@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="AI-powered job application assistant for Claude Code. Fill out job applications automatically on LinkedIn, Greenhouse, Ashby, Lever, Rippling, and Workday.">
+  <link rel="canonical" href="https://neonwatty.github.io/job-apply-plugin/">
+  <meta property="og:title" content="Job Apply Plugin - AI-powered job application assistant for Claude Code">
+  <meta property="og:description" content="Fill out job applications automatically using your resume. Supports LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://neonwatty.github.io/job-apply-plugin/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Job Apply Plugin - AI-powered job application assistant for Claude Code">
+  <meta name="twitter:description" content="Fill out job applications automatically using your resume. Supports LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday.">
+  <title>Job Apply Plugin - AI-powered job application assistant for Claude Code</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="#main" aria-label="Job Apply Plugin home">
+      <span class="brand-mark">J</span>
+      <span>Job Apply</span>
+    </a>
+    <nav aria-label="Primary navigation">
+      <a href="#skills">Skills</a>
+      <a href="#requirements">Requirements</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/neonwatty/job-apply-plugin">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">AI-powered job application assistant for Claude Code</p>
+        <h1>Fill out job applications automatically using your resume.</h1>
+        <p class="lede">
+          Supports LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday. One-time profile setup from your resume, then apply to jobs with a single command.
+        </p>
+        <div class="actions" aria-label="Primary actions">
+          <a class="button primary" href="#install">Get started</a>
+          <a class="button secondary" href="https://github.com/neonwatty/job-apply-plugin">View on GitHub</a>
+        </div>
+      </div>
+
+      <div class="product-shot" aria-label="Job Apply Plugin terminal preview">
+        <div class="mac-strip">
+          <span class="mac-dot red"></span>
+          <span class="mac-dot yellow"></span>
+          <span class="mac-dot green"></span>
+        </div>
+        <div class="terminal">
+          <div class="terminal-title">Claude Code</div>
+          <div class="prompt">$ /job-apply</div>
+          <div class="output output-dim">Paste the job URL you'd like to apply to:</div>
+          <div class="prompt">https://linkedin.com/jobs/view/4019283746</div>
+          <div class="output">
+            <div>Loading profile from ~/.claude-job-profile.json</div>
+            <div class="output-dim" style="margin: 6px 0;">Navigating to job listing...</div>
+            <div>Filling application fields:</div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">Application Progress</div>
+            <div class="field-row"><span class="check">&#10003;</span> Full name</div>
+            <div class="field-row"><span class="check">&#10003;</span> Email address</div>
+            <div class="field-row"><span class="check">&#10003;</span> Phone number</div>
+            <div class="field-row"><span class="check">&#10003;</span> Resume uploaded</div>
+            <div class="field-row"><span class="check">&#10003;</span> Work authorization</div>
+            <div class="field-row"><span class="active">&#9654;</span> Cover letter</div>
+          </div>
+          <div class="output output-confirm">Ready to submit. Review and confirm?</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section intro">
+      <p>
+        Job Apply Plugin turns Claude Code into a job application assistant. Extract your profile once from a resume, then let Claude fill out applications across six major job platforms while you review and confirm.
+      </p>
+    </section>
+
+    <section id="skills" class="section">
+      <div class="section-heading">
+        <p class="eyebrow">Two skills</p>
+        <h2>Apply to jobs and discover new opportunities.</h2>
+      </div>
+      <div class="skills-grid">
+        <article class="skill-card">
+          <div class="skill-header">
+            <span class="skill-badge">/job-apply</span>
+          </div>
+          <h3>Fill out applications automatically</h3>
+          <ul class="feature-bullets">
+            <li>One-time profile setup from your resume (PDF, DOCX, or TXT)</li>
+            <li>Multi-platform: LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, Workday</li>
+            <li>Smart field mapping from your profile to form fields</li>
+            <li>Dual-tool architecture: Chrome MCP for authenticated sites, Playwright MCP for forms</li>
+            <li>Never submits without your explicit confirmation</li>
+          </ul>
+        </article>
+        <article class="skill-card">
+          <div class="skill-header">
+            <span class="skill-badge">/job-search</span>
+          </div>
+          <h3>Find jobs where you have an advantage</h3>
+          <ul class="feature-bullets">
+            <li>Auto-generates search keywords from your resume</li>
+            <li>Finds jobs at companies where you have connections</li>
+            <li>Identifies jobs with hiring managers listed</li>
+            <li>Auto-inferred location and experience level filters</li>
+            <li>Results saved to <code>~/.claude-job-searches/</code> as JSON</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section platforms">
+      <div class="section-heading">
+        <p class="eyebrow">Supported platforms</p>
+        <h2>Works where the jobs are.</h2>
+      </div>
+      <div class="platform-grid">
+        <div class="platform-pill">LinkedIn Easy Apply</div>
+        <div class="platform-pill">Greenhouse</div>
+        <div class="platform-pill">Ashby</div>
+        <div class="platform-pill">Lever</div>
+        <div class="platform-pill">Rippling</div>
+        <div class="platform-pill">Workday</div>
+      </div>
+    </section>
+
+    <section id="requirements" class="section split">
+      <div class="section-heading">
+        <p class="eyebrow">Requirements</p>
+        <h2>Three tools, zero config.</h2>
+      </div>
+      <div class="feature-list">
+        <article>
+          <h3>Claude Code</h3>
+          <p>The CLI that runs the plugin and orchestrates the entire workflow.</p>
+        </article>
+        <article>
+          <h3>Claude in Chrome</h3>
+          <p>MCP server for authenticated browser sessions, used for LinkedIn where login is required.</p>
+        </article>
+        <article>
+          <h3>Playwright MCP</h3>
+          <p>Headless browser automation for form filling, file uploads, and iframe interaction on external ATS platforms.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="install" class="section install">
+      <div>
+        <p class="eyebrow">Install</p>
+        <h2>Add the plugin and start applying.</h2>
+        <p>
+          Install from the Claude Code plugin marketplace, then invoke <code>/job-apply</code> with a job URL. Your profile is extracted once and reused across all applications.
+        </p>
+      </div>
+      <div class="code-card">
+        <pre><code>claude plugin marketplace add neonwatty/job-apply-plugin
+claude plugin install job-apply@neonwatty-plugins
+
+# Then in Claude Code:
+/job-apply</code></pre>
+      </div>
+    </section>
+
+    <section class="section safety">
+      <div class="section-heading">
+        <p class="eyebrow">Safety first</p>
+        <h2>You stay in control at every step.</h2>
+      </div>
+      <div class="constraint-grid">
+        <article>
+          <h3>Never submits without confirmation</h3>
+          <p>Every application shows a full summary and waits for your explicit approval before submitting.</p>
+        </article>
+        <article>
+          <h3>Never enters passwords</h3>
+          <p>If a site requires login, the plugin stops and asks you to sign in first.</p>
+        </article>
+        <article>
+          <h3>Never enters payment info</h3>
+          <p>Premium features and paid prompts are skipped automatically.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>Job Apply Plugin is MIT licensed.</span>
+    <a href="https://discord.gg/7xsxU4ZG6A">Discord</a>
+    <a href="https://github.com/neonwatty/job-apply-plugin">GitHub</a>
+  </footer>
+</body>
+</html>
