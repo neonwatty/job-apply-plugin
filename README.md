@@ -9,7 +9,9 @@ AI-powered job application assistant that automatically fills out job applicatio
 | Skill | Description |
 |-------|-------------|
 | `/job-apply` | Fill out job applications automatically using your resume |
-| `/job-search` | Search LinkedIn for jobs with connections and hiring manager insights |
+| `/job-search` | Search LinkedIn, Hacker News, and Twitter/X for jobs with connections and hiring manager insights |
+| `/job-preferences` | Set and save target titles, salary, remote, and filters used by the other skills |
+| `/hidden-jobs` | Hunt the hidden market — niche boards, small-company ATS pages, and direct-to-hiring-manager posts; drafts outreach |
 
 ## Features
 
@@ -27,6 +29,14 @@ AI-powered job application assistant that automatically fills out job applicatio
 - **Hiring manager discovery**: Identifies jobs with hiring managers listed
 - **Auto-inferred filters**: Location and experience level from your profile
 - **Results saved**: All searches saved to `~/.claude-job-searches/` as JSON
+
+### Hidden Jobs (`/hidden-jobs`)
+- **ATS board APIs**: Pulls small companies' Greenhouse / Lever / Ashby boards (public JSON, no auth)
+- **Niche aggregators**: RemoteOK, Remotive, WeWorkRemotely — remote-first, startup-heavy
+- **Direct-contact posts**: LinkedIn / Twitter-X / Reddit posts where a hiring manager gives an email or "DM me"
+- **Contact-priority scoring**: Rewards a direct line to a human and low-competition roles over ATS black holes
+- **Outreach drafts**: Generates a personalized message for every direct-contact role (you review and send)
+- **Fetcher**: `skills/hidden-jobs/scripts/hunt.py` — stdlib Python, no dependencies
 
 ## Requirements
 
