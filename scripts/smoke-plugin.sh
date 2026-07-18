@@ -91,7 +91,7 @@ CLAUDE_CONFIG_DIR="$SMOKE_CONFIG_DIR" claude plugin details job-apply@neonwatty-
   | tee "$SMOKE_TEMP_ROOT/plugin-details.txt"
 
 for skill in job-apply job-search job-preferences; do
-  if ! rg -q "$skill" "$SMOKE_TEMP_ROOT/plugin-details.txt"; then
+  if ! grep -Fq -- "$skill" "$SMOKE_TEMP_ROOT/plugin-details.txt"; then
     echo "Installed plugin details did not list $skill" >&2
     exit 1
   fi
