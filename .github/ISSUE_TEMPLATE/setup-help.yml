@@ -1,0 +1,66 @@
+name: Setup help
+description: Get help installing or connecting the plugin without sharing private applicant data.
+title: "[Setup]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for asking for help. Do not attach a resume or profile file. Remove credentials, passwords, names, contact details, full application URLs, and other applicant data from every response and log excerpt.
+
+  - type: checkboxes
+    id: redaction
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed credentials, passwords, resume content, full application URLs, and personal applicant data.
+          required: true
+
+  - type: input
+    id: claude_version
+    attributes:
+      label: Claude Code version
+      description: Run `claude --version` and share only the version number.
+      placeholder: "Example: 2.x.x"
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Operating system and browser
+      placeholder: "Example: macOS 15, Chrome 138"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: setup_stage
+    attributes:
+      label: Where did setup stop?
+      options:
+        - Marketplace add
+        - Plugin install
+        - Skill invocation
+        - Claude in Chrome connection
+        - Profile setup
+        - Other setup step
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the expected and actual behavior using redacted details only.
+      placeholder: "The setup stopped after... I expected... Instead..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Redacted diagnostics
+      description: Optional short error text or steps already tried. Remove paths containing names and all applicant data.
+      render: shell
+    validations:
+      required: false

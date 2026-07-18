@@ -1,12 +1,12 @@
 ---
 name: job-preferences
-description: Set or update your job search preferences (titles, salary, remote, filters). Used by /job-search and other skills.
+description: Set or update your job search preferences (titles, salary, remote, filters). Used by /job-apply:job-search and other skills.
 allowed-tools: Read, Write
 ---
 
 # Job Preferences
 
-A Claude Code skill for managing persistent job search preferences. Set your target titles, salary floor, remote preference, and exclusion filters once — `/job-search` and other skills reuse them automatically.
+A Claude Code skill for managing persistent job search preferences. Set your target titles, salary floor, remote preference, and exclusion filters once — `/job-apply:job-search` and other skills reuse them automatically.
 
 ---
 
@@ -77,7 +77,7 @@ Use `AskUserQuestion` to collect all fields. Ask up to 4 questions at a time (th
 
 ### Step 4: Save Preferences
 
-Write the collected values into `~/.claude-job-profile.json` under the `preferences` key. Preserve all other existing keys in the file (like profile data used by `/job-apply`).
+Write the collected values into `~/.claude-job-profile.json` under the `preferences` key. Preserve all other existing keys in the file (like profile data used by `/job-apply:job-apply`).
 
 **Schema:**
 
@@ -99,18 +99,18 @@ Display the saved preferences and confirm:
 
 > **Preferences saved to `~/.claude-job-profile.json`.**
 >
-> These will be used automatically by `/job-search`. Run `/job-preferences` again any time to update them.
+> These will be used automatically by `/job-apply:job-search`. Run `/job-apply:job-preferences` again any time to update them.
 
 ---
 
 ## Updating Preferences
 
-When the user runs `/job-preferences` and preferences already exist, show current values and let them update selectively. Only overwrite the fields they change — keep the rest intact.
+When the user runs `/job-apply:job-preferences` and preferences already exist, show current values and let them update selectively. Only overwrite the fields they change — keep the rest intact.
 
 ---
 
 ## Safety Rules
 
 1. **Never overwrite non-preference data** — only read/write the `preferences` key in the profile JSON
-2. **Preserve existing profile** — `/job-apply` stores resume data in the same file; never delete or modify those keys
+2. **Preserve existing profile** — `/job-apply:job-apply` stores resume data in the same file; never delete or modify those keys
 3. **No defaults without user input** — always ask the user, never assume values

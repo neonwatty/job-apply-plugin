@@ -1,7 +1,7 @@
 ---
 name: job-search
 description: Search LinkedIn, Hacker News, and Twitter/X for jobs with connections, hiring manager insights, and preference-based scoring. Use when the user wants to find jobs, search for positions, or explore job opportunities.
-allowed-tools: Read, Write, Bash, WebSearch, WebFetch, mcp__claude-in-chrome__*, mcp__plugin_playwright_playwright__*
+allowed-tools: Read, Write, Bash, WebSearch, WebFetch, mcp__claude-in-chrome__*
 ---
 
 # Multi-Source Job Search
@@ -18,7 +18,7 @@ Read `~/.claude-job-profile.json`. Check for the `preferences` key.
 
 **If no preferences found**, say:
 
-> No search preferences found. Run `/job-preferences` first to set your target titles, salary range, and filters.
+> No search preferences found. Run `/job-apply:job-preferences` first to set your target titles, salary range, and filters.
 
 Then **STOP**. Do not prompt the user to set preferences inline.
 
@@ -331,7 +331,7 @@ If confirmed, append to `application_queue.md` under a new "## Tier 3 — Auto-D
 
 ## Safety Rules
 
-1. **Never enter credentials** — if login is required, stop and instruct user to log in manually
+1. **Never handle credentials** — pause for the user to complete login, password, CAPTCHA, or MFA steps manually
 2. **Never click Apply** — this skill is for searching only, not applying
 3. **Never create accounts** — stop and inform user if account creation is required
 4. **Respect rate limits per source**:
@@ -350,30 +350,30 @@ If confirmed, append to `application_queue.md` under a new "## Tier 3 — Auto-D
 
 **Standard search (all sources):**
 ```
-User: /job-search
+User: /job-apply:job-search
 Claude: [Loads preferences, searches LinkedIn + HN + Twitter, displays ranked results]
 ```
 
 **With time range override:**
 ```
-User: /job-search 2 weeks
+User: /job-apply:job-search 2 weeks
 Claude: [Uses 2-week time range instead of default]
 ```
 
 **Single source:**
 ```
-User: /job-search hn
+User: /job-apply:job-search hn
 Claude: [Searches only Hacker News Who's Hiring]
 ```
 
 **Multiple source filter:**
 ```
-User: /job-search linkedin hn
+User: /job-apply:job-search linkedin hn
 Claude: [Searches LinkedIn and HN, skips Twitter]
 ```
 
 **With extra keywords:**
 ```
-User: /job-search agentic systems
+User: /job-apply:job-search agentic systems
 Claude: [Adds "agentic systems" to title-based keywords]
 ```

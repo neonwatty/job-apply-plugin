@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest a privacy-conscious improvement to the plugin.
+title: "[Feature]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. Keep examples generic. Do not include resumes, profile files, credentials, passwords, full application URLs, or personal applicant data.
+
+  - type: checkboxes
+    id: redaction
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed credentials, passwords, resume content, full application URLs, and personal applicant data.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem should this solve?
+      description: Describe the general user need without identifying a person, employer, or application.
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Explain what a successful, safe experience would look like.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional workarounds or approaches you have considered, using generic examples only.
+    validations:
+      required: false

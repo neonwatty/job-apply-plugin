@@ -1,6 +1,5 @@
 {
   "name": "job-apply",
-  "version": "1.0.0",
   "description": "AI-powered job application assistant for LinkedIn, Greenhouse, Ashby, Lever, Rippling, and Workday",
   "author": {
     "name": "Jeremy Watt",

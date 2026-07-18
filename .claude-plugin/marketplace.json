@@ -14,7 +14,6 @@
         "repo": "neonwatty/job-apply-plugin"
       },
       "description": "AI-powered job application assistant for LinkedIn, Greenhouse, Ashby, Lever, Rippling, and Workday",
-      "version": "1.0.0",
       "category": "productivity"
     }
   ]

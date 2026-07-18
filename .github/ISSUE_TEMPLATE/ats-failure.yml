@@ -1,0 +1,75 @@
+name: ATS workflow failure
+description: Report a redacted problem with a guided ATS workflow.
+title: "[ATS]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ATS forms change frequently, so a clear redacted report helps. Do not attach a resume, profile file, screenshot with applicant data, credentials, passwords, or a full application URL.
+
+  - type: checkboxes
+    id: redaction
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed credentials, passwords, resume content, full application URLs, company-specific tokens, and personal applicant data.
+          required: true
+
+  - type: dropdown
+    id: ats_family
+    attributes:
+      label: ATS family
+      options:
+        - LinkedIn Easy Apply
+        - Greenhouse
+        - Ashby
+        - Lever
+        - Rippling
+        - Workday
+        - Unknown or other
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Claude Code, operating system, and browser versions
+      placeholder: "Example: Claude Code 2.x, macOS 15, Chrome 138"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Workflow stage
+      options:
+        - Page navigation
+        - Login or user-only checkpoint
+        - Form reading
+        - Field entry
+        - File upload
+        - Review-page handoff
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Redacted behavior
+      description: Explain what was visible, what you expected, and what happened. Use generic field labels and omit employer or applicant details.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Redacted reproduction steps
+      description: Give the smallest safe sequence using an ATS family and generic field names, not a full application URL.
+      placeholder: |
+        1. Opened a Greenhouse form.
+        2. Reached a generic location field.
+        3. The control was not detected.
+    validations:
+      required: true

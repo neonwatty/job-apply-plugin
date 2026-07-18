@@ -31,3 +31,9 @@ jobs:
           echo "Validating marketplace.json..."
           python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
           echo "All JSON files are valid"
+
+      - name: Run isolated plugin smoke test
+        run: bash scripts/smoke-plugin.sh
+
+      - name: Check documentation links
+        run: bash scripts/check-links.sh

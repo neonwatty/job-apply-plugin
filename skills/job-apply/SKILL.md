@@ -1,6 +1,6 @@
 ---
 name: job-apply
-description: Fill out job applications automatically using your resume. Use when the user wants to apply for jobs on LinkedIn Easy Apply, Greenhouse, Ashby, or Workday.
+description: Fill out job applications automatically using your resume. Use when the user wants to apply for jobs on LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, or Workday.
 allowed-tools: Read, Write, Bash, mcp__claude-in-chrome__*, mcp__plugin_playwright_playwright__*
 ---
 
@@ -14,7 +14,7 @@ When this skill is invoked, first check if a profile exists at `~/.claude-job-pr
 
 **If NO profile exists**, say:
 
-> Welcome to the Job Application Assistant! I'll help you fill out job applications on LinkedIn, Greenhouse, and Workday.
+> Welcome to the Job Application Assistant! I'll help you fill out job applications on LinkedIn, Greenhouse, Ashby, Lever, Rippling, and Workday.
 >
 > First, I need to set up your profile. This is a one-time process — your information will be saved for future applications.
 >
@@ -48,73 +48,27 @@ Your extracted profile is stored at `~/.claude-job-profile.json` for reuse acros
 
 ---
 
-## Dual-Tool Architecture
+## Browser Routing
 
-This skill uses **two browser automation tools** together because each has capabilities the other lacks:
+Use **Claude in Chrome** as the default and only required browser integration. Work in the visible Chrome session so the user can see navigation, authenticated state, entered values, uploads, and the final review page.
 
-| Capability | Chrome MCP | Playwright MCP |
-|---|---|---|
-| Authenticated sessions (LinkedIn) | Yes | No — runs a separate browser with no login |
-| File uploads | No — opens OS file picker that can't be controlled | Yes — `setInputFiles` and `browser_file_upload` |
-| Iframe interaction | Limited — can't reliably reach iframe content | Yes — snapshots include iframe elements transparently |
-| JavaScript injection | Yes — `javascript_tool` | Yes — `browser_evaluate` and `browser_run_code` |
-| Dropdown/combobox interaction | Limited | Yes — `browser_fill_form` and `browser_click` |
+### Chrome-First Rules
 
-### Tool Routing Rules
+- Use Claude in Chrome for LinkedIn and every external application portal.
+- Use the user's existing authenticated Chrome session, but never ask for, read, store, or enter credentials.
+- Pause for the user to handle login, password, CAPTCHA, MFA, consent prompts, or account creation.
+- Use Chrome's visible form controls and local file-upload support. Confirm the selected filename after an upload.
+- If an Apply link opens an external portal or a new tab, continue there in Claude in Chrome.
 
-**Use Chrome MCP (`mcp__claude-in-chrome__*`) for:**
-- LinkedIn navigation (requires logged-in session)
-- Any site requiring authentication
-- JavaScript injection to capture external URLs
-- Reading LinkedIn job details
+### Optional Playwright Fallback
 
-**Use Playwright MCP (`mcp__plugin_playwright_playwright__*`) for:**
-- External application portals (Greenhouse, Ashby, Lever, Rippling, Workday)
-- File uploads (resume, cover letter)
-- Forms embedded in iframes
-- Dropdown and combobox interaction
-- Any form filling on non-authenticated pages
+Playwright is not required. Use it only when **all** of the following are true:
 
-### The Handoff Pattern
+1. The user already has a Playwright integration configured.
+2. Chrome cannot reach a specific iframe, upload widget, or custom control after a reasonable visible attempt.
+3. The fallback does not require transferring login state or credentials.
 
-1. **Chrome MCP** navigates to the LinkedIn job listing (authenticated)
-2. **Chrome MCP** clicks Apply — if it's an external application, captures the external URL via JavaScript interception
-3. **Playwright MCP** opens the captured URL and fills the form, uploads files, and submits
-
----
-
-## LinkedIn → External URL Extraction
-
-When a LinkedIn job uses an external application portal, the Apply button opens a new tab. Use JavaScript interception to capture that URL.
-
-### Pattern A: Button with `window.open` (most common)
-
-```javascript
-// Step 1: Set up interceptor in Chrome MCP
-var originalOpen = window.open;
-window.open = function(url, target, features) {
-  document.title = 'CAPTURED:' + url;
-  var w = originalOpen.call(window, url, target, features);
-  return w;
-};
-
-// Step 2: Click the Apply button
-document.querySelector('button.jobs-apply-button').click();
-
-// Step 3: Read document.title — it will start with "CAPTURED:" followed by the URL
-```
-
-### Pattern B: Link with `target="_blank"` (fallback)
-
-```javascript
-// Remove target="_blank" so it navigates in the same tab
-var link = document.querySelector('a.jobs-apply-button');
-link.removeAttribute('target');
-link.click();
-// Read the URL from the Chrome tab after navigation
-```
-
-After capturing the URL, pass it to Playwright MCP via `browser_navigate`.
+Use the fallback only for the blocked control, then return to the visible review workflow. If these conditions are not met, explain which field is blocked and leave it for the user to complete manually.
 
 ---
 
@@ -140,18 +94,18 @@ If no profile exists at `~/.claude-job-profile.json`, or if the user requests a 
 ### Phase 2: Application Filling
 
 1. **Load profile** from `~/.claude-job-profile.json`
-2. **Determine starting point**:
-   - If URL is LinkedIn (`linkedin.com`) → use **Chrome MCP** to navigate (authenticated)
-   - If URL is a direct external portal → skip to step 5 with **Playwright MCP**
-3. **Chrome MCP**: Navigate to LinkedIn job listing, click Apply
-4. **Chrome MCP**: If external portal, capture URL using JS interception pattern (see above)
-5. **Playwright MCP**: Navigate to external URL with `browser_navigate`
-6. **Playwright MCP**: Detect platform, read form structure with `browser_snapshot`
-7. **Playwright MCP**: Fill fields with `browser_fill_form`, handle dropdowns with `browser_click`
-8. **Playwright MCP**: Upload resume with `browser_file_upload` or `browser_run_code` using `setInputFiles`
-9. **Playwright MCP**: Take snapshot to verify all fields are filled correctly
-10. **Present summary** to user showing all filled values, wait for explicit confirmation
-11. **Playwright MCP**: Click Submit
+2. **Open the URL in Claude in Chrome** and identify the job site and application flow
+3. **Pause for user-only steps** if login, password, CAPTCHA, MFA, consent, or account creation appears
+4. **Open the application form**; if an Apply link opens an external portal, continue in that visible Chrome tab
+5. **Read the form** and fill only values supported by the confirmed profile
+6. **Ask before sensitive answers** such as salary, work authorization, visa status, demographic information, or disability disclosure
+7. **Upload the resume** through the visible file control and verify the selected filename
+8. **Handle inaccessible controls** using the optional fallback rules above, or leave the field for the user
+9. **Advance through non-final steps** only when the control is clearly Next, Continue, Save, or Review
+10. **Stop at final review** before any Submit, Send, or equivalent final-action button
+11. **Summarize every entered value**, identify anything incomplete or uncertain, and tell the user to inspect the page and submit manually
+
+User confirmation never authorizes this skill to click Submit, Send, or any equivalent final-action button.
 
 ---
 
@@ -173,7 +127,7 @@ If no profile exists at `~/.claude-job-profile.json`, or if the user requests a 
    - Work authorization questions (dropdowns)
    - Custom screening questions (varies by employer)
 4. Click "Next" to advance, "Review" on final step
-5. Screenshot the review page before "Submit application"
+5. Stop on the review page, summarize all entered fields, and leave "Submit application" untouched for the user
 
 **Field patterns to look for:**
 - `input[name*="phone"]` - Phone number
@@ -187,20 +141,20 @@ If no profile exists at `~/.claude-job-profile.json`, or if the user requests a 
 - Single long-form page with sections
 - Clear field labels
 - Often has "Add another" for work history/education
-- **Frequently embedded in iframes** on company career sites — Playwright handles this transparently
+- May be embedded in an iframe on a company career site
 
-**Approach (use Playwright MCP):**
-1. Navigate to URL with `browser_navigate`
-2. Use `browser_snapshot` to read full form — iframe content appears with `f54eXX` refs
-3. Fill from top to bottom using `browser_fill_form`
+**Approach (Chrome first):**
+1. Navigate to the application URL in Claude in Chrome
+2. Read the visible form; if an embedded form is inaccessible, follow the optional fallback rules or leave it for the user
+3. Fill from top to bottom
 4. **Phone country code**: Click the country code toggle → select "United States: +1" from the listbox → the phone field auto-formats with +1 prefix
 5. For work history sections:
    - Fill most recent position
    - Click "Add another" if form allows and user has more history
 6. Education section similar pattern
 7. Handle custom questions at bottom
-8. Upload resume via `browser_file_upload` or `browser_run_code` with `setInputFiles`
-9. Single "Submit Application" button at end
+8. Upload the resume through the visible file control and confirm the filename
+9. Stop before the final "Submit Application" button, summarize the fields, and hand control to the user
 
 **Field patterns:**
 - Standard `<input>` and `<select>` elements
@@ -214,14 +168,14 @@ If no profile exists at `~/.claude-job-profile.json`, or if the user requests a 
 - Fields: name, phone, email, location (combobox), LinkedIn URL, resume upload
 - Has both a resume upload field and a separate autofill file input — use the resume field, not the autofill one
 
-**Approach (use Playwright MCP):**
-1. Navigate to URL with `browser_navigate`
-2. Use `browser_snapshot` to read form structure
-3. Fill text fields with `browser_fill_form` (name, phone, email, LinkedIn URL)
+**Approach (Chrome first):**
+1. Navigate to the URL in Claude in Chrome
+2. Read the visible form structure
+3. Fill text fields (name, phone, email, LinkedIn URL)
 4. **Location combobox**: Type the location to trigger suggestions, then click the matching option
-5. **Resume upload**: Use `browser_run_code` with `page.locator('#_systemfield_resume').setInputFiles('/path/to/resume.pdf')` — target `#_systemfield_resume` specifically, not the autofill input
-6. Verify with `browser_snapshot`
-7. Submit
+5. **Resume upload**: Use the resume field, not the separate autofill file input, and verify the filename
+6. Review all visible values
+7. Stop before the final action, summarize the fields, and let the user submit manually
 
 ### Lever
 
@@ -231,23 +185,13 @@ If no profile exists at `~/.claude-job-profile.json`, or if the user requests a 
 - Text fields for name, email, phone, LinkedIn, etc.
 - Radio buttons for screening questions — often use custom overlays that intercept clicks
 
-**Approach (use Playwright MCP):**
-1. Navigate to URL with `browser_navigate`
+**Approach (Chrome first):**
+1. Navigate to the URL in Claude in Chrome
 2. Scroll down to find the application form (usually below job description)
-3. Use `browser_snapshot` to read form structure
-4. Fill text fields with `browser_fill_form`
-5. **Radio buttons**: If `browser_click` doesn't work (overlay intercepts), use `browser_evaluate` with:
-   ```javascript
-   element.click();
-   element.dispatchEvent(new Event('change', {bubbles: true}));
-   ```
-6. **Resume upload**: Use `browser_run_code` to find the hidden file input and call `setInputFiles`:
-   ```javascript
-   async (page) => {
-     await page.locator('input[type="file"][name="resume"]').setInputFiles('/path/to/resume.pdf');
-   }
-   ```
-7. Verify with `browser_snapshot`, then submit
+3. Read the visible form structure and fill text fields
+4. **Radio buttons**: If a custom overlay blocks a control, follow the optional fallback rules or leave it for the user
+5. **Resume upload**: Use the visible resume file control and verify the filename
+6. Review all fields, stop before the final action, and let the user submit manually
 
 ### Rippling
 
@@ -256,33 +200,33 @@ If no profile exists at `~/.claude-job-profile.json`, or if the user requests a 
 - Upload resume first, then verify/correct auto-filled data
 - Location uses a typeahead combobox
 
-**Approach (use Playwright MCP):**
-1. Navigate to URL with `browser_navigate`
+**Approach (Chrome first):**
+1. Navigate to the URL in Claude in Chrome
 2. **Upload resume first** — Rippling will auto-parse and fill fields
-3. Use `browser_snapshot` to see what was auto-filled
-4. Correct any mis-parsed fields with `browser_fill_form`
+3. Read the visible form to see what was auto-filled
+4. Correct any mis-parsed fields
 5. **Location combobox**: Clear existing value, type the correct location, wait for dropdown, click match
 6. Fill any remaining required fields
-7. Verify with `browser_snapshot`, then submit
+7. Review the parsed and entered values, stop before the final action, and let the user submit manually
 
 ### Workday
 
 **Characteristics:**
 - Multi-page wizard with heavy JavaScript
 - Non-standard UI components (custom dropdowns, date pickers)
-- Often requires account creation (STOP and inform user - do not create accounts)
+- Often requires account creation (pause so the user can decide and handle it)
 
-**Approach (use Playwright MCP):**
-1. If login/account creation required, STOP and inform user they must handle this
+**Approach (Chrome first):**
+1. If login, CAPTCHA, MFA, or account creation is required, pause for the user; never handle credentials or create the account
 2. Navigate through "My Information" → "My Experience" → "Application Questions"
-3. Use `browser_snapshot` to read form structure on each page
-4. For dropdowns: `browser_click` to open, then `browser_snapshot` to read options, then `browser_click` option
+3. Read the visible form structure on each page
+4. For dropdowns: open the field, read the visible options, then choose the supported value
 5. For date fields: May need to click calendar icon, then select date
-6. Watch for "Save and Continue" vs "Submit" buttons
-7. Upload resume via `browser_file_upload` or `browser_run_code`
+6. Use "Save and Continue" for intermediate steps, but stop before "Submit" or any equivalent final action
+7. Upload the resume through the visible file control and verify the filename
 
 **Special handling:**
-- Workday dropdowns: Click field → wait → read options with `browser_snapshot` → click option
+- Workday dropdowns: Click field → wait → read the visible options → click the supported option
 - Date pickers: Often format-sensitive, try MM/DD/YYYY
 - Required fields marked with asterisk or red border after validation
 
@@ -309,127 +253,36 @@ If no profile exists at `~/.claude-job-profile.json`, or if the user requests a 
 
 ---
 
-## Chrome MCP Tool Usage
+## Browser Tool Usage
 
-### Reading Forms
-```
-Use read_page with filter: "interactive" to see all form fields
-Use find with natural language: "email input field", "submit button"
-```
+### Claude in Chrome (Default)
 
-### Filling Fields
-```
-Use form_input for standard inputs and selects:
-  - ref: element reference from read_page
-  - value: the value to set
+1. Read the visible page and identify interactive fields.
+2. Fill standard fields and use visible controls for dropdowns, radio buttons, and checkboxes.
+3. Upload the resume through the page's file control and verify the displayed filename.
+4. After each non-final Next, Continue, or Save action, read the new page before proceeding.
+5. When Review, Submit, Send, or an equivalent final action appears, stop and summarize the application for the user.
 
-Use computer with action: "left_click" for custom dropdowns:
-  1. Click to open dropdown
-  2. read_page to see options
-  3. Click the correct option
-```
+### Playwright (Optional Fallback Only)
 
-### File Upload (Resume)
-```
-Use find to locate file input: "resume upload field"
-Use form_input or computer to trigger file picker
-Note: May need to use upload_image tool for some implementations
-```
-
-### Multi-Page Navigation
-```
-After filling current page:
-1. find "next button" or "continue button"
-2. Take screenshot for record
-3. Click next
-4. read_page on new step
-5. Repeat until review/submit page
-```
-
----
-
-## Playwright MCP Tool Usage
-
-### Reading Forms
-```
-Use browser_snapshot to get the full accessibility tree, including iframe content.
-Iframe elements appear with refs like "f54eXX" — these refs work with all Playwright tools.
-```
-
-### Filling Fields
-```
-Use browser_fill_form with ref/value pairs from the snapshot:
-  - fields: [{ name: "First Name", type: "textbox", ref: "ref123", value: "John" }]
-
-For multiple fields at once, pass an array of field objects.
-```
-
-### Dropdowns and Comboboxes
-```
-1. browser_click on the dropdown toggle/button to open it
-2. browser_snapshot to read the available options
-3. browser_click on the correct option
-
-For comboboxes (typeahead): type into the field first, then click the matching suggestion.
-```
-
-### File Upload
-Two patterns depending on the form:
-
-**Pattern A: Direct setInputFiles (preferred)**
-```
-Use browser_run_code:
-  async (page) => {
-    await page.locator('#resume-input').setInputFiles('/path/to/resume.pdf');
-  }
-Replace '#resume-input' with the actual selector for the file input.
-```
-
-**Pattern B: File chooser interception**
-```
-Use browser_run_code:
-  async (page) => {
-    const [fileChooser] = await Promise.all([
-      page.waitForEvent('filechooser'),
-      page.locator('button:has-text("Upload")').click()
-    ]);
-    await fileChooser.setFiles('/path/to/resume.pdf');
-  }
-
-If a modal appears after upload, use browser_file_upload to complete it.
-```
-
-### Iframe Interaction
-```
-Playwright handles iframes transparently.
-browser_snapshot shows iframe content with refs (e.g., "f54eXX").
-These refs work directly with browser_fill_form, browser_click, etc.
-No special handling needed — just use the refs from the snapshot.
-```
-
-### Custom Radio Buttons
-```
-If browser_click is intercepted by overlays, use browser_evaluate:
-  element.click();
-  element.dispatchEvent(new Event('change', {bubbles: true}));
-Pass the ref of the radio input element.
-```
+If Playwright is already configured and Chrome cannot reach a specific iframe or custom control, it may be used only for that blocked field. Do not require it, do not transfer authenticated state or credentials, and do not use it to activate Submit, Send, or any equivalent final action. If the fallback is unavailable or unsuccessful, leave the field for the user.
 
 ---
 
 ## Safety Rules
 
-1. **Never enter passwords** - If login required, stop and instruct user
-2. **Never create accounts** - Stop and inform user they must create accounts themselves
-3. **Never click Submit without confirmation** - Always take a snapshot and get explicit "yes"
+1. **Never handle credentials** - Pause for the user to complete login, password, CAPTCHA, and MFA steps
+2. **Never create accounts** - Pause so the user can decide and create an account themselves
+3. **Never submit applications** - Stop at final review; confirmation does not authorize clicking Submit, Send, or an equivalent final action
 4. **Never enter payment information** - Some applications have optional premium features
 5. **Handle sensitive questions carefully** - Salary expectations, visa status, disability disclosure should be confirmed with user before filling
-6. **Always use Chrome MCP for LinkedIn** - Playwright cannot access authenticated sessions
-7. **Never store or pass login credentials between tools** - Each tool uses its own browser context
+6. **Use Claude in Chrome by default** - Playwright is only an already-configured fallback for a specific inaccessible control
+7. **Never store or pass login credentials between tools** - Authentication remains a user-only step in the visible Chrome session
 
 ---
 
 ## Example Invocation
 
 ```
-User: Help me apply to this job: https://www.linkedin.com/jobs/view/123456789
+User: /job-apply:job-apply https://www.linkedin.com/jobs/view/123456789
+```
