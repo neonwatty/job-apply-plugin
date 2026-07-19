@@ -1,7 +1,7 @@
 ---
 name: job-preferences
 description: Set or update your job search preferences (titles, salary, remote, filters). Used by /job-apply:job-search and other skills.
-allowed-tools: Read, Write
+allowed-tools: Read, Write, Bash
 ---
 
 # Job Preferences
@@ -14,11 +14,11 @@ A Claude Code skill for managing persistent job search preferences. Set your tar
 
 ### Step 1: Load Profile
 
-Read `~/.claude-job-profile.json`. If the file doesn't exist yet, create it with an empty object `{}`.
+Follow `/job-apply:answer-memory`: run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/job-apply-store.py" init`, then load saved preferences with `preferences-get`. Never read or write persistent Job Apply files directly.
 
 ### Step 2: Check for Existing Preferences
 
-Look for the `preferences` key in the profile.
+Use the JSON object returned by `preferences-get`.
 
 **If preferences exist**, display them:
 
@@ -77,7 +77,7 @@ Use `AskUserQuestion` to collect all fields. Ask up to 4 questions at a time (th
 
 ### Step 4: Save Preferences
 
-Write the collected values into `~/.claude-job-profile.json` under the `preferences` key. Preserve all other existing keys in the file (like profile data used by `/job-apply:job-apply`).
+Write the collected values to a private temporary JSON object, then call `preferences-set --input <preferences.json>` through the bundled helper and remove the temporary file. The helper merges supplied keys while preserving the rest of the preferences and profile. Never patch `profile.json` directly.
 
 **Schema:**
 
@@ -97,7 +97,7 @@ Write the collected values into `~/.claude-job-profile.json` under the `preferen
 
 Display the saved preferences and confirm:
 
-> **Preferences saved to `~/.claude-job-profile.json`.**
+> **Preferences saved to your local Job Apply store at `~/.job-apply/profile.json`.**
 >
 > These will be used automatically by `/job-apply:job-search`. Run `/job-apply:job-preferences` again any time to update them.
 
@@ -111,6 +111,6 @@ When the user runs `/job-apply:job-preferences` and preferences already exist, s
 
 ## Safety Rules
 
-1. **Never overwrite non-preference data** — only read/write the `preferences` key in the profile JSON
-2. **Preserve existing profile** — `/job-apply:job-apply` stores resume data in the same file; never delete or modify those keys
+1. **Use only the helper** — initialize, read, and merge preferences through `/job-apply:answer-memory`; never directly edit files under `~/.job-apply/`
+2. **Preserve existing profile** — use `preferences-set` without `--replace` for selective updates
 3. **No defaults without user input** — always ask the user, never assume values

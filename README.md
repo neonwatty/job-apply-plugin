@@ -9,6 +9,7 @@ AI-powered job application assistant that automatically fills out job applicatio
 | Skill | Description |
 |-------|-------------|
 | `/job-apply:job-apply` | Fill out job applications automatically using your resume |
+| `/job-apply:answer-memory` | Safely manage your local profile, reusable answers, application history, and resumable sessions |
 | `/job-apply:job-search` | Search LinkedIn, Hacker News, and Twitter/X for jobs, then rank results against your preferences |
 | `/job-apply:job-preferences` | Set the titles, salary, remote-work, and filtering preferences used by job search |
 
@@ -19,8 +20,17 @@ AI-powered job application assistant that automatically fills out job applicatio
 - **Guided ATS coverage**: Workflows for LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday, with current forms unverified
 - **Visible browser automation**: Claude in Chrome fills forms in the browser session you can see and control
 - **Smart field mapping**: Automatically matches your profile to form fields
+- **Confidence-aware answer reuse**: Reuses confirmed non-sensitive answers and flags inferred, missing, or sensitive answers for review
+- **Resumable progress**: Saves application step metadata and answer references without copying answer values
 - **Manual submission**: Stops at final review so only you can click Submit or Send
 - **Resume storage**: Profile saved locally for reuse across applications
+
+### Answer Memory (`/job-apply:answer-memory`)
+- **One local contract**: All Job Apply skills use the same bundled storage helper
+- **Reusable answers**: Records confirmed, inferred, missing, and sensitive states with provenance and scope
+- **Separate remember consent**: A sensitive answer is never retained merely because it was used in a form
+- **Minimal history**: Application events and sessions reference answer keys instead of duplicating values
+- **Non-destructive migration**: Imports an existing legacy profile once and leaves the original file untouched
 
 ### Job Search (`/job-apply:job-search`)
 - **Preference-based search**: Searches for the titles, salary range, remote options, and time range you saved
@@ -31,7 +41,7 @@ AI-powered job application assistant that automatically fills out job applicatio
 
 ### Job Preferences (`/job-apply:job-preferences`)
 - **Reusable search settings**: Save target titles, salary floor, remote preference, exclusion patterns, and time range
-- **Shared profile**: Preferences are stored in `~/.claude-job-profile.json` without replacing resume profile data
+- **Shared profile**: Preferences are stored in `~/.job-apply/profile.json` without replacing resume profile data
 - **Selective updates**: Change individual preferences while preserving the rest
 
 ## Requirements
@@ -128,7 +138,25 @@ The plugin includes guided workflows for six ATS families. Repository instructio
 
 ## Profile Storage
 
-Your profile is stored as **plaintext** at `~/.claude-job-profile.json` and includes sensitive personal information such as:
+Job Apply stores data as **plaintext local files** under `~/.job-apply/`:
+
+```text
+~/.job-apply/
+  profile.json
+  answers.json
+  applications.jsonl
+  sessions/
+    <application-id>.json
+```
+
+| File | Purpose |
+|------|---------|
+| `profile.json` | Resume facts and job-search preferences |
+| `answers.json` | Reusable answers with confirmation, source, scope, and sensitivity state |
+| `applications.jsonl` | Minimal append-only application lifecycle events |
+| `sessions/*.json` | Resumable workflow metadata and answer-key references |
+
+These files can include sensitive personal information such as:
 
 - Personal information (name, email, phone, location)
 - Work history
@@ -136,20 +164,27 @@ Your profile is stored as **plaintext** at `~/.claude-job-profile.json` and incl
 - Skills
 - Social links (LinkedIn, GitHub, portfolio)
 
-The repository contains no telemetry or analytics integration, and the profile file is not uploaded to a plugin service. It remains on your computer until you direct Claude to use its values in browser forms or searches; those third-party sites receive the information you choose to enter there.
+The repository contains no telemetry or analytics integration, and the store is not uploaded to a plugin service. It remains on your computer until you direct Claude to use values in browser forms or searches; those third-party sites receive the information you choose to enter there.
 
-Protect the file like a resume. Do not attach it to issues or share it in logs. On macOS or Linux, you can restrict access to your user account:
+Protect the directory like a resume. Do not attach its files to issues or share them in logs. The helper creates user-only permissions on supported systems. On macOS or Linux, you can verify or restore them with:
 
 ```bash
-chmod 600 ~/.claude-job-profile.json
+chmod 700 ~/.job-apply
+chmod 600 ~/.job-apply/profile.json ~/.job-apply/answers.json ~/.job-apply/applications.jsonl
 ```
+
+On first use, an existing `~/.claude-job-profile.json` is copied into the new versioned profile without modifying or deleting the legacy file. Once `~/.job-apply/profile.json` exists it is authoritative; later legacy-file changes are not re-imported. Verify the new profile before deciding whether to archive or remove the old file.
+
+All plugin skills access this data through the bundled `scripts/job-apply-store.py` helper. Canonical JSON updates are atomic, corrupt or future-version files fail closed, and application history and sessions do not duplicate reusable answer values.
+
+Only matching, non-sensitive `confirmed` answers may be reused without asking. Inferred and missing answers require review. Sensitive answers are reconfirmed before every use and are stored only when you separately ask Job Apply to remember that specific value.
 
 To replace the stored profile from a new resume:
 ```
 /job-apply:job-apply reset profile
 ```
 
-To delete it completely, close Claude Code and remove only that file with `rm -i ~/.claude-job-profile.json`. Search-result Markdown files are separate under `~/.claude-job-searches/`; review and remove them independently if needed.
+To remove Job Apply data, close Claude Code and first move the directory to a private backup so recovery remains possible, for example `mv ~/.job-apply ~/.job-apply.backup`. Search-result Markdown files are separate under `~/.claude-job-searches/`; review them independently. The legacy `~/.claude-job-profile.json` is also separate and is never deleted automatically.
 
 ## Search Results Storage
 
@@ -174,6 +209,7 @@ Each file contains:
 - **Never submits applications** - Stops at final review, summarizes entered fields, and leaves Submit or Send for you
 - **Never enters payment info** - Skips premium features
 - **Confirms sensitive questions** - Salary, visa status, etc.
+- **Separates use from storage consent** - Filling a sensitive answer once never automatically remembers it
 
 ## Setup Check and Troubleshooting
 

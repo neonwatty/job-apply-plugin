@@ -10,9 +10,9 @@ A Claude Code skill for filling job applications on LinkedIn Easy Apply, Greenho
 
 ## Initial Prompt
 
-When this skill is invoked, first check if a profile exists at `~/.claude-job-profile.json`.
+When this skill is invoked, first follow `/job-apply:answer-memory`: run the bundled helper's `init` command, then load the profile with `profile-get`. Never read or write persistent Job Apply files directly.
 
-**If NO profile exists**, say:
+**If the returned profile object is empty**, say:
 
 > Welcome to the Job Application Assistant! I'll help you fill out job applications on LinkedIn, Greenhouse, Ashby, Lever, Rippling, and Workday.
 >
@@ -24,9 +24,9 @@ When this skill is invoked, first check if a profile exists at `~/.claude-job-pr
 
 Then wait for the user to provide the path before proceeding with profile extraction.
 
-**If a profile DOES exist**, say:
+**If the profile contains applicant data**, say:
 
-> Welcome back! Your profile is loaded from `~/.claude-job-profile.json`.
+> Welcome back! Your local Job Apply profile and answer memory are ready.
 >
 > **Provide a job URL** and I'll help you apply. For example:
 > - LinkedIn: `https://www.linkedin.com/jobs/view/123456789`
@@ -44,7 +44,7 @@ Then wait for the user to provide the path before proceeding with profile extrac
 
 ## Profile Storage
 
-Your extracted profile is stored at `~/.claude-job-profile.json` for reuse across sessions. Run with `--reset-profile` to re-extract from resume.
+Your extracted profile is stored under `~/.job-apply/` for reuse across sessions. All persistent reads and writes go through `${CLAUDE_PLUGIN_ROOT}/scripts/job-apply-store.py` as defined by `/job-apply:answer-memory`. A first run non-destructively migrates an existing `~/.claude-job-profile.json`.
 
 ---
 
@@ -76,7 +76,7 @@ Use the fallback only for the blocked control, then return to the visible review
 
 ### Phase 1: Profile Setup
 
-If no profile exists at `~/.claude-job-profile.json`, or if the user requests a reset:
+If `profile-get` returns an empty object, or if the user requests a reset:
 
 1. **Read the resume file** using the Read tool
 2. **Extract structured data** into these categories:
@@ -89,21 +89,23 @@ If no profile exists at `~/.claude-job-profile.json`, or if the user requests a 
    - `skills[]`: array of skill strings
    - `resumePath`: absolute path to the resume file on disk
 3. **Present extracted data to user** for review and correction
-4. **Save confirmed profile** to `~/.claude-job-profile.json`
+4. **Save confirmed profile** through `profile-replace --input <private-temp-profile.json>`, then remove the temporary input
 
 ### Phase 2: Application Filling
 
-1. **Load profile** from `~/.claude-job-profile.json`
+1. **Initialize and load storage** through `/job-apply:answer-memory`; use `profile-get`, then check `session-list` for resumable work matching this application
 2. **Open the URL in Claude in Chrome** and identify the job site and application flow
 3. **Pause for user-only steps** if login, password, CAPTCHA, MFA, consent, or account creation appears
 4. **Open the application form**; if an Apply link opens an external portal, continue in that visible Chrome tab
-5. **Read the form** and fill only values supported by the confirmed profile
-6. **Ask before sensitive answers** such as salary, work authorization, visa status, demographic information, or disability disclosure
-7. **Upload the resume** through the visible file control and verify the selected filename
-8. **Handle inaccessible controls** using the optional fallback rules above, or leave the field for the user
-9. **Advance through non-final steps** only when the control is clearly Next, Continue, Save, or Review
-10. **Stop at final review** before any Submit, Send, or equivalent final-action button
-11. **Summarize every entered value**, identify anything incomplete or uncertain, and tell the user to inspect the page and submit manually
+5. **Read the form** and fill profile-backed fields; for recurring questions call `answer-find` with the exact visible question and relevant scope
+6. **Reuse only matching, non-sensitive `confirmed` answers**. Show and confirm `inferred` answers, ask for `missing` answers, and reconfirm every `sensitive` answer before entry
+7. **Separate fill consent from remember consent** for salary, work authorization, visa status, demographic information, disability disclosure, and similar answers. Use `--remember-sensitive` only after explicit field-specific permission to remember
+8. **Upload the resume** through the visible file control and verify the selected filename
+9. **Save resumable progress** through `session-save`; store answer keys and pending-field states, never answer values
+10. **Handle inaccessible controls** using the optional fallback rules above, or leave the field for the user
+11. **Advance through non-final steps** only when the control is clearly Next, Continue, Save, or Review
+12. **Stop at final review** before any Submit, Send, or equivalent final-action button
+13. **Record a minimal `reviewed` history event** with answer-key references, summarize every entered value, identify anything incomplete or uncertain, and tell the user to inspect the page and submit manually
 
 User confirmation never authorizes this skill to click Submit, Send, or any equivalent final-action button.
 
@@ -278,6 +280,8 @@ If Playwright is already configured and Chrome cannot reach a specific iframe or
 5. **Handle sensitive questions carefully** - Salary expectations, visa status, disability disclosure should be confirmed with user before filling
 6. **Use Claude in Chrome by default** - Playwright is only an already-configured fallback for a specific inaccessible control
 7. **Never store or pass login credentials between tools** - Authentication remains a user-only step in the visible Chrome session
+8. **Use answer memory only through the helper** - Never directly modify `~/.job-apply/`; history and sessions reference answer keys, not values
+9. **Remembering is separate consent** - Permission to use a sensitive answer now never authorizes storing it for later
 
 ---
 

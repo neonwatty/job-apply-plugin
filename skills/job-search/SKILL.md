@@ -14,7 +14,7 @@ A Claude Code skill for searching jobs across LinkedIn, Hacker News Who's Hiring
 
 ### Step 1: Load Profile
 
-Read `~/.claude-job-profile.json`. Check for the `preferences` key.
+Follow `/job-apply:answer-memory`: run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/job-apply-store.py" init`, load preferences with `preferences-get`, and load location or other profile facts with `profile-get`. Never read or write persistent Job Apply files directly.
 
 **If no preferences found**, say:
 

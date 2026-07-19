@@ -16,6 +16,8 @@ mkdir -p "$SMOKE_CONFIG_DIR" "$SMOKE_FIXTURE_DIR"
 echo "Validating plugin manifest"
 claude plugin validate "$REPO_ROOT"
 
+python3 "$REPO_ROOT/scripts/job-apply-store.py" --help >/dev/null
+
 python3 - "$REPO_ROOT" <<'PY'
 import json
 import re
@@ -23,7 +25,7 @@ import sys
 from pathlib import Path
 
 root = Path(sys.argv[1])
-expected = {"job-apply", "job-search", "job-preferences"}
+expected = {"answer-memory", "job-apply", "job-search", "job-preferences"}
 
 for relative in (".claude-plugin/plugin.json", ".claude-plugin/marketplace.json"):
     data = json.loads((root / relative).read_text())
@@ -43,13 +45,25 @@ for skill in expected:
     if not match or match.group(1) != skill:
         raise SystemExit(f"skills/{skill}/SKILL.md frontmatter name is missing or incorrect")
 
-invocation_pattern = re.compile(r"/job-apply:(job-apply|job-search|job-preferences)")
+invocation_pattern = re.compile(r"/job-apply:(answer-memory|job-apply|job-search|job-preferences)")
 for relative in ("README.md", "site/index.html"):
     found = set(invocation_pattern.findall((root / relative).read_text()))
     if found != expected:
         raise SystemExit(f"{relative} inventory differs: expected {sorted(expected)}, got {sorted(found)}")
 
 application_skill = (root / "skills/job-apply/SKILL.md").read_text()
+answer_memory_skill = (root / "skills/answer-memory/SKILL.md").read_text()
+helper_reference = 'python3 "${CLAUDE_PLUGIN_ROOT}/scripts/job-apply-store.py"'
+for skill in expected:
+    content = (root / "skills" / skill / "SKILL.md").read_text()
+    if "job-apply-store.py" not in content:
+        raise SystemExit(f"skills/{skill}/SKILL.md does not use the shared storage helper")
+if helper_reference not in answer_memory_skill:
+    raise SystemExit("answer-memory skill does not use the plugin-root helper path")
+if "--remember-sensitive" not in answer_memory_skill:
+    raise SystemExit("answer-memory skill is missing explicit sensitive remember consent")
+if "Permission to fill is not permission to remember" not in answer_memory_skill:
+    raise SystemExit("answer-memory skill does not separate fill consent from storage consent")
 required_contract = (
     "User confirmation never authorizes this skill to click Submit, Send, "
     "or any equivalent final-action button."
@@ -90,7 +104,7 @@ CLAUDE_CONFIG_DIR="$SMOKE_CONFIG_DIR" claude plugin install job-apply@neonwatty-
 CLAUDE_CONFIG_DIR="$SMOKE_CONFIG_DIR" claude plugin details job-apply@neonwatty-plugins \
   | tee "$SMOKE_TEMP_ROOT/plugin-details.txt"
 
-for skill in job-apply job-search job-preferences; do
+for skill in answer-memory job-apply job-search job-preferences; do
   if ! grep -Fq -- "$skill" "$SMOKE_TEMP_ROOT/plugin-details.txt"; then
     echo "Installed plugin details did not list $skill" >&2
     exit 1

@@ -56,7 +56,7 @@
           <div class="output output-dim">Paste the job URL you'd like to apply to:</div>
           <div class="prompt">https://linkedin.com/jobs/view/4019283746</div>
           <div class="output">
-            <div>Loading profile from ~/.claude-job-profile.json</div>
+            <div>Loading profile and confirmed answers from ~/.job-apply/</div>
             <div class="output-dim" style="margin: 6px 0;">Navigating to job listing...</div>
             <div>Filling application fields:</div>
           </div>
@@ -76,14 +76,14 @@
 
     <section class="section intro">
       <p>
-        Job Apply Plugin turns Claude Code into a job application assistant. Extract your profile once from a resume, then use guided form filling across six ATS families while you review every step and submit manually.
+        Job Apply Plugin turns Claude Code into a job application assistant. Extract your profile once, reuse confirmed answers, and let uncertain or sensitive fields come back to you for review before you submit manually.
       </p>
     </section>
 
     <section id="skills" class="section">
       <div class="section-heading">
-        <p class="eyebrow">Three skills</p>
-        <h2>Set your preferences, discover opportunities, and apply.</h2>
+        <p class="eyebrow">Four skills</p>
+        <h2>Remember trusted answers, set preferences, discover opportunities, and apply.</h2>
       </div>
       <div class="skills-grid">
         <article class="skill-card">
@@ -97,6 +97,19 @@
             <li>Smart field mapping from your profile to form fields</li>
             <li>Visible automation in your Claude in Chrome session</li>
             <li>Stops at final review so only you can submit</li>
+          </ul>
+        </article>
+        <article class="skill-card">
+          <div class="skill-header">
+            <span class="skill-badge">/job-apply:answer-memory</span>
+          </div>
+          <h3>Reuse answers without losing control</h3>
+          <ul class="feature-bullets">
+            <li>Stores profile data and reusable answers locally</li>
+            <li>Distinguishes confirmed, inferred, missing, and sensitive answers</li>
+            <li>Requires separate consent before remembering sensitive values</li>
+            <li>Saves resumable progress without copying answer values</li>
+            <li>Migrates the legacy profile non-destructively</li>
           </ul>
         </article>
         <article class="skill-card">
@@ -172,7 +185,7 @@
         <p class="eyebrow">Install</p>
         <h2>Add the plugin and start applying.</h2>
         <p>
-          Install from the Claude Code plugin marketplace, then invoke <code>/job-apply:job-apply</code> with a job URL. Your profile is extracted once and reused across all applications.
+          Install from the Claude Code plugin marketplace, then invoke <code>/job-apply:job-apply</code> with a job URL. Your profile and explicitly confirmed answers are stored locally and reused when their scope still matches.
         </p>
       </div>
       <div class="code-card">
@@ -203,6 +216,10 @@ claude plugin install job-apply@neonwatty-plugins
           <p>Premium features and paid prompts are skipped automatically.</p>
         </article>
         <article>
+          <h3>Sensitive answers stay deliberate</h3>
+          <p>Using a sensitive answer once never stores it automatically. Remembering it requires a separate explicit choice, and future use is still reconfirmed.</p>
+        </article>
+        <article>
           <h3>Changing ATS controls</h3>
           <p>If Chrome cannot reach a site-specific field, the plugin reports it and leaves it for you unless an optional fallback is already configured.</p>
         </article>
@@ -216,8 +233,8 @@ claude plugin install job-apply@neonwatty-plugins
       </div>
       <div class="constraint-grid">
         <article>
-          <h3>Plaintext local profile</h3>
-          <p>Your profile is stored at <code>~/.claude-job-profile.json</code>. Protect or delete it like a resume; never attach it to a public issue.</p>
+          <h3>Plaintext local store</h3>
+          <p>Your profile, answer bank, minimal history, and resumable sessions live under <code>~/.job-apply/</code>. Protect it like a resume; never attach its files to a public issue.</p>
         </article>
         <article>
           <h3>No plugin telemetry</h3>
