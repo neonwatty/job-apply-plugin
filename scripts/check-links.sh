@@ -33,7 +33,8 @@ class Links(HTMLParser):
             self.ids.add(values["name"])
         for key in ("href", "src"):
             if key in values:
-                self.targets.append(values[key])
+                kind = "link" if key == "href" else "asset"
+                self.targets.append((kind, values[key]))
 
 remote = set()
 errors = []
@@ -41,7 +42,16 @@ errors = []
 for source in sources:
     text = source.read_text()
     if source.suffix == ".md":
-        targets = re.findall(r"!?\[[^\]]*\]\(([^\s)]+)", text)
+        image_pattern = r"!\[[^\]]*\]\(([^\s)]+)\)"
+        targets = [
+            ("asset", target)
+            for target in re.findall(image_pattern, text)
+        ]
+        text_without_images = re.sub(image_pattern, "", text)
+        targets.extend(
+            ("link", target)
+            for target in re.findall(r"\[[^\]]*\]\(([^\s)]+)", text_without_images)
+        )
         ids = set()
     else:
         parser = Links()
@@ -49,11 +59,14 @@ for source in sources:
         targets = parser.targets
         ids = parser.ids
 
-    for target in targets:
+    for kind, target in targets:
         target = target.strip("<>")
         parsed = urlsplit(target)
         if parsed.scheme in {"http", "https"}:
-            remote.add(target)
+            # Remote images and badges are cosmetic and often served by flaky CDNs.
+            # Continue validating local assets and all navigational links.
+            if kind == "link":
+                remote.add(target)
             continue
         if parsed.scheme or target.startswith("//"):
             continue
