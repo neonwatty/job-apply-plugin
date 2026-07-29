@@ -106,7 +106,7 @@ print("Static smoke assertions passed")
 PY
 
 echo "Creating isolated working-tree marketplace fixture"
-tar --exclude='./.git' --exclude='./docs/goals' -cf - -C "$REPO_ROOT" . \
+tar --exclude='./.git' --exclude='./docs/goals' --exclude='./test_resumes' -cf - -C "$REPO_ROOT" . \
   | tar -xf - -C "$SMOKE_FIXTURE_DIR"
 
 python3 - "$SMOKE_FIXTURE_DIR/.claude-plugin/marketplace.json" <<'PY'
