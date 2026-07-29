@@ -2,7 +2,7 @@
 
 [![Discord](https://img.shields.io/badge/Discord-Join%20Server-7289da?style=flat&logo=discord&logoColor=white)](https://discord.gg/7xsxU4ZG6A)
 
-Local-first job application assistant for Codex and Claude Code that fills supported ATS forms in a visible browser and stops before Submit or Send.
+AI-powered job application assistant for Claude Code and Codex that fills job applications on LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday using visible browser automation.
 
 ## Skills
 

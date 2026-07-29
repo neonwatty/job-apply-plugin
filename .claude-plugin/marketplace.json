@@ -13,7 +13,7 @@
         "source": "github",
         "repo": "neonwatty/job-apply-plugin"
       },
-      "description": "Local-first job application assistant for Codex and Claude Code that fills supported ATS forms and stops before submission",
+      "description": "AI-powered job application assistant for Claude Code and Codex covering LinkedIn, Greenhouse, Ashby, Lever, Rippling, and Workday",
       "category": "productivity"
     }
   ]
