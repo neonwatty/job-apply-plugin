@@ -34,8 +34,8 @@ body:
   - type: input
     id: environment
     attributes:
-      label: Claude Code, operating system, and browser versions
-      placeholder: "Example: Claude Code 2.x, macOS 15, Chrome 138"
+      label: Codex or Claude Code, operating system, and browser versions
+      placeholder: "Example: Codex 0.x, macOS 15, Chrome 138"
     validations:
       required: true
 

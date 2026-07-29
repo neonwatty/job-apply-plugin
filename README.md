@@ -2,7 +2,7 @@
 
 [![Discord](https://img.shields.io/badge/Discord-Join%20Server-7289da?style=flat&logo=discord&logoColor=white)](https://discord.gg/7xsxU4ZG6A)
 
-AI-powered job application assistant for Codex and Claude Code that fills job applications on LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday using visible browser automation.
+Local-first job application assistant for Codex and Claude Code that fills supported ATS forms in a visible browser and stops before Submit or Send.
 
 ## Skills
 
@@ -39,7 +39,7 @@ Invoke skills with `$job-apply:...` in Codex or `/job-apply:...` in Claude Code.
 - **Connection insights**: Finds jobs at companies where you have connections
 - **Hiring manager discovery**: Identifies jobs with hiring managers listed
 - **Multi-source discovery**: Searches LinkedIn, Hacker News Who's Hiring, and Twitter/X
-- **Results saved**: Full search results saved to `~/.claude-job-searches/` as Markdown
+- **Results saved**: Full search results saved to the shared `~/.claude-job-searches/` compatibility directory as Markdown
 
 ### Job Preferences (`job-apply:job-preferences`)
 - **Reusable search settings**: Save target titles, salary floor, remote preference, exclusion patterns, and time range
@@ -140,11 +140,11 @@ First run `$job-apply:job-preferences` to save your search preferences. Then use
    - Jobs with 1st-degree connections
    - Matching Hacker News and Twitter/X opportunities
 
-Results are automatically saved to `~/.claude-job-searches/`.
+Results are automatically saved to `~/.claude-job-searches/`. Both Codex and Claude Code use this legacy-compatible path.
 
 ## Compatibility and Verification Status
 
-The plugin includes guided workflows for six ATS families. Codex and Claude Code host instructions were reviewed on **2026-07-28**, but this PR does not claim live end-to-end validation of every current ATS form. Individual flows remain unverified and may drift as sites change.
+The plugin includes guided workflows for six ATS families. Codex and Claude Code host instructions were reviewed on **2026-07-28**. Live end-to-end ATS acceptance is tracked separately; individual flows remain unverified and may drift as sites change.
 
 | Platform | URL Pattern | Default browser path | Verification status |
 |----------|-------------|----------------------|---------------------|
@@ -203,11 +203,11 @@ To replace the stored profile from a new resume:
 $job-apply:job-apply reset profile
 ```
 
-To remove Job Apply data, close Codex or Claude Code and first move the directory to a private backup so recovery remains possible, for example `mv ~/.job-apply ~/.job-apply.backup`. Search-result Markdown files are separate under `~/.claude-job-searches/`; review them independently. The legacy `~/.claude-job-profile.json` is also separate and is never deleted automatically.
+To remove Job Apply data, close Codex or Claude Code and first move the directory to a private backup so recovery remains possible, for example `mv ~/.job-apply ~/.job-apply.backup`. Shared search-result Markdown files are separate under `~/.claude-job-searches/`; review them independently. The legacy `~/.claude-job-profile.json` is also separate and is never deleted automatically.
 
 ## Search Results Storage
 
-Job search results are saved to `~/.claude-job-searches/` with timestamped filenames:
+Job search results from both Codex and Claude Code are saved to the legacy-compatible `~/.claude-job-searches/` path with timestamped filenames:
 
 ```
 ~/.claude-job-searches/

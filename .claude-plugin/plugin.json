@@ -1,6 +1,6 @@
 {
   "name": "job-apply",
-  "description": "AI-powered job application assistant for LinkedIn, Greenhouse, Ashby, Lever, Rippling, and Workday",
+  "description": "Local-first job application assistant for Codex and Claude Code that fills supported ATS forms and stops before submission",
   "author": {
     "name": "Jeremy Watt",
     "url": "https://github.com/neonwatty"
@@ -8,6 +8,8 @@
   "license": "MIT",
   "keywords": [
     "job-application",
+    "codex",
+    "claude-code",
     "linkedin",
     "greenhouse",
     "workday",

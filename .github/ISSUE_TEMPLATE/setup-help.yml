@@ -16,12 +16,22 @@ body:
         - label: I removed credentials, passwords, resume content, full application URLs, and personal applicant data.
           required: true
 
-  - type: input
-    id: claude_version
+  - type: dropdown
+    id: host
     attributes:
-      label: Claude Code version
-      description: Run `claude --version` and share only the version number.
-      placeholder: "Example: 2.x.x"
+      label: Host
+      options:
+        - Codex
+        - Claude Code
+    validations:
+      required: true
+
+  - type: input
+    id: host_version
+    attributes:
+      label: Codex or Claude Code version
+      description: Run `codex --version` or `claude --version` and share only the version number.
+      placeholder: "Example: Codex 0.x or Claude Code 2.x"
     validations:
       required: true
 
@@ -41,6 +51,7 @@ body:
         - Marketplace add
         - Plugin install
         - Skill invocation
+        - Codex Browser connection
         - Claude in Chrome connection
         - Profile setup
         - Other setup step

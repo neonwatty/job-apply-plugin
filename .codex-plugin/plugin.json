@@ -1,7 +1,7 @@
 {
   "name": "job-apply",
   "version": "1.1.0",
-  "description": "A local-first job application assistant for Codex and Claude Code that reuses confirmed answers and always stops before submission.",
+  "description": "Local-first job application assistant for Codex and Claude Code that fills supported ATS forms and stops before submission.",
   "author": {
     "name": "Jeremy Watt",
     "url": "https://github.com/neonwatty"
