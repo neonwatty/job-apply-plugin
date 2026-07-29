@@ -21,6 +21,9 @@ jobs:
       - name: Install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Install Codex CLI
+        run: npm install -g @openai/codex
+
       - name: Validate plugin schema
         run: claude plugin validate .
 
@@ -30,6 +33,10 @@ jobs:
           python3 -m json.tool .claude-plugin/plugin.json > /dev/null
           echo "Validating marketplace.json..."
           python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
+          echo "Validating Codex plugin.json..."
+          python3 -m json.tool .codex-plugin/plugin.json > /dev/null
+          echo "Validating Codex marketplace.json..."
+          python3 -m json.tool .agents/plugins/marketplace.json > /dev/null
           echo "All JSON files are valid"
 
       - name: Run isolated plugin smoke test

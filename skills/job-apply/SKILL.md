@@ -6,11 +6,11 @@ allowed-tools: Read, Write, Bash, mcp__claude-in-chrome__*, mcp__plugin_playwrig
 
 # Job Application Assistant
 
-A Claude Code skill for filling job applications on LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday using browser automation.
+A Codex and Claude Code skill for filling job applications on LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday using visible browser automation.
 
 ## Initial Prompt
 
-When this skill is invoked, first follow `/job-apply:answer-memory`: run the bundled helper's `init` command, then load the profile with `profile-get`. Never read or write persistent Job Apply files directly.
+When this skill is invoked, first follow the bundled `answer-memory` skill (`$job-apply:answer-memory` in Codex; `/job-apply:answer-memory` in Claude Code): resolve `<plugin-root>`, run the bundled helper's `init` command, then load the profile with `profile-get`. Never read or write persistent Job Apply files directly.
 
 **If the returned profile object is empty**, say:
 
@@ -44,28 +44,31 @@ Then wait for the user to provide the path before proceeding with profile extrac
 
 ## Profile Storage
 
-Your extracted profile is stored under `~/.job-apply/` for reuse across sessions. All persistent reads and writes go through `${CLAUDE_PLUGIN_ROOT}/scripts/job-apply-store.py` as defined by `/job-apply:answer-memory`. A first run non-destructively migrates an existing `~/.claude-job-profile.json`.
+Your extracted profile is stored under `~/.job-apply/` for reuse across sessions. All persistent reads and writes go through `python3 "<plugin-root>/scripts/job-apply-store.py"` as defined by the bundled `answer-memory` skill. A first run non-destructively migrates an existing `~/.claude-job-profile.json`.
 
 ---
 
 ## Browser Routing
 
-Use **Claude in Chrome** as the default and only required browser integration. Work in the visible Chrome session so the user can see navigation, authenticated state, entered values, uploads, and the final review page.
+Use the active host's supported visible browser integration so the user can see navigation, authenticated state, entered values, uploads, and the final review page.
 
-### Chrome-First Rules
+- **Codex:** Use the installed Browser plugin and follow its complete browser-control instructions. When the job URL is known, let the Browser runtime select the appropriate in-app or Chrome surface for that URL. Reuse that browser binding and visible tab throughout the application. Do not substitute an unrelated browser automation server.
+- **Claude Code:** Use Claude in Chrome as the default and only required browser integration.
 
-- Use Claude in Chrome for LinkedIn and every external application portal.
+### Visible-Browser Rules
+
+- Use Codex Browser/Chrome or Claude in Chrome for LinkedIn and every external application portal, according to the active host.
 - Use the user's existing authenticated Chrome session, but never ask for, read, store, or enter credentials.
 - Pause for the user to handle login, password, CAPTCHA, MFA, consent prompts, or account creation.
 - Use Chrome's visible form controls and local file-upload support. Confirm the selected filename after an upload.
-- If an Apply link opens an external portal or a new tab, continue there in Claude in Chrome.
+- If an Apply link opens an external portal or a new tab, continue there in the same host-managed visible browser session.
 
-### Optional Playwright Fallback
+### Optional Browser Fallback
 
-Playwright is not required. Use it only when **all** of the following are true:
+In Codex, use only the interaction methods exposed by the selected Browser plugin; its Playwright API is part of that browser surface, not a separate integration. In Claude Code, a separate Playwright integration is not required and may be used only when **all** of the following are true:
 
-1. The user already has a Playwright integration configured.
-2. Chrome cannot reach a specific iframe, upload widget, or custom control after a reasonable visible attempt.
+1. The user already has a Playwright integration configured in Claude Code.
+2. Claude in Chrome cannot reach a specific iframe, upload widget, or custom control after a reasonable visible attempt.
 3. The fallback does not require transferring login state or credentials.
 
 Use the fallback only for the blocked control, then return to the visible review workflow. If these conditions are not met, explain which field is blocked and leave it for the user to complete manually.
@@ -93,10 +96,10 @@ If `profile-get` returns an empty object, or if the user requests a reset:
 
 ### Phase 2: Application Filling
 
-1. **Initialize and load storage** through `/job-apply:answer-memory`; use `profile-get`, then check `session-list` for resumable work matching this application
-2. **Open the URL in Claude in Chrome** and identify the job site and application flow
+1. **Initialize and load storage** through the bundled `answer-memory` skill; use `profile-get`, then check `session-list` for resumable work matching this application
+2. **Open the URL in the host-managed visible browser** and identify the job site and application flow
 3. **Pause for user-only steps** if login, password, CAPTCHA, MFA, consent, or account creation appears
-4. **Open the application form**; if an Apply link opens an external portal, continue in that visible Chrome tab
+4. **Open the application form**; if an Apply link opens an external portal, continue in that visible host-managed tab
 5. **Read the form** and fill profile-backed fields; for recurring questions call `answer-find` with the exact visible question and relevant scope
 6. **Reuse only matching, non-sensitive `confirmed` answers**. Show and confirm `inferred` answers, ask for `missing` answers, and reconfirm every `sensitive` answer before entry
 7. **Separate fill consent from remember consent** for salary, work authorization, visa status, demographic information, disability disclosure, and similar answers. Use `--remember-sensitive` only after explicit field-specific permission to remember
@@ -125,7 +128,7 @@ User confirmation never authorizes this skill to click Submit, Send, or any equi
 2. Use `read_page` on each step to identify fields
 3. Common fields:
    - Phone number (often pre-filled from LinkedIn)
-   - Resume upload (use `upload_image` tool with resume path)
+   - Resume upload (use the host browser's supported file-chooser flow with the resume path)
    - Work authorization questions (dropdowns)
    - Custom screening questions (varies by employer)
 4. Click "Next" to advance, "Review" on final step
@@ -145,8 +148,8 @@ User confirmation never authorizes this skill to click Submit, Send, or any equi
 - Often has "Add another" for work history/education
 - May be embedded in an iframe on a company career site
 
-**Approach (Chrome first):**
-1. Navigate to the application URL in Claude in Chrome
+**Approach (visible browser first):**
+1. Navigate to the application URL in the host-managed visible browser
 2. Read the visible form; if an embedded form is inaccessible, follow the optional fallback rules or leave it for the user
 3. Fill from top to bottom
 4. **Phone country code**: Click the country code toggle → select "United States: +1" from the listbox → the phone field auto-formats with +1 prefix
@@ -170,8 +173,8 @@ User confirmation never authorizes this skill to click Submit, Send, or any equi
 - Fields: name, phone, email, location (combobox), LinkedIn URL, resume upload
 - Has both a resume upload field and a separate autofill file input — use the resume field, not the autofill one
 
-**Approach (Chrome first):**
-1. Navigate to the URL in Claude in Chrome
+**Approach (visible browser first):**
+1. Navigate to the URL in the host-managed visible browser
 2. Read the visible form structure
 3. Fill text fields (name, phone, email, LinkedIn URL)
 4. **Location combobox**: Type the location to trigger suggestions, then click the matching option
@@ -187,8 +190,8 @@ User confirmation never authorizes this skill to click Submit, Send, or any equi
 - Text fields for name, email, phone, LinkedIn, etc.
 - Radio buttons for screening questions — often use custom overlays that intercept clicks
 
-**Approach (Chrome first):**
-1. Navigate to the URL in Claude in Chrome
+**Approach (visible browser first):**
+1. Navigate to the URL in the host-managed visible browser
 2. Scroll down to find the application form (usually below job description)
 3. Read the visible form structure and fill text fields
 4. **Radio buttons**: If a custom overlay blocks a control, follow the optional fallback rules or leave it for the user
@@ -202,8 +205,8 @@ User confirmation never authorizes this skill to click Submit, Send, or any equi
 - Upload resume first, then verify/correct auto-filled data
 - Location uses a typeahead combobox
 
-**Approach (Chrome first):**
-1. Navigate to the URL in Claude in Chrome
+**Approach (visible browser first):**
+1. Navigate to the URL in the host-managed visible browser
 2. **Upload resume first** — Rippling will auto-parse and fill fields
 3. Read the visible form to see what was auto-filled
 4. Correct any mis-parsed fields
@@ -218,7 +221,7 @@ User confirmation never authorizes this skill to click Submit, Send, or any equi
 - Non-standard UI components (custom dropdowns, date pickers)
 - Often requires account creation (pause so the user can decide and handle it)
 
-**Approach (Chrome first):**
+**Approach (visible browser first):**
 1. If login, CAPTCHA, MFA, or account creation is required, pause for the user; never handle credentials or create the account
 2. Navigate through "My Information" → "My Experience" → "Application Questions"
 3. Read the visible form structure on each page
@@ -257,7 +260,7 @@ User confirmation never authorizes this skill to click Submit, Send, or any equi
 
 ## Browser Tool Usage
 
-### Claude in Chrome (Default)
+### Codex Browser or Claude in Chrome (Default)
 
 1. Read the visible page and identify interactive fields.
 2. Fill standard fields and use visible controls for dropdowns, radio buttons, and checkboxes.
@@ -265,9 +268,9 @@ User confirmation never authorizes this skill to click Submit, Send, or any equi
 4. After each non-final Next, Continue, or Save action, read the new page before proceeding.
 5. When Review, Submit, Send, or an equivalent final action appears, stop and summarize the application for the user.
 
-### Playwright (Optional Fallback Only)
+### Separate Playwright Integration (Claude Code Optional Fallback Only)
 
-If Playwright is already configured and Chrome cannot reach a specific iframe or custom control, it may be used only for that blocked field. Do not require it, do not transfer authenticated state or credentials, and do not use it to activate Submit, Send, or any equivalent final action. If the fallback is unavailable or unsuccessful, leave the field for the user.
+In Codex, stay inside the selected Browser plugin surface. In Claude Code, if a separate Playwright integration is already configured and Claude in Chrome cannot reach a specific iframe or custom control, it may be used only for that blocked field. Do not require it, do not transfer authenticated state or credentials, and do not use it to activate Submit, Send, or any equivalent final action. If the fallback is unavailable or unsuccessful, leave the field for the user.
 
 ---
 
@@ -278,7 +281,7 @@ If Playwright is already configured and Chrome cannot reach a specific iframe or
 3. **Never submit applications** - Stop at final review; confirmation does not authorize clicking Submit, Send, or an equivalent final action
 4. **Never enter payment information** - Some applications have optional premium features
 5. **Handle sensitive questions carefully** - Salary expectations, visa status, disability disclosure should be confirmed with user before filling
-6. **Use Claude in Chrome by default** - Playwright is only an already-configured fallback for a specific inaccessible control
+6. **Use the host-managed visible browser by default** - Codex stays within its Browser plugin; Claude Code may use an already-configured Playwright fallback for one inaccessible control
 7. **Never store or pass login credentials between tools** - Authentication remains a user-only step in the visible Chrome session
 8. **Use answer memory only through the helper** - Never directly modify `~/.job-apply/`; history and sessions reference answer keys, not values
 9. **Remembering is separate consent** - Permission to use a sensitive answer now never authorizes storing it for later
@@ -288,5 +291,6 @@ If Playwright is already configured and Chrome cannot reach a specific iframe or
 ## Example Invocation
 
 ```
-User: /job-apply:job-apply https://www.linkedin.com/jobs/view/123456789
+Codex: $job-apply:job-apply https://www.linkedin.com/jobs/view/123456789
+Claude Code: /job-apply:job-apply https://www.linkedin.com/jobs/view/123456789
 ```

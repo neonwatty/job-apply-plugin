@@ -3,7 +3,7 @@
 The bundled helper is the sole supported mutation interface:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/job-apply-store.py" --help
+python3 "<plugin-root>/scripts/job-apply-store.py" --help
 ```
 
 ## Files

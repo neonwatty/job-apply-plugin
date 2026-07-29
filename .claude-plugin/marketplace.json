@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "neonwatty-plugins",
-  "description": "Claude Code plugins by Jeremy Watt",
+  "description": "Job Apply plugins for Codex and Claude Code by Jeremy Watt",
   "owner": {
     "name": "Jeremy Watt",
     "github": "neonwatty"

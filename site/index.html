@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="AI-powered job application assistant for Claude Code with guided workflows for LinkedIn, Greenhouse, Ashby, Lever, Rippling, and Workday.">
+  <meta name="description" content="AI-powered job application assistant for Codex and Claude Code with guided workflows for LinkedIn, Greenhouse, Ashby, Lever, Rippling, and Workday.">
   <link rel="canonical" href="https://neonwatty.github.io/job-apply-plugin/">
-  <meta property="og:title" content="Job Apply Plugin - AI-powered job application assistant for Claude Code">
+  <meta property="og:title" content="Job Apply Plugin for Codex and Claude Code">
   <meta property="og:description" content="Guided resume-based workflows for LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://neonwatty.github.io/job-apply-plugin/">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Job Apply Plugin - AI-powered job application assistant for Claude Code">
+  <meta name="twitter:title" content="Job Apply Plugin for Codex and Claude Code">
   <meta name="twitter:description" content="Guided resume-based workflows for LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday.">
-  <title>Job Apply Plugin - AI-powered job application assistant for Claude Code</title>
+  <title>Job Apply Plugin for Codex and Claude Code</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -33,7 +33,7 @@
   <main id="main">
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">AI-powered job application assistant for Claude Code</p>
+        <p class="eyebrow">AI-powered job application assistant for Codex and Claude Code</p>
         <h1>Fill out job applications automatically using your resume.</h1>
         <p class="lede">
           Guided workflows cover LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday. Set up your profile once, then start a guided application with a single command.
@@ -51,8 +51,8 @@
           <span class="mac-dot green"></span>
         </div>
         <div class="terminal">
-          <div class="terminal-title">Claude Code</div>
-          <div class="prompt">$ /job-apply:job-apply</div>
+          <div class="terminal-title">Codex / Claude Code</div>
+          <div class="prompt">$job-apply:job-apply</div>
           <div class="output output-dim">Paste the job URL you'd like to apply to:</div>
           <div class="prompt">https://linkedin.com/jobs/view/4019283746</div>
           <div class="output">
@@ -76,7 +76,7 @@
 
     <section class="section intro">
       <p>
-        Job Apply Plugin turns Claude Code into a job application assistant. Extract your profile once, reuse confirmed answers, and let uncertain or sensitive fields come back to you for review before you submit manually.
+        Job Apply turns Codex or Claude Code into a job application assistant. Extract your profile once, reuse confirmed answers, and let uncertain or sensitive fields come back to you for review before you submit manually.
       </p>
     </section>
 
@@ -88,20 +88,20 @@
       <div class="skills-grid">
         <article class="skill-card">
           <div class="skill-header">
-            <span class="skill-badge">/job-apply:job-apply</span>
+            <span class="skill-badge">job-apply:job-apply</span>
           </div>
           <h3>Fill out applications automatically</h3>
           <ul class="feature-bullets">
             <li>One-time profile setup from your resume (PDF, DOCX, or TXT)</li>
             <li>Multi-platform: LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, Workday</li>
             <li>Smart field mapping from your profile to form fields</li>
-            <li>Visible automation in your Claude in Chrome session</li>
+            <li>Visible automation with Codex Browser or Claude in Chrome</li>
             <li>Stops at final review so only you can submit</li>
           </ul>
         </article>
         <article class="skill-card">
           <div class="skill-header">
-            <span class="skill-badge">/job-apply:answer-memory</span>
+            <span class="skill-badge">job-apply:answer-memory</span>
           </div>
           <h3>Reuse answers without losing control</h3>
           <ul class="feature-bullets">
@@ -114,7 +114,7 @@
         </article>
         <article class="skill-card">
           <div class="skill-header">
-            <span class="skill-badge">/job-apply:job-search</span>
+            <span class="skill-badge">job-apply:job-search</span>
           </div>
           <h3>Find jobs where you have an advantage</h3>
           <ul class="feature-bullets">
@@ -127,7 +127,7 @@
         </article>
         <article class="skill-card">
           <div class="skill-header">
-            <span class="skill-badge">/job-apply:job-preferences</span>
+            <span class="skill-badge">job-apply:job-preferences</span>
           </div>
           <h3>Save reusable search preferences</h3>
           <ul class="feature-bullets">
@@ -155,27 +155,27 @@
         <div class="platform-pill">Workday</div>
       </div>
       <p>
-        Repository and browser guidance was reviewed on July 18, 2026. This pass did not submit live applications or verify every current ATS form; individual flows remain unverified and may drift as sites change.
+        Codex and Claude Code host guidance was reviewed on July 28, 2026. This PR does not claim live end-to-end validation of every current ATS form; individual flows remain unverified and may drift as sites change.
       </p>
     </section>
 
     <section id="requirements" class="section split">
       <div class="section-heading">
         <p class="eyebrow">Requirements</p>
-        <h2>One browser integration required.</h2>
+        <h2>Choose your agent and a visible browser.</h2>
       </div>
       <div class="feature-list">
         <article>
+          <h3>Codex</h3>
+          <p>Use the Codex CLI or desktop app with the Browser plugin for visible navigation, form filling, and file uploads.</p>
+        </article>
+        <article>
           <h3>Claude Code</h3>
-          <p>The CLI that runs the plugin and orchestrates the entire workflow.</p>
+          <p>Use Claude Code with Claude in Chrome for the same visible, supervised workflow.</p>
         </article>
         <article>
-          <h3>Claude in Chrome</h3>
-          <p>The visible default for browser navigation, authenticated sessions, form filling, and local file uploads.</p>
-        </article>
-        <article>
-          <h3>Optional fallback</h3>
-          <p>If already configured, Playwright may help with a site-specific iframe or control Chrome cannot reach. It is not required.</p>
+          <h3>Your existing session</h3>
+          <p>Sign in yourself. The plugin never asks for, stores, or enters credentials, passwords, CAPTCHA responses, or MFA codes.</p>
         </article>
       </div>
     </section>
@@ -185,14 +185,18 @@
         <p class="eyebrow">Install</p>
         <h2>Add the plugin and start applying.</h2>
         <p>
-          Install from the Claude Code plugin marketplace, then invoke <code>/job-apply:job-apply</code> with a job URL. Your profile and explicitly confirmed answers are stored locally and reused when their scope still matches.
+          Install for Codex or Claude Code, then invoke the application skill with a job URL. Your profile and explicitly confirmed answers are stored locally and reused only when their scope still matches.
         </p>
       </div>
       <div class="code-card">
-        <pre><code>claude plugin marketplace add neonwatty/job-apply-plugin
-claude plugin install job-apply@neonwatty-plugins
+        <pre><code># Codex
+codex plugin marketplace add neonwatty/job-apply-plugin
+codex plugin add job-apply@neonwatty-plugins
+$job-apply:job-apply
 
-# Then in Claude Code:
+# Claude Code
+claude plugin marketplace add neonwatty/job-apply-plugin
+claude plugin install job-apply@neonwatty-plugins
 /job-apply:job-apply</code></pre>
       </div>
     </section>
@@ -221,7 +225,7 @@ claude plugin install job-apply@neonwatty-plugins
         </article>
         <article>
           <h3>Changing ATS controls</h3>
-          <p>If Chrome cannot reach a site-specific field, the plugin reports it and leaves it for you unless an optional fallback is already configured.</p>
+          <p>If the visible browser cannot reach a site-specific field, the plugin reports it and leaves it for you.</p>
         </article>
       </div>
     </section>
@@ -238,7 +242,7 @@ claude plugin install job-apply@neonwatty-plugins
         </article>
         <article>
           <h3>No plugin telemetry</h3>
-          <p>The repository defines no telemetry service. Information is shared with third-party sites only when you direct Claude to use it in browser or search workflows.</p>
+          <p>The repository defines no telemetry service. Information is shared with third-party sites only when you direct Codex or Claude Code to use it in browser or search workflows.</p>
         </article>
         <article>
           <h3>Friendly, redacted support</h3>

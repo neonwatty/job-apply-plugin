@@ -1,0 +1,41 @@
+{
+  "name": "job-apply",
+  "version": "1.1.0",
+  "description": "A local-first job application assistant for Codex and Claude Code that reuses confirmed answers and always stops before submission.",
+  "author": {
+    "name": "Jeremy Watt",
+    "url": "https://github.com/neonwatty"
+  },
+  "homepage": "https://neonwatty.github.io/job-apply-plugin/",
+  "repository": "https://github.com/neonwatty/job-apply-plugin",
+  "license": "MIT",
+  "keywords": [
+    "job-application",
+    "codex",
+    "claude-code",
+    "greenhouse",
+    "workday",
+    "browser-automation",
+    "resume"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Job Apply",
+    "shortDescription": "Fill applications without surrendering the final click",
+    "longDescription": "Extract a reusable local profile from a resume, fill supported ATS forms with confidence-aware answer memory, and stop before Submit or Send so the applicant stays in control.",
+    "developerName": "Jeremy Watt",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://neonwatty.github.io/job-apply-plugin/",
+    "defaultPrompt": [
+      "Fill this job application from my resume.",
+      "Review my saved application answers.",
+      "Set my job-search preferences."
+    ],
+    "brandColor": "#0891B2"
+  }
+}

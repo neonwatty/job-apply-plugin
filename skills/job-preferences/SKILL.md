@@ -1,12 +1,12 @@
 ---
 name: job-preferences
-description: Set or update your job search preferences (titles, salary, remote, filters). Used by /job-apply:job-search and other skills.
+description: Set or update job-search preferences such as titles, salary, remote work, and filters for the other Job Apply skills.
 allowed-tools: Read, Write, Bash
 ---
 
 # Job Preferences
 
-A Claude Code skill for managing persistent job search preferences. Set your target titles, salary floor, remote preference, and exclusion filters once — `/job-apply:job-search` and other skills reuse them automatically.
+A Codex and Claude Code skill for managing persistent job search preferences. Set your target titles, salary floor, remote preference, and exclusion filters once; the bundled `job-search` skill reuses them automatically.
 
 ---
 
@@ -14,7 +14,7 @@ A Claude Code skill for managing persistent job search preferences. Set your tar
 
 ### Step 1: Load Profile
 
-Follow `/job-apply:answer-memory`: run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/job-apply-store.py" init`, then load saved preferences with `preferences-get`. Never read or write persistent Job Apply files directly.
+Follow the bundled `answer-memory` skill (`$job-apply:answer-memory` in Codex; `/job-apply:answer-memory` in Claude Code). Resolve `<plugin-root>` as that skill directs, run `python3 "<plugin-root>/scripts/job-apply-store.py" init`, then load saved preferences with `preferences-get`. Never read or write persistent Job Apply files directly.
 
 ### Step 2: Check for Existing Preferences
 
@@ -32,13 +32,13 @@ Use the JSON object returned by `preferences-get`.
 >
 > Would you like to update any of these?
 
-Then wait for the user. If they say no, stop. If they want to update, ask only about the fields they want to change using `AskUserQuestion`.
+Then wait for the user. If they say no, stop. If they want to update, ask only about the fields they want to change using the host's structured question surface when available, or concise direct questions otherwise.
 
 **If no preferences exist**, run the full Q&A below.
 
 ### Step 3: Collect Preferences (full Q&A)
 
-Use `AskUserQuestion` to collect all fields. Ask up to 4 questions at a time (the tool's limit).
+Use the host's structured question surface when available; otherwise ask concise direct questions. Ask no more than 4 questions at a time.
 
 **Question batch 1:**
 
@@ -99,18 +99,18 @@ Display the saved preferences and confirm:
 
 > **Preferences saved to your local Job Apply store at `~/.job-apply/profile.json`.**
 >
-> These will be used automatically by `/job-apply:job-search`. Run `/job-apply:job-preferences` again any time to update them.
+> These will be used automatically by the bundled `job-search` skill. Invoke `job-preferences` again any time to update them.
 
 ---
 
 ## Updating Preferences
 
-When the user runs `/job-apply:job-preferences` and preferences already exist, show current values and let them update selectively. Only overwrite the fields they change — keep the rest intact.
+When the user invokes `job-preferences` and preferences already exist, show current values and let them update selectively. Only overwrite the fields they change — keep the rest intact.
 
 ---
 
 ## Safety Rules
 
-1. **Use only the helper** — initialize, read, and merge preferences through `/job-apply:answer-memory`; never directly edit files under `~/.job-apply/`
+1. **Use only the helper** — initialize, read, and merge preferences through the bundled `answer-memory` skill; never directly edit files under `~/.job-apply/`
 2. **Preserve existing profile** — use `preferences-set` without `--replace` for selective updates
 3. **No defaults without user input** — always ask the user, never assume values

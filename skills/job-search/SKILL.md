@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Bash, WebSearch, WebFetch, mcp__claude-in-chrome__*
 
 # Multi-Source Job Search
 
-A Claude Code skill for searching jobs across LinkedIn, Hacker News Who's Hiring, and Twitter/X. Scores and ranks results against your saved preferences, highlights network advantages, and saves structured output.
+A Codex and Claude Code skill for searching jobs across LinkedIn, Hacker News Who's Hiring, and Twitter/X. Scores and ranks results against your saved preferences, highlights network advantages, and saves structured output.
 
 ---
 
@@ -14,11 +14,11 @@ A Claude Code skill for searching jobs across LinkedIn, Hacker News Who's Hiring
 
 ### Step 1: Load Profile
 
-Follow `/job-apply:answer-memory`: run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/job-apply-store.py" init`, load preferences with `preferences-get`, and load location or other profile facts with `profile-get`. Never read or write persistent Job Apply files directly.
+Follow the bundled `answer-memory` skill (`$job-apply:answer-memory` in Codex; `/job-apply:answer-memory` in Claude Code). Resolve `<plugin-root>` as that skill directs, run `python3 "<plugin-root>/scripts/job-apply-store.py" init`, load preferences with `preferences-get`, and load location or other profile facts with `profile-get`. Never read or write persistent Job Apply files directly.
 
 **If no preferences found**, say:
 
-> No search preferences found. Run `/job-apply:job-preferences` first to set your target titles, salary range, and filters.
+> No search preferences found. Invoke the bundled `job-preferences` skill first to set your target titles, salary range, and filters.
 
 Then **STOP**. Do not prompt the user to set preferences inline.
 
@@ -54,14 +54,14 @@ Display the active search config before proceeding:
 
 ---
 
-## Phase 2a: LinkedIn Search (Chrome MCP)
+## Phase 2a: LinkedIn Search (visible host browser)
 
 ### Navigation
 
-1. Get browser context using `tabs_context_mcp`
-2. Create a new tab using `tabs_create_mcp`
+1. Use the host-managed visible browser (Codex Browser plugin or Claude in Chrome) and reuse an appropriate existing tab or create a new one
+2. Keep that browser/tab binding for the search instead of switching automation surfaces
 3. Navigate to `https://www.linkedin.com/jobs/`
-4. Verify user is logged in — use `read_page` to check for profile menu. If not logged in, say: "Please log into LinkedIn in this browser tab, then let me know when you're ready." and **wait**.
+4. Verify the user is logged in from visible page state. If not logged in, say: "Please log into LinkedIn in this browser tab, then let me know when you're ready." and **wait**.
 
 ### Build Search URL
 
@@ -92,12 +92,12 @@ Map time range:
 
 For each job card:
 
-1. Use `read_page` to read job cards from results list
-2. Click into job detail page using `computer` with left_click
+1. Read visible job cards from the results list with the host browser
+2. Click into a job detail page through the same visible browser surface
 3. Wait 2-3 seconds for detail page to load
 4. Extract: title, company, location, posted date, applicant count, work type, apply method
-5. Look for connection indicators — use `find` with query "connections work here" or "connections at"
-6. Look for hiring team — use `find` with query "Meet the hiring team" or "hiring manager"
+5. Look for visible connection indicators such as "connections work here" or "connections at"
+6. Look for "Meet the hiring team" or "hiring manager"
 7. If hiring manager found, extract name, title, profile URL
 8. Store result, navigate back to results list
 9. **2-3 second delay** between each job
@@ -105,18 +105,18 @@ For each job card:
 ### Scrolling for More Results
 
 LinkedIn uses infinite scroll:
-1. Use `computer` with action "scroll", scroll_direction "down"
+1. Scroll the results list through the host-managed browser
 2. Wait 2-3 seconds for new results
-3. Use `read_page` to see newly loaded cards
+3. Read the newly loaded visible cards
 4. Repeat until desired count or no more results
 
 ---
 
-## Phase 2b: Hacker News Who's Hiring (Bash + WebSearch)
+## Phase 2b: Hacker News Who's Hiring (shell + host web search)
 
 ### Find Current Thread
 
-1. Use `WebSearch` to search for: `"Ask HN: Who is hiring?" site:news.ycombinator.com {current_month} {current_year}`
+1. Use the host's supported web-search tool to search for: `"Ask HN: Who is hiring?" site:news.ycombinator.com {current_month} {current_year}`
 2. Extract the thread ID from the HN URL in the search results (e.g., `https://news.ycombinator.com/item?id=XXXXXXXX` → `XXXXXXXX`)
 
 If no thread found for the current month, try the previous month. If still nothing, skip HN and report it.
@@ -154,13 +154,13 @@ Skip comments that:
 
 ---
 
-## Phase 2c: Twitter/X Search (Chrome MCP)
+## Phase 2c: Twitter/X Search (visible host browser)
 
 ### Navigation
 
-1. Use existing browser context (or create new tab)
+1. Use the existing host-managed browser context (or create a new tab in that browser)
 2. Navigate to `https://x.com/search`
-3. Verify logged in — use `read_page` to check for profile avatar or compose button. If not logged in, **skip Twitter entirely** and continue with other sources. Report: "Skipped Twitter — not logged in."
+3. Verify login from visible page state by checking for a profile avatar or compose button. If not logged in, **skip Twitter entirely** and continue with other sources. Report: "Skipped Twitter — not logged in."
 
 ### Build Search Query
 
@@ -350,30 +350,30 @@ If confirmed, append to `application_queue.md` under a new "## Tier 3 — Auto-D
 
 **Standard search (all sources):**
 ```
-User: /job-apply:job-search
-Claude: [Loads preferences, searches LinkedIn + HN + Twitter, displays ranked results]
+User: $job-apply:job-search (Codex) or /job-apply:job-search (Claude Code)
+Agent: [Loads preferences, searches LinkedIn + HN + Twitter, displays ranked results]
 ```
 
 **With time range override:**
 ```
-User: /job-apply:job-search 2 weeks
-Claude: [Uses 2-week time range instead of default]
+User: Invoke job-search with "2 weeks"
+Agent: [Uses 2-week time range instead of default]
 ```
 
 **Single source:**
 ```
-User: /job-apply:job-search hn
-Claude: [Searches only Hacker News Who's Hiring]
+User: Invoke job-search with "hn"
+Agent: [Searches only Hacker News Who's Hiring]
 ```
 
 **Multiple source filter:**
 ```
-User: /job-apply:job-search linkedin hn
-Claude: [Searches LinkedIn and HN, skips Twitter]
+User: Invoke job-search with "linkedin hn"
+Agent: [Searches LinkedIn and HN, skips Twitter]
 ```
 
 **With extra keywords:**
 ```
-User: /job-apply:job-search agentic systems
-Claude: [Adds "agentic systems" to title-based keywords]
+User: Invoke job-search with "agentic systems"
+Agent: [Adds "agentic systems" to title-based keywords]
 ```
