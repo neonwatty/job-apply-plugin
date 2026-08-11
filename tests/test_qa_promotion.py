@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 from unittest import mock
 
+import qa.promote as promotion
 from qa.promote import (
     PromotionError,
     approve_candidate,
@@ -132,6 +135,86 @@ class PromotionTests(unittest.TestCase):
         replace.assert_called_once()
         self.assertEqual((existing / "fixture.json").read_bytes(), prior)
         self.assertTrue(self.session.exists())
+
+    def test_private_parent_swap_fails_closed_without_deleting_replacement(self) -> None:
+        approve_candidate(self.candidate, "qa-owner", now=NOW)
+        displaced = self.root / ".qa-private-original"
+        original_safe_destination = promotion._safe_destination
+
+        def swap_parent(destination: Path) -> Path:
+            result = original_safe_destination(destination)
+            self.private.rename(displaced)
+            replacement = self.private / self.session.name
+            replacement.mkdir(parents=True)
+            (replacement / "unrelated.txt").write_text("keep", encoding="utf-8")
+            return result
+
+        with mock.patch("qa.promote._safe_destination", side_effect=swap_parent):
+            with self.assertRaisesRegex(PromotionError, "private session changed"):
+                promote_candidate(self.candidate, self.destination, now=NOW)
+
+        self.assertEqual(
+            (self.private / self.session.name / "unrelated.txt").read_text(
+                encoding="utf-8"
+            ),
+            "keep",
+        )
+        self.assertTrue((displaced / self.session.name / "candidate").is_dir())
+        self.assertFalse((self.destination / FIXTURE_ID).exists())
+
+    def test_private_session_swap_fails_closed_without_deleting_replacement(self) -> None:
+        approve_candidate(self.candidate, "qa-owner", now=NOW)
+        displaced = self.private / "qa-session-original"
+        original_safe_destination = promotion._safe_destination
+
+        def swap_session(destination: Path) -> Path:
+            result = original_safe_destination(destination)
+            self.session.rename(displaced)
+            self.session.mkdir()
+            (self.session / "unrelated.txt").write_text("keep", encoding="utf-8")
+            return result
+
+        with mock.patch("qa.promote._safe_destination", side_effect=swap_session):
+            with self.assertRaisesRegex(PromotionError, "private session changed"):
+                promote_candidate(self.candidate, self.destination, now=NOW)
+
+        self.assertEqual(
+            (self.session / "unrelated.txt").read_text(encoding="utf-8"), "keep"
+        )
+        self.assertTrue((displaced / "candidate").is_dir())
+        self.assertFalse((self.destination / FIXTURE_ID).exists())
+
+    def test_compile_cli_redacts_filesystem_errors(self) -> None:
+        stderr = io.StringIO()
+        arguments = [
+            "qa.promote",
+            "compile",
+            "--capture",
+            str(self.session),
+            "--fixture-id",
+            FIXTURE_ID,
+            "--candidate",
+            str(self.candidate),
+        ]
+        # Recreate the pre-compilation state used by the command.
+        for child in self.candidate.iterdir():
+            child.unlink()
+        self.candidate.rmdir()
+
+        with (
+            mock.patch.object(sys, "argv", arguments),
+            mock.patch(
+                "qa.promote.Path.mkdir",
+                side_effect=OSError("Private Person /sensitive/path"),
+            ),
+            mock.patch("sys.stderr", stderr),
+        ):
+            result = promotion.main()
+
+        self.assertEqual(result, 1)
+        self.assertIn("candidate creation failed", stderr.getvalue())
+        self.assertNotIn("Private Person", stderr.getvalue())
+        self.assertNotIn("sensitive", stderr.getvalue())
 
 
 if __name__ == "__main__":

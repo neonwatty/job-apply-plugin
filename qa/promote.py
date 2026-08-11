@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -68,6 +69,24 @@ class PromotionError(ValueError):
     """A stable, value-free promotion diagnostic."""
 
 
+@dataclass
+class _PrivateBinding:
+    private: Path
+    session: Path
+    candidate: Path
+    private_descriptor: int
+    session_descriptor: int
+    candidate_descriptor: int
+    private_identity: os.stat_result
+    session_identity: os.stat_result
+    candidate_identity: os.stat_result
+
+    def close(self) -> None:
+        os.close(self.candidate_descriptor)
+        os.close(self.session_descriptor)
+        os.close(self.private_descriptor)
+
+
 def _json_bytes(value: Any) -> bytes:
     return (
         json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
@@ -103,7 +122,7 @@ def _read_regular(path: Path, diagnostic: str) -> bytes:
         return data
     except PromotionError:
         raise
-    except OSError:
+    except (OSError, RuntimeError, ValueError):
         raise PromotionError(diagnostic) from None
     finally:
         if descriptor is not None:
@@ -119,12 +138,60 @@ def _read_json(path: Path, diagnostic: str) -> Any:
         raise PromotionError(diagnostic) from None
 
 
+def _read_regular_at(
+    directory_descriptor: int, name: str, diagnostic: str
+) -> bytes:
+    descriptor = None
+    try:
+        expected = os.stat(
+            name, dir_fd=directory_descriptor, follow_symlinks=False
+        )
+        if not stat.S_ISREG(expected.st_mode) or expected.st_size > MAX_JSON_BYTES:
+            raise PromotionError(diagnostic)
+        descriptor = os.open(
+            name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory_descriptor
+        )
+        opened = os.fstat(descriptor)
+        if not stat.S_ISREG(opened.st_mode) or not _same_identity(expected, opened):
+            raise PromotionError(diagnostic)
+        chunks: list[bytes] = []
+        remaining = MAX_JSON_BYTES + 1
+        while remaining:
+            chunk = os.read(descriptor, min(64 * 1024, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        data = b"".join(chunks)
+        if len(data) > MAX_JSON_BYTES:
+            raise PromotionError(diagnostic)
+        return data
+    except PromotionError:
+        raise
+    except (OSError, RuntimeError, ValueError):
+        raise PromotionError(diagnostic) from None
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
+def _read_json_at(directory_descriptor: int, name: str, diagnostic: str) -> Any:
+    try:
+        return json.loads(
+            _read_regular_at(directory_descriptor, name, diagnostic).decode("utf-8")
+        )
+    except PromotionError:
+        raise
+    except (UnicodeError, json.JSONDecodeError, RecursionError):
+        raise PromotionError(diagnostic) from None
+
+
 def _guard_existing_directory(path: Path, diagnostic: str) -> Path:
     absolute = Path(os.path.abspath(path))
     try:
         identity = absolute.lstat()
         resolved = absolute.resolve(strict=True)
-    except OSError:
+    except (OSError, RuntimeError, ValueError):
         raise PromotionError(diagnostic) from None
     if not stat.S_ISDIR(identity.st_mode) or stat.S_ISLNK(identity.st_mode):
         raise PromotionError(diagnostic)
@@ -161,6 +228,100 @@ def _guard_candidate(candidate: Path) -> tuple[Path, Path, Path]:
     if candidate.parent != session:
         raise PromotionError("unsafe candidate path")
     return private, session, candidate
+
+
+def _open_private_binding(
+    private: Path, session: Path, candidate: Path
+) -> _PrivateBinding:
+    private_descriptor = session_descriptor = candidate_descriptor = None
+    binding = None
+    try:
+        private_identity = private.lstat()
+        private_descriptor = os.open(
+            private, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+        )
+        if not _same_identity(private_identity, os.fstat(private_descriptor)):
+            raise PromotionError("private session changed")
+
+        session_identity = os.stat(
+            session.name, dir_fd=private_descriptor, follow_symlinks=False
+        )
+        session_descriptor = os.open(
+            session.name,
+            os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+            dir_fd=private_descriptor,
+        )
+        if not _same_identity(session_identity, os.fstat(session_descriptor)):
+            raise PromotionError("private session changed")
+
+        candidate_identity = os.stat(
+            candidate.name, dir_fd=session_descriptor, follow_symlinks=False
+        )
+        candidate_descriptor = os.open(
+            candidate.name,
+            os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+            dir_fd=session_descriptor,
+        )
+        if not _same_identity(candidate_identity, os.fstat(candidate_descriptor)):
+            raise PromotionError("private session changed")
+        binding = _PrivateBinding(
+            private,
+            session,
+            candidate,
+            private_descriptor,
+            session_descriptor,
+            candidate_descriptor,
+            private_identity,
+            session_identity,
+            candidate_identity,
+        )
+        return binding
+    except PromotionError:
+        raise
+    except OSError:
+        raise PromotionError("private session changed") from None
+    finally:
+        if binding is None:
+            if candidate_descriptor is not None:
+                os.close(candidate_descriptor)
+            if session_descriptor is not None:
+                os.close(session_descriptor)
+            if private_descriptor is not None:
+                os.close(private_descriptor)
+
+
+def _assert_private_binding(binding: _PrivateBinding) -> None:
+    try:
+        if not _same_identity(binding.private_identity, binding.private.lstat()):
+            raise PromotionError("private session changed")
+        if not _same_identity(
+            binding.private_identity, os.fstat(binding.private_descriptor)
+        ):
+            raise PromotionError("private session changed")
+        named_session = os.stat(
+            binding.session.name,
+            dir_fd=binding.private_descriptor,
+            follow_symlinks=False,
+        )
+        if not _same_identity(binding.session_identity, named_session) or not _same_identity(
+            binding.session_identity, os.fstat(binding.session_descriptor)
+        ):
+            raise PromotionError("private session changed")
+        named_candidate = os.stat(
+            binding.candidate.name,
+            dir_fd=binding.session_descriptor,
+            follow_symlinks=False,
+        )
+        if not _same_identity(
+            binding.candidate_identity, named_candidate
+        ) or not _same_identity(
+            binding.candidate_identity, os.fstat(binding.candidate_descriptor)
+        ):
+            raise PromotionError("private session changed")
+    except PromotionError:
+        raise
+    except OSError:
+        raise PromotionError("private session changed") from None
 
 
 def _atomic_write(path: Path, content: bytes) -> None:
@@ -227,10 +388,15 @@ def compile_candidate(capture: Path, fixture_id: str, candidate: Path) -> dict[s
 
     _, capture = _guard_session(Path(capture))
     lexical_candidate = Path(os.path.abspath(candidate))
+    try:
+        candidate_parent = lexical_candidate.parent.resolve(strict=True)
+        candidate_exists = lexical_candidate.exists()
+    except (OSError, RuntimeError, ValueError):
+        raise PromotionError("unsafe candidate path") from None
     if (
         lexical_candidate.name != "candidate"
-        or lexical_candidate.parent.resolve(strict=True) != capture
-        or lexical_candidate.exists()
+        or candidate_parent != capture
+        or candidate_exists
     ):
         raise PromotionError("unsafe candidate path")
     candidate = capture / "candidate"
@@ -242,7 +408,10 @@ def compile_candidate(capture: Path, fixture_id: str, candidate: Path) -> dict[s
         raise PromotionError("candidate compilation failed") from None
 
     try:
-        candidate.mkdir(mode=0o700)
+        try:
+            candidate.mkdir(mode=0o700)
+        except (OSError, ValueError):
+            raise PromotionError("candidate creation failed") from None
         _atomic_write(candidate / "fixture.json", _json_bytes(fixture))
         manifest = {
             "schemaVersion": PROMOTION_SCHEMA_VERSION,
@@ -257,6 +426,8 @@ def compile_candidate(capture: Path, fixture_id: str, candidate: Path) -> dict[s
         shutil.rmtree(candidate, ignore_errors=True)
         if isinstance(error, PrivacyError):
             raise PromotionError(str(error)) from None
+        if isinstance(error, OSError):
+            raise PromotionError("candidate creation failed") from None
         raise
 
 
@@ -387,50 +558,70 @@ def _remove_child_tree(parent_descriptor: int, name: str) -> None:
     os.rmdir(name, dir_fd=parent_descriptor)
 
 
-def _destroy_session(private: Path, session: Path) -> None:
-    private_descriptor = session_descriptor = None
+def _destroy_bound_session(binding: _PrivateBinding) -> None:
     try:
-        private_descriptor = os.open(private, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-        expected = os.stat(session.name, dir_fd=private_descriptor, follow_symlinks=False)
-        session_descriptor = os.open(
-            session.name,
-            os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
-            dir_fd=private_descriptor,
+        _assert_private_binding(binding)
+        _remove_tree_contents(binding.session_descriptor)
+        named_session = os.stat(
+            binding.session.name,
+            dir_fd=binding.private_descriptor,
+            follow_symlinks=False,
         )
-        if not _same_identity(expected, os.fstat(session_descriptor)):
+        if not _same_identity(binding.session_identity, named_session):
             raise PromotionError("private session deletion failed")
-        _remove_tree_contents(session_descriptor)
-        os.close(session_descriptor)
-        session_descriptor = None
-        os.rmdir(session.name, dir_fd=private_descriptor)
+        os.rmdir(binding.session.name, dir_fd=binding.private_descriptor)
+    except PromotionError:
+        raise
     except (OSError, ValueError):
         raise PromotionError("private session deletion failed") from None
-    finally:
-        if session_descriptor is not None:
-            os.close(session_descriptor)
-        if private_descriptor is not None:
-            os.close(private_descriptor)
 
 
 def promote_candidate(candidate: Path, destination: Path, now: str | None = None) -> Path:
     """Revalidate, atomically install, then securely destroy the raw session."""
 
     private, session, candidate = _guard_candidate(Path(candidate))
-    approval_path = candidate / "approval.json"
-    if not approval_path.exists():
-        raise PromotionError("approval required")
+    binding = _open_private_binding(private, session, candidate)
+    try:
+        return _promote_bound_candidate(binding, Path(destination), now)
+    finally:
+        binding.close()
 
-    fixture_bytes = _read_regular(candidate / "fixture.json", "invalid fixture artifact")
+
+def _promote_bound_candidate(
+    binding: _PrivateBinding, destination_argument: Path, now: str | None
+) -> Path:
+    _assert_private_binding(binding)
+    try:
+        os.stat(
+            "approval.json",
+            dir_fd=binding.candidate_descriptor,
+            follow_symlinks=False,
+        )
+    except OSError:
+        raise PromotionError("approval required") from None
+
+    fixture_bytes = _read_regular_at(
+        binding.candidate_descriptor, "fixture.json", "invalid fixture artifact"
+    )
     digest = hashlib.sha256(fixture_bytes).hexdigest()
-    approval = _validate_approval(_read_json(approval_path, "invalid approval"), digest)
-    fixture = _read_json(candidate / "fixture.json", "invalid fixture artifact")
+    approval = _validate_approval(
+        _read_json_at(binding.candidate_descriptor, "approval.json", "invalid approval"),
+        digest,
+    )
+    fixture = _read_json_at(
+        binding.candidate_descriptor, "fixture.json", "invalid fixture artifact"
+    )
     try:
         validate_fixture(fixture)
     except ContractError:
         raise PromotionError("invalid fixture artifact") from None
 
-    semantic = _read_json(session / "semantic.json", "invalid private inputs")
-    receipt = _read_json(session / "capture-receipt.json", "invalid private inputs")
+    semantic = _read_json_at(
+        binding.session_descriptor, "semantic.json", "invalid private inputs"
+    )
+    receipt = _read_json_at(
+        binding.session_descriptor, "capture-receipt.json", "invalid private inputs"
+    )
     try:
         rebuilt = compile_capture(semantic, receipt, fixture["id"])
     except (ContractError, TypeError, ValueError):
@@ -439,11 +630,16 @@ def promote_candidate(candidate: Path, destination: Path, now: str | None = None
         raise PromotionError("fixture does not match private inputs")
 
     try:
-        scan_tree(candidate, _denied_terms(semantic))
+        scan_tree(binding.candidate, _denied_terms(semantic))
     except PrivacyError as error:
         raise PromotionError(str(error)) from None
+    _assert_private_binding(binding)
     _validate_manifest(
-        _read_json(candidate / "review-manifest.json", "invalid review manifest"),
+        _read_json_at(
+            binding.candidate_descriptor,
+            "review-manifest.json",
+            "invalid review manifest",
+        ),
         fixture["id"],
     )
 
@@ -465,8 +661,9 @@ def promote_candidate(candidate: Path, destination: Path, now: str | None = None
     if set(provenance) != PROVENANCE_KEYS:
         raise PromotionError("invalid provenance")
 
-    display_destination = Path(os.path.abspath(destination))
-    destination = _safe_destination(Path(destination))
+    display_destination = Path(os.path.abspath(destination_argument))
+    destination = _safe_destination(destination_argument)
+    _assert_private_binding(binding)
     destination_descriptor = staging_descriptor = None
     staging_name = f".{fixture['id']}.{secrets.token_hex(8)}"
     try:
@@ -492,6 +689,7 @@ def promote_candidate(candidate: Path, destination: Path, now: str | None = None
         os.fsync(staging_descriptor)
         os.close(staging_descriptor)
         staging_descriptor = None
+        _assert_private_binding(binding)
         try:
             os.replace(
                 staging_name,
@@ -525,7 +723,7 @@ def promote_candidate(candidate: Path, destination: Path, now: str | None = None
                     pass
             os.close(destination_descriptor)
 
-    _destroy_session(private, session)
+    _destroy_bound_session(binding)
     return display_destination / fixture["id"]
 
 
