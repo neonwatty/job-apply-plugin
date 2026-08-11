@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import select
+import signal
 import subprocess
 import sys
 import tempfile
@@ -236,6 +237,44 @@ class BrokerProtocolTests(unittest.TestCase):
                 child.stdin.close()
                 child.stdout.close()
                 child.stderr.close()
+
+    def test_process_group_signals_leave_guardian_to_remove_control(self):
+        for sent_signal in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+            with self.subTest(signal=sent_signal), tempfile.TemporaryDirectory() as directory:
+                private = Path(directory, ".qa-private")
+                private.mkdir(mode=0o700)
+                session = private / "qa-session-group-signal"
+                child = subprocess.Popen(
+                    [sys.executable, "-m", "qa.recorder_fs", "--root", str(session)],
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    start_new_session=True,
+                )
+                try:
+                    self.assertEqual(json.loads(child.stdout.readline()), {"ready": True})
+                    child.stdin.write(json.dumps({
+                        "id": 1,
+                        "command": "write-exclusive",
+                        "path": "control.json",
+                        "data": base64.b64encode(b"private-control").decode("ascii"),
+                    }) + "\n")
+                    child.stdin.flush()
+                    self.assertTrue(json.loads(child.stdout.readline())["ok"])
+                    os.killpg(child.pid, sent_signal)
+                    child.wait(timeout=3)
+                    deadline = time.monotonic() + 2
+                    while (session / "control.json").exists() and time.monotonic() < deadline:
+                        time.sleep(0.02)
+                    self.assertFalse((session / "control.json").exists())
+                finally:
+                    if child.poll() is None:
+                        child.kill()
+                        child.wait(timeout=3)
+                    child.stdin.close()
+                    child.stdout.close()
+                    child.stderr.close()
 
 
 if __name__ == "__main__":

@@ -24,7 +24,7 @@ export const CHECKPOINT_KINDS = Object.freeze([
 ]);
 
 const CHECKPOINT_KIND_SET = new Set(CHECKPOINT_KINDS);
-const SENSITIVE_PATTERN = /(?:\blog[ -]?in\b|\bsign[ -]?in\b|password|passcode|captcha|multi[ -]?factor|\bmfa\b|two[ -]?factor|\b2fa\b|2[ -]?step verification|verification code|security code|sms code|recovery code|authenticator app|push notification|approve (?:this |the )?(?:device|sign[ -]?in)|create (?:an? )?account|account[ -]?creation|register|\botp\b|authentication|challenge|security[ -]?key|one[ -]?time[ -]?code)/i;
+const SENSITIVE_PATTERN = /(?:\blog[ -]?in\b|\bsign[ -]?in\b|password|passcode|captcha|multi[ -]?factor|\bmfa\b|two[ -]?factor|\b2fa\b|2[ -]?step verification|verification code|security code|sms code|recovery code|authenticator app|push notification|verify (?:your )?identity|\b\d{1,2}[ -]?digit code(?: we sent)?|approve (?:this |the )?(?:device|sign[ -]?in)|create (?:an? )?account|account[ -]?creation|register|\botp\b|authentication|challenge|security[ -]?key|one[ -]?time[ -]?code)/i;
 const MAX_CONTROL_BODY = 4096;
 const MAX_EVENTS = 10_000;
 const MAX_PENDING_EVENT_OPERATIONS = 8;
@@ -473,7 +473,25 @@ function isolatedInstallerSource(bindingName) {
             if (option.text) mutable.push(option.text);
           }
         }
-        if (mutable.some((value) => label.includes(value))) label = "";
+        const normalizeMutable = (value) => value.normalize("NFKC")
+          .toLocaleLowerCase("und").replaceAll("ß", "ss").replaceAll("ς", "σ")
+          .replace(/\s+/g, " ").trim();
+        const compactMutable = (value) => normalizeMutable(value)
+          .replace(/[^\\p{L}\\p{N}]+/gu, "");
+        const normalizedLabel = normalizeMutable(label);
+        const compactLabel = compactMutable(label);
+        const exposesMutable = mutable.some((value) => {
+          const normalized = normalizeMutable(value);
+          if (!normalized) return false;
+          if (normalizedLabel.includes(normalized)) return true;
+          const compact = compactMutable(value);
+          if (compact.length >= 4 && compactLabel.includes(compact)) return true;
+          return compact.length >= 8 && (
+            compactLabel.includes(compact.slice(0, 6)) ||
+            compactLabel.includes(compact.slice(-6))
+          );
+        });
+        if (exposesMutable) label = "";
         const observed = {
           messageType: "interaction",
           interactionType,
@@ -491,7 +509,7 @@ function isolatedInstallerSource(bindingName) {
 
 function isolatedSnapshotSource(includeStructure) {
   return `(() => {
-    const denied = /(?:password|passcode|captcha|multi[ -]?factor|\\bmfa\\b|\\b2fa\\b|2[ -]?step verification|\\botp\\b|authentication|authenticator app|push notification|recovery code|sms code|security code|challenge|security[ -]?key|one[ -]?time[ -]?code|authorization|bearer|cookie|session|csrf|token)/i;
+    const denied = /(?:password|passcode|captcha|multi[ -]?factor|\\bmfa\\b|\\b2fa\\b|2[ -]?step verification|\\botp\\b|authentication|authenticator app|push notification|verify (?:your )?identity|\\b\\d{1,2}[ -]?digit code(?: we sent)?|recovery code|sms code|security code|challenge|security[ -]?key|one[ -]?time[ -]?code|authorization|bearer|cookie|session|csrf|token)/i;
     const labelFor = (element) => {
       const aria = element.getAttribute("aria-label");
       if (aria) return aria;
@@ -582,7 +600,7 @@ function isolatedSnapshotSource(includeStructure) {
     }
     return {
       title: document.title.slice(0, 512),
-      text: (document.body?.innerText || "").slice(0, 8192),
+      text: (document.body?.textContent || "").slice(0, 8192),
       controls,
       securityControls,
       controlOverflow: elements.length > ${CAPTURE_LIMITS.maxControls},

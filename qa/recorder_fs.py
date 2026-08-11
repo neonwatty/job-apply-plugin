@@ -10,6 +10,8 @@ import json
 import os
 from pathlib import Path
 import re
+import select
+import signal
 import stat
 import sys
 from typing import Any, Callable
@@ -590,14 +592,27 @@ def _start_cleanup_guardian(broker: SessionBroker) -> tuple[int, int]:
     if not hasattr(os, "fork"):
         raise BrokerError("cleanup-unsupported")
     read_fd, write_fd = os.pipe()
+    ready_read, ready_write = os.pipe()
     try:
         pid = os.fork()
     except OSError:
         os.close(read_fd)
         os.close(write_fd)
+        os.close(ready_read)
+        os.close(ready_write)
         raise BrokerError("cleanup-unavailable") from None
     if pid == 0:
         os.close(write_fd)
+        os.close(ready_read)
+        try:
+            for guardian_signal in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+                signal.signal(guardian_signal, signal.SIG_IGN)
+            os.setsid()
+            os.write(ready_write, b"1")
+        except (OSError, ValueError):
+            os._exit(1)
+        finally:
+            os.close(ready_write)
         os.close(broker._parent_fd)
         for descriptor in (0, 1, 2):
             try:
@@ -606,6 +621,21 @@ def _start_cleanup_guardian(broker: SessionBroker) -> tuple[int, int]:
                 pass
         _cleanup_guardian(broker._root_fd, broker._root_identity, read_fd)
     os.close(read_fd)
+    os.close(ready_write)
+    ready = select.select([ready_read], [], [], 2)[0]
+    acknowledged = os.read(ready_read, 1) if ready else b""
+    os.close(ready_read)
+    if acknowledged != b"1":
+        os.close(write_fd)
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        try:
+            os.waitpid(pid, 0)
+        except ChildProcessError:
+            pass
+        raise BrokerError("cleanup-unavailable")
     return pid, write_fd
 
 

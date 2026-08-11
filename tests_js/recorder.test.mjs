@@ -345,6 +345,8 @@ test("sensitive page detector rejects login and credential surfaces", () => {
     "Approve the authenticator app push notification",
     "Enter the SMS security code",
     "Use a recovery code for 2FA",
+    "Verify your identity",
+    "Enter the 6-digit code we sent",
   ]) {
     assert.equal(isSensitivePage({
       url: "https://example.test/jobs/1/apply",
@@ -742,11 +744,21 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
     document.body.append(hidden);
     const valueLeak = document.createElement("label");
     valueLeak.textContent = "Label contains value-leak-secret";
-    valueLeak.insertAdjacentHTML("beforeend", '<input id="value-leak">');
+    valueLeak.insertAdjacentHTML("beforeend", '<input id="value-leak" value="value-leak-secret">');
     document.body.append(valueLeak);
+    const unicodeLeak = document.createElement("label");
+    unicodeLeak.textContent = "ＦＵＬＬＷＩＤＴＨ-ＳＥＣＲＥＴ details";
+    unicodeLeak.insertAdjacentHTML("beforeend", '<input id="unicode-value-leak" value="fullwidth-secret">');
+    document.body.append(unicodeLeak);
+    const partialLeak = document.createElement("label");
+    partialLeak.textContent = "Account ending CDEF12";
+    partialLeak.insertAdjacentHTML("beforeend", '<input id="partial-value-leak" value="abcdef12">');
+    document.body.append(partialLeak);
   });
   await page.locator("#hidden-trusted-event").click({ force: true });
-  await page.locator("#value-leak").fill("value-leak-secret");
+  await page.locator("#value-leak").click();
+  await page.locator("#unicode-value-leak").click();
+  await page.locator("#partial-value-leak").click();
   await page.evaluate(() => {
     const upload = document.createElement("label");
     upload.textContent = "Upload private-resume.pdf";
@@ -844,6 +856,28 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   await abortCheckpointClient(control, 100);
   await cdpSession.send("Debugger.resume");
   await new Promise((resolve) => setTimeout(resolve, 750));
+  assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
+
+  await page.evaluate(() => {
+    const style = document.createElement("style");
+    style.id = "css-sensitive-style";
+    style.textContent = `@keyframes css-sensitive-flash {
+      0%, 48%, 52%, 100% { visibility: hidden }
+      49%, 51% { visibility: visible }
+    }`;
+    document.head.append(style);
+    const sensitive = document.createElement("div");
+    sensitive.id = "css-transient-sensitive";
+    sensitive.textContent = "Verify your identity";
+    sensitive.style.animation = "css-sensitive-flash 100ms linear infinite";
+    document.body.append(sensitive);
+  });
+  const cssTransientSensitive = await postControl(control, { kind: "application-opened" });
+  assert.notEqual(cssTransientSensitive.status, 200);
+  await page.evaluate(() => {
+    document.querySelector("#css-transient-sensitive")?.remove();
+    document.querySelector("#css-sensitive-style")?.remove();
+  });
   assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
 
   await page.evaluate(() => {
@@ -996,6 +1030,8 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
     "Untrusted event secret",
     "Hidden trusted secret",
     "Label contains value-leak-secret",
+    "ＦＵＬＬＷＩＤＴＨ-ＳＥＣＲＥＴ details",
+    "Account ending CDEF12",
     "Upload private-resume.pdf",
     "Choose selected-option-secret",
   ]) {
