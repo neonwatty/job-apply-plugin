@@ -9,6 +9,7 @@ import {
   readFile,
   readdir,
   realpath,
+  rename,
   rm,
   writeFile,
 } from "node:fs/promises";
@@ -30,10 +31,45 @@ const CHECKPOINT_KIND_SET = new Set(CHECKPOINT_KINDS);
 const SENSITIVE_PATTERN = /(?:\blog[ -]?in\b|\bsign[ -]?in\b|password|passcode|captcha|multi[ -]?factor|\bmfa\b|two[ -]?factor|verification code|create (?:an? )?account|account[ -]?creation|register)/i;
 const MAX_CONTROL_BODY = 4096;
 const MAX_EVENTS = 10_000;
+const BODY_DEADLINE_MS = 500;
+const CAPTURE_DEADLINE_MS = 1000;
+const CONTROL_DEADLINE_MS = 1500;
+const CLIENT_DEADLINE_MS = 2500;
 const FILE_MODE = 0o600;
 const DIRECTORY_MODE = 0o700;
 
 export class RecorderError extends Error {}
+
+function throwIfAborted(signal) {
+  if (signal?.aborted) throw new RecorderError("operation canceled");
+}
+
+function withDeadline(promise, timeoutMs, signal, onTimeout) {
+  throwIfAborted(signal);
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", onAbort);
+      callback(value);
+    };
+    const onAbort = () => finish(reject, new RecorderError("operation canceled"));
+    const timer = setTimeout(() => {
+      try {
+        onTimeout?.();
+      } finally {
+        finish(reject, new RecorderError("operation timed out"));
+      }
+    }, timeoutMs);
+    signal?.addEventListener("abort", onAbort, { once: true });
+    Promise.resolve(promise).then(
+      (value) => finish(resolve, value),
+      (error) => finish(reject, error),
+    );
+  });
+}
 
 export function sanitizeObservedControl(observed) {
   const sourceLabel = typeof observed?.label === "string"
@@ -325,38 +361,57 @@ function authorizedRequest(request, port, token) {
   return supplied.length === expected.length && timingSafeEqual(supplied, expected);
 }
 
-async function readRequestBody(request) {
-  const chunks = [];
-  let size = 0;
-  for await (const chunk of request) {
-    size += chunk.length;
-    if (size > MAX_CONTROL_BODY) throw new RecorderError("invalid control request");
-    chunks.push(chunk);
-  }
-  let body;
+async function readRequestBody(request, signal) {
+  const read = (async () => {
+    const chunks = [];
+    let size = 0;
+    for await (const chunk of request) {
+      throwIfAborted(signal);
+      size += chunk.length;
+      if (size > MAX_CONTROL_BODY) throw new RecorderError("invalid control request");
+      chunks.push(chunk);
+    }
+    let body;
+    try {
+      body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    } catch {
+      throw new RecorderError("invalid control request");
+    }
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      throw new RecorderError("invalid control request");
+    }
+    return body;
+  })();
+  const destroy = () => request.destroy();
+  signal?.addEventListener("abort", destroy, { once: true });
   try {
-    body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-  } catch {
-    throw new RecorderError("invalid control request");
+    return await withDeadline(read, BODY_DEADLINE_MS, signal, destroy);
+  } finally {
+    signal?.removeEventListener("abort", destroy);
   }
-  if (!body || typeof body !== "object" || Array.isArray(body)) {
-    throw new RecorderError("invalid control request");
-  }
-  return body;
 }
 
 async function runRecord(rawOptions) {
   const options = await validateRecorderOptions(rawOptions);
-  let browser;
   let server;
   let controlPath;
-  let clean = false;
+  let activeToken = null;
+  let captureEnabled = false;
+  let shuttingDown = false;
+  let checkpointQueue = Promise.resolve();
+  let writeQueue = Promise.resolve();
+  const activeControllers = new Set();
+  const activeHandlers = new Set();
+  let quiesce;
   try {
-    browser = await chromium.connectOverCDP(options.cdpUrl);
+    const browser = await chromium.connectOverCDP(options.cdpUrl);
     const pages = ordinaryPages(browser);
     if (pages.length !== 1) throw new RecorderError("ordinary page selection required");
     const page = pages[0];
-    const initialSnapshot = await snapshotPage(page);
+    const initialSnapshot = await withDeadline(
+      snapshotPage(page),
+      CAPTURE_DEADLINE_MS,
+    );
     if (isSensitivePage(initialSnapshot)) throw new RecorderError("sensitive page refused");
 
     await mkdir(options.output, { mode: DIRECTORY_MODE, recursive: true });
@@ -366,12 +421,11 @@ async function runRecord(rawOptions) {
     await writeFile(eventsPath, "", { mode: FILE_MODE, flag: "wx" });
     let eventCount = 0;
     let pageSequence = 1;
-    let writeQueue = Promise.resolve();
     const checkpointKinds = [];
     const checkpointNames = [];
 
     await page.exposeBinding("__qaRecorderObserve", (_source, observed) => {
-      if (eventCount >= MAX_EVENTS || !observed ||
+      if (!captureEnabled || eventCount >= MAX_EVENTS || !observed ||
           !["click", "change", "input"].includes(observed.interactionType)) return;
       const control = sanitizeObservedControl(observed);
       if (!control.sourceLabel || control.role === "unknown") return;
@@ -387,71 +441,149 @@ async function runRecord(rawOptions) {
     });
     await page.addInitScript(pageInstaller);
     await page.evaluate(pageInstaller);
+    captureEnabled = true;
     page.on("framenavigated", (frame) => {
       if (frame === page.mainFrame()) pageSequence += 1;
     });
 
-    const writeCheckpoint = async (kind) => {
-      validateCheckpointKind(kind);
-      if (!lifecycleAllows(checkpointKinds, kind)) throw new RecorderError("invalid checkpoint lifecycle");
-      await writeQueue;
-      const snapshot = await snapshotPage(page);
-      if (isSensitivePage(snapshot)) throw new RecorderError("sensitive page refused");
-      const sequence = checkpointKinds.length + 1;
-      const checkpointName = `${String(sequence).padStart(4, "0")}-${kind}`;
-      const checkpointDirectory = path.join(options.output, "checkpoints", checkpointName);
-      await mkdir(checkpointDirectory, { mode: DIRECTORY_MODE });
-      const controls = snapshot.controls
-        .filter((control) => control.type !== "password")
-        .map(sanitizeObservedControl);
-      const html = await page.content();
-      const screenshot = await page.screenshot({ fullPage: true });
-      await Promise.all([
-        writeFile(path.join(checkpointDirectory, "page.html"), html, { mode: FILE_MODE, flag: "wx" }),
-        writeFile(path.join(checkpointDirectory, "page.png"), screenshot, { mode: FILE_MODE, flag: "wx" }),
-        privateJson(path.join(checkpointDirectory, "controls.json"), controls),
-        privateJson(path.join(checkpointDirectory, "checkpoint.json"), {
-          kind,
-          sequence,
-          timestamp: new Date().toISOString(),
-          pageSequence,
-        }),
-      ]);
-      checkpointKinds.push(kind);
-      checkpointNames.push(checkpointName);
+    const writeCheckpoint = async (kind, signal) => {
+      let temporaryDirectory;
+      try {
+        throwIfAborted(signal);
+        if (shuttingDown) throw new RecorderError("operation canceled");
+        validateCheckpointKind(kind);
+        if (!lifecycleAllows(checkpointKinds, kind)) {
+          throw new RecorderError("invalid checkpoint lifecycle");
+        }
+        await writeQueue;
+        throwIfAborted(signal);
+        const snapshot = await withDeadline(
+          snapshotPage(page),
+          CAPTURE_DEADLINE_MS,
+          signal,
+        );
+        if (isSensitivePage(snapshot)) throw new RecorderError("sensitive page refused");
+        const sequence = checkpointKinds.length + 1;
+        const checkpointName = `${String(sequence).padStart(4, "0")}-${kind}`;
+        const checkpointsRoot = path.join(options.output, "checkpoints");
+        const checkpointDirectory = path.join(checkpointsRoot, checkpointName);
+        temporaryDirectory = path.join(
+          checkpointsRoot,
+          `.tmp-${randomBytes(18).toString("base64url")}`,
+        );
+        await mkdir(temporaryDirectory, { mode: DIRECTORY_MODE });
+        const controls = snapshot.controls
+          .filter((control) => control.type !== "password")
+          .map(sanitizeObservedControl);
+        const html = await withDeadline(
+          page.content(),
+          CAPTURE_DEADLINE_MS,
+          signal,
+        );
+        const screenshot = await withDeadline(
+          page.screenshot({ fullPage: true, timeout: CAPTURE_DEADLINE_MS }),
+          CAPTURE_DEADLINE_MS,
+          signal,
+        );
+        throwIfAborted(signal);
+        await Promise.all([
+          writeFile(path.join(temporaryDirectory, "page.html"), html, { mode: FILE_MODE, flag: "wx" }),
+          writeFile(path.join(temporaryDirectory, "page.png"), screenshot, { mode: FILE_MODE, flag: "wx" }),
+          privateJson(path.join(temporaryDirectory, "controls.json"), controls),
+          privateJson(path.join(temporaryDirectory, "checkpoint.json"), {
+            kind,
+            sequence,
+            timestamp: new Date().toISOString(),
+            pageSequence,
+          }),
+        ]);
+        throwIfAborted(signal);
+        if (shuttingDown) throw new RecorderError("operation canceled");
+        await rename(temporaryDirectory, checkpointDirectory);
+        temporaryDirectory = undefined;
+        checkpointKinds.push(kind);
+        checkpointNames.push(checkpointName);
+      } catch (error) {
+        if (temporaryDirectory) {
+          await rm(temporaryDirectory, { recursive: true, force: true }).catch(() => {});
+        }
+        throw error;
+      }
     };
 
-    const token = randomBytes(32).toString("base64url");
+    const enqueueCheckpoint = (kind, signal) => {
+      const operation = checkpointQueue.then(() => writeCheckpoint(kind, signal));
+      checkpointQueue = operation.catch(() => {});
+      return operation;
+    };
+
+    activeToken = randomBytes(32).toString("base64url");
     let stopRequested;
     const stopPromise = new Promise((resolve) => { stopRequested = resolve; });
-    server = http.createServer(async (request, response) => {
-      const port = server.address().port;
+    const handleControlRequest = async (request, response) => {
       const reject = (status = 400) => {
+        if (response.destroyed || response.writableEnded) return;
         response.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" });
         response.end('{"error":"request rejected"}\n');
       };
+      const address = server.address();
+      if (shuttingDown || !address) {
+        request.resume();
+        reject(503);
+        return;
+      }
+      const port = address.port;
       if (request.method !== "POST" || !["/checkpoint", "/stop"].includes(request.url) ||
-          !authorizedRequest(request, port, token)) {
+          !activeToken || !authorizedRequest(request, port, activeToken)) {
         request.resume();
         reject(403);
         return;
       }
+      const controller = new AbortController();
+      activeControllers.add(controller);
+      const cancel = () => controller.abort();
+      request.once("aborted", cancel);
+      request.once("close", () => {
+        if (!request.complete) cancel();
+      });
+      response.once("close", () => {
+        if (!response.writableEnded) cancel();
+      });
+      const deadline = setTimeout(cancel, CONTROL_DEADLINE_MS);
       try {
-        const body = await readRequestBody(request);
+        const body = await readRequestBody(request, controller.signal);
         if (request.url === "/checkpoint") {
           if (Object.keys(body).length !== 1 || !Object.hasOwn(body, "kind")) {
             throw new RecorderError("invalid control request");
           }
-          await writeCheckpoint(body.kind);
+          await enqueueCheckpoint(body.kind, controller.signal);
         } else {
           if (Object.keys(body).length !== 0) throw new RecorderError("invalid control request");
-          stopRequested();
         }
+        throwIfAborted(controller.signal);
+        if (shuttingDown) throw new RecorderError("operation canceled");
         response.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
         response.end('{"ok":true}\n');
+        if (request.url === "/stop") setImmediate(stopRequested);
       } catch {
         reject(400);
+      } finally {
+        clearTimeout(deadline);
+        activeControllers.delete(controller);
       }
+    };
+    server = http.createServer((request, response) => {
+      const handler = handleControlRequest(request, response).catch(() => {
+        if (!response.destroyed && !response.writableEnded) {
+          response.writeHead(400, { "content-type": "application/json", "cache-control": "no-store" });
+          response.end('{"error":"request rejected"}\n');
+        }
+      });
+      activeHandlers.add(handler);
+      handler.then(
+        () => activeHandlers.delete(handler),
+        () => activeHandlers.delete(handler),
+      );
     });
     await new Promise((resolve, reject) => {
       server.once("error", reject);
@@ -459,15 +591,37 @@ async function runRecord(rawOptions) {
     });
     const port = server.address().port;
     controlPath = path.join(options.output, "control.json");
-    await privateJson(controlPath, { port, token });
+    await privateJson(controlPath, { port, token: activeToken });
+
+    let quiescePromise;
+    quiesce = () => {
+      if (quiescePromise) return quiescePromise;
+      quiescePromise = (async () => {
+        shuttingDown = true;
+        captureEnabled = false;
+        activeToken = null;
+        if (controlPath) await rm(controlPath, { force: true }).catch(() => {});
+        const serverClosed = server?.listening
+          ? new Promise((resolve) => server.close(resolve))
+          : Promise.resolve();
+        server?.closeIdleConnections?.();
+        for (const controller of activeControllers) controller.abort();
+        while (activeHandlers.size > 0) {
+          await Promise.allSettled([...activeHandlers]);
+        }
+        await checkpointQueue;
+        await writeQueue;
+        await serverClosed;
+      })();
+      return quiescePromise;
+    };
 
     const signalPromise = new Promise((resolve) => {
       process.once("SIGINT", resolve);
       process.once("SIGTERM", resolve);
     });
     await Promise.race([signalPromise, stopPromise]);
-    clean = true;
-    await writeQueue;
+    await quiesce();
     await privateJson(path.join(options.output, "recording-summary.json"), {
       checkpointKinds,
     });
@@ -479,12 +633,13 @@ async function runRecord(rawOptions) {
     };
     await privateJson(path.join(options.output, "capture-receipt.json"), receipt);
   } finally {
+    shuttingDown = true;
+    captureEnabled = false;
+    activeToken = null;
     if (controlPath) await rm(controlPath, { force: true }).catch(() => {});
-    if (server) await new Promise((resolve) => server.close(resolve)).catch(() => {});
-    if (browser) await browser.close().catch(() => {});
-    if (!clean) {
-      // Private evidence is intentionally retained for manual inspection.
-    }
+    for (const controller of activeControllers) controller.abort();
+    if (quiesce) await quiesce().catch(() => {});
+    else if (server?.listening) await new Promise((resolve) => server.close(resolve)).catch(() => {});
   }
 }
 
@@ -545,8 +700,11 @@ async function main() {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-  main().catch((error) => {
-    process.stderr.write(`${error instanceof RecorderError ? error.message : "recorder failed"}\n`);
-    process.exitCode = 1;
-  });
+  main().then(
+    () => process.exit(0),
+    (error) => {
+      const message = `${error instanceof RecorderError ? error.message : "recorder failed"}\n`;
+      process.stderr.write(message, () => process.exit(1));
+    },
+  );
 }

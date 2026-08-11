@@ -41,6 +41,22 @@ function waitForExit(child, timeoutMs = 5000) {
   });
 }
 
+function withTimeout(promise, timeoutMs, message) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 async function stopChild(child) {
   if (child.exitCode !== null || child.signalCode !== null) return;
   child.kill("SIGTERM");
@@ -143,6 +159,83 @@ async function postControl(control, body, overrides = {}) {
     });
     request.once("error", reject);
     request.end(encoded);
+  });
+}
+
+function controlHeaders(control, encoded) {
+  return {
+    authorization: `Bearer ${control.token}`,
+    "content-type": "application/json",
+    host: `127.0.0.1:${control.port}`,
+    origin: `http://127.0.0.1:${control.port}`,
+    "content-length": Buffer.byteLength(encoded),
+  };
+}
+
+async function sendSlowPartialBody(control) {
+  const encoded = '{"kind":"application-opened"}';
+  return new Promise((resolve, reject) => {
+    const request = http.request({
+      hostname: "127.0.0.1",
+      port: control.port,
+      path: "/checkpoint",
+      method: "POST",
+      headers: controlHeaders(control, encoded),
+    });
+    const timer = setTimeout(() => {
+      request.destroy();
+      reject(new Error("slow body was not bounded"));
+    }, 1500);
+    const settle = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    request.once("response", (response) => {
+      response.resume();
+      response.once("end", settle);
+    });
+    request.once("error", settle);
+    request.write(encoded.slice(0, 8));
+  });
+}
+
+function startPartialBody(control) {
+  const encoded = '{"kind":"application-opened"}';
+  let resolveSettled;
+  const settled = new Promise((resolve) => { resolveSettled = resolve; });
+  const request = http.request({
+    hostname: "127.0.0.1",
+    port: control.port,
+    path: "/checkpoint",
+    method: "POST",
+    headers: controlHeaders(control, encoded),
+  });
+  request.once("response", (response) => {
+    response.resume();
+    response.once("end", resolveSettled);
+  });
+  request.once("error", resolveSettled);
+  request.write(encoded.slice(0, 8));
+  return settled;
+}
+
+async function abortCheckpointClient(control, delayMs = 50) {
+  const encoded = '{"kind":"application-opened"}';
+  return new Promise((resolve) => {
+    const request = http.request({
+      hostname: "127.0.0.1",
+      port: control.port,
+      path: "/checkpoint",
+      method: "POST",
+      headers: controlHeaders(control, encoded),
+    });
+    request.once("response", (response) => {
+      response.resume();
+      response.once("end", resolve);
+    });
+    request.once("error", resolve);
+    request.end(encoded);
+    setTimeout(() => request.destroy(), delayMs);
   });
 }
 
@@ -278,6 +371,40 @@ test("recorder options require one safe child of .qa-private and loopback CDP", 
   }), /unsafe session directory/);
 });
 
+test("checkpoint client aborts a stalled local request by its deadline", async (t) => {
+  const directory = await mkdtemp(path.join(tmpdir(), "checkpoint-timeout-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const privateRoot = path.join(directory, ".qa-private");
+  const session = path.join(privateRoot, "qa-session-timeout");
+  await mkdir(path.join(session, "checkpoints"), { recursive: true, mode: 0o700 });
+  const token = "t".repeat(43);
+  let clientDisconnected;
+  const disconnected = new Promise((resolve) => { clientDisconnected = resolve; });
+  const server = http.createServer((request, response) => {
+    request.resume();
+    response.once("close", clientDisconnected);
+  });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  await writeFile(path.join(session, "control.json"), `${JSON.stringify({
+    port: server.address().port,
+    token,
+  })}\n`, { mode: 0o600 });
+
+  const started = Date.now();
+  const result = await runNode([
+    "qa/recorder.mjs", "checkpoint", "--session", session,
+    "--kind", "application-opened",
+  ], 5000);
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /recorder unavailable/);
+  assert.ok(Date.now() - started < 4000);
+  await withTimeout(disconnected, 1000, "checkpoint client did not abort");
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
+});
+
 test("record refuses a login page before creating private evidence", async (t) => {
   const site = await startSyntheticSite(t);
   const { cdpUrl } = await startIndependentChromium(t, `${site}/login`);
@@ -337,6 +464,7 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
     const response = await request();
     assert.notEqual(response.status, 200, label);
   }
+  await sendSlowPartialBody(control);
   assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
 
   const attached = await chromium.connectOverCDP(cdpUrl);
@@ -370,11 +498,26 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   await page.goto(`${site}/application`);
   const afterNavigationEmail = "after-navigation@example.invalid";
   await page.locator("#email").fill(afterNavigationEmail);
+
+  const cdpSession = await attached.contexts()[0].newCDPSession(page);
+  await cdpSession.send("Debugger.enable");
+  await cdpSession.send("Debugger.pause");
+  await abortCheckpointClient(control, 100);
+  await cdpSession.send("Debugger.resume");
+  await new Promise((resolve) => setTimeout(resolve, 750));
+  assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
+
+  await cdpSession.send("Debugger.pause");
+  const firstConcurrent = postControl(control, { kind: "application-opened" });
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  const secondConcurrent = postControl(control, { kind: "step-advanced" });
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  await cdpSession.send("Debugger.resume");
+  const concurrentStatuses = await Promise.all([firstConcurrent, secondConcurrent]);
+  assert.deepEqual(concurrentStatuses.map((response) => response.status), [200, 200]);
   await attached.close();
 
   for (const kind of [
-    "application-opened",
-    "step-advanced",
     "validation-observed",
     "review-reached",
     "final-action-boundary",
@@ -516,11 +659,75 @@ compile_capture(c, r, "recorder-compatible-v1")
   assert.doesNotMatch(dead.stderr, new RegExp(control.port));
 });
 
+test("shutdown quiesces events and an in-flight checkpoint before hashing", async (t) => {
+  const site = await startSyntheticSite(t);
+  const { browserProcess, cdpUrl } = await startIndependentChromium(t, `${site}/application`);
+  const directory = await mkdtemp(path.join(tmpdir(), "recording-shutdown-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const privateRoot = path.join(directory, ".qa-private");
+  await mkdir(privateRoot, { mode: 0o700 });
+  const session = path.join(privateRoot, "qa-session-shutdown");
+  const recorder = spawn(process.execPath, [
+    "qa/recorder.mjs", "record", "--cdp-url", cdpUrl, "--output", session,
+  ], { cwd: root });
+  let recorderStderr = "";
+  recorder.stderr.setEncoding("utf8");
+  recorder.stderr.on("data", (chunk) => { recorderStderr += chunk; });
+  t.after(() => stopChild(recorder));
+  const controlPath = path.join(session, "control.json");
+  await waitForFile(controlPath, 10000);
+  const control = JSON.parse(await readFile(controlPath, "utf8"));
+
+  const attached = await chromium.connectOverCDP(cdpUrl);
+  const page = attached.contexts()[0].pages()[0];
+  for (let index = 0; index < 12; index += 1) {
+    await page.locator("#email").fill(`shutdown-race-${index}@example.invalid`);
+  }
+  const cdpSession = await attached.contexts()[0].newCDPSession(page);
+  await cdpSession.send("Debugger.enable");
+  await cdpSession.send("Debugger.pause");
+  const inFlight = postControl(control, { kind: "application-opened" }).catch(() => ({ status: 0 }));
+  const partialBodySettled = startPartialBody(control);
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  recorder.kill("SIGTERM");
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  await cdpSession.send("Debugger.resume");
+  await withTimeout(inFlight, 3000, "in-flight request did not settle");
+  await withTimeout(partialBodySettled, 3000, "partial request did not settle");
+  await attached.close();
+  await waitForExit(recorder, 5000);
+
+  assert.equal(recorderStderr, "");
+  assert.equal(browserProcess.exitCode, null);
+  await assert.rejects(access(controlPath));
+  const checkpointNames = await readdir(path.join(session, "checkpoints"));
+  assert.equal(checkpointNames.some((name) => name.startsWith(".tmp-")), false);
+  const receipt = JSON.parse(await readFile(path.join(session, "capture-receipt.json"), "utf8"));
+  assert.equal(Object.keys(receipt.sourceFiles).length, 2 + checkpointNames.length * 4);
+  for (const checkpointName of checkpointNames) {
+    assert.deepEqual((await readdir(path.join(session, "checkpoints", checkpointName))).sort(), [
+      "checkpoint.json", "controls.json", "page.html", "page.png",
+    ]);
+  }
+  for (const [relative, digest] of Object.entries(receipt.sourceFiles)) {
+    const contents = await readFile(path.join(session, ...relative.split("/")));
+    assert.equal(createHash("sha256").update(contents).digest("hex"), digest);
+  }
+  const expectedCheckpointFiles = checkpointNames.flatMap((name) => [
+    "checkpoint.json", "controls.json", "page.html", "page.png",
+  ].map((basename) => `checkpoints/${name}/${basename}`));
+  assert.deepEqual(
+    Object.keys(receipt.sourceFiles).sort(),
+    ["events.jsonl", "recording-summary.json", ...expectedCheckpointFiles].sort(),
+  );
+});
+
 test("recorder source has no prohibited browser data capture APIs", async () => {
   const source = await readFile(path.join(root, "qa", "recorder.mjs"), "utf8");
   for (const prohibited of [
     "context.cookies(", "storageState(", "response.body(",
     "localStorage", "sessionStorage", "authorization headers",
+    "browser.close(", 'send("Browser.close"',
   ]) {
     assert.equal(source.includes(prohibited), false, prohibited);
   }
