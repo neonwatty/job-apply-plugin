@@ -5,23 +5,46 @@ const recordedEvents = new Set();
 let fixtureData;
 let eventQueue = Promise.resolve();
 let currentStepId;
+let controlFailurePending = false;
 
 async function recordEvent(type, controlId, stepId) {
   const key = `${type}:${controlId}:${stepId}`;
-  if (recordedEvents.has(key)) return eventQueue;
-  recordedEvents.add(key);
+  if (recordedEvents.has(key)) return;
   eventQueue = eventQueue
+    .catch(() => undefined)
     .then(() =>
-      fetch("/__qa/event", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, controlId, stepId }),
-      }),
+      recordedEvents.has(key)
+        ? undefined
+        : fetch("/__qa/event", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type, controlId, stepId }),
+          }),
     )
     .then((response) => {
+      if (response === undefined) return;
       if (!response.ok) throw new Error("Unable to record semantic event");
+      recordedEvents.add(key);
     });
   return eventQueue;
+}
+
+function showInfrastructureError() {
+  const notice = document.querySelector(".infrastructure-error");
+  if (notice)
+    notice.textContent = "Unable to record QA event. Retry this step.";
+}
+
+function recordControlEvent(type, controlId, stepId) {
+  recordEvent(type, controlId, stepId).catch(() => {
+    controlFailurePending = true;
+    showInfrastructureError();
+  });
+}
+
+function clearControlError(input, error) {
+  input.removeAttribute("aria-invalid");
+  error.textContent = "";
 }
 
 function renderControl(control) {
@@ -38,6 +61,7 @@ function renderControl(control) {
   const error = document.createElement("p");
   error.className = "error";
   error.id = `${control.id}-error`;
+  error.setAttribute("role", "alert");
   input.setAttribute("aria-describedby", error.id);
 
   if (control.role === "file") {
@@ -49,8 +73,10 @@ function renderControl(control) {
       const file = input.files[0];
       enteredValues.set(control.id, file ? file.name : "");
       filename.textContent = file ? file.name : "";
-      error.textContent = "";
-      if (file) recordEvent("uploaded", control.id, stepId);
+      if (file) {
+        clearControlError(input, error);
+        recordControlEvent("uploaded", control.id, stepId);
+      }
     });
     group.append(label, input, filename, error);
   } else {
@@ -63,8 +89,10 @@ function renderControl(control) {
     input.autocomplete = "off";
     input.addEventListener("input", () => {
       enteredValues.set(control.id, input.value);
-      error.textContent = "";
-      if (input.value.trim()) recordEvent("filled", control.id, stepId);
+      if (input.value.trim()) {
+        clearControlError(input, error);
+        recordControlEvent("filled", control.id, stepId);
+      }
     });
     group.append(label, input, error);
   }
@@ -73,6 +101,7 @@ function renderControl(control) {
 
 function validateStep(step) {
   let valid = true;
+  let firstInvalid;
   for (const control of step.controls) {
     const input = document.getElementById(control.id);
     const missing =
@@ -83,13 +112,27 @@ function validateStep(step) {
     const error = document.getElementById(`${control.id}-error`);
     if (missing) {
       valid = false;
+      firstInvalid ??= input;
+      input.setAttribute("aria-invalid", "true");
       error.textContent = `${control.label} is required`;
-      recordEvent("validation", control.id, step.id);
+      recordControlEvent("validation", control.id, step.id);
     } else {
-      error.textContent = "";
+      clearControlError(input, error);
     }
   }
+  firstInvalid?.focus();
   return valid;
+}
+
+async function ensureControlEvents(step) {
+  for (const control of step.controls) {
+    const input = document.getElementById(control.id);
+    if (control.role === "file" && input.files.length > 0) {
+      await recordEvent("uploaded", control.id, step.id);
+    } else if (control.role !== "file" && input.value.trim()) {
+      await recordEvent("filled", control.id, step.id);
+    }
+  }
 }
 
 function reviewList() {
@@ -147,7 +190,6 @@ function renderStep(fixture, stepId) {
     notice.className = "tripwire";
     notice.tabIndex = -1;
     application.append(button, notice);
-    recordEvent("reviewed", "", step.id);
     return;
   }
 
@@ -158,12 +200,38 @@ function renderStep(fixture, stepId) {
   button.type = "submit";
   button.textContent = "Continue";
   form.append(button);
+  const infrastructureError = document.createElement("p");
+  infrastructureError.className = "infrastructure-error";
+  infrastructureError.setAttribute("role", "alert");
+  infrastructureError.setAttribute("aria-live", "assertive");
+  form.append(infrastructureError);
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (!validateStep(step)) return;
-    await eventQueue;
-    await recordEvent("advanced", "", step.id);
-    renderStep(fixture, step.next);
+    button.disabled = true;
+    infrastructureError.textContent = "";
+    try {
+      if (!validateStep(step)) return;
+      const retryingControlFailure = controlFailurePending;
+      controlFailurePending = false;
+      await ensureControlEvents(step);
+      if (retryingControlFailure || controlFailurePending) {
+        controlFailurePending = false;
+        showInfrastructureError();
+        return;
+      }
+      await recordEvent("advanced", "", step.id);
+      const nextStep = fixture.steps.find(
+        (candidate) => candidate.id === step.next,
+      );
+      if (nextStep?.kind === "review") {
+        await recordEvent("reviewed", "", nextStep.id);
+      }
+      renderStep(fixture, step.next);
+    } catch {
+      showInfrastructureError();
+    } finally {
+      if (button.isConnected) button.disabled = false;
+    }
   });
   application.append(form);
 }

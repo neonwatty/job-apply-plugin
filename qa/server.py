@@ -4,6 +4,7 @@ import argparse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
+import re
 import signal
 import sys
 import threading
@@ -32,6 +33,10 @@ SECURITY_HEADERS = {
         "base-uri 'none'; frame-ancestors 'none'"
     ),
 }
+JSON_CONTENT_TYPE = re.compile(
+    r"application/json(?:;[ \t]*charset[ \t]*=[ \t]*utf-8)?",
+    re.IGNORECASE,
+)
 
 
 class ReplayHTTPServer(ThreadingHTTPServer):
@@ -109,7 +114,33 @@ class ReplayRequestHandler(BaseHTTPRequestHandler):
             self._error(400, "invalid request body")
             return INVALID_BODY
 
+    def _has_local_host(self) -> bool:
+        hosts = self.headers.get_all("Host", failobj=[])
+        expected = f"{HOST}:{self.server.server_address[1]}"
+        return len(hosts) == 1 and hosts[0] == expected
+
+    def _authorize_post(self) -> bool:
+        if not self._has_local_host():
+            self._error(400, "invalid local request")
+            return False
+        origins = self.headers.get_all("Origin", failobj=[])
+        expected_origin = f"http://{HOST}:{self.server.server_address[1]}"
+        if len(origins) != 1 or origins[0] != expected_origin:
+            self._error(403, "invalid local request")
+            return False
+        content_types = self.headers.get_all("Content-Type", failobj=[])
+        if (
+            len(content_types) != 1
+            or JSON_CONTENT_TYPE.fullmatch(content_types[0]) is None
+        ):
+            self._error(415, "invalid content type")
+            return False
+        return True
+
     def do_GET(self) -> None:
+        if not self._has_local_host():
+            self._error(400, "invalid local request")
+            return
         if self.path in STATIC_ROUTES:
             filename, content_type = STATIC_ROUTES[self.path]
             try:
@@ -133,13 +164,17 @@ class ReplayRequestHandler(BaseHTTPRequestHandler):
         self._error(404, "not found")
 
     def do_POST(self) -> None:
+        if self.path not in {"/__qa/event", "/__qa/final-action"}:
+            self._error(404, "not found")
+            return
+        if not self._authorize_post():
+            return
         if self.path == "/__qa/event":
             self._handle_event()
             return
         if self.path == "/__qa/final-action":
             self._handle_final_action()
             return
-        self._error(404, "not found")
 
     def _handle_event(self) -> None:
         value = self._read_json()

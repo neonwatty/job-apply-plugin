@@ -1,6 +1,7 @@
 import http.client
 import json
 from pathlib import Path
+import queue
 import subprocess
 import tempfile
 import threading
@@ -28,46 +29,71 @@ class RunningServer:
         self.directory = tempfile.TemporaryDirectory()
         self.fixture_path = Path(self.directory.name) / "fixture.json"
         self.fixture_path.write_text(json.dumps(valid_fixture()))
-        self.process = subprocess.Popen(
-            [
-                "python3",
-                "-m",
-                "qa.server",
-                "--fixture",
-                str(self.fixture_path),
-                "--port",
-                "0",
-            ],
-            cwd=ROOT,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        line = self.process.stdout.readline()
-        if not line:
-            stderr = self.process.stderr.read()
-            self.process.wait(timeout=5)
-            raise AssertionError(f"server did not start: {stderr}")
-        self.startup = json.loads(line)
-        self.port = self.startup["port"]
-        return self
+        self.process = None
+        try:
+            self.process = subprocess.Popen(
+                [
+                    "python3",
+                    "-m",
+                    "qa.server",
+                    "--fixture",
+                    str(self.fixture_path),
+                    "--port",
+                    "0",
+                ],
+                cwd=ROOT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            startup_lines = queue.Queue()
+            reader = threading.Thread(
+                target=lambda: startup_lines.put(self.process.stdout.readline()),
+                daemon=True,
+            )
+            reader.start()
+            try:
+                line = startup_lines.get(timeout=5)
+            except queue.Empty:
+                raise AssertionError("server startup timed out") from None
+            if not line:
+                raise AssertionError("server exited before startup")
+            self.startup = json.loads(line)
+            self.port = self.startup["port"]
+            return self
+        except BaseException:
+            self._cleanup()
+            raise
 
     def __exit__(self, *_):
-        self.process.terminate()
+        self._cleanup()
+
+    def _cleanup(self):
         try:
-            self.process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            self.process.kill()
-            self.process.wait(timeout=5)
-        self.process.stdout.close()
-        self.process.stderr.close()
-        self.directory.cleanup()
+            if self.process is not None and self.process.poll() is None:
+                self.process.terminate()
+                try:
+                    self.process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    self.process.wait(timeout=5)
+        finally:
+            if self.process is not None:
+                if self.process.stdout is not None:
+                    self.process.stdout.close()
+                if self.process.stderr is not None:
+                    self.process.stderr.close()
+            self.directory.cleanup()
 
     def request(self, method, path, payload=None, headers=None):
         body = None if payload is None else json.dumps(payload).encode()
         request_headers = dict(headers or {})
         if payload is not None:
             request_headers.setdefault("Content-Type", "application/json")
+        if method == "POST":
+            request_headers.setdefault(
+                "Origin", f"http://127.0.0.1:{self.port}"
+            )
         connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
         connection.request(method, path, body=body, headers=request_headers)
         response = connection.getresponse()
@@ -81,6 +107,17 @@ class RunningServer:
         headers_result = dict(response.getheaders())
         connection.close()
         return response.status, headers_result, result
+
+    def raw_request(self, method, path, body=b"", headers=None, skip_host=False):
+        connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
+        connection.putrequest(method, path, skip_host=skip_host)
+        for name, value in (headers or {}).items():
+            connection.putheader(name, value)
+        connection.endheaders(body)
+        response = connection.getresponse()
+        raw = response.read()
+        connection.close()
+        return response.status, raw
 
 
 class ServerOracleTests(unittest.TestCase):
@@ -152,6 +189,107 @@ class ServerOracleTests(unittest.TestCase):
                     self.assertNotIn("SECRET", json.dumps(body))
                     self.assertEqual(server.request("GET", "/__qa/state")[2], baseline)
 
+    def test_local_api_rejects_spoofed_or_simple_post_headers(self):
+        event = json.dumps(
+            {
+                "type": "filled",
+                "controlId": "contact.first_name",
+                "stepId": "step-1",
+            }
+        ).encode()
+        with RunningServer() as server:
+            baseline = server.request("GET", "/__qa/state")[2]
+            valid_host = f"127.0.0.1:{server.port}"
+            valid_origin = f"http://127.0.0.1:{server.port}"
+            cases = (
+                {
+                    "Content-Length": str(len(event)),
+                    "Content-Type": "application/json",
+                    "Origin": valid_origin,
+                },
+                {
+                    "Host": "attacker.invalid",
+                    "Content-Length": str(len(event)),
+                    "Content-Type": "application/json",
+                    "Origin": valid_origin,
+                },
+                {
+                    "Host": valid_host,
+                    "Content-Length": str(len(event)),
+                    "Content-Type": "application/json",
+                },
+                {
+                    "Host": valid_host,
+                    "Content-Length": str(len(event)),
+                    "Content-Type": "application/json",
+                    "Origin": "http://attacker.invalid",
+                },
+                {
+                    "Host": valid_host,
+                    "Content-Length": str(len(event)),
+                    "Origin": valid_origin,
+                },
+                {
+                    "Host": valid_host,
+                    "Content-Length": str(len(event)),
+                    "Content-Type": "text/plain",
+                    "Origin": valid_origin,
+                },
+                {
+                    "Host": valid_host,
+                    "Content-Length": str(len(event)),
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Origin": valid_origin,
+                },
+                {
+                    "Host": valid_host,
+                    "Content-Length": str(len(event)),
+                    "Content-Type": "application/json; charset=iso-8859-1",
+                    "Origin": valid_origin,
+                },
+            )
+            for headers in cases:
+                with self.subTest(headers=headers):
+                    status, body = server.raw_request(
+                        "POST",
+                        "/__qa/event",
+                        event,
+                        headers,
+                        skip_host=True,
+                    )
+                    self.assertIn(status, (400, 403, 415))
+                    self.assertNotIn(b"attacker.invalid", body)
+                    self.assertEqual(server.request("GET", "/__qa/state")[2], baseline)
+
+            status, _ = server.raw_request(
+                "POST",
+                "/__qa/event",
+                event,
+                {
+                    "Host": valid_host,
+                    "Content-Length": str(len(event)),
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Origin": valid_origin,
+                },
+                skip_host=True,
+            )
+            self.assertEqual(status, 204)
+
+    def test_get_requires_the_exact_local_host_without_origin(self):
+        with RunningServer() as server:
+            status, _ = server.raw_request(
+                "GET", "/__qa/state", headers={}, skip_host=True
+            )
+            self.assertEqual(status, 400)
+            status, _ = server.raw_request(
+                "GET",
+                "/__qa/state",
+                headers={"Host": "attacker.invalid"},
+                skip_host=True,
+            )
+            self.assertEqual(status, 400)
+            self.assertEqual(server.request("GET", "/__qa/state")[0], 200)
+
     def test_malformed_chunked_and_oversized_bodies_fail_closed(self):
         with RunningServer() as server:
             cases = [
@@ -187,6 +325,7 @@ class ServerOracleTests(unittest.TestCase):
             ]
             baseline = server.request("GET", "/__qa/state")[2]
             for body, headers in cases:
+                headers["Origin"] = f"http://127.0.0.1:{server.port}"
                 connection = http.client.HTTPConnection("127.0.0.1", server.port, timeout=5)
                 connection.putrequest("POST", "/__qa/event")
                 for name, value in headers.items():

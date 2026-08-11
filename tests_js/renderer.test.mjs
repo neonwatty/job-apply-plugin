@@ -7,6 +7,34 @@ import { test } from "node:test";
 import { chromium } from "playwright";
 
 const root = path.resolve(import.meta.dirname, "..");
+
+function waitForExit(child, timeoutMs) {
+  if (child.exitCode !== null || child.signalCode !== null)
+    return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      child.off("exit", onExit);
+      reject(new Error("server shutdown timed out"));
+    }, timeoutMs);
+    const onExit = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    child.once("exit", onExit);
+  });
+}
+
+async function stopChild(child) {
+  if (child.exitCode !== null || child.signalCode !== null) return;
+  child.kill("SIGTERM");
+  try {
+    await waitForExit(child, 2000);
+  } catch {
+    child.kill("SIGKILL");
+    await waitForExit(child, 2000);
+  }
+}
+
 async function startServer(t) {
   const directory = await mkdtemp(path.join(tmpdir(), "qa-renderer-"));
   const fixturePath = path.join(directory, "fixture.json");
@@ -89,42 +117,116 @@ async function startServer(t) {
     oracle: { finalActionActivations: 0 },
   };
   await writeFile(fixturePath, JSON.stringify(data));
-  const child = spawn(
-    "python3",
-    ["-m", "qa.server", "--fixture", fixturePath, "--port", "0"],
-    { cwd: root },
-  );
-  let stderr = "";
-  child.stderr.setEncoding("utf8");
-  child.stderr.on("data", (chunk) => {
-    stderr += chunk;
-  });
-  const startup = await new Promise((resolve, reject) => {
-    let stdout = "";
-    child.stdout.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-      const newline = stdout.indexOf("\n");
-      if (newline !== -1) resolve(JSON.parse(stdout.slice(0, newline)));
-    });
-    child.on("exit", (code) =>
-      reject(new Error(`server exited ${code}: ${stderr}`)),
+  let child;
+  try {
+    child = spawn(
+      "python3",
+      ["-m", "qa.server", "--fixture", fixturePath, "--port", "0"],
+      { cwd: root },
     );
-  });
-  t.after(async () => {
-    child.kill("SIGTERM");
-    await new Promise((resolve) => child.once("exit", resolve));
-    await rm(directory, { recursive: true, force: true });
-  });
-  return startup;
+    let stderr = "";
+    child.stderr.setEncoding("utf8");
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
+    const startup = await new Promise((resolve, reject) => {
+      let stdout = "";
+      const timer = setTimeout(
+        () => reject(new Error("server startup timed out")),
+        5000,
+      );
+      child.stdout.setEncoding("utf8");
+      child.stdout.on("data", (chunk) => {
+        stdout += chunk;
+        const newline = stdout.indexOf("\n");
+        if (newline !== -1) {
+          clearTimeout(timer);
+          try {
+            resolve(JSON.parse(stdout.slice(0, newline)));
+          } catch (error) {
+            reject(error);
+          }
+        }
+      });
+      child.once("error", (error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+      child.once("exit", (code) => {
+        clearTimeout(timer);
+        reject(new Error(`server exited ${code}: ${stderr}`));
+      });
+    });
+    t.after(async () => {
+      try {
+        await stopChild(child);
+      } finally {
+        await rm(directory, { recursive: true, force: true });
+      }
+    });
+    return startup;
+  } catch (error) {
+    try {
+      if (child) await stopChild(child);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+    throw error;
+  }
 }
 
-async function getState(url) {
-  return (await fetch(`${url}/__qa/state`)).json();
+async function getState(url, timeoutMs = 1000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return (
+      await fetch(`${url}/__qa/state`, { signal: controller.signal })
+    ).json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function withTimeout(promise, timeoutMs, label) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error(`${label} timed out`)),
+      timeoutMs,
+    );
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
+async function waitForState(url, predicate, timeoutMs = 3000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const state = await getState(url);
+    if (predicate(state)) return state;
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  throw new Error("state polling timed out");
+}
+
+async function waitForCondition(predicate, label, timeoutMs = 3000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await predicate()) return;
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  throw new Error(`${label} timed out`);
 }
 
 async function assertVisible(locator) {
-  await locator.waitFor({ state: "visible" });
+  await locator.waitFor({ state: "visible", timeout: 3000 });
   assert.equal(await locator.isVisible(), true);
 }
 
@@ -132,7 +234,20 @@ async function expectValidation(page, labels) {
   await page.getByRole("button", { name: "Continue" }).click();
   for (const label of labels) {
     await assertVisible(page.getByText(`${label} is required`));
+    assert.equal(
+      await page.getByLabel(label).getAttribute("aria-invalid"),
+      "true",
+    );
+    await assertVisible(
+      page.getByRole("alert").filter({ hasText: `${label} is required` }),
+    );
   }
+  assert.equal(
+    await page
+      .getByLabel(labels[0])
+      .evaluate((input) => input === document.activeElement),
+    true,
+  );
 }
 
 async function fillCompleteProfile(page) {
@@ -140,6 +255,17 @@ async function fillCompleteProfile(page) {
   await page.getByLabel("Last name").fill("Example");
   await page.getByLabel("Email address").fill("riley@example.invalid");
   await page.getByLabel("Phone number").fill("202-555-0101");
+  for (const label of [
+    "First name",
+    "Last name",
+    "Email address",
+    "Phone number",
+  ]) {
+    assert.equal(
+      await page.getByLabel(label).getAttribute("aria-invalid"),
+      null,
+    );
+  }
 }
 
 test("renders the generic fixture and blocks the final action without leaking values", async (t) => {
@@ -189,7 +315,9 @@ test("renders the generic fixture and blocks the final action without leaking va
   );
   await assertVisible(page.getByText("Riley", { exact: true }));
   await assertVisible(page.getByText("synthetic-resume.pdf", { exact: true }));
-  const beforeSubmit = await getState(url);
+  const beforeSubmit = await waitForState(url, (state) =>
+    state.events.some((event) => event.type === "reviewed"),
+  );
   assert.deepEqual(
     beforeSubmit.events
       .filter((event) => event.type === "filled")
@@ -252,9 +380,109 @@ test("review without clicking the final action keeps the oracle at zero", async 
     mimeType: "application/pdf",
     buffer: Buffer.from("%PDF-1.4 synthetic"),
   });
+  let releaseReview;
+  let markReviewSeen;
+  const reviewSeen = new Promise((resolve) => {
+    markReviewSeen = resolve;
+  });
+  await page.route("**/__qa/event", async (route) => {
+    const event = route.request().postDataJSON();
+    if (event.type === "reviewed") {
+      markReviewSeen();
+      await new Promise((resolve) => {
+        releaseReview = resolve;
+      });
+    }
+    await route.continue();
+  });
   await page.getByRole("button", { name: "Continue" }).click();
+  await withTimeout(reviewSeen, 3000, "review event");
+  assert.equal(
+    await page.getByRole("heading", { name: "Review application" }).count(),
+    0,
+  );
+  releaseReview();
   await assertVisible(
     page.getByRole("heading", { name: "Review application" }),
   );
-  assert.equal((await getState(url)).finalActionActivations, 0);
+  const state = await waitForState(url, (candidate) =>
+    candidate.events.some((event) => event.type === "reviewed"),
+  );
+  assert.equal(state.finalActionActivations, 0);
+});
+
+test("a failed event is visible and retryable without duplicate successes", async (t) => {
+  const { url } = await startServer(t);
+  const browser = await chromium.launch();
+  t.after(() => browser.close());
+  const page = await browser.newPage();
+  await page.goto(url);
+
+  let releaseInitialFailure;
+  let markInitialRequestSeen;
+  let firstNameAttempts = 0;
+  const initialRequestSeen = new Promise((resolve) => {
+    markInitialRequestSeen = resolve;
+  });
+  await page.route("**/__qa/event", async (route) => {
+    const event = route.request().postDataJSON();
+    const isFirstName =
+      event.type === "filled" && event.controlId === "contact.first_name";
+    if (isFirstName) firstNameAttempts += 1;
+    if (isFirstName && firstNameAttempts === 1) {
+      markInitialRequestSeen();
+      await new Promise((resolve) => {
+        releaseInitialFailure = resolve;
+      });
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "injected failure" }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+  await fillCompleteProfile(page);
+  await withTimeout(initialRequestSeen, 3000, "initial event");
+
+  const continueButton = page.getByRole("button", { name: "Continue" });
+  await continueButton.click();
+  assert.equal(await continueButton.isDisabled(), true);
+  releaseInitialFailure();
+  await assertVisible(
+    page
+      .getByRole("alert")
+      .filter({ hasText: "Unable to record QA event. Retry this step." }),
+  );
+  await waitForCondition(
+    () => continueButton.isEnabled(),
+    "transition re-enable",
+  );
+  assert.equal(
+    await page
+      .getByRole("heading", { name: "Application details" })
+      .isVisible(),
+    true,
+  );
+  assert.equal(await continueButton.isEnabled(), true);
+
+  await continueButton.click();
+  await assertVisible(page.getByRole("heading", { name: "Resume" }));
+  const state = await waitForState(url, (candidate) =>
+    candidate.events.some((event) => event.type === "advanced"),
+  );
+  assert.equal(
+    state.events.filter(
+      (event) => event.type === "advanced" && event.stepId === "step-1",
+    ).length,
+    1,
+  );
+  assert.equal(
+    state.events.filter(
+      (event) =>
+        event.type === "filled" && event.controlId === "contact.first_name",
+    ).length,
+    1,
+  );
 });
