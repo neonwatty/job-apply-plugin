@@ -33,6 +33,28 @@ class PrivacyScannerTests(unittest.TestCase):
             ("credential", b"Set-Cookie: session=fake", []),
             ("credential", b"Authorization: Basic fictional", []),
             ("credential", b'{"header":"Cookie: session=fake"}', []),
+            ("credential", b'{"cookie":"PRIVATE-VALUE-DO-NOT-ECHO"}', [], ".json"),
+            (
+                "credential",
+                b'{"authorization":"PRIVATE-VALUE-DO-NOT-ECHO"}',
+                [],
+                ".json",
+            ),
+            (
+                "credential",
+                b'{"set-cookie":"PRIVATE-VALUE-DO-NOT-ECHO"}',
+                [],
+                ".json",
+            ),
+            (
+                "credential",
+                b"{'cookie': 'PRIVATE-VALUE-DO-NOT-ECHO'}",
+                [],
+                ".js",
+            ),
+            ("credential", b"cookie=PRIVATE-VALUE-DO-NOT-ECHO", []),
+            ("credential", b"authorization=PRIVATE-VALUE-DO-NOT-ECHO", []),
+            ("credential", b"set-cookie=PRIVATE-VALUE-DO-NOT-ECHO", []),
             ("denied-term-0", private_sentinel.encode(), [private_sentinel]),
             ("source-html", b'<script src="/fictional.js"></script>', []),
             ("source-html", b"linkedin-logo", []),
@@ -63,6 +85,14 @@ class PrivacyScannerTests(unittest.TestCase):
 
     def test_clean_generic_fixture_tree_passes(self):
         self.assertIsNone(scan_tree(TESTDATA / "clean", []))
+
+    def test_credential_words_in_ordinary_prose_are_not_assignments(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "candidate.txt").write_text(
+                "Generic authorization guidance and cookie preferences are available."
+            )
+            self.assertIsNone(scan_tree(root, []))
 
     def test_leak_corpus_has_one_expected_category_per_file(self):
         cases = {

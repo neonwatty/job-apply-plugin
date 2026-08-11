@@ -21,7 +21,11 @@ _PATTERNS = {
         re.IGNORECASE,
     ),
     "credential": re.compile(
-        rb"\b(?:authorization|cookie|set-cookie)\s*:|\bbearer\s+[A-Z0-9._~+/=-]+",
+        rb"(?<![A-Z0-9_-])(?:"
+        rb'"(?:authorization|cookie|set-cookie)"|'
+        rb"'(?:authorization|cookie|set-cookie)'|"
+        rb"(?:authorization|cookie|set-cookie)"
+        rb")\s*[:=]|\bbearer\s+[A-Z0-9._~+/=-]+",
         re.IGNORECASE,
     ),
     "source-html": re.compile(
