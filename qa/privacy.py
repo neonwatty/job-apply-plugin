@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import errno
+from dataclasses import dataclass, field
 import json
 import os
 from pathlib import Path
@@ -12,6 +13,8 @@ from typing import Any
 ALLOWED_SUFFIXES = {".json", ".html", ".css", ".js", ".txt"}
 
 # Replay fixture candidates are small; these bounds cap work before content scanning.
+MAX_ENTRIES = 2_000
+MAX_DEPTH = 32
 MAX_FILES = 1_000
 MAX_FILE_BYTES = 1 * 1024 * 1024
 MAX_TOTAL_BYTES = 16 * 1024 * 1024
@@ -68,8 +71,17 @@ class PrivacyError(ValueError):
     pass
 
 
+@dataclass
+class _ScanState:
+    denied_terms: list[tuple[int, str]]
+    findings: set[tuple[str, str]] = field(default_factory=set)
+    entry_count: int = 0
+    file_count: int = 0
+    total_bytes: int = 0
+
+
 def _escaped_relative_path(relative_path: str) -> str:
-    return json.dumps(relative_path, ensure_ascii=True)[1:-1]
+    return json.dumps(relative_path, ensure_ascii=True)
 
 
 def _raise(findings: set[tuple[str, str]]) -> None:
@@ -199,6 +211,139 @@ def _scan_content(
             findings.add((f"denied-term-{index}", relative_text))
 
 
+def _scan_directory(
+    directory_descriptor: int,
+    relative_directory: Path,
+    depth: int,
+    directory_flags: int,
+    state: _ScanState,
+) -> bool:
+    remaining_entries = MAX_ENTRIES - state.entry_count
+    entries = []
+    try:
+        with os.scandir(directory_descriptor) as iterator:
+            for entry in iterator:
+                entries.append(entry)
+                if len(entries) > remaining_entries:
+                    state.findings = {("limit-entry-count", ".")}
+                    return True
+    except OSError:
+        state.entry_count += len(entries)
+        state.findings.add(("unreadable", relative_directory.as_posix() or "."))
+        return False
+
+    state.entry_count += len(entries)
+    entries.sort(key=lambda entry: entry.name)
+
+    for entry in entries:
+        relative = relative_directory / entry.name
+        relative_text = relative.as_posix()
+        try:
+            entry_identity = entry.stat(follow_symlinks=False)
+        except OSError:
+            state.findings.add(("unreadable", relative_text))
+            continue
+
+        if stat.S_ISLNK(entry_identity.st_mode):
+            state.findings.add(("symlink", relative_text))
+            continue
+        if stat.S_ISDIR(entry_identity.st_mode):
+            if depth >= MAX_DEPTH:
+                state.findings.add(("limit-depth", relative_text))
+                continue
+            child_descriptor = None
+            try:
+                child_descriptor = os.open(
+                    entry.name,
+                    directory_flags,
+                    dir_fd=directory_descriptor,
+                )
+                opened_identity = os.fstat(child_descriptor)
+            except OSError as error:
+                if child_descriptor is not None:
+                    os.close(child_descriptor)
+                state.findings.add((_open_error_category(error), relative_text))
+                continue
+            if not stat.S_ISDIR(opened_identity.st_mode) or not _same_identity(
+                entry_identity, opened_identity
+            ):
+                os.close(child_descriptor)
+                state.findings.add(("unsafe-entry", relative_text))
+                continue
+            try:
+                if _scan_directory(
+                    child_descriptor,
+                    relative,
+                    depth + 1,
+                    directory_flags,
+                    state,
+                ):
+                    return True
+            finally:
+                os.close(child_descriptor)
+            continue
+
+        if not stat.S_ISREG(entry_identity.st_mode):
+            state.findings.add(("unexpected-file-type", relative_text))
+            continue
+
+        state.file_count += 1
+        if state.file_count > MAX_FILES:
+            state.findings.add(("limit-file-count", relative_text))
+            continue
+        if Path(entry.name).suffix not in ALLOWED_SUFFIXES:
+            state.findings.add(("unexpected-suffix", relative_text))
+            continue
+
+        file_descriptor = None
+        try:
+            file_descriptor = os.open(
+                entry.name,
+                os.O_RDONLY | os.O_NOFOLLOW,
+                dir_fd=directory_descriptor,
+            )
+            opened_identity = os.fstat(file_descriptor)
+        except OSError as error:
+            if file_descriptor is not None:
+                os.close(file_descriptor)
+            state.findings.add((_open_error_category(error), relative_text))
+            continue
+        try:
+            if not stat.S_ISREG(opened_identity.st_mode) or not _same_identity(
+                entry_identity, opened_identity
+            ):
+                state.findings.add(("unsafe-entry", relative_text))
+                continue
+            if opened_identity.st_size > MAX_FILE_BYTES:
+                state.findings.add(("limit-file-bytes", relative_text))
+                continue
+            if state.total_bytes + opened_identity.st_size > MAX_TOTAL_BYTES:
+                state.findings.add(("limit-total-bytes", relative_text))
+                continue
+            try:
+                content = _read_descriptor(file_descriptor, MAX_FILE_BYTES)
+            except OSError:
+                state.findings.add(("unreadable", relative_text))
+                continue
+            if len(content) > MAX_FILE_BYTES:
+                state.findings.add(("limit-file-bytes", relative_text))
+                continue
+            if state.total_bytes + len(content) > MAX_TOTAL_BYTES:
+                state.findings.add(("limit-total-bytes", relative_text))
+                continue
+            state.total_bytes += len(content)
+            _scan_content(
+                content,
+                relative_text,
+                state.denied_terms,
+                state.findings,
+            )
+        finally:
+            os.close(file_descriptor)
+
+    return False
+
+
 def scan_tree(root: Path, denied_terms: list[str]) -> None:
     compiled_denied_terms = _compiled_denied_terms(denied_terms)
     root = Path(root)
@@ -229,117 +374,11 @@ def scan_tree(root: Path, denied_terms: list[str]) -> None:
         os.close(root_descriptor)
         _raise({("unsafe-entry", ".")})
 
-    findings: set[tuple[str, str]] = set()
-    pending = [(root_descriptor, Path())]
-    file_count = 0
-    total_bytes = 0
+    state = _ScanState(compiled_denied_terms)
+    try:
+        _scan_directory(root_descriptor, Path(), 0, directory_flags, state)
+    finally:
+        os.close(root_descriptor)
 
-    while pending:
-        directory_descriptor, relative_directory = pending.pop()
-        try:
-            try:
-                with os.scandir(directory_descriptor) as iterator:
-                    entries = sorted(iterator, key=lambda entry: entry.name)
-            except OSError:
-                findings.add(
-                    ("unreadable", relative_directory.as_posix() or ".")
-                )
-                continue
-
-            for entry in entries:
-                relative = relative_directory / entry.name
-                relative_text = relative.as_posix()
-                try:
-                    entry_identity = entry.stat(follow_symlinks=False)
-                except OSError:
-                    findings.add(("unreadable", relative_text))
-                    continue
-
-                if stat.S_ISLNK(entry_identity.st_mode):
-                    findings.add(("symlink", relative_text))
-                    continue
-                if stat.S_ISDIR(entry_identity.st_mode):
-                    child_descriptor = None
-                    try:
-                        child_descriptor = os.open(
-                            entry.name,
-                            directory_flags,
-                            dir_fd=directory_descriptor,
-                        )
-                        opened_identity = os.fstat(child_descriptor)
-                    except OSError as error:
-                        if child_descriptor is not None:
-                            os.close(child_descriptor)
-                        findings.add((_open_error_category(error), relative_text))
-                        continue
-                    if not stat.S_ISDIR(opened_identity.st_mode) or not _same_identity(
-                        entry_identity, opened_identity
-                    ):
-                        os.close(child_descriptor)
-                        findings.add(("unsafe-entry", relative_text))
-                        continue
-                    pending.append((child_descriptor, relative))
-                    continue
-
-                if not stat.S_ISREG(entry_identity.st_mode):
-                    findings.add(("unexpected-file-type", relative_text))
-                    continue
-
-                file_count += 1
-                if file_count > MAX_FILES:
-                    findings.add(("limit-file-count", relative_text))
-                    continue
-                if Path(entry.name).suffix not in ALLOWED_SUFFIXES:
-                    findings.add(("unexpected-suffix", relative_text))
-                    continue
-
-                file_descriptor = None
-                try:
-                    file_descriptor = os.open(
-                        entry.name,
-                        os.O_RDONLY | os.O_NOFOLLOW,
-                        dir_fd=directory_descriptor,
-                    )
-                    opened_identity = os.fstat(file_descriptor)
-                except OSError as error:
-                    if file_descriptor is not None:
-                        os.close(file_descriptor)
-                    findings.add((_open_error_category(error), relative_text))
-                    continue
-                try:
-                    if not stat.S_ISREG(opened_identity.st_mode) or not _same_identity(
-                        entry_identity, opened_identity
-                    ):
-                        findings.add(("unsafe-entry", relative_text))
-                        continue
-                    if opened_identity.st_size > MAX_FILE_BYTES:
-                        findings.add(("limit-file-bytes", relative_text))
-                        continue
-                    if total_bytes + opened_identity.st_size > MAX_TOTAL_BYTES:
-                        findings.add(("limit-total-bytes", relative_text))
-                        continue
-                    try:
-                        content = _read_descriptor(file_descriptor, MAX_FILE_BYTES)
-                    except OSError:
-                        findings.add(("unreadable", relative_text))
-                        continue
-                    if len(content) > MAX_FILE_BYTES:
-                        findings.add(("limit-file-bytes", relative_text))
-                        continue
-                    if total_bytes + len(content) > MAX_TOTAL_BYTES:
-                        findings.add(("limit-total-bytes", relative_text))
-                        continue
-                    total_bytes += len(content)
-                    _scan_content(
-                        content,
-                        relative_text,
-                        compiled_denied_terms,
-                        findings,
-                    )
-                finally:
-                    os.close(file_descriptor)
-        finally:
-            os.close(directory_descriptor)
-
-    if findings:
-        _raise(findings)
+    if state.findings:
+        _raise(state.findings)

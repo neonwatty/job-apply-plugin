@@ -91,8 +91,8 @@ class PrivacyScannerTests(unittest.TestCase):
                     )
                 self.assertEqual(
                     message,
-                    f"privacy scan failed: {category}:candidate"
-                    f"{suffix[0] if suffix else '.txt'}",
+                    f'privacy scan failed: {category}:"candidate'
+                    f'{suffix[0] if suffix else ".txt"}"',
                 )
                 captured = stdout.getvalue() + stderr.getvalue() + message
                 self.assertNotIn(private_sentinel, captured)
@@ -136,7 +136,7 @@ class PrivacyScannerTests(unittest.TestCase):
                     )
                     with self.assertRaisesRegex(
                         PrivacyError,
-                        f"^privacy scan failed: {category}:{filename}$",
+                        f'^privacy scan failed: {category}:"{filename}"$',
                     ):
                         scan_tree(root, terms)
 
@@ -149,7 +149,7 @@ class PrivacyScannerTests(unittest.TestCase):
             for root in (missing, regular_file):
                 with self.subTest(root=root.name):
                     with self.assertRaisesRegex(
-                        PrivacyError, "^privacy scan failed: root:.$"
+                        PrivacyError, '^privacy scan failed: root:"."$'
                     ) as raised:
                         scan_tree(root, [])
                     self.assertNotIn(str(root), str(raised.exception))
@@ -165,7 +165,8 @@ class PrivacyScannerTests(unittest.TestCase):
                 if os.access(candidate, os.R_OK):
                     self.skipTest("platform does not enforce unreadable test file")
                 with self.assertRaisesRegex(
-                    PrivacyError, "^privacy scan failed: unreadable:candidate.txt$"
+                    PrivacyError,
+                    '^privacy scan failed: unreadable:"candidate.txt"$',
                 ):
                     scan_tree(root, [])
             finally:
@@ -189,7 +190,8 @@ class PrivacyScannerTests(unittest.TestCase):
                     root.mkdir()
                     (root / name).symlink_to(target, target_is_directory=target.is_dir())
                     with self.assertRaisesRegex(
-                        PrivacyError, f"^privacy scan failed: symlink:{name}$"
+                        PrivacyError,
+                        f'^privacy scan failed: symlink:"{name}"$',
                     ) as raised:
                         scan_tree(root, [])
                     message = str(raised.exception)
@@ -200,7 +202,9 @@ class PrivacyScannerTests(unittest.TestCase):
         message = self.scan_text(
             b"fictional applicant", denied_terms=["FiCtIoNaL ApPlIcAnT"]
         )
-        self.assertEqual(message, "privacy scan failed: denied-term-0:candidate.txt")
+        self.assertEqual(
+            message, 'privacy scan failed: denied-term-0:"candidate.txt"'
+        )
 
     def test_denied_terms_use_unicode_casefolding(self):
         cases = (
@@ -213,12 +217,12 @@ class PrivacyScannerTests(unittest.TestCase):
                     content.encode("utf-8"), denied_terms=[denied_term]
                 )
                 self.assertEqual(
-                    message, "privacy scan failed: denied-term-0:candidate.txt"
+                    message, 'privacy scan failed: denied-term-0:"candidate.txt"'
                 )
 
     def test_duplicate_findings_are_deduplicated(self):
         message = self.scan_text(b"first@example.invalid second@example.invalid")
-        self.assertEqual(message, "privacy scan failed: email:candidate.txt")
+        self.assertEqual(message, 'privacy scan failed: email:"candidate.txt"')
 
     def test_diagnostics_are_deterministic_and_sorted(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -229,7 +233,7 @@ class PrivacyScannerTests(unittest.TestCase):
                 scan_tree(root, [])
         self.assertEqual(
             str(raised.exception),
-            "privacy scan failed: credential:a.txt, email:z.txt",
+            'privacy scan failed: credential:"a.txt", email:"z.txt"',
         )
 
     def test_only_documented_text_suffixes_are_allowed(self):
@@ -242,7 +246,9 @@ class PrivacyScannerTests(unittest.TestCase):
                     self.assertIsNone(scan_tree(root, []))
 
         message = self.scan_text(b"generic fixture content", suffix=".TXT")
-        self.assertEqual(message, "privacy scan failed: unexpected-suffix:candidate.TXT")
+        self.assertEqual(
+            message, 'privacy scan failed: unexpected-suffix:"candidate.TXT"'
+        )
 
     def test_resource_limits_accept_boundaries_and_reject_excess(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -256,7 +262,7 @@ class PrivacyScannerTests(unittest.TestCase):
                 (root / "b.txt").write_bytes(b"")
                 with self.assertRaisesRegex(
                     PrivacyError,
-                    "^privacy scan failed: limit-file-count:b.txt$",
+                    '^privacy scan failed: limit-file-count:"b.txt"$',
                 ):
                     scan_tree(root, [])
 
@@ -265,7 +271,7 @@ class PrivacyScannerTests(unittest.TestCase):
             with mock.patch("qa.privacy.MAX_FILE_BYTES", 3):
                 with self.assertRaisesRegex(
                     PrivacyError,
-                    "^privacy scan failed: limit-file-bytes:a.txt$",
+                    '^privacy scan failed: limit-file-bytes:"a.txt"$',
                 ):
                     scan_tree(root, [])
 
@@ -274,7 +280,7 @@ class PrivacyScannerTests(unittest.TestCase):
             with mock.patch("qa.privacy.MAX_TOTAL_BYTES", 5):
                 with self.assertRaisesRegex(
                     PrivacyError,
-                    "^privacy scan failed: limit-total-bytes:b.txt$",
+                    '^privacy scan failed: limit-total-bytes:"b.txt"$',
                 ):
                     scan_tree(root, [])
 
@@ -289,13 +295,13 @@ class PrivacyScannerTests(unittest.TestCase):
 
                 with self.assertRaisesRegex(
                     PrivacyError,
-                    "^privacy scan failed: limit-denied-term-count:.$",
+                    '^privacy scan failed: limit-denied-term-count:"."$',
                 ):
                     scan_tree(root, ["abc", "def"])
 
                 with self.assertRaisesRegex(
                     PrivacyError,
-                    "^privacy scan failed: limit-denied-term-length:.$",
+                    '^privacy scan failed: limit-denied-term-length:"."$',
                 ):
                     scan_tree(root, ["abcd"])
 
@@ -323,7 +329,7 @@ class PrivacyScannerTests(unittest.TestCase):
             with mock.patch("qa.privacy.os.open", side_effect=swap_before_open):
                 with self.assertRaisesRegex(
                     PrivacyError,
-                    "^privacy scan failed: unsafe-entry:candidate.txt$",
+                    '^privacy scan failed: unsafe-entry:"candidate.txt"$',
                 ) as raised:
                     scan_tree(root, [])
             self.assertTrue(swapped)
@@ -337,7 +343,7 @@ class PrivacyScannerTests(unittest.TestCase):
             with self.assertRaises(PrivacyError) as raised:
                 scan_tree(root, [])
         message = str(raised.exception)
-        self.assertEqual(message, "privacy scan failed: email:line\\nbreak.txt")
+        self.assertEqual(message, 'privacy scan failed: email:"line\\nbreak.txt"')
         self.assertNotIn("\n", message)
 
     def test_missing_descriptor_primitives_fail_closed(self):
@@ -347,9 +353,115 @@ class PrivacyScannerTests(unittest.TestCase):
             with mock.patch("qa.privacy._DESCRIPTOR_TRAVERSAL_AVAILABLE", False):
                 with self.assertRaisesRegex(
                     PrivacyError,
-                    "^privacy scan failed: unsupported-platform:.$",
+                    '^privacy scan failed: unsupported-platform:"."$',
                 ):
                     scan_tree(root, [])
+
+    def test_entry_limit_counts_every_entry_type_and_has_one_diagnostic(self):
+        creators = {
+            "directory": lambda root, parent: (root / "entry").mkdir(),
+            "symlink": lambda root, parent: (root / "entry").symlink_to(
+                parent / "outside"
+            ),
+        }
+        if hasattr(os, "mkfifo"):
+            creators["special"] = lambda root, parent: os.mkfifo(root / "entry")
+
+        for entry_type, create_entry in creators.items():
+            with self.subTest(entry_type=entry_type):
+                with tempfile.TemporaryDirectory() as directory:
+                    parent = Path(directory)
+                    root = parent / "root"
+                    root.mkdir()
+                    (parent / "outside").write_text("PRIVATE-OUTSIDE")
+                    create_entry(root, parent)
+                    with mock.patch("qa.privacy.MAX_ENTRIES", 0):
+                        with self.assertRaises(PrivacyError) as raised:
+                            scan_tree(root, [])
+                    self.assertEqual(
+                        str(raised.exception),
+                        'privacy scan failed: limit-entry-count:"."',
+                    )
+
+    def test_entry_limit_stops_and_discards_prior_findings(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "a.txt").write_text("person@example.invalid")
+            nested = root / "z"
+            nested.mkdir()
+            (nested / "a.txt").write_text("generic")
+            (nested / "b.txt").write_text("generic")
+            with mock.patch("qa.privacy.MAX_ENTRIES", 3):
+                with self.assertRaises(PrivacyError) as raised:
+                    scan_tree(root, [])
+        self.assertEqual(
+            str(raised.exception),
+            'privacy scan failed: limit-entry-count:"."',
+        )
+
+    def test_entry_limit_accepts_boundary_and_rejects_next_entry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "a.txt").write_text("generic")
+            with mock.patch("qa.privacy.MAX_ENTRIES", 1):
+                self.assertIsNone(scan_tree(root, []))
+                (root / "b.txt").write_text("generic")
+                with self.assertRaisesRegex(
+                    PrivacyError,
+                    '^privacy scan failed: limit-entry-count:"."$',
+                ):
+                    scan_tree(root, [])
+
+    def test_wide_tree_keeps_open_directory_descriptors_bounded(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for index in range(12):
+                (root / f"directory-{index:02d}").mkdir()
+
+            real_open = os.open
+            real_close = os.close
+            active_descriptors = set()
+            maximum_active = 0
+
+            def tracked_open(*args, **kwargs):
+                nonlocal maximum_active
+                descriptor = real_open(*args, **kwargs)
+                active_descriptors.add(descriptor)
+                maximum_active = max(maximum_active, len(active_descriptors))
+                return descriptor
+
+            def tracked_close(descriptor):
+                active_descriptors.discard(descriptor)
+                return real_close(descriptor)
+
+            with mock.patch("qa.privacy.os.open", side_effect=tracked_open), mock.patch(
+                "qa.privacy.os.close", side_effect=tracked_close
+            ):
+                self.assertIsNone(scan_tree(root, []))
+            self.assertEqual(active_descriptors, set())
+            self.assertLessEqual(maximum_active, 2)
+
+    def test_depth_limit_fails_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "nested").mkdir()
+            with mock.patch("qa.privacy.MAX_DEPTH", 0):
+                with self.assertRaisesRegex(
+                    PrivacyError,
+                    '^privacy scan failed: limit-depth:"nested"$',
+                ):
+                    scan_tree(root, [])
+
+    def test_comma_and_colon_in_relative_path_cannot_forge_diagnostics(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "comma,name:part.txt").write_text("person@example.invalid")
+            with self.assertRaises(PrivacyError) as raised:
+                scan_tree(root, [])
+        self.assertEqual(
+            str(raised.exception),
+            'privacy scan failed: email:"comma,name:part.txt"',
+        )
 
 
 if __name__ == "__main__":
