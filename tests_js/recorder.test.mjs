@@ -673,6 +673,11 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
     "Zero size control",
     "Offscreen control",
     "Hidden frame control",
+    "Nested hidden frame control",
+  ];
+  const visibleLabels = [
+    "Below fold control",
+    "Scrollable region control",
   ];
   await page.evaluate(() => {
     const fixture = document.createElement("div");
@@ -683,16 +688,29 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
       <label style="display:none">Display none control<input></label>
       <label style="visibility:hidden">Visibility hidden control<input></label>
       <label>Zero size control<input style="width:0;height:0;padding:0;border:0"></label>
-      <label style="position:fixed;left:-10000px;top:0">Offscreen control<input></label>`;
+      <label style="position:fixed;left:-10000px;top:0">Offscreen control<input></label>
+      <div style="height:1400px"></div>
+      <label>Below fold control<input></label>
+      <div style="width:100px;height:50px;overflow:auto">
+        <label style="display:block;margin-left:2000px;width:200px">Scrollable region control<input></label>
+      </div>`;
     document.body.append(fixture);
     const frame = document.createElement("iframe");
     frame.id = "hidden-controls-frame";
     frame.hidden = true;
     frame.srcdoc = "<label>Hidden frame control<input id=hidden-frame-input></label>";
     document.body.append(frame);
+    const nested = document.createElement("iframe");
+    nested.id = "nested-hidden-frame";
+    nested.hidden = true;
+    nested.srcdoc = `<iframe id="nested-visible-child"
+      srcdoc="<label>Nested hidden frame control<input id='nested-hidden-input'></label>"></iframe>`;
+    document.body.append(nested);
   });
   await page.locator("#hidden-controls-frame").contentFrame().locator("#hidden-frame-input")
     .waitFor({ state: "attached" });
+  await page.locator("#nested-hidden-frame").contentFrame().locator("#nested-visible-child")
+    .contentFrame().locator("#nested-hidden-input").waitFor({ state: "attached" });
 
   const cdpSession = await attached.contexts()[0].newCDPSession(page);
   await cdpSession.send("Debugger.enable");
@@ -843,6 +861,9 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   assert.equal(controls.some((control) => control.sourceLabel === "Secret password"), false);
   for (const label of invisibleLabels) {
     assert.equal(controls.some((control) => control.sourceLabel === label), false, label);
+  }
+  for (const label of visibleLabels) {
+    assert.equal(controls.some((control) => control.sourceLabel === label), true, label);
   }
   const sanitizedHtml = await readFile(
     path.join(session, "checkpoints", checkpointNames[0], "page.html"),

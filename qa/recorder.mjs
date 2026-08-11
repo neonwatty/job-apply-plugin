@@ -444,8 +444,13 @@ function isolatedSnapshotSource(includeStructure) {
             style.contentVisibility === "hidden") return false;
       }
       const rectangle = element.getBoundingClientRect();
-      return rectangle.width > 0 && rectangle.height > 0 && rectangle.bottom > 0 &&
-        rectangle.right > 0 && rectangle.top < innerHeight && rectangle.left < innerWidth;
+      if (rectangle.width <= 0 || rectangle.height <= 0) return false;
+      const elementStyle = getComputedStyle(element);
+      if (elementStyle.position === "fixed") {
+        return rectangle.bottom > 0 && rectangle.right > 0 &&
+          rectangle.top < innerHeight && rectangle.left < innerWidth;
+      }
+      return rectangle.right + scrollX > 0 && rectangle.bottom + scrollY > 0;
     };
     const elements = Array.from(document.querySelectorAll("input,select,textarea,button,[role]"));
     const describe = (element) => ({
@@ -618,8 +623,13 @@ async function inspectFrames(isolated, includeStructure = false) {
                   style.contentVisibility === "hidden") return false;
             }
             const rectangle = this.getBoundingClientRect();
-            return rectangle.width > 0 && rectangle.height > 0 && rectangle.bottom > 0 &&
-              rectangle.right > 0 && rectangle.top < innerHeight && rectangle.left < innerWidth;
+            if (rectangle.width <= 0 || rectangle.height <= 0) return false;
+            const elementStyle = getComputedStyle(this);
+            if (elementStyle.position === "fixed") {
+              return rectangle.bottom > 0 && rectangle.right > 0 &&
+                rectangle.top < innerHeight && rectangle.left < innerWidth;
+            }
+            return rectangle.right + scrollX > 0 && rectangle.bottom + scrollY > 0;
           }`,
         });
         frameVisible = checked.result?.value === true;
@@ -629,6 +639,9 @@ async function inspectFrames(isolated, includeStructure = false) {
       } catch {
         frameVisible = false;
       }
+      const parentSnapshot = snapshots.find(({ frame: candidate }) =>
+        candidate.id === frame.parentId);
+      frameVisible = frameVisible && parentSnapshot?.frameVisible === true;
     }
     snapshots.push({
       frame,
