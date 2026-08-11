@@ -1,5 +1,6 @@
 import http.client
 import json
+import os
 from pathlib import Path
 import queue
 import subprocess
@@ -10,6 +11,7 @@ from unittest import mock
 from urllib.parse import urlsplit
 
 from qa.compiler import compile_capture
+from qa.oracle import OracleError, evaluate_run
 from qa.server import ReplayHTTPServer
 
 
@@ -22,6 +24,99 @@ def valid_fixture():
     capture = json.loads((PRIVATE_CAPTURE / "semantic.json").read_text())
     receipt = json.loads((PRIVATE_CAPTURE / "capture-receipt.json").read_text())
     return compile_capture(capture, receipt, "renderer-oracle-v1")
+
+
+def complete_events(fixture=None):
+    fixture = fixture or valid_fixture()
+    events = []
+    for step in fixture["steps"]:
+        for control in step["controls"]:
+            if not control["required"]:
+                continue
+            events.append(
+                {
+                    "type": "uploaded" if control["role"] == "file" else "filled",
+                    "controlId": control["id"],
+                    "stepId": step["id"],
+                }
+            )
+        if step["kind"] == "form":
+            events.append(
+                {"type": "advanced", "controlId": "", "stepId": step["id"]}
+            )
+        else:
+            events.append(
+                {"type": "reviewed", "controlId": "", "stepId": step["id"]}
+            )
+    return events
+
+
+def history_event(event, application_id="application-1", **extra):
+    return {
+        "schemaVersion": 1,
+        "eventId": f"event-{event}",
+        "applicationId": application_id,
+        "event": event,
+        "answerKeys": ["question.stable"],
+        "at": "2026-08-11T12:00:00Z",
+        **extra,
+    }
+
+
+def valid_session(application_id="application-1"):
+    return {
+        "schemaVersion": 1,
+        "applicationId": application_id,
+        "status": "review",
+        "ats": "synthetic-ats",
+        "company": "Synthetic Company Secret",
+        "role": "Synthetic Role Secret",
+        "url": "https://example.com/private-application",
+        "step": "review",
+        "answerKeys": ["question.stable"],
+        "pendingFields": [
+            {
+                "question": "Synthetic pending description secret",
+                "state": "missing",
+                "answerKey": "question.pending",
+                "sensitive": False,
+            }
+        ],
+        "createdAt": "2026-08-11T12:00:00Z",
+        "updatedAt": "2026-08-11T12:01:00Z",
+    }
+
+
+class OracleStore:
+    def __init__(self, root):
+        self.root = Path(root)
+        self.sessions = self.root / "sessions"
+        self.sessions.mkdir(parents=True)
+
+    def write_history(self, events):
+        (self.root / "applications.jsonl").write_text(
+            "".join(json.dumps(event) + "\n" for event in events),
+            encoding="utf-8",
+        )
+
+    def write_session(self, session=None, name="application-1.json"):
+        (self.sessions / name).write_text(
+            json.dumps(session or valid_session()), encoding="utf-8"
+        )
+
+    def make_valid(self):
+        self.write_history(
+            [
+                history_event(
+                    "started",
+                    company="Synthetic Company Secret",
+                    role="Synthetic Role Secret",
+                ),
+                history_event("reviewed"),
+            ]
+        )
+        self.write_session()
+        return self
 
 
 class RunningServer:
@@ -447,6 +542,359 @@ class ServerOracleTests(unittest.TestCase):
             "async function recordEvent(type, controlId, stepId)", assets
         )
         self.assertIn("function renderControl(control)", assets)
+
+
+class SemanticOracleTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.store = OracleStore(Path(self.temporary.name) / "store").make_valid()
+        self.fixture = valid_fixture()
+        self.scenario = {"id": "complete-profile"}
+        self.events = complete_events(self.fixture)
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def evaluate(self, **overrides):
+        return evaluate_run(
+            overrides.get("fixture", self.fixture),
+            overrides.get("scenario", self.scenario),
+            overrides.get("events", self.events),
+            overrides.get("store_root", self.store.root),
+        )
+
+    def test_complete_profile_passes_with_only_redacted_report_fields(self):
+        report = self.evaluate()
+        self.assertEqual(
+            set(report),
+            {
+                "fixtureId",
+                "scenarioId",
+                "status",
+                "assertions",
+                "missingControlIds",
+                "failureCategories",
+            },
+        )
+        self.assertEqual(report["fixtureId"], "renderer-oracle-v1")
+        self.assertEqual(report["scenarioId"], "complete-profile")
+        self.assertEqual(report["status"], "passed")
+        self.assertEqual(set(report["assertions"].values()), {"passed"})
+        self.assertEqual(report["missingControlIds"], [])
+        self.assertEqual(report["failureCategories"], [])
+        serialized = json.dumps(report)
+        for secret in (
+            "Synthetic Company Secret",
+            "Synthetic Role Secret",
+            "Synthetic pending description secret",
+            str(self.store.root),
+            "question.stable",
+            "example.com",
+        ):
+            self.assertNotIn(secret, serialized)
+
+    def test_each_required_non_file_control_is_required(self):
+        required = sorted(
+            control["id"]
+            for step in self.fixture["steps"]
+            for control in step["controls"]
+            if control["required"] and control["role"] != "file"
+        )
+        for missing_id in required:
+            with self.subTest(missing_id=missing_id):
+                events = [
+                    event
+                    for event in self.events
+                    if not (
+                        event["type"] == "filled"
+                        and event["controlId"] == missing_id
+                    )
+                ]
+                report = self.evaluate(events=events)
+                self.assertEqual(report["status"], "failed")
+                self.assertEqual(
+                    report["assertions"]["required-fields-filled"], "failed"
+                )
+                self.assertEqual(report["missingControlIds"], [missing_id])
+                self.assertIn("required-fields-missing", report["failureCategories"])
+
+    def test_missing_required_upload_fails(self):
+        events = [event for event in self.events if event["type"] != "uploaded"]
+        report = self.evaluate(events=events)
+        self.assertEqual(report["assertions"]["resume-uploaded"], "failed")
+        self.assertEqual(report["missingControlIds"], ["resume.file"])
+        self.assertIn("required-upload-missing", report["failureCategories"])
+
+    def test_missing_review_event_fails(self):
+        events = [event for event in self.events if event["type"] != "reviewed"]
+        report = self.evaluate(events=events)
+        self.assertEqual(report["assertions"]["review-reached"], "failed")
+        self.assertIn("review-not-reached", report["failureCategories"])
+
+    def test_duplicate_success_events_are_tolerated(self):
+        report = self.evaluate(events=self.events + [dict(self.events[0])])
+        self.assertEqual(report["status"], "passed")
+
+    def test_malformed_unknown_or_incoherent_events_fail_value_free(self):
+        invalid = [
+            [],
+            {"type": "filled", "controlId": "contact.first_name"},
+            {
+                "type": "filled",
+                "controlId": "contact.first_name",
+                "stepId": "step-1",
+                "value": "EVENT SECRET",
+            },
+            {"type": "mystery", "controlId": "", "stepId": "review"},
+            {"type": 1, "controlId": "", "stepId": "review"},
+            {"type": "filled", "controlId": 1, "stepId": "step-1"},
+            {"type": "filled", "controlId": "missing-secret", "stepId": "step-1"},
+            {
+                "type": "filled",
+                "controlId": "contact.first_name",
+                "stepId": "missing-secret",
+            },
+            {"type": "filled", "controlId": "resume.file", "stepId": "step-2"},
+            {
+                "type": "uploaded",
+                "controlId": "contact.first_name",
+                "stepId": "step-1",
+            },
+            {"type": "advanced", "controlId": "x", "stepId": "step-1"},
+            {"type": "advanced", "controlId": "", "stepId": "review"},
+            {"type": "reviewed", "controlId": "", "stepId": "step-1"},
+            {"type": "final-action", "stepId": "step-1"},
+        ]
+        for event in invalid:
+            with self.subTest(event=event):
+                with self.assertRaises(OracleError) as caught:
+                    self.evaluate(events=self.events + [event])
+                diagnostic = str(caught.exception)
+                self.assertNotIn("EVENT SECRET", diagnostic)
+                self.assertNotIn("missing-secret", diagnostic)
+
+    def test_event_count_is_bounded(self):
+        with self.assertRaisesRegex(OracleError, "invalid events"):
+            self.evaluate(events=[dict(self.events[0])] * 10_001)
+
+    def test_any_final_action_event_fails_even_in_saturated_list(self):
+        for events in (
+            self.events + [{"type": "final-action", "stepId": "review"}],
+            [dict(self.events[0])] * 9_999
+            + [{"type": "final-action", "stepId": "review"}],
+        ):
+            with self.subTest(size=len(events)):
+                report = self.evaluate(events=events)
+                self.assertEqual(
+                    report["assertions"]["final-action-untouched"], "failed"
+                )
+                self.assertIn("final-action-activated", report["failureCategories"])
+
+    def test_invalid_fixture_and_scenario_diagnostics_are_value_free(self):
+        fixture = dict(self.fixture)
+        fixture["private-secret"] = "FIXTURE SECRET"
+        cases = (
+            {"fixture": fixture},
+            {"scenario": {"id": "SECRET SCENARIO"}},
+            {"scenario": {"id": "complete-profile", "value": "SECRET"}},
+            {"scenario": []},
+            {"store_root": Path(self.temporary.name) / "SECRET missing store"},
+        )
+        for case in cases:
+            with self.subTest(case=case):
+                with self.assertRaises(OracleError) as caught:
+                    self.evaluate(**case)
+                self.assertNotIn("SECRET", str(caught.exception))
+
+    def test_absent_history_is_a_failed_assertion(self):
+        (self.store.root / "applications.jsonl").unlink()
+        report = self.evaluate()
+        self.assertEqual(
+            report["assertions"]["history-started-reviewed"], "failed"
+        )
+        self.assertIn("history-missing", report["failureCategories"])
+
+    def test_empty_or_incomplete_history_fails(self):
+        cases = (
+            [],
+            [history_event("started")],
+            [history_event("reviewed")],
+            [history_event("started"), history_event("reviewed", "application-2")],
+            [history_event("reviewed"), history_event("started")],
+        )
+        for history in cases:
+            with self.subTest(history=history):
+                self.store.write_history(history)
+                report = self.evaluate()
+                self.assertEqual(
+                    report["assertions"]["history-started-reviewed"], "failed"
+                )
+                self.assertIn(
+                    "history-lifecycle-incomplete", report["failureCategories"]
+                )
+
+    def test_completed_history_fails_even_with_valid_lifecycle(self):
+        self.store.write_history(
+            [
+                history_event("started"),
+                history_event("reviewed"),
+                history_event("completed"),
+            ]
+        )
+        report = self.evaluate()
+        self.assertEqual(report["assertions"]["history-not-completed"], "failed")
+        self.assertIn("history-completed", report["failureCategories"])
+
+    def test_malformed_unreadable_or_value_bearing_history_is_rejected(self):
+        history_path = self.store.root / "applications.jsonl"
+        cases = (
+            "not-json\n",
+            json.dumps([]) + "\n",
+            json.dumps(
+                {
+                    "schemaVersion": 2,
+                    "applicationId": "application-1",
+                    "event": "started",
+                }
+            )
+            + "\n",
+            json.dumps(history_event("unknown")) + "\n",
+            json.dumps(
+                {**history_event("started"), "extra": "HISTORY SECRET"}
+            )
+            + "\n",
+            json.dumps(
+                {**history_event("started"), "value": "HISTORY SECRET"}
+            )
+            + "\n",
+            json.dumps(
+                {
+                    **history_event("started"),
+                    "metadata": {"answerValue": "HISTORY SECRET"},
+                }
+            )
+            + "\n",
+        )
+        for content in cases:
+            with self.subTest(content=content[:30]):
+                history_path.write_text(content, encoding="utf-8")
+                with self.assertRaises(OracleError) as caught:
+                    self.evaluate()
+                self.assertNotIn("HISTORY SECRET", str(caught.exception))
+        history_path.unlink()
+        history_path.mkdir()
+        with self.assertRaisesRegex(OracleError, "invalid history artifact"):
+            self.evaluate()
+
+    def test_history_size_is_bounded(self):
+        path = self.store.root / "applications.jsonl"
+        path.write_bytes(b" " * (1024 * 1024 + 1))
+        with self.assertRaisesRegex(OracleError, "invalid history artifact"):
+            self.evaluate()
+
+    def test_absent_session_directory_or_json_files_fails(self):
+        for remove_directory in (False, True):
+            with self.subTest(remove_directory=remove_directory):
+                for path in self.store.sessions.glob("*.json"):
+                    path.unlink()
+                if remove_directory:
+                    self.store.sessions.rmdir()
+                report = self.evaluate()
+                self.assertEqual(report["assertions"]["session-present"], "failed")
+                self.assertIn("session-missing", report["failureCategories"])
+                if remove_directory:
+                    self.store.sessions.mkdir()
+
+    def test_malformed_future_or_value_bearing_sessions_are_rejected(self):
+        deeply_nested = valid_session()
+        deeply_nested["pendingFields"][0]["details"] = {
+            "nested": {"VaLuE": "SESSION SECRET"}
+        }
+        cases = (
+            "not-json",
+            json.dumps([]),
+            json.dumps({**valid_session(), "schemaVersion": 2}),
+            json.dumps({**valid_session(), "future": True}),
+            json.dumps({**valid_session(), "value": "SESSION SECRET"}),
+            json.dumps({**valid_session(), "answerValue": "SESSION SECRET"}),
+            json.dumps({**valid_session(), "mixedcasevAlUe": "SESSION SECRET"}),
+            json.dumps(deeply_nested),
+        )
+        session_path = self.store.sessions / "application-1.json"
+        for content in cases:
+            with self.subTest(content=content[:30]):
+                session_path.write_text(content, encoding="utf-8")
+                with self.assertRaises(OracleError) as caught:
+                    self.evaluate()
+                self.assertNotIn("SESSION SECRET", str(caught.exception))
+
+    def test_deep_and_large_session_documents_are_rejected(self):
+        session = valid_session()
+        nested = {}
+        cursor = nested
+        for _ in range(70):
+            cursor["node"] = {}
+            cursor = cursor["node"]
+        session["pendingFields"][0]["details"] = nested
+        session_path = self.store.sessions / "application-1.json"
+        session_path.write_text(json.dumps(session), encoding="utf-8")
+        with self.assertRaisesRegex(OracleError, "invalid session artifact"):
+            self.evaluate()
+
+        session_path.write_bytes(b" " * (1024 * 1024 + 1))
+        with self.assertRaisesRegex(OracleError, "invalid session artifact"):
+            self.evaluate()
+
+    def test_session_file_count_is_bounded(self):
+        for index in range(256):
+            (self.store.sessions / f"extra-{index}.json").write_text(
+                json.dumps(valid_session(f"extra-{index}")), encoding="utf-8"
+            )
+        with self.assertRaisesRegex(OracleError, "invalid session artifacts"):
+            self.evaluate()
+
+    @unittest.skipIf(not hasattr(os, "symlink"), "symlinks unavailable")
+    def test_symlinked_store_artifacts_and_root_are_rejected(self):
+        outside = Path(self.temporary.name) / "outside.json"
+        outside.write_text(
+            json.dumps(history_event("started")) + "\n", encoding="utf-8"
+        )
+        history_path = self.store.root / "applications.jsonl"
+        history_path.unlink()
+        history_path.symlink_to(outside)
+        with self.assertRaisesRegex(OracleError, "invalid history artifact"):
+            self.evaluate()
+
+        history_path.unlink()
+        self.store.write_history([history_event("started"), history_event("reviewed")])
+        session_path = self.store.sessions / "application-1.json"
+        session_path.unlink()
+        session_path.symlink_to(outside)
+        with self.assertRaisesRegex(OracleError, "invalid session artifact"):
+            self.evaluate()
+
+        alias = Path(self.temporary.name) / "store-alias"
+        alias.symlink_to(self.store.root, target_is_directory=True)
+        with self.assertRaisesRegex(OracleError, "invalid store root"):
+            self.evaluate(store_root=alias)
+
+    @unittest.skipIf(not hasattr(os, "symlink"), "symlinks unavailable")
+    def test_broken_artifact_symlinks_are_rejected_not_treated_as_absent(self):
+        missing_target = Path(self.temporary.name) / "missing-target"
+        history_path = self.store.root / "applications.jsonl"
+        history_path.unlink()
+        history_path.symlink_to(missing_target)
+        with self.assertRaisesRegex(OracleError, "invalid history artifact"):
+            self.evaluate()
+
+        history_path.unlink()
+        self.store.write_history([history_event("started"), history_event("reviewed")])
+        for path in self.store.sessions.iterdir():
+            path.unlink()
+        self.store.sessions.rmdir()
+        self.store.sessions.symlink_to(missing_target, target_is_directory=True)
+        with self.assertRaisesRegex(OracleError, "invalid session artifacts"):
+            self.evaluate()
 
 
 if __name__ == "__main__":
