@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 
 from qa.compiler import COMPILER_VERSION, CompilerError, compile_capture
 from qa.contracts import CATALOG, FINAL_ACTION, ContractError, validate_fixture
@@ -162,6 +163,8 @@ class CompilerTests(unittest.TestCase):
             {"a/./b.html": "a" * 64},
             {"a/../b.html": "a" * 64},
             {"a\\b.html": "a" * 64},
+            {"C:/capture/page.html": "a" * 64},
+            {"C:\\capture\\page.html": "a" * 64},
             {"a//b.html": "a" * 64},
             {"a/PRIVATE-SENTINEL\n.html": "a" * 64},
             {"a.html": "A" * 64},
@@ -174,6 +177,23 @@ class CompilerTests(unittest.TestCase):
                 receipt = copy.deepcopy(self.receipt)
                 receipt["sourceFiles"] = invalid
                 self.assert_rejected_without_echo(receipt=receipt)
+
+    def test_source_file_work_limits_accept_boundaries_and_reject_excess(self):
+        receipt = copy.deepcopy(self.receipt)
+        receipt["sourceFiles"] = {"one": "a" * 64, "two": "b" * 64}
+        with mock.patch("qa.compiler.MAX_SOURCE_FILES", 2):
+            self.assertIsNotNone(self.compile(receipt=receipt))
+
+            receipt["sourceFiles"]["three"] = "c" * 64
+            self.assert_rejected_without_echo(receipt=receipt)
+
+        receipt = copy.deepcopy(self.receipt)
+        receipt["sourceFiles"] = {"ééé": "a" * 64}
+        with mock.patch("qa.compiler.MAX_SOURCE_PATH_CHARS", 3):
+            self.assertIsNotNone(self.compile(receipt=receipt))
+
+            receipt["sourceFiles"] = {"éééé": "a" * 64}
+            self.assert_rejected_without_echo(receipt=receipt)
 
     def test_private_text_and_capture_identifiers_are_noninterfering(self):
         first_capture = copy.deepcopy(self.capture)

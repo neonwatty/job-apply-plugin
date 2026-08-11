@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import PureWindowsPath
 import re
 from typing import Any
 import unicodedata
@@ -17,6 +18,8 @@ from qa.contracts import (
 
 
 COMPILER_VERSION = "1.0.0"
+MAX_SOURCE_FILES = 2_000
+MAX_SOURCE_PATH_CHARS = 512
 
 _CAPTURE_KEYS = {
     "captureId",
@@ -150,10 +153,15 @@ def _validate_controls(
 def _validate_source_files(value: Any) -> str:
     if not isinstance(value, dict) or not value:
         raise CompilerError("invalid source files")
+    if len(value) > MAX_SOURCE_FILES:
+        raise CompilerError("source file count limit exceeded")
     for path, digest in value.items():
+        if not isinstance(path, str) or not path:
+            raise CompilerError("invalid source file path")
+        if len(path) > MAX_SOURCE_PATH_CHARS:
+            raise CompilerError("source file path limit exceeded")
         if (
-            not isinstance(path, str)
-            or not path
+            PureWindowsPath(path).drive
             or path.startswith("/")
             or "\\" in path
             or any(unicodedata.category(character) == "Cc" for character in path)
