@@ -25,6 +25,7 @@ import {
   isSensitivePage,
   sanitizeObservedControl,
   validateCheckpointKind,
+  validateCaptureResources,
   validateRecorderOptions,
 } from "../qa/recorder.mjs";
 
@@ -106,6 +107,9 @@ async function startSyntheticSite(t) {
       <main><h1>Apply for this position</h1>
       <label>Private Person email<input id=email type=email required></label>
       <label>Resume upload<input id=resume type=file required></label>
+      <input type=hidden name=csrf_token value=hidden-token-secret>
+      <div hidden>cookie=session-cookie-secret</div>
+      <script>window.bootstrapAuthorization = "Bearer inline-bearer-secret";</script>
       <button id=continue type=button>Continue application</button></main>`);
   });
   server.listen(0, "127.0.0.1");
@@ -298,6 +302,7 @@ test("checkpoint commit rolls back cancellation after rename and reuses sequence
       await rename(source, destination);
       controller.abort();
     },
+    removeDirectory: (target) => rm(target, { recursive: true, force: true }),
   }), /operation canceled/);
   await assert.rejects(access(finalDirectory));
   await assert.rejects(access(firstTemporary));
@@ -312,6 +317,8 @@ test("checkpoint commit rolls back cancellation after rename and reuses sequence
     signal: new AbortController().signal,
     isShuttingDown: () => false,
     updateLifecycle: () => lifecycle.push("application-opened"),
+    renameDirectory: rename,
+    removeDirectory: (target) => rm(target, { recursive: true, force: true }),
   });
   assert.equal(await readFile(path.join(finalDirectory, "checkpoint.json"), "utf8"), "second");
   assert.deepEqual(lifecycle, ["application-opened"]);
@@ -328,6 +335,22 @@ test("sensitive page detector rejects login and credential surfaces", () => {
     true,
   );
   for (const text of ["Complete CAPTCHA verification", "Enter your MFA code"]) {
+    assert.equal(isSensitivePage({
+      url: "https://example.test/jobs/1/apply",
+      title: "Application",
+      controls: [],
+      text,
+    }), true);
+  }
+  for (const autocomplete of ["current-password", "one-time-code"]) {
+    assert.equal(isSensitivePage({
+      url: "https://example.test/jobs/1/apply",
+      title: "Application",
+      controls: [{ type: "text", label: "Code", autocomplete }],
+      text: "",
+    }), true);
+  }
+  for (const text of ["OTP", "Authentication challenge", "Use your security key"]) {
     assert.equal(isSensitivePage({
       url: "https://example.test/jobs/1/apply",
       title: "Application",
@@ -362,6 +385,48 @@ test("sensitive page detector rejects login and credential surfaces", () => {
     }),
     false,
   );
+});
+
+test("capture resource limits accept boundaries and reject one over", () => {
+  const limits = {
+    maxControls: 2,
+    maxHtmlBytes: 3,
+    maxScreenshotWidth: 4,
+    maxScreenshotHeight: 5,
+    maxScreenshotBytes: 6,
+    maxCheckpoints: 7,
+    maxSessionBytes: 8,
+  };
+  assert.doesNotThrow(() => validateCaptureResources({
+    controlCount: 2,
+    htmlBytes: 3,
+    screenshotWidth: 4,
+    screenshotHeight: 5,
+    screenshotBytes: 6,
+    checkpointCount: 7,
+    sessionBytes: 8,
+  }, limits));
+  for (const field of Object.keys({
+    controlCount: 2,
+    htmlBytes: 3,
+    screenshotWidth: 4,
+    screenshotHeight: 5,
+    screenshotBytes: 6,
+    checkpointCount: 7,
+    sessionBytes: 8,
+  })) {
+    const value = {
+      controlCount: 2,
+      htmlBytes: 3,
+      screenshotWidth: 4,
+      screenshotHeight: 5,
+      screenshotBytes: 6,
+      checkpointCount: 7,
+      sessionBytes: 8,
+    };
+    value[field] += 1;
+    assert.throws(() => validateCaptureResources(value, limits), /capture resource limit/);
+  }
 });
 
 test("recorder options require one safe child of .qa-private and loopback CDP", async (t) => {
@@ -437,10 +502,10 @@ test("checkpoint client aborts a stalled local request by its deadline", async (
   const result = await runNode([
     "qa/recorder.mjs", "checkpoint", "--session", session,
     "--kind", "application-opened",
-  ], 5000);
+  ], 17000);
   assert.equal(result.code, 1);
   assert.match(result.stderr, /recorder unavailable/);
-  assert.ok(Date.now() - started < 4000);
+  assert.ok(Date.now() - started < 16000);
   await withTimeout(disconnected, 1000, "checkpoint client did not abort");
   await new Promise((resolve) => setTimeout(resolve, 250));
   assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
@@ -473,7 +538,7 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   const privateRoot = path.join(directory, ".qa-private");
   await mkdir(privateRoot, { mode: 0o700 });
   const session = path.join(privateRoot, "qa-session-app");
-  await mkdir(session, { mode: 0o755 });
+  await mkdir(session, { mode: 0o700 });
 
   const recorder = spawn(process.execPath, [
     "qa/recorder.mjs", "record", "--cdp-url", cdpUrl, "--output", session,
@@ -483,7 +548,11 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   recorder.stderr.on("data", (chunk) => { recorderStderr += chunk; });
   t.after(() => stopChild(recorder));
   const controlPath = path.join(session, "control.json");
-  await waitForFile(controlPath, 10000);
+  try {
+    await waitForFile(controlPath, 10000);
+  } catch (error) {
+    assert.fail(`${error.message}: ${recorderStderr}`);
+  }
   const controlText = await readFile(controlPath, "utf8");
   const control = JSON.parse(controlText);
   assert.deepEqual(Object.keys(control).sort(), ["port", "token"]);
@@ -512,6 +581,47 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   const pages = attached.contexts().flatMap((context) => context.pages());
   assert.equal(pages.length, 1);
   const page = pages[0];
+  await page.evaluate((loginUrl) => {
+    const frame = document.createElement("iframe");
+    frame.id = "sensitive-child";
+    frame.src = loginUrl;
+    document.body.append(frame);
+  }, `${site}/login`);
+  await page.locator("#sensitive-child").contentFrame().locator("input[type=password]").waitFor();
+  const childSensitive = await postControl(control, { kind: "application-opened" });
+  assert.notEqual(childSensitive.status, 200);
+  assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
+  await page.locator("#sensitive-child").evaluate((element) => element.remove());
+
+  const mainSpoof = "main-world-binding-spoof-secret";
+  await page.evaluate((secret) => {
+    globalThis.__qaRecorderObserve?.({
+      interactionType: "input",
+      role: "textbox",
+      label: secret,
+      required: true,
+    });
+  }, mainSpoof);
+  const ordinaryChild = await page.evaluateHandle((childUrl) => {
+    const frame = document.createElement("iframe");
+    frame.id = "ordinary-child";
+    frame.src = childUrl;
+    document.body.append(frame);
+    return frame;
+  }, `${site}/application`);
+  await page.locator("#ordinary-child").contentFrame().locator("#email").waitFor();
+  const childSpoof = "child-world-binding-spoof-secret";
+  const childFrame = page.frames().find((frame) =>
+    frame !== page.mainFrame() && frame.url() === `${site}/application`);
+  await childFrame.evaluate((secret) => {
+    globalThis.__qaRecorderObserve?.({
+      interactionType: "input",
+      role: "textbox",
+      label: secret,
+      required: true,
+    });
+  }, childSpoof);
+  await ordinaryChild.dispose();
   const privateEmail = "private@example.invalid";
   const privateFilename = path.join(directory, "private-resume.pdf");
   await writeFile(privateFilename, "private uploaded bytes");
@@ -546,6 +656,45 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   await abortCheckpointClient(control, 100);
   await cdpSession.send("Debugger.resume");
   await new Promise((resolve) => setTimeout(resolve, 750));
+  assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
+
+  await page.evaluate(() => {
+    setTimeout(() => {
+      const input = document.createElement("input");
+      input.id = "late-password";
+      input.type = "password";
+      document.body.append(input);
+    }, 10);
+  });
+  const changedDuringCapture = await postControl(control, { kind: "application-opened" });
+  assert.notEqual(changedDuringCapture.status, 200);
+  await page.locator("#late-password").waitFor();
+  await page.locator("#late-password").evaluate((element) => element.remove());
+  assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
+
+  await page.evaluate(() => {
+    const container = document.createElement("div");
+    container.id = "too-many-controls";
+    for (let index = 0; index < 1001; index += 1) {
+      container.append(document.createElement("button"));
+    }
+    document.body.append(container);
+  });
+  const tooManyControls = await postControl(control, { kind: "application-opened" });
+  assert.notEqual(tooManyControls.status, 200);
+  await page.locator("#too-many-controls").evaluate((element) => element.remove());
+  assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
+
+  await page.evaluate(() => {
+    const oversized = document.createElement("div");
+    oversized.id = "oversized-page";
+    oversized.style.width = "5000px";
+    oversized.style.height = "17000px";
+    document.body.append(oversized);
+  });
+  const oversizedPage = await postControl(control, { kind: "application-opened" });
+  assert.notEqual(oversizedPage.status, 200);
+  await page.locator("#oversized-page").evaluate((element) => element.remove());
   assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
 
   await cdpSession.send("Debugger.pause");
@@ -613,6 +762,8 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
     cdpUrl,
     `${site}/application`,
     control.token,
+    mainSpoof,
+    childSpoof,
     '"value"',
     '"checked"',
     '"files"',
@@ -639,6 +790,20 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   const controls = JSON.parse(controlsText);
   assert.ok(controls.some((control) => control.sourceLabel === "Private Person email"));
   assert.equal(controls.some((control) => control.sourceLabel === "Secret password"), false);
+  const sanitizedHtml = await readFile(
+    path.join(session, "checkpoints", checkpointNames[0], "page.html"),
+    "utf8",
+  );
+  for (const forbidden of [
+    "hidden-token-secret",
+    "session-cookie-secret",
+    "inline-bearer-secret",
+    "<script",
+    "type=\"hidden\"",
+    " value=",
+  ]) {
+    assert.equal(sanitizedHtml.toLowerCase().includes(forbidden.toLowerCase()), false, forbidden);
+  }
 
   const receipt = JSON.parse(receiptText);
   assert.deepEqual(Object.keys(receipt).sort(), [
@@ -763,12 +928,51 @@ test("shutdown quiesces events and an in-flight checkpoint before hashing", asyn
   );
 });
 
+test("recording stays anchored when the published session path is swapped", async (t) => {
+  const site = await startSyntheticSite(t);
+  const { browserProcess, cdpUrl } = await startIndependentChromium(t, `${site}/application`);
+  const directory = await mkdtemp(path.join(tmpdir(), "recording-anchor-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const privateRoot = path.join(directory, ".qa-private");
+  await mkdir(privateRoot, { mode: 0o700 });
+  const session = path.join(privateRoot, "qa-session-anchor");
+  const recorder = spawn(process.execPath, [
+    "qa/recorder.mjs", "record", "--cdp-url", cdpUrl, "--output", session,
+  ], { cwd: root });
+  let stderr = "";
+  recorder.stderr.setEncoding("utf8");
+  recorder.stderr.on("data", (chunk) => { stderr += chunk; });
+  t.after(() => stopChild(recorder));
+  const controlPath = path.join(session, "control.json");
+  await waitForFile(controlPath, 10000);
+  const control = JSON.parse(await readFile(controlPath, "utf8"));
+  const anchoredParent = path.join(directory, "anchored-private");
+  const anchored = path.join(anchoredParent, path.basename(session));
+  const target = path.join(directory, "swap-target");
+  await mkdir(target, { mode: 0o700 });
+  await rename(privateRoot, anchoredParent);
+  await symlink(target, privateRoot);
+
+  const checkpoint = await postControl(control, { kind: "application-opened" });
+  assert.equal(checkpoint.status, 200);
+  recorder.kill("SIGTERM");
+  await waitForExit(recorder, 5000);
+  assert.equal(stderr, "");
+  assert.equal(browserProcess.exitCode, null);
+  assert.deepEqual(await readdir(target), []);
+  const receipt = JSON.parse(await readFile(path.join(anchored, "capture-receipt.json"), "utf8"));
+  for (const [relative, digest] of Object.entries(receipt.sourceFiles)) {
+    const contents = await readFile(path.join(anchored, ...relative.split("/")));
+    assert.equal(createHash("sha256").update(contents).digest("hex"), digest);
+  }
+});
+
 test("recorder source has no prohibited browser data capture APIs", async () => {
   const source = await readFile(path.join(root, "qa", "recorder.mjs"), "utf8");
   for (const prohibited of [
     "context.cookies(", "storageState(", "response.body(",
     "localStorage", "sessionStorage", "authorization headers",
-    "browser.close(", 'send("Browser.close"',
+    "browser.close(", 'send("Browser.close"', "exposeBinding(", "page.content(",
   ]) {
     assert.equal(source.includes(prohibited), false, prohibited);
   }

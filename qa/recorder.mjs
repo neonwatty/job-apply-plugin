@@ -1,21 +1,17 @@
 #!/usr/bin/env node
 
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { randomBytes, timingSafeEqual } from "node:crypto";
+import { spawn } from "node:child_process";
 import {
-  appendFile,
-  chmod,
   lstat,
-  mkdir,
   readFile,
   readdir,
   realpath,
-  rename,
-  rm,
-  writeFile,
 } from "node:fs/promises";
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
+import readline from "node:readline";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
@@ -28,17 +24,43 @@ export const CHECKPOINT_KINDS = Object.freeze([
 ]);
 
 const CHECKPOINT_KIND_SET = new Set(CHECKPOINT_KINDS);
-const SENSITIVE_PATTERN = /(?:\blog[ -]?in\b|\bsign[ -]?in\b|password|passcode|captcha|multi[ -]?factor|\bmfa\b|two[ -]?factor|verification code|create (?:an? )?account|account[ -]?creation|register)/i;
+const SENSITIVE_PATTERN = /(?:\blog[ -]?in\b|\bsign[ -]?in\b|password|passcode|captcha|multi[ -]?factor|\bmfa\b|two[ -]?factor|verification code|create (?:an? )?account|account[ -]?creation|register|\botp\b|authentication|challenge|security[ -]?key|one[ -]?time[ -]?code)/i;
 const MAX_CONTROL_BODY = 4096;
 const MAX_EVENTS = 10_000;
 const BODY_DEADLINE_MS = 500;
 const CAPTURE_DEADLINE_MS = 1000;
-const CONTROL_DEADLINE_MS = 1500;
-const CLIENT_DEADLINE_MS = 2500;
-const FILE_MODE = 0o600;
-const DIRECTORY_MODE = 0o700;
+const BROKER_REQUEST_DEADLINE_MS = 1000;
+const CHECKPOINT_OPERATION_DEADLINE_MS = 12_000;
+const CLIENT_DEADLINE_MS = 14_000;
+export const CAPTURE_LIMITS = Object.freeze({
+  maxControls: 1_000,
+  maxHtmlBytes: 1_048_576,
+  maxScreenshotWidth: 4_096,
+  maxScreenshotHeight: 16_384,
+  maxScreenshotBytes: 8_388_608,
+  maxCheckpoints: 100,
+  maxSessionBytes: 67_108_864,
+});
 
 export class RecorderError extends Error {}
+
+export function validateCaptureResources(resources, limits = CAPTURE_LIMITS) {
+  const checks = [
+    ["controlCount", "maxControls"],
+    ["htmlBytes", "maxHtmlBytes"],
+    ["screenshotWidth", "maxScreenshotWidth"],
+    ["screenshotHeight", "maxScreenshotHeight"],
+    ["screenshotBytes", "maxScreenshotBytes"],
+    ["checkpointCount", "maxCheckpoints"],
+    ["sessionBytes", "maxSessionBytes"],
+  ];
+  for (const [resource, limit] of checks) {
+    const value = resources[resource] ?? 0;
+    if (!Number.isSafeInteger(value) || value < 0 || value > limits[limit]) {
+      throw new RecorderError("capture resource limit exceeded");
+    }
+  }
+}
 
 function throwIfAborted(signal) {
   if (signal?.aborted) throw new RecorderError("operation canceled");
@@ -101,7 +123,12 @@ export function isSensitivePage(snapshot) {
   return controls.some((control) => {
     const type = typeof control?.type === "string" ? control.type : "";
     const label = typeof control?.label === "string" ? control.label : "";
-    return type.toLowerCase() === "password" || SENSITIVE_PATTERN.test(label);
+    const autocomplete = typeof control?.autocomplete === "string"
+      ? control.autocomplete.toLowerCase()
+      : "";
+    return type.toLowerCase() === "password" ||
+      ["current-password", "one-time-code"].includes(autocomplete) ||
+      SENSITIVE_PATTERN.test(label);
   });
 }
 
@@ -210,75 +237,135 @@ function parseFlags(args, names) {
   return result;
 }
 
-function privateJson(filename, value) {
-  return writeFile(filename, `${JSON.stringify(value)}\n`, { mode: FILE_MODE, flag: "wx" });
-}
+class BrokerClient {
+  constructor(child, lines) {
+    this.child = child;
+    this.lines = lines;
+    this.nextId = 1;
+    this.pending = new Map();
+    this.closed = false;
+  }
 
-function pageInstaller() {
-  if (globalThis.__qaRecorderInstalled) return;
-  Object.defineProperty(globalThis, "__qaRecorderInstalled", { value: true });
-  const sensitive = () => {
-    const summary = `${location.href}\n${document.title}\n${document.body?.innerText?.slice(0, 8192) ?? ""}`;
-    return /(?:\blog[ -]?in\b|\bsign[ -]?in\b|password|passcode|captcha|multi[ -]?factor|\bmfa\b|two[ -]?factor|verification code|create (?:an? )?account|account[ -]?creation|register)/i.test(summary) ||
-      Boolean(document.querySelector('input[type="password"]'));
-  };
-  const labelFor = (element) => {
-    const aria = element.getAttribute("aria-label");
-    if (aria) return aria;
-    const labelled = element.getAttribute("aria-labelledby");
-    if (labelled) {
-      const label = labelled.split(/\s+/).map((id) => document.getElementById(id)?.innerText ?? "").join(" ").trim();
-      if (label) return label;
+  static async start(root) {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    const child = spawn("python3", ["-m", "qa.recorder_fs", "--root", root], {
+      cwd: repositoryRoot,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    child.stderr.resume();
+    const lines = readline.createInterface({ input: child.stdout });
+    let ready;
+    try {
+      ready = await withDeadline(new Promise((resolve, reject) => {
+        lines.once("line", (line) => {
+          try {
+            const message = JSON.parse(line);
+            if (message?.ready !== true || Object.keys(message).length !== 1) throw new Error();
+            resolve();
+          } catch {
+            reject(new RecorderError("filesystem broker unavailable"));
+          }
+        });
+        child.once("exit", () => reject(new RecorderError("filesystem broker unavailable")));
+        child.once("error", () => reject(new RecorderError("filesystem broker unavailable")));
+      }), 2000);
+    } catch (error) {
+      lines.close();
+      child.kill("SIGTERM");
+      throw error;
     }
-    if (element.labels?.length) {
-      return Array.from(element.labels).map((label) => label.innerText).join(" ").trim();
+    void ready;
+    const client = new BrokerClient(child, lines);
+    lines.on("line", (line) => client._handleLine(line));
+    child.on("exit", () => client._failAll());
+    child.on("error", () => client._failAll());
+    return client;
+  }
+
+  _failAll() {
+    this.closed = true;
+    for (const pending of this.pending.values()) {
+      pending.reject(new RecorderError("filesystem broker unavailable"));
     }
-    if (element instanceof HTMLButtonElement) return element.innerText.trim();
-    return element.getAttribute("name") || element.getAttribute("placeholder") || "Unlabelled control";
-  };
-  const roleFor = (element) => {
-    const explicit = element.getAttribute("role");
-    if (explicit) return explicit;
-    if (element instanceof HTMLButtonElement) return "button";
-    if (element instanceof HTMLSelectElement) return "combobox";
-    if (element instanceof HTMLTextAreaElement) return "textbox";
-    if (element instanceof HTMLInputElement) {
-      if (element.type === "checkbox") return "checkbox";
-      if (element.type === "radio") return "radio";
-      if (element.type === "file") return "file";
-      return "textbox";
+    this.pending.clear();
+  }
+
+  _handleLine(line) {
+    let response;
+    try {
+      response = JSON.parse(line);
+    } catch {
+      this._failAll();
+      return;
     }
-    return "control";
-  };
-  for (const interactionType of ["click", "change", "input"]) {
-    document.addEventListener(interactionType, (event) => {
-      if (sensitive()) return;
-      const element = event.target instanceof Element
-        ? event.target.closest("input,select,textarea,button,[role]")
-        : null;
-      if (!element || (element instanceof HTMLInputElement && element.type === "password")) return;
-      globalThis.__qaRecorderObserve({
-        interactionType,
-        role: roleFor(element),
-        label: labelFor(element),
-        required: element.matches("[required],[aria-required=true]"),
-      }).catch(() => {});
-    }, true);
+    const pending = this.pending.get(response?.id);
+    if (!pending) return;
+    this.pending.delete(response.id);
+    if (response.ok === true && Object.hasOwn(response, "result")) {
+      pending.resolve(response.result);
+    } else {
+      pending.reject(new RecorderError("filesystem operation rejected"));
+    }
+  }
+
+  request(command, fields = {}) {
+    if (this.closed || this.child.exitCode !== null) {
+      return Promise.reject(new RecorderError("filesystem broker unavailable"));
+    }
+    const id = this.nextId++;
+    const payload = `${JSON.stringify({ id, command, ...fields })}\n`;
+    const operation = withDeadline(new Promise((resolve, reject) => {
+      this.pending.set(id, { resolve, reject });
+      this.child.stdin.write(payload, (error) => {
+        if (error) {
+          this.pending.delete(id);
+          reject(new RecorderError("filesystem broker unavailable"));
+        }
+      });
+    }), BROKER_REQUEST_DEADLINE_MS);
+    return operation.finally(() => this.pending.delete(id));
+  }
+
+  write(command, relative, data) {
+    return this.request(command, {
+      path: relative,
+      data: Buffer.from(data).toString("base64"),
+    });
+  }
+
+  writeJson(command, relative, value) {
+    return this.write(command, relative, `${JSON.stringify(value)}\n`);
+  }
+
+  async close() {
+    if (this.closed) return;
+    this.closed = true;
+    this.child.stdin.end();
+    await withDeadline(new Promise((resolve) => {
+      if (this.child.exitCode !== null) resolve();
+      else this.child.once("exit", resolve);
+    }), 2000).catch(() => {
+      this.child.kill("SIGTERM");
+    });
+    this.lines.close();
   }
 }
 
-async function snapshotPage(page) {
-  return page.evaluate(() => {
-    const controls = Array.from(document.querySelectorAll("input,select,textarea,button,[role]"));
+function isolatedInstallerSource(bindingName) {
+  return `(() => {
+    if (globalThis.__qaIsolatedRecorderInstalled) return;
+    Object.defineProperty(globalThis, "__qaIsolatedRecorderInstalled", { value: true });
+    const binding = globalThis[${JSON.stringify(bindingName)}];
+    if (typeof binding !== "function") return;
     const labelFor = (element) => {
       const aria = element.getAttribute("aria-label");
       if (aria) return aria;
       const labelled = element.getAttribute("aria-labelledby");
       if (labelled) {
-        const value = labelled.split(/\s+/).map((id) => document.getElementById(id)?.innerText ?? "").join(" ").trim();
-        if (value) return value;
+        const label = labelled.split(/\\s+/).map((id) => document.getElementById(id)?.innerText || "").join(" ").trim();
+        if (label) return label;
       }
-      if (element.labels?.length) return Array.from(element.labels).map((item) => item.innerText).join(" ").trim();
+      if (element.labels?.length) return Array.from(element.labels).map((label) => label.innerText).join(" ").trim();
       if (element instanceof HTMLButtonElement) return element.innerText.trim();
       return element.getAttribute("name") || element.getAttribute("placeholder") || "Unlabelled control";
     };
@@ -295,18 +382,196 @@ async function snapshotPage(page) {
       }
       return "control";
     };
-    return {
-      url: location.href,
-      title: document.title,
-      text: document.body?.innerText?.slice(0, 8192) ?? "",
-      controls: controls.map((element) => ({
-        type: element instanceof HTMLInputElement ? element.type : element.tagName.toLowerCase(),
-        label: labelFor(element),
-        role: roleFor(element),
-        required: element.matches("[required],[aria-required=true]"),
-      })),
+    for (const interactionType of ["click", "change", "input"]) {
+      document.addEventListener(interactionType, (event) => {
+        const element = event.target instanceof Element ? event.target.closest("input,select,textarea,button,[role]") : null;
+        if (!element || (element instanceof HTMLInputElement && ["password", "hidden"].includes(element.type))) return;
+        binding(JSON.stringify({
+          interactionType,
+          role: roleFor(element),
+          label: labelFor(element),
+          required: element.matches("[required],[aria-required=true]"),
+        }));
+      }, true);
+    }
+  })()`;
+}
+
+function isolatedSnapshotSource(includeStructure) {
+  return `(() => {
+    const denied = /(?:password|passcode|captcha|multi[ -]?factor|\\bmfa\\b|\\botp\\b|authentication|challenge|security[ -]?key|one[ -]?time[ -]?code|authorization|bearer|cookie|session|csrf|token)/i;
+    const labelFor = (element) => {
+      const aria = element.getAttribute("aria-label");
+      if (aria) return aria;
+      const labelled = element.getAttribute("aria-labelledby");
+      if (labelled) {
+        const label = labelled.split(/\\s+/).map((id) => document.getElementById(id)?.innerText || "").join(" ").trim();
+        if (label) return label;
+      }
+      if (element.labels?.length) return Array.from(element.labels).map((label) => label.innerText).join(" ").trim();
+      if (element instanceof HTMLButtonElement) return element.innerText.trim();
+      return element.getAttribute("name") || element.getAttribute("placeholder") || "Unlabelled control";
     };
+    const roleFor = (element) => {
+      if (element.getAttribute("role")) return element.getAttribute("role");
+      if (element instanceof HTMLButtonElement) return "button";
+      if (element instanceof HTMLSelectElement) return "combobox";
+      if (element instanceof HTMLTextAreaElement) return "textbox";
+      if (element instanceof HTMLInputElement) {
+        if (element.type === "checkbox") return "checkbox";
+        if (element.type === "radio") return "radio";
+        if (element.type === "file") return "file";
+        return "textbox";
+      }
+      return "control";
+    };
+    const elements = Array.from(document.querySelectorAll("input,select,textarea,button,[role]"));
+    const controls = elements.slice(0, ${CAPTURE_LIMITS.maxControls + 1}).map((element) => ({
+      type: element instanceof HTMLInputElement ? element.type : element.tagName.toLowerCase(),
+      autocomplete: element.getAttribute("autocomplete") || "",
+      label: labelFor(element).slice(0, 256),
+      role: roleFor(element).slice(0, 64),
+      required: element.matches("[required],[aria-required=true]"),
+    }));
+    let html = "";
+    let structuralOverflow = false;
+    if (${includeStructure ? "true" : "false"}) {
+      const allowed = new Set(["html","body","main","section","article","div","form","fieldset","legend","label","h1","h2","h3","h4","h5","h6","p","span","ul","ol","li","button","input","select","option","textarea"]);
+      const allowedAttributes = new Set(["role","aria-label","aria-required","required","type","name","autocomplete"]);
+      const escape = (value) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+      let nodes = 0;
+      const serialize = (node) => {
+        if (++nodes > 5000) { structuralOverflow = true; return ""; }
+        if (node.nodeType === Node.TEXT_NODE) {
+          const text = (node.textContent || "").replace(/\\s+/g, " ").trim().slice(0, 512);
+          return !text || denied.test(text) ? "" : escape(text);
+        }
+        if (!(node instanceof Element)) return "";
+        const tag = node.tagName.toLowerCase();
+        if (!allowed.has(tag)) return "";
+        if (node.matches("[hidden],[aria-hidden=true],input[type=hidden],input[type=password]")) return "";
+        const style = getComputedStyle(node);
+        if (style.display === "none" || style.visibility === "hidden") return "";
+        const attributes = [];
+        for (const attribute of node.attributes) {
+          const name = attribute.name.toLowerCase();
+          if (!allowedAttributes.has(name) || ["value","checked","selected"].includes(name)) continue;
+          if (denied.test(name) || denied.test(attribute.value)) continue;
+          attributes.push(attribute.value === "" ? name : name + '=\"' + escape(attribute.value.slice(0, 256)) + '\"');
+        }
+        let children = "";
+        for (const child of node.childNodes) children += serialize(child);
+        const result = "<" + tag + (attributes.length ? " " + attributes.join(" ") : "") + ">" + children + "</" + tag + ">";
+        if (result.length > ${CAPTURE_LIMITS.maxHtmlBytes + 1}) structuralOverflow = true;
+        return result.slice(0, ${CAPTURE_LIMITS.maxHtmlBytes + 1});
+      };
+      html = "<!doctype html>" + serialize(document.documentElement);
+    }
+    return {
+      title: document.title.slice(0, 512),
+      text: (document.body?.innerText || "").slice(0, 8192),
+      controls,
+      controlOverflow: elements.length > ${CAPTURE_LIMITS.maxControls},
+      html,
+      structuralOverflow,
+      width: Math.max(document.documentElement.scrollWidth, document.body?.scrollWidth || 0),
+      height: Math.max(document.documentElement.scrollHeight, document.body?.scrollHeight || 0),
+    };
+  })()`;
+}
+
+function flattenFrameTree(tree, frames = []) {
+  frames.push({ id: tree.frame.id, loaderId: tree.frame.loaderId, url: tree.frame.url });
+  for (const child of tree.childFrames ?? []) flattenFrameTree(child, frames);
+  return frames;
+}
+
+async function createIsolatedRecorder(context, page, observe, navigated) {
+  const session = await context.newCDPSession(page);
+  const worldName = `qa-recorder-${randomBytes(18).toString("base64url")}`;
+  const bindingName = `__qa_${randomBytes(18).toString("hex")}`;
+  const contexts = new Map();
+  const allowedContexts = new Set();
+  const installer = isolatedInstallerSource(bindingName);
+  await session.send("Page.enable");
+  await session.send("Runtime.enable");
+  await session.send("Runtime.addBinding", { name: bindingName, executionContextName: worldName });
+  await session.send("Page.addScriptToEvaluateOnNewDocument", { source: installer, worldName });
+  const install = async (frameId) => {
+    try {
+      const created = await session.send("Page.createIsolatedWorld", {
+        frameId,
+        worldName,
+        grantUniversalAccess: false,
+      });
+      contexts.set(frameId, created.executionContextId);
+      allowedContexts.add(created.executionContextId);
+      await session.send("Runtime.evaluate", {
+        expression: installer,
+        contextId: created.executionContextId,
+      });
+    } catch {
+      // A detach/navigation racing world creation is rejected by the next stable inspection.
+    }
+  };
+  session.on("Runtime.executionContextDestroyed", ({ executionContextId }) => {
+    allowedContexts.delete(executionContextId);
+    for (const [frameId, contextId] of contexts) {
+      if (contextId === executionContextId) contexts.delete(frameId);
+    }
   });
+  session.on("Runtime.bindingCalled", ({ name, payload, executionContextId }) => {
+    if (name !== bindingName || !allowedContexts.has(executionContextId)) return;
+    let value;
+    try {
+      value = JSON.parse(payload);
+    } catch {
+      return;
+    }
+    observe(value);
+  });
+  session.on("Page.frameAttached", ({ frameId }) => void install(frameId));
+  session.on("Page.frameNavigated", ({ frame }) => {
+    contexts.delete(frame.id);
+    navigated(frame.parentId == null);
+    void install(frame.id);
+  });
+  const initial = await session.send("Page.getFrameTree");
+  for (const frame of flattenFrameTree(initial.frameTree)) await install(frame.id);
+  return { session, contexts, allowedContexts, install };
+}
+
+async function inspectFrames(isolated, includeStructure = false) {
+  const treeResult = await isolated.session.send("Page.getFrameTree");
+  const frames = flattenFrameTree(treeResult.frameTree);
+  const frameIds = new Set(frames.map((frame) => frame.id));
+  for (const frame of frames) {
+    if (!isolated.contexts.has(frame.id)) await isolated.install(frame.id);
+  }
+  const snapshots = [];
+  for (const frame of frames) {
+    const contextId = isolated.contexts.get(frame.id);
+    if (!contextId || !isolated.allowedContexts.has(contextId) || !frameIds.has(frame.id)) {
+      throw new RecorderError("unstable page document");
+    }
+    const evaluated = await isolated.session.send("Runtime.evaluate", {
+      expression: isolatedSnapshotSource(includeStructure && frame.id === treeResult.frameTree.frame.id),
+      contextId,
+      returnByValue: true,
+    });
+    if (evaluated.exceptionDetails || !evaluated.result?.value) {
+      throw new RecorderError("unstable page document");
+    }
+    snapshots.push({
+      frame,
+      value: { ...evaluated.result.value, url: frame.url },
+    });
+  }
+  return {
+    identity: frames.map((frame) => `${frame.id}:${frame.loaderId}`).sort().join("|"),
+    snapshots,
+    main: snapshots.find(({ frame }) => frame.id === treeResult.frameTree.frame.id)?.value,
+  };
 }
 
 function ordinaryPages(browser) {
@@ -336,8 +601,12 @@ export async function commitCheckpoint({
   signal,
   isShuttingDown,
   updateLifecycle,
-  renameDirectory = rename,
+  renameDirectory,
+  removeDirectory,
 }) {
+  if (typeof renameDirectory !== "function" || typeof removeDirectory !== "function") {
+    throw new RecorderError("checkpoint commit unavailable");
+  }
   let renamed = false;
   try {
     await renameDirectory(temporaryDirectory, checkpointDirectory);
@@ -347,27 +616,9 @@ export async function commitCheckpoint({
     updateLifecycle();
   } catch (error) {
     const cleanupTarget = renamed ? checkpointDirectory : temporaryDirectory;
-    await rm(cleanupTarget, { recursive: true, force: true }).catch(() => {});
+    await removeDirectory(cleanupTarget).catch(() => {});
     throw error;
   }
-}
-
-async function sha256File(filename) {
-  return createHash("sha256").update(await readFile(filename)).digest("hex");
-}
-
-async function sourceFileMap(session, checkpointNames) {
-  const relativePaths = ["events.jsonl", "recording-summary.json"];
-  for (const checkpointName of checkpointNames) {
-    for (const basename of ["page.html", "page.png", "controls.json", "checkpoint.json"]) {
-      relativePaths.push(`checkpoints/${checkpointName}/${basename}`);
-    }
-  }
-  const entries = await Promise.all(relativePaths.sort().map(async (relative) => [
-    relative,
-    await sha256File(path.join(session, ...relative.split("/"))),
-  ]));
-  return Object.fromEntries(entries);
 }
 
 function authorizedRequest(request, port, token) {
@@ -416,6 +667,7 @@ async function readRequestBody(request, signal) {
 async function runRecord(rawOptions) {
   const options = await validateRecorderOptions(rawOptions);
   let server;
+  let broker;
   let controlPath;
   let activeToken = null;
   let captureEnabled = false;
@@ -426,27 +678,15 @@ async function runRecord(rawOptions) {
   const activeHandlers = new Set();
   let quiesce;
   try {
+    broker = await BrokerClient.start(options.output);
     const browser = await chromium.connectOverCDP(options.cdpUrl);
     const pages = ordinaryPages(browser);
     if (pages.length !== 1) throw new RecorderError("ordinary page selection required");
     const page = pages[0];
-    const initialSnapshot = await withDeadline(
-      snapshotPage(page),
-      CAPTURE_DEADLINE_MS,
-    );
-    if (isSensitivePage(initialSnapshot)) throw new RecorderError("sensitive page refused");
-
-    await mkdir(options.output, { mode: DIRECTORY_MODE, recursive: true });
-    await chmod(options.output, DIRECTORY_MODE);
-    await mkdir(path.join(options.output, "checkpoints"), { mode: DIRECTORY_MODE });
-    const eventsPath = path.join(options.output, "events.jsonl");
-    await writeFile(eventsPath, "", { mode: FILE_MODE, flag: "wx" });
     let eventCount = 0;
     let pageSequence = 1;
     const checkpointKinds = [];
-    const checkpointNames = [];
-
-    await page.exposeBinding("__qaRecorderObserve", (_source, observed) => {
+    const observe = (observed) => {
       if (!captureEnabled || eventCount >= MAX_EVENTS || !observed ||
           !["click", "change", "input"].includes(observed.interactionType)) return;
       const control = sanitizeObservedControl(observed);
@@ -458,17 +698,42 @@ async function runRecord(rawOptions) {
         interactionType: observed.interactionType,
         ...control,
       };
-      writeQueue = writeQueue.then(() => appendFile(eventsPath, `${JSON.stringify(event)}\n`, { mode: FILE_MODE }));
-      return writeQueue;
-    });
-    await page.addInitScript(pageInstaller);
-    await page.evaluate(pageInstaller);
-    captureEnabled = true;
-    page.on("framenavigated", (frame) => {
-      if (frame === page.mainFrame()) pageSequence += 1;
-    });
+      writeQueue = writeQueue.then(() => broker.write(
+        "append",
+        "events.jsonl",
+        `${JSON.stringify(event)}\n`,
+      ));
+    };
+    const isolated = await createIsolatedRecorder(
+      page.context(),
+      page,
+      observe,
+      (mainFrame) => {
+        if (mainFrame) pageSequence += 1;
+      },
+    );
+    const initialInspection = await withDeadline(
+      inspectFrames(isolated),
+      CAPTURE_DEADLINE_MS,
+    );
+    if (initialInspection.snapshots.some(({ value }) => isSensitivePage(value))) {
+      throw new RecorderError("sensitive page refused");
+    }
 
-    const writeCheckpoint = async (kind, signal) => {
+    await broker.request("mkdir", { path: "checkpoints" });
+    await broker.write("write-exclusive", "events.jsonl", "");
+    captureEnabled = true;
+
+    const writeCheckpoint = async (kind, requestSignal) => {
+      const operationController = new AbortController();
+      const cancelOperation = () => operationController.abort();
+      requestSignal.addEventListener("abort", cancelOperation, { once: true });
+      if (requestSignal.aborted) cancelOperation();
+      const operationDeadline = setTimeout(
+        cancelOperation,
+        CHECKPOINT_OPERATION_DEADLINE_MS,
+      );
+      const signal = operationController.signal;
       let temporaryDirectory;
       try {
         throwIfAborted(signal);
@@ -477,48 +742,87 @@ async function runRecord(rawOptions) {
         if (!lifecycleAllows(checkpointKinds, kind)) {
           throw new RecorderError("invalid checkpoint lifecycle");
         }
-        await writeQueue;
+        await withDeadline(writeQueue, BROKER_REQUEST_DEADLINE_MS, signal);
         throwIfAborted(signal);
-        const snapshot = await withDeadline(
-          snapshotPage(page),
+        const inspection = await withDeadline(
+          inspectFrames(isolated, true),
           CAPTURE_DEADLINE_MS,
           signal,
         );
-        if (isSensitivePage(snapshot)) throw new RecorderError("sensitive page refused");
+        if (inspection.snapshots.some(({ value }) => isSensitivePage(value))) {
+          throw new RecorderError("sensitive page refused");
+        }
+        if (!inspection.main || inspection.main.structuralOverflow ||
+            inspection.snapshots.some(({ value }) => value.controlOverflow)) {
+          throw new RecorderError("capture resource limit exceeded");
+        }
+        const controls = inspection.snapshots.flatMap(({ value }) => value.controls)
+          .filter((control) => !["password", "hidden"].includes(control.type))
+          .map(sanitizeObservedControl);
+        const html = inspection.main.html;
+        const budget = await broker.request("stat-budget");
+        validateCaptureResources({
+          controlCount: controls.length,
+          htmlBytes: Buffer.byteLength(html),
+          screenshotWidth: inspection.main.width,
+          screenshotHeight: inspection.main.height,
+          checkpointCount: checkpointKinds.length + 1,
+          sessionBytes: budget.bytes,
+        });
+        const afterStructure = await withDeadline(
+          inspectFrames(isolated),
+          CAPTURE_DEADLINE_MS,
+          signal,
+        );
+        if (afterStructure.identity !== inspection.identity ||
+            afterStructure.snapshots.some(({ value }) => isSensitivePage(value))) {
+          throw new RecorderError("unstable page document");
+        }
         const sequence = checkpointKinds.length + 1;
         const checkpointName = `${String(sequence).padStart(4, "0")}-${kind}`;
-        const checkpointsRoot = path.join(options.output, "checkpoints");
-        const checkpointDirectory = path.join(checkpointsRoot, checkpointName);
-        temporaryDirectory = path.join(
-          checkpointsRoot,
-          `.tmp-${randomBytes(18).toString("base64url")}`,
-        );
-        await mkdir(temporaryDirectory, { mode: DIRECTORY_MODE });
-        const controls = snapshot.controls
-          .filter((control) => control.type !== "password")
-          .map(sanitizeObservedControl);
-        const html = await withDeadline(
-          page.content(),
-          CAPTURE_DEADLINE_MS,
-          signal,
-        );
+        const checkpointDirectory = `checkpoints/${checkpointName}`;
+        temporaryDirectory = `checkpoints/.tmp-${randomBytes(18).toString("base64url")}`;
+        await broker.request("mkdir", { path: temporaryDirectory });
         const screenshot = await withDeadline(
           page.screenshot({ fullPage: true, timeout: CAPTURE_DEADLINE_MS }),
           CAPTURE_DEADLINE_MS,
           signal,
         );
+        validateCaptureResources({
+          screenshotWidth: inspection.main.width,
+          screenshotHeight: inspection.main.height,
+          screenshotBytes: screenshot.byteLength,
+        });
+        const afterScreenshot = await withDeadline(
+          inspectFrames(isolated),
+          CAPTURE_DEADLINE_MS,
+          signal,
+        );
+        if (afterScreenshot.identity !== inspection.identity ||
+            afterScreenshot.snapshots.some(({ value }) => isSensitivePage(value))) {
+          throw new RecorderError("unstable page document");
+        }
         throwIfAborted(signal);
         await Promise.all([
-          writeFile(path.join(temporaryDirectory, "page.html"), html, { mode: FILE_MODE, flag: "wx" }),
-          writeFile(path.join(temporaryDirectory, "page.png"), screenshot, { mode: FILE_MODE, flag: "wx" }),
-          privateJson(path.join(temporaryDirectory, "controls.json"), controls),
-          privateJson(path.join(temporaryDirectory, "checkpoint.json"), {
+          broker.write("write-exclusive", `${temporaryDirectory}/page.html`, html),
+          broker.write("write-exclusive", `${temporaryDirectory}/page.png`, screenshot),
+          broker.writeJson("write-exclusive", `${temporaryDirectory}/controls.json`, controls),
+          broker.writeJson("write-exclusive", `${temporaryDirectory}/checkpoint.json`, {
             kind,
             sequence,
             timestamp: new Date().toISOString(),
             pageSequence,
           }),
         ]);
+        const beforeCommit = await withDeadline(
+          inspectFrames(isolated),
+          CAPTURE_DEADLINE_MS,
+          signal,
+        );
+        if (beforeCommit.identity !== inspection.identity ||
+            beforeCommit.snapshots.some(({ value }) => isSensitivePage(value))) {
+          throw new RecorderError("unstable page document");
+        }
         throwIfAborted(signal);
         if (shuttingDown) throw new RecorderError("operation canceled");
         await commitCheckpoint({
@@ -526,17 +830,24 @@ async function runRecord(rawOptions) {
           checkpointDirectory,
           signal,
           isShuttingDown: () => shuttingDown,
+          renameDirectory: (source, destination) => broker.request(
+            "rename-no-replace",
+            { source, destination },
+          ),
+          removeDirectory: (target) => broker.request("remove-tree", { path: target }),
           updateLifecycle: () => {
             checkpointKinds.push(kind);
-            checkpointNames.push(checkpointName);
           },
         });
         temporaryDirectory = undefined;
       } catch (error) {
         if (temporaryDirectory) {
-          await rm(temporaryDirectory, { recursive: true, force: true }).catch(() => {});
+          await broker.request("remove-tree", { path: temporaryDirectory }).catch(() => {});
         }
         throw error;
+      } finally {
+        clearTimeout(operationDeadline);
+        requestSignal.removeEventListener("abort", cancelOperation);
       }
     };
 
@@ -549,6 +860,11 @@ async function runRecord(rawOptions) {
     activeToken = randomBytes(32).toString("base64url");
     let stopRequested;
     const stopPromise = new Promise((resolve) => { stopRequested = resolve; });
+    const brokerFailurePromise = new Promise((resolve) => {
+      if (broker.child.exitCode !== null) resolve("broker-failed");
+      broker.child.once("exit", () => resolve("broker-failed"));
+      broker.child.once("error", () => resolve("broker-failed"));
+    });
     const handleControlRequest = async (request, response) => {
       const reject = (status = 400) => {
         if (response.destroyed || response.writableEnded) return;
@@ -578,7 +894,6 @@ async function runRecord(rawOptions) {
       response.once("close", () => {
         if (!response.writableEnded) cancel();
       });
-      const deadline = setTimeout(cancel, CONTROL_DEADLINE_MS);
       try {
         const body = await readRequestBody(request, controller.signal);
         if (request.url === "/checkpoint") {
@@ -597,7 +912,6 @@ async function runRecord(rawOptions) {
       } catch {
         reject(400);
       } finally {
-        clearTimeout(deadline);
         activeControllers.delete(controller);
       }
     };
@@ -620,7 +934,7 @@ async function runRecord(rawOptions) {
     });
     const port = server.address().port;
     controlPath = path.join(options.output, "control.json");
-    await privateJson(controlPath, { port, token: activeToken });
+    await broker.writeJson("write-exclusive", "control.json", { port, token: activeToken });
 
     let quiescePromise;
     quiesce = () => {
@@ -629,7 +943,7 @@ async function runRecord(rawOptions) {
         shuttingDown = true;
         captureEnabled = false;
         activeToken = null;
-        if (controlPath) await rm(controlPath, { force: true }).catch(() => {});
+        if (controlPath) await broker.request("remove-tree", { path: "control.json" }).catch(() => {});
         const serverClosed = server?.listening
           ? new Promise((resolve) => server.close(resolve))
           : Promise.resolve();
@@ -649,26 +963,32 @@ async function runRecord(rawOptions) {
       process.once("SIGINT", resolve);
       process.once("SIGTERM", resolve);
     });
-    await Promise.race([signalPromise, stopPromise]);
+    const stopReason = await Promise.race([signalPromise, stopPromise, brokerFailurePromise]);
+    if (stopReason === "broker-failed") {
+      throw new RecorderError("filesystem broker unavailable");
+    }
     await quiesce();
-    await privateJson(path.join(options.output, "recording-summary.json"), {
+    await broker.writeJson("write-exclusive", "recording-summary.json", {
       checkpointKinds,
     });
     const receipt = {
       recorderVersion: "1.0.0",
       captureMonth: new Date().toISOString().slice(0, 7),
       captureId: randomBytes(18).toString("base64url"),
-      sourceFiles: await sourceFileMap(options.output, checkpointNames),
+      sourceFiles: await broker.request("hash-source-files"),
     };
-    await privateJson(path.join(options.output, "capture-receipt.json"), receipt);
+    await broker.writeJson("write-exclusive", "capture-receipt.json", receipt);
   } finally {
     shuttingDown = true;
     captureEnabled = false;
     activeToken = null;
-    if (controlPath) await rm(controlPath, { force: true }).catch(() => {});
+    if (controlPath && broker) {
+      await broker.request("remove-tree", { path: "control.json" }).catch(() => {});
+    }
     for (const controller of activeControllers) controller.abort();
     if (quiesce) await quiesce().catch(() => {});
     else if (server?.listening) await new Promise((resolve) => server.close(resolve)).catch(() => {});
+    await broker?.close().catch(() => {});
   }
 }
 
@@ -691,7 +1011,7 @@ async function runCheckpoint(rawSession, rawKind) {
     throw new RecorderError("recorder unavailable");
   }
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 2000);
+  const timer = setTimeout(() => controller.abort(), CLIENT_DEADLINE_MS);
   try {
     const response = await fetch(`http://127.0.0.1:${control.port}/checkpoint`, {
       method: "POST",
