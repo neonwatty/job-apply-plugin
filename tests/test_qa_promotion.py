@@ -18,6 +18,7 @@ from qa.promote import (
     compile_candidate,
     promote_candidate,
 )
+from qa.recorder_fs import BrokerError
 
 
 FIXTURE_ID = "linkedin-easy-apply-short-2026-08-v1"
@@ -34,6 +35,7 @@ class PromotionTests(unittest.TestCase):
         self.candidate = self.session / "candidate"
         self.destination = self.root / "qa" / "fixtures"
         self.session.mkdir(parents=True)
+        self.destination.mkdir(parents=True)
         self._write_private_inputs()
         compile_candidate(self.session, FIXTURE_ID, self.candidate)
 
@@ -97,8 +99,9 @@ class PromotionTests(unittest.TestCase):
         manifest["stringCategories"].append("Private Person")
         manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
 
-        with self.assertRaisesRegex(PromotionError, "privacy scan failed"):
+        with self.assertRaisesRegex(PromotionError, "privacy scan failed") as raised:
             promote_candidate(self.candidate, self.destination, now=NOW)
+        self.assertNotIn("Private Person", str(raised.exception))
         self.assertTrue(self.session.exists())
 
     def test_success_promotes_and_deletes_private_session(self) -> None:
@@ -128,7 +131,7 @@ class PromotionTests(unittest.TestCase):
         (existing / "fixture.json").write_bytes(prior)
 
         with mock.patch(
-            "qa.promote.os.replace", side_effect=OSError("synthetic failure")
+            "qa.promote.exclusive_rename", side_effect=BrokerError("rename-failed")
         ) as replace:
             with self.assertRaisesRegex(PromotionError, "atomic install failed"):
                 promote_candidate(self.candidate, self.destination, now=NOW)
@@ -140,7 +143,7 @@ class PromotionTests(unittest.TestCase):
     def test_private_parent_swap_fails_closed_without_deleting_replacement(self) -> None:
         approve_candidate(self.candidate, "qa-owner", now=NOW)
         displaced = self.root / ".qa-private-original"
-        original_safe_destination = promotion._safe_destination
+        original_safe_destination = promotion._open_destination_binding
 
         def swap_parent(destination: Path) -> Path:
             result = original_safe_destination(destination)
@@ -150,7 +153,7 @@ class PromotionTests(unittest.TestCase):
             (replacement / "unrelated.txt").write_text("keep", encoding="utf-8")
             return result
 
-        with mock.patch("qa.promote._safe_destination", side_effect=swap_parent):
+        with mock.patch("qa.promote._open_destination_binding", side_effect=swap_parent):
             with self.assertRaisesRegex(PromotionError, "private session changed"):
                 promote_candidate(self.candidate, self.destination, now=NOW)
 
@@ -166,7 +169,7 @@ class PromotionTests(unittest.TestCase):
     def test_private_session_swap_fails_closed_without_deleting_replacement(self) -> None:
         approve_candidate(self.candidate, "qa-owner", now=NOW)
         displaced = self.private / "qa-session-original"
-        original_safe_destination = promotion._safe_destination
+        original_safe_destination = promotion._open_destination_binding
 
         def swap_session(destination: Path) -> Path:
             result = original_safe_destination(destination)
@@ -175,7 +178,7 @@ class PromotionTests(unittest.TestCase):
             (self.session / "unrelated.txt").write_text("keep", encoding="utf-8")
             return result
 
-        with mock.patch("qa.promote._safe_destination", side_effect=swap_session):
+        with mock.patch("qa.promote._open_destination_binding", side_effect=swap_session):
             with self.assertRaisesRegex(PromotionError, "private session changed"):
                 promote_candidate(self.candidate, self.destination, now=NOW)
 
@@ -249,6 +252,192 @@ class PromotionTests(unittest.TestCase):
         )
         self.assertTrue((displaced / self.session.name / "candidate").is_dir())
         self.assertFalse((self.destination / FIXTURE_ID).exists())
+
+    def test_destination_inside_private_tree_is_rejected(self) -> None:
+        approve_candidate(self.candidate, "qa-owner", now=NOW)
+        overlapping = self.candidate / "qa" / "fixtures"
+        overlapping.mkdir(parents=True)
+
+        with self.assertRaisesRegex(PromotionError, "unsafe destination path"):
+            promote_candidate(self.candidate, overlapping, now=NOW)
+
+        self.assertTrue(self.session.exists())
+
+    def test_existing_empty_fixture_target_is_never_replaced(self) -> None:
+        approve_candidate(self.candidate, "qa-owner", now=NOW)
+        existing = self.destination / FIXTURE_ID
+        existing.mkdir()
+
+        with self.assertRaisesRegex(PromotionError, "destination exists"):
+            promote_candidate(self.candidate, self.destination, now=NOW)
+
+        self.assertTrue(existing.is_dir())
+        self.assertEqual(list(existing.iterdir()), [])
+        self.assertTrue(self.session.exists())
+
+    def test_deletion_failure_rolls_back_new_fixture(self) -> None:
+        approve_candidate(self.candidate, "qa-owner", now=NOW)
+
+        with mock.patch(
+            "qa.promote._destroy_bound_session",
+            side_effect=PromotionError("private session deletion failed"),
+        ):
+            with self.assertRaisesRegex(PromotionError, "deletion failed") as raised:
+                promote_candidate(self.candidate, self.destination, now=NOW)
+
+        self.assertNotIn("Private Person", str(raised.exception))
+        self.assertFalse((self.destination / FIXTURE_ID).exists())
+        self.assertTrue(self.session.exists())
+
+    def test_deep_raw_tree_fails_preflight_before_install(self) -> None:
+        approve_candidate(self.candidate, "qa-owner", now=NOW)
+        current = self.session
+        for index in range(40):
+            current = current / f"d{index}"
+            current.mkdir()
+
+        with self.assertRaisesRegex(PromotionError, "deletion preflight failed"):
+            promote_candidate(self.candidate, self.destination, now=NOW)
+
+        self.assertFalse((self.destination / FIXTURE_ID).exists())
+        self.assertTrue(self.session.exists())
+
+    def test_privacy_failure_never_echoes_sensitive_filename(self) -> None:
+        approve_candidate(self.candidate, "qa-owner", now=NOW)
+        sensitive = "Private Person secret.txt"
+        (self.candidate / sensitive).write_text("safe", encoding="utf-8")
+
+        with self.assertRaisesRegex(PromotionError, "invalid candidate inventory") as raised:
+            promote_candidate(self.candidate, self.destination, now=NOW)
+
+        self.assertNotIn(sensitive, str(raised.exception))
+
+    def test_cross_device_descendant_fails_preflight(self) -> None:
+        approve_candidate(self.candidate, "qa-owner", now=NOW)
+        marker = self.session / "cross-device.txt"
+        marker.write_text("safe", encoding="utf-8")
+        original_identity = promotion._deletion_entry_identity
+
+        def change_device(entry):
+            identity = original_identity(entry)
+            if entry.name == marker.name:
+                values = list(identity)
+                values[2] = identity.st_dev + 1
+                return os.stat_result(values)
+            return identity
+
+        with mock.patch(
+            "qa.promote._deletion_entry_identity", side_effect=change_device
+        ):
+            with self.assertRaisesRegex(PromotionError, "deletion preflight failed"):
+                promote_candidate(self.candidate, self.destination, now=NOW)
+
+        self.assertFalse((self.destination / FIXTURE_ID).exists())
+        self.assertTrue(marker.exists())
+
+    def test_wide_raw_tree_fails_bounded_preflight(self) -> None:
+        approve_candidate(self.candidate, "qa-owner", now=NOW)
+        wide = self.session / "wide"
+        wide.mkdir()
+        for index in range(promotion.MAX_DELETE_ENTRIES_PER_DIRECTORY + 1):
+            (wide / f"f{index}").touch()
+
+        with self.assertRaisesRegex(PromotionError, "deletion preflight failed"):
+            promote_candidate(self.candidate, self.destination, now=NOW)
+
+        self.assertFalse((self.destination / FIXTURE_ID).exists())
+        self.assertTrue(wide.exists())
+
+    def test_fixture_bytes_are_read_once_and_installed_from_snapshot(self) -> None:
+        approve_candidate(self.candidate, "qa-owner", now=NOW)
+        fixture_path = self.candidate / "fixture.json"
+        original_fixture = fixture_path.read_bytes()
+        original_read = promotion._read_regular_at
+        fixture_reads = 0
+
+        def mutate_after_read(directory_descriptor, name, diagnostic):
+            nonlocal fixture_reads
+            data = original_read(directory_descriptor, name, diagnostic)
+            if name == "fixture.json":
+                fixture_reads += 1
+                fixture_path.write_bytes(b'{"tampered":true}\n')
+            return data
+
+        with mock.patch("qa.promote._read_regular_at", side_effect=mutate_after_read):
+            promote_candidate(self.candidate, self.destination, now=NOW)
+
+        self.assertEqual(fixture_reads, 1)
+        self.assertEqual(
+            (self.destination / FIXTURE_ID / "fixture.json").read_bytes(),
+            original_fixture,
+        )
+
+    def test_candidate_aba_during_privacy_scan_fails_closed(self) -> None:
+        approve_candidate(self.candidate, "qa-owner", now=NOW)
+        displaced = self.session / "candidate-original"
+        original_scan = promotion._scan_snapshot
+
+        def swap_candidate(snapshot, denied_terms):
+            original_scan(snapshot, denied_terms)
+            self.candidate.rename(displaced)
+            shutil.copytree(displaced, self.candidate)
+
+        with mock.patch("qa.promote._scan_snapshot", side_effect=swap_candidate):
+            with self.assertRaisesRegex(PromotionError, "private session changed"):
+                promote_candidate(self.candidate, self.destination, now=NOW)
+
+        self.assertTrue(displaced.is_dir())
+        self.assertTrue(self.candidate.is_dir())
+        self.assertFalse((self.destination / FIXTURE_ID).exists())
+
+    def test_destination_ancestor_swap_fails_before_install(self) -> None:
+        approve_candidate(self.candidate, "qa-owner", now=NOW)
+        displaced = self.root / "qa-original"
+        original_stat = promotion.os.stat
+        swapped = False
+
+        def swap_qa_after_stat(path, *args, **kwargs):
+            nonlocal swapped
+            observed = original_stat(path, *args, **kwargs)
+            if path == "qa" and kwargs.get("dir_fd") is not None and not swapped:
+                swapped = True
+                (self.root / "qa").rename(displaced)
+                shutil.copytree(displaced, self.root / "qa")
+            return observed
+
+        with mock.patch("qa.promote.os.stat", side_effect=swap_qa_after_stat):
+            with self.assertRaisesRegex(PromotionError, "unsafe destination path"):
+                promote_candidate(self.candidate, self.destination, now=NOW)
+
+        self.assertTrue(swapped)
+        self.assertTrue(displaced.is_dir())
+        self.assertFalse((self.destination / FIXTURE_ID).exists())
+
+    def test_missing_destination_parents_are_not_created(self) -> None:
+        approve_candidate(self.candidate, "qa-owner", now=NOW)
+        self.destination.rmdir()
+        self.destination.parent.rmdir()
+
+        with self.assertRaisesRegex(PromotionError, "unsafe destination path"):
+            promote_candidate(self.candidate, self.destination, now=NOW)
+
+        self.assertFalse(self.destination.parent.exists())
+        self.assertTrue(self.session.exists())
+
+    def test_missing_posix_capabilities_fail_closed(self) -> None:
+        approve_candidate(self.candidate, "qa-owner", now=NOW)
+        with mock.patch("qa.promote._POSIX_DESCRIPTOR_SUPPORT", False):
+            with self.assertRaisesRegex(PromotionError, "unsupported platform"):
+                promote_candidate(self.candidate, self.destination, now=NOW)
+        self.assertTrue(self.session.exists())
+
+    def test_missing_exclusive_rename_capability_fails_closed(self) -> None:
+        approve_candidate(self.candidate, "qa-owner", now=NOW)
+        with mock.patch("qa.promote._EXCLUSIVE_RENAME", None):
+            with self.assertRaisesRegex(PromotionError, "unsupported platform"):
+                promote_candidate(self.candidate, self.destination, now=NOW)
+        self.assertFalse((self.destination / FIXTURE_ID).exists())
+        self.assertTrue(self.session.exists())
 
 
 if __name__ == "__main__":
