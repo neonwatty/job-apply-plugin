@@ -100,7 +100,10 @@ async function startSyntheticSite(t) {
   const server = http.createServer((request, response) => {
     response.setHeader("content-type", "text/html; charset=utf-8");
     if (request.url === "/login") {
-      response.end("<!doctype html><title>Sign in</title><form><label>Access phrase<input type=password></label></form>");
+      response.end(`<!doctype html><title>Sign in</title><form>
+        <label>Sensitive login email<input id=login-email type=email></label>
+        <label>Access phrase<input type=password></label>
+        <button id=login-button type=button>Sign in securely</button></form>`);
       return;
     }
     response.end(`<!doctype html><title>Application</title>
@@ -588,10 +591,20 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
     document.body.append(frame);
   }, `${site}/login`);
   await page.locator("#sensitive-child").contentFrame().locator("input[type=password]").waitFor();
+  await page.evaluate(() => {
+    const button = document.createElement("button");
+    button.id = "blocked-by-sensitive-child";
+    button.textContent = "Never record while sensitive child";
+    document.body.append(button);
+  });
+  await page.locator("#blocked-by-sensitive-child").click();
+  await page.locator("#sensitive-child").contentFrame().locator("#login-email")
+    .fill("sensitive-child@example.invalid");
   const childSensitive = await postControl(control, { kind: "application-opened" });
   assert.notEqual(childSensitive.status, 200);
   assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
   await page.locator("#sensitive-child").evaluate((element) => element.remove());
+  await page.locator("#blocked-by-sensitive-child").evaluate((element) => element.remove());
 
   const mainSpoof = "main-world-binding-spoof-secret";
   await page.evaluate((secret) => {
@@ -638,6 +651,8 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   await page.locator("#continue").click();
 
   await page.goto(`${site}/login`);
+  await page.locator("#login-email").fill("sensitive-main@example.invalid");
+  await page.locator("#login-button").click();
   const sensitiveCheckpoint = await runNode([
     "qa/recorder.mjs", "checkpoint", "--session", session,
     "--kind", "application-opened",
@@ -649,6 +664,35 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   await page.goto(`${site}/application`);
   const afterNavigationEmail = "after-navigation@example.invalid";
   await page.locator("#email").fill(afterNavigationEmail);
+
+  const invisibleLabels = [
+    "Hidden attribute control",
+    "ARIA hidden control",
+    "Display none control",
+    "Visibility hidden control",
+    "Zero size control",
+    "Offscreen control",
+    "Hidden frame control",
+  ];
+  await page.evaluate(() => {
+    const fixture = document.createElement("div");
+    fixture.id = "invisible-controls";
+    fixture.innerHTML = `
+      <label hidden>Hidden attribute control<input></label>
+      <div aria-hidden=true><label>ARIA hidden control<input></label></div>
+      <label style="display:none">Display none control<input></label>
+      <label style="visibility:hidden">Visibility hidden control<input></label>
+      <label>Zero size control<input style="width:0;height:0;padding:0;border:0"></label>
+      <label style="position:fixed;left:-10000px;top:0">Offscreen control<input></label>`;
+    document.body.append(fixture);
+    const frame = document.createElement("iframe");
+    frame.id = "hidden-controls-frame";
+    frame.hidden = true;
+    frame.srcdoc = "<label>Hidden frame control<input id=hidden-frame-input></label>";
+    document.body.append(frame);
+  });
+  await page.locator("#hidden-controls-frame").contentFrame().locator("#hidden-frame-input")
+    .waitFor({ state: "attached" });
 
   const cdpSession = await attached.contexts()[0].newCDPSession(page);
   await cdpSession.send("Debugger.enable");
@@ -785,11 +829,21 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
     event.required === true));
   assert.ok(events.some((event) => event.pageSequence >= 2));
   assert.equal(events.some((event) => event.sourceLabel === "Secret password"), false);
+  for (const forbidden of [
+    "Never record while sensitive child",
+    "Sensitive login email",
+    "Sign in securely",
+  ]) {
+    assert.equal(events.some((event) => event.sourceLabel === forbidden), false, forbidden);
+  }
   assert.ok(events.length <= 10_000);
 
   const controls = JSON.parse(controlsText);
   assert.ok(controls.some((control) => control.sourceLabel === "Private Person email"));
   assert.equal(controls.some((control) => control.sourceLabel === "Secret password"), false);
+  for (const label of invisibleLabels) {
+    assert.equal(controls.some((control) => control.sourceLabel === label), false, label);
+  }
   const sanitizedHtml = await readFile(
     path.join(session, "checkpoints", checkpointNames[0], "page.html"),
     "utf8",

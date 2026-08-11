@@ -118,7 +118,10 @@ export function isSensitivePage(snapshot) {
   const url = typeof snapshot?.url === "string" ? snapshot.url : "";
   const title = typeof snapshot?.title === "string" ? snapshot.title : "";
   const text = typeof snapshot?.text === "string" ? snapshot.text.slice(0, 8192) : "";
-  const controls = Array.isArray(snapshot?.controls) ? snapshot.controls : [];
+  const controls = [
+    ...(Array.isArray(snapshot?.controls) ? snapshot.controls : []),
+    ...(Array.isArray(snapshot?.securityControls) ? snapshot.securityControls : []),
+  ];
   if (SENSITIVE_PATTERN.test(`${url}\n${title}\n${text}`)) return true;
   return controls.some((control) => {
     const type = typeof control?.type === "string" ? control.type : "";
@@ -357,6 +360,9 @@ function isolatedInstallerSource(bindingName) {
     Object.defineProperty(globalThis, "__qaIsolatedRecorderInstalled", { value: true });
     const binding = globalThis[${JSON.stringify(bindingName)}];
     if (typeof binding !== "function") return;
+    new MutationObserver(() => {
+      binding(JSON.stringify({ messageType: "document-state" }));
+    }).observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
     const labelFor = (element) => {
       const aria = element.getAttribute("aria-label");
       if (aria) return aria;
@@ -386,12 +392,15 @@ function isolatedInstallerSource(bindingName) {
       document.addEventListener(interactionType, (event) => {
         const element = event.target instanceof Element ? event.target.closest("input,select,textarea,button,[role]") : null;
         if (!element || (element instanceof HTMLInputElement && ["password", "hidden"].includes(element.type))) return;
-        binding(JSON.stringify({
-          interactionType,
-          role: roleFor(element),
-          label: labelFor(element),
-          required: element.matches("[required],[aria-required=true]"),
-        }));
+        queueMicrotask(() => {
+          binding(JSON.stringify({
+            messageType: "interaction",
+            interactionType,
+            role: roleFor(element),
+            label: labelFor(element),
+            required: element.matches("[required],[aria-required=true]"),
+          }));
+        });
       }, true);
     }
   })()`;
@@ -425,14 +434,30 @@ function isolatedSnapshotSource(includeStructure) {
       }
       return "control";
     };
+    const isVisible = (element) => {
+      if (element.matches("input[type=hidden],input[type=password]")) return false;
+      for (let current = element; current instanceof Element; current = current.parentElement) {
+        if (current.matches("[hidden],[aria-hidden=true]")) return false;
+        const style = getComputedStyle(current);
+        if (style.display === "none" || style.visibility === "hidden" ||
+            style.visibility === "collapse" || Number.parseFloat(style.opacity) === 0 ||
+            style.contentVisibility === "hidden") return false;
+      }
+      const rectangle = element.getBoundingClientRect();
+      return rectangle.width > 0 && rectangle.height > 0 && rectangle.bottom > 0 &&
+        rectangle.right > 0 && rectangle.top < innerHeight && rectangle.left < innerWidth;
+    };
     const elements = Array.from(document.querySelectorAll("input,select,textarea,button,[role]"));
-    const controls = elements.slice(0, ${CAPTURE_LIMITS.maxControls + 1}).map((element) => ({
+    const describe = (element) => ({
       type: element instanceof HTMLInputElement ? element.type : element.tagName.toLowerCase(),
       autocomplete: element.getAttribute("autocomplete") || "",
       label: labelFor(element).slice(0, 256),
       role: roleFor(element).slice(0, 64),
       required: element.matches("[required],[aria-required=true]"),
-    }));
+    });
+    const securityControls = elements.slice(0, ${CAPTURE_LIMITS.maxControls + 1}).map(describe);
+    const visibleElements = elements.filter(isVisible);
+    const controls = visibleElements.slice(0, ${CAPTURE_LIMITS.maxControls + 1}).map(describe);
     let html = "";
     let structuralOverflow = false;
     if (${includeStructure ? "true" : "false"}) {
@@ -471,6 +496,7 @@ function isolatedSnapshotSource(includeStructure) {
       title: document.title.slice(0, 512),
       text: (document.body?.innerText || "").slice(0, 8192),
       controls,
+      securityControls,
       controlOverflow: elements.length > ${CAPTURE_LIMITS.maxControls},
       html,
       structuralOverflow,
@@ -481,7 +507,12 @@ function isolatedSnapshotSource(includeStructure) {
 }
 
 function flattenFrameTree(tree, frames = []) {
-  frames.push({ id: tree.frame.id, loaderId: tree.frame.loaderId, url: tree.frame.url });
+  frames.push({
+    id: tree.frame.id,
+    parentId: tree.frame.parentId,
+    loaderId: tree.frame.loaderId,
+    url: tree.frame.url,
+  });
   for (const child of tree.childFrames ?? []) flattenFrameTree(child, frames);
   return frames;
 }
@@ -494,6 +525,7 @@ async function createIsolatedRecorder(context, page, observe, navigated) {
   const allowedContexts = new Set();
   const installer = isolatedInstallerSource(bindingName);
   await session.send("Page.enable");
+  await session.send("DOM.enable");
   await session.send("Runtime.enable");
   await session.send("Runtime.addBinding", { name: bindingName, executionContextName: worldName });
   await session.send("Page.addScriptToEvaluateOnNewDocument", { source: installer, worldName });
@@ -528,7 +560,7 @@ async function createIsolatedRecorder(context, page, observe, navigated) {
     } catch {
       return;
     }
-    observe(value);
+    observe(value, executionContextId);
   });
   session.on("Page.frameAttached", ({ frameId }) => void install(frameId));
   session.on("Page.frameNavigated", ({ frame }) => {
@@ -562,13 +594,51 @@ async function inspectFrames(isolated, includeStructure = false) {
     if (evaluated.exceptionDetails || !evaluated.result?.value) {
       throw new RecorderError("unstable page document");
     }
+    let frameVisible = true;
+    if (frame.parentId) {
+      const parentContextId = isolated.contexts.get(frame.parentId);
+      if (!parentContextId || !isolated.allowedContexts.has(parentContextId)) {
+        throw new RecorderError("unstable page document");
+      }
+      try {
+        const owner = await isolated.session.send("DOM.getFrameOwner", { frameId: frame.id });
+        const resolved = await isolated.session.send("DOM.resolveNode", {
+          backendNodeId: owner.backendNodeId,
+          executionContextId: parentContextId,
+        });
+        const checked = await isolated.session.send("Runtime.callFunctionOn", {
+          objectId: resolved.object.objectId,
+          returnByValue: true,
+          functionDeclaration: `function () {
+            for (let current = this; current instanceof Element; current = current.parentElement) {
+              if (current.matches("[hidden],[aria-hidden=true]")) return false;
+              const style = getComputedStyle(current);
+              if (style.display === "none" || style.visibility === "hidden" ||
+                  style.visibility === "collapse" || Number.parseFloat(style.opacity) === 0 ||
+                  style.contentVisibility === "hidden") return false;
+            }
+            const rectangle = this.getBoundingClientRect();
+            return rectangle.width > 0 && rectangle.height > 0 && rectangle.bottom > 0 &&
+              rectangle.right > 0 && rectangle.top < innerHeight && rectangle.left < innerWidth;
+          }`,
+        });
+        frameVisible = checked.result?.value === true;
+        await isolated.session.send("Runtime.releaseObject", {
+          objectId: resolved.object.objectId,
+        }).catch(() => {});
+      } catch {
+        frameVisible = false;
+      }
+    }
     snapshots.push({
       frame,
+      frameVisible,
       value: { ...evaluated.result.value, url: frame.url },
     });
   }
   return {
-    identity: frames.map((frame) => `${frame.id}:${frame.loaderId}`).sort().join("|"),
+    identity: snapshots.map(({ frame, frameVisible }) =>
+      `${frame.id}:${frame.loaderId}:${frameVisible ? 1 : 0}`).sort().join("|"),
     snapshots,
     main: snapshots.find(({ frame }) => frame.id === treeResult.frameTree.frame.id)?.value,
   };
@@ -674,6 +744,7 @@ async function runRecord(rawOptions) {
   let shuttingDown = false;
   let checkpointQueue = Promise.resolve();
   let writeQueue = Promise.resolve();
+  let eventSafetyQueue = Promise.resolve();
   const activeControllers = new Set();
   const activeHandlers = new Set();
   let quiesce;
@@ -704,11 +775,35 @@ async function runRecord(rawOptions) {
         `${JSON.stringify(event)}\n`,
       ));
     };
-    const isolated = await createIsolatedRecorder(
+    let isolated;
+    let safetyRevision = 0;
+    const safelyObserve = (observed, executionContextId) => {
+      if (observed?.messageType === "document-state") {
+        safetyRevision += 1;
+        return;
+      }
+      if (observed?.messageType !== "interaction") return;
+      if (!captureEnabled || shuttingDown) return;
+      const observedRevision = safetyRevision;
+      eventSafetyQueue = eventSafetyQueue.then(async () => {
+        if (!captureEnabled || shuttingDown) return;
+        if (![...isolated.contexts.values()].includes(executionContextId)) return;
+        const inspection = await withDeadline(
+          inspectFrames(isolated),
+          CAPTURE_DEADLINE_MS,
+        );
+        if (!captureEnabled || shuttingDown || safetyRevision !== observedRevision ||
+            ![...isolated.contexts.values()].includes(executionContextId) ||
+            inspection.snapshots.some(({ value }) => isSensitivePage(value))) return;
+        observe(observed);
+      }).catch(() => {});
+    };
+    isolated = await createIsolatedRecorder(
       page.context(),
       page,
-      observe,
+      safelyObserve,
       (mainFrame) => {
+        safetyRevision += 1;
         if (mainFrame) pageSequence += 1;
       },
     );
@@ -756,7 +851,8 @@ async function runRecord(rawOptions) {
             inspection.snapshots.some(({ value }) => value.controlOverflow)) {
           throw new RecorderError("capture resource limit exceeded");
         }
-        const controls = inspection.snapshots.flatMap(({ value }) => value.controls)
+        const controls = inspection.snapshots.flatMap(({ value, frameVisible }) =>
+          frameVisible ? value.controls : [])
           .filter((control) => !["password", "hidden"].includes(control.type))
           .map(sanitizeObservedControl);
         const html = inspection.main.html;
@@ -953,6 +1049,7 @@ async function runRecord(rawOptions) {
           await Promise.allSettled([...activeHandlers]);
         }
         await checkpointQueue;
+        await eventSafetyQueue;
         await writeQueue;
         await serverClosed;
       })();
