@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 import secrets
 import stat
+import sys
 import tempfile
 from typing import Any
 
@@ -94,6 +95,7 @@ class _SessionBinding:
     session_descriptor: int
     private_identity: os.stat_result
     session_identity: os.stat_result
+    mount_identity: tuple[int, int]
 
     def close(self) -> None:
         os.close(self.session_descriptor)
@@ -153,8 +155,63 @@ def _same_identity(left: os.stat_result, right: os.stat_result) -> bool:
 def _require_posix_capabilities(*, exclusive_install: bool = False) -> None:
     if not _POSIX_DESCRIPTOR_SUPPORT or (
         exclusive_install and _EXCLUSIVE_RENAME is None
-    ):
+    ) or not (sys.platform == "darwin" or sys.platform.startswith("linux")):
         raise PromotionError("unsupported platform")
+
+
+def _descriptor_mount_identity(descriptor: int) -> tuple[int, int]:
+    device = os.fstat(descriptor).st_dev
+    if sys.platform.startswith("linux"):
+        fdinfo = None
+        try:
+            fdinfo = os.open(
+                f"/proc/self/fdinfo/{descriptor}", os.O_RDONLY | os.O_CLOEXEC
+            )
+            data = os.read(fdinfo, 16 * 1024)
+            if os.read(fdinfo, 1):
+                raise PromotionError("unsafe mount boundary")
+            for line in data.splitlines():
+                if line.startswith(b"mnt_id:"):
+                    value = line.split(b":", 1)[1].strip()
+                    if value.isdigit():
+                        return device, int(value)
+            raise PromotionError("unsafe mount boundary")
+        except PromotionError:
+            raise
+        except OSError:
+            raise PromotionError("unsafe mount boundary") from None
+        finally:
+            if fdinfo is not None:
+                os.close(fdinfo)
+    if sys.platform == "darwin":
+        return device, device
+    raise PromotionError("unsupported platform")
+
+
+def _require_private_permissions(identity: os.stat_result) -> None:
+    if identity.st_uid != os.getuid() or stat.S_IMODE(identity.st_mode) != 0o700:
+        raise PromotionError("unsafe private permissions")
+
+
+def _darwin_mountpoint_bound(
+    path: Path, identity: os.stat_result, descriptor: int
+) -> bool:
+    if sys.platform != "darwin":
+        return False
+    try:
+        before = path.lstat()
+        mounted = os.path.ismount(path)
+        after = path.lstat()
+        opened = os.fstat(descriptor)
+    except (OSError, RuntimeError, ValueError):
+        raise PromotionError("unsafe mount boundary") from None
+    if not (
+        _same_identity(identity, before)
+        and _same_identity(identity, after)
+        and _same_identity(identity, opened)
+    ):
+        raise PromotionError("unsafe mount boundary")
+    return mounted
 
 
 def _read_regular_at(
@@ -266,6 +323,8 @@ def _open_session_binding(session_argument: Path) -> _SessionBinding:
         )
         if not _same_identity(private_identity, os.fstat(private_descriptor)):
             raise PromotionError("private session changed")
+        _require_private_permissions(private_identity)
+        mount_identity = _descriptor_mount_identity(private_descriptor)
 
         session_identity = os.stat(
             session.name, dir_fd=private_descriptor, follow_symlinks=False
@@ -277,6 +336,13 @@ def _open_session_binding(session_argument: Path) -> _SessionBinding:
         )
         if not _same_identity(session_identity, os.fstat(session_descriptor)):
             raise PromotionError("private session changed")
+        _require_private_permissions(session_identity)
+        if (
+            session_identity.st_dev != private_identity.st_dev
+            or _descriptor_mount_identity(session_descriptor) != mount_identity
+            or _darwin_mountpoint_bound(session, session_identity, session_descriptor)
+        ):
+            raise PromotionError("unsafe mount boundary")
         binding = _SessionBinding(
             private,
             session,
@@ -284,6 +350,7 @@ def _open_session_binding(session_argument: Path) -> _SessionBinding:
             session_descriptor,
             private_identity,
             session_identity,
+            mount_identity,
         )
         return binding
     except PromotionError:
@@ -318,6 +385,16 @@ def _open_private_binding(candidate_argument: Path) -> _PrivateBinding:
         )
         if not _same_identity(candidate_identity, os.fstat(candidate_descriptor)):
             raise PromotionError("private session changed")
+        _require_private_permissions(candidate_identity)
+        if (
+            candidate_identity.st_dev != session_binding.session_identity.st_dev
+            or _descriptor_mount_identity(candidate_descriptor)
+            != session_binding.mount_identity
+            or _darwin_mountpoint_bound(
+                candidate, candidate_identity, candidate_descriptor
+            )
+        ):
+            raise PromotionError("unsafe mount boundary")
         binding = _PrivateBinding(
             session_binding.private,
             session_binding.session,
@@ -325,6 +402,7 @@ def _open_private_binding(candidate_argument: Path) -> _PrivateBinding:
             session_binding.session_descriptor,
             session_binding.private_identity,
             session_binding.session_identity,
+            session_binding.mount_identity,
             candidate,
             candidate_descriptor,
             candidate_identity,
@@ -349,6 +427,9 @@ def _assert_session_binding(binding: _SessionBinding) -> None:
             binding.private_identity, os.fstat(binding.private_descriptor)
         ):
             raise PromotionError("private session changed")
+        _require_private_permissions(os.fstat(binding.private_descriptor))
+        if _descriptor_mount_identity(binding.private_descriptor) != binding.mount_identity:
+            raise PromotionError("unsafe mount boundary")
         named_session = os.stat(
             binding.session.name,
             dir_fd=binding.private_descriptor,
@@ -358,6 +439,15 @@ def _assert_session_binding(binding: _SessionBinding) -> None:
             binding.session_identity, os.fstat(binding.session_descriptor)
         ):
             raise PromotionError("private session changed")
+        _require_private_permissions(os.fstat(binding.session_descriptor))
+        if (
+            _descriptor_mount_identity(binding.session_descriptor)
+            != binding.mount_identity
+            or _darwin_mountpoint_bound(
+                binding.session, named_session, binding.session_descriptor
+            )
+        ):
+            raise PromotionError("unsafe mount boundary")
     except PromotionError:
         raise
     except OSError:
@@ -378,6 +468,17 @@ def _assert_private_binding(binding: _PrivateBinding) -> None:
             binding.candidate_identity, os.fstat(binding.candidate_descriptor)
         ):
             raise PromotionError("private session changed")
+        _require_private_permissions(os.fstat(binding.candidate_descriptor))
+        if (
+            _descriptor_mount_identity(binding.candidate_descriptor)
+            != binding.mount_identity
+            or _darwin_mountpoint_bound(
+                binding.session / binding.candidate.name,
+                named_candidate,
+                binding.candidate_descriptor,
+            )
+        ):
+            raise PromotionError("unsafe mount boundary")
     except OSError:
         raise PromotionError("private session changed") from None
 
@@ -509,6 +610,16 @@ def compile_candidate(capture: Path, fixture_id: str, candidate: Path) -> dict[s
             raise PromotionError("candidate creation failed") from None
         if not _same_identity(candidate_identity, os.fstat(candidate_descriptor)):
             raise PromotionError("private session changed")
+        _require_private_permissions(candidate_identity)
+        if (
+            candidate_identity.st_dev != session_binding.session_identity.st_dev
+            or _descriptor_mount_identity(candidate_descriptor)
+            != session_binding.mount_identity
+            or _darwin_mountpoint_bound(
+                lexical_candidate, candidate_identity, candidate_descriptor
+            )
+        ):
+            raise PromotionError("unsafe mount boundary")
         binding = _PrivateBinding(
             session_binding.private,
             session_binding.session,
@@ -516,6 +627,7 @@ def compile_candidate(capture: Path, fixture_id: str, candidate: Path) -> dict[s
             session_binding.session_descriptor,
             session_binding.private_identity,
             session_binding.session_identity,
+            session_binding.mount_identity,
             lexical_candidate,
             candidate_descriptor,
             candidate_identity,
@@ -775,6 +887,7 @@ def _remove_tree_contents(
     depth: int = 0,
     state: list[int] | None = None,
     device: int | None = None,
+    mount_identity: tuple[int, int] | None = None,
 ) -> None:
     if state is None:
         state = [0]
@@ -782,6 +895,8 @@ def _remove_tree_contents(
         raise PromotionError("bounded cleanup failed")
     if device is None:
         device = os.fstat(directory_descriptor).st_dev
+    if mount_identity is None:
+        mount_identity = _descriptor_mount_identity(directory_descriptor)
     per_directory = 0
     with os.scandir(directory_descriptor) as entries:
         for entry in entries:
@@ -804,11 +919,14 @@ def _remove_tree_contents(
                 try:
                     if not _same_identity(identity, os.fstat(child)):
                         raise PromotionError("bounded cleanup failed")
+                    if _descriptor_mount_identity(child) != mount_identity:
+                        raise PromotionError("bounded cleanup failed")
                     _remove_tree_contents(
                         child,
                         depth=depth + 1,
                         state=state,
                         device=device,
+                        mount_identity=mount_identity,
                     )
                 finally:
                     os.close(child)
@@ -836,7 +954,9 @@ def _preflight_deletion(binding: _PrivateBinding) -> list[_DeleteNode]:
     total = 0
     session_device = binding.session_identity.st_dev
 
-    def walk(directory_descriptor: int, depth: int) -> list[_DeleteNode]:
+    def walk(
+        directory_descriptor: int, depth: int, directory_path: Path
+    ) -> list[_DeleteNode]:
         nonlocal total
         if depth > MAX_DELETE_DEPTH:
             raise PromotionError("deletion preflight failed")
@@ -869,15 +989,43 @@ def _preflight_deletion(binding: _PrivateBinding) -> list[_DeleteNode]:
                             if (
                                 not _same_identity(identity, opened)
                                 or opened.st_dev != session_device
+                                or _descriptor_mount_identity(child)
+                                != binding.mount_identity
+                                or _darwin_mountpoint_bound(
+                                    directory_path / entry.name,
+                                    identity,
+                                    child,
+                                )
                             ):
                                 raise PromotionError("deletion preflight failed")
-                            children = walk(child, depth + 1)
+                            children = walk(
+                                child, depth + 1, directory_path / entry.name
+                            )
                         finally:
                             os.close(child)
                         nodes.append(_DeleteNode(entry.name, identity, children))
-                    elif stat.S_ISREG(identity.st_mode) or stat.S_ISLNK(
-                        identity.st_mode
-                    ):
+                    elif stat.S_ISREG(identity.st_mode):
+                        child = os.open(
+                            entry.name,
+                            os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC,
+                            dir_fd=directory_descriptor,
+                        )
+                        try:
+                            if (
+                                not _same_identity(identity, os.fstat(child))
+                                or _descriptor_mount_identity(child)
+                                != binding.mount_identity
+                                or _darwin_mountpoint_bound(
+                                    directory_path / entry.name,
+                                    identity,
+                                    child,
+                                )
+                            ):
+                                raise PromotionError("deletion preflight failed")
+                        finally:
+                            os.close(child)
+                        nodes.append(_DeleteNode(entry.name, identity, None))
+                    elif stat.S_ISLNK(identity.st_mode):
                         nodes.append(_DeleteNode(entry.name, identity, None))
                     else:
                         raise PromotionError("deletion preflight failed")
@@ -888,13 +1036,14 @@ def _preflight_deletion(binding: _PrivateBinding) -> list[_DeleteNode]:
         return nodes
 
     _assert_private_binding(binding)
-    return walk(binding.session_descriptor, 0)
+    return walk(binding.session_descriptor, 0, binding.session)
 
 
 def _delete_preflighted(
     directory_descriptor: int,
     nodes: list[_DeleteNode],
     session_device: int,
+    mount_identity: tuple[int, int],
 ) -> None:
     try:
         for node in nodes:
@@ -918,7 +1067,11 @@ def _delete_preflighted(
                 try:
                     if not _same_identity(node.identity, os.fstat(child)):
                         raise PromotionError("private session deletion failed")
-                    _delete_preflighted(child, node.children, session_device)
+                    if _descriptor_mount_identity(child) != mount_identity:
+                        raise PromotionError("private session deletion failed")
+                    _delete_preflighted(
+                        child, node.children, session_device, mount_identity
+                    )
                 finally:
                     os.close(child)
                 os.rmdir(node.name, dir_fd=directory_descriptor)
@@ -939,6 +1092,7 @@ def _destroy_bound_session(
             binding.session_descriptor,
             deletion_plan,
             binding.session_identity.st_dev,
+            binding.mount_identity,
         )
         named_session = os.stat(
             binding.session.name,
@@ -1153,17 +1307,36 @@ def _promote_bound_candidate(
             except (OSError, PromotionError):
                 pass
 
+    cleanup_mutated = False
+    tombstone_name = f".deleting-{secrets.token_hex(12)}"
     try:
         if installed_identity is None:
             raise PromotionError("atomic install failed")
         _assert_destination_binding(destination)
         _assert_private_binding(binding)
-        _destroy_bound_session(binding, deletion_plan)
-    except PromotionError as deletion_error:
-        _rollback_installed_fixture(
-            destination, fixture["id"], installed_identity
+        exclusive_rename(
+            binding.private_descriptor,
+            binding.session.name,
+            binding.private_descriptor,
+            tombstone_name,
         )
-        raise PromotionError("private session deletion failed") from deletion_error
+        cleanup_mutated = True
+        binding.session = binding.private / tombstone_name
+        os.fsync(binding.private_descriptor)
+        named_tombstone = os.stat(
+            tombstone_name,
+            dir_fd=binding.private_descriptor,
+            follow_symlinks=False,
+        )
+        if not _same_identity(binding.session_identity, named_tombstone):
+            raise PromotionError("cleanup incomplete")
+        _destroy_bound_session(binding, deletion_plan)
+    except (BrokerError, OSError, PromotionError) as cleanup_error:
+        if not cleanup_mutated and installed_identity is not None:
+            _rollback_installed_fixture(
+                destination, fixture["id"], installed_identity
+            )
+        raise PromotionError("cleanup incomplete") from cleanup_error
     return display_destination / fixture["id"]
 
 
