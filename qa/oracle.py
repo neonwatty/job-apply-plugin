@@ -20,6 +20,15 @@ MAX_SESSION_ENTRIES = 256
 MAX_JSON_DEPTH = 64
 MAX_JSON_NODES = 100_000
 
+_DESCRIPTOR_TRAVERSAL_AVAILABLE = (
+    hasattr(os, "O_DIRECTORY")
+    and hasattr(os, "O_NOFOLLOW")
+    and os.open in getattr(os, "supports_dir_fd", set())
+    and os.stat in getattr(os, "supports_dir_fd", set())
+    and os.stat in getattr(os, "supports_follow_symlinks", set())
+    and os.scandir in getattr(os, "supports_fd", set())
+)
+
 EVENT_TYPES = {
     "filled",
     "uploaded",
@@ -76,9 +85,10 @@ def _has_forbidden_value_key(key: str) -> bool:
     return lowered == "value" or lowered.endswith("value")
 
 
-def _inspect_json_tree(value: Any, diagnostic: str) -> None:
+def _json_tree_has_forbidden_value_key(value: Any, diagnostic: str) -> bool:
     stack = [(value, 0)]
     nodes = 0
+    forbidden = False
     while stack:
         current, depth = stack.pop()
         nodes += 1
@@ -86,11 +96,18 @@ def _inspect_json_tree(value: Any, diagnostic: str) -> None:
             raise OracleError(diagnostic)
         if isinstance(current, dict):
             for key, child in current.items():
-                if not isinstance(key, str) or _has_forbidden_value_key(key):
+                if not isinstance(key, str):
                     raise OracleError(diagnostic)
+                forbidden = forbidden or _has_forbidden_value_key(key)
                 stack.append((child, depth + 1))
         elif isinstance(current, list):
             stack.extend((child, depth + 1) for child in current)
+    return forbidden
+
+
+def _inspect_json_tree(value: Any, diagnostic: str) -> None:
+    if _json_tree_has_forbidden_value_key(value, diagnostic):
+        raise OracleError(diagnostic)
 
 
 def _validate_string_fields(value: dict[str, Any], fields: set[str]) -> bool:
@@ -110,24 +127,29 @@ def _valid_application_id(value: Any) -> bool:
     )
 
 
-def _read_regular_file(path: Path, diagnostic: str) -> bytes:
+def _read_regular_file(
+    directory_descriptor: int,
+    name: str,
+    diagnostic: str,
+    expected_identity: os.stat_result | None = None,
+) -> bytes:
+    descriptor = None
     try:
-        path_stat = path.lstat()
-        if not stat.S_ISREG(path_stat.st_mode):
-            raise OracleError(diagnostic)
-        if path_stat.st_size > MAX_ARTIFACT_BYTES:
-            raise OracleError(diagnostic)
-        flags = os.O_RDONLY
-        if hasattr(os, "O_NOFOLLOW"):
-            flags |= os.O_NOFOLLOW
-        descriptor = os.open(path, flags)
+        descriptor = os.open(
+            name,
+            os.O_RDONLY | os.O_NOFOLLOW,
+            dir_fd=directory_descriptor,
+        )
         try:
             opened_stat = os.fstat(descriptor)
             if (
                 not stat.S_ISREG(opened_stat.st_mode)
                 or opened_stat.st_size > MAX_ARTIFACT_BYTES
-                or (path_stat.st_dev, path_stat.st_ino)
-                != (opened_stat.st_dev, opened_stat.st_ino)
+                or (
+                    expected_identity is not None
+                    and (expected_identity.st_dev, expected_identity.st_ino)
+                    != (opened_stat.st_dev, opened_stat.st_ino)
+                )
             ):
                 raise OracleError(diagnostic)
             chunks: list[bytes] = []
@@ -144,9 +166,12 @@ def _read_regular_file(path: Path, diagnostic: str) -> bytes:
             return data
         finally:
             os.close(descriptor)
+            descriptor = None
     except OracleError:
         raise
     except (OSError, ValueError):
+        if descriptor is not None:
+            os.close(descriptor)
         raise OracleError(diagnostic) from None
 
 
@@ -243,15 +268,29 @@ def _validate_history_event(value: Any) -> dict[str, Any]:
     return value
 
 
-def _history_results(root: Path) -> tuple[bool, bool, str | None]:
-    path = root / "applications.jsonl"
+def _history_results(
+    root_descriptor: int,
+) -> tuple[bool, bool, str | None, set[str]]:
     try:
-        path.lstat()
-    except FileNotFoundError:
-        return False, True, "history-missing"
+        data = _read_regular_file(
+            root_descriptor,
+            "applications.jsonl",
+            "invalid history artifact",
+        )
+    except OracleError as error:
+        try:
+            os.stat(
+                "applications.jsonl",
+                dir_fd=root_descriptor,
+                follow_symlinks=False,
+            )
+        except FileNotFoundError:
+            return False, True, "history-missing", set()
+        except OSError:
+            pass
+        raise error
     except OSError:
         raise OracleError("invalid history artifact") from None
-    data = _read_regular_file(path, "invalid history artifact")
     lines: list[str] = []
     for physical_line_count, raw_line in enumerate(io.BytesIO(data), 1):
         if physical_line_count > MAX_HISTORY_LINES:
@@ -263,7 +302,7 @@ def _history_results(root: Path) -> tuple[bool, bool, str | None]:
         if line.strip():
             lines.append(line)
     if not lines:
-        return False, True, "history-lifecycle-incomplete"
+        return False, True, "history-lifecycle-incomplete", set()
 
     history: list[dict[str, Any]] = []
     for line in lines:
@@ -275,17 +314,20 @@ def _history_results(root: Path) -> tuple[bool, bool, str | None]:
 
     started_at: dict[str, int] = {}
     lifecycle = False
+    reviewed_ids: set[str] = set()
     completed = False
     for index, event in enumerate(history):
         application_id = event["applicationId"]
         if event["event"] == "started" and application_id not in started_at:
             started_at[application_id] = index
         elif event["event"] == "reviewed" and application_id in started_at:
-            lifecycle = lifecycle or started_at[application_id] < index
+            if started_at[application_id] < index:
+                lifecycle = True
+                reviewed_ids.add(application_id)
         if event["event"] == "completed":
             completed = True
     category = None if lifecycle else "history-lifecycle-incomplete"
-    return lifecycle, not completed, category
+    return lifecycle, not completed, category, reviewed_ids
 
 
 def _validate_session(value: Any, expected_id: str) -> None:
@@ -333,47 +375,83 @@ def _validate_session(value: Any, expected_id: str) -> None:
             raise OracleError("invalid session artifact")
 
 
-def _session_results(root: Path) -> tuple[bool, bool]:
-    directory = root / "sessions"
+def _session_results(
+    root_descriptor: int, reviewed_application_ids: set[str]
+) -> tuple[bool, bool, bool]:
+    sessions_descriptor = None
     try:
-        directory_stat = directory.lstat()
+        sessions_descriptor = os.open(
+            "sessions",
+            os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+            dir_fd=root_descriptor,
+        )
+        directory_stat = os.fstat(sessions_descriptor)
     except FileNotFoundError:
-        return False, True
+        return False, True, False
     except OSError:
+        if sessions_descriptor is not None:
+            os.close(sessions_descriptor)
         raise OracleError("invalid session artifacts") from None
     try:
         if not stat.S_ISDIR(directory_stat.st_mode):
             raise OracleError("invalid session artifacts")
-        paths: list[Path] = []
-        with os.scandir(directory) as entries:
+        names: list[str] = []
+        with os.scandir(sessions_descriptor) as entries:
             for entry_count, entry in enumerate(entries, 1):
                 if entry_count > MAX_SESSION_ENTRIES:
                     raise OracleError("invalid session artifacts")
-                paths.append(Path(entry.path))
+                names.append(entry.name)
     except OracleError:
+        os.close(sessions_descriptor)
         raise
     except OSError:
+        os.close(sessions_descriptor)
         raise OracleError("invalid session artifacts") from None
 
-    json_paths: list[Path] = []
-    for path in sorted(paths, key=lambda item: item.name):
-        try:
-            path_stat = path.lstat()
-        except OSError:
-            raise OracleError("invalid session artifact") from None
-        if not stat.S_ISREG(path_stat.st_mode):
-            raise OracleError("invalid session artifact")
-        if path.suffix == ".json":
-            json_paths.append(path)
-    if not json_paths:
-        return False, True
-    for path in sorted(json_paths, key=lambda item: item.name):
-        value = _parse_json(
-            _read_regular_file(path, "invalid session artifact"),
-            "invalid session artifact",
-        )
-        _validate_session(value, path.stem)
-    return True, True
+    correlated_value_free_session = False
+    session_value_free = True
+    json_found = False
+    try:
+        for name in sorted(names):
+            try:
+                entry_identity = os.stat(
+                    name,
+                    dir_fd=sessions_descriptor,
+                    follow_symlinks=False,
+                )
+            except OSError:
+                raise OracleError("invalid session artifact") from None
+            if not stat.S_ISREG(entry_identity.st_mode):
+                raise OracleError("invalid session artifact")
+            path = Path(name)
+            if path.suffix != ".json":
+                continue
+            json_found = True
+            expected_id = path.stem
+            if not _valid_application_id(expected_id):
+                raise OracleError("invalid session artifact")
+            value = _parse_json(
+                _read_regular_file(
+                    sessions_descriptor,
+                    name,
+                    "invalid session artifact",
+                    entry_identity,
+                ),
+                "invalid session artifact",
+            )
+            if _json_tree_has_forbidden_value_key(
+                value, "invalid session artifact"
+            ):
+                session_value_free = False
+                continue
+            _validate_session(value, expected_id)
+            if expected_id in reviewed_application_ids:
+                correlated_value_free_session = True
+    finally:
+        os.close(sessions_descriptor)
+    if not json_found:
+        return False, True, False
+    return correlated_value_free_session, session_value_free, True
 
 
 def evaluate_run(
@@ -397,16 +475,26 @@ def evaluate_run(
         raise OracleError("invalid scenario")
     if not isinstance(store_root, Path):
         raise OracleError("invalid store root")
+    filled, uploaded, reviewed, final_action = _validate_events(fixture, events)
+    if not _DESCRIPTOR_TRAVERSAL_AVAILABLE:
+        raise OracleError("invalid store root")
+    root_descriptor = None
     try:
-        root_stat = store_root.lstat()
+        root_descriptor = os.open(
+            store_root,
+            os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+        )
+        root_stat = os.fstat(root_descriptor)
         if not stat.S_ISDIR(root_stat.st_mode):
             raise OracleError("invalid store root")
-        root = store_root.resolve(strict=True)
     except OracleError:
+        if root_descriptor is not None:
+            os.close(root_descriptor)
         raise
-    except (OSError, RuntimeError):
+    except OSError:
+        if root_descriptor is not None:
+            os.close(root_descriptor)
         raise OracleError("invalid store root") from None
-    filled, uploaded, reviewed, final_action = _validate_events(fixture, events)
     required_fields = {
         control["id"]
         for step in fixture["steps"]
@@ -421,8 +509,17 @@ def evaluate_run(
     }
     missing_fields = required_fields - filled
     missing_files = required_files - uploaded
-    lifecycle, not_completed, history_category = _history_results(root)
-    session_present, session_value_free = _session_results(root)
+    try:
+        lifecycle, not_completed, history_category, reviewed_ids = _history_results(
+            root_descriptor
+        )
+        (
+            session_present,
+            session_value_free,
+            session_artifact_present,
+        ) = _session_results(root_descriptor, reviewed_ids)
+    finally:
+        os.close(root_descriptor)
 
     checks = {
         "required-fields-filled": not missing_fields,
@@ -449,7 +546,11 @@ def evaluate_run(
     if not not_completed:
         categories.add("history-completed")
     if not session_present:
-        categories.add("session-missing")
+        categories.add(
+            "session-not-correlated"
+            if session_artifact_present
+            else "session-missing"
+        )
     if not session_value_free:
         categories.add("session-value-present")
     if final_action:

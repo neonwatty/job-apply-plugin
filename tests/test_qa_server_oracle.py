@@ -745,6 +745,29 @@ class SemanticOracleTests(unittest.TestCase):
         self.assertEqual(report["assertions"]["history-not-completed"], "failed")
         self.assertIn("history-completed", report["failureCategories"])
 
+    def test_session_must_correlate_to_a_reviewed_history_application(self):
+        session_path = self.store.sessions / "application-1.json"
+        session_path.unlink()
+        self.store.write_session(valid_session("application-2"), "application-2.json")
+        report = self.evaluate()
+        self.assertEqual(report["assertions"]["session-present"], "failed")
+        self.assertEqual(report["status"], "failed")
+        self.assertIn("session-not-correlated", report["failureCategories"])
+
+    def test_session_may_match_any_ordered_reviewed_history_application(self):
+        self.store.write_history(
+            [
+                history_event("started", "application-1"),
+                history_event("started", "application-2"),
+                history_event("reviewed", "application-2"),
+                history_event("reviewed", "application-1"),
+            ]
+        )
+        session_path = self.store.sessions / "application-1.json"
+        session_path.unlink()
+        self.store.write_session(valid_session("application-2"), "application-2.json")
+        self.assertEqual(self.evaluate()["status"], "passed")
+
     def test_malformed_unreadable_or_value_bearing_history_is_rejected(self):
         history_path = self.store.root / "applications.jsonl"
         cases = (
@@ -822,20 +845,12 @@ class SemanticOracleTests(unittest.TestCase):
                 if remove_directory:
                     self.store.sessions.mkdir()
 
-    def test_malformed_future_or_value_bearing_sessions_are_rejected(self):
-        deeply_nested = valid_session()
-        deeply_nested["pendingFields"][0]["details"] = {
-            "nested": {"VaLuE": "SESSION SECRET"}
-        }
+    def test_malformed_or_future_sessions_are_rejected(self):
         cases = (
             "not-json",
             json.dumps([]),
             json.dumps({**valid_session(), "schemaVersion": 2}),
             json.dumps({**valid_session(), "future": True}),
-            json.dumps({**valid_session(), "value": "SESSION SECRET"}),
-            json.dumps({**valid_session(), "answerValue": "SESSION SECRET"}),
-            json.dumps({**valid_session(), "mixedcasevAlUe": "SESSION SECRET"}),
-            json.dumps(deeply_nested),
         )
         session_path = self.store.sessions / "application-1.json"
         for content in cases:
@@ -844,6 +859,27 @@ class SemanticOracleTests(unittest.TestCase):
                 with self.assertRaises(OracleError) as caught:
                     self.evaluate()
                 self.assertNotIn("SESSION SECRET", str(caught.exception))
+
+    def test_value_bearing_sessions_are_scored_as_redacted_failures(self):
+        deeply_nested = valid_session()
+        deeply_nested["pendingFields"][0]["details"] = {
+            "nested": {"VaLuE": "SESSION SECRET"}
+        }
+        cases = (
+            {**valid_session(), "value": "SESSION SECRET"},
+            {**valid_session(), "answerValue": "SESSION SECRET"},
+            {**valid_session(), "mixedcasevAlUe": "SESSION SECRET"},
+            deeply_nested,
+        )
+        session_path = self.store.sessions / "application-1.json"
+        for session in cases:
+            with self.subTest(keys=sorted(session)):
+                session_path.write_text(json.dumps(session), encoding="utf-8")
+                report = self.evaluate()
+                self.assertEqual(report["assertions"]["session-value-free"], "failed")
+                self.assertEqual(report["status"], "failed")
+                self.assertIn("session-value-present", report["failureCategories"])
+                self.assertNotIn("SESSION SECRET", json.dumps(report))
 
     def test_deep_and_large_session_documents_are_rejected(self):
         session = valid_session()
@@ -937,6 +973,79 @@ class SemanticOracleTests(unittest.TestCase):
         self.store.sessions.symlink_to(missing_target, target_is_directory=True)
         with self.assertRaisesRegex(OracleError, "invalid session artifacts"):
             self.evaluate()
+
+    def test_descriptor_traversal_is_required(self):
+        with mock.patch("qa.oracle._DESCRIPTOR_TRAVERSAL_AVAILABLE", False):
+            with self.assertRaisesRegex(OracleError, "invalid store root"):
+                self.evaluate()
+
+    def test_sessions_descriptor_is_closed_when_identity_check_fails(self):
+        real_fstat = os.fstat
+        calls = 0
+        failed_descriptor = None
+
+        def fail_sessions_fstat(descriptor):
+            nonlocal calls, failed_descriptor
+            calls += 1
+            if calls == 3:
+                failed_descriptor = descriptor
+                raise OSError("synthetic failure")
+            return real_fstat(descriptor)
+
+        with mock.patch("qa.oracle.os.fstat", side_effect=fail_sessions_fstat):
+            with self.assertRaisesRegex(OracleError, "invalid session artifacts"):
+                self.evaluate()
+        self.assertIsNotNone(failed_descriptor)
+        with self.assertRaises(OSError):
+            real_fstat(failed_descriptor)
+
+    @unittest.skipIf(not hasattr(os, "symlink"), "symlinks unavailable")
+    def test_root_swap_is_refused_without_reading_outside_store(self):
+        outside = Path(self.temporary.name) / "outside-store"
+        OracleStore(outside).make_valid()
+        backup = Path(self.temporary.name) / "original-store"
+        real_open = os.open
+        swapped = False
+
+        def swap_root(path, flags, mode=0o777, *, dir_fd=None):
+            nonlocal swapped
+            if path == self.store.root and dir_fd is None and not swapped:
+                swapped = True
+                self.store.root.rename(backup)
+                self.store.root.symlink_to(outside, target_is_directory=True)
+            return real_open(path, flags, mode, dir_fd=dir_fd)
+
+        with mock.patch("qa.oracle.os.open", side_effect=swap_root):
+            with self.assertRaisesRegex(OracleError, "invalid store root") as caught:
+                self.evaluate()
+        self.assertTrue(swapped)
+        self.assertNotIn(str(outside), str(caught.exception))
+
+    @unittest.skipIf(not hasattr(os, "symlink"), "symlinks unavailable")
+    def test_sessions_swap_is_refused_without_reading_outside_directory(self):
+        outside = Path(self.temporary.name) / "outside-sessions"
+        outside.mkdir()
+        (outside / "application-1.json").write_text(
+            json.dumps({**valid_session(), "value": "OUTSIDE SECRET"}),
+            encoding="utf-8",
+        )
+        backup = self.store.root / "original-sessions"
+        real_open = os.open
+        swapped = False
+
+        def swap_sessions(path, flags, mode=0o777, *, dir_fd=None):
+            nonlocal swapped
+            if path == "sessions" and dir_fd is not None and not swapped:
+                swapped = True
+                self.store.sessions.rename(backup)
+                self.store.sessions.symlink_to(outside, target_is_directory=True)
+            return real_open(path, flags, mode, dir_fd=dir_fd)
+
+        with mock.patch("qa.oracle.os.open", side_effect=swap_sessions):
+            with self.assertRaisesRegex(OracleError, "invalid session artifacts") as caught:
+                self.evaluate()
+        self.assertTrue(swapped)
+        self.assertNotIn("OUTSIDE SECRET", str(caught.exception))
 
 
 if __name__ == "__main__":
