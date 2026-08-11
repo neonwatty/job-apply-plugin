@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 
 from qa.privacy import ALLOWED_SUFFIXES, PrivacyError, scan_tree
 
@@ -55,11 +56,25 @@ class PrivacyScannerTests(unittest.TestCase):
             ("credential", b"cookie=PRIVATE-VALUE-DO-NOT-ECHO", []),
             ("credential", b"authorization=PRIVATE-VALUE-DO-NOT-ECHO", []),
             ("credential", b"set-cookie=PRIVATE-VALUE-DO-NOT-ECHO", []),
+            (
+                "credential",
+                b'{"cookies":[{"name":"li_at","value":"fictional-secret"}]}',
+                [],
+                ".json",
+            ),
+            (
+                "credential",
+                b'{"headers":[["Cookie","fictional-secret"]]}',
+                [],
+                ".json",
+            ),
+            ("credential", b"document.cookie", [], ".js"),
             ("denied-term-0", private_sentinel.encode(), [private_sentinel]),
             ("source-html", b'<script src="/fictional.js"></script>', []),
             ("source-html", b"linkedin-logo", []),
             ("source-html", b"voyager-web", []),
             ("unexpected-file-type", b"generic\x00binary", []),
+            ("unexpected-file-type", b"generic\xffbinary", []),
             ("unexpected-suffix", b"generic content", [], ".md"),
         )
 
@@ -105,6 +120,10 @@ class PrivacyScannerTests(unittest.TestCase):
             "unexpected.bin": "unexpected-suffix",
         }
         leak_root = TESTDATA / "leaks"
+        self.assertEqual(
+            {path.name for path in leak_root.iterdir()},
+            set(cases),
+        )
         for filename, category in cases.items():
             with self.subTest(filename=filename):
                 with tempfile.TemporaryDirectory() as directory:
@@ -183,6 +202,20 @@ class PrivacyScannerTests(unittest.TestCase):
         )
         self.assertEqual(message, "privacy scan failed: denied-term-0:candidate.txt")
 
+    def test_denied_terms_use_unicode_casefolding(self):
+        cases = (
+            ("ÉLODIE", "élodie"),
+            ("ПРИВЕТ", "привет"),
+        )
+        for content, denied_term in cases:
+            with self.subTest(script=denied_term.encode("unicode_escape")):
+                message = self.scan_text(
+                    content.encode("utf-8"), denied_terms=[denied_term]
+                )
+                self.assertEqual(
+                    message, "privacy scan failed: denied-term-0:candidate.txt"
+                )
+
     def test_duplicate_findings_are_deduplicated(self):
         message = self.scan_text(b"first@example.invalid second@example.invalid")
         self.assertEqual(message, "privacy scan failed: email:candidate.txt")
@@ -210,6 +243,113 @@ class PrivacyScannerTests(unittest.TestCase):
 
         message = self.scan_text(b"generic fixture content", suffix=".TXT")
         self.assertEqual(message, "privacy scan failed: unexpected-suffix:candidate.TXT")
+
+    def test_resource_limits_accept_boundaries_and_reject_excess(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "a.txt").write_bytes(b"abc")
+            with mock.patch("qa.privacy.MAX_FILES", 1), mock.patch(
+                "qa.privacy.MAX_FILE_BYTES", 3
+            ), mock.patch("qa.privacy.MAX_TOTAL_BYTES", 3):
+                self.assertIsNone(scan_tree(root, []))
+
+                (root / "b.txt").write_bytes(b"")
+                with self.assertRaisesRegex(
+                    PrivacyError,
+                    "^privacy scan failed: limit-file-count:b.txt$",
+                ):
+                    scan_tree(root, [])
+
+            (root / "b.txt").unlink()
+            (root / "a.txt").write_bytes(b"abcd")
+            with mock.patch("qa.privacy.MAX_FILE_BYTES", 3):
+                with self.assertRaisesRegex(
+                    PrivacyError,
+                    "^privacy scan failed: limit-file-bytes:a.txt$",
+                ):
+                    scan_tree(root, [])
+
+            (root / "a.txt").write_bytes(b"abc")
+            (root / "b.txt").write_bytes(b"def")
+            with mock.patch("qa.privacy.MAX_TOTAL_BYTES", 5):
+                with self.assertRaisesRegex(
+                    PrivacyError,
+                    "^privacy scan failed: limit-total-bytes:b.txt$",
+                ):
+                    scan_tree(root, [])
+
+    def test_denied_term_limits_accept_boundaries_and_reject_excess(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "candidate.txt").write_text("generic")
+            with mock.patch("qa.privacy.MAX_DENIED_TERMS", 1), mock.patch(
+                "qa.privacy.MAX_DENIED_TERM_CHARS", 3
+            ):
+                self.assertIsNone(scan_tree(root, ["abc"]))
+
+                with self.assertRaisesRegex(
+                    PrivacyError,
+                    "^privacy scan failed: limit-denied-term-count:.$",
+                ):
+                    scan_tree(root, ["abc", "def"])
+
+                with self.assertRaisesRegex(
+                    PrivacyError,
+                    "^privacy scan failed: limit-denied-term-length:.$",
+                ):
+                    scan_tree(root, ["abcd"])
+
+    def test_entry_swapped_to_symlink_is_refused_without_reading_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            parent = Path(directory)
+            root = parent / "root"
+            root.mkdir()
+            candidate = root / "candidate.txt"
+            candidate.write_text("generic fixture content")
+            target = parent / "outside.txt"
+            private_sentinel = "PRIVATE-SWAPPED-TARGET"
+            target.write_text(private_sentinel)
+            real_open = os.open
+            swapped = False
+
+            def swap_before_open(path, flags, mode=0o777, *, dir_fd=None):
+                nonlocal swapped
+                if path == "candidate.txt" and dir_fd is not None and not swapped:
+                    swapped = True
+                    candidate.unlink()
+                    candidate.symlink_to(target)
+                return real_open(path, flags, mode, dir_fd=dir_fd)
+
+            with mock.patch("qa.privacy.os.open", side_effect=swap_before_open):
+                with self.assertRaisesRegex(
+                    PrivacyError,
+                    "^privacy scan failed: unsafe-entry:candidate.txt$",
+                ) as raised:
+                    scan_tree(root, [])
+            self.assertTrue(swapped)
+            self.assertNotIn(private_sentinel, str(raised.exception))
+            self.assertNotIn(str(target), str(raised.exception))
+
+    def test_control_characters_in_relative_paths_are_json_escaped(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "line\nbreak.txt").write_text("person@example.invalid")
+            with self.assertRaises(PrivacyError) as raised:
+                scan_tree(root, [])
+        message = str(raised.exception)
+        self.assertEqual(message, "privacy scan failed: email:line\\nbreak.txt")
+        self.assertNotIn("\n", message)
+
+    def test_missing_descriptor_primitives_fail_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "candidate.txt").write_text("generic fixture content")
+            with mock.patch("qa.privacy._DESCRIPTOR_TRAVERSAL_AVAILABLE", False):
+                with self.assertRaisesRegex(
+                    PrivacyError,
+                    "^privacy scan failed: unsupported-platform:.$",
+                ):
+                    scan_tree(root, [])
 
 
 if __name__ == "__main__":
