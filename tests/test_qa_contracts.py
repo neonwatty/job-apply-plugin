@@ -109,6 +109,30 @@ class ContractTests(unittest.TestCase):
         fixture["steps"][0]["next"] = "missing"
         self.assert_contract_error(fixture, "next target does not exist")
 
+    def test_fixture_flow_rejects_self_cycle(self):
+        fixture = self.valid_fixture()
+        fixture["steps"][0]["next"] = "step-1"
+        self.assert_contract_error(fixture, "fixture flow contains a cycle")
+
+    def test_fixture_flow_rejects_multi_node_cycle(self):
+        fixture = self.valid_fixture()
+        fixture["steps"][1]["next"] = "step-1"
+        self.assert_contract_error(fixture, "fixture flow contains a cycle")
+
+    def test_fixture_flow_rejects_unreachable_declared_step(self):
+        fixture = self.valid_fixture()
+        fixture["steps"][0]["next"] = "review"
+        self.assert_contract_error(fixture, "fixture flow has unreachable steps")
+
+    def test_fixture_flow_rejects_review_entry_with_trailing_forms(self):
+        fixture = self.valid_fixture()
+        fixture["steps"] = [
+            fixture["steps"][2],
+            fixture["steps"][0],
+            fixture["steps"][1],
+        ]
+        self.assert_contract_error(fixture, "fixture flow has unreachable steps")
+
     def test_oracle_requires_zero_final_activations(self):
         fixture = self.valid_fixture()
         fixture["oracle"]["finalActionActivations"] = 1

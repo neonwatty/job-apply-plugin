@@ -149,6 +149,7 @@ def validate_fixture(value: dict[str, Any]) -> None:
         if "finalAction" in step:
             raise ContractError("final action is only allowed on review step")
 
+    _validate_flow(steps, step_ids)
     _validate_final_action(review_steps[0].get("finalAction"))
     _validate_oracle(value.get("oracle"))
 
@@ -193,6 +194,28 @@ def _validate_provenance(value: Any, fixture_capture_month: str) -> None:
     digest = value.get("sourceRecordingSha256")
     if not isinstance(digest, str) or not SHA256.fullmatch(digest):
         raise ContractError("invalid source recording sha256")
+
+
+def _validate_flow(steps: list[dict[str, Any]], step_ids: set[str]) -> None:
+    steps_by_id = {step["id"]: step for step in steps}
+    current_id = steps[0]["id"]
+    visited: set[str] = set()
+
+    while True:
+        if current_id in visited:
+            raise ContractError("fixture flow contains a cycle")
+        visited.add(current_id)
+
+        current_step = steps_by_id[current_id]
+        if current_step["kind"] == "review":
+            break
+        next_id = current_step.get("next")
+        if next_id not in steps_by_id:
+            raise ContractError("fixture flow must terminate at review")
+        current_id = next_id
+
+    if visited != step_ids:
+        raise ContractError("fixture flow has unreachable steps")
 
 
 def _validate_final_action(value: Any) -> None:
