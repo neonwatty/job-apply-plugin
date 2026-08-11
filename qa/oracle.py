@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 import os
 from pathlib import Path
@@ -15,7 +16,7 @@ from qa.contracts import validate_fixture
 MAX_EVENTS = 10_000
 MAX_ARTIFACT_BYTES = 1024 * 1024
 MAX_HISTORY_LINES = 10_000
-MAX_SESSION_FILES = 256
+MAX_SESSION_ENTRIES = 256
 MAX_JSON_DEPTH = 64
 MAX_JSON_NODES = 100_000
 
@@ -251,13 +252,16 @@ def _history_results(root: Path) -> tuple[bool, bool, str | None]:
     except OSError:
         raise OracleError("invalid history artifact") from None
     data = _read_regular_file(path, "invalid history artifact")
-    try:
-        text = data.decode("utf-8")
-    except UnicodeError:
-        raise OracleError("invalid history artifact") from None
-    lines = [line for line in text.splitlines() if line.strip()]
-    if len(lines) > MAX_HISTORY_LINES:
-        raise OracleError("invalid history artifact")
+    lines: list[str] = []
+    for physical_line_count, raw_line in enumerate(io.BytesIO(data), 1):
+        if physical_line_count > MAX_HISTORY_LINES:
+            raise OracleError("invalid history artifact")
+        try:
+            line = raw_line.decode("utf-8")
+        except UnicodeError:
+            raise OracleError("invalid history artifact") from None
+        if line.strip():
+            lines.append(line)
     if not lines:
         return False, True, "history-lifecycle-incomplete"
 
@@ -340,14 +344,19 @@ def _session_results(root: Path) -> tuple[bool, bool]:
     try:
         if not stat.S_ISDIR(directory_stat.st_mode):
             raise OracleError("invalid session artifacts")
-        entries = list(directory.iterdir())
+        paths: list[Path] = []
+        with os.scandir(directory) as entries:
+            for entry_count, entry in enumerate(entries, 1):
+                if entry_count > MAX_SESSION_ENTRIES:
+                    raise OracleError("invalid session artifacts")
+                paths.append(Path(entry.path))
     except OracleError:
         raise
     except OSError:
         raise OracleError("invalid session artifacts") from None
 
     json_paths: list[Path] = []
-    for path in entries:
+    for path in sorted(paths, key=lambda item: item.name):
         try:
             path_stat = path.lstat()
         except OSError:
@@ -356,8 +365,6 @@ def _session_results(root: Path) -> tuple[bool, bool]:
             raise OracleError("invalid session artifact")
         if path.suffix == ".json":
             json_paths.append(path)
-    if len(json_paths) > MAX_SESSION_FILES:
-        raise OracleError("invalid session artifacts")
     if not json_paths:
         return False, True
     for path in sorted(json_paths, key=lambda item: item.name):

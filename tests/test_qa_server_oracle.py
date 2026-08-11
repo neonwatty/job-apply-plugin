@@ -792,6 +792,23 @@ class SemanticOracleTests(unittest.TestCase):
         with self.assertRaisesRegex(OracleError, "invalid history artifact"):
             self.evaluate()
 
+    def test_history_line_limit_counts_blank_physical_lines(self):
+        path = self.store.root / "applications.jsonl"
+        boundary = "".join(
+            (
+                json.dumps(history_event("started")) + "\n",
+                "   \n",
+                json.dumps(history_event("reviewed")) + "\n",
+            )
+        )
+        with mock.patch("qa.oracle.MAX_HISTORY_LINES", 3):
+            path.write_text(boundary, encoding="utf-8")
+            self.assertEqual(self.evaluate()["status"], "passed")
+
+            path.write_text(boundary + "\n", encoding="utf-8")
+            with self.assertRaisesRegex(OracleError, "invalid history artifact"):
+                self.evaluate()
+
     def test_absent_session_directory_or_json_files_fails(self):
         for remove_directory in (False, True):
             with self.subTest(remove_directory=remove_directory):
@@ -852,6 +869,31 @@ class SemanticOracleTests(unittest.TestCase):
             )
         with self.assertRaisesRegex(OracleError, "invalid session artifacts"):
             self.evaluate()
+
+    def test_session_entry_limit_counts_every_suffix_without_materializing_excess(self):
+        for index in range(3):
+            (self.store.sessions / f"ignored-{index}.txt").write_text(
+                "SESSION SECRET", encoding="utf-8"
+            )
+        with mock.patch("qa.oracle.MAX_SESSION_ENTRIES", 3):
+            with self.assertRaisesRegex(OracleError, "invalid session artifacts"):
+                self.evaluate()
+
+        (self.store.sessions / "ignored-2.txt").unlink()
+        with mock.patch("qa.oracle.MAX_SESSION_ENTRIES", 3):
+            self.assertEqual(self.evaluate()["status"], "passed")
+
+    @unittest.skipIf(not hasattr(os, "symlink"), "symlinks unavailable")
+    def test_session_entry_limit_counts_symlinks_and_special_entries(self):
+        for path in self.store.sessions.iterdir():
+            path.unlink()
+        target = Path(self.temporary.name) / "outside"
+        target.write_text("SESSION SECRET", encoding="utf-8")
+        (self.store.sessions / "entry.json").symlink_to(target)
+        (self.store.sessions / "special-directory").mkdir()
+        with mock.patch("qa.oracle.MAX_SESSION_ENTRIES", 1):
+            with self.assertRaisesRegex(OracleError, "invalid session artifacts"):
+                self.evaluate()
 
     @unittest.skipIf(not hasattr(os, "symlink"), "symlinks unavailable")
     def test_symlinked_store_artifacts_and_root_are_rejected(self):
