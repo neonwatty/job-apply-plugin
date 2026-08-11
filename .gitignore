@@ -9,6 +9,7 @@ Thumbs.db
 .vscode/
 .idea/
 .superpowers/
+.worktrees/
 
 # Test files
 *.test.md
