@@ -8,6 +8,7 @@ import {
   mkdir,
   readFile,
   readdir,
+  rename,
   rm,
   stat,
   symlink,
@@ -20,6 +21,7 @@ import { test } from "node:test";
 import { chromium } from "playwright";
 
 import {
+  commitCheckpoint,
   isSensitivePage,
   sanitizeObservedControl,
   validateCheckpointKind,
@@ -274,6 +276,45 @@ test("checkpoint kinds are closed and value-free on rejection", () => {
     (error) => error.message === "invalid checkpoint kind" &&
       !error.message.includes("secret-kind"),
   );
+});
+
+test("checkpoint commit rolls back cancellation after rename and reuses sequence", async (t) => {
+  const directory = await mkdtemp(path.join(tmpdir(), "checkpoint-commit-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const finalDirectory = path.join(directory, "0001-application-opened");
+  const firstTemporary = path.join(directory, ".tmp-first");
+  await mkdir(firstTemporary, { mode: 0o700 });
+  await writeFile(path.join(firstTemporary, "checkpoint.json"), "first", { mode: 0o600 });
+  const controller = new AbortController();
+  const lifecycle = [];
+
+  await assert.rejects(commitCheckpoint({
+    temporaryDirectory: firstTemporary,
+    checkpointDirectory: finalDirectory,
+    signal: controller.signal,
+    isShuttingDown: () => false,
+    updateLifecycle: () => lifecycle.push("application-opened"),
+    renameDirectory: async (source, destination) => {
+      await rename(source, destination);
+      controller.abort();
+    },
+  }), /operation canceled/);
+  await assert.rejects(access(finalDirectory));
+  await assert.rejects(access(firstTemporary));
+  assert.deepEqual(lifecycle, []);
+
+  const secondTemporary = path.join(directory, ".tmp-second");
+  await mkdir(secondTemporary, { mode: 0o700 });
+  await writeFile(path.join(secondTemporary, "checkpoint.json"), "second", { mode: 0o600 });
+  await commitCheckpoint({
+    temporaryDirectory: secondTemporary,
+    checkpointDirectory: finalDirectory,
+    signal: new AbortController().signal,
+    isShuttingDown: () => false,
+    updateLifecycle: () => lifecycle.push("application-opened"),
+  });
+  assert.equal(await readFile(path.join(finalDirectory, "checkpoint.json"), "utf8"), "second");
+  assert.deepEqual(lifecycle, ["application-opened"]);
 });
 
 test("sensitive page detector rejects login and credential surfaces", () => {

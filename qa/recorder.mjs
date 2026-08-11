@@ -330,6 +330,28 @@ function lifecycleAllows(kinds, kind) {
   return kind === "step-advanced" || kind === "validation-observed" || kind === "review-reached";
 }
 
+export async function commitCheckpoint({
+  temporaryDirectory,
+  checkpointDirectory,
+  signal,
+  isShuttingDown,
+  updateLifecycle,
+  renameDirectory = rename,
+}) {
+  let renamed = false;
+  try {
+    await renameDirectory(temporaryDirectory, checkpointDirectory);
+    renamed = true;
+    throwIfAborted(signal);
+    if (isShuttingDown()) throw new RecorderError("operation canceled");
+    updateLifecycle();
+  } catch (error) {
+    const cleanupTarget = renamed ? checkpointDirectory : temporaryDirectory;
+    await rm(cleanupTarget, { recursive: true, force: true }).catch(() => {});
+    throw error;
+  }
+}
+
 async function sha256File(filename) {
   return createHash("sha256").update(await readFile(filename)).digest("hex");
 }
@@ -499,10 +521,17 @@ async function runRecord(rawOptions) {
         ]);
         throwIfAborted(signal);
         if (shuttingDown) throw new RecorderError("operation canceled");
-        await rename(temporaryDirectory, checkpointDirectory);
+        await commitCheckpoint({
+          temporaryDirectory,
+          checkpointDirectory,
+          signal,
+          isShuttingDown: () => shuttingDown,
+          updateLifecycle: () => {
+            checkpointKinds.push(kind);
+            checkpointNames.push(checkpointName);
+          },
+        });
         temporaryDirectory = undefined;
-        checkpointKinds.push(kind);
-        checkpointNames.push(checkpointName);
       } catch (error) {
         if (temporaryDirectory) {
           await rm(temporaryDirectory, { recursive: true, force: true }).catch(() => {});
