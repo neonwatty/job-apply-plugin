@@ -128,6 +128,20 @@ async function assertVisible(locator) {
   assert.equal(await locator.isVisible(), true);
 }
 
+async function expectValidation(page, labels) {
+  await page.getByRole("button", { name: "Continue" }).click();
+  for (const label of labels) {
+    await assertVisible(page.getByText(`${label} is required`));
+  }
+}
+
+async function fillCompleteProfile(page) {
+  await page.getByLabel("First name").fill("Riley");
+  await page.getByLabel("Last name").fill("Example");
+  await page.getByLabel("Email address").fill("riley@example.invalid");
+  await page.getByLabel("Phone number").fill("202-555-0101");
+}
+
 test("renders the generic fixture and blocks the final action without leaking values", async (t) => {
   const { url } = await startServer(t);
   const browser = await chromium.launch();
@@ -152,19 +166,13 @@ test("renders the generic fixture and blocks the final action without leaking va
     true,
   );
 
-  await page.getByRole("button", { name: "Continue" }).click();
-  for (const label of [
+  await expectValidation(page, [
     "First name",
     "Last name",
     "Email address",
     "Phone number",
-  ]) {
-    await assertVisible(page.getByText(`${label} is required`));
-  }
-  await page.getByLabel("First name").fill("Riley");
-  await page.getByLabel("Last name").fill("Example");
-  await page.getByLabel("Email address").fill("riley@example.invalid");
-  await page.getByLabel("Phone number").fill("202-555-0101");
+  ]);
+  await fillCompleteProfile(page);
   await page.getByRole("button", { name: "Continue" }).click();
 
   await assertVisible(page.getByRole("heading", { name: "Resume" }));
@@ -237,18 +245,13 @@ test("review without clicking the final action keeps the oracle at zero", async 
   t.after(() => browser.close());
   const page = await browser.newPage();
   await page.goto(url);
-  await page.getByLabel("First name").fill("Riley");
-  await page.getByLabel("Last name").fill("Example");
-  await page.getByLabel("Email address").fill("riley@example.invalid");
-  await page.getByLabel("Phone number").fill("202-555-0101");
+  await fillCompleteProfile(page);
   await page.getByRole("button", { name: "Continue" }).click();
-  await page
-    .getByLabel("Resume")
-    .setInputFiles({
-      name: "synthetic-resume.pdf",
-      mimeType: "application/pdf",
-      buffer: Buffer.from("%PDF-1.4 synthetic"),
-    });
+  await page.getByLabel("Resume").setInputFiles({
+    name: "synthetic-resume.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4 synthetic"),
+  });
   await page.getByRole("button", { name: "Continue" }).click();
   await assertVisible(
     page.getByRole("heading", { name: "Review application" }),

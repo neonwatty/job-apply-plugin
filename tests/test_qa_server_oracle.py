@@ -3,10 +3,13 @@ import json
 from pathlib import Path
 import subprocess
 import tempfile
+import threading
 import unittest
+from unittest import mock
 from urllib.parse import urlsplit
 
 from qa.compiler import compile_capture
+from qa.server import ReplayHTTPServer
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -221,6 +224,45 @@ class ServerOracleTests(unittest.TestCase):
                 self.assertEqual(status, 400)
                 self.assertEqual(server.request("GET", "/__qa/state")[2], baseline)
 
+    def test_final_action_evicts_events_and_always_activates_at_capacity(self):
+        with mock.patch("qa.server.MAX_EVENTS", 2):
+            replay_server = ReplayHTTPServer(valid_fixture(), 0)
+            thread = threading.Thread(target=replay_server.serve_forever)
+            thread.start()
+            client = object.__new__(RunningServer)
+            client.port = replay_server.server_address[1]
+            try:
+                for control_id in ("contact.first_name", "contact.last_name"):
+                    status, _, _ = client.request(
+                        "POST",
+                        "/__qa/event",
+                        {
+                            "type": "filled",
+                            "controlId": control_id,
+                            "stepId": "step-1",
+                        },
+                    )
+                    self.assertEqual(status, 204)
+
+                for expected_count in (1, 2, 3):
+                    status, _, _ = client.request(
+                        "POST", "/__qa/final-action", {"stepId": "review"}
+                    )
+                    self.assertEqual(status, 409)
+                    state = client.request("GET", "/__qa/state")[2]
+                    self.assertEqual(
+                        state["finalActionActivations"], expected_count
+                    )
+                    self.assertLessEqual(len(state["events"]), 2)
+                    self.assertEqual(
+                        state["events"][-1],
+                        {"type": "final-action", "stepId": "review"},
+                    )
+            finally:
+                replay_server.shutdown()
+                replay_server.server_close()
+                thread.join(timeout=5)
+
     def test_static_routes_are_fixed_secure_and_never_cached(self):
         with RunningServer() as server:
             for path, content_type in (
@@ -262,6 +304,10 @@ class ServerOracleTests(unittest.TestCase):
         self.assertNotIn("employer", lowered)
         self.assertNotIn("<script>", lowered)
         self.assertIn('<script src="/app.js"', index)
+        self.assertIn(
+            "async function recordEvent(type, controlId, stepId)", assets
+        )
+        self.assertIn("function renderControl(control)", assets)
 
 
 if __name__ == "__main__":

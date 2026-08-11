@@ -4,8 +4,9 @@ const enteredValues = new Map();
 const recordedEvents = new Set();
 let fixtureData;
 let eventQueue = Promise.resolve();
+let currentStepId;
 
-function recordEvent(type, controlId, stepId) {
+async function recordEvent(type, controlId, stepId) {
   const key = `${type}:${controlId}:${stepId}`;
   if (recordedEvents.has(key)) return eventQueue;
   recordedEvents.add(key);
@@ -23,7 +24,8 @@ function recordEvent(type, controlId, stepId) {
   return eventQueue;
 }
 
-function renderControl(control, stepId) {
+function renderControl(control) {
+  const stepId = currentStepId;
   const group = document.createElement("div");
   group.className = "control";
   const label = document.createElement("label");
@@ -125,6 +127,7 @@ async function activateFinalAction(stepId) {
 function renderStep(fixture, stepId) {
   const step = fixture.steps.find((candidate) => candidate.id === stepId);
   if (!step) throw new Error("Fixture step is unavailable");
+  currentStepId = step.id;
   const index = fixture.steps.indexOf(step);
   progress.textContent = `Step ${index + 1} of ${fixture.steps.length}`;
   application.replaceChildren();
@@ -150,8 +153,7 @@ function renderStep(fixture, stepId) {
 
   const form = document.createElement("form");
   form.noValidate = true;
-  for (const control of step.controls)
-    form.append(renderControl(control, step.id));
+  for (const control of step.controls) form.append(renderControl(control));
   const button = document.createElement("button");
   button.type = "submit";
   button.textContent = "Continue";

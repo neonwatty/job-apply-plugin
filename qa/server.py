@@ -214,17 +214,13 @@ class ReplayRequestHandler(BaseHTTPRequestHandler):
             self._error(400, "invalid final action")
             return
         with self.server.state_lock:
-            if len(self.server.events) >= MAX_EVENTS:
-                action_recorded = False
-            else:
-                self.server.final_action_activations += 1
-                self.server.events.append(
-                    {"type": "final-action", "stepId": value["stepId"]}
-                )
-                action_recorded = True
-        if not action_recorded:
-            self._error(503, "event limit reached")
-            return
+            overflow = len(self.server.events) - MAX_EVENTS + 1
+            if overflow > 0:
+                del self.server.events[:overflow]
+            self.server.final_action_activations += 1
+            self.server.events.append(
+                {"type": "final-action", "stepId": value["stepId"]}
+            )
         self._error(409, "final action blocked by QA tripwire")
 
     def _method_not_allowed(self) -> None:
