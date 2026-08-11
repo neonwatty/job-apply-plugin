@@ -20,6 +20,7 @@ FIXTURE_KEYS = {
     "oracle",
 }
 STEP_KEYS = {"id", "kind", "title", "controls", "next", "finalAction"}
+STEP_KINDS = {"form", "review"}
 CONTROL_KEYS = {"id", "kind", "role", "label", "required", "choices"}
 PROVENANCE_KEYS = {"recorderVersion", "captureMonth", "sourceRecordingSha256"}
 FINAL_ACTION_KEYS = {"id", "label", "enabled", "tripwire"}
@@ -115,7 +116,9 @@ def validate_fixture(value: dict[str, Any]) -> None:
         _closed(step, STEP_KEYS, "step")
 
         step_id = _non_empty_string(step.get("id"), "step id")
-        _non_empty_string(step.get("kind"), "step kind")
+        step_kind = _non_empty_string(step.get("kind"), "step kind")
+        if step_kind not in STEP_KINDS:
+            raise ContractError(f"unsupported step kind: {step_kind}")
         _non_empty_string(step.get("title"), "step title")
         if step_id in step_ids:
             raise ContractError("duplicate step id")

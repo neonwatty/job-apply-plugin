@@ -201,6 +201,13 @@ class ContractTests(unittest.TestCase):
                     fixture, f"step {key} must be a non-empty string"
                 )
 
+    def test_unsupported_step_kinds_are_rejected(self):
+        fixture = self.valid_fixture()
+        fixture["steps"][0]["kind"] = "redirect-with-source-script"
+        self.assert_contract_error(
+            fixture, "unsupported step kind: redirect-with-source-script"
+        )
+
     def test_unsupported_catalog_kinds_are_rejected(self):
         with self.assertRaisesRegex(
             ContractError, "^unsupported control kind: employer.name$"
