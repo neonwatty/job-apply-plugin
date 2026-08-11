@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Application replay</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell" aria-labelledby="page-title">
+      <header class="header">
+        <p class="eyebrow">Application replay</p>
+        <h1 id="page-title">Complete application</h1>
+        <p id="progress" class="progress" aria-live="polite"></p>
+      </header>
+      <section
+        id="application"
+        class="application"
+        aria-label="Application form"
+        aria-live="polite"
+      >
+        <p>Loading application…</p>
+      </section>
+    </main>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

@@ -1,0 +1,135 @@
+:root {
+  color: #20242b;
+  background: #eef1f5;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  line-height: 1.45;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+}
+
+.shell {
+  width: min(100%, 42rem);
+  max-height: calc(100vh - 4rem);
+  overflow: auto;
+  background: #fff;
+  border: 1px solid #d6dbe3;
+  border-radius: 0.75rem;
+  box-shadow: 0 1rem 3rem rgb(27 39 55 / 12%);
+}
+
+.header,
+.application {
+  padding: 1.5rem 2rem;
+}
+
+.header {
+  border-bottom: 1px solid #e3e7ed;
+  background: #f8f9fb;
+}
+
+.eyebrow,
+.progress {
+  margin: 0;
+  color: #596273;
+  font-size: 0.875rem;
+}
+
+h1 {
+  margin: 0.25rem 0;
+  font-size: 1.5rem;
+}
+h2 {
+  margin: 0 0 1.5rem;
+  font-size: 1.25rem;
+}
+
+.control {
+  margin-bottom: 1.25rem;
+}
+
+label,
+dt {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-weight: 650;
+}
+
+input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #aeb6c3;
+  border-radius: 0.375rem;
+  color: inherit;
+  background: #fff;
+  font: inherit;
+}
+
+input:focus,
+button:focus {
+  outline: 3px solid #b9d3ff;
+  outline-offset: 2px;
+}
+
+button {
+  min-height: 2.75rem;
+  padding: 0.625rem 1rem;
+  border: 0;
+  border-radius: 0.375rem;
+  color: #fff;
+  background: #245eb5;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.error {
+  min-height: 1.25rem;
+  margin: 0.25rem 0 0;
+  color: #a02323;
+  font-size: 0.875rem;
+}
+
+.filename,
+.tripwire {
+  margin: 0.5rem 0;
+  color: #4d5665;
+}
+.tripwire {
+  min-height: 1.5rem;
+  color: #8b271f;
+  font-weight: 650;
+}
+
+.review-list {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) 2fr;
+  gap: 0.75rem 1.25rem;
+  margin: 0 0 1.5rem;
+}
+
+.review-list dt,
+.review-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
