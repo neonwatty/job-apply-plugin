@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from qa.contracts import (
@@ -43,6 +44,9 @@ _CONTROL_SEQUENCE = (
     ),
     ("resume.file",),
     (),
+)
+_SEMVER_CORE = re.compile(
+    r"^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)$"
 )
 
 
@@ -145,9 +149,12 @@ def _validate_receipt(receipt: Any) -> tuple[str, str, str, str]:
         raise CompilerError("invalid receipt object")
     _closed(receipt, _RECEIPT_KEYS, "receipt")
 
-    recorder_version = _nonempty_string(
-        receipt.get("recorderVersion"), "recorder version"
-    )
+    recorder_version = receipt.get("recorderVersion")
+    if (
+        not isinstance(recorder_version, str)
+        or not _SEMVER_CORE.fullmatch(recorder_version)
+    ):
+        raise CompilerError("invalid recorder version")
     capture_id = _nonempty_string(receipt.get("captureId"), "receipt identifier")
     capture_month = receipt.get("captureMonth")
     if not isinstance(capture_month, str) or not CAPTURE_MONTH.fullmatch(capture_month):

@@ -203,6 +203,34 @@ class CompilerTests(unittest.TestCase):
                 receipt[key] = invalid
                 self.assert_rejected_without_echo(receipt=receipt)
 
+    def test_recorder_version_requires_strict_semver_core_syntax(self):
+        for invalid in (
+            "nonsense",
+            1,
+            "1",
+            "1.2",
+            "1.2.3 extra",
+            " 1.2.3",
+            "1.2.3 ",
+            "\n1.2.3",
+            "1.2.3\n",
+            "01.2.3",
+            "1.02.3",
+            "1.2.03",
+            None,
+        ):
+            with self.subTest(invalid=invalid):
+                receipt = copy.deepcopy(self.receipt)
+                receipt["recorderVersion"] = invalid
+                self.assert_rejected_without_echo(receipt=receipt)
+
+        for valid in ("0.0.0", "1.0.0", "12.34.56"):
+            with self.subTest(valid=valid):
+                receipt = copy.deepcopy(self.receipt)
+                receipt["recorderVersion"] = valid
+                fixture = self.compile(receipt=receipt)
+                self.assertEqual(fixture["provenance"]["recorderVersion"], valid)
+
     def test_rejects_duplicate_unsupported_or_out_of_order_checkpoints(self):
         variants = []
         capture = copy.deepcopy(self.capture)
