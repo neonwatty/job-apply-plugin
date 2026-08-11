@@ -5,9 +5,11 @@ import io
 import json
 import os
 from pathlib import Path
+import select
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -189,6 +191,51 @@ class BrokerProtocolTests(unittest.TestCase):
             self.assertFalse((session / "control.json").exists())
             child.stdout.close()
             child.stderr.close()
+
+    def test_blocked_broker_signal_still_removes_control_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            private = Path(directory, ".qa-private")
+            private.mkdir(mode=0o700)
+            session = private / "qa-session-blocked"
+            child = subprocess.Popen(
+                [sys.executable, "-m", "qa.recorder_fs", "--root", str(session)],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            try:
+                self.assertEqual(json.loads(child.stdout.readline()), {"ready": True})
+                child.stdin.write(json.dumps({
+                    "id": 1,
+                    "command": "write-exclusive",
+                    "path": "control.json",
+                    "data": base64.b64encode(b"private-control").decode("ascii"),
+                }) + "\n")
+                child.stdin.flush()
+                self.assertTrue(json.loads(child.stdout.readline())["ok"])
+                os.mkfifo(session / "blocked", 0o600)
+                child.stdin.write(json.dumps({
+                    "id": 2,
+                    "command": "append",
+                    "path": "blocked",
+                    "data": base64.b64encode(b"blocked").decode("ascii"),
+                }) + "\n")
+                child.stdin.flush()
+                self.assertEqual(select.select([child.stdout], [], [], 0.2)[0], [])
+                child.kill()
+                child.wait(timeout=3)
+                deadline = time.monotonic() + 2
+                while (session / "control.json").exists() and time.monotonic() < deadline:
+                    time.sleep(0.02)
+                self.assertFalse((session / "control.json").exists())
+            finally:
+                if child.poll() is None:
+                    child.kill()
+                    child.wait(timeout=3)
+                child.stdin.close()
+                child.stdout.close()
+                child.stderr.close()
 
 
 if __name__ == "__main__":

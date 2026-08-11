@@ -483,10 +483,32 @@ test("broker timeout fails the session and rejects later writes", async () => {
   };
   const client = new BrokerClient(child, { close() {} });
   await assert.rejects(client.request("slow"), /timed out|broker unavailable/);
-  await new Promise((resolve) => setTimeout(resolve, 150));
+  await new Promise((resolve) => setTimeout(resolve, 300));
   assert.equal(killedWith, "SIGTERM");
   assert.equal(child.stdin.destroyed, true);
   await assert.rejects(client.request("late"), /broker unavailable/);
+});
+
+test("broker timeout escalates to SIGKILL only after graceful cleanup windows", async () => {
+  const child = new EventEmitter();
+  child.exitCode = null;
+  child.stdin = {
+    destroyed: false,
+    write(_payload, callback) { callback(); },
+    destroy() { this.destroyed = true; },
+  };
+  const signals = [];
+  child.kill = (signal) => {
+    signals.push({ signal, at: Date.now() });
+    if (signal === "SIGKILL") child.exitCode = 1;
+  };
+  const client = new BrokerClient(child, { close() {} });
+  const started = Date.now();
+  await assert.rejects(client.request("blocked"), /timed out|broker unavailable/);
+  await new Promise((resolve) => setTimeout(resolve, 1850));
+  assert.deepEqual(signals.map(({ signal }) => signal), ["SIGTERM", "SIGKILL"]);
+  assert.ok(signals[0].at - started >= 1200);
+  assert.ok(signals[1].at - signals[0].at >= 1400);
 });
 
 test("recorder options require one safe child of .qa-private and loopback CDP", async (t) => {

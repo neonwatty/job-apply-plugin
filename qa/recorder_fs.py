@@ -558,10 +558,67 @@ def _bounded_lines(stream: Any, limit: int = MAX_REQUEST_BYTES):
             yield raw
 
 
+def _cleanup_guardian(root_fd: int, root_identity: tuple[int, int], signal_fd: int) -> None:
+    try:
+        while os.read(signal_fd, 1):
+            pass
+    except OSError:
+        pass
+    try:
+        current = os.fstat(root_fd)
+        if (
+            (current.st_dev, current.st_ino) == root_identity
+            and stat.S_ISDIR(current.st_mode)
+            and current.st_uid == os.getuid()
+            and current.st_mode & 0o777 == 0o700
+        ):
+            try:
+                control = os.stat("control.json", dir_fd=root_fd, follow_symlinks=False)
+                if stat.S_ISREG(control.st_mode) or stat.S_ISLNK(control.st_mode):
+                    os.unlink("control.json", dir_fd=root_fd)
+            except FileNotFoundError:
+                pass
+    except OSError:
+        pass
+    finally:
+        os.close(signal_fd)
+        os.close(root_fd)
+    os._exit(0)
+
+
+def _start_cleanup_guardian(broker: SessionBroker) -> tuple[int, int]:
+    if not hasattr(os, "fork"):
+        raise BrokerError("cleanup-unsupported")
+    read_fd, write_fd = os.pipe()
+    try:
+        pid = os.fork()
+    except OSError:
+        os.close(read_fd)
+        os.close(write_fd)
+        raise BrokerError("cleanup-unavailable") from None
+    if pid == 0:
+        os.close(write_fd)
+        os.close(broker._parent_fd)
+        for descriptor in (0, 1, 2):
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+        _cleanup_guardian(broker._root_fd, broker._root_identity, read_fd)
+    os.close(read_fd)
+    return pid, write_fd
+
+
 def _serve(root: str) -> int:
     try:
         broker = SessionBroker(root)
     except Exception:
+        sys.stderr.write("broker startup failed\n")
+        return 1
+    try:
+        guardian_pid, guardian_signal = _start_cleanup_guardian(broker)
+    except BrokerError:
+        broker.close()
         sys.stderr.write("broker startup failed\n")
         return 1
     sys.stdout.write('{"ready":true}\n')
@@ -590,6 +647,11 @@ def _serve(root: str) -> int:
         except BrokerError:
             pass
         broker.close()
+        os.close(guardian_signal)
+        try:
+            os.waitpid(guardian_pid, 0)
+        except ChildProcessError:
+            pass
     return 0
 
 

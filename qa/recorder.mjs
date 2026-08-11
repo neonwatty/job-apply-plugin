@@ -33,6 +33,8 @@ const MAX_EVENT_LINE_BYTES = 1024;
 const BODY_DEADLINE_MS = 500;
 const CAPTURE_DEADLINE_MS = 1000;
 const BROKER_REQUEST_DEADLINE_MS = 1000;
+const BROKER_EOF_GRACE_MS = 250;
+const BROKER_TERMINATE_GRACE_MS = 1500;
 const CHECKPOINT_OPERATION_DEADLINE_MS = 15_000;
 const CLIENT_DEADLINE_MS =
   CHECKPOINT_OPERATION_DEADLINE_MS * MAX_PENDING_CHECKPOINTS + 2_000;
@@ -299,7 +301,9 @@ export class BrokerClient {
   _failAll() {
     this.closed = true;
     clearTimeout(this.terminationTimer);
+    clearTimeout(this.killTimer);
     this.terminationTimer = undefined;
+    this.killTimer = undefined;
     for (const pending of this.pending.values()) {
       pending.reject(new RecorderError("filesystem broker unavailable"));
     }
@@ -312,8 +316,12 @@ export class BrokerClient {
     if (this.child.exitCode === null && !this.terminationTimer) {
       this.terminationTimer = setTimeout(() => {
         if (this.child.exitCode === null) this.child.kill("SIGTERM");
-      }, 100);
+      }, BROKER_EOF_GRACE_MS);
       this.terminationTimer.unref?.();
+      this.killTimer = setTimeout(() => {
+        if (this.child.exitCode === null) this.child.kill("SIGKILL");
+      }, BROKER_EOF_GRACE_MS + BROKER_TERMINATE_GRACE_MS);
+      this.killTimer.unref?.();
     }
   }
 
