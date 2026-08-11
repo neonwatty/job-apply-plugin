@@ -5,6 +5,7 @@ import io
 import json
 import os
 from pathlib import Path
+import shutil
 import sys
 import tempfile
 import unittest
@@ -204,7 +205,7 @@ class PromotionTests(unittest.TestCase):
         with (
             mock.patch.object(sys, "argv", arguments),
             mock.patch(
-                "qa.promote.Path.mkdir",
+                "qa.promote.os.mkdir",
                 side_effect=OSError("Private Person /sensitive/path"),
             ),
             mock.patch("sys.stderr", stderr),
@@ -215,6 +216,39 @@ class PromotionTests(unittest.TestCase):
         self.assertIn("candidate creation failed", stderr.getvalue())
         self.assertNotIn("Private Person", stderr.getvalue())
         self.assertNotIn("sensitive", stderr.getvalue())
+
+    def test_first_observation_swap_cannot_replace_guarded_private_tree(self) -> None:
+        approve_candidate(self.candidate, "qa-owner", now=NOW)
+        displaced = self.root / ".qa-private-original"
+        original_lstat = Path.lstat
+        swapped = False
+
+        def swap_after_observation(path: Path):
+            nonlocal swapped
+            observed = original_lstat(path)
+            if Path(path) == self.private and not swapped:
+                swapped = True
+                self.private.rename(displaced)
+                shutil.copytree(displaced, self.private)
+                replacement_session = self.private / self.session.name
+                (replacement_session / "unrelated.txt").write_text(
+                    "keep", encoding="utf-8"
+                )
+            return observed
+
+        with mock.patch("qa.promote.Path.lstat", new=swap_after_observation):
+            with self.assertRaisesRegex(PromotionError, "private session changed"):
+                promote_candidate(self.candidate, self.destination, now=NOW)
+
+        self.assertTrue(swapped)
+        self.assertEqual(
+            (self.private / self.session.name / "unrelated.txt").read_text(
+                encoding="utf-8"
+            ),
+            "keep",
+        )
+        self.assertTrue((displaced / self.session.name / "candidate").is_dir())
+        self.assertFalse((self.destination / FIXTURE_ID).exists())
 
 
 if __name__ == "__main__":
