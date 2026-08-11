@@ -2,5 +2,9 @@
   "recorderVersion": "1.0.0",
   "captureMonth": "2026-08",
   "captureId": "private-synthetic-capture",
-  "sourceRecordingSha256": "b7e4a911c8d2360f8457aab1de239036db62cc6e33c10846bc0c39b3efca70ae"
+  "sourceFiles": {
+    "checkpoints/application-opened/page.html": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "checkpoints/review-reached/page.html": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "checkpoints/step-advanced/page.html": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  }
 }

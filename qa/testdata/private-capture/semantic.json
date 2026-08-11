@@ -6,9 +6,9 @@
     "Source Employer",
     "Synthetic Applicant"
   ],
-  "checkpoints": [
+  "steps": [
     {
-      "kind": "application-opened",
+      "checkpoint": "application-opened",
       "controls": [
         {
           "kind": "contact.first_name",
@@ -33,7 +33,7 @@
       ]
     },
     {
-      "kind": "step-advanced",
+      "checkpoint": "step-advanced",
       "controls": [
         {
           "kind": "resume.file",
@@ -43,7 +43,7 @@
       ]
     },
     {
-      "kind": "review-reached",
+      "checkpoint": "review-reached",
       "controls": [],
       "finalActionObserved": true
     }

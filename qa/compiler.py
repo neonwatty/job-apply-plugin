@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 from typing import Any
+import unicodedata
 
 from qa.contracts import (
     CAPTURE_MONTH,
@@ -20,15 +23,15 @@ _CAPTURE_KEYS = {
     "platformFamily",
     "captureMonth",
     "sourceDeniedTerms",
-    "checkpoints",
+    "steps",
 }
-_CHECKPOINT_KEYS = {"kind", "controls", "finalActionObserved"}
+_STEP_KEYS = {"checkpoint", "controls", "finalActionObserved"}
 _CONTROL_KEYS = {"kind", "sourceLabel", "required"}
 _RECEIPT_KEYS = {
     "recorderVersion",
     "captureMonth",
     "captureId",
-    "sourceRecordingSha256",
+    "sourceFiles",
 }
 _CHECKPOINT_SEQUENCE = (
     "application-opened",
@@ -50,7 +53,7 @@ _SEMVER_CORE = re.compile(
 )
 
 
-class CompilerError(ValueError):
+class CompilerError(ContractError):
     """A value-free diagnostic for rejected private compiler input."""
 
 
@@ -84,42 +87,42 @@ def _validate_capture(capture: Any) -> tuple[str, str, list[dict[str, Any]]]:
     ):
         raise CompilerError("invalid denied terms")
 
-    checkpoints = capture.get("checkpoints")
-    if not isinstance(checkpoints, list):
-        raise CompilerError("invalid checkpoints")
-    for checkpoint in checkpoints:
-        _validate_checkpoint_shape(checkpoint)
+    steps = capture.get("steps")
+    if not isinstance(steps, list):
+        raise CompilerError("invalid steps")
+    for step in steps:
+        _validate_step_shape(step)
 
-    kinds = tuple(checkpoint.get("kind") for checkpoint in checkpoints)
-    if len(kinds) != len(set(kinds)):
-        raise CompilerError("duplicate checkpoint kind")
-    if kinds != _CHECKPOINT_SEQUENCE:
+    checkpoints = tuple(step.get("checkpoint") for step in steps)
+    if len(checkpoints) != len(set(checkpoints)):
+        raise CompilerError("duplicate checkpoint")
+    if checkpoints != _CHECKPOINT_SEQUENCE:
         raise CompilerError("unsupported checkpoint sequence")
 
-    for index, checkpoint in enumerate(checkpoints):
-        expected_keys = {"kind", "controls"}
+    for index, step in enumerate(steps):
+        expected_keys = {"checkpoint", "controls"}
         if index == 2:
             expected_keys.add("finalActionObserved")
-        if set(checkpoint) != expected_keys:
-            raise CompilerError("invalid checkpoint fields")
-        _validate_controls(checkpoint["controls"], _CONTROL_SEQUENCE[index])
+        if set(step) != expected_keys:
+            raise CompilerError("invalid step fields")
+        _validate_controls(step["controls"], _CONTROL_SEQUENCE[index])
 
-    review = checkpoints[2]
+    review = steps[2]
     if review["finalActionObserved"] is not True:
         raise CompilerError("final action observation required")
 
-    return capture_id, capture_month, checkpoints
+    return capture_id, capture_month, steps
 
 
-def _validate_checkpoint_shape(checkpoint: Any) -> None:
-    if not isinstance(checkpoint, dict):
-        raise CompilerError("invalid checkpoint object")
-    _closed(checkpoint, _CHECKPOINT_KEYS, "checkpoint")
-    if not isinstance(checkpoint.get("kind"), str):
-        raise CompilerError("invalid checkpoint kind")
-    if not isinstance(checkpoint.get("controls"), list):
-        raise CompilerError("invalid checkpoint controls")
-    for control in checkpoint["controls"]:
+def _validate_step_shape(step: Any) -> None:
+    if not isinstance(step, dict):
+        raise CompilerError("invalid step object")
+    _closed(step, _STEP_KEYS, "step")
+    if not isinstance(step.get("checkpoint"), str):
+        raise CompilerError("invalid checkpoint")
+    if not isinstance(step.get("controls"), list):
+        raise CompilerError("invalid step controls")
+    for control in step["controls"]:
         _validate_control_shape(control)
 
 
@@ -144,6 +147,27 @@ def _validate_controls(
         raise CompilerError("unsupported control sequence")
 
 
+def _validate_source_files(value: Any) -> str:
+    if not isinstance(value, dict) or not value:
+        raise CompilerError("invalid source files")
+    for path, digest in value.items():
+        if (
+            not isinstance(path, str)
+            or not path
+            or path.startswith("/")
+            or "\\" in path
+            or any(unicodedata.category(character) == "Cc" for character in path)
+            or any(part in {"", ".", ".."} for part in path.split("/"))
+        ):
+            raise CompilerError("invalid source file path")
+        if not isinstance(digest, str) or not SHA256.fullmatch(digest):
+            raise CompilerError("invalid source file digest")
+    canonical = json.dumps(
+        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def _validate_receipt(receipt: Any) -> tuple[str, str, str, str]:
     if not isinstance(receipt, dict):
         raise CompilerError("invalid receipt object")
@@ -159,16 +183,14 @@ def _validate_receipt(receipt: Any) -> tuple[str, str, str, str]:
     capture_month = receipt.get("captureMonth")
     if not isinstance(capture_month, str) or not CAPTURE_MONTH.fullmatch(capture_month):
         raise CompilerError("invalid receipt month")
-    digest = receipt.get("sourceRecordingSha256")
-    if not isinstance(digest, str) or not SHA256.fullmatch(digest):
-        raise CompilerError("invalid recording digest")
+    digest = _validate_source_files(receipt.get("sourceFiles"))
     return recorder_version, capture_id, capture_month, digest
 
 
 def compile_capture(capture: dict, receipt: dict, fixture_id: str) -> dict:
     """Compile validated private semantic observations into a generic fixture."""
 
-    capture_id, capture_month, checkpoints = _validate_capture(capture)
+    capture_id, capture_month, steps = _validate_capture(capture)
     recorder_version, receipt_id, receipt_month, digest = _validate_receipt(receipt)
     if capture_id != receipt_id:
         raise CompilerError("capture identifier mismatch")
@@ -178,11 +200,11 @@ def compile_capture(capture: dict, receipt: dict, fixture_id: str) -> dict:
     try:
         first_controls = [
             generic_control(control["kind"], control["required"])
-            for control in checkpoints[0]["controls"]
+            for control in steps[0]["controls"]
         ]
         second_controls = [
             generic_control(control["kind"], control["required"])
-            for control in checkpoints[1]["controls"]
+            for control in steps[1]["controls"]
         ]
         fixture = {
             "schemaVersion": 1,
