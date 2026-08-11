@@ -170,6 +170,8 @@ class BrokerProtocolTests(unittest.TestCase):
                     {"id": 1, "command": "mkdir", "path": "checkpoints"},
                     {"id": 2, "command": "unknown", "private": "secret-value"},
                     {"id": 3, "command": "write-exclusive", "path": "private-name", "data": "%%%"},
+                    {"id": 4, "command": "write-exclusive", "path": "control.json",
+                     "data": base64.b64encode(b"private-control").decode("ascii")},
                 ]
                 responses = []
                 for request in requests:
@@ -184,6 +186,7 @@ class BrokerProtocolTests(unittest.TestCase):
                 child.stdin.close()
                 child.wait(timeout=3)
             self.assertEqual(child.stderr.read(), "")
+            self.assertFalse((session / "control.json").exists())
             child.stdout.close()
             child.stderr.close()
 

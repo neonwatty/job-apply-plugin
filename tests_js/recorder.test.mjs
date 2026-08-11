@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { once } from "node:events";
+import { EventEmitter, once } from "node:events";
 import {
   access,
   mkdtemp,
@@ -21,12 +21,14 @@ import { test } from "node:test";
 import { chromium } from "playwright";
 
 import {
+  BrokerClient,
   commitCheckpoint,
   isSensitivePage,
   sanitizeObservedControl,
   validateCheckpointKind,
   validateCaptureResources,
   validateRecorderOptions,
+  validateSafetyRevision,
 } from "../qa/recorder.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -337,7 +339,13 @@ test("sensitive page detector rejects login and credential surfaces", () => {
     }),
     true,
   );
-  for (const text of ["Complete CAPTCHA verification", "Enter your MFA code"]) {
+  for (const text of [
+    "Complete CAPTCHA verification",
+    "Enter your MFA code",
+    "Approve the authenticator app push notification",
+    "Enter the SMS security code",
+    "Use a recovery code for 2FA",
+  ]) {
     assert.equal(isSensitivePage({
       url: "https://example.test/jobs/1/apply",
       title: "Application",
@@ -432,6 +440,55 @@ test("capture resource limits accept boundaries and reject one over", () => {
   }
 });
 
+test("checkpoint safety revision rejects transient document changes", () => {
+  assert.doesNotThrow(() => validateSafetyRevision(7, 7));
+  assert.throws(() => validateSafetyRevision(7, 9), /unstable page document/);
+});
+
+test("broker request deadlines begin when serialized execution starts", async () => {
+  const child = new EventEmitter();
+  child.exitCode = null;
+  child.stdin = {
+    destroyed: false,
+    write(payload, callback) {
+      const { id } = JSON.parse(payload);
+      setTimeout(() => client._handleLine(JSON.stringify({ id, ok: true, result: id })), 700);
+      callback();
+    },
+    destroy() { this.destroyed = true; },
+  };
+  child.kill = () => {};
+  const client = new BrokerClient(child, { close() {} });
+  const started = Date.now();
+  assert.deepEqual(await Promise.all([
+    client.request("first"),
+    client.request("second"),
+  ]), [1, 2]);
+  assert.ok(Date.now() - started >= 1300);
+});
+
+test("broker timeout fails the session and rejects later writes", async () => {
+  const child = new EventEmitter();
+  child.exitCode = null;
+  child.stdin = {
+    destroyed: false,
+    write(_payload, callback) { callback(); },
+    destroy() { this.destroyed = true; },
+  };
+  let killedWith;
+  child.kill = (signal) => {
+    killedWith = signal;
+    child.exitCode = 1;
+    child.emit("exit", 1, signal);
+  };
+  const client = new BrokerClient(child, { close() {} });
+  await assert.rejects(client.request("slow"), /timed out|broker unavailable/);
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  assert.equal(killedWith, "SIGTERM");
+  assert.equal(child.stdin.destroyed, true);
+  await assert.rejects(client.request("late"), /broker unavailable/);
+});
+
 test("recorder options require one safe child of .qa-private and loopback CDP", async (t) => {
   const directory = await mkdtemp(path.join(tmpdir(), "recorder-options-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
@@ -505,10 +562,10 @@ test("checkpoint client aborts a stalled local request by its deadline", async (
   const result = await runNode([
     "qa/recorder.mjs", "checkpoint", "--session", session,
     "--kind", "application-opened",
-  ], 17000);
+  ], 34000);
   assert.equal(result.code, 1);
   assert.match(result.stderr, /recorder unavailable/);
-  assert.ok(Date.now() - started < 16000);
+  assert.ok(Date.now() - started < 33000);
   await withTimeout(disconnected, 1000, "checkpoint client did not abort");
   await new Promise((resolve) => setTimeout(resolve, 250));
   assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
@@ -535,6 +592,7 @@ test("record refuses a login page before creating private evidence", async (t) =
 
 test("recorder captures sanitized interactions and secure sequential checkpoints", async (t) => {
   const site = await startSyntheticSite(t);
+  const crossOriginSite = await startSyntheticSite(t);
   const { browserProcess, cdpUrl } = await startIndependentChromium(t, `${site}/application`);
   const directory = await mkdtemp(path.join(tmpdir(), "recording-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
@@ -621,11 +679,11 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
     frame.src = childUrl;
     document.body.append(frame);
     return frame;
-  }, `${site}/application`);
+  }, `${crossOriginSite}/application`);
   await page.locator("#ordinary-child").contentFrame().locator("#email").waitFor();
   const childSpoof = "child-world-binding-spoof-secret";
   const childFrame = page.frames().find((frame) =>
-    frame !== page.mainFrame() && frame.url() === `${site}/application`);
+    frame !== page.mainFrame() && frame.url() === `${crossOriginSite}/application`);
   await childFrame.evaluate((secret) => {
     globalThis.__qaRecorderObserve?.({
       interactionType: "input",
@@ -649,6 +707,52 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   await page.locator("#email").fill(privateEmail);
   await page.locator("#resume").setInputFiles(privateFilename);
   await page.locator("#continue").click();
+  await page.evaluate(() => {
+    const untrusted = document.createElement("button");
+    untrusted.id = "untrusted-event";
+    untrusted.textContent = "Untrusted event secret";
+    document.body.append(untrusted);
+    untrusted.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    const hidden = document.createElement("button");
+    hidden.id = "hidden-trusted-event";
+    hidden.textContent = "Hidden trusted secret";
+    hidden.style.cssText = "position:fixed;left:20px;top:20px;opacity:0";
+    document.body.append(hidden);
+    const valueLeak = document.createElement("label");
+    valueLeak.textContent = "Label contains value-leak-secret";
+    valueLeak.insertAdjacentHTML("beforeend", '<input id="value-leak">');
+    document.body.append(valueLeak);
+  });
+  await page.locator("#hidden-trusted-event").click({ force: true });
+  await page.locator("#value-leak").fill("value-leak-secret");
+  await page.evaluate(() => {
+    const upload = document.createElement("label");
+    upload.textContent = "Upload private-resume.pdf";
+    upload.insertAdjacentHTML("beforeend", '<input id="filename-leak" type="file">');
+    document.body.append(upload);
+    const choice = document.createElement("label");
+    choice.textContent = "Choose selected-option-secret";
+    choice.insertAdjacentHTML("beforeend", `<select id="selected-option-leak">
+      <option value="">Choose</option>
+      <option value="selected-option-secret">selected-option-secret</option>
+    </select>`);
+    document.body.append(choice);
+  });
+  await page.locator("#filename-leak").setInputFiles(privateFilename);
+  await page.locator("#selected-option-leak").selectOption("selected-option-secret");
+  const continueBox = await page.locator("#continue").boundingBox();
+  const floodSession = await attached.contexts()[0].newCDPSession(page);
+  for (let index = 0; index < 200; index += 1) {
+    await floodSession.send("Input.dispatchMouseEvent", {
+      type: "mousePressed", button: "left", clickCount: 1,
+      x: continueBox.x + 2, y: continueBox.y + 2,
+    });
+    await floodSession.send("Input.dispatchMouseEvent", {
+      type: "mouseReleased", button: "left", clickCount: 1,
+      x: continueBox.x + 2, y: continueBox.y + 2,
+    });
+  }
+  await floodSession.detach();
 
   await page.goto(`${site}/login`);
   await page.locator("#login-email").fill("sensitive-main@example.invalid");
@@ -723,6 +827,20 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   await page.evaluate(() => {
     setTimeout(() => {
       const input = document.createElement("input");
+      input.id = "transient-password";
+      input.type = "password";
+      document.body.append(input);
+      setTimeout(() => input.remove(), 10);
+    }, 5);
+  });
+  const transientSensitive = await postControl(control, { kind: "application-opened" });
+  assert.notEqual(transientSensitive.status, 200);
+  await page.locator("#transient-password").waitFor({ state: "detached" });
+  assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
+
+  await page.evaluate(() => {
+    setTimeout(() => {
+      const input = document.createElement("input");
       input.id = "late-password";
       input.type = "password";
       document.body.append(input);
@@ -764,6 +882,8 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   await new Promise((resolve) => setTimeout(resolve, 50));
   const secondConcurrent = postControl(control, { kind: "step-advanced" });
   await new Promise((resolve) => setTimeout(resolve, 50));
+  const overflowConcurrent = await postControl(control, { kind: "validation-observed" });
+  assert.notEqual(overflowConcurrent.status, 200);
   await cdpSession.send("Debugger.resume");
   const concurrentStatuses = await Promise.all([firstConcurrent, secondConcurrent]);
   assert.deepEqual(concurrentStatuses.map((response) => response.status), [200, 200]);
@@ -851,10 +971,15 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
     "Never record while sensitive child",
     "Sensitive login email",
     "Sign in securely",
+    "Untrusted event secret",
+    "Hidden trusted secret",
+    "Label contains value-leak-secret",
+    "Upload private-resume.pdf",
+    "Choose selected-option-secret",
   ]) {
     assert.equal(events.some((event) => event.sourceLabel === forbidden), false, forbidden);
   }
-  assert.ok(events.length <= 10_000);
+  assert.ok(events.length <= 64, `event flood admitted ${events.length}`);
 
   const controls = JSON.parse(controlsText);
   assert.ok(controls.some((control) => control.sourceLabel === "Private Person email"));

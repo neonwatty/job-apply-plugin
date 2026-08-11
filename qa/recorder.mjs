@@ -24,14 +24,18 @@ export const CHECKPOINT_KINDS = Object.freeze([
 ]);
 
 const CHECKPOINT_KIND_SET = new Set(CHECKPOINT_KINDS);
-const SENSITIVE_PATTERN = /(?:\blog[ -]?in\b|\bsign[ -]?in\b|password|passcode|captcha|multi[ -]?factor|\bmfa\b|two[ -]?factor|verification code|create (?:an? )?account|account[ -]?creation|register|\botp\b|authentication|challenge|security[ -]?key|one[ -]?time[ -]?code)/i;
+const SENSITIVE_PATTERN = /(?:\blog[ -]?in\b|\bsign[ -]?in\b|password|passcode|captcha|multi[ -]?factor|\bmfa\b|two[ -]?factor|\b2fa\b|2[ -]?step verification|verification code|security code|sms code|recovery code|authenticator app|push notification|approve (?:this |the )?(?:device|sign[ -]?in)|create (?:an? )?account|account[ -]?creation|register|\botp\b|authentication|challenge|security[ -]?key|one[ -]?time[ -]?code)/i;
 const MAX_CONTROL_BODY = 4096;
 const MAX_EVENTS = 10_000;
+const MAX_PENDING_EVENT_OPERATIONS = 8;
+const MAX_PENDING_CHECKPOINTS = 2;
+const MAX_EVENT_LINE_BYTES = 1024;
 const BODY_DEADLINE_MS = 500;
 const CAPTURE_DEADLINE_MS = 1000;
 const BROKER_REQUEST_DEADLINE_MS = 1000;
-const CHECKPOINT_OPERATION_DEADLINE_MS = 12_000;
-const CLIENT_DEADLINE_MS = 14_000;
+const CHECKPOINT_OPERATION_DEADLINE_MS = 15_000;
+const CLIENT_DEADLINE_MS =
+  CHECKPOINT_OPERATION_DEADLINE_MS * MAX_PENDING_CHECKPOINTS + 2_000;
 export const CAPTURE_LIMITS = Object.freeze({
   maxControls: 1_000,
   maxHtmlBytes: 1_048_576,
@@ -59,6 +63,12 @@ export function validateCaptureResources(resources, limits = CAPTURE_LIMITS) {
     if (!Number.isSafeInteger(value) || value < 0 || value > limits[limit]) {
       throw new RecorderError("capture resource limit exceeded");
     }
+  }
+}
+
+export function validateSafetyRevision(expected, current) {
+  if (!Number.isSafeInteger(expected) || expected !== current) {
+    throw new RecorderError("unstable page document");
   }
 }
 
@@ -240,12 +250,13 @@ function parseFlags(args, names) {
   return result;
 }
 
-class BrokerClient {
+export class BrokerClient {
   constructor(child, lines) {
     this.child = child;
     this.lines = lines;
     this.nextId = 1;
     this.pending = new Map();
+    this.requestQueue = Promise.resolve();
     this.closed = false;
   }
 
@@ -287,10 +298,23 @@ class BrokerClient {
 
   _failAll() {
     this.closed = true;
+    clearTimeout(this.terminationTimer);
+    this.terminationTimer = undefined;
     for (const pending of this.pending.values()) {
       pending.reject(new RecorderError("filesystem broker unavailable"));
     }
     this.pending.clear();
+  }
+
+  _failClosed() {
+    this._failAll();
+    this.child.stdin.destroy();
+    if (this.child.exitCode === null && !this.terminationTimer) {
+      this.terminationTimer = setTimeout(() => {
+        if (this.child.exitCode === null) this.child.kill("SIGTERM");
+      }, 100);
+      this.terminationTimer.unref?.();
+    }
   }
 
   _handleLine(line) {
@@ -298,11 +322,14 @@ class BrokerClient {
     try {
       response = JSON.parse(line);
     } catch {
-      this._failAll();
+      this._failClosed();
       return;
     }
     const pending = this.pending.get(response?.id);
-    if (!pending) return;
+    if (!pending) {
+      this._failClosed();
+      return;
+    }
     this.pending.delete(response.id);
     if (response.ok === true && Object.hasOwn(response, "result")) {
       pending.resolve(response.result);
@@ -311,7 +338,7 @@ class BrokerClient {
     }
   }
 
-  request(command, fields = {}) {
+  _requestNow(command, fields) {
     if (this.closed || this.child.exitCode !== null) {
       return Promise.reject(new RecorderError("filesystem broker unavailable"));
     }
@@ -325,8 +352,17 @@ class BrokerClient {
           reject(new RecorderError("filesystem broker unavailable"));
         }
       });
-    }), BROKER_REQUEST_DEADLINE_MS);
+    }), BROKER_REQUEST_DEADLINE_MS, undefined, () => this._failClosed());
     return operation.finally(() => this.pending.delete(id));
+  }
+
+  request(command, fields = {}) {
+    if (this.closed || this.child.exitCode !== null) {
+      return Promise.reject(new RecorderError("filesystem broker unavailable"));
+    }
+    const operation = this.requestQueue.then(() => this._requestNow(command, fields));
+    this.requestQueue = operation.catch(() => {});
+    return operation;
   }
 
   write(command, relative, data) {
@@ -341,14 +377,18 @@ class BrokerClient {
   }
 
   async close() {
-    if (this.closed) return;
+    await this.requestQueue.catch(() => {});
+    if (this.child.exitCode !== null) {
+      this.lines.close();
+      return;
+    }
     this.closed = true;
-    this.child.stdin.end();
+    if (!this.child.stdin.destroyed) this.child.stdin.end();
     await withDeadline(new Promise((resolve) => {
       if (this.child.exitCode !== null) resolve();
       else this.child.once("exit", resolve);
     }), 2000).catch(() => {
-      this.child.kill("SIGTERM");
+      this.child.kill("SIGKILL");
     });
     this.lines.close();
   }
@@ -388,18 +428,53 @@ function isolatedInstallerSource(bindingName) {
       }
       return "control";
     };
+    const isVisible = (element) => {
+      if (element.matches("input[type=hidden],input[type=password]")) return false;
+      for (let current = element; current instanceof Element; current = current.parentElement) {
+        if (current.matches("[hidden],[aria-hidden=true]")) return false;
+        const style = getComputedStyle(current);
+        if (style.display === "none" || style.visibility === "hidden" ||
+            style.visibility === "collapse" || Number.parseFloat(style.opacity) === 0 ||
+            style.contentVisibility === "hidden") return false;
+      }
+      const rectangle = element.getBoundingClientRect();
+      if (rectangle.width <= 0 || rectangle.height <= 0) return false;
+      const style = getComputedStyle(element);
+      if (style.position === "fixed") {
+        return rectangle.bottom > 0 && rectangle.right > 0 &&
+          rectangle.top < innerHeight && rectangle.left < innerWidth;
+      }
+      return rectangle.right + scrollX > 0 && rectangle.bottom + scrollY > 0;
+    };
     for (const interactionType of ["click", "change", "input"]) {
       document.addEventListener(interactionType, (event) => {
+        if (!event.isTrusted) return;
         const element = event.target instanceof Element ? event.target.closest("input,select,textarea,button,[role]") : null;
-        if (!element || (element instanceof HTMLInputElement && ["password", "hidden"].includes(element.type))) return;
+        if (!element || !isVisible(element)) return;
+        let label = labelFor(element).slice(0, 256);
+        const mutable = [];
+        if ("value" in element && typeof element.value === "string" && element.value) {
+          mutable.push(element.value);
+        }
+        if (element instanceof HTMLInputElement && element.files) {
+          for (const file of element.files) if (file.name) mutable.push(file.name);
+        }
+        if (element instanceof HTMLSelectElement) {
+          for (const option of element.selectedOptions) {
+            if (option.value) mutable.push(option.value);
+            if (option.text) mutable.push(option.text);
+          }
+        }
+        if (mutable.some((value) => label.includes(value))) label = "";
+        const observed = {
+          messageType: "interaction",
+          interactionType,
+          role: roleFor(element),
+          label,
+          required: element.matches("[required],[aria-required=true]"),
+        };
         queueMicrotask(() => {
-          binding(JSON.stringify({
-            messageType: "interaction",
-            interactionType,
-            role: roleFor(element),
-            label: labelFor(element),
-            required: element.matches("[required],[aria-required=true]"),
-          }));
+          binding(JSON.stringify(observed));
         });
       }, true);
     }
@@ -408,7 +483,7 @@ function isolatedInstallerSource(bindingName) {
 
 function isolatedSnapshotSource(includeStructure) {
   return `(() => {
-    const denied = /(?:password|passcode|captcha|multi[ -]?factor|\\bmfa\\b|\\botp\\b|authentication|challenge|security[ -]?key|one[ -]?time[ -]?code|authorization|bearer|cookie|session|csrf|token)/i;
+    const denied = /(?:password|passcode|captcha|multi[ -]?factor|\\bmfa\\b|\\b2fa\\b|2[ -]?step verification|\\botp\\b|authentication|authenticator app|push notification|recovery code|sms code|security code|challenge|security[ -]?key|one[ -]?time[ -]?code|authorization|bearer|cookie|session|csrf|token)/i;
     const labelFor = (element) => {
       const aria = element.getAttribute("aria-label");
       if (aria) return aria;
@@ -556,6 +631,12 @@ async function createIsolatedRecorder(context, page, observe, navigated) {
     for (const [frameId, contextId] of contexts) {
       if (contextId === executionContextId) contexts.delete(frameId);
     }
+    navigated(false);
+  });
+  session.on("Runtime.executionContextsCleared", () => {
+    contexts.clear();
+    allowedContexts.clear();
+    navigated(false);
   });
   session.on("Runtime.bindingCalled", ({ name, payload, executionContextId }) => {
     if (name !== bindingName || !allowedContexts.has(executionContextId)) return;
@@ -567,8 +648,21 @@ async function createIsolatedRecorder(context, page, observe, navigated) {
     }
     observe(value, executionContextId);
   });
-  session.on("Page.frameAttached", ({ frameId }) => void install(frameId));
+  session.on("Page.frameAttached", ({ frameId }) => {
+    navigated(false);
+    void install(frameId);
+  });
+  session.on("Page.frameDetached", ({ frameId }) => {
+    const contextId = contexts.get(frameId);
+    if (contextId) allowedContexts.delete(contextId);
+    contexts.delete(frameId);
+    navigated(false);
+  });
+  session.on("Page.frameStartedLoading", () => navigated(false));
+  session.on("Page.frameStoppedLoading", () => navigated(false));
   session.on("Page.frameNavigated", ({ frame }) => {
+    const oldContext = contexts.get(frame.id);
+    if (oldContext) allowedContexts.delete(oldContext);
     contexts.delete(frame.id);
     navigated(frame.parentId == null);
     void install(frame.id);
@@ -758,8 +852,12 @@ async function runRecord(rawOptions) {
   let checkpointQueue = Promise.resolve();
   let writeQueue = Promise.resolve();
   let eventSafetyQueue = Promise.resolve();
+  let pendingEventInspections = 0;
+  let pendingEventWrites = 0;
+  const eventSafetyController = new AbortController();
   const activeControllers = new Set();
   const activeHandlers = new Set();
+  let pendingCheckpointRequests = 0;
   let quiesce;
   try {
     broker = await BrokerClient.start(options.output);
@@ -775,18 +873,22 @@ async function runRecord(rawOptions) {
           !["click", "change", "input"].includes(observed.interactionType)) return;
       const control = sanitizeObservedControl(observed);
       if (!control.sourceLabel || control.role === "unknown") return;
-      eventCount += 1;
       const event = {
         timestamp: new Date().toISOString(),
         pageSequence,
         interactionType: observed.interactionType,
         ...control,
       };
-      writeQueue = writeQueue.then(() => broker.write(
+      const line = `${JSON.stringify(event)}\n`;
+      if (Buffer.byteLength(line) > MAX_EVENT_LINE_BYTES) return;
+      eventCount += 1;
+      pendingEventWrites += 1;
+      const write = writeQueue.then(() => broker.write(
         "append",
         "events.jsonl",
-        `${JSON.stringify(event)}\n`,
-      ));
+        line,
+      )).finally(() => { pendingEventWrites -= 1; });
+      writeQueue = write.catch(() => { broker._failClosed(); });
     };
     let isolated;
     let safetyRevision = 0;
@@ -797,18 +899,30 @@ async function runRecord(rawOptions) {
       }
       if (observed?.messageType !== "interaction") return;
       if (!captureEnabled || shuttingDown) return;
+      if (pendingEventInspections + pendingEventWrites >= MAX_PENDING_EVENT_OPERATIONS ||
+          eventCount + pendingEventInspections >= MAX_EVENTS) return;
+      pendingEventInspections += 1;
       const observedRevision = safetyRevision;
       eventSafetyQueue = eventSafetyQueue.then(async () => {
-        if (!captureEnabled || shuttingDown) return;
-        if (![...isolated.contexts.values()].includes(executionContextId)) return;
-        const inspection = await withDeadline(
-          inspectFrames(isolated),
-          CAPTURE_DEADLINE_MS,
-        );
-        if (!captureEnabled || shuttingDown || safetyRevision !== observedRevision ||
-            ![...isolated.contexts.values()].includes(executionContextId) ||
-            inspection.snapshots.some(({ value }) => isSensitivePage(value))) return;
-        observe(observed);
+        try {
+          if (!captureEnabled || shuttingDown) return;
+          const frameId = [...isolated.contexts].find(([, contextId]) =>
+            contextId === executionContextId)?.[0];
+          if (!frameId) return;
+          const inspection = await withDeadline(
+            inspectFrames(isolated),
+            CAPTURE_DEADLINE_MS,
+            eventSafetyController.signal,
+          );
+          const sourceFrame = inspection.snapshots.find(({ frame }) => frame.id === frameId);
+          if (!captureEnabled || shuttingDown || safetyRevision !== observedRevision ||
+              isolated.contexts.get(frameId) !== executionContextId ||
+              sourceFrame?.frameVisible !== true ||
+              inspection.snapshots.some(({ value }) => isSensitivePage(value))) return;
+          observe(observed);
+        } finally {
+          pendingEventInspections -= 1;
+        }
       }).catch(() => {});
     };
     isolated = await createIsolatedRecorder(
@@ -844,19 +958,23 @@ async function runRecord(rawOptions) {
       const signal = operationController.signal;
       let temporaryDirectory;
       try {
+        await withDeadline(writeQueue, CHECKPOINT_OPERATION_DEADLINE_MS, signal);
         throwIfAborted(signal);
         if (shuttingDown) throw new RecorderError("operation canceled");
         validateCheckpointKind(kind);
         if (!lifecycleAllows(checkpointKinds, kind)) {
           throw new RecorderError("invalid checkpoint lifecycle");
         }
-        await withDeadline(writeQueue, BROKER_REQUEST_DEADLINE_MS, signal);
         throwIfAborted(signal);
+        const captureRevision = safetyRevision;
+        const assertCaptureRevision = () =>
+          validateSafetyRevision(captureRevision, safetyRevision);
         const inspection = await withDeadline(
           inspectFrames(isolated, true),
           CAPTURE_DEADLINE_MS,
           signal,
         );
+        assertCaptureRevision();
         if (inspection.snapshots.some(({ value }) => isSensitivePage(value))) {
           throw new RecorderError("sensitive page refused");
         }
@@ -870,6 +988,7 @@ async function runRecord(rawOptions) {
           .map(sanitizeObservedControl);
         const html = inspection.main.html;
         const budget = await broker.request("stat-budget");
+        assertCaptureRevision();
         validateCaptureResources({
           controlCount: controls.length,
           htmlBytes: Buffer.byteLength(html),
@@ -883,6 +1002,7 @@ async function runRecord(rawOptions) {
           CAPTURE_DEADLINE_MS,
           signal,
         );
+        assertCaptureRevision();
         if (afterStructure.identity !== inspection.identity ||
             afterStructure.snapshots.some(({ value }) => isSensitivePage(value))) {
           throw new RecorderError("unstable page document");
@@ -892,11 +1012,18 @@ async function runRecord(rawOptions) {
         const checkpointDirectory = `checkpoints/${checkpointName}`;
         temporaryDirectory = `checkpoints/.tmp-${randomBytes(18).toString("base64url")}`;
         await broker.request("mkdir", { path: temporaryDirectory });
+        assertCaptureRevision();
         const screenshot = await withDeadline(
-          page.screenshot({ fullPage: true, timeout: CAPTURE_DEADLINE_MS }),
+          page.screenshot({
+            fullPage: true,
+            animations: "allow",
+            caret: "initial",
+            timeout: CAPTURE_DEADLINE_MS,
+          }),
           CAPTURE_DEADLINE_MS,
           signal,
         );
+        assertCaptureRevision();
         validateCaptureResources({
           screenshotWidth: inspection.main.width,
           screenshotHeight: inspection.main.height,
@@ -907,6 +1034,7 @@ async function runRecord(rawOptions) {
           CAPTURE_DEADLINE_MS,
           signal,
         );
+        assertCaptureRevision();
         if (afterScreenshot.identity !== inspection.identity ||
             afterScreenshot.snapshots.some(({ value }) => isSensitivePage(value))) {
           throw new RecorderError("unstable page document");
@@ -923,11 +1051,13 @@ async function runRecord(rawOptions) {
             pageSequence,
           }),
         ]);
+        assertCaptureRevision();
         const beforeCommit = await withDeadline(
           inspectFrames(isolated),
           CAPTURE_DEADLINE_MS,
           signal,
         );
+        assertCaptureRevision();
         if (beforeCommit.identity !== inspection.identity ||
             beforeCommit.snapshots.some(({ value }) => isSensitivePage(value))) {
           throw new RecorderError("unstable page document");
@@ -945,6 +1075,7 @@ async function runRecord(rawOptions) {
           ),
           removeDirectory: (target) => broker.request("remove-tree", { path: target }),
           updateLifecycle: () => {
+            assertCaptureRevision();
             checkpointKinds.push(kind);
           },
         });
@@ -1009,7 +1140,15 @@ async function runRecord(rawOptions) {
           if (Object.keys(body).length !== 1 || !Object.hasOwn(body, "kind")) {
             throw new RecorderError("invalid control request");
           }
-          await enqueueCheckpoint(body.kind, controller.signal);
+          if (pendingCheckpointRequests >= MAX_PENDING_CHECKPOINTS) {
+            throw new RecorderError("checkpoint queue full");
+          }
+          pendingCheckpointRequests += 1;
+          try {
+            await enqueueCheckpoint(body.kind, controller.signal);
+          } finally {
+            pendingCheckpointRequests -= 1;
+          }
         } else {
           if (Object.keys(body).length !== 0) throw new RecorderError("invalid control request");
         }
@@ -1051,6 +1190,7 @@ async function runRecord(rawOptions) {
       quiescePromise = (async () => {
         shuttingDown = true;
         captureEnabled = false;
+        eventSafetyController.abort();
         activeToken = null;
         if (controlPath) await broker.request("remove-tree", { path: "control.json" }).catch(() => {});
         const serverClosed = server?.listening

@@ -585,6 +585,10 @@ def _serve(root: str) -> int:
             sys.stdout.write(json.dumps(response, separators=(",", ":")) + "\n")
             sys.stdout.flush()
     finally:
+        try:
+            broker.remove_tree("control.json")
+        except BrokerError:
+            pass
         broker.close()
     return 0
 
