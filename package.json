@@ -1,0 +1,10 @@
+{
+  "name": "job-apply-plugin-qa",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:qa-browser": "node --test tests_js/*.test.mjs",
+    "qa:record": "node qa/recorder.mjs"
+  },
+  "devDependencies": { "playwright": "1.62.1" }
+}

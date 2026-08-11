@@ -14,3 +14,7 @@ Thumbs.db
 # Test files
 *.test.md
 test_resumes/
+
+# Private Job Apply QA recordings and local run evidence
+.qa-private/
+qa/runs/
