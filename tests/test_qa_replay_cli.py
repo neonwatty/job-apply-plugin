@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import fcntl
+import hashlib
 import importlib.util
 import io
 import json
@@ -25,6 +26,9 @@ SCRIPT = ROOT / "scripts" / "qa-replay.py"
 PRIVATE_CAPTURE = ROOT / "qa" / "testdata" / "private-capture"
 FIXTURE_ID = "linkedin-easy-apply-short-2026-08-v1"
 SCENARIO_ID = "complete-profile"
+SYNTHETIC_RESUME_SHA256 = (
+    "04eab9c3265232cf4950631ca2c8a1e1b3070da6d441ebb8953221ced8c55274"
+)
 PROMPT = (
     "Use job-apply:job-apply on this approved local LinkedIn Easy Apply QA "
     "fixture: {url}. Use the isolated QA profile already prepared for this "
@@ -365,6 +369,13 @@ def inspect_synthetic_pdf(content: bytes) -> str:
     ]
     if [value.decode("ascii") for value in strings] != expected_visible_strings:
         raise AssertionError("visible PDF text is not allowlisted")
+    return extracted
+
+
+def validate_committed_synthetic_pdf(content: bytes) -> str:
+    extracted = inspect_synthetic_pdf(content)
+    if hashlib.sha256(content).hexdigest() != SYNTHETIC_RESUME_SHA256:
+        raise AssertionError("reviewed synthetic resume digest changed")
     return extracted
 
 
@@ -1315,7 +1326,7 @@ class CommittedScenarioTests(unittest.TestCase):
         ):
             self.assertNotIn(value.casefold(), serialized_expected)
 
-        extracted = inspect_synthetic_pdf(
+        extracted = validate_committed_synthetic_pdf(
             (scenario_root / "synthetic-resume.pdf").read_bytes()
         )
         for expected_text in (
@@ -1440,6 +1451,26 @@ class CommittedScenarioTests(unittest.TestCase):
             with self.subTest(trailing=trailing):
                 with self.assertRaisesRegex(AssertionError, "physical EOF"):
                     inspect_synthetic_pdf(scenario_pdf + trailing)
+
+    def test_reviewed_digest_rejects_arbitrary_catalog_and_page_names(self) -> None:
+        scenario_pdf = (
+            ROOT / "qa/scenarios/complete-profile/synthetic-resume.pdf"
+        ).read_bytes()
+        for original, replacement in (
+            (
+                b"/PageMode /UseNone",
+                b"/PageMode /UseNone /HiddenCatalogName /HiddenValue",
+            ),
+            (
+                b"/Rotate 0",
+                b"/Rotate 0 /HiddenPageName /HiddenValue",
+            ),
+        ):
+            with self.subTest(replacement=replacement):
+                tampered = scenario_pdf.replace(original, replacement, 1)
+                self.assertNotEqual(tampered, scenario_pdf)
+                with self.assertRaisesRegex(AssertionError, "digest changed"):
+                    validate_committed_synthetic_pdf(tampered)
 
     def test_committed_scenario_prepares_real_store_without_http_leak(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
