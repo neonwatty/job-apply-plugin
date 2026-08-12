@@ -22,11 +22,79 @@ python3 "$REPO_ROOT/scripts/job-apply-store.py" --help >/dev/null
 python3 - "$REPO_ROOT" <<'PY'
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 root = Path(sys.argv[1])
 expected = {"answer-memory", "job-apply", "job-search", "job-preferences"}
+
+
+def git(*arguments: str, check: bool = True) -> subprocess.CompletedProcess[bytes]:
+    try:
+        return subprocess.run(
+            ["git", "-C", str(root), *arguments],
+            check=check,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        raise SystemExit("unable to inspect repository fixture policy") from error
+
+
+for ignored_path in (".qa-private/smoke-probe", "qa/runs/smoke-probe"):
+    ignored = git("check-ignore", "--no-index", "-q", "--", ignored_path, check=False)
+    if ignored.returncode != 0:
+        raise SystemExit(f"{ignored_path.rsplit('/', 1)[0]}/ must be ignored")
+
+fixture_ignore = git(
+    "check-ignore", "--no-index", "-q", "--", "qa/fixtures/smoke-probe", check=False
+)
+if fixture_ignore.returncode not in (0, 1):
+    raise SystemExit("unable to inspect repository fixture policy")
+if fixture_ignore.returncode == 0:
+    raise SystemExit("qa/fixtures/ must not be ignored")
+
+tracked_output = git("ls-files", "-z", "--", ".qa-private/**", "qa/runs/**", "qa/fixtures/**").stdout
+if len(tracked_output) > 1024 * 1024:
+    raise SystemExit("tracked QA fixture inventory is unexpectedly large")
+try:
+    tracked_paths = [entry.decode("utf-8") for entry in tracked_output.split(b"\0") if entry]
+except UnicodeDecodeError as error:
+    raise SystemExit("tracked QA fixture path is not UTF-8") from error
+if len(tracked_paths) > 2_000 or any(len(path) > 512 for path in tracked_paths):
+    raise SystemExit("tracked QA fixture inventory exceeds safety limits")
+
+private_tracked = [
+    path
+    for path in tracked_paths
+    if path.startswith(".qa-private/") or path.startswith("qa/runs/")
+]
+if private_tracked:
+    raise SystemExit(
+        f"private QA artifact is tracked: {json.dumps(private_tracked[0])}"
+    )
+
+allowed_fixture_files = {"approval.json", "fixture.json", "provenance.json"}
+fixture_id_pattern = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*-v[1-9][0-9]*$")
+fixture_inventory: dict[str, set[str]] = {}
+for path in tracked_paths:
+    if not path.startswith("qa/fixtures/") or path == "qa/fixtures/.gitkeep":
+        continue
+    parts = path.split("/")
+    if len(parts) != 4 or parts[3] not in allowed_fixture_files:
+        raise SystemExit(
+            f"fixture contains a non-durable path: {json.dumps(path)}"
+        )
+    if fixture_id_pattern.fullmatch(parts[2]) is None:
+        raise SystemExit("tracked fixture has an invalid identifier")
+    fixture_inventory.setdefault(parts[2], set()).add(parts[3])
+for fixture_id, files in fixture_inventory.items():
+    if files != allowed_fixture_files:
+        missing = sorted(allowed_fixture_files - files)
+        raise SystemExit(f"fixture {fixture_id} is incomplete; missing {missing}")
 
 for relative in (".claude-plugin/plugin.json", ".claude-plugin/marketplace.json"):
     data = json.loads((root / relative).read_text())

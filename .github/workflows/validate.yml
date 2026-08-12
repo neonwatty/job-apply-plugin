@@ -18,6 +18,18 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install QA dependencies
+        run: npm ci
+
+      - name: Install replay browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Python tests
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Run deterministic replay browser tests
+        run: npm run test:qa-browser
+
       - name: Install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
 
