@@ -43,6 +43,36 @@ from qa.promote import (
 
 expected = {"answer-memory", "job-apply", "job-search", "job-preferences"}
 
+launcher = root / "scripts" / "qa-chrome.py"
+try:
+    launcher_metadata = launcher.lstat()
+except OSError as error:
+    raise SystemExit("replay QA launcher is missing from the plugin source") from error
+if not stat.S_ISREG(launcher_metadata.st_mode):
+    raise SystemExit("replay QA launcher must be a regular file")
+
+readme = (root / "README.md").read_text(encoding="utf-8")
+profile = "linkedin-capture"
+required_launcher_commands = (
+    f"python3 scripts/qa-chrome.py start --profile {profile}",
+    f"python3 scripts/qa-chrome.py check --profile {profile}",
+    f"python3 scripts/qa-chrome.py stop --profile {profile}",
+    f"python3 scripts/qa-chrome.py reset --profile {profile}",
+)
+for command in required_launcher_commands:
+    if command not in readme:
+        raise SystemExit("README is missing the complete replay QA launcher workflow")
+if re.search(r"--remote-debugging-port(?:=|\s+)\d+", readme):
+    raise SystemExit("README must not prescribe a fixed Chrome debugging port")
+if re.search(r"(?m)^\s*open\b[^\n]*--remote-debugging-port", readme):
+    raise SystemExit("README must not prescribe a direct open/remote-debugging recipe")
+if "--confirm" in readme:
+    raise SystemExit("README must not require typed confirmation for manual reset guidance")
+if "~/.job-apply-qa/chrome-profiles/linkedin-capture" not in readme:
+    raise SystemExit("README must document the literal dedicated manual-removal path")
+if "requires no Trash permission" not in readme:
+    raise SystemExit("README must document that reset does not require Trash access")
+
 
 def git(*arguments: str, check: bool = True) -> subprocess.CompletedProcess[bytes]:
     try:
@@ -271,7 +301,13 @@ echo "Creating isolated working-tree marketplace fixture"
 tar --exclude='./.git' \
   --exclude='./.qa-private' \
   --exclude='./qa/runs' \
+  --exclude='./.job-apply-qa' \
   --exclude='./node_modules' \
+  --exclude='./coverage' \
+  --exclude='./dist' \
+  --exclude='./build' \
+  --exclude='__pycache__' \
+  --exclude='*.py[co]' \
   --exclude='./.worktrees' \
   --exclude='./docs/goals' \
   --exclude='./test_resumes' \
@@ -280,6 +316,7 @@ tar --exclude='./.git' \
 
 python3 - "$SMOKE_FIXTURE_DIR" <<'PY'
 import os
+import stat
 import sys
 from pathlib import Path
 
@@ -288,7 +325,11 @@ excluded = (
     ".git",
     ".qa-private",
     "qa/runs",
+    ".job-apply-qa",
     "node_modules",
+    "coverage",
+    "dist",
+    "build",
     ".worktrees",
     "docs/goals",
     "test_resumes",
@@ -301,6 +342,16 @@ for relative in excluded:
     except OSError as error:
         raise SystemExit("unable to verify packaged fixture exclusions") from error
     raise SystemExit("packaged fixture contains an excluded private or generated path")
+launcher = fixture / "scripts" / "qa-chrome.py"
+try:
+    metadata = launcher.lstat()
+except OSError as error:
+    raise SystemExit("packaged fixture is missing the replay QA launcher") from error
+if not os.path.isfile(launcher) or not stat.S_ISREG(metadata.st_mode):
+    raise SystemExit("packaged replay QA launcher must be a regular file")
+for generated in fixture.rglob("*"):
+    if generated.name == "__pycache__" or generated.suffix in {".pyc", ".pyo"}:
+        raise SystemExit("packaged fixture contains generated Python content")
 print("Packaged fixture exclusions passed")
 PY
 

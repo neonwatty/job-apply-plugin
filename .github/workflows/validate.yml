@@ -24,6 +24,9 @@ jobs:
       - name: Install replay browser
         run: npx playwright install --with-deps chromium
 
+      - name: Run replay QA launcher and manual reset guidance tests
+        run: python3 -m unittest tests.test_qa_chrome -v
+
       - name: Run Python tests
         run: python3 -m unittest discover -s tests -v
 

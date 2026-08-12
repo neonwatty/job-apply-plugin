@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { EventEmitter, once } from "node:events";
 import {
   access,
+  chmod,
   mkdtemp,
   mkdir,
   readFile,
@@ -88,6 +89,21 @@ async function waitForFile(filename, timeoutMs = 5000) {
 
 async function runNode(args, timeoutMs = 5000) {
   const child = spawn(process.execPath, args, { cwd: root });
+  let stdout = "";
+  let stderr = "";
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (chunk) => { stdout += chunk; });
+  child.stderr.on("data", (chunk) => { stderr += chunk; });
+  const { code, signal } = await waitForExit(child, timeoutMs);
+  return { code, signal, stdout, stderr };
+}
+
+async function runLauncher(args, home, timeoutMs = 15000) {
+  const child = spawn("python3", ["scripts/qa-chrome.py", ...args], {
+    cwd: root,
+    env: { ...process.env, HOME: home },
+  });
   let stdout = "";
   let stderr = "";
   child.stdout.setEncoding("utf8");
@@ -612,6 +628,75 @@ test("record refuses a login page before creating private evidence", async (t) =
   assert.doesNotMatch(result.stderr, /Sign in|password|127\.0\.0\.1/);
   await assert.rejects(access(path.join(session, "capture-receipt.json")));
   await assert.rejects(access(path.join(session, "events.jsonl")));
+});
+
+test("qa Chrome launcher exposes recorder-compatible real CDP and persists its profile", async (t) => {
+  const directory = await mkdtemp(path.join(tmpdir(), "qa-chrome-real-"));
+  const home = path.join(directory, "home");
+  const trash = path.join(home, ".Trash");
+  const wrapper = path.join(directory, "injected chromium");
+  const privateRoot = path.join(root, ".qa-private");
+  await mkdir(home, { mode: 0o700 });
+  await mkdir(trash, { mode: 0o700 });
+  await mkdir(privateRoot, { mode: 0o700, recursive: true });
+  const session = await mkdtemp(path.join(privateRoot, "launcher-real-"));
+  const executable = chromium.executablePath().replaceAll("'", "'\\''");
+  const wrapperSource = `#!/bin/sh\nexec '${executable}' --headless=new --no-sandbox --use-mock-keychain "$@"\n`;
+  assert.match(wrapperSource, /--use-mock-keychain/);
+  await writeFile(wrapper, wrapperSource);
+  await chmod(wrapper, 0o700);
+  t.after(async () => {
+    await runLauncher(["stop", "--profile", "real-cdp"], home).catch(() => {});
+    await rm(directory, { recursive: true, force: true });
+    await rm(session, { recursive: true, force: true });
+  });
+
+  const first = await runLauncher([
+    "start", "--profile", "real-cdp", "--chrome-path", wrapper,
+  ], home);
+  assert.equal(first.code, 0, first.stderr);
+  const ready = JSON.parse(first.stdout);
+  assert.match(ready.cdpUrl, /^http:\/\/127\.0\.0\.1:\d+$/);
+  const attached = await chromium.connectOverCDP(ready.cdpUrl);
+  const context = attached.contexts()[0];
+  const pages = context.pages();
+  const page = pages[0] ?? await context.newPage();
+  for (const extra of pages.slice(1)) await extra.close();
+  const site = await startSyntheticSite(t);
+  await page.goto(`${site}/application`, { waitUntil: "commit", timeout: 10000 });
+  await page.setContent(`<!doctype html><main><h1>Apply for this position</h1>
+    <label>Contact email<input type=email required></label>
+    <button type=button>Continue application</button></main>`);
+  await attached.close();
+
+  const recorder = spawn(process.execPath, [
+    "qa/recorder.mjs", "record", "--cdp-url", ready.cdpUrl, "--output", session,
+  ], { cwd: root });
+  let recorderStderr = "";
+  recorder.stderr.setEncoding("utf8");
+  recorder.stderr.on("data", (chunk) => { recorderStderr += chunk; });
+  try {
+    await waitForFile(path.join(session, "control.json"), 10000);
+  } catch (error) {
+    assert.fail(`${error.message}: ${recorderStderr}`);
+  }
+  recorder.kill("SIGTERM");
+  await waitForExit(recorder, 5000);
+  assert.equal(recorderStderr, "");
+
+  const marker = path.join(home, ".job-apply-qa", "chrome-profiles", "real-cdp", "persistence-marker");
+  await writeFile(marker, "retained");
+  const checked = await runLauncher(["check", "--profile", "real-cdp"], home);
+  assert.equal(checked.code, 0, checked.stderr);
+  const stopped = await runLauncher(["stop", "--profile", "real-cdp"], home);
+  assert.equal(stopped.code, 0, stopped.stderr);
+  const second = await runLauncher([
+    "start", "--profile", "real-cdp", "--chrome-path", wrapper,
+  ], home);
+  assert.equal(second.code, 0, second.stderr);
+  assert.equal(await readFile(marker, "utf8"), "retained");
+  assert.notEqual(JSON.parse(second.stdout).cdpUrl, "http://127.0.0.1:0");
+  assert.equal((await runLauncher(["stop", "--profile", "real-cdp"], home)).code, 0);
 });
 
 test("recorder captures sanitized interactions and secure sequential checkpoints", async (t) => {

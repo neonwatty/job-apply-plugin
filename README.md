@@ -258,17 +258,29 @@ MIT License - See [LICENSE](LICENSE) for details.
 Replay fixtures are built from a tightly controlled, private recording and checked in only after they have been reduced to a generic semantic model. Follow these policies:
 
 1. Record a source application only for a genuine application the user already intends to make, and only after the user logs in manually.
-2. Start Chrome with a dedicated profile and remote debugging enabled; never reuse a profile that contains unrelated tabs.
+2. Start Chrome through the replay QA launcher with a dedicated named profile; never use an everyday Chrome profile or an ad hoc debugging command.
 3. Record and annotate the walkthrough only under `.qa-private/`.
 4. Compile the capture, inspect every entry in `review-manifest.json`, explicitly approve the reviewed candidate, and then promote it.
 5. Confirm the complete raw session was deleted before staging anything.
 6. Run the deterministic checks before preparing a supervised advisory replay through the normal Job Apply skill in a visible host session.
 7. Never commit source URLs, employer or job identity, screenshots, DOM, applicant values, resumes, cookies, tokens, or raw reports.
 
-Record and annotate the walkthrough under `.qa-private/`:
+Choose a lowercase, hyphenated profile name and reuse it for a given QA identity. The launcher keeps its credential-bearing Chrome profiles and runtime state under the current user's home directory, outside the repository. They are never included in the plugin package. Chrome may ask for normal macOS Keychain access when the profile first stores or reuses authentication; handle that prompt yourself, and never put a password or Keychain secret in a command or recording.
+
+Start the named profile, then confirm that its authenticated supervisor and dynamic loopback CDP endpoint are ready:
 
 ```bash
-node qa/recorder.mjs record --cdp-url http://127.0.0.1:9222 --output .qa-private/qa-session-20260811-001
+python3 scripts/qa-chrome.py start --profile linkedin-capture
+python3 scripts/qa-chrome.py check --profile linkedin-capture
+```
+
+Both commands return a small JSON status. When ready, use the `recorderCommand` emitted by the launcher; it contains the verified current CDP URL and a placeholder for a unique private session ID. Do not substitute a remembered port or launch Chrome directly with remote-debugging flags.
+
+In the launched Chrome window, manually sign in and complete any password, CAPTCHA, MFA, or Keychain prompts. Manually choose the genuine job application the user already intends to make, close unrelated tabs, and leave exactly that ordinary application page open. Only then replace the emitted command's session placeholder and run that emitted command on the application page. For example, the output directory may be `.qa-private/qa-session-20260811-001`.
+
+Record and annotate the walkthrough under `.qa-private/`. In a second terminal, use the checkpoint command after the emitted recorder command is running:
+
+```bash
 node qa/recorder.mjs checkpoint --session .qa-private/qa-session-20260811-001 --kind application-opened
 ```
 
@@ -308,6 +320,22 @@ While the recorder is still running, draft `.qa-private/qa-session-20260811-001/
 ```
 
 After the final checkpoint and draft annotation, press `Ctrl-C` once in the recorder terminal and wait for it to exit cleanly. Do not force-kill it: clean shutdown removes the private control file and writes `capture-receipt.json`, including the generated `captureId`, capture month, recorder version, and hashes of the private source files.
+
+Only after the recorder has exited cleanly, stop the launcher-owned Chrome child:
+
+```bash
+python3 scripts/qa-chrome.py stop --profile linkedin-capture
+```
+
+Normal `stop` preserves the named profile, including its login state, for the next `start`. `reset` is a non-mutating guidance command. Run it only after `stop` when you are considering discarding that retained authentication and other profile state:
+
+```bash
+python3 scripts/qa-chrome.py reset --profile linkedin-capture
+```
+
+When the profile is safely stopped and its managed state is unambiguous, the command makes no filesystem changes and returns `~/.job-apply-qa/chrome-profiles/linkedin-capture` as the exact dedicated directory. It does not open Trash, inspect profile contents, move, rename, or delete anything. If the profile is active or state is ambiguous, it returns an error without presenting removal as safe; stop the launcher-owned Chrome window or resolve the ambiguous state first.
+
+Removing the directory is a separate, user-owned manual action. In Finder, use **Go to Folder** with the exact tilde-form path emitted by `reset`, verify that it is the intended dedicated QA profile, and move that directory to Trash yourself. If you instead choose a terminal removal workflow, target only that exact emitted directory and run it yourself. The launcher never performs or authorizes either removal action and requires no Trash permission.
 
 Replace the two placeholders by copying `captureId` and `captureMonth` exactly from the recorder-generated receipt. `sourceLabel` and `sourceDeniedTerms` may contain private source wording because `semantic.json` is deleted with the raw session, but do not copy applicant input values into it. The compiler accepts no extra properties or alternate step/control order.
 
