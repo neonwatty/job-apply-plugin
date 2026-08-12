@@ -172,7 +172,7 @@ class SessionBroker:
             if (
                 not stat.S_ISDIR(parent_stat.st_mode)
                 or parent_stat.st_uid != os.getuid()
-                or parent_stat.st_mode & 0o077
+                or parent_stat.st_mode & 0o777 != 0o700
             ):
                 raise BrokerError("unsafe-root")
             try:

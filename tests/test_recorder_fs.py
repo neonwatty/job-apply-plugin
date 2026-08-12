@@ -91,6 +91,24 @@ class SessionBrokerTests(unittest.TestCase):
         self.broker.write_exclusive("events.jsonl", b"event\n")
         self.assertEqual((self.session / "events.jsonl").stat().st_mode & 0o777, 0o600)
 
+    def test_private_parent_requires_exact_owner_mode(self):
+        for mode in (0o500, 0o600, 0o700 | 0o001, 0o710, 0o750, 0o770):
+            with self.subTest(mode=oct(mode)), tempfile.TemporaryDirectory() as directory:
+                private = Path(directory, ".qa-private")
+                private.mkdir(mode=0o700)
+                private.chmod(mode)
+                try:
+                    with self.assertRaisesRegex(BrokerError, "unsafe-root"):
+                        SessionBroker(str(private / "qa-session-mode"))
+                finally:
+                    private.chmod(0o700)
+
+        with tempfile.TemporaryDirectory() as directory:
+            private = Path(directory, ".qa-private")
+            private.mkdir(mode=0o700)
+            broker = SessionBroker(str(private / "qa-session-exact"))
+            broker.close()
+
     def test_close_releases_retained_descriptors(self):
         root_fd = self.broker._root_fd
         parent_fd = self.broker._parent_fd
