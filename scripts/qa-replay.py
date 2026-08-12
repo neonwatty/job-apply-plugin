@@ -39,6 +39,9 @@ STORE_SCRIPT = REPO_ROOT / "scripts" / "job-apply-store.py"
 IDENTIFIER = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 RUN_ID = re.compile(r"^qa-run-20[0-9]{6}-[a-f0-9]{8}$")
 TOKEN = re.compile(r"^[a-f0-9]{64}$")
+ROUTE = re.compile(
+    r"^(qa-run-20[0-9]{6}-[a-f0-9]{8})\.([a-f0-9]{64})$"
+)
 MAX_JSON_BYTES = 1024 * 1024
 MAX_RESUME_BYTES = 10 * 1024 * 1024
 STARTUP_TIMEOUT_SECONDS = 10
@@ -61,7 +64,6 @@ RUN_STATE_KEYS = {
     "createdAt",
 }
 EXPECTED_KEYS = {"controlIds", "resumeFilename"}
-MAX_RUN_ENTRIES = 256
 REPORT_KEYS = {
     "fixtureId",
     "scenarioId",
@@ -204,7 +206,10 @@ def _validate_report(
     report: Any, state: dict[str, Any], fixture: dict[str, Any]
 ) -> dict[str, Any]:
     control_ids = {
-        control["id"] for step in fixture["steps"] for control in step["controls"]
+        control["id"]
+        for step in fixture["steps"]
+        for control in step["controls"]
+        if control["required"]
     }
     if (
         not isinstance(report, dict)
@@ -212,20 +217,35 @@ def _validate_report(
         or report.get("fixtureId") != state["fixtureId"]
         or report.get("scenarioId") != state["scenarioId"]
         or report.get("status") not in {"passed", "failed"}
-        or not isinstance(report.get("assertions"), dict)
-        or set(report["assertions"]) != ASSERTION_NAMES
-        or any(
-            value not in {"passed", "failed"}
-            for value in report["assertions"].values()
-        )
-        or not isinstance(report.get("missingControlIds"), list)
-        or any(value not in control_ids for value in report["missingControlIds"])
-        or not isinstance(report.get("failureCategories"), list)
-        or any(
-            value not in FAILURE_CATEGORIES
-            for value in report["failureCategories"]
-        )
     ):
+        raise CoordinatorError("invalid run report")
+    assertions = report.get("assertions")
+    missing = report.get("missingControlIds")
+    categories = report.get("failureCategories")
+    if (
+        not isinstance(assertions, dict)
+        or set(assertions) != ASSERTION_NAMES
+        or any(value not in {"passed", "failed"} for value in assertions.values())
+        or not isinstance(missing, list)
+        or len(missing) > len(control_ids)
+        or not all(isinstance(value, str) for value in missing)
+        or len(missing) != len(set(missing))
+        or missing != sorted(missing)
+        or not set(missing).issubset(control_ids)
+        or not isinstance(categories, list)
+        or len(categories) > len(FAILURE_CATEGORIES)
+        or not all(isinstance(value, str) for value in categories)
+        or len(categories) != len(set(categories))
+        or categories != sorted(categories)
+        or not set(categories).issubset(FAILURE_CATEGORIES)
+    ):
+        raise CoordinatorError("invalid run report")
+    semantically_passed = (
+        all(value == "passed" for value in assertions.values())
+        and not missing
+        and not categories
+    )
+    if (report["status"] == "passed") != semantically_passed:
         raise CoordinatorError("invalid run report")
     return report
 
@@ -316,6 +336,11 @@ def _remove_contents_at(directory_descriptor: int, depth: int = 0) -> None:
                 name, dir_fd=directory_descriptor, follow_symlinks=False
             )
             if stat.S_ISDIR(metadata.st_mode):
+                if (
+                    metadata.st_uid != os.getuid()
+                    or stat.S_IMODE(metadata.st_mode) != 0o700
+                ):
+                    raise CoordinatorError("run cleanup failed")
                 child = os.open(
                     name,
                     os.O_RDONLY
@@ -329,6 +354,11 @@ def _remove_contents_at(directory_descriptor: int, depth: int = 0) -> None:
                     os.close(child)
                 os.rmdir(name, dir_fd=directory_descriptor)
             elif stat.S_ISREG(metadata.st_mode):
+                if (
+                    metadata.st_uid != os.getuid()
+                    or stat.S_IMODE(metadata.st_mode) != 0o600
+                ):
+                    raise CoordinatorError("run cleanup failed")
                 os.unlink(name, dir_fd=directory_descriptor)
             else:
                 raise CoordinatorError("run cleanup failed")
@@ -609,10 +639,10 @@ def _prepare(fixture_id: str, scenario_id: str) -> dict[str, Any]:
         return {
             "fixtureId": fixture_id,
             "scenarioId": scenario_id,
-            "url": f'{startup["url"]}#qa-route={route_token}',
+            "url": f'{startup["url"]}#qa-route={_run_id}.{route_token}',
             "storeRoot": str(store_root.resolve()),
             "suggestedPrompt": PROMPT.format(
-                url=f'{startup["url"]}#qa-route={route_token}'
+                url=f'{startup["url"]}#qa-route={_run_id}.{route_token}'
             ),
         }
     except BaseException:
@@ -633,10 +663,28 @@ def _prepare(fixture_id: str, scenario_id: str) -> dict[str, Any]:
         os.close(runs_descriptor)
 
 
+def _load_state_at(run_root: Path, run_descriptor: int) -> dict[str, Any]:
+    state = _read_json_at(run_descriptor, "run.json", "invalid run state")
+    if (
+        not isinstance(state, dict)
+        or set(state) != RUN_STATE_KEYS
+        or not all(isinstance(state.get(key), str) for key in RUN_STATE_KEYS)
+        or TOKEN.fullmatch(state["routeToken"]) is None
+        or TOKEN.fullmatch(state["shutdownToken"]) is None
+        or TOKEN.fullmatch(state["lifecycleNonce"]) is None
+        or Path(state["storeRoot"]) != run_root / "store"
+        or Path(state["fixturePath"]) != run_root / "fixture.json"
+        or state["scenarioId"] != "complete-profile"
+    ):
+        raise CoordinatorError("invalid run state")
+    return state
+
+
 def _load_run(run_id: str) -> tuple[Path, dict[str, Any], int, int]:
     if RUN_ID.fullmatch(run_id) is None:
         raise CoordinatorError("invalid run identifier")
     run_root = RUNS_ROOT / run_id
+    canonical_run_root = RUNS_ROOT.resolve() / run_id
     root_descriptor = _open_private_directory(RUNS_ROOT, "invalid run state")
     run_descriptor = None
     try:
@@ -653,29 +701,12 @@ def _load_run(run_id: str) -> tuple[Path, dict[str, Any], int, int]:
             raise CoordinatorError("invalid run state")
         _verify_directory_binding(RUNS_ROOT, root_descriptor, "invalid run state")
         _verify_directory_binding(run_root, run_descriptor, "invalid run state")
-        state = _read_json_at(run_descriptor, "run.json", "invalid run state")
+        state = _load_state_at(canonical_run_root, run_descriptor)
     except BaseException:
         if run_descriptor is not None:
             os.close(run_descriptor)
         os.close(root_descriptor)
         raise
-    if (
-        not isinstance(state, dict)
-        or set(state) != RUN_STATE_KEYS
-        or not all(
-            isinstance(state.get(key), str)
-            for key in RUN_STATE_KEYS
-        )
-        or TOKEN.fullmatch(state["routeToken"]) is None
-        or TOKEN.fullmatch(state["shutdownToken"]) is None
-        or TOKEN.fullmatch(state["lifecycleNonce"]) is None
-        or Path(state["storeRoot"]) != (run_root / "store").resolve()
-        or Path(state["fixturePath"]) != (run_root / "fixture.json").resolve()
-        or state["scenarioId"] != "complete-profile"
-    ):
-        os.close(run_descriptor)
-        os.close(root_descriptor)
-        raise CoordinatorError("invalid run state")
     return run_root, state, root_descriptor, run_descriptor
 
 
@@ -758,50 +789,36 @@ def _shutdown_server(url: str, token: str, required: bool = True) -> None:
 
 
 def _resolve_route(route_token: str) -> dict[str, str]:
-    if TOKEN.fullmatch(route_token) is None:
-        raise CoordinatorError("invalid QA route")
-    scan_descriptor = _open_private_directory(RUNS_ROOT, "unknown QA route")
-    try:
-        with os.scandir(scan_descriptor) as iterator:
-            names = [entry.name for entry in iterator]
-    except OSError:
-        raise CoordinatorError("unknown QA route") from None
-    finally:
-        os.close(scan_descriptor)
-    if len(names) > MAX_RUN_ENTRIES:
-        raise CoordinatorError("unknown QA route")
-    match: str | None = None
-    for name in names:
-        if RUN_ID.fullmatch(name) is None:
-            continue
-        root_descriptor = run_descriptor = None
-        try:
-            _run_root, state, root_descriptor, run_descriptor = _load_run(name)
-            lifecycle = _read_json_at(
-                run_descriptor, "lifecycle.json", "invalid run state"
-            )
-            terminal = _entry_exists_at(
-                run_descriptor, "completed.json"
-            ) or _entry_exists_at(run_descriptor, "abandoned.json")
-        except CoordinatorError:
-            continue
-        finally:
-            if run_descriptor is not None:
-                os.close(run_descriptor)
-            if root_descriptor is not None:
-                os.close(root_descriptor)
-        if terminal or lifecycle != {
-            "state": "prepared",
-            "nonce": state["lifecycleNonce"],
-        }:
-            continue
-        if hmac.compare_digest(state["routeToken"], route_token):
-            if match is not None:
-                raise CoordinatorError("unknown QA route")
-            match = state["storeRoot"]
+    match = ROUTE.fullmatch(route_token)
     if match is None:
         raise CoordinatorError("unknown QA route")
-    return {"storeRoot": match}
+    run_id, supplied_token = match.groups()
+    root_descriptor = run_descriptor = None
+    try:
+        _run_root, state, root_descriptor, run_descriptor = _load_run(run_id)
+        lifecycle = _read_json_at(
+            run_descriptor, "lifecycle.json", "invalid run state"
+        )
+        terminal = _entry_exists_at(
+            run_descriptor, "completed.json"
+        ) or _entry_exists_at(run_descriptor, "abandoned.json")
+        if (
+            terminal
+            or lifecycle != {
+                "state": "prepared",
+                "nonce": state["lifecycleNonce"],
+            }
+            or not hmac.compare_digest(state["routeToken"], supplied_token)
+        ):
+            raise CoordinatorError("unknown QA route")
+        return {"storeRoot": state["storeRoot"]}
+    except CoordinatorError:
+        raise CoordinatorError("unknown QA route")
+    finally:
+        if run_descriptor is not None:
+            os.close(run_descriptor)
+        if root_descriptor is not None:
+            os.close(root_descriptor)
 
 
 def _evaluate(run_id: str) -> tuple[int, dict[str, Any]]:
@@ -809,6 +826,7 @@ def _evaluate(run_id: str) -> tuple[int, dict[str, Any]]:
     lock_descriptor = None
     authenticated = False
     lifecycle_active = False
+    store_descriptor = None
     try:
         lock_descriptor = os.open(
             "evaluate.lock",
@@ -858,6 +876,25 @@ def _evaluate(run_id: str) -> tuple[int, dict[str, Any]]:
         if lifecycle != {"state": "prepared", "nonce": state["lifecycleNonce"]}:
             raise CoordinatorError("run is abandoned")
         lifecycle_active = True
+        try:
+            store_descriptor = os.open(
+                "store",
+                os.O_RDONLY
+                | os.O_DIRECTORY
+                | getattr(os, "O_NOFOLLOW", 0),
+                dir_fd=run_descriptor,
+            )
+            store_metadata = os.fstat(store_descriptor)
+            if (
+                not stat.S_ISDIR(store_metadata.st_mode)
+                or store_metadata.st_uid != os.getuid()
+                or stat.S_IMODE(store_metadata.st_mode) != 0o700
+            ):
+                raise CoordinatorError("invalid store root")
+        except CoordinatorError:
+            raise
+        except OSError:
+            raise CoordinatorError("invalid store root") from None
         _verify_identity(state)
         authenticated = True
         server_state = _fetch_state(state["url"])
@@ -865,7 +902,7 @@ def _evaluate(run_id: str) -> tuple[int, dict[str, Any]]:
             fixture,
             {"id": state["scenarioId"]},
             server_state["events"],
-            Path(state["storeRoot"]),
+            store_descriptor,
         )
         if not isinstance(report, dict):
             raise CoordinatorError("replay evaluation failed")
@@ -906,6 +943,211 @@ def _evaluate(run_id: str) -> tuple[int, dict[str, Any]]:
             _shutdown_server(state["url"], state["shutdownToken"], required=False)
         if lock_descriptor is not None:
             os.close(lock_descriptor)
+        if store_descriptor is not None:
+            os.close(store_descriptor)
+        os.close(run_descriptor)
+        os.close(root_descriptor)
+
+
+def _open_run_for_cleanup(run_id: str) -> tuple[Path, Path, int, int]:
+    if RUN_ID.fullmatch(run_id) is None:
+        raise CoordinatorError("invalid run identifier")
+    run_root = RUNS_ROOT / run_id
+    canonical_run_root = RUNS_ROOT.resolve() / run_id
+    root_descriptor = _open_private_directory(RUNS_ROOT, "invalid run state")
+    run_descriptor = None
+    try:
+        run_descriptor = os.open(
+            run_id,
+            os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0),
+            dir_fd=root_descriptor,
+        )
+        _verify_directory_binding(RUNS_ROOT, root_descriptor, "invalid run state")
+        _verify_directory_binding(run_root, run_descriptor, "invalid run state")
+        return run_root, canonical_run_root, root_descriptor, run_descriptor
+    except BaseException:
+        if run_descriptor is not None:
+            os.close(run_descriptor)
+        os.close(root_descriptor)
+        raise
+
+
+def _prune_run_artifacts(
+    run_descriptor: int, *, retain_report: bool
+) -> None:
+    retained = {"tombstone.json"}
+    if retain_report:
+        retained.add("report.json")
+    allowed_files = {
+        "fixture.json",
+        "profile.json",
+        "synthetic-resume.pdf",
+        "expected.json",
+        "run.json",
+        "lifecycle.json",
+        "completed.json",
+        "abandoned.json",
+        "report.json",
+        "evaluate.lock",
+        "tombstone.json",
+    }
+    try:
+        names = os.listdir(run_descriptor)
+        if len(names) > 2_000:
+            raise CoordinatorError("run cleanup failed")
+        for name in names:
+            if name in retained:
+                continue
+            metadata = os.stat(
+                name, dir_fd=run_descriptor, follow_symlinks=False
+            )
+            if name == "store" and stat.S_ISDIR(metadata.st_mode):
+                store_descriptor = os.open(
+                    name,
+                    os.O_RDONLY
+                    | os.O_DIRECTORY
+                    | getattr(os, "O_NOFOLLOW", 0),
+                    dir_fd=run_descriptor,
+                )
+                try:
+                    store_metadata = os.fstat(store_descriptor)
+                    if (
+                        store_metadata.st_uid != os.getuid()
+                        or stat.S_IMODE(store_metadata.st_mode) != 0o700
+                    ):
+                        raise CoordinatorError("run cleanup failed")
+                    _remove_contents_at(store_descriptor)
+                finally:
+                    os.close(store_descriptor)
+                os.rmdir(name, dir_fd=run_descriptor)
+            elif (
+                name in allowed_files
+                and stat.S_ISREG(metadata.st_mode)
+                and metadata.st_uid == os.getuid()
+                and stat.S_IMODE(metadata.st_mode) == 0o600
+            ):
+                os.unlink(name, dir_fd=run_descriptor)
+            else:
+                raise CoordinatorError("run cleanup failed")
+        os.fsync(run_descriptor)
+    except CoordinatorError:
+        raise
+    except OSError:
+        raise CoordinatorError("run cleanup failed") from None
+
+
+def _cleanup(run_id: str) -> dict[str, Any]:
+    (
+        _run_root,
+        canonical_run_root,
+        root_descriptor,
+        run_descriptor,
+    ) = _open_run_for_cleanup(run_id)
+    lock_descriptor = None
+    try:
+        lock_descriptor = os.open(
+            "evaluate.lock",
+            os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+            dir_fd=run_descriptor,
+        )
+        os.fchmod(lock_descriptor, 0o600)
+        try:
+            fcntl.flock(lock_descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise CoordinatorError("evaluation already in progress") from None
+
+        if _entry_exists_at(run_descriptor, "tombstone.json"):
+            tombstone = _read_json_at(
+                run_descriptor, "tombstone.json", "invalid cleanup state"
+            )
+            if (
+                not isinstance(tombstone, dict)
+                or set(tombstone) != {"runId", "state", "reportRetained"}
+                or tombstone.get("runId") != run_id
+                or tombstone.get("state") not in {"abandoned", "completed"}
+                or not isinstance(tombstone.get("reportRetained"), bool)
+                or tombstone["reportRetained"]
+                != (tombstone["state"] == "completed")
+            ):
+                raise CoordinatorError("invalid cleanup state")
+            _prune_run_artifacts(
+                run_descriptor, retain_report=tombstone["reportRetained"]
+            )
+            return tombstone
+
+        state = _load_state_at(canonical_run_root, run_descriptor)
+        lifecycle = _read_json_at(
+            run_descriptor, "lifecycle.json", "invalid run state"
+        )
+        expected_prepared = {
+            "state": "prepared",
+            "nonce": state["lifecycleNonce"],
+        }
+        if lifecycle != expected_prepared:
+            raise CoordinatorError("invalid run state")
+        completed = _entry_exists_at(run_descriptor, "completed.json")
+        abandoned = _entry_exists_at(run_descriptor, "abandoned.json")
+        if completed and abandoned:
+            raise CoordinatorError("invalid run state")
+        if completed:
+            if _read_json_at(
+                run_descriptor, "completed.json", "invalid run state"
+            ) != {"state": "completed", "nonce": state["lifecycleNonce"]}:
+                raise CoordinatorError("invalid run state")
+            fixture = _read_json_at(
+                run_descriptor,
+                "fixture.json",
+                "invalid fixture package",
+            )
+            try:
+                validate_fixture(fixture)
+            except (ContractError, TypeError):
+                raise CoordinatorError("invalid fixture package") from None
+            report = _read_json_at(
+                run_descriptor, "report.json", "invalid run report"
+            )
+            _validate_report(report, state, fixture)
+            cleanup_state = "completed"
+            retain_report = True
+        elif not abandoned:
+            try:
+                _verify_identity(state)
+            except CoordinatorError as error:
+                if str(error) != "fixture server unavailable":
+                    raise
+            else:
+                _shutdown_server(
+                    state["url"], state["shutdownToken"], required=True
+                )
+            _atomic_json_at(
+                run_descriptor,
+                "abandoned.json",
+                {"state": "abandoned", "nonce": state["lifecycleNonce"]},
+            )
+            cleanup_state = "abandoned"
+            retain_report = False
+        elif abandoned:
+            if _read_json_at(
+                run_descriptor, "abandoned.json", "invalid run state"
+            ) != {"state": "abandoned", "nonce": state["lifecycleNonce"]}:
+                raise CoordinatorError("invalid run state")
+            cleanup_state = "abandoned"
+            retain_report = False
+        else:
+            raise CoordinatorError("invalid run state")
+
+        tombstone = {
+            "runId": run_id,
+            "state": cleanup_state,
+            "reportRetained": retain_report,
+        }
+        _atomic_json_at(run_descriptor, "tombstone.json", tombstone)
+        _prune_run_artifacts(run_descriptor, retain_report=retain_report)
+        return tombstone
+    finally:
+        if lock_descriptor is not None:
+            os.close(lock_descriptor)
         os.close(run_descriptor)
         os.close(root_descriptor)
 
@@ -920,6 +1162,8 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--run-id", required=True)
     resolve = commands.add_parser("resolve")
     resolve.add_argument("--route-token", required=True)
+    cleanup = commands.add_parser("cleanup")
+    cleanup.add_argument("--run-id", required=True)
     return parser
 
 
@@ -931,8 +1175,11 @@ def main(argv: list[str] | None = None) -> int:
             code = 0
         elif arguments.command == "evaluate":
             code, result = _evaluate(arguments.run_id)
-        else:
+        elif arguments.command == "resolve":
             result = _resolve_route(arguments.route_token)
+            code = 0
+        else:
+            result = _cleanup(arguments.run_id)
             code = 0
         print(json.dumps(result, sort_keys=True, separators=(",", ":")))
         return code

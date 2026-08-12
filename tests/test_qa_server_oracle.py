@@ -641,6 +641,24 @@ class SemanticOracleTests(unittest.TestCase):
         ):
             self.assertNotIn(secret, serialized)
 
+    def test_store_root_may_be_an_already_open_owned_descriptor(self):
+        descriptor = os.open(
+            self.store.root,
+            os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+        )
+        displaced = self.store.root.parent / "original-store"
+        try:
+            self.store.root.rename(displaced)
+            replacement = OracleStore(self.store.root)
+            replacement.write_history([])
+
+            report = self.evaluate(store_root=descriptor)
+
+            self.assertEqual(report["status"], "passed")
+            self.assertTrue(os.fstat(descriptor).st_ino)
+        finally:
+            os.close(descriptor)
+
     def test_each_required_non_file_control_is_required(self):
         required = sorted(
             control["id"]

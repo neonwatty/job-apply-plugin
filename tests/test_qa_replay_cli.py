@@ -132,7 +132,10 @@ class ReplayCoordinatorTests(unittest.TestCase):
         self.assertEqual(output["scenarioId"], SCENARIO_ID)
         self.assertEqual(output["suggestedPrompt"], PROMPT.format(url=output["url"]))
         route_token = parse_qs(urlsplit(output["url"]).fragment)["qa-route"][0]
-        self.assertRegex(route_token, r"^[a-f0-9]{64}$")
+        self.assertRegex(
+            route_token,
+            r"^qa-run-20[0-9]{6}-[a-f0-9]{8}\.[a-f0-9]{64}$",
+        )
         code, route, stderr = self.invoke(["resolve", "--route-token", route_token])
         self.assertEqual((code, stderr), (0, ""))
         self.assertEqual(route, {"storeRoot": output["storeRoot"]})
@@ -396,6 +399,172 @@ class ReplayCoordinatorTests(unittest.TestCase):
         self.assertEqual((code, report, stderr), (2, None, "invalid run report\n"))
         self.assertNotIn("DO NOT ECHO", stderr)
 
+    def test_cached_report_shape_and_semantics_fail_closed(self) -> None:
+        output, run_root, _state = self.prepare()
+        for step in self.fixture["steps"]:
+            for control in step["controls"]:
+                self._post_event(
+                    output["url"],
+                    {
+                        "type": "uploaded" if control["role"] == "file" else "filled",
+                        "controlId": control["id"],
+                        "stepId": step["id"],
+                        **(
+                            {"expectedFilenameMatched": True}
+                            if control["role"] == "file"
+                            else {}
+                        ),
+                    },
+                )
+            self._post_event(
+                output["url"],
+                {
+                    "type": "reviewed" if step["kind"] == "review" else "advanced",
+                    "controlId": "",
+                    "stepId": step["id"],
+                },
+            )
+        self._write_passing_store(Path(output["storeRoot"]))
+        self.assertEqual(self.invoke(["evaluate", "--run-id", run_root.name])[0], 0)
+        self.server_cleanup = None
+        report_path = run_root / "report.json"
+        valid = json.loads(report_path.read_text())
+        cases = []
+        malformed = dict(valid)
+        malformed["missingControlIds"] = [{}]
+        cases.append(malformed)
+        malformed = dict(valid)
+        malformed["missingControlIds"] = ["resume.file", "resume.file"]
+        cases.append(malformed)
+        malformed = json.loads(json.dumps(valid))
+        malformed["assertions"]["review-reached"] = "failed"
+        cases.append(malformed)
+        malformed = dict(valid)
+        malformed["status"] = "failed"
+        cases.append(malformed)
+        malformed = dict(valid)
+        malformed["failureCategories"] = ["unknown-category"]
+        cases.append(malformed)
+        for malformed in cases:
+            with self.subTest(malformed=malformed):
+                report_path.write_text(json.dumps(malformed))
+                os.chmod(report_path, 0o600)
+                code, report, stderr = self.invoke(
+                    ["evaluate", "--run-id", run_root.name]
+                )
+                self.assertEqual((code, report, stderr), (2, None, "invalid run report\n"))
+
+    def test_route_resolution_is_direct_with_more_than_256_retained_runs(self) -> None:
+        self.runs.mkdir(mode=0o700)
+        os.chmod(self.runs, 0o700)
+        for index in range(300):
+            (self.runs / f"retained-{index:03d}").mkdir()
+        output, _run_root, _state = self.prepare()
+        route = parse_qs(urlsplit(output["url"]).fragment)["qa-route"][0]
+
+        code, resolved, stderr = self.invoke(["resolve", "--route-token", route])
+
+        self.assertEqual((code, stderr), (0, ""))
+        self.assertEqual(resolved, {"storeRoot": output["storeRoot"]})
+
+    def test_run_parent_replacement_keeps_store_and_report_descriptor_anchored(self) -> None:
+        output, run_root, _state = self.prepare()
+        for step in self.fixture["steps"]:
+            for control in step["controls"]:
+                self._post_event(
+                    output["url"],
+                    {
+                        "type": "uploaded" if control["role"] == "file" else "filled",
+                        "controlId": control["id"],
+                        "stepId": step["id"],
+                        **(
+                            {"expectedFilenameMatched": True}
+                            if control["role"] == "file"
+                            else {}
+                        ),
+                    },
+                )
+            self._post_event(
+                output["url"],
+                {
+                    "type": "reviewed" if step["kind"] == "review" else "advanced",
+                    "controlId": "",
+                    "stepId": step["id"],
+                },
+            )
+        self._write_passing_store(Path(output["storeRoot"]))
+        displaced = self.runs / "anchored-original"
+        original_verify = self.cli._verify_identity
+
+        def replace_parent(state):
+            run_root.rename(displaced)
+            run_root.mkdir(mode=0o700)
+            os.chmod(run_root, 0o700)
+            return original_verify(state)
+
+        with mock.patch.object(self.cli, "_verify_identity", side_effect=replace_parent):
+            code, report, stderr = self.invoke(
+                ["evaluate", "--run-id", run_root.name]
+            )
+
+        self.assertEqual((code, report["status"], stderr), (0, "passed", ""))
+        self.assertTrue((displaced / "report.json").is_file())
+        self.assertFalse((run_root / "report.json").exists())
+        self.server_cleanup = None
+
+    def test_cleanup_abandons_prepared_run_and_is_idempotent(self) -> None:
+        output, run_root, _state = self.prepare()
+
+        code, result, stderr = self.invoke(["cleanup", "--run-id", run_root.name])
+
+        self.assertEqual((code, stderr), (0, ""))
+        self.assertEqual(
+            result,
+            {"runId": run_root.name, "state": "abandoned", "reportRetained": False},
+        )
+        self.assertFalse((run_root / "store").exists())
+        self.assertEqual(json.loads((run_root / "tombstone.json").read_text()), result)
+        with self.assertRaises((OSError, urllib.error.URLError)):
+            urllib.request.urlopen(
+                self.base_url(output["url"]) + "/__qa/state", timeout=1
+            )
+        self.server_cleanup = None
+        self.assertEqual(
+            self.invoke(["cleanup", "--run-id", run_root.name]),
+            (0, result, ""),
+        )
+
+    def test_cleanup_prunes_completed_synthetic_data_but_retains_report(self) -> None:
+        output, run_root, _state = self.prepare()
+        code, report, _stderr = self.invoke(["evaluate", "--run-id", run_root.name])
+        self.assertEqual(code, 1)
+        self.server_cleanup = None
+
+        code, result, stderr = self.invoke(["cleanup", "--run-id", run_root.name])
+
+        self.assertEqual((code, stderr), (0, ""))
+        self.assertEqual(result["state"], "completed")
+        self.assertTrue(result["reportRetained"])
+        self.assertEqual(json.loads((run_root / "report.json").read_text()), report)
+        for name in ("store", "fixture.json", "profile.json", "expected.json", "run.json"):
+            self.assertFalse((run_root / name).exists())
+
+    def test_cleanup_never_stops_a_server_that_fails_run_authentication(self) -> None:
+        output, run_root, _state = self.prepare()
+        state_path = run_root / "run.json"
+        state = json.loads(state_path.read_text())
+        state["shutdownToken"] = "b" * 64
+        state_path.write_text(json.dumps(state))
+        os.chmod(state_path, 0o600)
+
+        code, result, stderr = self.invoke(["cleanup", "--run-id", run_root.name])
+
+        self.assertEqual((code, result, stderr), (2, None, "fixture server identity mismatch\n"))
+        with urllib.request.urlopen(
+            self.base_url(output["url"]) + "/__qa/state", timeout=1
+        ) as response:
+            self.assertEqual(response.status, 200)
+
     def test_expected_resume_contract_is_closed_and_required(self) -> None:
         expected_path = self.scenarios / SCENARIO_ID / "expected.json"
         expected = json.loads(expected_path.read_text())
@@ -417,6 +586,9 @@ class ReplayCoordinatorTests(unittest.TestCase):
             self.assertIn("--route-token", document)
             self.assertIn("--root", document)
             self.assertIn("before", document.lower())
+            self.assertIn("#qa-route=<run-id>.<64-lowercase-hex-token>", document)
+            self.assertIn("cleanup --run-id", document)
+            self.assertIn("report", document.lower())
         coordinator = SCRIPT.read_text()
         self.assertNotIn("os.kill(", coordinator)
         self.assertNotIn('["ps",', coordinator)

@@ -24,13 +24,15 @@ python3 "<plugin-root>/scripts/job-apply-store.py" <command>
 
 ### Approved local QA routing
 
-An approved replay URL has the exact loopback form `http://127.0.0.1:<port>/#qa-route=<64-lowercase-hex-token>`. Before **any** storage command for that workflow, resolve its fragment token without navigating it or printing it:
+An approved replay URL has the exact loopback form `http://127.0.0.1:<port>/#qa-route=<run-id>.<64-lowercase-hex-token>`. Before **any** storage command for that workflow, resolve the complete fragment value without navigating it or printing it:
 
 ```bash
 python3 "<plugin-root>/scripts/qa-replay.py" resolve --route-token "<qa-route-token>"
 ```
 
 The resolver returns one JSON field, `storeRoot`. For the entire replay, add `--root "<resolved-storeRoot>"` immediately after `job-apply-store.py` on **every** command, including `init`, `profile-get`, answer, history, and session commands. Never omit `--root`, use `JOB_APPLY_STORE_DIR`, inspect the default store, or fall back to `~/.job-apply/` during an approved local replay. If resolution fails, stop the replay without making any storage call. Treat the route token and resolved path as private run metadata and do not repeat them in prose or logs.
+
+After evaluation, or when abandoning a prepared replay, retire its synthetic data with `python3 "<plugin-root>/scripts/qa-replay.py" cleanup --run-id "<run-id>"`. Cleanup authenticates shutdown of a prepared fixture server and never signals an unknown process. Completed runs retain only their redacted report and a lifecycle tombstone; abandoned runs retain only the tombstone. Running cleanup again is safe.
 
 The command examples below show normal persistent usage without a QA route. When a QA route is active, the explicit `--root` rule above overrides every example.
 

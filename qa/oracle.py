@@ -473,7 +473,7 @@ def evaluate_run(
     fixture: dict,
     scenario: dict,
     events: list[dict],
-    store_root: Path,
+    store_root: Path | int,
 ) -> dict:
     """Return assertion names/statuses and stable IDs; never return answer values.
 
@@ -488,7 +488,7 @@ def evaluate_run(
         raise OracleError("invalid fixture") from None
     if scenario != {"id": "complete-profile"}:
         raise OracleError("invalid scenario")
-    if not isinstance(store_root, Path):
+    if not isinstance(store_root, (Path, int)) or isinstance(store_root, bool):
         raise OracleError("invalid store root")
     (
         filled,
@@ -501,10 +501,13 @@ def evaluate_run(
         raise OracleError("invalid store root")
     root_descriptor = None
     try:
-        root_descriptor = os.open(
-            store_root,
-            os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
-        )
+        if isinstance(store_root, int):
+            root_descriptor = os.dup(store_root)
+        else:
+            root_descriptor = os.open(
+                store_root,
+                os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+            )
         root_stat = os.fstat(root_descriptor)
         if not stat.S_ISDIR(root_stat.st_mode):
             raise OracleError("invalid store root")
