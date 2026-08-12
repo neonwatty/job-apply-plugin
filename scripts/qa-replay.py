@@ -319,6 +319,60 @@ def _signed_tombstone_matches(
     )
 
 
+def _recover_signed_tombstone(
+    run_descriptor: int,
+    run_id: str,
+    state: dict[str, Any],
+    observed: Any,
+) -> tuple[dict[str, Any], dict[str, Any]] | None:
+    if (
+        not isinstance(observed, dict)
+        or set(observed) != TOMBSTONE_KEYS
+        or observed.get("runId") != run_id
+        or observed.get("lifecycleNonce") != state["lifecycleNonce"]
+        or observed.get("fixtureId") != state["fixtureId"]
+        or observed.get("scenarioId") != state["scenarioId"]
+        or observed.get("state") not in {"abandoned", "completed"}
+        or observed.get("reportRetained") != (observed["state"] == "completed")
+    ):
+        return None
+    report = None
+    if observed["reportRetained"]:
+        try:
+            report = _read_json_at(
+                run_descriptor, "report.json", "invalid run report"
+            )
+        except CoordinatorError:
+            return None
+    expected = _signed_tombstone(
+        run_id,
+        state,
+        observed["state"],
+        observed["reportRetained"],
+        report,
+    )
+    if not _signed_tombstone_matches(observed, expected):
+        return None
+    marker_name = (
+        "completed.json" if observed["state"] == "completed" else "abandoned.json"
+    )
+    expected_marker = {
+        "state": observed["state"],
+        "nonce": state["lifecycleNonce"],
+    }
+    try:
+        marker_bytes = _read_regular_at(
+            run_descriptor, marker_name, MAX_JSON_BYTES, "invalid run state"
+        )
+        if marker_bytes:
+            marker = json.loads(marker_bytes.decode())
+            if marker != expected_marker:
+                return None
+    except (CoordinatorError, UnicodeError, json.JSONDecodeError):
+        return None
+    return observed, _public_cleanup_result(observed)
+
+
 def _atomic_json_at(
     directory_descriptor: int,
     name: str,
@@ -1278,6 +1332,7 @@ def _sanitize_cleanup_tree(
     manifest: dict[tuple[str, ...], os.stat_result],
     children: dict[tuple[str, ...], tuple[str, ...]],
     retained: set[tuple[str, ...]],
+    deferred: set[tuple[str, ...]],
 ) -> None:
     try:
         expected_names = children[prefix]
@@ -1291,6 +1346,8 @@ def _sanitize_cleanup_tree(
             )
             if not _same_entry(expected, current):
                 raise CoordinatorError("run cleanup failed")
+            if path in deferred:
+                continue
             is_directory = stat.S_ISDIR(expected.st_mode)
             flags = os.O_RDONLY if is_directory or path in retained else os.O_WRONLY
             flags |= getattr(os, "O_NOFOLLOW", 0)
@@ -1302,7 +1359,7 @@ def _sanitize_cleanup_tree(
                     raise CoordinatorError("run cleanup failed")
                 if is_directory:
                     _sanitize_cleanup_tree(
-                        opened, path, manifest, children, retained
+                        opened, path, manifest, children, retained, deferred
                     )
                 elif path not in retained:
                     os.ftruncate(opened, 0)
@@ -1321,6 +1378,43 @@ def _sanitize_cleanup_tree(
         raise
     except OSError:
         raise CoordinatorError("run cleanup failed") from None
+
+
+def _sanitize_deferred_regular(
+    directory_descriptor: int,
+    name: str,
+    expected: os.stat_result,
+) -> None:
+    descriptor = None
+    try:
+        current = os.stat(
+            name, dir_fd=directory_descriptor, follow_symlinks=False
+        )
+        if not stat.S_ISREG(expected.st_mode) or not _same_entry(expected, current):
+            raise CoordinatorError("run cleanup failed")
+        descriptor = os.open(
+            name,
+            os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0),
+            dir_fd=directory_descriptor,
+        )
+        if not _same_entry(expected, os.fstat(descriptor)):
+            raise CoordinatorError("run cleanup failed")
+        os.ftruncate(descriptor, 0)
+        os.fsync(descriptor)
+        os.close(descriptor)
+        descriptor = None
+        if not _same_entry(
+            expected,
+            os.stat(name, dir_fd=directory_descriptor, follow_symlinks=False),
+        ):
+            raise CoordinatorError("run cleanup failed")
+    except CoordinatorError:
+        raise
+    except OSError:
+        raise CoordinatorError("run cleanup failed") from None
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
 
 
 def _verify_cleanup_tree(
@@ -1412,9 +1506,28 @@ def _sanitize_run_artifacts(
         elif not stat.S_ISREG(metadata.st_mode):
             raise CoordinatorError("run cleanup failed")
     retained_paths = {(name,) for name in retained}
-    _sanitize_cleanup_tree(
-        run_descriptor, (), manifest, children, retained_paths
+    deferred_paths = (
+        {("run.json",)}
+        if ("run.json",) in manifest and ("run.json",) not in retained_paths
+        else set()
     )
+    _sanitize_cleanup_tree(
+        run_descriptor,
+        (),
+        manifest,
+        children,
+        retained_paths,
+        deferred_paths,
+    )
+    _verify_cleanup_tree(
+        run_descriptor,
+        (),
+        manifest,
+        children,
+        retained_paths | deferred_paths,
+    )
+    for path in sorted(deferred_paths):
+        _sanitize_deferred_regular(run_descriptor, path[0], manifest[path])
     _verify_cleanup_tree(
         run_descriptor, (), manifest, children, retained_paths
     )
@@ -1570,6 +1683,24 @@ def _cleanup(run_id: str) -> dict[str, Any]:
             return _public_cleanup_result(tombstone)
 
         state = _load_state_at(canonical_run_root, run_descriptor)
+        if _entry_exists_at(run_descriptor, "tombstone.json"):
+            try:
+                observed_tombstone = _read_json_at(
+                    run_descriptor, "tombstone.json", "invalid cleanup state"
+                )
+            except CoordinatorError:
+                observed_tombstone = None
+            recovered = _recover_signed_tombstone(
+                run_descriptor, run_id, state, observed_tombstone
+            )
+            if recovered is not None:
+                tombstone, result = recovered
+                _shutdown_authenticated_run_if_available(state)
+                _sanitize_run_artifacts(
+                    run_descriptor,
+                    retain_report=tombstone["reportRetained"],
+                )
+                return result
         lifecycle = _read_json_at(
             run_descriptor, "lifecycle.json", "invalid run state"
         )

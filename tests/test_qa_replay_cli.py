@@ -858,6 +858,45 @@ class ReplayCoordinatorTests(unittest.TestCase):
                     self.assertEqual(path.stat().st_size, 0)
                 self.server_cleanup = None
 
+    def test_cleanup_recovers_after_every_sanitization_interruption(self) -> None:
+        _probe_output, probe_root, _state = self.prepare()
+        existing_regulars = sum(path.is_file() for path in probe_root.rglob("*"))
+        self.invoke(["cleanup", "--run-id", probe_root.name])
+        self.server_cleanup = None
+        phases = existing_regulars + 2  # abandoned marker and evaluate lock
+        self.assertGreater(phases, 3)
+
+        for interrupt_after in range(1, phases + 1):
+            with self.subTest(interrupt_after=interrupt_after):
+                _output, run_root, _state = self.prepare()
+                original_truncate = self.cli.os.ftruncate
+                truncations = 0
+
+                def interrupt_after_write(descriptor, size):
+                    nonlocal truncations
+                    truncations += 1
+                    result = original_truncate(descriptor, size)
+                    if truncations == interrupt_after:
+                        raise OSError("interrupted sanitization")
+                    return result
+
+                with mock.patch.object(
+                    self.cli.os, "ftruncate", side_effect=interrupt_after_write
+                ):
+                    first = self.invoke(["cleanup", "--run-id", run_root.name])
+
+                self.assertEqual(first, (2, None, "run cleanup failed\n"))
+                code, result, stderr = self.invoke(
+                    ["cleanup", "--run-id", run_root.name]
+                )
+                self.assertEqual(
+                    (code, result["state"], stderr), (0, "abandoned", "")
+                )
+                for path in run_root.rglob("*"):
+                    if path.is_file() and path.name != "tombstone.json":
+                        self.assertEqual(path.stat().st_size, 0, path)
+                self.server_cleanup = None
+
     def test_expected_resume_contract_is_closed_and_required(self) -> None:
         expected_path = self.scenarios / SCENARIO_ID / "expected.json"
         expected = json.loads(expected_path.read_text())
