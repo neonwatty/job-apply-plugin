@@ -59,8 +59,12 @@ def append_to_pdf_content(content: bytes, addition: bytes) -> bytes:
 
 
 def inspect_synthetic_pdf(content: bytes) -> str:
-    if not content.startswith(b"%PDF-") or b"%%EOF" not in content:
+    if not content.startswith(b"%PDF-"):
         raise AssertionError("invalid PDF envelope")
+    if content.count(b"%%EOF") != 1 or re.fullmatch(
+        rb".*%%EOF[\r\n]*", content, re.DOTALL
+    ) is None:
+        raise AssertionError("PDF contains bytes after physical EOF")
 
     object_matches = list(
         re.finditer(
@@ -72,6 +76,54 @@ def inspect_synthetic_pdf(content: bytes) -> str:
     objects = {int(match.group(1)): match.group(2) for match in object_matches}
     if len(objects) != len(object_matches):
         raise AssertionError("PDF contains duplicate object identifiers")
+
+    trailers = re.findall(
+        rb"\btrailer\s*<<(.*?)>>\s*startxref\b",
+        content,
+        re.DOTALL,
+    )
+    if len(trailers) != 1:
+        raise AssertionError("synthetic resume must contain one trailer")
+    info_match = re.search(rb"/Info\s+([0-9]+)\s+0\s+R\b", trailers[0])
+    if info_match is None:
+        raise AssertionError("trailer has no direct Info reference")
+    info_id = int(info_match.group(1))
+    info = objects.get(info_id)
+    if info is None:
+        raise AssertionError("trailer Info reference is invalid")
+    info_entries = re.findall(
+        rb"/([A-Za-z]+)\s+(\([^()]*\)|/[A-Za-z]+)",
+        info,
+    )
+    if len(info_entries) != 9:
+        raise AssertionError("Info dictionary shape is not allowlisted")
+    parsed_info = {
+        key.decode("ascii"): (
+            value[1:-1].decode("ascii") if value.startswith(b"(") else value.decode("ascii")
+        )
+        for key, value in info_entries
+    }
+    expected_info = {
+        "Author": "Fictional QA Applicant",
+        "CreationDate": "D:20000101000000+00'00'",
+        "Creator": "Synthetic QA Fixture Generator",
+        "Keywords": "",
+        "ModDate": "D:20000101000000+00'00'",
+        "Producer": "Synthetic QA Fixture Generator",
+        "Subject": "Synthetic profile fixture",
+        "Title": "Synthetic Resume",
+        "Trapped": "/False",
+    }
+    info_names = re.findall(rb"/([A-Za-z]+)\b", info)
+    expected_info_names = [key.encode("ascii") for key in expected_info] + [b"False"]
+    if parsed_info != expected_info or sorted(info_names) != sorted(expected_info_names):
+        raise AssertionError("Info dictionary value is not allowlisted")
+    metadata_keys = rb"/(?:Author|CreationDate|Creator|Keywords|ModDate|Producer|Subject|Title|Trapped)\b"
+    if any(
+        identifier != info_id and re.search(metadata_keys, value)
+        for identifier, value in objects.items()
+    ):
+        raise AssertionError("PDF contains an extra metadata dictionary")
 
     catalogs = [
         identifier
@@ -117,6 +169,12 @@ def inspect_synthetic_pdf(content: bytes) -> str:
     if contents_match is None:
         raise AssertionError("page has no single direct content stream")
     content_id = int(contents_match.group(1))
+    if any(
+        identifier not in {info_id, content_id}
+        and (b"(" in value or b")" in value)
+        for identifier, value in objects.items()
+    ):
+        raise AssertionError("PDF contains an unsupported container literal string")
 
     forbidden_features = (
         rb"/Action\b",
@@ -138,6 +196,9 @@ def inspect_synthetic_pdf(content: bytes) -> str:
         rb"/FontFile[23]?\b",
         rb"/Subtype\s*/(?:Type0|Type3)\b",
         rb"/Encoding\s+/(?!WinAnsiEncoding\b)",
+        rb"/Metadata\b",
+        rb"<\?xpacket\b",
+        rb"<x:xmpmeta\b",
     )
 
     stream_objects = {
@@ -232,6 +293,39 @@ def inspect_synthetic_pdf(content: bytes) -> str:
         strings.append(bytes(value))
 
     extracted = b"\n".join(strings).decode("latin-1")
+
+    stream_start = content.find(stream, header.end())
+    if stream_start < 0:
+        raise AssertionError("content stream binding changed")
+    container = content[:stream_start] + content[stream_start + len(stream) :]
+    comments = [
+        value.decode("ascii", errors="ignore")
+        for value in re.findall(rb"(?m)^%([^\r\n]*)", container)
+    ]
+    id_matches = re.findall(
+        rb"/ID\s*\[\s*<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*\]",
+        trailers[0],
+    )
+    if len(id_matches) != 1 or any(len(value) != 32 for value in id_matches[0]):
+        raise AssertionError("trailer ID is not allowlisted PDF machinery")
+    container_without_id = re.sub(
+        rb"/ID\s*\[\s*<[0-9A-Fa-f]+>\s*<[0-9A-Fa-f]+>\s*\]",
+        b"",
+        container,
+    )
+    if re.search(rb"(?<!<)<(?!<)|(?<!>)>(?!>)", container_without_id):
+        raise AssertionError("PDF contains an unsupported container hex string")
+
+    scanned_text = "\n".join(list(expected_info.values()) + comments + [extracted])
+    if re.search(r"\b[a-z][a-z0-9+.-]*://|\bwww\.", scanned_text, re.IGNORECASE):
+        raise AssertionError("PDF contains a URL")
+    emails = re.findall(
+        r"(?<![A-Z0-9._%+-])[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}",
+        scanned_text,
+        re.IGNORECASE,
+    )
+    if any(value.casefold() != "avery.replay@example.com" for value in emails):
+        raise AssertionError("PDF contains a non-reserved email")
     denied_terms = (
         "linkedin",
         "http://",
@@ -243,10 +337,34 @@ def inspect_synthetic_pdf(content: bytes) -> str:
         "employment",
         "work history",
         "education",
+        "person",
     )
     for denied in denied_terms:
-        if denied in extracted.casefold():
+        if re.search(rf"\b{re.escape(denied)}\b", scanned_text, re.IGNORECASE):
             raise AssertionError("synthetic resume contains denied text")
+    expected_comments = [
+        "PDF-1.4",
+        " ReportLab Generated PDF document (opensource)",
+        " ReportLab generated PDF document -- digest (opensource)",
+        "%EOF",
+    ]
+    if comments != expected_comments:
+        raise AssertionError("PDF comment is not allowlisted machinery")
+    expected_visible_strings = [
+        "AVERY REPLAY",
+        "Fictional Applicant",
+        "Phoenix, Arizona  |  avery.replay@example.com  |  602-555-0142",
+        "PROFILE",
+        "Fictional applicant profile prepared for a repeatable form-filling quality-assurance scenario.",
+        "SKILLS",
+        "Communication",
+        "Organization",
+        "Problem solving",
+        "Attention to detail",
+        "Synthetic fixture for repeatable quality assurance",
+    ]
+    if [value.decode("ascii") for value in strings] != expected_visible_strings:
+        raise AssertionError("visible PDF text is not allowlisted")
     return extracted
 
 
@@ -1271,6 +1389,57 @@ class CommittedScenarioTests(unittest.TestCase):
         self.assertNotEqual(duplicate_kid, scenario_pdf)
         with self.assertRaisesRegex(AssertionError, "one unique page kid"):
             inspect_synthetic_pdf(duplicate_kid)
+
+    def test_pdf_inspector_rejects_hidden_metadata_and_trailing_bytes(self) -> None:
+        scenario_pdf = (
+            ROOT / "qa/scenarios/complete-profile/synthetic-resume.pdf"
+        ).read_bytes()
+        for original, replacement in (
+            (b"(Fictional QA Applicant)", b"(Source Company)"),
+            (b"(Fictional QA Applicant)", b"(Private Person)"),
+            (b"(Synthetic Resume)", b"(Hidden Value)"),
+            (b"(Synthetic profile fixture)", b"(Confidential Value)"),
+        ):
+            with self.subTest(replacement=replacement):
+                tampered = scenario_pdf.replace(original, replacement, 1)
+                self.assertNotEqual(tampered, scenario_pdf)
+                with self.assertRaisesRegex(AssertionError, "Info dictionary value"):
+                    inspect_synthetic_pdf(tampered)
+
+        xmp = scenario_pdf.replace(
+            b"trailer\n",
+            b"99 0 obj\n<< /Type /Metadata /Subtype /XML >>\nendobj\ntrailer\n",
+            1,
+        )
+        self.assertNotEqual(xmp, scenario_pdf)
+        with self.assertRaisesRegex(AssertionError, "active PDF feature"):
+            inspect_synthetic_pdf(xmp)
+
+        extra_info = scenario_pdf.replace(
+            b"trailer\n",
+            b"99 0 obj\n<< /Author (Fictional QA Applicant) >>\nendobj\ntrailer\n",
+            1,
+        )
+        self.assertNotEqual(extra_info, scenario_pdf)
+        with self.assertRaisesRegex(AssertionError, "extra metadata dictionary"):
+            inspect_synthetic_pdf(extra_info)
+
+        hidden_comment = scenario_pdf.replace(
+            b"trailer\n",
+            b"% Source Company\ntrailer\n",
+            1,
+        )
+        with self.assertRaisesRegex(AssertionError, "denied text"):
+            inspect_synthetic_pdf(hidden_comment)
+
+        for trailing in (
+            b"% https://private.invalid\n",
+            b"% hidden comment\n",
+            b"unexpected bytes",
+        ):
+            with self.subTest(trailing=trailing):
+                with self.assertRaisesRegex(AssertionError, "physical EOF"):
+                    inspect_synthetic_pdf(scenario_pdf + trailing)
 
     def test_committed_scenario_prepares_real_store_without_http_leak(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
