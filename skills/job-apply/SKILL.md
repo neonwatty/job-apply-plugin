@@ -10,7 +10,9 @@ A Codex and Claude Code skill for filling job applications on LinkedIn Easy Appl
 
 ## Initial Prompt
 
-When this skill is invoked, first follow the bundled `answer-memory` skill (`$job-apply:answer-memory` in Codex; `/job-apply:answer-memory` in Claude Code): resolve `<plugin-root>`, run the bundled helper's `init` command, then load the profile with `profile-get`. Never read or write persistent Job Apply files directly.
+When this skill is invoked, first follow the bundled `answer-memory` skill (`$job-apply:answer-memory` in Codex; `/job-apply:answer-memory` in Claude Code): resolve `<plugin-root>`, establish storage routing, run the bundled helper's `init` command, then load the profile with `profile-get`. Never read or write persistent Job Apply files directly.
+
+If the supplied job URL is an approved local loopback QA URL containing a `#qa-route=<64-lowercase-hex-token>` fragment, resolve that token through `python3 "<plugin-root>/scripts/qa-replay.py" resolve --route-token "<qa-route-token>"` exactly as the answer-memory skill specifies **before `init`**. Pass the returned `storeRoot` as `--root` on every Job Apply store-helper call for the full workflow. Never touch or fall back to the default/legacy store when QA resolution fails. Keep the route token private. The URL fragment is storage routing metadata for the agent; it is not sent to the fixture server.
 
 **If the returned profile object is empty**, say:
 

@@ -5,28 +5,30 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
+import fcntl
+import hmac
 import json
 import os
 from pathlib import Path
 import queue
 import re
 import secrets
-import shutil
-import signal
 import stat
 import subprocess
 import sys
 import threading
-import time
 from typing import Any
 import urllib.error
 import urllib.request
+from urllib.parse import urlsplit
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from qa.oracle import OracleError, evaluate_run
+from qa.contracts import ContractError, validate_fixture
+from qa.recorder_fs import BrokerError, exclusive_rename
 
 
 FIXTURES_ROOT = REPO_ROOT / "qa" / "fixtures"
@@ -36,6 +38,7 @@ STORE_SCRIPT = REPO_ROOT / "scripts" / "job-apply-store.py"
 
 IDENTIFIER = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 RUN_ID = re.compile(r"^qa-run-20[0-9]{6}-[a-f0-9]{8}$")
+TOKEN = re.compile(r"^[a-f0-9]{64}$")
 MAX_JSON_BYTES = 1024 * 1024
 MAX_RESUME_BYTES = 10 * 1024 * 1024
 STARTUP_TIMEOUT_SECONDS = 10
@@ -52,12 +55,220 @@ RUN_STATE_KEYS = {
     "url",
     "storeRoot",
     "fixturePath",
-    "serverPid",
+    "routeToken",
+    "shutdownToken",
+    "lifecycleNonce",
+    "createdAt",
 }
+EXPECTED_KEYS = {"controlIds", "resumeFilename"}
+MAX_RUN_ENTRIES = 256
 
 
 class CoordinatorError(ValueError):
     """A stable, value-free failure safe to display to the tester."""
+
+
+def _open_private_directory(path: Path, diagnostic: str) -> int:
+    descriptor = None
+    try:
+        descriptor = os.open(
+            path,
+            os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0),
+        )
+        metadata = os.fstat(descriptor)
+        if (
+            not stat.S_ISDIR(metadata.st_mode)
+            or metadata.st_uid != os.getuid()
+            or stat.S_IMODE(metadata.st_mode) != 0o700
+        ):
+            raise CoordinatorError(diagnostic)
+        return descriptor
+    except CoordinatorError:
+        if descriptor is not None:
+            os.close(descriptor)
+        raise
+    except OSError:
+        if descriptor is not None:
+            os.close(descriptor)
+        raise CoordinatorError(diagnostic) from None
+
+
+def _verify_directory_binding(path: Path, descriptor: int, diagnostic: str) -> None:
+    try:
+        bound = os.fstat(descriptor)
+        current = path.lstat()
+    except OSError:
+        raise CoordinatorError(diagnostic) from None
+    if (
+        not stat.S_ISDIR(current.st_mode)
+        or (bound.st_dev, bound.st_ino) != (current.st_dev, current.st_ino)
+        or current.st_uid != os.getuid()
+        or stat.S_IMODE(current.st_mode) != 0o700
+    ):
+        raise CoordinatorError(diagnostic)
+
+
+def _read_regular_at(
+    directory_descriptor: int, name: str, limit: int, diagnostic: str
+) -> bytes:
+    descriptor = None
+    try:
+        descriptor = os.open(
+            name,
+            os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0),
+            dir_fd=directory_descriptor,
+        )
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_size > limit:
+            raise CoordinatorError(diagnostic)
+        chunks: list[bytes] = []
+        remaining = limit + 1
+        while remaining:
+            chunk = os.read(descriptor, min(64 * 1024, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        data = b"".join(chunks)
+        if len(data) > limit:
+            raise CoordinatorError(diagnostic)
+        return data
+    except CoordinatorError:
+        raise
+    except OSError:
+        raise CoordinatorError(diagnostic) from None
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
+def _read_json_at(directory_descriptor: int, name: str, diagnostic: str) -> Any:
+    try:
+        return json.loads(
+            _read_regular_at(
+                directory_descriptor, name, MAX_JSON_BYTES, diagnostic
+            ).decode()
+        )
+    except (UnicodeError, json.JSONDecodeError, RecursionError):
+        raise CoordinatorError(diagnostic) from None
+
+
+def _entry_exists_at(directory_descriptor: int, name: str) -> bool:
+    try:
+        os.stat(name, dir_fd=directory_descriptor, follow_symlinks=False)
+        return True
+    except FileNotFoundError:
+        return False
+    except OSError:
+        raise CoordinatorError("invalid run state") from None
+
+
+def _atomic_json_at(
+    directory_descriptor: int,
+    name: str,
+    value: dict[str, Any],
+) -> None:
+    encoded = (json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    temporary = f".{name}.{secrets.token_hex(8)}.tmp"
+    descriptor = None
+    try:
+        descriptor = os.open(
+            temporary,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+            dir_fd=directory_descriptor,
+        )
+        os.fchmod(descriptor, 0o600)
+        written = 0
+        while written < len(encoded):
+            count = os.write(descriptor, encoded[written:])
+            if count <= 0:
+                raise OSError
+            written += count
+        os.fsync(descriptor)
+        os.close(descriptor)
+        descriptor = None
+        exclusive_rename(
+            directory_descriptor,
+            temporary,
+            directory_descriptor,
+            name,
+        )
+        os.fsync(directory_descriptor)
+    except (OSError, BrokerError):
+        raise CoordinatorError("run artifact write failed") from None
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        try:
+            os.unlink(temporary, dir_fd=directory_descriptor)
+        except FileNotFoundError:
+            pass
+
+
+def _copy_regular_at(
+    source: Path,
+    directory_descriptor: int,
+    name: str,
+    limit: int,
+    diagnostic: str,
+) -> None:
+    data = _read_regular(source, limit, diagnostic)
+    descriptor = None
+    try:
+        descriptor = os.open(
+            name,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+            dir_fd=directory_descriptor,
+        )
+        os.fchmod(descriptor, 0o600)
+        view = memoryview(data)
+        while view:
+            count = os.write(descriptor, view)
+            if count <= 0:
+                raise OSError
+            view = view[count:]
+        os.fsync(descriptor)
+    except OSError:
+        raise CoordinatorError(diagnostic) from None
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
+def _remove_contents_at(directory_descriptor: int, depth: int = 0) -> None:
+    if depth > 32:
+        raise CoordinatorError("run cleanup failed")
+    try:
+        names = os.listdir(directory_descriptor)
+        if len(names) > 2_000:
+            raise CoordinatorError("run cleanup failed")
+        for name in names:
+            metadata = os.stat(
+                name, dir_fd=directory_descriptor, follow_symlinks=False
+            )
+            if stat.S_ISDIR(metadata.st_mode):
+                child = os.open(
+                    name,
+                    os.O_RDONLY
+                    | os.O_DIRECTORY
+                    | getattr(os, "O_NOFOLLOW", 0),
+                    dir_fd=directory_descriptor,
+                )
+                try:
+                    _remove_contents_at(child, depth + 1)
+                finally:
+                    os.close(child)
+                os.rmdir(name, dir_fd=directory_descriptor)
+            elif stat.S_ISREG(metadata.st_mode):
+                os.unlink(name, dir_fd=directory_descriptor)
+            else:
+                raise CoordinatorError("run cleanup failed")
+    except CoordinatorError:
+        raise
+    except OSError:
+        raise CoordinatorError("run cleanup failed") from None
 
 
 def _read_regular(path: Path, limit: int, diagnostic: str) -> bytes:
@@ -95,38 +306,6 @@ def _read_json(path: Path, diagnostic: str) -> Any:
         raise CoordinatorError(diagnostic) from None
 
 
-def _atomic_json(path: Path, value: dict[str, Any], mode: int = 0o600) -> None:
-    encoded = (json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n").encode()
-    temporary = path.with_name(f".{path.name}.{secrets.token_hex(8)}.tmp")
-    descriptor = None
-    try:
-        descriptor = os.open(
-            temporary,
-            os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0),
-            mode,
-        )
-        written = 0
-        while written < len(encoded):
-            count = os.write(descriptor, encoded[written:])
-            if count <= 0:
-                raise OSError("short write")
-            written += count
-        os.fsync(descriptor)
-        os.close(descriptor)
-        descriptor = None
-        os.replace(temporary, path)
-        os.chmod(path, mode)
-    except OSError:
-        raise CoordinatorError("run artifact write failed") from None
-    finally:
-        if descriptor is not None:
-            os.close(descriptor)
-        try:
-            temporary.unlink()
-        except FileNotFoundError:
-            pass
-
-
 def _validate_source_directory(path: Path, diagnostic: str) -> None:
     try:
         metadata = path.lstat()
@@ -136,33 +315,19 @@ def _validate_source_directory(path: Path, diagnostic: str) -> None:
         raise CoordinatorError(diagnostic)
 
 
-def _copy_regular(source: Path, destination: Path, limit: int, diagnostic: str) -> None:
-    data = _read_regular(source, limit, diagnostic)
-    descriptor = None
-    try:
-        descriptor = os.open(
-            destination,
-            os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0),
-            0o600,
-        )
-        written = 0
-        while written < len(data):
-            count = os.write(descriptor, data[written:])
-            if count <= 0:
-                raise OSError("short write")
-            written += count
-        os.fsync(descriptor)
-    except OSError:
-        raise CoordinatorError(diagnostic) from None
-    finally:
-        if descriptor is not None:
-            os.close(descriptor)
-
-
 def _run_store(store_root: Path, command: list[str]) -> None:
+    disabled_legacy = store_root.parent / ".legacy-profile-disabled.json"
     try:
         result = subprocess.run(
-            [sys.executable, str(STORE_SCRIPT), "--root", str(store_root), *command],
+            [
+                sys.executable,
+                str(STORE_SCRIPT),
+                "--root",
+                str(store_root),
+                "--legacy-profile",
+                str(disabled_legacy),
+                *command,
+            ],
             cwd=REPO_ROOT,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
@@ -176,7 +341,13 @@ def _run_store(store_root: Path, command: list[str]) -> None:
         raise CoordinatorError("isolated store initialization failed")
 
 
-def _start_server(fixture_path: Path) -> tuple[int, dict[str, Any]]:
+def _start_server(
+    fixture_path: Path,
+    expected_resume_filename: str,
+    shutdown_token: str,
+) -> dict[str, Any]:
+    server_environment = os.environ.copy()
+    server_environment["JOB_APPLY_QA_SHUTDOWN_TOKEN"] = shutdown_token
     try:
         process = subprocess.Popen(
             [
@@ -187,6 +358,8 @@ def _start_server(fixture_path: Path) -> tuple[int, dict[str, Any]]:
                 str(fixture_path),
                 "--port",
                 "0",
+                "--expected-resume-filename",
+                expected_resume_filename,
             ],
             cwd=REPO_ROOT,
             stdin=subprocess.DEVNULL,
@@ -194,6 +367,7 @@ def _start_server(fixture_path: Path) -> tuple[int, dict[str, Any]]:
             stderr=subprocess.DEVNULL,
             text=True,
             start_new_session=True,
+            env=server_environment,
         )
     except OSError:
         raise CoordinatorError("fixture server startup failed") from None
@@ -212,34 +386,59 @@ def _start_server(fixture_path: Path) -> tuple[int, dict[str, Any]]:
             or not isinstance(startup["port"], int)
         ):
             raise ValueError
-        pid = process.pid
         # The server intentionally outlives this command. Mark this local handle as
         # detached so Popen's destructor does not report the expected live child.
         process.returncode = 0
-        return pid, startup
+        return startup
     except (queue.Empty, json.JSONDecodeError, TypeError, ValueError):
-        _terminate_process(process.pid, fixture_path)
+        process.terminate()
+        try:
+            process.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=2)
         raise CoordinatorError("fixture server startup failed") from None
     finally:
         process.stdout.close()
 
 
-def _new_run_directory() -> tuple[str, Path]:
+def _new_run_directory() -> tuple[str, Path, int, int]:
     try:
-        RUNS_ROOT.mkdir(parents=True, exist_ok=True, mode=0o700)
+        created = False
+        try:
+            RUNS_ROOT.mkdir(mode=0o700)
+            created = True
+        except FileExistsError:
+            pass
         if not stat.S_ISDIR(RUNS_ROOT.lstat().st_mode):
             raise OSError
-        os.chmod(RUNS_ROOT, 0o700)
+        if created:
+            os.chmod(RUNS_ROOT, 0o700)
+        root_descriptor = _open_private_directory(
+            RUNS_ROOT, "run directory creation failed"
+        )
         for _ in range(16):
             date = datetime.now(timezone.utc).strftime("%Y%m%d")
             run_id = f"qa-run-{date}-{secrets.token_hex(4)}"
             run_root = RUNS_ROOT / run_id
             try:
-                run_root.mkdir(mode=0o700)
-                return run_id, run_root
+                os.mkdir(run_id, 0o700, dir_fd=root_descriptor)
+                run_descriptor = os.open(
+                    run_id,
+                    os.O_RDONLY
+                    | os.O_DIRECTORY
+                    | getattr(os, "O_NOFOLLOW", 0),
+                    dir_fd=root_descriptor,
+                )
+                os.fchmod(run_descriptor, 0o700)
+                return run_id, run_root, root_descriptor, run_descriptor
             except FileExistsError:
                 continue
     except OSError:
+        pass
+    try:
+        os.close(root_descriptor)
+    except (NameError, OSError):
         pass
     raise CoordinatorError("run directory creation failed")
 
@@ -256,33 +455,71 @@ def _prepare(fixture_id: str, scenario_id: str) -> dict[str, Any]:
     fixture_path = fixture_dir / "fixture.json"
     profile_path = scenario_dir / "profile.json"
     resume_path = scenario_dir / "synthetic-resume.pdf"
+    expected_path = scenario_dir / "expected.json"
     fixture = _read_json(fixture_path, "invalid fixture package")
     profile = _read_json(profile_path, "invalid scenario package")
-    if not isinstance(fixture, dict) or fixture.get("id") != fixture_id:
+    expected = _read_json(expected_path, "invalid scenario package")
+    try:
+        validate_fixture(fixture)
+    except (ContractError, TypeError):
+        raise CoordinatorError("invalid fixture package") from None
+    if fixture.get("id") != fixture_id:
         raise CoordinatorError("invalid fixture package")
     if not isinstance(profile, dict):
         raise CoordinatorError("invalid scenario package")
+    fixture_control_ids = [
+        control["id"]
+        for step in fixture.get("steps", [])
+        for control in step.get("controls", [])
+    ]
+    if (
+        not isinstance(expected, dict)
+        or set(expected) != EXPECTED_KEYS
+        or expected.get("controlIds") != fixture_control_ids
+        or expected.get("resumeFilename") != "synthetic-resume.pdf"
+    ):
+        raise CoordinatorError("invalid scenario package")
 
-    _run_id, run_root = _new_run_directory()
-    server_pid: int | None = None
+    _run_id, run_root, runs_descriptor, run_descriptor = _new_run_directory()
+    startup: dict[str, Any] | None = None
+    shutdown_token = secrets.token_hex(32)
+    route_token = secrets.token_hex(32)
+    run_descriptor_open = True
     try:
+        _verify_directory_binding(run_root, run_descriptor, "run directory changed")
         store_root = run_root / "store"
         copied_fixture = run_root / "fixture.json"
         copied_profile = run_root / "profile.json"
         copied_resume = run_root / "synthetic-resume.pdf"
-        _copy_regular(fixture_path, copied_fixture, MAX_JSON_BYTES, "invalid fixture package")
-        _copy_regular(profile_path, copied_profile, MAX_JSON_BYTES, "invalid scenario package")
-        _copy_regular(resume_path, copied_resume, MAX_RESUME_BYTES, "invalid scenario package")
+        copied_expected = run_root / "expected.json"
+        _copy_regular_at(fixture_path, run_descriptor, "fixture.json", MAX_JSON_BYTES, "invalid fixture package")
+        _copy_regular_at(profile_path, run_descriptor, "profile.json", MAX_JSON_BYTES, "invalid scenario package")
+        _copy_regular_at(resume_path, run_descriptor, "synthetic-resume.pdf", MAX_RESUME_BYTES, "invalid scenario package")
+        _copy_regular_at(expected_path, run_descriptor, "expected.json", MAX_JSON_BYTES, "invalid scenario package")
 
         prepared_profile = dict(profile)
         prepared_profile["resumePath"] = str(copied_resume.resolve())
         _run_store(store_root, ["init"])
+        _verify_directory_binding(run_root, run_descriptor, "run directory changed")
         prepared_path = run_root / ".prepared-profile.json"
-        _atomic_json(prepared_path, prepared_profile)
-        _run_store(store_root, ["profile-replace", "--input", str(prepared_path)])
-        prepared_path.unlink()
+        _atomic_json_at(run_descriptor, ".prepared-profile.json", prepared_profile)
+        _run_store(
+            store_root,
+            [
+                "profile-replace",
+                "--input",
+                str(prepared_path),
+            ],
+        )
+        _verify_directory_binding(run_root, run_descriptor, "run directory changed")
+        os.unlink(".prepared-profile.json", dir_fd=run_descriptor)
 
-        server_pid, startup = _start_server(copied_fixture.resolve())
+        startup = _start_server(
+            copied_fixture.resolve(),
+            expected["resumeFilename"],
+            shutdown_token,
+        )
+        _verify_directory_binding(run_root, run_descriptor, "run directory changed")
         if startup["fixtureId"] != fixture_id:
             raise CoordinatorError("fixture server startup failed")
         state = {
@@ -291,50 +528,92 @@ def _prepare(fixture_id: str, scenario_id: str) -> dict[str, Any]:
             "url": startup["url"],
             "storeRoot": str(store_root.resolve()),
             "fixturePath": str(copied_fixture.resolve()),
-            "serverPid": server_pid,
+            "routeToken": route_token,
+            "shutdownToken": shutdown_token,
+            "lifecycleNonce": secrets.token_hex(32),
+            "createdAt": datetime.now(timezone.utc).isoformat(),
         }
-        _atomic_json(run_root / "run.json", state)
+        _atomic_json_at(run_descriptor, "run.json", state)
+        _atomic_json_at(
+            run_descriptor,
+            "lifecycle.json",
+            {"state": "prepared", "nonce": state["lifecycleNonce"]},
+        )
         return {
             "fixtureId": fixture_id,
             "scenarioId": scenario_id,
-            "url": startup["url"],
+            "url": f'{startup["url"]}#qa-route={route_token}',
             "storeRoot": str(store_root.resolve()),
-            "suggestedPrompt": PROMPT.format(url=startup["url"]),
+            "suggestedPrompt": PROMPT.format(
+                url=f'{startup["url"]}#qa-route={route_token}'
+            ),
         }
     except BaseException:
-        if server_pid is not None:
-            _terminate_process(server_pid, copied_fixture.resolve())
-        shutil.rmtree(run_root, ignore_errors=True)
+        if startup is not None:
+            _shutdown_server(startup["url"], shutdown_token, required=False)
+        try:
+            _remove_contents_at(run_descriptor)
+            os.close(run_descriptor)
+            run_descriptor_open = False
+            os.rmdir(_run_id, dir_fd=runs_descriptor)
+            os.fsync(runs_descriptor)
+        except (CoordinatorError, OSError):
+            pass
         raise
+    finally:
+        if run_descriptor_open:
+            os.close(run_descriptor)
+        os.close(runs_descriptor)
 
 
-def _load_run(run_id: str) -> tuple[Path, dict[str, Any]]:
+def _load_run(run_id: str) -> tuple[Path, dict[str, Any], int, int]:
     if RUN_ID.fullmatch(run_id) is None:
         raise CoordinatorError("invalid run identifier")
     run_root = RUNS_ROOT / run_id
-    _validate_source_directory(run_root, "invalid run state")
-    state = _read_json(run_root / "run.json", "invalid run state")
+    root_descriptor = _open_private_directory(RUNS_ROOT, "invalid run state")
+    run_descriptor = None
+    try:
+        run_descriptor = os.open(
+            run_id,
+            os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0),
+            dir_fd=root_descriptor,
+        )
+        metadata = os.fstat(run_descriptor)
+        if (
+            metadata.st_uid != os.getuid()
+            or stat.S_IMODE(metadata.st_mode) != 0o700
+        ):
+            raise CoordinatorError("invalid run state")
+        _verify_directory_binding(RUNS_ROOT, root_descriptor, "invalid run state")
+        _verify_directory_binding(run_root, run_descriptor, "invalid run state")
+        state = _read_json_at(run_descriptor, "run.json", "invalid run state")
+    except BaseException:
+        if run_descriptor is not None:
+            os.close(run_descriptor)
+        os.close(root_descriptor)
+        raise
     if (
         not isinstance(state, dict)
         or set(state) != RUN_STATE_KEYS
-        or not isinstance(state.get("serverPid"), int)
-        or isinstance(state.get("serverPid"), bool)
-        or state["serverPid"] <= 1
         or not all(
             isinstance(state.get(key), str)
-            for key in RUN_STATE_KEYS - {"serverPid"}
+            for key in RUN_STATE_KEYS
         )
+        or TOKEN.fullmatch(state["routeToken"]) is None
+        or TOKEN.fullmatch(state["shutdownToken"]) is None
+        or TOKEN.fullmatch(state["lifecycleNonce"]) is None
         or Path(state["storeRoot"]) != (run_root / "store").resolve()
         or Path(state["fixturePath"]) != (run_root / "fixture.json").resolve()
         or state["scenarioId"] != "complete-profile"
     ):
+        os.close(run_descriptor)
+        os.close(root_descriptor)
         raise CoordinatorError("invalid run state")
-    return run_root, state
+    return run_root, state, root_descriptor, run_descriptor
 
 
 def _fetch_state(url: str) -> dict[str, Any]:
-    if re.fullmatch(r"http://127\.0\.0\.1:[1-9][0-9]{0,4}", url) is None:
-        raise CoordinatorError("invalid run state")
+    url = _base_url(url)
     try:
         request = urllib.request.Request(url + "/__qa/state", method="GET")
         with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
@@ -360,66 +639,153 @@ def _fetch_state(url: str) -> dict[str, Any]:
     return state
 
 
-def _process_matches(pid: int, fixture_path: Path) -> bool:
+def _base_url(url: str) -> str:
+    parsed = urlsplit(url)
+    base = f"{parsed.scheme}://{parsed.netloc}"
+    if re.fullmatch(r"http://127\.0\.0\.1:[1-9][0-9]{0,4}", base) is None:
+        raise CoordinatorError("invalid run state")
+    return base
+
+
+def _authenticated_request(
+    url: str, path: str, token: str, method: str = "GET"
+) -> tuple[int, bytes]:
     try:
-        result = subprocess.run(
-            ["ps", "-p", str(pid), "-o", "command="],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            text=True,
-            timeout=2,
-            check=False,
+        request = urllib.request.Request(
+            _base_url(url) + path,
+            headers={"X-QA-Run-Token": token},
+            method=method,
         )
-        command = result.stdout.strip()
-        return result.returncode == 0 and "qa.server" in command and str(fixture_path) in command
-    except (OSError, subprocess.TimeoutExpired):
-        return False
+        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+            return response.status, response.read(MAX_JSON_BYTES + 1)
+    except urllib.error.HTTPError as error:
+        error.read()
+        return error.code, b""
+    except (OSError, urllib.error.URLError):
+        raise CoordinatorError("fixture server unavailable") from None
 
 
-def _pid_exists(pid: int) -> bool:
+def _verify_identity(state: dict[str, Any]) -> None:
+    status, body = _authenticated_request(
+        state["url"], "/__qa/identity", state["shutdownToken"]
+    )
     try:
-        waited, _status = os.waitpid(pid, os.WNOHANG)
-        if waited == pid:
-            return False
-    except ChildProcessError:
-        pass
+        identity = json.loads(body.decode())
+    except (UnicodeError, json.JSONDecodeError):
+        identity = None
+    if status != 200 or identity != {"fixtureId": state["fixtureId"]}:
+        raise CoordinatorError("fixture server identity mismatch")
+
+
+def _shutdown_server(url: str, token: str, required: bool = True) -> None:
     try:
-        os.kill(pid, 0)
-        return True
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-
-
-def _terminate_process(pid: int, fixture_path: Path) -> None:
-    if not _process_matches(pid, fixture_path):
+        status, _body = _authenticated_request(
+            url, "/__qa/shutdown", token, method="POST"
+        )
+    except CoordinatorError:
+        if required:
+            raise
         return
+    if status != 204 and required:
+        raise CoordinatorError("fixture server shutdown failed")
+
+
+def _resolve_route(route_token: str) -> dict[str, str]:
+    if TOKEN.fullmatch(route_token) is None:
+        raise CoordinatorError("invalid QA route")
+    scan_descriptor = _open_private_directory(RUNS_ROOT, "unknown QA route")
     try:
-        os.kill(pid, signal.SIGTERM)
-    except ProcessLookupError:
-        return
-    for _ in range(50):
-        if not _pid_exists(pid):
-            return
-        time.sleep(0.02)
-    if _process_matches(pid, fixture_path):
+        with os.scandir(scan_descriptor) as iterator:
+            names = [entry.name for entry in iterator]
+    except OSError:
+        raise CoordinatorError("unknown QA route") from None
+    finally:
+        os.close(scan_descriptor)
+    if len(names) > MAX_RUN_ENTRIES:
+        raise CoordinatorError("unknown QA route")
+    match: str | None = None
+    for name in names:
+        if RUN_ID.fullmatch(name) is None:
+            continue
+        root_descriptor = run_descriptor = None
         try:
-            os.kill(pid, signal.SIGKILL)
-        except ProcessLookupError:
-            return
-        for _ in range(50):
-            if not _pid_exists(pid):
-                return
-            time.sleep(0.02)
+            _run_root, state, root_descriptor, run_descriptor = _load_run(name)
+            lifecycle = _read_json_at(
+                run_descriptor, "lifecycle.json", "invalid run state"
+            )
+            terminal = _entry_exists_at(
+                run_descriptor, "completed.json"
+            ) or _entry_exists_at(run_descriptor, "abandoned.json")
+        except CoordinatorError:
+            continue
+        finally:
+            if run_descriptor is not None:
+                os.close(run_descriptor)
+            if root_descriptor is not None:
+                os.close(root_descriptor)
+        if terminal or lifecycle != {
+            "state": "prepared",
+            "nonce": state["lifecycleNonce"],
+        }:
+            continue
+        if hmac.compare_digest(state["routeToken"], route_token):
+            if match is not None:
+                raise CoordinatorError("unknown QA route")
+            match = state["storeRoot"]
+    if match is None:
+        raise CoordinatorError("unknown QA route")
+    return {"storeRoot": match}
 
 
 def _evaluate(run_id: str) -> tuple[int, dict[str, Any]]:
-    run_root, state = _load_run(run_id)
-    fixture_path = Path(state["fixturePath"])
+    _run_root, state, root_descriptor, run_descriptor = _load_run(run_id)
+    lock_descriptor = None
+    authenticated = False
+    lifecycle_active = False
     try:
+        lock_descriptor = os.open(
+            "evaluate.lock",
+            os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+            dir_fd=run_descriptor,
+        )
+        os.fchmod(lock_descriptor, 0o600)
+        try:
+            fcntl.flock(lock_descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise CoordinatorError("evaluation already in progress") from None
+        try:
+            completed = _read_json_at(
+                run_descriptor, "report.json", "invalid run report"
+            )
+        except CoordinatorError:
+            try:
+                os.stat("report.json", dir_fd=run_descriptor, follow_symlinks=False)
+            except FileNotFoundError:
+                completed = None
+            else:
+                raise
+        if completed is not None:
+            if not isinstance(completed, dict) or completed.get("status") not in {
+                "passed",
+                "failed",
+            }:
+                raise CoordinatorError("invalid run report")
+            return (0 if completed["status"] == "passed" else 1), completed
+        lifecycle = _read_json_at(
+            run_descriptor, "lifecycle.json", "invalid run state"
+        )
+        if _entry_exists_at(run_descriptor, "abandoned.json"):
+            raise CoordinatorError("run is abandoned")
+        if lifecycle != {"state": "prepared", "nonce": state["lifecycleNonce"]}:
+            raise CoordinatorError("run is abandoned")
+        lifecycle_active = True
+        _verify_identity(state)
+        authenticated = True
         server_state = _fetch_state(state["url"])
-        fixture = _read_json(fixture_path, "invalid fixture package")
+        fixture = _read_json_at(
+            run_descriptor, "fixture.json", "invalid fixture package"
+        )
         report = evaluate_run(
             fixture,
             {"id": state["scenarioId"]},
@@ -428,12 +794,44 @@ def _evaluate(run_id: str) -> tuple[int, dict[str, Any]]:
         )
         if not isinstance(report, dict):
             raise CoordinatorError("replay evaluation failed")
-        _atomic_json(run_root / "report.json", report)
+        _shutdown_server(state["url"], state["shutdownToken"], required=True)
+        authenticated = False
+        _atomic_json_at(run_descriptor, "report.json", report)
+        _atomic_json_at(
+            run_descriptor,
+            "completed.json",
+            {"state": "completed", "nonce": state["lifecycleNonce"]},
+        )
         return (0 if report.get("status") == "passed" else 1), report
     except OracleError as error:
+        if lifecycle_active:
+            try:
+                _atomic_json_at(
+                    run_descriptor,
+                    "abandoned.json",
+                    {"state": "abandoned", "nonce": state["lifecycleNonce"]},
+                )
+            except CoordinatorError:
+                pass
         raise CoordinatorError(str(error)) from None
+    except CoordinatorError:
+        if lifecycle_active:
+            try:
+                _atomic_json_at(
+                    run_descriptor,
+                    "abandoned.json",
+                    {"state": "abandoned", "nonce": state["lifecycleNonce"]},
+                )
+            except CoordinatorError:
+                pass
+        raise
     finally:
-        _terminate_process(state["serverPid"], fixture_path)
+        if authenticated:
+            _shutdown_server(state["url"], state["shutdownToken"], required=False)
+        if lock_descriptor is not None:
+            os.close(lock_descriptor)
+        os.close(run_descriptor)
+        os.close(root_descriptor)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -444,6 +842,8 @@ def build_parser() -> argparse.ArgumentParser:
     prepare.add_argument("--scenario", required=True)
     evaluate = commands.add_parser("evaluate")
     evaluate.add_argument("--run-id", required=True)
+    resolve = commands.add_parser("resolve")
+    resolve.add_argument("--route-token", required=True)
     return parser
 
 
@@ -453,8 +853,11 @@ def main(argv: list[str] | None = None) -> int:
         if arguments.command == "prepare":
             result = _prepare(arguments.fixture, arguments.scenario)
             code = 0
-        else:
+        elif arguments.command == "evaluate":
             code, result = _evaluate(arguments.run_id)
+        else:
+            result = _resolve_route(arguments.route_token)
+            code = 0
         print(json.dumps(result, sort_keys=True, separators=(",", ":")))
         return code
     except CoordinatorError as error:

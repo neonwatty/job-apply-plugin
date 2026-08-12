@@ -121,7 +121,16 @@ async function startServer(t) {
   try {
     child = spawn(
       "python3",
-      ["-m", "qa.server", "--fixture", fixturePath, "--port", "0"],
+      [
+        "-m",
+        "qa.server",
+        "--fixture",
+        fixturePath,
+        "--port",
+        "0",
+        "--expected-resume-filename",
+        "synthetic-resume.pdf",
+      ],
       { cwd: root },
     );
     let stderr = "";
@@ -332,7 +341,10 @@ test("renders the generic fixture and blocks the final action without leaking va
   );
   assert.equal(
     beforeSubmit.events.some(
-      (event) => event.type === "uploaded" && event.controlId === "resume.file",
+      (event) =>
+        event.type === "uploaded" &&
+        event.controlId === "resume.file" &&
+        event.expectedFilenameMatched === true,
     ),
     true,
   );
@@ -365,6 +377,33 @@ test("renders the generic fixture and blocks the final action without leaking va
   await assertVisible(page.getByText("Final action blocked by QA tripwire"));
   assert.equal(page.url(), originalUrl);
   assert.equal((await getState(url)).finalActionActivations, 1);
+});
+
+test("records only a false match bit for a wrong resume filename", async (t) => {
+  const { url } = await startServer(t);
+  const browser = await chromium.launch();
+  t.after(() => browser.close());
+  const page = await browser.newPage();
+  await page.goto(url);
+  await fillCompleteProfile(page);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByLabel("Resume").setInputFiles({
+    name: "wrong-name.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4 synthetic wrong-name test"),
+  });
+  await page.getByRole("button", { name: "Continue" }).click();
+  const state = await waitForState(url, (candidate) =>
+    candidate.events.some((event) => event.type === "uploaded"),
+  );
+  const upload = state.events.find((event) => event.type === "uploaded");
+  assert.deepEqual(upload, {
+    type: "uploaded",
+    controlId: "resume.file",
+    stepId: "step-2",
+    expectedFilenameMatched: false,
+  });
+  assert.equal(JSON.stringify(state).includes("wrong-name.pdf"), false);
 });
 
 test("review without clicking the final action keeps the oracle at zero", async (t) => {

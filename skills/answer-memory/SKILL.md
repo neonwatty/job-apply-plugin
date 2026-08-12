@@ -22,6 +22,18 @@ Run the helper from that resolved root:
 python3 "<plugin-root>/scripts/job-apply-store.py" <command>
 ```
 
+### Approved local QA routing
+
+An approved replay URL has the exact loopback form `http://127.0.0.1:<port>/#qa-route=<64-lowercase-hex-token>`. Before **any** storage command for that workflow, resolve its fragment token without navigating it or printing it:
+
+```bash
+python3 "<plugin-root>/scripts/qa-replay.py" resolve --route-token "<qa-route-token>"
+```
+
+The resolver returns one JSON field, `storeRoot`. For the entire replay, add `--root "<resolved-storeRoot>"` immediately after `job-apply-store.py` on **every** command, including `init`, `profile-get`, answer, history, and session commands. Never omit `--root`, use `JOB_APPLY_STORE_DIR`, inspect the default store, or fall back to `~/.job-apply/` during an approved local replay. If resolution fails, stop the replay without making any storage call. Treat the route token and resolved path as private run metadata and do not repeat them in prose or logs.
+
+The command examples below show normal persistent usage without a QA route. When a QA route is active, the explicit `--root` rule above overrides every example.
+
 Do not directly create, parse, patch, append to, or replace files under `~/.job-apply/`. Do not recreate question normalization, answer keys, migration logic, permissions, or atomic writes in the agent. Use only helper commands described here and in [the storage contract](references/storage-contract.md).
 
 Successful data commands return JSON on stdout. If the helper returns nonzero, stop the storage operation, preserve the existing files, and explain the failure without printing stored values.

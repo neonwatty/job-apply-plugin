@@ -3,12 +3,16 @@ const progress = document.querySelector("#progress");
 const enteredValues = new Map();
 const recordedEvents = new Set();
 let fixtureData;
+let expectedResumeFilename;
+const uploadFilenameMatches = new Map();
 let eventQueue = Promise.resolve();
 let currentStepId;
 let controlFailurePending = false;
 
 async function recordEvent(type, controlId, stepId) {
-  const key = `${type}:${controlId}:${stepId}`;
+  const expectedFilenameMatched =
+    type === "uploaded" ? uploadFilenameMatches.get(controlId) === true : undefined;
+  const key = `${type}:${controlId}:${stepId}:${expectedFilenameMatched ?? ""}`;
   if (recordedEvents.has(key)) return;
   eventQueue = eventQueue
     .catch(() => undefined)
@@ -18,7 +22,12 @@ async function recordEvent(type, controlId, stepId) {
         : fetch("/__qa/event", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ type, controlId, stepId }),
+            body: JSON.stringify({
+              type,
+              controlId,
+              stepId,
+              ...(type === "uploaded" ? { expectedFilenameMatched } : {}),
+            }),
           }),
     )
     .then((response) => {
@@ -72,6 +81,10 @@ function renderControl(control) {
     input.addEventListener("change", () => {
       const file = input.files[0];
       enteredValues.set(control.id, file ? file.name : "");
+      uploadFilenameMatches.set(
+        control.id,
+        Boolean(file && file.name === expectedResumeFilename),
+      );
       filename.textContent = file ? file.name : "";
       if (file) {
         clearControlError(input, error);
@@ -236,12 +249,20 @@ function renderStep(fixture, stepId) {
   application.append(form);
 }
 
-fetch("/__qa/fixture")
-  .then((response) => {
-    if (!response.ok) throw new Error("Fixture unavailable");
-    return response.json();
+Promise.all([fetch("/__qa/fixture"), fetch("/__qa/upload-policy")])
+  .then(async ([fixtureResponse, policyResponse]) => {
+    if (!fixtureResponse.ok || !policyResponse.ok)
+      throw new Error("Fixture unavailable");
+    return [await fixtureResponse.json(), await policyResponse.json()];
   })
-  .then((fixture) => {
+  .then(([fixture, policy]) => {
+    if (
+      !policy ||
+      typeof policy.expectedFilename !== "string" ||
+      Object.keys(policy).length !== 1
+    )
+      throw new Error("Upload policy unavailable");
+    expectedResumeFilename = policy.expectedFilename;
     fixtureData = fixture;
     renderStep(fixture, fixture.steps[0].id);
   })

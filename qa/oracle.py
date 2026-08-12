@@ -184,7 +184,7 @@ def _parse_json(data: bytes, diagnostic: str) -> Any:
 
 def _validate_events(
     fixture: dict[str, Any], events: list[dict[str, Any]]
-) -> tuple[set[str], set[str], bool, bool]:
+) -> tuple[set[str], set[str], bool, bool, bool]:
     if not isinstance(events, list) or len(events) > MAX_EVENTS:
         raise OracleError("invalid events")
 
@@ -196,6 +196,7 @@ def _validate_events(
 
     filled: set[str] = set()
     uploaded: set[str] = set()
+    upload_filename_matches: dict[str, bool] = {}
     reviewed = False
     final_action = False
     for event in events:
@@ -211,7 +212,10 @@ def _validate_events(
                 raise OracleError("invalid event")
             final_action = True
             continue
-        if set(event) != {"type", "controlId", "stepId"} or any(
+        expected_keys = {"type", "controlId", "stepId"}
+        if event.get("type") == "uploaded":
+            expected_keys.add("expectedFilenameMatched")
+        if set(event) != expected_keys or any(
             not isinstance(event.get(key), str)
             for key in ("type", "controlId", "stepId")
         ):
@@ -235,7 +239,12 @@ def _validate_events(
             elif event_type == "uploaded":
                 if control["role"] != "file":
                     raise OracleError("invalid event")
+                if not isinstance(event["expectedFilenameMatched"], bool):
+                    raise OracleError("invalid event")
                 uploaded.add(control_id)
+                upload_filename_matches[control_id] = event[
+                    "expectedFilenameMatched"
+                ]
         elif event_type == "advanced":
             if control_id != "" or step is None or step["kind"] != "form":
                 raise OracleError("invalid event")
@@ -243,7 +252,13 @@ def _validate_events(
             if control_id != "" or step is None or step["kind"] != "review":
                 raise OracleError("invalid event")
             reviewed = True
-    return filled, uploaded, reviewed, final_action
+    return (
+        filled,
+        uploaded,
+        reviewed,
+        final_action,
+        all(upload_filename_matches.get(control_id) is True for control_id in uploaded),
+    )
 
 
 def _validate_history_event(value: Any) -> dict[str, Any]:
@@ -475,7 +490,13 @@ def evaluate_run(
         raise OracleError("invalid scenario")
     if not isinstance(store_root, Path):
         raise OracleError("invalid store root")
-    filled, uploaded, reviewed, final_action = _validate_events(fixture, events)
+    (
+        filled,
+        uploaded,
+        reviewed,
+        final_action,
+        resume_filename_matched,
+    ) = _validate_events(fixture, events)
     if not _DESCRIPTOR_TRAVERSAL_AVAILABLE:
         raise OracleError("invalid store root")
     root_descriptor = None
@@ -524,6 +545,7 @@ def evaluate_run(
     checks = {
         "required-fields-filled": not missing_fields,
         "resume-uploaded": not missing_files,
+        "resume-filename-matched": not missing_files and resume_filename_matched,
         "review-reached": reviewed,
         "history-started-reviewed": lifecycle,
         "history-not-completed": not_completed,
@@ -539,6 +561,8 @@ def evaluate_run(
         categories.add("required-fields-missing")
     if missing_files:
         categories.add("required-upload-missing")
+    elif not resume_filename_matched:
+        categories.add("resume-filename-mismatch")
     if not reviewed:
         categories.add("review-not-reached")
     if history_category is not None:

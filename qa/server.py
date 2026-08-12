@@ -3,8 +3,10 @@ from __future__ import annotations
 import argparse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import os
 from pathlib import Path
 import re
+import secrets
 import signal
 import sys
 import threading
@@ -39,12 +41,24 @@ JSON_CONTENT_TYPE = re.compile(
 )
 
 
+TOKEN = re.compile(r"^[a-f0-9]{64}$")
+SAFE_FILENAME = re.compile(r"^[^/\\\x00-\x1f\x7f]{1,255}$")
+
+
 class ReplayHTTPServer(ThreadingHTTPServer):
     daemon_threads = True
 
-    def __init__(self, fixture: dict[str, Any], port: int):
+    def __init__(
+        self,
+        fixture: dict[str, Any],
+        port: int,
+        expected_resume_filename: str = "synthetic-resume.pdf",
+        shutdown_token: str | None = None,
+    ):
         super().__init__((HOST, port), ReplayRequestHandler)
         self.fixture = fixture
+        self.expected_resume_filename = expected_resume_filename
+        self.shutdown_token = shutdown_token
         self.events: list[dict[str, str]] = []
         self.final_action_activations = 0
         self.state_lock = threading.Lock()
@@ -153,6 +167,18 @@ class ReplayRequestHandler(BaseHTTPRequestHandler):
         if self.path == "/__qa/fixture":
             self._json(200, self.server.fixture)
             return
+        if self.path == "/__qa/upload-policy":
+            self._json(
+                200,
+                {"expectedFilename": self.server.expected_resume_filename},
+            )
+            return
+        if self.path == "/__qa/identity":
+            if not self._has_run_token():
+                self._error(404, "not found")
+                return
+            self._json(200, {"fixtureId": self.server.fixture["id"]})
+            return
         if self.path == "/__qa/state":
             with self.server.state_lock:
                 state = {
@@ -164,6 +190,13 @@ class ReplayRequestHandler(BaseHTTPRequestHandler):
         self._error(404, "not found")
 
     def do_POST(self) -> None:
+        if self.path == "/__qa/shutdown":
+            if not self._has_local_host() or not self._has_run_token():
+                self._error(404, "not found")
+                return
+            self._send(204)
+            threading.Thread(target=self.server.shutdown, daemon=True).start()
+            return
         if self.path not in {"/__qa/event", "/__qa/final-action"}:
             self._error(404, "not found")
             return
@@ -180,11 +213,13 @@ class ReplayRequestHandler(BaseHTTPRequestHandler):
         value = self._read_json()
         if value is INVALID_BODY:
             return
-        if not isinstance(value, dict) or set(value) != {
-            "type",
-            "controlId",
-            "stepId",
-        }:
+        if not isinstance(value, dict):
+            self._error(400, "invalid semantic event")
+            return
+        expected_keys = {"type", "controlId", "stepId"}
+        if value.get("type") == "uploaded":
+            expected_keys.add("expectedFilenameMatched")
+        if set(value) != expected_keys:
             self._error(400, "invalid semantic event")
             return
         if any(
@@ -206,7 +241,9 @@ class ReplayRequestHandler(BaseHTTPRequestHandler):
                 if event_type == "filled":
                     valid = control["role"] != "file"
                 elif event_type == "uploaded":
-                    valid = control["role"] == "file"
+                    valid = control["role"] == "file" and isinstance(
+                        value["expectedFilenameMatched"], bool
+                    )
                 else:
                     valid = True
         elif event_type == "advanced":
@@ -227,6 +264,15 @@ class ReplayRequestHandler(BaseHTTPRequestHandler):
             self._error(503, "event limit reached")
             return
         self._send(204, content_type="application/json; charset=utf-8")
+
+    def _has_run_token(self) -> bool:
+        configured = self.server.shutdown_token
+        supplied = self.headers.get_all("X-QA-Run-Token", failobj=[])
+        return (
+            isinstance(configured, str)
+            and len(supplied) == 1
+            and secrets.compare_digest(supplied[0], configured)
+        )
 
     def _handle_final_action(self) -> None:
         value = self._read_json()
@@ -283,12 +329,26 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--fixture", required=True, type=Path)
     parser.add_argument("--port", type=int, default=0)
+    parser.add_argument("--expected-resume-filename", required=True)
+    parser.add_argument("--shutdown-token")
     arguments = parser.parse_args(argv)
     if not 0 <= arguments.port <= 65535:
         parser.error("port must be between 0 and 65535")
+    if SAFE_FILENAME.fullmatch(arguments.expected_resume_filename) is None:
+        parser.error("invalid expected resume filename")
+    shutdown_token = arguments.shutdown_token or os.environ.get(
+        "JOB_APPLY_QA_SHUTDOWN_TOKEN"
+    )
+    if shutdown_token is not None and TOKEN.fullmatch(shutdown_token) is None:
+        parser.error("invalid shutdown token")
     try:
         fixture = _load_fixture(arguments.fixture)
-        server = ReplayHTTPServer(fixture, arguments.port)
+        server = ReplayHTTPServer(
+            fixture,
+            arguments.port,
+            arguments.expected_resume_filename,
+            shutdown_token,
+        )
     except (ValueError, OSError) as error:
         print(str(error), file=sys.stderr)
         return 2

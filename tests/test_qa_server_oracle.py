@@ -38,6 +38,11 @@ def complete_events(fixture=None):
                     "type": "uploaded" if control["role"] == "file" else "filled",
                     "controlId": control["id"],
                     "stepId": step["id"],
+                    **(
+                        {"expectedFilenameMatched": True}
+                        if control["role"] == "file"
+                        else {}
+                    ),
                 }
             )
         if step["kind"] == "form":
@@ -120,6 +125,8 @@ class OracleStore:
 
 
 class RunningServer:
+    shutdown_token = "a" * 64
+
     def __enter__(self):
         self.directory = tempfile.TemporaryDirectory()
         self.fixture_path = Path(self.directory.name) / "fixture.json"
@@ -135,6 +142,10 @@ class RunningServer:
                     str(self.fixture_path),
                     "--port",
                     "0",
+                    "--expected-resume-filename",
+                    "synthetic-resume.pdf",
+                    "--shutdown-token",
+                    self.shutdown_token,
                 ],
                 cwd=ROOT,
                 stdout=subprocess.PIPE,
@@ -246,6 +257,7 @@ class ServerOracleTests(unittest.TestCase):
                     "type": "uploaded",
                     "controlId": "resume.file",
                     "stepId": "step-2",
+                    "expectedFilenameMatched": True,
                 },
                 {
                     "type": "validation",
@@ -270,6 +282,8 @@ class ServerOracleTests(unittest.TestCase):
             {"type": "filled", "controlId": "contact.first_name", "stepId": "missing"},
             {"type": "filled", "controlId": "resume.file", "stepId": "step-2"},
             {"type": "uploaded", "controlId": "contact.first_name", "stepId": "step-1"},
+            {"type": "uploaded", "controlId": "resume.file", "stepId": "step-2"},
+            {"type": "uploaded", "controlId": "resume.file", "stepId": "step-2", "expectedFilenameMatched": "yes"},
             {"type": "validation", "controlId": "resume.file", "stepId": "step-1"},
             {"type": "advanced", "controlId": "", "stepId": "review"},
             {"type": "reviewed", "controlId": "", "stepId": "step-1"},
@@ -458,6 +472,40 @@ class ServerOracleTests(unittest.TestCase):
                 self.assertEqual(status, 400)
                 self.assertEqual(server.request("GET", "/__qa/state")[2], baseline)
 
+    def test_hidden_identity_and_shutdown_require_exact_token(self):
+        with RunningServer() as server:
+            for path in ("/__qa/identity", "/__qa/shutdown"):
+                method = "GET" if path.endswith("identity") else "POST"
+                status, _, body = server.request(method, path)
+                self.assertEqual(status, 404)
+                self.assertEqual(body, {"error": "not found"})
+
+                status, _, body = server.request(
+                    method,
+                    path,
+                    headers={"X-QA-Run-Token": "b" * 64},
+                )
+                self.assertEqual(status, 404)
+                self.assertEqual(body, {"error": "not found"})
+
+            status, _, identity = server.request(
+                "GET",
+                "/__qa/identity",
+                headers={"X-QA-Run-Token": server.shutdown_token},
+            )
+            self.assertEqual(
+                (status, identity),
+                (200, {"fixtureId": "renderer-oracle-v1"}),
+            )
+
+            status, _, body = server.request(
+                "POST",
+                "/__qa/shutdown",
+                headers={"X-QA-Run-Token": server.shutdown_token},
+            )
+            self.assertEqual((status, body), (204, b""))
+            server.process.wait(timeout=5)
+
     def test_final_action_evicts_events_and_always_activates_at_capacity(self):
         with mock.patch("qa.server.MAX_EVENTS", 2):
             replay_server = ReplayHTTPServer(valid_fixture(), 0)
@@ -624,6 +672,21 @@ class SemanticOracleTests(unittest.TestCase):
         self.assertEqual(report["assertions"]["resume-uploaded"], "failed")
         self.assertEqual(report["missingControlIds"], ["resume.file"])
         self.assertIn("required-upload-missing", report["failureCategories"])
+
+    def test_wrong_resume_filename_match_fails_without_exposing_filename(self):
+        events = [
+            {
+                **event,
+                "expectedFilenameMatched": False,
+            }
+            if event["type"] == "uploaded"
+            else event
+            for event in self.events
+        ]
+        report = self.evaluate(events=events)
+        self.assertEqual(report["assertions"]["resume-filename-matched"], "failed")
+        self.assertIn("resume-filename-mismatch", report["failureCategories"])
+        self.assertNotIn("filename", json.dumps(report["missingControlIds"]))
 
     def test_missing_review_event_fails(self):
         events = [event for event in self.events if event["type"] != "reviewed"]
