@@ -565,6 +565,204 @@ class ReplayCoordinatorTests(unittest.TestCase):
         ) as response:
             self.assertEqual(response.status, 200)
 
+    def test_cleanup_directory_swap_preserves_replacement_bytes(self) -> None:
+        _output, run_root, _state = self.prepare()
+        original_rename = self.cli.exclusive_rename
+        swapped = False
+
+        def swap_store(src_fd, src_name, dst_fd, dst_name):
+            nonlocal swapped
+            if src_name == "store" and not swapped:
+                swapped = True
+                os.rename(
+                    "store",
+                    "attacker-original-store",
+                    src_dir_fd=src_fd,
+                    dst_dir_fd=src_fd,
+                )
+                os.mkdir("store", mode=0o700, dir_fd=src_fd)
+                replacement = os.open(
+                    "store/valuable.bin",
+                    os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                    0o600,
+                    dir_fd=src_fd,
+                )
+                os.write(replacement, b"valuable-directory-replacement")
+                os.close(replacement)
+            return original_rename(src_fd, src_name, dst_fd, dst_name)
+
+        with mock.patch.object(self.cli, "exclusive_rename", side_effect=swap_store):
+            result = self.invoke(["cleanup", "--run-id", run_root.name])
+
+        self.assertEqual(result, (2, None, "run cleanup failed\n"))
+        self.assertEqual(
+            (run_root / "store/valuable.bin").read_bytes(),
+            b"valuable-directory-replacement",
+        )
+        self.server_cleanup = None
+
+    def test_cleanup_regular_file_swap_preserves_replacement_bytes(self) -> None:
+        _output, run_root, _state = self.prepare()
+        original_rename = self.cli.exclusive_rename
+        swapped = False
+
+        def swap_profile(src_fd, src_name, dst_fd, dst_name):
+            nonlocal swapped
+            if src_name == "profile.json" and not swapped:
+                swapped = True
+                os.rename(
+                    "profile.json",
+                    "attacker-original-profile.json",
+                    src_dir_fd=src_fd,
+                    dst_dir_fd=src_fd,
+                )
+                replacement = os.open(
+                    "profile.json",
+                    os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                    0o600,
+                    dir_fd=src_fd,
+                )
+                os.write(replacement, b"valuable-regular-replacement")
+                os.close(replacement)
+            return original_rename(src_fd, src_name, dst_fd, dst_name)
+
+        with mock.patch.object(self.cli, "exclusive_rename", side_effect=swap_profile):
+            result = self.invoke(["cleanup", "--run-id", run_root.name])
+
+        self.assertEqual(result, (2, None, "run cleanup failed\n"))
+        self.assertEqual(
+            (run_root / "profile.json").read_bytes(),
+            b"valuable-regular-replacement",
+        )
+        self.server_cleanup = None
+
+    def test_cleanup_directory_swap_at_open_preserves_replacement_bytes(self) -> None:
+        _output, run_root, _state = self.prepare()
+        original_open = self.cli.os.open
+        swapped = False
+
+        def swap_before_open(path, flags, *args, **kwargs):
+            nonlocal swapped
+            dir_fd = kwargs.get("dir_fd")
+            if (
+                isinstance(path, str)
+                and path.startswith(".cleanup-")
+                and flags & os.O_DIRECTORY
+                and dir_fd is not None
+                and not swapped
+            ):
+                swapped = True
+                os.rename(
+                    path,
+                    "attacker-original-store",
+                    src_dir_fd=dir_fd,
+                    dst_dir_fd=dir_fd,
+                )
+                os.mkdir(path, mode=0o700, dir_fd=dir_fd)
+                replacement = original_open(
+                    f"{path}/valuable.bin",
+                    os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                    0o600,
+                    dir_fd=dir_fd,
+                )
+                os.write(replacement, b"valuable-open-replacement")
+                os.close(replacement)
+            return original_open(path, flags, *args, **kwargs)
+
+        with mock.patch.object(self.cli.os, "open", side_effect=swap_before_open):
+            result = self.invoke(["cleanup", "--run-id", run_root.name])
+
+        self.assertEqual(result, (2, None, "run cleanup failed\n"))
+        self.assertEqual(
+            (run_root / "store/valuable.bin").read_bytes(),
+            b"valuable-open-replacement",
+        )
+        self.server_cleanup = None
+
+    def test_cleanup_regular_swap_at_unlink_boundary_preserves_replacement(self) -> None:
+        _output, run_root, _state = self.prepare()
+        original_stat = self.cli.os.stat
+        original_rename = self.cli.exclusive_rename
+        captured_stats = 0
+        profile_capture = None
+        swapped = False
+
+        def remember_profile_capture(src_fd, src_name, dst_fd, dst_name):
+            nonlocal profile_capture
+            result = original_rename(src_fd, src_name, dst_fd, dst_name)
+            if src_name == "profile.json":
+                profile_capture = dst_name
+            return result
+
+        def swap_before_final_check(path, *args, **kwargs):
+            nonlocal captured_stats, swapped
+            dir_fd = kwargs.get("dir_fd")
+            if path == profile_capture and dir_fd is not None:
+                observed = original_stat(path, *args, **kwargs)
+                if stat.S_ISREG(observed.st_mode):
+                    captured_stats += 1
+                    if captured_stats == 2 and not swapped:
+                        swapped = True
+                        os.rename(
+                            path,
+                            "attacker-original-profile.json",
+                            src_dir_fd=dir_fd,
+                            dst_dir_fd=dir_fd,
+                        )
+                        replacement = os.open(
+                            path,
+                            os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                            0o600,
+                            dir_fd=dir_fd,
+                        )
+                        os.write(replacement, b"valuable-unlink-replacement")
+                        os.close(replacement)
+                        return original_stat(path, *args, **kwargs)
+                return observed
+            return original_stat(path, *args, **kwargs)
+
+        with mock.patch.object(
+            self.cli, "exclusive_rename", side_effect=remember_profile_capture
+        ), mock.patch.object(self.cli.os, "stat", side_effect=swap_before_final_check):
+            result = self.invoke(["cleanup", "--run-id", run_root.name])
+
+        self.assertEqual(result, (2, None, "run cleanup failed\n"))
+        self.assertTrue(swapped)
+        self.assertEqual(
+            (run_root / "profile.json").read_bytes(),
+            b"valuable-unlink-replacement",
+        )
+        self.server_cleanup = None
+
+    def test_cleanup_detects_a_new_entry_created_during_pruning(self) -> None:
+        _output, run_root, _state = self.prepare()
+        original_unlink = self.cli.os.unlink
+        injected = False
+
+        def inject_late_entry(name, *args, **kwargs):
+            nonlocal injected
+            result = original_unlink(name, *args, **kwargs)
+            if not injected and kwargs.get("dir_fd") is not None:
+                injected = True
+                descriptor = os.open(
+                    "late-value.bin",
+                    os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                    0o600,
+                    dir_fd=kwargs["dir_fd"],
+                )
+                os.write(descriptor, b"late-valuable-bytes")
+                os.close(descriptor)
+            return result
+
+        with mock.patch.object(self.cli.os, "unlink", side_effect=inject_late_entry):
+            result = self.invoke(["cleanup", "--run-id", run_root.name])
+
+        self.assertEqual(result, (2, None, "run cleanup failed\n"))
+        self.assertEqual(
+            (run_root / "late-value.bin").read_bytes(), b"late-valuable-bytes"
+        )
+        self.server_cleanup = None
+
     def test_expected_resume_contract_is_closed_and_required(self) -> None:
         expected_path = self.scenarios / SCENARIO_ID / "expected.json"
         expected = json.loads(expected_path.read_text())

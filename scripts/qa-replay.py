@@ -44,6 +44,9 @@ ROUTE = re.compile(
 )
 MAX_JSON_BYTES = 1024 * 1024
 MAX_RESUME_BYTES = 10 * 1024 * 1024
+MAX_CLEANUP_ENTRIES = 2_000
+MAX_CLEANUP_BYTES = 128 * 1024 * 1024
+MAX_CLEANUP_DEPTH = 32
 STARTUP_TIMEOUT_SECONDS = 10
 REQUEST_TIMEOUT_SECONDS = 5
 PROMPT = (
@@ -324,48 +327,126 @@ def _copy_regular_at(
             os.close(descriptor)
 
 
-def _remove_contents_at(directory_descriptor: int, depth: int = 0) -> None:
-    if depth > 32:
-        raise CoordinatorError("run cleanup failed")
+def _same_entry(expected: os.stat_result, observed: os.stat_result) -> bool:
+    return (
+        (expected.st_dev, expected.st_ino, stat.S_IFMT(expected.st_mode))
+        == (observed.st_dev, observed.st_ino, stat.S_IFMT(observed.st_mode))
+    )
+
+
+def _restore_captured_entry(
+    directory_descriptor: int, captured: str, original: str
+) -> None:
     try:
-        names = os.listdir(directory_descriptor)
-        if len(names) > 2_000:
-            raise CoordinatorError("run cleanup failed")
-        for name in names:
-            metadata = os.stat(
-                name, dir_fd=directory_descriptor, follow_symlinks=False
+        os.stat(original, dir_fd=directory_descriptor, follow_symlinks=False)
+    except FileNotFoundError:
+        try:
+            exclusive_rename(
+                directory_descriptor,
+                captured,
+                directory_descriptor,
+                original,
             )
-            if stat.S_ISDIR(metadata.st_mode):
-                if (
-                    metadata.st_uid != os.getuid()
-                    or stat.S_IMODE(metadata.st_mode) != 0o700
-                ):
-                    raise CoordinatorError("run cleanup failed")
-                child = os.open(
-                    name,
-                    os.O_RDONLY
-                    | os.O_DIRECTORY
-                    | getattr(os, "O_NOFOLLOW", 0),
-                    dir_fd=directory_descriptor,
-                )
-                try:
-                    _remove_contents_at(child, depth + 1)
-                finally:
-                    os.close(child)
-                os.rmdir(name, dir_fd=directory_descriptor)
-            elif stat.S_ISREG(metadata.st_mode):
-                if (
-                    metadata.st_uid != os.getuid()
-                    or stat.S_IMODE(metadata.st_mode) != 0o600
-                ):
-                    raise CoordinatorError("run cleanup failed")
-                os.unlink(name, dir_fd=directory_descriptor)
-            else:
-                raise CoordinatorError("run cleanup failed")
-    except CoordinatorError:
-        raise
+        except (OSError, BrokerError):
+            pass
     except OSError:
+        pass
+
+
+def _capture_and_remove_at(
+    directory_descriptor: int,
+    name: str,
+    budget: dict[str, int],
+    depth: int,
+    expected_kind: str | None = None,
+) -> None:
+    if depth > MAX_CLEANUP_DEPTH:
         raise CoordinatorError("run cleanup failed") from None
+    captured = f".cleanup-{secrets.token_hex(16)}"
+    try:
+        expected = os.stat(name, dir_fd=directory_descriptor, follow_symlinks=False)
+        parent = os.fstat(directory_descriptor)
+        if (
+            expected.st_uid != os.getuid()
+            or expected.st_dev != parent.st_dev
+            or not (stat.S_ISDIR(expected.st_mode) or stat.S_ISREG(expected.st_mode))
+            or (expected_kind == "dir" and not stat.S_ISDIR(expected.st_mode))
+            or (expected_kind == "file" and not stat.S_ISREG(expected.st_mode))
+        ):
+            raise CoordinatorError("run cleanup failed")
+        expected_mode = 0o700 if stat.S_ISDIR(expected.st_mode) else 0o600
+        if stat.S_IMODE(expected.st_mode) != expected_mode:
+            raise CoordinatorError("run cleanup failed")
+        budget["entries"] += 1
+        if stat.S_ISREG(expected.st_mode):
+            budget["bytes"] += expected.st_size
+        if (
+            budget["entries"] > MAX_CLEANUP_ENTRIES
+            or budget["bytes"] > MAX_CLEANUP_BYTES
+        ):
+            raise CoordinatorError("run cleanup failed")
+        exclusive_rename(
+            directory_descriptor,
+            name,
+            directory_descriptor,
+            captured,
+        )
+        renamed = os.stat(
+            captured, dir_fd=directory_descriptor, follow_symlinks=False
+        )
+        if not _same_entry(expected, renamed):
+            _restore_captured_entry(directory_descriptor, captured, name)
+            raise CoordinatorError("run cleanup failed")
+        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+        if stat.S_ISDIR(expected.st_mode):
+            flags |= os.O_DIRECTORY
+        opened = os.open(captured, flags, dir_fd=directory_descriptor)
+        try:
+            if not _same_entry(expected, os.fstat(opened)):
+                raise CoordinatorError("run cleanup failed")
+            if stat.S_ISDIR(expected.st_mode):
+                _remove_contents_at(opened, budget=budget, depth=depth + 1)
+        finally:
+            os.close(opened)
+        final = os.stat(
+            captured, dir_fd=directory_descriptor, follow_symlinks=False
+        )
+        if not _same_entry(expected, final):
+            _restore_captured_entry(directory_descriptor, captured, name)
+            raise CoordinatorError("run cleanup failed")
+        if stat.S_ISDIR(expected.st_mode):
+            os.rmdir(captured, dir_fd=directory_descriptor)
+        else:
+            os.unlink(captured, dir_fd=directory_descriptor)
+    except CoordinatorError:
+        _restore_captured_entry(directory_descriptor, captured, name)
+        raise
+    except (OSError, BrokerError):
+        _restore_captured_entry(directory_descriptor, captured, name)
+        raise CoordinatorError("run cleanup failed") from None
+
+
+def _remove_contents_at(
+    directory_descriptor: int,
+    depth: int = 0,
+    *,
+    budget: dict[str, int] | None = None,
+) -> None:
+    if budget is None:
+        budget = {"entries": 0, "bytes": 0}
+    if depth > MAX_CLEANUP_DEPTH:
+        raise CoordinatorError("run cleanup failed")
+    while True:
+        try:
+            names = os.listdir(directory_descriptor)
+        except OSError:
+            raise CoordinatorError("run cleanup failed") from None
+        if len(names) > MAX_CLEANUP_ENTRIES - budget["entries"]:
+            raise CoordinatorError("run cleanup failed")
+        if not names:
+            return
+        for name in names:
+            _capture_and_remove_at(directory_descriptor, name, budget, depth)
 
 
 def _read_regular(path: Path, limit: int, diagnostic: str) -> bytes:
@@ -991,45 +1072,28 @@ def _prune_run_artifacts(
         "evaluate.lock",
         "tombstone.json",
     }
+    budget = {"entries": 0, "bytes": 0}
     try:
-        names = os.listdir(run_descriptor)
-        if len(names) > 2_000:
-            raise CoordinatorError("run cleanup failed")
-        for name in names:
-            if name in retained:
-                continue
-            metadata = os.stat(
-                name, dir_fd=run_descriptor, follow_symlinks=False
-            )
-            if name == "store" and stat.S_ISDIR(metadata.st_mode):
-                store_descriptor = os.open(
-                    name,
-                    os.O_RDONLY
-                    | os.O_DIRECTORY
-                    | getattr(os, "O_NOFOLLOW", 0),
-                    dir_fd=run_descriptor,
-                )
-                try:
-                    store_metadata = os.fstat(store_descriptor)
-                    if (
-                        store_metadata.st_uid != os.getuid()
-                        or stat.S_IMODE(store_metadata.st_mode) != 0o700
-                    ):
-                        raise CoordinatorError("run cleanup failed")
-                    _remove_contents_at(store_descriptor)
-                finally:
-                    os.close(store_descriptor)
-                os.rmdir(name, dir_fd=run_descriptor)
-            elif (
-                name in allowed_files
-                and stat.S_ISREG(metadata.st_mode)
-                and metadata.st_uid == os.getuid()
-                and stat.S_IMODE(metadata.st_mode) == 0o600
+        while True:
+            names = os.listdir(run_descriptor)
+            if len(names) > (
+                MAX_CLEANUP_ENTRIES - budget["entries"] + len(retained)
             ):
-                os.unlink(name, dir_fd=run_descriptor)
-            else:
                 raise CoordinatorError("run cleanup failed")
-        os.fsync(run_descriptor)
+            pending = [name for name in names if name not in retained]
+            if not pending:
+                os.fsync(run_descriptor)
+                return
+            for name in pending:
+                if name != "store" and name not in allowed_files:
+                    raise CoordinatorError("run cleanup failed")
+                _capture_and_remove_at(
+                    run_descriptor,
+                    name,
+                    budget,
+                    0,
+                    expected_kind="dir" if name == "store" else "file",
+                )
     except CoordinatorError:
         raise
     except OSError:
