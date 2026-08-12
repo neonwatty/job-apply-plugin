@@ -21,12 +21,26 @@ python3 "$REPO_ROOT/scripts/job-apply-store.py" --help >/dev/null
 
 python3 - "$REPO_ROOT" <<'PY'
 import json
+import hashlib
 import re
+import stat
 import subprocess
 import sys
 from pathlib import Path
 
 root = Path(sys.argv[1])
+sys.path.insert(0, str(root))
+
+from qa.contracts import ContractError, validate_fixture
+from qa.privacy import PrivacyError, scan_tree
+from qa.promote import (
+    APPROVAL_KEYS,
+    PROVENANCE_KEYS,
+    PromotionError,
+    _timestamp,
+    _validate_approval,
+)
+
 expected = {"answer-memory", "job-apply", "job-search", "job-preferences"}
 
 
@@ -44,32 +58,57 @@ def git(*arguments: str, check: bool = True) -> subprocess.CompletedProcess[byte
         raise SystemExit("unable to inspect repository fixture policy") from error
 
 
-for ignored_path in (".qa-private/smoke-probe", "qa/runs/smoke-probe"):
+private_ignore_probes = (
+    ".qa-private/smoke-probe",
+    ".qa-private/nested/private fixture.json",
+    ".qa-private/nested/!approval.json",
+    "qa/runs/smoke-probe",
+    "qa/runs/nested/[private] report.json",
+    "qa/runs/nested/provenance.json",
+)
+for ignored_path in private_ignore_probes:
     ignored = git("check-ignore", "--no-index", "-q", "--", ignored_path, check=False)
     if ignored.returncode != 0:
-        raise SystemExit(f"{ignored_path.rsplit('/', 1)[0]}/ must be ignored")
+        raise SystemExit("private QA paths must remain ignored without exceptions")
 
-fixture_ignore = git(
-    "check-ignore", "--no-index", "-q", "--", "qa/fixtures/smoke-probe", check=False
-)
-if fixture_ignore.returncode not in (0, 1):
-    raise SystemExit("unable to inspect repository fixture policy")
-if fixture_ignore.returncode == 0:
-    raise SystemExit("qa/fixtures/ must not be ignored")
+fixture_ignore_probes = tuple(
+    f"qa/fixtures/smoke-fixture-v1/{name}"
+    for name in ("fixture.json", "approval.json", "provenance.json")
+) + ("qa/fixtures/nested-smoke-v1/subdirectory/odd [name].json",)
+for fixture_path in fixture_ignore_probes:
+    fixture_ignore = git(
+        "check-ignore", "--no-index", "-q", "--", fixture_path, check=False
+    )
+    if fixture_ignore.returncode not in (0, 1):
+        raise SystemExit("unable to inspect repository fixture policy")
+    if fixture_ignore.returncode == 0:
+        raise SystemExit("qa/fixtures/ and its durable files must not be ignored")
 
-tracked_output = git("ls-files", "-z", "--", ".qa-private/**", "qa/runs/**", "qa/fixtures/**").stdout
+tracked_output = git(
+    "ls-files", "-s", "-z", "--", ".qa-private/**", "qa/runs/**", "qa/fixtures/**"
+).stdout
 if len(tracked_output) > 1024 * 1024:
     raise SystemExit("tracked QA fixture inventory is unexpectedly large")
 try:
-    tracked_paths = [entry.decode("utf-8") for entry in tracked_output.split(b"\0") if entry]
-except UnicodeDecodeError as error:
+    tracked_entries = []
+    for entry in tracked_output.split(b"\0"):
+        if not entry:
+            continue
+        header, separator, raw_path = entry.partition(b"\t")
+        mode, object_id, stage = header.split(b" ")
+        if not separator or stage != b"0" or not object_id:
+            raise ValueError
+        tracked_entries.append((mode.decode("ascii"), raw_path.decode("utf-8")))
+except (UnicodeDecodeError, ValueError) as error:
     raise SystemExit("tracked QA fixture path is not UTF-8") from error
-if len(tracked_paths) > 2_000 or any(len(path) > 512 for path in tracked_paths):
+if len(tracked_entries) > 2_000 or any(
+    len(path) > 512 for _mode, path in tracked_entries
+):
     raise SystemExit("tracked QA fixture inventory exceeds safety limits")
 
 private_tracked = [
     path
-    for path in tracked_paths
+    for _mode, path in tracked_entries
     if path.startswith(".qa-private/") or path.startswith("qa/runs/")
 ]
 if private_tracked:
@@ -80,8 +119,12 @@ if private_tracked:
 allowed_fixture_files = {"approval.json", "fixture.json", "provenance.json"}
 fixture_id_pattern = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*-v[1-9][0-9]*$")
 fixture_inventory: dict[str, set[str]] = {}
-for path in tracked_paths:
-    if not path.startswith("qa/fixtures/") or path == "qa/fixtures/.gitkeep":
+for mode, path in tracked_entries:
+    if not path.startswith("qa/fixtures/"):
+        continue
+    if mode != "100644":
+        raise SystemExit("tracked fixture artifacts must be regular non-executable blobs")
+    if path == "qa/fixtures/.gitkeep":
         continue
     parts = path.split("/")
     if len(parts) != 4 or parts[3] not in allowed_fixture_files:
@@ -95,6 +138,57 @@ for fixture_id, files in fixture_inventory.items():
     if files != allowed_fixture_files:
         missing = sorted(allowed_fixture_files - files)
         raise SystemExit(f"fixture {fixture_id} is incomplete; missing {missing}")
+    fixture_root = root / "qa" / "fixtures" / fixture_id
+    try:
+        for name in allowed_fixture_files:
+            metadata = (fixture_root / name).lstat()
+            if not stat.S_ISREG(metadata.st_mode) or metadata.st_size > 1024 * 1024:
+                raise ValueError
+        documents = {
+            name: json.loads((fixture_root / name).read_text(encoding="utf-8"))
+            for name in allowed_fixture_files
+        }
+        fixture_bytes = (fixture_root / "fixture.json").read_bytes()
+        digest = hashlib.sha256(fixture_bytes).hexdigest()
+        fixture = documents["fixture.json"]
+        approval = documents["approval.json"]
+        provenance = documents["provenance.json"]
+        validate_fixture(fixture)
+        _validate_approval(approval, digest)
+        if (
+            not isinstance(approval, dict)
+            or set(approval) != APPROVAL_KEYS
+            or not isinstance(provenance, dict)
+            or set(provenance) != PROVENANCE_KEYS
+            or fixture.get("id") != fixture_id
+            or provenance.get("fixtureId") != fixture_id
+            or provenance.get("fixtureSha256") != digest
+            or provenance.get("schemaVersion") != approval.get("schemaVersion")
+            or provenance.get("platformFamily") != fixture.get("platformFamily")
+            or provenance.get("captureMonth") != fixture.get("captureMonth")
+            or provenance.get("recorderVersion")
+            != fixture.get("provenance", {}).get("recorderVersion")
+            or provenance.get("sourceRecordingSha256")
+            != fixture.get("provenance", {}).get("sourceRecordingSha256")
+            or provenance.get("compilerVersion") != approval.get("compilerVersion")
+            or provenance.get("scannerVersion") != approval.get("scannerVersion")
+            or provenance.get("approvedBy") != approval.get("reviewer")
+            or provenance.get("approvedAt") != approval.get("approvedAt")
+        ):
+            raise ValueError
+        _timestamp(provenance.get("promotedAt"))
+        scan_tree(fixture_root, [])
+    except (
+        ContractError,
+        OSError,
+        PrivacyError,
+        PromotionError,
+        RecursionError,
+        UnicodeError,
+        ValueError,
+        json.JSONDecodeError,
+    ) as error:
+        raise SystemExit(f"fixture {fixture_id} failed durable validation") from error
 
 for relative in (".claude-plugin/plugin.json", ".claude-plugin/marketplace.json"):
     data = json.loads((root / relative).read_text())
@@ -174,8 +268,41 @@ print("Static smoke assertions passed")
 PY
 
 echo "Creating isolated working-tree marketplace fixture"
-tar --exclude='./.git' --exclude='./docs/goals' --exclude='./test_resumes' -cf - -C "$REPO_ROOT" . \
+tar --exclude='./.git' \
+  --exclude='./.qa-private' \
+  --exclude='./qa/runs' \
+  --exclude='./node_modules' \
+  --exclude='./.worktrees' \
+  --exclude='./docs/goals' \
+  --exclude='./test_resumes' \
+  -cf - -C "$REPO_ROOT" . \
   | tar -xf - -C "$SMOKE_FIXTURE_DIR"
+
+python3 - "$SMOKE_FIXTURE_DIR" <<'PY'
+import os
+import sys
+from pathlib import Path
+
+fixture = Path(sys.argv[1])
+excluded = (
+    ".git",
+    ".qa-private",
+    "qa/runs",
+    "node_modules",
+    ".worktrees",
+    "docs/goals",
+    "test_resumes",
+)
+for relative in excluded:
+    try:
+        os.lstat(fixture / relative)
+    except FileNotFoundError:
+        continue
+    except OSError as error:
+        raise SystemExit("unable to verify packaged fixture exclusions") from error
+    raise SystemExit("packaged fixture contains an excluded private or generated path")
+print("Packaged fixture exclusions passed")
+PY
 
 python3 - "$SMOKE_FIXTURE_DIR/.claude-plugin/marketplace.json" <<'PY'
 import json
