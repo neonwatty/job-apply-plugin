@@ -42,6 +42,9 @@ TOKEN = re.compile(r"^[a-f0-9]{64}$")
 ROUTE = re.compile(
     r"^(qa-run-20[0-9]{6}-[a-f0-9]{8})\.([a-f0-9]{64})$"
 )
+MARKER_TEMP = re.compile(
+    r"^\.marker-(?:abandoned|tombstone)-[a-f0-9]{32}\.tmp$"
+)
 MAX_JSON_BYTES = 1024 * 1024
 MAX_RESUME_BYTES = 10 * 1024 * 1024
 MAX_CLEANUP_ENTRIES = 2_000
@@ -296,14 +299,18 @@ def _atomic_json_at(
             pass
 
 
-def _exclusive_json_at(
+def _publish_marker_at(
     directory_descriptor: int, name: str, value: dict[str, Any]
 ) -> None:
+    if name not in {"abandoned.json", "tombstone.json"}:
+        raise CoordinatorError("run artifact write failed")
     encoded = (json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    stem = name.removesuffix(".json")
+    temporary = f".marker-{stem}-{secrets.token_hex(16)}.tmp"
     descriptor = None
     try:
         descriptor = os.open(
-            name,
+            temporary,
             os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0),
             0o600,
             dir_fd=directory_descriptor,
@@ -316,12 +323,64 @@ def _exclusive_json_at(
                 raise OSError
             written += count
         os.fsync(descriptor)
+        os.close(descriptor)
+        descriptor = None
+        exclusive_rename(
+            directory_descriptor,
+            temporary,
+            directory_descriptor,
+            name,
+        )
         os.fsync(directory_descriptor)
-    except OSError:
+    except (OSError, BrokerError):
         raise CoordinatorError("run artifact write failed") from None
     finally:
         if descriptor is not None:
             os.close(descriptor)
+
+
+def _ensure_marker_at(
+    directory_descriptor: int, name: str, value: dict[str, Any]
+) -> None:
+    try:
+        current = _read_json_at(directory_descriptor, name, "invalid run state")
+    except CoordinatorError:
+        current = None
+    if current == value:
+        return
+    if _entry_exists_at(directory_descriptor, name):
+        captured = f".marker-{name.removesuffix('.json')}-{secrets.token_hex(16)}.tmp"
+        try:
+            expected = os.stat(
+                name, dir_fd=directory_descriptor, follow_symlinks=False
+            )
+            parent = os.fstat(directory_descriptor)
+            if (
+                not stat.S_ISREG(expected.st_mode)
+                or expected.st_uid != os.getuid()
+                or expected.st_dev != parent.st_dev
+                or stat.S_IMODE(expected.st_mode) != 0o600
+                or expected.st_size > MAX_JSON_BYTES
+            ):
+                raise CoordinatorError("invalid run state")
+            exclusive_rename(
+                directory_descriptor,
+                name,
+                directory_descriptor,
+                captured,
+            )
+            observed = os.stat(
+                captured, dir_fd=directory_descriptor, follow_symlinks=False
+            )
+            if not _same_entry(expected, observed):
+                _restore_captured_entry(directory_descriptor, captured, name)
+                raise CoordinatorError("invalid run state")
+            os.fsync(directory_descriptor)
+        except CoordinatorError:
+            raise
+        except (OSError, BrokerError):
+            raise CoordinatorError("invalid run state") from None
+    _publish_marker_at(directory_descriptor, name, value)
 
 
 def _copy_regular_at(
@@ -1264,8 +1323,21 @@ def _sanitize_run_artifacts(
         {"entries": 0, "bytes": 0},
         0,
     )
-    if any(path[0] != "store" and path[0] not in allowed_files for path in manifest):
+    if any(
+        path[0] != "store"
+        and path[0] not in allowed_files
+        and MARKER_TEMP.fullmatch(path[0]) is None
+        for path in manifest
+    ):
         raise CoordinatorError("run cleanup failed")
+    for path, metadata in manifest.items():
+        if len(path) != 1:
+            continue
+        if path[0] == "store":
+            if not stat.S_ISDIR(metadata.st_mode):
+                raise CoordinatorError("run cleanup failed")
+        elif not stat.S_ISREG(metadata.st_mode):
+            raise CoordinatorError("run cleanup failed")
     retained_paths = {(name,) for name in retained}
     _sanitize_cleanup_tree(
         run_descriptor, (), manifest, children, retained_paths
@@ -1301,23 +1373,25 @@ def _cleanup(run_id: str) -> dict[str, Any]:
             raise CoordinatorError("evaluation already in progress") from None
 
         if _entry_exists_at(run_descriptor, "tombstone.json"):
-            tombstone = _read_json_at(
-                run_descriptor, "tombstone.json", "invalid cleanup state"
-            )
+            try:
+                tombstone = _read_json_at(
+                    run_descriptor, "tombstone.json", "invalid cleanup state"
+                )
+            except CoordinatorError:
+                tombstone = None
             if (
-                not isinstance(tombstone, dict)
-                or set(tombstone) != {"runId", "state", "reportRetained"}
-                or tombstone.get("runId") != run_id
-                or tombstone.get("state") not in {"abandoned", "completed"}
-                or not isinstance(tombstone.get("reportRetained"), bool)
-                or tombstone["reportRetained"]
-                != (tombstone["state"] == "completed")
+                isinstance(tombstone, dict)
+                and set(tombstone) == {"runId", "state", "reportRetained"}
+                and tombstone.get("runId") == run_id
+                and tombstone.get("state") in {"abandoned", "completed"}
+                and isinstance(tombstone.get("reportRetained"), bool)
+                and tombstone["reportRetained"]
+                == (tombstone["state"] == "completed")
             ):
-                raise CoordinatorError("invalid cleanup state")
-            _sanitize_run_artifacts(
-                run_descriptor, retain_report=tombstone["reportRetained"]
-            )
-            return tombstone
+                _sanitize_run_artifacts(
+                    run_descriptor, retain_report=tombstone["reportRetained"]
+                )
+                return tombstone
 
         state = _load_state_at(canonical_run_root, run_descriptor)
         lifecycle = _read_json_at(
@@ -1330,8 +1404,23 @@ def _cleanup(run_id: str) -> dict[str, Any]:
         if lifecycle != expected_prepared:
             raise CoordinatorError("invalid run state")
         completed = _entry_exists_at(run_descriptor, "completed.json")
-        abandoned = _entry_exists_at(run_descriptor, "abandoned.json")
-        if completed and abandoned:
+        expected_abandoned = {
+            "state": "abandoned",
+            "nonce": state["lifecycleNonce"],
+        }
+        abandoned_exists = _entry_exists_at(run_descriptor, "abandoned.json")
+        abandoned_valid = False
+        if abandoned_exists:
+            try:
+                abandoned_valid = (
+                    _read_json_at(
+                        run_descriptor, "abandoned.json", "invalid run state"
+                    )
+                    == expected_abandoned
+                )
+            except CoordinatorError:
+                abandoned_valid = False
+        if completed and abandoned_exists:
             raise CoordinatorError("invalid run state")
         if completed:
             if _read_json_at(
@@ -1353,7 +1442,7 @@ def _cleanup(run_id: str) -> dict[str, Any]:
             _validate_report(report, state, fixture)
             cleanup_state = "completed"
             retain_report = True
-        elif not abandoned:
+        elif not abandoned_valid:
             try:
                 _verify_identity(state)
             except CoordinatorError as error:
@@ -1363,18 +1452,14 @@ def _cleanup(run_id: str) -> dict[str, Any]:
                 _shutdown_server(
                     state["url"], state["shutdownToken"], required=True
                 )
-            _exclusive_json_at(
+            _ensure_marker_at(
                 run_descriptor,
                 "abandoned.json",
-                {"state": "abandoned", "nonce": state["lifecycleNonce"]},
+                expected_abandoned,
             )
             cleanup_state = "abandoned"
             retain_report = False
-        elif abandoned:
-            if _read_json_at(
-                run_descriptor, "abandoned.json", "invalid run state"
-            ) != {"state": "abandoned", "nonce": state["lifecycleNonce"]}:
-                raise CoordinatorError("invalid run state")
+        elif abandoned_valid:
             cleanup_state = "abandoned"
             retain_report = False
         else:
@@ -1385,7 +1470,7 @@ def _cleanup(run_id: str) -> dict[str, Any]:
             "state": cleanup_state,
             "reportRetained": retain_report,
         }
-        _exclusive_json_at(run_descriptor, "tombstone.json", tombstone)
+        _ensure_marker_at(run_descriptor, "tombstone.json", tombstone)
         _sanitize_run_artifacts(run_descriptor, retain_report=retain_report)
         return tombstone
     finally:

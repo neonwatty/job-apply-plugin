@@ -721,6 +721,102 @@ class ReplayCoordinatorTests(unittest.TestCase):
         )
         self.server_cleanup = None
 
+    def test_cleanup_retries_after_interrupted_abandoned_marker_temp(self) -> None:
+        _output, run_root, _state = self.prepare()
+        original_open = self.cli.os.open
+        original_write = self.cli.os.write
+        marker_descriptor = None
+        interrupted = False
+
+        def remember_marker(path, flags, *args, **kwargs):
+            nonlocal marker_descriptor
+            descriptor = original_open(path, flags, *args, **kwargs)
+            if isinstance(path, str) and path.startswith(".marker-abandoned-"):
+                marker_descriptor = descriptor
+            return descriptor
+
+        def short_write(descriptor, data):
+            nonlocal interrupted
+            if descriptor == marker_descriptor and not interrupted:
+                interrupted = True
+                original_write(descriptor, data[:3])
+                raise OSError("disk full")
+            return original_write(descriptor, data)
+
+        with mock.patch.object(
+            self.cli.os, "open", side_effect=remember_marker
+        ), mock.patch.object(self.cli.os, "write", side_effect=short_write):
+            first = self.invoke(["cleanup", "--run-id", run_root.name])
+
+        self.assertEqual(first, (2, None, "run artifact write failed\n"))
+        temps = list(run_root.glob(".marker-abandoned-*.tmp"))
+        self.assertEqual(len(temps), 1)
+        self.assertGreater(temps[0].stat().st_size, 0)
+        with mock.patch.object(
+            self.cli.os, "unlink", side_effect=AssertionError("unlink called")
+        ), mock.patch.object(
+            self.cli.os, "rmdir", side_effect=AssertionError("rmdir called")
+        ):
+            code, result, stderr = self.invoke(["cleanup", "--run-id", run_root.name])
+        self.assertEqual((code, result["state"], stderr), (0, "abandoned", ""))
+        self.assertEqual(temps[0].stat().st_size, 0)
+        self.server_cleanup = None
+
+    def test_cleanup_retries_after_interrupted_tombstone_marker_temp(self) -> None:
+        _output, run_root, _state = self.prepare()
+        original_open = self.cli.os.open
+        original_write = self.cli.os.write
+        marker_descriptor = None
+        interrupted = False
+
+        def remember_marker(path, flags, *args, **kwargs):
+            nonlocal marker_descriptor
+            descriptor = original_open(path, flags, *args, **kwargs)
+            if isinstance(path, str) and path.startswith(".marker-tombstone-"):
+                marker_descriptor = descriptor
+            return descriptor
+
+        def fail_tombstone(descriptor, data):
+            nonlocal interrupted
+            if descriptor == marker_descriptor and not interrupted:
+                interrupted = True
+                original_write(descriptor, data[:5])
+                raise OSError("disk full")
+            return original_write(descriptor, data)
+
+        with mock.patch.object(
+            self.cli.os, "open", side_effect=remember_marker
+        ), mock.patch.object(self.cli.os, "write", side_effect=fail_tombstone):
+            first = self.invoke(["cleanup", "--run-id", run_root.name])
+
+        self.assertEqual(first, (2, None, "run artifact write failed\n"))
+        temps = list(run_root.glob(".marker-tombstone-*.tmp"))
+        self.assertEqual(len(temps), 1)
+        code, result, stderr = self.invoke(["cleanup", "--run-id", run_root.name])
+        self.assertEqual((code, result["state"], stderr), (0, "abandoned", ""))
+        self.assertEqual(temps[0].stat().st_size, 0)
+        self.server_cleanup = None
+
+    def test_cleanup_reconstructs_partial_final_markers_from_anchored_state(self) -> None:
+        for marker_name in ("abandoned.json", "tombstone.json"):
+            with self.subTest(marker_name=marker_name):
+                _output, run_root, _state = self.prepare()
+                marker = run_root / marker_name
+                marker.write_bytes(b'{"state":')
+                os.chmod(marker, 0o600)
+
+                code, result, stderr = self.invoke(
+                    ["cleanup", "--run-id", run_root.name]
+                )
+
+                self.assertEqual((code, result["state"], stderr), (0, "abandoned", ""))
+                self.assertEqual(
+                    json.loads((run_root / "tombstone.json").read_text()), result
+                )
+                for path in run_root.glob(".marker-*.tmp"):
+                    self.assertEqual(path.stat().st_size, 0)
+                self.server_cleanup = None
+
     def test_expected_resume_contract_is_closed_and_required(self) -> None:
         expected_path = self.scenarios / SCENARIO_ID / "expected.json"
         expected = json.loads(expected_path.read_text())
