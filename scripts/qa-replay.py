@@ -62,6 +62,38 @@ RUN_STATE_KEYS = {
 }
 EXPECTED_KEYS = {"controlIds", "resumeFilename"}
 MAX_RUN_ENTRIES = 256
+REPORT_KEYS = {
+    "fixtureId",
+    "scenarioId",
+    "status",
+    "assertions",
+    "missingControlIds",
+    "failureCategories",
+}
+ASSERTION_NAMES = {
+    "required-fields-filled",
+    "resume-uploaded",
+    "resume-filename-matched",
+    "review-reached",
+    "history-started-reviewed",
+    "history-not-completed",
+    "session-present",
+    "session-value-free",
+    "final-action-untouched",
+}
+FAILURE_CATEGORIES = {
+    "required-fields-missing",
+    "required-upload-missing",
+    "resume-filename-mismatch",
+    "review-not-reached",
+    "history-missing",
+    "history-lifecycle-incomplete",
+    "history-completed",
+    "session-not-correlated",
+    "session-missing",
+    "session-value-present",
+    "final-action-activated",
+}
 
 
 class CoordinatorError(ValueError):
@@ -119,7 +151,12 @@ def _read_regular_at(
             dir_fd=directory_descriptor,
         )
         metadata = os.fstat(descriptor)
-        if not stat.S_ISREG(metadata.st_mode) or metadata.st_size > limit:
+        if (
+            not stat.S_ISREG(metadata.st_mode)
+            or metadata.st_uid != os.getuid()
+            or stat.S_IMODE(metadata.st_mode) != 0o600
+            or metadata.st_size > limit
+        ):
             raise CoordinatorError(diagnostic)
         chunks: list[bytes] = []
         remaining = limit + 1
@@ -161,6 +198,36 @@ def _entry_exists_at(directory_descriptor: int, name: str) -> bool:
         return False
     except OSError:
         raise CoordinatorError("invalid run state") from None
+
+
+def _validate_report(
+    report: Any, state: dict[str, Any], fixture: dict[str, Any]
+) -> dict[str, Any]:
+    control_ids = {
+        control["id"] for step in fixture["steps"] for control in step["controls"]
+    }
+    if (
+        not isinstance(report, dict)
+        or set(report) != REPORT_KEYS
+        or report.get("fixtureId") != state["fixtureId"]
+        or report.get("scenarioId") != state["scenarioId"]
+        or report.get("status") not in {"passed", "failed"}
+        or not isinstance(report.get("assertions"), dict)
+        or set(report["assertions"]) != ASSERTION_NAMES
+        or any(
+            value not in {"passed", "failed"}
+            for value in report["assertions"].values()
+        )
+        or not isinstance(report.get("missingControlIds"), list)
+        or any(value not in control_ids for value in report["missingControlIds"])
+        or not isinstance(report.get("failureCategories"), list)
+        or any(
+            value not in FAILURE_CATEGORIES
+            for value in report["failureCategories"]
+        )
+    ):
+        raise CoordinatorError("invalid run report")
+    return report
 
 
 def _atomic_json_at(
@@ -754,6 +821,13 @@ def _evaluate(run_id: str) -> tuple[int, dict[str, Any]]:
             fcntl.flock(lock_descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             raise CoordinatorError("evaluation already in progress") from None
+        fixture = _read_json_at(
+            run_descriptor, "fixture.json", "invalid fixture package"
+        )
+        try:
+            validate_fixture(fixture)
+        except (ContractError, TypeError):
+            raise CoordinatorError("invalid fixture package") from None
         try:
             completed = _read_json_at(
                 run_descriptor, "report.json", "invalid run report"
@@ -766,11 +840,15 @@ def _evaluate(run_id: str) -> tuple[int, dict[str, Any]]:
             else:
                 raise
         if completed is not None:
-            if not isinstance(completed, dict) or completed.get("status") not in {
-                "passed",
-                "failed",
+            completed_marker = _read_json_at(
+                run_descriptor, "completed.json", "invalid run report"
+            )
+            if completed_marker != {
+                "state": "completed",
+                "nonce": state["lifecycleNonce"],
             }:
                 raise CoordinatorError("invalid run report")
+            completed = _validate_report(completed, state, fixture)
             return (0 if completed["status"] == "passed" else 1), completed
         lifecycle = _read_json_at(
             run_descriptor, "lifecycle.json", "invalid run state"
@@ -783,9 +861,6 @@ def _evaluate(run_id: str) -> tuple[int, dict[str, Any]]:
         _verify_identity(state)
         authenticated = True
         server_state = _fetch_state(state["url"])
-        fixture = _read_json_at(
-            run_descriptor, "fixture.json", "invalid fixture package"
-        )
         report = evaluate_run(
             fixture,
             {"id": state["scenarioId"]},
@@ -794,6 +869,7 @@ def _evaluate(run_id: str) -> tuple[int, dict[str, Any]]:
         )
         if not isinstance(report, dict):
             raise CoordinatorError("replay evaluation failed")
+        report = _validate_report(report, state, fixture)
         _shutdown_server(state["url"], state["shutdownToken"], required=True)
         authenticated = False
         _atomic_json_at(run_descriptor, "report.json", report)

@@ -380,6 +380,22 @@ class ReplayCoordinatorTests(unittest.TestCase):
         second = self.invoke(["evaluate", "--run-id", run_root.name])
         self.assertEqual(second, (2, None, "run is abandoned\n"))
 
+    def test_tampered_completed_report_never_echoes_injected_values(self) -> None:
+        _output, run_root, state = self.prepare()
+        (run_root / "report.json").write_text(
+            json.dumps({"status": "passed", "secret": "DO NOT ECHO"})
+        )
+        (run_root / "completed.json").write_text(
+            json.dumps(
+                {"state": "completed", "nonce": state["lifecycleNonce"]}
+            )
+        )
+
+        code, report, stderr = self.invoke(["evaluate", "--run-id", run_root.name])
+
+        self.assertEqual((code, report, stderr), (2, None, "invalid run report\n"))
+        self.assertNotIn("DO NOT ECHO", stderr)
+
     def test_expected_resume_contract_is_closed_and_required(self) -> None:
         expected_path = self.scenarios / SCENARIO_ID / "expected.json"
         expected = json.loads(expected_path.read_text())
