@@ -524,7 +524,24 @@ class ReplayCoordinatorTests(unittest.TestCase):
             {"runId": run_root.name, "state": "abandoned", "reportRetained": False},
         )
         self.assertTrue((run_root / "store").is_dir())
-        self.assertEqual(json.loads((run_root / "tombstone.json").read_text()), result)
+        tombstone = json.loads((run_root / "tombstone.json").read_text())
+        self.assertEqual(
+            set(tombstone),
+            {
+                "runId",
+                "state",
+                "reportRetained",
+                "lifecycleNonce",
+                "fixtureId",
+                "scenarioId",
+                "reportSha256",
+                "mac",
+            },
+        )
+        self.assertEqual(
+            {key: tombstone[key] for key in result},
+            result,
+        )
         for path in run_root.rglob("*"):
             if path.is_file() and path.name != "tombstone.json":
                 self.assertEqual(path.stat().st_size, 0, path)
@@ -580,6 +597,31 @@ class ReplayCoordinatorTests(unittest.TestCase):
             self.base_url(output["url"]) + "/__qa/state", timeout=1
         ) as response:
             self.assertEqual(response.status, 200)
+
+    def test_preplanted_tombstone_and_report_cannot_bypass_shutdown(self) -> None:
+        output, run_root, _state = self.prepare()
+        forged_tombstone = {
+            "runId": run_root.name,
+            "state": "completed",
+            "reportRetained": True,
+        }
+        (run_root / "tombstone.json").write_text(json.dumps(forged_tombstone))
+        (run_root / "report.json").write_text(
+            json.dumps({"forged": "valuable report bytes"})
+        )
+        os.chmod(run_root / "tombstone.json", 0o600)
+        os.chmod(run_root / "report.json", 0o600)
+
+        code, result, stderr = self.invoke(["cleanup", "--run-id", run_root.name])
+
+        self.assertEqual((code, result["state"], stderr), (0, "abandoned", ""))
+        self.assertFalse(result["reportRetained"])
+        self.assertEqual((run_root / "report.json").stat().st_size, 0)
+        with self.assertRaises((OSError, urllib.error.URLError)):
+            urllib.request.urlopen(
+                self.base_url(output["url"]) + "/__qa/state", timeout=1
+            )
+        self.server_cleanup = None
 
     def test_cleanup_directory_swap_at_open_preserves_replacement_bytes(self) -> None:
         _output, run_root, _state = self.prepare()
@@ -810,9 +852,8 @@ class ReplayCoordinatorTests(unittest.TestCase):
                 )
 
                 self.assertEqual((code, result["state"], stderr), (0, "abandoned", ""))
-                self.assertEqual(
-                    json.loads((run_root / "tombstone.json").read_text()), result
-                )
+                stored = json.loads((run_root / "tombstone.json").read_text())
+                self.assertEqual({key: stored[key] for key in result}, result)
                 for path in run_root.glob(".marker-*.tmp"):
                     self.assertEqual(path.stat().st_size, 0)
                 self.server_cleanup = None

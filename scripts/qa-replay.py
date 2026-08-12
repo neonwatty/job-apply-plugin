@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 import fcntl
+import hashlib
 import hmac
 import json
 import os
@@ -77,6 +78,16 @@ REPORT_KEYS = {
     "assertions",
     "missingControlIds",
     "failureCategories",
+}
+TOMBSTONE_KEYS = {
+    "runId",
+    "state",
+    "reportRetained",
+    "lifecycleNonce",
+    "fixtureId",
+    "scenarioId",
+    "reportSha256",
+    "mac",
 }
 ASSERTION_NAMES = {
     "required-fields-filled",
@@ -254,6 +265,58 @@ def _validate_report(
     if (report["status"] == "passed") != semantically_passed:
         raise CoordinatorError("invalid run report")
     return report
+
+
+def _report_digest(report: dict[str, Any]) -> str:
+    encoded = json.dumps(report, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _signed_tombstone(
+    run_id: str,
+    state: dict[str, Any],
+    cleanup_state: str,
+    retain_report: bool,
+    report: dict[str, Any] | None,
+) -> dict[str, Any]:
+    fields = {
+        "runId": run_id,
+        "state": cleanup_state,
+        "reportRetained": retain_report,
+        "lifecycleNonce": state["lifecycleNonce"],
+        "fixtureId": state["fixtureId"],
+        "scenarioId": state["scenarioId"],
+        "reportSha256": _report_digest(report) if report is not None else None,
+    }
+    key = bytes.fromhex(state["routeToken"]) + bytes.fromhex(state["shutdownToken"])
+    message = json.dumps(fields, sort_keys=True, separators=(",", ":")).encode()
+    return {
+        **fields,
+        "mac": hmac.new(key, message, hashlib.sha256).hexdigest(),
+    }
+
+
+def _public_cleanup_result(tombstone: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "runId": tombstone["runId"],
+        "state": tombstone["state"],
+        "reportRetained": tombstone["reportRetained"],
+    }
+
+
+def _signed_tombstone_matches(
+    observed: Any, expected: dict[str, Any]
+) -> bool:
+    return (
+        isinstance(observed, dict)
+        and set(observed) == TOMBSTONE_KEYS
+        and all(
+            observed.get(key) == expected[key]
+            for key in TOMBSTONE_KEYS - {"mac"}
+        )
+        and isinstance(observed.get("mac"), str)
+        and hmac.compare_digest(observed["mac"], expected["mac"])
+    )
 
 
 def _atomic_json_at(
@@ -956,6 +1019,16 @@ def _shutdown_server(url: str, token: str, required: bool = True) -> None:
         raise CoordinatorError("fixture server shutdown failed")
 
 
+def _shutdown_authenticated_run_if_available(state: dict[str, Any]) -> None:
+    try:
+        _verify_identity(state)
+    except CoordinatorError as error:
+        if str(error) != "fixture server unavailable":
+            raise
+    else:
+        _shutdown_server(state["url"], state["shutdownToken"], required=True)
+
+
 def _resolve_route(route_token: str) -> dict[str, str]:
     match = ROUTE.fullmatch(route_token)
     if match is None:
@@ -1351,6 +1424,100 @@ def _sanitize_run_artifacts(
         raise CoordinatorError("run cleanup failed") from None
 
 
+def _validate_self_contained_tombstone(
+    run_descriptor: int, run_id: str, tombstone: Any
+) -> dict[str, Any]:
+    if (
+        not isinstance(tombstone, dict)
+        or set(tombstone) != TOMBSTONE_KEYS
+        or tombstone.get("runId") != run_id
+        or tombstone.get("state") not in {"abandoned", "completed"}
+        or not isinstance(tombstone.get("reportRetained"), bool)
+        or tombstone["reportRetained"] != (tombstone["state"] == "completed")
+        or TOKEN.fullmatch(tombstone.get("lifecycleNonce", "")) is None
+        or IDENTIFIER.fullmatch(tombstone.get("fixtureId", "")) is None
+        or tombstone.get("scenarioId") != "complete-profile"
+        or TOKEN.fullmatch(tombstone.get("mac", "")) is None
+    ):
+        raise CoordinatorError("invalid cleanup state")
+    report = None
+    if tombstone["reportRetained"]:
+        report = _read_json_at(run_descriptor, "report.json", "invalid run report")
+        missing = report.get("missingControlIds") if isinstance(report, dict) else None
+        if (
+            not isinstance(missing, list)
+            or not all(
+                isinstance(value, str)
+                and re.fullmatch(r"[a-z0-9]+(?:[._-][a-z0-9]+)*", value)
+                for value in missing
+            )
+        ):
+            raise CoordinatorError("invalid run report")
+        fixture = {
+            "steps": [
+                {
+                    "controls": [
+                        {"id": value, "required": True} for value in missing
+                    ]
+                }
+            ]
+        }
+        _validate_report(
+            report,
+            {
+                "fixtureId": tombstone["fixtureId"],
+                "scenarioId": tombstone["scenarioId"],
+            },
+            fixture,
+        )
+        if tombstone.get("reportSha256") != _report_digest(report):
+            raise CoordinatorError("invalid run report")
+    elif tombstone.get("reportSha256") is not None:
+        raise CoordinatorError("invalid cleanup state")
+
+    manifest: dict[tuple[str, ...], os.stat_result] = {}
+    children: dict[tuple[str, ...], tuple[str, ...]] = {}
+    _preflight_cleanup_tree(
+        run_descriptor,
+        (),
+        manifest,
+        children,
+        {"entries": 0, "bytes": 0},
+        0,
+    )
+    allowed_top = {
+        "fixture.json",
+        "profile.json",
+        "synthetic-resume.pdf",
+        "expected.json",
+        "run.json",
+        "lifecycle.json",
+        "completed.json",
+        "abandoned.json",
+        "report.json",
+        "evaluate.lock",
+        "tombstone.json",
+    }
+    retained = {("tombstone.json",)}
+    if tombstone["reportRetained"]:
+        retained.add(("report.json",))
+    for path, metadata in manifest.items():
+        if (
+            path[0] != "store"
+            and path[0] not in allowed_top
+            and MARKER_TEMP.fullmatch(path[0]) is None
+        ):
+            raise CoordinatorError("invalid cleanup state")
+        if len(path) == 1:
+            if path[0] == "store" and not stat.S_ISDIR(metadata.st_mode):
+                raise CoordinatorError("invalid cleanup state")
+            if path[0] != "store" and not stat.S_ISREG(metadata.st_mode):
+                raise CoordinatorError("invalid cleanup state")
+        if stat.S_ISREG(metadata.st_mode) and path not in retained and metadata.st_size:
+            raise CoordinatorError("invalid cleanup state")
+    return tombstone
+
+
 def _cleanup(run_id: str) -> dict[str, Any]:
     (
         _run_root,
@@ -1372,26 +1539,35 @@ def _cleanup(run_id: str) -> dict[str, Any]:
         except BlockingIOError:
             raise CoordinatorError("evaluation already in progress") from None
 
-        if _entry_exists_at(run_descriptor, "tombstone.json"):
+        try:
+            run_metadata = os.stat(
+                "run.json", dir_fd=run_descriptor, follow_symlinks=False
+            )
+            if not stat.S_ISREG(run_metadata.st_mode):
+                raise CoordinatorError("invalid run state")
+            meaningful_run_state = run_metadata.st_size > 0
+        except FileNotFoundError:
+            meaningful_run_state = False
+        except OSError:
+            raise CoordinatorError("invalid run state") from None
+
+        if (
+            _entry_exists_at(run_descriptor, "tombstone.json")
+            and not meaningful_run_state
+        ):
             try:
                 tombstone = _read_json_at(
                     run_descriptor, "tombstone.json", "invalid cleanup state"
                 )
             except CoordinatorError:
                 tombstone = None
-            if (
-                isinstance(tombstone, dict)
-                and set(tombstone) == {"runId", "state", "reportRetained"}
-                and tombstone.get("runId") == run_id
-                and tombstone.get("state") in {"abandoned", "completed"}
-                and isinstance(tombstone.get("reportRetained"), bool)
-                and tombstone["reportRetained"]
-                == (tombstone["state"] == "completed")
-            ):
-                _sanitize_run_artifacts(
-                    run_descriptor, retain_report=tombstone["reportRetained"]
-                )
-                return tombstone
+            tombstone = _validate_self_contained_tombstone(
+                run_descriptor, run_id, tombstone
+            )
+            _sanitize_run_artifacts(
+                run_descriptor, retain_report=tombstone["reportRetained"]
+            )
+            return _public_cleanup_result(tombstone)
 
         state = _load_state_at(canonical_run_root, run_descriptor)
         lifecycle = _read_json_at(
@@ -1422,7 +1598,9 @@ def _cleanup(run_id: str) -> dict[str, Any]:
                 abandoned_valid = False
         if completed and abandoned_exists:
             raise CoordinatorError("invalid run state")
+        cleanup_report = None
         if completed:
+            _shutdown_authenticated_run_if_available(state)
             if _read_json_at(
                 run_descriptor, "completed.json", "invalid run state"
             ) != {"state": "completed", "nonce": state["lifecycleNonce"]}:
@@ -1440,18 +1618,11 @@ def _cleanup(run_id: str) -> dict[str, Any]:
                 run_descriptor, "report.json", "invalid run report"
             )
             _validate_report(report, state, fixture)
+            cleanup_report = report
             cleanup_state = "completed"
             retain_report = True
         elif not abandoned_valid:
-            try:
-                _verify_identity(state)
-            except CoordinatorError as error:
-                if str(error) != "fixture server unavailable":
-                    raise
-            else:
-                _shutdown_server(
-                    state["url"], state["shutdownToken"], required=True
-                )
+            _shutdown_authenticated_run_if_available(state)
             _ensure_marker_at(
                 run_descriptor,
                 "abandoned.json",
@@ -1460,19 +1631,29 @@ def _cleanup(run_id: str) -> dict[str, Any]:
             cleanup_state = "abandoned"
             retain_report = False
         elif abandoned_valid:
+            _shutdown_authenticated_run_if_available(state)
             cleanup_state = "abandoned"
             retain_report = False
         else:
             raise CoordinatorError("invalid run state")
 
-        tombstone = {
-            "runId": run_id,
-            "state": cleanup_state,
-            "reportRetained": retain_report,
-        }
-        _ensure_marker_at(run_descriptor, "tombstone.json", tombstone)
+        tombstone = _signed_tombstone(
+            run_id,
+            state,
+            cleanup_state,
+            retain_report,
+            cleanup_report,
+        )
+        try:
+            observed_tombstone = _read_json_at(
+                run_descriptor, "tombstone.json", "invalid cleanup state"
+            )
+        except CoordinatorError:
+            observed_tombstone = None
+        if not _signed_tombstone_matches(observed_tombstone, tombstone):
+            _ensure_marker_at(run_descriptor, "tombstone.json", tombstone)
         _sanitize_run_artifacts(run_descriptor, retain_report=retain_report)
-        return tombstone
+        return _public_cleanup_result(tombstone)
     finally:
         if lock_descriptor is not None:
             os.close(lock_descriptor)
