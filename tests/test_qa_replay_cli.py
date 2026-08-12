@@ -7,6 +7,7 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import tempfile
 import stat
 import unittest
@@ -14,6 +15,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import parse_qs, urlsplit
 from unittest import mock
+import zlib
 
 from qa.compiler import compile_capture
 
@@ -29,6 +31,137 @@ PROMPT = (
     "run. Operate the visible form normally and stop at final review exactly "
     "as you would on a live application."
 )
+
+
+def inspect_synthetic_pdf(content: bytes) -> str:
+    if not content.startswith(b"%PDF-") or b"%%EOF" not in content:
+        raise AssertionError("invalid PDF envelope")
+
+    objects = re.findall(
+        rb"(?:^|\n)[0-9]+\s+[0-9]+\s+obj\b(.*?)\bendobj\b",
+        content,
+        re.DOTALL,
+    )
+    page_count = sum(
+        re.search(rb"/Type\s*/Page(?!s\b)", value) is not None
+        for value in objects
+    )
+    if page_count != 1:
+        raise AssertionError("synthetic resume must contain exactly one page")
+
+    forbidden_features = (
+        rb"/Action\b",
+        rb"/URI\b",
+        rb"/JavaScript\b",
+        rb"/JS\b",
+        rb"/Launch\b",
+        rb"/GoToR\b",
+        rb"/SubmitForm\b",
+        rb"/RichMedia\b",
+        rb"/EmbeddedFile\b",
+        rb"/AcroForm\b",
+        rb"/Annots\b",
+        rb"/OpenAction\b",
+        rb"/AA\b",
+    )
+
+    decoded = bytearray()
+    stream_headers = list(
+        re.finditer(rb"<<(.*?)>>\s*stream\r?\n", content, re.DOTALL)
+    )
+    if not stream_headers:
+        raise AssertionError("synthetic resume has no inspectable content stream")
+    for header in stream_headers:
+        dictionary = header.group(1)
+        length_match = re.search(rb"/Length\s+([0-9]+)\b", dictionary)
+        if length_match is None:
+            raise AssertionError("PDF stream has no direct bounded length")
+        length = int(length_match.group(1))
+        stream = content[header.end() : header.end() + length]
+        if len(stream) != length:
+            raise AssertionError("truncated PDF stream")
+        if re.search(rb"/FlateDecode\b", dictionary):
+            try:
+                decoded.extend(b"\n" + zlib.decompress(stream))
+            except zlib.error as error:
+                raise AssertionError("invalid compressed PDF stream") from error
+        else:
+            decoded.extend(b"\n" + stream)
+
+    inspectable = content + decoded
+    if any(re.search(pattern, inspectable) for pattern in forbidden_features):
+        raise AssertionError("synthetic resume contains an active PDF feature")
+
+    strings: list[bytes] = []
+    index = 0
+    while index < len(decoded):
+        if decoded[index] != ord("("):
+            index += 1
+            continue
+        index += 1
+        depth = 1
+        value = bytearray()
+        while index < len(decoded) and depth:
+            current = decoded[index]
+            index += 1
+            if current == ord("\\"):
+                if index >= len(decoded):
+                    raise AssertionError("unterminated PDF string escape")
+                escaped = decoded[index]
+                index += 1
+                if escaped in b"nrtbf":
+                    value.append(dict(zip(b"nrtbf", b"\n\r\t\b\f"))[escaped])
+                elif escaped in b"()\\":
+                    value.append(escaped)
+                elif ord("0") <= escaped <= ord("7"):
+                    digits = bytearray([escaped])
+                    while (
+                        len(digits) < 3
+                        and index < len(decoded)
+                        and ord("0") <= decoded[index] <= ord("7")
+                    ):
+                        digits.append(decoded[index])
+                        index += 1
+                    value.append(int(digits, 8))
+                elif escaped in b"\r\n":
+                    if (
+                        escaped == ord("\r")
+                        and index < len(decoded)
+                        and decoded[index] == ord("\n")
+                    ):
+                        index += 1
+                else:
+                    value.append(escaped)
+            elif current == ord("("):
+                depth += 1
+                value.append(current)
+            elif current == ord(")"):
+                depth -= 1
+                if depth:
+                    value.append(current)
+            else:
+                value.append(current)
+        if depth:
+            raise AssertionError("unterminated PDF string")
+        strings.append(bytes(value))
+
+    extracted = b"\n".join(strings).decode("latin-1")
+    denied_terms = (
+        "linkedin",
+        "http://",
+        "https://",
+        "company",
+        "school",
+        "university",
+        "college",
+        "employment",
+        "work history",
+        "education",
+    )
+    for denied in denied_terms:
+        if denied in extracted.casefold():
+            raise AssertionError("synthetic resume contains denied text")
+    return extracted
 
 
 def load_cli():
@@ -978,24 +1111,110 @@ class CommittedScenarioTests(unittest.TestCase):
         ):
             self.assertNotIn(value.casefold(), serialized_expected)
 
-        resume = (scenario_root / "synthetic-resume.pdf").read_bytes()
-        self.assertTrue(resume.startswith(b"%PDF-1.4"))
-        self.assertIn(b"/Count 1", resume)
-        for denied in (
-            b"linkedin",
-            b"http://",
-            b"https://",
-            b"/uri",
-            b"javascript",
-            b"company",
-            b"school",
-            b"university",
-            b"college",
-            b"employment",
-            b"work history",
-            b"education",
+        extracted = inspect_synthetic_pdf(
+            (scenario_root / "synthetic-resume.pdf").read_bytes()
+        )
+        for expected_text in (
+            "AVERY REPLAY",
+            "Fictional Applicant",
+            "Phoenix, Arizona",
+            "avery.replay@example.com",
+            "602-555-0142",
+            "Communication",
+            "Organization",
+            "Problem solving",
+            "Attention to detail",
         ):
-            self.assertNotIn(denied, resume.lower())
+            self.assertIn(expected_text, extracted)
+
+    def test_pdf_inspector_rejects_denied_text_active_content_and_pages(self) -> None:
+        scenario_pdf = (
+            ROOT / "qa/scenarios/complete-profile/synthetic-resume.pdf"
+        ).read_bytes()
+        forbidden_stream = zlib.compress(b"BT (Source Company) Tj ET")
+        injected = (
+            scenario_pdf.removesuffix(b"%%EOF\n")
+            + b"\n99 0 obj\n<< /Filter /FlateDecode /Length "
+            + str(len(forbidden_stream)).encode("ascii")
+            + b" >>\nstream\n"
+            + forbidden_stream
+            + b"\nendstream\nendobj\n%%EOF\n"
+        )
+        with self.assertRaisesRegex(AssertionError, "denied text"):
+            inspect_synthetic_pdf(injected)
+
+        active_stream = zlib.compress(b"/Type /Action /S /JavaScript")
+        active = (
+            scenario_pdf.removesuffix(b"%%EOF\n")
+            + b"\n99 0 obj\n<< /Filter /FlateDecode /Length "
+            + str(len(active_stream)).encode("ascii")
+            + b" >>\nstream\n"
+            + active_stream
+            + b"\nendstream\nendobj\n%%EOF\n"
+        )
+        with self.assertRaisesRegex(AssertionError, "active PDF feature"):
+            inspect_synthetic_pdf(active)
+
+        extra_page = (
+            scenario_pdf.removesuffix(b"%%EOF\n")
+            + b"\n99 0 obj\n<< /Type /Page >>\nendobj\n%%EOF\n"
+        )
+        with self.assertRaisesRegex(AssertionError, "exactly one page"):
+            inspect_synthetic_pdf(extra_page)
+
+    def test_committed_scenario_prepares_real_store_without_http_leak(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture_dir = root / "fixtures" / FIXTURE_ID
+            fixture_dir.mkdir(parents=True)
+            capture = json.loads((PRIVATE_CAPTURE / "semantic.json").read_text())
+            receipt = json.loads(
+                (PRIVATE_CAPTURE / "capture-receipt.json").read_text()
+            )
+            fixture = compile_capture(capture, receipt, FIXTURE_ID)
+            (fixture_dir / "fixture.json").write_text(json.dumps(fixture))
+
+            cli = load_cli()
+            cli.FIXTURES_ROOT = root / "fixtures"
+            cli.SCENARIOS_ROOT = ROOT / "qa/scenarios"
+            cli.RUNS_ROOT = root / "runs"
+            prepared = cli._prepare(FIXTURE_ID, SCENARIO_ID)
+            run_root = Path(prepared["storeRoot"]).parent
+            state = json.loads((run_root / "run.json").read_text())
+            try:
+                profile = json.loads(
+                    (run_root / "store/profile.json").read_text()
+                )["profile"]
+                committed_profile = json.loads(
+                    (ROOT / "qa/scenarios/complete-profile/profile.json").read_text()
+                )
+                expected_profile = dict(committed_profile)
+                expected_profile["resumePath"] = str(
+                    (run_root / "synthetic-resume.pdf").resolve()
+                )
+                self.assertEqual(profile, expected_profile)
+
+                base_url = ReplayCoordinatorTests.base_url(self, prepared["url"])
+                responses = []
+                for path in ("/", "/__qa/fixture", "/__qa/state"):
+                    with urllib.request.urlopen(base_url + path, timeout=2) as response:
+                        responses.append(response.read().decode("utf-8"))
+                visible_http = "\n".join(responses).casefold()
+                for private_value in (
+                    committed_profile["name"],
+                    committed_profile["email"],
+                    committed_profile["phone"],
+                    committed_profile["location"]["city"],
+                ):
+                    self.assertNotIn(private_value.casefold(), visible_http)
+            finally:
+                request = urllib.request.Request(
+                    ReplayCoordinatorTests.base_url(self, prepared["url"])
+                    + "/__qa/shutdown",
+                    headers={"X-QA-Run-Token": state["shutdownToken"]},
+                    method="POST",
+                )
+                urllib.request.urlopen(request, timeout=2).close()
 
 
 if __name__ == "__main__":
