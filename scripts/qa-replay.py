@@ -296,6 +296,34 @@ def _atomic_json_at(
             pass
 
 
+def _exclusive_json_at(
+    directory_descriptor: int, name: str, value: dict[str, Any]
+) -> None:
+    encoded = (json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    descriptor = None
+    try:
+        descriptor = os.open(
+            name,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+            dir_fd=directory_descriptor,
+        )
+        os.fchmod(descriptor, 0o600)
+        written = 0
+        while written < len(encoded):
+            count = os.write(descriptor, encoded[written:])
+            if count <= 0:
+                raise OSError
+            written += count
+        os.fsync(descriptor)
+        os.fsync(directory_descriptor)
+    except OSError:
+        raise CoordinatorError("run artifact write failed") from None
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
 def _copy_regular_at(
     source: Path,
     directory_descriptor: int,
@@ -1053,7 +1081,161 @@ def _open_run_for_cleanup(run_id: str) -> tuple[Path, Path, int, int]:
         raise
 
 
-def _prune_run_artifacts(
+def _preflight_cleanup_tree(
+    directory_descriptor: int,
+    prefix: tuple[str, ...],
+    manifest: dict[tuple[str, ...], os.stat_result],
+    children: dict[tuple[str, ...], tuple[str, ...]],
+    budget: dict[str, int],
+    depth: int,
+) -> None:
+    if depth > MAX_CLEANUP_DEPTH:
+        raise CoordinatorError("run cleanup failed")
+    try:
+        names = tuple(sorted(os.listdir(directory_descriptor)))
+        if len(names) > MAX_CLEANUP_ENTRIES - budget["entries"]:
+            raise CoordinatorError("run cleanup failed")
+        children[prefix] = names
+        parent = os.fstat(directory_descriptor)
+        for name in names:
+            metadata = os.stat(
+                name, dir_fd=directory_descriptor, follow_symlinks=False
+            )
+            is_directory = stat.S_ISDIR(metadata.st_mode)
+            is_file = stat.S_ISREG(metadata.st_mode)
+            expected_mode = 0o700 if is_directory else 0o600
+            if (
+                metadata.st_uid != os.getuid()
+                or metadata.st_dev != parent.st_dev
+                or not (is_directory or is_file)
+                or stat.S_IMODE(metadata.st_mode) != expected_mode
+            ):
+                raise CoordinatorError("run cleanup failed")
+            budget["entries"] += 1
+            if is_file:
+                budget["bytes"] += metadata.st_size
+            if (
+                budget["entries"] > MAX_CLEANUP_ENTRIES
+                or budget["bytes"] > MAX_CLEANUP_BYTES
+            ):
+                raise CoordinatorError("run cleanup failed")
+            flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+            if is_directory:
+                flags |= os.O_DIRECTORY
+            opened = os.open(name, flags, dir_fd=directory_descriptor)
+            try:
+                if not _same_entry(metadata, os.fstat(opened)):
+                    raise CoordinatorError("run cleanup failed")
+                path = prefix + (name,)
+                manifest[path] = metadata
+                if is_directory:
+                    _preflight_cleanup_tree(
+                        opened, path, manifest, children, budget, depth + 1
+                    )
+            finally:
+                os.close(opened)
+    except CoordinatorError:
+        raise
+    except OSError:
+        raise CoordinatorError("run cleanup failed") from None
+
+
+def _sanitize_cleanup_tree(
+    directory_descriptor: int,
+    prefix: tuple[str, ...],
+    manifest: dict[tuple[str, ...], os.stat_result],
+    children: dict[tuple[str, ...], tuple[str, ...]],
+    retained: set[tuple[str, ...]],
+) -> None:
+    try:
+        expected_names = children[prefix]
+        if tuple(sorted(os.listdir(directory_descriptor))) != expected_names:
+            raise CoordinatorError("run cleanup failed")
+        for name in expected_names:
+            path = prefix + (name,)
+            expected = manifest[path]
+            current = os.stat(
+                name, dir_fd=directory_descriptor, follow_symlinks=False
+            )
+            if not _same_entry(expected, current):
+                raise CoordinatorError("run cleanup failed")
+            is_directory = stat.S_ISDIR(expected.st_mode)
+            flags = os.O_RDONLY if is_directory or path in retained else os.O_WRONLY
+            flags |= getattr(os, "O_NOFOLLOW", 0)
+            if is_directory:
+                flags |= os.O_DIRECTORY
+            opened = os.open(name, flags, dir_fd=directory_descriptor)
+            try:
+                if not _same_entry(expected, os.fstat(opened)):
+                    raise CoordinatorError("run cleanup failed")
+                if is_directory:
+                    _sanitize_cleanup_tree(
+                        opened, path, manifest, children, retained
+                    )
+                elif path not in retained:
+                    os.ftruncate(opened, 0)
+                    os.fsync(opened)
+            finally:
+                os.close(opened)
+        if tuple(sorted(os.listdir(directory_descriptor))) != expected_names:
+            raise CoordinatorError("run cleanup failed")
+        for name in expected_names:
+            if not _same_entry(
+                manifest[prefix + (name,)],
+                os.stat(name, dir_fd=directory_descriptor, follow_symlinks=False),
+            ):
+                raise CoordinatorError("run cleanup failed")
+    except CoordinatorError:
+        raise
+    except OSError:
+        raise CoordinatorError("run cleanup failed") from None
+
+
+def _verify_cleanup_tree(
+    directory_descriptor: int,
+    prefix: tuple[str, ...],
+    manifest: dict[tuple[str, ...], os.stat_result],
+    children: dict[tuple[str, ...], tuple[str, ...]],
+    retained: set[tuple[str, ...]],
+) -> None:
+    try:
+        expected_names = children[prefix]
+        if tuple(sorted(os.listdir(directory_descriptor))) != expected_names:
+            raise CoordinatorError("run cleanup failed")
+        for name in expected_names:
+            path = prefix + (name,)
+            expected = manifest[path]
+            current = os.stat(
+                name, dir_fd=directory_descriptor, follow_symlinks=False
+            )
+            if not _same_entry(expected, current):
+                raise CoordinatorError("run cleanup failed")
+            is_directory = stat.S_ISDIR(expected.st_mode)
+            flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+            if is_directory:
+                flags |= os.O_DIRECTORY
+            opened = os.open(name, flags, dir_fd=directory_descriptor)
+            try:
+                opened_metadata = os.fstat(opened)
+                if not _same_entry(expected, opened_metadata):
+                    raise CoordinatorError("run cleanup failed")
+                if is_directory:
+                    _verify_cleanup_tree(
+                        opened, path, manifest, children, retained
+                    )
+                elif path not in retained and opened_metadata.st_size != 0:
+                    raise CoordinatorError("run cleanup failed")
+            finally:
+                os.close(opened)
+        if tuple(sorted(os.listdir(directory_descriptor))) != expected_names:
+            raise CoordinatorError("run cleanup failed")
+    except CoordinatorError:
+        raise
+    except OSError:
+        raise CoordinatorError("run cleanup failed") from None
+
+
+def _sanitize_run_artifacts(
     run_descriptor: int, *, retain_report: bool
 ) -> None:
     retained = {"tombstone.json"}
@@ -1072,30 +1254,27 @@ def _prune_run_artifacts(
         "evaluate.lock",
         "tombstone.json",
     }
-    budget = {"entries": 0, "bytes": 0}
+    manifest: dict[tuple[str, ...], os.stat_result] = {}
+    children: dict[tuple[str, ...], tuple[str, ...]] = {}
+    _preflight_cleanup_tree(
+        run_descriptor,
+        (),
+        manifest,
+        children,
+        {"entries": 0, "bytes": 0},
+        0,
+    )
+    if any(path[0] != "store" and path[0] not in allowed_files for path in manifest):
+        raise CoordinatorError("run cleanup failed")
+    retained_paths = {(name,) for name in retained}
+    _sanitize_cleanup_tree(
+        run_descriptor, (), manifest, children, retained_paths
+    )
+    _verify_cleanup_tree(
+        run_descriptor, (), manifest, children, retained_paths
+    )
     try:
-        while True:
-            names = os.listdir(run_descriptor)
-            if len(names) > (
-                MAX_CLEANUP_ENTRIES - budget["entries"] + len(retained)
-            ):
-                raise CoordinatorError("run cleanup failed")
-            pending = [name for name in names if name not in retained]
-            if not pending:
-                os.fsync(run_descriptor)
-                return
-            for name in pending:
-                if name != "store" and name not in allowed_files:
-                    raise CoordinatorError("run cleanup failed")
-                _capture_and_remove_at(
-                    run_descriptor,
-                    name,
-                    budget,
-                    0,
-                    expected_kind="dir" if name == "store" else "file",
-                )
-    except CoordinatorError:
-        raise
+        os.fsync(run_descriptor)
     except OSError:
         raise CoordinatorError("run cleanup failed") from None
 
@@ -1135,7 +1314,7 @@ def _cleanup(run_id: str) -> dict[str, Any]:
                 != (tombstone["state"] == "completed")
             ):
                 raise CoordinatorError("invalid cleanup state")
-            _prune_run_artifacts(
+            _sanitize_run_artifacts(
                 run_descriptor, retain_report=tombstone["reportRetained"]
             )
             return tombstone
@@ -1184,7 +1363,7 @@ def _cleanup(run_id: str) -> dict[str, Any]:
                 _shutdown_server(
                     state["url"], state["shutdownToken"], required=True
                 )
-            _atomic_json_at(
+            _exclusive_json_at(
                 run_descriptor,
                 "abandoned.json",
                 {"state": "abandoned", "nonce": state["lifecycleNonce"]},
@@ -1206,8 +1385,8 @@ def _cleanup(run_id: str) -> dict[str, Any]:
             "state": cleanup_state,
             "reportRetained": retain_report,
         }
-        _atomic_json_at(run_descriptor, "tombstone.json", tombstone)
-        _prune_run_artifacts(run_descriptor, retain_report=retain_report)
+        _exclusive_json_at(run_descriptor, "tombstone.json", tombstone)
+        _sanitize_run_artifacts(run_descriptor, retain_report=retain_report)
         return tombstone
     finally:
         if lock_descriptor is not None:

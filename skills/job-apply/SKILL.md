@@ -14,7 +14,7 @@ When this skill is invoked, first follow the bundled `answer-memory` skill (`$jo
 
 If the supplied job URL is an approved local loopback QA URL containing a `#qa-route=<run-id>.<64-lowercase-hex-token>` fragment, resolve that complete fragment value through `python3 "<plugin-root>/scripts/qa-replay.py" resolve --route-token "<qa-route-token>"` exactly as the answer-memory skill specifies **before `init`**. Pass the returned `storeRoot` as `--root` on every Job Apply store-helper call for the full workflow. Never touch or fall back to the default/legacy store when QA resolution fails. Keep the route token private. The URL fragment is storage routing metadata for the agent; it is not sent to the fixture server.
 
-After evaluation, or if the QA replay is abandoned, run `python3 "<plugin-root>/scripts/qa-replay.py" cleanup --run-id "<run-id>"`. This authenticated cleanup never signals an unknown process. It prunes synthetic data, retaining only a redacted report plus tombstone for completed runs, or only a tombstone for abandoned runs.
+After evaluation, or if the QA replay is abandoned, run `python3 "<plugin-root>/scripts/qa-replay.py" cleanup --run-id "<run-id>"`. This authenticated cleanup never signals an unknown process and never unlinks run artifacts. It converts synthetic files to zero-length sanitized tombstones through verified open descriptors. Completed runs retain their redacted report and lifecycle tombstone; abandoned runs retain only a meaningful lifecycle tombstone, with routing secrets and synthetic content sanitized.
 
 **If the returned profile object is empty**, say:
 
