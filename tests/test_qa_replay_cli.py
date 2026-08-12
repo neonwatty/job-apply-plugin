@@ -928,5 +928,75 @@ class ReplayCoordinatorTests(unittest.TestCase):
         self.assertNotIn('["ps",', coordinator)
 
 
+class CommittedScenarioTests(unittest.TestCase):
+    def test_complete_profile_scenario_is_closed_and_synthetic(self) -> None:
+        scenario_root = ROOT / "qa/scenarios/complete-profile"
+        self.assertEqual(
+            {path.name for path in scenario_root.iterdir()},
+            {"profile.json", "synthetic-resume.pdf", "expected.json"},
+        )
+        profile = json.loads((scenario_root / "profile.json").read_text())
+        expected = json.loads((scenario_root / "expected.json").read_text())
+
+        self.assertEqual(profile["name"], "Avery Replay")
+        self.assertEqual(
+            (profile["firstName"], profile["lastName"]),
+            ("Avery", "Replay"),
+        )
+        self.assertRegex(profile["email"], r"^[a-z.]+@example\.com$")
+        self.assertRegex(profile["phone"], r"^[2-9][0-9]{2}-555-01[0-9]{2}$")
+        self.assertEqual(profile["location"]["city"], "Phoenix")
+        self.assertEqual(profile["resumePath"], "synthetic-resume.pdf")
+        for forbidden_key in (
+            "workHistory",
+            "education",
+            "linkedInUrl",
+            "portfolioUrl",
+            "githubUrl",
+        ):
+            self.assertNotIn(forbidden_key, profile)
+
+        self.assertEqual(
+            expected,
+            {
+                "controlIds": [
+                    "contact.first_name",
+                    "contact.last_name",
+                    "contact.email",
+                    "contact.phone",
+                    "resume.file",
+                ],
+                "resumeFilename": "synthetic-resume.pdf",
+            },
+        )
+        serialized_expected = json.dumps(expected).casefold()
+        for value in (
+            profile["name"],
+            profile["email"],
+            profile["phone"],
+            profile["location"]["city"],
+        ):
+            self.assertNotIn(value.casefold(), serialized_expected)
+
+        resume = (scenario_root / "synthetic-resume.pdf").read_bytes()
+        self.assertTrue(resume.startswith(b"%PDF-1.4"))
+        self.assertIn(b"/Count 1", resume)
+        for denied in (
+            b"linkedin",
+            b"http://",
+            b"https://",
+            b"/uri",
+            b"javascript",
+            b"company",
+            b"school",
+            b"university",
+            b"college",
+            b"employment",
+            b"work history",
+            b"education",
+        ):
+            self.assertNotIn(denied, resume.lower())
+
+
 if __name__ == "__main__":
     unittest.main()
