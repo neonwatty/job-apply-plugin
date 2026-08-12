@@ -33,21 +33,90 @@ PROMPT = (
 )
 
 
+def append_to_pdf_content(content: bytes, addition: bytes) -> bytes:
+    header = re.search(rb"<<(.*?)>>\s*stream\r?\n", content, re.DOTALL)
+    if header is None:
+        raise AssertionError("test PDF has no content stream")
+    length_match = re.search(rb"/Length\s+([0-9]+)\b", header.group(1))
+    if length_match is None:
+        raise AssertionError("test PDF has no direct stream length")
+    old_length = int(length_match.group(1))
+    old_stream = content[header.end() : header.end() + old_length]
+    new_stream = zlib.compress(zlib.decompress(old_stream) + b"\n" + addition)
+    dictionary = header.group(0)
+    new_dictionary = re.sub(
+        rb"(/Length\s+)[0-9]+\b",
+        rb"\g<1>" + str(len(new_stream)).encode("ascii"),
+        dictionary,
+        count=1,
+    )
+    return (
+        content[: header.start()]
+        + new_dictionary
+        + new_stream
+        + content[header.end() + old_length :]
+    )
+
+
 def inspect_synthetic_pdf(content: bytes) -> str:
     if not content.startswith(b"%PDF-") or b"%%EOF" not in content:
         raise AssertionError("invalid PDF envelope")
 
-    objects = re.findall(
-        rb"(?:^|\n)[0-9]+\s+[0-9]+\s+obj\b(.*?)\bendobj\b",
-        content,
-        re.DOTALL,
+    object_matches = list(
+        re.finditer(
+            rb"(?:^|\n)([0-9]+)\s+0\s+obj\s*(.*?)\s*endobj\b",
+            content,
+            re.DOTALL,
+        )
     )
-    page_count = sum(
-        re.search(rb"/Type\s*/Page(?!s\b)", value) is not None
-        for value in objects
-    )
-    if page_count != 1:
-        raise AssertionError("synthetic resume must contain exactly one page")
+    objects = {int(match.group(1)): match.group(2) for match in object_matches}
+    if len(objects) != len(object_matches):
+        raise AssertionError("PDF contains duplicate object identifiers")
+
+    catalogs = [
+        identifier
+        for identifier, value in objects.items()
+        if re.search(rb"/Type\s*/Catalog\b", value)
+    ]
+    if len(catalogs) != 1:
+        raise AssertionError("synthetic resume must contain one catalog")
+    pages_match = re.search(rb"/Pages\s+([0-9]+)\s+0\s+R\b", objects[catalogs[0]])
+    if pages_match is None:
+        raise AssertionError("catalog has no direct pages reference")
+    pages_id = int(pages_match.group(1))
+    pages = objects.get(pages_id, b"")
+    if re.search(rb"/Type\s*/Pages\b", pages) is None:
+        raise AssertionError("catalog pages reference is invalid")
+    count_match = re.search(rb"/Count\s+([0-9]+)\b", pages)
+    kids_match = re.search(rb"/Kids\s*\[(.*?)\]", pages, re.DOTALL)
+    if count_match is None or int(count_match.group(1)) != 1 or kids_match is None:
+        raise AssertionError("synthetic resume page tree must declare Count 1")
+    kid_source = kids_match.group(1)
+    kid_refs = [
+        int(value)
+        for value in re.findall(rb"([0-9]+)\s+0\s+R\b", kid_source)
+    ]
+    if re.sub(rb"[0-9]+\s+0\s+R\b", b"", kid_source).strip():
+        raise AssertionError("page tree contains an unsupported kid")
+    if len(kid_refs) != 1 or len(set(kid_refs)) != len(kid_refs):
+        raise AssertionError("page tree must contain one unique page kid")
+    page_ids = {
+        identifier
+        for identifier, value in objects.items()
+        if re.search(rb"/Type\s*/Page(?!s\b)", value)
+    }
+    if page_ids != set(kid_refs):
+        raise AssertionError("page tree contains an orphan or missing page")
+    page = objects[kid_refs[0]]
+    if re.search(
+        rb"/Parent\s+" + str(pages_id).encode("ascii") + rb"\s+0\s+R\b",
+        page,
+    ) is None:
+        raise AssertionError("page parent does not match the pages tree")
+    contents_match = re.search(rb"/Contents\s+([0-9]+)\s+0\s+R\b", page)
+    if contents_match is None:
+        raise AssertionError("page has no single direct content stream")
+    content_id = int(contents_match.group(1))
 
     forbidden_features = (
         rb"/Action\b",
@@ -63,34 +132,55 @@ def inspect_synthetic_pdf(content: bytes) -> str:
         rb"/Annots\b",
         rb"/OpenAction\b",
         rb"/AA\b",
+        rb"/ObjStm\b",
+        rb"/XObject\b",
+        rb"/ToUnicode\b",
+        rb"/FontFile[23]?\b",
+        rb"/Subtype\s*/(?:Type0|Type3)\b",
+        rb"/Encoding\s+/(?!WinAnsiEncoding\b)",
     )
 
-    decoded = bytearray()
-    stream_headers = list(
-        re.finditer(rb"<<(.*?)>>\s*stream\r?\n", content, re.DOTALL)
-    )
-    if not stream_headers:
+    stream_objects = {
+        identifier: value
+        for identifier, value in objects.items()
+        if re.search(rb"\bstream\r?\n", value)
+    }
+    if set(stream_objects) != {content_id}:
+        raise AssertionError("PDF contains an orphan or missing content stream")
+    stream_object = stream_objects[content_id]
+    header = re.match(rb"<<(.*?)>>\s*stream\r?\n", stream_object, re.DOTALL)
+    if header is None:
         raise AssertionError("synthetic resume has no inspectable content stream")
-    for header in stream_headers:
-        dictionary = header.group(1)
-        length_match = re.search(rb"/Length\s+([0-9]+)\b", dictionary)
-        if length_match is None:
-            raise AssertionError("PDF stream has no direct bounded length")
-        length = int(length_match.group(1))
-        stream = content[header.end() : header.end() + length]
-        if len(stream) != length:
-            raise AssertionError("truncated PDF stream")
-        if re.search(rb"/FlateDecode\b", dictionary):
-            try:
-                decoded.extend(b"\n" + zlib.decompress(stream))
-            except zlib.error as error:
-                raise AssertionError("invalid compressed PDF stream") from error
-        else:
-            decoded.extend(b"\n" + stream)
+    dictionary = header.group(1)
+    if re.search(rb"/Filter\s*\[\s*/FlateDecode\s*\]", dictionary) is None:
+        raise AssertionError("unsupported PDF content stream filter")
+    if len(re.findall(rb"/Filter\b", dictionary)) != 1:
+        raise AssertionError("unsupported PDF content stream filter")
+    length_match = re.search(rb"/Length\s+([0-9]+)\b", dictionary)
+    if length_match is None:
+        raise AssertionError("PDF stream has no direct bounded length")
+    length = int(length_match.group(1))
+    stream = stream_object[header.end() : header.end() + length]
+    if len(stream) != length:
+        raise AssertionError("truncated PDF stream")
+    try:
+        decoded = zlib.decompress(stream)
+    except zlib.error as error:
+        raise AssertionError("invalid compressed PDF stream") from error
+    if len(decoded) > 1_000_000:
+        raise AssertionError("PDF content stream exceeds inspection limit")
 
     inspectable = content + decoded
     if any(re.search(pattern, inspectable) for pattern in forbidden_features):
         raise AssertionError("synthetic resume contains an active PDF feature")
+    if b"<" in decoded or b">" in decoded:
+        raise AssertionError("unsupported hex string in PDF content")
+    if b"[" in decoded or b"]" in decoded or re.search(rb"\bTJ\b", decoded):
+        raise AssertionError("unsupported PDF text array")
+    if re.search(rb"(?:^|\s)(?:'|\")(?=\s|$)", decoded):
+        raise AssertionError("unsupported PDF text-show operator")
+    if re.search(rb"(?:^|\s)(?:Do|BI|ID|EI)(?=\s|$)", decoded):
+        raise AssertionError("unsupported PDF graphical text content")
 
     strings: list[bytes] = []
     index = 0
@@ -109,9 +199,7 @@ def inspect_synthetic_pdf(content: bytes) -> str:
                     raise AssertionError("unterminated PDF string escape")
                 escaped = decoded[index]
                 index += 1
-                if escaped in b"nrtbf":
-                    value.append(dict(zip(b"nrtbf", b"\n\r\t\b\f"))[escaped])
-                elif escaped in b"()\\":
+                if escaped in b"()\\":
                     value.append(escaped)
                 elif ord("0") <= escaped <= ord("7"):
                     digits = bytearray([escaped])
@@ -123,15 +211,8 @@ def inspect_synthetic_pdf(content: bytes) -> str:
                         digits.append(decoded[index])
                         index += 1
                     value.append(int(digits, 8))
-                elif escaped in b"\r\n":
-                    if (
-                        escaped == ord("\r")
-                        and index < len(decoded)
-                        and decoded[index] == ord("\n")
-                    ):
-                        index += 1
                 else:
-                    value.append(escaped)
+                    raise AssertionError("unsupported PDF string escape")
             elif current == ord("("):
                 depth += 1
                 value.append(current)
@@ -143,6 +224,11 @@ def inspect_synthetic_pdf(content: bytes) -> str:
                 value.append(current)
         if depth:
             raise AssertionError("unterminated PDF string")
+        if any(byte < 0x20 or byte > 0x7E for byte in value):
+            raise AssertionError("unsupported PDF text encoding")
+        operator = re.match(rb"\s+([A-Za-z*]+)\b", decoded[index:])
+        if operator is None or operator.group(1) != b"Tj":
+            raise AssertionError("literal PDF text must use the Tj operator")
         strings.append(bytes(value))
 
     extracted = b"\n".join(strings).decode("latin-1")
@@ -1131,36 +1217,60 @@ class CommittedScenarioTests(unittest.TestCase):
         scenario_pdf = (
             ROOT / "qa/scenarios/complete-profile/synthetic-resume.pdf"
         ).read_bytes()
-        forbidden_stream = zlib.compress(b"BT (Source Company) Tj ET")
-        injected = (
-            scenario_pdf.removesuffix(b"%%EOF\n")
-            + b"\n99 0 obj\n<< /Filter /FlateDecode /Length "
-            + str(len(forbidden_stream)).encode("ascii")
-            + b" >>\nstream\n"
-            + forbidden_stream
-            + b"\nendstream\nendobj\n%%EOF\n"
+        injected = append_to_pdf_content(
+            scenario_pdf,
+            b"BT (Source Company) Tj ET",
         )
         with self.assertRaisesRegex(AssertionError, "denied text"):
             inspect_synthetic_pdf(injected)
 
-        active_stream = zlib.compress(b"/Type /Action /S /JavaScript")
-        active = (
-            scenario_pdf.removesuffix(b"%%EOF\n")
-            + b"\n99 0 obj\n<< /Filter /FlateDecode /Length "
-            + str(len(active_stream)).encode("ascii")
-            + b" >>\nstream\n"
-            + active_stream
-            + b"\nendstream\nendobj\n%%EOF\n"
+        active = append_to_pdf_content(
+            scenario_pdf,
+            b"/Type /Action /S /JavaScript",
         )
         with self.assertRaisesRegex(AssertionError, "active PDF feature"):
             inspect_synthetic_pdf(active)
 
-        extra_page = (
-            scenario_pdf.removesuffix(b"%%EOF\n")
-            + b"\n99 0 obj\n<< /Type /Page >>\nendobj\n%%EOF\n"
+        hex_text = append_to_pdf_content(
+            scenario_pdf,
+            b"BT <536F7572636520436F6D70616E79> Tj ET",
         )
-        with self.assertRaisesRegex(AssertionError, "exactly one page"):
-            inspect_synthetic_pdf(extra_page)
+        with self.assertRaisesRegex(AssertionError, "hex string"):
+            inspect_synthetic_pdf(hex_text)
+
+        text_array = append_to_pdf_content(
+            scenario_pdf,
+            b"BT [(Source) 0 (Company)] TJ ET",
+        )
+        with self.assertRaisesRegex(AssertionError, "text array"):
+            inspect_synthetic_pdf(text_array)
+
+        unsupported_filter = scenario_pdf.replace(
+            b"/Filter [ /FlateDecode ]",
+            b"/Filter [ /ASCII85Decode ]",
+            1,
+        )
+        self.assertNotEqual(unsupported_filter, scenario_pdf)
+        with self.assertRaisesRegex(AssertionError, "content stream filter"):
+            inspect_synthetic_pdf(unsupported_filter)
+
+        unsupported_encoding = scenario_pdf.replace(
+            b"/Encoding /WinAnsiEncoding",
+            b"/Encoding /MacRomanEncoding",
+            1,
+        )
+        self.assertNotEqual(unsupported_encoding, scenario_pdf)
+        with self.assertRaisesRegex(AssertionError, "active PDF feature"):
+            inspect_synthetic_pdf(unsupported_encoding)
+
+        duplicate_kid = scenario_pdf.replace(
+            b"/Kids [ 4 0 R ]",
+            b"/Kids [ 4 0 R 4 0 R ]",
+            1,
+        )
+        self.assertNotEqual(duplicate_kid, scenario_pdf)
+        with self.assertRaisesRegex(AssertionError, "one unique page kid"):
+            inspect_synthetic_pdf(duplicate_kid)
 
     def test_committed_scenario_prepares_real_store_without_http_leak(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
