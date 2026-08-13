@@ -24,6 +24,7 @@ import { chromium } from "playwright";
 import {
   BrokerClient,
   commitCheckpoint,
+  inspectionHasSensitivePage,
   isSensitivePage,
   sanitizeObservedControl,
   validateCheckpointKind,
@@ -414,6 +415,112 @@ test("sensitive page detector rejects login and credential surfaces", () => {
     }),
     false,
   );
+  assert.equal(
+    isSensitivePage({
+      url: "https://example.test/jobs/1/apply",
+      title: "Application",
+      controls: [],
+      text: "Solve difficult technical challenges with the engineering team",
+    }),
+    false,
+  );
+});
+
+test("LinkedIn jobs allow only an inert hidden CAPTCHA bootstrap frame", () => {
+  const main = {
+    frame: { id: "main" },
+    frameVisible: true,
+    value: {
+      url: "https://www.linkedin.com/jobs/view/4450809022/",
+      title: "AI Engineer | LinkedIn",
+      text: "Solve difficult technical challenges. Easy Apply",
+      controls: [{ type: "button", label: "Easy Apply" }],
+      securityControls: [],
+    },
+  };
+  const dormantCaptcha = {
+    frame: { id: "captcha", parentId: "main" },
+    frameVisible: false,
+    value: {
+      url: "",
+      title: "CAPTCHA",
+      text: "CAPTCHA",
+      controls: [],
+      securityControls: [],
+    },
+  };
+  const dormantCaptchaResponse = {
+    frame: { id: "captcha-response", parentId: "captcha" },
+    frameVisible: false,
+    value: {
+      url: "https://www.google.com/recaptcha/api2/anchor",
+      title: "",
+      text: "",
+      controls: [{
+        type: "textarea",
+        autocomplete: "",
+        label: "g-recaptcha-response",
+      }],
+      securityControls: [],
+    },
+  };
+
+  assert.equal(inspectionHasSensitivePage([
+    main,
+    dormantCaptcha,
+    dormantCaptchaResponse,
+  ]), false);
+  assert.equal(inspectionHasSensitivePage([
+    main,
+    { ...dormantCaptcha, frameVisible: true },
+  ]), true);
+  assert.equal(inspectionHasSensitivePage([
+    main,
+    dormantCaptcha,
+    { ...dormantCaptchaResponse, frameVisible: true },
+  ]), true);
+  assert.equal(inspectionHasSensitivePage([
+    { ...main, value: { ...main.value, url: "https://example.test/jobs/1" } },
+    dormantCaptcha,
+  ]), true);
+  assert.equal(inspectionHasSensitivePage([
+    main,
+    {
+      ...dormantCaptcha,
+      value: {
+        ...dormantCaptcha.value,
+        controls: [{ type: "button", label: "Reload CAPTCHA" }],
+      },
+    },
+  ]), false);
+  assert.equal(inspectionHasSensitivePage([
+    main,
+    {
+      ...dormantCaptcha,
+      value: {
+        ...dormantCaptcha.value,
+        controls: [{ type: "password", label: "CAPTCHA response" }],
+      },
+    },
+  ]), true);
+  assert.equal(inspectionHasSensitivePage([
+    main,
+    {
+      ...dormantCaptcha,
+      value: { ...dormantCaptcha.value, title: "Sign in", text: "Sign in" },
+    },
+  ]), true);
+  assert.equal(inspectionHasSensitivePage([
+    {
+      ...main,
+      value: {
+        ...main.value,
+        url: "https://www.linkedin.com/checkpoint/challengesV2/opaque",
+        title: "Verify your identity",
+        text: "Approve this sign-in",
+      },
+    },
+  ]), true);
 });
 
 test("capture resource limits accept boundaries and reject one over", () => {
@@ -628,6 +735,94 @@ test("record refuses a login page before creating private evidence", async (t) =
   assert.doesNotMatch(result.stderr, /Sign in|password|127\.0\.0\.1/);
   await assert.rejects(access(path.join(session, "capture-receipt.json")));
   await assert.rejects(access(path.join(session, "events.jsonl")));
+});
+
+test("terminal SIGINT lets the recorder finalize before its broker exits", {
+  skip: process.platform === "win32",
+}, async (t) => {
+  const site = await startSyntheticSite(t);
+  const { cdpUrl } = await startIndependentChromium(t, `${site}/application`);
+  const directory = await mkdtemp(path.join(tmpdir(), "recording-terminal-sigint-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const privateRoot = path.join(directory, ".qa-private");
+  await mkdir(privateRoot, { mode: 0o700 });
+  const session = path.join(privateRoot, "qa-session-terminal-sigint");
+  const recorder = spawn(process.execPath, [
+    "qa/recorder.mjs", "record", "--cdp-url", cdpUrl, "--output", session,
+  ], { cwd: root, detached: true });
+  let recorderStderr = "";
+  recorder.stderr.setEncoding("utf8");
+  recorder.stderr.on("data", (chunk) => { recorderStderr += chunk; });
+  t.after(() => stopChild(recorder));
+
+  await waitForFile(path.join(session, "control.json"), 10000);
+  process.kill(-recorder.pid, "SIGINT");
+  const exit = await waitForExit(recorder, 5000);
+
+  assert.equal(exit.code, 0);
+  assert.equal(recorderStderr, "");
+  await access(path.join(session, "capture-receipt.json"));
+  await assert.rejects(access(path.join(session, "control.json")));
+});
+
+test("recorder inventories open shadow controls and refuses shadow credentials", async (t) => {
+  const site = await startSyntheticSite(t);
+  const { cdpUrl } = await startIndependentChromium(t, `${site}/application`);
+  const attached = await chromium.connectOverCDP(cdpUrl);
+  const page = attached.contexts()[0].pages()[0];
+  await page.setContent("<!doctype html><main><h1>Application</h1><div id=host></div></main>");
+  await page.locator("#host").evaluate((host) => {
+    const root = host.attachShadow({ mode: "open" });
+    root.innerHTML = "<label>Contact email<input type=email required></label>";
+  });
+
+  const directory = await mkdtemp(path.join(tmpdir(), "recording-shadow-controls-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const privateRoot = path.join(directory, ".qa-private");
+  await mkdir(privateRoot, { mode: 0o700 });
+  const session = path.join(privateRoot, "qa-session-shadow-controls");
+  const recorder = spawn(process.execPath, [
+    "qa/recorder.mjs", "record", "--cdp-url", cdpUrl, "--output", session,
+  ], { cwd: root });
+  let recorderStderr = "";
+  recorder.stderr.setEncoding("utf8");
+  recorder.stderr.on("data", (chunk) => { recorderStderr += chunk; });
+  t.after(() => stopChild(recorder));
+  await waitForFile(path.join(session, "control.json"), 10000);
+  const checkpoint = await runNode([
+    "qa/recorder.mjs", "checkpoint", "--session", session,
+    "--kind", "application-opened",
+  ], 10000);
+  assert.equal(checkpoint.code, 0, checkpoint.stderr);
+  recorder.kill("SIGTERM");
+  await waitForExit(recorder, 5000);
+  assert.equal(recorderStderr, "");
+  const controls = JSON.parse(await readFile(
+    path.join(session, "checkpoints", "0001-application-opened", "controls.json"),
+    "utf8",
+  ));
+  const structuralHtml = await readFile(
+    path.join(session, "checkpoints", "0001-application-opened", "page.html"),
+    "utf8",
+  );
+  assert.equal(controls.some((control) =>
+    control.role === "textbox" && control.sourceLabel === "Contact email" &&
+      control.required === true), true);
+  assert.match(structuralHtml, /Contact email/);
+
+  await page.setContent("<!doctype html><main><h1>Application</h1><div id=host></div></main>");
+  await page.locator("#host").evaluate((host) => {
+    const root = host.attachShadow({ mode: "open" });
+    root.innerHTML = "<label>Account password<input type=password></label>";
+  });
+  const refusedSession = path.join(privateRoot, "qa-session-shadow-password");
+  const refused = await runNode([
+    "qa/recorder.mjs", "record", "--cdp-url", cdpUrl, "--output", refusedSession,
+  ], 10000);
+  assert.equal(refused.code, 1);
+  assert.match(refused.stderr, /sensitive page refused/);
+  await assert.rejects(access(path.join(refusedSession, "events.jsonl")));
+  await attached.close();
 });
 
 test("qa Chrome launcher exposes recorder-compatible real CDP and persists its profile", async (t) => {

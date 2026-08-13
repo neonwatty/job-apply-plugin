@@ -24,7 +24,7 @@ export const CHECKPOINT_KINDS = Object.freeze([
 ]);
 
 const CHECKPOINT_KIND_SET = new Set(CHECKPOINT_KINDS);
-const SENSITIVE_PATTERN = /(?:\blog[ -]?in\b|\bsign[ -]?in\b|password|passcode|captcha|multi[ -]?factor|\bmfa\b|two[ -]?factor|\b2fa\b|2[ -]?step verification|verification code|security code|sms code|recovery code|authenticator app|push notification|verify (?:your )?identity|\b\d{1,2}[ -]?digit code(?: we sent)?|approve (?:this |the )?(?:device|sign[ -]?in)|create (?:an? )?account|account[ -]?creation|register|\botp\b|authentication|challenge|security[ -]?key|one[ -]?time[ -]?code)/i;
+const SENSITIVE_PATTERN = /(?:\blog[ -]?in\b|\bsign[ -]?in\b|password|passcode|captcha|multi[ -]?factor|\bmfa\b|two[ -]?factor|\b2fa\b|2[ -]?step verification|verification code|security code|sms code|recovery code|authenticator app|push notification|verify (?:your )?identity|\b\d{1,2}[ -]?digit code(?: we sent)?|approve (?:this |the )?(?:device|sign[ -]?in)|create (?:an? )?account|account[ -]?creation|register|\botp\b|authentication|security[ -]?key|one[ -]?time[ -]?code)/i;
 const MAX_CONTROL_BODY = 4096;
 const MAX_EVENTS = 10_000;
 const MAX_PENDING_EVENT_OPERATIONS = 8;
@@ -147,6 +147,57 @@ export function isSensitivePage(snapshot) {
   });
 }
 
+function isLinkedInJobsUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.username === "" && url.password === "" &&
+      url.port === "" && ["linkedin.com", "www.linkedin.com"].includes(url.hostname) &&
+      (url.pathname === "/jobs" || url.pathname.startsWith("/jobs/"));
+  } catch {
+    return false;
+  }
+}
+
+function isDormantLinkedInCaptcha(snapshot) {
+  const value = snapshot?.value;
+  if (!value || !snapshot.frame?.parentId || snapshot.frameVisible !== false) return false;
+  const url = typeof value.url === "string" ? value.url : "";
+  const title = typeof value.title === "string" ? value.title : "";
+  const text = typeof value.text === "string" ? value.text : "";
+  const controls = [
+    ...(Array.isArray(value.controls) ? value.controls : []),
+    ...(Array.isArray(value.securityControls) ? value.securityControls : []),
+  ];
+  const surface = `${url}\n${title}\n${text}\n${controls.map((control) =>
+    `${control?.type ?? ""}\n${control?.autocomplete ?? ""}\n${control?.label ?? ""}`
+  ).join("\n")}`;
+  const captchaOnly = surface.replace(/captcha/gi, "");
+  const hasCredentialControl = controls.some((control) => {
+    const type = typeof control?.type === "string" ? control.type.toLowerCase() : "";
+    const autocomplete = typeof control?.autocomplete === "string"
+      ? control.autocomplete.toLowerCase()
+      : "";
+    const label = typeof control?.label === "string" ? control.label : "";
+    return type === "password" ||
+      ["current-password", "one-time-code"].includes(autocomplete) ||
+      SENSITIVE_PATTERN.test(`${type}\n${autocomplete}\n${label}`.replace(/captcha/gi, ""));
+  });
+  return /captcha/i.test(surface) &&
+    !SENSITIVE_PATTERN.test(captchaOnly) && !hasCredentialControl;
+}
+
+export function inspectionHasSensitivePage(snapshots) {
+  if (!Array.isArray(snapshots) || snapshots.length === 0) return true;
+  const main = snapshots.find(({ frame }) => frame && !frame.parentId);
+  const linkedInJobsPage = main && isLinkedInJobsUrl(main.value?.url) &&
+    !isSensitivePage(main.value);
+  return snapshots.some((snapshot) => {
+    if (!isSensitivePage(snapshot.value)) return false;
+    return !(linkedInJobsPage && snapshot !== main &&
+      isDormantLinkedInCaptcha(snapshot));
+  });
+}
+
 function isLoopbackHostname(hostname) {
   const normalized = hostname.toLowerCase();
   if (normalized === "localhost" || normalized === "::1" || normalized === "[::1]") {
@@ -266,6 +317,7 @@ export class BrokerClient {
     const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
     const child = spawn("python3", ["-m", "qa.recorder_fs", "--root", root], {
       cwd: repositoryRoot,
+      detached: process.platform !== "win32",
       stdio: ["pipe", "pipe", "pipe"],
     });
     child.stderr.resume();
@@ -408,9 +460,31 @@ function isolatedInstallerSource(bindingName) {
     Object.defineProperty(globalThis, "__qaIsolatedRecorderInstalled", { value: true });
     const binding = globalThis[${JSON.stringify(bindingName)}];
     if (typeof binding !== "function") return;
-    new MutationObserver(() => {
-      binding(JSON.stringify({ messageType: "document-state" }));
-    }).observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
+    const controlSelector = "input,select,textarea,button,[role]";
+    const composedParent = (element) => element.parentElement ||
+      (element.getRootNode() instanceof ShadowRoot ? element.getRootNode().host : null);
+    const roots = new WeakSet();
+    const observeRoot = (root) => {
+      if (roots.has(root)) return;
+      roots.add(root);
+      const observer = new MutationObserver((records) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (!(node instanceof Element)) continue;
+            if (node.shadowRoot) observeRoot(node.shadowRoot);
+            for (const child of node.querySelectorAll("*")) {
+              if (child.shadowRoot) observeRoot(child.shadowRoot);
+            }
+          }
+        }
+        binding(JSON.stringify({ messageType: "document-state" }));
+      });
+      observer.observe(root, { subtree: true, childList: true, attributes: true, characterData: true });
+      for (const element of root.querySelectorAll("*")) {
+        if (element.shadowRoot) observeRoot(element.shadowRoot);
+      }
+    };
+    observeRoot(document);
     const labelFor = (element) => {
       const aria = element.getAttribute("aria-label");
       if (aria) return aria;
@@ -438,7 +512,7 @@ function isolatedInstallerSource(bindingName) {
     };
     const isVisible = (element) => {
       if (element.matches("input[type=hidden],input[type=password]")) return false;
-      for (let current = element; current instanceof Element; current = current.parentElement) {
+      for (let current = element; current instanceof Element; current = composedParent(current)) {
         if (current.matches("[hidden],[aria-hidden=true]")) return false;
         const style = getComputedStyle(current);
         if (style.display === "none" || style.visibility === "hidden" ||
@@ -457,7 +531,8 @@ function isolatedInstallerSource(bindingName) {
     for (const interactionType of ["click", "change", "input"]) {
       document.addEventListener(interactionType, (event) => {
         if (!event.isTrusted) return;
-        const element = event.target instanceof Element ? event.target.closest("input,select,textarea,button,[role]") : null;
+        const source = event.composedPath().find((node) => node instanceof Element);
+        const element = source instanceof Element ? source.closest(controlSelector) : null;
         if (!element || !isVisible(element)) return;
         let label = labelFor(element).slice(0, 256);
         const mutable = [];
@@ -510,12 +585,29 @@ function isolatedInstallerSource(bindingName) {
 function isolatedSnapshotSource(includeStructure) {
   return `(() => {
     const denied = /(?:password|passcode|captcha|multi[ -]?factor|\\bmfa\\b|\\b2fa\\b|2[ -]?step verification|\\botp\\b|authentication|authenticator app|push notification|verify (?:your )?identity|\\b\\d{1,2}[ -]?digit code(?: we sent)?|recovery code|sms code|security code|challenge|security[ -]?key|one[ -]?time[ -]?code|authorization|bearer|cookie|session|csrf|token)/i;
+    const controlSelector = "input,select,textarea,button,[role]";
+    const composedParent = (element) => element.parentElement ||
+      (element.getRootNode() instanceof ShadowRoot ? element.getRootNode().host : null);
+    const shadowRoots = [];
+    const collectControls = (root, controls = []) => {
+      for (const element of root.querySelectorAll("*")) {
+        if (element.matches(controlSelector)) controls.push(element);
+        if (element.shadowRoot) {
+          shadowRoots.push(element.shadowRoot);
+          collectControls(element.shadowRoot, controls);
+        }
+      }
+      return controls;
+    };
     const labelFor = (element) => {
       const aria = element.getAttribute("aria-label");
       if (aria) return aria;
       const labelled = element.getAttribute("aria-labelledby");
       if (labelled) {
-        const label = labelled.split(/\\s+/).map((id) => document.getElementById(id)?.innerText || "").join(" ").trim();
+        const root = element.getRootNode();
+        const label = labelled.split(/\\s+/).map((id) =>
+          (root.getElementById?.(id) || document.getElementById(id))?.innerText || ""
+        ).join(" ").trim();
         if (label) return label;
       }
       if (element.labels?.length) return Array.from(element.labels).map((label) => label.innerText).join(" ").trim();
@@ -537,7 +629,7 @@ function isolatedSnapshotSource(includeStructure) {
     };
     const isVisible = (element) => {
       if (element.matches("input[type=hidden],input[type=password]")) return false;
-      for (let current = element; current instanceof Element; current = current.parentElement) {
+      for (let current = element; current instanceof Element; current = composedParent(current)) {
         if (current.matches("[hidden],[aria-hidden=true]")) return false;
         const style = getComputedStyle(current);
         if (style.display === "none" || style.visibility === "hidden" ||
@@ -553,7 +645,7 @@ function isolatedSnapshotSource(includeStructure) {
       }
       return rectangle.right + scrollX > 0 && rectangle.bottom + scrollY > 0;
     };
-    const elements = Array.from(document.querySelectorAll("input,select,textarea,button,[role]"));
+    const elements = collectControls(document);
     const describe = (element) => ({
       type: element instanceof HTMLInputElement ? element.type : element.tagName.toLowerCase(),
       autocomplete: element.getAttribute("autocomplete") || "",
@@ -592,6 +684,9 @@ function isolatedSnapshotSource(includeStructure) {
         }
         let children = "";
         for (const child of node.childNodes) children += serialize(child);
+        if (node.shadowRoot) {
+          for (const child of node.shadowRoot.childNodes) children += serialize(child);
+        }
         const result = "<" + tag + (attributes.length ? " " + attributes.join(" ") : "") + ">" + children + "</" + tag + ">";
         if (result.length > ${CAPTURE_LIMITS.maxHtmlBytes + 1}) structuralOverflow = true;
         return result.slice(0, ${CAPTURE_LIMITS.maxHtmlBytes + 1});
@@ -600,7 +695,8 @@ function isolatedSnapshotSource(includeStructure) {
     }
     return {
       title: document.title.slice(0, 512),
-      text: (document.body?.textContent || "").slice(0, 8192),
+      text: [document.body?.textContent || "", ...shadowRoots.map((root) => root.textContent || "")]
+        .join(" ").slice(0, 8192),
       controls,
       securityControls,
       controlOverflow: elements.length > ${CAPTURE_LIMITS.maxControls},
@@ -944,7 +1040,7 @@ async function runRecord(rawOptions) {
           if (!captureEnabled || shuttingDown || safetyRevision !== observedRevision ||
               isolated.contexts.get(frameId) !== executionContextId ||
               sourceFrame?.frameVisible !== true ||
-              inspection.snapshots.some(({ value }) => isSensitivePage(value))) return;
+              inspectionHasSensitivePage(inspection.snapshots)) return;
           observe(observed);
         } finally {
           pendingEventInspections -= 1;
@@ -964,7 +1060,7 @@ async function runRecord(rawOptions) {
       inspectFrames(isolated),
       CAPTURE_DEADLINE_MS,
     );
-    if (initialInspection.snapshots.some(({ value }) => isSensitivePage(value))) {
+    if (inspectionHasSensitivePage(initialInspection.snapshots)) {
       throw new RecorderError("sensitive page refused");
     }
 
@@ -1001,7 +1097,7 @@ async function runRecord(rawOptions) {
           signal,
         );
         assertCaptureRevision();
-        if (inspection.snapshots.some(({ value }) => isSensitivePage(value))) {
+        if (inspectionHasSensitivePage(inspection.snapshots)) {
           throw new RecorderError("sensitive page refused");
         }
         if (!inspection.main || inspection.main.structuralOverflow ||
@@ -1030,7 +1126,7 @@ async function runRecord(rawOptions) {
         );
         assertCaptureRevision();
         if (afterStructure.identity !== inspection.identity ||
-            afterStructure.snapshots.some(({ value }) => isSensitivePage(value))) {
+            inspectionHasSensitivePage(afterStructure.snapshots)) {
           throw new RecorderError("unstable page document");
         }
         const sequence = checkpointKinds.length + 1;
@@ -1062,7 +1158,7 @@ async function runRecord(rawOptions) {
         );
         assertCaptureRevision();
         if (afterScreenshot.identity !== inspection.identity ||
-            afterScreenshot.snapshots.some(({ value }) => isSensitivePage(value))) {
+            inspectionHasSensitivePage(afterScreenshot.snapshots)) {
           throw new RecorderError("unstable page document");
         }
         throwIfAborted(signal);
@@ -1085,7 +1181,7 @@ async function runRecord(rawOptions) {
         );
         assertCaptureRevision();
         if (beforeCommit.identity !== inspection.identity ||
-            beforeCommit.snapshots.some(({ value }) => isSensitivePage(value))) {
+            inspectionHasSensitivePage(beforeCommit.snapshots)) {
           throw new RecorderError("unstable page document");
         }
         throwIfAborted(signal);
