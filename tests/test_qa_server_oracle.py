@@ -641,6 +641,41 @@ class SemanticOracleTests(unittest.TestCase):
         ):
             self.assertNotIn(secret, serialized)
 
+    def test_committed_linkedin_screening_fixture_passes_with_closed_identity(self):
+        fixture = json.loads(
+            (
+                ROOT
+                / "qa/fixtures/linkedin-easy-apply-screening-2026-08-v1/fixture.json"
+            ).read_text()
+        )
+        events = complete_events(fixture)
+        optional = next(
+            control
+            for step in fixture["steps"]
+            for control in step["controls"]
+            if control["id"] == "preference.top_choice"
+        )
+        events.insert(
+            -1,
+            {
+                "type": "filled",
+                "controlId": optional["id"],
+                "stepId": "step-3",
+            },
+        )
+
+        report = self.evaluate(
+            fixture=fixture,
+            scenario={"id": "linkedin-screening"},
+            events=events,
+        )
+
+        self.assertEqual(report["scenarioId"], "linkedin-screening")
+        self.assertEqual(report["status"], "passed")
+        self.assertEqual(set(report["assertions"].values()), {"passed"})
+        self.assertEqual(report["missingControlIds"], [])
+        self.assertEqual(report["failureCategories"], [])
+
     def test_store_root_may_be_an_already_open_owned_descriptor(self):
         descriptor = os.open(
             self.store.root,
@@ -777,6 +812,7 @@ class SemanticOracleTests(unittest.TestCase):
         cases = (
             {"fixture": fixture},
             {"scenario": {"id": "SECRET SCENARIO"}},
+            {"scenario": {"id": "other-scenario"}},
             {"scenario": {"id": "complete-profile", "value": "SECRET"}},
             {"scenario": []},
             {"store_root": Path(self.temporary.name) / "SECRET missing store"},

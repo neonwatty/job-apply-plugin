@@ -71,6 +71,7 @@ RUN_STATE_KEYS = {
     "createdAt",
 }
 EXPECTED_KEYS = {"controlIds", "resumeFilename"}
+SCENARIO_IDS = frozenset({"complete-profile", "linkedin-screening"})
 REPORT_KEYS = {
     "fixtureId",
     "scenarioId",
@@ -830,6 +831,8 @@ def _prepare(fixture_id: str, scenario_id: str) -> dict[str, Any]:
         raise CoordinatorError("invalid fixture identifier")
     if IDENTIFIER.fullmatch(scenario_id) is None:
         raise CoordinatorError("invalid scenario identifier")
+    if scenario_id not in SCENARIO_IDS:
+        raise CoordinatorError("invalid scenario identifier")
     fixture_dir = FIXTURES_ROOT / fixture_id
     scenario_dir = SCENARIOS_ROOT / scenario_id
     _validate_source_directory(fixture_dir, "invalid fixture package")
@@ -959,7 +962,7 @@ def _load_state_at(run_root: Path, run_descriptor: int) -> dict[str, Any]:
         or TOKEN.fullmatch(state["lifecycleNonce"]) is None
         or Path(state["storeRoot"]) != run_root / "store"
         or Path(state["fixturePath"]) != run_root / "fixture.json"
-        or state["scenarioId"] != "complete-profile"
+        or state["scenarioId"] not in SCENARIO_IDS
     ):
         raise CoordinatorError("invalid run state")
     return state
@@ -1549,7 +1552,7 @@ def _validate_self_contained_tombstone(
         or tombstone["reportRetained"] != (tombstone["state"] == "completed")
         or TOKEN.fullmatch(tombstone.get("lifecycleNonce", "")) is None
         or IDENTIFIER.fullmatch(tombstone.get("fixtureId", "")) is None
-        or tombstone.get("scenarioId") != "complete-profile"
+        or tombstone.get("scenarioId") not in SCENARIO_IDS
         or TOKEN.fullmatch(tombstone.get("mac", "")) is None
     ):
         raise CoordinatorError("invalid cleanup state")

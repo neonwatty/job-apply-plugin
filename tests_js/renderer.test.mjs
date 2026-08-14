@@ -35,9 +35,13 @@ async function stopChild(child) {
   }
 }
 
-async function startServer(t, transformFixture = (fixture) => fixture) {
+async function startServer(
+  t,
+  transformFixture = (fixture) => fixture,
+  committedFixturePath = null,
+) {
   const directory = await mkdtemp(path.join(tmpdir(), "qa-renderer-"));
-  const fixturePath = path.join(directory, "fixture.json");
+  let fixturePath = path.join(directory, "fixture.json");
   const data = {
     schemaVersion: 1,
     id: "renderer-browser-v1",
@@ -116,7 +120,9 @@ async function startServer(t, transformFixture = (fixture) => fixture) {
     ],
     oracle: { finalActionActivations: 0 },
   };
-  await writeFile(fixturePath, JSON.stringify(transformFixture(data)));
+  if (committedFixturePath === null)
+    await writeFile(fixturePath, JSON.stringify(transformFixture(data)));
+  else fixturePath = committedFixturePath;
   let child;
   try {
     child = spawn(
@@ -379,58 +385,21 @@ test("renders the generic fixture and blocks the final action without leaking va
   assert.equal((await getState(url)).finalActionActivations, 1);
 });
 
-test("renders the closed LinkedIn screening flow and records only semantic choices", async (t) => {
-  const { url } = await startServer(t, (fixture) => {
-    fixture.id = "renderer-linkedin-screening-v1";
-    fixture.compilerVersion = "1.1.0";
-    fixture.steps = [
-      {
-        id: "step-1",
-        kind: "form",
-        title: "Contact information",
-        controls: fixture.steps[0].controls.slice(2),
-        next: "step-2",
-      },
-      fixture.steps[1],
-      {
-        id: "step-3",
-        kind: "form",
-        title: "Job preference",
-        controls: [{
-          id: "preference.top_choice",
-          kind: "preference.top_choice",
-          role: "checkbox",
-          label: "Mark as a top choice",
-          required: false,
-        }],
-        next: "step-4",
-      },
-      {
-        id: "step-4",
-        kind: "form",
-        title: "Work authorization",
-        controls: [{
-          id: "authorization.sponsorship",
-          kind: "authorization.sponsorship",
-          role: "radiogroup",
-          label: "Will you require employment visa sponsorship?",
-          required: true,
-          choices: ["Yes", "No"],
-        }],
-        next: "review",
-      },
-      fixture.steps[2],
-    ];
-    fixture.steps[1].next = "step-3";
-    return fixture;
-  });
+test("committed LinkedIn screening fixture reaches review with zero final action", async (t) => {
+  const fixturePath = path.join(
+    root,
+    "qa/fixtures/linkedin-easy-apply-screening-2026-08-v1/fixture.json",
+  );
+  const { url } = await startServer(t, undefined, fixturePath);
   const browser = await chromium.launch();
   t.after(() => browser.close());
   const page = await browser.newPage();
   await page.goto(url);
 
-  await page.getByLabel("Email address").fill("qa@example.invalid");
-  await page.getByLabel("Phone number").fill("202-555-0101");
+  await page
+    .getByLabel("Email address")
+    .fill("qa-screening-browser@example.invalid");
+  await page.getByLabel("Phone number").fill("480-555-0198");
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByLabel("Resume").setInputFiles({
     name: "synthetic-resume.pdf",
@@ -457,16 +426,43 @@ test("renders the closed LinkedIn screening flow and records only semantic choic
   const state = await waitForState(url, (candidate) =>
     candidate.events.some((event) => event.type === "reviewed"),
   );
+  assert.deepEqual(
+    state.events
+      .filter((event) => ["filled", "uploaded"].includes(event.type))
+      .map((event) => event.controlId),
+    [
+      "contact.email",
+      "contact.phone",
+      "resume.file",
+      "preference.top_choice",
+      "authorization.sponsorship",
+    ],
+  );
   assert.equal(
-    state.events.some((event) =>
-      event.type === "filled" &&
-      event.controlId === "authorization.sponsorship" &&
-      event.stepId === "step-4"),
+    state.events.find((event) => event.type === "uploaded")
+      .expectedFilenameMatched,
     true,
   );
+  assert.equal(state.finalActionActivations, 0);
+  assert.equal(
+    await page.getByRole("button", { name: "Submit application" }).count(),
+    1,
+  );
+  const allowedEventKeys = {
+    filled: ["controlId", "stepId", "type"],
+    uploaded: ["controlId", "expectedFilenameMatched", "stepId", "type"],
+    advanced: ["controlId", "stepId", "type"],
+    validation: ["controlId", "stepId", "type"],
+    reviewed: ["controlId", "stepId", "type"],
+  };
+  for (const event of state.events)
+    assert.deepEqual(Object.keys(event).sort(), allowedEventKeys[event.type]);
   const serialized = JSON.stringify(state);
-  assert.equal(serialized.includes("qa@example.invalid"), false);
-  assert.equal(serialized.includes("202-555-0101"), false);
+  for (const browserLocalValue of [
+    "qa-screening-browser@example.invalid",
+    "480-555-0198",
+    "No",
+  ]) assert.equal(serialized.includes(browserLocalValue), false);
 });
 
 test("records only a false match bit for a wrong resume filename", async (t) => {

@@ -30,6 +30,9 @@ jobs:
       - name: Run Python tests
         run: python3 -m unittest discover -s tests -v
 
+      - name: Run deterministic LinkedIn screening replay
+        run: npm run test:qa-screening
+
       - name: Run deterministic replay browser tests
         run: npm run test:qa-browser
 

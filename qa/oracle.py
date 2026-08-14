@@ -486,8 +486,12 @@ def evaluate_run(
         validate_fixture(fixture)
     except Exception:
         raise OracleError("invalid fixture") from None
-    if scenario != {"id": "complete-profile"}:
+    if scenario not in (
+        {"id": "complete-profile"},
+        {"id": "linkedin-screening"},
+    ):
         raise OracleError("invalid scenario")
+    scenario_id = scenario["id"]
     if not isinstance(store_root, (Path, int)) or isinstance(store_root, bool):
         raise OracleError("invalid store root")
     (
@@ -585,7 +589,7 @@ def evaluate_run(
 
     return {
         "fixtureId": fixture["id"],
-        "scenarioId": "complete-profile",
+        "scenarioId": scenario_id,
         "status": "passed" if all(checks.values()) else "failed",
         "assertions": assertions,
         "missingControlIds": sorted(missing_fields | missing_files),

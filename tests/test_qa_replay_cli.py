@@ -1258,6 +1258,17 @@ class ReplayCoordinatorTests(unittest.TestCase):
         self.assertEqual((code, output, stderr), (2, None, "invalid scenario package\n"))
         self.assertFalse(self.runs.exists())
 
+    def test_prepare_rejects_scenario_outside_closed_allowlist(self) -> None:
+        code, output, stderr = self.invoke(
+            ["prepare", "--fixture", FIXTURE_ID, "--scenario", "other-scenario"]
+        )
+
+        self.assertEqual(
+            (code, output, stderr),
+            (2, None, "invalid scenario identifier\n"),
+        )
+        self.assertFalse(self.runs.exists())
+
     def test_skills_document_mandatory_qa_root_routing(self) -> None:
         answer_memory = (ROOT / "skills/answer-memory/SKILL.md").read_text()
         job_apply = (ROOT / "skills/job-apply/SKILL.md").read_text()
@@ -1277,6 +1288,10 @@ class ReplayCoordinatorTests(unittest.TestCase):
 
 
 class CommittedScenarioTests(unittest.TestCase):
+    def base_url(self, url: str) -> str:
+        parsed = urlsplit(url)
+        return f"{parsed.scheme}://{parsed.netloc}"
+
     def test_complete_profile_scenario_is_closed_and_synthetic(self) -> None:
         scenario_root = ROOT / "qa/scenarios/complete-profile"
         self.assertEqual(
@@ -1341,6 +1356,263 @@ class CommittedScenarioTests(unittest.TestCase):
             "Attention to detail",
         ):
             self.assertIn(expected_text, extracted)
+
+    def test_linkedin_screening_scenario_is_closed_and_synthetic(self) -> None:
+        scenario_root = ROOT / "qa/scenarios/linkedin-screening"
+        self.assertEqual(
+            {path.name for path in scenario_root.iterdir()},
+            {"profile.json", "synthetic-resume.pdf", "expected.json"},
+        )
+        profile = json.loads((scenario_root / "profile.json").read_text())
+        expected = json.loads((scenario_root / "expected.json").read_text())
+        self.assertEqual(profile["name"], "Avery Replay")
+        self.assertRegex(profile["email"], r"^[a-z.]+@example\.com$")
+        self.assertRegex(profile["phone"], r"^[2-9][0-9]{2}-555-01[0-9]{2}$")
+        self.assertEqual(profile["resumePath"], "synthetic-resume.pdf")
+        self.assertEqual(
+            expected,
+            {
+                "controlIds": [
+                    "contact.email",
+                    "contact.phone",
+                    "resume.file",
+                    "preference.top_choice",
+                    "authorization.sponsorship",
+                ],
+                "resumeFilename": "synthetic-resume.pdf",
+            },
+        )
+        serialized_expected = json.dumps(expected).casefold()
+        for value in (profile["name"], profile["email"], profile["phone"]):
+            self.assertNotIn(value.casefold(), serialized_expected)
+        self.assertEqual(
+            (scenario_root / "synthetic-resume.pdf").read_bytes(),
+            (ROOT / "qa/scenarios/complete-profile/synthetic-resume.pdf").read_bytes(),
+        )
+
+    def test_linkedin_screening_fresh_prepare_evaluate_cleanup_lifecycle(self) -> None:
+        fixture_id = "linkedin-easy-apply-screening-2026-08-v1"
+        scenario_id = "linkedin-screening"
+        with tempfile.TemporaryDirectory() as directory:
+            cli = load_cli()
+            cli.FIXTURES_ROOT = ROOT / "qa/fixtures"
+            cli.SCENARIOS_ROOT = ROOT / "qa/scenarios"
+            cli.RUNS_ROOT = Path(directory) / "fresh-runs"
+
+            prepared = cli._prepare(fixture_id, scenario_id)
+            run_root = Path(prepared["storeRoot"]).parent
+            report_path = run_root / "report.json"
+            self.assertFalse(report_path.exists())
+            state = json.loads((run_root / "run.json").read_text())
+            fixture = json.loads((run_root / "fixture.json").read_text())
+            profile = json.loads((run_root / "profile.json").read_text())
+            applicant_values = {
+                profile["name"],
+                profile["firstName"],
+                profile["lastName"],
+                profile["email"],
+                profile["phone"],
+                *profile["location"].values(),
+                *profile["skills"],
+            }
+            browser_answer_sentinels = {
+                "qa-screening-browser@example.invalid",
+                "480-555-0198",
+                "No",
+            }
+            base_url = ReplayCoordinatorTests.base_url(self, prepared["url"])
+            try:
+                for step in fixture["steps"]:
+                    for control in step["controls"]:
+                        event = {
+                            "type": (
+                                "uploaded" if control["role"] == "file" else "filled"
+                            ),
+                            "controlId": control["id"],
+                            "stepId": step["id"],
+                        }
+                        if control["role"] == "file":
+                            event["expectedFilenameMatched"] = True
+                        ReplayCoordinatorTests._post_event(self, prepared["url"], event)
+                    ReplayCoordinatorTests._post_event(
+                        self,
+                        prepared["url"],
+                        {
+                            "type": (
+                                "reviewed" if step["kind"] == "review" else "advanced"
+                            ),
+                            "controlId": "",
+                            "stepId": step["id"],
+                        },
+                    )
+
+                application_id = "linkedin-screening-application"
+                history = [
+                    {
+                        "schemaVersion": 1,
+                        "eventId": "screening-started",
+                        "applicationId": application_id,
+                        "event": "started",
+                        "answerKeys": [],
+                        "at": "2026-08-14T12:00:00Z",
+                    },
+                    {
+                        "schemaVersion": 1,
+                        "eventId": "screening-reviewed",
+                        "applicationId": application_id,
+                        "event": "reviewed",
+                        "answerKeys": [],
+                        "at": "2026-08-14T12:01:00Z",
+                    },
+                ]
+                history_path = Path(prepared["storeRoot"]) / "applications.jsonl"
+                history_path.write_text(
+                    "".join(json.dumps(item) + "\n" for item in history)
+                )
+                os.chmod(history_path, 0o600)
+                session_path = (
+                    Path(prepared["storeRoot"]) / "sessions" / f"{application_id}.json"
+                )
+                session_path.write_text(
+                    json.dumps(
+                        {
+                            "schemaVersion": 1,
+                            "applicationId": application_id,
+                            "status": "review",
+                            "step": "review",
+                            "answerKeys": [],
+                            "pendingFields": [],
+                            "createdAt": "2026-08-14T12:00:00Z",
+                            "updatedAt": "2026-08-14T12:01:00Z",
+                        }
+                    )
+                )
+                os.chmod(session_path, 0o600)
+
+                with urllib.request.urlopen(base_url + "/__qa/state", timeout=2) as response:
+                    server_state = json.load(response)
+                expected_ids = [
+                    "contact.email",
+                    "contact.phone",
+                    "resume.file",
+                    "preference.top_choice",
+                    "authorization.sponsorship",
+                ]
+                self.assertEqual(
+                    [
+                        event["controlId"]
+                        for event in server_state["events"]
+                        if event["type"] in {"filled", "uploaded"}
+                    ],
+                    expected_ids,
+                )
+                self.assertEqual(server_state["finalActionActivations"], 0)
+                visible_artifacts = json.dumps(server_state).casefold()
+                allowed_event_keys = {
+                    "filled": {"type", "controlId", "stepId"},
+                    "uploaded": {
+                        "type",
+                        "controlId",
+                        "stepId",
+                        "expectedFilenameMatched",
+                    },
+                    "advanced": {"type", "controlId", "stepId"},
+                    "reviewed": {"type", "controlId", "stepId"},
+                }
+                for event in server_state["events"]:
+                    self.assertEqual(set(event), allowed_event_keys[event["type"]])
+                for value in applicant_values:
+                    self.assertNotIn(value.casefold(), visible_artifacts)
+                for value in browser_answer_sentinels:
+                    self.assertNotIn(json.dumps(value).casefold(), visible_artifacts)
+
+                store_root = Path(prepared["storeRoot"])
+                store_artifacts = {
+                    path.relative_to(store_root).as_posix(): path.read_bytes()
+                    for path in store_root.rglob("*")
+                    if path.is_file()
+                }
+                self.assertEqual(
+                    set(store_artifacts),
+                    {
+                        "answers.json",
+                        "applications.jsonl",
+                        "profile.json",
+                        f"sessions/{application_id}.json",
+                    },
+                )
+                serialized_store = (
+                    b"\n".join(store_artifacts.values()).decode("utf-8").casefold()
+                )
+                for value in browser_answer_sentinels:
+                    self.assertNotIn(json.dumps(value).casefold(), serialized_store)
+
+                self.assertFalse(report_path.exists())
+                code, report = cli._evaluate(run_root.name)
+                self.assertEqual(code, 0)
+                self.assertTrue(report_path.is_file())
+                self.assertEqual(json.loads(report_path.read_text()), report)
+                self.assertEqual(report["scenarioId"], scenario_id)
+                self.assertEqual(report["status"], "passed")
+                self.assertEqual(set(report["assertions"].values()), {"passed"})
+                self.assertEqual(report["missingControlIds"], [])
+                self.assertEqual(report["failureCategories"], [])
+                serialized_report = json.dumps(report).casefold()
+                for value in applicant_values:
+                    self.assertNotIn(value.casefold(), serialized_report)
+                for value in browser_answer_sentinels:
+                    self.assertNotIn(json.dumps(value).casefold(), serialized_report)
+                self.assertEqual(
+                    report["assertions"]["final-action-untouched"], "passed"
+                )
+
+                cleanup = cli._cleanup(run_root.name)
+                self.assertEqual(
+                    cleanup,
+                    {
+                        "runId": run_root.name,
+                        "state": "completed",
+                        "reportRetained": True,
+                    },
+                )
+                retained = {
+                    path.relative_to(run_root).as_posix(): path.read_bytes()
+                    for path in run_root.rglob("*")
+                    if path.is_file()
+                }
+                nonempty_retained = {
+                    path: payload for path, payload in retained.items() if payload
+                }
+                self.assertEqual(
+                    set(nonempty_retained), {"report.json", "tombstone.json"}
+                )
+                for path, payload in retained.items():
+                    if path not in nonempty_retained:
+                        self.assertEqual(payload, b"")
+                serialized_retained = (
+                    b"\n".join(
+                        nonempty_retained[path] for path in sorted(nonempty_retained)
+                    )
+                    .decode("utf-8")
+                    .casefold()
+                )
+                for value in applicant_values:
+                    self.assertNotIn(value.casefold(), serialized_retained)
+                for value in browser_answer_sentinels:
+                    self.assertNotIn(json.dumps(value).casefold(), serialized_retained)
+                tombstone = json.loads(retained["tombstone.json"])
+                self.assertEqual(tombstone["scenarioId"], scenario_id)
+                self.assertEqual(cli._cleanup(run_root.name), cleanup)
+            finally:
+                try:
+                    request = urllib.request.Request(
+                        base_url + "/__qa/shutdown",
+                        headers={"X-QA-Run-Token": state["shutdownToken"]},
+                        method="POST",
+                    )
+                    urllib.request.urlopen(request, timeout=2).close()
+                except (OSError, urllib.error.URLError):
+                    pass
 
     def test_pdf_inspector_rejects_denied_text_active_content_and_pages(self) -> None:
         scenario_pdf = (
