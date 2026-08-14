@@ -32,7 +32,13 @@ CATALOG = {
     "contact.email": ("textbox", "Email address"),
     "contact.phone": ("textbox", "Phone number"),
     "resume.file": ("file", "Resume"),
+    "preference.top_choice": ("checkbox", "Mark as a top choice"),
+    "authorization.sponsorship": (
+        "radiogroup",
+        "Will you require employment visa sponsorship?",
+    ),
 }
+CONTROL_CHOICES = {"authorization.sponsorship": ("Yes", "No")}
 
 FINAL_ACTION = {
     "id": "final.apply",
@@ -65,13 +71,16 @@ def generic_control(kind: str, required: bool) -> dict[str, Any]:
         role, label = CATALOG[kind]
     except (KeyError, TypeError) as error:
         raise ContractError(f"unsupported control kind: {kind}") from error
-    return {
+    control = {
         "id": kind,
         "kind": kind,
         "role": role,
         "label": label,
         "required": required,
     }
+    if kind in CONTROL_CHOICES:
+        control["choices"] = list(CONTROL_CHOICES[kind])
+    return control
 
 
 def validate_fixture(value: dict[str, Any]) -> None:
@@ -158,7 +167,8 @@ def _validate_control(control: Any, control_ids: set[str]) -> None:
     if not isinstance(control, dict):
         raise ContractError("control must be an object")
     _closed(control, CONTROL_KEYS, "control")
-    if "choices" in control:
+    expected_has_choices = control.get("kind") in CONTROL_CHOICES
+    if "choices" in control and not expected_has_choices:
         raise ContractError("control choices are not supported")
 
     control_id = control.get("id")
@@ -171,7 +181,9 @@ def _validate_control(control: Any, control_ids: set[str]) -> None:
     if not isinstance(required, bool):
         raise ContractError("control required must be a boolean")
     expected = generic_control(control.get("kind"), required)
-    for key in ("id", "role", "label", "required"):
+    for key in ("id", "role", "label", "required", "choices"):
+        if key not in expected and key not in control:
+            continue
         if control.get(key) != expected[key]:
             raise ContractError(f"control {control_id} has non-catalog {key}")
 

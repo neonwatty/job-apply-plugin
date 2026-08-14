@@ -286,7 +286,7 @@ node qa/recorder.mjs checkpoint --session .qa-private/qa-session-20260811-001 --
 
 Add checkpoints as the application advances, ending with `review-reached` and `final-action-boundary`. The recorder must never be used on a login, password, CAPTCHA, or MFA page.
 
-While the recorder is still running, draft `.qa-private/qa-session-20260811-001/semantic.json` from the checkpoint control inventories. It is a private annotation file and must use this closed shape and exact Milestone 1 step/control order:
+While the recorder is still running, draft `.qa-private/qa-session-20260811-001/semantic.json` from the checkpoint control inventories. It is a private annotation file and must use one of the compiler's closed LinkedIn Easy Apply profiles. The original short profile has this exact order:
 
 ```json
 {
@@ -319,6 +319,33 @@ While the recorder is still running, draft `.qa-private/qa-session-20260811-001/
 }
 ```
 
+LinkedIn applications that source name details from the member profile and add the observed screening steps must instead use this exact five-step profile:
+
+```json
+{
+  "captureId": "COPY_FROM_CAPTURE_RECEIPT",
+  "platformFamily": "linkedin-easy-apply",
+  "captureMonth": "COPY_FROM_CAPTURE_RECEIPT",
+  "sourceDeniedTerms": ["SOURCE_EMPLOYER_OR_OTHER_TERM_TO_BLOCK"],
+  "steps": [
+    {"checkpoint": "application-opened", "controls": [
+      {"kind": "contact.email", "sourceLabel": "Observed email label", "required": true},
+      {"kind": "contact.phone", "sourceLabel": "Observed phone label", "required": true}
+    ]},
+    {"checkpoint": "step-advanced", "controls": [
+      {"kind": "resume.file", "sourceLabel": "Observed resume label", "required": true}
+    ]},
+    {"checkpoint": "step-advanced", "controls": [
+      {"kind": "preference.top_choice", "sourceLabel": "Observed top-choice label", "required": false}
+    ]},
+    {"checkpoint": "step-advanced", "controls": [
+      {"kind": "authorization.sponsorship", "sourceLabel": "Observed sponsorship question", "required": true}
+    ]},
+    {"checkpoint": "review-reached", "controls": [], "finalActionObserved": true}
+  ]
+}
+```
+
 After the final checkpoint and draft annotation, press `Ctrl-C` once in the recorder terminal and wait for it to exit cleanly. Do not force-kill it: clean shutdown removes the private control file and writes `capture-receipt.json`, including the generated `captureId`, capture month, recorder version, and hashes of the private source files.
 
 Only after the recorder has exited cleanly, stop the launcher-owned Chrome child:
@@ -337,7 +364,7 @@ When the profile is safely stopped and its managed state is unambiguous, the com
 
 Removing the directory is a separate, user-owned manual action. In Finder, use **Go to Folder** with the exact tilde-form path emitted by `reset`, verify that it is the intended dedicated QA profile, and move that directory to Trash yourself. If you instead choose a terminal removal workflow, target only that exact emitted directory and run it yourself. The launcher never performs or authorizes either removal action and requires no Trash permission.
 
-Replace the two placeholders by copying `captureId` and `captureMonth` exactly from the recorder-generated receipt. `sourceLabel` and `sourceDeniedTerms` may contain private source wording because `semantic.json` is deleted with the raw session, but do not copy applicant input values into it. The compiler accepts no extra properties or alternate step/control order.
+Replace the two placeholders by copying `captureId` and `captureMonth` exactly from the recorder-generated receipt. `sourceLabel` and `sourceDeniedTerms` may contain private source wording because `semantic.json` is deleted with the raw session, but do not copy applicant input values into it. The compiler accepts no extra properties, mixed profiles, or alternate step/control order.
 
 Compile the private capture, inspect every entry in `review-manifest.json`, explicitly approve the reviewed candidate, and promote it:
 

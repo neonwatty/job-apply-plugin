@@ -49,9 +49,101 @@ class CompilerTests(unittest.TestCase):
             self.assertNotIn(value, message)
         return message
 
+    def linkedin_screening_capture(self):
+        capture = copy.deepcopy(self.capture)
+        capture["steps"] = [
+            {
+                "checkpoint": "application-opened",
+                "controls": [
+                    {
+                        "kind": "contact.email",
+                        "sourceLabel": "Email",
+                        "required": True,
+                    },
+                    {
+                        "kind": "contact.phone",
+                        "sourceLabel": "Mobile",
+                        "required": True,
+                    },
+                ],
+            },
+            {
+                "checkpoint": "step-advanced",
+                "controls": [
+                    {"kind": "resume.file", "sourceLabel": "Upload", "required": True}
+                ],
+            },
+            {
+                "checkpoint": "step-advanced",
+                "controls": [
+                    {
+                        "kind": "preference.top_choice",
+                        "sourceLabel": "Top choice",
+                        "required": False,
+                    }
+                ],
+            },
+            {
+                "checkpoint": "step-advanced",
+                "controls": [
+                    {
+                        "kind": "authorization.sponsorship",
+                        "sourceLabel": "Private source question",
+                        "required": True,
+                    }
+                ],
+            },
+            {
+                "checkpoint": "review-reached",
+                "controls": [],
+                "finalActionObserved": True,
+            },
+        ]
+        return capture
+
     def test_compiles_a_contract_valid_fixture(self):
         fixture = self.compile()
         self.assertIsNone(validate_fixture(fixture))
+
+    def test_compiles_current_linkedin_screening_flow(self):
+        fixture = self.compile(capture=self.linkedin_screening_capture())
+        self.assertIsNone(validate_fixture(fixture))
+        self.assertEqual(
+            [
+                tuple(control["id"] for control in step["controls"])
+                for step in fixture["steps"]
+            ],
+            [
+                ("contact.email", "contact.phone"),
+                ("resume.file",),
+                ("preference.top_choice",),
+                ("authorization.sponsorship",),
+                (),
+            ],
+        )
+        self.assertEqual(
+            [step["title"] for step in fixture["steps"]],
+            [
+                "Contact information",
+                "Resume",
+                "Job preference",
+                "Work authorization",
+                "Review application",
+            ],
+        )
+        self.assertEqual(fixture["steps"][3]["next"], "review")
+        self.assertEqual(
+            fixture["steps"][3]["controls"][0]["choices"], ["Yes", "No"]
+        )
+
+    def test_screening_flow_remains_closed(self):
+        capture = self.linkedin_screening_capture()
+        capture["steps"][2]["controls"][0]["required"] = True
+        self.assert_rejected_without_echo(capture=capture)
+
+        capture = self.linkedin_screening_capture()
+        capture["steps"][3]["controls"][0]["kind"] = "PRIVATE-SENTINEL"
+        self.assert_rejected_without_echo(capture=capture)
 
     def test_compiler_error_is_a_contract_error(self):
         capture = copy.deepcopy(self.capture)
@@ -90,7 +182,16 @@ class CompilerTests(unittest.TestCase):
         controls = [
             control for step in fixture["steps"] for control in step["controls"]
         ]
-        self.assertEqual([control["id"] for control in controls], list(CATALOG))
+        self.assertEqual(
+            [control["id"] for control in controls],
+            [
+                "contact.first_name",
+                "contact.last_name",
+                "contact.email",
+                "contact.phone",
+                "resume.file",
+            ],
+        )
         for control in controls:
             role, label = CATALOG[control["kind"]]
             self.assertEqual(control["id"], control["kind"])

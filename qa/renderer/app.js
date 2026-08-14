@@ -56,6 +56,18 @@ function clearControlError(input, error) {
   error.textContent = "";
 }
 
+function controlHasValue(control) {
+  if (control.role === "file")
+    return document.getElementById(control.id).files.length > 0;
+  if (control.role === "checkbox")
+    return document.getElementById(control.id).checked;
+  if (control.role === "radiogroup")
+    return Boolean(
+      document.querySelector(`input[name="${control.id}"]:checked`),
+    );
+  return Boolean(document.getElementById(control.id).value.trim());
+}
+
 function renderControl(control) {
   const stepId = currentStepId;
   const group = document.createElement("div");
@@ -73,7 +85,30 @@ function renderControl(control) {
   error.setAttribute("role", "alert");
   input.setAttribute("aria-describedby", error.id);
 
-  if (control.role === "file") {
+  if (control.role === "radiogroup") {
+    const fieldset = document.createElement("fieldset");
+    fieldset.id = control.id;
+    fieldset.setAttribute("aria-describedby", error.id);
+    const legend = document.createElement("legend");
+    legend.textContent = control.label;
+    fieldset.append(legend);
+    for (const choice of control.choices) {
+      const choiceLabel = document.createElement("label");
+      const choiceInput = document.createElement("input");
+      choiceInput.type = "radio";
+      choiceInput.name = control.id;
+      choiceInput.value = choice;
+      choiceInput.required = control.required;
+      choiceInput.addEventListener("change", () => {
+        enteredValues.set(control.id, choice);
+        clearControlError(fieldset, error);
+        recordControlEvent("filled", control.id, stepId);
+      });
+      choiceLabel.append(choiceInput, document.createTextNode(choice));
+      fieldset.append(choiceLabel);
+    }
+    group.append(fieldset, error);
+  } else if (control.role === "file") {
     input.type = "file";
     input.accept = ".pdf,application/pdf";
     const filename = document.createElement("p");
@@ -92,6 +127,18 @@ function renderControl(control) {
       }
     });
     group.append(label, input, filename, error);
+  } else if (control.role === "checkbox") {
+    input.type = "checkbox";
+    input.addEventListener("change", () => {
+      enteredValues.set(
+        control.id,
+        input.checked ? "Selected" : "Not selected",
+      );
+      clearControlError(input, error);
+      recordControlEvent("filled", control.id, stepId);
+    });
+    label.prepend(input);
+    group.append(label, error);
   } else {
     input.type =
       control.kind === "contact.email"
@@ -117,15 +164,14 @@ function validateStep(step) {
   let firstInvalid;
   for (const control of step.controls) {
     const input = document.getElementById(control.id);
-    const missing =
-      control.required &&
-      (control.role === "file"
-        ? input.files.length === 0
-        : !input.value.trim());
+    const missing = control.required && !controlHasValue(control);
     const error = document.getElementById(`${control.id}-error`);
     if (missing) {
       valid = false;
-      firstInvalid ??= input;
+      firstInvalid ??=
+        control.role === "radiogroup"
+          ? document.querySelector(`input[name="${control.id}"]`)
+          : input;
       input.setAttribute("aria-invalid", "true");
       error.textContent = `${control.label} is required`;
       recordControlEvent("validation", control.id, step.id);
@@ -142,7 +188,7 @@ async function ensureControlEvents(step) {
     const input = document.getElementById(control.id);
     if (control.role === "file" && input.files.length > 0) {
       await recordEvent("uploaded", control.id, step.id);
-    } else if (control.role !== "file" && input.value.trim()) {
+    } else if (control.role !== "file" && controlHasValue(control)) {
       await recordEvent("filled", control.id, step.id);
     }
   }

@@ -69,6 +69,42 @@ class ContractTests(unittest.TestCase):
             },
         )
 
+    def test_catalog_generates_closed_linkedin_screening_controls(self):
+        self.assertEqual(
+            generic_control("preference.top_choice", required=False),
+            {
+                "id": "preference.top_choice",
+                "kind": "preference.top_choice",
+                "role": "checkbox",
+                "label": "Mark as a top choice",
+                "required": False,
+            },
+        )
+        self.assertEqual(
+            generic_control("authorization.sponsorship", required=True),
+            {
+                "id": "authorization.sponsorship",
+                "kind": "authorization.sponsorship",
+                "role": "radiogroup",
+                "label": "Will you require employment visa sponsorship?",
+                "required": True,
+                "choices": ["Yes", "No"],
+            },
+        )
+
+    def test_catalog_choice_shape_is_exact(self):
+        fixture = self.valid_fixture()
+        fixture["steps"][0]["controls"] = [
+            generic_control("authorization.sponsorship", required=True)
+        ]
+        self.assertIsNone(validate_fixture(fixture))
+
+        fixture["steps"][0]["controls"][0]["choices"] = ["No", "Yes"]
+        self.assert_contract_error(
+            fixture,
+            "control authorization.sponsorship has non-catalog choices",
+        )
+
     def test_valid_fixture_is_accepted(self):
         self.assertIsNone(validate_fixture(self.valid_fixture()))
 
@@ -266,7 +302,7 @@ class ContractTests(unittest.TestCase):
         ):
             generic_control("contact.first_name", required=1)
 
-    def test_choices_are_not_supported_by_catalog_v1(self):
+    def test_choices_are_not_supported_for_non_choice_controls(self):
         fixture = self.valid_fixture()
         fixture["steps"][0]["controls"][0]["choices"] = []
         self.assert_contract_error(fixture, "control choices are not supported")

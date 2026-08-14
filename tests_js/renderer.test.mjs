@@ -35,7 +35,7 @@ async function stopChild(child) {
   }
 }
 
-async function startServer(t) {
+async function startServer(t, transformFixture = (fixture) => fixture) {
   const directory = await mkdtemp(path.join(tmpdir(), "qa-renderer-"));
   const fixturePath = path.join(directory, "fixture.json");
   const data = {
@@ -116,7 +116,7 @@ async function startServer(t) {
     ],
     oracle: { finalActionActivations: 0 },
   };
-  await writeFile(fixturePath, JSON.stringify(data));
+  await writeFile(fixturePath, JSON.stringify(transformFixture(data)));
   let child;
   try {
     child = spawn(
@@ -377,6 +377,96 @@ test("renders the generic fixture and blocks the final action without leaking va
   await assertVisible(page.getByText("Final action blocked by QA tripwire"));
   assert.equal(page.url(), originalUrl);
   assert.equal((await getState(url)).finalActionActivations, 1);
+});
+
+test("renders the closed LinkedIn screening flow and records only semantic choices", async (t) => {
+  const { url } = await startServer(t, (fixture) => {
+    fixture.id = "renderer-linkedin-screening-v1";
+    fixture.compilerVersion = "1.1.0";
+    fixture.steps = [
+      {
+        id: "step-1",
+        kind: "form",
+        title: "Contact information",
+        controls: fixture.steps[0].controls.slice(2),
+        next: "step-2",
+      },
+      fixture.steps[1],
+      {
+        id: "step-3",
+        kind: "form",
+        title: "Job preference",
+        controls: [{
+          id: "preference.top_choice",
+          kind: "preference.top_choice",
+          role: "checkbox",
+          label: "Mark as a top choice",
+          required: false,
+        }],
+        next: "step-4",
+      },
+      {
+        id: "step-4",
+        kind: "form",
+        title: "Work authorization",
+        controls: [{
+          id: "authorization.sponsorship",
+          kind: "authorization.sponsorship",
+          role: "radiogroup",
+          label: "Will you require employment visa sponsorship?",
+          required: true,
+          choices: ["Yes", "No"],
+        }],
+        next: "review",
+      },
+      fixture.steps[2],
+    ];
+    fixture.steps[1].next = "step-3";
+    return fixture;
+  });
+  const browser = await chromium.launch();
+  t.after(() => browser.close());
+  const page = await browser.newPage();
+  await page.goto(url);
+
+  await page.getByLabel("Email address").fill("qa@example.invalid");
+  await page.getByLabel("Phone number").fill("202-555-0101");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByLabel("Resume").setInputFiles({
+    name: "synthetic-resume.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4 synthetic"),
+  });
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByLabel("Mark as a top choice").check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await assertVisible(
+    page.getByText("Will you require employment visa sponsorship? is required"),
+  );
+  assert.equal(
+    await page
+      .getByRole("group", { name: "Will you require employment visa sponsorship?" })
+      .getAttribute("aria-invalid"),
+    "true",
+  );
+  await page.getByLabel("No", { exact: true }).check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await assertVisible(page.getByRole("heading", { name: "Review application" }));
+
+  const state = await waitForState(url, (candidate) =>
+    candidate.events.some((event) => event.type === "reviewed"),
+  );
+  assert.equal(
+    state.events.some((event) =>
+      event.type === "filled" &&
+      event.controlId === "authorization.sponsorship" &&
+      event.stepId === "step-4"),
+    true,
+  );
+  const serialized = JSON.stringify(state);
+  assert.equal(serialized.includes("qa@example.invalid"), false);
+  assert.equal(serialized.includes("202-555-0101"), false);
 });
 
 test("records only a false match bit for a wrong resume filename", async (t) => {

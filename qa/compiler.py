@@ -17,7 +17,7 @@ from qa.contracts import (
 )
 
 
-COMPILER_VERSION = "1.0.0"
+COMPILER_VERSION = "1.1.0"
 MAX_SOURCE_FILES = 2_000
 MAX_SOURCE_PATH_CHARS = 512
 
@@ -36,21 +36,46 @@ _RECEIPT_KEYS = {
     "captureId",
     "sourceFiles",
 }
-_CHECKPOINT_SEQUENCE = (
-    "application-opened",
-    "step-advanced",
-    "review-reached",
+_FLOW_PROFILES = (
+    (
+        (
+            "application-opened",
+            (
+                ("contact.first_name", True),
+                ("contact.last_name", True),
+                ("contact.email", True),
+                ("contact.phone", True),
+            ),
+        ),
+        ("step-advanced", (("resume.file", True),)),
+        ("review-reached", ()),
+    ),
+    (
+        (
+            "application-opened",
+            (
+                ("contact.email", True),
+                ("contact.phone", True),
+            ),
+        ),
+        ("step-advanced", (("resume.file", True),)),
+        ("step-advanced", (("preference.top_choice", False),)),
+        ("step-advanced", (("authorization.sponsorship", True),)),
+        ("review-reached", ()),
+    ),
 )
-_CONTROL_SEQUENCE = (
+_STEP_TITLES = {
     (
         "contact.first_name",
         "contact.last_name",
         "contact.email",
         "contact.phone",
-    ),
-    ("resume.file",),
-    (),
-)
+    ): "Application details",
+    ("contact.email", "contact.phone"): "Contact information",
+    ("resume.file",): "Resume",
+    ("preference.top_choice",): "Job preference",
+    ("authorization.sponsorship",): "Work authorization",
+}
 _SEMVER_CORE = re.compile(
     r"^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)$"
 )
@@ -96,21 +121,28 @@ def _validate_capture(capture: Any) -> tuple[str, str, list[dict[str, Any]]]:
     for step in steps:
         _validate_step_shape(step)
 
-    checkpoints = tuple(step.get("checkpoint") for step in steps)
-    if len(checkpoints) != len(set(checkpoints)):
-        raise CompilerError("duplicate checkpoint")
-    if checkpoints != _CHECKPOINT_SEQUENCE:
-        raise CompilerError("unsupported checkpoint sequence")
+    observed_profile = tuple(
+        (
+            step.get("checkpoint"),
+            tuple(
+                (control.get("kind"), control.get("required"))
+                for control in step["controls"]
+            ),
+        )
+        for step in steps
+    )
+    if observed_profile not in _FLOW_PROFILES:
+        raise CompilerError("unsupported application flow")
 
     for index, step in enumerate(steps):
         expected_keys = {"checkpoint", "controls"}
-        if index == 2:
+        if index == len(steps) - 1:
             expected_keys.add("finalActionObserved")
         if set(step) != expected_keys:
             raise CompilerError("invalid step fields")
-        _validate_controls(step["controls"], _CONTROL_SEQUENCE[index])
+        _validate_controls(step["controls"])
 
-    review = steps[2]
+    review = steps[-1]
     if review["finalActionObserved"] is not True:
         raise CompilerError("final action observation required")
 
@@ -140,14 +172,10 @@ def _validate_control_shape(control: Any) -> None:
         raise CompilerError("invalid control required flag")
 
 
-def _validate_controls(
-    controls: list[dict[str, Any]], expected_kinds: tuple[str, ...]
-) -> None:
+def _validate_controls(controls: list[dict[str, Any]]) -> None:
     kinds = tuple(control["kind"] for control in controls)
     if len(kinds) != len(set(kinds)):
         raise CompilerError("duplicate control kind")
-    if kinds != expected_kinds:
-        raise CompilerError("unsupported control sequence")
 
 
 def _validate_source_files(value: Any) -> str:
@@ -206,14 +234,23 @@ def compile_capture(capture: dict, receipt: dict, fixture_id: str) -> dict:
         raise CompilerError("capture month mismatch")
 
     try:
-        first_controls = [
-            generic_control(control["kind"], control["required"])
-            for control in steps[0]["controls"]
-        ]
-        second_controls = [
-            generic_control(control["kind"], control["required"])
-            for control in steps[1]["controls"]
-        ]
+        form_steps = []
+        for index, source_step in enumerate(steps[:-1], start=1):
+            controls = [
+                generic_control(control["kind"], control["required"])
+                for control in source_step["controls"]
+            ]
+            kinds = tuple(control["kind"] for control in source_step["controls"])
+            next_id = "review" if index == len(steps) - 1 else f"step-{index + 1}"
+            form_steps.append(
+                {
+                    "id": f"step-{index}",
+                    "kind": "form",
+                    "title": _STEP_TITLES[kinds],
+                    "controls": controls,
+                    "next": next_id,
+                }
+            )
         fixture = {
             "schemaVersion": 1,
             "id": fixture_id,
@@ -225,21 +262,7 @@ def compile_capture(capture: dict, receipt: dict, fixture_id: str) -> dict:
                 "captureMonth": receipt_month,
                 "sourceRecordingSha256": digest,
             },
-            "steps": [
-                {
-                    "id": "step-1",
-                    "kind": "form",
-                    "title": "Application details",
-                    "controls": first_controls,
-                    "next": "step-2",
-                },
-                {
-                    "id": "step-2",
-                    "kind": "form",
-                    "title": "Resume",
-                    "controls": second_controls,
-                    "next": "review",
-                },
+            "steps": form_steps + [
                 {
                     "id": "review",
                     "kind": "review",
