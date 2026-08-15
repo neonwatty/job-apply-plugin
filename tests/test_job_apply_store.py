@@ -251,6 +251,16 @@ class StoreTests(unittest.TestCase):
         for forbidden in ("http://", "https://", "routeToken", "resumePath", "value"):
             self.assertNotIn(forbidden, serialized)
 
+    def test_ashby_replay_transitions_are_supported_and_value_free(self):
+        application_id = "qa-run-20260815-5678abcd"
+        self.store.record_replay_transition(application_id, "started", "ashby")
+        self.store.record_replay_transition(application_id, "reviewed", "ashby")
+        history = self.store.read_history()
+        session = self.store.load_session(application_id)
+        self.assertEqual([event["ats"] for event in history], ["ashby", "ashby"])
+        self.assertEqual((session["ats"], session["status"]), ("ashby", "review"))
+        self.assertNotIn("value", json.dumps({"history": history, "session": session}))
+
     def test_replay_review_requires_started_and_rejects_terminal_or_mismatched_ats(self):
         application_id = "qa-run-20260815-1234abcd"
         with self.assertRaisesRegex(STORE_MODULE.StoreError, "has not started"):

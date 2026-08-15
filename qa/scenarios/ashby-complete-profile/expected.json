@@ -1,0 +1,8 @@
+{
+  "controlIds": [
+    "contact.full_name",
+    "contact.email",
+    "resume.file"
+  ],
+  "resumeFilename": "synthetic-resume.pdf"
+}

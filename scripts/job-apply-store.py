@@ -35,7 +35,7 @@ HISTORY_EVENTS = {
 }
 SESSION_STATUSES = {"active", "review", "completed", "abandoned"}
 REPLAY_TRANSITIONS = {"started", "reviewed"}
-REPLAY_ATS = {"greenhouse", "linkedin-easy-apply"}
+REPLAY_ATS = {"ashby", "greenhouse", "linkedin-easy-apply"}
 SESSION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 
 

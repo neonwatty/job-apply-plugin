@@ -139,6 +139,26 @@ class CompilerTests(unittest.TestCase):
         ]
         return capture
 
+    def ashby_capture(self):
+        capture = copy.deepcopy(self.capture)
+        capture["platformFamily"] = "ashby"
+        capture["steps"] = [
+            {
+                "checkpoint": "application-opened",
+                "controls": [
+                    {"kind": "contact.full_name", "sourceLabel": "Observed 1", "required": True},
+                    {"kind": "contact.email", "sourceLabel": "Observed 2", "required": True},
+                    {"kind": "resume.file", "sourceLabel": "Observed 3", "required": True},
+                ],
+            },
+            {
+                "checkpoint": "review-reached",
+                "controls": [],
+                "finalActionObserved": True,
+            },
+        ]
+        return capture
+
     def test_compiles_a_contract_valid_fixture(self):
         fixture = self.compile()
         self.assertIsNone(validate_fixture(fixture))
@@ -215,6 +235,30 @@ class CompilerTests(unittest.TestCase):
     def test_greenhouse_flow_remains_closed(self):
         capture = self.greenhouse_capture()
         capture["steps"][0]["controls"][2]["required"] = True
+        self.assert_rejected_without_echo(capture=capture)
+
+    def test_compiles_closed_ashby_single_page_flow(self):
+        fixture = self.compile(capture=self.ashby_capture())
+        self.assertIsNone(validate_fixture(fixture))
+        self.assertEqual(fixture["platformFamily"], "ashby")
+        self.assertEqual(
+            [step["title"] for step in fixture["steps"]],
+            ["Application form", "Review application"],
+        )
+        self.assertEqual(
+            [control["id"] for control in fixture["steps"][0]["controls"]],
+            ["contact.full_name", "contact.email", "resume.file"],
+        )
+
+    def test_ashby_flow_remains_closed(self):
+        capture = self.ashby_capture()
+        capture["steps"][0]["controls"][0]["required"] = False
+        self.assert_rejected_without_echo(capture=capture)
+
+        capture = self.ashby_capture()
+        capture["steps"][0]["controls"].append(
+            {"kind": "contact.phone", "sourceLabel": "Private", "required": False}
+        )
         self.assert_rejected_without_echo(capture=capture)
 
         capture = self.greenhouse_capture()

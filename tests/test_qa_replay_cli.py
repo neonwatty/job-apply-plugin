@@ -565,6 +565,56 @@ class ReplayCoordinatorTests(unittest.TestCase):
         )
         self.assertEqual((session["ats"], session["status"]), ("greenhouse", "review"))
 
+    def test_prepare_uses_closed_ashby_guidance_without_changing_shape(self) -> None:
+        fixture_id = "ashby-application-2026-08-v1"
+        scenario_id = "ashby-complete-profile"
+        fixture_dir = self.fixtures / fixture_id
+        scenario_dir = self.scenarios / scenario_id
+        fixture_dir.mkdir()
+        scenario_dir.mkdir()
+        fixture = json.loads(json.dumps(self.fixture))
+        fixture["id"] = fixture_id
+        fixture["platformFamily"] = "ashby"
+        fixture["steps"] = [
+            {
+                "id": "step-1",
+                "kind": "form",
+                "title": "Application form",
+                "controls": [
+                    {"id": "contact.full_name", "kind": "contact.full_name", "role": "textbox", "label": "Full name", "required": True},
+                    {"id": "contact.email", "kind": "contact.email", "role": "textbox", "label": "Email address", "required": True},
+                    {"id": "resume.file", "kind": "resume.file", "role": "file", "label": "Resume", "required": True},
+                ],
+                "next": "review",
+            },
+            fixture["steps"][-1],
+        ]
+        (fixture_dir / "fixture.json").write_text(json.dumps(fixture))
+        profile = json.loads(
+            (ROOT / "qa/scenarios/ashby-complete-profile/profile.json").read_text()
+        )
+        (scenario_dir / "profile.json").write_text(json.dumps(profile))
+        (scenario_dir / "expected.json").write_text(json.dumps({
+            "controlIds": ["contact.full_name", "contact.email", "resume.file"],
+            "resumeFilename": "synthetic-resume.pdf",
+        }))
+        (scenario_dir / "synthetic-resume.pdf").write_bytes(
+            (ROOT / "qa/scenarios/ashby-complete-profile/synthetic-resume.pdf").read_bytes()
+        )
+
+        output = self.cli._prepare(fixture_id, scenario_id)
+        run_root = Path(output["storeRoot"]).parent
+        state = json.loads((run_root / "run.json").read_text())
+        self.server_cleanup = (output["url"], state["shutdownToken"])
+        self.assertEqual(
+            set(output),
+            {"fixtureId", "scenarioId", "url", "storeRoot", "suggestedPrompt"},
+        )
+        self.assertEqual(
+            output["suggestedPrompt"],
+            PROMPT.format(url=output["url"]).replace("LinkedIn Easy Apply", "Ashby"),
+        )
+
     def _record_complete_replay_events(self, output: dict) -> None:
         for step in self.fixture["steps"]:
             for control in step["controls"]:
@@ -1613,6 +1663,26 @@ class CommittedScenarioTests(unittest.TestCase):
         self.assertEqual(profile["name"], "Avery Replay")
         self.assertEqual(expected, {
             "controlIds": fixture_control_ids,
+            "resumeFilename": "synthetic-resume.pdf",
+        })
+        self.assertEqual(
+            (scenario_root / "synthetic-resume.pdf").read_bytes(),
+            (ROOT / "qa/scenarios/complete-profile/synthetic-resume.pdf").read_bytes(),
+        )
+
+    def test_ashby_complete_profile_scenario_is_closed_and_synthetic(self) -> None:
+        scenario_root = ROOT / "qa/scenarios/ashby-complete-profile"
+        self.assertEqual(
+            {path.name for path in scenario_root.iterdir()},
+            {"profile.json", "synthetic-resume.pdf", "expected.json"},
+        )
+        profile = json.loads((scenario_root / "profile.json").read_text())
+        expected = json.loads((scenario_root / "expected.json").read_text())
+        self.assertEqual(profile["name"], "Avery Replay")
+        self.assertRegex(profile["email"], r"^[a-z.]+@example\.com$")
+        self.assertEqual(profile["resumePath"], "synthetic-resume.pdf")
+        self.assertEqual(expected, {
+            "controlIds": ["contact.full_name", "contact.email", "resume.file"],
             "resumeFilename": "synthetic-resume.pdf",
         })
         self.assertEqual(

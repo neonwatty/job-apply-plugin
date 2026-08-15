@@ -24,7 +24,7 @@ export const CHECKPOINT_KINDS = Object.freeze([
 ]);
 
 const CHECKPOINT_KIND_SET = new Set(CHECKPOINT_KINDS);
-const SENSITIVE_PATTERN = /(?:\blog[ -]?in\b|\bsign[ -]?in\b|password|passcode|captcha|multi[ -]?factor|\bmfa\b|two[ -]?factor|\b2fa\b|2[ -]?step verification|verification code|security code|sms code|recovery code|authenticator app|push notification|verify (?:your )?identity|\b\d{1,2}[ -]?digit code(?: we sent)?|approve (?:this |the )?(?:device|sign[ -]?in)|create (?:an? )?account|account[ -]?creation|register|\botp\b|authentication|security[ -]?key|one[ -]?time[ -]?code)/i;
+const SENSITIVE_PATTERN = /(?:\blog[ -]?in\b|\bsign[ -]?in\b|password|passcode|captcha|not a robot|multi[ -]?factor|\bmfa\b|two[ -]?factor|\b2fa\b|2[ -]?step verification|verification code|security code|sms code|recovery code|authenticator app|push notification|verify (?:your )?identity|\b\d{1,2}[ -]?digit code(?: we sent)?|approve (?:this |the )?(?:device|sign[ -]?in)|create (?:an? )?account|account[ -]?creation|register|\botp\b|authentication|security[ -]?key|one[ -]?time[ -]?code)/i;
 const MAX_CONTROL_BODY = 4096;
 const MAX_EVENTS = 10_000;
 const MAX_PENDING_EVENT_OPERATIONS = 8;
@@ -225,6 +225,54 @@ function isPassiveGreenhouseRecaptchaFrame(snapshot, main) {
     /^(?:Privacy\s*[-|]\s*Terms)?$/.test(text) && controls.length === 0;
 }
 
+function isAshbyApplicationUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.username === "" && url.password === "" &&
+      url.port === "" && url.hostname === "jobs.ashbyhq.com" &&
+      url.search === "" && url.hash === "" &&
+      /^\/[A-Za-z0-9_-]+\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/application\/?$/i
+        .test(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
+function isAshbyPassiveRecaptchaInspection(snapshots, main) {
+  if (snapshots.length !== 2 || !main?.frame?.id || main.frameVisible !== true) return false;
+  const value = main.value;
+  if (!value || !isAshbyApplicationUrl(value.url) || value.controlOverflow !== false ||
+      !Array.isArray(value.controls) || !Array.isArray(value.securityControls)) {
+    return false;
+  }
+  const controls = value.controls;
+  const securityControls = value.securityControls;
+  const hiddenResponses = securityControls.filter(isPassiveRecaptchaResponseControl);
+  if (hiddenResponses.length !== 1 || controls.some(isPassiveRecaptchaResponseControl)) {
+    return false;
+  }
+  const hasInteractiveChallenge = [...controls, ...securityControls].some((control) =>
+    /(?:captcha|challenge|not a robot)/i.test(
+      typeof control?.label === "string" ? control.label : "",
+    ) && !isPassiveRecaptchaResponseControl(control));
+  if (hasInteractiveChallenge) return false;
+  if (isSensitivePage({
+    ...value,
+    securityControls: securityControls.filter((control) =>
+      !isPassiveRecaptchaResponseControl(control)),
+  })) return false;
+
+  const child = snapshots.find((snapshot) => snapshot !== main);
+  const childValue = child?.value;
+  return child?.frame?.parentId === main.frame.id && child.frame.id &&
+    child.frame.id !== main.frame.id && typeof child.frameVisible === "boolean" &&
+    childValue?.url === "about:blank" && typeof childValue.title === "string" &&
+    childValue.title.trim() === "" && typeof childValue.text === "string" &&
+    childValue.text.trim() === "" && Array.isArray(childValue.controls) &&
+    childValue.controls.length === 0 && Array.isArray(childValue.securityControls) &&
+    childValue.securityControls.length === 0 && childValue.controlOverflow === false;
+}
+
 function isDormantLinkedInCaptcha(snapshot) {
   const value = snapshot?.value;
   if (!value || !snapshot.frame?.parentId || snapshot.frameVisible !== false) return false;
@@ -259,8 +307,11 @@ export function inspectionHasSensitivePage(snapshots) {
   const linkedInJobsPage = main && isLinkedInJobsUrl(main.value?.url) &&
     !isSensitivePage(main.value);
   const greenhousePassiveRecaptcha = main && isGreenhousePassiveRecaptchaMain(main);
+  const ashbyPassiveRecaptcha = main &&
+    isAshbyPassiveRecaptchaInspection(snapshots, main);
   return snapshots.some((snapshot) => {
     if (!isSensitivePage(snapshot.value)) return false;
+    if (ashbyPassiveRecaptcha && snapshot === main) return false;
     if (greenhousePassiveRecaptcha &&
         (snapshot === main || isPassiveGreenhouseRecaptchaFrame(snapshot, main))) {
       return false;
@@ -660,16 +711,26 @@ function isolatedSnapshotSource(includeStructure) {
     const controlSelector = "input,select,textarea,button,[role]";
     const composedParent = (element) => element.parentElement ||
       (element.getRootNode() instanceof ShadowRoot ? element.getRootNode().host : null);
-    const shadowRoots = [];
     const collectControls = (root, controls = []) => {
       for (const element of root.querySelectorAll("*")) {
         if (element.matches(controlSelector)) controls.push(element);
         if (element.shadowRoot) {
-          shadowRoots.push(element.shadowRoot);
           collectControls(element.shadowRoot, controls);
         }
       }
       return controls;
+    };
+    let pageText = "";
+    const collectPageText = (node) => {
+      if (!node || pageText.length >= 8192) return;
+      if (node.nodeType === Node.TEXT_NODE) {
+        pageText += (pageText ? " " : "") + (node.textContent || "");
+        pageText = pageText.slice(0, 8192);
+        return;
+      }
+      if (node instanceof Element && node.matches("script,style,template")) return;
+      for (const child of node.childNodes) collectPageText(child);
+      if (node instanceof Element && node.shadowRoot) collectPageText(node.shadowRoot);
     };
     const labelFor = (element) => {
       const aria = element.getAttribute("aria-label");
@@ -728,6 +789,7 @@ function isolatedSnapshotSource(includeStructure) {
     const securityControls = elements.slice(0, ${CAPTURE_LIMITS.maxControls + 1}).map(describe);
     const visibleElements = elements.filter(isVisible);
     const controls = visibleElements.slice(0, ${CAPTURE_LIMITS.maxControls + 1}).map(describe);
+    collectPageText(document.body);
     let html = "";
     let structuralOverflow = false;
     if (${includeStructure ? "true" : "false"}) {
@@ -767,8 +829,7 @@ function isolatedSnapshotSource(includeStructure) {
     }
     return {
       title: document.title.slice(0, 512),
-      text: [document.body?.textContent || "", ...shadowRoots.map((root) => root.textContent || "")]
-        .join(" ").slice(0, 8192),
+      text: pageText,
       controls,
       securityControls,
       controlOverflow: elements.length > ${CAPTURE_LIMITS.maxControls},

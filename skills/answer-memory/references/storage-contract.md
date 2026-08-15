@@ -40,7 +40,7 @@ History and sessions reference answer keys instead of copying values. Their inpu
 
 ## Approved replay lifecycle
 
-Approved loopback QA runs record `started` and `reviewed` through `qa-replay.py`, which delegates to the store helper's closed `replay-transition` command. The application identity is the generated run ID; callers cannot supply a second identity or persistence location. Transitions are idempotent, ordered, limited to Greenhouse and LinkedIn Easy Apply fixtures, and keep using `applications.jsonl` plus the matching session document. They contain no applicant answers, private URLs, route or shutdown tokens, resume content, or browser state. A reviewed transition is accepted only for a nonterminal run after its correlated replay review event and while the final-action activation count remains zero.
+Approved loopback QA runs record `started` and `reviewed` through `qa-replay.py`, which delegates to the store helper's closed `replay-transition` command. The application identity is the generated run ID; callers cannot supply a second identity or persistence location. Transitions are idempotent, ordered, limited to Greenhouse, LinkedIn Easy Apply, and Ashby fixtures, and keep using `applications.jsonl` plus the matching session document. They contain no applicant answers, private URLs, route or shutdown tokens, resume content, or browser state. A reviewed transition is accepted only for a nonterminal run after its correlated replay review event and while the final-action activation count remains zero.
 
 ## Auto-submit campaign contract
 

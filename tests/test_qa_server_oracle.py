@@ -825,6 +825,44 @@ class SemanticOracleTests(unittest.TestCase):
         self.assertEqual(report["missingControlIds"], [])
         self.assertEqual(report["failureCategories"], [])
 
+    def test_ashby_complete_profile_scenario_passes_with_closed_identity(self):
+        fixture = valid_fixture()
+        fixture["id"] = "ashby-application-2026-08-v1"
+        fixture["platformFamily"] = "ashby"
+        fixture["steps"][0]["controls"] = [
+            {
+                "id": "contact.full_name",
+                "kind": "contact.full_name",
+                "role": "textbox",
+                "label": "Full name",
+                "required": True,
+            },
+            {
+                "id": "contact.email",
+                "kind": "contact.email",
+                "role": "textbox",
+                "label": "Email address",
+                "required": True,
+            },
+            {
+                "id": "resume.file",
+                "kind": "resume.file",
+                "role": "file",
+                "label": "Resume",
+                "required": True,
+            },
+        ]
+        fixture["steps"] = [fixture["steps"][0], fixture["steps"][-1]]
+        fixture["steps"][0]["next"] = "review"
+        report = self.evaluate(
+            fixture=fixture,
+            scenario={"id": "ashby-complete-profile"},
+            events=complete_events(fixture),
+        )
+        self.assertEqual(report["scenarioId"], "ashby-complete-profile")
+        self.assertEqual(report["status"], "passed")
+        self.assertEqual(set(report["assertions"].values()), {"passed"})
+
     def test_store_root_may_be_an_already_open_owned_descriptor(self):
         descriptor = os.open(
             self.store.root,

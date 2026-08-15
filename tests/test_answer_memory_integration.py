@@ -178,6 +178,11 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
         self.assertIn("review_only", skills["job-apply"])
         self.assertIn("job_apply_policy.py", skills["job-apply"])
         self.assertIn("atomically claims one final action", skills["job-apply"])
+
+        storage_contract = (
+            ROOT / "skills/answer-memory/references/storage-contract.md"
+        ).read_text()
+        self.assertIn("Greenhouse, LinkedIn Easy Apply, and Ashby", storage_contract)
         self.assertIn("isolated loopback QA adapter", skills["job-apply"])
         self.assertIn("Every live Submit", skills["job-apply"])
         self.assertIn("separately audited canary", skills["job-apply"])

@@ -607,6 +607,136 @@ test("Greenhouse jobs allow only passive reCAPTCHA disclosure surfaces", () => {
   ]), true);
 });
 
+test("Ashby applications allow only one passive hidden response and empty child frame", () => {
+  const response = {
+    type: "textarea",
+    role: "textbox",
+    autocomplete: "",
+    label: "g-recaptcha-response",
+  };
+  const main = {
+    frame: { id: "main" },
+    frameVisible: true,
+    value: {
+      url: "https://jobs.ashbyhq.com/example/00000000-0000-4000-8000-000000000001/application",
+      title: "Application",
+      text: "Apply for this position",
+      controls: [
+        { type: "email", role: "textbox", autocomplete: "", label: "Email" },
+        { type: "button", role: "button", autocomplete: "", label: "Continue" },
+      ],
+      securityControls: [
+        { type: "email", role: "textbox", autocomplete: "", label: "Email" },
+        { type: "button", role: "button", autocomplete: "", label: "Continue" },
+        response,
+      ],
+      controlOverflow: false,
+    },
+  };
+  const emptyChild = {
+    frame: { id: "passive", parentId: "main" },
+    frameVisible: false,
+    value: {
+      url: "about:blank",
+      title: "",
+      text: "",
+      controls: [],
+      securityControls: [],
+      controlOverflow: false,
+    },
+  };
+  const inspect = (mainValue = main.value, childValue = emptyChild.value, extras = []) =>
+    inspectionHasSensitivePage([
+      { ...main, value: mainValue },
+      { ...emptyChild, value: childValue },
+      ...extras,
+    ]);
+
+  assert.equal(inspect(), false);
+
+  const invalidUrls = [
+    "http://jobs.ashbyhq.com/example/00000000-0000-4000-8000-000000000001/application",
+    "https://user@jobs.ashbyhq.com/example/00000000-0000-4000-8000-000000000001/application",
+    "https://jobs.ashbyhq.com:444/example/00000000-0000-4000-8000-000000000001/application",
+    "https://jobs.ashbyhq.com/example/00000000-0000-4000-8000-000000000001/application?source=test",
+    "https://jobs.ashbyhq.com/example/00000000-0000-4000-8000-000000000001/application#form",
+    "https://jobs.ashbyhq.com/example/00000000-0000-4000-8000-000000000001",
+    "https://jobs.ashbyhq.com/application",
+    "https://example.test/example/00000000-0000-4000-8000-000000000001/application",
+  ];
+  for (const url of invalidUrls) {
+    assert.equal(inspect({ ...main.value, url }), true, url);
+  }
+
+  const invalidMainShapes = [
+    {
+      ...main.value,
+      controls: [...main.value.controls, response],
+    },
+    {
+      ...main.value,
+      controls: [...main.value.controls, {
+        type: "checkbox", role: "checkbox", autocomplete: "", label: "I'm not a robot",
+      }],
+    },
+    {
+      ...main.value,
+      controls: [...main.value.controls, {
+        type: "button", role: "button", autocomplete: "", label: "Start challenge",
+      }],
+    },
+    {
+      ...main.value,
+      securityControls: [...main.value.securityControls, response],
+    },
+    {
+      ...main.value,
+      securityControls: main.value.securityControls.map((control) =>
+        control === response ? { ...response, role: "control" } : control),
+    },
+    {
+      ...main.value,
+      securityControls: [...main.value.securityControls, {
+        type: "password", role: "textbox", autocomplete: "current-password", label: "Password",
+      }],
+    },
+    { ...main.value, text: "Complete CAPTCHA verification" },
+    { ...main.value, text: "Authentication required" },
+    { ...main.value, text: "Sign in to continue" },
+  ];
+  for (const value of invalidMainShapes) {
+    assert.equal(inspect(value), true);
+  }
+
+  const invalidChildShapes = [
+    { ...emptyChild.value, url: "https://example.test/frame" },
+    { ...emptyChild.value, title: "Challenge" },
+    { ...emptyChild.value, text: "Complete CAPTCHA verification" },
+    {
+      ...emptyChild.value,
+      controls: [{ type: "checkbox", role: "checkbox", label: "I'm not a robot" }],
+    },
+    {
+      ...emptyChild.value,
+      securityControls: [{ type: "password", role: "textbox", label: "Password" }],
+    },
+  ];
+  for (const value of invalidChildShapes) {
+    assert.equal(inspect(main.value, value), true);
+  }
+
+  assert.equal(inspectionHasSensitivePage([main]), true);
+  assert.equal(inspect(main.value, emptyChild.value, [{
+    frame: { id: "unexpected", parentId: "main" },
+    frameVisible: false,
+    value: { ...emptyChild.value },
+  }]), true);
+  assert.equal(inspectionHasSensitivePage([
+    main,
+    { ...emptyChild, frame: { id: "passive", parentId: "other" } },
+  ]), true);
+});
+
 test("capture resource limits accept boundaries and reject one over", () => {
   const limits = {
     maxControls: 2,
@@ -819,6 +949,79 @@ test("record refuses a login page before creating private evidence", async (t) =
   assert.doesNotMatch(result.stderr, /Sign in|password|127\.0\.0\.1/);
   await assert.rejects(access(path.join(session, "capture-receipt.json")));
   await assert.rejects(access(path.join(session, "events.jsonl")));
+});
+
+test("recorder excludes inert source text but keeps ordinary sensitive text in scope", async (t) => {
+  const site = await startSyntheticSite(t);
+  const { cdpUrl } = await startIndependentChromium(t, `${site}/application`);
+  const attached = await chromium.connectOverCDP(cdpUrl);
+  t.after(() => attached.close());
+  const page = attached.contexts()[0].pages()[0];
+  const directory = await mkdtemp(path.join(tmpdir(), "recording-inert-source-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const privateRoot = path.join(directory, ".qa-private");
+  await mkdir(privateRoot, { mode: 0o700 });
+
+  await page.setContent(`<!doctype html><title>Application</title><main>
+    <h1>Apply for this position</h1>
+    <script type="application/json">{"authenticationMode":"captcha"}</script>
+    <style>.ordinary::after { content: "sign in"; }</style>
+    <template><p>Enter the verification code</p></template>
+    <label>Contact email<input type="email"></label>
+  </main>`);
+  const allowedSession = path.join(privateRoot, "qa-session-inert-source");
+  const allowed = spawn(process.execPath, [
+    "qa/recorder.mjs", "record", "--cdp-url", cdpUrl, "--output", allowedSession,
+  ], { cwd: root });
+  let allowedStderr = "";
+  allowed.stderr.setEncoding("utf8");
+  allowed.stderr.on("data", (chunk) => { allowedStderr += chunk; });
+  t.after(() => stopChild(allowed));
+  await waitForFile(path.join(allowedSession, "control.json"), 10000);
+  allowed.kill("SIGTERM");
+  assert.deepEqual(await waitForExit(allowed, 5000), { code: 0, signal: null });
+  assert.equal(allowedStderr, "");
+
+  const refusedCases = [
+    ["visible text", `<!doctype html><title>Application</title>
+      <main><p>Authentication required</p></main>`],
+    ["CSS-hidden ordinary text", `<!doctype html><title>Application</title>
+      <main><p style="display:none">Authentication required</p></main>`],
+    ["security control", `<!doctype html><title>Application</title>
+      <main><label>Access code<input autocomplete="one-time-code"></label></main>`],
+  ];
+  for (const [label, markup] of refusedCases) {
+    await page.setContent(markup);
+    const session = path.join(privateRoot, `qa-session-${label.replaceAll(" ", "-")}`);
+    const refused = await runNode([
+      "qa/recorder.mjs", "record", "--cdp-url", cdpUrl, "--output", session,
+    ], 10000);
+    assert.equal(refused.code, 1, label);
+    assert.match(refused.stderr, /sensitive page refused/, label);
+  }
+
+  await page.setContent("<!doctype html><title>Application</title><main><div id=host></div></main>");
+  await page.locator("#host").evaluate((host) => {
+    const shadow = host.attachShadow({ mode: "open" });
+    shadow.innerHTML = "<p>Authentication required</p>";
+  });
+  const shadowSession = path.join(privateRoot, "qa-session-shadow-text");
+  const shadowRefused = await runNode([
+    "qa/recorder.mjs", "record", "--cdp-url", cdpUrl, "--output", shadowSession,
+  ], 10000);
+  assert.equal(shadowRefused.code, 1);
+  assert.match(shadowRefused.stderr, /sensitive page refused/);
+
+  await page.setContent(`<!doctype html><title>Application</title><main>
+    <iframe id="child" srcdoc="<p>Authentication required</p>"></iframe>
+  </main>`);
+  await page.locator("#child").contentFrame().locator("p").waitFor();
+  const frameSession = path.join(privateRoot, "qa-session-child-text");
+  const frameRefused = await runNode([
+    "qa/recorder.mjs", "record", "--cdp-url", cdpUrl, "--output", frameSession,
+  ], 10000);
+  assert.equal(frameRefused.code, 1);
+  assert.match(frameRefused.stderr, /sensitive page refused/);
 });
 
 test("terminal SIGINT lets the recorder finalize before its broker exits", {

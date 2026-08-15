@@ -97,6 +97,32 @@ class ContractTests(unittest.TestCase):
         ]
         return fixture
 
+    def valid_ashby_fixture(self):
+        fixture = self.valid_fixture()
+        fixture["id"] = "ashby-application-2026-08-v1"
+        fixture["platformFamily"] = "ashby"
+        fixture["steps"] = [
+            {
+                "id": "step-1",
+                "kind": "form",
+                "title": "Application form",
+                "controls": [
+                    generic_control("contact.full_name", required=True),
+                    generic_control("contact.email", required=True),
+                    generic_control("resume.file", required=True),
+                ],
+                "next": "review",
+            },
+            {
+                "id": "review",
+                "kind": "review",
+                "title": "Review application",
+                "controls": [],
+                "finalAction": copy.deepcopy(fixture["steps"][-1]["finalAction"]),
+            },
+        ]
+        return fixture
+
     def test_catalog_generates_source_independent_contact_control(self):
         self.assertEqual(
             generic_control("contact.first_name", required=True),
@@ -174,6 +200,31 @@ class ContractTests(unittest.TestCase):
                 if control["id"] == "source.discovery"
             )["choices"],
             ["LinkedIn (Social Media)", "Other"],
+        )
+
+    def test_closed_ashby_single_page_fixture_is_accepted(self):
+        fixture = self.valid_ashby_fixture()
+        self.assertIsNone(validate_fixture(fixture))
+        self.assertEqual(
+            fixture["steps"][0]["controls"],
+            [
+                {
+                    "id": "contact.full_name",
+                    "kind": "contact.full_name",
+                    "role": "textbox",
+                    "label": "Full name",
+                    "required": True,
+                },
+                generic_control("contact.email", required=True),
+                generic_control("resume.file", required=True),
+            ],
+        )
+
+        fixture["steps"][0]["controls"].append(
+            generic_control("contact.phone", required=False)
+        )
+        self.assert_contract_error(
+            fixture, "control kind is not supported for platform"
         )
 
     def test_platform_control_catalogs_cannot_be_mixed(self):

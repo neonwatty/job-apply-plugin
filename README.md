@@ -150,7 +150,7 @@ The plugin includes guided workflows for six ATS families. Codex and Claude Code
 |----------|-------------|----------------------|---------------------|
 | LinkedIn Easy Apply | `linkedin.com/jobs/view/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
 | Greenhouse | `boards.greenhouse.io/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
-| Ashby | `jobs.ashbyhq.com/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
+| Ashby | `jobs.ashbyhq.com/*` | Codex Browser or Claude in Chrome | Guided; closed replay lane supported |
 | Lever | `jobs.lever.co/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
 | Rippling | `*.rippling.com/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
 | Workday | `*.myworkdayjobs.com/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
@@ -384,6 +384,32 @@ A single-page Greenhouse application must use this exact two-step profile. The c
 }
 ```
 
+A supported single-page Ashby application uses the same two-step lifecycle with exactly three required controls. The compiler accepts no other Ashby control, order, or required-state combination:
+
+```json
+{
+  "captureId": "COPY_FROM_CAPTURE_RECEIPT",
+  "platformFamily": "ashby",
+  "captureMonth": "COPY_FROM_CAPTURE_RECEIPT",
+  "sourceDeniedTerms": ["SOURCE_EMPLOYER_OR_OTHER_TERM_TO_BLOCK"],
+  "steps": [
+    {
+      "checkpoint": "application-opened",
+      "controls": [
+        {"kind": "contact.full_name", "sourceLabel": "PRIVATE_REVIEW_ONLY_LABEL", "required": true},
+        {"kind": "contact.email", "sourceLabel": "PRIVATE_REVIEW_ONLY_LABEL", "required": true},
+        {"kind": "resume.file", "sourceLabel": "PRIVATE_REVIEW_ONLY_LABEL", "required": true}
+      ]
+    },
+    {
+      "checkpoint": "review-reached",
+      "controls": [],
+      "finalActionObserved": true
+    }
+  ]
+}
+```
+
 After the final checkpoint and draft annotation, press `Ctrl-C` once in the recorder terminal and wait for it to exit cleanly. Do not force-kill it: clean shutdown removes the private control file and writes `capture-receipt.json`, including the generated `captureId`, capture month, recorder version, and hashes of the private source files.
 
 Only after the recorder has exited cleanly, stop the launcher-owned Chrome child:
@@ -431,7 +457,7 @@ python3 scripts/qa-replay.py reviewed --run-id GENERATED_RUN_ID
 python3 scripts/qa-replay.py evaluate --run-id qa-run-20260811-001
 ```
 
-`prepare` prints the same five fields for every supported fixture, with platform-correct Greenhouse or LinkedIn guidance, a unique route fragment, and a unique run ID. It only prepares local instructions; it never launches an agent. The host resolves the route to the isolated store with `python3 scripts/qa-replay.py resolve --route-token 'GENERATED_RUN_ID.GENERATED_ROUTE_TOKEN'`, records `started` before filling, and records `reviewed` only after the visible fixture reaches its review event with zero final-action activations. Both lifecycle commands are idempotent and write only value-free history/session metadata through the existing store helper. Then run `evaluate`. After evaluation—or to abandon an interrupted run—sanitize the run with `python3 scripts/qa-replay.py cleanup --run-id GENERATED_RUN_ID`. Cleanup leaves a minimal tombstone; completed runs retain only the redacted report, while abandoned runs retain no report. The dated IDs above are examples; use the generated ID for every lifecycle, evaluation, and cleanup command.
+`prepare` prints the same five fields for every supported fixture, with platform-correct Ashby, Greenhouse, or LinkedIn guidance, a unique route fragment, and a unique run ID. It only prepares local instructions; it never launches an agent. The host resolves the route to the isolated store with `python3 scripts/qa-replay.py resolve --route-token 'GENERATED_RUN_ID.GENERATED_ROUTE_TOKEN'`, records `started` before filling, and records `reviewed` only after the visible fixture reaches its review event with zero final-action activations. Both lifecycle commands are idempotent and write only value-free history/session metadata through the existing store helper. Then run `evaluate`. After evaluation—or to abandon an interrupted run—sanitize the run with `python3 scripts/qa-replay.py cleanup --run-id GENERATED_RUN_ID`. Cleanup leaves a minimal tombstone; completed runs retain only the redacted report, while abandoned runs retain no report. The dated IDs above are examples; use the generated ID for every lifecycle, evaluation, and cleanup command.
 
 The committed `linkedin-screening` review lane remains wholly synthetic and requires zero final-action activations. A second repeatable loopback verifier exercises the high-risk Auto-submit state machine at the policy-coupled activation boundary, including actual review-only refusal, kill/expiry and concurrency races, forged/stale/prompt/redirect denial, all runtime stops, redaction, one-winner success with independent confirmation, and terminal one-retry uncertainty:
 

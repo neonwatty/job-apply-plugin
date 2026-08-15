@@ -68,6 +68,7 @@ PROMPT = (
     "as you would on a live application."
 )
 PLATFORM_LABELS = {
+    "ashby": "Ashby",
     "greenhouse": "Greenhouse",
     "linkedin-easy-apply": "LinkedIn Easy Apply",
 }
@@ -84,6 +85,7 @@ RUN_STATE_KEYS = {
 }
 EXPECTED_KEYS = {"controlIds", "resumeFilename"}
 SCENARIO_IDS = frozenset({
+    "ashby-complete-profile",
     "complete-profile",
     "greenhouse-complete-profile",
     "linkedin-screening",

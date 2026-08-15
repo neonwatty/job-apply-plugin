@@ -81,7 +81,18 @@ _GREENHOUSE_CONTROL_PROFILE = (
     ("source.discovery", True),
     ("referral.contact", False),
 )
+_ASHBY_CONTROL_PROFILE = (
+    ("contact.full_name", True),
+    ("contact.email", True),
+    ("resume.file", True),
+)
 _FLOW_PROFILES = {
+    "ashby": (
+        (
+            ("application-opened", _ASHBY_CONTROL_PROFILE),
+            ("review-reached", ()),
+        ),
+    ),
     "linkedin-easy-apply": _LINKEDIN_FLOW_PROFILES,
     "greenhouse": (
         (
@@ -104,6 +115,7 @@ _STEP_TITLES = {
     tuple(kind for kind, _required in _GREENHOUSE_CONTROL_PROFILE): (
         "Application form"
     ),
+    tuple(kind for kind, _required in _ASHBY_CONTROL_PROFILE): "Application form",
 }
 _SEMVER_CORE = re.compile(
     r"^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)$"

@@ -27,6 +27,7 @@ FINAL_ACTION_KEYS = {"id", "label", "enabled", "tripwire"}
 ORACLE_KEYS = {"finalActionActivations"}
 
 CATALOG = {
+    "contact.full_name": ("textbox", "Full name"),
     "contact.first_name": ("textbox", "First name"),
     "contact.last_name": ("textbox", "Last name"),
     "contact.preferred_name": ("textbox", "Preferred first name"),
@@ -92,7 +93,13 @@ GREENHOUSE_CONTROL_KINDS = {
     "source.discovery",
     "referral.contact",
 }
+ASHBY_CONTROL_KINDS = {
+    "contact.full_name",
+    "contact.email",
+    "resume.file",
+}
 PLATFORM_CONTROL_KINDS = {
+    "ashby": ASHBY_CONTROL_KINDS,
     "linkedin-easy-apply": LINKEDIN_CONTROL_KINDS,
     "greenhouse": GREENHOUSE_CONTROL_KINDS,
 }
