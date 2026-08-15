@@ -36,7 +36,7 @@ _RECEIPT_KEYS = {
     "captureId",
     "sourceFiles",
 }
-_FLOW_PROFILES = (
+_LINKEDIN_FLOW_PROFILES = (
     (
         (
             "application-opened",
@@ -64,6 +64,32 @@ _FLOW_PROFILES = (
         ("review-reached", ()),
     ),
 )
+_GREENHOUSE_CONTROL_PROFILE = (
+    ("contact.first_name", True),
+    ("contact.last_name", True),
+    ("contact.preferred_name", False),
+    ("contact.email", True),
+    ("contact.phone_country", True),
+    ("contact.phone", True),
+    ("contact.location_city", True),
+    ("resume.file", True),
+    ("cover_letter.file", False),
+    ("profile.linkedin", True),
+    ("profile.website", False),
+    ("authorization.sponsorship_select", True),
+    ("employment.prior_affiliate", True),
+    ("source.discovery", True),
+    ("referral.contact", False),
+)
+_FLOW_PROFILES = {
+    "linkedin-easy-apply": _LINKEDIN_FLOW_PROFILES,
+    "greenhouse": (
+        (
+            ("application-opened", _GREENHOUSE_CONTROL_PROFILE),
+            ("review-reached", ()),
+        ),
+    ),
+}
 _STEP_TITLES = {
     (
         "contact.first_name",
@@ -75,6 +101,9 @@ _STEP_TITLES = {
     ("resume.file",): "Resume",
     ("preference.top_choice",): "Job preference",
     ("authorization.sponsorship",): "Work authorization",
+    tuple(kind for kind, _required in _GREENHOUSE_CONTROL_PROFILE): (
+        "Application form"
+    ),
 }
 _SEMVER_CORE = re.compile(
     r"^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)$"
@@ -96,13 +125,16 @@ def _nonempty_string(value: Any, category: str) -> str:
     return value
 
 
-def _validate_capture(capture: Any) -> tuple[str, str, list[dict[str, Any]]]:
+def _validate_capture(
+    capture: Any,
+) -> tuple[str, str, str, list[dict[str, Any]]]:
     if not isinstance(capture, dict):
         raise CompilerError("invalid capture object")
     _closed(capture, _CAPTURE_KEYS, "capture")
 
     capture_id = _nonempty_string(capture.get("captureId"), "capture identifier")
-    if capture.get("platformFamily") != "linkedin-easy-apply":
+    platform_family = capture.get("platformFamily")
+    if not isinstance(platform_family, str) or platform_family not in _FLOW_PROFILES:
         raise CompilerError("unsupported platform family")
 
     capture_month = capture.get("captureMonth")
@@ -131,7 +163,7 @@ def _validate_capture(capture: Any) -> tuple[str, str, list[dict[str, Any]]]:
         )
         for step in steps
     )
-    if observed_profile not in _FLOW_PROFILES:
+    if observed_profile not in _FLOW_PROFILES[platform_family]:
         raise CompilerError("unsupported application flow")
 
     for index, step in enumerate(steps):
@@ -146,7 +178,7 @@ def _validate_capture(capture: Any) -> tuple[str, str, list[dict[str, Any]]]:
     if review["finalActionObserved"] is not True:
         raise CompilerError("final action observation required")
 
-    return capture_id, capture_month, steps
+    return capture_id, platform_family, capture_month, steps
 
 
 def _validate_step_shape(step: Any) -> None:
@@ -226,7 +258,7 @@ def _validate_receipt(receipt: Any) -> tuple[str, str, str, str]:
 def compile_capture(capture: dict, receipt: dict, fixture_id: str) -> dict:
     """Compile validated private semantic observations into a generic fixture."""
 
-    capture_id, capture_month, steps = _validate_capture(capture)
+    capture_id, platform_family, capture_month, steps = _validate_capture(capture)
     recorder_version, receipt_id, receipt_month, digest = _validate_receipt(receipt)
     if capture_id != receipt_id:
         raise CompilerError("capture identifier mismatch")
@@ -254,7 +286,7 @@ def compile_capture(capture: dict, receipt: dict, fixture_id: str) -> dict:
         fixture = {
             "schemaVersion": 1,
             "id": fixture_id,
-            "platformFamily": "linkedin-easy-apply",
+            "platformFamily": platform_family,
             "captureMonth": capture_month,
             "compilerVersion": COMPILER_VERSION,
             "provenance": {

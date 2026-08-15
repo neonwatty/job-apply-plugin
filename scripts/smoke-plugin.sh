@@ -285,17 +285,11 @@ required_contract = (
 if required_contract not in application_skill:
     raise SystemExit("hard manual-submit contract is missing")
 
-safety_words = re.compile(
-    r"\b(never|not|do not|don't|stop|before|manual(?:ly)?|untouched|leaves?)\b",
-    re.IGNORECASE,
-)
-final_action = re.compile(r"\b(submit|send)\b", re.IGNORECASE)
-for number, line in enumerate(application_skill.splitlines(), 1):
-    if final_action.search(line) and not safety_words.search(line):
-        raise SystemExit(f"unsafe final-action instruction at skills/job-apply/SKILL.md:{number}: {line}")
-
 print("Static smoke assertions passed")
 PY
+
+python3 "$REPO_ROOT/scripts/check-final-action-docs.py" \
+  "$REPO_ROOT/skills/job-apply/SKILL.md"
 
 echo "Creating isolated working-tree marketplace fixture"
 tar --exclude='./.git' \

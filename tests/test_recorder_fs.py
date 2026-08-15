@@ -263,7 +263,18 @@ class BrokerProtocolTests(unittest.TestCase):
                 private.mkdir(mode=0o700)
                 session = private / "qa-session-group-signal"
                 child = subprocess.Popen(
-                    [sys.executable, "-m", "qa.recorder_fs", "--root", str(session)],
+                    [
+                        sys.executable,
+                        "-c",
+                        (
+                            "import os, signal, sys; "
+                            "signal.signal(int(sys.argv[1]), signal.SIG_IGN); "
+                            "os.execv(sys.executable, [sys.executable, '-m', "
+                            "'qa.recorder_fs', '--root', sys.argv[2]])"
+                        ),
+                        str(int(sent_signal)),
+                        str(session),
+                    ],
                     stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,

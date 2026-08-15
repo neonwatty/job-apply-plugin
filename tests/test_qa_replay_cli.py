@@ -510,6 +510,194 @@ class ReplayCoordinatorTests(unittest.TestCase):
         with urllib.request.urlopen(self.base_url(output["url"]) + "/__qa/state", timeout=2) as response:
             self.assertEqual(json.load(response), {"events": [], "finalActionActivations": 0})
 
+    def test_prepare_uses_closed_greenhouse_guidance_without_changing_shape(self) -> None:
+        self.cli.FIXTURES_ROOT = ROOT / "qa/fixtures"
+        self.cli.SCENARIOS_ROOT = ROOT / "qa/scenarios"
+        output = self.cli._prepare(
+            "greenhouse-single-page-2026-08-v1", "greenhouse-complete-profile"
+        )
+        run_root = Path(output["storeRoot"]).parent
+        state = json.loads((run_root / "run.json").read_text())
+        self.server_cleanup = (output["url"], state["shutdownToken"])
+
+        self.assertEqual(
+            set(output),
+            {"fixtureId", "scenarioId", "url", "storeRoot", "suggestedPrompt"},
+        )
+        self.assertEqual(
+            output["suggestedPrompt"],
+            PROMPT.format(url=output["url"]).replace(
+                "LinkedIn Easy Apply", "Greenhouse"
+            ),
+        )
+        code, started, stderr = self.invoke(["started", "--run-id", run_root.name])
+        self.assertEqual((code, stderr), (0, ""))
+        self.assertTrue(started["changed"])
+        fixture = json.loads((run_root / "fixture.json").read_text())
+        for step in fixture["steps"]:
+            for control in step["controls"]:
+                self._post_event(
+                    output["url"],
+                    {
+                        "type": "uploaded" if control["role"] == "file" else "filled",
+                        "controlId": control["id"],
+                        "stepId": step["id"],
+                        **(
+                            {"expectedFilenameMatched": True}
+                            if control["role"] == "file"
+                            else {}
+                        ),
+                    },
+                )
+            self._post_event(
+                output["url"],
+                {
+                    "type": "reviewed" if step["kind"] == "review" else "advanced",
+                    "controlId": "",
+                    "stepId": step["id"],
+                },
+            )
+        code, reviewed, stderr = self.invoke(["reviewed", "--run-id", run_root.name])
+        self.assertEqual((code, stderr), (0, ""))
+        self.assertTrue(reviewed["changed"])
+        session = json.loads(
+            (Path(output["storeRoot"]) / "sessions" / f"{run_root.name}.json").read_text()
+        )
+        self.assertEqual((session["ats"], session["status"]), ("greenhouse", "review"))
+
+    def _record_complete_replay_events(self, output: dict) -> None:
+        for step in self.fixture["steps"]:
+            for control in step["controls"]:
+                self._post_event(
+                    output["url"],
+                    {
+                        "type": "uploaded" if control["role"] == "file" else "filled",
+                        "controlId": control["id"],
+                        "stepId": step["id"],
+                        **(
+                            {"expectedFilenameMatched": True}
+                            if control["role"] == "file"
+                            else {}
+                        ),
+                    },
+                )
+            self._post_event(
+                output["url"],
+                {
+                    "type": "reviewed" if step["kind"] == "review" else "advanced",
+                    "controlId": "",
+                    "stepId": step["id"],
+                },
+            )
+
+    def test_supported_lifecycle_is_ordered_idempotent_and_evaluates(self) -> None:
+        output, run_root, _state = self.prepare()
+        code, result, stderr = self.invoke(["started", "--run-id", run_root.name])
+        self.assertEqual((code, stderr), (0, ""))
+        self.assertTrue(result["changed"])
+        code, repeated, stderr = self.invoke(["started", "--run-id", run_root.name])
+        self.assertEqual((code, stderr), (0, ""))
+        self.assertFalse(repeated["changed"])
+
+        code, result, stderr = self.invoke(["reviewed", "--run-id", run_root.name])
+        self.assertEqual(code, 2)
+        self.assertIsNone(result)
+        self.assertEqual(stderr, "replay review event not observed\n")
+
+        self._record_complete_replay_events(output)
+        code, result, stderr = self.invoke(["reviewed", "--run-id", run_root.name])
+        self.assertEqual((code, stderr), (0, ""))
+        self.assertTrue(result["changed"])
+        code, repeated, stderr = self.invoke(["reviewed", "--run-id", run_root.name])
+        self.assertEqual((code, stderr), (0, ""))
+        self.assertFalse(repeated["changed"])
+
+        history = [
+            json.loads(line)
+            for line in (Path(output["storeRoot"]) / "applications.jsonl").read_text().splitlines()
+        ]
+        self.assertEqual([event["event"] for event in history], ["started", "reviewed"])
+        self.assertTrue(all(event["applicationId"] == run_root.name for event in history))
+        serialized = json.dumps(history)
+        for forbidden in (self.profile["name"], self.profile["email"], output["url"]):
+            self.assertNotIn(forbidden, serialized)
+
+        code, report, stderr = self.invoke(["evaluate", "--run-id", run_root.name])
+        self.assertEqual((code, stderr), (0, ""))
+        self.assertEqual(report["status"], "passed")
+        self.server_cleanup = None
+        code, result, stderr = self.invoke(["reviewed", "--run-id", run_root.name])
+        self.assertEqual(code, 2)
+        self.assertIsNone(result)
+        self.assertEqual(stderr, "run is terminal\n")
+
+    def test_supported_lifecycle_evaluate_cleanup_and_tombstone_retry(self) -> None:
+        output, run_root, _state = self.prepare()
+        code, started, stderr = self.invoke(["started", "--run-id", run_root.name])
+        self.assertEqual((code, stderr), (0, ""))
+        self.assertTrue(started["changed"])
+
+        self._record_complete_replay_events(output)
+        code, reviewed, stderr = self.invoke(["reviewed", "--run-id", run_root.name])
+        self.assertEqual((code, stderr), (0, ""))
+        self.assertTrue(reviewed["changed"])
+        self.assertTrue((run_root / "lifecycle-transition.lock").is_file())
+
+        code, report, stderr = self.invoke(["evaluate", "--run-id", run_root.name])
+        self.assertEqual((code, stderr), (0, ""))
+        self.assertEqual(report["status"], "passed")
+        self.assertEqual(set(report["assertions"].values()), {"passed"})
+        retained_report = (run_root / "report.json").read_bytes()
+        self.server_cleanup = None
+
+        expected = {
+            "runId": run_root.name,
+            "state": "completed",
+            "reportRetained": True,
+        }
+        code, cleanup, stderr = self.invoke(["cleanup", "--run-id", run_root.name])
+        self.assertEqual((code, cleanup, stderr), (0, expected, ""))
+        retained_tombstone = (run_root / "tombstone.json").read_bytes()
+        self.assertEqual((run_root / "report.json").read_bytes(), retained_report)
+        for path in run_root.rglob("*"):
+            if path.is_file() and path.name not in {"report.json", "tombstone.json"}:
+                self.assertEqual(path.stat().st_size, 0, path.relative_to(run_root))
+
+        code, cleanup, stderr = self.invoke(["cleanup", "--run-id", run_root.name])
+        self.assertEqual((code, cleanup, stderr), (0, expected, ""))
+        self.assertEqual((run_root / "report.json").read_bytes(), retained_report)
+        self.assertEqual(
+            (run_root / "tombstone.json").read_bytes(), retained_tombstone
+        )
+
+    def test_reviewed_rejects_missing_started_and_final_action_activation(self) -> None:
+        output, run_root, _state = self.prepare()
+        self._record_complete_replay_events(output)
+        code, result, stderr = self.invoke(["reviewed", "--run-id", run_root.name])
+        self.assertEqual(code, 2)
+        self.assertIsNone(result)
+        self.assertEqual(stderr, "isolated lifecycle transition failed\n")
+
+        code, _result, stderr = self.invoke(["started", "--run-id", run_root.name])
+        self.assertEqual((code, stderr), (0, ""))
+        review_id = next(
+            step["id"] for step in self.fixture["steps"] if step["kind"] == "review"
+        )
+        base_url = self.base_url(output["url"])
+        request = urllib.request.Request(
+            base_url + "/__qa/final-action",
+            data=json.dumps({"stepId": review_id}).encode(),
+            headers={"Content-Type": "application/json", "Origin": base_url},
+            method="POST",
+        )
+        with self.assertRaises(urllib.error.HTTPError) as captured:
+            urllib.request.urlopen(request, timeout=2)
+        self.assertEqual(captured.exception.code, 409)
+        code, result, stderr = self.invoke(["reviewed", "--run-id", run_root.name])
+        self.assertEqual(code, 2)
+        self.assertIsNone(result)
+        self.assertEqual(stderr, "replay final action was activated\n")
+
     def _write_passing_store(self, store_root: Path) -> None:
         application_id = "application-1"
         history = [
@@ -1287,6 +1475,55 @@ class ReplayCoordinatorTests(unittest.TestCase):
         self.assertNotIn('["ps",', coordinator)
 
 
+    def test_verify_auto_submit_is_repeatable_redacted_and_loopback_only(self):
+        fixture = ROOT / "qa/fixtures/linkedin-easy-apply-screening-2026-08-v1/fixture.json"
+        for _ in range(2):
+            completed = __import__("subprocess").run(
+                [
+                    "python3",
+                    str(SCRIPT),
+                    "verify-auto-submit",
+                    "--fixture",
+                    str(fixture),
+                    "--json",
+                ],
+                cwd=ROOT,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            report = json.loads(completed.stdout)
+            self.assertEqual(report["status"], "passed")
+            self.assertIs(report["redacted"], True)
+            self.assertEqual(
+                set(report["assertions"]),
+                {
+                    "actual-review-only-refused",
+                    "all-stop-boundaries-zero-activations",
+                    "concurrent-activation-single-winner",
+                    "danger-warning-required",
+                    "denials-and-receipts-redacted",
+                    "forged-stale-prompt-redirect-kill-expiry-refused",
+                    "independent-confirmation-required",
+                    "kill-versus-activation-linearized",
+                    "one-retry-terminal-exhaustion",
+                    "review-only-zero-activations",
+                    "success-one-claimed-activation",
+                },
+            )
+            self.assertEqual(set(report["assertions"].values()), {"passed"})
+            self.assertEqual(
+                report["scenarios"]["success"]["claimedActivations"], 1
+            )
+            self.assertEqual(
+                report["scenarios"]["uncertainty-retry"]["terminalState"],
+                "uncertain_exhausted",
+            )
+            serialized = completed.stdout.casefold()
+            for forbidden in ("http://", "https://", "answerrevision", "resume-v1"):
+                self.assertNotIn(forbidden, serialized)
+
+
 class CommittedScenarioTests(unittest.TestCase):
     def base_url(self, url: str) -> str:
         parsed = urlsplit(url)
@@ -1356,6 +1593,32 @@ class CommittedScenarioTests(unittest.TestCase):
             "Attention to detail",
         ):
             self.assertIn(expected_text, extracted)
+
+    def test_greenhouse_complete_profile_scenario_matches_committed_fixture(self) -> None:
+        scenario_root = ROOT / "qa/scenarios/greenhouse-complete-profile"
+        self.assertEqual(
+            {path.name for path in scenario_root.iterdir()},
+            {"profile.json", "synthetic-resume.pdf", "expected.json"},
+        )
+        profile = json.loads((scenario_root / "profile.json").read_text())
+        expected = json.loads((scenario_root / "expected.json").read_text())
+        fixture = json.loads((
+            ROOT / "qa/fixtures/greenhouse-single-page-2026-08-v1/fixture.json"
+        ).read_text())
+        fixture_control_ids = [
+            control["id"]
+            for step in fixture["steps"]
+            for control in step["controls"]
+        ]
+        self.assertEqual(profile["name"], "Avery Replay")
+        self.assertEqual(expected, {
+            "controlIds": fixture_control_ids,
+            "resumeFilename": "synthetic-resume.pdf",
+        })
+        self.assertEqual(
+            (scenario_root / "synthetic-resume.pdf").read_bytes(),
+            (ROOT / "qa/scenarios/complete-profile/synthetic-resume.pdf").read_bytes(),
+        )
 
     def test_linkedin_screening_scenario_is_closed_and_synthetic(self) -> None:
         scenario_root = ROOT / "qa/scenarios/linkedin-screening"

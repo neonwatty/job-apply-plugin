@@ -33,6 +33,9 @@ jobs:
       - name: Run deterministic LinkedIn screening replay
         run: npm run test:qa-screening
 
+      - name: Run isolated Auto-submit safety matrix
+        run: npm run test:auto-submit
+
       - name: Run deterministic replay browser tests
         run: npm run test:qa-browser
 

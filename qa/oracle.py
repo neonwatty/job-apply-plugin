@@ -488,6 +488,7 @@ def evaluate_run(
         raise OracleError("invalid fixture") from None
     if scenario not in (
         {"id": "complete-profile"},
+        {"id": "greenhouse-complete-profile"},
         {"id": "linkedin-screening"},
     ):
         raise OracleError("invalid scenario")

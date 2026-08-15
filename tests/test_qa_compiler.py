@@ -101,6 +101,44 @@ class CompilerTests(unittest.TestCase):
         ]
         return capture
 
+    def greenhouse_capture(self):
+        capture = copy.deepcopy(self.capture)
+        capture["platformFamily"] = "greenhouse"
+        capture["steps"] = [
+            {
+                "checkpoint": "application-opened",
+                "controls": [
+                    {"kind": kind, "sourceLabel": f"Observed {index}", "required": required}
+                    for index, (kind, required) in enumerate(
+                        (
+                            ("contact.first_name", True),
+                            ("contact.last_name", True),
+                            ("contact.preferred_name", False),
+                            ("contact.email", True),
+                            ("contact.phone_country", True),
+                            ("contact.phone", True),
+                            ("contact.location_city", True),
+                            ("resume.file", True),
+                            ("cover_letter.file", False),
+                            ("profile.linkedin", True),
+                            ("profile.website", False),
+                            ("authorization.sponsorship_select", True),
+                            ("employment.prior_affiliate", True),
+                            ("source.discovery", True),
+                            ("referral.contact", False),
+                        ),
+                        start=1,
+                    )
+                ],
+            },
+            {
+                "checkpoint": "review-reached",
+                "controls": [],
+                "finalActionObserved": True,
+            },
+        ]
+        return capture
+
     def test_compiles_a_contract_valid_fixture(self):
         fixture = self.compile()
         self.assertIsNone(validate_fixture(fixture))
@@ -135,6 +173,55 @@ class CompilerTests(unittest.TestCase):
         self.assertEqual(
             fixture["steps"][3]["controls"][0]["choices"], ["Yes", "No"]
         )
+
+    def test_compiles_closed_greenhouse_single_page_flow(self):
+        fixture = self.compile(capture=self.greenhouse_capture())
+        self.assertIsNone(validate_fixture(fixture))
+        self.assertEqual(fixture["platformFamily"], "greenhouse")
+        self.assertEqual(
+            [step["title"] for step in fixture["steps"]],
+            ["Application form", "Review application"],
+        )
+        controls = fixture["steps"][0]["controls"]
+        self.assertEqual(
+            [control["id"] for control in controls],
+            [
+                "contact.first_name",
+                "contact.last_name",
+                "contact.preferred_name",
+                "contact.email",
+                "contact.phone_country",
+                "contact.phone",
+                "contact.location_city",
+                "resume.file",
+                "cover_letter.file",
+                "profile.linkedin",
+                "profile.website",
+                "authorization.sponsorship_select",
+                "employment.prior_affiliate",
+                "source.discovery",
+                "referral.contact",
+            ],
+        )
+        self.assertEqual(
+            next(
+                control
+                for control in controls
+                if control["id"] == "authorization.sponsorship_select"
+            )["choices"],
+            ["Yes", "No"],
+        )
+
+    def test_greenhouse_flow_remains_closed(self):
+        capture = self.greenhouse_capture()
+        capture["steps"][0]["controls"][2]["required"] = True
+        self.assert_rejected_without_echo(capture=capture)
+
+        capture = self.greenhouse_capture()
+        capture["steps"][0]["controls"].append(
+            {"kind": "preference.top_choice", "sourceLabel": "Private", "required": False}
+        )
+        self.assert_rejected_without_echo(capture=capture)
 
     def test_screening_flow_remains_closed(self):
         capture = self.linkedin_screening_capture()

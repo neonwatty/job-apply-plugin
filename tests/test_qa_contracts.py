@@ -57,6 +57,46 @@ class ContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, f"^{message}$"):
             validate_fixture(fixture)
 
+    def valid_greenhouse_fixture(self):
+        fixture = self.valid_fixture()
+        fixture["id"] = "greenhouse-single-page-2026-08-v1"
+        fixture["platformFamily"] = "greenhouse"
+        fixture["steps"] = [
+            {
+                "id": "step-1",
+                "kind": "form",
+                "title": "Application form",
+                "controls": [
+                    generic_control("contact.first_name", required=True),
+                    generic_control("contact.last_name", required=True),
+                    generic_control("contact.preferred_name", required=False),
+                    generic_control("contact.email", required=True),
+                    generic_control("contact.phone_country", required=True),
+                    generic_control("contact.phone", required=True),
+                    generic_control("contact.location_city", required=True),
+                    generic_control("resume.file", required=True),
+                    generic_control("cover_letter.file", required=False),
+                    generic_control("profile.linkedin", required=True),
+                    generic_control("profile.website", required=False),
+                    generic_control(
+                        "authorization.sponsorship_select", required=True
+                    ),
+                    generic_control("employment.prior_affiliate", required=True),
+                    generic_control("source.discovery", required=True),
+                    generic_control("referral.contact", required=False),
+                ],
+                "next": "review",
+            },
+            {
+                "id": "review",
+                "kind": "review",
+                "title": "Review application",
+                "controls": [],
+                "finalAction": copy.deepcopy(fixture["steps"][-1]["finalAction"]),
+            },
+        ]
+        return fixture
+
     def test_catalog_generates_source_independent_contact_control(self):
         self.assertEqual(
             generic_control("contact.first_name", required=True),
@@ -107,6 +147,51 @@ class ContractTests(unittest.TestCase):
 
     def test_valid_fixture_is_accepted(self):
         self.assertIsNone(validate_fixture(self.valid_fixture()))
+
+    def test_closed_greenhouse_single_page_fixture_is_accepted(self):
+        fixture = self.valid_greenhouse_fixture()
+        self.assertIsNone(validate_fixture(fixture))
+        controls = fixture["steps"][0]["controls"]
+        self.assertEqual(
+            next(
+                control
+                for control in controls
+                if control["id"] == "contact.phone_country"
+            ),
+            {
+                "id": "contact.phone_country",
+                "kind": "contact.phone_country",
+                "role": "combobox",
+                "label": "Phone country",
+                "required": True,
+                "choices": ["United States +1", "Canada +1"],
+            },
+        )
+        self.assertEqual(
+            next(
+                control
+                for control in controls
+                if control["id"] == "source.discovery"
+            )["choices"],
+            ["LinkedIn (Social Media)", "Other"],
+        )
+
+    def test_platform_control_catalogs_cannot_be_mixed(self):
+        fixture = self.valid_greenhouse_fixture()
+        fixture["steps"][0]["controls"].append(
+            generic_control("preference.top_choice", required=False)
+        )
+        self.assert_contract_error(
+            fixture, "control kind is not supported for platform"
+        )
+
+        fixture = self.valid_fixture()
+        fixture["steps"][0]["controls"].append(
+            generic_control("contact.location_city", required=True)
+        )
+        self.assert_contract_error(
+            fixture, "control kind is not supported for platform"
+        )
 
     def test_fixture_rejects_unknown_keys_and_source_strings(self):
         fixture = self.valid_fixture()

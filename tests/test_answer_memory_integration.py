@@ -175,6 +175,13 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
             "User confirmation never authorizes this skill to click Submit",
             skills["job-apply"],
         )
+        self.assertIn("review_only", skills["job-apply"])
+        self.assertIn("job_apply_policy.py", skills["job-apply"])
+        self.assertIn("atomically claims one final action", skills["job-apply"])
+        self.assertIn("isolated loopback QA adapter", skills["job-apply"])
+        self.assertIn("Every live Submit", skills["job-apply"])
+        self.assertIn("separately audited canary", skills["job-apply"])
+        self.assertIn("Auto-submit policy", skills["answer-memory"])
 
 
 if __name__ == "__main__":

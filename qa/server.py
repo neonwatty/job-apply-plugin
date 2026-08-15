@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
+import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
@@ -13,6 +15,7 @@ import threading
 from typing import Any
 
 from qa.contracts import ContractError, validate_fixture
+from scripts.job_apply_policy import PolicyError, PolicyStore
 
 
 HOST = "127.0.0.1"
@@ -42,6 +45,14 @@ JSON_CONTENT_TYPE = re.compile(
 
 
 TOKEN = re.compile(r"^[a-f0-9]{64}$")
+SAFETY_CHECK_KEYS = {
+    "loginRequired",
+    "captchaPresent",
+    "mfaRequired",
+    "accountCreationRequired",
+    "controlAccessible",
+    "redirected",
+}
 SAFE_FILENAME = re.compile(r"^[^/\\\x00-\x1f\x7f]{1,255}$")
 
 
@@ -54,11 +65,17 @@ class ReplayHTTPServer(ThreadingHTTPServer):
         port: int,
         expected_resume_filename: str = "synthetic-resume.pdf",
         shutdown_token: str | None = None,
+        auto_submit_policy_root: Path | None = None,
     ):
         super().__init__((HOST, port), ReplayRequestHandler)
         self.fixture = fixture
         self.expected_resume_filename = expected_resume_filename
         self.shutdown_token = shutdown_token
+        self.auto_submit_policy = (
+            PolicyStore(auto_submit_policy_root)
+            if auto_submit_policy_root is not None
+            else None
+        )
         self.events: list[dict[str, str]] = []
         self.final_action_activations = 0
         self.state_lock = threading.Lock()
@@ -197,13 +214,23 @@ class ReplayRequestHandler(BaseHTTPRequestHandler):
             self._send(204)
             threading.Thread(target=self.server.shutdown, daemon=True).start()
             return
-        if self.path not in {"/__qa/event", "/__qa/final-action"}:
+        if self.path not in {
+            "/__qa/event",
+            "/__qa/final-action",
+            "/__qa/auto-submit/final-action",
+        }:
             self._error(404, "not found")
             return
         if not self._authorize_post():
             return
         if self.path == "/__qa/event":
             self._handle_event()
+            return
+        if self.path == "/__qa/auto-submit/final-action":
+            if not self._has_run_token():
+                self._error(404, "not found")
+                return
+            self._handle_auto_submit_final_action()
             return
         if self.path == "/__qa/final-action":
             self._handle_final_action()
@@ -304,6 +331,114 @@ class ReplayRequestHandler(BaseHTTPRequestHandler):
             )
         self._error(409, "final action blocked by QA tripwire")
 
+    def _handle_auto_submit_final_action(self) -> None:
+        """Atomically consume current persisted policy and activate once.
+
+        This route is unavailable without the coordinator's private per-run
+        capability and exact loopback Origin.  It does not accept policy or page
+        page identity is closed and revalidated by the persisted authority.
+        """
+        value = self._read_json()
+        if value is INVALID_BODY:
+            return
+        if (
+            not isinstance(value, dict)
+            or set(value)
+            != {
+                "stepId",
+                "applicationRef",
+                "leaseId",
+                "attempt",
+                "authorization",
+                "safetyChecks",
+            }
+            or not isinstance(value.get("stepId"), str)
+            or not isinstance(value.get("applicationRef"), str)
+            or not isinstance(value.get("leaseId"), str)
+            or not isinstance(value.get("attempt"), int)
+            or isinstance(value.get("attempt"), bool)
+            or not isinstance(value.get("authorization"), dict)
+        ):
+            self._error(400, "invalid claimed final action")
+            return
+        safety_checks = value["safetyChecks"]
+        if (
+            not isinstance(safety_checks, dict)
+            or set(safety_checks) != SAFETY_CHECK_KEYS
+            or any(not isinstance(item, bool) for item in safety_checks.values())
+        ):
+            self._error(400, "invalid claimed final action")
+            return
+        if (
+            safety_checks["loginRequired"]
+            or safety_checks["captchaPresent"]
+            or safety_checks["mfaRequired"]
+            or safety_checks["accountCreationRequired"]
+            or not safety_checks["controlAccessible"]
+            or safety_checks["redirected"]
+        ):
+            self._error(409, "runtime safety boundary blocked final action")
+            return
+        step = self.server.steps.get(value["stepId"])
+        if (
+            step is None
+            or step["kind"] != "review"
+            or step.get("finalAction") != {
+                "id": "final.apply",
+                "label": "Submit application",
+                "enabled": True,
+                "tripwire": True,
+            }
+        ):
+            self._error(400, "invalid claimed final action")
+            return
+        policy = self.server.auto_submit_policy
+        if policy is None:
+            self._error(404, "not found")
+            return
+        confirmation: dict[str, Any] = {}
+
+        def activate(claim: dict[str, Any]) -> None:
+            nonlocal confirmation
+            with self.server.state_lock:
+                self.server.final_action_activations += 1
+                self.server.events.append(
+                    {"type": "final-action", "stepId": value["stepId"]}
+                )
+                activation_number = self.server.final_action_activations
+            confirmation = {
+                "eventId": "receipt:" + secrets.token_hex(32),
+                "claimId": claim["claimId"],
+                "source": "isolated_loopback",
+                "observedAt": datetime.now(timezone.utc).isoformat(
+                    timespec="seconds"
+                ).replace("+00:00", "Z"),
+                "confirmationRevision": "sha256:" + hashlib.sha256(
+                    f"{self.server.fixture['id']}:{claim['claimId']}:{activation_number}".encode()
+                ).hexdigest(),
+                "activationObserved": True,
+            }
+            import hmac
+            confirmation["proof"] = hmac.new(
+                self.server.shutdown_token.encode(),
+                json.dumps(confirmation, sort_keys=True, separators=(",", ":")).encode(),
+                hashlib.sha256,
+            ).hexdigest()
+
+        try:
+            policy.claim_final_action(
+                value["applicationRef"],
+                value["leaseId"],
+                value["attempt"],
+                value["authorization"],
+                self.server.shutdown_token,
+                activation=activate,
+            )
+        except (PolicyError, OSError):
+            self._error(409, "current policy refused final action")
+            return
+        self._json(200, confirmation)
+
     def _method_not_allowed(self) -> None:
         self._error(405, "method not allowed")
 
@@ -331,6 +466,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--port", type=int, default=0)
     parser.add_argument("--expected-resume-filename", required=True)
     parser.add_argument("--shutdown-token")
+    parser.add_argument("--auto-submit-policy-root", type=Path)
     arguments = parser.parse_args(argv)
     if not 0 <= arguments.port <= 65535:
         parser.error("port must be between 0 and 65535")
@@ -348,6 +484,7 @@ def main(argv: list[str] | None = None) -> int:
             arguments.port,
             arguments.expected_resume_filename,
             shutdown_token,
+            arguments.auto_submit_policy_root,
         )
     except (ValueError, OSError) as error:
         print(str(error), file=sys.stderr)

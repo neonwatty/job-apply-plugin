@@ -651,9 +651,22 @@ def _serve(root: str) -> int:
         broker.close()
         sys.stderr.write("broker startup failed\n")
         return 1
-    sys.stdout.write('{"ready":true}\n')
-    sys.stdout.flush()
+    shutdown_requested = False
+
+    def request_shutdown(_signum: int, _frame: object) -> None:
+        nonlocal shutdown_requested
+        if shutdown_requested:
+            return
+        shutdown_requested = True
+        raise KeyboardInterrupt
+
+    previous_handlers = {
+        broker_signal: signal.signal(broker_signal, request_shutdown)
+        for broker_signal in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
+    }
     try:
+        sys.stdout.write('{"ready":true}\n')
+        sys.stdout.flush()
         for raw in _bounded_lines(sys.stdin.buffer):
             if raw is None:
                 response = {"id": None, "ok": False, "code": "request-budget"}
@@ -671,7 +684,10 @@ def _serve(root: str) -> int:
                     response = {"id": request_id, "ok": False, "code": "invalid-request"}
             sys.stdout.write(json.dumps(response, separators=(",", ":")) + "\n")
             sys.stdout.flush()
+    except KeyboardInterrupt:
+        pass
     finally:
+        shutdown_requested = True
         try:
             broker.remove_tree("control.json")
         except BrokerError:
@@ -682,6 +698,8 @@ def _serve(root: str) -> int:
             os.waitpid(guardian_pid, 0)
         except ChildProcessError:
             pass
+        for broker_signal, previous_handler in previous_handlers.items():
+            signal.signal(broker_signal, previous_handler)
     return 0
 
 

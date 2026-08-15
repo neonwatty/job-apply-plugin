@@ -109,6 +109,15 @@ class PrivacyScannerTests(unittest.TestCase):
             )
             self.assertIsNone(scan_tree(root, []))
 
+    def test_phone_like_digits_inside_sha256_are_not_phone_values(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "candidate.json").write_text(
+                '{"sourceRecordingSha256":'
+                '"77e6f32a2c0785eed267fb1ff0e6f4140bc7ba3b0f608ba24da9fa2907724819"}'
+            )
+            self.assertIsNone(scan_tree(root, []))
+
     def test_leak_corpus_has_one_expected_category_per_file(self):
         cases = {
             "credential.txt": "credential",

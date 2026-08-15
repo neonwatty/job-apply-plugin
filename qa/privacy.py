@@ -34,7 +34,8 @@ _PATTERNS = {
         re.IGNORECASE,
     ),
     "phone": re.compile(
-        rb"(?<!\d)(?:\+?1[ .-]?)?(?:\([2-9]\d{2}\)|[2-9]\d{2})[ .-]?\d{3}[ .-]?\d{4}(?!\d)"
+        rb"(?<![A-Fa-f0-9])(?:\+?1[ .-]?)?(?:\([2-9]\d{2}\)|[2-9]\d{2})"
+        rb"[ .-]?\d{3}[ .-]?\d{4}(?![A-Fa-f0-9])"
     ),
     "source-url": re.compile(
         rb"(?:linkedin\.com\b|/jobs?(?:[/#?]|\b))",

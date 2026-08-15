@@ -85,7 +85,31 @@ function renderControl(control) {
   error.setAttribute("role", "alert");
   input.setAttribute("aria-describedby", error.id);
 
-  if (control.role === "radiogroup") {
+  if (control.role === "combobox") {
+    const select = document.createElement("select");
+    select.id = control.id;
+    select.name = control.id;
+    select.required = control.required;
+    select.setAttribute("aria-describedby", error.id);
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select an option";
+    select.append(placeholder);
+    for (const choice of control.choices) {
+      const option = document.createElement("option");
+      option.value = choice;
+      option.textContent = choice;
+      select.append(option);
+    }
+    select.addEventListener("change", () => {
+      enteredValues.set(control.id, select.value);
+      if (select.value) {
+        clearControlError(select, error);
+        recordControlEvent("filled", control.id, stepId);
+      }
+    });
+    group.append(label, select, error);
+  } else if (control.role === "radiogroup") {
     const fieldset = document.createElement("fieldset");
     fieldset.id = control.id;
     fieldset.setAttribute("aria-describedby", error.id);
@@ -226,6 +250,53 @@ async function activateFinalAction(stepId) {
     throw new Error("QA tripwire did not block final action");
 }
 
+async function activateClaimedFinalAction(
+  stepId,
+  lease,
+  authorization,
+  runToken,
+  safetyChecks,
+) {
+  if (
+    typeof stepId !== "string" ||
+    !lease ||
+    typeof lease.applicationRef !== "string" ||
+    typeof lease.leaseId !== "string" ||
+    ![1, 2].includes(lease.attempt) ||
+    !authorization ||
+    typeof authorization !== "object" ||
+    !/^[a-f0-9]{64}$/.test(runToken) ||
+    !safetyChecks ||
+    Object.keys(safetyChecks).sort().join(",") !==
+      "accountCreationRequired,captchaPresent,controlAccessible,loginRequired,mfaRequired,redirected"
+  )
+    throw new Error("Invalid private Auto-submit claim");
+  const response = await fetch("/__qa/auto-submit/final-action", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-QA-Run-Token": runToken,
+    },
+    body: JSON.stringify({
+      stepId,
+      applicationRef: lease.applicationRef,
+      leaseId: lease.leaseId,
+      attempt: lease.attempt,
+      authorization,
+      safetyChecks,
+    }),
+  });
+  if (!response.ok) throw new Error("Claimed Auto-submit action was refused");
+  const confirmation = await response.json();
+  if (
+    !/^claim:[a-f0-9]{64}$/.test(confirmation.claimId) ||
+    confirmation.source !== "isolated_loopback" ||
+    confirmation.activationObserved !== true
+  )
+    throw new Error("Independent confirmation was unavailable");
+  return confirmation;
+}
+
 function renderStep(fixture, stepId) {
   const step = fixture.steps.find((candidate) => candidate.id === stepId);
   if (!step) throw new Error("Fixture step is unavailable");
@@ -317,6 +388,7 @@ Promise.all([fetch("/__qa/fixture"), fetch("/__qa/upload-policy")])
   });
 
 export {
+  activateClaimedFinalAction,
   activateFinalAction,
   recordEvent,
   renderControl,

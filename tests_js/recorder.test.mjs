@@ -523,6 +523,90 @@ test("LinkedIn jobs allow only an inert hidden CAPTCHA bootstrap frame", () => {
   ]), true);
 });
 
+test("Greenhouse jobs allow only passive reCAPTCHA disclosure surfaces", () => {
+  const main = {
+    frame: { id: "main" },
+    frameVisible: true,
+    value: {
+      url: "https://job-boards.greenhouse.io/tubitv/jobs/7702258",
+      title: "Machine Learning Engineer | Tubi",
+      text: "Apply for this job. This site is protected by reCAPTCHA and the Google Privacy Policy and Terms of Service apply.",
+      controls: [
+        { type: "email", label: "Email" },
+        { type: "button", label: "Submit application" },
+      ],
+      securityControls: [],
+    },
+  };
+  const passiveBadge = {
+    frame: { id: "recaptcha-badge", parentId: "main" },
+    frameVisible: true,
+    value: {
+      url: "https://www.google.com/recaptcha/api2/anchor?ar=1&k=public-site-key",
+      title: "reCAPTCHA",
+      text: "Privacy - Terms",
+      controls: [],
+      securityControls: [],
+    },
+  };
+
+  assert.equal(inspectionHasSensitivePage([main, passiveBadge]), false);
+  const hiddenResponseOnly = {
+    ...main,
+    value: {
+      ...main.value,
+      text: "Apply for this job",
+      securityControls: [{
+        type: "textarea",
+        role: "textbox",
+        autocomplete: "",
+        label: "g-recaptcha-response",
+      }],
+    },
+  };
+  assert.equal(inspectionHasSensitivePage([hiddenResponseOnly]), false);
+  assert.equal(inspectionHasSensitivePage([{
+    ...hiddenResponseOnly,
+    value: {
+      ...hiddenResponseOnly.value,
+      controls: hiddenResponseOnly.value.securityControls,
+    },
+  }]), true);
+  assert.equal(inspectionHasSensitivePage([
+    main,
+    {
+      ...passiveBadge,
+      value: {
+        ...passiveBadge.value,
+        controls: [{ type: "checkbox", label: "I'm not a robot" }],
+      },
+    },
+  ]), true);
+  assert.equal(inspectionHasSensitivePage([
+    main,
+    {
+      ...passiveBadge,
+      value: {
+        ...passiveBadge.value,
+        url: "https://www.google.com/recaptcha/api2/bframe?hl=en",
+        title: "reCAPTCHA challenge",
+        text: "Select all images with traffic lights",
+      },
+    },
+  ]), true);
+  assert.equal(inspectionHasSensitivePage([
+    {
+      ...main,
+      value: { ...main.value, text: "Complete CAPTCHA verification to apply" },
+    },
+    passiveBadge,
+  ]), true);
+  assert.equal(inspectionHasSensitivePage([
+    { ...main, value: { ...main.value, url: "https://example.test/jobs/7702258" } },
+    passiveBadge,
+  ]), true);
+});
+
 test("capture resource limits accept boundaries and reject one over", () => {
   const limits = {
     maxControls: 2,

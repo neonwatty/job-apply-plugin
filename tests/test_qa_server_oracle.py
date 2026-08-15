@@ -1,4 +1,5 @@
 import http.client
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -13,6 +14,7 @@ from urllib.parse import urlsplit
 from qa.compiler import compile_capture
 from qa.oracle import OracleError, evaluate_run
 from qa.server import ReplayHTTPServer
+from scripts.job_apply_policy import PolicyStore, confirmation_authority_revision
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -127,6 +129,9 @@ class OracleStore:
 class RunningServer:
     shutdown_token = "a" * 64
 
+    def __init__(self, auto_submit=False):
+        self.auto_submit = auto_submit
+
     def __enter__(self):
         self.directory = tempfile.TemporaryDirectory()
         self.fixture_path = Path(self.directory.name) / "fixture.json"
@@ -146,6 +151,11 @@ class RunningServer:
                     "synthetic-resume.pdf",
                     "--shutdown-token",
                     self.shutdown_token,
+                    *(
+                        ["--auto-submit-policy-root", str(Path(self.directory.name) / "policy")]
+                        if self.auto_submit
+                        else []
+                    ),
                 ],
                 cwd=ROOT,
                 stdout=subprocess.PIPE,
@@ -166,6 +176,38 @@ class RunningServer:
                 raise AssertionError("server exited before startup")
             self.startup = json.loads(line)
             self.port = self.startup["port"]
+            if self.auto_submit:
+                self.policy_store = PolicyStore(Path(self.directory.name) / "policy")
+                self.application_ref = "application:" + "1" * 64
+                base_url = f"http://127.0.0.1:{self.port}"
+                revision = lambda label: "sha256:" + hashlib.sha256(label.encode()).hexdigest()
+                self.authorization = {
+                    "applicationRef": self.application_ref,
+                    "origin": base_url,
+                    "urlFingerprint": revision("synthetic-url"),
+                    "ats": "linkedin",
+                    "jobFingerprint": revision("synthetic-job"),
+                    "formRevision": revision("synthetic-form"),
+                    "finalControlRevision": revision("synthetic-control"),
+                    "resumeRevision": revision("synthetic-resume"),
+                    "answerRevisions": [],
+                }
+                rule = {key: self.authorization[key] for key in {
+                    "applicationRef", "origin", "urlFingerprint", "ats",
+                    "jobFingerprint", "formRevision", "finalControlRevision",
+                }}
+                self.policy_store.activate({
+                    "riskAcknowledged": True,
+                    "applicationRules": [rule],
+                    "resumeRevision": self.authorization["resumeRevision"],
+                    "sensitiveAllowlist": [],
+                    "confirmationAuthorityRevision": confirmation_authority_revision(
+                        self.shutdown_token
+                    ),
+                    "maxApplications": 1,
+                    "durationSeconds": 300,
+                })
+                self.lease = self.policy_store.authorize(self.authorization)
             return self
         except BaseException:
             self._cleanup()
@@ -472,6 +514,98 @@ class ServerOracleTests(unittest.TestCase):
                 self.assertEqual(status, 400)
                 self.assertEqual(server.request("GET", "/__qa/state")[2], baseline)
 
+    def test_auto_submit_endpoint_requires_private_capability_and_consumes_claim_once(self):
+        with RunningServer(auto_submit=True) as server:
+            payload = {
+                "stepId": "review",
+                "applicationRef": server.application_ref,
+                "leaseId": server.lease["leaseId"],
+                "attempt": server.lease["attempt"],
+                "authorization": server.authorization,
+                "safetyChecks": {
+                "loginRequired": False,
+                "captchaPresent": False,
+                "mfaRequired": False,
+                "accountCreationRequired": False,
+                "controlAccessible": True,
+                "redirected": False,
+                },
+            }
+            baseline = server.request("GET", "/__qa/state")[2]
+            for headers in ({}, {"X-QA-Run-Token": "b" * 64}):
+                status, _, body = server.request(
+                    "POST", "/__qa/auto-submit/final-action", payload, headers=headers
+                )
+                self.assertEqual((status, body), (404, {"error": "not found"}))
+                self.assertEqual(server.request("GET", "/__qa/state")[2], baseline)
+
+            headers = {"X-QA-Run-Token": server.shutdown_token}
+            for boundary in (
+                "loginRequired",
+                "captchaPresent",
+                "mfaRequired",
+                "accountCreationRequired",
+                "redirected",
+                "controlAccessible",
+            ):
+                unsafe = json.loads(json.dumps(payload))
+                unsafe["safetyChecks"][boundary] = boundary != "controlAccessible"
+                status, _, _ = server.request(
+                    "POST", "/__qa/auto-submit/final-action", unsafe, headers=headers
+                )
+                self.assertEqual(status, 409)
+                self.assertEqual(
+                    server.request("GET", "/__qa/state")[2]["finalActionActivations"], 0
+                )
+            status, _, confirmation = server.request(
+                "POST", "/__qa/auto-submit/final-action", payload, headers=headers
+            )
+            self.assertEqual(status, 200)
+            self.assertRegex(confirmation["claimId"], r"^claim:[a-f0-9]{64}$")
+            self.assertEqual(confirmation["source"], "isolated_loopback")
+            self.assertIs(confirmation["activationObserved"], True)
+            self.assertEqual(
+                server.request("GET", "/__qa/state")[2]["finalActionActivations"], 1
+            )
+            status, _, _ = server.request(
+                "POST", "/__qa/auto-submit/final-action", payload, headers=headers
+            )
+            self.assertEqual(status, 409)
+            self.assertEqual(
+                server.request("GET", "/__qa/state")[2]["finalActionActivations"], 1
+            )
+
+    def test_auto_submit_rechecks_kill_and_rejects_unknown_authority_fields(self):
+        with RunningServer(auto_submit=True) as server:
+            payload = {
+                "stepId": "review",
+                "applicationRef": server.application_ref,
+                "leaseId": server.lease["leaseId"],
+                "attempt": server.lease["attempt"],
+                "authorization": server.authorization,
+                "safetyChecks": {
+                    "loginRequired": False,
+                    "captchaPresent": False,
+                    "mfaRequired": False,
+                    "accountCreationRequired": False,
+                    "controlAccessible": True,
+                    "redirected": False,
+                },
+            }
+            headers = {"X-QA-Run-Token": server.shutdown_token}
+            injected = json.loads(json.dumps(payload))
+            injected["authorization"]["ignorePolicy"] = True
+            self.assertEqual(
+                server.request("POST", "/__qa/auto-submit/final-action", injected, headers=headers)[0],
+                409,
+            )
+            server.policy_store.kill()
+            self.assertEqual(
+                server.request("POST", "/__qa/auto-submit/final-action", payload, headers=headers)[0],
+                409,
+            )
+            self.assertEqual(server.request("GET", "/__qa/state")[2]["finalActionActivations"], 0)
+
     def test_hidden_identity_and_shutdown_require_exact_token(self):
         with RunningServer() as server:
             for path in ("/__qa/identity", "/__qa/shutdown"):
@@ -671,6 +805,21 @@ class SemanticOracleTests(unittest.TestCase):
         )
 
         self.assertEqual(report["scenarioId"], "linkedin-screening")
+        self.assertEqual(report["status"], "passed")
+        self.assertEqual(set(report["assertions"].values()), {"passed"})
+        self.assertEqual(report["missingControlIds"], [])
+        self.assertEqual(report["failureCategories"], [])
+
+    def test_committed_greenhouse_fixture_passes_with_closed_identity(self):
+        fixture = json.loads((
+            ROOT / "qa/fixtures/greenhouse-single-page-2026-08-v1/fixture.json"
+        ).read_text())
+        report = self.evaluate(
+            fixture=fixture,
+            scenario={"id": "greenhouse-complete-profile"},
+            events=complete_events(fixture),
+        )
+        self.assertEqual(report["scenarioId"], "greenhouse-complete-profile")
         self.assertEqual(report["status"], "passed")
         self.assertEqual(set(report["assertions"].values()), {"passed"})
         self.assertEqual(report["missingControlIds"], [])

@@ -1,0 +1,20 @@
+{
+  "name": "Avery Replay",
+  "firstName": "Avery",
+  "lastName": "Replay",
+  "email": "avery.replay@example.com",
+  "phone": "602-555-0142",
+  "location": {
+    "city": "Phoenix",
+    "state": "Arizona",
+    "country": "United States",
+    "zip": "85001"
+  },
+  "skills": [
+    "Communication",
+    "Organization",
+    "Problem solving",
+    "Attention to detail"
+  ],
+  "resumePath": "synthetic-resume.pdf"
+}

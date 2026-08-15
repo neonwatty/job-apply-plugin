@@ -29,16 +29,73 @@ ORACLE_KEYS = {"finalActionActivations"}
 CATALOG = {
     "contact.first_name": ("textbox", "First name"),
     "contact.last_name": ("textbox", "Last name"),
+    "contact.preferred_name": ("textbox", "Preferred first name"),
     "contact.email": ("textbox", "Email address"),
+    "contact.phone_country": ("combobox", "Phone country"),
     "contact.phone": ("textbox", "Phone number"),
+    "contact.location_city": ("combobox", "City"),
     "resume.file": ("file", "Resume"),
+    "cover_letter.file": ("file", "Cover letter"),
+    "profile.linkedin": ("textbox", "LinkedIn profile"),
+    "profile.website": ("textbox", "Website"),
     "preference.top_choice": ("checkbox", "Mark as a top choice"),
     "authorization.sponsorship": (
         "radiogroup",
         "Will you require employment visa sponsorship?",
     ),
+    "authorization.sponsorship_select": (
+        "combobox",
+        "Will you require employment visa sponsorship?",
+    ),
+    "employment.prior_affiliate": (
+        "combobox",
+        "Have you previously worked for this company or an affiliate?",
+    ),
+    "source.discovery": ("combobox", "How did you hear about this opportunity?"),
+    "referral.contact": ("textbox", "Employee referral contact"),
 }
-CONTROL_CHOICES = {"authorization.sponsorship": ("Yes", "No")}
+CONTROL_CHOICES = {
+    "authorization.sponsorship": ("Yes", "No"),
+    "authorization.sponsorship_select": ("Yes", "No"),
+    "contact.phone_country": ("United States +1", "Canada +1"),
+    "contact.location_city": (
+        "Phoenix, Arizona, United States",
+        "Seattle, Washington, United States",
+    ),
+    "employment.prior_affiliate": ("Yes", "No"),
+    "source.discovery": ("LinkedIn (Social Media)", "Other"),
+}
+
+LINKEDIN_CONTROL_KINDS = {
+    "contact.first_name",
+    "contact.last_name",
+    "contact.email",
+    "contact.phone",
+    "resume.file",
+    "preference.top_choice",
+    "authorization.sponsorship",
+}
+GREENHOUSE_CONTROL_KINDS = {
+    "contact.first_name",
+    "contact.last_name",
+    "contact.preferred_name",
+    "contact.email",
+    "contact.phone_country",
+    "contact.phone",
+    "contact.location_city",
+    "resume.file",
+    "cover_letter.file",
+    "profile.linkedin",
+    "profile.website",
+    "authorization.sponsorship_select",
+    "employment.prior_affiliate",
+    "source.discovery",
+    "referral.contact",
+}
+PLATFORM_CONTROL_KINDS = {
+    "linkedin-easy-apply": LINKEDIN_CONTROL_KINDS,
+    "greenhouse": GREENHOUSE_CONTROL_KINDS,
+}
 
 FINAL_ACTION = {
     "id": "final.apply",
@@ -99,7 +156,8 @@ def validate_fixture(value: dict[str, Any]) -> None:
     fixture_id = value.get("id")
     if not isinstance(fixture_id, str) or not FIXTURE_ID.fullmatch(fixture_id):
         raise ContractError("invalid fixture id")
-    if value.get("platformFamily") != "linkedin-easy-apply":
+    platform_family = value.get("platformFamily")
+    if platform_family not in PLATFORM_CONTROL_KINDS:
         raise ContractError("unsupported platform family")
 
     capture_month = value.get("captureMonth")
@@ -137,7 +195,7 @@ def validate_fixture(value: dict[str, Any]) -> None:
         if not isinstance(controls, list):
             raise ContractError("controls must be an array")
         for control in controls:
-            _validate_control(control, control_ids)
+            _validate_control(control, control_ids, platform_family)
 
         if step["kind"] == "review":
             review_steps.append(step)
@@ -163,11 +221,16 @@ def validate_fixture(value: dict[str, Any]) -> None:
     _validate_oracle(value.get("oracle"))
 
 
-def _validate_control(control: Any, control_ids: set[str]) -> None:
+def _validate_control(
+    control: Any, control_ids: set[str], platform_family: str
+) -> None:
     if not isinstance(control, dict):
         raise ContractError("control must be an object")
     _closed(control, CONTROL_KEYS, "control")
-    expected_has_choices = control.get("kind") in CONTROL_CHOICES
+    kind = control.get("kind")
+    if kind in CATALOG and kind not in PLATFORM_CONTROL_KINDS[platform_family]:
+        raise ContractError("control kind is not supported for platform")
+    expected_has_choices = kind in CONTROL_CHOICES
     if "choices" in control and not expected_has_choices:
         raise ContractError("control choices are not supported")
 
@@ -180,7 +243,7 @@ def _validate_control(control: Any, control_ids: set[str]) -> None:
     required = control.get("required")
     if not isinstance(required, bool):
         raise ContractError("control required must be a boolean")
-    expected = generic_control(control.get("kind"), required)
+    expected = generic_control(kind, required)
     for key in ("id", "role", "label", "required", "choices"):
         if key not in expected and key not in control:
             continue
