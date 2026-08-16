@@ -12,6 +12,7 @@ from unittest import mock
 from urllib.parse import urlsplit
 
 from qa.compiler import compile_capture
+from qa.contracts import LEVER_CONTROL_PROFILE, generic_control
 from qa.oracle import OracleError, evaluate_run
 from qa.server import ReplayHTTPServer
 from scripts.job_apply_policy import PolicyStore, confirmation_authority_revision
@@ -862,6 +863,34 @@ class SemanticOracleTests(unittest.TestCase):
         self.assertEqual(report["scenarioId"], "ashby-complete-profile")
         self.assertEqual(report["status"], "passed")
         self.assertEqual(set(report["assertions"].values()), {"passed"})
+
+    def test_lever_complete_profile_scenario_passes_with_closed_identity(self):
+        fixture = valid_fixture()
+        fixture["id"] = "lever-application-2026-08-v1"
+        fixture["platformFamily"] = "lever"
+        fixture["steps"] = [
+            {
+                "id": "step-1",
+                "kind": "form",
+                "title": "Application form",
+                "controls": [
+                    generic_control(kind, required)
+                    for kind, required in LEVER_CONTROL_PROFILE
+                ],
+                "next": "review",
+            },
+            fixture["steps"][-1],
+        ]
+        report = self.evaluate(
+            fixture=fixture,
+            scenario={"id": "lever-complete-profile"},
+            events=complete_events(fixture),
+        )
+        self.assertEqual(report["scenarioId"], "lever-complete-profile")
+        self.assertEqual(report["status"], "passed")
+        self.assertEqual(set(report["assertions"].values()), {"passed"})
+        self.assertEqual(report["missingControlIds"], [])
+        self.assertEqual(report["failureCategories"], [])
 
     def test_store_root_may_be_an_already_open_owned_descriptor(self):
         descriptor = os.open(

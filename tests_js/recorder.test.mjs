@@ -737,6 +737,337 @@ test("Ashby applications allow only one passive hidden response and empty child 
   ]), true);
 });
 
+test("Lever applications allow only the exact passive hidden hCaptcha bootstrap", () => {
+  const textareaResponse = (label) => ({
+    type: "textarea",
+    role: "textbox",
+    autocomplete: "",
+    label,
+    required: false,
+  });
+  const gResponse = textareaResponse("g-recaptcha-response");
+  const hResponse = textareaResponse("h-captcha-response");
+  const mainResponse = {
+    ...hResponse,
+    type: "hidden",
+  };
+  const visibleControls = [
+    { type: "email", role: "textbox", autocomplete: "email", label: "Email" },
+    { type: "button", role: "button", autocomplete: "", label: "Submit application" },
+  ];
+  const enclaveVersion = "a".repeat(40);
+  const enclaveOwner = (channel) => ({
+    src: `https://newassets.hcaptcha.com/captcha/v1/${enclaveVersion}/static/hcaptcha-enclave.html` +
+      `#frame=enclave&_channel=${channel}&_origin=https%3A%2F%2Fjobs.lever.co` +
+      `&host=jobs.lever.co&se=${enclaveVersion}`,
+    title: "Widget containing checkbox for hCaptcha security challenge",
+    visibility: "hidden",
+    position: "fixed",
+    width: 300,
+    height: 200,
+  });
+  const auxiliaryOwner = {
+    src: "",
+    title: "",
+    visibility: "hidden",
+    position: "absolute",
+    width: 1,
+    height: 1,
+  };
+  const securityFrames = [
+    auxiliaryOwner,
+    enclaveOwner("ChannelOne1"),
+    enclaveOwner("ChannelTwo2"),
+  ];
+  const main = {
+    frame: { id: "main" },
+    frameVisible: true,
+    value: {
+      url: "https://jobs.lever.co/example/00000000-0000-4000-8000-000000000001/apply",
+      title: "Application",
+      text: "Apply for this position",
+      controls: visibleControls,
+      securityControls: [...visibleControls, mainResponse],
+      controlOverflow: false,
+      securityFrames,
+      securityFrameOverflow: false,
+    },
+  };
+  const auxiliary = {
+    frame: { id: "auxiliary", parentId: "main" },
+    frameVisible: false,
+    value: {
+      url: "about:blank",
+      title: "",
+      text: "",
+      controls: [],
+      securityControls: [],
+      controlOverflow: false,
+    },
+  };
+  const hcaptchaChild = (id) => ({
+    frame: { id, parentId: "main" },
+    frameVisible: false,
+    value: {
+      url: "",
+      title: "hCaptcha",
+      text: "",
+      controls: [],
+      securityControls: [gResponse, hResponse],
+      controlOverflow: false,
+    },
+  });
+  const hcaptchaChildren = [hcaptchaChild("hcaptcha-one"), hcaptchaChild("hcaptcha-two")];
+  const children = [auxiliary, ...hcaptchaChildren];
+  const inspect = (mainValue = main.value, childValues = [auxiliary], extras = []) =>
+    inspectionHasSensitivePage([
+      { ...main, value: mainValue },
+      ...childValues,
+      ...extras,
+    ]);
+
+  assert.equal(inspect(), false);
+  assert.equal(inspect(main.value, children), false);
+
+  const invalidUrls = [
+    "http://jobs.lever.co/example/00000000-0000-4000-8000-000000000001/apply",
+    "https://user@jobs.lever.co/example/00000000-0000-4000-8000-000000000001/apply",
+    "https://user:secret@jobs.lever.co/example/00000000-0000-4000-8000-000000000001/apply",
+    "https://jobs.lever.co:444/example/00000000-0000-4000-8000-000000000001/apply",
+    "https://jobs.lever.co/example/00000000-0000-4000-8000-000000000001/apply?source=test",
+    "https://jobs.lever.co/example/00000000-0000-4000-8000-000000000001/apply#form",
+    "https://www.jobs.lever.co/example/00000000-0000-4000-8000-000000000001/apply",
+    "https://jobs.lever.co/example/00000000-0000-4000-8000-000000000001",
+    "https://jobs.lever.co/example/apply",
+    "https://jobs.lever.co/example/00000000-0000-4000-8000-000000000001/apply/extra",
+    "https://example.test/example/00000000-0000-4000-8000-000000000001/apply",
+  ];
+  for (const url of invalidUrls) {
+    assert.equal(inspect({ ...main.value, url }), true, url);
+  }
+
+  const invalidMainShapes = [
+    { ...main.value, controlOverflow: true },
+    { ...main.value, controls: [...visibleControls, mainResponse] },
+    { ...main.value, securityControls: visibleControls },
+    { ...main.value, securityControls: [...main.value.securityControls, mainResponse] },
+    {
+      ...main.value,
+      securityControls: main.value.securityControls.map((control) =>
+        control === mainResponse
+          ? { ...mainResponse, label: "g-recaptcha-response" }
+          : control),
+    },
+    {
+      ...main.value,
+      securityControls: main.value.securityControls.map((control) =>
+        control === mainResponse ? { ...mainResponse, type: "textarea" } : control),
+    },
+    {
+      ...main.value,
+      securityControls: main.value.securityControls.map((control) =>
+        control === mainResponse ? { ...mainResponse, role: "control" } : control),
+    },
+    {
+      ...main.value,
+      securityControls: main.value.securityControls.map((control) =>
+        control === mainResponse ? { ...mainResponse, autocomplete: "off" } : control),
+    },
+    {
+      ...main.value,
+      securityControls: main.value.securityControls.map((control) =>
+        control === mainResponse ? { ...mainResponse, required: true } : control),
+    },
+    {
+      ...main.value,
+      controls: [...visibleControls, {
+        type: "checkbox", role: "checkbox", autocomplete: "", label: "I'm not a robot",
+      }],
+    },
+    {
+      ...main.value,
+      controls: [...visibleControls, {
+        type: "button", role: "button", autocomplete: "", label: "Start CAPTCHA challenge",
+      }],
+    },
+    {
+      ...main.value,
+      securityControls: [...main.value.securityControls, {
+        type: "password", role: "textbox", autocomplete: "current-password", label: "Password",
+      }],
+    },
+    {
+      ...main.value,
+      controls: [...visibleControls, {
+        type: "text", role: "textbox", autocomplete: "one-time-code", label: "Code",
+      }],
+    },
+    { ...main.value, text: "Sign in to continue" },
+    { ...main.value, text: "Create an account" },
+    { ...main.value, text: "Enter your MFA code" },
+    { ...main.value, text: "Complete CAPTCHA verification" },
+  ];
+  for (const [index, value] of invalidMainShapes.entries()) {
+    assert.equal(inspect(value), true, `invalid Lever main shape ${index}`);
+  }
+
+  const mutateEnclaveUrl = (mutate) => {
+    const url = new URL(enclaveOwner("ChannelOne1").src);
+    mutate(url);
+    return url.toString();
+  };
+  const mutateFragment = (name, value) => mutateEnclaveUrl((url) => {
+    const params = new URLSearchParams(url.hash.slice(1));
+    params.set(name, value);
+    url.hash = params.toString();
+  });
+  const invalidEnclaveUrls = [
+    mutateEnclaveUrl((url) => { url.protocol = "http:"; }),
+    mutateEnclaveUrl((url) => { url.hostname = "assets.hcaptcha.com"; }),
+    mutateEnclaveUrl((url) => { url.pathname = "/captcha/v1/not-a-version/static/hcaptcha-enclave.html"; }),
+    mutateEnclaveUrl((url) => { url.pathname = `/captcha/v2/${enclaveVersion}/static/hcaptcha-enclave.html`; }),
+    mutateEnclaveUrl((url) => { url.pathname = `/captcha/v1/${"a".repeat(39)}/static/hcaptcha-enclave.html`; }),
+    mutateEnclaveUrl((url) => { url.username = "user"; }),
+    mutateEnclaveUrl((url) => { url.password = "secret"; }),
+    mutateEnclaveUrl((url) => { url.port = "444"; }),
+    mutateEnclaveUrl((url) => { url.search = "?source=test"; }),
+    mutateFragment("frame", "checkbox"),
+    mutateFragment("_channel", "bad-channel"),
+    mutateFragment("_origin", "https://example.test"),
+    mutateFragment("host", "example.test"),
+    mutateFragment("se", "b".repeat(40)),
+    mutateEnclaveUrl((url) => {
+      const params = new URLSearchParams(url.hash.slice(1));
+      params.append("extra", "value");
+      url.hash = params.toString();
+    }),
+  ];
+  for (const src of invalidEnclaveUrls) {
+    assert.equal(inspect({
+      ...main.value,
+      securityFrames: [auxiliaryOwner, { ...securityFrames[1], src }, securityFrames[2]],
+    }), true, src);
+  }
+
+  const invalidOwnerInventories = [
+    securityFrames.slice(0, 2),
+    [...securityFrames, auxiliaryOwner],
+    [auxiliaryOwner, { ...securityFrames[1], visibility: "visible" }, securityFrames[2]],
+    [auxiliaryOwner, { ...securityFrames[1], position: "absolute" }, securityFrames[2]],
+    [auxiliaryOwner, { ...securityFrames[1], width: 0 }, securityFrames[2]],
+    [auxiliaryOwner, { ...securityFrames[1], height: 0 }, securityFrames[2]],
+    [auxiliaryOwner, {
+      ...securityFrames[1],
+      title: "Widget containing hCaptcha challenge",
+    }, securityFrames[2]],
+    [{ ...auxiliaryOwner, src: "about:blank" }, ...securityFrames.slice(1)],
+    [{ ...auxiliaryOwner, title: "Auxiliary" }, ...securityFrames.slice(1)],
+    [{ ...auxiliaryOwner, visibility: "visible" }, ...securityFrames.slice(1)],
+    [{ ...auxiliaryOwner, position: "fixed" }, ...securityFrames.slice(1)],
+    [{ ...auxiliaryOwner, width: 2 }, ...securityFrames.slice(1)],
+    [{ ...auxiliaryOwner, height: 0 }, ...securityFrames.slice(1)],
+  ];
+  for (const frames of invalidOwnerInventories) {
+    assert.equal(inspect({ ...main.value, securityFrames: frames }), true);
+  }
+  assert.equal(inspect({ ...main.value, securityFrames: undefined }), true);
+  assert.equal(inspect({ ...main.value, securityFrameOverflow: true }), true);
+
+  const replaceFirstChild = (value, overrides = {}) => [
+    auxiliary,
+    { ...hcaptchaChildren[0], ...overrides, value },
+    hcaptchaChildren[1],
+  ];
+  const invalidChildValues = [
+    { ...hcaptchaChildren[0].value, url: "about:blank" },
+    { ...hcaptchaChildren[0].value, url: "https://newassets.hcaptcha.com/captcha/v1/asset.html" },
+    { ...hcaptchaChildren[0].value, title: "hCaptcha challenge" },
+    { ...hcaptchaChildren[0].value, text: "Select all matching images" },
+    { ...hcaptchaChildren[0].value, text: "Sign in to continue" },
+    { ...hcaptchaChildren[0].value, controlOverflow: true },
+    { ...hcaptchaChildren[0].value, controls: [gResponse, hResponse] },
+    { ...hcaptchaChildren[0].value, securityControls: [hResponse] },
+    { ...hcaptchaChildren[0].value, securityControls: [gResponse, hResponse, hResponse] },
+    {
+      ...hcaptchaChildren[0].value,
+      securityControls: [{ ...gResponse, role: "control" }, hResponse],
+    },
+    {
+      ...hcaptchaChildren[0].value,
+      securityControls: [{ ...gResponse, type: "text" }, hResponse],
+    },
+    {
+      ...hcaptchaChildren[0].value,
+      securityControls: [{ ...gResponse, label: "recaptcha-response" }, hResponse],
+    },
+    {
+      ...hcaptchaChildren[0].value,
+      securityControls: [gResponse, { ...hResponse, autocomplete: "one-time-code" }],
+    },
+    {
+      ...hcaptchaChildren[0].value,
+      securityControls: [gResponse, { ...hResponse, required: true }],
+    },
+    {
+      ...hcaptchaChildren[0].value,
+      securityControls: [gResponse, hResponse, {
+        type: "password", role: "textbox", autocomplete: "current-password", label: "Password",
+      }],
+    },
+    {
+      ...hcaptchaChildren[0].value,
+      controls: [{ type: "checkbox", role: "checkbox", label: "I'm not a robot" }],
+    },
+  ];
+  for (const value of invalidChildValues) {
+    assert.equal(inspect(main.value, replaceFirstChild(value)), true);
+  }
+
+  assert.equal(inspect(main.value, [
+    auxiliary,
+    { ...hcaptchaChildren[0], frameVisible: true },
+    hcaptchaChildren[1],
+  ]), true);
+  assert.equal(inspect(main.value, [
+    auxiliary,
+    { ...hcaptchaChildren[0], frame: { id: "hcaptcha-one", parentId: "other" } },
+    hcaptchaChildren[1],
+  ]), true);
+  const invalidAuxiliaryValues = [
+    { ...auxiliary.value, url: "" },
+    { ...auxiliary.value, title: "Auxiliary" },
+    { ...auxiliary.value, text: "Loading" },
+    { ...auxiliary.value, controls: [{ type: "button", role: "button", label: "Continue" }] },
+    { ...auxiliary.value, securityControls: [hResponse] },
+    { ...auxiliary.value, controlOverflow: true },
+  ];
+  for (const value of invalidAuxiliaryValues) {
+    assert.equal(inspect(main.value, [
+      { ...auxiliary, value },
+      ...hcaptchaChildren,
+    ]), true);
+  }
+  assert.equal(inspect(main.value, [
+    { ...auxiliary, frameVisible: true },
+    ...hcaptchaChildren,
+  ]), true);
+  assert.equal(inspect(main.value, hcaptchaChildren), true);
+  assert.equal(inspect(main.value, [auxiliary, hcaptchaChildren[0]]), true);
+  assert.equal(inspect(main.value, children, [hcaptchaChild("hcaptcha-three")]), true);
+  assert.equal(inspect(main.value, children, [{
+    frame: { id: "sensitive", parentId: "main" },
+    frameVisible: false,
+    value: {
+      url: "about:blank",
+      title: "Sign in",
+      text: "Authentication required",
+      controls: [],
+      securityControls: [],
+      controlOverflow: false,
+    },
+  }]), true);
+});
+
 test("capture resource limits accept boundaries and reject one over", () => {
   const limits = {
     maxControls: 2,
@@ -949,6 +1280,138 @@ test("record refuses a login page before creating private evidence", async (t) =
   assert.doesNotMatch(result.stderr, /Sign in|password|127\.0\.0\.1/);
   await assert.rejects(access(path.join(session, "capture-receipt.json")));
   await assert.rejects(access(path.join(session, "events.jsonl")));
+});
+
+test("record permits only the exact passive Lever hCaptcha browser shape", async (t) => {
+  const site = await startSyntheticSite(t);
+  const { cdpUrl } = await startIndependentChromium(t, `${site}/application`);
+  const attached = await chromium.connectOverCDP(cdpUrl);
+  t.after(() => attached.close());
+  const context = attached.contexts()[0];
+  const page = context.pages()[0];
+  const canonical =
+    "https://jobs.lever.co/example/00000000-0000-4000-8000-000000000001/apply";
+  const enclaveVersion = "a".repeat(40);
+  const pendingEnclaveRoutes = [];
+  await context.route("https://jobs.lever.co/**", (route) => route.fulfill({
+    contentType: "text/html; charset=utf-8",
+    body: `<!doctype html><title>Application</title><main>
+      <h1>Apply for this position</h1>
+      <label>Email<input type=email autocomplete=email></label>
+      <input type=hidden name=h-captcha-response>
+      <button type=button>Submit application</button>
+    </main>`,
+  }));
+  await context.route("https://newassets.hcaptcha.com/**", (route) => {
+    pendingEnclaveRoutes.push(route);
+  });
+  const abortPendingEnclaveRoutes = async () => {
+    const routes = pendingEnclaveRoutes.splice(0);
+    await Promise.all(routes.map((route) => route.abort().catch(() => {})));
+  };
+  t.after(abortPendingEnclaveRoutes);
+
+  const renderShape = async (variant = "safe") => {
+    await abortPendingEnclaveRoutes();
+    await page.goto(canonical, { waitUntil: "domcontentloaded" });
+    await page.evaluate(async ({ selectedVariant, version }) => {
+      const auxiliary = document.createElement("iframe");
+      auxiliary.id = "auxiliary";
+      auxiliary.style.cssText =
+        "visibility:hidden;position:absolute;width:1px;height:1px;border:0";
+      document.body.append(auxiliary);
+
+      for (let index = 0; index < 2; index += 1) {
+        const frame = document.createElement("iframe");
+        frame.id = `hcaptcha-${index + 1}`;
+        frame.title = "Widget containing checkbox for hCaptcha security challenge";
+        frame.style.cssText = `visibility:${
+          selectedVariant === "visible" && index === 0 ? "visible" : "hidden"
+        };position:fixed;width:300px;height:200px;border:0`;
+        frame.src = "javascript:false";
+        document.body.append(frame);
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        frame.contentDocument.title = "hCaptcha";
+        frame.contentDocument.body.innerHTML =
+          "<textarea name=g-recaptcha-response hidden></textarea>" +
+          "<textarea name=h-captcha-response hidden></textarea>";
+        if (selectedVariant === "nonempty" && index === 0) {
+          frame.contentDocument.body.append("Choose the matching images");
+        }
+        frame.src = `https://newassets.hcaptcha.com/captcha/v1/${version}` +
+          "/static/hcaptcha-enclave.html#frame=enclave" +
+          `&_channel=Channel${index + 1}&_origin=https%3A%2F%2Fjobs.lever.co` +
+          `&host=jobs.lever.co&se=${version}`;
+      }
+      if (selectedVariant === "credential") {
+        const password = document.createElement("input");
+        password.type = "password";
+        password.hidden = true;
+        password.autocomplete = "current-password";
+        password.setAttribute("aria-label", "Password");
+        document.body.append(password);
+      }
+    }, { selectedVariant: variant, version: enclaveVersion });
+    await page.waitForFunction(() => document.querySelectorAll("iframe").length === 3);
+  };
+
+  const directory = await mkdtemp(path.join(tmpdir(), "lever-passive-hcaptcha-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const privateRoot = path.join(directory, ".qa-private");
+  await mkdir(privateRoot, { mode: 0o700 });
+
+  await renderShape();
+  const cdp = await context.newCDPSession(page);
+  const { frameTree } = await cdp.send("Page.getFrameTree");
+  const childUrls = (frameTree.childFrames ?? []).map(({ frame }) => frame.url).sort();
+  assert.deepEqual(childUrls, ["", "", "about:blank"]);
+  await cdp.detach();
+
+  const allowedSession = path.join(privateRoot, "qa-session-allowed");
+  const recorder = spawn(process.execPath, [
+    "qa/recorder.mjs", "record", "--cdp-url", cdpUrl, "--output", allowedSession,
+  ], { cwd: root });
+  let recorderStderr = "";
+  recorder.stderr.setEncoding("utf8");
+  recorder.stderr.on("data", (chunk) => { recorderStderr += chunk; });
+  t.after(() => stopChild(recorder));
+  try {
+    await waitForFile(path.join(allowedSession, "control.json"), 10000);
+  } catch (error) {
+    assert.fail(`${error.message}: ${recorderStderr}`);
+  }
+  const checkpoint = await runNode([
+    "qa/recorder.mjs", "checkpoint", "--session", allowedSession,
+    "--kind", "application-opened",
+  ], 10000);
+  assert.equal(checkpoint.code, 0, checkpoint.stderr);
+  recorder.kill("SIGTERM");
+  assert.deepEqual(await waitForExit(recorder, 5000), { code: 0, signal: null });
+  assert.equal(recorderStderr, "");
+  const persisted = (await Promise.all([
+    "capture-receipt.json",
+    "recording-summary.json",
+    "events.jsonl",
+    "checkpoints/0001-application-opened/page.html",
+    "checkpoints/0001-application-opened/controls.json",
+    "checkpoints/0001-application-opened/checkpoint.json",
+  ].map((filename) => readFile(path.join(allowedSession, filename), "utf8")))).join("\n");
+  assert.doesNotMatch(persisted, /newassets\.hcaptcha\.com|Channel1|securityFrames/);
+  await abortPendingEnclaveRoutes();
+
+  for (const variant of ["visible", "nonempty", "credential"]) {
+    await renderShape(variant);
+    const session = path.join(privateRoot, `qa-session-${variant}`);
+    const refused = await runNode([
+      "qa/recorder.mjs", "record", "--cdp-url", cdpUrl, "--output", session,
+    ], 10000);
+    assert.equal(refused.code, 1, variant);
+    assert.match(refused.stderr, /sensitive page refused/, variant);
+    assert.doesNotMatch(refused.stderr, /newassets\.hcaptcha\.com|Channel1|securityFrames/);
+    await assert.rejects(access(path.join(session, "capture-receipt.json")));
+    await assert.rejects(access(path.join(session, "events.jsonl")));
+    await abortPendingEnclaveRoutes();
+  }
 });
 
 test("recorder excludes inert source text but keeps ordinary sensitive text in scope", async (t) => {

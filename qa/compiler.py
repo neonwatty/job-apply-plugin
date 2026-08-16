@@ -13,6 +13,7 @@ from qa.contracts import (
     SHA256,
     ContractError,
     generic_control,
+    LEVER_CONTROL_PROFILE,
     validate_fixture,
 )
 
@@ -86,6 +87,7 @@ _ASHBY_CONTROL_PROFILE = (
     ("contact.email", True),
     ("resume.file", True),
 )
+_LEVER_CONTROL_PROFILE = LEVER_CONTROL_PROFILE
 _FLOW_PROFILES = {
     "ashby": (
         (
@@ -97,6 +99,12 @@ _FLOW_PROFILES = {
     "greenhouse": (
         (
             ("application-opened", _GREENHOUSE_CONTROL_PROFILE),
+            ("review-reached", ()),
+        ),
+    ),
+    "lever": (
+        (
+            ("application-opened", _LEVER_CONTROL_PROFILE),
             ("review-reached", ()),
         ),
     ),
@@ -116,6 +124,7 @@ _STEP_TITLES = {
         "Application form"
     ),
     tuple(kind for kind, _required in _ASHBY_CONTROL_PROFILE): "Application form",
+    tuple(kind for kind, _required in _LEVER_CONTROL_PROFILE): "Application form",
 }
 _SEMVER_CORE = re.compile(
     r"^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)$"

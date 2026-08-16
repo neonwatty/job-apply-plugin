@@ -34,11 +34,16 @@ CATALOG = {
     "contact.email": ("textbox", "Email address"),
     "contact.phone_country": ("combobox", "Phone country"),
     "contact.phone": ("textbox", "Phone number"),
+    "contact.location": ("combobox", "Current location"),
     "contact.location_city": ("combobox", "City"),
     "resume.file": ("file", "Resume"),
     "cover_letter.file": ("file", "Cover letter"),
     "profile.linkedin": ("textbox", "LinkedIn profile"),
+    "profile.location_url": ("textbox", "Current location profile"),
+    "profile.github": ("textbox", "GitHub profile"),
+    "profile.portfolio": ("textbox", "Portfolio"),
     "profile.website": ("textbox", "Website"),
+    "employment.current_company": ("textbox", "Current company"),
     "preference.top_choice": ("checkbox", "Mark as a top choice"),
     "authorization.sponsorship": (
         "radiogroup",
@@ -48,12 +53,46 @@ CATALOG = {
         "combobox",
         "Will you require employment visa sponsorship?",
     ),
+    "authorization.work_authorized": (
+        "radiogroup",
+        "Authorized to work in the United States?",
+    ),
+    "authorization.sponsorship_status": (
+        "radiogroup",
+        "Will you require employment visa sponsorship?",
+    ),
     "employment.prior_affiliate": (
         "combobox",
         "Have you previously worked for this company or an affiliate?",
     ),
     "source.discovery": ("combobox", "How did you hear about this opportunity?"),
+    "source.discovery_radio": (
+        "radiogroup",
+        "How did you hear about this opportunity?",
+    ),
     "referral.contact": ("textbox", "Employee referral contact"),
+    "compensation.total_range": ("radiogroup", "Expected total compensation"),
+    "compensation.target_salary": ("textbox", "Target salary"),
+    "employment.prior_company": (
+        "radiogroup",
+        "Previously worked for this company?",
+    ),
+    "conflict.related_person": (
+        "radiogroup",
+        "Related to someone at this company?",
+    ),
+    "conflict.customer_partner_reseller": (
+        "radiogroup",
+        "Worked for a customer, partner, or reseller?",
+    ),
+    "location.us_resident": ("radiogroup", "Live in the United States?"),
+    "location.city_state": ("textbox", "City and state"),
+    "authorization.us_citizen": ("radiogroup", "United States citizen?"),
+    "authorization.green_card": ("radiogroup", "Permanent resident?"),
+    "eeo.gender": ("combobox", "Gender"),
+    "eeo.race": ("radiogroup", "Race or ethnicity"),
+    "eeo.veteran": ("combobox", "Veteran status"),
+    "eeo.disability": ("combobox", "Disability status"),
 }
 CONTROL_CHOICES = {
     "authorization.sponsorship": ("Yes", "No"),
@@ -63,8 +102,52 @@ CONTROL_CHOICES = {
         "Phoenix, Arizona, United States",
         "Seattle, Washington, United States",
     ),
+    "contact.location": (
+        "Phoenix, Arizona, United States",
+        "Seattle, Washington, United States",
+    ),
     "employment.prior_affiliate": ("Yes", "No"),
     "source.discovery": ("LinkedIn (Social Media)", "Other"),
+    "authorization.work_authorized": ("Yes", "No", "Not applicable"),
+    "authorization.sponsorship_status": ("Yes", "No", "Not applicable"),
+    "source.discovery_radio": (
+        "Professional network",
+        "Referral",
+        "Recruiter",
+        "Career site",
+        "Job board",
+        "Agency",
+        "Other",
+    ),
+    "compensation.total_range": (
+        "Below $100,000",
+        "$100,000–$199,999",
+        "$200,000–$259,999",
+        "$260,000+",
+    ),
+    "employment.prior_company": ("Yes", "No"),
+    "conflict.related_person": ("Yes", "No"),
+    "conflict.customer_partner_reseller": ("Yes", "No"),
+    "location.us_resident": ("Yes", "No"),
+    "authorization.us_citizen": ("Yes", "No"),
+    "authorization.green_card": ("Yes", "No"),
+    "eeo.gender": ("Male", "Female", "Decline to answer"),
+    "eeo.race": (
+        "Hispanic or Latino",
+        "White",
+        "Black or African American",
+        "Native Hawaiian or Pacific Islander",
+        "Asian",
+        "American Indian or Alaska Native",
+        "Two or more races",
+        "Decline to answer",
+    ),
+    "eeo.veteran": (
+        "Protected veteran",
+        "Not a protected veteran",
+        "Decline to answer",
+    ),
+    "eeo.disability": ("Yes", "No", "Decline to answer"),
 }
 
 LINKEDIN_CONTROL_KINDS = {
@@ -98,8 +181,39 @@ ASHBY_CONTROL_KINDS = {
     "contact.email",
     "resume.file",
 }
+LEVER_CONTROL_PROFILE = (
+    ("resume.file", True),
+    ("contact.full_name", True),
+    ("contact.email", True),
+    ("contact.phone", True),
+    ("contact.location", True),
+    ("employment.current_company", False),
+    ("profile.location_url", False),
+    ("profile.linkedin", True),
+    ("profile.github", False),
+    ("profile.portfolio", False),
+    ("profile.website", False),
+    ("authorization.work_authorized", True),
+    ("authorization.sponsorship_status", True),
+    ("source.discovery_radio", False),
+    ("compensation.total_range", True),
+    ("compensation.target_salary", False),
+    ("employment.prior_company", True),
+    ("conflict.related_person", True),
+    ("conflict.customer_partner_reseller", True),
+    ("location.us_resident", True),
+    ("location.city_state", True),
+    ("authorization.us_citizen", False),
+    ("authorization.green_card", False),
+    ("eeo.gender", False),
+    ("eeo.race", False),
+    ("eeo.veteran", False),
+    ("eeo.disability", False),
+)
+LEVER_CONTROL_KINDS = {kind for kind, _required in LEVER_CONTROL_PROFILE}
 PLATFORM_CONTROL_KINDS = {
     "ashby": ASHBY_CONTROL_KINDS,
+    "lever": LEVER_CONTROL_KINDS,
     "linkedin-easy-apply": LINKEDIN_CONTROL_KINDS,
     "greenhouse": GREENHOUSE_CONTROL_KINDS,
 }
@@ -224,6 +338,8 @@ def validate_fixture(value: dict[str, Any]) -> None:
             raise ContractError("final action is only allowed on review step")
 
     _validate_flow(steps, step_ids)
+    if platform_family == "lever":
+        _validate_lever_flow(steps)
     _validate_final_action(review_steps[0].get("finalAction"))
     _validate_oracle(value.get("oracle"))
 
@@ -310,6 +426,27 @@ def _validate_final_action(value: Any) -> None:
         or not isinstance(value.get("tripwire"), bool)
     ):
         raise ContractError("enabled final-action tripwire is required")
+
+
+def _validate_lever_flow(steps: list[dict[str, Any]]) -> None:
+    if (
+        len(steps) != 2
+        or steps[0].get("id") != "step-1"
+        or steps[0].get("kind") != "form"
+        or steps[0].get("title") != "Application form"
+        or steps[0].get("next") != "review"
+        or steps[1].get("id") != "review"
+        or steps[1].get("kind") != "review"
+        or steps[1].get("title") != "Review application"
+        or steps[1].get("controls") != []
+    ):
+        raise ContractError("unsupported Lever fixture flow")
+    observed = tuple(
+        (control.get("kind"), control.get("required"))
+        for control in steps[0].get("controls", [])
+    )
+    if observed != LEVER_CONTROL_PROFILE:
+        raise ContractError("unsupported Lever fixture flow")
 
 
 def _validate_oracle(value: Any) -> None:

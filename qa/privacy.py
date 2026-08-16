@@ -38,7 +38,7 @@ _PATTERNS = {
         rb"[ .-]?\d{3}[ .-]?\d{4}(?![A-Fa-f0-9])"
     ),
     "source-url": re.compile(
-        rb"(?:linkedin\.com\b|ashbyhq\.com\b|/jobs?(?:[/#?]|\b))",
+        rb"(?:linkedin\.com\b|ashbyhq\.com\b|lever\.co\b|/jobs?(?:[/#?]|\b))",
         re.IGNORECASE,
     ),
     "credential": re.compile(
@@ -51,7 +51,7 @@ _PATTERNS = {
         re.IGNORECASE,
     ),
     "source-html": re.compile(
-        rb"<script\s+[^>]*\bsrc\s*=|linkedin-logo|voyager-web|ashby-logo",
+        rb"<script\s+[^>]*\bsrc\s*=|linkedin-logo|voyager-web|ashby-logo|lever-logo",
         re.IGNORECASE,
     ),
 }

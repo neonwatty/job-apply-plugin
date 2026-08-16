@@ -151,7 +151,7 @@ The plugin includes guided workflows for six ATS families. Codex and Claude Code
 | LinkedIn Easy Apply | `linkedin.com/jobs/view/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
 | Greenhouse | `boards.greenhouse.io/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
 | Ashby | `jobs.ashbyhq.com/*` | Codex Browser or Claude in Chrome | Guided; closed replay lane supported |
-| Lever | `jobs.lever.co/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
+| Lever | `jobs.lever.co/*` | Codex Browser or Claude in Chrome | Guided; closed replay lane supported |
 | Rippling | `*.rippling.com/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
 | Workday | `*.myworkdayjobs.com/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
 
@@ -409,6 +409,8 @@ A supported single-page Ashby application uses the same two-step lifecycle with 
   ]
 }
 ```
+
+A supported single-page Lever replay also uses the application-form-to-review lifecycle. Its compiler profile is closed to the exact ordered, value-free controls recorded for `lever-complete-profile`: resume and contact fields; optional company and profile links; work authorization; discovery and compensation; prior-company, conflict, and location questions; optional citizenship; and optional EEO controls. Roles, requiredness, and every generic choice list are catalog-owned. Reordering a control, changing requiredness, adding a control, or changing a choice is rejected. The final Submit control remains enabled only behind the local QA tripwire and must stay untouched during review-only replay.
 
 After the final checkpoint and draft annotation, press `Ctrl-C` once in the recorder terminal and wait for it to exit cleanly. Do not force-kill it: clean shutdown removes the private control file and writes `capture-receipt.json`, including the generated `captureId`, capture month, recorder version, and hashes of the private source files.
 

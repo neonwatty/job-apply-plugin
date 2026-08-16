@@ -123,6 +123,57 @@ class ContractTests(unittest.TestCase):
         ]
         return fixture
 
+    def valid_lever_fixture(self):
+        fixture = self.valid_fixture()
+        fixture["id"] = "lever-application-2026-08-v1"
+        fixture["platformFamily"] = "lever"
+        kinds = (
+            ("resume.file", True),
+            ("contact.full_name", True),
+            ("contact.email", True),
+            ("contact.phone", True),
+            ("contact.location", True),
+            ("employment.current_company", False),
+            ("profile.location_url", False),
+            ("profile.linkedin", True),
+            ("profile.github", False),
+            ("profile.portfolio", False),
+            ("profile.website", False),
+            ("authorization.work_authorized", True),
+            ("authorization.sponsorship_status", True),
+            ("source.discovery_radio", False),
+            ("compensation.total_range", True),
+            ("compensation.target_salary", False),
+            ("employment.prior_company", True),
+            ("conflict.related_person", True),
+            ("conflict.customer_partner_reseller", True),
+            ("location.us_resident", True),
+            ("location.city_state", True),
+            ("authorization.us_citizen", False),
+            ("authorization.green_card", False),
+            ("eeo.gender", False),
+            ("eeo.race", False),
+            ("eeo.veteran", False),
+            ("eeo.disability", False),
+        )
+        fixture["steps"] = [
+            {
+                "id": "step-1",
+                "kind": "form",
+                "title": "Application form",
+                "controls": [generic_control(kind, required) for kind, required in kinds],
+                "next": "review",
+            },
+            {
+                "id": "review",
+                "kind": "review",
+                "title": "Review application",
+                "controls": [],
+                "finalAction": copy.deepcopy(fixture["steps"][-1]["finalAction"]),
+            },
+        ]
+        return fixture
+
     def test_catalog_generates_source_independent_contact_control(self):
         self.assertEqual(
             generic_control("contact.first_name", required=True),
@@ -226,6 +277,66 @@ class ContractTests(unittest.TestCase):
         self.assert_contract_error(
             fixture, "control kind is not supported for platform"
         )
+
+    def test_closed_lever_fixture_uses_exact_roles_choices_and_order(self):
+        fixture = self.valid_lever_fixture()
+        self.assertIsNone(validate_fixture(fixture))
+        controls = fixture["steps"][0]["controls"]
+        self.assertEqual(controls[0]["id"], "resume.file")
+        self.assertEqual(
+            next(control for control in controls if control["id"] == "contact.location"),
+            {
+                "id": "contact.location",
+                "kind": "contact.location",
+                "role": "combobox",
+                "label": "Current location",
+                "required": True,
+                "choices": [
+                    "Phoenix, Arizona, United States",
+                    "Seattle, Washington, United States",
+                ],
+            },
+        )
+        self.assertEqual(
+            next(control for control in controls if control["id"] == "eeo.disability")["choices"],
+            ["Yes", "No", "Decline to answer"],
+        )
+
+        controls[12]["choices"] = ["No", "Yes", "Not applicable"]
+        self.assert_contract_error(
+            fixture,
+            "control authorization.sponsorship_status has non-catalog choices",
+        )
+
+    def test_lever_fixture_rejects_step_and_control_profile_drift(self):
+        cases = []
+        fixture = self.valid_lever_fixture()
+        fixture["steps"][0]["id"] = "application"
+        fixture["steps"][0]["next"] = "review"
+        cases.append(fixture)
+
+        fixture = self.valid_lever_fixture()
+        fixture["steps"][0]["title"] = "Other form"
+        cases.append(fixture)
+
+        fixture = self.valid_lever_fixture()
+        fixture["steps"][1]["title"] = "Other review"
+        cases.append(fixture)
+
+        fixture = self.valid_lever_fixture()
+        fixture["steps"][0]["controls"][5]["required"] = True
+        cases.append(fixture)
+
+        fixture = self.valid_lever_fixture()
+        fixture["steps"][0]["controls"][0], fixture["steps"][0]["controls"][1] = (
+            fixture["steps"][0]["controls"][1],
+            fixture["steps"][0]["controls"][0],
+        )
+        cases.append(fixture)
+
+        for fixture in cases:
+            with self.subTest(fixture=fixture):
+                self.assert_contract_error(fixture, "unsupported Lever fixture flow")
 
     def test_platform_control_catalogs_cannot_be_mixed(self):
         fixture = self.valid_greenhouse_fixture()

@@ -159,6 +159,58 @@ class CompilerTests(unittest.TestCase):
         ]
         return capture
 
+    def lever_capture(self):
+        capture = copy.deepcopy(self.capture)
+        capture["platformFamily"] = "lever"
+        profile = (
+            ("resume.file", True),
+            ("contact.full_name", True),
+            ("contact.email", True),
+            ("contact.phone", True),
+            ("contact.location", True),
+            ("employment.current_company", False),
+            ("profile.location_url", False),
+            ("profile.linkedin", True),
+            ("profile.github", False),
+            ("profile.portfolio", False),
+            ("profile.website", False),
+            ("authorization.work_authorized", True),
+            ("authorization.sponsorship_status", True),
+            ("source.discovery_radio", False),
+            ("compensation.total_range", True),
+            ("compensation.target_salary", False),
+            ("employment.prior_company", True),
+            ("conflict.related_person", True),
+            ("conflict.customer_partner_reseller", True),
+            ("location.us_resident", True),
+            ("location.city_state", True),
+            ("authorization.us_citizen", False),
+            ("authorization.green_card", False),
+            ("eeo.gender", False),
+            ("eeo.race", False),
+            ("eeo.veteran", False),
+            ("eeo.disability", False),
+        )
+        capture["steps"] = [
+            {
+                "checkpoint": "application-opened",
+                "controls": [
+                    {
+                        "kind": kind,
+                        "sourceLabel": f"Observed {index}",
+                        "required": required,
+                    }
+                    for index, (kind, required) in enumerate(profile, start=1)
+                ],
+            },
+            {
+                "checkpoint": "review-reached",
+                "controls": [],
+                "finalActionObserved": True,
+            },
+        ]
+        return capture
+
     def test_compiles_a_contract_valid_fixture(self):
         fixture = self.compile()
         self.assertIsNone(validate_fixture(fixture))
@@ -253,6 +305,51 @@ class CompilerTests(unittest.TestCase):
     def test_ashby_flow_remains_closed(self):
         capture = self.ashby_capture()
         capture["steps"][0]["controls"][0]["required"] = False
+        self.assert_rejected_without_echo(capture=capture)
+
+    def test_compiles_exact_closed_lever_single_page_flow(self):
+        fixture = self.compile(capture=self.lever_capture())
+        self.assertIsNone(validate_fixture(fixture))
+        self.assertEqual(fixture["platformFamily"], "lever")
+        self.assertEqual(
+            [step["title"] for step in fixture["steps"]],
+            ["Application form", "Review application"],
+        )
+        controls = fixture["steps"][0]["controls"]
+        self.assertEqual(
+            [control["id"] for control in controls],
+            [control["kind"] for control in self.lever_capture()["steps"][0]["controls"]],
+        )
+        self.assertEqual(
+            next(control for control in controls if control["id"] == "compensation.total_range")["choices"],
+            [
+                "Below $100,000",
+                "$100,000–$199,999",
+                "$200,000–$259,999",
+                "$260,000+",
+            ],
+        )
+        self.assertEqual(
+            next(control for control in controls if control["id"] == "eeo.race")["role"],
+            "radiogroup",
+        )
+
+    def test_lever_flow_rejects_any_profile_drift(self):
+        capture = self.lever_capture()
+        capture["steps"][0]["controls"][5]["required"] = True
+        self.assert_rejected_without_echo(capture=capture)
+
+        capture = self.lever_capture()
+        capture["steps"][0]["controls"].append(
+            {"kind": "contact.first_name", "sourceLabel": "Private", "required": False}
+        )
+        self.assert_rejected_without_echo(capture=capture)
+
+        capture = self.lever_capture()
+        capture["steps"][0]["controls"][11], capture["steps"][0]["controls"][12] = (
+            capture["steps"][0]["controls"][12],
+            capture["steps"][0]["controls"][11],
+        )
         self.assert_rejected_without_echo(capture=capture)
 
         capture = self.ashby_capture()

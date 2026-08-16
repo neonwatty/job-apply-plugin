@@ -490,6 +490,7 @@ def evaluate_run(
         {"id": "ashby-complete-profile"},
         {"id": "complete-profile"},
         {"id": "greenhouse-complete-profile"},
+        {"id": "lever-complete-profile"},
         {"id": "linkedin-screening"},
     ):
         raise OracleError("invalid scenario")

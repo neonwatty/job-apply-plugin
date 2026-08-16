@@ -70,6 +70,7 @@ PROMPT = (
 PLATFORM_LABELS = {
     "ashby": "Ashby",
     "greenhouse": "Greenhouse",
+    "lever": "Lever",
     "linkedin-easy-apply": "LinkedIn Easy Apply",
 }
 RUN_STATE_KEYS = {
@@ -88,6 +89,7 @@ SCENARIO_IDS = frozenset({
     "ashby-complete-profile",
     "complete-profile",
     "greenhouse-complete-profile",
+    "lever-complete-profile",
     "linkedin-screening",
 })
 REPORT_KEYS = {

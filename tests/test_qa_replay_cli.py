@@ -19,6 +19,7 @@ from unittest import mock
 import zlib
 
 from qa.compiler import compile_capture
+from qa.contracts import LEVER_CONTROL_PROFILE, generic_control
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -613,6 +614,52 @@ class ReplayCoordinatorTests(unittest.TestCase):
         self.assertEqual(
             output["suggestedPrompt"],
             PROMPT.format(url=output["url"]).replace("LinkedIn Easy Apply", "Ashby"),
+        )
+
+    def test_prepare_uses_closed_lever_guidance_without_changing_shape(self) -> None:
+        fixture_id = "lever-application-2026-08-v1"
+        scenario_id = "lever-complete-profile"
+        fixture_dir = self.fixtures / fixture_id
+        scenario_dir = self.scenarios / scenario_id
+        fixture_dir.mkdir()
+        scenario_dir.mkdir()
+        fixture = json.loads(json.dumps(self.fixture))
+        fixture["id"] = fixture_id
+        fixture["platformFamily"] = "lever"
+        fixture["steps"] = [
+            {
+                "id": "step-1",
+                "kind": "form",
+                "title": "Application form",
+                "controls": [
+                    generic_control(kind, required)
+                    for kind, required in LEVER_CONTROL_PROFILE
+                ],
+                "next": "review",
+            },
+            fixture["steps"][-1],
+        ]
+        (fixture_dir / "fixture.json").write_text(json.dumps(fixture))
+        source_scenario = ROOT / "qa/scenarios/lever-complete-profile"
+        for filename in ("profile.json", "expected.json", "synthetic-resume.pdf"):
+            target = scenario_dir / filename
+            source = source_scenario / filename
+            if filename.endswith(".pdf"):
+                target.write_bytes(source.read_bytes())
+            else:
+                target.write_text(source.read_text())
+
+        output = self.cli._prepare(fixture_id, scenario_id)
+        run_root = Path(output["storeRoot"]).parent
+        state = json.loads((run_root / "run.json").read_text())
+        self.server_cleanup = (output["url"], state["shutdownToken"])
+        self.assertEqual(
+            set(output),
+            {"fixtureId", "scenarioId", "url", "storeRoot", "suggestedPrompt"},
+        )
+        self.assertEqual(
+            output["suggestedPrompt"],
+            PROMPT.format(url=output["url"]).replace("LinkedIn Easy Apply", "Lever"),
         )
 
     def _record_complete_replay_events(self, output: dict) -> None:
@@ -1685,6 +1732,39 @@ class CommittedScenarioTests(unittest.TestCase):
             "controlIds": ["contact.full_name", "contact.email", "resume.file"],
             "resumeFilename": "synthetic-resume.pdf",
         })
+        self.assertEqual(
+            (scenario_root / "synthetic-resume.pdf").read_bytes(),
+            (ROOT / "qa/scenarios/complete-profile/synthetic-resume.pdf").read_bytes(),
+        )
+
+    def test_lever_complete_profile_scenario_is_closed_and_synthetic(self) -> None:
+        scenario_root = ROOT / "qa/scenarios/lever-complete-profile"
+        self.assertEqual(
+            {path.name for path in scenario_root.iterdir()},
+            {"profile.json", "synthetic-resume.pdf", "expected.json"},
+        )
+        profile = json.loads((scenario_root / "profile.json").read_text())
+        expected = json.loads((scenario_root / "expected.json").read_text())
+        self.assertEqual(profile["name"], "Avery Replay")
+        self.assertRegex(profile["email"], r"^[a-z.]+@example\.com$")
+        self.assertEqual(profile["resumePath"], "synthetic-resume.pdf")
+        self.assertEqual(
+            expected["controlIds"],
+            [
+                "resume.file", "contact.full_name", "contact.email",
+                "contact.phone", "contact.location", "employment.current_company",
+                "profile.location_url", "profile.linkedin", "profile.github",
+                "profile.portfolio", "profile.website",
+                "authorization.work_authorized", "authorization.sponsorship_status",
+                "source.discovery_radio", "compensation.total_range",
+                "compensation.target_salary", "employment.prior_company",
+                "conflict.related_person", "conflict.customer_partner_reseller",
+                "location.us_resident", "location.city_state",
+                "authorization.us_citizen", "authorization.green_card",
+                "eeo.gender", "eeo.race", "eeo.veteran", "eeo.disability",
+            ],
+        )
+        self.assertEqual(expected["resumeFilename"], "synthetic-resume.pdf")
         self.assertEqual(
             (scenario_root / "synthetic-resume.pdf").read_bytes(),
             (ROOT / "qa/scenarios/complete-profile/synthetic-resume.pdf").read_bytes(),
