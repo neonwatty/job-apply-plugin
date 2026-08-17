@@ -21,12 +21,204 @@ python3 "$REPO_ROOT/scripts/job-apply-store.py" --help >/dev/null
 
 python3 - "$REPO_ROOT" <<'PY'
 import json
+import hashlib
 import re
+import stat
+import subprocess
 import sys
 from pathlib import Path
 
 root = Path(sys.argv[1])
+sys.path.insert(0, str(root))
+
+from qa.contracts import ContractError, validate_fixture
+from qa.privacy import PrivacyError, scan_tree
+from qa.promote import (
+    APPROVAL_KEYS,
+    PROVENANCE_KEYS,
+    PromotionError,
+    _timestamp,
+    _validate_approval,
+)
+
 expected = {"answer-memory", "job-apply", "job-search", "job-preferences"}
+
+launcher = root / "scripts" / "qa-chrome.py"
+try:
+    launcher_metadata = launcher.lstat()
+except OSError as error:
+    raise SystemExit("replay QA launcher is missing from the plugin source") from error
+if not stat.S_ISREG(launcher_metadata.st_mode):
+    raise SystemExit("replay QA launcher must be a regular file")
+
+readme = (root / "README.md").read_text(encoding="utf-8")
+profile = "linkedin-capture"
+required_launcher_commands = (
+    f"python3 scripts/qa-chrome.py start --profile {profile}",
+    f"python3 scripts/qa-chrome.py check --profile {profile}",
+    f"python3 scripts/qa-chrome.py stop --profile {profile}",
+    f"python3 scripts/qa-chrome.py reset --profile {profile}",
+)
+for command in required_launcher_commands:
+    if command not in readme:
+        raise SystemExit("README is missing the complete replay QA launcher workflow")
+if re.search(r"--remote-debugging-port(?:=|\s+)\d+", readme):
+    raise SystemExit("README must not prescribe a fixed Chrome debugging port")
+if re.search(r"(?m)^\s*open\b[^\n]*--remote-debugging-port", readme):
+    raise SystemExit("README must not prescribe a direct open/remote-debugging recipe")
+if "--confirm" in readme:
+    raise SystemExit("README must not require typed confirmation for manual reset guidance")
+if "~/.job-apply-qa/chrome-profiles/linkedin-capture" not in readme:
+    raise SystemExit("README must document the literal dedicated manual-removal path")
+if "requires no Trash permission" not in readme:
+    raise SystemExit("README must document that reset does not require Trash access")
+
+
+def git(*arguments: str, check: bool = True) -> subprocess.CompletedProcess[bytes]:
+    try:
+        return subprocess.run(
+            ["git", "-C", str(root), *arguments],
+            check=check,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        raise SystemExit("unable to inspect repository fixture policy") from error
+
+
+private_ignore_probes = (
+    ".qa-private/smoke-probe",
+    ".qa-private/nested/private fixture.json",
+    ".qa-private/nested/!approval.json",
+    "qa/runs/smoke-probe",
+    "qa/runs/nested/[private] report.json",
+    "qa/runs/nested/provenance.json",
+)
+for ignored_path in private_ignore_probes:
+    ignored = git("check-ignore", "--no-index", "-q", "--", ignored_path, check=False)
+    if ignored.returncode != 0:
+        raise SystemExit("private QA paths must remain ignored without exceptions")
+
+fixture_ignore_probes = tuple(
+    f"qa/fixtures/smoke-fixture-v1/{name}"
+    for name in ("fixture.json", "approval.json", "provenance.json")
+) + ("qa/fixtures/nested-smoke-v1/subdirectory/odd [name].json",)
+for fixture_path in fixture_ignore_probes:
+    fixture_ignore = git(
+        "check-ignore", "--no-index", "-q", "--", fixture_path, check=False
+    )
+    if fixture_ignore.returncode not in (0, 1):
+        raise SystemExit("unable to inspect repository fixture policy")
+    if fixture_ignore.returncode == 0:
+        raise SystemExit("qa/fixtures/ and its durable files must not be ignored")
+
+tracked_output = git(
+    "ls-files", "-s", "-z", "--", ".qa-private/**", "qa/runs/**", "qa/fixtures/**"
+).stdout
+if len(tracked_output) > 1024 * 1024:
+    raise SystemExit("tracked QA fixture inventory is unexpectedly large")
+try:
+    tracked_entries = []
+    for entry in tracked_output.split(b"\0"):
+        if not entry:
+            continue
+        header, separator, raw_path = entry.partition(b"\t")
+        mode, object_id, stage = header.split(b" ")
+        if not separator or stage != b"0" or not object_id:
+            raise ValueError
+        tracked_entries.append((mode.decode("ascii"), raw_path.decode("utf-8")))
+except (UnicodeDecodeError, ValueError) as error:
+    raise SystemExit("tracked QA fixture path is not UTF-8") from error
+if len(tracked_entries) > 2_000 or any(
+    len(path) > 512 for _mode, path in tracked_entries
+):
+    raise SystemExit("tracked QA fixture inventory exceeds safety limits")
+
+private_tracked = [
+    path
+    for _mode, path in tracked_entries
+    if path.startswith(".qa-private/") or path.startswith("qa/runs/")
+]
+if private_tracked:
+    raise SystemExit(
+        f"private QA artifact is tracked: {json.dumps(private_tracked[0])}"
+    )
+
+allowed_fixture_files = {"approval.json", "fixture.json", "provenance.json"}
+fixture_id_pattern = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*-v[1-9][0-9]*$")
+fixture_inventory: dict[str, set[str]] = {}
+for mode, path in tracked_entries:
+    if not path.startswith("qa/fixtures/"):
+        continue
+    if mode != "100644":
+        raise SystemExit("tracked fixture artifacts must be regular non-executable blobs")
+    if path == "qa/fixtures/.gitkeep":
+        continue
+    parts = path.split("/")
+    if len(parts) != 4 or parts[3] not in allowed_fixture_files:
+        raise SystemExit(
+            f"fixture contains a non-durable path: {json.dumps(path)}"
+        )
+    if fixture_id_pattern.fullmatch(parts[2]) is None:
+        raise SystemExit("tracked fixture has an invalid identifier")
+    fixture_inventory.setdefault(parts[2], set()).add(parts[3])
+for fixture_id, files in fixture_inventory.items():
+    if files != allowed_fixture_files:
+        missing = sorted(allowed_fixture_files - files)
+        raise SystemExit(f"fixture {fixture_id} is incomplete; missing {missing}")
+    fixture_root = root / "qa" / "fixtures" / fixture_id
+    try:
+        for name in allowed_fixture_files:
+            metadata = (fixture_root / name).lstat()
+            if not stat.S_ISREG(metadata.st_mode) or metadata.st_size > 1024 * 1024:
+                raise ValueError
+        documents = {
+            name: json.loads((fixture_root / name).read_text(encoding="utf-8"))
+            for name in allowed_fixture_files
+        }
+        fixture_bytes = (fixture_root / "fixture.json").read_bytes()
+        digest = hashlib.sha256(fixture_bytes).hexdigest()
+        fixture = documents["fixture.json"]
+        approval = documents["approval.json"]
+        provenance = documents["provenance.json"]
+        validate_fixture(fixture)
+        _validate_approval(approval, digest)
+        if (
+            not isinstance(approval, dict)
+            or set(approval) != APPROVAL_KEYS
+            or not isinstance(provenance, dict)
+            or set(provenance) != PROVENANCE_KEYS
+            or fixture.get("id") != fixture_id
+            or provenance.get("fixtureId") != fixture_id
+            or provenance.get("fixtureSha256") != digest
+            or provenance.get("schemaVersion") != approval.get("schemaVersion")
+            or provenance.get("platformFamily") != fixture.get("platformFamily")
+            or provenance.get("captureMonth") != fixture.get("captureMonth")
+            or provenance.get("recorderVersion")
+            != fixture.get("provenance", {}).get("recorderVersion")
+            or provenance.get("sourceRecordingSha256")
+            != fixture.get("provenance", {}).get("sourceRecordingSha256")
+            or provenance.get("compilerVersion") != approval.get("compilerVersion")
+            or provenance.get("scannerVersion") != approval.get("scannerVersion")
+            or provenance.get("approvedBy") != approval.get("reviewer")
+            or provenance.get("approvedAt") != approval.get("approvedAt")
+        ):
+            raise ValueError
+        _timestamp(provenance.get("promotedAt"))
+        scan_tree(fixture_root, [])
+    except (
+        ContractError,
+        OSError,
+        PrivacyError,
+        PromotionError,
+        RecursionError,
+        UnicodeError,
+        ValueError,
+        json.JSONDecodeError,
+    ) as error:
+        raise SystemExit(f"fixture {fixture_id} failed durable validation") from error
 
 for relative in (".claude-plugin/plugin.json", ".claude-plugin/marketplace.json"):
     data = json.loads((root / relative).read_text())
@@ -93,21 +285,69 @@ required_contract = (
 if required_contract not in application_skill:
     raise SystemExit("hard manual-submit contract is missing")
 
-safety_words = re.compile(
-    r"\b(never|not|do not|don't|stop|before|manual(?:ly)?|untouched|leaves?)\b",
-    re.IGNORECASE,
-)
-final_action = re.compile(r"\b(submit|send)\b", re.IGNORECASE)
-for number, line in enumerate(application_skill.splitlines(), 1):
-    if final_action.search(line) and not safety_words.search(line):
-        raise SystemExit(f"unsafe final-action instruction at skills/job-apply/SKILL.md:{number}: {line}")
-
 print("Static smoke assertions passed")
 PY
 
+python3 "$REPO_ROOT/scripts/check-final-action-docs.py" \
+  "$REPO_ROOT/skills/job-apply/SKILL.md"
+
 echo "Creating isolated working-tree marketplace fixture"
-tar --exclude='./.git' --exclude='./docs/goals' --exclude='./test_resumes' -cf - -C "$REPO_ROOT" . \
+tar --exclude='./.git' \
+  --exclude='./.qa-private' \
+  --exclude='./qa/runs' \
+  --exclude='./.job-apply-qa' \
+  --exclude='./node_modules' \
+  --exclude='./coverage' \
+  --exclude='./dist' \
+  --exclude='./build' \
+  --exclude='__pycache__' \
+  --exclude='*.py[co]' \
+  --exclude='./.worktrees' \
+  --exclude='./docs/goals' \
+  --exclude='./test_resumes' \
+  -cf - -C "$REPO_ROOT" . \
   | tar -xf - -C "$SMOKE_FIXTURE_DIR"
+
+python3 - "$SMOKE_FIXTURE_DIR" <<'PY'
+import os
+import stat
+import sys
+from pathlib import Path
+
+fixture = Path(sys.argv[1])
+excluded = (
+    ".git",
+    ".qa-private",
+    "qa/runs",
+    ".job-apply-qa",
+    "node_modules",
+    "coverage",
+    "dist",
+    "build",
+    ".worktrees",
+    "docs/goals",
+    "test_resumes",
+)
+for relative in excluded:
+    try:
+        os.lstat(fixture / relative)
+    except FileNotFoundError:
+        continue
+    except OSError as error:
+        raise SystemExit("unable to verify packaged fixture exclusions") from error
+    raise SystemExit("packaged fixture contains an excluded private or generated path")
+launcher = fixture / "scripts" / "qa-chrome.py"
+try:
+    metadata = launcher.lstat()
+except OSError as error:
+    raise SystemExit("packaged fixture is missing the replay QA launcher") from error
+if not os.path.isfile(launcher) or not stat.S_ISREG(metadata.st_mode):
+    raise SystemExit("packaged replay QA launcher must be a regular file")
+for generated in fixture.rglob("*"):
+    if generated.name == "__pycache__" or generated.suffix in {".pyc", ".pyo"}:
+        raise SystemExit("packaged fixture contains generated Python content")
+print("Packaged fixture exclusions passed")
+PY
 
 python3 - "$SMOKE_FIXTURE_DIR/.claude-plugin/marketplace.json" <<'PY'
 import json

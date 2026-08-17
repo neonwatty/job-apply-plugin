@@ -34,6 +34,8 @@ HISTORY_EVENTS = {
     "failed",
 }
 SESSION_STATUSES = {"active", "review", "completed", "abandoned"}
+REPLAY_TRANSITIONS = {"started", "reviewed"}
+REPLAY_ATS = {"ashby", "greenhouse", "lever", "linkedin-easy-apply"}
 SESSION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 
 
@@ -314,6 +316,7 @@ class Store:
         self.answers_path = self.root / "answers.json"
         self.history_path = self.root / "applications.jsonl"
         self.sessions_path = self.root / "sessions"
+        self.auto_submit_policy_path = self.root / "auto-submit"
         self.legacy_profile = (
             legacy_profile.expanduser()
             if legacy_profile is not None
@@ -328,6 +331,7 @@ class Store:
             "answers": str(self.answers_path),
             "history": str(self.history_path),
             "sessions": str(self.sessions_path),
+            "autoSubmitPolicy": str(self.auto_submit_policy_path),
             "legacyProfile": str(self.legacy_profile),
         }
 
@@ -607,6 +611,93 @@ class Store:
         _set_private_mode(self.history_path, 0o600)
         return event
 
+    def record_replay_transition(
+        self, application_id: str, transition: str, ats: str
+    ) -> dict[str, Any]:
+        """Record one value-free replay lifecycle transition idempotently.
+
+        The replay coordinator serializes calls for a run. This method keeps the
+        canonical history/session formats authoritative and repairs a missing
+        session if a prior process stopped after the append.
+        """
+
+        application_id = _safe_session_id(application_id)
+        if transition not in REPLAY_TRANSITIONS:
+            raise StoreError("replay transition is unsupported")
+        if ats not in REPLAY_ATS:
+            raise StoreError("replay ATS is unsupported")
+
+        self.initialize()
+        history = self.read_history()
+        application_events = [
+            event for event in history if event["applicationId"] == application_id
+        ]
+        if any(
+            event.get("ats") not in {None, ats} for event in application_events
+        ):
+            raise StoreError("replay lifecycle ATS does not match")
+        names = [event["event"] for event in application_events]
+        if any(name in {"completed", "abandoned", "failed"} for name in names):
+            raise StoreError("replay lifecycle is terminal")
+
+        started_indexes = [
+            index for index, name in enumerate(names) if name == "started"
+        ]
+        reviewed_indexes = [
+            index for index, name in enumerate(names) if name == "reviewed"
+        ]
+        if reviewed_indexes and (
+            not started_indexes or reviewed_indexes[0] < started_indexes[0]
+        ):
+            raise StoreError("replay lifecycle is out of order")
+        if transition == "reviewed" and not started_indexes:
+            raise StoreError("replay lifecycle has not started")
+
+        path = self._session_path(application_id)
+        session = self.load_session(application_id) if path.exists() else None
+        if session is not None:
+            if session.get("ats") not in {None, ats}:
+                raise StoreError("replay session ATS does not match")
+            if session["status"] in {"completed", "abandoned"}:
+                raise StoreError("replay session is terminal")
+
+        changed = transition not in names
+        if changed:
+            self.append_history(
+                {
+                    "applicationId": application_id,
+                    "event": transition,
+                    "ats": ats,
+                    "status": "active" if transition == "started" else "review",
+                    "answerKeys": [],
+                }
+            )
+
+        session_status = "review" if transition == "reviewed" else "active"
+        session_step = "review" if transition == "reviewed" else "application"
+        if session is not None:
+            if transition == "started" and session["status"] == "review":
+                return {
+                    "applicationId": application_id,
+                    "transition": transition,
+                    "changed": changed,
+                }
+        self.save_session(
+            application_id,
+            {
+                "status": session_status,
+                "ats": ats,
+                "step": session_step,
+                "answerKeys": [],
+                "pendingFields": [],
+            },
+        )
+        return {
+            "applicationId": application_id,
+            "transition": transition,
+            "changed": changed,
+        }
+
     def _session_path(self, application_id: str) -> Path:
         return self.sessions_path / f"{_safe_session_id(application_id)}.json"
 
@@ -738,6 +829,11 @@ def build_parser() -> argparse.ArgumentParser:
     history_append.add_argument("--input", required=True)
     commands.add_parser("history-list")
 
+    replay_transition = commands.add_parser("replay-transition")
+    replay_transition.add_argument("--id", required=True)
+    replay_transition.add_argument("--transition", required=True)
+    replay_transition.add_argument("--ats", required=True)
+
     session_save = commands.add_parser("session-save")
     session_save.add_argument("--id", required=True)
     session_save.add_argument("--input", required=True)
@@ -786,6 +882,10 @@ def run(args: argparse.Namespace) -> Any:
     if command == "history-list":
         store.initialize()
         return store.read_history()
+    if command == "replay-transition":
+        return store.record_replay_transition(
+            args.id, args.transition, args.ats
+        )
     if command == "session-save":
         return store.save_session(args.id, _read_input(args.input))
     if command == "session-load":

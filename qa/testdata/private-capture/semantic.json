@@ -1,0 +1,51 @@
+{
+  "captureId": "private-synthetic-capture",
+  "platformFamily": "linkedin-easy-apply",
+  "captureMonth": "2026-08",
+  "sourceDeniedTerms": [
+    "Source Employer",
+    "Synthetic Applicant"
+  ],
+  "steps": [
+    {
+      "checkpoint": "application-opened",
+      "controls": [
+        {
+          "kind": "contact.first_name",
+          "sourceLabel": "First name at Source Employer",
+          "required": true
+        },
+        {
+          "kind": "contact.last_name",
+          "sourceLabel": "Last name",
+          "required": true
+        },
+        {
+          "kind": "contact.email",
+          "sourceLabel": "Email address",
+          "required": true
+        },
+        {
+          "kind": "contact.phone",
+          "sourceLabel": "Phone number",
+          "required": true
+        }
+      ]
+    },
+    {
+      "checkpoint": "step-advanced",
+      "controls": [
+        {
+          "kind": "resume.file",
+          "sourceLabel": "Upload CV",
+          "required": true
+        }
+      ]
+    },
+    {
+      "checkpoint": "review-reached",
+      "controls": [],
+      "finalActionObserved": true
+    }
+  ]
+}

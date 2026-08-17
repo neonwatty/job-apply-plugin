@@ -222,6 +222,84 @@ class StoreTests(unittest.TestCase):
         with self.assertRaises(STORE_MODULE.StoreError):
             self.store.read_history()
 
+    def test_replay_transitions_are_ordered_idempotent_and_value_free(self):
+        application_id = "qa-run-20260815-1234abcd"
+        started = self.store.record_replay_transition(
+            application_id, "started", "greenhouse"
+        )
+        repeated = self.store.record_replay_transition(
+            application_id, "started", "greenhouse"
+        )
+        reviewed = self.store.record_replay_transition(
+            application_id, "reviewed", "greenhouse"
+        )
+        reviewed_again = self.store.record_replay_transition(
+            application_id, "reviewed", "greenhouse"
+        )
+
+        self.assertTrue(started["changed"])
+        self.assertFalse(repeated["changed"])
+        self.assertTrue(reviewed["changed"])
+        self.assertFalse(reviewed_again["changed"])
+        history = self.store.read_history()
+        self.assertEqual([event["event"] for event in history], ["started", "reviewed"])
+        self.assertTrue(all(event["answerKeys"] == [] for event in history))
+        session = self.store.load_session(application_id)
+        self.assertEqual(session["status"], "review")
+        self.assertEqual(session["step"], "review")
+        serialized = json.dumps({"history": history, "session": session})
+        for forbidden in ("http://", "https://", "routeToken", "resumePath", "value"):
+            self.assertNotIn(forbidden, serialized)
+
+    def test_ashby_replay_transitions_are_supported_and_value_free(self):
+        application_id = "qa-run-20260815-5678abcd"
+        self.store.record_replay_transition(application_id, "started", "ashby")
+        self.store.record_replay_transition(application_id, "reviewed", "ashby")
+        history = self.store.read_history()
+        session = self.store.load_session(application_id)
+        self.assertEqual([event["ats"] for event in history], ["ashby", "ashby"])
+        self.assertEqual((session["ats"], session["status"]), ("ashby", "review"))
+        self.assertNotIn("value", json.dumps({"history": history, "session": session}))
+
+    def test_lever_replay_transitions_are_supported_and_value_free(self):
+        application_id = "qa-run-20260816-5678abcd"
+        self.store.record_replay_transition(application_id, "started", "lever")
+        self.store.record_replay_transition(application_id, "reviewed", "lever")
+        history = self.store.read_history()
+        session = self.store.load_session(application_id)
+        self.assertEqual([event["ats"] for event in history], ["lever", "lever"])
+        self.assertEqual((session["ats"], session["status"]), ("lever", "review"))
+        serialized = json.dumps({"history": history, "session": session})
+        self.assertNotIn("value", serialized)
+        self.assertNotIn("http", serialized)
+
+    def test_replay_review_requires_started_and_rejects_terminal_or_mismatched_ats(self):
+        application_id = "qa-run-20260815-1234abcd"
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "has not started"):
+            self.store.record_replay_transition(
+                application_id, "reviewed", "linkedin-easy-apply"
+            )
+
+        self.store.record_replay_transition(
+            application_id, "started", "linkedin-easy-apply"
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "ATS does not match"):
+            self.store.record_replay_transition(
+                application_id, "reviewed", "greenhouse"
+            )
+        self.store.append_history(
+            {
+                "applicationId": application_id,
+                "event": "abandoned",
+                "ats": "linkedin-easy-apply",
+                "answerKeys": [],
+            }
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "terminal"):
+            self.store.record_replay_transition(
+                application_id, "reviewed", "linkedin-easy-apply"
+            )
+
     def test_session_round_trip_rejects_values_and_path_traversal(self):
         session = self.store.save_session(
             "acme-role-1",
@@ -289,6 +367,14 @@ class StoreTests(unittest.TestCase):
         result = json.loads(completed.stdout)
         self.assertTrue(result["initialized"])
         self.assertEqual(result["root"], str(self.root))
+
+    def test_paths_exposes_separate_inert_policy_root_without_changing_v1_store(self):
+        self.store.initialize()
+        paths = self.store.paths()
+        self.assertEqual(paths["schemaVersion"], 1)
+        self.assertEqual(paths["autoSubmitPolicy"], str(self.root / "auto-submit"))
+        self.assertFalse((self.root / "auto-submit").exists())
+        self.assertEqual(self.store.get_profile(), {})
 
     def test_cli_filesystem_failure_is_terse(self):
         blocker = self.home / "not-a-directory"

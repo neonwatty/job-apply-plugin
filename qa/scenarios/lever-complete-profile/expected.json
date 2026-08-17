@@ -1,0 +1,32 @@
+{
+  "controlIds": [
+    "resume.file",
+    "contact.full_name",
+    "contact.email",
+    "contact.phone",
+    "contact.location",
+    "employment.current_company",
+    "profile.location_url",
+    "profile.linkedin",
+    "profile.github",
+    "profile.portfolio",
+    "profile.website",
+    "authorization.work_authorized",
+    "authorization.sponsorship_status",
+    "source.discovery_radio",
+    "compensation.total_range",
+    "compensation.target_salary",
+    "employment.prior_company",
+    "conflict.related_person",
+    "conflict.customer_partner_reseller",
+    "location.us_resident",
+    "location.city_state",
+    "authorization.us_citizen",
+    "authorization.green_card",
+    "eeo.gender",
+    "eeo.race",
+    "eeo.veteran",
+    "eeo.disability"
+  ],
+  "resumeFilename": "synthetic-resume.pdf"
+}

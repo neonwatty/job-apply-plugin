@@ -1,0 +1,20 @@
+{
+  "controlIds": [
+    "contact.first_name",
+    "contact.last_name",
+    "contact.preferred_name",
+    "contact.email",
+    "contact.phone_country",
+    "contact.phone",
+    "contact.location_city",
+    "resume.file",
+    "cover_letter.file",
+    "profile.linkedin",
+    "profile.website",
+    "authorization.sponsorship_select",
+    "employment.prior_affiliate",
+    "source.discovery",
+    "referral.contact"
+  ],
+  "resumeFilename": "synthetic-resume.pdf"
+}

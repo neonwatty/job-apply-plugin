@@ -1,0 +1,10 @@
+{
+  "recorderVersion": "1.0.0",
+  "captureMonth": "2026-08",
+  "captureId": "private-synthetic-capture",
+  "sourceFiles": {
+    "checkpoints/application-opened/page.html": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "checkpoints/review-reached/page.html": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "checkpoints/step-advanced/page.html": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  }
+}

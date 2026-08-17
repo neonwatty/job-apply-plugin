@@ -175,6 +175,39 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
             "User confirmation never authorizes this skill to click Submit",
             skills["job-apply"],
         )
+        self.assertIn("review_only", skills["job-apply"])
+        self.assertIn("job_apply_policy.py", skills["job-apply"])
+        self.assertIn("atomically claims one final action", skills["job-apply"])
+
+        storage_contract = (
+            ROOT / "skills/answer-memory/references/storage-contract.md"
+        ).read_text()
+        self.assertIn("Greenhouse, LinkedIn Easy Apply, Ashby, and Lever", storage_contract)
+        self.assertIn("isolated loopback QA adapter", skills["job-apply"])
+        self.assertIn("Every live Submit", skills["job-apply"])
+        self.assertIn("separately audited canary", skills["job-apply"])
+        self.assertIn("Auto-submit policy", skills["answer-memory"])
+
+    def test_lever_replay_lifecycle_uses_value_free_store_records(self):
+        application_id = "qa-run-20260816-ab12cd34"
+        self.json_store("init")
+        started = self.json_store(
+            "replay-transition", "--id", application_id,
+            "--transition", "started", "--ats", "lever",
+        )
+        reviewed = self.json_store(
+            "replay-transition", "--id", application_id,
+            "--transition", "reviewed", "--ats", "lever",
+        )
+        self.assertTrue(started["changed"])
+        self.assertTrue(reviewed["changed"])
+        history = self.json_store("history-list")
+        session = self.json_store("session-load", "--id", application_id)
+        self.assertEqual([event["event"] for event in history], ["started", "reviewed"])
+        self.assertEqual((session["ats"], session["status"]), ("lever", "review"))
+        serialized = json.dumps({"history": history, "session": session})
+        self.assertNotIn("value", serialized)
+        self.assertNotIn("http", serialized)
 
 
 if __name__ == "__main__":

@@ -150,8 +150,8 @@ The plugin includes guided workflows for six ATS families. Codex and Claude Code
 |----------|-------------|----------------------|---------------------|
 | LinkedIn Easy Apply | `linkedin.com/jobs/view/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
 | Greenhouse | `boards.greenhouse.io/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
-| Ashby | `jobs.ashbyhq.com/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
-| Lever | `jobs.lever.co/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
+| Ashby | `jobs.ashbyhq.com/*` | Codex Browser or Claude in Chrome | Guided; closed replay lane supported |
+| Lever | `jobs.lever.co/*` | Codex Browser or Claude in Chrome | Guided; closed replay lane supported |
 | Rippling | `*.rippling.com/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
 | Workday | `*.myworkdayjobs.com/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
 
@@ -253,6 +253,222 @@ Before posting, remove names, email addresses, phone numbers, resume content, cr
 
 MIT License - See [LICENSE](LICENSE) for details.
 
+## Replay QA (developers)
+
+Replay fixtures are built from a tightly controlled, private recording and checked in only after they have been reduced to a generic semantic model. Follow these policies:
+
+1. Record a source application only for a genuine application the user already intends to make, and only after the user logs in manually.
+2. Start Chrome through the replay QA launcher with a dedicated named profile; never use an everyday Chrome profile or an ad hoc debugging command.
+3. Record and annotate the walkthrough only under `.qa-private/`.
+4. Compile the capture, inspect every entry in `review-manifest.json`, explicitly approve the reviewed candidate, and then promote it.
+5. Confirm the complete raw session was deleted before staging anything.
+6. Run the deterministic checks before preparing a supervised advisory replay through the normal Job Apply skill in a visible host session.
+7. Never commit source URLs, employer or job identity, screenshots, DOM, applicant values, resumes, cookies, tokens, or raw reports.
+
+Choose a lowercase, hyphenated profile name and reuse it for a given QA identity. The launcher keeps its credential-bearing Chrome profiles and runtime state under the current user's home directory, outside the repository. They are never included in the plugin package. Chrome may ask for normal macOS Keychain access when the profile first stores or reuses authentication; handle that prompt yourself, and never put a password or Keychain secret in a command or recording.
+
+Start the named profile, then confirm that its authenticated supervisor and dynamic loopback CDP endpoint are ready:
+
+```bash
+python3 scripts/qa-chrome.py start --profile linkedin-capture
+python3 scripts/qa-chrome.py check --profile linkedin-capture
+```
+
+Both commands return a small JSON status. When ready, use the `recorderCommand` emitted by the launcher; it contains the verified current CDP URL and a placeholder for a unique private session ID. Do not substitute a remembered port or launch Chrome directly with remote-debugging flags.
+
+In the launched Chrome window, manually sign in and complete any password, CAPTCHA, MFA, or Keychain prompts. Manually choose the genuine job application the user already intends to make, close unrelated tabs, and leave exactly that ordinary application page open. Only then replace the emitted command's session placeholder and run that emitted command on the application page. For example, the output directory may be `.qa-private/qa-session-20260811-001`.
+
+Record and annotate the walkthrough under `.qa-private/`. In a second terminal, use the checkpoint command after the emitted recorder command is running:
+
+```bash
+node qa/recorder.mjs checkpoint --session .qa-private/qa-session-20260811-001 --kind application-opened
+```
+
+Add checkpoints as the application advances, ending with `review-reached` and `final-action-boundary`. The recorder must never be used on a login, password, CAPTCHA, or MFA page.
+
+While the recorder is still running, draft `.qa-private/qa-session-20260811-001/semantic.json` from the checkpoint control inventories. It is a private annotation file and must use one of the compiler's closed platform profiles. The original LinkedIn Easy Apply short profile has this exact order:
+
+```json
+{
+  "captureId": "COPY_FROM_CAPTURE_RECEIPT",
+  "platformFamily": "linkedin-easy-apply",
+  "captureMonth": "COPY_FROM_CAPTURE_RECEIPT",
+  "sourceDeniedTerms": ["SOURCE_EMPLOYER_OR_OTHER_TERM_TO_BLOCK"],
+  "steps": [
+    {
+      "checkpoint": "application-opened",
+      "controls": [
+        {"kind": "contact.first_name", "sourceLabel": "Observed first-name label", "required": true},
+        {"kind": "contact.last_name", "sourceLabel": "Observed last-name label", "required": true},
+        {"kind": "contact.email", "sourceLabel": "Observed email label", "required": true},
+        {"kind": "contact.phone", "sourceLabel": "Observed phone label", "required": true}
+      ]
+    },
+    {
+      "checkpoint": "step-advanced",
+      "controls": [
+        {"kind": "resume.file", "sourceLabel": "Observed resume label", "required": true}
+      ]
+    },
+    {
+      "checkpoint": "review-reached",
+      "controls": [],
+      "finalActionObserved": true
+    }
+  ]
+}
+```
+
+LinkedIn applications that source name details from the member profile and add the observed screening steps must instead use this exact five-step profile:
+
+```json
+{
+  "captureId": "COPY_FROM_CAPTURE_RECEIPT",
+  "platformFamily": "linkedin-easy-apply",
+  "captureMonth": "COPY_FROM_CAPTURE_RECEIPT",
+  "sourceDeniedTerms": ["SOURCE_EMPLOYER_OR_OTHER_TERM_TO_BLOCK"],
+  "steps": [
+    {"checkpoint": "application-opened", "controls": [
+      {"kind": "contact.email", "sourceLabel": "Observed email label", "required": true},
+      {"kind": "contact.phone", "sourceLabel": "Observed phone label", "required": true}
+    ]},
+    {"checkpoint": "step-advanced", "controls": [
+      {"kind": "resume.file", "sourceLabel": "Observed resume label", "required": true}
+    ]},
+    {"checkpoint": "step-advanced", "controls": [
+      {"kind": "preference.top_choice", "sourceLabel": "Observed top-choice label", "required": false}
+    ]},
+    {"checkpoint": "step-advanced", "controls": [
+      {"kind": "authorization.sponsorship", "sourceLabel": "Observed sponsorship question", "required": true}
+    ]},
+    {"checkpoint": "review-reached", "controls": [], "finalActionObserved": true}
+  ]
+}
+```
+
+A single-page Greenhouse application must use this exact two-step profile. The catalog generates the generic labels and choices; keep employer wording, the source URL, and applicant values out of the annotation controls:
+
+```json
+{
+  "captureId": "COPY_FROM_CAPTURE_RECEIPT",
+  "platformFamily": "greenhouse",
+  "captureMonth": "COPY_FROM_CAPTURE_RECEIPT",
+  "sourceDeniedTerms": ["SOURCE_EMPLOYER_OR_OTHER_TERM_TO_BLOCK"],
+  "steps": [
+    {
+      "checkpoint": "application-opened",
+      "controls": [
+        {"kind": "contact.first_name", "sourceLabel": "Observed first-name label", "required": true},
+        {"kind": "contact.last_name", "sourceLabel": "Observed last-name label", "required": true},
+        {"kind": "contact.preferred_name", "sourceLabel": "Observed preferred-name label", "required": false},
+        {"kind": "contact.email", "sourceLabel": "Observed email label", "required": true},
+        {"kind": "contact.phone_country", "sourceLabel": "Observed phone-country label", "required": true},
+        {"kind": "contact.phone", "sourceLabel": "Observed phone label", "required": true},
+        {"kind": "contact.location_city", "sourceLabel": "Observed city label", "required": true},
+        {"kind": "resume.file", "sourceLabel": "Observed resume label", "required": true},
+        {"kind": "cover_letter.file", "sourceLabel": "Observed cover-letter label", "required": false},
+        {"kind": "profile.linkedin", "sourceLabel": "Observed LinkedIn-profile label", "required": true},
+        {"kind": "profile.website", "sourceLabel": "Observed website label", "required": false},
+        {"kind": "authorization.sponsorship_select", "sourceLabel": "Observed sponsorship question", "required": true},
+        {"kind": "employment.prior_affiliate", "sourceLabel": "Observed prior-employment question", "required": true},
+        {"kind": "source.discovery", "sourceLabel": "Observed discovery-source question", "required": true},
+        {"kind": "referral.contact", "sourceLabel": "Observed referral label", "required": false}
+      ]
+    },
+    {
+      "checkpoint": "review-reached",
+      "controls": [],
+      "finalActionObserved": true
+    }
+  ]
+}
+```
+
+A supported single-page Ashby application uses the same two-step lifecycle with exactly three required controls. The compiler accepts no other Ashby control, order, or required-state combination:
+
+```json
+{
+  "captureId": "COPY_FROM_CAPTURE_RECEIPT",
+  "platformFamily": "ashby",
+  "captureMonth": "COPY_FROM_CAPTURE_RECEIPT",
+  "sourceDeniedTerms": ["SOURCE_EMPLOYER_OR_OTHER_TERM_TO_BLOCK"],
+  "steps": [
+    {
+      "checkpoint": "application-opened",
+      "controls": [
+        {"kind": "contact.full_name", "sourceLabel": "PRIVATE_REVIEW_ONLY_LABEL", "required": true},
+        {"kind": "contact.email", "sourceLabel": "PRIVATE_REVIEW_ONLY_LABEL", "required": true},
+        {"kind": "resume.file", "sourceLabel": "PRIVATE_REVIEW_ONLY_LABEL", "required": true}
+      ]
+    },
+    {
+      "checkpoint": "review-reached",
+      "controls": [],
+      "finalActionObserved": true
+    }
+  ]
+}
+```
+
+A supported single-page Lever replay also uses the application-form-to-review lifecycle. Its compiler profile is closed to the exact ordered, value-free controls recorded for `lever-complete-profile`: resume and contact fields; optional company and profile links; work authorization; discovery and compensation; prior-company, conflict, and location questions; optional citizenship; and optional EEO controls. Roles, requiredness, and every generic choice list are catalog-owned. Reordering a control, changing requiredness, adding a control, or changing a choice is rejected. The final Submit control remains enabled only behind the local QA tripwire and must stay untouched during review-only replay.
+
+After the final checkpoint and draft annotation, press `Ctrl-C` once in the recorder terminal and wait for it to exit cleanly. Do not force-kill it: clean shutdown removes the private control file and writes `capture-receipt.json`, including the generated `captureId`, capture month, recorder version, and hashes of the private source files.
+
+Only after the recorder has exited cleanly, stop the launcher-owned Chrome child:
+
+```bash
+python3 scripts/qa-chrome.py stop --profile linkedin-capture
+```
+
+Normal `stop` preserves the named profile, including its login state, for the next `start`. `reset` is a non-mutating guidance command. Run it only after `stop` when you are considering discarding that retained authentication and other profile state:
+
+```bash
+python3 scripts/qa-chrome.py reset --profile linkedin-capture
+```
+
+When the profile is safely stopped and its managed state is unambiguous, the command makes no filesystem changes and returns `~/.job-apply-qa/chrome-profiles/linkedin-capture` as the exact dedicated directory. It does not open Trash, inspect profile contents, move, rename, or delete anything. If the profile is active or state is ambiguous, it returns an error without presenting removal as safe; stop the launcher-owned Chrome window or resolve the ambiguous state first.
+
+Removing the directory is a separate, user-owned manual action. In Finder, use **Go to Folder** with the exact tilde-form path emitted by `reset`, verify that it is the intended dedicated QA profile, and move that directory to Trash yourself. If you instead choose a terminal removal workflow, target only that exact emitted directory and run it yourself. The launcher never performs or authorizes either removal action and requires no Trash permission.
+
+Replace the two placeholders by copying `captureId` and `captureMonth` exactly from the recorder-generated receipt. `sourceLabel` and `sourceDeniedTerms` may contain private source wording because `semantic.json` is deleted with the raw session, but do not copy applicant input values into it. The compiler accepts no extra properties, mixed profiles, or alternate step/control order.
+
+Compile the private capture, inspect every entry in `review-manifest.json`, explicitly approve the reviewed candidate, and promote it:
+
+```bash
+python3 -m qa.promote compile --capture .qa-private/qa-session-20260811-001 --fixture-id linkedin-easy-apply-short-2026-08-v1 --candidate .qa-private/qa-session-20260811-001/candidate
+python3 -m qa.promote approve --candidate .qa-private/qa-session-20260811-001/candidate --reviewer qa-owner
+python3 -m qa.promote promote --candidate .qa-private/qa-session-20260811-001/candidate --destination qa/fixtures
+```
+
+Before staging anything, confirm that promotion deleted the complete `.qa-private/qa-session-20260811-001` source session.
+
+Run the deterministic checks, then prepare a supervised advisory replay through the normal Job Apply skill in a visible host session:
+
+```bash
+npm ci
+npx playwright install --with-deps chromium
+python3 -m unittest discover -s tests -v
+npm run test:qa-screening
+npm run test:qa-browser
+bash scripts/smoke-plugin.sh
+bash scripts/check-links.sh
+git diff --check
+python3 scripts/qa-replay.py prepare --fixture linkedin-easy-apply-screening-2026-08-v1 --scenario linkedin-screening
+python3 scripts/qa-replay.py started --run-id GENERATED_RUN_ID
+python3 scripts/qa-replay.py reviewed --run-id GENERATED_RUN_ID
+python3 scripts/qa-replay.py evaluate --run-id qa-run-20260811-001
+```
+
+`prepare` prints the same five fields for every supported fixture, with platform-correct Ashby, Greenhouse, or LinkedIn guidance, a unique route fragment, and a unique run ID. It only prepares local instructions; it never launches an agent. The host resolves the route to the isolated store with `python3 scripts/qa-replay.py resolve --route-token 'GENERATED_RUN_ID.GENERATED_ROUTE_TOKEN'`, records `started` before filling, and records `reviewed` only after the visible fixture reaches its review event with zero final-action activations. Both lifecycle commands are idempotent and write only value-free history/session metadata through the existing store helper. Then run `evaluate`. After evaluation—or to abandon an interrupted run—sanitize the run with `python3 scripts/qa-replay.py cleanup --run-id GENERATED_RUN_ID`. Cleanup leaves a minimal tombstone; completed runs retain only the redacted report, while abandoned runs retain no report. The dated IDs above are examples; use the generated ID for every lifecycle, evaluation, and cleanup command.
+
+The committed `linkedin-screening` review lane remains wholly synthetic and requires zero final-action activations. A second repeatable loopback verifier exercises the high-risk Auto-submit state machine at the policy-coupled activation boundary, including actual review-only refusal, kill/expiry and concurrency races, forged/stale/prompt/redirect denial, all runtime stops, redaction, one-winner success with independent confirmation, and terminal one-retry uncertainty:
+
+```bash
+python3 scripts/qa-replay.py verify-auto-submit --fixture qa/fixtures/linkedin-easy-apply-screening-2026-08-v1/fixture.json --json
+```
+
+That verifier uses only `127.0.0.1`, a private per-run capability, opaque identities, and redacted reports. It does not contact LinkedIn, authenticate, use applicant data, or authorize a live action. A real canary remains a separate audited and exactly approved step.
+
 ## Contributing
 
 Contributions welcome! Please open an issue or PR on GitHub.
@@ -260,10 +476,13 @@ Contributions welcome! Please open an issue or PR on GitHub.
 Before opening a PR, run the same deterministic checks used by CI:
 
 ```bash
+npm ci
+npx playwright install --with-deps chromium
+python3 -m unittest discover -s tests -v
+npm run test:qa-screening
+npm run test:qa-browser
 bash scripts/smoke-plugin.sh
 bash scripts/check-links.sh
-claude plugin validate .
-python3 /path/to/plugin-creator/scripts/validate_plugin.py .
 git diff --check
 ```
 

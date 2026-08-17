@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "title": "Generic application fixture",
+  "steps": ["contact", "resume", "review"]
+}
