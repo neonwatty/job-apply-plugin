@@ -146,7 +146,11 @@ async function startIndependentChromium(t, url, extraArgs = []) {
   const profile = await mkdtemp(path.join(tmpdir(), "recorder-chrome-"));
   const browserProcess = spawn(chromium.executablePath(), [
     "--headless=new",
-    ...(process.platform === "linux" ? ["--no-sandbox", "--disable-dev-shm-usage"] : []),
+    ...(process.platform === "linux" ? [
+      "--no-sandbox",
+      "--disable-dev-shm-usage",
+      "--window-size=1280,720",
+    ] : []),
     "--no-first-run",
     "--no-default-browser-check",
     "--remote-debugging-address=127.0.0.1",
@@ -2951,6 +2955,8 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   await page.evaluate(() => new Promise((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(resolve));
   }));
+
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
   await cdpSession.send("Debugger.pause");
   const firstConcurrent = postControl(control, { kind: "application-opened" });
