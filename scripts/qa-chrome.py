@@ -1119,6 +1119,12 @@ def command_stop(profile):
             try:
                 current = _entry_stat(paths.runtime_root_fd, profile)
             except FileNotFoundError:
+                owner = _observe_owner(paths)
+                if owner is None:
+                    time.sleep(0.04)
+                    continue
+                os.close(owner[1])
+                os.close(owner[0])
                 emit({"profile": profile, "status": "stopped"})
                 return
             if _identity(current) != _identity(paths.runtime_st):
