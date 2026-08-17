@@ -2981,6 +2981,14 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   await cdpSession.send("Debugger.resume");
   const concurrentStatuses = await Promise.all([firstConcurrent, secondConcurrent]);
   assert.ok(concurrentStatuses.every((response) => [200, 400].includes(response.status)));
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  for (const [index, kind] of ["application-opened", "step-advanced"].entries()) {
+    if (concurrentStatuses[index].status === 200) continue;
+    const retry = await runNode([
+      "qa/recorder.mjs", "checkpoint", "--session", session, "--kind", kind,
+    ], 5000);
+    assert.equal(retry.code, 0, retry.stderr);
+  }
   await attached.close();
 
   for (const kind of [
