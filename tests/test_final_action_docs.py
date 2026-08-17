@@ -71,6 +71,30 @@ class FinalActionDocumentationTests(unittest.TestCase):
     def test_unsafe_heading_is_rejected(self):
         self.assertRejected("## Submit applications automatically\n")
 
+    def test_unrelated_safety_words_do_not_exempt_actionable_clauses(self):
+        for instruction in (
+            "Do not wait; click Submit application.",
+            "Click Submit application; do not ask again.",
+            "Never hesitate; click Apply button.",
+            "Do not wait, click Submit application.",
+            "Click Submit application, but do not ask again.",
+            "Apply now, do not ask again.",
+            "Click this control; the control is labeled Apply button.",
+            "Activate this control; it is the final-action control.",
+            "Click this control; it is the Submit button; do not wait.",
+        ):
+            with self.subTest(instruction=instruction):
+                self.assertRejected(instruction)
+
+        for instruction in (
+            "Do not click Submit application.",
+            "Stop before the final action and leave the Submit button untouched.",
+            "The user submits the application manually.",
+            "Do not click this control; it is the Submit button.",
+        ):
+            with self.subTest(instruction=instruction):
+                self.assertAccepted(instruction)
+
 
 if __name__ == "__main__":
     unittest.main()

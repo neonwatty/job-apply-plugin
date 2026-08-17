@@ -43,7 +43,7 @@ The first fixture set covers two LinkedIn Easy Apply variants: a short mostly pr
 6. Assertions evaluate observable outcomes, not exact action order.
 7. The final action remains enabled but is intercepted by a safe local tripwire.
 8. New fixtures require both automated privacy checks and human approval.
-9. Raw captures are automatically deleted after successful promotion. Failed or abandoned sessions also delete raw artifacts when the recording session closes.
+9. Raw captures are automatically deleted after successful promotion. Failed, interrupted, or abandoned sessions remain private and ignored until the operator manually removes their exact `.qa-private/<capture-id>` directory after the recorder has stopped.
 10. Deterministic fixture and contract tests block merges. Full plugin-agent replays are advisory until a later explicit reliability policy promotes them.
 
 ## Architecture
@@ -56,7 +56,7 @@ The separate QA recorder attaches only after the tester has signed in and reache
 
 The tester invokes the normal Job Apply plugin within the recording session. The recorder observes the application from the job page through Easy Apply and final review. The user remains responsible for any real final submission after recording has stopped.
 
-The raw capture directory is private, excluded from version control, and short-lived. It may contain source HTML observations or screenshots with visible applicant values, so nothing in this directory is presumed sanitized. Uploaded resume bytes are never copied into the capture. The directory is destroyed after fixture promotion or when an incomplete session closes.
+The raw capture directory is private, excluded from version control, and short-lived. It may contain source HTML observations or screenshots with visible applicant values, so nothing in this directory is presumed sanitized. Uploaded resume bytes are never copied into the capture. Successful fixture promotion destroys the directory. Closing an incomplete recorder does not: the operator must manually remove that exact capture directory when it is no longer needed.
 
 ### 2. Promotion gate
 
@@ -201,10 +201,10 @@ Each run emits a redacted machine-readable report keyed by fixture ID, scenario 
 
 ## Error handling
 
-- **Capture interruption:** emit a metadata-only incomplete receipt, compile nothing, and delete raw artifacts when the session closes.
+- **Capture interruption:** compile and promote nothing; retain the private evidence for diagnosis until the operator manually removes the exact capture directory after the recorder has stopped.
 - **Unsupported required control:** mark compilation incomplete with its semantic role; emit no approvable fixture.
 - **Privacy scan failure:** block promotion and identify the detector category and local artifact path without printing the matched value.
-- **Human rejection:** delete the raw capture and candidate package; retain only a non-sensitive rejection reason code.
+- **Human rejection:** block promotion and instruct the operator to manually remove the exact private capture directory and candidate package.
 - **Deterministic renderer failure:** treat the fixture as invalid and block promotion or merge.
 - **Replay infrastructure failure:** classify separately from product assertions so browser, server, host, or model availability does not become a false plugin regression.
 - **Final-action tripwire activation:** record a critical safety failure, capture synthetic evidence, and prevent all navigation or transmission. Agent runs remain advisory in the first policy version, but this result receives the highest severity and cannot be reported as a passing acceptance run.
@@ -266,7 +266,7 @@ The initial system is complete when:
 1. A supervised genuine LinkedIn Easy Apply walkthrough can be recorded without capturing authentication material or uploaded resume bytes.
 2. The compiler emits no source HTML, scripts, assets, employer content, source URLs, or applicant values into the durable fixture.
 3. Automated privacy scanning and human approval are both required for promotion.
-4. Raw capture data is automatically destroyed after promotion or session closure.
+4. Raw capture data is automatically destroyed after promotion; incomplete or rejected captures remain private until explicit manual removal.
 5. Two approved LinkedIn Easy Apply fixture variants run locally with parameterized synthetic scenarios.
 6. Deterministic CI validates all declared behavior and safety tripwires.
 7. The unchanged Job Apply plugin can complete advisory replay runs through final review.

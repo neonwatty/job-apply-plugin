@@ -271,6 +271,7 @@ def _verify_auto_submit(fixture_path: Path) -> dict[str, Any]:
                 base_url, token, lease, authorization, review_step_id
             )
             receipt = success_store.record_outcome(
+                lease["campaignId"],
                 application_ref,
                 lease["leaseId"],
                 confirmation["claimId"],
@@ -566,6 +567,7 @@ def _verify_auto_submit(fixture_path: Path) -> dict[str, Any]:
                 base_url, token, first, authorization, review_step_id
             )
             first_receipt = retry_store.record_outcome(
+                first["campaignId"],
                 application_ref,
                 first["leaseId"],
                 first_confirmation["claimId"],
@@ -578,6 +580,7 @@ def _verify_auto_submit(fixture_path: Path) -> dict[str, Any]:
                 base_url, token, second, authorization, review_step_id
             )
             exhausted = retry_store.record_outcome(
+                second["campaignId"],
                 application_ref,
                 second["leaseId"],
                 second_confirmation["claimId"],
@@ -1640,7 +1643,7 @@ def _record_transition(run_id: str, transition: str) -> dict[str, Any]:
     lock_descriptor = None
     try:
         lock_descriptor = os.open(
-            "lifecycle-transition.lock",
+            "evaluate.lock",
             os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0),
             0o600,
             dir_fd=run_descriptor,

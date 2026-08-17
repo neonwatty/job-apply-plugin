@@ -532,10 +532,30 @@ class PolicyStore:
                 _private_dir(self.archive_dir)
                 archive_path = self.archive_dir / f"{previous['campaignId'].split(':', 1)[1]}.json"
                 if archive_path.exists():
-                    raise PolicyError("campaign archive already exists")
-                _atomic_json(archive_path, previous)
+                    archived = self._validate_campaign(
+                        _read_json(archive_path, "campaign archive")
+                    )
+                    if archived != previous:
+                        raise PolicyError("campaign archive already exists")
+                else:
+                    _atomic_json(archive_path, previous)
             _atomic_json(self.campaign_path, campaign)
         return campaign
+
+    def _load_campaign_by_id(self, campaign_id: str) -> dict[str, Any]:
+        _reference(campaign_id, "campaign", "campaignId")
+        current = self.load_campaign()
+        if current["campaignId"] == campaign_id:
+            return current
+        archive_path = self.archive_dir / f"{campaign_id.split(':', 1)[1]}.json"
+        if not archive_path.exists():
+            raise PolicyError("campaign does not exist")
+        archived = self._validate_campaign(
+            _read_json(archive_path, "campaign archive")
+        )
+        if archived["campaignId"] != campaign_id:
+            raise PolicyError("campaign archive does not match")
+        return archived
 
     def _campaign_applications_dir(self, campaign_id: str) -> Path:
         _reference(campaign_id, "campaign", "campaignId")
@@ -911,6 +931,7 @@ class PolicyStore:
 
     def record_outcome(
         self,
+        campaign_id: str,
         application_ref: str,
         lease_id: str,
         claim_id: str,
@@ -920,6 +941,7 @@ class PolicyStore:
         now: datetime | None = None,
     ) -> dict[str, Any]:
         current_time = now or utc_now()
+        _reference(campaign_id, "campaign", "campaignId")
         _reference(application_ref, "application", "applicationRef")
         _reference(lease_id, "lease", "leaseId")
         _reference(claim_id, "claim", "claimId")
@@ -934,7 +956,7 @@ class PolicyStore:
         else:
             confirmation_revision = None
         with self._lock():
-            campaign = self.load_campaign()
+            campaign = self._load_campaign_by_id(campaign_id)
             application = self._load_application(application_ref, campaign["campaignId"])
             if outcome == "confirmed_submitted":
                 confirmation = _confirmation_event(
@@ -1046,6 +1068,7 @@ def build_parser() -> argparse.ArgumentParser:
     claim.add_argument("--attempt", required=True, type=int)
     claim.add_argument("--action-capability", required=True)
     outcome = commands.add_parser("record-outcome")
+    outcome.add_argument("--campaign-id", required=True)
     outcome.add_argument("--application-ref", required=True)
     outcome.add_argument("--lease-id", required=True)
     outcome.add_argument("--claim-id", required=True)
@@ -1077,6 +1100,7 @@ def run(args: argparse.Namespace) -> Any:
         )
     if args.command == "record-outcome":
         return store.record_outcome(
+            args.campaign_id,
             args.application_ref,
             args.lease_id,
             args.claim_id,

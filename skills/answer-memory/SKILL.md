@@ -86,6 +86,7 @@ python3 "<plugin-root>/scripts/job_apply_policy.py" claim-final-action \
   --application-ref <opaque-application-ref> --lease-id <opaque-lease-ref> \
   --attempt <1-or-2> --action-capability <private-64-hex-capability>
 python3 "<plugin-root>/scripts/job_apply_policy.py" record-outcome \
+  --campaign-id <opaque-campaign-ref> \
   --application-ref <opaque-application-ref> \
   --lease-id <opaque-lease-ref> \
   --claim-id <opaque-claim-ref> \

@@ -15,6 +15,11 @@ SAFETY_CONTEXT = re.compile(
     r"stop(?:s|ped|ping)?\s+(?:at|before)|leave(?:s|ing)?\s+[^.]*\buntouched)\b",
     re.IGNORECASE,
 )
+DIRECT_ACTION_SAFETY = re.compile(
+    r"\b(?:never|do not|don't|cannot|can't|must not|may not|should not)\s+"
+    r"(?:click|activate|submit|send|apply)\b",
+    re.IGNORECASE,
+)
 LEADING_FINAL_ACTION = re.compile(
     r"^\s*(?:(?:[-*+]\s+)|(?:\d+[.)]\s+))?(?:\*{1,2})?"
     r"(?:submit|send)\b",
@@ -57,11 +62,28 @@ def violations_for_text(text: str) -> list[tuple[int, str]]:
     violations: list[tuple[int, str]] = []
     for number, line in enumerate(text.splitlines(), 1):
         stripped = line.strip()
-        if not stripped or not _is_actionable(stripped):
+        if not stripped:
             continue
-        if SAFETY_CONTEXT.search(stripped):
-            continue
-        violations.append((number, stripped))
+        clauses = [
+            clause.strip()
+            for clause in re.split(
+                r"[;.!?]+|,\s+(?=(?:(?:but|however)\s+)?"
+                r"(?:click|activate)\b|(?:but|however)\b|"
+                r"(?:do not|don't|never|must not|may not|should not)\b)",
+                stripped,
+                flags=re.IGNORECASE,
+            )
+            if clause.strip()
+        ]
+        actionable_clauses = [clause for clause in clauses if _is_actionable(clause)]
+        if any(
+            not SAFETY_CONTEXT.search(clause) for clause in actionable_clauses
+        ) or (
+            _is_actionable(stripped)
+            and not actionable_clauses
+            and not DIRECT_ACTION_SAFETY.search(stripped)
+        ):
+            violations.append((number, stripped))
     return violations
 
 

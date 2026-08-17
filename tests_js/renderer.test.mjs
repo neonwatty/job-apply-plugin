@@ -283,6 +283,20 @@ async function fillCompleteProfile(page) {
   }
 }
 
+async function reachGenericReview(page) {
+  await fillCompleteProfile(page);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByLabel("Resume").setInputFiles({
+    name: "synthetic-resume.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4 synthetic replay resume"),
+  });
+  await page.getByRole("button", { name: "Continue" }).click();
+  await assertVisible(
+    page.getByRole("heading", { name: "Review application" }),
+  );
+}
+
 test("renders the generic fixture and blocks the final action without leaking values", async (t) => {
   const { url } = await startServer(t);
   const browser = await chromium.launch();
@@ -383,6 +397,31 @@ test("renders the generic fixture and blocks the final action without leaking va
   await assertVisible(page.getByText("Final action blocked by QA tripwire"));
   assert.equal(page.url(), originalUrl);
   assert.equal((await getState(url)).finalActionActivations, 1);
+});
+
+test("does not claim the tripwire blocked when its request is unconfirmed", async (t) => {
+  const { url } = await startServer(t);
+  const browser = await chromium.launch();
+  t.after(() => browser.close());
+
+  for (const failure of ["abort", "server-error"]) {
+    const page = await browser.newPage();
+    await page.goto(url);
+    await reachGenericReview(page);
+    await page.route("**/__qa/final-action", async (route) => {
+      if (failure === "abort") await route.abort("failed");
+      else await route.fulfill({ status: 500, body: "failure" });
+    });
+
+    await page.getByRole("button", { name: "Submit application" }).click();
+    await assertVisible(page.getByText("Unable to confirm the QA tripwire"));
+    assert.equal(
+      await page.getByText("Final action blocked by QA tripwire").count(),
+      0,
+    );
+    await page.close();
+  }
+  assert.equal((await getState(url)).finalActionActivations, 0);
 });
 
 test("renders the closed Greenhouse form with deterministic comboboxes", async (t) => {

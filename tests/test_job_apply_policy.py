@@ -9,6 +9,7 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -138,6 +139,54 @@ class PolicyTests(unittest.TestCase):
             self.store.activate(self.campaign_input(applicationRules=[]), now=NOW)
         self.assertEqual(self.store.load_campaign(), campaign)
 
+    def test_activation_recovers_matching_archive_after_interruption(self):
+        previous = self.store.activate(
+            self.campaign_input(durationSeconds=1), now=NOW
+        )
+        later = NOW + timedelta(seconds=2)
+        original_atomic_json = POLICY._atomic_json
+
+        def interrupt_after_archive(path, value):
+            original_atomic_json(path, value)
+            if path.parent == self.store.archive_dir:
+                raise RuntimeError("injected interruption")
+
+        with mock.patch.object(POLICY, "_atomic_json", interrupt_after_archive):
+            with self.assertRaisesRegex(RuntimeError, "injected interruption"):
+                self.store.activate(self.campaign_input(), now=later)
+
+        restarted = POLICY.PolicyStore(self.root)
+        replacement = restarted.activate(self.campaign_input(), now=later)
+        archive_path = restarted.archive_dir / (
+            previous["campaignId"].split(":", 1)[1] + ".json"
+        )
+        self.assertEqual(json.loads(archive_path.read_text()), previous)
+        self.assertEqual(restarted.load_campaign(), replacement)
+
+        mismatch = POLICY.PolicyStore(Path(self.temporary.name) / "mismatch")
+        mismatch_previous = mismatch.activate(
+            self.campaign_input(durationSeconds=1), now=NOW
+        )
+
+        def mismatch_interrupt(path, value):
+            original_atomic_json(path, value)
+            if path.parent == mismatch.archive_dir:
+                raise RuntimeError("injected interruption")
+
+        with mock.patch.object(POLICY, "_atomic_json", mismatch_interrupt):
+            with self.assertRaises(RuntimeError):
+                mismatch.activate(self.campaign_input(), now=later)
+        mismatch_archive = mismatch.archive_dir / (
+            mismatch_previous["campaignId"].split(":", 1)[1] + ".json"
+        )
+        mismatch_archive.write_text(
+            json.dumps({**mismatch_previous, "reservedApplications": 1})
+        )
+        with self.assertRaisesRegex(
+            POLICY.PolicyError, "campaign archive already exists"
+        ):
+            mismatch.activate(self.campaign_input(), now=later)
+
     def test_campaign_rejects_private_or_unclosed_metadata(self):
         for changes in (
             {"answerValue": "secret"},
@@ -244,7 +293,12 @@ class PolicyTests(unittest.TestCase):
         first = self.store.authorize(self.authorization(), now=NOW)
         first_claim = self.claim(first)
         result = self.store.record_outcome(
-            self.application_ref, first["leaseId"], first_claim["claimId"], "uncertain", now=NOW
+            first_claim["campaignId"],
+            self.application_ref,
+            first["leaseId"],
+            first_claim["claimId"],
+            "uncertain",
+            now=NOW,
         )
         self.assertEqual(result["status"], "retry_available")
         second = self.store.authorize(self.authorization(), now=NOW + timedelta(seconds=1))
@@ -252,6 +306,7 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(second["attempt"], 2)
         second_claim = self.claim(second, now=NOW + timedelta(seconds=1))
         exhausted = self.store.record_outcome(
+            second_claim["campaignId"],
             self.application_ref,
             second["leaseId"],
             second_claim["claimId"],
@@ -269,12 +324,25 @@ class PolicyTests(unittest.TestCase):
         lease = self.store.authorize(self.authorization(), now=NOW)
         claim = self.claim(lease)
         with self.assertRaises(POLICY.PolicyError):
-            self.store.record_outcome(self.application_ref, lease["leaseId"], claim["claimId"], "clicked", now=NOW)
+            self.store.record_outcome(
+                claim["campaignId"],
+                self.application_ref,
+                lease["leaseId"],
+                claim["claimId"],
+                "clicked",
+                now=NOW,
+            )
         with self.assertRaises(POLICY.PolicyError):
             self.store.record_outcome(
-                self.application_ref, lease["leaseId"], claim["claimId"], "confirmed_submitted", now=NOW
+                claim["campaignId"],
+                self.application_ref,
+                lease["leaseId"],
+                claim["claimId"],
+                "confirmed_submitted",
+                now=NOW,
             )
         confirmed = self.store.record_outcome(
+            claim["campaignId"],
             self.application_ref,
             lease["leaseId"],
             claim["claimId"],
@@ -291,10 +359,20 @@ class PolicyTests(unittest.TestCase):
         lease = self.store.authorize(self.authorization(), now=NOW)
         claim = self.claim(lease)
         receipt = self.store.record_outcome(
-            self.application_ref, lease["leaseId"], claim["claimId"], "blocked", now=NOW
+            claim["campaignId"],
+            self.application_ref,
+            lease["leaseId"],
+            claim["claimId"],
+            "blocked",
+            now=NOW,
         )
         repeated = self.store.record_outcome(
-            self.application_ref, lease["leaseId"], claim["claimId"], "blocked", now=NOW
+            claim["campaignId"],
+            self.application_ref,
+            lease["leaseId"],
+            claim["claimId"],
+            "blocked",
+            now=NOW,
         )
         self.assertEqual(repeated, receipt)
         self.assertEqual(len(self.store.receipts_path.read_text(encoding="utf-8").splitlines()), 1)
@@ -303,7 +381,12 @@ class PolicyTests(unittest.TestCase):
         self.assertNotIn(secret, self.store.receipts_path.read_text(encoding="utf-8"))
         with self.assertRaises(POLICY.PolicyError):
             self.store.record_outcome(
-                self.application_ref, reference("lease", "wrong"), claim["claimId"], "blocked", now=NOW
+                claim["campaignId"],
+                self.application_ref,
+                reference("lease", "wrong"),
+                claim["claimId"],
+                "blocked",
+                now=NOW,
             )
 
     def test_atomic_action_claim_has_one_winner_and_rechecks_every_boundary(self):
@@ -358,12 +441,39 @@ class PolicyTests(unittest.TestCase):
         lease = self.store.authorize(self.authorization(), now=NOW)
         with self.assertRaises(POLICY.PolicyError):
             self.store.record_outcome(
+                lease["campaignId"],
                 self.application_ref,
                 lease["leaseId"],
                 reference("claim", "fabricated"),
                 "uncertain",
                 now=NOW,
             )
+
+    def test_outcome_is_recorded_against_claiming_archived_campaign(self):
+        original = self.activate()
+        lease = self.store.authorize(self.authorization(), now=NOW)
+        claim = self.claim(lease)
+        self.store.revoke(now=NOW)
+        replacement = self.store.activate(
+            self.campaign_input(), now=NOW + timedelta(seconds=1)
+        )
+
+        receipt = self.store.record_outcome(
+            claim["campaignId"],
+            self.application_ref,
+            lease["leaseId"],
+            claim["claimId"],
+            "uncertain",
+            now=NOW + timedelta(seconds=1),
+        )
+
+        self.assertEqual(receipt["campaignId"], original["campaignId"])
+        self.assertEqual(receipt["status"], "retry_available")
+        archived_application = self.store._load_application(
+            self.application_ref, original["campaignId"]
+        )
+        self.assertEqual(archived_application["status"], "retry_available")
+        self.assertEqual(self.store.load_campaign(), replacement)
 
     def test_activation_callback_is_inside_policy_lock_and_exactly_once(self):
         self.activate()

@@ -14,6 +14,8 @@ import stat
 import unittest
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
+import time
 from urllib.parse import parse_qs, urlsplit
 from unittest import mock
 import zlib
@@ -738,7 +740,7 @@ class ReplayCoordinatorTests(unittest.TestCase):
         code, reviewed, stderr = self.invoke(["reviewed", "--run-id", run_root.name])
         self.assertEqual((code, stderr), (0, ""))
         self.assertTrue(reviewed["changed"])
-        self.assertTrue((run_root / "lifecycle-transition.lock").is_file())
+        self.assertTrue((run_root / "evaluate.lock").is_file())
 
         code, report, stderr = self.invoke(["evaluate", "--run-id", run_root.name])
         self.assertEqual((code, stderr), (0, ""))
@@ -999,6 +1001,30 @@ class ReplayCoordinatorTests(unittest.TestCase):
             (code, report, stderr),
             (2, None, "evaluation already in progress\n"),
         )
+
+    def test_terminal_publication_serializes_with_lifecycle_transition(self) -> None:
+        _output, run_root, state = self.prepare()
+        lock = os.open(run_root / "evaluate.lock", os.O_RDWR | os.O_CREAT, 0o600)
+        self.addCleanup(os.close, lock)
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            transition = executor.submit(
+                self.cli._record_transition, run_root.name, "started"
+            )
+            time.sleep(0.05)
+            self.assertFalse(transition.done())
+            (run_root / "completed.json").write_text(
+                json.dumps(
+                    {"state": "completed", "nonce": state["lifecycleNonce"]}
+                )
+            )
+            fcntl.flock(lock, fcntl.LOCK_UN)
+            with self.assertRaisesRegex(self.cli.CoordinatorError, "run is terminal"):
+                transition.result(timeout=2)
+
+        history_path = Path(state["storeRoot"]) / "applications.jsonl"
+        self.assertEqual(history_path.read_text(), "")
 
     def test_stale_server_marks_run_abandoned_idempotently(self) -> None:
         output, run_root, state = self.prepare()

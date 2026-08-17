@@ -234,20 +234,25 @@ function reviewList() {
 }
 
 async function activateFinalAction(stepId) {
-  let response;
+  const notice = document.querySelector("#tripwire-notice");
   try {
-    response = await fetch("/__qa/final-action", {
+    const response = await fetch("/__qa/final-action", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stepId }),
     });
-  } finally {
-    const notice = document.querySelector("#tripwire-notice");
+    if (response.status !== 409)
+      throw new Error("QA tripwire did not block final action");
+    notice.className = "tripwire";
     notice.textContent = "Final action blocked by QA tripwire";
     notice.focus();
+    return true;
+  } catch {
+    notice.className = "infrastructure-error";
+    notice.textContent = "Unable to confirm the QA tripwire";
+    notice.focus();
+    return false;
   }
-  if (response.status !== 409)
-    throw new Error("QA tripwire did not block final action");
 }
 
 async function activateClaimedFinalAction(
