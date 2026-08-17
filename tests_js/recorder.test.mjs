@@ -2181,7 +2181,7 @@ test("record starts on the revised Workday job and choice shapes without source 
   } catch (error) {
     assert.fail(`${error.message}: ${recorderStderr}`);
   }
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 500));
   const firstCheckpoint = await runNode([
     "qa/recorder.mjs", "checkpoint", "--session", allowedSession,
     "--kind", "application-opened",
@@ -2491,6 +2491,7 @@ test("terminal SIGINT lets the recorder finalize before its broker exits", {
   t.after(() => stopChild(recorder));
 
   await waitForFile(path.join(session, "control.json"), 10000);
+  await new Promise((resolve) => setTimeout(resolve, 100));
   process.kill(-recorder.pid, "SIGINT");
   const exit = await waitForExit(recorder, 5000);
 
@@ -2947,6 +2948,9 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   assert.notEqual(oversizedPage.status, 200);
   await page.locator("#oversized-page").evaluate((element) => element.remove());
   assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
+  await page.evaluate(() => new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  }));
 
   await cdpSession.send("Debugger.pause");
   const firstConcurrent = postControl(control, { kind: "application-opened" });
