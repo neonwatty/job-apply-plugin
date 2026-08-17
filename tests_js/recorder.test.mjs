@@ -146,7 +146,7 @@ async function startIndependentChromium(t, url, extraArgs = []) {
   const profile = await mkdtemp(path.join(tmpdir(), "recorder-chrome-"));
   const browserProcess = spawn(chromium.executablePath(), [
     "--headless=new",
-    ...(process.platform === "linux" ? ["--no-sandbox"] : []),
+    ...(process.platform === "linux" ? ["--no-sandbox", "--disable-dev-shm-usage"] : []),
     "--no-first-run",
     "--no-default-browser-check",
     "--remote-debugging-address=127.0.0.1",
@@ -157,7 +157,12 @@ async function startIndependentChromium(t, url, extraArgs = []) {
   ], { stdio: "ignore" });
   t.after(async () => {
     await stopChild(browserProcess);
-    await rm(profile, { recursive: true, force: true });
+    await rm(profile, {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 100,
+    });
   });
   const activePort = path.join(profile, "DevToolsActivePort");
   await waitForFile(activePort, 10000);
@@ -2082,7 +2087,10 @@ test("record starts on the revised Workday job and choice shapes without source 
   });
   const render = async (selectedVariant, url = canonical) => {
     variant = selectedVariant;
-    await page.goto(url, { waitUntil: "domcontentloaded" });
+    await page.goto(url, { waitUntil: "load" });
+    await page.evaluate(() => new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    }));
   };
 
   const directory = await mkdtemp(path.join(tmpdir(), "workday-optional-sign-in-"));
@@ -2173,6 +2181,7 @@ test("record starts on the revised Workday job and choice shapes without source 
   } catch (error) {
     assert.fail(`${error.message}: ${recorderStderr}`);
   }
+  await new Promise((resolve) => setTimeout(resolve, 100));
   const firstCheckpoint = await runNode([
     "qa/recorder.mjs", "checkpoint", "--session", allowedSession,
     "--kind", "application-opened",
@@ -2941,9 +2950,9 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
 
   await cdpSession.send("Debugger.pause");
   const firstConcurrent = postControl(control, { kind: "application-opened" });
-  await new Promise((resolve) => setTimeout(resolve, 50));
+  await new Promise((resolve) => setTimeout(resolve, 250));
   const secondConcurrent = postControl(control, { kind: "step-advanced" });
-  await new Promise((resolve) => setTimeout(resolve, 50));
+  await new Promise((resolve) => setTimeout(resolve, 250));
   const overflowConcurrent = await postControl(control, { kind: "validation-observed" });
   assert.notEqual(overflowConcurrent.status, 200);
   await cdpSession.send("Debugger.resume");
