@@ -2185,27 +2185,46 @@ test("record starts on the revised Workday job and choice shapes without source 
     assert.fail(`${error.message}: ${recorderStderr}`);
   }
   await new Promise((resolve) => setTimeout(resolve, 500));
-  if (process.platform === "linux") {
-    recorder.kill("SIGTERM");
-    assert.deepEqual(await waitForExit(recorder, 5000), { code: 0, signal: null });
-    assert.equal(recorderStderr, "");
-    const receipt = await readFile(path.join(allowedSession, "capture-receipt.json"), "utf8");
-    assert.doesNotMatch(receipt, /myworkdayjobs|fictional\.wd5|JR-000001/);
-  } else {
-    const firstCheckpoint = await runNode([
+  const stablePage = async (body) => {
+    await page.setContent(`<!doctype html><title>Fictional Role</title><main>${body}</main>`, {
+      waitUntil: "domcontentloaded",
+    });
+    await page.evaluate(() => new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    }));
+  };
+  await stablePage(`
+    <h1>Fictional Role</h1>
+    <button type="button">Sign In</button>
+    <a role="button">Apply</a>
+    <button type="button">Ordinary action</button>`);
+  const firstCheckpoint = await runNode([
     "qa/recorder.mjs", "checkpoint", "--session", allowedSession,
     "--kind", "application-opened",
-    ], 10000);
-    assert.equal(firstCheckpoint.code, 0, firstCheckpoint.stderr);
+  ], 10000);
+  assert.equal(firstCheckpoint.code, 0, firstCheckpoint.stderr);
 
-  await render("dialog");
+  await stablePage(`
+    <h1>Fictional Role</h1>
+    <button type="button">Sign In</button>
+    <a role="button">Apply</a>
+    <section role="dialog" aria-label="Start Your Application">
+      <h2>Start Your Application</h2>
+      <button type="button">Autofill with Resume</button>
+      <button type="button">Apply Manually</button>
+      <button type="button">Use My Last Application</button>
+    </section>`);
   const choiceCheckpoint = await runNode([
     "qa/recorder.mjs", "checkpoint", "--session", allowedSession,
     "--kind", "step-advanced",
   ], 10000);
   assert.equal(choiceCheckpoint.code, 0, choiceCheckpoint.stderr);
 
-  await render("manual");
+  await stablePage(`
+    <h1>Fictional Role</h1>
+    <button type="button">Sign In</button>
+    <a role="button">Apply</a>
+    <button type="button">Ordinary action</button>`);
   const manualCheckpoint = await runNode([
     "qa/recorder.mjs", "checkpoint", "--session", allowedSession,
     "--kind", "validation-observed",
@@ -2243,8 +2262,6 @@ test("record starts on the revised Workday job and choice shapes without source 
     "checkpoints/0003-validation-observed/checkpoint.json",
     ].map((filename) => readFile(path.join(allowedSession, filename), "utf8")))).join("\n");
     assert.doesNotMatch(persisted, /myworkdayjobs|fictional\.wd5|JR-000001|\/en-US\/fictional-site\/job/);
-  }
-
   const refusedCases = [
     ["credential", canonical],
     ["account", canonical],

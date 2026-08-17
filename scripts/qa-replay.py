@@ -1603,6 +1603,25 @@ def _shutdown_authenticated_run_if_available(state: dict[str, Any]) -> None:
         _shutdown_server(state["url"], state["shutdownToken"], required=True)
 
 
+def _shutdown_authenticated_run(state: dict[str, Any]) -> None:
+    _verify_identity(state)
+    _shutdown_server(state["url"], state["shutdownToken"], required=True)
+
+
+def _interrupted_marker_exists(directory_descriptor: int, stem: str) -> bool:
+    prefix = f".marker-{stem}-"
+    try:
+        names = os.listdir(directory_descriptor)
+    except OSError:
+        raise CoordinatorError("invalid cleanup state") from None
+    if len(names) > MAX_CLEANUP_ENTRIES:
+        raise CoordinatorError("invalid cleanup state")
+    return any(
+        name.startswith(prefix) and MARKER_TEMP.fullmatch(name) is not None
+        for name in names
+    )
+
+
 def _resolve_route(route_token: str) -> dict[str, str]:
     match = ROUTE.fullmatch(route_token)
     if match is None:
@@ -2377,7 +2396,13 @@ def _cleanup(run_id: str) -> dict[str, Any]:
             cleanup_state = "completed"
             retain_report = True
         elif not abandoned_valid:
-            _shutdown_authenticated_run_if_available(state)
+            # A prepared run has no durable evidence that its detached server was
+            # already stopped. Preserve the shutdown capability on any transient
+            # failure so cleanup can be retried instead of orphaning the server.
+            if _interrupted_marker_exists(run_descriptor, "abandoned"):
+                _shutdown_authenticated_run_if_available(state)
+            else:
+                _shutdown_authenticated_run(state)
             _ensure_marker_at(
                 run_descriptor,
                 "abandoned.json",

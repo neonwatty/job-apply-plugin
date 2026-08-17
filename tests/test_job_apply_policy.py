@@ -436,6 +436,46 @@ class PolicyTests(unittest.TestCase):
             )
         self.assertEqual(campaign["mode"], "auto_submit")
 
+    def test_action_claim_rejects_mismatched_persisted_application_identity(self):
+        self.activate()
+        lease = self.store.authorize(self.authorization(), now=NOW)
+        application_path = self.store._application_path(
+            self.application_ref, lease["campaignId"]
+        )
+        application = json.loads(application_path.read_text(encoding="utf-8"))
+        application["applicationRef"] = reference("application", "substituted")
+        application_path.write_text(json.dumps(application), encoding="utf-8")
+        activated = []
+
+        with self.assertRaises(POLICY.PolicyError):
+            self.store.claim_final_action(
+                self.application_ref,
+                lease["leaseId"],
+                lease["attempt"],
+                self.authorization(),
+                CONFIRMATION_CAPABILITY,
+                now=NOW,
+                activation=lambda current: activated.append(current["claimId"]),
+            )
+
+        application["authorization"]["applicationRef"] = application["applicationRef"]
+        application["authorizationFingerprint"] = POLICY._digest(
+            POLICY._authorization(application["authorization"])
+        )
+        application_path.write_text(json.dumps(application), encoding="utf-8")
+        with self.assertRaises(POLICY.PolicyError):
+            self.store.claim_final_action(
+                self.application_ref,
+                lease["leaseId"],
+                lease["attempt"],
+                self.authorization(),
+                CONFIRMATION_CAPABILITY,
+                now=NOW,
+                activation=lambda current: activated.append(current["claimId"]),
+            )
+
+        self.assertEqual(activated, [])
+
     def test_unclaimed_or_killed_attempt_cannot_record_outcome(self):
         self.activate()
         lease = self.store.authorize(self.authorization(), now=NOW)

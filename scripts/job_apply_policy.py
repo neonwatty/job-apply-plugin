@@ -574,6 +574,8 @@ class PolicyStore:
         if not isinstance(value["slot"], int) or isinstance(value["slot"], bool) or value["slot"] < 1:
             raise PolicyError("application slot is invalid")
         authorization = _authorization(value["authorization"])
+        if authorization["applicationRef"] != value["applicationRef"]:
+            raise PolicyError("application authorization does not match")
         if value["authorizationFingerprint"] != _digest(authorization):
             raise PolicyError("application authorization fingerprint is invalid")
         if value["status"] not in APPLICATION_STATUSES:
@@ -655,6 +657,8 @@ class PolicyStore:
         application = self._validate_application(_read_json(path, "application record"))
         if application["campaignId"] != campaign_id:
             raise PolicyError("application campaign does not match")
+        if application["applicationRef"] != application_ref:
+            raise PolicyError("application record does not match")
         return application
 
     def _campaign_applications(self, campaign_id: str) -> list[dict[str, Any]]:

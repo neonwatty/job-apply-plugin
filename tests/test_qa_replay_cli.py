@@ -1225,6 +1225,33 @@ class ReplayCoordinatorTests(unittest.TestCase):
             (0, result, ""),
         )
 
+    def test_cleanup_preserves_shutdown_capability_when_server_is_unavailable(self) -> None:
+        output, run_root, state = self.prepare()
+        original_request = self.cli._authenticated_request
+
+        def unavailable_identity(url, path, token, method="GET"):
+            if path == "/__qa/identity":
+                raise self.cli.CoordinatorError("fixture server unavailable")
+            return original_request(url, path, token, method)
+
+        with mock.patch.object(
+            self.cli, "_authenticated_request", side_effect=unavailable_identity
+        ):
+            result = self.invoke(["cleanup", "--run-id", run_root.name])
+
+        self.assertEqual(result, (2, None, "fixture server unavailable\n"))
+        self.assertEqual(json.loads((run_root / "run.json").read_text()), state)
+        self.assertFalse((run_root / "abandoned.json").exists())
+        self.assertFalse((run_root / "tombstone.json").exists())
+        with urllib.request.urlopen(
+            self.base_url(output["url"]) + "/__qa/state", timeout=1
+        ) as response:
+            self.assertEqual(response.status, 200)
+
+        code, cleanup, stderr = self.invoke(["cleanup", "--run-id", run_root.name])
+        self.assertEqual((code, cleanup["state"], stderr), (0, "abandoned", ""))
+        self.server_cleanup = None
+
     def test_cleanup_sanitizes_completed_synthetic_data_but_retains_report(self) -> None:
         output, run_root, _state = self.prepare()
         code, report, _stderr = self.invoke(["evaluate", "--run-id", run_root.name])
