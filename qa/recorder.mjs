@@ -32,6 +32,8 @@ const MAX_PENDING_CHECKPOINTS = 2;
 const MAX_EVENT_LINE_BYTES = 1024;
 const BODY_DEADLINE_MS = 500;
 const CAPTURE_DEADLINE_MS = 1000;
+const SCREENSHOT_DEADLINE_MS = 5000;
+const MAX_CAPTURE_DEVICE_PIXEL_RATIO = 4;
 const BROKER_REQUEST_DEADLINE_MS = 1000;
 const BROKER_EOF_GRACE_MS = 250;
 const BROKER_TERMINATE_GRACE_MS = 1500;
@@ -66,6 +68,94 @@ export function validateCaptureResources(resources, limits = CAPTURE_LIMITS) {
       throw new RecorderError("capture resource limit exceeded");
     }
   }
+}
+
+function pngCrc32(buffer, start, end) {
+  let crc = 0xffffffff;
+  for (let index = start; index < end; index += 1) {
+    crc ^= buffer[index];
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function base64Value(code) {
+  if (code >= 65 && code <= 90) return code - 65;
+  if (code >= 97 && code <= 122) return code - 97 + 26;
+  if (code >= 48 && code <= 57) return code - 48 + 52;
+  if (code === 43) return 62;
+  if (code === 47) return 63;
+  return -1;
+}
+
+function isCanonicalBase64(data) {
+  if (data.length === 0 || data.length % 4 !== 0) return false;
+  let padding = 0;
+  if (data.charCodeAt(data.length - 1) === 61) padding += 1;
+  if (data.charCodeAt(data.length - 2) === 61) padding += 1;
+  const contentLength = data.length - padding;
+  if (contentLength === 0 || contentLength % 4 !== (4 - padding) % 4) return false;
+  for (let index = 0; index < contentLength; index += 1) {
+    if (base64Value(data.charCodeAt(index)) < 0) return false;
+  }
+  for (let index = contentLength; index < data.length; index += 1) {
+    if (data.charCodeAt(index) !== 61) return false;
+  }
+  const finalValue = base64Value(data.charCodeAt(contentLength - 1));
+  if ((padding === 1 && (finalValue & 0x03) !== 0) ||
+      (padding === 2 && (finalValue & 0x0f) !== 0)) return false;
+  return true;
+}
+
+export function decodeCapturedPng(data, expectedWidth, expectedHeight, maxBytes) {
+  const byteLimit = maxBytes ?? CAPTURE_LIMITS.maxScreenshotBytes;
+  const fail = () => { throw new RecorderError("invalid screenshot capture"); };
+  if (typeof data !== "string" || data.length === 0 ||
+      !Number.isSafeInteger(expectedWidth) || expectedWidth <= 0 ||
+      !Number.isSafeInteger(expectedHeight) || expectedHeight <= 0 ||
+      !Number.isSafeInteger(byteLimit) || byteLimit <= 0 ||
+      data.length > Math.ceil(byteLimit / 3) * 4 ||
+      !isCanonicalBase64(data)) {
+    fail();
+  }
+  const png = Buffer.from(data, "base64");
+  if (png.length > byteLimit || png.toString("base64") !== data || png.length < 45 ||
+      !png.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
+    fail();
+  }
+  let offset = 8;
+  let sawHeader = false;
+  let sawEnd = false;
+  while (offset < png.length) {
+    if (png.length - offset < 12) fail();
+    const length = png.readUInt32BE(offset);
+    const dataStart = offset + 8;
+    const dataEnd = dataStart + length;
+    const chunkEnd = dataEnd + 4;
+    if (length > byteLimit || dataEnd < dataStart || chunkEnd > png.length) fail();
+    const type = png.toString("ascii", offset + 4, offset + 8);
+    if (!/^[A-Za-z]{4}$/.test(type) ||
+        pngCrc32(png, offset + 4, dataEnd) !== png.readUInt32BE(dataEnd)) {
+      fail();
+    }
+    if (!sawHeader) {
+      if (type !== "IHDR" || length !== 13 ||
+          png.readUInt32BE(dataStart) !== expectedWidth ||
+          png.readUInt32BE(dataStart + 4) !== expectedHeight) fail();
+      sawHeader = true;
+    } else if (type === "IHDR") {
+      fail();
+    }
+    if (type === "IEND") {
+      if (length !== 0 || chunkEnd !== png.length) fail();
+      sawEnd = true;
+    }
+    offset = chunkEnd;
+  }
+  if (!sawHeader || !sawEnd || offset !== png.length) fail();
+  return png;
 }
 
 export function validateSafetyRevision(expected, current) {
@@ -251,6 +341,101 @@ function isLeverApplicationUrl(value) {
   }
 }
 
+function isWorkdayOptionalSignInUrl(value) {
+  try {
+    const url = new URL(value);
+    const host =
+      /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.(wd1|wd5)\.myworkdayjobs\.com$/
+        .exec(url.hostname);
+    if (url.protocol !== "https:" || url.username !== "" || url.password !== "" ||
+        url.port !== "" || !host || url.search !== "" || url.hash !== "") {
+      return false;
+    }
+    const boundedToken = "[A-Za-z0-9](?:[A-Za-z0-9_-]{0,62}[A-Za-z0-9])?";
+    const boundedSlug = "[A-Za-z0-9](?:[A-Za-z0-9_-]{0,126}[A-Za-z0-9])?";
+    const wd5Path = new RegExp(
+      `^/en-US/${boundedToken}/job/${boundedSlug}_JR-\\d{1,18}/?$`,
+    );
+    const wd1Path = new RegExp(
+      `^/en-US/${boundedToken}/job/${boundedToken}/${boundedSlug}_JR\\d{1,18}-\\d{1,18}/?$`,
+    );
+    return host[1] === "wd5" ? wd5Path.test(url.pathname) : wd1Path.test(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
+const WORKDAY_CHOICE_MARKERS = Object.freeze([
+  "Start Your Application",
+  "Autofill with Resume",
+  "Apply Manually",
+  "Use My Last Application",
+]);
+const WORKDAY_MAX_VISIBLE_CONTROLS = 32;
+const WORKDAY_MAX_SECURITY_CONTROLS = 48;
+const WORKDAY_CONTROL_SHAPES = new Set([
+  "button:button",
+  "svg:presentation",
+  "span:alert",
+  "a:button",
+  "div:button",
+  "div:search",
+  "nav:menu",
+  "text:textbox",
+  "email:textbox",
+  "section:dialog",
+]);
+
+function isExactWorkdaySignIn(control) {
+  return control?.type === "button" && control?.role === "button" &&
+    control?.autocomplete === "" && control?.label === "Sign In" &&
+    control?.required === false;
+}
+
+function hasBoundedWorkdayControls(controls, maximum) {
+  return Array.isArray(controls) && controls.length >= 2 && controls.length <= maximum &&
+    controls.filter(isExactWorkdaySignIn).length === 1 && controls.every((control) =>
+      control?.autocomplete === "" && control?.required === false &&
+      WORKDAY_CONTROL_SHAPES.has(`${control?.type ?? ""}:${control?.role ?? ""}`));
+}
+
+function isExactWorkdayOptionalSignInInspection(snapshots, main, boundUrl) {
+  if (snapshots.length !== 1 || !main?.frame?.id || main.frame.parentId ||
+      main.frameVisible !== true) {
+    return false;
+  }
+  const value = main.value;
+  if (!value || !isWorkdayOptionalSignInUrl(value.url) ||
+      (boundUrl !== undefined && value.url !== boundUrl) ||
+      value.controlOverflow !== false || value.securityFrameOverflow !== false ||
+      !Array.isArray(value.securityFrames) || value.securityFrames.length !== 0 ||
+      !Number.isSafeInteger(value.formCount) || value.formCount < 0 ||
+      (boundUrl === undefined && value.formCount !== 0) ||
+      !hasBoundedWorkdayControls(value.controls, WORKDAY_MAX_VISIBLE_CONTROLS) ||
+      !hasBoundedWorkdayControls(
+        value.securityControls,
+        WORKDAY_MAX_SECURITY_CONTROLS,
+      ) || value.securityControls.length < value.controls.length) {
+    return false;
+  }
+  const text = typeof value.text === "string" ? value.text : "";
+  const signIns = text.match(/\bSign\s+In\b/g) ?? [];
+  const choiceMarkerCount = WORKDAY_CHOICE_MARKERS.filter((marker) =>
+    text.includes(marker)).length;
+  if (signIns.length !== 1 || !/\bApply\b/.test(text) ||
+      /\bApply\s+Now\b/.test(text) ||
+      ![0, WORKDAY_CHOICE_MARKERS.length].includes(choiceMarkerCount)) {
+    return false;
+  }
+  return !isSensitivePage({
+    ...value,
+    text: text.replace(/\bSign\s+In\b/, ""),
+    controls: value.controls.filter((control) => !isExactWorkdaySignIn(control)),
+    securityControls: value.securityControls.filter((control) =>
+      !isExactWorkdaySignIn(control)),
+  });
+}
+
 function isExactPassiveResponseControl(control, label, type = "textarea") {
   return control?.type === type && control?.role === "textbox" &&
     control?.autocomplete === "" && control?.label === label &&
@@ -428,7 +613,7 @@ function isDormantLinkedInCaptcha(snapshot) {
     !SENSITIVE_PATTERN.test(captchaOnly) && !hasCredentialControl;
 }
 
-export function inspectionHasSensitivePage(snapshots) {
+export function inspectionHasSensitivePage(snapshots, boundWorkdayUrl) {
   if (!Array.isArray(snapshots) || snapshots.length === 0) return true;
   const main = snapshots.find(({ frame }) => frame && !frame.parentId);
   const linkedInJobsPage = main && isLinkedInJobsUrl(main.value?.url) &&
@@ -438,12 +623,15 @@ export function inspectionHasSensitivePage(snapshots) {
     isAshbyPassiveRecaptchaInspection(snapshots, main);
   const leverPassiveHcaptcha = main &&
     isLeverPassiveHcaptchaInspection(snapshots, main);
+  const workdayOptionalSignIn = main &&
+    isExactWorkdayOptionalSignInInspection(snapshots, main, boundWorkdayUrl);
   if (main && hasCaptchaSecurityFrameOwner(main.value) && !leverPassiveHcaptcha) {
     return true;
   }
   return snapshots.some((snapshot) => {
     if (!isSensitivePage(snapshot.value)) return false;
     if (leverPassiveHcaptcha) return false;
+    if (workdayOptionalSignIn && snapshot === main) return false;
     if (ashbyPassiveRecaptcha && snapshot === main) return false;
     if (greenhousePassiveRecaptcha &&
         (snapshot === main || isPassiveGreenhouseRecaptchaFrame(snapshot, main))) {
@@ -922,6 +1110,7 @@ function isolatedSnapshotSource(includeStructure) {
     const securityControls = elements.slice(0, ${CAPTURE_LIMITS.maxControls + 1}).map(describe);
     const visibleElements = elements.filter(isVisible);
     const controls = visibleElements.slice(0, ${CAPTURE_LIMITS.maxControls + 1}).map(describe);
+    const formCount = document.querySelectorAll("form").length;
     const iframeOwners = Array.from(document.querySelectorAll("iframe"));
     const securityFrames = iframeOwners.slice(0, 4).map((frame) => {
       const style = getComputedStyle(frame);
@@ -979,6 +1168,7 @@ function isolatedSnapshotSource(includeStructure) {
       controls,
       securityControls,
       controlOverflow: elements.length > ${CAPTURE_LIMITS.maxControls},
+      formCount,
       securityFrames,
       securityFrameOverflow: iframeOwners.length > 3,
       html,
@@ -1154,6 +1344,170 @@ async function inspectFrames(isolated, includeStructure = false) {
   };
 }
 
+async function readTrustedCaptureState(isolated, signal) {
+  const treeResult = await withDeadline(
+    isolated.session.send("Page.getFrameTree"),
+    CAPTURE_DEADLINE_MS,
+    signal,
+  );
+  const frame = treeResult?.frameTree?.frame;
+  const contextId = frame?.id && isolated.contexts?.get(frame.id);
+  if (typeof frame?.id !== "string" || frame.id.length === 0 ||
+      typeof frame.loaderId !== "string" || frame.loaderId.length === 0 ||
+      frame.parentId != null || !Number.isSafeInteger(contextId) || contextId <= 0 ||
+      !isolated.allowedContexts?.has(contextId)) {
+    throw new RecorderError("invalid screenshot capture");
+  }
+  const evaluated = await withDeadline(
+    isolated.session.send("Runtime.evaluate", {
+      expression: "globalThis.devicePixelRatio",
+      contextId,
+      returnByValue: true,
+    }),
+    CAPTURE_DEADLINE_MS,
+    signal,
+  );
+  const devicePixelRatio = evaluated?.result?.value;
+  if (evaluated?.exceptionDetails || evaluated?.result?.type !== "number" ||
+      !Number.isFinite(devicePixelRatio) || devicePixelRatio < 1 ||
+      devicePixelRatio > MAX_CAPTURE_DEVICE_PIXEL_RATIO) {
+    throw new RecorderError("invalid screenshot capture");
+  }
+  return { frameId: frame.id, loaderId: frame.loaderId, contextId, devicePixelRatio };
+}
+
+async function setCaptureScriptExecution(isolated, disabled, signal) {
+  await withDeadline(
+    isolated.session.send("Emulation.setScriptExecutionDisabled", { value: disabled }),
+    CAPTURE_DEADLINE_MS,
+    signal,
+  );
+}
+
+async function restoreCaptureScriptExecution(isolated) {
+  let failed = false;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      await setCaptureScriptExecution(isolated, false);
+      return failed;
+    } catch {
+      failed = true;
+    }
+  }
+  // Detaching clears the session-scoped Emulation override when restoration is uncertain.
+  isolated.contexts?.clear();
+  isolated.allowedContexts?.clear();
+  await isolated.session.detach?.().catch(() => {});
+  return true;
+}
+
+async function waitForRestoredScriptTurn(isolated, captureState, signal) {
+  const evaluated = await withDeadline(
+    isolated.session.send("Runtime.evaluate", {
+      expression: "new Promise((resolve) => setTimeout(resolve, 0))",
+      contextId: captureState.contextId,
+      awaitPromise: true,
+      returnByValue: true,
+    }),
+    CAPTURE_DEADLINE_MS,
+    signal,
+  );
+  if (evaluated?.exceptionDetails) throw new RecorderError("unstable page document");
+}
+
+export async function captureFullPagePng(
+  isolated,
+  width,
+  height,
+  signal,
+  verifyRestoredPage,
+) {
+  if (!Number.isSafeInteger(width) || width <= 0 ||
+      !Number.isSafeInteger(height) || height <= 0) {
+    throw new RecorderError("invalid screenshot capture");
+  }
+  const captureState = await readTrustedCaptureState(isolated, signal);
+  const metrics = await withDeadline(
+    isolated.session.send("Page.getLayoutMetrics"),
+    CAPTURE_DEADLINE_MS,
+    signal,
+  );
+  const content = metrics?.cssContentSize;
+  if (!content || content.x !== 0 || Object.is(content.x, -0) ||
+      content.y !== 0 || Object.is(content.y, -0) ||
+      !Number.isFinite(content.width) || content.width <= 0 ||
+      !Number.isFinite(content.height) || content.height <= 0) {
+    throw new RecorderError("invalid screenshot capture");
+  }
+  const cdpWidth = Math.ceil(content.x + content.width);
+  const cdpHeight = Math.ceil(content.y + content.height);
+  if (!Number.isSafeInteger(cdpWidth) || cdpWidth <= 0 ||
+      !Number.isSafeInteger(cdpHeight) || cdpHeight <= 0) {
+    throw new RecorderError("invalid screenshot capture");
+  }
+  const captureWidth = Math.max(width, cdpWidth);
+  const captureHeight = Math.max(height, cdpHeight);
+  validateCaptureResources({
+    screenshotWidth: captureWidth,
+    screenshotHeight: captureHeight,
+  });
+  const scale = 1 / captureState.devicePixelRatio;
+  if (!Number.isFinite(scale) || scale <= 0 || scale > 1) {
+    throw new RecorderError("invalid screenshot capture");
+  }
+  let result;
+  let captureError;
+  let restorationFailed = false;
+  try {
+    await setCaptureScriptExecution(isolated, true, signal);
+    result = await withDeadline(
+      isolated.session.send("Page.captureScreenshot", {
+        format: "png",
+        fromSurface: true,
+        captureBeyondViewport: true,
+        clip: { x: 0, y: 0, width: captureWidth, height: captureHeight, scale },
+      }),
+      SCREENSHOT_DEADLINE_MS,
+      signal,
+    );
+  } catch (error) {
+    captureError = error;
+  } finally {
+    restorationFailed = await restoreCaptureScriptExecution(isolated);
+  }
+  if (restorationFailed) throw new RecorderError("invalid screenshot capture");
+  if (captureError) throw captureError;
+  if (!result || Object.keys(result).length !== 1 ||
+      !Object.hasOwn(result, "data")) {
+    throw new RecorderError("invalid screenshot capture");
+  }
+  await waitForRestoredScriptTurn(isolated, captureState, signal);
+  const afterMetrics = await withDeadline(
+    isolated.session.send("Page.getLayoutMetrics"),
+    CAPTURE_DEADLINE_MS,
+    signal,
+  );
+  const afterContent = afterMetrics?.cssContentSize;
+  if (!afterContent || afterContent.x !== content.x || afterContent.y !== content.y ||
+      afterContent.width !== content.width || afterContent.height !== content.height) {
+    throw new RecorderError("unstable page document");
+  }
+  const afterCaptureState = await readTrustedCaptureState(isolated, signal);
+  if (afterCaptureState.frameId !== captureState.frameId ||
+      afterCaptureState.loaderId !== captureState.loaderId ||
+      afterCaptureState.contextId !== captureState.contextId ||
+      afterCaptureState.devicePixelRatio !== captureState.devicePixelRatio) {
+    throw new RecorderError("unstable page document");
+  }
+  if (verifyRestoredPage !== undefined) {
+    if (typeof verifyRestoredPage !== "function") {
+      throw new RecorderError("invalid screenshot capture");
+    }
+    await verifyRestoredPage();
+  }
+  return decodeCapturedPng(result.data, captureWidth, captureHeight);
+}
+
 function ordinaryPages(browser) {
   return browser.contexts().flatMap((context) => context.pages()).filter((page) => {
     try {
@@ -1295,6 +1649,9 @@ async function runRecord(rawOptions) {
     };
     let isolated;
     let safetyRevision = 0;
+    let boundWorkdayUrl;
+    const hasSensitivePage = (snapshots) =>
+      inspectionHasSensitivePage(snapshots, boundWorkdayUrl);
     const safelyObserve = (observed, executionContextId) => {
       if (observed?.messageType === "document-state") {
         safetyRevision += 1;
@@ -1321,7 +1678,7 @@ async function runRecord(rawOptions) {
           if (!captureEnabled || shuttingDown || safetyRevision !== observedRevision ||
               isolated.contexts.get(frameId) !== executionContextId ||
               sourceFrame?.frameVisible !== true ||
-              inspectionHasSensitivePage(inspection.snapshots)) return;
+              hasSensitivePage(inspection.snapshots)) return;
           observe(observed);
         } finally {
           pendingEventInspections -= 1;
@@ -1341,8 +1698,17 @@ async function runRecord(rawOptions) {
       inspectFrames(isolated),
       CAPTURE_DEADLINE_MS,
     );
-    if (inspectionHasSensitivePage(initialInspection.snapshots)) {
+    if (hasSensitivePage(initialInspection.snapshots)) {
       throw new RecorderError("sensitive page refused");
+    }
+    const initialMain = initialInspection.snapshots.find(({ frame }) =>
+      frame && !frame.parentId);
+    if (initialMain && isExactWorkdayOptionalSignInInspection(
+      initialInspection.snapshots,
+      initialMain,
+      undefined,
+    )) {
+      boundWorkdayUrl = initialMain.value.url;
     }
 
     await broker.request("mkdir", { path: "checkpoints" });
@@ -1378,7 +1744,7 @@ async function runRecord(rawOptions) {
           signal,
         );
         assertCaptureRevision();
-        if (inspectionHasSensitivePage(inspection.snapshots)) {
+        if (hasSensitivePage(inspection.snapshots)) {
           throw new RecorderError("sensitive page refused");
         }
         if (!inspection.main || inspection.main.structuralOverflow ||
@@ -1407,7 +1773,7 @@ async function runRecord(rawOptions) {
         );
         assertCaptureRevision();
         if (afterStructure.identity !== inspection.identity ||
-            inspectionHasSensitivePage(afterStructure.snapshots)) {
+            hasSensitivePage(afterStructure.snapshots)) {
           throw new RecorderError("unstable page document");
         }
         const sequence = checkpointKinds.length + 1;
@@ -1416,15 +1782,24 @@ async function runRecord(rawOptions) {
         temporaryDirectory = `checkpoints/.tmp-${randomBytes(18).toString("base64url")}`;
         await broker.request("mkdir", { path: temporaryDirectory });
         assertCaptureRevision();
-        const screenshot = await withDeadline(
-          page.screenshot({
-            fullPage: true,
-            animations: "allow",
-            caret: "initial",
-            timeout: CAPTURE_DEADLINE_MS,
-          }),
-          CAPTURE_DEADLINE_MS,
+        const screenshot = await captureFullPagePng(
+          isolated,
+          inspection.main.width,
+          inspection.main.height,
           signal,
+          async () => {
+            assertCaptureRevision();
+            const restored = await withDeadline(
+              inspectFrames(isolated),
+              CAPTURE_DEADLINE_MS,
+              signal,
+            );
+            assertCaptureRevision();
+            if (restored.identity !== inspection.identity ||
+                hasSensitivePage(restored.snapshots)) {
+              throw new RecorderError("unstable page document");
+            }
+          },
         );
         assertCaptureRevision();
         validateCaptureResources({
@@ -1439,7 +1814,7 @@ async function runRecord(rawOptions) {
         );
         assertCaptureRevision();
         if (afterScreenshot.identity !== inspection.identity ||
-            inspectionHasSensitivePage(afterScreenshot.snapshots)) {
+            hasSensitivePage(afterScreenshot.snapshots)) {
           throw new RecorderError("unstable page document");
         }
         throwIfAborted(signal);
@@ -1462,7 +1837,7 @@ async function runRecord(rawOptions) {
         );
         assertCaptureRevision();
         if (beforeCommit.identity !== inspection.identity ||
-            inspectionHasSensitivePage(beforeCommit.snapshots)) {
+            hasSensitivePage(beforeCommit.snapshots)) {
           throw new RecorderError("unstable page document");
         }
         throwIfAborted(signal);

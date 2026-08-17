@@ -23,7 +23,9 @@ import { chromium } from "playwright";
 
 import {
   BrokerClient,
+  captureFullPagePng,
   commitCheckpoint,
+  decodeCapturedPng,
   inspectionHasSensitivePage,
   isSensitivePage,
   sanitizeObservedControl,
@@ -140,7 +142,7 @@ async function startSyntheticSite(t) {
   return `http://127.0.0.1:${server.address().port}`;
 }
 
-async function startIndependentChromium(t, url) {
+async function startIndependentChromium(t, url, extraArgs = []) {
   const profile = await mkdtemp(path.join(tmpdir(), "recorder-chrome-"));
   const browserProcess = spawn(chromium.executablePath(), [
     "--headless=new",
@@ -149,6 +151,7 @@ async function startIndependentChromium(t, url) {
     "--remote-debugging-address=127.0.0.1",
     "--remote-debugging-port=0",
     `--user-data-dir=${profile}`,
+    ...extraArgs,
     url,
   ], { stdio: "ignore" });
   t.after(async () => {
@@ -424,6 +427,159 @@ test("sensitive page detector rejects login and credential surfaces", () => {
     }),
     false,
   );
+});
+
+test("Workday permits only a bounded ordinary shell around one optional Sign In", () => {
+  const control = (label, overrides = {}) => ({
+    type: "button",
+    autocomplete: "",
+    label,
+    role: "button",
+    required: false,
+    ...overrides,
+  });
+  const signIn = control("Sign In");
+  const applyAnchor = control("Unlabelled control", { type: "a" });
+  const ordinaryPairs = [
+    ["button", "button"],
+    ["svg", "presentation"],
+    ["span", "alert"],
+    ["a", "button"],
+    ["div", "button"],
+    ["div", "search"],
+    ["nav", "menu"],
+    ["text", "textbox"],
+  ];
+  const ordinary = (index) => {
+    const [type, role] = ordinaryPairs[index % ordinaryPairs.length];
+    return control(type === "button" ? `Ordinary action ${index}` : "Unlabelled control", {
+      type,
+      role,
+    });
+  };
+  const controls = [signIn, applyAnchor];
+  while (controls.length < 26) controls.push(ordinary(controls.length));
+  const securityControls = [...controls];
+  while (securityControls.length < 41) securityControls.push(ordinary(securityControls.length));
+  const main = {
+    frame: { id: "main" },
+    frameVisible: true,
+    value: {
+      url: "https://fictional.wd5.myworkdayjobs.com/en-US/fictional-site/job/Fictional-Role_JR-000001",
+      title: "Fictional Role",
+      text: "Fictional Role Sign In Apply",
+      controls,
+      securityControls,
+      controlOverflow: false,
+      formCount: 0,
+      securityFrames: [],
+      securityFrameOverflow: false,
+    },
+  };
+  const inspect = (value = main.value, extras = [], boundUrl = undefined) =>
+    inspectionHasSensitivePage([{ ...main, value }, ...extras], boundUrl);
+
+  assert.equal(inspect(), false);
+  const wd1Value = {
+    ...main.value,
+    url: "https://fictional.wd1.myworkdayjobs.com/en-US/fictional-site/job/fictional-location/Fictional-Role_JR000001-1",
+  };
+  assert.equal(inspect(wd1Value), false);
+  const choiceControls = [...controls,
+    control("Start Your Application", { type: "section", role: "dialog" }),
+    control("Autofill with Resume"),
+    control("Apply Manually"),
+    control("Use My Last Application"),
+  ];
+  const choiceSecurityControls = [...securityControls, ...choiceControls.slice(-4)];
+  assert.equal(inspect({
+    ...main.value,
+    text: "Fictional Role Sign In Apply Start Your Application Autofill with Resume Apply Manually Use My Last Application",
+    controls: choiceControls,
+    securityControls: choiceSecurityControls,
+  }), false);
+
+  const invalidValues = [
+    { ...main.value, url: main.value.url.replace("wd5", "wd2") },
+    { ...main.value, url: main.value.url.replace("wd5", "wd4") },
+    { ...main.value, url: main.value.url.replace("wd5", "wd6") },
+    { ...main.value, url: main.value.url.replace("_JR-000001", "_R000001") },
+    { ...main.value, url: main.value.url.replace("_JR-000001", "_JR000001") },
+    { ...main.value, url: main.value.url.replace("fictional.wd5", `${"a".repeat(64)}.wd5`) },
+    { ...main.value, url: main.value.url.replace("fictional-site", "fictional.site") },
+    { ...main.value, url: main.value.url.replace("fictional-site", `${"s".repeat(65)}`) },
+    { ...main.value, url: main.value.url.replace("Fictional-Role", "Fictional%2FRole") },
+    { ...main.value, url: main.value.url.replace("Fictional-Role", `${"r".repeat(129)}`) },
+    { ...main.value, url: `${main.value.url}?source=private` },
+    { ...main.value, url: `${main.value.url}#application` },
+    { ...wd1Value, url: wd1Value.url.replace("_JR000001-1", "_JR-000001-1") },
+    { ...wd1Value, url: wd1Value.url.replace("_JR000001-1", "_JR000001_1") },
+    { ...wd1Value, url: wd1Value.url.replace("_JR000001-1", "_JR000001") },
+    { ...wd1Value, url: wd1Value.url.replace("_JR000001-1", "_JR000001-") },
+    { ...wd1Value, url: wd1Value.url.replace("_JR000001-1", "") },
+    { ...wd1Value, url: wd1Value.url.replace("000001-1", `${"1".repeat(19)}-1`) },
+    { ...wd1Value, url: wd1Value.url.replace("000001-1", `000001-${"1".repeat(19)}`) },
+    { ...wd1Value, url: wd1Value.url.replace("/Fictional-Role_", "/extra/Fictional-Role_") },
+    { ...wd1Value, url: `${wd1Value.url}?source=private` },
+    { ...wd1Value, url: `${wd1Value.url}#application` },
+    { ...wd1Value, url: wd1Value.url.replace("wd1", "wd2") },
+    { ...wd1Value, url: wd1Value.url.replace("wd1", "wd5") },
+    { ...wd1Value, url: main.value.url.replace("wd5", "wd1") },
+    { ...main.value, text: `${main.value.text} Create an account` },
+    { ...main.value, text: `${main.value.text} Complete CAPTCHA verification` },
+    { ...main.value, text: main.value.text.replace("Apply", "Apply Now") },
+    { ...main.value, text: `${main.value.text} Apply Manually` },
+    { ...main.value, controls: controls.filter((item) => item !== signIn) },
+    { ...main.value, securityControls: securityControls.filter((item) => item !== signIn) },
+    { ...main.value, controls: [signIn, ...controls] },
+    { ...main.value, securityControls: [signIn, ...securityControls] },
+    { ...main.value, securityControls: [...securityControls, {
+      type: "password",
+      autocomplete: "current-password",
+      label: "Password",
+      role: "textbox",
+      required: true,
+    }] },
+    { ...main.value, securityControls: securityControls.map((item, index) =>
+      index === 2 ? { ...item, type: "section", role: "navigation" } : item) },
+    { ...main.value, controls: [...controls, ...Array.from({ length: 7 }, (_, index) =>
+      ordinary(100 + index))] },
+    { ...main.value, securityControls: [...securityControls,
+      ...Array.from({ length: 8 }, (_, index) => ordinary(200 + index))] },
+    { ...main.value, securityFrames: [{
+      src: "about:blank",
+      title: "",
+      visibility: "hidden",
+      position: "absolute",
+      width: 1,
+      height: 1,
+    }] },
+    { ...main.value, securityFrameOverflow: true },
+    { ...main.value, controlOverflow: true },
+    { ...main.value, formCount: 1 },
+  ];
+  for (const [index, value] of invalidValues.entries()) {
+    assert.equal(inspect(value), true, `invalid Workday shape ${index}`);
+  }
+  for (const url of [
+    main.value.url.replace("fictional", "other-tenant"),
+    main.value.url.replace("/fictional-site/", "/other-site/"),
+    main.value.url.replace("/Fictional-Role_", "/Other-Role_"),
+  ]) {
+    assert.equal(inspect({ ...main.value, url }, [], main.value.url), true, url);
+  }
+  assert.equal(inspect(main.value, [{
+    frame: { id: "child", parentId: "main" },
+    frameVisible: false,
+    value: {
+      url: "about:blank",
+      title: "",
+      text: "",
+      controls: [],
+      securityControls: [],
+      controlOverflow: false,
+    },
+  }]), true);
 });
 
 test("LinkedIn jobs allow only an inert hidden CAPTCHA bootstrap frame", () => {
@@ -1110,6 +1266,77 @@ test("capture resource limits accept boundaries and reject one over", () => {
   }
 });
 
+test("captured PNG decoding is canonical, bounded, and dimension-locked", () => {
+  const encoded =
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+  const decoded = decodeCapturedPng(encoded, 1, 1);
+  assert.ok(decoded.byteLength > 0);
+  for (const invoke of [
+    () => decodeCapturedPng("not base64", 1, 1),
+    () => decodeCapturedPng(`${encoded}=`, 1, 1),
+    () => decodeCapturedPng(encoded, 2, 1),
+    () => decodeCapturedPng(encoded, 1, 2),
+    () => decodeCapturedPng(encoded, 1, 1, decoded.byteLength - 1),
+    () => {
+      const corrupted = Buffer.from(decoded);
+      corrupted[corrupted.length - 5] ^= 1;
+      return decodeCapturedPng(corrupted.toString("base64"), 1, 1);
+    },
+  ]) {
+    assert.throws(invoke, /invalid screenshot capture/);
+  }
+});
+
+test("captured PNG decoding handles canonical near-limit base64 iteratively", () => {
+  const small = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+    "base64",
+  );
+  const payload = Buffer.alloc(4_900_001, 0x61);
+  const ancillary = Buffer.alloc(payload.length + 12);
+  ancillary.writeUInt32BE(payload.length, 0);
+  ancillary.write("raNd", 4, "ascii");
+  payload.copy(ancillary, 8);
+  let crc = 0xffffffff;
+  for (let index = 4; index < ancillary.length - 4; index += 1) {
+    crc ^= ancillary[index];
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+  }
+  ancillary.writeUInt32BE((crc ^ 0xffffffff) >>> 0, ancillary.length - 4);
+  const large = Buffer.concat([
+    small.subarray(0, small.length - 12),
+    ancillary,
+    small.subarray(small.length - 12),
+  ]);
+  const encoded = large.toString("base64");
+  assert.ok(large.byteLength > 4_800_000);
+  assert.match(encoded, /==$/);
+  assert.equal(decodeCapturedPng(encoded, 1, 1, large.byteLength).byteLength,
+    large.byteLength);
+
+  const midpoint = Math.floor(encoded.length / 2);
+  const invalidValues = [
+    `${encoded.slice(0, midpoint)}-${encoded.slice(midpoint + 1)}`,
+    `${encoded}=`,
+    encoded.slice(0, -1),
+    `${encoded.slice(0, -3)}B==`,
+  ];
+  for (const value of invalidValues) {
+    assert.throws(
+      () => decodeCapturedPng(value, 1, 1, large.byteLength),
+      (error) => error?.constructor?.name === "RecorderError" &&
+        error.message === "invalid screenshot capture",
+    );
+  }
+  assert.throws(
+    () => decodeCapturedPng(encoded, 1, 1, large.byteLength - 1),
+    (error) => error?.constructor?.name === "RecorderError" &&
+      error.message === "invalid screenshot capture",
+  );
+});
+
 test("checkpoint safety revision rejects transient document changes", () => {
   assert.doesNotThrow(() => validateSafetyRevision(7, 7));
   assert.throws(() => validateSafetyRevision(7, 9), /unstable page document/);
@@ -1280,6 +1507,754 @@ test("record refuses a login page before creating private evidence", async (t) =
   assert.doesNotMatch(result.stderr, /Sign in|password|127\.0\.0\.1/);
   await assert.rejects(access(path.join(session, "capture-receipt.json")));
   await assert.rejects(access(path.join(session, "events.jsonl")));
+});
+
+function mockCaptureIsolated(send, devicePixelRatio = 1, setScriptExecution) {
+  const frame = { id: "main-frame", loaderId: "main-loader" };
+  const contextId = 17;
+  return {
+    contexts: new Map([[frame.id, contextId]]),
+    allowedContexts: new Set([contextId]),
+    session: { send: async (command, options) => {
+      if (command === "Page.getFrameTree") return { frameTree: { frame } };
+      if (command === "Runtime.evaluate") {
+        if (options.expression.includes("setTimeout")) return { result: { value: true } };
+        assert.equal(options.contextId, contextId);
+        const value = typeof devicePixelRatio === "function" ?
+          devicePixelRatio() : devicePixelRatio;
+        return { result: { type: "number", value } };
+      }
+      if (command === "Emulation.setScriptExecutionDisabled") {
+        return setScriptExecution?.(options.value) ?? {};
+      }
+      return send(command, options);
+    } },
+  };
+}
+
+test("bounded CDP screenshot command permits a stable capture after one second", async () => {
+  const encoded =
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+  const isolated = mockCaptureIsolated(async (command) => {
+    if (command === "Page.getLayoutMetrics") {
+      return { cssContentSize: { x: 0, y: 0, width: 1, height: 1 } };
+    }
+    if (command === "Page.captureScreenshot") {
+      return new Promise((resolve) => setTimeout(() => resolve({ data: encoded }), 1500));
+    }
+    throw new Error("unexpected command");
+  });
+  const started = Date.now();
+  const screenshot = await captureFullPagePng(
+    isolated,
+    1,
+    1,
+    new AbortController().signal,
+  );
+  const elapsed = Date.now() - started;
+  assert.ok(screenshot.byteLength > 0);
+  assert.ok(elapsed >= 1250, `screenshot completed too quickly: ${elapsed}ms`);
+});
+
+test("bounded CDP screenshot trusts only stable conservative DPR values", async () => {
+  const encoded =
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+  const layout = { cssContentSize: { x: 0, y: 0, width: 1, height: 1 } };
+  for (const ratio of [1, 1.25, 2]) {
+    let captureOptions;
+    const isolated = mockCaptureIsolated(async (command, options) => {
+      if (command === "Page.getLayoutMetrics") return layout;
+      if (command === "Page.captureScreenshot") {
+        captureOptions = options;
+        return { data: encoded };
+      }
+      assert.fail(`unexpected command: ${command}`);
+    }, ratio);
+    assert.ok((await captureFullPagePng(
+      isolated,
+      1,
+      1,
+      new AbortController().signal,
+    )).byteLength > 0);
+    assert.equal(captureOptions.captureBeyondViewport, true);
+    assert.equal(captureOptions.clip.scale, 1 / ratio);
+  }
+
+  for (const ratio of [0.5, 4.01, Number.NaN, Number.POSITIVE_INFINITY, "2", null]) {
+    const isolated = mockCaptureIsolated(() => assert.fail("invalid DPR reached capture"), ratio);
+    await assert.rejects(captureFullPagePng(
+      isolated,
+      1,
+      1,
+      new AbortController().signal,
+    ), /invalid screenshot capture/);
+  }
+  const missing = mockCaptureIsolated(() => assert.fail("missing DPR reached capture"));
+  missing.contexts.clear();
+  await assert.rejects(captureFullPagePng(
+    missing,
+    1,
+    1,
+    new AbortController().signal,
+  ), /invalid screenshot capture/);
+
+  let dprReads = 0;
+  const drifting = mockCaptureIsolated(async (command) => {
+    if (command === "Page.getLayoutMetrics") return layout;
+    if (command === "Page.captureScreenshot") return { data: encoded };
+    assert.fail(`unexpected command: ${command}`);
+  }, () => (++dprReads === 1 ? 2 : 1.25));
+  await assert.rejects(captureFullPagePng(
+    drifting,
+    1,
+    1,
+    new AbortController().signal,
+  ), /unstable page document/);
+});
+
+test("bounded CDP screenshot fails closed when script restoration is uncertain", async () => {
+  const encoded =
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+  const layout = { cssContentSize: { x: 0, y: 0, width: 1, height: 1 } };
+  const capture = async (scriptHandler) => {
+    const isolated = mockCaptureIsolated(async (command) => {
+      if (command === "Page.getLayoutMetrics") return layout;
+      if (command === "Page.captureScreenshot") return { data: encoded };
+      assert.fail(`unexpected command: ${command}`);
+    }, 1, scriptHandler);
+    let detachCalls = 0;
+    isolated.session.detach = async () => { detachCalls += 1; };
+    await assert.rejects(captureFullPagePng(
+      isolated,
+      1,
+      1,
+      new AbortController().signal,
+    ), /invalid screenshot capture/);
+    return { isolated, detachCalls };
+  };
+
+  const retryCalls = [];
+  let enableAttempts = 0;
+  const restoredOnRetry = await capture((disabled) => {
+    retryCalls.push(disabled);
+    if (!disabled && ++enableAttempts === 1) throw new Error("restore failed once");
+  });
+  assert.deepEqual(retryCalls, [true, false, false]);
+  assert.equal(restoredOnRetry.detachCalls, 0);
+  assert.equal(restoredOnRetry.isolated.contexts.size, 1);
+
+  const failedCalls = [];
+  const neverRestored = await capture((disabled) => {
+    failedCalls.push(disabled);
+    if (!disabled) throw new Error("restore failed");
+  });
+  assert.deepEqual(failedCalls, [true, false, false]);
+  assert.equal(neverRestored.detachCalls, 1);
+  assert.equal(neverRestored.isolated.contexts.size, 0);
+  assert.equal(neverRestored.isolated.allowedContexts.size, 0);
+});
+
+test("bounded CDP screenshot restores scripts after disable or capture failure", async () => {
+  const layout = { cssContentSize: { x: 0, y: 0, width: 1, height: 1 } };
+  for (const failureCommand of ["disable", "capture"]) {
+    const scriptCalls = [];
+    const isolated = mockCaptureIsolated(async (command) => {
+      if (command === "Page.getLayoutMetrics") return layout;
+      if (command === "Page.captureScreenshot") {
+        throw new Error("capture failed");
+      }
+      assert.fail(`unexpected command: ${command}`);
+    }, 1, (disabled) => {
+      scriptCalls.push(disabled);
+      if (disabled && failureCommand === "disable") throw new Error("disable failed");
+    });
+    await assert.rejects(captureFullPagePng(
+      isolated,
+      1,
+      1,
+      new AbortController().signal,
+    ), new RegExp(`${failureCommand} failed`));
+    assert.deepEqual(scriptCalls, [true, false]);
+  }
+});
+
+test("bounded CDP screenshot command rejects timeout and protocol failure", async () => {
+  const layout = { cssContentSize: { x: 0, y: 0, width: 1, height: 1 } };
+  const stalled = mockCaptureIsolated(async (command) =>
+    command === "Page.getLayoutMetrics" ? layout : new Promise(() => {}));
+  const started = Date.now();
+  await assert.rejects(captureFullPagePng(
+    stalled,
+    1,
+    1,
+    new AbortController().signal,
+  ), /operation timed out/);
+  const elapsed = Date.now() - started;
+  assert.ok(elapsed >= 4500, `screenshot timed out too quickly: ${elapsed}ms`);
+  assert.ok(elapsed < 8000, `screenshot timeout was not bounded: ${elapsed}ms`);
+  const failed = mockCaptureIsolated(async (command) => {
+    if (command === "Page.getLayoutMetrics") return layout;
+    throw new Error("synthetic protocol failure");
+  });
+  await assert.rejects(captureFullPagePng(
+    failed,
+    1,
+    1,
+    new AbortController().signal,
+  ), /synthetic protocol failure/);
+});
+
+test("bounded CDP screenshot rejects unsafe metrics and layout drift", async () => {
+  const encoded =
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+  const rejectsMetrics = async (content, width = 1, height = 1) => {
+    const isolated = mockCaptureIsolated(async (command) => {
+      if (command === "Page.getLayoutMetrics") return { cssContentSize: content };
+      assert.fail("unsafe metrics reached screenshot capture");
+    });
+    await assert.rejects(captureFullPagePng(
+      isolated,
+      width,
+      height,
+      new AbortController().signal,
+    ), /invalid screenshot capture|capture resource limit exceeded/);
+  };
+  for (const content of [
+    { x: 1, y: 0, width: 1, height: 1 },
+    { x: -1, y: 0, width: 1, height: 1 },
+    { x: -0, y: 0, width: 1, height: 1 },
+    { x: 0, y: 0, width: Number.NaN, height: 1 },
+    { x: 0, y: 0, width: Number.POSITIVE_INFINITY, height: 1 },
+    { x: 0, y: 0, width: 4096.1, height: 1 },
+    { x: 0, y: 0, width: 1, height: 16384.1 },
+  ]) await rejectsMetrics(content);
+  await rejectsMetrics({ x: 0, y: 0, width: 1, height: 1 }, 1.5, 1);
+  await rejectsMetrics({ x: 0, y: 0, width: 1, height: 1 }, 4097, 1);
+
+  let metricReads = 0;
+  const drifting = mockCaptureIsolated(async (command) => {
+    if (command === "Page.getLayoutMetrics") {
+      metricReads += 1;
+      return { cssContentSize: {
+        x: 0,
+        y: 0,
+        width: 1,
+        height: metricReads === 1 ? 1 : 2,
+      } };
+    }
+    return { data: encoded };
+  });
+  await assert.rejects(captureFullPagePng(
+    drifting,
+    1,
+    1,
+    new AbortController().signal,
+  ), /unstable page document/);
+});
+
+test("checkpoint suspends responsive scripts for a complete mutation-free capture", async (t) => {
+  const site = await startSyntheticSite(t);
+  const { cdpUrl } = await startIndependentChromium(t, `${site}/application`);
+  const attached = await chromium.connectOverCDP(cdpUrl);
+  t.after(() => attached.close());
+  const page = attached.contexts()[0].pages()[0];
+  await page.setContent(`<!doctype html><title>Responsive application</title>
+    <style>html,body{margin:0}main{width:1277px;height:4511px;
+      background:repeating-linear-gradient(45deg,#fff 0 8px,#eaf0f6 8px 16px)}</style>
+    <main><h1>Responsive application</h1><button type=button>Continue</button>
+      <div id=bottom style="position:absolute;top:4400px;left:0;width:1277px;height:111px;
+        background:rgb(12,34,56)"></div></main>
+    <script>
+      window.resizeMutations = 0;
+      addEventListener("resize", () => {
+        document.querySelector("main").dataset.resizeMutation =
+          String(++window.resizeMutations);
+      });
+    </script>`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(100);
+  await page.evaluate(() => {
+    window.resizeMutations = 0;
+    delete document.querySelector("main").dataset.resizeMutation;
+  });
+  const captureSession = await page.context().newCDPSession(page);
+  const metrics = await captureSession.send("Page.getLayoutMetrics");
+  const { width, height } = metrics.cssContentSize;
+  await page.evaluate(() => {
+    window.resizeMutations = 0;
+    delete document.querySelector("main").dataset.resizeMutation;
+  });
+  const directCapture = await captureSession.send("Page.captureScreenshot", {
+    format: "png",
+    fromSurface: true,
+    captureBeyondViewport: false,
+    clip: { x: 0, y: 0, width, height, scale: 1 },
+  });
+  assert.ok(decodeCapturedPng(directCapture.data, width, height).byteLength > 0);
+  assert.equal(await page.evaluate(() => window.resizeMutations), 0);
+  await captureSession.detach();
+
+  const directory = await mkdtemp(path.join(tmpdir(), "responsive-screenshot-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const privateRoot = path.join(directory, ".qa-private");
+  await mkdir(privateRoot, { mode: 0o700 });
+  const session = path.join(privateRoot, "qa-session-responsive");
+  const recorder = spawn(process.execPath, [
+    "qa/recorder.mjs", "record", "--cdp-url", cdpUrl, "--output", session,
+  ], { cwd: root });
+  let recorderStderr = "";
+  recorder.stderr.setEncoding("utf8");
+  recorder.stderr.on("data", (chunk) => { recorderStderr += chunk; });
+  t.after(() => stopChild(recorder));
+  await waitForFile(path.join(session, "control.json"), 10000);
+  const checkpoint = await runNode([
+    "qa/recorder.mjs", "checkpoint", "--session", session,
+    "--kind", "application-opened",
+  ], 10000);
+  assert.equal(checkpoint.code, 0, checkpoint.stderr);
+  await page.waitForTimeout(250);
+  assert.equal(await page.evaluate(() => window.resizeMutations), 0);
+  const screenshotPath = path.join(
+    session,
+    "checkpoints/0001-application-opened/page.png",
+  );
+  const screenshot = await readFile(screenshotPath);
+  recorder.kill("SIGTERM");
+  assert.deepEqual(await waitForExit(recorder, 5000), { code: 0, signal: null });
+  assert.equal(recorderStderr, "");
+  const imagePage = await attached.contexts()[0].newPage();
+  const lowerPixel = await imagePage.evaluate(async (source) => {
+    const image = new Image();
+    image.src = source;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    canvas.getContext("2d").drawImage(image, 100, 4450, 1, 1, 0, 0, 1, 1);
+    return Array.from(canvas.getContext("2d").getImageData(0, 0, 1, 1).data);
+  }, `data:image/png;base64,${screenshot.toString("base64")}`);
+  assert.deepEqual(lowerPixel, [12, 34, 56, 255]);
+});
+
+test("CDP capture normalizes a trusted Retina DPR without viewport clipping", async (t) => {
+  const site = await startSyntheticSite(t);
+  const { cdpUrl } = await startIndependentChromium(
+    t,
+    `${site}/application`,
+    ["--force-device-scale-factor=2"],
+  );
+  const attached = await chromium.connectOverCDP(cdpUrl);
+  t.after(() => attached.close());
+  const page = attached.contexts()[0].pages()[0];
+  await page.setContent(`<!doctype html><title>Retina application</title>
+    <style>html,body{margin:0;width:1200px}main{width:1200px;height:2200px;overflow:hidden;
+      background:repeating-linear-gradient(45deg,#fff 0 8px,#dfe8f1 8px 16px)}</style>
+    <main><h1>Retina application</h1><button type=button>Continue</button></main>`, {
+    waitUntil: "domcontentloaded",
+  });
+  assert.equal(await page.evaluate(() => devicePixelRatio), 2);
+  await page.evaluate(() => {
+    Object.defineProperty(window, "devicePixelRatio", { value: 99 });
+  });
+  assert.equal(await page.evaluate(() => devicePixelRatio), 99);
+
+  const actualSession = await page.context().newCDPSession(page);
+  t.after(() => actualSession.detach().catch(() => {}));
+  await actualSession.send("Page.enable");
+  await actualSession.send("Runtime.enable");
+  const tree = await actualSession.send("Page.getFrameTree");
+  const mainFrame = tree.frameTree.frame;
+  const world = await actualSession.send("Page.createIsolatedWorld", {
+    frameId: mainFrame.id,
+    worldName: "qa-recorder-retina-test",
+    grantUniversalAccess: false,
+  });
+  const metrics = await actualSession.send("Page.getLayoutMetrics");
+  const dom = await page.locator("main").evaluate((main) => ({
+    width: main.scrollWidth,
+    height: main.scrollHeight,
+  }));
+  assert.equal(dom.width, metrics.cssContentSize.width);
+  assert.equal(dom.height, metrics.cssContentSize.height);
+  let captureOptions;
+  const isolated = {
+    contexts: new Map([[mainFrame.id, world.executionContextId]]),
+    allowedContexts: new Set([world.executionContextId]),
+    session: { send: (command, options) => {
+      if (command === "Page.captureScreenshot") captureOptions = options;
+      return actualSession.send(command, options);
+    } },
+  };
+  const screenshot = await captureFullPagePng(
+    isolated,
+    dom.width,
+    dom.height,
+    new AbortController().signal,
+  );
+  assert.equal(captureOptions.captureBeyondViewport, true);
+  assert.deepEqual(captureOptions.clip, {
+    x: 0,
+    y: 0,
+    width: dom.width,
+    height: dom.height,
+    scale: 0.5,
+  });
+  assert.ok(decodeCapturedPng(
+    screenshot.toString("base64"),
+    dom.width,
+    dom.height,
+  ).byteLength > 0);
+});
+
+test("CDP capture unions opposite-axis bounded DOM and layout extents", async (t) => {
+  const site = await startSyntheticSite(t);
+  const { cdpUrl } = await startIndependentChromium(t, `${site}/application`);
+  const attached = await chromium.connectOverCDP(cdpUrl);
+  t.after(() => attached.close());
+  const page = attached.contexts()[0].pages()[0];
+  await page.setContent(`<!doctype html><title>Offset application</title>
+    <style>html,body{margin:0}main{position:absolute;left:-77px;top:120px;
+      width:1277px;height:4511px;background:linear-gradient(#fff,#dfe8f1)}</style>
+    <main><h1>Offset application</h1></main>`, { waitUntil: "domcontentloaded" });
+  const dom = await page.locator("main").evaluate((main) => ({
+    width: main.scrollWidth,
+    height: main.scrollHeight,
+  }));
+  const actualSession = await page.context().newCDPSession(page);
+  await actualSession.send("Page.enable");
+  await actualSession.send("Runtime.enable");
+  const tree = await actualSession.send("Page.getFrameTree");
+  const mainFrame = tree.frameTree.frame;
+  const world = await actualSession.send("Page.createIsolatedWorld", {
+    frameId: mainFrame.id,
+    worldName: "qa-recorder-union-test",
+    grantUniversalAccess: false,
+  });
+  let captureOptions;
+  const isolated = {
+    contexts: new Map([[mainFrame.id, world.executionContextId]]),
+    allowedContexts: new Set([world.executionContextId]),
+    session: { send: (command, options) => {
+      if (command === "Page.captureScreenshot") captureOptions = options;
+      return actualSession.send(command, options);
+    } },
+  };
+  t.after(() => actualSession.detach().catch(() => {}));
+  const metrics = await actualSession.send("Page.getLayoutMetrics");
+  assert.ok(dom.width > metrics.cssContentSize.width);
+  assert.ok(dom.height < metrics.cssContentSize.height);
+  const screenshot = await captureFullPagePng(
+    isolated,
+    dom.width,
+    dom.height,
+    new AbortController().signal,
+  );
+  assert.equal(captureOptions.captureBeyondViewport, true);
+  assert.deepEqual(captureOptions.clip, {
+    x: 0,
+    y: 0,
+    width: dom.width,
+    height: metrics.cssContentSize.height,
+    scale: 1,
+  });
+  assert.ok(decodeCapturedPng(
+    screenshot.toString("base64"),
+    dom.width,
+    metrics.cssContentSize.height,
+  ).byteLength > 0);
+});
+
+test("checkpoint rejects a forced mutation during bounded CDP capture", async (t) => {
+  const site = await startSyntheticSite(t);
+  const { cdpUrl } = await startIndependentChromium(t, `${site}/application`);
+  const attached = await chromium.connectOverCDP(cdpUrl);
+  t.after(() => attached.close());
+  const page = attached.contexts()[0].pages()[0];
+  await page.setContent(`<!doctype html><title>Mutable application</title>
+    <style>html,body{margin:0}main{width:1277px;height:4511px;
+      background:repeating-linear-gradient(45deg,#fff 0 4px,#dfe8f1 4px 8px)}</style>
+    <main><h1>Mutable application</h1><button type=button>Continue</button></main>`, {
+    waitUntil: "domcontentloaded",
+  });
+  const directory = await mkdtemp(path.join(tmpdir(), "mutating-cdp-screenshot-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const privateRoot = path.join(directory, ".qa-private");
+  await mkdir(privateRoot, { mode: 0o700 });
+  const session = path.join(privateRoot, "qa-session-mutating-cdp");
+  const recorder = spawn(process.execPath, [
+    "qa/recorder.mjs", "record", "--cdp-url", cdpUrl, "--output", session,
+  ], { cwd: root });
+  let recorderStderr = "";
+  recorder.stderr.setEncoding("utf8");
+  recorder.stderr.on("data", (chunk) => { recorderStderr += chunk; });
+  t.after(() => stopChild(recorder));
+  await waitForFile(path.join(session, "control.json"), 10000);
+
+  const checkpointPromise = runNode([
+    "qa/recorder.mjs", "checkpoint", "--session", session,
+    "--kind", "application-opened",
+  ], 10000);
+  const temporaryDeadline = Date.now() + 5000;
+  let temporaryObserved = false;
+  while (Date.now() < temporaryDeadline) {
+    const entries = await readdir(path.join(session, "checkpoints"));
+    if (entries.some((entry) => entry.startsWith(".tmp-"))) {
+      temporaryObserved = true;
+      break;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  assert.equal(temporaryObserved, true);
+  await page.locator("main").evaluate((main) => {
+    main.dataset.forcedMutation = "1";
+  });
+  const checkpoint = await checkpointPromise;
+  assert.equal(checkpoint.code, 1);
+  assert.match(checkpoint.stderr, /checkpoint rejected/);
+  assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
+  recorder.kill("SIGTERM");
+  assert.deepEqual(await waitForExit(recorder, 5000), { code: 0, signal: null });
+  assert.equal(recorderStderr, "");
+  await access(path.join(session, "capture-receipt.json"));
+  assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
+});
+
+test("record starts on the revised Workday job and choice shapes without source metadata", async (t) => {
+  const site = await startSyntheticSite(t);
+  const { cdpUrl } = await startIndependentChromium(t, `${site}/application`);
+  const attached = await chromium.connectOverCDP(cdpUrl);
+  t.after(() => attached.close());
+  const context = attached.contexts()[0];
+  const page = context.pages()[0];
+  const canonical =
+    "https://fictional.wd5.myworkdayjobs.com/en-US/fictional-site/job/Fictional-Role_JR-000001";
+  const wd1Canonical =
+    "https://fictional.wd1.myworkdayjobs.com/en-US/fictional-site/job/fictional-location/Fictional-Role_JR000001-1";
+  let variant = "job";
+  await context.route("https://*.myworkdayjobs.com/**", (route) => {
+    const additions = {
+      job: "",
+      dialog: "",
+      credential: '<label>Password<input type="password" autocomplete="current-password"></label>',
+      account: "<p>Create an account to continue</p>",
+      challenge: "<p>Complete CAPTCHA verification</p>",
+      alternate: '<button type="button">Apply with Profile</button>',
+      "apply-now": "",
+      manual: '<form><label>Contact Email<input type="email"></label></form>',
+    };
+    const visibleShell = [
+      '<button type="button">Sign In</button>',
+      `<a role="button">${variant === "apply-now" ? "Apply Now" : "Apply"}</a>`,
+      ...Array.from({ length: 5 }, (_, index) =>
+        `<button type="button">Ordinary action ${index}</button>`),
+      ...Array.from({ length: 5 }, () =>
+        '<svg role="presentation" width="1" height="1"></svg>'),
+      '<span role="alert">Ordinary status</span>',
+      ...Array.from({ length: 4 }, () => '<div role="button">Ordinary action</div>'),
+      '<div role="search">Ordinary search</div>',
+      '<nav role="menu">Ordinary menu</nav>',
+      ...Array.from({ length: 7 }, () => '<input type="text">'),
+    ].join("\n");
+    const hiddenShell = [
+      ...Array.from({ length: 5 }, () => '<button type="button" hidden>Ordinary</button>'),
+      ...Array.from({ length: 5 }, () => '<svg role="presentation" hidden></svg>'),
+      ...Array.from({ length: 5 }, () => '<div role="button" hidden></div>'),
+    ].join("\n");
+    const manual = variant === "alternate" ? "" : '<button type="button">Apply Manually</button>';
+    const choiceDialog = variant === "job" || variant === "manual" ? "" : `
+      <section role="dialog" aria-label="Start Your Application">
+        <h2>Start Your Application</h2>
+        <button type="button">Autofill with Resume</button>
+        ${manual}
+        <button type="button">Use My Last Application</button>
+        ${additions[variant]}
+      </section>`;
+    return route.fulfill({
+      contentType: "text/html; charset=utf-8",
+      body: `<!doctype html><title>Fictional Role</title><main>
+        <h1>Fictional Role</h1>
+        ${visibleShell}
+        ${hiddenShell}
+        ${choiceDialog}
+        ${variant === "manual" ? additions.manual : ""}
+      </main>`,
+    });
+  });
+  const render = async (selectedVariant, url = canonical) => {
+    variant = selectedVariant;
+    await page.goto(url, { waitUntil: "domcontentloaded" });
+  };
+
+  const directory = await mkdtemp(path.join(tmpdir(), "workday-optional-sign-in-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const privateRoot = path.join(directory, ".qa-private");
+  await mkdir(privateRoot, { mode: 0o700 });
+
+  await render("job", wd1Canonical);
+  const wd1Session = path.join(privateRoot, "qa-session-wd1-allowed");
+  const wd1Recorder = spawn(process.execPath, [
+    "qa/recorder.mjs", "record", "--cdp-url", cdpUrl, "--output", wd1Session,
+  ], { cwd: root });
+  let wd1Stderr = "";
+  wd1Recorder.stderr.setEncoding("utf8");
+  wd1Recorder.stderr.on("data", (chunk) => { wd1Stderr += chunk; });
+  t.after(() => stopChild(wd1Recorder));
+  try {
+    await waitForFile(path.join(wd1Session, "control.json"), 10000);
+  } catch (error) {
+    assert.fail(`${error.message}: ${wd1Stderr}`);
+  }
+  wd1Recorder.kill("SIGTERM");
+  assert.deepEqual(await waitForExit(wd1Recorder, 5000), { code: 0, signal: null });
+  assert.equal(wd1Stderr, "");
+  const wd1Receipt = await readFile(path.join(wd1Session, "capture-receipt.json"), "utf8");
+  assert.doesNotMatch(wd1Receipt, /myworkdayjobs|fictional|JR0/);
+
+  await render("job", canonical);
+  const browserShape = await page.evaluate(() => {
+    const elements = Array.from(document.querySelectorAll(
+      "input,select,textarea,button,[role]",
+    ));
+    const visible = (element) => {
+      if (element.matches("input[type=hidden],input[type=password]")) return false;
+      for (let current = element; current instanceof Element; current = current.parentElement) {
+        if (current.matches("[hidden],[aria-hidden=true]")) return false;
+        const style = getComputedStyle(current);
+        if (["none"].includes(style.display) ||
+            ["hidden", "collapse"].includes(style.visibility) ||
+            Number.parseFloat(style.opacity) === 0) return false;
+      }
+      const rectangle = element.getBoundingClientRect();
+      return rectangle.width > 0 && rectangle.height > 0;
+    };
+    const describe = (element) => ({
+      type: element instanceof HTMLInputElement ? element.type : element.tagName.toLowerCase(),
+      autocomplete: element.getAttribute("autocomplete") || "",
+      label: element.getAttribute("aria-label") ||
+        (element instanceof HTMLButtonElement ? element.innerText.trim() :
+          element.getAttribute("name") || element.getAttribute("placeholder") ||
+          "Unlabelled control"),
+      role: element.getAttribute("role") ||
+        (element instanceof HTMLButtonElement ? "button" :
+          element instanceof HTMLInputElement ? "textbox" : "control"),
+      required: element.matches("[required],[aria-required=true]"),
+    });
+    return {
+      url: location.href,
+      title: document.title,
+      text: document.body.innerText,
+      controls: elements.filter(visible).map(describe),
+      securityControls: elements.map(describe),
+      controlOverflow: false,
+      formCount: document.querySelectorAll("form").length,
+      securityFrames: [],
+      securityFrameOverflow: false,
+    };
+  });
+  assert.equal(browserShape.controls.length, 26);
+  assert.equal(browserShape.securityControls.length, 41);
+  assert.equal(browserShape.controls.find((item) => item.type === "a")?.label,
+    "Unlabelled control");
+  assert.equal(inspectionHasSensitivePage([{
+    frame: { id: "main" },
+    frameVisible: true,
+    value: browserShape,
+  }]), false, JSON.stringify(browserShape));
+  const allowedSession = path.join(privateRoot, "qa-session-allowed");
+  const recorder = spawn(process.execPath, [
+    "qa/recorder.mjs", "record", "--cdp-url", cdpUrl, "--output", allowedSession,
+  ], { cwd: root });
+  let recorderStderr = "";
+  recorder.stderr.setEncoding("utf8");
+  recorder.stderr.on("data", (chunk) => { recorderStderr += chunk; });
+  t.after(() => stopChild(recorder));
+  try {
+    await waitForFile(path.join(allowedSession, "control.json"), 10000);
+  } catch (error) {
+    assert.fail(`${error.message}: ${recorderStderr}`);
+  }
+  const firstCheckpoint = await runNode([
+    "qa/recorder.mjs", "checkpoint", "--session", allowedSession,
+    "--kind", "application-opened",
+  ], 10000);
+  assert.equal(firstCheckpoint.code, 0, firstCheckpoint.stderr);
+
+  await render("dialog");
+  const choiceCheckpoint = await runNode([
+    "qa/recorder.mjs", "checkpoint", "--session", allowedSession,
+    "--kind", "step-advanced",
+  ], 10000);
+  assert.equal(choiceCheckpoint.code, 0, choiceCheckpoint.stderr);
+
+  await render("manual");
+  const manualCheckpoint = await runNode([
+    "qa/recorder.mjs", "checkpoint", "--session", allowedSession,
+    "--kind", "validation-observed",
+  ], 10000);
+  assert.equal(manualCheckpoint.code, 0, manualCheckpoint.stderr);
+
+  await render("dialog", canonical.replace("fictional", "other-tenant"));
+  const driftCheckpoint = await runNode([
+    "qa/recorder.mjs", "checkpoint", "--session", allowedSession,
+    "--kind", "step-advanced",
+  ], 10000);
+  assert.equal(driftCheckpoint.code, 1);
+  assert.match(driftCheckpoint.stderr, /checkpoint rejected/);
+  assert.deepEqual(await readdir(path.join(allowedSession, "checkpoints")), [
+    "0001-application-opened",
+    "0002-step-advanced",
+    "0003-validation-observed",
+  ]);
+  recorder.kill("SIGTERM");
+  assert.deepEqual(await waitForExit(recorder, 5000), { code: 0, signal: null });
+  assert.equal(recorderStderr, "");
+
+  const persisted = (await Promise.all([
+    "capture-receipt.json",
+    "recording-summary.json",
+    "events.jsonl",
+    "checkpoints/0001-application-opened/page.html",
+    "checkpoints/0001-application-opened/controls.json",
+    "checkpoints/0001-application-opened/checkpoint.json",
+    "checkpoints/0002-step-advanced/page.html",
+    "checkpoints/0002-step-advanced/controls.json",
+    "checkpoints/0002-step-advanced/checkpoint.json",
+    "checkpoints/0003-validation-observed/page.html",
+    "checkpoints/0003-validation-observed/controls.json",
+    "checkpoints/0003-validation-observed/checkpoint.json",
+  ].map((filename) => readFile(path.join(allowedSession, filename), "utf8")))).join("\n");
+  assert.doesNotMatch(persisted, /myworkdayjobs|fictional\.wd5|JR-000001|\/en-US\/fictional-site\/job/);
+
+  const refusedCases = [
+    ["credential", canonical],
+    ["account", canonical],
+    ["challenge", canonical],
+    ["alternate", canonical],
+    ["apply-now", canonical],
+    ["manual", canonical],
+    ["unobserved-tenant-family", canonical.replace("wd5", "wd2")],
+    ["host-family", canonical.replace("wd5", "wd4")],
+    ["wd1-old-route", canonical.replace("wd5", "wd1")],
+    ["wd5-new-route", wd1Canonical.replace("wd1", "wd5")],
+    ["wd1-bad-separator", wd1Canonical.replace("_JR000001-1", "_JR-000001-1")],
+    ["wd1-extra-segment", wd1Canonical.replace("/Fictional-Role_", "/extra/Fictional-Role_")],
+    ["old-requisition", canonical.replace("_JR-000001", "_R000001")],
+    ["path-family", canonical.replace("/en-US/fictional-site/job/", "/jobs/job/")],
+  ];
+  for (const [name, url] of refusedCases) {
+    await render([
+      "unobserved-tenant-family", "host-family", "wd1-old-route", "wd5-new-route",
+      "wd1-bad-separator", "wd1-extra-segment", "old-requisition", "path-family",
+    ].includes(name) ? "dialog" : name, url);
+    const session = path.join(privateRoot, `qa-session-${name}`);
+    const refused = await runNode([
+      "qa/recorder.mjs", "record", "--cdp-url", cdpUrl, "--output", session,
+    ], 10000);
+    assert.equal(refused.code, 1, name);
+    assert.match(refused.stderr, /sensitive page refused/, name);
+    assert.doesNotMatch(refused.stderr, /myworkdayjobs|fictional|R000001/, name);
+    await assert.rejects(access(path.join(session, "capture-receipt.json")));
+    await assert.rejects(access(path.join(session, "events.jsonl")));
+  }
 });
 
 test("record permits only the exact passive Lever hCaptcha browser shape", async (t) => {
