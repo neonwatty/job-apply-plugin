@@ -146,6 +146,7 @@ async function startIndependentChromium(t, url, extraArgs = []) {
   const profile = await mkdtemp(path.join(tmpdir(), "recorder-chrome-"));
   const browserProcess = spawn(chromium.executablePath(), [
     "--headless=new",
+    ...(process.platform === "linux" ? ["--no-sandbox"] : []),
     "--no-first-run",
     "--no-default-browser-check",
     "--remote-debugging-address=127.0.0.1",
