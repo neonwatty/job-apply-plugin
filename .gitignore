@@ -10,6 +10,9 @@ Thumbs.db
 .idea/
 .superpowers/
 .worktrees/
+node_modules/
+__pycache__/
+*.py[cod]
 
 # Test files
 *.test.md

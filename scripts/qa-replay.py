@@ -183,11 +183,15 @@ def _post_claimed_action(
         with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
             return response.status, json.loads(response.read(MAX_JSON_BYTES).decode())
     except urllib.error.HTTPError as error:
+        status = error.code
         try:
-            body = json.loads(error.read(MAX_JSON_BYTES).decode())
-        except (UnicodeError, json.JSONDecodeError):
-            body = {"error": "invalid isolated response"}
-        return error.code, body
+            try:
+                body = json.loads(error.read(MAX_JSON_BYTES).decode())
+            except (UnicodeError, json.JSONDecodeError):
+                body = {"error": "invalid isolated response"}
+        finally:
+            error.close()
+        return status, body
 
 
 def _verify_auto_submit(fixture_path: Path) -> dict[str, Any]:
@@ -1551,8 +1555,12 @@ def _authenticated_request(
         with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
             return response.status, response.read(MAX_JSON_BYTES + 1)
     except urllib.error.HTTPError as error:
-        error.read()
-        return error.code, b""
+        status = error.code
+        try:
+            error.read()
+        finally:
+            error.close()
+        return status, b""
     except (OSError, urllib.error.URLError):
         raise CoordinatorError("fixture server unavailable") from None
 

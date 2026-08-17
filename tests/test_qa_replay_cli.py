@@ -789,7 +789,10 @@ class ReplayCoordinatorTests(unittest.TestCase):
         )
         with self.assertRaises(urllib.error.HTTPError) as captured:
             urllib.request.urlopen(request, timeout=2)
-        self.assertEqual(captured.exception.code, 409)
+        try:
+            self.assertEqual(captured.exception.code, 409)
+        finally:
+            captured.exception.close()
         code, result, stderr = self.invoke(["reviewed", "--run-id", run_root.name])
         self.assertEqual(code, 2)
         self.assertIsNone(result)

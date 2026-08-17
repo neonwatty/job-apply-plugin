@@ -5,7 +5,7 @@
   "scripts": {
     "test:qa-browser": "node --test --test-concurrency=1 tests_js/*.test.mjs",
     "test:auto-submit": "python3 scripts/qa-replay.py verify-auto-submit --fixture qa/fixtures/linkedin-easy-apply-screening-2026-08-v1/fixture.json --json",
-    "test:qa-screening": "python3 -m unittest -v tests.test_qa_replay_cli.CommittedScenarioTests.test_linkedin_screening_scenario_is_closed_and_synthetic tests.test_qa_replay_cli.CommittedScenarioTests.test_linkedin_screening_fresh_prepare_evaluate_cleanup_lifecycle tests.test_qa_server_oracle.SemanticOracleTests.test_committed_linkedin_screening_fixture_passes_with_closed_identity && node --test --test-name-pattern='committed LinkedIn screening' tests_js/renderer.test.mjs",
+    "test:qa-screening": "PYTHONPATH=tests python3 -m unittest -v test_qa_replay_cli.CommittedScenarioTests.test_linkedin_screening_scenario_is_closed_and_synthetic test_qa_replay_cli.CommittedScenarioTests.test_linkedin_screening_fresh_prepare_evaluate_cleanup_lifecycle test_qa_server_oracle.SemanticOracleTests.test_committed_linkedin_screening_fixture_passes_with_closed_identity && node --test --test-name-pattern='committed LinkedIn screening' tests_js/renderer.test.mjs",
     "qa:record": "node qa/recorder.mjs"
   },
   "devDependencies": { "playwright": "1.62.1" }
