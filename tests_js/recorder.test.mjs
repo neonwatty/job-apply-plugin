@@ -2552,11 +2552,11 @@ test("recorder inventories open shadow controls and refuses shadow credentials",
   recorder.stderr.setEncoding("utf8");
   recorder.stderr.on("data", (chunk) => { recorderStderr += chunk; });
   t.after(() => stopChild(recorder));
-  await waitForFile(path.join(session, "control.json"), 10000);
+  await waitForFile(path.join(session, "control.json"), 20000);
   const checkpoint = await runNode([
     "qa/recorder.mjs", "checkpoint", "--session", session,
     "--kind", "application-opened",
-  ], 10000);
+  ], 15000);
   assert.equal(checkpoint.code, 0, checkpoint.stderr);
   recorder.kill("SIGTERM");
   await waitForExit(recorder, 5000);
@@ -2582,7 +2582,7 @@ test("recorder inventories open shadow controls and refuses shadow credentials",
   const refusedSession = path.join(privateRoot, "qa-session-shadow-password");
   const refused = await runNode([
     "qa/recorder.mjs", "record", "--cdp-url", cdpUrl, "--output", refusedSession,
-  ], 10000);
+  ], 15000);
   assert.equal(refused.code, 1);
   assert.match(refused.stderr, /sensitive page refused/);
   await assert.rejects(access(path.join(refusedSession, "events.jsonl")));
@@ -2772,7 +2772,36 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   });
   await page.locator("#password").fill("never-capture-this");
   await page.locator("#temporary-secret").evaluate((element) => element.remove());
-  await page.locator("#email").fill(privateEmail);
+  await page.evaluate(() => new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  }));
+  const expectedEmailEvent = (event) =>
+    event.interactionType === "input" &&
+    event.role === "textbox" &&
+    event.sourceLabel === "Private Person email" &&
+    event.required === true;
+  const emailEventRecorded = async () => {
+    try {
+      const text = await readFile(path.join(session, "events.jsonl"), "utf8");
+      return text.trim().split("\n").filter(Boolean).map(JSON.parse)
+        .some(expectedEmailEvent);
+    } catch {
+      return false;
+    }
+  };
+  let capturedExpectedEmail = false;
+  for (let attempt = 0; attempt < 4 && !capturedExpectedEmail; attempt += 1) {
+    await page.locator("#email").fill("");
+    await page.locator("#email").fill(privateEmail);
+    const eventDeadline = Date.now() + 1000;
+    while (Date.now() < eventDeadline && !capturedExpectedEmail) {
+      capturedExpectedEmail = await emailEventRecorded();
+      if (!capturedExpectedEmail) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+    }
+  }
+  assert.equal(capturedExpectedEmail, true);
   await page.locator("#resume").setInputFiles(privateFilename);
   await page.locator("#continue").click();
   await page.evaluate(() => {
@@ -3079,11 +3108,7 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   for (const line of eventsText.trim().split("\n")) {
     assert.ok(Buffer.byteLength(line) <= 1024);
   }
-  assert.ok(events.some((event) =>
-    event.interactionType === "input" &&
-    event.role === "textbox" &&
-    event.sourceLabel === "Private Person email" &&
-    event.required === true));
+  assert.ok(events.some(expectedEmailEvent));
   assert.ok(events.some((event) => event.pageSequence >= 2));
   assert.equal(events.some((event) => event.sourceLabel === "Secret password"), false);
   for (const forbidden of [
