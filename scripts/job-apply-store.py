@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 import re
+import stat
 import sys
 import tempfile
 import unicodedata
@@ -61,6 +62,7 @@ JOB_TRANSITIONS = {
     "applied": {"closed"},
     "closed": {"saved"},
 }
+FACT_SOURCES = {"user", "resume", "agent", "migration"}
 REPLAY_TRANSITIONS = {"started", "reviewed"}
 REPLAY_ATS = {"ashby", "greenhouse", "lever", "linkedin-easy-apply"}
 SESSION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
@@ -230,6 +232,29 @@ def normalize_job_url(url: str) -> str:
     return urlunsplit((parsed.scheme.lower(), netloc, path, parsed.query, ""))
 
 
+def normalize_resume_path(path: str) -> str:
+    if not isinstance(path, str) or not path.strip() or "\0" in path:
+        raise StoreError("resume path must be a non-empty absolute path")
+    expanded = Path(path.strip()).expanduser()
+    if not expanded.is_absolute():
+        raise StoreError("resume path must be absolute")
+    return os.path.normpath(str(expanded))
+
+
+def observe_resume_file(path: str) -> dict[str, Any]:
+    normalized = normalize_resume_path(path)
+    try:
+        metadata = Path(normalized).stat()
+    except FileNotFoundError:
+        return {"exists": False, "size": None, "modifiedAt": None}
+    if not stat.S_ISREG(metadata.st_mode):
+        raise StoreError("resume path must identify a regular file")
+    modified = datetime.fromtimestamp(metadata.st_mtime, timezone.utc).isoformat(
+        timespec="seconds"
+    ).replace("+00:00", "Z")
+    return {"exists": True, "size": metadata.st_size, "modifiedAt": modified}
+
+
 def _safe_session_id(application_id: str) -> str:
     if (
         not isinstance(application_id, str)
@@ -248,6 +273,40 @@ def _validate_optional_strings(
             document[field], str
         ):
             raise StoreError(f"{label}.{field} must be a string")
+
+
+def _json_pointer_segment(value: str) -> str:
+    return value.replace("~", "~0").replace("/", "~1")
+
+
+def _merge_object_patch(
+    target: dict[str, Any], patch: dict[str, Any], prefix: str = ""
+) -> tuple[dict[str, Any], list[str]]:
+    """Apply an object merge patch and return changed JSON-pointer paths."""
+
+    updated = dict(target)
+    changed: list[str] = []
+    for key, value in patch.items():
+        if not isinstance(key, str) or not key:
+            raise StoreError("profile patch keys must be non-empty strings")
+        path = f"{prefix}/{_json_pointer_segment(key)}"
+        if value is None:
+            if key in updated:
+                del updated[key]
+                changed.append(path)
+            continue
+        current = updated.get(key)
+        if isinstance(value, dict):
+            base = current if isinstance(current, dict) else {}
+            nested, nested_changed = _merge_object_patch(base, value, path)
+            if nested_changed or not isinstance(current, dict):
+                updated[key] = nested
+                changed.extend(nested_changed or [path])
+            continue
+        if current != value:
+            updated[key] = value
+            changed.append(path)
+    return updated, changed
 
 
 def _validate_answer_record(key: str, value: Any) -> dict[str, Any]:
@@ -463,6 +522,66 @@ def _validate_job_record(key: str, value: Any) -> dict[str, Any]:
     return record
 
 
+def _validate_resume_record(key: str, value: Any) -> dict[str, Any]:
+    record = _require_object(value, "resume record")
+    allowed = {
+        "id",
+        "label",
+        "path",
+        "tags",
+        "default",
+        "observedSize",
+        "observedModifiedAt",
+        "revision",
+        "createdAt",
+        "updatedAt",
+        "deletedAt",
+    }
+    if set(record) - allowed:
+        raise StoreError("resume record contains unsupported fields")
+    if record.get("id") != key:
+        raise StoreError("resume record id does not match its index")
+    _safe_session_id(key)
+    if not isinstance(record.get("label"), str) or not record["label"].strip():
+        raise StoreError("resume label must be a non-empty string")
+    if record.get("path") != normalize_resume_path(record.get("path", "")):
+        raise StoreError("resume path is not normalized")
+    tags = record.get("tags", [])
+    if not isinstance(tags, list) or not all(
+        isinstance(item, str) and item.strip() for item in tags
+    ):
+        raise StoreError("resume tags must be non-empty strings")
+    if len(set(tags)) != len(tags):
+        raise StoreError("resume tags must be unique")
+    if not isinstance(record.get("default"), bool):
+        raise StoreError("resume default must be a boolean")
+    observed_size = record.get("observedSize")
+    if observed_size is not None and (
+        not isinstance(observed_size, int)
+        or isinstance(observed_size, bool)
+        or observed_size < 0
+    ):
+        raise StoreError("resume observed size is invalid")
+    revision = record.get("revision")
+    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
+        raise StoreError("resume revision must be a positive integer")
+    _validate_optional_strings(
+        record,
+        {
+            "observedModifiedAt",
+            "createdAt",
+            "updatedAt",
+            "deletedAt",
+        },
+        "resume record",
+    )
+    if not isinstance(record.get("createdAt"), str) or not record["createdAt"]:
+        raise StoreError("resume record has no creation timestamp")
+    if not isinstance(record.get("updatedAt"), str) or not record["updatedAt"]:
+        raise StoreError("resume record has no update timestamp")
+    return record
+
+
 def _read_input(path: str) -> dict[str, Any]:
     try:
         if path == "-":
@@ -481,6 +600,7 @@ class Store:
         self.profile_path = self.root / "profile.json"
         self.answers_path = self.root / "answers.json"
         self.jobs_path = self.root / "jobs.json"
+        self.resumes_path = self.root / "resumes.json"
         self.history_path = self.root / "applications.jsonl"
         self.sessions_path = self.root / "sessions"
         self.store_lock_path = self.root / ".store.lock"
@@ -498,6 +618,7 @@ class Store:
             "profile": str(self.profile_path),
             "answers": str(self.answers_path),
             "jobs": str(self.jobs_path),
+            "resumes": str(self.resumes_path),
             "history": str(self.history_path),
             "sessions": str(self.sessions_path),
             "autoSubmitPolicy": str(self.auto_submit_policy_path),
@@ -513,6 +634,8 @@ class Store:
             self._load_answers_document()
         if self.jobs_path.exists():
             self._load_jobs_document()
+        if self.resumes_path.exists():
+            self._load_resumes_document()
         if self.history_path.exists():
             self.read_history()
 
@@ -525,6 +648,8 @@ class Store:
             metadata: dict[str, Any] = {
                 "createdAt": utc_now(),
                 "updatedAt": utc_now(),
+                "revision": 1,
+                "factProvenance": {},
             }
             if self.legacy_profile.exists():
                 profile = read_json_object(self.legacy_profile, "legacy profile")
@@ -562,6 +687,17 @@ class Store:
                 },
             )
 
+        if not self.resumes_path.exists():
+            now = utc_now()
+            atomic_write_json(
+                self.resumes_path,
+                {
+                    "schemaVersion": SCHEMA_VERSION,
+                    "resumes": {},
+                    "metadata": {"createdAt": now, "updatedAt": now},
+                },
+            )
+
         if not self.history_path.exists():
             descriptor = os.open(
                 self.history_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600
@@ -575,7 +711,23 @@ class Store:
         document = read_json_object(self.profile_path, "profile")
         validate_version(document, "profile")
         _require_object(document.get("profile"), "profile.profile")
-        _require_object(document.get("metadata"), "profile.metadata")
+        metadata = _require_object(document.get("metadata"), "profile.metadata")
+        revision = metadata.get("revision", 1)
+        if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
+            raise StoreError("profile revision must be a positive integer")
+        provenance = _require_object(
+            metadata.get("factProvenance", {}), "profile fact provenance"
+        )
+        for path, value in provenance.items():
+            if not isinstance(path, str) or not path.startswith("/"):
+                raise StoreError("profile fact provenance path is invalid")
+            record = _require_object(value, "profile fact provenance record")
+            if set(record) != {"source", "updatedAt"}:
+                raise StoreError("profile fact provenance record is invalid")
+            if record.get("source") not in FACT_SOURCES:
+                raise StoreError("profile fact provenance source is unsupported")
+            if not isinstance(record.get("updatedAt"), str) or not record["updatedAt"]:
+                raise StoreError("profile fact provenance timestamp is invalid")
         return document
 
     def _load_answers_document(self) -> dict[str, Any]:
@@ -600,17 +752,94 @@ class Store:
             _validate_job_record(key, record)
         return document
 
+    def _load_resumes_document(self) -> dict[str, Any]:
+        document = read_json_object(self.resumes_path, "resumes")
+        validate_version(document, "resumes")
+        resumes = _require_object(document.get("resumes"), "resumes.resumes")
+        _require_object(document.get("metadata"), "resumes.metadata")
+        active_defaults = 0
+        for key, record in resumes.items():
+            if not isinstance(key, str) or not key:
+                raise StoreError("resume index keys must be non-empty strings")
+            item = _validate_resume_record(key, record)
+            if item["default"] and item.get("deletedAt") is None:
+                active_defaults += 1
+        if active_defaults > 1:
+            raise StoreError("resume store has more than one active default")
+        return document
+
     def get_profile(self) -> dict[str, Any]:
         self.initialize()
         return self._load_profile_document()["profile"]
 
-    def replace_profile(self, profile: dict[str, Any]) -> dict[str, Any]:
+    def inspect_profile(self) -> dict[str, Any]:
         self.initialize()
         document = self._load_profile_document()
-        document["profile"] = _require_object(profile, "profile")
-        document["metadata"]["updatedAt"] = utc_now()
-        atomic_write_json(self.profile_path, document)
+        metadata = document["metadata"]
+        return {
+            "profile": document["profile"],
+            "revision": metadata.get("revision", 1),
+            "factProvenance": metadata.get("factProvenance", {}),
+            "updatedAt": metadata.get("updatedAt"),
+        }
+
+    def replace_profile(self, profile: dict[str, Any]) -> dict[str, Any]:
+        self.initialize()
+        incoming = _require_object(profile, "profile")
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_profile_document()
+            document["profile"] = incoming
+            document["metadata"]["updatedAt"] = utc_now()
+            document["metadata"]["revision"] = (
+                document["metadata"].get("revision", 1) + 1
+            )
+            document["metadata"]["factProvenance"] = {}
+            atomic_write_json(self.profile_path, document)
         return document["profile"]
+
+    def patch_profile(
+        self,
+        patch: dict[str, Any],
+        expected_revision: int,
+        source: str,
+    ) -> dict[str, Any]:
+        self.initialize()
+        incoming = _require_object(patch, "profile patch")
+        if not incoming:
+            raise StoreError("profile patch must not be empty")
+        if source not in FACT_SOURCES:
+            raise StoreError("profile fact source is unsupported")
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_profile_document()
+            metadata = document["metadata"]
+            revision = metadata.get("revision", 1)
+            if revision != expected_revision:
+                raise StoreError("profile revision conflict")
+            updated, changed = _merge_object_patch(document["profile"], incoming)
+            if not changed:
+                return self.inspect_profile()
+            now = utc_now()
+            provenance = dict(metadata.get("factProvenance", {}))
+            for path in changed:
+                prefix = f"{path}/"
+                for stale in [
+                    key
+                    for key in provenance
+                    if key.startswith(prefix) or path.startswith(f"{key}/")
+                ]:
+                    provenance.pop(stale, None)
+                provenance[path] = {"source": source, "updatedAt": now}
+            document["profile"] = updated
+            metadata["factProvenance"] = provenance
+            metadata["revision"] = revision + 1
+            metadata["updatedAt"] = now
+            atomic_write_json(self.profile_path, document)
+        return {
+            "profile": updated,
+            "revision": revision + 1,
+            "factProvenance": provenance,
+            "updatedAt": now,
+        }
 
     def get_preferences(self) -> dict[str, Any]:
         preferences = self.get_profile().get("preferences", {})
@@ -620,18 +849,22 @@ class Store:
         self, preferences: dict[str, Any], replace: bool = False
     ) -> dict[str, Any]:
         self.initialize()
-        document = self._load_profile_document()
-        profile = document["profile"]
         incoming = _require_object(preferences, "preferences")
-        if replace:
-            updated = dict(incoming)
-        else:
-            current = profile.get("preferences", {})
-            updated = dict(_require_object(current, "profile.preferences"))
-            updated.update(incoming)
-        profile["preferences"] = updated
-        document["metadata"]["updatedAt"] = utc_now()
-        atomic_write_json(self.profile_path, document)
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_profile_document()
+            profile = document["profile"]
+            if replace:
+                updated = dict(incoming)
+            else:
+                current = profile.get("preferences", {})
+                updated = dict(_require_object(current, "profile.preferences"))
+                updated.update(incoming)
+            profile["preferences"] = updated
+            document["metadata"]["updatedAt"] = utc_now()
+            document["metadata"]["revision"] = (
+                document["metadata"].get("revision", 1) + 1
+            )
+            atomic_write_json(self.profile_path, document)
         return updated
 
     def get_answer(self, key: str) -> dict[str, Any] | None:
@@ -741,6 +974,16 @@ class Store:
         atomic_write_json(self.answers_path, document)
         return record
 
+    def _require_active_resume(self, resume_id: str | None) -> None:
+        if resume_id is None:
+            return
+        if not isinstance(resume_id, str):
+            raise StoreError("job resume id must be a string")
+        _safe_session_id(resume_id)
+        record = self._load_resumes_document()["resumes"].get(resume_id)
+        if record is None or record.get("deletedAt") is not None:
+            raise StoreError("assigned resume does not exist")
+
     def create_job(self, incoming: dict[str, Any]) -> dict[str, Any]:
         self.initialize()
         allowed = {
@@ -790,6 +1033,7 @@ class Store:
         }
         _validate_job_record(job_id, record)
         with exclusive_file_lock(self.store_lock_path):
+            self._require_active_resume(incoming.get("resumeId"))
             document = self._load_jobs_document()
             if job_id in document["jobs"]:
                 raise StoreError("job id already exists")
@@ -839,6 +1083,57 @@ class Store:
             ),
         )
 
+    def _preflight_job_record(self, record: dict[str, Any]) -> dict[str, Any]:
+        errors: list[str] = []
+        warnings: list[str] = []
+        profile = self._load_profile_document()["profile"]
+        if not profile:
+            errors.append("profile_empty")
+        resumes = self._load_resumes_document()["resumes"]
+        resume_id = record.get("resumeId")
+        if resume_id is None:
+            default = next(
+                (
+                    item
+                    for item in resumes.values()
+                    if item.get("deletedAt") is None and item.get("default")
+                ),
+                None,
+            )
+            resume_id = default["id"] if default is not None else None
+        resume = resumes.get(resume_id) if resume_id is not None else None
+        if resume is None or resume.get("deletedAt") is not None:
+            errors.append("resume_missing")
+        else:
+            observation = observe_resume_file(resume["path"])
+            if not observation["exists"]:
+                errors.append("resume_file_missing")
+            elif (
+                observation["size"] != resume.get("observedSize")
+                or observation["modifiedAt"] != resume.get("observedModifiedAt")
+            ):
+                warnings.append("resume_file_changed")
+        if not record.get("role"):
+            warnings.append("role_missing")
+        if not record.get("company"):
+            warnings.append("company_missing")
+        return {
+            "id": record["id"],
+            "revision": record["revision"],
+            "ready": not errors,
+            "resumeId": resume_id,
+            "errors": errors,
+            "warnings": warnings,
+        }
+
+    def preflight_job(self, job_id: str) -> dict[str, Any]:
+        self.initialize()
+        _safe_session_id(job_id)
+        record = self._load_jobs_document()["jobs"].get(job_id)
+        if record is None or record.get("deletedAt") is not None:
+            raise StoreError("job does not exist")
+        return self._preflight_job_record(record)
+
     def update_job(
         self, job_id: str, patch: dict[str, Any], expected_revision: int
     ) -> dict[str, Any]:
@@ -871,6 +1166,8 @@ class Store:
                 raise StoreError("job does not exist")
             if current["revision"] != expected_revision:
                 raise StoreError("job revision conflict")
+            if "resumeId" in patch:
+                self._require_active_resume(patch["resumeId"])
             updated = {**current, **patch}
             if "url" in patch:
                 updated["url"] = patch["url"].strip()
@@ -920,8 +1217,8 @@ class Store:
                 raise StoreError("job status transition is unsupported")
             if status == "applied" and not user_confirmed:
                 raise StoreError("applied status requires explicit user confirmation")
-            if status == "ready" and not current.get("url"):
-                raise StoreError("ready job requires a URL")
+            if status == "ready" and not self._preflight_job_record(current)["ready"]:
+                raise StoreError("job is not ready")
             updated = dict(current)
             updated["status"] = status
             updated["closedOutcome"] = closed_outcome if status == "closed" else None
@@ -955,6 +1252,7 @@ class Store:
             if restore == (not is_trashed):
                 return current
             if restore:
+                self._require_active_resume(current.get("resumeId"))
                 duplicate = next(
                     (
                         item
@@ -993,6 +1291,257 @@ class Store:
             document["metadata"]["updatedAt"] = utc_now()
             atomic_write_json(self.jobs_path, document)
         return {"deleted": True, "id": job_id}
+
+    def create_resume(self, incoming: dict[str, Any]) -> dict[str, Any]:
+        self.initialize()
+        allowed = {"id", "label", "path", "tags", "default"}
+        if set(incoming) - allowed:
+            raise StoreError("resume input contains unsupported fields")
+        resume_id = incoming.get("id") or f"resume-{uuid.uuid4()}"
+        _safe_session_id(resume_id)
+        label = incoming.get("label")
+        path = normalize_resume_path(incoming.get("path", ""))
+        tags_input = incoming.get("tags", [])
+        if not isinstance(tags_input, list):
+            raise StoreError("resume tags must be a list")
+        tags = [
+            item.strip() if isinstance(item, str) else item for item in tags_input
+        ]
+        observation = observe_resume_file(path)
+        now = utc_now()
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_resumes_document()
+            if resume_id in document["resumes"]:
+                raise StoreError("resume id already exists")
+            if any(
+                item.get("deletedAt") is None and item.get("path") == path
+                for item in document["resumes"].values()
+            ):
+                raise StoreError("active resume path already exists")
+            active = [
+                item
+                for item in document["resumes"].values()
+                if item.get("deletedAt") is None
+            ]
+            make_default = incoming.get("default", not active)
+            if not isinstance(make_default, bool):
+                raise StoreError("resume default must be a boolean")
+            if make_default:
+                for key, item in list(document["resumes"].items()):
+                    if item.get("deletedAt") is None and item.get("default"):
+                        changed = dict(item)
+                        changed["default"] = False
+                        changed["revision"] += 1
+                        changed["updatedAt"] = now
+                        document["resumes"][key] = changed
+            record = {
+                "id": resume_id,
+                "label": label.strip() if isinstance(label, str) else label,
+                "path": path,
+                "tags": tags,
+                "default": make_default,
+                "observedSize": observation["size"],
+                "observedModifiedAt": observation["modifiedAt"],
+                "revision": 1,
+                "createdAt": now,
+                "updatedAt": now,
+                "deletedAt": None,
+            }
+            _validate_resume_record(resume_id, record)
+            document["resumes"][resume_id] = record
+            document["metadata"]["updatedAt"] = now
+            atomic_write_json(self.resumes_path, document)
+        return record
+
+    def get_resume(
+        self, resume_id: str, include_trashed: bool = False
+    ) -> dict[str, Any] | None:
+        self.initialize()
+        _safe_session_id(resume_id)
+        record = self._load_resumes_document()["resumes"].get(resume_id)
+        if record is None or (record.get("deletedAt") is not None and not include_trashed):
+            return None
+        return _require_object(record, "resume record")
+
+    def list_resumes(self, include_trashed: bool = False) -> list[dict[str, Any]]:
+        self.initialize()
+        records = [
+            record
+            for record in self._load_resumes_document()["resumes"].values()
+            if include_trashed or record.get("deletedAt") is None
+        ]
+        return sorted(
+            records,
+            key=lambda item: (
+                not item.get("default", False),
+                item.get("label", "").casefold(),
+                item["id"],
+            ),
+        )
+
+    def update_resume(
+        self, resume_id: str, patch: dict[str, Any], expected_revision: int
+    ) -> dict[str, Any]:
+        self.initialize()
+        _safe_session_id(resume_id)
+        allowed = {"label", "path", "tags"}
+        if not patch or set(patch) - allowed:
+            raise StoreError("resume patch contains unsupported fields")
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_resumes_document()
+            current = document["resumes"].get(resume_id)
+            if current is None or current.get("deletedAt") is not None:
+                raise StoreError("resume does not exist")
+            if current["revision"] != expected_revision:
+                raise StoreError("resume revision conflict")
+            updated = {**current, **patch}
+            if "label" in patch and isinstance(patch["label"], str):
+                updated["label"] = patch["label"].strip()
+            if "tags" in patch:
+                if not isinstance(patch["tags"], list):
+                    raise StoreError("resume tags must be a list")
+                updated["tags"] = [
+                    item.strip() if isinstance(item, str) else item
+                    for item in patch["tags"]
+                ]
+            if "path" in patch:
+                path = normalize_resume_path(patch["path"])
+                if any(
+                    key != resume_id
+                    and item.get("deletedAt") is None
+                    and item.get("path") == path
+                    for key, item in document["resumes"].items()
+                ):
+                    raise StoreError("active resume path already exists")
+                observation = observe_resume_file(path)
+                updated["path"] = path
+                updated["observedSize"] = observation["size"]
+                updated["observedModifiedAt"] = observation["modifiedAt"]
+            updated["revision"] = current["revision"] + 1
+            updated["updatedAt"] = utc_now()
+            _validate_resume_record(resume_id, updated)
+            document["resumes"][resume_id] = updated
+            document["metadata"]["updatedAt"] = updated["updatedAt"]
+            atomic_write_json(self.resumes_path, document)
+        return updated
+
+    def set_default_resume(
+        self, resume_id: str, expected_revision: int
+    ) -> dict[str, Any]:
+        self.initialize()
+        _safe_session_id(resume_id)
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_resumes_document()
+            target = document["resumes"].get(resume_id)
+            if target is None or target.get("deletedAt") is not None:
+                raise StoreError("resume does not exist")
+            if target["revision"] != expected_revision:
+                raise StoreError("resume revision conflict")
+            if target["default"]:
+                return target
+            now = utc_now()
+            for key, item in list(document["resumes"].items()):
+                if item.get("deletedAt") is not None:
+                    continue
+                if item.get("default") or key == resume_id:
+                    changed = dict(item)
+                    changed["default"] = key == resume_id
+                    changed["revision"] += 1
+                    changed["updatedAt"] = now
+                    document["resumes"][key] = changed
+            document["metadata"]["updatedAt"] = now
+            atomic_write_json(self.resumes_path, document)
+            return document["resumes"][resume_id]
+
+    def check_resume(self, resume_id: str) -> dict[str, Any]:
+        record = self.get_resume(resume_id, include_trashed=True)
+        if record is None:
+            raise StoreError("resume does not exist")
+        current = observe_resume_file(record["path"])
+        changed = (
+            current["size"] != record.get("observedSize")
+            or current["modifiedAt"] != record.get("observedModifiedAt")
+        )
+        return {
+            "id": resume_id,
+            "exists": current["exists"],
+            "changed": changed,
+            "observedSize": record.get("observedSize"),
+            "observedModifiedAt": record.get("observedModifiedAt"),
+            "currentSize": current["size"],
+            "currentModifiedAt": current["modifiedAt"],
+        }
+
+    def trash_resume(self, resume_id: str, expected_revision: int) -> dict[str, Any]:
+        return self._set_resume_deleted(resume_id, expected_revision, restore=False)
+
+    def restore_resume(self, resume_id: str, expected_revision: int) -> dict[str, Any]:
+        return self._set_resume_deleted(resume_id, expected_revision, restore=True)
+
+    def _set_resume_deleted(
+        self, resume_id: str, expected_revision: int, restore: bool
+    ) -> dict[str, Any]:
+        self.initialize()
+        _safe_session_id(resume_id)
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_resumes_document()
+            current = document["resumes"].get(resume_id)
+            if current is None:
+                raise StoreError("resume does not exist")
+            if current["revision"] != expected_revision:
+                raise StoreError("resume revision conflict")
+            is_trashed = current.get("deletedAt") is not None
+            if restore == (not is_trashed):
+                return current
+            if restore:
+                if any(
+                    key != resume_id
+                    and item.get("deletedAt") is None
+                    and item.get("path") == current["path"]
+                    for key, item in document["resumes"].items()
+                ):
+                    raise StoreError("active resume path already exists")
+            else:
+                jobs = self._load_jobs_document()["jobs"].values()
+                if any(
+                    item.get("deletedAt") is None
+                    and item.get("resumeId") == resume_id
+                    for item in jobs
+                ):
+                    raise StoreError("resume is assigned to an active job")
+            updated = dict(current)
+            updated["deletedAt"] = None if restore else utc_now()
+            if not restore:
+                updated["default"] = False
+            updated["revision"] = current["revision"] + 1
+            updated["updatedAt"] = utc_now()
+            _validate_resume_record(resume_id, updated)
+            document["resumes"][resume_id] = updated
+            document["metadata"]["updatedAt"] = updated["updatedAt"]
+            atomic_write_json(self.resumes_path, document)
+        return updated
+
+    def delete_resume(self, resume_id: str, expected_revision: int) -> dict[str, Any]:
+        self.initialize()
+        _safe_session_id(resume_id)
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_resumes_document()
+            current = document["resumes"].get(resume_id)
+            if current is None:
+                return {"deleted": False, "id": resume_id}
+            if current["revision"] != expected_revision:
+                raise StoreError("resume revision conflict")
+            if current.get("deletedAt") is None:
+                raise StoreError("resume must be trashed before permanent deletion")
+            if any(
+                item.get("resumeId") == resume_id
+                for item in self._load_jobs_document()["jobs"].values()
+            ):
+                raise StoreError("resume is still referenced by a job")
+            del document["resumes"][resume_id]
+            document["metadata"]["updatedAt"] = utc_now()
+            atomic_write_json(self.resumes_path, document)
+        return {"deleted": True, "id": resume_id}
 
     def read_history(self) -> list[dict[str, Any]]:
         if not self.history_path.exists():
@@ -1252,8 +1801,13 @@ def build_parser() -> argparse.ArgumentParser:
     commands.add_parser("init")
     commands.add_parser("paths")
     commands.add_parser("profile-get")
+    commands.add_parser("profile-inspect")
     profile_replace = commands.add_parser("profile-replace")
     profile_replace.add_argument("--input", required=True)
+    profile_patch = commands.add_parser("profile-patch")
+    profile_patch.add_argument("--input", required=True)
+    profile_patch.add_argument("--expected-revision", required=True, type=int)
+    profile_patch.add_argument("--source", required=True, choices=sorted(FACT_SOURCES))
     commands.add_parser("preferences-get")
     preferences_set = commands.add_parser("preferences-set")
     preferences_set.add_argument("--input", required=True)
@@ -1279,6 +1833,8 @@ def build_parser() -> argparse.ArgumentParser:
     job_list = commands.add_parser("job-list")
     job_list.add_argument("--status")
     job_list.add_argument("--include-trashed", action="store_true")
+    job_preflight = commands.add_parser("job-preflight")
+    job_preflight.add_argument("--id", required=True)
     job_update = commands.add_parser("job-update")
     job_update.add_argument("--id", required=True)
     job_update.add_argument("--input", required=True)
@@ -1298,6 +1854,32 @@ def build_parser() -> argparse.ArgumentParser:
     job_delete = commands.add_parser("job-delete")
     job_delete.add_argument("--id", required=True)
     job_delete.add_argument("--expected-revision", required=True, type=int)
+
+    resume_create = commands.add_parser("resume-create")
+    resume_create.add_argument("--input", required=True)
+    resume_get = commands.add_parser("resume-get")
+    resume_get.add_argument("--id", required=True)
+    resume_get.add_argument("--include-trashed", action="store_true")
+    resume_list = commands.add_parser("resume-list")
+    resume_list.add_argument("--include-trashed", action="store_true")
+    resume_update = commands.add_parser("resume-update")
+    resume_update.add_argument("--id", required=True)
+    resume_update.add_argument("--input", required=True)
+    resume_update.add_argument("--expected-revision", required=True, type=int)
+    resume_default = commands.add_parser("resume-set-default")
+    resume_default.add_argument("--id", required=True)
+    resume_default.add_argument("--expected-revision", required=True, type=int)
+    resume_check = commands.add_parser("resume-check")
+    resume_check.add_argument("--id", required=True)
+    resume_trash = commands.add_parser("resume-trash")
+    resume_trash.add_argument("--id", required=True)
+    resume_trash.add_argument("--expected-revision", required=True, type=int)
+    resume_restore = commands.add_parser("resume-restore")
+    resume_restore.add_argument("--id", required=True)
+    resume_restore.add_argument("--expected-revision", required=True, type=int)
+    resume_delete = commands.add_parser("resume-delete")
+    resume_delete.add_argument("--id", required=True)
+    resume_delete.add_argument("--expected-revision", required=True, type=int)
 
     history_append = commands.add_parser("history-append")
     history_append.add_argument("--input", required=True)
@@ -1335,8 +1917,14 @@ def run(args: argparse.Namespace) -> Any:
         return store.paths()
     if command == "profile-get":
         return store.get_profile()
+    if command == "profile-inspect":
+        return store.inspect_profile()
     if command == "profile-replace":
         return store.replace_profile(_read_input(args.input))
+    if command == "profile-patch":
+        return store.patch_profile(
+            _read_input(args.input), args.expected_revision, args.source
+        )
     if command == "preferences-get":
         return store.get_preferences()
     if command == "preferences-set":
@@ -1357,6 +1945,8 @@ def run(args: argparse.Namespace) -> Any:
         return store.get_job(args.id, include_trashed=args.include_trashed)
     if command == "job-list":
         return store.list_jobs(args.status, include_trashed=args.include_trashed)
+    if command == "job-preflight":
+        return store.preflight_job(args.id)
     if command == "job-update":
         return store.update_job(
             args.id, _read_input(args.input), args.expected_revision
@@ -1375,6 +1965,26 @@ def run(args: argparse.Namespace) -> Any:
         return store.restore_job(args.id, args.expected_revision)
     if command == "job-delete":
         return store.delete_job(args.id, args.expected_revision)
+    if command == "resume-create":
+        return store.create_resume(_read_input(args.input))
+    if command == "resume-get":
+        return store.get_resume(args.id, include_trashed=args.include_trashed)
+    if command == "resume-list":
+        return store.list_resumes(include_trashed=args.include_trashed)
+    if command == "resume-update":
+        return store.update_resume(
+            args.id, _read_input(args.input), args.expected_revision
+        )
+    if command == "resume-set-default":
+        return store.set_default_resume(args.id, args.expected_revision)
+    if command == "resume-check":
+        return store.check_resume(args.id)
+    if command == "resume-trash":
+        return store.trash_resume(args.id, args.expected_revision)
+    if command == "resume-restore":
+        return store.restore_resume(args.id, args.expected_revision)
+    if command == "resume-delete":
+        return store.delete_resume(args.id, args.expected_revision)
     if command == "history-append":
         return store.append_history(_read_input(args.input))
     if command == "history-list":

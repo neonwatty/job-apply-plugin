@@ -2004,10 +2004,12 @@ class CommittedScenarioTests(unittest.TestCase):
                 self.assertEqual(
                     set(store_artifacts),
                     {
+                        ".store.lock",
                         "answers.json",
                         "applications.jsonl",
                         "jobs.json",
                         "profile.json",
+                        "resumes.json",
                         f"sessions/{application_id}.json",
                     },
                 )

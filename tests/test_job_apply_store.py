@@ -60,6 +60,88 @@ class StoreTests(unittest.TestCase):
         )
         self.assertEqual(self.store.get_profile()["firstName"], "Ada")
 
+    def test_profile_patch_edits_nested_facts_with_revision_and_provenance(self):
+        self.store.initialize()
+        self.store.replace_profile(
+            {
+                "firstName": "Ada",
+                "location": {"city": "London", "country": "UK"},
+                "skills": ["Python"],
+                "portfolioUrl": "https://example.com",
+            }
+        )
+        before = self.store.inspect_profile()
+        updated = self.store.patch_profile(
+            {
+                "location": {"city": "Phoenix"},
+                "skills": ["Python", "Rust"],
+                "portfolioUrl": None,
+            },
+            expected_revision=before["revision"],
+            source="user",
+        )
+        self.assertEqual(updated["profile"]["location"], {"city": "Phoenix", "country": "UK"})
+        self.assertEqual(updated["profile"]["skills"], ["Python", "Rust"])
+        self.assertNotIn("portfolioUrl", updated["profile"])
+        self.assertEqual(updated["revision"], before["revision"] + 1)
+        self.assertEqual(
+            set(updated["factProvenance"]),
+            {"/location/city", "/skills", "/portfolioUrl"},
+        )
+        self.assertTrue(
+            all(
+                item["source"] == "user"
+                for item in updated["factProvenance"].values()
+            )
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "revision conflict"):
+            self.store.patch_profile(
+                {"firstName": "Grace"},
+                expected_revision=before["revision"],
+                source="user",
+            )
+
+    def test_profile_patch_replaces_parent_provenance_with_specific_changes(self):
+        self.store.initialize()
+        first = self.store.patch_profile(
+            {"location": {"city": "Phoenix", "country": "US"}},
+            expected_revision=1,
+            source="resume",
+        )
+        second = self.store.patch_profile(
+            {"location": {"city": "Tempe"}},
+            expected_revision=first["revision"],
+            source="user",
+        )
+        self.assertEqual(second["factProvenance"]["/location/city"]["source"], "user")
+        self.assertEqual(
+            second["factProvenance"]["/location/country"]["source"], "resume"
+        )
+
+    def test_existing_v1_profile_without_revision_upgrades_on_first_patch(self):
+        self.root.mkdir(parents=True)
+        self.store.profile_path.write_text(
+            json.dumps(
+                {
+                    "schemaVersion": 1,
+                    "profile": {"firstName": "Ada"},
+                    "metadata": {
+                        "createdAt": "2026-01-01T00:00:00Z",
+                        "updatedAt": "2026-01-01T00:00:00Z",
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        self.store.initialize()
+        inspected = self.store.inspect_profile()
+        self.assertEqual(inspected["revision"], 1)
+        updated = self.store.patch_profile(
+            {"firstName": "Grace"}, expected_revision=1, source="user"
+        )
+        self.assertEqual(updated["revision"], 2)
+        self.assertEqual(updated["profile"]["firstName"], "Grace")
+
     def test_atomic_write_failure_keeps_previous_document_and_cleans_temp(self):
         self.store.initialize()
         before = self.store.profile_path.read_text(encoding="utf-8")
@@ -78,6 +160,7 @@ class StoreTests(unittest.TestCase):
             self.store.profile_path,
             self.store.answers_path,
             self.store.jobs_path,
+            self.store.resumes_path,
             self.store.history_path,
         ):
             self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
@@ -222,9 +305,19 @@ class StoreTests(unittest.TestCase):
             )
 
     def test_job_transitions_require_supported_flow_and_user_submission(self):
+        self.store.replace_profile({"firstName": "Ada"})
+        resume_path = self.home / "resume.pdf"
+        resume_path.write_bytes(b"resume")
+        self.store.create_resume(
+            {"id": "main-resume", "label": "Main", "path": str(resume_path)}
+        )
         job = self.store.create_job(
             {"id": "acme-role", "url": "https://example.com/jobs/1"}
         )
+        preflight = self.store.preflight_job(job["id"])
+        self.assertTrue(preflight["ready"])
+        self.assertEqual(preflight["resumeId"], "main-resume")
+        self.assertEqual(set(preflight["warnings"]), {"role_missing", "company_missing"})
         job = self.store.transition_job(
             job["id"], "ready", expected_revision=job["revision"]
         )
@@ -255,6 +348,20 @@ class StoreTests(unittest.TestCase):
             closed_outcome="rejected",
         )
         self.assertEqual((job["status"], job["closedOutcome"]), ("closed", "rejected"))
+
+    def test_ready_transition_fails_closed_without_profile_or_resume(self):
+        job = self.store.create_job(
+            {"id": "not-ready", "url": "https://example.com/jobs/not-ready"}
+        )
+        preflight = self.store.preflight_job(job["id"])
+        self.assertFalse(preflight["ready"])
+        self.assertEqual(
+            set(preflight["errors"]), {"profile_empty", "resume_missing"}
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "not ready"):
+            self.store.transition_job(
+                job["id"], "ready", expected_revision=job["revision"]
+            )
 
     def test_job_trash_restore_and_permanent_delete_are_guarded(self):
         job = self.store.create_job(
@@ -302,6 +409,144 @@ class StoreTests(unittest.TestCase):
         self.store.jobs_path.write_text(json.dumps(document), encoding="utf-8")
         with self.assertRaisesRegex(STORE_MODULE.StoreError, "normalized URL"):
             self.store.list_jobs()
+
+    def test_resume_registry_tracks_files_defaults_and_revisions(self):
+        first_path = self.home / "resume-a.pdf"
+        first_path.write_bytes(b"resume-a")
+        first = self.store.create_resume(
+            {
+                "id": "resume-a",
+                "label": "Engineering",
+                "path": str(first_path),
+                "tags": ["engineering"],
+            }
+        )
+        self.assertTrue(first["default"])
+        self.assertEqual(first["observedSize"], len(b"resume-a"))
+        self.assertFalse(self.store.check_resume(first["id"])["changed"])
+
+        missing_path = self.home / "resume-b.pdf"
+        second = self.store.create_resume(
+            {
+                "id": "resume-b",
+                "label": "Leadership",
+                "path": str(missing_path),
+            }
+        )
+        self.assertFalse(second["default"])
+        self.assertFalse(self.store.check_resume(second["id"])["exists"])
+        second = self.store.set_default_resume(
+            second["id"], expected_revision=second["revision"]
+        )
+        self.assertTrue(second["default"])
+        refreshed_first = self.store.get_resume(first["id"])
+        self.assertFalse(refreshed_first["default"])
+        self.assertEqual(refreshed_first["revision"], first["revision"] + 1)
+
+        first_path.write_bytes(b"changed-resume-a")
+        self.assertTrue(self.store.check_resume(first["id"])["changed"])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "revision conflict"):
+            self.store.update_resume(
+                first["id"], {"label": "Old"}, expected_revision=first["revision"]
+            )
+        updated = self.store.update_resume(
+            first["id"],
+            {"label": "Updated Engineering", "tags": ["staff"]},
+            expected_revision=refreshed_first["revision"],
+        )
+        self.assertEqual(updated["label"], "Updated Engineering")
+        self.assertEqual(self.store.list_resumes()[0]["id"], second["id"])
+
+    def test_resume_assignment_prevents_trash_until_job_is_reassigned(self):
+        resume_path = self.home / "resume.pdf"
+        resume_path.write_bytes(b"resume")
+        resume = self.store.create_resume(
+            {"id": "resume-main", "label": "Main", "path": str(resume_path)}
+        )
+        job = self.store.create_job(
+            {
+                "id": "assigned-job",
+                "url": "https://example.com/jobs/assigned",
+                "resumeId": resume["id"],
+            }
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "assigned"):
+            self.store.trash_resume(
+                resume["id"], expected_revision=resume["revision"]
+            )
+        job = self.store.update_job(
+            job["id"], {"resumeId": None}, expected_revision=job["revision"]
+        )
+        self.assertIsNone(job["resumeId"])
+        trashed = self.store.trash_resume(
+            resume["id"], expected_revision=resume["revision"]
+        )
+        self.assertIsNotNone(trashed["deletedAt"])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "does not exist"):
+            self.store.update_job(
+                job["id"],
+                {"resumeId": resume["id"]},
+                expected_revision=job["revision"],
+            )
+        restored = self.store.restore_resume(
+            resume["id"], expected_revision=trashed["revision"]
+        )
+        trashed_again = self.store.trash_resume(
+            resume["id"], expected_revision=restored["revision"]
+        )
+        self.assertEqual(
+            self.store.delete_resume(
+                resume["id"], expected_revision=trashed_again["revision"]
+            ),
+            {"deleted": True, "id": resume["id"]},
+        )
+
+    def test_tampered_resume_store_with_multiple_defaults_fails_closed(self):
+        first_path = self.home / "first.pdf"
+        second_path = self.home / "second.pdf"
+        first_path.write_bytes(b"first")
+        second_path.write_bytes(b"second")
+        first = self.store.create_resume(
+            {"id": "first", "label": "First", "path": str(first_path)}
+        )
+        second = self.store.create_resume(
+            {"id": "second", "label": "Second", "path": str(second_path)}
+        )
+        document = json.loads(self.store.resumes_path.read_text(encoding="utf-8"))
+        document["resumes"][first["id"]]["default"] = True
+        document["resumes"][second["id"]]["default"] = True
+        self.store.resumes_path.write_text(json.dumps(document), encoding="utf-8")
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "more than one"):
+            self.store.list_resumes()
+
+    def test_resume_permanent_delete_rejects_trashed_job_reference(self):
+        resume_path = self.home / "resume.pdf"
+        resume_path.write_bytes(b"resume")
+        resume = self.store.create_resume(
+            {"id": "resume-main", "label": "Main", "path": str(resume_path)}
+        )
+        job = self.store.create_job(
+            {
+                "id": "job-main",
+                "url": "https://example.com/jobs/main",
+                "resumeId": resume["id"],
+            }
+        )
+        job = self.store.trash_job(job["id"], expected_revision=job["revision"])
+        resume = self.store.trash_resume(
+            resume["id"], expected_revision=resume["revision"]
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "referenced"):
+            self.store.delete_resume(
+                resume["id"], expected_revision=resume["revision"]
+            )
+        self.store.delete_job(job["id"], expected_revision=job["revision"])
+        self.assertEqual(
+            self.store.delete_resume(
+                resume["id"], expected_revision=resume["revision"]
+            ),
+            {"deleted": True, "id": resume["id"]},
+        )
 
     def test_history_is_minimal_parseable_and_rejects_answer_values(self):
         event = self.store.append_history(
@@ -542,11 +787,81 @@ class StoreTests(unittest.TestCase):
         )
         self.assertEqual(json.loads(listed.stdout), [record])
 
+    def test_profile_and_resume_cli_commands_use_shared_revisions(self):
+        subprocess.run(
+            [sys.executable, str(SCRIPT), "--root", str(self.root), "init"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        patch_input = self.home / "profile-patch.json"
+        patch_input.write_text(
+            json.dumps({"firstName": "Ada", "skills": ["Python"]}),
+            encoding="utf-8",
+        )
+        patched = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--root",
+                str(self.root),
+                "profile-patch",
+                "--input",
+                str(patch_input),
+                "--expected-revision",
+                "1",
+                "--source",
+                "user",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(json.loads(patched.stdout)["revision"], 2)
+
+        resume_file = self.home / "resume.pdf"
+        resume_file.write_bytes(b"resume")
+        resume_input = self.home / "resume.json"
+        resume_input.write_text(
+            json.dumps(
+                {"id": "main-resume", "label": "Main", "path": str(resume_file)}
+            ),
+            encoding="utf-8",
+        )
+        created = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--root",
+                str(self.root),
+                "resume-create",
+                "--input",
+                str(resume_input),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        listed = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--root",
+                str(self.root),
+                "resume-list",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(json.loads(listed.stdout), [json.loads(created.stdout)])
+
     def test_paths_exposes_separate_inert_policy_root_without_changing_v1_store(self):
         self.store.initialize()
         paths = self.store.paths()
         self.assertEqual(paths["schemaVersion"], 1)
         self.assertEqual(paths["jobs"], str(self.root / "jobs.json"))
+        self.assertEqual(paths["resumes"], str(self.root / "resumes.json"))
         self.assertEqual(paths["autoSubmitPolicy"], str(self.root / "auto-submit"))
         self.assertFalse((self.root / "auto-submit").exists())
         self.assertEqual(self.store.get_profile(), {})

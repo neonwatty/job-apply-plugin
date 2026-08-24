@@ -164,6 +164,7 @@ Job Apply stores data as **plaintext local files** under `~/.job-apply/`:
   profile.json
   answers.json
   jobs.json
+  resumes.json
   applications.jsonl
   sessions/
     <application-id>.json
@@ -174,6 +175,7 @@ Job Apply stores data as **plaintext local files** under `~/.job-apply/`:
 | `profile.json` | Resume facts and job-search preferences |
 | `answers.json` | Reusable answers with confirmation, source, scope, and sensitivity state |
 | `jobs.json` | Canonical job records, application status, revisions, and recoverable trash state |
+| `resumes.json` | Versioned local resume references, labels, defaults, and file observations |
 | `applications.jsonl` | Minimal append-only application lifecycle events |
 | `sessions/*.json` | Resumable workflow metadata and answer-key references |
 
@@ -191,7 +193,7 @@ Protect the directory like a resume. Do not attach its files to issues or share 
 
 ```bash
 chmod 700 ~/.job-apply
-chmod 600 ~/.job-apply/profile.json ~/.job-apply/answers.json ~/.job-apply/jobs.json ~/.job-apply/applications.jsonl
+chmod 600 ~/.job-apply/profile.json ~/.job-apply/answers.json ~/.job-apply/jobs.json ~/.job-apply/resumes.json ~/.job-apply/applications.jsonl
 ```
 
 On first use, an existing `~/.claude-job-profile.json` is copied into the new versioned profile without modifying or deleting the legacy file. Once `~/.job-apply/profile.json` exists it is authoritative; later legacy-file changes are not re-imported. Verify the new profile before deciding whether to archive or remove the old file.

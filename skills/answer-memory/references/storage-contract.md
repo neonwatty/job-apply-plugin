@@ -11,6 +11,7 @@ python3 "<plugin-root>/scripts/job-apply-store.py" --help
 - `~/.job-apply/profile.json`: versioned canonical profile and preferences.
 - `~/.job-apply/answers.json`: versioned answer records with state, source, scope, aliases, sensitivity, and confirmation metadata.
 - `~/.job-apply/jobs.json`: versioned canonical job records with optimistic revisions, focused application status, and recoverable trash state.
+- `~/.job-apply/resumes.json`: versioned local resume references with labels, defaults, file observations, revisions, and recoverable trash state.
 - `~/.job-apply/applications.jsonl`: append-only minimal application events.
 - `~/.job-apply/sessions/<application-id>.json`: resumable workflow metadata with answer-key references.
 - `~/.job-apply/auto-submit/campaign.json`: the current closed version-1 campaign record.
@@ -36,6 +37,32 @@ Normal deletion moves a job to recoverable trash. Permanent deletion is accepted
 only for an already-trashed record and requires its current revision. Active job
 URLs are normalized and unique; URL fragments and default ports do not create a
 second job identity.
+
+Readiness preflight returns stable error and warning codes without echoing profile
+or resume values. `ready` requires a non-empty valid profile and a current local
+file for the assigned or default active resume. Missing role or company and a
+resume file that changed since registration remain visible warnings.
+
+## Profile fact updates
+
+`profile-get` remains backward compatible and returns the raw profile.
+`profile-inspect` additionally returns the current positive revision and a
+JSON-pointer provenance map. `profile-patch` applies a nested object merge patch
+under the private store lock and records each changed path as `user`, `resume`,
+`agent`, or `migration`. Null removes the selected field. Arrays are replaced as
+one fact. A stale expected revision fails without modifying the profile.
+
+## Resume records
+
+Resume records contain only a stable identifier, label, normalized absolute local
+path, tags, default selection, file size and modification observation, revision,
+timestamps, and trash state. They do not contain resume bytes. A current check can
+report that the referenced file is missing or changed without updating the saved
+observation.
+
+Only one active resume may be the default. Trashing an actively assigned resume
+fails until every active job reference is reassigned or cleared. Permanent
+deletion requires an already-trashed record and its current revision.
 
 ## Migration
 
