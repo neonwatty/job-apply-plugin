@@ -62,6 +62,7 @@ The default layout is:
 ~/.job-apply/
   profile.json
   answers.json
+  jobs.json
   applications.jsonl
   sessions/
     <application-id>.json
@@ -169,6 +170,34 @@ Use `reviewed` when Job Apply reaches final review. Do not record `completed` un
 ```bash
 python3 "<plugin-root>/scripts/job-apply-store.py" history-list
 ```
+
+## Canonical jobs
+
+Use the job commands for durable records shared by people, the companion UX,
+and agent workflows. New jobs begin in `saved`. Updates and lifecycle changes
+require the current positive `revision`, so stale clients cannot silently replace
+newer edits.
+
+```bash
+python3 "<plugin-root>/scripts/job-apply-store.py" job-create --input <job.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" job-list [--status <status>]
+python3 "<plugin-root>/scripts/job-apply-store.py" job-get --id <job-id>
+python3 "<plugin-root>/scripts/job-apply-store.py" job-update \
+  --id <job-id> --expected-revision <revision> --input <patch.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" job-transition \
+  --id <job-id> --status <status> --expected-revision <revision>
+python3 "<plugin-root>/scripts/job-apply-store.py" job-trash \
+  --id <job-id> --expected-revision <revision>
+python3 "<plugin-root>/scripts/job-apply-store.py" job-restore \
+  --id <job-id> --expected-revision <revision>
+python3 "<plugin-root>/scripts/job-apply-store.py" job-delete \
+  --id <job-id> --expected-revision <revision>
+```
+
+Only explicit user confirmation may transition a reviewed job to `applied`; pass
+`--user-confirmed` only for that direct confirmation. A job must be in recoverable
+trash before permanent deletion. Use `--include-trashed` only when the user wants
+to inspect or restore trashed records.
 
 ## Resumable sessions
 

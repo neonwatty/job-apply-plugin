@@ -2006,6 +2006,7 @@ class CommittedScenarioTests(unittest.TestCase):
                     {
                         "answers.json",
                         "applications.jsonl",
+                        "jobs.json",
                         "profile.json",
                         f"sessions/{application_id}.json",
                     },

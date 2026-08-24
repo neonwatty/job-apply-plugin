@@ -16,9 +16,11 @@ import sys
 import tempfile
 import unicodedata
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 
 SCHEMA_VERSION = 1
@@ -34,6 +36,31 @@ HISTORY_EVENTS = {
     "failed",
 }
 SESSION_STATUSES = {"active", "review", "completed", "abandoned"}
+JOB_STATUSES = {
+    "saved",
+    "needs_info",
+    "ready",
+    "in_progress",
+    "awaiting_review",
+    "applied",
+    "closed",
+}
+JOB_CLOSED_OUTCOMES = {
+    "rejected",
+    "withdrawn",
+    "expired",
+    "duplicate",
+    "not_interested",
+}
+JOB_TRANSITIONS = {
+    "saved": {"needs_info", "ready", "closed"},
+    "needs_info": {"saved", "ready", "in_progress", "closed"},
+    "ready": {"saved", "needs_info", "in_progress", "closed"},
+    "in_progress": {"needs_info", "awaiting_review", "closed"},
+    "awaiting_review": {"in_progress", "applied", "closed"},
+    "applied": {"closed"},
+    "closed": {"saved"},
+}
 REPLAY_TRANSITIONS = {"started", "reviewed"}
 REPLAY_ATS = {"ashby", "greenhouse", "lever", "linkedin-easy-apply"}
 SESSION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
@@ -63,6 +90,40 @@ def _set_private_mode(path: Path, mode: int) -> None:
 def _ensure_private_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True, mode=0o700)
     _set_private_mode(path, 0o700)
+
+
+@contextmanager
+def exclusive_file_lock(path: Path):
+    """Serialize read-modify-write operations across local clients."""
+
+    _ensure_private_dir(path.parent)
+    descriptor = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+    _set_private_mode(path, 0o600)
+    try:
+        if os.name == "nt":
+            import msvcrt
+
+            if os.fstat(descriptor).st_size == 0:
+                os.write(descriptor, b"0")
+                os.fsync(descriptor)
+            os.lseek(descriptor, 0, os.SEEK_SET)
+            msvcrt.locking(descriptor, msvcrt.LK_LOCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(descriptor, fcntl.LOCK_EX)
+        yield
+    finally:
+        if os.name == "nt":
+            import msvcrt
+
+            os.lseek(descriptor, 0, os.SEEK_SET)
+            msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(descriptor, fcntl.LOCK_UN)
+        os.close(descriptor)
 
 
 def _fsync_directory(path: Path) -> None:
@@ -146,6 +207,27 @@ def answer_key(question: str, scope: dict[str, Any] | None = None) -> str:
         f"v1\0{normalized}\0{scope_json}".encode("utf-8")
     ).hexdigest()
     return f"question.{digest}"
+
+
+def normalize_job_url(url: str) -> str:
+    if not isinstance(url, str) or not url.strip():
+        raise StoreError("job URL must be a non-empty string")
+    try:
+        parsed = urlsplit(url.strip())
+        port = parsed.port
+    except ValueError as error:
+        raise StoreError("job URL is invalid") from error
+    if parsed.scheme.lower() not in {"http", "https"} or not parsed.hostname:
+        raise StoreError("job URL must use HTTP or HTTPS")
+    if parsed.username is not None or parsed.password is not None:
+        raise StoreError("job URL must not contain credentials")
+    hostname = parsed.hostname.lower()
+    if ":" in hostname and not hostname.startswith("["):
+        hostname = f"[{hostname}]"
+    default_port = (parsed.scheme.lower(), port) in {("http", 80), ("https", 443)}
+    netloc = hostname if port is None or default_port else f"{hostname}:{port}"
+    path = parsed.path or "/"
+    return urlunsplit((parsed.scheme.lower(), netloc, path, parsed.query, ""))
 
 
 def _safe_session_id(application_id: str) -> str:
@@ -297,6 +379,90 @@ def _validate_session_document(session: dict[str, Any]) -> None:
     )
 
 
+def _validate_job_record(key: str, value: Any) -> dict[str, Any]:
+    record = _require_object(value, "job record")
+    allowed = {
+        "id",
+        "url",
+        "normalizedUrl",
+        "source",
+        "sourceId",
+        "role",
+        "company",
+        "location",
+        "workplaceType",
+        "employmentType",
+        "compensation",
+        "description",
+        "ats",
+        "priority",
+        "status",
+        "closedOutcome",
+        "resumeId",
+        "notes",
+        "provenance",
+        "lastCheckedAt",
+        "revision",
+        "createdAt",
+        "updatedAt",
+        "deletedAt",
+    }
+    if set(record) - allowed:
+        raise StoreError("job record contains unsupported fields")
+    if record.get("id") != key:
+        raise StoreError("job record id does not match its index")
+    _safe_session_id(key)
+    normalized = normalize_job_url(record.get("url", ""))
+    if record.get("normalizedUrl") != normalized:
+        raise StoreError("job record normalized URL does not match")
+    if record.get("status") not in JOB_STATUSES:
+        raise StoreError("job status is unsupported")
+    closed_outcome = record.get("closedOutcome")
+    if record["status"] == "closed":
+        if closed_outcome not in JOB_CLOSED_OUTCOMES:
+            raise StoreError("closed job requires a supported outcome")
+    elif closed_outcome is not None:
+        raise StoreError("open job cannot have a closed outcome")
+    priority = record.get("priority", 0)
+    if not isinstance(priority, int) or isinstance(priority, bool) or not 0 <= priority <= 5:
+        raise StoreError("job priority must be an integer from 0 to 5")
+    revision = record.get("revision")
+    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
+        raise StoreError("job revision must be a positive integer")
+    provenance = record.get("provenance", {})
+    _require_object(provenance, "job provenance")
+    _validate_optional_strings(
+        record,
+        {
+            "url",
+            "normalizedUrl",
+            "source",
+            "sourceId",
+            "role",
+            "company",
+            "location",
+            "workplaceType",
+            "employmentType",
+            "compensation",
+            "description",
+            "ats",
+            "closedOutcome",
+            "resumeId",
+            "notes",
+            "lastCheckedAt",
+            "createdAt",
+            "updatedAt",
+            "deletedAt",
+        },
+        "job record",
+    )
+    if not isinstance(record.get("createdAt"), str) or not record["createdAt"]:
+        raise StoreError("job record has no creation timestamp")
+    if not isinstance(record.get("updatedAt"), str) or not record["updatedAt"]:
+        raise StoreError("job record has no update timestamp")
+    return record
+
+
 def _read_input(path: str) -> dict[str, Any]:
     try:
         if path == "-":
@@ -314,8 +480,10 @@ class Store:
         self.root = root.expanduser()
         self.profile_path = self.root / "profile.json"
         self.answers_path = self.root / "answers.json"
+        self.jobs_path = self.root / "jobs.json"
         self.history_path = self.root / "applications.jsonl"
         self.sessions_path = self.root / "sessions"
+        self.store_lock_path = self.root / ".store.lock"
         self.auto_submit_policy_path = self.root / "auto-submit"
         self.legacy_profile = (
             legacy_profile.expanduser()
@@ -329,6 +497,7 @@ class Store:
             "root": str(self.root),
             "profile": str(self.profile_path),
             "answers": str(self.answers_path),
+            "jobs": str(self.jobs_path),
             "history": str(self.history_path),
             "sessions": str(self.sessions_path),
             "autoSubmitPolicy": str(self.auto_submit_policy_path),
@@ -342,6 +511,8 @@ class Store:
             self._load_profile_document()
         if self.answers_path.exists():
             self._load_answers_document()
+        if self.jobs_path.exists():
+            self._load_jobs_document()
         if self.history_path.exists():
             self.read_history()
 
@@ -380,6 +551,17 @@ class Store:
                 },
             )
 
+        if not self.jobs_path.exists():
+            now = utc_now()
+            atomic_write_json(
+                self.jobs_path,
+                {
+                    "schemaVersion": SCHEMA_VERSION,
+                    "jobs": {},
+                    "metadata": {"createdAt": now, "updatedAt": now},
+                },
+            )
+
         if not self.history_path.exists():
             descriptor = os.open(
                 self.history_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600
@@ -405,6 +587,17 @@ class Store:
             if not isinstance(key, str) or not key:
                 raise StoreError("answer index keys must be non-empty strings")
             _validate_answer_record(key, record)
+        return document
+
+    def _load_jobs_document(self) -> dict[str, Any]:
+        document = read_json_object(self.jobs_path, "jobs")
+        validate_version(document, "jobs")
+        jobs = _require_object(document.get("jobs"), "jobs.jobs")
+        _require_object(document.get("metadata"), "jobs.metadata")
+        for key, record in jobs.items():
+            if not isinstance(key, str) or not key:
+                raise StoreError("job index keys must be non-empty strings")
+            _validate_job_record(key, record)
         return document
 
     def get_profile(self) -> dict[str, Any]:
@@ -547,6 +740,259 @@ class Store:
         document["metadata"]["updatedAt"] = utc_now()
         atomic_write_json(self.answers_path, document)
         return record
+
+    def create_job(self, incoming: dict[str, Any]) -> dict[str, Any]:
+        self.initialize()
+        allowed = {
+            "id",
+            "url",
+            "source",
+            "sourceId",
+            "role",
+            "company",
+            "location",
+            "workplaceType",
+            "employmentType",
+            "compensation",
+            "description",
+            "ats",
+            "priority",
+            "status",
+            "closedOutcome",
+            "resumeId",
+            "notes",
+            "provenance",
+            "lastCheckedAt",
+        }
+        if set(incoming) - allowed:
+            raise StoreError("job input contains unsupported fields")
+        url = incoming.get("url")
+        normalized_url = normalize_job_url(url)
+        job_id = incoming.get("id") or f"job-{uuid.uuid4()}"
+        _safe_session_id(job_id)
+        status = incoming.get("status", "saved")
+        if status != "saved":
+            raise StoreError("new jobs must start with saved status")
+        now = utc_now()
+        record = {
+            **incoming,
+            "id": job_id,
+            "url": url.strip(),
+            "normalizedUrl": normalized_url,
+            "priority": incoming.get("priority", 0),
+            "status": status,
+            "closedOutcome": incoming.get("closedOutcome"),
+            "provenance": incoming.get("provenance", {}),
+            "revision": 1,
+            "createdAt": now,
+            "updatedAt": now,
+            "deletedAt": None,
+        }
+        _validate_job_record(job_id, record)
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_jobs_document()
+            if job_id in document["jobs"]:
+                raise StoreError("job id already exists")
+            duplicate = next(
+                (
+                    item
+                    for item in document["jobs"].values()
+                    if item.get("deletedAt") is None
+                    and item.get("normalizedUrl") == normalized_url
+                ),
+                None,
+            )
+            if duplicate is not None:
+                raise StoreError("active job URL already exists")
+            document["jobs"][job_id] = record
+            document["metadata"]["updatedAt"] = now
+            atomic_write_json(self.jobs_path, document)
+        return record
+
+    def get_job(self, job_id: str, include_trashed: bool = False) -> dict[str, Any] | None:
+        self.initialize()
+        _safe_session_id(job_id)
+        record = self._load_jobs_document()["jobs"].get(job_id)
+        if record is None or (record.get("deletedAt") is not None and not include_trashed):
+            return None
+        return _require_object(record, "job record")
+
+    def list_jobs(
+        self, status: str | None = None, include_trashed: bool = False
+    ) -> list[dict[str, Any]]:
+        self.initialize()
+        if status is not None and status not in JOB_STATUSES:
+            raise StoreError("job status is unsupported")
+        records = []
+        for record in self._load_jobs_document()["jobs"].values():
+            if record.get("deletedAt") is not None and not include_trashed:
+                continue
+            if status is not None and record.get("status") != status:
+                continue
+            records.append(record)
+        return sorted(
+            records,
+            key=lambda item: (
+                -item.get("priority", 0),
+                item.get("createdAt", ""),
+                item["id"],
+            ),
+        )
+
+    def update_job(
+        self, job_id: str, patch: dict[str, Any], expected_revision: int
+    ) -> dict[str, Any]:
+        self.initialize()
+        _safe_session_id(job_id)
+        allowed = {
+            "url",
+            "source",
+            "sourceId",
+            "role",
+            "company",
+            "location",
+            "workplaceType",
+            "employmentType",
+            "compensation",
+            "description",
+            "ats",
+            "priority",
+            "resumeId",
+            "notes",
+            "provenance",
+            "lastCheckedAt",
+        }
+        if not patch or set(patch) - allowed:
+            raise StoreError("job patch contains unsupported fields")
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_jobs_document()
+            current = document["jobs"].get(job_id)
+            if current is None or current.get("deletedAt") is not None:
+                raise StoreError("job does not exist")
+            if current["revision"] != expected_revision:
+                raise StoreError("job revision conflict")
+            updated = {**current, **patch}
+            if "url" in patch:
+                updated["url"] = patch["url"].strip()
+                updated["normalizedUrl"] = normalize_job_url(patch["url"])
+                duplicate = next(
+                    (
+                        item
+                        for key, item in document["jobs"].items()
+                        if key != job_id
+                        and item.get("deletedAt") is None
+                        and item.get("normalizedUrl") == updated["normalizedUrl"]
+                    ),
+                    None,
+                )
+                if duplicate is not None:
+                    raise StoreError("active job URL already exists")
+            updated["revision"] = current["revision"] + 1
+            updated["updatedAt"] = utc_now()
+            _validate_job_record(job_id, updated)
+            document["jobs"][job_id] = updated
+            document["metadata"]["updatedAt"] = updated["updatedAt"]
+            atomic_write_json(self.jobs_path, document)
+        return updated
+
+    def transition_job(
+        self,
+        job_id: str,
+        status: str,
+        expected_revision: int,
+        closed_outcome: str | None = None,
+        user_confirmed: bool = False,
+    ) -> dict[str, Any]:
+        self.initialize()
+        _safe_session_id(job_id)
+        if status not in JOB_STATUSES:
+            raise StoreError("job status is unsupported")
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_jobs_document()
+            current = document["jobs"].get(job_id)
+            if current is None or current.get("deletedAt") is not None:
+                raise StoreError("job does not exist")
+            if current["revision"] != expected_revision:
+                raise StoreError("job revision conflict")
+            if status == current["status"]:
+                return current
+            if status not in JOB_TRANSITIONS[current["status"]]:
+                raise StoreError("job status transition is unsupported")
+            if status == "applied" and not user_confirmed:
+                raise StoreError("applied status requires explicit user confirmation")
+            if status == "ready" and not current.get("url"):
+                raise StoreError("ready job requires a URL")
+            updated = dict(current)
+            updated["status"] = status
+            updated["closedOutcome"] = closed_outcome if status == "closed" else None
+            updated["revision"] = current["revision"] + 1
+            updated["updatedAt"] = utc_now()
+            _validate_job_record(job_id, updated)
+            document["jobs"][job_id] = updated
+            document["metadata"]["updatedAt"] = updated["updatedAt"]
+            atomic_write_json(self.jobs_path, document)
+        return updated
+
+    def trash_job(self, job_id: str, expected_revision: int) -> dict[str, Any]:
+        return self._set_job_deleted(job_id, expected_revision, restore=False)
+
+    def restore_job(self, job_id: str, expected_revision: int) -> dict[str, Any]:
+        return self._set_job_deleted(job_id, expected_revision, restore=True)
+
+    def _set_job_deleted(
+        self, job_id: str, expected_revision: int, restore: bool
+    ) -> dict[str, Any]:
+        self.initialize()
+        _safe_session_id(job_id)
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_jobs_document()
+            current = document["jobs"].get(job_id)
+            if current is None:
+                raise StoreError("job does not exist")
+            if current["revision"] != expected_revision:
+                raise StoreError("job revision conflict")
+            is_trashed = current.get("deletedAt") is not None
+            if restore == (not is_trashed):
+                return current
+            if restore:
+                duplicate = next(
+                    (
+                        item
+                        for key, item in document["jobs"].items()
+                        if key != job_id
+                        and item.get("deletedAt") is None
+                        and item.get("normalizedUrl") == current["normalizedUrl"]
+                    ),
+                    None,
+                )
+                if duplicate is not None:
+                    raise StoreError("active job URL already exists")
+            updated = dict(current)
+            updated["deletedAt"] = None if restore else utc_now()
+            updated["revision"] = current["revision"] + 1
+            updated["updatedAt"] = utc_now()
+            _validate_job_record(job_id, updated)
+            document["jobs"][job_id] = updated
+            document["metadata"]["updatedAt"] = updated["updatedAt"]
+            atomic_write_json(self.jobs_path, document)
+        return updated
+
+    def delete_job(self, job_id: str, expected_revision: int) -> dict[str, Any]:
+        self.initialize()
+        _safe_session_id(job_id)
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_jobs_document()
+            current = document["jobs"].get(job_id)
+            if current is None:
+                return {"deleted": False, "id": job_id}
+            if current["revision"] != expected_revision:
+                raise StoreError("job revision conflict")
+            if current.get("deletedAt") is None:
+                raise StoreError("job must be trashed before permanent deletion")
+            del document["jobs"][job_id]
+            document["metadata"]["updatedAt"] = utc_now()
+            atomic_write_json(self.jobs_path, document)
+        return {"deleted": True, "id": job_id}
 
     def read_history(self) -> list[dict[str, Any]]:
         if not self.history_path.exists():
@@ -825,6 +1271,34 @@ def build_parser() -> argparse.ArgumentParser:
     find.add_argument("--question", required=True)
     find.add_argument("--scope", default="{}")
 
+    job_create = commands.add_parser("job-create")
+    job_create.add_argument("--input", required=True)
+    job_get = commands.add_parser("job-get")
+    job_get.add_argument("--id", required=True)
+    job_get.add_argument("--include-trashed", action="store_true")
+    job_list = commands.add_parser("job-list")
+    job_list.add_argument("--status")
+    job_list.add_argument("--include-trashed", action="store_true")
+    job_update = commands.add_parser("job-update")
+    job_update.add_argument("--id", required=True)
+    job_update.add_argument("--input", required=True)
+    job_update.add_argument("--expected-revision", required=True, type=int)
+    job_transition = commands.add_parser("job-transition")
+    job_transition.add_argument("--id", required=True)
+    job_transition.add_argument("--status", required=True)
+    job_transition.add_argument("--closed-outcome")
+    job_transition.add_argument("--expected-revision", required=True, type=int)
+    job_transition.add_argument("--user-confirmed", action="store_true")
+    job_trash = commands.add_parser("job-trash")
+    job_trash.add_argument("--id", required=True)
+    job_trash.add_argument("--expected-revision", required=True, type=int)
+    job_restore = commands.add_parser("job-restore")
+    job_restore.add_argument("--id", required=True)
+    job_restore.add_argument("--expected-revision", required=True, type=int)
+    job_delete = commands.add_parser("job-delete")
+    job_delete.add_argument("--id", required=True)
+    job_delete.add_argument("--expected-revision", required=True, type=int)
+
     history_append = commands.add_parser("history-append")
     history_append.add_argument("--input", required=True)
     commands.add_parser("history-list")
@@ -877,6 +1351,30 @@ def run(args: argparse.Namespace) -> Any:
         return store.get_answer(args.key)
     if command == "answer-find":
         return store.find_answer(args.question, _scope(args.scope))
+    if command == "job-create":
+        return store.create_job(_read_input(args.input))
+    if command == "job-get":
+        return store.get_job(args.id, include_trashed=args.include_trashed)
+    if command == "job-list":
+        return store.list_jobs(args.status, include_trashed=args.include_trashed)
+    if command == "job-update":
+        return store.update_job(
+            args.id, _read_input(args.input), args.expected_revision
+        )
+    if command == "job-transition":
+        return store.transition_job(
+            args.id,
+            args.status,
+            args.expected_revision,
+            closed_outcome=args.closed_outcome,
+            user_confirmed=args.user_confirmed,
+        )
+    if command == "job-trash":
+        return store.trash_job(args.id, args.expected_revision)
+    if command == "job-restore":
+        return store.restore_job(args.id, args.expected_revision)
+    if command == "job-delete":
+        return store.delete_job(args.id, args.expected_revision)
     if command == "history-append":
         return store.append_history(_read_input(args.input))
     if command == "history-list":

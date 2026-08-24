@@ -10,6 +10,7 @@ python3 "<plugin-root>/scripts/job-apply-store.py" --help
 
 - `~/.job-apply/profile.json`: versioned canonical profile and preferences.
 - `~/.job-apply/answers.json`: versioned answer records with state, source, scope, aliases, sensitivity, and confirmation metadata.
+- `~/.job-apply/jobs.json`: versioned canonical job records with optimistic revisions, focused application status, and recoverable trash state.
 - `~/.job-apply/applications.jsonl`: append-only minimal application events.
 - `~/.job-apply/sessions/<application-id>.json`: resumable workflow metadata with answer-key references.
 - `~/.job-apply/auto-submit/campaign.json`: the current closed version-1 campaign record.
@@ -17,6 +18,24 @@ python3 "<plugin-root>/scripts/job-apply-store.py" --help
 - `~/.job-apply/auto-submit/receipts.jsonl`: append-only value-free receipt projection.
 
 Directories use user-only permissions and canonical files use `0600` where the platform supports POSIX modes. JSON writes use a same-directory temporary file and atomic replacement.
+
+Job read-modify-write operations additionally serialize through a private local
+store lock. Every mutable job record carries a positive revision. Updates,
+transitions, trash, restore, and permanent deletion require the current revision
+and fail closed on conflicts.
+
+## Canonical job lifecycle
+
+New jobs start as `saved`. The focused statuses are `saved`, `needs_info`,
+`ready`, `in_progress`, `awaiting_review`, `applied`, and `closed`. Closed jobs
+require one of `rejected`, `withdrawn`, `expired`, `duplicate`, or
+`not_interested` as their outcome. Only a direct user confirmation may authorize
+the `applied` transition.
+
+Normal deletion moves a job to recoverable trash. Permanent deletion is accepted
+only for an already-trashed record and requires its current revision. Active job
+URLs are normalized and unique; URL fragments and default ports do not create a
+second job identity.
 
 ## Migration
 
