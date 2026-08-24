@@ -308,24 +308,44 @@ Save full details to `~/.claude-job-searches/search-{timestamp}.md`:
 
 Create the `~/.claude-job-searches/` directory if it doesn't exist.
 
-### 3. Queue Append (Optional, User Confirms)
+### 3. Canonical Queue Ingestion (Optional, User Confirms)
 
-If any results scored 70+, ask the user:
+The shared job store is the authoritative queue. The timestamped search Markdown
+above is a compatibility report only; do not treat `application_queue.md` as the
+handoff or append to it.
 
-> **{N} jobs scored 70+.** Would you like me to add them to your application queue at `~/Desktop/jobs/application_queue.md`?
+For results scoring 70+, prepare a temporary JSON input with a top-level `jobs`
+array. Map only supported canonical fields when they are known: `url`, `source`,
+`sourceId`, `role`, `company`, `location`, `workplaceType`, `employmentType`,
+`compensation`, `description`, `ats`, and `lastCheckedAt`. A URL is required for
+each item. Keep score, connections, hiring-manager details, applicant counts,
+engagement, and other search-only details in the timestamped Markdown report;
+never place them in the structured input.
 
-If confirmed, append to `application_queue.md` under a new "## Tier 3 — Auto-Discovered" section:
+Before asking for confirmation, preview the exact agent-authored input:
 
-```markdown
-## Tier 3 — Auto-Discovered
-
-| Score | Source | Role | Company | URL | Status |
-|-------|--------|------|---------|-----|--------|
-| 92 | LinkedIn | Staff AI Engineer | Acme Corp | [link](https://...) | New |
-| 81 | HN | AI Engineer (Staff) | CoolStartup | [link](https://...) | New |
+```bash
+python3 "<plugin-root>/scripts/job-apply-store.py" job-upsert-preview \
+  --origin agent --input <temporary-jobs.json>
 ```
 
-**Never modify application_queue.md without explicit user confirmation.**
+Show the user the per-item `create`, `update`, `noop`, `conflict`, and `invalid`
+decisions and summary, then ask:
+
+> **{N} jobs scored 70+.** The shared queue preview is ready. Would you like me to commit these changes?
+
+Commit only after explicit confirmation, using the exact same input, origin, and
+opaque token returned by preview:
+
+```bash
+python3 "<plugin-root>/scripts/job-apply-store.py" job-upsert-commit \
+  --origin agent --input <temporary-jobs.json> --token <preview-token>
+```
+
+If commit rejects drift, run a fresh preview, show the changed decisions, and ask
+again. Never commit a stale or altered preview. Report conflicts and invalid
+items without attempting to invent a merge rule. Delete the temporary input when
+the interaction is finished.
 
 ---
 
@@ -340,7 +360,7 @@ If confirmed, append to `application_queue.md` under a new "## Tier 3 — Auto-D
    - Twitter: 2-3 second delays between interactions
 5. **Max results per source**: LinkedIn 25, HN 50 comments, Twitter 20 tweets
 6. **Graceful degradation** — if any source fails, skip it and continue with the others. Report which sources succeeded and which failed at the end.
-7. **Never modify application_queue.md without user confirmation**
+7. **Canonical queue confirmation** — preview before asking, commit only the exact confirmed preview, and never use `application_queue.md` as the authoritative handoff
 8. **HN Firebase API only** — never scrape the Hacker News website directly. Always use `https://hacker-news.firebaseio.com/v0/` endpoints.
 9. **Handle errors gracefully** — if a job page fails to load, skip and continue
 

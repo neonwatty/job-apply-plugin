@@ -401,6 +401,394 @@ class StoreTests(unittest.TestCase):
                 "acme-engineer", {"status": "applied"}, expected_revision=2
             )
 
+    def test_job_update_human_can_clear_optional_fields(self):
+        job = self.store.create_job(
+            {
+                "id": "human-clears",
+                "url": "https://example.com/jobs/human-clears",
+                "role": "Engineer",
+                "description": "Original description",
+                "notes": "Original notes",
+            }
+        )
+        cleared = self.store.update_job(
+            job["id"],
+            {"role": "", "description": "", "notes": None},
+            expected_revision=job["revision"],
+        )
+        self.assertEqual(cleared["revision"], job["revision"] + 1)
+        self.assertEqual(cleared["role"], "")
+        self.assertEqual(cleared["description"], "")
+        self.assertIsNone(cleared["notes"])
+        for field in ("role", "description", "notes"):
+            self.assertEqual(cleared["provenance"][f"/{field}"]["origin"], "human")
+
+        ignored = self.store.update_job(
+            job["id"],
+            {"role": "", "description": None, "notes": ""},
+            expected_revision=cleared["revision"],
+            origin="agent",
+        )
+        self.assertEqual(ignored, cleared)
+
+    def test_job_update_human_preserves_validation_and_string_values(self):
+        job = self.store.create_job(
+            {
+                "id": "human-update-values",
+                "url": "https://example.com/jobs/original",
+                "role": "Engineer",
+                "provenance": {"legacy": {"keep": True}},
+            }
+        )
+        updated = self.store.update_job(
+            job["id"],
+            {
+                "url": " HTTPS://Jobs.Example.com:443/new#apply ",
+                "role": "  Principal Engineer  ",
+                "company": "",
+                "provenance": {"custom": {"version": 1}},
+            },
+            expected_revision=job["revision"],
+        )
+        self.assertEqual(updated["url"], "HTTPS://Jobs.Example.com:443/new#apply")
+        self.assertEqual(updated["normalizedUrl"], "https://jobs.example.com/new")
+        self.assertEqual(updated["role"], "  Principal Engineer  ")
+        self.assertEqual(updated["company"], "")
+        self.assertIn("custom", updated["provenance"])
+        self.assertNotIn("legacy", updated["provenance"])
+        for field in ("url", "role", "company"):
+            self.assertEqual(updated["provenance"][f"/{field}"]["origin"], "human")
+
+        agent = self.store.update_job(
+            job["id"],
+            {
+                "company": "Agent Company",
+                "location": "Remote",
+                "provenance": {"/role": {"origin": "agent"}, "hijack": True},
+            },
+            expected_revision=updated["revision"],
+            origin="agent",
+        )
+        self.assertEqual(agent["company"], "")
+        self.assertEqual(agent["location"], "Remote")
+        self.assertEqual(agent["provenance"]["/company"]["origin"], "human")
+        self.assertEqual(agent["provenance"]["/location"]["origin"], "agent")
+        self.assertEqual(agent["provenance"]["/role"]["origin"], "human")
+        self.assertIn("custom", agent["provenance"])
+        self.assertNotIn("hijack", agent["provenance"])
+
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "HTTP or HTTPS"):
+            self.store.update_job(
+                job["id"],
+                {"url": "not-a-url"},
+                expected_revision=agent["revision"],
+            )
+
+    def test_agent_cannot_refill_human_cleared_fields(self):
+        job = self.store.create_job(
+            {
+                "id": "human-cleared-precedence",
+                "url": "https://example.com/jobs/human-cleared-precedence",
+                "role": "Original Role",
+            }
+        )
+        cleared = self.store.update_job(
+            job["id"], {"role": ""}, expected_revision=job["revision"]
+        )
+
+        direct = self.store.update_job(
+            job["id"],
+            {"role": "Agent Role", "company": "Acme"},
+            expected_revision=cleared["revision"],
+            origin="agent",
+        )
+        self.assertEqual(direct["role"], "")
+        self.assertEqual(direct["company"], "Acme")
+        self.assertEqual(direct["provenance"]["/role"]["origin"], "human")
+
+        payload = {
+            "jobs": [
+                {
+                    "url": job["url"],
+                    "role": "Agent Retry",
+                    "description": "Agent supplied",
+                }
+            ]
+        }
+        preview = self.store.preview_job_upsert(payload, "agent")
+        self.assertEqual(preview["decisions"][0]["fields"], ["description"])
+        self.store.commit_job_upsert(payload, "agent", preview["token"])
+        record = self.store.get_job(job["id"])
+        self.assertEqual(record["role"], "")
+        self.assertEqual(record["description"], "Agent supplied")
+        self.assertEqual(record["provenance"]["/role"]["origin"], "human")
+
+    def test_job_upsert_token_rejects_source_case_plan_drift(self):
+        job = self.store.create_job(
+            {
+                "id": "source-case-drift",
+                "url": "https://example.com/jobs/source-case-drift",
+                "source": "LinkedIn",
+            }
+        )
+        preview_input = {
+            "jobs": [{"url": job["url"], "source": "LinkedIn"}]
+        }
+        preview = self.store.preview_job_upsert(preview_input, "human")
+        self.assertEqual(preview["decisions"][0]["action"], "noop")
+
+        altered_input = {
+            "jobs": [{"url": job["url"], "source": "linkedin"}]
+        }
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "drifted"):
+            self.store.commit_job_upsert(altered_input, "human", preview["token"])
+        self.assertEqual(self.store.get_job(job["id"]), job)
+
+    def test_agent_ignores_protected_invalid_resume_before_validation(self):
+        resume_path = self.home / "resume.pdf"
+        resume_path.write_bytes(b"resume")
+        resume = self.store.create_resume(
+            {"id": "protected-resume", "label": "Protected", "path": str(resume_path)}
+        )
+        job = self.store.create_job(
+            {
+                "id": "protected-resume-job",
+                "url": "https://example.com/jobs/protected-resume",
+                "resumeId": resume["id"],
+            }
+        )
+
+        updated = self.store.update_job(
+            job["id"],
+            {"resumeId": "missing-resume", "company": "Acme"},
+            expected_revision=job["revision"],
+            origin="agent",
+        )
+        self.assertEqual(updated["resumeId"], resume["id"])
+        self.assertEqual(updated["company"], "Acme")
+
+    def test_job_upsert_preview_commit_cli_walkthrough(self):
+        subprocess.run(
+            [sys.executable, str(SCRIPT), "--root", str(self.root), "init"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        input_path = self.home / "upsert.json"
+        input_path.write_text(
+            json.dumps(
+                {
+                    "jobs": [
+                        {
+                            "url": "HTTPS://Jobs.Example.com:443/openings/42#apply",
+                            "source": "LinkedIn",
+                            "sourceId": "42",
+                            "role": "Staff Engineer",
+                        }
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        def command(name, *extra):
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--root",
+                    str(self.root),
+                    name,
+                    "--input",
+                    str(input_path),
+                    "--origin",
+                    "human",
+                    *extra,
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            return json.loads(completed.stdout)
+
+        preview = command("job-upsert-preview")
+        self.assertEqual(preview["summary"]["create"], 1)
+        job_id = preview["decisions"][0]["id"]
+        committed = command("job-upsert-commit", "--token", preview["token"])
+        self.assertTrue(committed["committed"])
+        self.assertEqual(committed["decisions"][0]["id"], job_id)
+
+        replay_preview = command("job-upsert-preview")
+        self.assertEqual(replay_preview["summary"]["noop"], 1)
+        before = self.store.jobs_path.read_bytes()
+        replay = command(
+            "job-upsert-commit", "--token", replay_preview["token"]
+        )
+        self.assertFalse(replay["committed"])
+        self.assertEqual(self.store.jobs_path.read_bytes(), before)
+        self.assertEqual(self.store.get_job(job_id)["status"], "saved")
+
+    def test_job_upsert_identity_conflicts_are_deterministic(self):
+        first = self.store.create_job(
+            {
+                "id": "first",
+                "url": "https://example.com/jobs/first",
+                "source": "LinkedIn",
+                "sourceId": "first-id",
+            }
+        )
+        second = self.store.create_job(
+            {
+                "id": "second",
+                "url": "https://example.com/jobs/second",
+                "source": "LinkedIn",
+                "sourceId": "second-id",
+            }
+        )
+        cross_identity = {
+            "jobs": [
+                {
+                    "url": first["url"],
+                    "source": "linkedin",
+                    "sourceId": second["sourceId"],
+                }
+            ]
+        }
+        preview = self.store.preview_job_upsert(cross_identity, "agent")
+        self.assertEqual(preview["decisions"][0]["action"], "conflict")
+
+        duplicates = {
+            "jobs": [
+                {"url": "https://example.com/jobs/new", "role": "One"},
+                {"url": "https://example.com/jobs/new", "role": "Two"},
+            ]
+        }
+        one = self.store.preview_job_upsert(duplicates, "agent")
+        two = self.store.preview_job_upsert(duplicates, "agent")
+        self.assertEqual(one["decisions"], two["decisions"])
+        self.assertEqual(
+            [item["action"] for item in one["decisions"]],
+            ["conflict", "conflict"],
+        )
+
+        identical = {
+            "jobs": [
+                {"url": "https://example.com/jobs/same", "role": "Same"},
+                {"url": "https://example.com/jobs/same", "role": "Same"},
+            ]
+        }
+        collapsed = self.store.preview_job_upsert(identical, "human")
+        self.assertEqual(
+            [item["action"] for item in collapsed["decisions"]],
+            ["create", "noop"],
+        )
+        self.assertEqual(
+            collapsed["decisions"][0]["id"], collapsed["decisions"][1]["id"]
+        )
+
+    def test_job_upsert_preserves_human_edits_and_records_provenance(self):
+        self.store.initialize()
+        human = {
+            "jobs": [
+                {
+                    "url": "https://example.com/jobs/provenance",
+                    "source": "LinkedIn",
+                    "sourceId": "provenance",
+                    "role": "Human Role",
+                }
+            ]
+        }
+        preview = self.store.preview_job_upsert(human, "human")
+        self.store.commit_job_upsert(human, "human", preview["token"])
+        job_id = preview["decisions"][0]["id"]
+
+        agent = {
+            "jobs": [
+                {
+                    "url": human["jobs"][0]["url"],
+                    "source": "linkedin",
+                    "sourceId": "provenance",
+                    "role": "Agent Role",
+                    "company": "Acme",
+                    "description": "Agent supplied",
+                }
+            ]
+        }
+        agent_preview = self.store.preview_job_upsert(agent, "agent")
+        self.assertEqual(agent_preview["decisions"][0]["fields"], ["company", "description"])
+        self.store.commit_job_upsert(agent, "agent", agent_preview["token"])
+        record = self.store.get_job(job_id)
+        self.assertEqual(record["role"], "Human Role")
+        self.assertEqual(record["company"], "Acme")
+        self.assertEqual(record["description"], "Agent supplied")
+        self.assertEqual(record["provenance"]["/role"]["origin"], "human")
+        self.assertEqual(record["provenance"]["/company"]["origin"], "agent")
+        self.assertEqual(
+            record["provenance"]["/company"]["observationSource"], "linkedin"
+        )
+
+        edited = self.store.update_job(
+            job_id, {"role": "Human Edited Role"}, record["revision"]
+        )
+        ignored = self.store.update_job(
+            job_id,
+            {"role": "Agent Retry", "company": "New Acme"},
+            edited["revision"],
+            origin="agent",
+        )
+        self.assertEqual(ignored["role"], "Human Edited Role")
+        self.assertEqual(ignored["company"], "New Acme")
+        self.assertEqual(ignored["provenance"]["/role"]["origin"], "human")
+        self.assertEqual(ignored["provenance"]["/company"]["origin"], "agent")
+
+    def test_job_upsert_preview_is_non_mutating_and_rejects_drift(self):
+        self.store.initialize()
+        before = {
+            path.name: (path.stat().st_mtime_ns, path.read_bytes())
+            for path in self.root.iterdir()
+            if path.is_file()
+        }
+        payload = {"jobs": [{"url": "https://example.com/jobs/preview"}]}
+        preview = self.store.preview_job_upsert(payload, "human")
+        after = {
+            path.name: (path.stat().st_mtime_ns, path.read_bytes())
+            for path in self.root.iterdir()
+            if path.is_file()
+        }
+        self.assertEqual(after, before)
+        self.assertNotIn(".store.lock", after)
+
+        self.store.create_job(
+            {"id": "drift", "url": "https://example.com/jobs/drift"}
+        )
+        current = self.store.jobs_path.read_bytes()
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "drifted"):
+            self.store.commit_job_upsert(
+                payload, "human", preview["token"]
+            )
+        self.assertEqual(self.store.jobs_path.read_bytes(), current)
+
+    def test_job_upsert_partial_records_remain_saved(self):
+        self.store.initialize()
+        payload = {
+            "jobs": [
+                {"url": "https://example.com/jobs/url-only"},
+                {"url": "https://example.com/jobs/invalid", "role": ["invalid"]},
+            ]
+        }
+        preview = self.store.preview_job_upsert(payload, "agent")
+        job_id = preview["decisions"][0]["id"]
+        committed = self.store.commit_job_upsert(
+            payload, "agent", preview["token"]
+        )
+        self.assertEqual(committed["summary"]["create"], 1)
+        self.assertEqual(committed["summary"]["invalid"], 1)
+        record = self.store.get_job(job_id)
+        self.assertEqual(record["status"], "saved")
+        self.assertNotIn("role", record)
+        self.assertNotIn("company", record)
+        self.assertEqual(record["provenance"]["/url"]["origin"], "agent")
+
     def test_job_transitions_require_supported_flow_and_user_submission(self):
         self.store.replace_profile({"firstName": "Ada"})
         resume_path = self.home / "resume.pdf"

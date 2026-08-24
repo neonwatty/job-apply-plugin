@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import hmac
 import json
 import os
 import re
@@ -52,6 +53,23 @@ JOB_CLOSED_OUTCOMES = {
     "expired",
     "duplicate",
     "not_interested",
+}
+JOB_ORIGINS = {"human", "agent"}
+JOB_INGEST_FIELDS = {
+    "url",
+    "source",
+    "sourceId",
+    "role",
+    "company",
+    "location",
+    "workplaceType",
+    "employmentType",
+    "compensation",
+    "description",
+    "ats",
+    "priority",
+    "notes",
+    "lastCheckedAt",
 }
 JOB_TRANSITIONS = {
     "saved": {"needs_info", "ready", "closed"},
@@ -277,6 +295,65 @@ def _validate_optional_strings(
 
 def _json_pointer_segment(value: str) -> str:
     return value.replace("~", "~0").replace("/", "~1")
+
+
+def _canonical_json(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def _job_origin(origin: str) -> str:
+    if origin not in JOB_ORIGINS:
+        raise StoreError("job origin must be human or agent")
+    return origin
+
+
+def _nonempty_job_value(value: Any) -> bool:
+    return value is not None and (not isinstance(value, str) or bool(value.strip()))
+
+
+def _normalized_job_source(value: Any) -> str | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return value.strip().lower()
+
+
+def _job_observation_source(record: dict[str, Any]) -> str:
+    return _normalized_job_source(record.get("source")) or "manual"
+
+
+def _job_field_provenance(
+    provenance: dict[str, Any], field: str
+) -> dict[str, Any] | None:
+    value = provenance.get(f"/{_json_pointer_segment(field)}")
+    if not isinstance(value, dict) or value.get("origin") not in JOB_ORIGINS:
+        return None
+    return value
+
+
+def _agent_may_update_job_field(
+    record: dict[str, Any], provenance: dict[str, Any], field: str
+) -> bool:
+    authored = _job_field_provenance(provenance, field)
+    if authored is not None:
+        return authored["origin"] == "agent"
+    return not _nonempty_job_value(record.get(field))
+
+
+def _stamp_job_provenance(
+    provenance: dict[str, Any],
+    fields: list[str] | set[str],
+    origin: str,
+    observation_source: str,
+    updated_at: str,
+) -> dict[str, Any]:
+    stamped = dict(provenance)
+    for field in fields:
+        stamped[f"/{_json_pointer_segment(field)}"] = {
+            "origin": origin,
+            "observationSource": observation_source,
+            "updatedAt": updated_at,
+        }
+    return stamped
 
 
 def _merge_object_patch(
@@ -1187,8 +1264,11 @@ class Store:
         if record is None or record.get("deletedAt") is not None:
             raise StoreError("assigned resume does not exist")
 
-    def create_job(self, incoming: dict[str, Any]) -> dict[str, Any]:
+    def create_job(
+        self, incoming: dict[str, Any], origin: str = "human"
+    ) -> dict[str, Any]:
         self.initialize()
+        origin = _job_origin(origin)
         allowed = {
             "id",
             "url",
@@ -1220,6 +1300,14 @@ class Store:
         if status != "saved":
             raise StoreError("new jobs must start with saved status")
         now = utc_now()
+        incoming_provenance = _require_object(
+            incoming.get("provenance", {}), "job provenance"
+        )
+        stamped_fields = {
+            field
+            for field in JOB_INGEST_FIELDS
+            if field in incoming and _nonempty_job_value(incoming[field])
+        }
         record = {
             **incoming,
             "id": job_id,
@@ -1228,7 +1316,13 @@ class Store:
             "priority": incoming.get("priority", 0),
             "status": status,
             "closedOutcome": incoming.get("closedOutcome"),
-            "provenance": incoming.get("provenance", {}),
+            "provenance": _stamp_job_provenance(
+                incoming_provenance,
+                stamped_fields,
+                origin,
+                _job_observation_source(incoming),
+                now,
+            ),
             "revision": 1,
             "createdAt": now,
             "updatedAt": now,
@@ -1338,9 +1432,14 @@ class Store:
         return self._preflight_job_record(record)
 
     def update_job(
-        self, job_id: str, patch: dict[str, Any], expected_revision: int
+        self,
+        job_id: str,
+        patch: dict[str, Any],
+        expected_revision: int,
+        origin: str = "human",
     ) -> dict[str, Any]:
         self.initialize()
+        origin = _job_origin(origin)
         _safe_session_id(job_id)
         allowed = {
             "url",
@@ -1369,12 +1468,31 @@ class Store:
                 raise StoreError("job does not exist")
             if current["revision"] != expected_revision:
                 raise StoreError("job revision conflict")
-            if "resumeId" in patch:
-                self._require_active_resume(patch["resumeId"])
-            updated = {**current, **patch}
-            if "url" in patch:
-                updated["url"] = patch["url"].strip()
-                updated["normalizedUrl"] = normalize_job_url(patch["url"])
+            current_provenance = _require_object(
+                current.get("provenance", {}), "job provenance"
+            )
+            provenance = current_provenance
+            provenance_changed = False
+            if origin == "human" and "provenance" in patch:
+                provenance = _require_object(patch["provenance"], "job provenance")
+                provenance_changed = provenance != current_provenance
+            accepted: dict[str, Any] = {}
+            for field, value in patch.items():
+                if field == "provenance":
+                    continue
+                if origin == "agent" and not _nonempty_job_value(value):
+                    continue
+                if origin == "agent" and not _agent_may_update_job_field(
+                    current, current_provenance, field
+                ):
+                    continue
+                accepted[field] = value
+            if "resumeId" in accepted:
+                self._require_active_resume(accepted["resumeId"])
+            updated = {**current, **accepted}
+            if "url" in accepted:
+                updated["normalizedUrl"] = normalize_job_url(accepted["url"])
+                updated["url"] = accepted["url"].strip()
                 duplicate = next(
                     (
                         item
@@ -1387,13 +1505,358 @@ class Store:
                 )
                 if duplicate is not None:
                     raise StoreError("active job URL already exists")
+            changed = [
+                field
+                for field in accepted
+                if current.get(field) != updated.get(field)
+            ]
+            if not changed and not provenance_changed:
+                return current
+            now = utc_now()
+            updated["provenance"] = _stamp_job_provenance(
+                provenance,
+                changed,
+                origin,
+                _job_observation_source(updated),
+                now,
+            )
             updated["revision"] = current["revision"] + 1
-            updated["updatedAt"] = utc_now()
+            updated["updatedAt"] = now
             _validate_job_record(job_id, updated)
             document["jobs"][job_id] = updated
             document["metadata"]["updatedAt"] = updated["updatedAt"]
             atomic_write_json(self.jobs_path, document)
         return updated
+
+    @staticmethod
+    def _job_upsert_payload(payload: dict[str, Any]) -> list[Any]:
+        if set(payload) != {"jobs"}:
+            raise StoreError("job upsert input must contain only a jobs array")
+        jobs = payload.get("jobs")
+        if not isinstance(jobs, list):
+            raise StoreError("job upsert input.jobs must be an array")
+        return jobs
+
+    @staticmethod
+    def _canonical_upsert_input(payload: dict[str, Any]) -> dict[str, Any]:
+        normalized: list[Any] = []
+        for value in Store._job_upsert_payload(payload):
+            if not isinstance(value, dict):
+                normalized.append(value)
+                continue
+            item: dict[str, Any] = {}
+            for field, field_value in value.items():
+                if isinstance(field_value, str):
+                    field_value = field_value.strip()
+                item[field] = field_value
+            normalized.append(item)
+        return {"jobs": normalized}
+
+    @staticmethod
+    def _upsert_token(
+        document: dict[str, Any], payload: dict[str, Any], origin: str
+    ) -> str:
+        bound = {
+            "version": 1,
+            "origin": _job_origin(origin),
+            "input": Store._canonical_upsert_input(payload),
+            "jobsDocument": document,
+        }
+        return "job-upsert-v1." + hashlib.sha256(
+            _canonical_json(bound).encode("utf-8")
+        ).hexdigest()
+
+    @staticmethod
+    def _deterministic_job_id(item: dict[str, Any]) -> str:
+        identity = f"url\0{item['normalizedUrl']}"
+        return "job-" + hashlib.sha256(identity.encode("utf-8")).hexdigest()[:24]
+
+    @staticmethod
+    def _normalize_upsert_item(value: Any) -> dict[str, Any]:
+        item = _require_object(value, "job upsert item")
+        if set(item) - JOB_INGEST_FIELDS:
+            raise StoreError("job upsert item contains unsupported fields")
+        if not _nonempty_job_value(item.get("url")):
+            raise StoreError("job upsert item requires a URL")
+        string_fields = JOB_INGEST_FIELDS - {"priority"}
+        for field in string_fields:
+            if field in item and item[field] is not None and not isinstance(
+                item[field], str
+            ):
+                raise StoreError(f"job upsert item.{field} must be a string")
+        priority = item.get("priority")
+        if priority is not None and (
+            not isinstance(priority, int)
+            or isinstance(priority, bool)
+            or not 0 <= priority <= 5
+        ):
+            raise StoreError("job upsert item.priority must be an integer from 0 to 5")
+        normalized: dict[str, Any] = {}
+        for field, field_value in item.items():
+            if not _nonempty_job_value(field_value):
+                continue
+            normalized[field] = (
+                field_value.strip() if isinstance(field_value, str) else field_value
+            )
+        normalized["normalizedUrl"] = normalize_job_url(normalized["url"])
+        normalized["url"] = normalized["url"].strip()
+        if "source" in normalized:
+            normalized["source"] = normalized["source"].strip()
+        if "sourceId" in normalized:
+            normalized["sourceId"] = normalized["sourceId"].strip()
+        return normalized
+
+    @staticmethod
+    def _source_identity(record: dict[str, Any]) -> tuple[str, str] | None:
+        source = _normalized_job_source(record.get("source"))
+        source_id = record.get("sourceId")
+        if source and isinstance(source_id, str) and source_id.strip():
+            return source, source_id.strip()
+        return None
+
+    def _plan_job_upsert(
+        self,
+        document: dict[str, Any],
+        payload: dict[str, Any],
+        origin: str,
+        now: str,
+    ) -> tuple[dict[str, Any], list[dict[str, Any]], bool]:
+        origin = _job_origin(origin)
+        raw_jobs = self._job_upsert_payload(payload)
+        normalized: list[dict[str, Any] | None] = []
+        errors: list[str | None] = []
+        for value in raw_jobs:
+            try:
+                normalized.append(self._normalize_upsert_item(value))
+                errors.append(None)
+            except StoreError as error:
+                normalized.append(None)
+                errors.append(str(error))
+
+        conflict_indexes: set[int] = set()
+        identities: dict[tuple[str, ...], list[int]] = {}
+        for index, item in enumerate(normalized):
+            if item is None:
+                continue
+            keys = [("url", item["normalizedUrl"])]
+            source_identity = self._source_identity(item)
+            if source_identity is not None:
+                keys.append(("source", *source_identity))
+            for key in keys:
+                identities.setdefault(key, []).append(index)
+        for indexes in identities.values():
+            canonical = {
+                _canonical_json(normalized[index]) for index in indexes
+            }
+            if len(canonical) > 1:
+                conflict_indexes.update(indexes)
+
+        simulated = json.loads(json.dumps(document))
+        decisions: list[dict[str, Any]] = []
+        changed_document = False
+        for index, item in enumerate(normalized):
+            if item is None:
+                decisions.append(
+                    {"index": index, "action": "invalid", "reason": errors[index]}
+                )
+                continue
+            if index in conflict_indexes:
+                decisions.append(
+                    {
+                        "index": index,
+                        "action": "conflict",
+                        "reason": "differing duplicate identities in input",
+                    }
+                )
+                continue
+
+            jobs = simulated["jobs"]
+            url_matches = [
+                record
+                for record in jobs.values()
+                if record.get("normalizedUrl") == item["normalizedUrl"]
+            ]
+            source_identity = self._source_identity(item)
+            source_matches = (
+                [
+                    record
+                    for record in jobs.values()
+                    if self._source_identity(record) == source_identity
+                ]
+                if source_identity is not None
+                else []
+            )
+            matches = {record["id"]: record for record in url_matches + source_matches}
+            if (
+                len(url_matches) > 1
+                or len(source_matches) > 1
+                or len(matches) > 1
+                or any(record.get("deletedAt") is not None for record in matches.values())
+            ):
+                decisions.append(
+                    {
+                        "index": index,
+                        "action": "conflict",
+                        "reason": "job identities do not resolve to one active record",
+                    }
+                )
+                continue
+
+            current = next(iter(matches.values()), None)
+            if current is not None:
+                current_source = self._source_identity(current)
+                if (
+                    current.get("normalizedUrl") != item["normalizedUrl"]
+                    or (
+                        current_source is not None
+                        and source_identity is not None
+                        and current_source != source_identity
+                    )
+                    or (
+                        _nonempty_job_value(current.get("source"))
+                        and _nonempty_job_value(item.get("source"))
+                        and _normalized_job_source(current.get("source"))
+                        != _normalized_job_source(item.get("source"))
+                    )
+                    or (
+                        _nonempty_job_value(current.get("sourceId"))
+                        and _nonempty_job_value(item.get("sourceId"))
+                        and current.get("sourceId", "").strip()
+                        != item.get("sourceId", "").strip()
+                    )
+                ):
+                    decisions.append(
+                        {
+                            "index": index,
+                            "action": "conflict",
+                            "id": current["id"],
+                            "reason": "incoming identity is incompatible with stored identity",
+                        }
+                    )
+                    continue
+                provenance = _require_object(
+                    current.get("provenance", {}), "job provenance"
+                )
+                accepted: dict[str, Any] = {}
+                for field in JOB_INGEST_FIELDS:
+                    if field not in item or field == "url":
+                        continue
+                    value = item[field]
+                    if origin == "agent" and not _agent_may_update_job_field(
+                        current, provenance, field
+                    ):
+                        continue
+                    if current.get(field) != value:
+                        accepted[field] = value
+                if not accepted:
+                    decisions.append(
+                        {"index": index, "action": "noop", "id": current["id"]}
+                    )
+                    continue
+                updated = {**current, **accepted}
+                updated["provenance"] = _stamp_job_provenance(
+                    provenance,
+                    list(accepted),
+                    origin,
+                    _job_observation_source(updated),
+                    now,
+                )
+                updated["revision"] = current["revision"] + 1
+                updated["updatedAt"] = now
+                _validate_job_record(current["id"], updated)
+                jobs[current["id"]] = updated
+                decisions.append(
+                    {
+                        "index": index,
+                        "action": "update",
+                        "id": current["id"],
+                        "fields": sorted(accepted),
+                    }
+                )
+                changed_document = True
+                continue
+
+            job_id = self._deterministic_job_id(item)
+            if job_id in jobs:
+                decisions.append(
+                    {
+                        "index": index,
+                        "action": "conflict",
+                        "id": job_id,
+                        "reason": "deterministic job id is already in use",
+                    }
+                )
+                continue
+            incoming = {key: value for key, value in item.items() if key != "normalizedUrl"}
+            fields = [field for field in JOB_INGEST_FIELDS if field in incoming]
+            record = {
+                **incoming,
+                "id": job_id,
+                "normalizedUrl": item["normalizedUrl"],
+                "priority": incoming.get("priority", 0),
+                "status": "saved",
+                "closedOutcome": None,
+                "provenance": _stamp_job_provenance(
+                    {}, fields, origin, _job_observation_source(incoming), now
+                ),
+                "revision": 1,
+                "createdAt": now,
+                "updatedAt": now,
+                "deletedAt": None,
+            }
+            try:
+                _validate_job_record(job_id, record)
+            except StoreError as error:
+                decisions.append(
+                    {"index": index, "action": "invalid", "reason": str(error)}
+                )
+                continue
+            jobs[job_id] = record
+            decisions.append({"index": index, "action": "create", "id": job_id})
+            changed_document = True
+
+        if changed_document:
+            simulated["metadata"]["updatedAt"] = now
+        return simulated, decisions, changed_document
+
+    @staticmethod
+    def _upsert_result(
+        token: str, decisions: list[dict[str, Any]], committed: bool
+    ) -> dict[str, Any]:
+        counts = {action: 0 for action in ("create", "update", "noop", "conflict", "invalid")}
+        for decision in decisions:
+            counts[decision["action"]] += 1
+        return {
+            "token": token,
+            "summary": counts,
+            "decisions": decisions,
+            "committed": committed,
+        }
+
+    def preview_job_upsert(
+        self, payload: dict[str, Any], origin: str
+    ) -> dict[str, Any]:
+        document = self._load_jobs_document()
+        token = self._upsert_token(document, payload, origin)
+        _, decisions, _ = self._plan_job_upsert(document, payload, origin, utc_now())
+        return self._upsert_result(token, decisions, committed=False)
+
+    def commit_job_upsert(
+        self, payload: dict[str, Any], origin: str, token: str
+    ) -> dict[str, Any]:
+        if not isinstance(token, str) or not token:
+            raise StoreError("job upsert commit requires a preview token")
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_jobs_document()
+            expected = self._upsert_token(document, payload, origin)
+            if not hmac.compare_digest(token, expected):
+                raise StoreError("job upsert preview token rejected because the store or input drifted")
+            planned, decisions, changed = self._plan_job_upsert(
+                document, payload, origin, utc_now()
+            )
+            if changed:
+                atomic_write_json(self.jobs_path, planned)
+        return self._upsert_result(token, decisions, committed=changed)
 
     def transition_job(
         self,
@@ -2048,6 +2511,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     job_create = commands.add_parser("job-create")
     job_create.add_argument("--input", required=True)
+    job_create.add_argument("--origin", choices=sorted(JOB_ORIGINS), default="human")
+    job_upsert_preview = commands.add_parser("job-upsert-preview")
+    job_upsert_preview.add_argument("--input", required=True)
+    job_upsert_preview.add_argument("--origin", choices=sorted(JOB_ORIGINS), required=True)
+    job_upsert_commit = commands.add_parser("job-upsert-commit")
+    job_upsert_commit.add_argument("--input", required=True)
+    job_upsert_commit.add_argument("--origin", choices=sorted(JOB_ORIGINS), required=True)
+    job_upsert_commit.add_argument("--token", required=True)
     job_get = commands.add_parser("job-get")
     job_get.add_argument("--id", required=True)
     job_get.add_argument("--include-trashed", action="store_true")
@@ -2060,6 +2531,7 @@ def build_parser() -> argparse.ArgumentParser:
     job_update.add_argument("--id", required=True)
     job_update.add_argument("--input", required=True)
     job_update.add_argument("--expected-revision", required=True, type=int)
+    job_update.add_argument("--origin", choices=sorted(JOB_ORIGINS), default="human")
     job_transition = commands.add_parser("job-transition")
     job_transition.add_argument("--id", required=True)
     job_transition.add_argument("--status", required=True)
@@ -2176,7 +2648,13 @@ def run(args: argparse.Namespace) -> Any:
     if command == "answer-delete":
         return store.delete_answer(args.key, args.expected_revision)
     if command == "job-create":
-        return store.create_job(_read_input(args.input))
+        return store.create_job(_read_input(args.input), origin=args.origin)
+    if command == "job-upsert-preview":
+        return store.preview_job_upsert(_read_input(args.input), args.origin)
+    if command == "job-upsert-commit":
+        return store.commit_job_upsert(
+            _read_input(args.input), args.origin, args.token
+        )
     if command == "job-get":
         return store.get_job(args.id, include_trashed=args.include_trashed)
     if command == "job-list":
@@ -2185,7 +2663,10 @@ def run(args: argparse.Namespace) -> Any:
         return store.preflight_job(args.id)
     if command == "job-update":
         return store.update_job(
-            args.id, _read_input(args.input), args.expected_revision
+            args.id,
+            _read_input(args.input),
+            args.expected_revision,
+            origin=args.origin,
         )
     if command == "job-transition":
         return store.transition_job(
