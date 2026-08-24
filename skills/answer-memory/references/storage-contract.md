@@ -43,6 +43,15 @@ or resume values. `ready` requires a non-empty valid profile and a current local
 file for the assigned or default active resume. Missing role or company and a
 resume file that changed since registration remain visible warnings.
 
+### Exclusive ready-job coordinator
+
+Use `job-acquire`, never a standalone transition to `in_progress`, when an agent consumes a ready job. One version-1 `coordinator.json` record holds at most one claim with a hashed token and a 300-second lease; `coordinator-journal.json` provides idempotent crash roll-forward. Neither file is a second workflow-status model: `jobs.json` remains authoritative.
+The coordinator files are created lazily by the first claim command, so direct-URL and replay workflows that never use canonical ready jobs retain their existing store shape.
+
+Acquisition requires the caller's selected job revision, re-runs preflight under the store lock, resolves an assigned resume before the default, transitions the job to `in_progress`, and records `job-started`. Terminal handoff requires the post-acquisition or post-recovery revision retained before browser work; callers must not refresh that revision immediately before handoff. Stale revisions fail without mutation. Heartbeat at least every 60 seconds. Heartbeat and all claim-gated mutations require the canonical job to remain `in_progress`; generic transition, trash, deletion, and session-mutation commands reject active canonical jobs. A live claim cannot be recovered, replaced, or silently cleared. After expiry, `claim-recover` must name the same still-`in_progress` job exposed by `claim-status` and rotates the token while recording `claim-recovered`.
+
+Use `claim-progress` for value-free checkpoints. Use `claim-handoff --status needs_info` for a blocked application and `claim-handoff --status awaiting_review` at final review. Each handoff atomically journals the status transition, session, lifecycle history, and claim release. The schema rejects explicit answer-value fields, while callers remain responsible for keeping every allowed metadata string value-free. A `needs_info` job returns through preflight to `ready` and then receives a fresh claim. Claims, journals, sessions, and history must never contain raw tokens, answer values, resume contents, credentials, CAPTCHA/MFA data, or browser state.
+
 ## Profile fact updates
 
 `profile-get` remains backward compatible and returns the raw profile.
