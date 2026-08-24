@@ -19,9 +19,10 @@ claude plugin validate "$REPO_ROOT"
 
 python3 "$REPO_ROOT/scripts/job-apply-store.py" --help >/dev/null
 
-python3 - "$REPO_ROOT" <<'PY'
+python3 - "$REPO_ROOT" "$SMOKE_TEMP_ROOT" <<'PY'
 import json
 import hashlib
+import os
 import re
 import stat
 import subprocess
@@ -29,7 +30,46 @@ import sys
 from pathlib import Path
 
 root = Path(sys.argv[1])
+smoke_root = Path(sys.argv[2])
 sys.path.insert(0, str(root))
+
+legacy_home = smoke_root / "legacy-home"
+legacy_reports = legacy_home / ".claude-job-searches"
+legacy_reports.mkdir(parents=True)
+(legacy_reports / "search-smoke.md").write_text(
+    """# Job Search Results — 2026-08-24
+## Results (ranked by score)
+### 1. Smoke Engineer — Example Co (Score: 90)
+- **Source**: Example
+- **URL**: https://example.com/jobs/smoke
+""",
+    encoding="utf-8",
+)
+legacy_store = smoke_root / "legacy-store"
+legacy_environment = {**os.environ, "HOME": str(legacy_home)}
+legacy_base = [
+    sys.executable,
+    str(root / "scripts" / "job-apply-store.py"),
+    "--root",
+    str(legacy_store),
+]
+discovery = json.loads(subprocess.run(
+    [*legacy_base, "legacy-jobs-preview"], check=True, capture_output=True,
+    text=True, env=legacy_environment,
+).stdout)
+if legacy_store.exists() or len(discovery.get("items", [])) != 1 or "token" in discovery:
+    raise SystemExit("legacy migration discovery must be non-mutating and token-free")
+item_id = discovery["items"][0]["itemId"]
+preview = json.loads(subprocess.run(
+    [*legacy_base, "legacy-jobs-preview", "--select", item_id], check=True,
+    capture_output=True, text=True, env=legacy_environment,
+).stdout)
+commit = json.loads(subprocess.run(
+    [*legacy_base, "legacy-jobs-commit", "--select", item_id, "--confirm", preview["token"]],
+    check=True, capture_output=True, text=True, env=legacy_environment,
+).stdout)
+if not commit.get("committed") or commit.get("summary", {}).get("create") != 1:
+    raise SystemExit("legacy migration selected commit smoke failed")
 
 from qa.contracts import ContractError, validate_fixture
 from qa.privacy import PrivacyError, scan_tree

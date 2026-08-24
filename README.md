@@ -232,6 +232,39 @@ Each file contains:
 - Connection and hiring manager information
 - Priority ranking
 
+### Guided legacy job migration
+
+The helper can selectively import the documented numbered job entries from
+regular `search-*.md` files directly under `~/.claude-job-searches/`. It does
+not read `application_queue.md`, arbitrary paths, nested directories, or
+symlinks. Undocumented Markdown variants are not imported, and the helper never
+modifies report files.
+
+Discover candidates without changing or creating the canonical store:
+
+```bash
+python3 scripts/job-apply-store.py legacy-jobs-preview
+```
+
+Invalid entries remain visible with a reason. Preview chosen valid `itemId`
+values by repeating `--select`, then commit only after reviewing that exact
+selected preview:
+
+```bash
+python3 scripts/job-apply-store.py legacy-jobs-preview \
+  --select <item-id> --select <item-id>
+```
+
+Use `legacy-jobs-commit` with the identical ordered selection and the selected
+preview's confirmation token; `legacy-jobs-commit --help` shows the token option.
+
+Commit fails closed if the selection, any discovered report, parsed payload, or
+canonical job store changed. Imported records carry value-free migration
+provenance. Migration can create jobs, fill empty fields, and refresh
+migration-authored fields; it never overwrites nonempty human- or agent-authored
+values. The canonical job store is authoritative after import; Markdown export,
+mutation, and two-way sync are not supported.
+
 ## Safety Features
 
 - **Never handles credentials** - Pauses for you to complete login, password, CAPTCHA, or MFA steps

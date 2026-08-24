@@ -77,6 +77,28 @@ deletion requires an already-trashed record and its current revision.
 
 On first initialization, if the new profile does not exist and `~/.claude-job-profile.json` does, the helper copies the complete legacy object into `profile.json`. It preserves unknown keys and leaves the legacy file untouched. Once the new profile exists it is authoritative, so later changes to the legacy file are not re-imported.
 
+Timestamped job-report migration is separately explicit and selective. A
+discovery-only `legacy-jobs-preview` reads only regular, direct
+`~/.claude-job-searches/search-*.md` files in deterministic order and does not
+initialize the canonical store. Discovery is bounded to 100 files, 2 MiB per
+file, 20 MiB aggregate, and 5,000 candidate entries; excess, invalid UTF-8,
+symlinks, special files, and read-time type drift fail the whole operation.
+
+Selected preview and `legacy-jobs-commit` repeat the same ordered opaque item
+IDs. The confirmation token binds that selection, canonical payloads, selected
+locators, the complete report manifest and digests, migration origin, and the
+current jobs document or missing-store sentinel. Commit locks, rediscovers,
+reparses, and rejects drift before a canonical write. Reports are never modified.
+
+Imported jobs use `migration` field provenance and a closed `legacySources`
+array containing only source kind, root-relative report filename, deterministic
+content-derived entry ID, and SHA-256 digest. Migration may create records, fill empty fields, and
+replace fields already authored by migration, but it cannot overwrite nonempty
+human- or agent-authored values. Identical reruns are byte-stable no-ops. The job
+store is authoritative afterward; arbitrary roots, recursion,
+`application_queue.md`, Markdown export, source mutation, and continuous
+synchronization are unsupported.
+
 ## Versions and corruption
 
 Current documents use `schemaVersion: 1`. A corrupt document, invalid shape, or future schema version causes the helper to fail non-destructively. Agents must not repair canonical files with text editing; preserve the file and explain the error.
