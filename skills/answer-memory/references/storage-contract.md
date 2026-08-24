@@ -10,6 +10,8 @@ python3 "<plugin-root>/scripts/job-apply-store.py" --help
 
 - `~/.job-apply/profile.json`: versioned canonical profile and preferences.
 - `~/.job-apply/answers.json`: versioned answer records with state, source, scope, aliases, sensitivity, and confirmation metadata.
+- `~/.job-apply/jobs.json`: versioned canonical job records with optimistic revisions, focused application status, and recoverable trash state.
+- `~/.job-apply/resumes.json`: versioned local resume references with labels, defaults, file observations, revisions, and recoverable trash state.
 - `~/.job-apply/applications.jsonl`: append-only minimal application events.
 - `~/.job-apply/sessions/<application-id>.json`: resumable workflow metadata with answer-key references.
 - `~/.job-apply/auto-submit/campaign.json`: the current closed version-1 campaign record.
@@ -17,6 +19,50 @@ python3 "<plugin-root>/scripts/job-apply-store.py" --help
 - `~/.job-apply/auto-submit/receipts.jsonl`: append-only value-free receipt projection.
 
 Directories use user-only permissions and canonical files use `0600` where the platform supports POSIX modes. JSON writes use a same-directory temporary file and atomic replacement.
+
+Job read-modify-write operations additionally serialize through a private local
+store lock. Every mutable job record carries a positive revision. Updates,
+transitions, trash, restore, and permanent deletion require the current revision
+and fail closed on conflicts.
+
+## Canonical job lifecycle
+
+New jobs start as `saved`. The focused statuses are `saved`, `needs_info`,
+`ready`, `in_progress`, `awaiting_review`, `applied`, and `closed`. Closed jobs
+require one of `rejected`, `withdrawn`, `expired`, `duplicate`, or
+`not_interested` as their outcome. Only a direct user confirmation may authorize
+the `applied` transition.
+
+Normal deletion moves a job to recoverable trash. Permanent deletion is accepted
+only for an already-trashed record and requires its current revision. Active job
+URLs are normalized and unique; URL fragments and default ports do not create a
+second job identity.
+
+Readiness preflight returns stable error and warning codes without echoing profile
+or resume values. `ready` requires a non-empty valid profile and a current local
+file for the assigned or default active resume. Missing role or company and a
+resume file that changed since registration remain visible warnings.
+
+## Profile fact updates
+
+`profile-get` remains backward compatible and returns the raw profile.
+`profile-inspect` additionally returns the current positive revision and a
+JSON-pointer provenance map. `profile-patch` applies a nested object merge patch
+under the private store lock and records each changed path as `user`, `resume`,
+`agent`, or `migration`. Null removes the selected field. Arrays are replaced as
+one fact. A stale expected revision fails without modifying the profile.
+
+## Resume records
+
+Resume records contain only a stable identifier, label, normalized absolute local
+path, tags, default selection, file size and modification observation, revision,
+timestamps, and trash state. They do not contain resume bytes. A current check can
+report that the referenced file is missing or changed without updating the saved
+observation.
+
+Only one active resume may be the default. Trashing an actively assigned resume
+fails until every active job reference is reassigned or cleared. Permanent
+deletion requires an already-trashed record and its current revision.
 
 ## Migration
 
@@ -33,6 +79,17 @@ Policy state is separately versioned and optional. A v1 answer/profile/history/s
 Known semantic fields may use documented keys. Dynamic questions receive `question.<sha256>` keys generated from versioned Unicode/whitespace/punctuation normalization plus canonical scope JSON. The helper also checks stored normalized aliases. Agents must call `answer-key` or `answer-find`, never implement this algorithm themselves.
 
 Only a non-sensitive `confirmed` answer with matching scope may be reused without asking. `inferred`, `missing`, and every `sensitive` record require review. A stored sensitive value must carry the helper-generated consent timestamp, and the agent still reconfirms it before use.
+
+Answer records are listable and carry optimistic revisions for shared CLI/UX
+editing. Existing version-1 records without an explicit revision are treated as
+revision 1 and gain stored revision metadata on their next mutation. Normal get,
+find, and list operations hide trashed records.
+
+Changing a retained sensitive value requires a fresh field-specific remember
+decision. Updating non-value metadata on an already consented sensitive record
+preserves its consent marker. Permanent deletion requires recoverable trash first
+and fails while a resumable session references the answer key. Minimal history
+may retain the value-free key after the reusable answer is deleted.
 
 ## Data minimization
 

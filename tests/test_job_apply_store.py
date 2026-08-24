@@ -60,6 +60,88 @@ class StoreTests(unittest.TestCase):
         )
         self.assertEqual(self.store.get_profile()["firstName"], "Ada")
 
+    def test_profile_patch_edits_nested_facts_with_revision_and_provenance(self):
+        self.store.initialize()
+        self.store.replace_profile(
+            {
+                "firstName": "Ada",
+                "location": {"city": "London", "country": "UK"},
+                "skills": ["Python"],
+                "portfolioUrl": "https://example.com",
+            }
+        )
+        before = self.store.inspect_profile()
+        updated = self.store.patch_profile(
+            {
+                "location": {"city": "Phoenix"},
+                "skills": ["Python", "Rust"],
+                "portfolioUrl": None,
+            },
+            expected_revision=before["revision"],
+            source="user",
+        )
+        self.assertEqual(updated["profile"]["location"], {"city": "Phoenix", "country": "UK"})
+        self.assertEqual(updated["profile"]["skills"], ["Python", "Rust"])
+        self.assertNotIn("portfolioUrl", updated["profile"])
+        self.assertEqual(updated["revision"], before["revision"] + 1)
+        self.assertEqual(
+            set(updated["factProvenance"]),
+            {"/location/city", "/skills", "/portfolioUrl"},
+        )
+        self.assertTrue(
+            all(
+                item["source"] == "user"
+                for item in updated["factProvenance"].values()
+            )
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "revision conflict"):
+            self.store.patch_profile(
+                {"firstName": "Grace"},
+                expected_revision=before["revision"],
+                source="user",
+            )
+
+    def test_profile_patch_replaces_parent_provenance_with_specific_changes(self):
+        self.store.initialize()
+        first = self.store.patch_profile(
+            {"location": {"city": "Phoenix", "country": "US"}},
+            expected_revision=1,
+            source="resume",
+        )
+        second = self.store.patch_profile(
+            {"location": {"city": "Tempe"}},
+            expected_revision=first["revision"],
+            source="user",
+        )
+        self.assertEqual(second["factProvenance"]["/location/city"]["source"], "user")
+        self.assertEqual(
+            second["factProvenance"]["/location/country"]["source"], "resume"
+        )
+
+    def test_existing_v1_profile_without_revision_upgrades_on_first_patch(self):
+        self.root.mkdir(parents=True)
+        self.store.profile_path.write_text(
+            json.dumps(
+                {
+                    "schemaVersion": 1,
+                    "profile": {"firstName": "Ada"},
+                    "metadata": {
+                        "createdAt": "2026-01-01T00:00:00Z",
+                        "updatedAt": "2026-01-01T00:00:00Z",
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        self.store.initialize()
+        inspected = self.store.inspect_profile()
+        self.assertEqual(inspected["revision"], 1)
+        updated = self.store.patch_profile(
+            {"firstName": "Grace"}, expected_revision=1, source="user"
+        )
+        self.assertEqual(updated["revision"], 2)
+        self.assertEqual(updated["profile"]["firstName"], "Grace")
+
     def test_atomic_write_failure_keeps_previous_document_and_cleans_temp(self):
         self.store.initialize()
         before = self.store.profile_path.read_text(encoding="utf-8")
@@ -77,6 +159,8 @@ class StoreTests(unittest.TestCase):
         for path in (
             self.store.profile_path,
             self.store.answers_path,
+            self.store.jobs_path,
+            self.store.resumes_path,
             self.store.history_path,
         ):
             self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
@@ -153,6 +237,103 @@ class StoreTests(unittest.TestCase):
         )
         self.assertIn("rememberedWithConsentAt", remembered)
 
+    def test_answer_list_update_revisions_and_recoverable_delete(self):
+        answer = self.store.put_answer(
+            {
+                "question": "Preferred start date?",
+                "state": "confirmed",
+                "value": "June",
+                "aliases": ["Start date"],
+            }
+        )
+        self.assertEqual(answer["revision"], 1)
+        self.assertEqual(self.store.list_answers(), [answer])
+        updated = self.store.update_answer(
+            answer["key"],
+            {"value": "July", "aliases": ["Start date", "START DATE"]},
+            expected_revision=answer["revision"],
+        )
+        self.assertEqual(updated["revision"], 2)
+        self.assertEqual(updated["value"], "July")
+        self.assertEqual(updated["aliases"], ["start date"])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "revision conflict"):
+            self.store.update_answer(
+                answer["key"], {"value": "August"}, expected_revision=1
+            )
+
+        trashed = self.store.trash_answer(
+            answer["key"], expected_revision=updated["revision"]
+        )
+        self.assertIsNone(self.store.get_answer(answer["key"]))
+        self.assertEqual(
+            self.store.get_answer(answer["key"], include_trashed=True), trashed
+        )
+        self.assertIsNone(self.store.find_answer("Preferred start date?", {}))
+        restored = self.store.restore_answer(
+            answer["key"], expected_revision=trashed["revision"]
+        )
+        trashed_again = self.store.trash_answer(
+            answer["key"], expected_revision=restored["revision"]
+        )
+        self.assertEqual(
+            self.store.delete_answer(
+                answer["key"], expected_revision=trashed_again["revision"]
+            ),
+            {"deleted": True, "key": answer["key"]},
+        )
+
+    def test_answer_sensitive_update_requires_new_remember_consent(self):
+        answer = self.store.put_answer(
+            {
+                "question": "Salary expectation?",
+                "state": "sensitive",
+                "value": "200K",
+                "sensitivity": "high",
+            },
+            remember_sensitive=True,
+        )
+        unchanged = self.store.update_answer(
+            answer["key"],
+            {"aliases": ["Expected salary"]},
+            expected_revision=answer["revision"],
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "remember consent"):
+            self.store.update_answer(
+                answer["key"],
+                {"value": "250K"},
+                expected_revision=unchanged["revision"],
+            )
+        changed = self.store.update_answer(
+            answer["key"],
+            {"value": "250K"},
+            expected_revision=unchanged["revision"],
+            remember_sensitive=True,
+        )
+        self.assertEqual(changed["value"], "250K")
+        self.assertIn("rememberedWithConsentAt", changed)
+
+    def test_answer_permanent_delete_rejects_live_session_reference(self):
+        answer = self.store.put_answer(
+            {"question": "Portfolio?", "state": "confirmed", "value": "Yes"}
+        )
+        self.store.save_session(
+            "active-job",
+            {"status": "active", "answerKeys": [answer["key"]]},
+        )
+        trashed = self.store.trash_answer(
+            answer["key"], expected_revision=answer["revision"]
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "active session"):
+            self.store.delete_answer(
+                answer["key"], expected_revision=trashed["revision"]
+            )
+        self.store.delete_session("active-job")
+        self.assertTrue(
+            self.store.delete_answer(
+                answer["key"], expected_revision=trashed["revision"]
+            )["deleted"]
+        )
+
     def test_tampered_sensitive_answer_without_consent_fails_closed(self):
         self.store.initialize()
         document = json.loads(self.store.answers_path.read_text(encoding="utf-8"))
@@ -171,6 +352,686 @@ class StoreTests(unittest.TestCase):
         self.store.answers_path.write_text(json.dumps(document), encoding="utf-8")
         with self.assertRaises(STORE_MODULE.StoreError):
             self.store.get_answer("sensitive.example")
+
+    def test_job_crud_normalizes_urls_rejects_duplicates_and_checks_revisions(self):
+        created = self.store.create_job(
+            {
+                "id": "acme-engineer",
+                "url": "HTTPS://Jobs.Example.com:443/roles/1#apply",
+                "source": "manual",
+                "role": "Engineer",
+                "company": "Acme",
+                "priority": 4,
+            }
+        )
+        self.assertEqual(created["normalizedUrl"], "https://jobs.example.com/roles/1")
+        self.assertEqual(created["status"], "saved")
+        self.assertEqual(created["revision"], 1)
+        self.assertEqual(self.store.get_job("acme-engineer"), created)
+        self.assertEqual(self.store.list_jobs(), [created])
+
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "already exists"):
+            self.store.create_job(
+                {
+                    "id": "duplicate",
+                    "url": "https://jobs.example.com/roles/1",
+                }
+            )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "credentials"):
+            self.store.create_job(
+                {
+                    "id": "credential-url",
+                    "url": "https://user:private@example.com/jobs/2",
+                }
+            )
+
+        updated = self.store.update_job(
+            "acme-engineer",
+            {"notes": "Strong match", "priority": 5},
+            expected_revision=1,
+        )
+        self.assertEqual(updated["revision"], 2)
+        self.assertEqual(updated["notes"], "Strong match")
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "revision conflict"):
+            self.store.update_job(
+                "acme-engineer", {"role": "Staff Engineer"}, expected_revision=1
+            )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "unsupported fields"):
+            self.store.update_job(
+                "acme-engineer", {"status": "applied"}, expected_revision=2
+            )
+
+    def test_job_update_human_can_clear_optional_fields(self):
+        job = self.store.create_job(
+            {
+                "id": "human-clears",
+                "url": "https://example.com/jobs/human-clears",
+                "role": "Engineer",
+                "description": "Original description",
+                "notes": "Original notes",
+            }
+        )
+        cleared = self.store.update_job(
+            job["id"],
+            {"role": "", "description": "", "notes": None},
+            expected_revision=job["revision"],
+        )
+        self.assertEqual(cleared["revision"], job["revision"] + 1)
+        self.assertEqual(cleared["role"], "")
+        self.assertEqual(cleared["description"], "")
+        self.assertIsNone(cleared["notes"])
+        for field in ("role", "description", "notes"):
+            self.assertEqual(cleared["provenance"][f"/{field}"]["origin"], "human")
+
+        ignored = self.store.update_job(
+            job["id"],
+            {"role": "", "description": None, "notes": ""},
+            expected_revision=cleared["revision"],
+            origin="agent",
+        )
+        self.assertEqual(ignored, cleared)
+
+    def test_job_update_human_preserves_validation_and_string_values(self):
+        job = self.store.create_job(
+            {
+                "id": "human-update-values",
+                "url": "https://example.com/jobs/original",
+                "role": "Engineer",
+                "provenance": {"legacy": {"keep": True}},
+            }
+        )
+        updated = self.store.update_job(
+            job["id"],
+            {
+                "url": " HTTPS://Jobs.Example.com:443/new#apply ",
+                "role": "  Principal Engineer  ",
+                "company": "",
+                "provenance": {"custom": {"version": 1}},
+            },
+            expected_revision=job["revision"],
+        )
+        self.assertEqual(updated["url"], "HTTPS://Jobs.Example.com:443/new#apply")
+        self.assertEqual(updated["normalizedUrl"], "https://jobs.example.com/new")
+        self.assertEqual(updated["role"], "  Principal Engineer  ")
+        self.assertEqual(updated["company"], "")
+        self.assertIn("custom", updated["provenance"])
+        self.assertNotIn("legacy", updated["provenance"])
+        for field in ("url", "role", "company"):
+            self.assertEqual(updated["provenance"][f"/{field}"]["origin"], "human")
+
+        agent = self.store.update_job(
+            job["id"],
+            {
+                "company": "Agent Company",
+                "location": "Remote",
+                "provenance": {"/role": {"origin": "agent"}, "hijack": True},
+            },
+            expected_revision=updated["revision"],
+            origin="agent",
+        )
+        self.assertEqual(agent["company"], "")
+        self.assertEqual(agent["location"], "Remote")
+        self.assertEqual(agent["provenance"]["/company"]["origin"], "human")
+        self.assertEqual(agent["provenance"]["/location"]["origin"], "agent")
+        self.assertEqual(agent["provenance"]["/role"]["origin"], "human")
+        self.assertIn("custom", agent["provenance"])
+        self.assertNotIn("hijack", agent["provenance"])
+
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "HTTP or HTTPS"):
+            self.store.update_job(
+                job["id"],
+                {"url": "not-a-url"},
+                expected_revision=agent["revision"],
+            )
+
+    def test_agent_cannot_refill_human_cleared_fields(self):
+        job = self.store.create_job(
+            {
+                "id": "human-cleared-precedence",
+                "url": "https://example.com/jobs/human-cleared-precedence",
+                "role": "Original Role",
+            }
+        )
+        cleared = self.store.update_job(
+            job["id"], {"role": ""}, expected_revision=job["revision"]
+        )
+
+        direct = self.store.update_job(
+            job["id"],
+            {"role": "Agent Role", "company": "Acme"},
+            expected_revision=cleared["revision"],
+            origin="agent",
+        )
+        self.assertEqual(direct["role"], "")
+        self.assertEqual(direct["company"], "Acme")
+        self.assertEqual(direct["provenance"]["/role"]["origin"], "human")
+
+        payload = {
+            "jobs": [
+                {
+                    "url": job["url"],
+                    "role": "Agent Retry",
+                    "description": "Agent supplied",
+                }
+            ]
+        }
+        preview = self.store.preview_job_upsert(payload, "agent")
+        self.assertEqual(preview["decisions"][0]["fields"], ["description"])
+        self.store.commit_job_upsert(payload, "agent", preview["token"])
+        record = self.store.get_job(job["id"])
+        self.assertEqual(record["role"], "")
+        self.assertEqual(record["description"], "Agent supplied")
+        self.assertEqual(record["provenance"]["/role"]["origin"], "human")
+
+    def test_job_upsert_token_rejects_source_case_plan_drift(self):
+        job = self.store.create_job(
+            {
+                "id": "source-case-drift",
+                "url": "https://example.com/jobs/source-case-drift",
+                "source": "LinkedIn",
+            }
+        )
+        preview_input = {
+            "jobs": [{"url": job["url"], "source": "LinkedIn"}]
+        }
+        preview = self.store.preview_job_upsert(preview_input, "human")
+        self.assertEqual(preview["decisions"][0]["action"], "noop")
+
+        altered_input = {
+            "jobs": [{"url": job["url"], "source": "linkedin"}]
+        }
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "drifted"):
+            self.store.commit_job_upsert(altered_input, "human", preview["token"])
+        self.assertEqual(self.store.get_job(job["id"]), job)
+
+    def test_agent_ignores_protected_invalid_resume_before_validation(self):
+        resume_path = self.home / "resume.pdf"
+        resume_path.write_bytes(b"resume")
+        resume = self.store.create_resume(
+            {"id": "protected-resume", "label": "Protected", "path": str(resume_path)}
+        )
+        job = self.store.create_job(
+            {
+                "id": "protected-resume-job",
+                "url": "https://example.com/jobs/protected-resume",
+                "resumeId": resume["id"],
+            }
+        )
+
+        updated = self.store.update_job(
+            job["id"],
+            {"resumeId": "missing-resume", "company": "Acme"},
+            expected_revision=job["revision"],
+            origin="agent",
+        )
+        self.assertEqual(updated["resumeId"], resume["id"])
+        self.assertEqual(updated["company"], "Acme")
+
+    def test_job_upsert_preview_commit_cli_walkthrough(self):
+        subprocess.run(
+            [sys.executable, str(SCRIPT), "--root", str(self.root), "init"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        input_path = self.home / "upsert.json"
+        input_path.write_text(
+            json.dumps(
+                {
+                    "jobs": [
+                        {
+                            "url": "HTTPS://Jobs.Example.com:443/openings/42#apply",
+                            "source": "LinkedIn",
+                            "sourceId": "42",
+                            "role": "Staff Engineer",
+                        }
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        def command(name, *extra):
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--root",
+                    str(self.root),
+                    name,
+                    "--input",
+                    str(input_path),
+                    "--origin",
+                    "human",
+                    *extra,
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            return json.loads(completed.stdout)
+
+        preview = command("job-upsert-preview")
+        self.assertEqual(preview["summary"]["create"], 1)
+        job_id = preview["decisions"][0]["id"]
+        committed = command("job-upsert-commit", "--token", preview["token"])
+        self.assertTrue(committed["committed"])
+        self.assertEqual(committed["decisions"][0]["id"], job_id)
+
+        replay_preview = command("job-upsert-preview")
+        self.assertEqual(replay_preview["summary"]["noop"], 1)
+        before = self.store.jobs_path.read_bytes()
+        replay = command(
+            "job-upsert-commit", "--token", replay_preview["token"]
+        )
+        self.assertFalse(replay["committed"])
+        self.assertEqual(self.store.jobs_path.read_bytes(), before)
+        self.assertEqual(self.store.get_job(job_id)["status"], "saved")
+
+    def test_job_upsert_identity_conflicts_are_deterministic(self):
+        first = self.store.create_job(
+            {
+                "id": "first",
+                "url": "https://example.com/jobs/first",
+                "source": "LinkedIn",
+                "sourceId": "first-id",
+            }
+        )
+        second = self.store.create_job(
+            {
+                "id": "second",
+                "url": "https://example.com/jobs/second",
+                "source": "LinkedIn",
+                "sourceId": "second-id",
+            }
+        )
+        cross_identity = {
+            "jobs": [
+                {
+                    "url": first["url"],
+                    "source": "linkedin",
+                    "sourceId": second["sourceId"],
+                }
+            ]
+        }
+        preview = self.store.preview_job_upsert(cross_identity, "agent")
+        self.assertEqual(preview["decisions"][0]["action"], "conflict")
+
+        duplicates = {
+            "jobs": [
+                {"url": "https://example.com/jobs/new", "role": "One"},
+                {"url": "https://example.com/jobs/new", "role": "Two"},
+            ]
+        }
+        one = self.store.preview_job_upsert(duplicates, "agent")
+        two = self.store.preview_job_upsert(duplicates, "agent")
+        self.assertEqual(one["decisions"], two["decisions"])
+        self.assertEqual(
+            [item["action"] for item in one["decisions"]],
+            ["conflict", "conflict"],
+        )
+
+        identical = {
+            "jobs": [
+                {"url": "https://example.com/jobs/same", "role": "Same"},
+                {"url": "https://example.com/jobs/same", "role": "Same"},
+            ]
+        }
+        collapsed = self.store.preview_job_upsert(identical, "human")
+        self.assertEqual(
+            [item["action"] for item in collapsed["decisions"]],
+            ["create", "noop"],
+        )
+        self.assertEqual(
+            collapsed["decisions"][0]["id"], collapsed["decisions"][1]["id"]
+        )
+
+    def test_job_upsert_preserves_human_edits_and_records_provenance(self):
+        self.store.initialize()
+        human = {
+            "jobs": [
+                {
+                    "url": "https://example.com/jobs/provenance",
+                    "source": "LinkedIn",
+                    "sourceId": "provenance",
+                    "role": "Human Role",
+                }
+            ]
+        }
+        preview = self.store.preview_job_upsert(human, "human")
+        self.store.commit_job_upsert(human, "human", preview["token"])
+        job_id = preview["decisions"][0]["id"]
+
+        agent = {
+            "jobs": [
+                {
+                    "url": human["jobs"][0]["url"],
+                    "source": "linkedin",
+                    "sourceId": "provenance",
+                    "role": "Agent Role",
+                    "company": "Acme",
+                    "description": "Agent supplied",
+                }
+            ]
+        }
+        agent_preview = self.store.preview_job_upsert(agent, "agent")
+        self.assertEqual(agent_preview["decisions"][0]["fields"], ["company", "description"])
+        self.store.commit_job_upsert(agent, "agent", agent_preview["token"])
+        record = self.store.get_job(job_id)
+        self.assertEqual(record["role"], "Human Role")
+        self.assertEqual(record["company"], "Acme")
+        self.assertEqual(record["description"], "Agent supplied")
+        self.assertEqual(record["provenance"]["/role"]["origin"], "human")
+        self.assertEqual(record["provenance"]["/company"]["origin"], "agent")
+        self.assertEqual(
+            record["provenance"]["/company"]["observationSource"], "linkedin"
+        )
+
+        edited = self.store.update_job(
+            job_id, {"role": "Human Edited Role"}, record["revision"]
+        )
+        ignored = self.store.update_job(
+            job_id,
+            {"role": "Agent Retry", "company": "New Acme"},
+            edited["revision"],
+            origin="agent",
+        )
+        self.assertEqual(ignored["role"], "Human Edited Role")
+        self.assertEqual(ignored["company"], "New Acme")
+        self.assertEqual(ignored["provenance"]["/role"]["origin"], "human")
+        self.assertEqual(ignored["provenance"]["/company"]["origin"], "agent")
+
+    def test_job_upsert_preview_is_non_mutating_and_rejects_drift(self):
+        self.store.initialize()
+        before = {
+            path.name: (path.stat().st_mtime_ns, path.read_bytes())
+            for path in self.root.iterdir()
+            if path.is_file()
+        }
+        payload = {"jobs": [{"url": "https://example.com/jobs/preview"}]}
+        preview = self.store.preview_job_upsert(payload, "human")
+        after = {
+            path.name: (path.stat().st_mtime_ns, path.read_bytes())
+            for path in self.root.iterdir()
+            if path.is_file()
+        }
+        self.assertEqual(after, before)
+        self.assertNotIn(".store.lock", after)
+
+        self.store.create_job(
+            {"id": "drift", "url": "https://example.com/jobs/drift"}
+        )
+        current = self.store.jobs_path.read_bytes()
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "drifted"):
+            self.store.commit_job_upsert(
+                payload, "human", preview["token"]
+            )
+        self.assertEqual(self.store.jobs_path.read_bytes(), current)
+
+    def test_job_upsert_partial_records_remain_saved(self):
+        self.store.initialize()
+        payload = {
+            "jobs": [
+                {"url": "https://example.com/jobs/url-only"},
+                {"url": "https://example.com/jobs/invalid", "role": ["invalid"]},
+            ]
+        }
+        preview = self.store.preview_job_upsert(payload, "agent")
+        job_id = preview["decisions"][0]["id"]
+        committed = self.store.commit_job_upsert(
+            payload, "agent", preview["token"]
+        )
+        self.assertEqual(committed["summary"]["create"], 1)
+        self.assertEqual(committed["summary"]["invalid"], 1)
+        record = self.store.get_job(job_id)
+        self.assertEqual(record["status"], "saved")
+        self.assertNotIn("role", record)
+        self.assertNotIn("company", record)
+        self.assertEqual(record["provenance"]["/url"]["origin"], "agent")
+
+    def test_job_transitions_require_supported_flow_and_user_submission(self):
+        self.store.replace_profile({"firstName": "Ada"})
+        resume_path = self.home / "resume.pdf"
+        resume_path.write_bytes(b"resume")
+        self.store.create_resume(
+            {"id": "main-resume", "label": "Main", "path": str(resume_path)}
+        )
+        job = self.store.create_job(
+            {"id": "acme-role", "url": "https://example.com/jobs/1"}
+        )
+        preflight = self.store.preflight_job(job["id"])
+        self.assertTrue(preflight["ready"])
+        self.assertEqual(preflight["resumeId"], "main-resume")
+        self.assertEqual(set(preflight["warnings"]), {"role_missing", "company_missing"})
+        job = self.store.transition_job(
+            job["id"], "ready", expected_revision=job["revision"]
+        )
+        job = self.store.transition_job(
+            job["id"], "in_progress", expected_revision=job["revision"]
+        )
+        job = self.store.transition_job(
+            job["id"], "awaiting_review", expected_revision=job["revision"]
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "user confirmation"):
+            self.store.transition_job(
+                job["id"], "applied", expected_revision=job["revision"]
+            )
+        job = self.store.transition_job(
+            job["id"],
+            "applied",
+            expected_revision=job["revision"],
+            user_confirmed=True,
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "requires a supported outcome"):
+            self.store.transition_job(
+                job["id"], "closed", expected_revision=job["revision"]
+            )
+        job = self.store.transition_job(
+            job["id"],
+            "closed",
+            expected_revision=job["revision"],
+            closed_outcome="rejected",
+        )
+        self.assertEqual((job["status"], job["closedOutcome"]), ("closed", "rejected"))
+
+    def test_ready_transition_fails_closed_without_profile_or_resume(self):
+        job = self.store.create_job(
+            {"id": "not-ready", "url": "https://example.com/jobs/not-ready"}
+        )
+        preflight = self.store.preflight_job(job["id"])
+        self.assertFalse(preflight["ready"])
+        self.assertEqual(
+            set(preflight["errors"]), {"profile_empty", "resume_missing"}
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "not ready"):
+            self.store.transition_job(
+                job["id"], "ready", expected_revision=job["revision"]
+            )
+
+    def test_job_trash_restore_and_permanent_delete_are_guarded(self):
+        job = self.store.create_job(
+            {"id": "acme-role", "url": "https://example.com/jobs/1"}
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "must be trashed"):
+            self.store.delete_job(job["id"], expected_revision=job["revision"])
+
+        trashed = self.store.trash_job(job["id"], expected_revision=job["revision"])
+        self.assertIsNotNone(trashed["deletedAt"])
+        self.assertIsNone(self.store.get_job(job["id"]))
+        self.assertEqual(
+            self.store.get_job(job["id"], include_trashed=True), trashed
+        )
+        self.assertEqual(self.store.list_jobs(), [])
+
+        restored = self.store.restore_job(
+            job["id"], expected_revision=trashed["revision"]
+        )
+        self.assertIsNone(restored["deletedAt"])
+        trashed_again = self.store.trash_job(
+            job["id"], expected_revision=restored["revision"]
+        )
+        result = self.store.delete_job(
+            job["id"], expected_revision=trashed_again["revision"]
+        )
+        self.assertEqual(result, {"deleted": True, "id": job["id"]})
+        self.assertIsNone(self.store.get_job(job["id"], include_trashed=True))
+
+    def test_tampered_job_store_fails_closed(self):
+        self.store.initialize()
+        document = json.loads(self.store.jobs_path.read_text(encoding="utf-8"))
+        document["jobs"]["bad-job"] = {
+            "id": "bad-job",
+            "url": "https://example.com/job",
+            "normalizedUrl": "https://different.example.com/job",
+            "status": "saved",
+            "priority": 0,
+            "revision": 1,
+            "provenance": {},
+            "createdAt": "2026-08-24T00:00:00Z",
+            "updatedAt": "2026-08-24T00:00:00Z",
+            "deletedAt": None,
+        }
+        self.store.jobs_path.write_text(json.dumps(document), encoding="utf-8")
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "normalized URL"):
+            self.store.list_jobs()
+
+    def test_resume_registry_tracks_files_defaults_and_revisions(self):
+        first_path = self.home / "resume-a.pdf"
+        first_path.write_bytes(b"resume-a")
+        first = self.store.create_resume(
+            {
+                "id": "resume-a",
+                "label": "Engineering",
+                "path": str(first_path),
+                "tags": ["engineering"],
+            }
+        )
+        self.assertTrue(first["default"])
+        self.assertEqual(first["observedSize"], len(b"resume-a"))
+        self.assertFalse(self.store.check_resume(first["id"])["changed"])
+
+        missing_path = self.home / "resume-b.pdf"
+        second = self.store.create_resume(
+            {
+                "id": "resume-b",
+                "label": "Leadership",
+                "path": str(missing_path),
+            }
+        )
+        self.assertFalse(second["default"])
+        self.assertFalse(self.store.check_resume(second["id"])["exists"])
+        second = self.store.set_default_resume(
+            second["id"], expected_revision=second["revision"]
+        )
+        self.assertTrue(second["default"])
+        refreshed_first = self.store.get_resume(first["id"])
+        self.assertFalse(refreshed_first["default"])
+        self.assertEqual(refreshed_first["revision"], first["revision"] + 1)
+
+        first_path.write_bytes(b"changed-resume-a")
+        self.assertTrue(self.store.check_resume(first["id"])["changed"])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "revision conflict"):
+            self.store.update_resume(
+                first["id"], {"label": "Old"}, expected_revision=first["revision"]
+            )
+        updated = self.store.update_resume(
+            first["id"],
+            {"label": "Updated Engineering", "tags": ["staff"]},
+            expected_revision=refreshed_first["revision"],
+        )
+        self.assertEqual(updated["label"], "Updated Engineering")
+        self.assertEqual(self.store.list_resumes()[0]["id"], second["id"])
+
+    def test_resume_assignment_prevents_trash_until_job_is_reassigned(self):
+        resume_path = self.home / "resume.pdf"
+        resume_path.write_bytes(b"resume")
+        resume = self.store.create_resume(
+            {"id": "resume-main", "label": "Main", "path": str(resume_path)}
+        )
+        job = self.store.create_job(
+            {
+                "id": "assigned-job",
+                "url": "https://example.com/jobs/assigned",
+                "resumeId": resume["id"],
+            }
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "assigned"):
+            self.store.trash_resume(
+                resume["id"], expected_revision=resume["revision"]
+            )
+        job = self.store.update_job(
+            job["id"], {"resumeId": None}, expected_revision=job["revision"]
+        )
+        self.assertIsNone(job["resumeId"])
+        trashed = self.store.trash_resume(
+            resume["id"], expected_revision=resume["revision"]
+        )
+        self.assertIsNotNone(trashed["deletedAt"])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "does not exist"):
+            self.store.update_job(
+                job["id"],
+                {"resumeId": resume["id"]},
+                expected_revision=job["revision"],
+            )
+        restored = self.store.restore_resume(
+            resume["id"], expected_revision=trashed["revision"]
+        )
+        trashed_again = self.store.trash_resume(
+            resume["id"], expected_revision=restored["revision"]
+        )
+        self.assertEqual(
+            self.store.delete_resume(
+                resume["id"], expected_revision=trashed_again["revision"]
+            ),
+            {"deleted": True, "id": resume["id"]},
+        )
+
+    def test_tampered_resume_store_with_multiple_defaults_fails_closed(self):
+        first_path = self.home / "first.pdf"
+        second_path = self.home / "second.pdf"
+        first_path.write_bytes(b"first")
+        second_path.write_bytes(b"second")
+        first = self.store.create_resume(
+            {"id": "first", "label": "First", "path": str(first_path)}
+        )
+        second = self.store.create_resume(
+            {"id": "second", "label": "Second", "path": str(second_path)}
+        )
+        document = json.loads(self.store.resumes_path.read_text(encoding="utf-8"))
+        document["resumes"][first["id"]]["default"] = True
+        document["resumes"][second["id"]]["default"] = True
+        self.store.resumes_path.write_text(json.dumps(document), encoding="utf-8")
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "more than one"):
+            self.store.list_resumes()
+
+    def test_resume_permanent_delete_rejects_trashed_job_reference(self):
+        resume_path = self.home / "resume.pdf"
+        resume_path.write_bytes(b"resume")
+        resume = self.store.create_resume(
+            {"id": "resume-main", "label": "Main", "path": str(resume_path)}
+        )
+        job = self.store.create_job(
+            {
+                "id": "job-main",
+                "url": "https://example.com/jobs/main",
+                "resumeId": resume["id"],
+            }
+        )
+        job = self.store.trash_job(job["id"], expected_revision=job["revision"])
+        resume = self.store.trash_resume(
+            resume["id"], expected_revision=resume["revision"]
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "referenced"):
+            self.store.delete_resume(
+                resume["id"], expected_revision=resume["revision"]
+            )
+        self.store.delete_job(job["id"], expected_revision=job["revision"])
+        self.assertEqual(
+            self.store.delete_resume(
+                resume["id"], expected_revision=resume["revision"]
+            ),
+            {"deleted": True, "id": resume["id"]},
+        )
 
     def test_history_is_minimal_parseable_and_rejects_answer_values(self):
         event = self.store.append_history(
@@ -368,10 +1229,187 @@ class StoreTests(unittest.TestCase):
         self.assertTrue(result["initialized"])
         self.assertEqual(result["root"], str(self.root))
 
+    def test_job_cli_round_trip_uses_shared_json_contract(self):
+        job_input = self.home / "job.json"
+        job_input.write_text(
+            json.dumps(
+                {
+                    "id": "cli-job",
+                    "url": "https://example.com/jobs/cli",
+                    "role": "Engineer",
+                }
+            ),
+            encoding="utf-8",
+        )
+        created = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--root",
+                str(self.root),
+                "job-create",
+                "--input",
+                str(job_input),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        record = json.loads(created.stdout)
+        listed = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--root",
+                str(self.root),
+                "job-list",
+                "--status",
+                "saved",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(json.loads(listed.stdout), [record])
+
+    def test_profile_and_resume_cli_commands_use_shared_revisions(self):
+        subprocess.run(
+            [sys.executable, str(SCRIPT), "--root", str(self.root), "init"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        patch_input = self.home / "profile-patch.json"
+        patch_input.write_text(
+            json.dumps({"firstName": "Ada", "skills": ["Python"]}),
+            encoding="utf-8",
+        )
+        patched = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--root",
+                str(self.root),
+                "profile-patch",
+                "--input",
+                str(patch_input),
+                "--expected-revision",
+                "1",
+                "--source",
+                "user",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(json.loads(patched.stdout)["revision"], 2)
+
+        resume_file = self.home / "resume.pdf"
+        resume_file.write_bytes(b"resume")
+        resume_input = self.home / "resume.json"
+        resume_input.write_text(
+            json.dumps(
+                {"id": "main-resume", "label": "Main", "path": str(resume_file)}
+            ),
+            encoding="utf-8",
+        )
+        created = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--root",
+                str(self.root),
+                "resume-create",
+                "--input",
+                str(resume_input),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        listed = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--root",
+                str(self.root),
+                "resume-list",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(json.loads(listed.stdout), [json.loads(created.stdout)])
+
+    def test_answer_library_cli_lists_and_updates_by_revision(self):
+        answer_input = self.home / "answer.json"
+        answer_input.write_text(
+            json.dumps(
+                {
+                    "question": "Preferred start date?",
+                    "state": "confirmed",
+                    "value": "June",
+                }
+            ),
+            encoding="utf-8",
+        )
+        created = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--root",
+                str(self.root),
+                "answer-put",
+                "--input",
+                str(answer_input),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        record = json.loads(created.stdout)
+        update_input = self.home / "answer-update.json"
+        update_input.write_text(json.dumps({"value": "July"}), encoding="utf-8")
+        updated = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--root",
+                str(self.root),
+                "answer-update",
+                "--key",
+                record["key"],
+                "--expected-revision",
+                str(record["revision"]),
+                "--input",
+                str(update_input),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        listed = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--root",
+                str(self.root),
+                "answer-list",
+                "--state",
+                "confirmed",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(json.loads(listed.stdout), [json.loads(updated.stdout)])
+
     def test_paths_exposes_separate_inert_policy_root_without_changing_v1_store(self):
         self.store.initialize()
         paths = self.store.paths()
         self.assertEqual(paths["schemaVersion"], 1)
+        self.assertEqual(paths["jobs"], str(self.root / "jobs.json"))
+        self.assertEqual(paths["resumes"], str(self.root / "resumes.json"))
         self.assertEqual(paths["autoSubmitPolicy"], str(self.root / "auto-submit"))
         self.assertFalse((self.root / "auto-submit").exists())
         self.assertEqual(self.store.get_profile(), {})

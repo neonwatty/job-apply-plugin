@@ -62,6 +62,8 @@ The default layout is:
 ~/.job-apply/
   profile.json
   answers.json
+  jobs.json
+  resumes.json
   applications.jsonl
   sessions/
     <application-id>.json
@@ -113,12 +115,49 @@ Do not place passwords, credentials, authentication tokens, CAPTCHA answers, pay
 
 ```bash
 python3 "<plugin-root>/scripts/job-apply-store.py" profile-get
+python3 "<plugin-root>/scripts/job-apply-store.py" profile-inspect
 python3 "<plugin-root>/scripts/job-apply-store.py" profile-replace --input <profile.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" profile-patch \
+  --input <patch.json> --expected-revision <revision> \
+  --source <user|resume|agent|migration>
 python3 "<plugin-root>/scripts/job-apply-store.py" preferences-get
 python3 "<plugin-root>/scripts/job-apply-store.py" preferences-set --input <preferences.json>
 ```
 
 `preferences-set` merges supplied keys and preserves all other profile and preference fields. Use `--replace` only after the user explicitly chooses to replace the full preferences object.
+
+`profile-get` keeps the legacy raw-profile response. Use `profile-inspect` before a
+selective edit to obtain the current revision and fact provenance, then pass that
+revision to `profile-patch`. A conflict means another client changed the profile;
+reload and show the user the current data instead of retrying a stale patch.
+
+## Resume records
+
+Resume records are stable local references. They store a label, absolute path,
+tags, default selection, file-observation metadata, revision, and trash state;
+they never copy resume file contents.
+
+```bash
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-create --input <resume.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-list
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-get --id <resume-id>
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-update \
+  --id <resume-id> --expected-revision <revision> --input <patch.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-set-default \
+  --id <resume-id> --expected-revision <revision>
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-check --id <resume-id>
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-trash \
+  --id <resume-id> --expected-revision <revision>
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-restore \
+  --id <resume-id> --expected-revision <revision>
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-delete \
+  --id <resume-id> --expected-revision <revision>
+```
+
+The first active resume becomes the default unless the input explicitly declines.
+Trashing a resume assigned to an active job fails until that job is reassigned or
+cleared. `resume-check` reports missing or changed files without mutating the
+stored observation.
 
 ## Reusable answers
 
@@ -141,6 +180,27 @@ python3 "<plugin-root>/scripts/job-apply-store.py" answer-find \
 
 Store a reviewed non-sensitive answer with `answer-put --input <answer.json>`. The helper owns stable keys and aliases; omit `key` for a dynamic question unless a documented semantic key already exists.
 
+For the shared answer-library surface, list and selectively edit records through
+the helper. Existing records without explicit revisions are exposed as revision
+1 and gain durable revision metadata on their next mutation.
+
+```bash
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-list [--state <state>]
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-update \
+  --key <answer-key> --expected-revision <revision> --input <patch.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-trash \
+  --key <answer-key> --expected-revision <revision>
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-restore \
+  --key <answer-key> --expected-revision <revision>
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-delete \
+  --key <answer-key> --expected-revision <revision>
+```
+
+Normal lookup and listing hide trashed answers. Use `--include-trashed` only for
+an explicit trash-management workflow. Permanent deletion requires an
+already-trashed record and fails while an active resumable session references the
+answer key.
+
 ### Sensitive answers require two decisions
 
 Ask separately:
@@ -159,6 +219,9 @@ python3 "<plugin-root>/scripts/job-apply-store.py" answer-put \
 ```
 
 Even a remembered sensitive answer must be shown and reconfirmed before each future form entry.
+Changing a stored sensitive value through `answer-update` requires a fresh
+`--remember-sensitive` decision. Editing only its aliases or question wording
+does not manufacture a new retention decision.
 
 ## Application history
 
@@ -169,6 +232,38 @@ Use `reviewed` when Job Apply reaches final review. Do not record `completed` un
 ```bash
 python3 "<plugin-root>/scripts/job-apply-store.py" history-list
 ```
+
+## Canonical jobs
+
+Use the job commands for durable records shared by people, the companion UX,
+and agent workflows. New jobs begin in `saved`. Updates and lifecycle changes
+require the current positive `revision`, so stale clients cannot silently replace
+newer edits.
+
+```bash
+python3 "<plugin-root>/scripts/job-apply-store.py" job-create --input <job.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" job-list [--status <status>]
+python3 "<plugin-root>/scripts/job-apply-store.py" job-get --id <job-id>
+python3 "<plugin-root>/scripts/job-apply-store.py" job-preflight --id <job-id>
+python3 "<plugin-root>/scripts/job-apply-store.py" job-update \
+  --id <job-id> --expected-revision <revision> --input <patch.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" job-transition \
+  --id <job-id> --status <status> --expected-revision <revision>
+python3 "<plugin-root>/scripts/job-apply-store.py" job-trash \
+  --id <job-id> --expected-revision <revision>
+python3 "<plugin-root>/scripts/job-apply-store.py" job-restore \
+  --id <job-id> --expected-revision <revision>
+python3 "<plugin-root>/scripts/job-apply-store.py" job-delete \
+  --id <job-id> --expected-revision <revision>
+```
+
+Only explicit user confirmation may transition a reviewed job to `applied`; pass
+`--user-confirmed` only for that direct confirmation. A job must be in recoverable
+trash before permanent deletion. Use `--include-trashed` only when the user wants
+to inspect or restore trashed records. Run `job-preflight` before `ready`; the
+transition fails if the profile is empty or no usable assigned/default resume file
+exists. Missing role or company and a changed resume file are warnings, not hidden
+assumptions.
 
 ## Resumable sessions
 
