@@ -24,6 +24,7 @@ Invoke skills with `$job-apply:...` in Codex or `/job-apply:...` in Claude Code.
 - **Smart field mapping**: Automatically matches your profile to form fields
 - **Confidence-aware answer reuse**: Reuses confirmed non-sensitive answers and flags inferred, missing, or sensitive answers for review
 - **Resumable progress**: Saves application step metadata and answer references without copying answer values
+- **Ready-job handoff**: Selects a canonical ready job, exclusively claims it with a recoverable lease, uses its assigned/default resume, and atomically hands it to needs-info or final review
 - **Manual submission**: Stops at final review so only you can click Submit or Send
 - **Resume storage**: Profile saved locally for reuse across applications
 
@@ -166,6 +167,8 @@ Job Apply stores data as **plaintext local files** under `~/.job-apply/`:
   jobs.json
   resumes.json
   applications.jsonl
+  coordinator.json
+  coordinator-journal.json
   sessions/
     <application-id>.json
 ```
@@ -177,7 +180,11 @@ Job Apply stores data as **plaintext local files** under `~/.job-apply/`:
 | `jobs.json` | Canonical job records, application status, revisions, and recoverable trash state |
 | `resumes.json` | Versioned local resume references, labels, defaults, and file observations |
 | `applications.jsonl` | Minimal append-only application lifecycle events |
+| `coordinator.json` | One global, recoverable 300-second application-agent claim |
+| `coordinator-journal.json` | Value-free idempotent roll-forward record for lifecycle handoffs |
 | `sessions/*.json` | Resumable workflow metadata and answer-key references |
+
+The coordinator files are created only when the ready-job claim workflow is first used; direct-URL applications keep the legacy store shape.
 
 These files can include sensitive personal information such as:
 
@@ -193,7 +200,7 @@ Protect the directory like a resume. Do not attach its files to issues or share 
 
 ```bash
 chmod 700 ~/.job-apply
-chmod 600 ~/.job-apply/profile.json ~/.job-apply/answers.json ~/.job-apply/jobs.json ~/.job-apply/resumes.json ~/.job-apply/applications.jsonl
+chmod 600 ~/.job-apply/profile.json ~/.job-apply/answers.json ~/.job-apply/jobs.json ~/.job-apply/resumes.json ~/.job-apply/applications.jsonl ~/.job-apply/coordinator.json ~/.job-apply/coordinator-journal.json
 ```
 
 On first use, an existing `~/.claude-job-profile.json` is copied into the new versioned profile without modifying or deleting the legacy file. Once `~/.job-apply/profile.json` exists it is authoritative; later legacy-file changes are not re-imported. Verify the new profile before deciding whether to archive or remove the old file.

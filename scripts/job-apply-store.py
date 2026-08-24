@@ -13,13 +13,14 @@ import hmac
 import json
 import os
 import re
+import secrets
 import stat
 import sys
 import tempfile
 import unicodedata
 import uuid
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
@@ -36,6 +37,9 @@ HISTORY_EVENTS = {
     "completed",
     "abandoned",
     "failed",
+    "job-started",
+    "claim-recovered",
+    "job-blocked",
 }
 SESSION_STATUSES = {"active", "review", "completed", "abandoned"}
 JOB_STATUSES = {
@@ -84,6 +88,8 @@ FACT_SOURCES = {"user", "resume", "agent", "migration"}
 REPLAY_TRANSITIONS = {"started", "reviewed"}
 REPLAY_ATS = {"ashby", "greenhouse", "lever", "linkedin-easy-apply"}
 SESSION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+CLAIM_LEASE_SECONDS = 300
+CLAIM_HEARTBEAT_SECONDS = 60
 
 
 class StoreError(Exception):
@@ -520,6 +526,20 @@ def _validate_session_document(session: dict[str, Any]) -> None:
     )
 
 
+def _validate_claim_record(value: Any) -> dict[str, Any]:
+    claim = _require_object(value, "coordinator claim")
+    required = {
+        "claimId", "jobId", "ownerLabel", "tokenHash", "acquiredAt",
+        "heartbeatAt", "expiresAt",
+    }
+    if set(claim) != required or not all(
+        isinstance(claim.get(field), str) and claim[field] for field in required
+    ):
+        raise StoreError("coordinator claim is invalid")
+    _safe_session_id(claim["jobId"])
+    return claim
+
+
 def _validate_job_record(key: str, value: Any) -> dict[str, Any]:
     record = _require_object(value, "job record")
     allowed = {
@@ -677,7 +697,7 @@ def _read_input(path: str) -> dict[str, Any]:
 
 
 class Store:
-    def __init__(self, root: Path, legacy_profile: Path | None = None):
+    def __init__(self, root: Path, legacy_profile: Path | None = None, clock=None):
         self.root = root.expanduser()
         self.profile_path = self.root / "profile.json"
         self.answers_path = self.root / "answers.json"
@@ -685,6 +705,8 @@ class Store:
         self.resumes_path = self.root / "resumes.json"
         self.history_path = self.root / "applications.jsonl"
         self.sessions_path = self.root / "sessions"
+        self.coordinator_path = self.root / "coordinator.json"
+        self.coordinator_journal_path = self.root / "coordinator-journal.json"
         self.store_lock_path = self.root / ".store.lock"
         self.auto_submit_policy_path = self.root / "auto-submit"
         self.legacy_profile = (
@@ -692,6 +714,18 @@ class Store:
             if legacy_profile is not None
             else Path.home() / ".claude-job-profile.json"
         )
+        self.clock = clock or (lambda: datetime.now(timezone.utc))
+
+    def _now_datetime(self) -> datetime:
+        value = self.clock()
+        if not isinstance(value, datetime):
+            raise StoreError("coordinator clock returned an invalid value")
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
+
+    def _now(self) -> str:
+        return self._now_datetime().isoformat(timespec="seconds").replace("+00:00", "Z")
 
     def paths(self) -> dict[str, Any]:
         return {
@@ -703,6 +737,8 @@ class Store:
             "resumes": str(self.resumes_path),
             "history": str(self.history_path),
             "sessions": str(self.sessions_path),
+            "coordinator": str(self.coordinator_path),
+            "coordinatorJournal": str(self.coordinator_journal_path),
             "autoSubmitPolicy": str(self.auto_submit_policy_path),
             "legacyProfile": str(self.legacy_profile),
         }
@@ -718,8 +754,15 @@ class Store:
             self._load_jobs_document()
         if self.resumes_path.exists():
             self._load_resumes_document()
-        if self.history_path.exists():
+        coordinator_exists = (
+            self.coordinator_path.exists() or self.coordinator_journal_path.exists()
+        )
+        if self.history_path.exists() and not coordinator_exists:
             self.read_history()
+        if self.coordinator_path.exists():
+            self._load_coordinator_document()
+        if self.coordinator_journal_path.exists():
+            self._load_coordinator_journal()
 
         _ensure_private_dir(self.root)
         _ensure_private_dir(self.sessions_path)
@@ -787,7 +830,91 @@ class Store:
             os.close(descriptor)
         _set_private_mode(self.history_path, 0o600)
 
+        if coordinator_exists:
+            with exclusive_file_lock(self.store_lock_path):
+                self._ensure_coordinator_files_locked()
+                self._repair_pending_history_tail_locked()
+                self._roll_forward_locked()
+                self.read_history()
+
         return {"initialized": True, "migratedLegacyProfile": migrated, **self.paths()}
+
+    def _ensure_coordinator_files_locked(self) -> None:
+        if not self.coordinator_path.exists():
+            atomic_write_json(
+                self.coordinator_path,
+                {"schemaVersion": SCHEMA_VERSION, "claim": None},
+            )
+        if not self.coordinator_journal_path.exists():
+            atomic_write_json(
+                self.coordinator_journal_path,
+                {"schemaVersion": SCHEMA_VERSION, "operation": None},
+            )
+
+    def _ensure_coordinator_files(self) -> None:
+        with exclusive_file_lock(self.store_lock_path):
+            self._ensure_coordinator_files_locked()
+            self._roll_forward_locked()
+
+    def _load_coordinator_document(self) -> dict[str, Any]:
+        document = read_json_object(self.coordinator_path, "coordinator")
+        validate_version(document, "coordinator")
+        if set(document) != {"schemaVersion", "claim"}:
+            raise StoreError("coordinator contains unsupported fields")
+        claim = document["claim"]
+        if claim is not None:
+            _validate_claim_record(claim)
+        return document
+
+    def _load_coordinator_journal(self) -> dict[str, Any]:
+        document = read_json_object(self.coordinator_journal_path, "coordinator journal")
+        validate_version(document, "coordinator journal")
+        if set(document) != {"schemaVersion", "operation"}:
+            raise StoreError("coordinator journal contains unsupported fields")
+        operation = document["operation"]
+        if operation is not None:
+            operation = _require_object(operation, "coordinator journal operation")
+            kind = operation.get("kind")
+            common = {"kind", "operationId", "jobId", "at", "historyEvent", "resultClaim"}
+            transition = {"sourceStatus", "targetStatus", "expectedRevision"}
+            expected = common | (transition if kind == "acquire" else set())
+            if kind == "handoff":
+                expected = common | transition | {"session"}
+            if kind not in {"acquire", "recover", "handoff"} or set(operation) != expected:
+                raise StoreError("coordinator journal operation is invalid")
+            job_id = _safe_session_id(operation.get("jobId", ""))
+            if not all(
+                isinstance(operation.get(field), str) and operation[field]
+                for field in ("operationId", "at")
+            ):
+                raise StoreError("coordinator journal operation is invalid")
+            event = _require_object(operation.get("historyEvent"), "coordinator history event")
+            _validate_history_event(event)
+            if event.get("applicationId") != job_id:
+                raise StoreError("coordinator history identity does not match")
+            if kind in {"acquire", "handoff"}:
+                revision = operation.get("expectedRevision")
+                if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
+                    raise StoreError("coordinator journal revision is invalid")
+            if kind == "acquire":
+                if operation.get("sourceStatus") != "ready" or operation.get("targetStatus") != "in_progress":
+                    raise StoreError("coordinator acquisition transition is invalid")
+            if kind == "handoff":
+                if operation.get("sourceStatus") != "in_progress" or operation.get("targetStatus") not in {"needs_info", "awaiting_review"}:
+                    raise StoreError("coordinator handoff transition is invalid")
+                session = _require_object(operation.get("session"), "coordinator session")
+                _validate_session_document(session)
+                if session.get("applicationId") != job_id:
+                    raise StoreError("coordinator session identity does not match")
+            result_claim = operation.get("resultClaim")
+            if kind == "handoff":
+                if result_claim is not None:
+                    raise StoreError("coordinator handoff must release its claim")
+            else:
+                claim = _validate_claim_record(result_claim)
+                if claim["jobId"] != job_id:
+                    raise StoreError("coordinator claim identity does not match")
+        return document
 
     def _load_profile_document(self) -> dict[str, Any]:
         document = read_json_object(self.profile_path, "profile")
@@ -856,7 +983,10 @@ class Store:
 
     def inspect_profile(self) -> dict[str, Any]:
         self.initialize()
-        document = self._load_profile_document()
+        return self._profile_inspection(self._load_profile_document())
+
+    @staticmethod
+    def _profile_inspection(document: dict[str, Any]) -> dict[str, Any]:
         metadata = document["metadata"]
         return {
             "profile": document["profile"],
@@ -899,7 +1029,7 @@ class Store:
                 raise StoreError("profile revision conflict")
             updated, changed = _merge_object_patch(document["profile"], incoming)
             if not changed:
-                return self.inspect_profile()
+                return self._profile_inspection(document)
             now = utc_now()
             provenance = dict(metadata.get("factProvenance", {}))
             for path in changed:
@@ -1243,7 +1373,7 @@ class Store:
                 raise StoreError("answer revision conflict")
             if current.get("deletedAt") is None:
                 raise StoreError("answer must be trashed before permanent deletion")
-            for session in self.list_sessions():
+            for session in self._list_sessions_uninitialized():
                 if key in session.get("answerKeys", []) or any(
                     field.get("answerKey") == key
                     for field in session.get("pendingFields", [])
@@ -1877,10 +2007,13 @@ class Store:
                 raise StoreError("job does not exist")
             if current["revision"] != expected_revision:
                 raise StoreError("job revision conflict")
+            self._require_job_unclaimed_locked(job_id)
             if status == current["status"]:
                 return current
             if status not in JOB_TRANSITIONS[current["status"]]:
                 raise StoreError("job status transition is unsupported")
+            if status == "in_progress":
+                raise StoreError("in_progress requires atomic job-acquire")
             if status == "applied" and not user_confirmed:
                 raise StoreError("applied status requires explicit user confirmation")
             if status == "ready" and not self._preflight_job_record(current)["ready"]:
@@ -1895,6 +2028,270 @@ class Store:
             document["metadata"]["updatedAt"] = updated["updatedAt"]
             atomic_write_json(self.jobs_path, document)
         return updated
+
+    @staticmethod
+    def _token_hash(token: str) -> str:
+        if not isinstance(token, str) or not token:
+            raise StoreError("claim token is required")
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+    def _public_claim(self, claim: dict[str, Any] | None) -> dict[str, Any] | None:
+        if claim is None:
+            return None
+        public = {key: value for key, value in claim.items() if key != "tokenHash"}
+        public["expired"] = self._now_datetime() >= self._parse_time(claim["expiresAt"])
+        return public
+
+    @staticmethod
+    def _parse_time(value: str) -> datetime:
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except (AttributeError, ValueError) as error:
+            raise StoreError("coordinator timestamp is invalid") from error
+        if parsed.tzinfo is None:
+            raise StoreError("coordinator timestamp is invalid")
+        return parsed.astimezone(timezone.utc)
+
+    def claim_status(self) -> dict[str, Any]:
+        self.initialize()
+        self._ensure_coordinator_files()
+        claim = self._load_coordinator_document()["claim"]
+        return {
+            "claim": self._public_claim(claim),
+            "leaseSeconds": CLAIM_LEASE_SECONDS,
+            "heartbeatSeconds": CLAIM_HEARTBEAT_SECONDS,
+        }
+
+    def _require_claim_locked(
+        self, job_id: str, token: str, allow_expired: bool = False
+    ) -> dict[str, Any]:
+        claim = self._load_coordinator_document()["claim"]
+        if claim is None or claim["jobId"] != job_id:
+            raise StoreError("job is not held by this claim")
+        if not hmac.compare_digest(claim["tokenHash"], self._token_hash(token)):
+            raise StoreError("claim token is invalid")
+        job = self._load_jobs_document()["jobs"].get(job_id)
+        if job is None or job.get("deletedAt") is not None or job.get("status") != "in_progress":
+            raise StoreError("claimed job is not in progress")
+        if not allow_expired and self._now_datetime() >= self._parse_time(claim["expiresAt"]):
+            raise StoreError("claim has expired; use explicit recovery")
+        return claim
+
+    def _require_job_unclaimed_locked(self, job_id: str) -> None:
+        if not self.coordinator_path.exists():
+            return
+        claim = self._load_coordinator_document()["claim"]
+        if claim is not None and claim["jobId"] == job_id:
+            raise StoreError("claimed job requires a coordinator operation")
+
+    def _history_event_for_operation(
+        self, operation_id: str, job: dict[str, Any], event: str, status: str, at: str
+    ) -> dict[str, Any]:
+        record = {
+            "schemaVersion": SCHEMA_VERSION,
+            "eventId": f"coordinator-{operation_id}",
+            "applicationId": job["id"],
+            "event": event,
+            "status": status,
+            "answerKeys": [],
+            "at": at,
+        }
+        for field in ("company", "role", "ats"):
+            if isinstance(job.get(field), str):
+                record[field] = job[field]
+        _validate_history_event(record)
+        return record
+
+    def _append_history_event_idempotent_locked(self, event: dict[str, Any]) -> None:
+        existing = self.read_history()
+        if any(item.get("eventId") == event["eventId"] for item in existing):
+            return
+        _validate_history_event(event)
+        encoded = (json.dumps(event, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8")
+        descriptor = os.open(
+            self.history_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600
+        )
+        original_size = os.fstat(descriptor).st_size
+        try:
+            offset = 0
+            while offset < len(encoded):
+                written = os.write(descriptor, encoded[offset:])
+                if written <= 0:
+                    raise StoreError("history append was incomplete")
+                offset += written
+            os.fsync(descriptor)
+        except BaseException:
+            os.ftruncate(descriptor, original_size)
+            os.fsync(descriptor)
+            raise
+        finally:
+            os.close(descriptor)
+        _set_private_mode(self.history_path, 0o600)
+
+    def _repair_pending_history_tail_locked(self) -> None:
+        journal = self._load_coordinator_journal()
+        if journal["operation"] is None or not self.history_path.exists():
+            return
+        descriptor = os.open(self.history_path, os.O_RDWR)
+        try:
+            content = os.read(descriptor, os.fstat(descriptor).st_size)
+            if not content or content.endswith(b"\n"):
+                return
+            last_newline = content.rfind(b"\n")
+            os.ftruncate(descriptor, last_newline + 1)
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+
+    def _roll_forward_locked(self) -> None:
+        journal = self._load_coordinator_journal()
+        operation = journal["operation"]
+        if operation is None:
+            return
+        job_id = _safe_session_id(operation.get("jobId", ""))
+        if "targetStatus" in operation:
+            jobs = self._load_jobs_document()
+            current = jobs["jobs"].get(job_id)
+            if current is None or current.get("deletedAt") is not None:
+                raise StoreError("coordinator journal references a missing job")
+            expected = operation["expectedRevision"]
+            if current["revision"] == expected:
+                if current["status"] != operation["sourceStatus"]:
+                    raise StoreError("coordinator journal source status drifted")
+                updated = dict(current)
+                updated["status"] = operation["targetStatus"]
+                updated["closedOutcome"] = None
+                updated["revision"] = expected + 1
+                updated["updatedAt"] = operation["at"]
+                _validate_job_record(job_id, updated)
+                jobs["jobs"][job_id] = updated
+                jobs["metadata"]["updatedAt"] = operation["at"]
+                atomic_write_json(self.jobs_path, jobs)
+            elif not (
+                current["revision"] == expected + 1
+                and current["status"] == operation["targetStatus"]
+            ):
+                raise StoreError("coordinator journal cannot be reconciled")
+        session = operation.get("session")
+        if session is not None:
+            _validate_session_document(session)
+            atomic_write_json(self._session_path(job_id), session)
+        event = operation.get("historyEvent")
+        if event is not None:
+            self._append_history_event_idempotent_locked(event)
+        atomic_write_json(
+            self.coordinator_path,
+            {"schemaVersion": SCHEMA_VERSION, "claim": operation.get("resultClaim")},
+        )
+        atomic_write_json(
+            self.coordinator_journal_path,
+            {"schemaVersion": SCHEMA_VERSION, "operation": None},
+        )
+
+    def _commit_coordinator_operation_locked(self, operation: dict[str, Any]) -> None:
+        atomic_write_json(
+            self.coordinator_journal_path,
+            {"schemaVersion": SCHEMA_VERSION, "operation": operation},
+        )
+        self._roll_forward_locked()
+
+    def acquire_ready_job(
+        self, job_id: str, owner_label: str, expected_revision: int
+    ) -> dict[str, Any]:
+        self.initialize()
+        self._ensure_coordinator_files()
+        _safe_session_id(job_id)
+        if not isinstance(owner_label, str) or not owner_label.strip():
+            raise StoreError("owner label must be a non-empty string")
+        with exclusive_file_lock(self.store_lock_path):
+            coordinator = self._load_coordinator_document()
+            current_claim = coordinator["claim"]
+            if current_claim is not None:
+                if self._now_datetime() >= self._parse_time(current_claim["expiresAt"]):
+                    raise StoreError("expired claim requires explicit same-job recovery")
+                raise StoreError("another live job claim already exists")
+            jobs = self._load_jobs_document()
+            job = jobs["jobs"].get(job_id)
+            if job is None or job.get("deletedAt") is not None:
+                raise StoreError("job does not exist")
+            if job["revision"] != expected_revision:
+                raise StoreError("job revision conflict")
+            if job["status"] != "ready":
+                raise StoreError("only a ready job can be acquired")
+            preflight = self._preflight_job_record(job)
+            if not preflight["ready"]:
+                raise StoreError("job is not ready")
+            now_dt = self._now_datetime()
+            now = now_dt.isoformat(timespec="seconds").replace("+00:00", "Z")
+            token = secrets.token_urlsafe(32)
+            claim = {
+                "claimId": str(uuid.uuid4()),
+                "jobId": job_id,
+                "ownerLabel": owner_label.strip(),
+                "tokenHash": self._token_hash(token),
+                "acquiredAt": now,
+                "heartbeatAt": now,
+                "expiresAt": (now_dt + timedelta(seconds=CLAIM_LEASE_SECONDS)).isoformat(timespec="seconds").replace("+00:00", "Z"),
+            }
+            operation_id = str(uuid.uuid4())
+            operation = {
+                "kind": "acquire", "operationId": operation_id, "jobId": job_id,
+                "sourceStatus": "ready", "targetStatus": "in_progress",
+                "expectedRevision": job["revision"], "at": now,
+                "historyEvent": self._history_event_for_operation(operation_id, job, "job-started", "in_progress", now),
+                "resultClaim": claim,
+            }
+            self._commit_coordinator_operation_locked(operation)
+            return {
+                "job": self._load_jobs_document()["jobs"][job_id],
+                "resume": self._load_resumes_document()["resumes"][preflight["resumeId"]],
+                "claim": self._public_claim(claim),
+                "token": token,
+            }
+
+    def heartbeat_claim(self, job_id: str, token: str) -> dict[str, Any]:
+        self.initialize()
+        self._ensure_coordinator_files()
+        with exclusive_file_lock(self.store_lock_path):
+            claim = dict(self._require_claim_locked(job_id, token))
+            now_dt = self._now_datetime()
+            claim["heartbeatAt"] = now_dt.isoformat(timespec="seconds").replace("+00:00", "Z")
+            claim["expiresAt"] = (now_dt + timedelta(seconds=CLAIM_LEASE_SECONDS)).isoformat(timespec="seconds").replace("+00:00", "Z")
+            atomic_write_json(self.coordinator_path, {"schemaVersion": SCHEMA_VERSION, "claim": claim})
+            return {"claim": self._public_claim(claim)}
+
+    def recover_claim(self, job_id: str, owner_label: str) -> dict[str, Any]:
+        self.initialize()
+        self._ensure_coordinator_files()
+        _safe_session_id(job_id)
+        if not isinstance(owner_label, str) or not owner_label.strip():
+            raise StoreError("owner label must be a non-empty string")
+        with exclusive_file_lock(self.store_lock_path):
+            old = self._load_coordinator_document()["claim"]
+            if old is None or old["jobId"] != job_id:
+                raise StoreError("explicit recovery must name the expired claimed job")
+            job = self._load_jobs_document()["jobs"].get(job_id)
+            if job is None or job.get("status") != "in_progress":
+                raise StoreError("expired claim job is not in progress")
+            if self._now_datetime() < self._parse_time(old["expiresAt"]):
+                raise StoreError("live claim cannot be recovered")
+            now_dt = self._now_datetime()
+            now = now_dt.isoformat(timespec="seconds").replace("+00:00", "Z")
+            token = secrets.token_urlsafe(32)
+            claim = {
+                "claimId": str(uuid.uuid4()), "jobId": job_id,
+                "ownerLabel": owner_label.strip(), "tokenHash": self._token_hash(token),
+                "acquiredAt": now, "heartbeatAt": now,
+                "expiresAt": (now_dt + timedelta(seconds=CLAIM_LEASE_SECONDS)).isoformat(timespec="seconds").replace("+00:00", "Z"),
+            }
+            operation_id = str(uuid.uuid4())
+            self._commit_coordinator_operation_locked({
+                "kind": "recover", "operationId": operation_id, "jobId": job_id,
+                "at": now,
+                "historyEvent": self._history_event_for_operation(operation_id, job, "claim-recovered", "in_progress", now),
+                "resultClaim": claim,
+            })
+            return {"job": job, "claim": self._public_claim(claim), "token": token}
 
     def trash_job(self, job_id: str, expected_revision: int) -> dict[str, Any]:
         return self._set_job_deleted(job_id, expected_revision, restore=False)
@@ -1914,6 +2311,7 @@ class Store:
                 raise StoreError("job does not exist")
             if current["revision"] != expected_revision:
                 raise StoreError("job revision conflict")
+            self._require_job_unclaimed_locked(job_id)
             is_trashed = current.get("deletedAt") is not None
             if restore == (not is_trashed):
                 return current
@@ -1951,6 +2349,7 @@ class Store:
                 return {"deleted": False, "id": job_id}
             if current["revision"] != expected_revision:
                 raise StoreError("job revision conflict")
+            self._require_job_unclaimed_locked(job_id)
             if current.get("deletedAt") is None:
                 raise StoreError("job must be trashed before permanent deletion")
             del document["jobs"][job_id]
@@ -2362,57 +2761,106 @@ class Store:
     def _session_path(self, application_id: str) -> Path:
         return self.sessions_path / f"{_safe_session_id(application_id)}.json"
 
-    def save_session(
-        self, application_id: str, incoming: dict[str, Any]
+    def _build_session(
+        self, application_id: str, incoming: dict[str, Any], now: str | None = None
     ) -> dict[str, Any]:
-        self.initialize()
         allowed = {
-            "applicationId",
-            "status",
-            "ats",
-            "company",
-            "role",
-            "url",
-            "step",
-            "answerKeys",
-            "pendingFields",
-            "createdAt",
-            "updatedAt",
+            "applicationId", "status", "ats", "company", "role", "url", "step",
+            "answerKeys", "pendingFields", "createdAt", "updatedAt",
         }
         if set(incoming) - allowed:
             raise StoreError("session contains unsupported fields")
         application_id = _safe_session_id(application_id)
-        supplied_id = incoming.get("applicationId", application_id)
-        if supplied_id != application_id:
+        if incoming.get("applicationId", application_id) != application_id:
             raise StoreError("session application id does not match path")
         status = incoming.get("status", "active")
         if status not in SESSION_STATUSES:
             raise StoreError("session status is unsupported")
         answer_keys = incoming.get("answerKeys", [])
-        if not isinstance(answer_keys, list) or not all(
-            isinstance(item, str) for item in answer_keys
-        ):
+        if not isinstance(answer_keys, list) or not all(isinstance(item, str) for item in answer_keys):
             raise StoreError("session answerKeys must be strings")
-        pending_fields = incoming.get("pendingFields", [])
-
         path = self._session_path(application_id)
         created_at = incoming.get("createdAt")
         if path.exists():
-            existing = self.load_session(application_id)
+            existing = read_json_object(path, "session")
+            _validate_session_document(existing)
             created_at = created_at or existing.get("createdAt")
+        timestamp = now or utc_now()
         session = {
-            "schemaVersion": SCHEMA_VERSION,
-            **incoming,
-            "applicationId": application_id,
-            "status": status,
+            "schemaVersion": SCHEMA_VERSION, **incoming,
+            "applicationId": application_id, "status": status,
             "answerKeys": answer_keys,
-            "pendingFields": pending_fields,
-            "createdAt": created_at or utc_now(),
-            "updatedAt": utc_now(),
+            "pendingFields": incoming.get("pendingFields", []),
+            "createdAt": created_at or timestamp, "updatedAt": timestamp,
         }
         _validate_session_document(session)
-        atomic_write_json(path, session)
         return session
+
+    def save_claim_progress(
+        self, job_id: str, token: str, incoming: dict[str, Any]
+    ) -> dict[str, Any]:
+        self.initialize()
+        self._ensure_coordinator_files()
+        with exclusive_file_lock(self.store_lock_path):
+            self._require_claim_locked(job_id, token)
+            job = self._load_jobs_document()["jobs"].get(job_id)
+            if job is None or job.get("status") != "in_progress":
+                raise StoreError("claimed job is not in progress")
+            session = self._build_session(job_id, incoming, self._now())
+            if session["status"] != "active":
+                raise StoreError("claim progress session must remain active")
+            atomic_write_json(self._session_path(job_id), session)
+            return session
+
+    def handoff_claimed_job(
+        self,
+        job_id: str,
+        token: str,
+        status: str,
+        incoming: dict[str, Any],
+        expected_revision: int,
+    ) -> dict[str, Any]:
+        self.initialize()
+        self._ensure_coordinator_files()
+        if status not in {"needs_info", "awaiting_review"}:
+            raise StoreError("claimed handoff status is unsupported")
+        with exclusive_file_lock(self.store_lock_path):
+            self._require_claim_locked(job_id, token)
+            job = self._load_jobs_document()["jobs"].get(job_id)
+            if job is None or job.get("status") != "in_progress":
+                raise StoreError("claimed job is not in progress")
+            if job["revision"] != expected_revision:
+                raise StoreError("job revision conflict")
+            now = self._now()
+            session = self._build_session(job_id, incoming, now)
+            required_session_status = "active" if status == "needs_info" else "review"
+            if session["status"] != required_session_status:
+                raise StoreError("handoff session status does not match job status")
+            event_name = "job-blocked" if status == "needs_info" else "reviewed"
+            operation_id = str(uuid.uuid4())
+            self._commit_coordinator_operation_locked({
+                "kind": "handoff", "operationId": operation_id, "jobId": job_id,
+                "sourceStatus": "in_progress", "targetStatus": status,
+                "expectedRevision": job["revision"], "at": now, "session": session,
+                "historyEvent": self._history_event_for_operation(operation_id, job, event_name, status, now),
+                "resultClaim": None,
+            })
+            return {
+                "job": self._load_jobs_document()["jobs"][job_id],
+                "session": session,
+                "claim": None,
+            }
+
+    def save_session(
+        self, application_id: str, incoming: dict[str, Any]
+    ) -> dict[str, Any]:
+        self.initialize()
+        with exclusive_file_lock(self.store_lock_path):
+            self._require_generic_session_mutation_allowed_locked(application_id)
+            session = self._build_session(application_id, incoming)
+            path = self._session_path(application_id)
+            atomic_write_json(path, session)
+            return session
 
     def load_session(self, application_id: str) -> dict[str, Any]:
         self.initialize()
@@ -2428,6 +2876,9 @@ class Store:
 
     def list_sessions(self) -> list[dict[str, Any]]:
         self.initialize()
+        return self._list_sessions_uninitialized()
+
+    def _list_sessions_uninitialized(self) -> list[dict[str, Any]]:
         sessions: list[dict[str, Any]] = []
         for path in sorted(self.sessions_path.glob("*.json")):
             session = read_json_object(path, "session")
@@ -2440,12 +2891,29 @@ class Store:
 
     def delete_session(self, application_id: str) -> dict[str, Any]:
         self.initialize()
-        path = self._session_path(application_id)
-        if not path.exists():
-            return {"deleted": False, "applicationId": application_id}
-        path.unlink()
-        _fsync_directory(self.sessions_path)
-        return {"deleted": True, "applicationId": application_id}
+        with exclusive_file_lock(self.store_lock_path):
+            self._require_generic_session_mutation_allowed_locked(
+                application_id, allow_terminal_delete=True
+            )
+            path = self._session_path(application_id)
+            if not path.exists():
+                return {"deleted": False, "applicationId": application_id}
+            path.unlink()
+            _fsync_directory(self.sessions_path)
+            return {"deleted": True, "applicationId": application_id}
+
+    def _require_generic_session_mutation_allowed_locked(
+        self, application_id: str, allow_terminal_delete: bool = False
+    ) -> None:
+        job = self._load_jobs_document()["jobs"].get(application_id)
+        if (
+            job is not None
+            and job.get("deletedAt") is None
+            and not (
+                allow_terminal_delete and job.get("status") in {"applied", "closed"}
+            )
+        ):
+            raise StoreError("canonical job sessions require a coordinator operation")
 
 
 def _scope(value: str) -> dict[str, Any]:
@@ -2538,6 +3006,27 @@ def build_parser() -> argparse.ArgumentParser:
     job_transition.add_argument("--closed-outcome")
     job_transition.add_argument("--expected-revision", required=True, type=int)
     job_transition.add_argument("--user-confirmed", action="store_true")
+    job_acquire = commands.add_parser("job-acquire")
+    job_acquire.add_argument("--id", required=True)
+    job_acquire.add_argument("--owner", required=True)
+    job_acquire.add_argument("--expected-revision", required=True, type=int)
+    commands.add_parser("claim-status")
+    claim_heartbeat = commands.add_parser("claim-heartbeat")
+    claim_heartbeat.add_argument("--id", required=True)
+    claim_heartbeat.add_argument("--token", required=True)
+    claim_recover = commands.add_parser("claim-recover")
+    claim_recover.add_argument("--id", required=True)
+    claim_recover.add_argument("--owner", required=True)
+    claim_progress = commands.add_parser("claim-progress")
+    claim_progress.add_argument("--id", required=True)
+    claim_progress.add_argument("--token", required=True)
+    claim_progress.add_argument("--input", required=True)
+    claim_handoff = commands.add_parser("claim-handoff")
+    claim_handoff.add_argument("--id", required=True)
+    claim_handoff.add_argument("--token", required=True)
+    claim_handoff.add_argument("--status", required=True)
+    claim_handoff.add_argument("--input", required=True)
+    claim_handoff.add_argument("--expected-revision", required=True, type=int)
     job_trash = commands.add_parser("job-trash")
     job_trash.add_argument("--id", required=True)
     job_trash.add_argument("--expected-revision", required=True, type=int)
@@ -2675,6 +3164,24 @@ def run(args: argparse.Namespace) -> Any:
             args.expected_revision,
             closed_outcome=args.closed_outcome,
             user_confirmed=args.user_confirmed,
+        )
+    if command == "job-acquire":
+        return store.acquire_ready_job(args.id, args.owner, args.expected_revision)
+    if command == "claim-status":
+        return store.claim_status()
+    if command == "claim-heartbeat":
+        return store.heartbeat_claim(args.id, args.token)
+    if command == "claim-recover":
+        return store.recover_claim(args.id, args.owner)
+    if command == "claim-progress":
+        return store.save_claim_progress(args.id, args.token, _read_input(args.input))
+    if command == "claim-handoff":
+        return store.handoff_claimed_job(
+            args.id,
+            args.token,
+            args.status,
+            _read_input(args.input),
+            args.expected_revision,
         )
     if command == "job-trash":
         return store.trash_job(args.id, args.expected_revision)

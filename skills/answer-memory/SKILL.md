@@ -277,6 +277,23 @@ python3 "<plugin-root>/scripts/job-apply-store.py" session-delete --id <applicat
 
 Delete a session after the user confirms submission or explicitly abandons it. History remains separate.
 
+## Ready-job agent handoff
+
+Canonical ready jobs are consumed through the coordinator, not by a standalone `ready -> in_progress` transition. The store permits at most one global claim, uses a 300-second lease and 60-second heartbeat cadence, and stores only a SHA-256 token hash. `job-acquire` and `claim-recover` return the raw bearer token in their machine-readable stdout; treat that output as ephemeral and never repeat the token in user-facing text or persist it in logs, sessions, or temporary files.
+
+```bash
+python3 "<plugin-root>/scripts/job-apply-store.py" job-list --status ready
+python3 "<plugin-root>/scripts/job-apply-store.py" job-acquire --id <job-id> --owner <owner-label> --expected-revision <revision>
+python3 "<plugin-root>/scripts/job-apply-store.py" claim-status
+python3 "<plugin-root>/scripts/job-apply-store.py" claim-heartbeat --id <job-id> --token <token>
+python3 "<plugin-root>/scripts/job-apply-store.py" claim-progress --id <job-id> --token <token> --input <session.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" claim-handoff --id <job-id> --token <token> --status needs_info --expected-revision <revision> --input <session.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" claim-handoff --id <job-id> --token <token> --status awaiting_review --expected-revision <revision> --input <session.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" claim-recover --id <same-job-id> --owner <owner-label>
+```
+
+`job-acquire` requires the revision shown during selection, rechecks readiness under the global lock, and returns the resolved resume record, preferring the job's assigned resume over the active default. Terminal handoff likewise requires the post-acquisition or post-recovery revision retained by the caller; reloading just before handoff would mask a concurrent change. A stale revision fails without changing claim, job, history, or session state. A live claim is never stolen or silently released. Generic transition, trash, deletion, and session-mutation commands reject active canonical jobs. An expired claim can only be recovered explicitly for the same `in_progress` job; use `claim-status` to obtain that job ID. Recovery rotates the token and preserves its session and status. Heartbeat, progress, recovery, and both handoffs require canonical `in_progress` status. The session schema rejects explicit value fields, but allowed metadata strings cannot be classified semantically: callers must never encode answer values in `step`, question metadata, answer keys, or any other allowed string. The needs-info and review handoffs journal and roll forward job, history, session, and claim-release changes idempotently after a crash.
+
 ## Safety rules
 
 1. Never bypass the helper for persistent data mutations.

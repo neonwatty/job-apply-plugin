@@ -30,7 +30,16 @@ After evaluation, or if the QA replay is abandoned, run `python3 "<plugin-root>/
 
 Then wait for the user to provide the path before proceeding with profile extraction.
 
-**If the profile contains applicant data**, say:
+**If the profile contains applicant data**, first determine the application mode:
+
+- If the user supplied a job URL, keep the existing direct-URL workflow unchanged. Do not create a canonical job or claim implicitly.
+- If no URL was supplied, run `claim-status` before listing ready jobs. If it returns a live claim, identify the claimed job and do not start another one. If it returns an expired claim, identify the returned claimed job ID and ask whether to recover that exact job; after confirmation run `claim-recover --id <claimed-job-id> --owner <owner-label>`. If there is no claim, run `job-list --status ready`. If ready jobs exist, show their role, company, and URL and ask the user to select one (offer the first priority-sorted result). If none exist, use the existing URL prompt below.
+
+For a selected ready job, retain its displayed revision, create a short non-sensitive owner label for this agent run, and run `job-acquire --id <job-id> --owner <owner-label> --expected-revision <revision>`. This single operation rejects a stale selection, re-runs preflight, resolves the job's assigned resume before the active default, creates the exclusive 300-second claim, moves `ready` to `in_progress`, and records `job-started`. Retain the returned post-acquisition job revision for the eventual handoff. The machine-readable result returns the bearer token on stdout; treat it as ephemeral sensitive output, never repeat it in user-facing text, and never place it in logs, saved sessions, or temporary files. Use the returned job URL and returned resume path for the application; do not substitute `profile.resumePath`.
+
+If acquisition reports a claim, run `claim-status` because the global claim can belong to a different job. Do not work around a live claim. For an expired claim, use the claimed job ID returned by `claim-status`, ask whether to resume that exact job, and only then run `claim-recover --id <claimed-job-id> --owner <owner-label>`. Recovery never steals a live claim. Retain the recovered job revision for handoff. Run `claim-heartbeat --id <job-id> --token <token>` at least every 60 seconds while actively working.
+
+**If the profile contains applicant data and neither a supplied URL nor a selected ready job is available**, say:
 
 > Welcome back! Your local Job Apply profile and answer memory are ready.
 >
@@ -46,7 +55,7 @@ Then wait for the user to provide the path before proceeding with profile extrac
 ## Required Input
 
 - **Resume file path**: Path to your resume (PDF, DOCX, or TXT format)
-- **Job URL**: LinkedIn job posting or direct application link
+- **Application target**: Either a selected canonical `ready` job or a supplied job URL
 
 ## Profile Storage
 
@@ -110,7 +119,7 @@ If `profile-get` returns an empty object, or if the user requests a reset:
 
 ### Phase 2: Application Filling
 
-1. **Initialize and load storage** through the bundled `answer-memory` skill; use `profile-get`, then check `session-list` for resumable work matching this application
+1. **Initialize and load storage** through the bundled `answer-memory` skill; use `profile-get`, then check `session-list` for resumable work matching this application. In selected-ready mode, use the acquired canonical job ID as the application/session ID and the resume returned by `job-acquire`; in direct-URL mode preserve the existing URL-derived workflow.
 2. **Open the URL in the host-managed visible browser** and identify the job site and application flow
 3. **Pause for user-only steps** if login, password, CAPTCHA, MFA, consent, or account creation appears
 4. **Open the application form**; if an Apply link opens an external portal, continue in that visible host-managed tab
@@ -118,11 +127,13 @@ If `profile-get` returns an empty object, or if the user requests a reset:
 6. **Reuse only matching, non-sensitive `confirmed` answers**. Show and confirm `inferred` answers, ask for `missing` answers, and reconfirm every `sensitive` answer before entry
 7. **Separate fill consent from remember consent** for salary, work authorization, visa status, demographic information, disability disclosure, and similar answers. Use `--remember-sensitive` only after explicit field-specific permission to remember
 8. **Upload the resume** through the visible file control and verify the selected filename
-9. **Save resumable progress** through `session-save`; store answer keys and pending-field states, never answer values
+9. **Save resumable progress**. In selected-ready mode use claim-gated `claim-progress --id <job-id> --token <token> --input <session.json>`; in direct-URL mode continue to use `session-save`. Store answer keys and pending-field states, never answer values.
 10. **Handle inaccessible controls** using the optional fallback rules above, or leave the field for the user
 11. **Advance through non-final steps** only when the control is clearly Next, Continue, Save, or Review
 12. **Stop at final review** before any Submit, Send, or equivalent final-action button
-13. **Record a minimal `reviewed` history event** with answer-key references (or use the required coordinator `reviewed` command for approved local QA), summarize every entered value, identify anything incomplete or uncertain, and tell the user to inspect the page and submit manually
+13. **Complete the durable handoff**. In selected-ready mode, pass the post-acquisition (or post-recovery) job revision retained before browser work to `claim-handoff --id <job-id> --token <token> --status awaiting_review --expected-revision <retained-revision> --input <review-session.json>`. The session JSON must contain only value-free review metadata. This atomically saves the review session, records `reviewed`, moves the canonical job to `awaiting_review`, and releases the claim. A revision conflict means the user or another client changed the job; stop and re-evaluate instead of reloading and retrying with an unseen revision. In direct-URL mode retain the existing minimal `reviewed` history event (or the required coordinator `reviewed` command for approved local QA). Summarize every entered value, identify anything incomplete or uncertain, and tell the user to inspect the page and submit manually.
+
+If selected-ready work needs a user answer, first prepare a session containing only question/state/answer-key/sensitivity metadata, then use `claim-handoff --id <job-id> --token <token> --status needs_info --expected-revision <retained-revision> --input <needs-info-session.json>`. Do not reload the job revision first; a conflict must expose concurrent changes. This atomically moves the job to `needs_info`, records `job-blocked`, and releases the claim. After the user supplies the missing information, transition `needs_info` to `ready` with the current revision (preflight is enforced), then acquire a fresh claim. Never retain a claim while waiting for the user. If the process crashes, leave the record intact for explicit stale recovery; never delete or silently clear a claim.
 
 User confirmation never authorizes this skill to click Submit, Send, or any equivalent final-action button.
 

@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -154,6 +155,7 @@ class StoreTests(unittest.TestCase):
     @unittest.skipIf(os.name == "nt", "POSIX permissions only")
     def test_private_permissions(self):
         self.store.initialize()
+        self.store.claim_status()
         self.assertEqual(stat.S_IMODE(self.root.stat().st_mode), 0o700)
         self.assertEqual(stat.S_IMODE(self.store.sessions_path.stat().st_mode), 0o700)
         for path in (
@@ -162,6 +164,8 @@ class StoreTests(unittest.TestCase):
             self.store.jobs_path,
             self.store.resumes_path,
             self.store.history_path,
+            self.store.coordinator_path,
+            self.store.coordinator_journal_path,
         ):
             self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
 
@@ -332,6 +336,23 @@ class StoreTests(unittest.TestCase):
             self.store.delete_answer(
                 answer["key"], expected_revision=trashed["revision"]
             )["deleted"]
+        )
+
+    def test_profile_noop_and_answer_delete_do_not_reenter_coordinator_lock(self):
+        self.store.replace_profile({"firstName": "Ada"})
+        self.store.claim_status()
+        before = self.store.inspect_profile()
+        unchanged = self.store.patch_profile(
+            {"firstName": "Ada"}, before["revision"], "user"
+        )
+        self.assertEqual(unchanged, before)
+
+        answer = self.store.put_answer(
+            {"question": "Portfolio?", "state": "confirmed", "value": "Yes"}
+        )
+        trashed = self.store.trash_answer(answer["key"], answer["revision"])
+        self.assertTrue(
+            self.store.delete_answer(answer["key"], trashed["revision"])["deleted"]
         )
 
     def test_tampered_sensitive_answer_without_consent_fails_closed(self):
@@ -806,12 +827,16 @@ class StoreTests(unittest.TestCase):
         job = self.store.transition_job(
             job["id"], "ready", expected_revision=job["revision"]
         )
-        job = self.store.transition_job(
-            job["id"], "in_progress", expected_revision=job["revision"]
+        acquired = self.store.acquire_ready_job(
+            job["id"], "unit-test-agent", job["revision"]
         )
-        job = self.store.transition_job(
-            job["id"], "awaiting_review", expected_revision=job["revision"]
+        job = acquired["job"]
+        handoff = self.store.handoff_claimed_job(
+            job["id"], acquired["token"], "awaiting_review",
+            {"status": "review", "step": "review", "pendingFields": []},
+            job["revision"],
         )
+        job = handoff["job"]
         with self.assertRaisesRegex(STORE_MODULE.StoreError, "user confirmation"):
             self.store.transition_job(
                 job["id"], "applied", expected_revision=job["revision"]
@@ -833,6 +858,326 @@ class StoreTests(unittest.TestCase):
             closed_outcome="rejected",
         )
         self.assertEqual((job["status"], job["closedOutcome"]), ("closed", "rejected"))
+
+    def _make_ready_job(self, job_id="ready-job", assigned=False):
+        self.store.replace_profile({"firstName": "Ada"})
+        default_path = self.home / "default.pdf"
+        default_path.write_bytes(b"default-resume")
+        self.store.create_resume(
+            {"id": "default-resume", "label": "Default", "path": str(default_path)}
+        )
+        resume_id = None
+        if assigned:
+            assigned_path = self.home / "assigned.pdf"
+            assigned_path.write_bytes(b"assigned-resume")
+            assigned_resume = self.store.create_resume(
+                {"id": "assigned-resume", "label": "Assigned", "path": str(assigned_path)}
+            )
+            resume_id = assigned_resume["id"]
+        job = self.store.create_job({
+            "id": job_id, "url": f"https://example.com/jobs/{job_id}",
+            "role": "Engineer", "company": "Acme", "resumeId": resume_id,
+        })
+        return self.store.transition_job(job_id, "ready", job["revision"])
+
+    def test_ready_acquisition_is_exclusive_and_uses_assigned_resume(self):
+        self._make_ready_job(assigned=True)
+        ready = self.store.get_job("ready-job")
+        acquired = self.store.acquire_ready_job("ready-job", "codex", ready["revision"])
+        self.assertEqual(acquired["job"]["status"], "in_progress")
+        self.assertEqual(acquired["resume"]["id"], "assigned-resume")
+        self.assertNotIn("tokenHash", acquired["claim"])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "live job claim"):
+            self.store.acquire_ready_job("ready-job", "claude", ready["revision"])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "claim token"):
+            self.store.save_claim_progress(
+                "ready-job", "wrong-token", {"status": "active", "step": "form"}
+            )
+        protected = self.store.save_claim_progress(
+            "ready-job", acquired["token"], {"status": "active", "step": "protected"}
+        )
+        for action in (
+            lambda: self.store.save_session(
+                "ready-job", {"status": "review", "step": "overwrite"}
+            ),
+            lambda: self.store.delete_session("ready-job"),
+        ):
+            with self.assertRaisesRegex(
+                STORE_MODULE.StoreError, "coordinator operation"
+            ):
+                action()
+        self.assertEqual(self.store.load_session("ready-job"), protected)
+        events = self.store.read_history()
+        self.assertEqual([event["event"] for event in events], ["job-started"])
+
+    def test_expired_claim_requires_explicit_same_job_recovery_and_rotates_token(self):
+        instant = [datetime(2026, 8, 24, tzinfo=timezone.utc)]
+        self.store = STORE_MODULE.Store(self.root, self.legacy, clock=lambda: instant[0])
+        self._make_ready_job()
+        ready = self.store.get_job("ready-job")
+        acquired = self.store.acquire_ready_job("ready-job", "codex", ready["revision"])
+        instant[0] += timedelta(seconds=301)
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "explicit same-job recovery"):
+            self.store.acquire_ready_job("ready-job", "claude", ready["revision"])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "claimed job"):
+            self.store.recover_claim("different-job", "claude")
+        recovered = self.store.recover_claim("ready-job", "claude")
+        self.assertNotEqual(recovered["token"], acquired["token"])
+        self.assertEqual(
+            [event["event"] for event in self.store.read_history()],
+            ["job-started", "claim-recovered"],
+        )
+
+    def test_claim_handoffs_are_atomic_value_free_and_release_ownership(self):
+        self._make_ready_job()
+        ready = self.store.get_job("ready-job")
+        acquired = self.store.acquire_ready_job("ready-job", "codex", ready["revision"])
+        pending = {
+            "status": "active", "step": "questions", "answerKeys": ["question.safe"],
+            "pendingFields": [{"question": "Authorization?", "state": "missing", "answerKey": "question.safe", "sensitive": False}],
+        }
+        self.store.save_claim_progress("ready-job", acquired["token"], pending)
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "unsupported fields"):
+            self.store.save_claim_progress(
+                "ready-job", acquired["token"],
+                {"status": "active", "pendingFields": [{"question": "Salary?", "value": "250K"}]},
+            )
+        handoff = self.store.handoff_claimed_job(
+            "ready-job", acquired["token"], "needs_info", pending,
+            acquired["job"]["revision"],
+        )
+        self.assertEqual(handoff["job"]["status"], "needs_info")
+        self.assertIsNone(self.store.claim_status()["claim"])
+        stored = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in (self.store.coordinator_path, self.store.coordinator_journal_path,
+                         self.store.history_path, self.store._session_path("ready-job"))
+        )
+        self.assertNotIn(acquired["token"], stored)
+        self.assertNotIn("250K", stored)
+        self.assertEqual([event["event"] for event in self.store.read_history()], ["job-started", "job-blocked"])
+
+    def test_coordinator_journal_rolls_forward_after_partial_failure_without_duplicates(self):
+        self._make_ready_job()
+        original = STORE_MODULE.atomic_write_json
+        failed = {"done": False}
+
+        def fail_coordinator_once(path, payload):
+            if path == self.store.coordinator_path and payload.get("claim") is not None and not failed["done"]:
+                failed["done"] = True
+                raise OSError("simulated crash")
+            return original(path, payload)
+
+        with mock.patch.object(STORE_MODULE, "atomic_write_json", side_effect=fail_coordinator_once):
+            with self.assertRaises(OSError):
+                ready = self.store.get_job("ready-job")
+                self.store.acquire_ready_job(
+                    "ready-job", "codex", ready["revision"]
+                )
+        repaired = STORE_MODULE.Store(self.root, self.legacy)
+        status = repaired.claim_status()
+        self.assertIsNotNone(status["claim"])
+        self.assertEqual(repaired.get_job("ready-job")["status"], "in_progress")
+        self.assertEqual([event["event"] for event in repaired.read_history()], ["job-started"])
+        self.assertIsNone(repaired._load_coordinator_journal()["operation"])
+
+    def test_claimed_jobs_reject_generic_mutations_and_divergence_claim_actions(self):
+        ready = self._make_ready_job()
+        acquired = self.store.acquire_ready_job("ready-job", "codex", ready["revision"])
+        revision = acquired["job"]["revision"]
+        for action in (
+            lambda: self.store.transition_job("ready-job", "awaiting_review", revision),
+            lambda: self.store.trash_job("ready-job", revision),
+            lambda: self.store.delete_job("ready-job", revision),
+        ):
+            with self.assertRaisesRegex(STORE_MODULE.StoreError, "coordinator operation"):
+                action()
+
+        document = json.loads(self.store.jobs_path.read_text(encoding="utf-8"))
+        document["jobs"]["ready-job"]["status"] = "awaiting_review"
+        document["jobs"]["ready-job"]["revision"] += 1
+        self.store.jobs_path.write_text(json.dumps(document), encoding="utf-8")
+        for action in (
+            lambda: self.store.heartbeat_claim("ready-job", acquired["token"]),
+            lambda: self.store.save_claim_progress(
+                "ready-job", acquired["token"], {"status": "active", "step": "form"}
+            ),
+            lambda: self.store.handoff_claimed_job(
+                "ready-job", acquired["token"], "awaiting_review",
+                {"status": "review", "step": "review"}, revision + 1,
+            ),
+            lambda: self.store.recover_claim("ready-job", "recovery-agent"),
+        ):
+            with self.assertRaisesRegex(STORE_MODULE.StoreError, "not in progress"):
+                action()
+
+    def test_lease_boundary_expires_exactly_at_expires_at(self):
+        instant = [datetime(2026, 8, 24, tzinfo=timezone.utc)]
+        self.store = STORE_MODULE.Store(self.root, self.legacy, clock=lambda: instant[0])
+        ready = self._make_ready_job()
+        acquired = self.store.acquire_ready_job("ready-job", "codex", ready["revision"])
+        instant[0] += timedelta(seconds=STORE_MODULE.CLAIM_LEASE_SECONDS)
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "claim has expired"):
+            self.store.heartbeat_claim("ready-job", acquired["token"])
+        recovered = self.store.recover_claim("ready-job", "recovery-agent")
+        self.assertNotEqual(recovered["token"], acquired["token"])
+
+    def test_expected_revisions_and_default_resume_are_enforced(self):
+        ready = self._make_ready_job()
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "revision conflict"):
+            self.store.acquire_ready_job("ready-job", "codex", ready["revision"] - 1)
+        acquired = self.store.acquire_ready_job("ready-job", "codex", ready["revision"])
+        self.assertEqual(acquired["resume"]["id"], "default-resume")
+        updated = self.store.update_job(
+            "ready-job", {"notes": "human update"}, acquired["job"]["revision"]
+        )
+        review = {"status": "review", "step": "review", "pendingFields": []}
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "revision conflict"):
+            self.store.handoff_claimed_job(
+                "ready-job", acquired["token"], "awaiting_review", review,
+                acquired["job"]["revision"],
+            )
+        self.assertIsNotNone(self.store.claim_status()["claim"])
+        handed = self.store.handoff_claimed_job(
+            "ready-job", acquired["token"], "awaiting_review", review,
+            updated["revision"],
+        )
+        self.assertEqual(handed["job"]["status"], "awaiting_review")
+
+    def test_acquisition_and_handoff_roll_forward_at_each_failure_boundary(self):
+        original_write = STORE_MODULE.atomic_write_json
+
+        def ready_store(case):
+            root = self.home / "boundaries" / case
+            store = STORE_MODULE.Store(root, self.legacy)
+            store.replace_profile({"firstName": "Ada"})
+            resume_path = root / "resume.pdf"
+            resume_path.write_bytes(b"resume")
+            store.create_resume({"id": "resume", "label": "Resume", "path": str(resume_path)})
+            job = store.create_job({"id": "job", "url": f"https://example.com/{case}"})
+            ready = store.transition_job("job", "ready", job["revision"])
+            store.claim_status()
+            return store, ready
+
+        acquisition_boundaries = {
+            "journal-write": lambda store, path, payload: path == store.coordinator_journal_path and payload.get("operation") is not None,
+            "jobs": lambda store, path, payload: path == store.jobs_path,
+            "history": None,
+            "coordinator": lambda store, path, payload: path == store.coordinator_path and payload.get("claim") is not None,
+            "journal-clear": lambda store, path, payload: path == store.coordinator_journal_path and payload.get("operation") is None,
+        }
+        for name, predicate in acquisition_boundaries.items():
+            with self.subTest(operation="acquire", boundary=name):
+                store, ready = ready_store(f"acquire-{name}")
+                if name == "history":
+                    patcher = mock.patch.object(
+                        store, "_append_history_event_idempotent_locked",
+                        side_effect=OSError("simulated crash"),
+                    )
+                else:
+                    failed = {"done": False}
+                    def fail_once(path, payload, predicate=predicate, store=store):
+                        if predicate(store, path, payload) and not failed["done"]:
+                            failed["done"] = True
+                            raise OSError("simulated crash")
+                        return original_write(path, payload)
+                    patcher = mock.patch.object(STORE_MODULE, "atomic_write_json", side_effect=fail_once)
+                with patcher, self.assertRaises(OSError):
+                    store.acquire_ready_job("job", "agent", ready["revision"])
+                repaired = STORE_MODULE.Store(store.root, self.legacy)
+                if name == "journal-write":
+                    self.assertIsNone(repaired.claim_status()["claim"])
+                    self.assertEqual(repaired.get_job("job")["status"], "ready")
+                    self.assertEqual(repaired.read_history(), [])
+                    continue
+                self.assertIsNotNone(repaired.claim_status()["claim"])
+                self.assertEqual(repaired.get_job("job")["status"], "in_progress")
+                self.assertEqual([event["event"] for event in repaired.read_history()], ["job-started"])
+
+        handoff_boundaries = {
+            "journal-write": lambda store, path, payload: path == store.coordinator_journal_path and payload.get("operation") is not None,
+            "jobs": lambda store, path, payload: path == store.jobs_path,
+            "session": lambda store, path, payload: path == store._session_path("job"),
+            "history": None,
+            "coordinator": lambda store, path, payload: path == store.coordinator_path and payload.get("claim") is None,
+            "journal-clear": lambda store, path, payload: path == store.coordinator_journal_path and payload.get("operation") is None,
+        }
+        for name, predicate in handoff_boundaries.items():
+            with self.subTest(operation="handoff", boundary=name):
+                store, ready = ready_store(f"handoff-{name}")
+                acquired = store.acquire_ready_job("job", "agent", ready["revision"])
+                if name == "history":
+                    patcher = mock.patch.object(
+                        store, "_append_history_event_idempotent_locked",
+                        side_effect=OSError("simulated crash"),
+                    )
+                else:
+                    failed = {"done": False}
+                    def fail_once(path, payload, predicate=predicate, store=store):
+                        if predicate(store, path, payload) and not failed["done"]:
+                            failed["done"] = True
+                            raise OSError("simulated crash")
+                        return original_write(path, payload)
+                    patcher = mock.patch.object(STORE_MODULE, "atomic_write_json", side_effect=fail_once)
+                with patcher, self.assertRaises(OSError):
+                    store.handoff_claimed_job(
+                        "job", acquired["token"], "awaiting_review",
+                        {"status": "review", "step": "review"},
+                        acquired["job"]["revision"],
+                    )
+                repaired = STORE_MODULE.Store(store.root, self.legacy)
+                if name == "journal-write":
+                    self.assertIsNotNone(repaired.claim_status()["claim"])
+                    self.assertEqual(repaired.get_job("job")["status"], "in_progress")
+                    self.assertFalse(repaired._session_path("job").exists())
+                    self.assertEqual(
+                        [event["event"] for event in repaired.read_history()],
+                        ["job-started"],
+                    )
+                    continue
+                self.assertIsNone(repaired.claim_status()["claim"])
+                self.assertEqual(repaired.get_job("job")["status"], "awaiting_review")
+                self.assertEqual(repaired.load_session("job")["status"], "review")
+                self.assertEqual(
+                    [event["event"] for event in repaired.read_history()],
+                    ["job-started", "reviewed"],
+                )
+
+    def test_pending_coordinator_operation_repairs_partial_history_tail(self):
+        ready = self._make_ready_job()
+
+        def append_partial_then_crash(event):
+            encoded = (
+                json.dumps(event, sort_keys=True, ensure_ascii=False) + "\n"
+            ).encode("utf-8")
+            descriptor = os.open(
+                self.store.history_path,
+                os.O_WRONLY | os.O_CREAT | os.O_APPEND,
+                0o600,
+            )
+            try:
+                os.write(descriptor, encoded[: len(encoded) // 2])
+                os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
+            raise OSError("simulated process crash after partial append")
+
+        with mock.patch.object(
+            self.store,
+            "_append_history_event_idempotent_locked",
+            side_effect=append_partial_then_crash,
+        ):
+            with self.assertRaisesRegex(OSError, "partial append"):
+                self.store.acquire_ready_job("ready-job", "codex", ready["revision"])
+
+        self.assertFalse(self.store.history_path.read_bytes().endswith(b"\n"))
+        repaired = STORE_MODULE.Store(self.root, self.legacy)
+        self.assertIsNotNone(repaired.claim_status()["claim"])
+        self.assertEqual(repaired.get_job("ready-job")["status"], "in_progress")
+        self.assertEqual(
+            [event["event"] for event in repaired.read_history()], ["job-started"]
+        )
+        self.assertIsNone(repaired._load_coordinator_journal()["operation"])
 
     def test_ready_transition_fails_closed_without_profile_or_resume(self):
         job = self.store.create_job(
