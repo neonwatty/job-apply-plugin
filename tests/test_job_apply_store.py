@@ -237,6 +237,103 @@ class StoreTests(unittest.TestCase):
         )
         self.assertIn("rememberedWithConsentAt", remembered)
 
+    def test_answer_list_update_revisions_and_recoverable_delete(self):
+        answer = self.store.put_answer(
+            {
+                "question": "Preferred start date?",
+                "state": "confirmed",
+                "value": "June",
+                "aliases": ["Start date"],
+            }
+        )
+        self.assertEqual(answer["revision"], 1)
+        self.assertEqual(self.store.list_answers(), [answer])
+        updated = self.store.update_answer(
+            answer["key"],
+            {"value": "July", "aliases": ["Start date", "START DATE"]},
+            expected_revision=answer["revision"],
+        )
+        self.assertEqual(updated["revision"], 2)
+        self.assertEqual(updated["value"], "July")
+        self.assertEqual(updated["aliases"], ["start date"])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "revision conflict"):
+            self.store.update_answer(
+                answer["key"], {"value": "August"}, expected_revision=1
+            )
+
+        trashed = self.store.trash_answer(
+            answer["key"], expected_revision=updated["revision"]
+        )
+        self.assertIsNone(self.store.get_answer(answer["key"]))
+        self.assertEqual(
+            self.store.get_answer(answer["key"], include_trashed=True), trashed
+        )
+        self.assertIsNone(self.store.find_answer("Preferred start date?", {}))
+        restored = self.store.restore_answer(
+            answer["key"], expected_revision=trashed["revision"]
+        )
+        trashed_again = self.store.trash_answer(
+            answer["key"], expected_revision=restored["revision"]
+        )
+        self.assertEqual(
+            self.store.delete_answer(
+                answer["key"], expected_revision=trashed_again["revision"]
+            ),
+            {"deleted": True, "key": answer["key"]},
+        )
+
+    def test_answer_sensitive_update_requires_new_remember_consent(self):
+        answer = self.store.put_answer(
+            {
+                "question": "Salary expectation?",
+                "state": "sensitive",
+                "value": "200K",
+                "sensitivity": "high",
+            },
+            remember_sensitive=True,
+        )
+        unchanged = self.store.update_answer(
+            answer["key"],
+            {"aliases": ["Expected salary"]},
+            expected_revision=answer["revision"],
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "remember consent"):
+            self.store.update_answer(
+                answer["key"],
+                {"value": "250K"},
+                expected_revision=unchanged["revision"],
+            )
+        changed = self.store.update_answer(
+            answer["key"],
+            {"value": "250K"},
+            expected_revision=unchanged["revision"],
+            remember_sensitive=True,
+        )
+        self.assertEqual(changed["value"], "250K")
+        self.assertIn("rememberedWithConsentAt", changed)
+
+    def test_answer_permanent_delete_rejects_live_session_reference(self):
+        answer = self.store.put_answer(
+            {"question": "Portfolio?", "state": "confirmed", "value": "Yes"}
+        )
+        self.store.save_session(
+            "active-job",
+            {"status": "active", "answerKeys": [answer["key"]]},
+        )
+        trashed = self.store.trash_answer(
+            answer["key"], expected_revision=answer["revision"]
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "active session"):
+            self.store.delete_answer(
+                answer["key"], expected_revision=trashed["revision"]
+            )
+        self.store.delete_session("active-job")
+        self.assertTrue(
+            self.store.delete_answer(
+                answer["key"], expected_revision=trashed["revision"]
+            )["deleted"]
+        )
+
     def test_tampered_sensitive_answer_without_consent_fails_closed(self):
         self.store.initialize()
         document = json.loads(self.store.answers_path.read_text(encoding="utf-8"))
@@ -855,6 +952,69 @@ class StoreTests(unittest.TestCase):
             text=True,
         )
         self.assertEqual(json.loads(listed.stdout), [json.loads(created.stdout)])
+
+    def test_answer_library_cli_lists_and_updates_by_revision(self):
+        answer_input = self.home / "answer.json"
+        answer_input.write_text(
+            json.dumps(
+                {
+                    "question": "Preferred start date?",
+                    "state": "confirmed",
+                    "value": "June",
+                }
+            ),
+            encoding="utf-8",
+        )
+        created = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--root",
+                str(self.root),
+                "answer-put",
+                "--input",
+                str(answer_input),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        record = json.loads(created.stdout)
+        update_input = self.home / "answer-update.json"
+        update_input.write_text(json.dumps({"value": "July"}), encoding="utf-8")
+        updated = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--root",
+                str(self.root),
+                "answer-update",
+                "--key",
+                record["key"],
+                "--expected-revision",
+                str(record["revision"]),
+                "--input",
+                str(update_input),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        listed = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--root",
+                str(self.root),
+                "answer-list",
+                "--state",
+                "confirmed",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(json.loads(listed.stdout), [json.loads(updated.stdout)])
 
     def test_paths_exposes_separate_inert_policy_root_without_changing_v1_store(self):
         self.store.initialize()

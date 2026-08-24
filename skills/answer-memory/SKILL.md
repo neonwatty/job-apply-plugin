@@ -180,6 +180,27 @@ python3 "<plugin-root>/scripts/job-apply-store.py" answer-find \
 
 Store a reviewed non-sensitive answer with `answer-put --input <answer.json>`. The helper owns stable keys and aliases; omit `key` for a dynamic question unless a documented semantic key already exists.
 
+For the shared answer-library surface, list and selectively edit records through
+the helper. Existing records without explicit revisions are exposed as revision
+1 and gain durable revision metadata on their next mutation.
+
+```bash
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-list [--state <state>]
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-update \
+  --key <answer-key> --expected-revision <revision> --input <patch.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-trash \
+  --key <answer-key> --expected-revision <revision>
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-restore \
+  --key <answer-key> --expected-revision <revision>
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-delete \
+  --key <answer-key> --expected-revision <revision>
+```
+
+Normal lookup and listing hide trashed answers. Use `--include-trashed` only for
+an explicit trash-management workflow. Permanent deletion requires an
+already-trashed record and fails while an active resumable session references the
+answer key.
+
 ### Sensitive answers require two decisions
 
 Ask separately:
@@ -198,6 +219,9 @@ python3 "<plugin-root>/scripts/job-apply-store.py" answer-put \
 ```
 
 Even a remembered sensitive answer must be shown and reconfirmed before each future form entry.
+Changing a stored sensitive value through `answer-update` requires a fresh
+`--remember-sensitive` decision. Editing only its aliases or question wording
+does not manufacture a new retention decision.
 
 ## Application history
 

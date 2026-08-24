@@ -80,6 +80,17 @@ Known semantic fields may use documented keys. Dynamic questions receive `questi
 
 Only a non-sensitive `confirmed` answer with matching scope may be reused without asking. `inferred`, `missing`, and every `sensitive` record require review. A stored sensitive value must carry the helper-generated consent timestamp, and the agent still reconfirms it before use.
 
+Answer records are listable and carry optimistic revisions for shared CLI/UX
+editing. Existing version-1 records without an explicit revision are treated as
+revision 1 and gain stored revision metadata on their next mutation. Normal get,
+find, and list operations hide trashed records.
+
+Changing a retained sensitive value requires a fresh field-specific remember
+decision. Updating non-value metadata on an already consented sensitive record
+preserves its consent marker. Permanent deletion requires recoverable trash first
+and fails while a resumable session references the answer key. Minimal history
+may retain the value-free key after the reusable answer is deleted.
+
 ## Data minimization
 
 History and sessions reference answer keys instead of copying values. Their input schemas are closed: arbitrary nested applicant payloads are rejected. Credentials, browser state, CAPTCHA/MFA data, and payment information are never valid storage inputs.

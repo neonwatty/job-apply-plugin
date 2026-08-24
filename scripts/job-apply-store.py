@@ -343,11 +343,16 @@ def _validate_answer_record(key: str, value: Any) -> dict[str, Any]:
         {
             "source",
             "confirmedAt",
+            "createdAt",
             "updatedAt",
             "rememberedWithConsentAt",
+            "deletedAt",
         },
         "answer record",
     )
+    revision = record.get("revision", 1)
+    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
+        raise StoreError("answer revision must be a positive integer")
     return record
 
 
@@ -867,13 +872,46 @@ class Store:
             atomic_write_json(self.profile_path, document)
         return updated
 
-    def get_answer(self, key: str) -> dict[str, Any] | None:
+    @staticmethod
+    def _answer_view(record: dict[str, Any]) -> dict[str, Any]:
+        view = dict(record)
+        view.setdefault("revision", 1)
+        view.setdefault("createdAt", record.get("updatedAt"))
+        view.setdefault("deletedAt", None)
+        return view
+
+    def get_answer(
+        self, key: str, include_trashed: bool = False
+    ) -> dict[str, Any] | None:
         self.initialize()
         answers = self._load_answers_document()["answers"]
         answer = answers.get(key)
-        if answer is None:
+        if answer is None or (
+            answer.get("deletedAt") is not None and not include_trashed
+        ):
             return None
-        return _require_object(answer, "answer record")
+        return self._answer_view(_require_object(answer, "answer record"))
+
+    def list_answers(
+        self, state: str | None = None, include_trashed: bool = False
+    ) -> list[dict[str, Any]]:
+        self.initialize()
+        if state is not None and state not in ANSWER_STATES:
+            raise StoreError("answer state is unsupported")
+        records = []
+        for record in self._load_answers_document()["answers"].values():
+            if record.get("deletedAt") is not None and not include_trashed:
+                continue
+            if state is not None and record.get("state") != state:
+                continue
+            records.append(self._answer_view(record))
+        return sorted(
+            records,
+            key=lambda item: (
+                item.get("question") or "",
+                item["key"],
+            ),
+        )
 
     def find_answer(
         self, question: str, scope: dict[str, Any] | None = None
@@ -883,6 +921,8 @@ class Store:
         document = self._load_answers_document()
         for record in document["answers"].values():
             item = _require_object(record, "answer record")
+            if item.get("deletedAt") is not None:
+                continue
             candidates = []
             if isinstance(item.get("question"), str):
                 candidates.append(normalize_question(item["question"]))
@@ -893,8 +933,11 @@ class Store:
                 raise StoreError("answer record aliases must be strings")
             candidates.extend(normalize_question(alias) for alias in aliases)
             if normalized in candidates and item.get("scope", {}) == (scope or {}):
-                return item
-        return document["answers"].get(answer_key(question, scope))
+                return self._answer_view(item)
+        direct = document["answers"].get(answer_key(question, scope))
+        if direct is None or direct.get("deletedAt") is not None:
+            return None
+        return self._answer_view(direct)
 
     def put_answer(
         self, incoming: dict[str, Any], remember_sensitive: bool = False
@@ -944,35 +987,195 @@ class Store:
             if normalized not in normalized_aliases:
                 normalized_aliases.append(normalized)
 
-        document = self._load_answers_document()
-        current = document["answers"].get(key, {})
-        record = dict(_require_object(current, "answer record"))
-        record.update(
-            {
-                "key": key,
-                "question": question,
-                "aliases": normalized_aliases,
-                "value": value,
-                "state": state,
-                "source": incoming.get("source", "user"),
-                "scope": scope,
-                "sensitivity": sensitivity,
-                "updatedAt": utc_now(),
-            }
-        )
-        if state == "confirmed":
-            record["confirmedAt"] = incoming.get("confirmedAt") or utc_now()
-        else:
-            record["confirmedAt"] = incoming.get("confirmedAt")
-        if requires_consent:
-            record["rememberedWithConsentAt"] = utc_now()
-        else:
-            record.pop("rememberedWithConsentAt", None)
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_answers_document()
+            current = document["answers"].get(key)
+            if current is not None and current.get("deletedAt") is not None:
+                raise StoreError("answer is trashed")
+            now = utc_now()
+            record = dict(_require_object(current or {}, "answer record"))
+            record.update(
+                {
+                    "key": key,
+                    "question": question,
+                    "aliases": normalized_aliases,
+                    "value": value,
+                    "state": state,
+                    "source": incoming.get("source", "user"),
+                    "scope": scope,
+                    "sensitivity": sensitivity,
+                    "createdAt": record.get("createdAt") or now,
+                    "updatedAt": now,
+                    "deletedAt": None,
+                    "revision": (
+                        record.get("revision", 1) + 1 if current is not None else 1
+                    ),
+                }
+            )
+            if state == "confirmed":
+                record["confirmedAt"] = incoming.get("confirmedAt") or now
+            else:
+                record["confirmedAt"] = incoming.get("confirmedAt")
+            if requires_consent:
+                record["rememberedWithConsentAt"] = now
+            else:
+                record.pop("rememberedWithConsentAt", None)
 
-        document["answers"][key] = record
-        document["metadata"]["updatedAt"] = utc_now()
-        atomic_write_json(self.answers_path, document)
+            _validate_answer_record(key, record)
+            document["answers"][key] = record
+            document["metadata"]["updatedAt"] = now
+            atomic_write_json(self.answers_path, document)
         return record
+
+    def update_answer(
+        self,
+        key: str,
+        patch: dict[str, Any],
+        expected_revision: int,
+        remember_sensitive: bool = False,
+    ) -> dict[str, Any]:
+        self.initialize()
+        if not isinstance(key, str) or not key:
+            raise StoreError("answer key must be a non-empty string")
+        allowed = {
+            "question",
+            "aliases",
+            "value",
+            "state",
+            "source",
+            "scope",
+            "sensitivity",
+        }
+        if not patch or set(patch) - allowed:
+            raise StoreError("answer patch contains unsupported fields")
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_answers_document()
+            current = document["answers"].get(key)
+            if current is None or current.get("deletedAt") is not None:
+                raise StoreError("answer does not exist")
+            revision = current.get("revision", 1)
+            if revision != expected_revision:
+                raise StoreError("answer revision conflict")
+            updated = {**current, **patch}
+            aliases = updated.get("aliases", [])
+            if not isinstance(aliases, list) or not all(
+                isinstance(alias, str) for alias in aliases
+            ):
+                raise StoreError("answer aliases must be strings")
+            normalized_aliases: list[str] = []
+            for alias in aliases:
+                normalized = normalize_question(alias)
+                if normalized not in normalized_aliases:
+                    normalized_aliases.append(normalized)
+            updated["aliases"] = normalized_aliases
+            scope = updated.get("scope", {})
+            if not isinstance(scope, dict):
+                raise StoreError("answer scope must be a JSON object")
+            state = updated.get("state")
+            if state not in ANSWER_STATES:
+                raise StoreError("answer state is unsupported")
+            sensitivity = updated.get(
+                "sensitivity", "high" if state == "sensitive" else "none"
+            )
+            if sensitivity not in SENSITIVITY_LEVELS:
+                raise StoreError("answer sensitivity is unsupported")
+            value = updated.get("value")
+            if state == "confirmed" and value is None:
+                raise StoreError("confirmed answers require a value")
+            if state == "missing" and value is not None:
+                raise StoreError("missing answers cannot contain a value")
+            requires_consent = value is not None and (
+                state == "sensitive" or sensitivity != "none"
+            )
+            changed_sensitive_value = (
+                value != current.get("value")
+                or not current.get("rememberedWithConsentAt")
+            )
+            if requires_consent and changed_sensitive_value and not remember_sensitive:
+                raise StoreError(
+                    "sensitive answer value requires explicit remember consent"
+                )
+            now = utc_now()
+            updated["sensitivity"] = sensitivity
+            updated["revision"] = revision + 1
+            updated["createdAt"] = current.get("createdAt") or current.get("updatedAt") or now
+            updated["updatedAt"] = now
+            updated["deletedAt"] = None
+            if state == "confirmed":
+                if state != current.get("state") or value != current.get("value"):
+                    updated["confirmedAt"] = now
+                else:
+                    updated["confirmedAt"] = current.get("confirmedAt") or now
+            else:
+                updated["confirmedAt"] = None
+            if requires_consent:
+                if changed_sensitive_value:
+                    updated["rememberedWithConsentAt"] = now
+            else:
+                updated.pop("rememberedWithConsentAt", None)
+            _validate_answer_record(key, updated)
+            document["answers"][key] = updated
+            document["metadata"]["updatedAt"] = now
+            atomic_write_json(self.answers_path, document)
+        return self._answer_view(updated)
+
+    def trash_answer(self, key: str, expected_revision: int) -> dict[str, Any]:
+        return self._set_answer_deleted(key, expected_revision, restore=False)
+
+    def restore_answer(self, key: str, expected_revision: int) -> dict[str, Any]:
+        return self._set_answer_deleted(key, expected_revision, restore=True)
+
+    def _set_answer_deleted(
+        self, key: str, expected_revision: int, restore: bool
+    ) -> dict[str, Any]:
+        self.initialize()
+        if not isinstance(key, str) or not key:
+            raise StoreError("answer key must be a non-empty string")
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_answers_document()
+            current = document["answers"].get(key)
+            if current is None:
+                raise StoreError("answer does not exist")
+            revision = current.get("revision", 1)
+            if revision != expected_revision:
+                raise StoreError("answer revision conflict")
+            is_trashed = current.get("deletedAt") is not None
+            if restore == (not is_trashed):
+                return self._answer_view(current)
+            updated = dict(current)
+            updated["deletedAt"] = None if restore else utc_now()
+            updated["revision"] = revision + 1
+            updated["updatedAt"] = utc_now()
+            _validate_answer_record(key, updated)
+            document["answers"][key] = updated
+            document["metadata"]["updatedAt"] = updated["updatedAt"]
+            atomic_write_json(self.answers_path, document)
+        return self._answer_view(updated)
+
+    def delete_answer(self, key: str, expected_revision: int) -> dict[str, Any]:
+        self.initialize()
+        if not isinstance(key, str) or not key:
+            raise StoreError("answer key must be a non-empty string")
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_answers_document()
+            current = document["answers"].get(key)
+            if current is None:
+                return {"deleted": False, "key": key}
+            revision = current.get("revision", 1)
+            if revision != expected_revision:
+                raise StoreError("answer revision conflict")
+            if current.get("deletedAt") is None:
+                raise StoreError("answer must be trashed before permanent deletion")
+            for session in self.list_sessions():
+                if key in session.get("answerKeys", []) or any(
+                    field.get("answerKey") == key
+                    for field in session.get("pendingFields", [])
+                ):
+                    raise StoreError("answer is referenced by an active session")
+            del document["answers"][key]
+            document["metadata"]["updatedAt"] = utc_now()
+            atomic_write_json(self.answers_path, document)
+        return {"deleted": True, "key": key}
 
     def _require_active_resume(self, resume_id: str | None) -> None:
         if resume_id is None:
@@ -1821,9 +2024,27 @@ def build_parser() -> argparse.ArgumentParser:
     put.add_argument("--remember-sensitive", action="store_true")
     get = commands.add_parser("answer-get")
     get.add_argument("--key", required=True)
+    get.add_argument("--include-trashed", action="store_true")
     find = commands.add_parser("answer-find")
     find.add_argument("--question", required=True)
     find.add_argument("--scope", default="{}")
+    answer_list = commands.add_parser("answer-list")
+    answer_list.add_argument("--state")
+    answer_list.add_argument("--include-trashed", action="store_true")
+    answer_update = commands.add_parser("answer-update")
+    answer_update.add_argument("--key", required=True)
+    answer_update.add_argument("--input", required=True)
+    answer_update.add_argument("--expected-revision", required=True, type=int)
+    answer_update.add_argument("--remember-sensitive", action="store_true")
+    answer_trash = commands.add_parser("answer-trash")
+    answer_trash.add_argument("--key", required=True)
+    answer_trash.add_argument("--expected-revision", required=True, type=int)
+    answer_restore = commands.add_parser("answer-restore")
+    answer_restore.add_argument("--key", required=True)
+    answer_restore.add_argument("--expected-revision", required=True, type=int)
+    answer_delete = commands.add_parser("answer-delete")
+    answer_delete.add_argument("--key", required=True)
+    answer_delete.add_argument("--expected-revision", required=True, type=int)
 
     job_create = commands.add_parser("job-create")
     job_create.add_argument("--input", required=True)
@@ -1936,9 +2157,24 @@ def run(args: argparse.Namespace) -> Any:
             _read_input(args.input), remember_sensitive=args.remember_sensitive
         )
     if command == "answer-get":
-        return store.get_answer(args.key)
+        return store.get_answer(args.key, include_trashed=args.include_trashed)
     if command == "answer-find":
         return store.find_answer(args.question, _scope(args.scope))
+    if command == "answer-list":
+        return store.list_answers(args.state, include_trashed=args.include_trashed)
+    if command == "answer-update":
+        return store.update_answer(
+            args.key,
+            _read_input(args.input),
+            args.expected_revision,
+            remember_sensitive=args.remember_sensitive,
+        )
+    if command == "answer-trash":
+        return store.trash_answer(args.key, args.expected_revision)
+    if command == "answer-restore":
+        return store.restore_answer(args.key, args.expected_revision)
+    if command == "answer-delete":
+        return store.delete_answer(args.key, args.expected_revision)
     if command == "job-create":
         return store.create_job(_read_input(args.input))
     if command == "job-get":

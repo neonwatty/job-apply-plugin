@@ -173,7 +173,7 @@ Job Apply stores data as **plaintext local files** under `~/.job-apply/`:
 | File | Purpose |
 |------|---------|
 | `profile.json` | Resume facts and job-search preferences |
-| `answers.json` | Reusable answers with confirmation, source, scope, and sensitivity state |
+| `answers.json` | Revisioned reusable answers with confirmation, source, scope, sensitivity, and trash state |
 | `jobs.json` | Canonical job records, application status, revisions, and recoverable trash state |
 | `resumes.json` | Versioned local resume references, labels, defaults, and file observations |
 | `applications.jsonl` | Minimal append-only application lifecycle events |
