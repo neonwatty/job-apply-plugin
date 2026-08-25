@@ -2347,6 +2347,7 @@ class Store:
         selected: list[str],
         *,
         unknown_message: str = "legacy job selection contains an unknown item id",
+        invalid_message: str = "legacy job selection contains an invalid item",
     ) -> list[dict[str, Any]]:
         if len(selected) != len(set(selected)):
             raise StoreError("legacy job selection contains duplicate item ids")
@@ -2357,7 +2358,7 @@ class Store:
             if item is None:
                 raise StoreError(unknown_message)
             if item["state"] != "valid":
-                raise StoreError("legacy job selection contains an invalid item")
+                raise StoreError(invalid_message)
             chosen.append(item)
         return chosen
 
@@ -2480,6 +2481,9 @@ class Store:
                 discovery,
                 selected,
                 unknown_message=(
+                    "legacy job preview token rejected because the source, selection, input, or store drifted"
+                ),
+                invalid_message=(
                     "legacy job preview token rejected because the source, selection, input, or store drifted"
                 ),
             )

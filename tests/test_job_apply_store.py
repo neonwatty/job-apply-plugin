@@ -880,7 +880,7 @@ class StoreTests(unittest.TestCase):
             discovery = self.store.preview_legacy_jobs([])
             selected = [discovery["items"][0]["itemId"]]
             preview = self.store.preview_legacy_jobs(selected)
-            source.write_text(source.read_text() + "\n", encoding="utf-8")
+            source.write_bytes(source.read_bytes() + b"\n")
             with self.assertRaisesRegex(STORE_MODULE.StoreError, "drifted"):
                 self.store.commit_legacy_jobs(selected, preview["token"])
 
