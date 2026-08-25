@@ -384,11 +384,11 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await jobDialog.getByLabel("Notes", { exact: true }).fill("Edited in the browser");
     await page.getByRole("button", { name: "Save job" }).click();
     await page.locator("#job-dialog").waitFor({ state: "hidden" });
+    await page.waitForFunction((id) => document.activeElement?.dataset?.id === id, cliJob.id);
     const browserEdited = await cli("job-get", ["--id", cliJob.id]);
     assert.equal(browserEdited.role, "Browser-edited CLI Engineer");
     assert.equal(browserEdited.notes, "Edited in the browser");
     assert.equal(browserEdited.revision, cliJob.revision + 1);
-    await page.waitForFunction((id) => document.activeElement?.dataset?.id === id, cliJob.id);
 
     await page.getByRole("button", { name: "New job" }).click();
     await jobDialog.getByLabel("Job URL", { exact: true }).fill("https://example.com/jobs/ui-browser");
