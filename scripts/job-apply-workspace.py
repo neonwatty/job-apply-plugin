@@ -31,6 +31,12 @@ ASSETS = {
 }
 
 
+def loopback_authority(port: int) -> tuple[str, str]:
+    if port == 80:
+        return f"http://{LOOPBACK}", LOOPBACK
+    return f"http://{LOOPBACK}:{port}", f"{LOOPBACK}:{port}"
+
+
 def load_store_module() -> Any:
     path = Path(__file__).resolve().with_name("job-apply-store.py")
     spec = importlib.util.spec_from_file_location("job_apply_store", path)
@@ -53,8 +59,7 @@ class WorkspaceServer(ThreadingHTTPServer):
         self.store.initialize()
         self.token = token or secrets.token_urlsafe(32)
         super().__init__((LOOPBACK, port), WorkspaceHandler)
-        self.origin = f"http://{LOOPBACK}:{self.server_port}"
-        self.expected_host = f"{LOOPBACK}:{self.server_port}"
+        self.origin, self.expected_host = loopback_authority(self.server_port)
 
 
 class WorkspaceHandler(BaseHTTPRequestHandler):

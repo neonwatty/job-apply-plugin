@@ -21,6 +21,10 @@ export function sessionToken(hash, storage) {
   }
 }
 
+export function safeSessionStorage(scope) {
+  try { return scope?.sessionStorage || null; } catch { return null; }
+}
+
 export function filterJobs(jobs, query = "", status = "") {
   const needle = query.trim().toLocaleLowerCase();
   return jobs.filter((job) => {
@@ -68,7 +72,7 @@ export function createApi(token, fetchImpl = globalThis.fetch) {
 const hasDom = typeof document !== "undefined";
 
 if (hasDom) {
-  const token = sessionToken(location.hash, sessionStorage);
+  const token = sessionToken(location.hash, safeSessionStorage(globalThis));
   if (location.hash) history.replaceState(null, "", location.pathname);
   const api = createApi(token);
   const state = { jobs: [], resumes: [], selected: null, latest: null, draft: null, dirty: false, dirtyFields: new Set(), polling: false, opener: null, openerJobId: null, focusAfterClose: null };
@@ -152,7 +156,7 @@ if (hasDom) {
     const job = state.jobs.find((item) => item.id === id); if (!job) return;
     rememberOpener(id);
     state.selected = job; state.latest = null; state.draft = null; fillForm(job); $("#job-dialog-title").textContent = job.role || "Job details"; $("#dialog-kicker").textContent = `${statusLabel(job.status).toUpperCase()} · REVISION ${job.revision}`;
-    $("#trash-job").classList.toggle("hidden", job.status === "in_progress"); $("#preflight-job").classList.remove("hidden"); $("#mark-ready").classList.toggle("hidden", !canMarkReadyFrom(job.status)); renderStatusActions(job); dialog.showModal(); setTimeout(() => form.elements.role.focus(), 0);
+    renderJobControls(job); dialog.showModal(); setTimeout(() => form.elements.role.focus(), 0);
   }
 
   function currentValues() { return Object.fromEntries(new FormData(form).entries()); }
@@ -230,6 +234,13 @@ if (hasDom) {
     $("#status-actions").classList.toggle("hidden", holder.children.length === 0);
   }
 
+  function renderJobControls(job) {
+    $("#trash-job").classList.toggle("hidden", job.status === "in_progress");
+    $("#preflight-job").classList.remove("hidden");
+    $("#mark-ready").classList.toggle("hidden", !canMarkReadyFrom(job.status));
+    renderStatusActions(job);
+  }
+
   function jobButton(id) { return document.querySelector(`[data-id="${CSS.escape(id)}"]`); }
   function rememberOpener(jobId = null) {
     state.opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -247,8 +258,8 @@ if (hasDom) {
   $("#search").addEventListener("input", render); $("#status-filter").addEventListener("change", render);
   $("#preflight-job").addEventListener("click", preflight); $("#mark-ready").addEventListener("click", async () => { const result = await preflight(); if (result?.ready) transition("ready"); });
   $("#trash-job").addEventListener("click", async () => { if (!confirm("Move this job to trash? It will leave this Jobs workspace, but remains recoverable through the canonical store.")) return; try { const id = state.selected.id; await api(`/api/jobs/${encodeURIComponent(id)}/trash`, { method: "POST", body: JSON.stringify({ expectedRevision: state.selected.revision }) }); await refresh({ quiet: true }); closeJobDialog(firstListDestination()); toast("Job moved to trash"); } catch (error) { if (error.status === 409) await showConflict(); else showFormError(error.message); } });
-  $("#reload-latest").addEventListener("click", () => { if (!state.latest) return; state.selected = state.latest; state.draft = null; fillForm(state.latest); $("#dialog-kicker").textContent = `CANONICAL · REVISION ${state.latest.revision}`; form.elements.role.focus(); toast("Loaded the latest canonical values"); });
-  $("#rebase-draft").addEventListener("click", () => { if (!state.latest || !state.draft) return; const latest = state.latest; const draft = state.draft; state.selected = latest; fillForm(latest); for (const [name, value] of Object.entries(draft)) if (form.elements[name]) form.elements[name].value = value; state.dirtyFields = new Set(Object.keys(draft)); state.dirty = state.dirtyFields.size > 0; state.draft = null; hideConflict(); $("#save-job").focus(); toast("Your edited fields were reapplied to the latest canonical values. Review, then save."); });
+  $("#reload-latest").addEventListener("click", () => { if (!state.latest) return; state.selected = state.latest; state.draft = null; fillForm(state.latest); renderJobControls(state.latest); $("#dialog-kicker").textContent = `CANONICAL · REVISION ${state.latest.revision}`; form.elements.role.focus(); toast("Loaded the latest canonical values"); });
+  $("#rebase-draft").addEventListener("click", () => { if (!state.latest || !state.draft) return; const latest = state.latest; const draft = state.draft; state.selected = latest; fillForm(latest); renderJobControls(latest); for (const [name, value] of Object.entries(draft)) if (form.elements[name]) form.elements[name].value = value; state.dirtyFields = new Set(Object.keys(draft)); state.dirty = state.dirtyFields.size > 0; state.draft = null; hideConflict(); $("#save-job").focus(); toast("Your edited fields were reapplied to the latest canonical values. Review, then save."); });
   for (const button of document.querySelectorAll("[data-close]")) button.addEventListener("click", () => document.getElementById(button.dataset.close).close());
   $("#bulk-open").addEventListener("click", () => { $("#bulk-results").replaceChildren(); $("#bulk-dialog").showModal(); setTimeout(() => $("#bulk-form").elements.urls.focus(), 0); });
   $("#bulk-form").addEventListener("submit", async (event) => { event.preventDefault(); const urls = event.currentTarget.elements.urls.value.split(/\r?\n/).map((v) => v.trim()).filter(Boolean); try { const data = await api("/api/jobs/bulk", { method: "POST", body: JSON.stringify({ urls }) }); const holder = $("#bulk-results"); holder.replaceChildren(); for (const item of data.results) { const row = document.createElement("div"); row.className = `bulk-result${item.ok ? "" : " bad"}`; row.textContent = item.ok ? `Saved · ${item.url}` : `Not saved · ${item.url} · ${item.error}`; holder.append(row); } await refresh({ quiet: true }); } catch (error) { const row = document.createElement("div"); row.className = "bulk-result bad"; row.textContent = error.message; $("#bulk-results").replaceChildren(row); } });

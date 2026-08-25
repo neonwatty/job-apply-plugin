@@ -18,6 +18,7 @@ const {
   createApi,
   filterJobs,
   formPatch,
+  safeSessionStorage,
   sessionToken,
   tokenFromHash,
   transitionsFor,
@@ -33,6 +34,10 @@ test("fragment token survives a same-tab reload without remaining in the URL", (
   const storage = { setItem(key, value) { values.set(key, value); }, getItem(key) { return values.get(key) || null; } };
   assert.equal(sessionToken("#token=session-secret", storage), "session-secret");
   assert.equal(sessionToken("", storage), "session-secret");
+  const denied = {};
+  Object.defineProperty(denied, "sessionStorage", { get() { throw new DOMException("denied", "SecurityError"); } });
+  assert.equal(safeSessionStorage(denied), null);
+  assert.equal(sessionToken("#token=fallback-secret", safeSessionStorage(denied)), "fallback-secret");
 });
 
 test("API client authenticates in memory and surfaces revision conflicts", async () => {
@@ -198,6 +203,7 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await page.getByRole("button", { name: /UI Engineer/ }).press("Enter");
     await jobDialog.getByLabel("Role", { exact: true }).fill("My preserved draft");
     const cliUpdated = await cli("job-update", ["--id", uiJob.id, "--expected-revision", String(uiJob.revision), "--origin", "human"], { role: "CLI canonical edit", notes: "CLI concurrent note" });
+    await cli("job-transition", ["--id", uiJob.id, "--status", "needs_info", "--expected-revision", String(cliUpdated.revision)]);
     await page.getByRole("button", { name: "Save job" }).click();
     const conflict = page.locator("#conflict");
     await conflict.waitFor();
@@ -208,6 +214,8 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await page.getByRole("button", { name: "Reapply my draft" }).click();
     assert.equal(await jobDialog.getByLabel("Role", { exact: true }).inputValue(), "My preserved draft");
     assert.equal(await jobDialog.getByLabel("Notes", { exact: true }).inputValue(), "CLI concurrent note");
+    assert.equal(await page.getByRole("button", { name: "Move to saved" }).isVisible(), true);
+    assert.equal(await page.getByRole("button", { name: "Move to needs info" }).count(), 0);
     await page.getByRole("button", { name: "Save job" }).click();
     await page.locator("#job-dialog").waitFor({ state: "hidden" });
     const safelyRebased = await cli("job-get", ["--id", uiJob.id]);

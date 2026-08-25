@@ -71,6 +71,8 @@ class WorkspaceServerTests(unittest.TestCase):
 
     def test_binds_exact_ipv4_loopback_and_serves_allowlisted_assets(self):
         self.assertEqual(self.server.server_address[0], "127.0.0.1")
+        self.assertEqual(WORKSPACE.loopback_authority(80), ("http://127.0.0.1", "127.0.0.1"))
+        self.assertEqual(WORKSPACE.loopback_authority(8080), ("http://127.0.0.1:8080", "127.0.0.1:8080"))
         status, headers, body = self.request("GET", "/", token=False, origin=False)
         self.assertEqual(status, 200)
         self.assertIn(b"Jobs Workspace", body)
