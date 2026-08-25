@@ -292,6 +292,7 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await customNote.getByLabel("JSON value").fill('"draft after delete"');
     profile = await cli("profile-patch", ["--expected-revision", String(profile.revision), "--source", "user"], { customNote: null });
     await page.locator("#facts-refresh").click();
+    await page.waitForFunction((revision) => document.querySelector("#facts-revision")?.textContent === `Revision ${revision}`, profile.revision);
     customNote = page.locator('.additional-fact').filter({ hasText: "customNote" });
     assert.equal(await customNote.getByLabel("JSON value").inputValue(), '"draft after delete"');
     await page.getByRole("button", { name: "Save changes" }).click();
@@ -305,6 +306,7 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await customNote.getByLabel("JSON value").fill('"discard after delete"');
     profile = await cli("profile-patch", ["--expected-revision", String(profile.revision), "--source", "user"], { customNote: null });
     await page.locator("#facts-refresh").click();
+    await page.waitForFunction((revision) => document.querySelector("#facts-revision")?.textContent === `Revision ${revision}`, profile.revision);
     await page.getByRole("button", { name: "Save changes" }).click();
     await page.locator("#facts-conflict").waitFor();
     await page.getByRole("button", { name: "Use latest for conflicts" }).click();
@@ -321,6 +323,7 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await page.getByLabel("First name").fill("Refresh-protected draft");
     profile = await cli("profile-patch", ["--expected-revision", String(profile.revision), "--source", "user"], { firstName: "Refresh canonical" });
     await page.locator("#facts-refresh").click();
+    await page.waitForFunction((revision) => document.querySelector("#facts-revision")?.textContent === `Revision ${revision}`, profile.revision);
     assert.equal(await page.getByLabel("First name").inputValue(), "Refresh-protected draft");
     await page.getByRole("button", { name: "Save changes" }).click();
     await page.locator("#facts-conflict").waitFor();
