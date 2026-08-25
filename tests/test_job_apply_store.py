@@ -880,7 +880,7 @@ class StoreTests(unittest.TestCase):
             discovery = self.store.preview_legacy_jobs([])
             selected = [discovery["items"][0]["itemId"]]
             preview = self.store.preview_legacy_jobs(selected)
-            source.write_text(source.read_text() + "\n", encoding="utf-8")
+            source.write_bytes(source.read_bytes() + b"\n")
             with self.assertRaisesRegex(STORE_MODULE.StoreError, "drifted"):
                 self.store.commit_legacy_jobs(selected, preview["token"])
 
@@ -1323,7 +1323,11 @@ class StoreTests(unittest.TestCase):
 
     def test_legacy_job_cli_walkthrough_uses_fixed_home_root(self):
         self._write_legacy_search_report()
-        environment = {**os.environ, "HOME": str(self.home)}
+        environment = {
+            **os.environ,
+            "HOME": str(self.home),
+            "USERPROFILE": str(self.home),
+        }
         base = [sys.executable, str(SCRIPT), "--root", str(self.root)]
         discovered = subprocess.run(
             [*base, "legacy-jobs-preview"], check=True, capture_output=True, text=True, env=environment
@@ -1457,6 +1461,57 @@ class StoreTests(unittest.TestCase):
             [event["event"] for event in self.store.read_history()],
             ["job-started", "claim-recovered"],
         )
+
+    def test_acquire_and_recover_tokens_are_cli_safe_when_random_payload_leads_hyphen(self):
+        instant = [datetime(2026, 8, 24, tzinfo=timezone.utc)]
+        self.store = STORE_MODULE.Store(self.root, self.legacy, clock=lambda: instant[0])
+        ready = self._make_ready_job()
+
+        with mock.patch.object(
+            STORE_MODULE.secrets,
+            "token_urlsafe",
+            side_effect=["-acquire-payload", "-recovery-payload"],
+        ):
+            acquired = self.store.acquire_ready_job(
+                "ready-job", "codex", ready["revision"]
+            )
+            self.assertEqual(acquired["token"], "claim_-acquire-payload")
+            parsed = STORE_MODULE.build_parser().parse_args(
+                [
+                    "--root",
+                    str(self.root),
+                    "claim-heartbeat",
+                    "--id",
+                    "ready-job",
+                    "--token",
+                    acquired["token"],
+                ]
+            )
+            self.assertEqual(parsed.token, acquired["token"])
+            persisted = self.store.coordinator_path.read_text(encoding="utf-8")
+            self.assertNotIn(acquired["token"], persisted)
+            self.assertIn(self.store._token_hash(acquired["token"]), persisted)
+
+            instant[0] += timedelta(seconds=STORE_MODULE.CLAIM_LEASE_SECONDS + 1)
+            recovered = self.store.recover_claim("ready-job", "recovery-agent")
+            self.assertEqual(recovered["token"], "claim_-recovery-payload")
+            parsed = STORE_MODULE.build_parser().parse_args(
+                [
+                    "--root",
+                    str(self.root),
+                    "claim-progress",
+                    "--id",
+                    "ready-job",
+                    "--token",
+                    recovered["token"],
+                    "--input",
+                    "progress.json",
+                ]
+            )
+            self.assertEqual(parsed.token, recovered["token"])
+            persisted = self.store.coordinator_path.read_text(encoding="utf-8")
+            self.assertNotIn(recovered["token"], persisted)
+            self.assertIn(self.store._token_hash(recovered["token"]), persisted)
 
     def test_claim_handoffs_are_atomic_value_free_and_release_ownership(self):
         self._make_ready_job()

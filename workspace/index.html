@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Jobs · Job Apply Workspace</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#jobs">Skip to jobs</a>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">LOCAL COMPANION</p>
+      <h1>Job Apply</h1>
+    </div>
+    <div class="connection" aria-live="polite">
+      <span id="connection-dot" class="dot"></span>
+      <span id="connection-label">Connecting…</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="workspace-title">
+      <div>
+        <p class="eyebrow">Jobs Workspace</p>
+        <h2 id="workspace-title">Keep every opportunity moving.</h2>
+        <p>One canonical local queue shared with your Job Apply agents. Nothing leaves this device until you choose to use it on a job site.</p>
+      </div>
+      <div class="hero-actions">
+        <button id="refresh" class="button secondary" type="button">Refresh</button>
+        <button id="bulk-open" class="button secondary" type="button">Paste URLs</button>
+        <button id="new-job" class="button primary" type="button">New job</button>
+      </div>
+    </section>
+
+    <section class="metrics" aria-label="Job summary">
+      <div><strong id="metric-active">0</strong><span>Active jobs</span></div>
+      <div><strong id="metric-ready">0</strong><span>Ready for agent</span></div>
+      <div><strong id="metric-needs">0</strong><span>Need information</span></div>
+    </section>
+
+    <section id="jobs" class="jobs-panel" aria-labelledby="jobs-heading">
+      <div class="panel-heading">
+        <div><p class="eyebrow">PIPELINE</p><h2 id="jobs-heading">Jobs</h2></div>
+        <div class="filters">
+          <label>Search <input id="search" type="search" placeholder="Role, company, location"></label>
+          <label>Status
+            <select id="status-filter">
+              <option value="">All active</option><option value="saved">Saved</option>
+              <option value="needs_info">Needs info</option><option value="ready">Ready</option>
+              <option value="in_progress">In progress</option><option value="awaiting_review">Awaiting review</option>
+              <option value="applied">Applied</option><option value="closed">Closed</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <p id="sync-notice" class="notice hidden" role="status"></p>
+      <div id="loading" class="empty-state"><span class="spinner" aria-hidden="true"></span><p>Loading your canonical job queue…</p></div>
+      <div id="empty" class="empty-state hidden">
+        <span class="empty-icon" aria-hidden="true">◎</span><h3>No jobs here yet</h3>
+        <p>Capture one opportunity or paste a list of URLs to start your local pipeline.</p>
+        <button id="empty-create" class="button primary" type="button">Capture a job</button>
+      </div>
+      <div id="job-list" class="job-list hidden" role="list"></div>
+    </section>
+  </main>
+
+  <dialog id="job-dialog" aria-labelledby="job-dialog-title">
+    <form id="job-form" class="dialog-shell">
+      <div class="dialog-heading">
+        <div><p class="eyebrow" id="dialog-kicker">CANONICAL RECORD</p><h2 id="job-dialog-title">Job details</h2></div>
+        <button class="icon-button" type="button" data-close="job-dialog" aria-label="Close job details">×</button>
+      </div>
+      <div id="conflict" class="conflict hidden" role="alert" tabindex="-1">
+        <h3>This job changed elsewhere</h3>
+        <p>Your draft is safe. Review every latest canonical value, then load it or reapply only the fields you edited.</p>
+        <div id="conflict-latest" class="conflict-values"></div>
+        <div class="button-row">
+          <button id="reload-latest" class="button secondary" type="button">Load canonical values</button>
+          <button id="rebase-draft" class="button primary" type="button">Reapply my draft</button>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label class="wide">Job URL <input name="url" type="url" required placeholder="https://company.example/jobs/123"></label>
+        <label>Role <input name="role" autocomplete="off"></label>
+        <label>Company <input name="company" autocomplete="organization"></label>
+        <label>Location <input name="location" autocomplete="off"></label>
+        <label>Workplace
+          <select name="workplaceType"><option value="">Not set</option><option>remote</option><option>hybrid</option><option>onsite</option></select>
+        </label>
+        <label>Employment
+          <select name="employmentType"><option value="">Not set</option><option>full_time</option><option>part_time</option><option>contract</option><option>temporary</option><option>internship</option></select>
+        </label>
+        <label>Priority <input name="priority" type="number" min="0" max="5" value="0"></label>
+        <label>Resume <select name="resumeId"><option value="">Use default resume</option></select></label>
+        <label>Compensation <input name="compensation" autocomplete="off"></label>
+        <label class="wide">Notes <textarea name="notes" rows="3"></textarea></label>
+        <label class="wide">Description <textarea name="description" rows="5"></textarea></label>
+      </div>
+      <section id="preflight-panel" class="preflight hidden" aria-labelledby="preflight-heading">
+        <h3 id="preflight-heading">Ready check</h3><div id="preflight-results"></div>
+      </section>
+      <p id="form-error" class="error hidden" role="alert"></p>
+      <div class="dialog-footer">
+        <div class="danger-zone"><button id="trash-job" class="button danger hidden" type="button">Move to trash</button></div>
+        <div class="button-row">
+          <button id="preflight-job" class="button secondary hidden" type="button">Run ready check</button>
+          <button id="mark-ready" class="button accent hidden" type="button">Mark ready</button>
+          <button id="save-job" class="button primary" type="submit">Save job</button>
+        </div>
+      </div>
+      <section id="status-actions" class="status-actions hidden" aria-label="Status actions">
+        <h3>Controlled status</h3><p>Status updates never submit or activate an application on a third-party site.</p>
+        <div id="status-buttons" class="button-row"></div>
+      </section>
+    </form>
+  </dialog>
+
+  <dialog id="bulk-dialog" aria-labelledby="bulk-title">
+    <form id="bulk-form" class="dialog-shell compact">
+      <div class="dialog-heading"><div><p class="eyebrow">QUICK CAPTURE</p><h2 id="bulk-title">Paste job URLs</h2></div><button class="icon-button" type="button" data-close="bulk-dialog" aria-label="Close bulk capture">×</button></div>
+      <p>One URL per line. Valid jobs are saved even if another line is a duplicate or invalid.</p>
+      <label>Job URLs <textarea name="urls" rows="9" required placeholder="https://example.com/jobs/one&#10;https://example.com/jobs/two"></textarea></label>
+      <div id="bulk-results" class="bulk-results" aria-live="polite"></div>
+      <div class="dialog-footer"><span></span><button class="button primary" type="submit">Capture jobs</button></div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

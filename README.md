@@ -8,10 +8,11 @@ AI-powered job application assistant for Claude Code and Codex that fills job ap
 
 | Skill | Description |
 |-------|-------------|
-| `job-apply:job-apply` | Fill out job applications automatically using your resume |
+| `job-apply:job-apply` | Prepare application fields from your resume and stop before final submission |
 | `job-apply:answer-memory` | Safely manage your local profile, reusable answers, application history, and resumable sessions |
 | `job-apply:job-search` | Search LinkedIn, Hacker News, and Twitter/X for jobs, then rank results against your preferences |
 | `job-apply:job-preferences` | Set the titles, salary, remote-work, and filtering preferences used by job search |
+| `job-apply:job-workspace` | Open the optional local Jobs workspace shared with Job Apply agents |
 
 Invoke skills with `$job-apply:...` in Codex or `/job-apply:...` in Claude Code.
 
@@ -110,7 +111,7 @@ Once your profile is set up:
 
 3. Watch as the agent fills the application from your reviewed local profile
 
-4. Inspect the final review page and the field summary, then click Submit or Send yourself if everything is correct
+4. Inspect the final review page and field summary. The assistant stops before final submission; only you may decide whether to complete it manually on the third-party site.
 
 ### Searching for Jobs
 
@@ -142,6 +143,20 @@ First run `$job-apply:job-preferences` to save your search preferences. Then use
    - Matching Hacker News and Twitter/X opportunities
 
 Results are automatically saved to `~/.claude-job-searches/`. Both Codex and Claude Code use this legacy-compatible path.
+
+### Local Jobs Workspace
+
+The optional workspace gives you a keyboard-accessible browser view of the same canonical Jobs records used by the CLI skills. From the plugin directory, start it with one command:
+
+```bash
+python3 scripts/job-apply-workspace.py
+```
+
+The launcher binds only to `127.0.0.1`, chooses a free port, opens the complete authenticated URL in your default browser, and stops cleanly with Ctrl-C. It requires Python 3 but no Node runtime, account, cloud service, telemetry, or separate database.
+
+Use the workspace to capture one job or paste multiple URLs, filter and edit records, assign an existing resume, run readiness checks, mark valid jobs ready for agent handoff, and move a job to recoverable trash. CLI changes appear within four seconds or when you select **Refresh**. If a CLI or agent changes an open record, the workspace keeps your draft and shows a revision conflict before anything can be overwritten.
+
+The workspace never runs an application, reads arbitrary files, or activates Submit, Send, Apply, or another third-party final action. A ready job remains an explicit handoff to `$job-apply:job-apply`; you personally control submission.
 
 ## Compatibility and Verification Status
 

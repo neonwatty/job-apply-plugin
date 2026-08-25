@@ -2342,7 +2342,13 @@ class Store:
         return document, {"state": "missing"}
 
     @staticmethod
-    def _selected_legacy_items(discovery: dict[str, Any], selected: list[str]) -> list[dict[str, Any]]:
+    def _selected_legacy_items(
+        discovery: dict[str, Any],
+        selected: list[str],
+        *,
+        unknown_message: str = "legacy job selection contains an unknown item id",
+        invalid_message: str = "legacy job selection contains an invalid item",
+    ) -> list[dict[str, Any]]:
         if len(selected) != len(set(selected)):
             raise StoreError("legacy job selection contains duplicate item ids")
         indexed = {item["itemId"]: item for item in discovery["items"]}
@@ -2350,9 +2356,9 @@ class Store:
         for item_id in selected:
             item = indexed.get(item_id)
             if item is None:
-                raise StoreError("legacy job selection contains an unknown item id")
+                raise StoreError(unknown_message)
             if item["state"] != "valid":
-                raise StoreError("legacy job selection contains an invalid item")
+                raise StoreError(invalid_message)
             chosen.append(item)
         return chosen
 
@@ -2471,7 +2477,16 @@ class Store:
             raise StoreError("legacy job commit requires selection and a preview token")
         with exclusive_file_lock(self.store_lock_path):
             discovery = self._discover_legacy_jobs()
-            chosen = self._selected_legacy_items(discovery, selected)
+            chosen = self._selected_legacy_items(
+                discovery,
+                selected,
+                unknown_message=(
+                    "legacy job preview token rejected because the source, selection, input, or store drifted"
+                ),
+                invalid_message=(
+                    "legacy job preview token rejected because the source, selection, input, or store drifted"
+                ),
+            )
             document, snapshot = self._migration_jobs_snapshot()
             expected = self._legacy_jobs_token(discovery, selected, chosen, snapshot)
             if not hmac.compare_digest(token, expected):
@@ -2527,6 +2542,12 @@ class Store:
         if not isinstance(token, str) or not token:
             raise StoreError("claim token is required")
         return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _new_claim_token() -> str:
+        # Keep the full 32-byte random payload while ensuring argparse can
+        # always consume the bearer token as a separate option value.
+        return f"claim_{secrets.token_urlsafe(32)}"
 
     def _public_claim(self, claim: dict[str, Any] | None) -> dict[str, Any] | None:
         if claim is None:
@@ -2716,7 +2737,7 @@ class Store:
                 raise StoreError("job is not ready")
             now_dt = self._now_datetime()
             now = now_dt.isoformat(timespec="seconds").replace("+00:00", "Z")
-            token = secrets.token_urlsafe(32)
+            token = self._new_claim_token()
             claim = {
                 "claimId": str(uuid.uuid4()),
                 "jobId": job_id,
@@ -2770,7 +2791,7 @@ class Store:
                 raise StoreError("live claim cannot be recovered")
             now_dt = self._now_datetime()
             now = now_dt.isoformat(timespec="seconds").replace("+00:00", "Z")
-            token = secrets.token_urlsafe(32)
+            token = self._new_claim_token()
             claim = {
                 "claimId": str(uuid.uuid4()), "jobId": job_id,
                 "ownerLabel": owner_label.strip(), "tokenHash": self._token_hash(token),

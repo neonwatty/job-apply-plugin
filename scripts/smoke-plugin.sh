@@ -81,7 +81,7 @@ from qa.promote import (
     _validate_approval,
 )
 
-expected = {"answer-memory", "job-apply", "job-search", "job-preferences"}
+expected = {"answer-memory", "job-apply", "job-search", "job-preferences", "job-workspace"}
 
 launcher = root / "scripts" / "qa-chrome.py"
 try:
@@ -295,7 +295,9 @@ for skill in expected:
     if not match or match.group(1) != skill:
         raise SystemExit(f"skills/{skill}/SKILL.md frontmatter name is missing or incorrect")
 
-invocation_pattern = re.compile(r"(?:\$|/)?job-apply:(answer-memory|job-apply|job-search|job-preferences)")
+invocation_pattern = re.compile(
+    r"(?:\$|/)?job-apply:(answer-memory|job-apply|job-search|job-preferences|job-workspace)"
+)
 for relative in ("README.md", "site/index.html"):
     found = set(invocation_pattern.findall((root / relative).read_text()))
     if found != expected:
@@ -389,6 +391,57 @@ for generated in fixture.rglob("*"):
 print("Packaged fixture exclusions passed")
 PY
 
+python3 - "$SMOKE_FIXTURE_DIR" "$SMOKE_TEMP_ROOT" <<'PY'
+import http.client
+import json
+import signal
+import subprocess
+import sys
+from pathlib import Path
+from urllib.parse import urlsplit
+
+fixture = Path(sys.argv[1])
+smoke_root = Path(sys.argv[2])
+launcher = fixture / "scripts" / "job-apply-workspace.py"
+assets = [fixture / "workspace" / name for name in ("index.html", "app.js", "styles.css")]
+if not launcher.is_file() or not all(asset.is_file() for asset in assets):
+    raise SystemExit("packaged fixture is missing the Jobs workspace launcher or assets")
+process = subprocess.Popen(
+    [sys.executable, str(launcher), "--root", str(smoke_root / "workspace-store"), "--port", "0", "--no-open", "--json"],
+    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+)
+try:
+    details = json.loads(process.stdout.readline())
+    parsed = urlsplit(details["url"])
+    token = parsed.fragment.removeprefix("token=")
+    connection = http.client.HTTPConnection("127.0.0.1", details["port"], timeout=5)
+    host = f"127.0.0.1:{details['port']}"
+    connection.request("GET", "/", headers={"Host": host})
+    response = connection.getresponse()
+    if response.status != 200 or b"Jobs Workspace" not in response.read():
+        raise SystemExit("packaged workspace did not serve its Jobs UI")
+    connection.request("GET", "/api/state", headers={"Host": host, "Authorization": f"Bearer {token}"})
+    response = connection.getresponse()
+    state = json.loads(response.read())
+    if response.status != 200 or state != {"jobs": [], "resumes": []}:
+        raise SystemExit("packaged workspace did not read the canonical store")
+    connection.close()
+    process.send_signal(signal.SIGINT)
+    if process.wait(timeout=5) != 0:
+        raise SystemExit("packaged workspace did not shut down cleanly")
+finally:
+    if process.poll() is None:
+        process.terminate()
+        process.wait(timeout=5)
+print("Packaged Jobs workspace launch passed")
+PY
+
+echo "Running Playwright and CLI walkthrough against packaged fixture"
+JOB_WORKSPACE_TEST_ROOT="$SMOKE_FIXTURE_DIR" \
+  node --test --test-name-pattern='real browser and CLI share CRUD' \
+  "$REPO_ROOT/tests_js/workspace.test.mjs"
+echo "Packaged Playwright and CLI walkthrough passed"
+
 python3 - "$SMOKE_FIXTURE_DIR/.claude-plugin/marketplace.json" <<'PY'
 import json
 import sys
@@ -406,7 +459,7 @@ CLAUDE_CONFIG_DIR="$SMOKE_CLAUDE_CONFIG_DIR" claude plugin install job-apply@neo
 CLAUDE_CONFIG_DIR="$SMOKE_CLAUDE_CONFIG_DIR" claude plugin details job-apply@neonwatty-plugins \
   | tee "$SMOKE_TEMP_ROOT/plugin-details.txt"
 
-for skill in answer-memory job-apply job-search job-preferences; do
+for skill in answer-memory job-apply job-search job-preferences job-workspace; do
   if ! grep -Fq -- "$skill" "$SMOKE_TEMP_ROOT/plugin-details.txt"; then
     echo "Installed plugin details did not list $skill" >&2
     exit 1
@@ -453,7 +506,7 @@ versions = [path for path in cache_root.iterdir() if path.is_dir()]
 if len(versions) != 1:
     raise SystemExit(f"expected one isolated Codex plugin version, found {len(versions)}")
 
-expected = {"answer-memory", "job-apply", "job-search", "job-preferences"}
+expected = {"answer-memory", "job-apply", "job-search", "job-preferences", "job-workspace"}
 installed_skills = {
     path.name for path in (versions[0] / "skills").iterdir() if path.is_dir()
 }

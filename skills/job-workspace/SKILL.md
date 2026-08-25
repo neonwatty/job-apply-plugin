@@ -1,0 +1,30 @@
+---
+name: job-workspace
+description: Start the optional local Jobs workspace shared with Job Apply agents and the canonical store.
+allowed-tools: Bash
+---
+
+# Job Workspace
+
+Start the packaged, local-only Jobs companion when the user asks to view, organize, edit, preflight, or prepare canonical jobs in a browser.
+
+## Launch
+
+1. Resolve `<plugin-root>` safely. In Codex, use the installed skill path and walk up from `skills/job-workspace/SKILL.md`; use `PLUGIN_ROOT` only after confirming it contains both `scripts/job-apply-workspace.py` and `workspace/index.html`. In Claude Code, use `CLAUDE_PLUGIN_ROOT` after the same checks.
+2. Run exactly:
+
+   ```bash
+   python3 "<plugin-root>/scripts/job-apply-workspace.py"
+   ```
+
+3. Leave the process attached while the user works. Report that Ctrl-C stops it cleanly.
+
+The launcher chooses a free port, binds only to `127.0.0.1`, opens the browser, and imports the same canonical Store implementation bundled in `scripts/job-apply-store.py`. The browser never reads or writes store files directly. It needs no account, cloud service, telemetry, separate database, Node runtime, or frontend installation.
+
+## Boundaries
+
+- Never copy the printed fragment token into chat, logs, or another URL. If the browser did not open, tell the user to open the complete URL printed locally by the launcher.
+- Never bind the workspace to another host or proxy it onto a network.
+- The UI can create, edit, organize, preflight, mark ready, and move Jobs records to recoverable trash. It does not restore or permanently delete records and does not provide standalone Facts, Answers, Resumes, or Trash management.
+- The UI does not run application agents or access arbitrary files. It must not submit applications or activate any third-party final action. A ready record is only a handoff for the existing Job Apply workflow.
+- All mutations go through the canonical Store contract with optimistic revisions. If a conflict appears, preserve the draft and let the user review or reapply it explicitly.
