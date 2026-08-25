@@ -12,13 +12,13 @@ A Codex and Claude Code skill for managing persistent job search preferences. Se
 
 ## Workflow
 
-### Step 1: Load Profile
+### Step 1: Inspect Profile
 
-Follow the bundled `answer-memory` skill (`$job-apply:answer-memory` in Codex; `/job-apply:answer-memory` in Claude Code). Resolve `<plugin-root>` as that skill directs, run `python3 "<plugin-root>/scripts/job-apply-store.py" init`, then load saved preferences with `preferences-get`. Never read or write persistent Job Apply files directly.
+Follow the bundled `answer-memory` skill (`$job-apply:answer-memory` in Codex; `/job-apply:answer-memory` in Claude Code). Resolve `<plugin-root>` as that skill directs, run `python3 "<plugin-root>/scripts/job-apply-store.py" init`, then run `profile-inspect`. Retain its `revision` and read the saved values from `profile.preferences`. Never read or write persistent Job Apply files directly.
 
 ### Step 2: Check for Existing Preferences
 
-Use the JSON object returned by `preferences-get`.
+Use the `profile.preferences` JSON object returned by `profile-inspect`.
 
 **If preferences exist**, display them:
 
@@ -77,19 +77,17 @@ Use the host's structured question surface when available; otherwise ask concise
 
 ### Step 4: Save Preferences
 
-Write the collected values to a private temporary JSON object, then call `preferences-set --input <preferences.json>` through the bundled helper and remove the temporary file. The helper merges supplied keys while preserving the rest of the preferences and profile. Never patch `profile.json` directly.
+Write only the changed preference keys to a private temporary JSON object, then call `preferences-set --input <preferences.json> --expected-revision <inspected-revision> --source user` through the bundled helper and remove the temporary file. The helper returns the machine-readable profile inspection and merges supplied keys while preserving the rest of the preferences and profile. If the revision conflicts, inspect again, show the current preferences, and ask before retrying. Never patch `profile.json` directly.
 
 **Schema:**
 
 ```json
 {
-  "preferences": {
-    "targetTitles": ["Staff AI Engineer", "Principal ML Engineer"],
-    "minBaseSalary": "$250K",
-    "remotePreference": "remote only",
-    "excludePatterns": ["junior", "associate", "intern", "entry level"],
-    "defaultTimeRange": "last week"
-  }
+  "targetTitles": ["Staff AI Engineer", "Principal ML Engineer"],
+  "minBaseSalary": "$250K",
+  "remotePreference": "remote only",
+  "excludePatterns": ["junior", "associate", "intern", "entry level"],
+  "defaultTimeRange": "last week"
 }
 ```
 
@@ -112,5 +110,5 @@ When the user invokes `job-preferences` and preferences already exist, show curr
 ## Safety Rules
 
 1. **Use only the helper** — initialize, read, and merge preferences through the bundled `answer-memory` skill; never directly edit files under `~/.job-apply/`
-2. **Preserve existing profile** — use `preferences-set` without `--replace` for selective updates
+2. **Preserve existing profile** — inspect first, then use `preferences-set` with the exact revision, `--source user`, and no `--replace` for selective updates
 3. **No defaults without user input** — always ask the user, never assume values

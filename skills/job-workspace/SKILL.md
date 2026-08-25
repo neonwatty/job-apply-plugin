@@ -1,12 +1,12 @@
 ---
 name: job-workspace
-description: Start the optional local Jobs workspace shared with Job Apply agents and the canonical store.
+description: Start the optional local Jobs and Facts workspace shared with Job Apply agents and the canonical store.
 allowed-tools: Bash
 ---
 
 # Job Workspace
 
-Start the packaged, local-only Jobs companion when the user asks to view, organize, edit, preflight, or prepare canonical jobs in a browser.
+Start the packaged, local-only companion when the user asks to review or edit canonical profile facts and preferences, or to view, organize, edit, preflight, or prepare canonical jobs in a browser.
 
 ## Launch
 
@@ -25,6 +25,6 @@ The launcher chooses a free port, binds only to `127.0.0.1`, opens the browser, 
 
 - Never copy the printed fragment token into chat, logs, or another URL. If the browser did not open, tell the user to open the complete URL printed locally by the launcher.
 - Never bind the workspace to another host or proxy it onto a network.
-- The UI can create, edit, organize, preflight, mark ready, and move Jobs records to recoverable trash. It does not restore or permanently delete records and does not provide standalone Facts, Answers, Resumes, or Trash management.
+- The Jobs surface can create, edit, organize, preflight, mark ready, and move Jobs records to recoverable trash. The Facts surface selectively edits the canonical profile and preferences with provenance and explicit conflict choices. It does not restore or permanently delete records and does not provide Answers, Resumes, or Trash management.
 - The UI does not run application agents or access arbitrary files. It must not submit applications or activate any third-party final action. A ready record is only a handoff for the existing Job Apply workflow.
 - All mutations go through the canonical Store contract with optimistic revisions. If a conflict appears, preserve the draft and let the user review or reapply it explicitly.

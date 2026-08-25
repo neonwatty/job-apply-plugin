@@ -6,6 +6,15 @@ export class ApiError extends Error {
   }
 }
 
+export const FACT_SAVE_REVISION_RETRIES = 2;
+
+export function shouldRetryFactSave(error, retries, maxRetries = FACT_SAVE_REVISION_RETRIES) {
+  return error instanceof ApiError
+    && error.status === 409
+    && error.code === "revision_conflict"
+    && retries < maxRetries;
+}
+
 export function tokenFromHash(hash) {
   const params = new URLSearchParams(String(hash || "").replace(/^#/, ""));
   return params.get("token") || "";
@@ -69,6 +78,49 @@ export function createApi(token, fetchImpl = globalThis.fetch) {
   };
 }
 
+export function pointerValue(value, pointer) {
+  return pointer.split("/").slice(1).reduce((item, segment) => {
+    const key = segment.replaceAll("~1", "/").replaceAll("~0", "~");
+    return item != null && Object.hasOwn(Object(item), key) ? item[key] : undefined;
+  }, value);
+}
+
+export function patchForPaths(entries) {
+  const patch = {};
+  for (const [pointer, value] of entries) {
+    const parts = pointer.split("/").slice(1).map((part) => part.replaceAll("~1", "/").replaceAll("~0", "~"));
+    let target = patch;
+    parts.forEach((part, index) => {
+      if (index === parts.length - 1) Object.defineProperty(target, part, { value, enumerable: true, configurable: true, writable: true });
+      else {
+        if (!Object.hasOwn(target, part)) Object.defineProperty(target, part, { value: {}, enumerable: true, configurable: true, writable: true });
+        target = target[part];
+      }
+    });
+  }
+  return patch;
+}
+
+export function conflictingPaths(base, latest, drafts, atomicPaths = new Set()) {
+  return [...drafts].filter(([path, mine]) => {
+    const before = base instanceof Map ? base.get(path) : pointerValue(base, path);
+    const now = pointerValue(latest, path);
+    const structured = atomicPaths.has(path) || typeof mine === "object" || typeof before === "object" || typeof now === "object";
+    return JSON.stringify(before) !== JSON.stringify(now) && (structured || JSON.stringify(mine) !== JSON.stringify(now));
+  }).map(([path]) => path);
+}
+
+export function summarizeProvenance(records, path) {
+  const ancestors = Object.entries(records || {}).filter(([candidate]) => path === candidate || path.startsWith(`${candidate}/`));
+  ancestors.sort((left, right) => right[0].length - left[0].length);
+  if (ancestors.length) return ancestors[0][1];
+  const descendants = Object.entries(records || {}).filter(([candidate]) => candidate.startsWith(`${path}/`));
+  if (!descendants.length) return null;
+  const sources = [...new Set(descendants.map(([, record]) => record.source))].sort();
+  const updatedAt = descendants.map(([, record]) => record.updatedAt).filter(Boolean).sort().at(-1);
+  return { source: sources.length === 1 ? sources[0] : `mixed: ${sources.join(", ")}`, updatedAt };
+}
+
 const hasDom = typeof document !== "undefined";
 
 if (hasDom) {
@@ -76,6 +128,7 @@ if (hasDom) {
   if (location.hash) history.replaceState(null, "", location.pathname);
   const api = createApi(token);
   const state = { jobs: [], resumes: [], selected: null, latest: null, draft: null, dirty: false, dirtyFields: new Set(), polling: false, opener: null, openerJobId: null, focusAfterClose: null };
+  const profileState = { inspection: null, drafts: new Map(), draftBases: new Map(), atomic: new Set(), additionalAtomic: new Set(), deletions: new Set(), conflicts: [], latest: null, loaded: false };
   const $ = (selector) => document.querySelector(selector);
   const form = $("#job-form");
   const dialog = $("#job-dialog");
@@ -89,6 +142,221 @@ if (hasDom) {
 
   function setConnection(online, message = online ? "Canonical store connected" : "Connection lost") {
     $("#connection-dot").classList.toggle("online", online); $("#connection-label").textContent = message;
+  }
+
+  const namedTopLevel = new Set(["firstName", "lastName", "email", "phone", "location", "linkedInUrl", "portfolioUrl", "githubUrl", "workHistory", "education", "skills", "preferences"]);
+  const encodePointer = (value) => String(value).replaceAll("~", "~0").replaceAll("/", "~1");
+  const decodePointer = (value) => String(value).replaceAll("~1", "/").replaceAll("~0", "~");
+  const equalJson = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+
+  function provenanceFor(path) {
+    return summarizeProvenance(profileState.inspection?.factProvenance, path);
+  }
+
+  function provenanceText(path) {
+    const record = provenanceFor(path);
+    if (!record) return "No recorded provenance";
+    const time = new Date(record.updatedAt);
+    return `${record.source} · ${Number.isNaN(time.valueOf()) ? record.updatedAt : time.toLocaleString()}`;
+  }
+
+  function controlValue(control) {
+    if (control.dataset.deleted === "true") return null;
+    if (control.dataset.repeater) {
+      return [...control.querySelectorAll(".repeater-item")].map((row) => {
+        const item = { ...(row._base || {}) };
+        for (const input of row.querySelectorAll("[data-item-field]")) item[input.dataset.itemField] = input.type === "checkbox" ? input.checked : input.value;
+        return item;
+      });
+    }
+    if (control.dataset.lines !== undefined) return control.value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
+    if (control.dataset.json !== undefined) {
+      let parsed;
+      try { parsed = JSON.parse(control.value); } catch { throw new Error(`${control.dataset.label || "Structured fact"} must contain valid JSON.`); }
+      if (control.dataset.array === "true" && !Array.isArray(parsed)) throw new Error(`${control.dataset.label} must be a JSON array.`);
+      return parsed;
+    }
+    if (control.type === "number" && control.value !== "") return Number(control.value);
+    return control.value;
+  }
+
+  function setControlValue(control, value) {
+    control.dataset.deleted = "false";
+    if (control.dataset.repeater) renderRepeater(control, Array.isArray(value) ? value : []);
+    else if (control.dataset.lines !== undefined) control.value = Array.isArray(value) ? value.join("\n") : "";
+    else if (control.dataset.json !== undefined) control.value = JSON.stringify(value ?? (control.dataset.array === "true" ? [] : null), null, 2);
+    else control.value = value ?? "";
+  }
+
+  const repeaterSchemas = {
+    work: [["company", "Company"], ["title", "Title"], ["startDate", "Start date"], ["endDate", "End date"], ["current", "Current position", "checkbox"], ["description", "Description"]],
+    education: [["school", "School"], ["degree", "Degree"], ["field", "Field of study"], ["startDate", "Start date"], ["endDate", "End date"], ["gpa", "GPA"]],
+  };
+
+  function renderRepeater(container, items) {
+    container.replaceChildren();
+    items.forEach((item, index) => {
+      const row = document.createElement("div"); row.className = "repeater-item form-grid"; row._base = item && typeof item === "object" ? { ...item } : {};
+      for (const [field, text, type] of repeaterSchemas[container.dataset.repeater]) {
+        const label = document.createElement("label"); label.textContent = text;
+        const input = document.createElement(field === "description" ? "textarea" : "input"); input.dataset.itemField = field;
+        if (type === "checkbox") { input.type = "checkbox"; input.checked = item?.[field] === true; }
+        else input.value = item?.[field] ?? "";
+        input.setAttribute("aria-label", `${text}, item ${index + 1}`); label.append(input); row.append(label);
+      }
+      const remove = document.createElement("button"); remove.type = "button"; remove.className = "button danger"; remove.textContent = `Remove ${container.dataset.repeater === "work" ? "position" : "education"}`;
+      remove.addEventListener("click", () => { row.remove(); markFactDirty(container); }); row.append(remove); container.append(row);
+    });
+  }
+
+  function addRepeaterItem(path) {
+    const container = document.querySelector(`#facts-form [data-path="${CSS.escape(path)}"]`);
+    const values = controlValue(container); values.push({}); renderRepeater(container, values); markFactDirty(container);
+    container.querySelector(".repeater-item:last-child input")?.focus();
+  }
+
+  function renderAdditionalFacts(profile, preservedDrafts = null, preservedDeletions = new Set()) {
+    const holder = $("#additional-facts"); holder.replaceChildren();
+    const keys = new Set(Object.keys(profile).filter((item) => !namedTopLevel.has(item)));
+    for (const [path] of preservedDrafts || []) {
+      const encoded = path.startsWith("/") ? path.slice(1) : "";
+      if (encoded && !encoded.includes("/")) {
+        const key = decodePointer(encoded);
+        if (!namedTopLevel.has(key)) keys.add(key);
+      }
+    }
+    for (const key of [...keys].sort()) {
+      const path = `/${encodePointer(key)}`;
+      const row = document.createElement("div"); row.className = "additional-fact";
+      const name = document.createElement("code"); name.textContent = key;
+      const label = document.createElement("label"); label.textContent = "JSON value";
+      const editor = document.createElement("textarea"); editor.dataset.path = path; editor.dataset.json = ""; editor.dataset.label = key; editor.dataset.additionalAtomic = ""; editor.rows = 4;
+      profileState.atomic.add(path); profileState.additionalAtomic.add(path);
+      const canonicalExists = Object.hasOwn(profile, key);
+      setControlValue(editor, canonicalExists ? profile[key] : preservedDrafts?.get(path));
+      const provenance = document.createElement("small"); provenance.textContent = provenanceText(path); label.append(editor, provenance);
+      const remove = document.createElement("button"); remove.type = "button"; remove.className = "button danger"; remove.textContent = "Delete";
+      remove.addEventListener("click", () => {
+        if (!confirm(`Delete the additional fact “${key}”?`)) return;
+        editor.dataset.deleted = "true"; editor.disabled = true; remove.disabled = true;
+        if (!profileState.drafts.has(path)) profileState.draftBases.set(path, pointerValue(profileState.inspection.profile, path));
+        profileState.drafts.set(path, null); profileState.deletions.add(path); row.classList.add("pending-delete");
+      });
+      editor.addEventListener("input", () => { profileState.deletions.delete(path); markFactDirty(editor); });
+      if (preservedDeletions.has(path)) {
+        editor.dataset.deleted = "true"; editor.disabled = true; remove.disabled = true; row.classList.add("pending-delete");
+      }
+      row.append(name, label, remove); holder.append(row);
+    }
+  }
+
+  function renderProfile(inspection, preserveDrafts = null, preserveDraftBases = null, preserveDeletions = new Set()) {
+    profileState.inspection = inspection; profileState.loaded = true; profileState.drafts.clear(); profileState.draftBases.clear(); profileState.atomic.clear(); profileState.additionalAtomic.clear(); profileState.deletions.clear(); profileState.conflicts = []; profileState.latest = null;
+    for (const control of document.querySelectorAll("#facts-form [data-path]")) {
+      const path = control.dataset.path;
+      if (control.dataset.atomic !== undefined) profileState.atomic.add(path);
+      if (control.dataset.json !== undefined) control.dataset.array = "true";
+      setControlValue(control, pointerValue(inspection.profile, path));
+      const note = document.querySelector(`[data-provenance="${CSS.escape(path)}"]`); if (note) note.textContent = provenanceText(path);
+    }
+    renderAdditionalFacts(inspection.profile, preserveDrafts, preserveDeletions);
+    if (preserveDrafts) {
+      for (const [path, value] of preserveDrafts) {
+        const control = document.querySelector(`#facts-form [data-path="${CSS.escape(path)}"]`);
+        if (control) {
+          if (!preserveDeletions.has(path)) setControlValue(control, value);
+          profileState.drafts.set(path, value);
+          profileState.draftBases.set(path, preserveDraftBases?.get(path));
+          if (preserveDeletions.has(path)) profileState.deletions.add(path);
+        }
+      }
+    }
+    $("#facts-revision").textContent = `Revision ${inspection.revision}`;
+    $("#facts-status").textContent = profileState.drafts.size ? "Draft changes are preserved against the latest profile." : "Profile is synchronized with the canonical store.";
+    $("#facts-conflict").classList.add("hidden"); $("#facts-error").classList.add("hidden");
+  }
+
+  function markFactDirty(control) {
+    try {
+      const value = controlValue(control);
+      const path = control.dataset.path;
+      if (equalJson(value, pointerValue(profileState.inspection.profile, path))) {
+        profileState.drafts.delete(path); profileState.draftBases.delete(path);
+      } else {
+        if (!profileState.drafts.has(path)) profileState.draftBases.set(path, pointerValue(profileState.inspection.profile, path));
+        profileState.drafts.set(path, value);
+      }
+      $("#facts-error").classList.add("hidden");
+      $("#facts-status").textContent = profileState.drafts.size ? `${profileState.drafts.size} fact change${profileState.drafts.size === 1 ? "" : "s"} ready to save.` : "Profile is synchronized with the canonical store.";
+    } catch (error) { const node = $("#facts-error"); node.textContent = error.message; node.classList.remove("hidden"); }
+  }
+
+  async function refreshProfile({ preserve = true } = {}) {
+    try {
+      const drafts = preserve ? new Map(profileState.drafts) : null;
+      const draftBases = preserve ? new Map(profileState.draftBases) : null;
+      const deletions = preserve ? new Set(profileState.deletions) : new Set();
+      const inspection = await api("/api/profile"); renderProfile(inspection, drafts, draftBases, deletions); setConnection(true);
+    } catch (error) { setConnection(false, error.message); const node = $("#facts-error"); node.textContent = error.message; node.classList.remove("hidden"); }
+  }
+
+  function showFactConflicts(latest, conflicts) {
+    profileState.latest = latest; profileState.conflicts = conflicts;
+    const list = $("#facts-conflict-list"); list.replaceChildren();
+    for (const path of conflicts) { const item = document.createElement("li"); item.textContent = path; list.append(item); }
+    $("#facts-conflict").classList.remove("hidden"); $("#facts-conflict").focus();
+  }
+
+  async function saveFacts() {
+    $("#facts-save").disabled = true;
+    try {
+      for (const control of document.querySelectorAll("#facts-form [data-path]")) if (profileState.drafts.has(control.dataset.path)) profileState.drafts.set(control.dataset.path, controlValue(control));
+      if (!profileState.drafts.size) { toast("No fact changes to save"); return; }
+      let retries = 0;
+      while (true) {
+        try {
+          const latest = await api("/api/profile");
+          const conflicts = conflictingPaths(profileState.draftBases, latest.profile, profileState.drafts, profileState.atomic);
+          if (conflicts.length) { showFactConflicts(latest, conflicts); return; }
+          const atomicPaths = [...profileState.drafts.keys()].filter((path) => profileState.additionalAtomic.has(path));
+          const deletedPaths = atomicPaths.filter((path) => profileState.deletions.has(path));
+          const updated = await api("/api/profile", { method: "PATCH", body: JSON.stringify({ patch: patchForPaths(profileState.drafts), expectedRevision: latest.revision, atomicPaths, deletedPaths }) });
+          renderProfile(updated); toast("Facts saved to the canonical profile");
+          return;
+        } catch (error) {
+          if (shouldRetryFactSave(error, retries)) { retries += 1; continue; }
+          if (error instanceof ApiError && error.status === 409 && error.code === "revision_conflict") {
+            const node = $("#facts-error");
+            node.textContent = "The profile changed repeatedly while saving. Your draft is preserved. Retry Save or refresh the profile before trying again.";
+            node.classList.remove("hidden");
+            return;
+          }
+          throw error;
+        }
+      }
+    } catch (error) {
+      const node = $("#facts-error"); node.textContent = error.message; node.classList.remove("hidden");
+    } finally { $("#facts-save").disabled = false; }
+  }
+
+  function resolveFactConflicts(useMine) {
+    const drafts = new Map(profileState.drafts);
+    if (!useMine) for (const path of profileState.conflicts) drafts.delete(path);
+    const deletions = new Set([...profileState.deletions].filter((path) => drafts.has(path)));
+    const resolvedBases = new Map(
+      [...drafts].map(([path]) => [path, pointerValue(profileState.latest.profile, path)]),
+    );
+    renderProfile(profileState.latest, drafts, resolvedBases, deletions);
+    if (useMine) saveFacts(); else $("#facts-save").focus();
+  }
+
+  async function showWorkspace(name) {
+    const facts = name === "facts";
+    $("#jobs-workspace").classList.toggle("hidden", facts); $("#facts-workspace").classList.toggle("hidden", !facts);
+    $("#nav-jobs").classList.toggle("active", !facts); $("#nav-facts").classList.toggle("active", facts);
+    $("#nav-jobs").toggleAttribute("aria-current", !facts); $("#nav-facts").toggleAttribute("aria-current", facts);
+    document.title = `${facts ? "Facts" : "Jobs"} · Job Apply Workspace`;
+    if (facts && !profileState.loaded) await refreshProfile({ preserve: false });
   }
 
   function metrics() {
@@ -254,6 +522,11 @@ if (hasDom) {
   function firstListDestination() { return $(".job-card") || $("#new-job"); }
 
   form.addEventListener("submit", save); form.addEventListener("input", (event) => { if (state.selected && event.target.name) { state.dirty = true; state.dirtyFields.add(event.target.name); } });
+  $("#nav-jobs").addEventListener("click", () => showWorkspace("jobs")); $("#nav-facts").addEventListener("click", () => showWorkspace("facts"));
+  $("#facts-form").addEventListener("input", (event) => { const control = event.target.closest("[data-path]"); if (control) markFactDirty(control); });
+  $("#add-work").addEventListener("click", () => addRepeaterItem("/workHistory")); $("#add-education").addEventListener("click", () => addRepeaterItem("/education"));
+  $("#facts-save").addEventListener("click", saveFacts); $("#facts-refresh").addEventListener("click", () => refreshProfile());
+  $("#facts-use-latest").addEventListener("click", () => resolveFactConflicts(false)); $("#facts-use-mine").addEventListener("click", () => resolveFactConflicts(true));
   $("#new-job").addEventListener("click", openNew); $("#empty-create").addEventListener("click", openNew); $("#refresh").addEventListener("click", () => refresh());
   $("#search").addEventListener("input", render); $("#status-filter").addEventListener("change", render);
   $("#preflight-job").addEventListener("click", preflight); $("#mark-ready").addEventListener("click", async () => { const result = await preflight(); if (result?.ready) transition("ready"); });

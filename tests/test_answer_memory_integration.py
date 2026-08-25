@@ -63,10 +63,26 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
             "preferences-input.json", {"remotePreference": "remote only"}
         )
         updated_preferences = self.json_store(
-            "preferences-set", "--input", str(preferences)
+            "preferences-set",
+            "--input",
+            str(preferences),
+            "--expected-revision",
+            str(self.json_store("profile-inspect")["revision"]),
+            "--source",
+            "user",
         )
-        self.assertEqual(updated_preferences["targetTitles"], ["Engineer"])
-        self.assertEqual(updated_preferences["remotePreference"], "remote only")
+        self.assertEqual(
+            updated_preferences["profile"]["preferences"]["targetTitles"],
+            ["Engineer"],
+        )
+        self.assertEqual(
+            updated_preferences["profile"]["preferences"]["remotePreference"],
+            "remote only",
+        )
+        self.assertEqual(
+            updated_preferences["factProvenance"]["/preferences/remotePreference"]["source"],
+            "user",
+        )
         self.assertTrue(self.json_store("profile-get")["unknownLegacyField"]["preserve"])
 
         confirmed = self.write_input(
@@ -211,7 +227,15 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
     def test_ready_job_cli_lifecycle_reaches_review_and_releases_claim(self):
         self.json_store("init")
         profile = self.write_input("profile.json", {"firstName": "Synthetic"})
-        self.json_store("profile-replace", "--input", str(profile))
+        self.json_store(
+            "profile-replace",
+            "--input",
+            str(profile),
+            "--expected-revision",
+            str(self.json_store("profile-inspect")["revision"]),
+            "--source",
+            "user",
+        )
         resume_path = self.home / "assigned-resume.pdf"
         resume_path.write_bytes(b"synthetic resume")
         resume = self.write_input("resume.json", {
@@ -266,7 +290,15 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
     def test_concurrent_cli_acquisition_allows_only_one_global_claim(self):
         self.json_store("init")
         profile = self.write_input("concurrent-profile.json", {"firstName": "Synthetic"})
-        self.json_store("profile-replace", "--input", str(profile))
+        self.json_store(
+            "profile-replace",
+            "--input",
+            str(profile),
+            "--expected-revision",
+            str(self.json_store("profile-inspect")["revision"]),
+            "--source",
+            "user",
+        )
         resume_path = self.home / "concurrent-resume.pdf"
         resume_path.write_bytes(b"resume")
         resume = self.write_input("concurrent-resume.json", {

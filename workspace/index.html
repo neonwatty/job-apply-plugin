@@ -8,19 +8,24 @@
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <a class="skip-link" href="#jobs">Skip to jobs</a>
+  <a class="skip-link" href="#workspace-content">Skip to workspace</a>
   <header class="topbar">
     <div>
       <p class="eyebrow">LOCAL COMPANION</p>
       <h1>Job Apply</h1>
     </div>
+    <nav class="workspace-nav" aria-label="Workspace sections">
+      <button id="nav-jobs" class="nav-link active" type="button" aria-current="page">Jobs</button>
+      <button id="nav-facts" class="nav-link" type="button">Facts</button>
+    </nav>
     <div class="connection" aria-live="polite">
       <span id="connection-dot" class="dot"></span>
       <span id="connection-label">Connecting…</span>
     </div>
   </header>
 
-  <main>
+  <main id="workspace-content">
+    <div id="jobs-workspace">
     <section class="hero" aria-labelledby="workspace-title">
       <div>
         <p class="eyebrow">Jobs Workspace</p>
@@ -64,6 +69,52 @@
       </div>
       <div id="job-list" class="job-list hidden" role="list"></div>
     </section>
+    </div>
+
+    <div id="facts-workspace" class="hidden">
+      <section class="hero" aria-labelledby="facts-title">
+        <div><p class="eyebrow">Facts Workspace</p><h2 id="facts-title">Your canonical application facts.</h2><p>Review and selectively edit the same local profile used by Job Apply agents.</p></div>
+        <div class="hero-actions"><button id="facts-refresh" class="button secondary" type="button">Refresh</button><button id="facts-save" class="button primary" type="button">Save changes</button></div>
+      </section>
+      <p id="facts-status" class="notice" role="status">Open Facts to load the canonical profile.</p>
+      <section class="facts-panel" aria-labelledby="facts-form-title">
+        <div class="panel-heading"><div><p class="eyebrow">CANONICAL PROFILE</p><h2 id="facts-form-title">Applicant facts</h2></div><p id="facts-revision">Revision —</p></div>
+        <form id="facts-form">
+          <fieldset><legend>Identity and contact</legend><div class="form-grid">
+            <label>First name <input data-path="/firstName" autocomplete="given-name"><small data-provenance="/firstName"></small></label>
+            <label>Last name <input data-path="/lastName" autocomplete="family-name"><small data-provenance="/lastName"></small></label>
+            <label>Email <input data-path="/email" type="email" autocomplete="email"><small data-provenance="/email"></small></label>
+            <label>Phone <input data-path="/phone" type="tel" autocomplete="tel"><small data-provenance="/phone"></small></label>
+          </div></fieldset>
+          <fieldset><legend>Location</legend><div class="form-grid">
+            <label>City <input data-path="/location/city" autocomplete="address-level2"><small data-provenance="/location/city"></small></label>
+            <label>State or region <input data-path="/location/state" autocomplete="address-level1"><small data-provenance="/location/state"></small></label>
+            <label>Country <input data-path="/location/country" autocomplete="country-name"><small data-provenance="/location/country"></small></label>
+            <label>Postal code <input data-path="/location/zip" autocomplete="postal-code"><small data-provenance="/location/zip"></small></label>
+          </div></fieldset>
+          <fieldset><legend>Professional links</legend><div class="form-grid">
+            <label>LinkedIn URL <input data-path="/linkedInUrl" type="url"><small data-provenance="/linkedInUrl"></small></label>
+            <label>Portfolio URL <input data-path="/portfolioUrl" type="url"><small data-provenance="/portfolioUrl"></small></label>
+            <label>GitHub URL <input data-path="/githubUrl" type="url"><small data-provenance="/githubUrl"></small></label>
+          </div></fieldset>
+          <fieldset><legend>Experience and skills</legend><div class="form-grid">
+            <section class="repeater wide" aria-labelledby="work-history-heading"><div class="repeater-heading"><h3 id="work-history-heading">Work history</h3><button id="add-work" class="button secondary" type="button">Add position</button></div><div id="work-history" data-path="/workHistory" data-repeater="work" data-atomic></div><small data-provenance="/workHistory"></small></section>
+            <section class="repeater wide" aria-labelledby="education-heading"><div class="repeater-heading"><h3 id="education-heading">Education</h3><button id="add-education" class="button secondary" type="button">Add education</button></div><div id="education-list" data-path="/education" data-repeater="education" data-atomic></div><small data-provenance="/education"></small></section>
+            <label class="wide">Skills (one per line) <textarea data-path="/skills" data-lines data-atomic rows="4"></textarea><small data-provenance="/skills"></small></label>
+          </div></fieldset>
+          <fieldset><legend>Search preferences</legend><div class="form-grid">
+            <label class="wide">Target titles (one per line) <textarea data-path="/preferences/targetTitles" data-lines data-atomic rows="3"></textarea><small data-provenance="/preferences/targetTitles"></small></label>
+            <label>Minimum base salary <input data-path="/preferences/minBaseSalary" type="text" inputmode="numeric"><small data-provenance="/preferences/minBaseSalary"></small></label>
+            <label>Remote preference <input data-path="/preferences/remotePreference"><small data-provenance="/preferences/remotePreference"></small></label>
+            <label class="wide">Exclude patterns (one per line) <textarea data-path="/preferences/excludePatterns" data-lines data-atomic rows="3"></textarea><small data-provenance="/preferences/excludePatterns"></small></label>
+            <label>Default time range <input data-path="/preferences/defaultTimeRange"><small data-provenance="/preferences/defaultTimeRange"></small></label>
+          </div></fieldset>
+          <fieldset><legend>Additional facts</legend><p>Existing forward-compatible facts can be edited as JSON or explicitly deleted.</p><div id="additional-facts"></div></fieldset>
+        </form>
+        <div id="facts-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>Some facts changed elsewhere</h3><p>Choose whether conflicting fields keep the latest canonical value or replace it with your draft. Structured values are never reapplied automatically.</p><ul id="facts-conflict-list"></ul><div class="button-row"><button id="facts-use-latest" class="button secondary" type="button">Use latest for conflicts</button><button id="facts-use-mine" class="button primary" type="button">Use my values for conflicts</button></div></div>
+        <p id="facts-error" class="error hidden" role="alert"></p>
+      </section>
+    </div>
   </main>
 
   <dialog id="job-dialog" aria-labelledby="job-dialog-title">

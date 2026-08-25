@@ -12,7 +12,7 @@ AI-powered job application assistant for Claude Code and Codex that fills job ap
 | `job-apply:answer-memory` | Safely manage your local profile, reusable answers, application history, and resumable sessions |
 | `job-apply:job-search` | Search LinkedIn, Hacker News, and Twitter/X for jobs, then rank results against your preferences |
 | `job-apply:job-preferences` | Set the titles, salary, remote-work, and filtering preferences used by job search |
-| `job-apply:job-workspace` | Open the optional local Jobs workspace shared with Job Apply agents |
+| `job-apply:job-workspace` | Open the optional local Jobs and Facts workspace shared with Job Apply agents |
 
 Invoke skills with `$job-apply:...` in Codex or `/job-apply:...` in Claude Code.
 
@@ -146,7 +146,7 @@ Results are automatically saved to `~/.claude-job-searches/`. Both Codex and Cla
 
 ### Local Jobs Workspace
 
-The optional workspace gives you a keyboard-accessible browser view of the same canonical Jobs records used by the CLI skills. From the plugin directory, start it with one command:
+The optional workspace gives you keyboard-accessible Jobs and Facts views backed by the same canonical records used by the CLI skills. From the plugin directory, start it with one command:
 
 ```bash
 python3 scripts/job-apply-workspace.py
@@ -154,7 +154,7 @@ python3 scripts/job-apply-workspace.py
 
 The launcher binds only to `127.0.0.1`, chooses a free port, opens the complete authenticated URL in your default browser, and stops cleanly with Ctrl-C. It requires Python 3 but no Node runtime, account, cloud service, telemetry, or separate database.
 
-Use the workspace to capture one job or paste multiple URLs, filter and edit records, assign an existing resume, run readiness checks, mark valid jobs ready for agent handoff, and move a job to recoverable trash. CLI changes appear within four seconds or when you select **Refresh**. If a CLI or agent changes an open record, the workspace keeps your draft and shows a revision conflict before anything can be overwritten.
+Use **Jobs** to capture one job or paste multiple URLs, filter and edit records, assign an existing resume, run readiness checks, mark valid jobs ready for agent handoff, and move a job to recoverable trash. Use **Facts** to review provenance and selectively edit identity, contact, location, professional links, history, education, skills, search preferences, and existing forward-compatible facts. Conflicts preserve the draft: disjoint scalar edits safely rebase, while same-path and structured-value changes require an explicit latest-or-mine choice.
 
 The workspace never runs an application, reads arbitrary files, or activates Submit, Send, Apply, or another third-party final action. A ready job remains an explicit handoff to `$job-apply:job-apply`; you personally control submission.
 
