@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
@@ -843,7 +844,7 @@ class StoreTests(unittest.TestCase):
 
     def test_agent_ignores_protected_invalid_resume_before_validation(self):
         resume_path = self.home / "resume.pdf"
-        resume_path.write_bytes(b"resume")
+        resume_path.write_bytes(b"%PDF-1.7\nresume")
         resume = self.store.create_resume(
             {"id": "protected-resume", "label": "Protected", "path": str(resume_path)}
         )
@@ -1627,7 +1628,7 @@ class StoreTests(unittest.TestCase):
             source="user",
         )
         resume_path = self.home / "resume.pdf"
-        resume_path.write_bytes(b"resume")
+        resume_path.write_bytes(b"%PDF-1.7\nresume")
         self.store.create_resume(
             {"id": "main-resume", "label": "Main", "path": str(resume_path)}
         )
@@ -1680,14 +1681,14 @@ class StoreTests(unittest.TestCase):
             source="user",
         )
         default_path = self.home / "default.pdf"
-        default_path.write_bytes(b"default-resume")
+        default_path.write_bytes(b"%PDF-1.7\ndefault-resume")
         self.store.create_resume(
             {"id": "default-resume", "label": "Default", "path": str(default_path)}
         )
         resume_id = None
         if assigned:
             assigned_path = self.home / "assigned.pdf"
-            assigned_path.write_bytes(b"assigned-resume")
+            assigned_path.write_bytes(b"%PDF-1.7\nassigned-resume")
             assigned_resume = self.store.create_resume(
                 {"id": "assigned-resume", "label": "Assigned", "path": str(assigned_path)}
             )
@@ -1727,6 +1728,78 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(self.store.load_session("ready-job"), protected)
         events = self.store.read_history()
         self.assertEqual([event["event"] for event in events], ["job-started"])
+
+    def test_ready_acquisition_rejects_tampered_managed_resume_without_side_effects(self):
+        ready = self._make_ready_job(assigned=True)
+        resume = self.store.get_resume("assigned-resume")
+        managed_path = self.store.resume_files_path / resume["managedFile"]
+        managed_path.write_bytes(b"%PDF-1.7\ntampered assigned resume")
+        self.store._ensure_coordinator_files()
+        before = {
+            "jobs": self.store.jobs_path.read_bytes(),
+            "coordinator": self.store.coordinator_path.read_bytes(),
+            "journal": self.store.coordinator_journal_path.read_bytes(),
+            "history": self.store.history_path.read_bytes(),
+        }
+
+        preflight = self.store.preflight_job("ready-job")
+        self.assertFalse(preflight["ready"])
+        self.assertIn("resume_file_changed", preflight["errors"])
+        self.assertNotIn("resume_file_changed", preflight["warnings"])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "job is not ready"):
+            self.store.acquire_ready_job("ready-job", "codex", ready["revision"])
+
+        self.assertEqual(self.store.get_job("ready-job"), ready)
+        self.assertIsNone(self.store.claim_status()["claim"])
+        self.assertEqual(self.store.jobs_path.read_bytes(), before["jobs"])
+        self.assertEqual(self.store.coordinator_path.read_bytes(), before["coordinator"])
+        self.assertEqual(self.store.coordinator_journal_path.read_bytes(), before["journal"])
+        self.assertEqual(self.store.history_path.read_bytes(), before["history"])
+
+    def test_ready_acquisition_preserves_changed_legacy_resume_warning(self):
+        self.store.replace_profile(
+            {"firstName": "Ada"},
+            expected_revision=self.store.inspect_profile()["revision"],
+            source="user",
+        )
+        external = self.home / "legacy.pdf"
+        external.write_bytes(b"%PDF-1.7\nlegacy resume")
+        now = "2026-08-25T00:00:00Z"
+        document = self.store._load_resumes_document()
+        document["resumes"]["legacy"] = {
+            "id": "legacy",
+            "label": "Legacy",
+            "path": str(external),
+            "tags": [],
+            "default": True,
+            "observedSize": external.stat().st_size,
+            "observedModifiedAt": STORE_MODULE.observe_resume_file(str(external))["modifiedAt"],
+            "revision": 1,
+            "createdAt": now,
+            "updatedAt": now,
+            "deletedAt": None,
+        }
+        STORE_MODULE.atomic_write_json(self.store.resumes_path, document)
+        job = self.store.create_job(
+            {
+                "id": "legacy-job",
+                "url": "https://example.com/jobs/legacy",
+                "role": "Engineer",
+                "company": "Acme",
+            }
+        )
+        ready = self.store.transition_job("legacy-job", "ready", job["revision"])
+        external.write_bytes(b"%PDF-1.7\nchanged legacy resume")
+
+        preflight = self.store.preflight_job("legacy-job")
+        self.assertTrue(preflight["ready"])
+        self.assertNotIn("resume_file_changed", preflight["errors"])
+        self.assertIn("resume_file_changed", preflight["warnings"])
+        acquired = self.store.acquire_ready_job(
+            "legacy-job", "codex", ready["revision"]
+        )
+        self.assertEqual(acquired["job"]["status"], "in_progress")
+        self.assertEqual(acquired["resume"]["path"], str(external))
 
     def test_expired_claim_requires_explicit_same_job_recovery_and_rotates_token(self):
         instant = [datetime(2026, 8, 24, tzinfo=timezone.utc)]
@@ -1925,7 +1998,7 @@ class StoreTests(unittest.TestCase):
                 source="user",
             )
             resume_path = root / "resume.pdf"
-            resume_path.write_bytes(b"resume")
+            resume_path.write_bytes(b"%PDF-1.7\nresume")
             store.create_resume({"id": "resume", "label": "Resume", "path": str(resume_path)})
             job = store.create_job({"id": "job", "url": f"https://example.com/{case}"})
             ready = store.transition_job("job", "ready", job["revision"])
@@ -2115,7 +2188,7 @@ class StoreTests(unittest.TestCase):
 
     def test_resume_registry_tracks_files_defaults_and_revisions(self):
         first_path = self.home / "resume-a.pdf"
-        first_path.write_bytes(b"resume-a")
+        first_path.write_bytes(b"%PDF-1.7\nresume-a")
         first = self.store.create_resume(
             {
                 "id": "resume-a",
@@ -2125,10 +2198,11 @@ class StoreTests(unittest.TestCase):
             }
         )
         self.assertTrue(first["default"])
-        self.assertEqual(first["observedSize"], len(b"resume-a"))
+        self.assertEqual(first["observedSize"], len(b"%PDF-1.7\nresume-a"))
         self.assertFalse(self.store.check_resume(first["id"])["changed"])
 
-        missing_path = self.home / "resume-b.pdf"
+        missing_path = self.home / "resume-b.txt"
+        missing_path.write_text("leadership resume", encoding="utf-8")
         second = self.store.create_resume(
             {
                 "id": "resume-b",
@@ -2137,7 +2211,7 @@ class StoreTests(unittest.TestCase):
             }
         )
         self.assertFalse(second["default"])
-        self.assertFalse(self.store.check_resume(second["id"])["exists"])
+        self.assertTrue(self.store.check_resume(second["id"])["exists"])
         second = self.store.set_default_resume(
             second["id"], expected_revision=second["revision"]
         )
@@ -2146,8 +2220,8 @@ class StoreTests(unittest.TestCase):
         self.assertFalse(refreshed_first["default"])
         self.assertEqual(refreshed_first["revision"], first["revision"] + 1)
 
-        first_path.write_bytes(b"changed-resume-a")
-        self.assertTrue(self.store.check_resume(first["id"])["changed"])
+        first_path.write_bytes(b"changed source is no longer canonical")
+        self.assertFalse(self.store.check_resume(first["id"])["changed"])
         with self.assertRaisesRegex(STORE_MODULE.StoreError, "revision conflict"):
             self.store.update_resume(
                 first["id"], {"label": "Old"}, expected_revision=first["revision"]
@@ -2160,9 +2234,650 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(updated["label"], "Updated Engineering")
         self.assertEqual(self.store.list_resumes()[0]["id"], second["id"])
 
+    def test_managed_resume_import_is_private_strict_and_source_independent(self):
+        source = self.home / "resume.txt"
+        source.write_text("Résumé text", encoding="utf-8")
+        created = self.store.import_resume(
+            {"id": "managed", "label": "Managed", "path": str(source)}
+        )
+        self.assertEqual(created["storageKind"], "managed")
+        self.assertNotIn("path", created)
+        stored = json.loads(self.store.resumes_path.read_text(encoding="utf-8"))
+        serialized = json.dumps(stored)
+        self.assertNotIn(str(source), serialized)
+        managed_path = self.store.resume_files_path / created["managedFile"]
+        self.assertEqual(managed_path.read_text(encoding="utf-8"), "Résumé text")
+        if os.name != "nt":
+            self.assertEqual(stat.S_IMODE(managed_path.stat().st_mode), 0o600)
+            self.assertEqual(stat.S_IMODE(self.store.resume_files_path.stat().st_mode), 0o700)
+        source.unlink()
+        self.assertTrue(self.store.check_resume(created["id"])["exists"])
+
+        docx = self.home / "resume.docx"
+        with STORE_MODULE.zipfile.ZipFile(docx, "w") as archive:
+            archive.writestr("[Content_Types].xml", "<Types />")
+            archive.writestr("word/document.xml", "<document />")
+        imported_docx = self.store.create_resume(
+            {"id": "docx", "label": "DOCX", "path": str(docx)}
+        )
+        self.assertEqual(imported_docx["mediaType"], STORE_MODULE.RESUME_MEDIA_TYPES[".docx"])
+
+        invalid = self.home / "invalid.pdf"
+        invalid.write_bytes(b"not a pdf")
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "does not match"):
+            self.store.create_resume(
+                {"id": "invalid", "label": "Invalid", "path": str(invalid)}
+            )
+        oversized = self.home / "oversized.txt"
+        oversized.write_bytes(b"x" * (STORE_MODULE.RESUME_MAX_BYTES + 1))
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "10 MiB"):
+            self.store.create_resume(
+                {"id": "oversized", "label": "Oversized", "path": str(oversized)}
+            )
+
+    def test_failed_managed_staging_is_removed_immediately(self):
+        source = self.home / "cleanup.txt"
+        source.write_text("synthetic cleanup resume", encoding="utf-8")
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "label"):
+            self.store.create_resume(
+                {"id": "bad-label", "label": "", "path": str(source)}
+            )
+        self.assertEqual(list(self.store.resume_files_path.glob(".*.tmp")), [])
+
+        created = self.store.create_resume(
+            {"id": "cleanup", "label": "Cleanup", "path": str(source)}
+        )
+        replacement = self.home / "replacement.pdf"
+        replacement.write_bytes(b"%PDF-1.7\nsynthetic replacement")
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "tags"):
+            self.store.update_resume(
+                created["id"],
+                {"path": str(replacement), "tags": [""]},
+                created["revision"],
+            )
+        self.assertEqual(list(self.store.resume_files_path.glob(".*.tmp")), [])
+        self.assertEqual(self.store.get_resume(created["id"]), created)
+
+    def test_managed_resume_bytes_share_validation_revisions_and_fail_clean_storage(self):
+        created = self.store.create_resume_bytes(
+            {"id": "browser-bytes", "label": "Browser bytes"},
+            "private-browser-name.txt",
+            b"synthetic browser resume",
+        )
+        self.assertNotEqual(created["originalFilename"], "private-browser-name.txt")
+        record, content = self.store.read_resume_content(created["id"])
+        self.assertEqual((record["id"], content), (created["id"], b"synthetic browser resume"))
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "revision conflict"):
+            self.store.update_resume_bytes(created["id"], "new.pdf", b"%PDF-1.7\nnew", 99)
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "does not match"):
+            self.store.update_resume_bytes(created["id"], "new.pdf", b"not pdf", created["revision"])
+        self.assertEqual(self.store.get_resume(created["id"]), created)
+        self.assertEqual(list(self.store.resume_files_path.glob(".*.tmp")), [])
+        self.assertEqual(list(self.store.resume_files_path.glob(".browser-upload.*")), [])
+        updated = self.store.update_resume_bytes(
+            created["id"], "new.pdf", b"%PDF-1.7\nnew", created["revision"]
+        )
+        self.assertEqual((updated["id"], updated["revision"]), (created["id"], created["revision"] + 1))
+        self.assertEqual(self.store.read_resume_content(created["id"])[1], b"%PDF-1.7\nnew")
+        managed_path = self.store.resume_files_path / updated["managedFile"]
+        managed_path.write_bytes(b"%PDF-1.7\ntampered")
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "unavailable"):
+            self.store.read_resume_content(created["id"])
+
+    def test_browser_source_cleanup_failure_does_not_reverse_commit_and_is_recoverable(self):
+        original_unlink = Path.unlink
+
+        def fail_browser_cleanup(path, *args, **kwargs):
+            if path.name.startswith(".browser-upload."):
+                raise PermissionError("synthetic cleanup failure")
+            return original_unlink(path, *args, **kwargs)
+
+        with mock.patch.object(Path, "unlink", fail_browser_cleanup):
+            created = self.store.create_resume_bytes(
+                {"id": "cleanup-success", "label": "Cleanup success"},
+                "private.txt",
+                b"committed bytes",
+            )
+        self.assertEqual(self.store.get_resume(created["id"])["id"], created["id"])
+        orphans = list(self.store.resume_files_path.glob(".browser-upload.*"))
+        self.assertEqual(len(orphans), 1)
+        old = time.time() - STORE_MODULE.UPLOAD_RECOVERY_GRACE_SECONDS - 1
+        os.utime(orphans[0], (old, old))
+        self.store.initialize()
+        self.assertFalse(orphans[0].exists())
+
+    def test_resume_resolve_returns_only_a_verified_active_managed_path(self):
+        created = self.store.create_resume_bytes(
+            {"id": "resolved", "label": "Resolved"}, "source.txt", b"resolved bytes"
+        )
+        resolved = self.store.resolve_resume()
+        self.assertEqual(set(resolved), {"id", "revision", "mediaType", "path"})
+        self.assertEqual(Path(resolved["path"]).read_bytes(), b"resolved bytes")
+        self.assertEqual(self.store.resolve_resume("resolved")["id"], created["id"])
+        managed_path = Path(resolved["path"])
+        managed_path.write_bytes(b"tampered")
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "unavailable"):
+            self.store.resolve_resume("resolved")
+
+    def test_partial_proposal_rebases_own_sibling_ancestors_but_rejects_external_drift(self):
+        resume = self.store.create_resume_bytes(
+            {"id": "sibling-review", "label": "Sibling review"},
+            "resume.txt",
+            b"synthetic",
+        )
+        profile = self.store.patch_profile({"details": {}}, 1, "user")
+        proposal = self.store.create_resume_proposal(
+            resume["id"],
+            {"details": {"a": "A", "b": "B", "c": "C"}},
+            resume["revision"],
+            profile["revision"],
+        )
+        self.assertEqual(proposal["pendingPaths"], ["/details/a", "/details/b", "/details/c"])
+        first = self.store.review_resume_proposal(
+            proposal["id"], {"decisions": {"/details/a": "use_extracted"}},
+            proposal["revision"], proposal["resultProfileRevision"],
+        )
+        second = self.store.review_resume_proposal(
+            proposal["id"], {"decisions": {"/details/b": "use_extracted"}},
+            first["revision"], first["resultProfileRevision"],
+        )
+        self.assertEqual(self.store.inspect_profile()["profile"]["details"], {"a": "A", "b": "B"})
+        externally_changed = self.store.patch_profile(
+            {"details": {"c": "external"}}, second["resultProfileRevision"], "user"
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "baseline changed"):
+            self.store.review_resume_proposal(
+                proposal["id"], {"decisions": {"/details/c": "use_extracted"}},
+                second["revision"], externally_changed["revision"],
+            )
+        self.assertEqual(self.store.inspect_profile()["profile"]["details"]["c"], "external")
+
+    def test_proposal_baselines_distinguish_booleans_from_numbers_recursively(self):
+        selected_resume = self.store.create_resume_bytes(
+            {"id": "strict-selected", "label": "Strict selected"},
+            "selected.txt",
+            b"selected proposal",
+        )
+        intervening_resume = self.store.create_resume_bytes(
+            {"id": "strict-intervening", "label": "Strict intervening"},
+            "intervening.txt",
+            b"intervening proposal",
+        )
+        profile = self.store.patch_profile(
+            {"selectedFlag": True, "replacementFlag": False}, 1, "user"
+        )
+        selected = self.store.create_resume_proposal(
+            selected_resume["id"],
+            {
+                "selectedFlag": "candidate",
+                "replacementFlag": {"child": "candidate"},
+            },
+            selected_resume["revision"],
+            profile["revision"],
+        )
+        intervening = self.store.create_resume_proposal(
+            intervening_resume["id"],
+            {"selectedFlag": 1, "replacementFlag": 0},
+            intervening_resume["revision"],
+            profile["revision"],
+        )
+        changed = self.store.review_resume_proposal(
+            intervening["id"],
+            {
+                "decisions": {
+                    "/selectedFlag": "use_extracted",
+                    "/replacementFlag": "use_extracted",
+                }
+            },
+            intervening["revision"],
+            profile["revision"],
+        )
+        self.assertEqual(
+            self.store.inspect_profile()["profile"],
+            {"selectedFlag": 1, "replacementFlag": 0},
+        )
+        for decisions in (
+            {"decisions": {"/selectedFlag": "use_extracted"}},
+            {
+                "decisions": {"/replacementFlag/child": "use_extracted"},
+                "replacementConfirmations": {
+                    "/replacementFlag/child": "/replacementFlag"
+                },
+            },
+        ):
+            with self.assertRaisesRegex(STORE_MODULE.StoreError, "baseline changed"):
+                self.store.review_resume_proposal(
+                    selected["id"],
+                    decisions,
+                    selected["revision"],
+                    changed["resultProfileRevision"],
+                )
+
+    def test_child_proposal_requires_exact_scalar_and_array_replacement_confirmation(self):
+        resume = self.store.create_resume_bytes(
+            {"id": "ancestor-review", "label": "Ancestor review"},
+            "resume.txt",
+            b"synthetic",
+        )
+        profile = self.store.patch_profile(
+            {"contact": "canonical scalar", "history": ["canonical array"]}, 1, "user"
+        )
+        proposal = self.store.create_resume_proposal(
+            resume["id"],
+            {"contact": {"email": "synthetic@example.invalid"}, "history": {"latest": "Synthetic"}},
+            resume["revision"],
+            profile["revision"],
+        )
+        decisions = {
+            "/contact/email": "use_extracted",
+            "/history/latest": "use_extracted",
+        }
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "replacement confirmation"):
+            self.store.review_resume_proposal(
+                proposal["id"], {"decisions": decisions}, proposal["revision"], profile["revision"]
+            )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "replacement confirmation"):
+            self.store.review_resume_proposal(
+                proposal["id"],
+                {"decisions": decisions, "replacementConfirmations": {"/contact/email": "/wrong"}},
+                proposal["revision"],
+                profile["revision"],
+            )
+        self.assertEqual(
+            self.store.inspect_profile()["profile"],
+            {"contact": "canonical scalar", "history": ["canonical array"]},
+        )
+        reviewed = self.store.review_resume_proposal(
+            proposal["id"],
+            {
+                "decisions": decisions,
+                "replacementConfirmations": {
+                    "/contact/email": "/contact",
+                    "/history/latest": "/history",
+                },
+            },
+            proposal["revision"],
+            profile["revision"],
+        )
+        self.assertEqual(reviewed["status"], "completed")
+        self.assertEqual(
+            self.store.inspect_profile()["profile"],
+            {
+                "contact": {"email": "synthetic@example.invalid"},
+                "history": {"latest": "Synthetic"},
+            },
+        )
+
+    def test_resume_proposal_autofill_review_and_stale_baselines(self):
+        source = self.home / "proposal.txt"
+        source.write_text("synthetic proposal resume", encoding="utf-8")
+        resume = self.store.create_resume(
+            {"id": "proposal-resume", "label": "Proposal", "path": str(source)}
+        )
+        self.assertFalse(self.store.resume_extractions_path.exists())
+        seeded = self.store.replace_profile(
+            {"portfolioUrl": None, "emptyParent": {}, "workHistory": []},
+            1,
+            "resume",
+        )
+        human = self.store.patch_profile(
+            {"firstName": "Human", "phone": "synthetic-phone", "blank": ""},
+            seeded["revision"],
+            "user",
+        )
+        cleared = self.store.patch_profile(
+            {"phone": None}, human["revision"], "user"
+        )
+        candidate = {
+            "firstName": "Extracted",
+            "phone": "extracted-phone",
+            "blank": "extracted-blank",
+            "portfolioUrl": "https://synthetic.invalid",
+            "email": "synthetic@example.invalid",
+            "location": {"city": "Synthetic City"},
+            "skills": ["Synthetic Skill"],
+            "emptyObject": {},
+            "emptyParent": {"child": "extracted-child"},
+            "workHistory": [{"company": "Synthetic Company"}],
+        }
+        proposal = self.store.create_resume_proposal(
+            resume["id"], candidate, resume["revision"], cleared["revision"]
+        )
+        self.assertTrue(self.store.resume_extractions_path.exists())
+        self.assertTrue(self.store.resume_extraction_journal_path.exists())
+        if os.name != "nt":
+            self.assertEqual(
+                stat.S_IMODE(self.store.resume_extractions_path.stat().st_mode), 0o600
+            )
+            self.assertEqual(
+                stat.S_IMODE(self.store.resume_extraction_journal_path.stat().st_mode),
+                0o600,
+            )
+        self.assertEqual(proposal["candidate"], candidate)
+        self.assertEqual(
+            set(proposal["pendingPaths"]),
+            {
+                "/firstName",
+                "/phone",
+                "/blank",
+                "/emptyParent/child",
+                "/workHistory",
+            },
+        )
+        self.assertEqual(
+            set(proposal["autoFilledPaths"]),
+            {"/portfolioUrl", "/email", "/location/city", "/skills", "/emptyObject"},
+        )
+        profile = self.store.inspect_profile()
+        self.assertEqual(profile["profile"]["firstName"], "Human")
+        self.assertNotIn("phone", profile["profile"])
+        self.assertEqual(profile["profile"]["location"]["city"], "Synthetic City")
+        for path in proposal["autoFilledPaths"]:
+            self.assertEqual(profile["factProvenance"][path]["source"], "resume")
+
+        reviewed = self.store.review_resume_proposal(
+            proposal["id"],
+            {
+                "decisions": {
+                    "/firstName": "keep_current",
+                    "/blank": "use_extracted",
+                    "/emptyParent/child": "keep_current",
+                    "/workHistory": "keep_current",
+                }
+            },
+            proposal["revision"],
+            profile["revision"],
+        )
+        self.assertEqual(reviewed["pendingPaths"], ["/phone"])
+        after_review = self.store.inspect_profile()
+        self.assertEqual(after_review["profile"]["blank"], "extracted-blank")
+        self.assertEqual(after_review["factProvenance"]["/blank"]["source"], "user")
+
+        changed = self.store.patch_profile(
+            {"phone": "new-human-phone"}, after_review["revision"], "user"
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "baseline changed"):
+            self.store.review_resume_proposal(
+                proposal["id"],
+                {"decisions": {"/phone": "use_extracted"}},
+                reviewed["revision"],
+                changed["revision"],
+            )
+
+    def test_resume_proposal_supersession_staleness_and_journal_recovery(self):
+        source = self.home / "journal.txt"
+        source.write_text("synthetic journal resume", encoding="utf-8")
+        resume = self.store.create_resume(
+            {"id": "journal-resume", "label": "Journal", "path": str(source)}
+        )
+        profile = self.store.patch_profile(
+            {"firstName": "Human"}, 1, "user"
+        )
+        proposal = self.store.create_resume_proposal(
+            resume["id"],
+            {"firstName": "Candidate"},
+            resume["revision"],
+            profile["revision"],
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "supersession"):
+            self.store.create_resume_proposal(
+                resume["id"],
+                {"firstName": "New Candidate"},
+                resume["revision"],
+                profile["revision"],
+            )
+        newer = self.store.create_resume_proposal(
+            resume["id"],
+            {"firstName": "New Candidate"},
+            resume["revision"],
+            profile["revision"],
+            supersedes=proposal["id"],
+        )
+        self.assertEqual(
+            self.store.get_resume_proposal(proposal["id"])["status"], "superseded"
+        )
+
+        replacement = self.home / "changed.txt"
+        replacement.write_text("changed synthetic resume", encoding="utf-8")
+        changed_resume = self.store.update_resume(
+            resume["id"], {"path": str(replacement)}, resume["revision"]
+        )
+        stale = self.store.get_resume_proposal(newer["id"])
+        self.assertTrue(stale["stale"])
+        self.assertIn("resume_revision_changed", stale["staleReasons"])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "stale"):
+            self.store.review_resume_proposal(
+                newer["id"],
+                {"decisions": {"/firstName": "keep_current"}},
+                newer["revision"],
+                profile["revision"],
+            )
+
+        recovery_source = self.home / "recovery.txt"
+        recovery_source.write_text("synthetic recovery resume", encoding="utf-8")
+        recovery_resume = self.store.create_resume(
+            {"id": "recovery-resume", "label": "Recovery", "path": str(recovery_source)}
+        )
+        original_write = STORE_MODULE.atomic_write_json
+        failed = False
+
+        def fail_proposals_once(path, payload):
+            nonlocal failed
+            if path == self.store.resume_extractions_path and not failed:
+                failed = True
+                raise OSError("synthetic proposal write failure")
+            return original_write(path, payload)
+
+        current_profile = self.store.inspect_profile()
+        with mock.patch.object(STORE_MODULE, "atomic_write_json", side_effect=fail_proposals_once):
+            with self.assertRaises(OSError):
+                self.store.create_resume_proposal(
+                    recovery_resume["id"],
+                    {"email": "recovery@example.invalid"},
+                    recovery_resume["revision"],
+                    current_profile["revision"],
+                )
+        repaired = STORE_MODULE.Store(self.root, self.legacy)
+        repaired.initialize()
+        recovered = repaired.list_resume_proposals(resume_id=recovery_resume["id"])
+        self.assertEqual(len(recovered), 1)
+        self.assertEqual(
+            repaired.inspect_profile()["profile"]["email"],
+            "recovery@example.invalid",
+        )
+        journal = json.loads(
+            repaired.resume_extraction_journal_path.read_text(encoding="utf-8")
+        )
+        self.assertIsNone(journal["operation"])
+
+    def test_resume_proposal_journal_recovers_every_commit_boundary(self):
+        for boundary in ("profile", "proposals", "clear"):
+            with self.subTest(boundary=boundary):
+                root = self.home / f"journal-{boundary}"
+                store = STORE_MODULE.Store(root, self.legacy)
+                source = self.home / f"journal-{boundary}.txt"
+                source.write_text(f"synthetic {boundary} resume", encoding="utf-8")
+                resume = store.create_resume(
+                    {"id": f"resume-{boundary}", "label": "Synthetic", "path": str(source)}
+                )
+                original_write = STORE_MODULE.atomic_write_json
+                journal_started = False
+                failed = False
+
+                def fail_boundary_once(path, payload):
+                    nonlocal journal_started, failed
+                    operation = payload.get("operation") if isinstance(payload, dict) else None
+                    if path == store.resume_extraction_journal_path and operation is not None:
+                        journal_started = True
+                    should_fail = (
+                        not failed
+                        and journal_started
+                        and (
+                            (boundary == "profile" and path == store.profile_path)
+                            or (
+                                boundary == "proposals"
+                                and path == store.resume_extractions_path
+                            )
+                            or (
+                                boundary == "clear"
+                                and path == store.resume_extraction_journal_path
+                                and operation is None
+                            )
+                        )
+                    )
+                    if should_fail:
+                        failed = True
+                        raise OSError("synthetic journal boundary failure")
+                    return original_write(path, payload)
+
+                with mock.patch.object(
+                    STORE_MODULE, "atomic_write_json", side_effect=fail_boundary_once
+                ):
+                    with self.assertRaises(OSError):
+                        store.create_resume_proposal(
+                            resume["id"],
+                            {"email": f"{boundary}@example.invalid"},
+                            resume["revision"],
+                            1,
+                        )
+                repaired = STORE_MODULE.Store(root, self.legacy)
+                repaired.initialize()
+                self.assertEqual(
+                    repaired.inspect_profile()["profile"]["email"],
+                    f"{boundary}@example.invalid",
+                )
+                self.assertEqual(len(repaired.list_resume_proposals()), 1)
+                journal = json.loads(
+                    repaired.resume_extraction_journal_path.read_text(encoding="utf-8")
+                )
+                self.assertIsNone(journal["operation"])
+
+    def test_resume_proposal_reports_missing_changed_trashed_and_deleted_resumes(self):
+        for condition, expected_reason in (
+            ("missing", "resume_file_missing"),
+            ("changed", "resume_file_changed"),
+            ("trashed", "resume_trashed"),
+            ("deleted", "resume_deleted"),
+        ):
+            with self.subTest(condition=condition):
+                root = self.home / f"stale-{condition}"
+                store = STORE_MODULE.Store(root, self.legacy)
+                source = self.home / f"stale-{condition}.txt"
+                source.write_text(f"synthetic {condition} resume", encoding="utf-8")
+                resume = store.create_resume(
+                    {"id": f"stale-{condition}", "label": "Synthetic", "path": str(source)}
+                )
+                proposal = store.create_resume_proposal(
+                    resume["id"],
+                    {"email": f"{condition}@example.invalid"},
+                    resume["revision"],
+                    1,
+                )
+                managed_path = store.resume_files_path / resume["managedFile"]
+                if condition == "missing":
+                    managed_path.unlink()
+                elif condition == "changed":
+                    managed_path.write_text("changed synthetic bytes", encoding="utf-8")
+                else:
+                    trashed = store.trash_resume(resume["id"], resume["revision"])
+                    if condition == "deleted":
+                        store.delete_resume(resume["id"], trashed["revision"])
+                stale = store.get_resume_proposal(proposal["id"])
+                self.assertTrue(stale["stale"])
+                self.assertIn(expected_reason, stale["staleReasons"])
+
+    def test_managed_resume_duplicate_replace_and_rollback_are_deterministic(self):
+        source = self.home / "original.pdf"
+        source.write_bytes(b"%PDF-1.7\noriginal")
+        created = self.store.create_resume(
+            {"id": "stable", "label": "Stable", "path": str(source)}
+        )
+        duplicate = self.home / "duplicate.pdf"
+        duplicate.write_bytes(source.read_bytes())
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "already managed"):
+            self.store.create_resume(
+                {"id": "duplicate", "label": "Duplicate", "path": str(duplicate)}
+            )
+        trashed = self.store.trash_resume(created["id"], created["revision"])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "already managed"):
+            self.store.create_resume(
+                {"id": "duplicate", "label": "Duplicate", "path": str(duplicate)}
+            )
+        created = self.store.restore_resume(created["id"], trashed["revision"])
+        replacement = self.home / "replacement.txt"
+        replacement.write_text("replacement", encoding="utf-8")
+        updated = self.store.update_resume(
+            created["id"], {"path": str(replacement)}, created["revision"]
+        )
+        self.assertEqual(updated["id"], created["id"])
+        self.assertEqual(updated["revision"], created["revision"] + 1)
+        self.assertNotEqual(updated["digest"], created["digest"])
+        self.assertFalse((self.store.resume_files_path / created["managedFile"]).exists())
+
+        failed_source = self.home / "failed.txt"
+        failed_source.write_text("failed replacement", encoding="utf-8")
+        canonical_path = self.store.resume_files_path / updated["managedFile"]
+        canonical_bytes = canonical_path.read_bytes()
+        with mock.patch.object(
+            STORE_MODULE, "atomic_write_json", side_effect=OSError("synthetic")
+        ):
+            with self.assertRaises(OSError):
+                self.store.update_resume(
+                    updated["id"], {"path": str(failed_source)}, updated["revision"]
+                )
+        self.assertEqual(canonical_path.read_bytes(), canonical_bytes)
+        self.assertEqual(self.store.get_resume(updated["id"]), updated)
+
+        quarantine = self.store.resume_files_path / (
+            f".{updated['managedFile']}.synthetic.quarantine"
+        )
+        os.replace(canonical_path, quarantine)
+        self.store.initialize()
+        self.assertTrue(canonical_path.exists())
+        self.assertFalse(quarantine.exists())
+
+    def test_legacy_resume_adoption_preserves_identity_and_rolls_back_delete(self):
+        self.store.initialize()
+        external = self.home / "legacy.pdf"
+        external.write_bytes(b"%PDF-1.7\nlegacy")
+        now = "2026-08-25T00:00:00Z"
+        document = json.loads(self.store.resumes_path.read_text(encoding="utf-8"))
+        document["resumes"]["legacy"] = {
+            "id": "legacy",
+            "label": "Legacy",
+            "path": str(external),
+            "tags": [],
+            "default": True,
+            "observedSize": external.stat().st_size,
+            "observedModifiedAt": STORE_MODULE.observe_resume_file(str(external))["modifiedAt"],
+            "revision": 4,
+            "createdAt": now,
+            "updatedAt": now,
+            "deletedAt": None,
+        }
+        STORE_MODULE.atomic_write_json(self.store.resumes_path, document)
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "adopted"):
+            self.store.resolve_resume("legacy")
+        adopted = self.store.adopt_resume("legacy", None, 4)
+        self.assertEqual((adopted["id"], adopted["revision"]), ("legacy", 5))
+        self.assertNotIn("path", adopted)
+        external.unlink()
+        trashed = self.store.trash_resume("legacy", adopted["revision"])
+        managed_path = self.store.resume_files_path / adopted["managedFile"]
+        with mock.patch.object(
+            STORE_MODULE, "atomic_write_json", side_effect=OSError("synthetic")
+        ):
+            with self.assertRaises(OSError):
+                self.store.delete_resume("legacy", trashed["revision"])
+        self.assertTrue(managed_path.exists())
+        self.assertEqual(
+            self.store.get_resume("legacy", include_trashed=True)["revision"],
+            trashed["revision"],
+        )
+
     def test_resume_assignment_prevents_trash_until_job_is_reassigned(self):
         resume_path = self.home / "resume.pdf"
-        resume_path.write_bytes(b"resume")
+        resume_path.write_bytes(b"%PDF-1.7\nresume")
         resume = self.store.create_resume(
             {"id": "resume-main", "label": "Main", "path": str(resume_path)}
         )
@@ -2181,6 +2896,13 @@ class StoreTests(unittest.TestCase):
             job["id"], {"resumeId": None}, expected_revision=job["revision"]
         )
         self.assertIsNone(job["resumeId"])
+        alternate_path = self.home / "alternate.txt"
+        alternate_path.write_text("alternate resume", encoding="utf-8")
+        alternate = self.store.create_resume(
+            {"id": "resume-alternate", "label": "Alternate", "path": str(alternate_path)}
+        )
+        self.store.set_default_resume(alternate["id"], alternate["revision"])
+        resume = self.store.get_resume(resume["id"])
         trashed = self.store.trash_resume(
             resume["id"], expected_revision=resume["revision"]
         )
@@ -2207,8 +2929,8 @@ class StoreTests(unittest.TestCase):
     def test_tampered_resume_store_with_multiple_defaults_fails_closed(self):
         first_path = self.home / "first.pdf"
         second_path = self.home / "second.pdf"
-        first_path.write_bytes(b"first")
-        second_path.write_bytes(b"second")
+        first_path.write_bytes(b"%PDF-1.7\nfirst")
+        second_path.write_bytes(b"%PDF-1.7\nsecond")
         first = self.store.create_resume(
             {"id": "first", "label": "First", "path": str(first_path)}
         )
@@ -2224,7 +2946,7 @@ class StoreTests(unittest.TestCase):
 
     def test_resume_permanent_delete_rejects_trashed_job_reference(self):
         resume_path = self.home / "resume.pdf"
-        resume_path.write_bytes(b"resume")
+        resume_path.write_bytes(b"%PDF-1.7\nresume")
         resume = self.store.create_resume(
             {"id": "resume-main", "label": "Main", "path": str(resume_path)}
         )
@@ -2577,7 +3299,7 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(json.loads(replaced.stdout)["revision"], 4)
 
         resume_file = self.home / "resume.pdf"
-        resume_file.write_bytes(b"resume")
+        resume_file.write_bytes(b"%PDF-1.7\nresume")
         resume_input = self.home / "resume.json"
         resume_input.write_text(
             json.dumps(
@@ -2612,6 +3334,23 @@ class StoreTests(unittest.TestCase):
             text=True,
         )
         self.assertEqual(json.loads(listed.stdout), [json.loads(created.stdout)])
+        resolved = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--root",
+                str(self.root),
+                "resume-resolve",
+                "--id",
+                "main-resume",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        resolved_record = json.loads(resolved.stdout)
+        self.assertEqual(resolved_record["id"], "main-resume")
+        self.assertTrue(Path(resolved_record["path"]).is_file())
 
     def test_answer_library_cli_lists_and_updates_by_revision(self):
         answer_input = self.home / "answer.json"

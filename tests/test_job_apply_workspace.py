@@ -1,3 +1,4 @@
+import base64
 import http.client
 import importlib.util
 import json
@@ -11,6 +12,7 @@ import threading
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -68,6 +70,9 @@ class WorkspaceServerTests(unittest.TestCase):
         status, _headers, result = self.request("POST", "/api/jobs", {"job": {"url": url, **fields}})
         self.assertEqual(status, 200, result)
         return result
+
+    def upload(self, filename, content, metadata):
+        return {"metadata": metadata, "filename": filename, "content": base64.b64encode(content).decode("ascii")}
 
     def test_binds_exact_ipv4_loopback_and_serves_allowlisted_assets(self):
         self.assertEqual(self.server.server_address[0], "127.0.0.1")
@@ -153,6 +158,165 @@ class WorkspaceServerTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(self.server.store.get_job(ui_job["id"])["notes"], "human note")
         self.assertEqual(updated["revision"], 2)
+
+    def test_resume_projection_redacts_private_file_identity(self):
+        source = Path(self.temporary.name) / "private-name.txt"
+        source.write_text("private resume content", encoding="utf-8")
+        resume = self.server.store.create_resume(
+            {"id": "private-resume", "label": "Private", "path": str(source)}
+        )
+        status, _headers, result = self.request("GET", "/api/resumes", origin=False)
+        self.assertEqual(status, 200)
+        projected = result["resumes"][0]
+        self.assertEqual(projected["id"], resume["id"])
+        self.assertEqual(projected["storageKind"], "managed")
+        for private_field in ("path", "managedFile", "originalFilename", "digest"):
+            self.assertNotIn(private_field, projected)
+        serialized = json.dumps(result)
+        self.assertNotIn(str(source), serialized)
+        self.assertNotIn(source.name, serialized)
+        self.assertNotIn("private resume content", serialized)
+
+    def test_resume_upload_lifecycle_content_and_guards_share_canonical_store(self):
+        status, _headers, created = self.request(
+            "POST", "/api/resumes/import",
+            self.upload("browser-private-name.txt", b"browser resume", {"id": "browser-resume", "label": "Browser", "tags": ["primary"]}),
+        )
+        self.assertEqual(status, 200, created)
+        canonical = self.server.store.get_resume("browser-resume")
+        self.assertEqual(canonical["storageKind"], "managed")
+        self.assertNotEqual(canonical["originalFilename"], "browser-private-name.txt")
+        status, headers, content = self.request("GET", "/api/resumes/browser-resume/content", origin=False)
+        self.assertEqual((status, content), (200, b"browser resume"))
+        header_map = dict(headers)
+        self.assertEqual(header_map["Content-Type"], "text/plain; charset=utf-8")
+        self.assertEqual(header_map["Cache-Control"], "no-store")
+        self.assertEqual(header_map["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(header_map["Content-Disposition"], 'inline; filename="resume-browser-resume.txt"')
+
+        status, _headers, patched = self.request("PATCH", "/api/resumes/browser-resume", {"patch": {"label": "Edited", "tags": ["new"]}, "expectedRevision": created["revision"]})
+        self.assertEqual((status, patched["label"]), (200, "Edited"))
+        status, _headers, body = self.request("PATCH", "/api/resumes/browser-resume", {"patch": {"path": "/tmp/secret.pdf"}, "expectedRevision": patched["revision"]})
+        self.assertEqual(status, 400, body)
+        status, _headers, replaced = self.request("POST", "/api/resumes/browser-resume/replace", self.upload("replacement.pdf", b"%PDF-1.7\nreplacement", {"expectedRevision": patched["revision"]}))
+        self.assertEqual((status, replaced["revision"], replaced["mediaType"]), (200, patched["revision"] + 1, "application/pdf"))
+        status, headers, content = self.request("GET", "/api/resumes/browser-resume/content", origin=False)
+        self.assertEqual((status, content), (200, b"%PDF-1.7\nreplacement"))
+        self.assertTrue(dict(headers)["Content-Disposition"].startswith("inline;"))
+
+        job = self.create_job(resumeId="browser-resume")
+        status, _headers, library = self.request("GET", "/api/resumes", origin=False)
+        projected = next(item for item in library["resumes"] if item["id"] == "browser-resume")
+        self.assertEqual((status, projected["assignedJobCount"], projected["implicitJobCount"]), (200, 1, 0))
+        job = self.server.store.update_job(job["id"], {"resumeId": None}, job["revision"])
+        status, _headers, detail = self.request("GET", "/api/resumes/browser-resume", origin=False)
+        self.assertEqual((status, detail["assignedJobCount"], detail["implicitJobCount"]), (200, 0, 1))
+        job = self.server.store.update_job(
+            job["id"], {"resumeId": "browser-resume"}, job["revision"]
+        )
+        status, _headers, body = self.request("POST", "/api/resumes/browser-resume/trash", {"expectedRevision": replaced["revision"]})
+        self.assertEqual(status, 400, body)
+        self.server.store.trash_job(job["id"], job["revision"])
+        status, _headers, trashed = self.request("POST", "/api/resumes/browser-resume/trash", {"expectedRevision": replaced["revision"]})
+        self.assertEqual(status, 200, trashed)
+        status, _headers, _body = self.request("GET", "/api/resumes/browser-resume/content", origin=False)
+        self.assertEqual(status, 404)
+        status, _headers, body = self.request("POST", "/api/resumes/browser-resume/delete", {"expectedRevision": trashed["revision"]})
+        self.assertEqual(status, 400, body)  # trashed job still retains a reference
+        self.server.store.delete_job(job["id"], job["revision"] + 1)
+        status, _headers, restored = self.request("POST", "/api/resumes/browser-resume/restore", {"expectedRevision": trashed["revision"]})
+        self.assertEqual(status, 200, restored)
+
+    def test_resume_upload_bounds_strict_base64_auth_and_fail_clean(self):
+        invalid = {"metadata": {"label": "Bad"}, "filename": "bad.txt", "content": "%%%"}
+        status, _headers, _body = self.request("POST", "/api/resumes/import", invalid)
+        self.assertEqual(status, 400)
+        status, _headers, _body = self.request("POST", "/api/resumes/import", self.upload("secret.txt", b"secret", {"label": "No auth"}), token=False)
+        self.assertEqual(status, 401)
+        status, _headers, _body = self.request("POST", "/api/resumes/import", self.upload("secret.txt", b"secret", {"label": "No origin"}), origin=False)
+        self.assertEqual(status, 403)
+        self.assertEqual(self.server.store.list_resumes(), [])
+
+    def test_post_commit_browser_source_cleanup_failure_still_returns_success(self):
+        original_unlink = Path.unlink
+
+        def fail_browser_cleanup(path, *args, **kwargs):
+            if path.name.startswith(".browser-upload."):
+                raise PermissionError("synthetic cleanup failure")
+            return original_unlink(path, *args, **kwargs)
+
+        with mock.patch.object(Path, "unlink", fail_browser_cleanup):
+            status, _headers, result = self.request(
+                "POST", "/api/resumes/import",
+                self.upload("private.txt", b"committed", {"id": "cleanup-http", "label": "Cleanup HTTP"}),
+            )
+        self.assertEqual(status, 200, result)
+        self.assertEqual(self.server.store.get_resume("cleanup-http")["id"], "cleanup-http")
+
+    def test_proposal_routes_redact_aggregate_values_and_review_without_retry(self):
+        created = self.server.store.create_resume_bytes({"id": "proposal-resume", "label": "Proposal"}, "resume.txt", b"resume")
+        profile = self.server.store.patch_profile(
+            {"firstName": "Grace", "location": {"city": "Tempe"}}, 1, "user"
+        )
+        proposal = self.server.store.create_resume_proposal(
+            created["id"], {"firstName": "Ada", "location": {"city": "Phoenix"}}, created["revision"], profile["revision"]
+        )
+        status, _headers, summaries = self.request("GET", "/api/resume-proposals", origin=False)
+        self.assertEqual(status, 200)
+        serialized = json.dumps(summaries)
+        self.assertNotIn("Ada", serialized); self.assertNotIn("Phoenix", serialized); self.assertNotIn("baselines", serialized)
+        unrelated = self.server.store.patch_profile(
+            {"lastName": "Unrelated"}, proposal["resultProfileRevision"], "user"
+        )
+        status, _headers, detail = self.request("GET", f"/api/resume-proposals/{proposal['id']}", origin=False)
+        self.assertEqual(status, 200)
+        self.assertEqual(detail["candidate"]["firstName"], "Ada")
+        self.assertEqual(detail["liveProfileRevision"], unrelated["revision"])
+        self.assertNotIn("baselines", detail); self.assertNotIn("resumeDigest", detail)
+        status, _headers, reviewed = self.request("POST", f"/api/resume-proposals/{proposal['id']}/review", {"decisions": {"/firstName": "use_extracted"}, "expectedRevision": proposal["revision"], "expectedProfileRevision": detail["liveProfileRevision"]})
+        self.assertEqual(status, 200, reviewed)
+        self.assertEqual(self.server.store.inspect_profile()["profile"]["firstName"], "Ada")
+        status, _headers, body = self.request("POST", f"/api/resume-proposals/{proposal['id']}/review", {"decisions": {"/location/city": "use_extracted"}, "expectedRevision": proposal["revision"], "expectedProfileRevision": proposal["profileRevision"]})
+        self.assertEqual(status, 409, body)
+
+    def test_proposal_detail_discloses_and_review_confirms_replaced_ancestor(self):
+        created = self.server.store.create_resume_bytes(
+            {"id": "ancestor-proposal", "label": "Ancestor proposal"}, "resume.txt", b"resume"
+        )
+        profile = self.server.store.patch_profile({"contact": "canonical scalar"}, 1, "user")
+        proposal = self.server.store.create_resume_proposal(
+            created["id"],
+            {"contact": {"email": "synthetic@example.invalid"}},
+            created["revision"],
+            profile["revision"],
+        )
+        status, _headers, detail = self.request(
+            "GET", f"/api/resume-proposals/{proposal['id']}", origin=False
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(
+            detail["replacementScopes"]["/contact/email"],
+            {"path": "/contact", "value": "canonical scalar"},
+        )
+        review = {
+            "decisions": {"/contact/email": "use_extracted"},
+            "expectedRevision": proposal["revision"],
+            "expectedProfileRevision": profile["revision"],
+        }
+        status, _headers, refused = self.request(
+            "POST", f"/api/resume-proposals/{proposal['id']}/review", review
+        )
+        self.assertEqual(status, 400, refused)
+        self.assertEqual(self.server.store.inspect_profile()["profile"]["contact"], "canonical scalar")
+        review["replacementConfirmations"] = {"/contact/email": "/contact"}
+        status, _headers, accepted = self.request(
+            "POST", f"/api/resume-proposals/{proposal['id']}/review", review
+        )
+        self.assertEqual(status, 200, accepted)
+        self.assertEqual(
+            self.server.store.inspect_profile()["profile"]["contact"],
+            {"email": "synthetic@example.invalid"},
+        )
 
     def test_profile_api_inspects_and_forces_browser_user_provenance(self):
         seeded = self.server.store.patch_profile(
@@ -285,7 +449,7 @@ class WorkspaceServerTests(unittest.TestCase):
             {"firstName": "Ada"}, expected_revision=1, source="user"
         )
         resume_path = Path(self.temporary.name) / "resume.pdf"
-        resume_path.write_bytes(b"resume")
+        resume_path.write_bytes(b"%PDF-1.7\nresume")
         resume = self.server.store.create_resume({"id": "main", "label": "Main", "path": str(resume_path)})
         job = self.create_job(resumeId=resume["id"], role="Engineer", company="Acme")
         status, _headers, preflight = self.request("GET", f"/api/jobs/{job['id']}/preflight", origin=False)

@@ -144,9 +144,9 @@ First run `$job-apply:job-preferences` to save your search preferences. Then use
 
 Results are automatically saved to `~/.claude-job-searches/`. Both Codex and Claude Code use this legacy-compatible path.
 
-### Local Jobs Workspace
+### Local Jobs, Facts, and Resumes Workspace
 
-The optional workspace gives you keyboard-accessible Jobs and Facts views backed by the same canonical records used by the CLI skills. From the plugin directory, start it with one command:
+The optional workspace gives you keyboard-accessible Jobs, Facts, and Resumes views backed by the same canonical records used by the CLI skills. From the plugin directory, start it with one command:
 
 ```bash
 python3 scripts/job-apply-workspace.py
@@ -154,9 +154,11 @@ python3 scripts/job-apply-workspace.py
 
 The launcher binds only to `127.0.0.1`, chooses a free port, opens the complete authenticated URL in your default browser, and stops cleanly with Ctrl-C. It requires Python 3 but no Node runtime, account, cloud service, telemetry, or separate database.
 
-Use **Jobs** to capture one job or paste multiple URLs, filter and edit records, assign an existing resume, run readiness checks, mark valid jobs ready for agent handoff, and move a job to recoverable trash. Use **Facts** to review provenance and selectively edit identity, contact, location, professional links, history, education, skills, search preferences, and existing forward-compatible facts. Conflicts preserve the draft: disjoint scalar edits safely rebase, while same-path and structured-value changes require an explicit latest-or-mine choice.
+Use **Jobs** to capture one job or paste multiple URLs, filter and edit records, assign an existing resume, run readiness checks, mark valid jobs ready for agent handoff, and move a job to recoverable trash. Use **Facts** to review provenance and selectively edit identity, contact, location, professional links, history, education, skills, search preferences, and existing forward-compatible facts. Use **Resumes** to import a PDF, DOCX, or UTF-8 TXT file (10 MiB maximum), edit labels and tags, replace or explicitly adopt bytes, choose a default, see active-job references, preview PDF/TXT, download DOCX, review agent-created extraction conflicts, and manage guarded Trash. Browser imports are privately staged into the same canonical managed library used by CLI commands; source paths and browser filenames are not retained or exposed.
 
-The workspace never runs an application, reads arbitrary files, or activates Submit, Send, Apply, or another third-party final action. A ready job remains an explicit handoff to `$job-apply:job-apply`; you personally control submission.
+Every mutation of an existing resume or proposal checks the target record's exact revision. Import is a new-record operation protected by ID/content uniqueness rather than an expected revision. Making a resume default checks the selected resume revision, then atomically advances any prior default as part of the compound change; it does not separately require the prior default's revision. If CLI or agent work changes a target record, the browser does not retry or overwrite it: only metadata fields actually edited in the browser remain as drafts, while untouched fields refresh from the canonical record; selected files also stay in place until you explicitly refresh and reapply them. Proposal review can decide a subset of pending paths; accepted values refresh Facts with user provenance. If accepting a child path would replace an existing scalar or array ancestor, the review discloses that ancestor and its current value and requires a separate confirmation of the exact replacement scope. Aggregate lists never contain resume bytes, file identities, or extracted values, and content requests require the in-memory workspace token and are returned with no-store and fixed content types.
+
+The workspace never runs an application, reads arbitrary filesystem paths, parses, writes, generates, or tailors resume content, authors extraction proposals, or activates Submit, Send, Apply, or another third-party final action. It has no cloud sync or browser-owned durable catalog. A ready job remains an explicit handoff to `$job-apply:job-apply`; you personally control submission.
 
 ## Compatibility and Verification Status
 
@@ -181,6 +183,9 @@ Job Apply stores data as **plaintext local files** under `~/.job-apply/`:
   answers.json
   jobs.json
   resumes.json
+  resume-files/
+  resume-extractions.json       # created on first extraction proposal
+  resume-extraction-journal.json # created on first extraction proposal
   applications.jsonl
   coordinator.json
   coordinator-journal.json
@@ -193,7 +198,10 @@ Job Apply stores data as **plaintext local files** under `~/.job-apply/`:
 | `profile.json` | Resume facts and job-search preferences |
 | `answers.json` | Revisioned reusable answers with confirmation, source, scope, sensitivity, and trash state |
 | `jobs.json` | Canonical job records, application status, revisions, and recoverable trash state |
-| `resumes.json` | Versioned local resume references, labels, defaults, and file observations |
+| `resumes.json` | Versioned resume metadata, labels, defaults, digests, and file observations |
+| `resume-files/` | Private managed copies of imported PDF, DOCX, and UTF-8 TXT resumes |
+| `resume-extractions.json` | Private revisioned extraction candidates, baselines, conflicts, decisions, and supersession state (lazy) |
+| `resume-extraction-journal.json` | Private write-ahead recovery for atomic profile/proposal commits (lazy) |
 | `applications.jsonl` | Minimal append-only application lifecycle events |
 | `coordinator.json` | One global, recoverable 300-second application-agent claim |
 | `coordinator-journal.json` | Value-free idempotent roll-forward record for lifecycle handoffs |
@@ -215,12 +223,45 @@ Protect the directory like a resume. Do not attach its files to issues or share 
 
 ```bash
 chmod 700 ~/.job-apply
+chmod 700 ~/.job-apply/resume-files
 chmod 600 ~/.job-apply/profile.json ~/.job-apply/answers.json ~/.job-apply/jobs.json ~/.job-apply/resumes.json ~/.job-apply/applications.jsonl ~/.job-apply/coordinator.json ~/.job-apply/coordinator-journal.json
+# If extraction proposals have been created:
+chmod 600 ~/.job-apply/resume-extractions.json ~/.job-apply/resume-extraction-journal.json
 ```
 
 On first use, an existing `~/.claude-job-profile.json` is copied into the new versioned profile without modifying or deleting the legacy file. Once `~/.job-apply/profile.json` exists it is authoritative; later legacy-file changes are not re-imported. Verify the new profile before deciding whether to archive or remove the old file.
 
 All plugin skills access this data through the bundled `scripts/job-apply-store.py` helper. Canonical JSON updates are atomic, corrupt or future-version files fail closed, and application history and sessions do not duplicate reusable answer values.
+
+New resume records import a private managed copy rather than retaining the source
+path. Imports accept PDF, DOCX, and UTF-8 TXT files up to 10 MiB, reject duplicate
+content (including copies in trash), and keep stable resume IDs across byte
+replacement. Existing path-based records remain readable and are never rewritten
+implicitly; use the CLI's explicit `resume-adopt` operation to copy one into managed
+storage under its existing ID. File and metadata transitions roll back together on
+failure. The local workspace receives a redacted resume projection without source
+paths, managed filenames, original filenames, or digests.
+
+Ready-job acquisition rechecks the assigned or default resume. Managed-file digest
+or observation drift blocks acquisition before any claim, job transition, journal,
+or history change. For backward compatibility, changed legacy external records keep
+their preflight warning behavior until they are explicitly adopted.
+
+Trusted local application workflows use `resume-resolve` (optionally with `--id`)
+to obtain the verified private path of an active managed resume. This path-bearing
+result is for local agent file upload only; workspace APIs and aggregate views remain
+redacted. A legacy external record must be explicitly adopted before it can resolve.
+
+Resume extraction remains agent-produced structured data; the store does not parse,
+edit, generate, or tailor resumes. A proposal is bound to the managed resume's
+current revision and digest plus the profile revision the agent inspected. Creation
+automatically fills only absent or null facts that are not protected by human
+provenance. Existing values—including blanks, arrays, and empty objects—and
+human-cleared facts remain explicit conflicts. Human review is revisioned per path,
+accepted extracted values become user-provenanced facts, and unrelated paths may
+remain pending. A private write-ahead journal makes profile-plus-proposal commits
+recoverable after interruption. Replaced, trashed, deleted, missing, or byte-changed
+resumes make bound proposals stale.
 
 Only matching, non-sensitive `confirmed` answers may be reused without asking. Inferred and missing answers require review. Sensitive answers are reconfirmed before every use and are stored only when you separately ask Job Apply to remember that specific value.
 

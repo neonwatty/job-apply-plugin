@@ -17,6 +17,7 @@
     <nav class="workspace-nav" aria-label="Workspace sections">
       <button id="nav-jobs" class="nav-link active" type="button" aria-current="page">Jobs</button>
       <button id="nav-facts" class="nav-link" type="button">Facts</button>
+      <button id="nav-resumes" class="nav-link" type="button">Resumes</button>
     </nav>
     <div class="connection" aria-live="polite">
       <span id="connection-dot" class="dot"></span>
@@ -115,6 +116,24 @@
         <p id="facts-error" class="error hidden" role="alert"></p>
       </section>
     </div>
+
+    <div id="resumes-workspace" class="hidden">
+      <section class="hero" aria-labelledby="resumes-title">
+        <div><p class="eyebrow">Resumes Workspace</p><h2 id="resumes-title">Your private resume library.</h2><p>Managed files stay in the canonical local store and remain available to Job Apply agents and the CLI.</p></div>
+        <div class="hero-actions"><button id="resumes-refresh" class="button secondary" type="button">Refresh</button></div>
+      </section>
+      <section class="resumes-panel" aria-labelledby="resume-library-heading">
+        <div class="panel-heading"><div><p class="eyebrow">CANONICAL LIBRARY</p><h2 id="resume-library-heading">Resumes</h2></div><div class="segmented" role="group" aria-label="Resume library view"><button id="resumes-active" class="button secondary active" type="button">Active</button><button id="resumes-trash" class="button secondary" type="button">Trash</button></div></div>
+        <form id="resume-import" class="resume-import">
+          <fieldset><legend>Import a managed resume</legend><div class="form-grid"><label>Label <input name="label" required></label><label>Tags (comma separated) <input name="tags"></label><label class="wide">PDF, DOCX, or UTF-8 TXT (10 MiB maximum) <input name="file" type="file" accept=".pdf,.docx,.txt" required></label></div><button class="button primary" type="submit">Import resume</button></fieldset>
+        </form>
+        <p id="resumes-status" class="notice" role="status">Open Resumes to load the canonical library.</p>
+        <div id="resumes-loading" class="empty-state hidden"><span class="spinner" aria-hidden="true"></span><p>Loading resumes…</p></div>
+        <div id="resumes-empty" class="empty-state hidden"><h3>No resumes in this view</h3><p>Import a file or switch between Active and Trash.</p></div>
+        <div id="resume-list" class="resume-list" role="list"></div>
+        <p id="resumes-error" class="error hidden" role="alert"></p>
+      </section>
+    </div>
   </main>
 
   <dialog id="job-dialog" aria-labelledby="job-dialog-title">
@@ -177,6 +196,25 @@
       <div class="dialog-footer"><span></span><button class="button primary" type="submit">Capture jobs</button></div>
     </form>
   </dialog>
+
+  <dialog id="resume-dialog" aria-labelledby="resume-dialog-title">
+    <form id="resume-form" class="dialog-shell">
+      <div class="dialog-heading"><div><p class="eyebrow">CANONICAL RESUME</p><h2 id="resume-dialog-title">Resume details</h2></div><button class="icon-button" type="button" data-close="resume-dialog" aria-label="Close resume details">×</button></div>
+      <p id="resume-assignment"></p><p id="resume-proposal-status"></p>
+      <fieldset><legend>Metadata</legend><div class="form-grid"><label>Label <input name="label" required></label><label>Tags (comma separated) <input name="tags"></label></div><button class="button primary" type="submit">Save metadata</button></fieldset>
+      <fieldset><legend>Managed file</legend><label>Replacement file <input name="file" type="file" accept=".pdf,.docx,.txt"></label><div class="button-row"><button id="resume-content" class="button secondary" type="button">Preview or download</button><button id="resume-replace" class="button secondary" type="button">Replace file</button><button id="resume-adopt" class="button secondary hidden" type="button">Adopt into managed storage</button></div></fieldset>
+      <section aria-labelledby="proposal-heading"><h3 id="proposal-heading">Extraction reviews</h3><div id="resume-proposals"></div></section>
+      <div id="resume-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>This resume changed elsewhere</h3><p>Your metadata and selected file remain in place. Refresh the canonical record, review your draft, then reapply it explicitly.</p><button id="resume-conflict-refresh" class="button secondary" type="button">Refresh canonical revision</button></div>
+      <p id="resume-error" class="error hidden" role="alert"></p>
+      <div class="dialog-footer"><div class="button-row"><button id="resume-default" class="button secondary" type="button">Make default</button><button id="resume-trash-action" class="button danger" type="button">Move to trash</button><button id="resume-restore" class="button secondary hidden" type="button">Restore</button><button id="resume-delete" class="button danger hidden" type="button">Delete permanently</button></div></div>
+    </form>
+  </dialog>
+
+  <dialog id="proposal-dialog" aria-labelledby="proposal-title">
+    <form id="proposal-form" class="dialog-shell"><div class="dialog-heading"><div><p class="eyebrow">EXTRACTION REVIEW</p><h2 id="proposal-title">Review proposed facts</h2></div><button class="icon-button" type="button" data-close="proposal-dialog" aria-label="Close extraction review">×</button></div><p>Choose only the paths you want to decide now. Unselected paths stay pending.</p><div id="proposal-rows"></div><p id="proposal-error" class="error hidden" role="alert"></p><div class="dialog-footer"><span></span><button id="proposal-submit" class="button primary" type="submit">Apply selected decisions</button></div></form>
+  </dialog>
+
+  <dialog id="preview-dialog" aria-labelledby="preview-title"><div class="dialog-shell"><div class="dialog-heading"><h2 id="preview-title">Text resume preview</h2><button class="icon-button" type="button" data-close="preview-dialog" aria-label="Close preview">×</button></div><pre id="resume-preview" class="resume-preview"></pre></div></dialog>
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script type="module" src="/app.js"></script>

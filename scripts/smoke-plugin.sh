@@ -392,6 +392,7 @@ print("Packaged fixture exclusions passed")
 PY
 
 python3 - "$SMOKE_FIXTURE_DIR" "$SMOKE_TEMP_ROOT" <<'PY'
+import base64
 import http.client
 import json
 import signal
@@ -419,8 +420,8 @@ try:
     connection.request("GET", "/", headers={"Host": host})
     response = connection.getresponse()
     markup = response.read()
-    if response.status != 200 or b"Jobs Workspace" not in markup or b"Facts Workspace" not in markup:
-        raise SystemExit("packaged workspace did not serve its Jobs and Facts UI")
+    if response.status != 200 or any(label not in markup for label in (b"Jobs Workspace", b"Facts Workspace", b"Resumes Workspace")):
+        raise SystemExit("packaged workspace did not serve its Jobs, Facts, and Resumes UI")
     connection.request("GET", "/api/state", headers={"Host": host, "Authorization": f"Bearer {token}"})
     response = connection.getresponse()
     state = json.loads(response.read())
@@ -431,6 +432,92 @@ try:
     profile = json.loads(response.read())
     if response.status != 200 or profile.get("profile") != {} or profile.get("revision") != 1:
         raise SystemExit("packaged workspace did not inspect the canonical profile")
+    source = smoke_root / "managed-smoke.txt"
+    source.write_text("packaged managed resume", encoding="utf-8")
+    created = subprocess.run(
+        [
+            sys.executable,
+            str(fixture / "scripts" / "job-apply-store.py"),
+            "--root",
+            str(smoke_root / "workspace-store"),
+            "resume-import",
+            "--input",
+            "-",
+        ],
+        input=json.dumps({"id": "smoke-resume", "label": "Smoke", "path": str(source)}),
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    managed = json.loads(created.stdout)
+    if managed.get("storageKind") != "managed" or "path" in managed:
+        raise SystemExit("packaged resume import did not create a managed record")
+    proposal_result = subprocess.run(
+        [
+            sys.executable,
+            str(fixture / "scripts" / "job-apply-store.py"),
+            "--root",
+            str(smoke_root / "workspace-store"),
+            "resume-proposal-create",
+            "--resume-id",
+            managed["id"],
+            "--expected-resume-revision",
+            str(managed["revision"]),
+            "--expected-profile-revision",
+            "1",
+            "--input",
+            "-",
+        ],
+        input=json.dumps({"email": "smoke@example.invalid"}),
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    proposal = json.loads(proposal_result.stdout)
+    if proposal.get("status") != "completed" or proposal.get("autoFilledPaths") != ["/email"]:
+        raise SystemExit("packaged resume proposal did not auto-fill an empty fact")
+    listed_result = subprocess.run(
+        [
+            sys.executable,
+            str(fixture / "scripts" / "job-apply-store.py"),
+            "--root",
+            str(smoke_root / "workspace-store"),
+            "resume-proposal-list",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    if len(json.loads(listed_result.stdout)) != 1:
+        raise SystemExit("packaged resume proposal was not durable")
+    source.unlink()
+    connection.request("GET", "/api/resumes", headers={"Host": host, "Authorization": f"Bearer {token}"})
+    response = connection.getresponse()
+    projected = json.loads(response.read())
+    records = projected.get("resumes", [])
+    if response.status != 200 or len(records) != 1 or any(
+        field in records[0] for field in ("path", "managedFile", "originalFilename", "digest")
+    ):
+        raise SystemExit("packaged workspace exposed private resume identity")
+    upload = json.dumps({
+        "metadata": {"id": "smoke-browser", "label": "Browser smoke"},
+        "filename": "private-smoke-name.txt",
+        "content": base64.b64encode(b"private browser smoke").decode("ascii"),
+    }).encode()
+    connection.request("POST", "/api/resumes/import", body=upload, headers={
+        "Host": host, "Authorization": f"Bearer {token}", "Origin": f"http://{host}",
+        "Content-Type": "application/json", "Content-Length": str(len(upload)),
+    })
+    response = connection.getresponse()
+    imported = json.loads(response.read())
+    if response.status != 200 or imported.get("id") != "smoke-browser":
+        raise SystemExit("packaged workspace resume upload failed")
+    connection.request("GET", "/api/resumes/smoke-browser/content", headers={"Host": host, "Authorization": f"Bearer {token}"})
+    response = connection.getresponse()
+    content = response.read()
+    headers = dict(response.getheaders())
+    if response.status != 200 or content != b"private browser smoke" or headers.get("Cache-Control") != "no-store" or "private-smoke-name" in headers.get("Content-Disposition", ""):
+        raise SystemExit("packaged workspace private content delivery failed")
     connection.close()
     process.send_signal(signal.SIGINT)
     if process.wait(timeout=5) != 0:
@@ -439,7 +526,7 @@ finally:
     if process.poll() is None:
         process.terminate()
         process.wait(timeout=5)
-print("Packaged Jobs and Facts workspace launch passed")
+print("Packaged Jobs, Facts, managed resume, and extraction store launch passed")
 PY
 
 echo "Running Playwright and CLI walkthrough against packaged fixture"

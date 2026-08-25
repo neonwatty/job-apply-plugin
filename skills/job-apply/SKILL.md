@@ -32,10 +32,10 @@ Then wait for the user to provide the path before proceeding with profile extrac
 
 **If the profile contains applicant data**, first determine the application mode:
 
-- If the user supplied a job URL, keep the existing direct-URL workflow unchanged. Do not create a canonical job or claim implicitly.
+- If the user supplied a job URL, do not create a canonical job or claim implicitly. Resolve the active canonical managed resume with `resume-resolve` before browser work as described below.
 - If no URL was supplied, run `claim-status` before listing ready jobs. If it returns a live claim, identify the claimed job and do not start another one. If it returns an expired claim, identify the returned claimed job ID and ask whether to recover that exact job; after confirmation run `claim-recover --id <claimed-job-id> --owner <owner-label>`. If there is no claim, run `job-list --status ready`. If ready jobs exist, show their role, company, and URL and ask the user to select one (offer the first priority-sorted result). If none exist, use the existing URL prompt below.
 
-For a selected ready job, retain its displayed revision, create a short non-sensitive owner label for this agent run, and run `job-acquire --id <job-id> --owner <owner-label> --expected-revision <revision>`. This single operation rejects a stale selection, re-runs preflight, resolves the job's assigned resume before the active default, creates the exclusive 300-second claim, moves `ready` to `in_progress`, and records `job-started`. Retain the returned post-acquisition job revision for the eventual handoff. The machine-readable result returns the bearer token on stdout; treat it as ephemeral sensitive output, never repeat it in user-facing text, and never place it in logs, saved sessions, or temporary files. Use the returned job URL and returned resume path for the application; do not substitute `profile.resumePath`.
+For a selected ready job, retain its displayed revision, create a short non-sensitive owner label for this agent run, and run `job-acquire --id <job-id> --owner <owner-label> --expected-revision <revision>`. This single operation rejects a stale selection, re-runs preflight, fails closed if the assigned/default managed resume no longer matches its canonical bytes or observation, resolves the job's assigned resume before the active default, creates the exclusive 300-second claim, moves `ready` to `in_progress`, and records `job-started`. Retain the returned post-acquisition job revision for the eventual handoff. The machine-readable result returns the bearer token on stdout; treat it as ephemeral sensitive output, never repeat it in user-facing text, and never place it in logs, saved sessions, or temporary files. Use the returned job URL and returned resume path for the application; do not substitute `profile.resumePath`.
 
 If acquisition reports a claim, run `claim-status` because the global claim can belong to a different job. Do not work around a live claim. For an expired claim, use the claimed job ID returned by `claim-status`, ask whether to resume that exact job, and only then run `claim-recover --id <claimed-job-id> --owner <owner-label>`. Recovery never steals a live claim. Retain the recovered job revision for handoff. Run `claim-heartbeat --id <job-id> --token <token>` at least every 60 seconds while actively working.
 
@@ -54,7 +54,7 @@ If acquisition reports a claim, run `claim-status` because the global claim can 
 
 ## Required Input
 
-- **Resume file path**: Path to your resume (PDF, DOCX, or TXT format)
+- **Resume source file path**: Needed only to import a new canonical managed PDF, DOCX, or TXT resume
 - **Application target**: Either a selected canonical `ready` job or a supplied job URL
 
 ## Profile Storage
@@ -104,8 +104,10 @@ Use the fallback only for the blocked control, then return to the visible review
 
 If `profile-get` returns an empty object, or if the user requests a reset:
 
-1. **Read the resume file** using the Read tool
-2. **Extract structured data** into these categories:
+1. **Import the resume into canonical managed storage**. Put only `{"label":"Primary resume","path":"<user-provided-source>"}` in a private temporary input, run `resume-import --input <private-temp.json>`, retain the returned opaque resume ID, and immediately remove the input. Never use the source path for a browser upload.
+2. **Resolve the managed resume** with `resume-resolve --id <resume-id>`. Treat its returned private path as ephemeral sensitive output: use it only for local reading and visible file upload, and never quote it to the user or place it in logs, profile data, history, or sessions.
+3. **Read the resolved managed resume file** using the Read tool
+4. **Extract structured data** into these categories:
    - `firstName`, `lastName`
    - `email`, `phone`
    - `location` (city, state, country, zip)
@@ -113,13 +115,21 @@ If `profile-get` returns an empty object, or if the user requests a reset:
    - `workHistory[]`: array of { company, title, startDate, endDate, current, description }
    - `education[]`: array of { school, degree, field, startDate, endDate, gpa }
    - `skills[]`: array of skill strings
-   - `resumePath`: absolute path to the resume file on disk
-3. **Present extracted data to user** for review and correction
-4. **Inspect and save confirmed profile** by running `profile-inspect`, retaining its revision, then calling `profile-replace --input <private-temp-profile.json> --expected-revision <inspected-revision> --source user`. Remove the temporary input. If the revision conflicts, stop and review the newly inspected profile; never replace unseen changes.
+   - Do not store a resume path in the profile; the resume ID and managed library are authoritative.
+5. **Present extracted data to user** for review and correction
+6. **Inspect and save confirmed profile** by running `profile-inspect`, retaining its revision, then calling `profile-replace --input <private-temp-profile.json> --expected-revision <inspected-revision> --source user`. Remove the temporary input. If the revision conflicts, stop and review the newly inspected profile; never replace unseen changes.
+
+For re-extraction from a managed resume, do not replace the profile wholesale.
+Produce a structured candidate, inspect the current resume and profile revisions,
+and use `resume-proposal-create`. The store auto-fills only absent/null unprotected
+facts; present every pending conflict for explicit per-path review through
+`resume-proposal-review`. Never retry stale resume, profile, proposal, or baseline
+conflicts against unseen state, and remove private candidate/decision input files
+immediately after the helper consumes them.
 
 ### Phase 2: Application Filling
 
-1. **Initialize and load storage** through the bundled `answer-memory` skill; use `profile-get`, then check `session-list` for resumable work matching this application. In selected-ready mode, use the acquired canonical job ID as the application/session ID and the resume returned by `job-acquire`; in direct-URL mode preserve the existing URL-derived workflow.
+1. **Initialize and load storage** through the bundled `answer-memory` skill; use `profile-get`, then check `session-list` for resumable work matching this application. In selected-ready mode, use the acquired canonical job ID as the application/session ID and the resume returned by `job-acquire`. In direct-URL mode, keep the URL-derived application/session ID but run `resume-resolve` to obtain the active default managed resume path. If it cannot resolve a default, treat the full `resume-list` records as private tool output, not as a redacted projection: never print, quote, log, or present those records to the user. If user choice is required, present a summary containing only `id`, `label`, `tags`, `default`, `revision`, and `storageKind`; never include a private path, managed filename, original filename, digest, or any other field. Resolve the user-selected active managed ID, or explicitly adopt a selected legacy record with `resume-adopt --id <id> --expected-revision <revision>` before resolving it. If no suitable record exists, ask the user for a source file, import it with `resume-import`, then resolve its returned ID. Never use `profile.resumePath` or a user source path for upload.
 2. **Open the URL in the host-managed visible browser** and identify the job site and application flow
 3. **Pause for user-only steps** if login, password, CAPTCHA, MFA, consent, or account creation appears
 4. **Open the application form**; if an Apply link opens an external portal, continue in that visible host-managed tab
@@ -310,6 +320,7 @@ In Codex, stay inside the selected Browser plugin surface. In Claude Code, if a 
 7. **Never store or pass login credentials between tools** - Authentication remains a user-only step in the visible Chrome session
 8. **Use answer memory only through the helper** - Never directly modify `~/.job-apply/`; history and sessions reference answer keys, not values
 9. **Remembering is separate consent** - Permission to use a sensitive answer now never authorizes storing it for later
+10. **Use canonical resume records** - Select or acquire resumes through the helper; never bypass managed storage with an arbitrary file path, and never print private resume paths, filenames, digests, or content in diagnostics
 
 ---
 
