@@ -296,6 +296,11 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     const startup = await waitForStartup(server);
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
+    await page.addInitScript(() => {
+      // This walkthrough drives every refresh explicitly; background polling can
+      // otherwise race the save-time refresh and make focus assertions flaky.
+      globalThis.setInterval = () => 0;
+    });
     const pageErrors = [];
     page.on("pageerror", (error) => pageErrors.push(error));
     await page.goto(startup.url);
@@ -445,11 +450,13 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
 
     const uploadCard = page.locator(".resume-card").filter({ hasText: "Browser upload" });
     const manageUpload = uploadCard.getByRole("button", { name: "Manage" });
+    const manageLifecycleUpload = () => page.locator(".resume-card").filter({ hasText: "Preserved browser draft" }).getByRole("button", { name: "Manage" });
     await manageUpload.click();
     const resumeDialog = page.locator("#resume-dialog");
     await resumeDialog.getByLabel("Label").fill("Preserved browser draft");
     await resumeDialog.getByLabel("Replacement file").setInputFiles({ name: "replacement.txt", mimeType: "text/plain", buffer: Buffer.from("replacement draft") });
     await cli("resume-update", ["--id", uploaded.id, "--expected-revision", String(uploaded.revision)], { tags: ["cli"] });
+    await page.locator("#resumes-refresh").evaluate((button) => button.click());
     await page.locator("#resume-conflict").waitFor();
     assert.equal(await resumeDialog.getByLabel("Label").inputValue(), "Preserved browser draft");
     assert.equal(await resumeDialog.getByLabel("Replacement file").evaluate((input) => input.files.length), 1);
@@ -461,6 +468,73 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     const finalResume = resumes.find((resume) => resume.id === uploaded.id);
     assert.equal(finalResume.label, "Preserved browser draft");
     assert.deepEqual(finalResume.tags, ["cli"]);
+
+    await manageLifecycleUpload().click();
+    await resumeDialog.getByRole("button", { name: "Make default" }).click();
+    await resumeDialog.waitFor({ state: "hidden" });
+    assert.equal((await cli("resume-get", ["--id", uploaded.id])).default, true);
+
+    await manageLifecycleUpload().click();
+    page.once("dialog", (prompt) => prompt.accept());
+    await resumeDialog.getByRole("button", { name: "Move to trash" }).click();
+    await page.getByText("default resume is used by an active job").waitFor();
+    await resumeDialog.getByRole("button", { name: "Close resume details" }).click();
+
+    await page.getByRole("button", { name: "Jobs" }).click();
+    await page.getByRole("button", { name: /CLI Engineer/ }).click();
+    await jobDialog.getByLabel("Resume").selectOption(uploaded.id);
+    await page.getByRole("button", { name: "Save job" }).click();
+    await jobDialog.waitFor({ state: "hidden" });
+    assert.equal((await cli("job-get", ["--id", cliJob.id])).resumeId, uploaded.id);
+
+    await page.getByRole("button", { name: "Resumes" }).click();
+    await page.locator(".resume-card").filter({ hasText: "Browser resume" }).getByRole("button", { name: "Manage" }).click();
+    await resumeDialog.getByRole("button", { name: "Make default" }).click();
+    await resumeDialog.waitFor({ state: "hidden" });
+    assert.equal((await cli("resume-get", ["--id", "browser-resume"])).default, true);
+    assert.equal((await cli("resume-get", ["--id", uploaded.id])).default, false);
+
+    await manageLifecycleUpload().click();
+    page.once("dialog", (prompt) => prompt.accept());
+    await resumeDialog.getByRole("button", { name: "Move to trash" }).click();
+    await page.getByText("resume is assigned to an active job").waitFor();
+    await resumeDialog.getByRole("button", { name: "Close resume details" }).click();
+
+    await page.getByRole("button", { name: "Jobs" }).click();
+    await page.getByRole("button", { name: /CLI Engineer/ }).click();
+    await jobDialog.getByLabel("Resume").selectOption("browser-resume");
+    await page.getByRole("button", { name: "Save job" }).click();
+    await jobDialog.waitFor({ state: "hidden" });
+    const reassignedCliJob = await cli("job-get", ["--id", cliJob.id]);
+    assert.equal(reassignedCliJob.resumeId, "browser-resume");
+
+    await page.getByRole("button", { name: "Resumes" }).click();
+    await manageLifecycleUpload().click();
+    page.once("dialog", (prompt) => prompt.accept());
+    await resumeDialog.getByRole("button", { name: "Move to trash" }).click();
+    await resumeDialog.waitFor({ state: "hidden" });
+    let lifecycleResume = await cli("resume-get", ["--id", uploaded.id, "--include-trashed"]);
+    assert.ok(lifecycleResume.deletedAt);
+
+    await page.locator("#resumes-trash").click();
+    await page.locator(".resume-card").filter({ hasText: "Preserved browser draft" }).getByRole("button", { name: "Manage" }).click();
+    await resumeDialog.getByRole("button", { name: "Restore" }).click();
+    await resumeDialog.waitFor({ state: "hidden" });
+    lifecycleResume = await cli("resume-get", ["--id", uploaded.id]);
+    assert.equal(lifecycleResume.deletedAt, null);
+
+    await page.locator("#resumes-active").click();
+    await page.locator(".resume-card").filter({ hasText: "Preserved browser draft" }).getByRole("button", { name: "Manage" }).click();
+    page.once("dialog", (prompt) => prompt.accept());
+    await resumeDialog.getByRole("button", { name: "Move to trash" }).click();
+    await resumeDialog.waitFor({ state: "hidden" });
+    await page.locator("#resumes-trash").click();
+    await page.locator(".resume-card").filter({ hasText: "Preserved browser draft" }).getByRole("button", { name: "Manage" }).click();
+    page.once("dialog", (prompt) => prompt.accept());
+    await resumeDialog.getByRole("button", { name: "Delete permanently" }).click();
+    await resumeDialog.waitFor({ state: "hidden" });
+    assert.equal(await cli("resume-get", ["--id", uploaded.id, "--include-trashed"]), null);
+    await page.locator("#resumes-active").click();
 
     profile = await cli("profile-inspect");
     profile = await cli("profile-patch", ["--expected-revision", String(profile.revision), "--source", "user"], { browserAncestor: "Canonical ancestor value" });
@@ -539,7 +613,7 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     const browserEdited = await cli("job-get", ["--id", cliJob.id]);
     assert.equal(browserEdited.role, "Browser-edited CLI Engineer");
     assert.equal(browserEdited.notes, "Edited in the browser");
-    assert.equal(browserEdited.revision, cliJob.revision + 1);
+    assert.equal(browserEdited.revision, reassignedCliJob.revision + 1);
 
     await page.getByRole("button", { name: "New job" }).click();
     await jobDialog.getByLabel("Job URL", { exact: true }).fill("https://example.com/jobs/ui-browser");
