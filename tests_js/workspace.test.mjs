@@ -241,7 +241,7 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     const jobDialog = page.locator("#job-dialog");
 
     await page.getByRole("button", { name: "Facts" }).click();
-    await page.getByLabel("First name").waitFor();
+    await page.waitForFunction(() => document.querySelector('[data-path="/firstName"]')?.value === "Ada");
     assert.equal(await page.getByLabel("First name").inputValue(), "Ada");
     assert.equal(await page.getByLabel("Postal code").inputValue(), "85001");
     assert.equal(await page.getByLabel("Minimum base salary").inputValue(), "$150K");
