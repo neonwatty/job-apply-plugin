@@ -490,14 +490,17 @@ class ReplayCoordinatorTests(unittest.TestCase):
         code, route, stderr = self.invoke(["resolve", "--route-token", route_token])
         self.assertEqual((code, stderr), (0, ""))
         self.assertEqual(route, {"storeRoot": output["storeRoot"]})
-        stored_profile = json.loads(
-            (run_root / "store/profile.json").read_text()
-        )["profile"]
+        stored_document = json.loads((run_root / "store/profile.json").read_text())
+        stored_profile = stored_document["profile"]
         self.assertEqual(stored_profile["name"], self.profile["name"])
         self.assertEqual(stored_profile["email"], self.profile["email"])
         self.assertEqual(
             Path(stored_profile["resumePath"]),
             (run_root / "synthetic-resume.pdf").resolve(),
+        )
+        self.assertEqual(
+            stored_document["metadata"]["factProvenance"]["/resumePath"]["source"],
+            "resume",
         )
         self.assertEqual(
             json.loads((run_root / "profile.json").read_text()), self.profile

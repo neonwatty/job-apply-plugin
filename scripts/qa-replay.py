@@ -1397,6 +1397,18 @@ def _prepare(fixture_id: str, scenario_id: str) -> dict[str, Any]:
         prepared_profile = dict(profile)
         prepared_profile["resumePath"] = str(copied_resume.resolve())
         _run_store(store_root, ["init"])
+        profile_inspection = _run_store_json(store_root, ["profile-inspect"])
+        expected_revision = (
+            profile_inspection.get("revision")
+            if isinstance(profile_inspection, dict)
+            else None
+        )
+        if (
+            not isinstance(expected_revision, int)
+            or isinstance(expected_revision, bool)
+            or expected_revision < 1
+        ):
+            raise CoordinatorError("isolated store initialization failed")
         _verify_directory_binding(run_root, run_descriptor, "run directory changed")
         prepared_path = run_root / ".prepared-profile.json"
         _atomic_json_at(run_descriptor, ".prepared-profile.json", prepared_profile)
@@ -1406,6 +1418,10 @@ def _prepare(fixture_id: str, scenario_id: str) -> dict[str, Any]:
                 "profile-replace",
                 "--input",
                 str(prepared_path),
+                "--expected-revision",
+                str(expected_revision),
+                "--source",
+                "resume",
             ],
         )
         _verify_directory_binding(run_root, run_descriptor, "run directory changed")

@@ -86,6 +86,10 @@ JOB_TRANSITIONS = {
     "closed": {"saved"},
 }
 FACT_SOURCES = {"user", "resume", "agent", "migration"}
+PROFILE_NAMED_TOP_LEVEL = {
+    "firstName", "lastName", "email", "phone", "location", "linkedInUrl",
+    "portfolioUrl", "githubUrl", "workHistory", "education", "skills", "preferences",
+}
 REPLAY_TRANSITIONS = {"started", "reviewed"}
 REPLAY_ATS = {"ashby", "greenhouse", "lever", "linkedin-easy-apply"}
 SESSION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
@@ -434,6 +438,133 @@ def _merge_object_patch(
             updated[key] = value
             changed.append(path)
     return updated, changed
+
+
+def _top_level_pointer_key(pointer: str) -> str:
+    if not isinstance(pointer, str) or not pointer.startswith("/") or "/" in pointer[1:]:
+        raise StoreError("atomic profile paths must identify one top-level fact")
+    encoded = pointer[1:]
+    if not encoded or re.search(r"~(?![01])", encoded):
+        raise StoreError("atomic profile path is invalid")
+    return encoded.replace("~1", "/").replace("~0", "~")
+
+
+def _apply_profile_patch(
+    target: dict[str, Any],
+    patch: dict[str, Any],
+    atomic_paths: list[str],
+    deleted_paths: list[str],
+) -> tuple[dict[str, Any], list[str]]:
+    """Apply merge-patch fields plus explicit atomic replacements/deletions."""
+
+    atomic_keys = {_top_level_pointer_key(path): path for path in atomic_paths}
+    deleted = set(deleted_paths)
+    if len(atomic_keys) != len(atomic_paths) or len(deleted) != len(deleted_paths):
+        raise StoreError("atomic profile paths must be unique")
+    if not deleted <= set(atomic_paths):
+        raise StoreError("deleted profile paths must also be atomic")
+    if any(key not in patch for key in atomic_keys):
+        raise StoreError("atomic profile paths must be present in the patch")
+
+    merge_patch = {key: value for key, value in patch.items() if key not in atomic_keys}
+    updated, changed = _merge_object_patch(target, merge_patch)
+    for key, path in atomic_keys.items():
+        if path in deleted:
+            if key in updated:
+                del updated[key]
+                changed.append(path)
+        elif key not in updated or updated[key] != patch[key]:
+            updated[key] = patch[key]
+            changed.append(path)
+    return updated, changed
+
+
+def _changed_json_pointer_paths(
+    current: Any, replacement: Any, prefix: str = ""
+) -> list[str]:
+    """Return narrow changed paths, treating non-objects as atomic values."""
+    if isinstance(current, dict) and isinstance(replacement, dict):
+        changed: list[str] = []
+        for key in sorted(set(current) | set(replacement)):
+            path = f"{prefix}/{_json_pointer_segment(key)}"
+            if key not in current or key not in replacement:
+                changed.append(path)
+            else:
+                changed.extend(
+                    _changed_json_pointer_paths(current[key], replacement[key], path)
+                )
+        return changed
+    return [prefix or "/"] if current != replacement else []
+
+
+def _protect_user_provenance(
+    provenance: dict[str, Any], changed: list[str], source: str
+) -> None:
+    """Reject lower-authority writes overlapping a human-authored fact path."""
+    if source == "user":
+        return
+    protected = [
+        path for path, record in provenance.items() if record.get("source") == "user"
+    ]
+    if any(
+        changed_path == protected_path
+        or changed_path.startswith(f"{protected_path}/")
+        or protected_path.startswith(f"{changed_path}/")
+        for changed_path in changed
+        for protected_path in protected
+    ):
+        raise StoreError("profile change conflicts with user-provenanced facts")
+
+
+def _json_pointer_value(document: Any, pointer: str) -> Any:
+    current = document
+    for encoded in pointer.split("/")[1:]:
+        key = encoded.replace("~1", "/").replace("~0", "~")
+        if not isinstance(current, dict) or key not in current:
+            return None
+        current = current[key]
+    return current
+
+
+def _fact_leaf_paths(value: Any, prefix: str) -> list[str]:
+    if isinstance(value, dict) and value:
+        return [
+            leaf
+            for key, child in value.items()
+            for leaf in _fact_leaf_paths(
+                child, f"{prefix}/{_json_pointer_segment(key)}"
+            )
+        ]
+    return [prefix]
+
+
+def _stamp_fact_provenance(
+    provenance: dict[str, Any],
+    changed: list[str],
+    source: str,
+    updated_at: str,
+    current_profile: dict[str, Any],
+) -> dict[str, Any]:
+    stamped = dict(provenance)
+    # Refining a parent marker to a changed child must not discard the
+    # authority of unchanged siblings. Materialize the parent's existing
+    # leaf provenance before replacing the changed branch marker.
+    for protected_path, record in list(provenance.items()):
+        if any(path.startswith(f"{protected_path}/") for path in changed):
+            for leaf in _fact_leaf_paths(
+                _json_pointer_value(current_profile, protected_path), protected_path
+            ):
+                stamped.setdefault(leaf, record)
+    for path in changed:
+        prefix = f"{path}/"
+        for stale in [
+            key
+            for key in stamped
+            if key.startswith(prefix) or path.startswith(f"{key}/")
+        ]:
+            stamped.pop(stale, None)
+        stamped[path] = {"source": source, "updatedAt": updated_at}
+    return stamped
 
 
 def _validate_answer_record(key: str, value: Any) -> dict[str, Any]:
@@ -817,23 +948,7 @@ class Store:
     def initialize(self) -> dict[str, Any]:
         """Validate existing documents, then create only missing store files."""
 
-        if self.profile_path.exists():
-            self._load_profile_document()
-        if self.answers_path.exists():
-            self._load_answers_document()
-        if self.jobs_path.exists():
-            self._load_jobs_document()
-        if self.resumes_path.exists():
-            self._load_resumes_document()
-        coordinator_exists = (
-            self.coordinator_path.exists() or self.coordinator_journal_path.exists()
-        )
-        if self.history_path.exists() and not coordinator_exists:
-            self.read_history()
-        if self.coordinator_path.exists():
-            self._load_coordinator_document()
-        if self.coordinator_journal_path.exists():
-            self._load_coordinator_journal()
+        self._validate_existing_documents()
 
         _ensure_private_dir(self.root)
         _ensure_private_dir(self.sessions_path)
@@ -901,6 +1016,9 @@ class Store:
             os.close(descriptor)
         _set_private_mode(self.history_path, 0o600)
 
+        coordinator_exists = (
+            self.coordinator_path.exists() or self.coordinator_journal_path.exists()
+        )
         if coordinator_exists:
             with exclusive_file_lock(self.store_lock_path):
                 self._ensure_coordinator_files_locked()
@@ -909,6 +1027,27 @@ class Store:
                 self.read_history()
 
         return {"initialized": True, "migratedLegacyProfile": migrated, **self.paths()}
+
+    def _validate_existing_documents(self) -> None:
+        """Validate existing store documents without creating or repairing files."""
+
+        if self.profile_path.exists():
+            self._load_profile_document()
+        if self.answers_path.exists():
+            self._load_answers_document()
+        if self.jobs_path.exists():
+            self._load_jobs_document()
+        if self.resumes_path.exists():
+            self._load_resumes_document()
+        coordinator_exists = (
+            self.coordinator_path.exists() or self.coordinator_journal_path.exists()
+        )
+        if self.history_path.exists() and not coordinator_exists:
+            self.read_history()
+        if self.coordinator_path.exists():
+            self._load_coordinator_document()
+        if self.coordinator_journal_path.exists():
+            self._load_coordinator_journal()
 
     def _ensure_coordinator_files_locked(self) -> None:
         if not self.coordinator_path.exists():
@@ -1066,25 +1205,88 @@ class Store:
             "updatedAt": metadata.get("updatedAt"),
         }
 
-    def replace_profile(self, profile: dict[str, Any]) -> dict[str, Any]:
-        self.initialize()
+    def replace_profile(
+        self, profile: dict[str, Any], expected_revision: int, source: str
+    ) -> dict[str, Any]:
         incoming = _require_object(profile, "profile")
+        if (
+            not isinstance(expected_revision, int)
+            or isinstance(expected_revision, bool)
+            or expected_revision < 0
+        ):
+            raise StoreError("profile expected revision must be a non-negative integer")
+        if source not in FACT_SOURCES:
+            raise StoreError("profile fact source is unsupported")
+        if self.profile_path.exists():
+            self.initialize()
+        result: dict[str, Any] | None = None
+        conflict_after_migration = False
         with exclusive_file_lock(self.store_lock_path):
-            document = self._load_profile_document()
-            document["profile"] = incoming
-            document["metadata"]["updatedAt"] = utc_now()
-            document["metadata"]["revision"] = (
-                document["metadata"].get("revision", 1) + 1
-            )
-            document["metadata"]["factProvenance"] = {}
-            atomic_write_json(self.profile_path, document)
-        return document["profile"]
+            if not self.profile_path.exists():
+                self._validate_existing_documents()
+                now = utc_now()
+                if self.legacy_profile.exists():
+                    migrated = read_json_object(self.legacy_profile, "legacy profile")
+                    atomic_write_json(self.profile_path, {
+                        "schemaVersion": SCHEMA_VERSION,
+                        "profile": migrated,
+                        "metadata": {
+                            "createdAt": now, "updatedAt": now, "revision": 1,
+                            "factProvenance": {},
+                            "migratedFrom": "~/.claude-job-profile.json", "migratedAt": now,
+                        },
+                    })
+                    conflict_after_migration = True
+                elif expected_revision == 0:
+                    changed = _changed_json_pointer_paths({}, incoming)
+                    document = {
+                        "schemaVersion": SCHEMA_VERSION,
+                        "profile": incoming,
+                        "metadata": {
+                            "createdAt": now, "updatedAt": now, "revision": 1,
+                            "factProvenance": _stamp_fact_provenance({}, changed, source, now, {}),
+                        },
+                    }
+                    atomic_write_json(self.profile_path, document)
+                    result = self._profile_inspection(document)
+                else:
+                    raise StoreError("profile revision conflict")
+
+            if result is None and not conflict_after_migration:
+                document = self._load_profile_document()
+                metadata = document["metadata"]
+                revision = metadata.get("revision", 1)
+                if expected_revision == 0 or revision != expected_revision:
+                    raise StoreError("profile revision conflict")
+                changed = _changed_json_pointer_paths(document["profile"], incoming)
+                if not changed:
+                    result = self._profile_inspection(document)
+                else:
+                    provenance = dict(metadata.get("factProvenance", {}))
+                    _protect_user_provenance(provenance, changed, source)
+                    now = utc_now()
+                    stamped_provenance = _stamp_fact_provenance(
+                        provenance, changed, source, now, document["profile"]
+                    )
+                    document["profile"] = incoming
+                    metadata["updatedAt"] = now
+                    metadata["revision"] = revision + 1
+                    metadata["factProvenance"] = stamped_provenance
+                    atomic_write_json(self.profile_path, document)
+                    result = self._profile_inspection(document)
+        self.initialize()
+        if conflict_after_migration:
+            raise StoreError("profile revision conflict")
+        assert result is not None
+        return result
 
     def patch_profile(
         self,
         patch: dict[str, Any],
         expected_revision: int,
         source: str,
+        atomic_paths: list[str] | None = None,
+        deleted_paths: list[str] | None = None,
     ) -> dict[str, Any]:
         self.initialize()
         incoming = _require_object(patch, "profile patch")
@@ -1092,26 +1294,29 @@ class Store:
             raise StoreError("profile patch must not be empty")
         if source not in FACT_SOURCES:
             raise StoreError("profile fact source is unsupported")
+        atomic = atomic_paths or []
+        deleted = deleted_paths or []
+        if not isinstance(atomic, list) or not all(isinstance(path, str) for path in atomic):
+            raise StoreError("atomic profile paths must be strings")
+        if not isinstance(deleted, list) or not all(isinstance(path, str) for path in deleted):
+            raise StoreError("deleted profile paths must be strings")
         with exclusive_file_lock(self.store_lock_path):
             document = self._load_profile_document()
             metadata = document["metadata"]
             revision = metadata.get("revision", 1)
             if revision != expected_revision:
                 raise StoreError("profile revision conflict")
-            updated, changed = _merge_object_patch(document["profile"], incoming)
+            updated, changed = _apply_profile_patch(
+                document["profile"], incoming, atomic, deleted
+            )
             if not changed:
                 return self._profile_inspection(document)
             now = utc_now()
             provenance = dict(metadata.get("factProvenance", {}))
-            for path in changed:
-                prefix = f"{path}/"
-                for stale in [
-                    key
-                    for key in provenance
-                    if key.startswith(prefix) or path.startswith(f"{key}/")
-                ]:
-                    provenance.pop(stale, None)
-                provenance[path] = {"source": source, "updatedAt": now}
+            _protect_user_provenance(provenance, changed, source)
+            provenance = _stamp_fact_provenance(
+                provenance, changed, source, now, document["profile"]
+            )
             document["profile"] = updated
             metadata["factProvenance"] = provenance
             metadata["revision"] = revision + 1
@@ -1129,26 +1334,44 @@ class Store:
         return _require_object(preferences, "profile.preferences")
 
     def set_preferences(
-        self, preferences: dict[str, Any], replace: bool = False
+        self,
+        preferences: dict[str, Any],
+        expected_revision: int,
+        source: str,
+        replace: bool = False,
     ) -> dict[str, Any]:
-        self.initialize()
         incoming = _require_object(preferences, "preferences")
+        if not replace:
+            return self.patch_profile(
+                {"preferences": incoming}, expected_revision, source
+            )
+
+        if source not in FACT_SOURCES:
+            raise StoreError("profile fact source is unsupported")
+        self.initialize()
         with exclusive_file_lock(self.store_lock_path):
             document = self._load_profile_document()
-            profile = document["profile"]
-            if replace:
-                updated = dict(incoming)
-            else:
-                current = profile.get("preferences", {})
-                updated = dict(_require_object(current, "profile.preferences"))
-                updated.update(incoming)
-            profile["preferences"] = updated
-            document["metadata"]["updatedAt"] = utc_now()
-            document["metadata"]["revision"] = (
-                document["metadata"].get("revision", 1) + 1
+            metadata = document["metadata"]
+            revision = metadata.get("revision", 1)
+            if revision != expected_revision:
+                raise StoreError("profile revision conflict")
+            updated = dict(document["profile"])
+            updated["preferences"] = incoming
+            changed = _changed_json_pointer_paths(document["profile"], updated)
+            if not changed:
+                return self._profile_inspection(document)
+            now = utc_now()
+            provenance = dict(metadata.get("factProvenance", {}))
+            _protect_user_provenance(provenance, changed, source)
+            provenance = _stamp_fact_provenance(
+                provenance, changed, source, now, document["profile"]
             )
+            document["profile"] = updated
+            metadata["factProvenance"] = provenance
+            metadata["revision"] = revision + 1
+            metadata["updatedAt"] = now
             atomic_write_json(self.profile_path, document)
-        return updated
+        return self._profile_inspection(document)
 
     @staticmethod
     def _answer_view(record: dict[str, Any]) -> dict[str, Any]:
@@ -3452,6 +3675,8 @@ def build_parser() -> argparse.ArgumentParser:
     commands.add_parser("profile-inspect")
     profile_replace = commands.add_parser("profile-replace")
     profile_replace.add_argument("--input", required=True)
+    profile_replace.add_argument("--expected-revision", required=True, type=int)
+    profile_replace.add_argument("--source", required=True, choices=sorted(FACT_SOURCES))
     profile_patch = commands.add_parser("profile-patch")
     profile_patch.add_argument("--input", required=True)
     profile_patch.add_argument("--expected-revision", required=True, type=int)
@@ -3459,6 +3684,8 @@ def build_parser() -> argparse.ArgumentParser:
     commands.add_parser("preferences-get")
     preferences_set = commands.add_parser("preferences-set")
     preferences_set.add_argument("--input", required=True)
+    preferences_set.add_argument("--expected-revision", required=True, type=int)
+    preferences_set.add_argument("--source", required=True, choices=sorted(FACT_SOURCES))
     preferences_set.add_argument("--replace", action="store_true")
 
     key = commands.add_parser("answer-key")
@@ -3621,7 +3848,9 @@ def run(args: argparse.Namespace) -> Any:
     if command == "profile-inspect":
         return store.inspect_profile()
     if command == "profile-replace":
-        return store.replace_profile(_read_input(args.input))
+        return store.replace_profile(
+            _read_input(args.input), args.expected_revision, args.source
+        )
     if command == "profile-patch":
         return store.patch_profile(
             _read_input(args.input), args.expected_revision, args.source
@@ -3629,7 +3858,9 @@ def run(args: argparse.Namespace) -> Any:
     if command == "preferences-get":
         return store.get_preferences()
     if command == "preferences-set":
-        return store.set_preferences(_read_input(args.input), args.replace)
+        return store.set_preferences(
+            _read_input(args.input), args.expected_revision, args.source, args.replace
+        )
     if command == "answer-key":
         return {"key": answer_key(args.question, _scope(args.scope))}
     if command == "answer-put":

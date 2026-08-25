@@ -418,13 +418,19 @@ try:
     host = f"127.0.0.1:{details['port']}"
     connection.request("GET", "/", headers={"Host": host})
     response = connection.getresponse()
-    if response.status != 200 or b"Jobs Workspace" not in response.read():
-        raise SystemExit("packaged workspace did not serve its Jobs UI")
+    markup = response.read()
+    if response.status != 200 or b"Jobs Workspace" not in markup or b"Facts Workspace" not in markup:
+        raise SystemExit("packaged workspace did not serve its Jobs and Facts UI")
     connection.request("GET", "/api/state", headers={"Host": host, "Authorization": f"Bearer {token}"})
     response = connection.getresponse()
     state = json.loads(response.read())
     if response.status != 200 or state != {"jobs": [], "resumes": []}:
         raise SystemExit("packaged workspace did not read the canonical store")
+    connection.request("GET", "/api/profile", headers={"Host": host, "Authorization": f"Bearer {token}"})
+    response = connection.getresponse()
+    profile = json.loads(response.read())
+    if response.status != 200 or profile.get("profile") != {} or profile.get("revision") != 1:
+        raise SystemExit("packaged workspace did not inspect the canonical profile")
     connection.close()
     process.send_signal(signal.SIGINT)
     if process.wait(timeout=5) != 0:
@@ -433,7 +439,7 @@ finally:
     if process.poll() is None:
         process.terminate()
         process.wait(timeout=5)
-print("Packaged Jobs workspace launch passed")
+print("Packaged Jobs and Facts workspace launch passed")
 PY
 
 echo "Running Playwright and CLI walkthrough against packaged fixture"

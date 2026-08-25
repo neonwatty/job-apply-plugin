@@ -115,7 +115,7 @@ If `profile-get` returns an empty object, or if the user requests a reset:
    - `skills[]`: array of skill strings
    - `resumePath`: absolute path to the resume file on disk
 3. **Present extracted data to user** for review and correction
-4. **Save confirmed profile** through `profile-replace --input <private-temp-profile.json>`, then remove the temporary input
+4. **Inspect and save confirmed profile** by running `profile-inspect`, retaining its revision, then calling `profile-replace --input <private-temp-profile.json> --expected-revision <inspected-revision> --source user`. Remove the temporary input. If the revision conflicts, stop and review the newly inspected profile; never replace unseen changes.
 
 ### Phase 2: Application Filling
 

@@ -230,6 +230,9 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         self._send_bytes(HTTPStatus.OK, body, asset[1])
 
     def _get_api(self, path: str) -> None:
+        if path == "/api/profile":
+            self._store_call(self.server.store.inspect_profile)
+            return
         if path == "/api/state":
             self._store_call(lambda: {
                 "jobs": self.server.store.list_jobs(),
@@ -270,6 +273,53 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
             return
         payload = self._read_json()
         if payload is None:
+            return
+        if method == "PATCH" and path == "/api/profile":
+            allowed = {"patch", "expectedRevision", "atomicPaths", "deletedPaths"}
+            atomic_paths = payload.get("atomicPaths", [])
+            deleted_paths = payload.get("deletedPaths", [])
+            if (
+                set(payload) - allowed
+                or not {"patch", "expectedRevision"} <= set(payload)
+                or not isinstance(payload.get("patch"), dict)
+                or not payload["patch"]
+                or not isinstance(atomic_paths, list)
+                or not all(isinstance(item, str) for item in atomic_paths)
+                or not isinstance(deleted_paths, list)
+                or not all(isinstance(item, str) for item in deleted_paths)
+            ):
+                self._error(
+                    HTTPStatus.BAD_REQUEST,
+                    "body requires a non-empty patch object, expectedRevision, and valid path lists",
+                )
+                return
+            try:
+                atomic_keys = {
+                    STORE_MODULE._top_level_pointer_key(item) for item in atomic_paths
+                }
+            except STORE_MODULE.StoreError as error:
+                self._error(HTTPStatus.BAD_REQUEST, str(error))
+                return
+            if (
+                len(set(atomic_paths)) != len(atomic_paths)
+                or len(set(deleted_paths)) != len(deleted_paths)
+                or not set(deleted_paths) <= set(atomic_paths)
+                or atomic_keys & STORE_MODULE.PROFILE_NAMED_TOP_LEVEL
+            ):
+                self._error(
+                    HTTPStatus.BAD_REQUEST,
+                    "atomic paths must uniquely identify Additional facts and include every deletion",
+                )
+                return
+            expected_revision = self._expected_revision(payload)
+            if expected_revision is None:
+                return
+            self._store_call(
+                lambda: self.server.store.patch_profile(
+                    payload["patch"], expected_revision, source="user",
+                    atomic_paths=atomic_paths, deleted_paths=deleted_paths,
+                )
+            )
             return
         if method == "POST" and path == "/api/jobs":
             job = payload.get("job")

@@ -116,15 +116,23 @@ Do not place passwords, credentials, authentication tokens, CAPTCHA answers, pay
 ```bash
 python3 "<plugin-root>/scripts/job-apply-store.py" profile-get
 python3 "<plugin-root>/scripts/job-apply-store.py" profile-inspect
-python3 "<plugin-root>/scripts/job-apply-store.py" profile-replace --input <profile.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" profile-replace \
+  --input <profile.json> --expected-revision <revision> \
+  --source <user|resume|agent|migration>
 python3 "<plugin-root>/scripts/job-apply-store.py" profile-patch \
   --input <patch.json> --expected-revision <revision> \
   --source <user|resume|agent|migration>
 python3 "<plugin-root>/scripts/job-apply-store.py" preferences-get
-python3 "<plugin-root>/scripts/job-apply-store.py" preferences-set --input <preferences.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" preferences-set \
+  --input <preferences.json> --expected-revision <revision> \
+  --source <user|resume|agent|migration> [--replace]
 ```
 
-`preferences-set` merges supplied keys and preserves all other profile and preference fields. Use `--replace` only after the user explicitly chooses to replace the full preferences object.
+Inspect the profile immediately before either mutation and pass its current revision.
+`preferences-set` merges supplied keys and preserves all other profile and preference
+fields. Use `--replace` only after the user explicitly chooses to replace the full
+preferences object. A revision conflict means the profile changed concurrently;
+reload it and resolve the difference instead of retrying the stale write.
 
 `profile-get` keeps the legacy raw-profile response. Use `profile-inspect` before a
 selective edit to obtain the current revision and fact provenance, then pass that
