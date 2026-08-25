@@ -2342,7 +2342,12 @@ class Store:
         return document, {"state": "missing"}
 
     @staticmethod
-    def _selected_legacy_items(discovery: dict[str, Any], selected: list[str]) -> list[dict[str, Any]]:
+    def _selected_legacy_items(
+        discovery: dict[str, Any],
+        selected: list[str],
+        *,
+        unknown_message: str = "legacy job selection contains an unknown item id",
+    ) -> list[dict[str, Any]]:
         if len(selected) != len(set(selected)):
             raise StoreError("legacy job selection contains duplicate item ids")
         indexed = {item["itemId"]: item for item in discovery["items"]}
@@ -2350,7 +2355,7 @@ class Store:
         for item_id in selected:
             item = indexed.get(item_id)
             if item is None:
-                raise StoreError("legacy job selection contains an unknown item id")
+                raise StoreError(unknown_message)
             if item["state"] != "valid":
                 raise StoreError("legacy job selection contains an invalid item")
             chosen.append(item)
@@ -2471,7 +2476,13 @@ class Store:
             raise StoreError("legacy job commit requires selection and a preview token")
         with exclusive_file_lock(self.store_lock_path):
             discovery = self._discover_legacy_jobs()
-            chosen = self._selected_legacy_items(discovery, selected)
+            chosen = self._selected_legacy_items(
+                discovery,
+                selected,
+                unknown_message=(
+                    "legacy job preview token rejected because the source, selection, input, or store drifted"
+                ),
+            )
             document, snapshot = self._migration_jobs_snapshot()
             expected = self._legacy_jobs_token(discovery, selected, chosen, snapshot)
             if not hmac.compare_digest(token, expected):

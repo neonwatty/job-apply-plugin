@@ -1323,7 +1323,11 @@ class StoreTests(unittest.TestCase):
 
     def test_legacy_job_cli_walkthrough_uses_fixed_home_root(self):
         self._write_legacy_search_report()
-        environment = {**os.environ, "HOME": str(self.home)}
+        environment = {
+            **os.environ,
+            "HOME": str(self.home),
+            "USERPROFILE": str(self.home),
+        }
         base = [sys.executable, str(SCRIPT), "--root", str(self.root)]
         discovered = subprocess.run(
             [*base, "legacy-jobs-preview"], check=True, capture_output=True, text=True, env=environment
