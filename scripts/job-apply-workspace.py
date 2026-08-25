@@ -173,6 +173,20 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         else:
             self._json(HTTPStatus.OK, result)
 
+    def _expected_revision(self, payload: dict[str, Any]) -> int | None:
+        revision = payload.get("expectedRevision")
+        if (
+            not isinstance(revision, int)
+            or isinstance(revision, bool)
+            or revision < 1
+        ):
+            self._error(
+                HTTPStatus.BAD_REQUEST,
+                "expectedRevision must be a positive integer",
+            )
+            return None
+        return revision
+
     def do_HEAD(self) -> None:
         path = self._path()
         if path is None or not self._valid_host():
@@ -267,8 +281,11 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
             if set(payload) != {"patch", "expectedRevision"} or not isinstance(payload.get("patch"), dict):
                 self._error(HTTPStatus.BAD_REQUEST, "body requires patch and expectedRevision")
                 return
+            expected_revision = self._expected_revision(payload)
+            if expected_revision is None:
+                return
             self._store_call(lambda: self.server.store.update_job(
-                parts[3], payload["patch"], payload["expectedRevision"], origin="human"
+                parts[3], payload["patch"], expected_revision, origin="human"
             ))
             return
         if len(parts) == 5 and parts[1:3] == ["api", "jobs"]:
@@ -278,10 +295,22 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
                 if set(payload) - allowed or not {"status", "expectedRevision"} <= set(payload):
                     self._error(HTTPStatus.BAD_REQUEST, "transition body is invalid")
                     return
+                if not isinstance(payload["status"], str):
+                    self._error(HTTPStatus.BAD_REQUEST, "transition status must be a string")
+                    return
+                if "closedOutcome" in payload and payload["closedOutcome"] is not None and not isinstance(payload["closedOutcome"], str):
+                    self._error(HTTPStatus.BAD_REQUEST, "closedOutcome must be a string or null")
+                    return
+                if "userConfirmed" in payload and not isinstance(payload["userConfirmed"], bool):
+                    self._error(HTTPStatus.BAD_REQUEST, "userConfirmed must be a boolean")
+                    return
+                expected_revision = self._expected_revision(payload)
+                if expected_revision is None:
+                    return
                 self._store_call(lambda: self.server.store.transition_job(
                     job_id,
                     payload["status"],
-                    payload["expectedRevision"],
+                    expected_revision,
                     closed_outcome=payload.get("closedOutcome"),
                     user_confirmed=payload.get("userConfirmed") is True,
                 ))
@@ -290,7 +319,10 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
                 if set(payload) != {"expectedRevision"}:
                     self._error(HTTPStatus.BAD_REQUEST, "trash body requires expectedRevision")
                     return
-                self._store_call(lambda: self.server.store.trash_job(job_id, payload["expectedRevision"]))
+                expected_revision = self._expected_revision(payload)
+                if expected_revision is None:
+                    return
+                self._store_call(lambda: self.server.store.trash_job(job_id, expected_revision))
                 return
         self._error(HTTPStatus.NOT_FOUND, "route not found", "not_found")
 
@@ -329,7 +361,10 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Start the local Job Apply Jobs workspace")
-    parser.add_argument("--root", help="canonical store root (default: JOB_APPLY_STORE or ~/.job-apply)")
+    parser.add_argument(
+        "--root",
+        help=f"canonical store root (default: ${STORE_MODULE.STORE_ENV} or ~/.job-apply)",
+    )
     parser.add_argument("--port", type=int, default=0, help="loopback port (default: choose a free port)")
     parser.add_argument("--no-open", action="store_true", help="do not open the default browser")
     parser.add_argument("--json", action="store_true", help="print startup details as one JSON line")
@@ -341,7 +376,7 @@ def main() -> int:
     if not 0 <= args.port <= 65535:
         print("job-apply-workspace: port must be between 0 and 65535", file=sys.stderr)
         return 2
-    configured = args.root or os.environ.get("JOB_APPLY_STORE")
+    configured = args.root or os.environ.get(STORE_MODULE.STORE_ENV)
     store_root = Path(configured).expanduser() if configured else Path.home() / ".job-apply"
     try:
         server = WorkspaceServer(store_root, args.port)

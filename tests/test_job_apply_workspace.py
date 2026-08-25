@@ -160,6 +160,23 @@ class WorkspaceServerTests(unittest.TestCase):
         self.assertEqual(self.server.store.get_job(job["id"])["role"], "CLI edit")
         self.assertEqual(self.server.store.get_job(job["id"])["revision"], cli["revision"])
 
+    def test_mutations_reject_invalid_revision_and_transition_types(self):
+        job = self.create_job(role="Original")
+        probes = (
+            ("PATCH", f"/api/jobs/{job['id']}", {"patch": {"role": "bad"}, "expectedRevision": True}),
+            ("POST", f"/api/jobs/{job['id']}/transition", {"status": [], "expectedRevision": 1}),
+            ("POST", f"/api/jobs/{job['id']}/transition", {"status": "closed", "expectedRevision": 1, "closedOutcome": []}),
+            ("POST", f"/api/jobs/{job['id']}/transition", {"status": "needs_info", "expectedRevision": 1.0}),
+            ("POST", f"/api/jobs/{job['id']}/trash", {"expectedRevision": 1.0}),
+        )
+        for method, path, payload in probes:
+            with self.subTest(method=method, path=path, payload=payload):
+                status, _headers, body = self.request(method, path, payload)
+                self.assertEqual(status, 400)
+                self.assertEqual(body["error"]["code"], "request_error")
+        canonical = self.server.store.get_job(job["id"])
+        self.assertEqual((canonical["role"], canonical["status"], canonical["revision"]), ("Original", "saved", 1))
+
     def test_bulk_capture_keeps_valid_items_and_reports_each_failure(self):
         urls = ["https://example.com/good", "not a url", "https://example.com/good"]
         status, _headers, body = self.request("POST", "/api/jobs/bulk", {"urls": urls})
@@ -183,6 +200,8 @@ class WorkspaceServerTests(unittest.TestCase):
         status, _headers, body = self.request("POST", f"/api/jobs/{job['id']}/transition", {"status": "applied", "expectedRevision": ready["revision"]})
         self.assertEqual(status, 400)
         self.assertIn("unsupported", body["error"]["message"])
+        status, _headers, closed = self.request("POST", f"/api/jobs/{job['id']}/transition", {"status": "closed", "closedOutcome": "withdrawn", "expectedRevision": ready["revision"]})
+        self.assertEqual((status, closed["status"], closed["closedOutcome"]), (200, "closed", "withdrawn"))
 
     def test_trash_is_guarded_and_no_restore_or_delete_routes_exist(self):
         job = self.create_job()
@@ -212,6 +231,35 @@ class WorkspaceProcessTests(unittest.TestCase):
                 connection.request("GET", "/", headers={"Host": f"127.0.0.1:{details['port']}"})
                 self.assertEqual(connection.getresponse().status, 200)
                 connection.close()
+                if os.name == "nt":
+                    process.send_signal(signal.CTRL_BREAK_EVENT)
+                else:
+                    process.send_signal(signal.SIGINT)
+                self.assertEqual(process.wait(timeout=5), 0)
+            finally:
+                if process.poll() is None:
+                    process.terminate()
+                    process.wait(timeout=5)
+
+    def test_launcher_uses_canonical_store_environment_variable(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary) / "home"
+            store = Path(temporary) / "configured-store"
+            home.mkdir()
+            environment = os.environ.copy()
+            environment["HOME"] = str(home)
+            environment[WORKSPACE.STORE_MODULE.STORE_ENV] = str(store)
+            environment.pop("JOB_APPLY_STORE", None)
+            process = subprocess.Popen(
+                [sys.executable, str(ROOT / "scripts" / "job-apply-workspace.py"), "--port", "0", "--no-open", "--json"],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=environment,
+                creationflags=(subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0),
+            )
+            try:
+                details = json.loads(process.stdout.readline())
+                self.assertEqual(details["host"], "127.0.0.1")
+                self.assertTrue((store / "jobs.json").is_file())
+                self.assertFalse((home / ".job-apply").exists())
                 if os.name == "nt":
                     process.send_signal(signal.CTRL_BREAK_EVENT)
                 else:

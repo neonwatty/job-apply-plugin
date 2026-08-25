@@ -54,6 +54,7 @@ dialog::backdrop { background: rgba(14,28,22,.58); backdrop-filter: blur(4px); }
 .icon-button { border: 0; border-radius: 50%; background: #edf0ec; color: var(--ink); width: 40px; height: 40px; font-size: 1.6rem; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }.wide { grid-column: 1/-1; }.dialog-footer { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
 .preflight, .conflict, .status-actions { margin-top: 1.2rem; padding: 1rem; border-radius: 12px; background: #eef4f0; }.preflight h3, .conflict h3, .status-actions h3 { margin: 0 0 .5rem; }.preflight ul { margin: .4rem 0; }.conflict { background: #fff1d7; border: 1px solid #e2bb70; }.conflict-values { display: grid; grid-template-columns: repeat(2,1fr); gap: .4rem; margin: .8rem 0; font-size: .84rem; }.conflict-values span { background: rgba(255,255,255,.6); padding: .5rem; border-radius: 6px; }
+.close-action { display: flex; align-items: center; gap: .5rem; }.close-action select { width: auto; min-width: 9rem; }
 .error { color: var(--danger); font-weight: 700; }.bulk-results { margin-top: 1rem; display: grid; gap: .4rem; }.bulk-result { padding: .55rem .7rem; border-radius: 7px; background: #e7f3ec; overflow-wrap: anywhere; }.bulk-result.bad { background: #f8e5e2; color: #792c25; }
 .toast { position: fixed; right: 1.5rem; bottom: 1.5rem; z-index: 30; max-width: 420px; padding: .9rem 1.15rem; border-radius: 10px; color: white; background: var(--forest-2); box-shadow: var(--shadow); }
 @keyframes spin { to { transform: rotate(360deg); } }

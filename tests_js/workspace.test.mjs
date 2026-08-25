@@ -14,9 +14,11 @@ const REPO_ROOT = process.env.JOB_WORKSPACE_TEST_ROOT
 const PYTHON = process.env.PYTHON || "python3";
 const {
   ApiError,
+  canMarkReadyFrom,
   createApi,
   filterJobs,
   formPatch,
+  sessionToken,
   tokenFromHash,
   transitionsFor,
 } = await import(pathToFileURL(join(REPO_ROOT, "workspace", "app.js")).href);
@@ -24,6 +26,13 @@ const {
 test("fragment token is decoded without accepting unrelated URL data", () => {
   assert.equal(tokenFromHash("#token=abc%20123"), "abc 123");
   assert.equal(tokenFromHash("#other=value"), "");
+});
+
+test("fragment token survives a same-tab reload without remaining in the URL", () => {
+  const values = new Map();
+  const storage = { setItem(key, value) { values.set(key, value); }, getItem(key) { return values.get(key) || null; } };
+  assert.equal(sessionToken("#token=session-secret", storage), "session-secret");
+  assert.equal(sessionToken("", storage), "session-secret");
 });
 
 test("API client authenticates in memory and surfaces revision conflicts", async () => {
@@ -67,7 +76,11 @@ test("form values become a supported Store patch", () => {
 test("status actions preserve guarded ready, acquire, and applied boundaries", () => {
   assert.deepEqual(transitionsFor("saved"), ["needs_info", "closed"]);
   assert.equal(transitionsFor("ready").includes("in_progress"), false);
-  assert.deepEqual(transitionsFor("awaiting_review"), ["in_progress", "applied", "closed"]);
+  assert.deepEqual(transitionsFor("in_progress"), []);
+  assert.deepEqual(transitionsFor("awaiting_review"), ["applied", "closed"]);
+  assert.equal(canMarkReadyFrom("saved"), true);
+  assert.equal(canMarkReadyFrom("needs_info"), true);
+  assert.equal(canMarkReadyFrom("awaiting_review"), false);
 });
 
 test("workspace markup has semantic dialogs, labels, live regions, and no remote assets", async () => {
@@ -138,6 +151,9 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
     await page.goto(startup.url);
+    await page.getByText("Canonical store connected").waitFor();
+    await page.reload();
+    await page.getByText("Canonical store connected").waitFor();
     const jobDialog = page.locator("#job-dialog");
 
     const cliButton = page.getByRole("button", { name: /CLI Engineer/ });
@@ -181,7 +197,7 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
 
     await page.getByRole("button", { name: /UI Engineer/ }).press("Enter");
     await jobDialog.getByLabel("Role", { exact: true }).fill("My preserved draft");
-    const cliUpdated = await cli("job-update", ["--id", uiJob.id, "--expected-revision", String(uiJob.revision), "--origin", "human"], { role: "CLI canonical edit" });
+    const cliUpdated = await cli("job-update", ["--id", uiJob.id, "--expected-revision", String(uiJob.revision), "--origin", "human"], { role: "CLI canonical edit", notes: "CLI concurrent note" });
     await page.getByRole("button", { name: "Save job" }).click();
     const conflict = page.locator("#conflict");
     await conflict.waitFor();
@@ -189,8 +205,29 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     assert.match(await conflict.innerText(), /CLI canonical edit/);
     assert.equal(await page.evaluate(() => document.activeElement?.id), "conflict");
 
+    await page.getByRole("button", { name: "Reapply my draft" }).click();
+    assert.equal(await jobDialog.getByLabel("Role", { exact: true }).inputValue(), "My preserved draft");
+    assert.equal(await jobDialog.getByLabel("Notes", { exact: true }).inputValue(), "CLI concurrent note");
+    await page.getByRole("button", { name: "Save job" }).click();
+    await page.locator("#job-dialog").waitFor({ state: "hidden" });
+    const safelyRebased = await cli("job-get", ["--id", uiJob.id]);
+    assert.equal(safelyRebased.role, "My preserved draft");
+    assert.equal(safelyRebased.notes, "CLI concurrent note");
+
+    await page.getByRole("button", { name: /My preserved draft/ }).click();
+    await jobDialog.getByLabel("Company", { exact: true }).fill("Offline draft company");
+    const newest = await cli("job-update", ["--id", uiJob.id, "--expected-revision", String(safelyRebased.revision), "--origin", "human"], { notes: "Newest canonical note" });
+    await page.route(`**/api/jobs/${uiJob.id}`, (route) => route.request().method() === "GET" ? route.abort() : route.continue());
+    await page.getByRole("button", { name: "Save job" }).click();
+    await conflict.waitFor();
+    assert.match(await conflict.innerText(), /could not be loaded/i);
+    assert.equal(await page.getByRole("button", { name: "Load canonical values" }).isDisabled(), true);
+    assert.equal(await page.getByRole("button", { name: "Reapply my draft" }).isDisabled(), true);
+    assert.equal(await jobDialog.getByLabel("Company", { exact: true }).inputValue(), "Offline draft company");
+    await page.unroute(`**/api/jobs/${uiJob.id}`);
+    await page.getByRole("button", { name: "Save job" }).click();
     await page.getByRole("button", { name: "Load canonical values" }).click();
-    assert.equal(await jobDialog.getByLabel("Role", { exact: true }).inputValue(), "CLI canonical edit");
+    assert.equal(await jobDialog.getByLabel("Notes", { exact: true }).inputValue(), "Newest canonical note");
     await page.getByRole("button", { name: "Run ready check" }).click();
     await page.getByText("No blocking issues").waitFor();
     await page.getByRole("button", { name: "Mark ready" }).click();
@@ -199,7 +236,15 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     assert.equal(ready.some((job) => job.id === uiJob.id), true);
     await page.waitForFunction((id) => document.activeElement?.dataset?.id === id, uiJob.id);
 
-    await page.getByRole("button", { name: /CLI Engineer/ }).click();
+    await page.getByRole("button", { name: /Browser-edited CLI Engineer/ }).click();
+    await page.getByLabel("Closed outcome").selectOption("withdrawn");
+    await page.getByRole("button", { name: "Close job", exact: true }).click();
+    await page.locator("#job-dialog").waitFor({ state: "hidden" });
+    const closed = await cli("job-get", ["--id", cliJob.id]);
+    assert.equal(closed.status, "closed");
+    assert.equal(closed.closedOutcome, "withdrawn");
+
+    await page.getByRole("button", { name: /Browser-edited CLI Engineer/ }).click();
     page.once("dialog", (prompt) => prompt.accept());
     await page.getByRole("button", { name: "Move to trash" }).click();
     await page.locator("#job-dialog").waitFor({ state: "hidden" });
@@ -213,6 +258,7 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     server = null;
     assert.equal((await cli("job-list", ["--status", "ready"])).some((job) => job.id === uiJob.id), true);
     assert.equal(cliUpdated.role, "CLI canonical edit");
+    assert.equal(newest.notes, "Newest canonical note");
   } finally {
     if (browser) await browser.close();
     if (server && server.exitCode === null) {

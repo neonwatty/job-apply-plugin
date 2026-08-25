@@ -11,6 +11,16 @@ export function tokenFromHash(hash) {
   return params.get("token") || "";
 }
 
+export function sessionToken(hash, storage) {
+  const token = tokenFromHash(hash);
+  try {
+    if (token) storage?.setItem("jobApplyWorkspaceToken", token);
+    return token || storage?.getItem("jobApplyWorkspaceToken") || "";
+  } catch {
+    return token;
+  }
+}
+
 export function filterJobs(jobs, query = "", status = "") {
   const needle = query.trim().toLocaleLowerCase();
   return jobs.filter((job) => {
@@ -34,9 +44,13 @@ export function formPatch(values) {
 export function transitionsFor(status) {
   return {
     saved: ["needs_info", "closed"], needs_info: ["saved", "closed"], ready: ["saved", "needs_info", "closed"],
-    in_progress: ["needs_info", "awaiting_review", "closed"], awaiting_review: ["in_progress", "applied", "closed"],
+    in_progress: [], awaiting_review: ["applied", "closed"],
     applied: ["closed"], closed: ["saved"],
   }[status] || [];
+}
+
+export function canMarkReadyFrom(status) {
+  return status === "saved" || status === "needs_info";
 }
 
 export function createApi(token, fetchImpl = globalThis.fetch) {
@@ -54,10 +68,10 @@ export function createApi(token, fetchImpl = globalThis.fetch) {
 const hasDom = typeof document !== "undefined";
 
 if (hasDom) {
-  const token = tokenFromHash(location.hash);
-  history.replaceState(null, "", location.pathname);
+  const token = sessionToken(location.hash, sessionStorage);
+  if (location.hash) history.replaceState(null, "", location.pathname);
   const api = createApi(token);
-  const state = { jobs: [], resumes: [], selected: null, latest: null, draft: null, dirty: false, polling: false, opener: null, openerJobId: null, focusAfterClose: null };
+  const state = { jobs: [], resumes: [], selected: null, latest: null, draft: null, dirty: false, dirtyFields: new Set(), polling: false, opener: null, openerJobId: null, focusAfterClose: null };
   const $ = (selector) => document.querySelector(selector);
   const form = $("#job-form");
   const dialog = $("#job-dialog");
@@ -124,12 +138,12 @@ if (hasDom) {
 
   function fillForm(job) {
     for (const field of ["url", "role", "company", "location", "workplaceType", "employmentType", "compensation", "notes", "description", "priority"]) form.elements[field].value = job?.[field] ?? (field === "priority" ? 0 : "");
-    fillResumeOptions(job?.resumeId); state.dirty = false; hideConflict(); $("#form-error").classList.add("hidden");
+    fillResumeOptions(job?.resumeId); state.dirty = false; state.dirtyFields.clear(); hideConflict(); $("#form-error").classList.add("hidden");
   }
 
   function openNew() {
     rememberOpener();
-    state.selected = null; state.latest = null; fillForm(null); $("#job-dialog-title").textContent = "Capture a job"; $("#dialog-kicker").textContent = "NEW CANONICAL RECORD";
+    state.selected = null; state.latest = null; state.draft = null; fillForm(null); $("#job-dialog-title").textContent = "Capture a job"; $("#dialog-kicker").textContent = "NEW CANONICAL RECORD";
     for (const id of ["trash-job", "preflight-job", "mark-ready", "status-actions"]) $("#" + id).classList.add("hidden");
     dialog.showModal(); setTimeout(() => form.elements.url.focus(), 0);
   }
@@ -137,19 +151,28 @@ if (hasDom) {
   function openExisting(id) {
     const job = state.jobs.find((item) => item.id === id); if (!job) return;
     rememberOpener(id);
-    state.selected = job; state.latest = null; fillForm(job); $("#job-dialog-title").textContent = job.role || "Job details"; $("#dialog-kicker").textContent = `${statusLabel(job.status).toUpperCase()} · REVISION ${job.revision}`;
-    $("#trash-job").classList.remove("hidden"); $("#preflight-job").classList.remove("hidden"); $("#mark-ready").classList.toggle("hidden", job.status === "ready"); renderStatusActions(job); dialog.showModal(); setTimeout(() => form.elements.role.focus(), 0);
+    state.selected = job; state.latest = null; state.draft = null; fillForm(job); $("#job-dialog-title").textContent = job.role || "Job details"; $("#dialog-kicker").textContent = `${statusLabel(job.status).toUpperCase()} · REVISION ${job.revision}`;
+    $("#trash-job").classList.toggle("hidden", job.status === "in_progress"); $("#preflight-job").classList.remove("hidden"); $("#mark-ready").classList.toggle("hidden", !canMarkReadyFrom(job.status)); renderStatusActions(job); dialog.showModal(); setTimeout(() => form.elements.role.focus(), 0);
   }
 
   function currentValues() { return Object.fromEntries(new FormData(form).entries()); }
   function showFormError(message) { const node = $("#form-error"); node.textContent = message; node.classList.remove("hidden"); }
-  function hideConflict() { $("#conflict").classList.add("hidden"); $("#conflict-latest").replaceChildren(); }
+  function hideConflict() { $("#conflict").classList.add("hidden"); $("#conflict-latest").replaceChildren(); $("#reload-latest").disabled = false; $("#rebase-draft").disabled = false; }
 
   async function showConflict() {
-    state.draft = currentValues();
-    try { state.latest = await api(`/api/jobs/${encodeURIComponent(state.selected.id)}`); } catch { state.latest = state.jobs.find((j) => j.id === state.selected.id); }
+    const values = currentValues();
+    state.draft = Object.fromEntries([...state.dirtyFields].map((field) => [field, values[field]]));
     const holder = $("#conflict-latest"); holder.replaceChildren();
-    for (const field of ["role", "company", "location", "status", "revision"]) { const span = document.createElement("span"); span.textContent = `${field}: ${state.latest?.[field] || "—"}`; holder.append(span); }
+    $("#reload-latest").disabled = false; $("#rebase-draft").disabled = false;
+    try {
+      state.latest = await api(`/api/jobs/${encodeURIComponent(state.selected.id)}`);
+    } catch (error) {
+      state.latest = null;
+      const message = document.createElement("p"); message.textContent = `Latest canonical values could not be loaded: ${error.message}. Your draft is still here; try Save again after the connection recovers.`; holder.append(message);
+      $("#reload-latest").disabled = true; $("#rebase-draft").disabled = true;
+      $("#conflict").classList.remove("hidden"); $("#conflict").focus(); return;
+    }
+    for (const field of ["url", "role", "company", "location", "workplaceType", "employmentType", "compensation", "notes", "description", "resumeId", "priority", "status", "revision"]) { const span = document.createElement("span"); span.textContent = `${field}: ${state.latest[field] ?? "—"}`; holder.append(span); }
     $("#conflict").classList.remove("hidden"); $("#conflict").focus();
   }
 
@@ -177,12 +200,14 @@ if (hasDom) {
     const panel = $("#preflight-panel"), body = $("#preflight-results"); body.replaceChildren();
     const summary = document.createElement("p"); summary.textContent = result.ready ? "No blocking issues. This job can be handed to a Job Apply agent." : "Resolve the blocking issues before marking this job ready."; body.append(summary);
     for (const [label, items] of [["Blocking", result.errors], ["Warnings", result.warnings]]) if (items.length) { const h = document.createElement("strong"); h.textContent = label; const ul = document.createElement("ul"); for (const code of items) { const li = document.createElement("li"); li.textContent = issueText[code] || code; ul.append(li); } body.append(h, ul); }
-    panel.classList.remove("hidden"); $("#mark-ready").classList.toggle("hidden", !result.ready || state.selected?.status === "ready");
+    panel.classList.remove("hidden"); $("#mark-ready").classList.toggle("hidden", !result.ready || !canMarkReadyFrom(state.selected?.status));
   }
 
-  async function transition(status, userConfirmed = false) {
+  async function transition(status, userConfirmed = false, closedOutcome = null) {
     try {
-      const updated = await api(`/api/jobs/${encodeURIComponent(state.selected.id)}/transition`, { method: "POST", body: JSON.stringify({ status, expectedRevision: state.selected.revision, userConfirmed }) });
+      const body = { status, expectedRevision: state.selected.revision, userConfirmed };
+      if (closedOutcome !== null) body.closedOutcome = closedOutcome;
+      const updated = await api(`/api/jobs/${encodeURIComponent(state.selected.id)}/transition`, { method: "POST", body: JSON.stringify(body) });
       state.selected = updated; await refresh({ quiet: true }); closeJobDialog(jobButton(updated.id)); toast(`Job moved to ${statusLabel(status)}`);
     } catch (error) { if (error.status === 409) await showConflict(); else showFormError(error.message); }
   }
@@ -192,6 +217,12 @@ if (hasDom) {
     for (const status of transitionsFor(job.status)) {
       if (status === "applied") {
         const button = document.createElement("button"); button.type = "button"; button.className = "button secondary"; button.textContent = "Mark applied…"; button.addEventListener("click", () => { if (confirm("Confirm that you personally submitted this application on the third-party site. This workspace does not submit it.")) transition("applied", true); }); holder.append(button);
+      } else if (status === "closed") {
+        const label = document.createElement("label"); label.className = "close-action"; label.append("Close as ");
+        const select = document.createElement("select"); select.setAttribute("aria-label", "Closed outcome");
+        for (const [value, text] of [["rejected", "Rejected"], ["withdrawn", "Withdrawn"], ["expired", "Expired"], ["duplicate", "Duplicate"], ["not_interested", "Not interested"]]) select.append(new Option(text, value));
+        const button = document.createElement("button"); button.type = "button"; button.className = "button secondary"; button.textContent = "Close job"; button.addEventListener("click", () => transition("closed", false, select.value));
+        label.append(select); holder.append(label, button);
       } else {
         const button = document.createElement("button"); button.type = "button"; button.className = "button secondary"; button.textContent = `Move to ${statusLabel(status)}`; button.addEventListener("click", () => transition(status)); holder.append(button);
       }
@@ -211,18 +242,18 @@ if (hasDom) {
   }
   function firstListDestination() { return $(".job-card") || $("#new-job"); }
 
-  form.addEventListener("submit", save); form.addEventListener("input", () => { if (state.selected) state.dirty = true; });
+  form.addEventListener("submit", save); form.addEventListener("input", (event) => { if (state.selected && event.target.name) { state.dirty = true; state.dirtyFields.add(event.target.name); } });
   $("#new-job").addEventListener("click", openNew); $("#empty-create").addEventListener("click", openNew); $("#refresh").addEventListener("click", () => refresh());
   $("#search").addEventListener("input", render); $("#status-filter").addEventListener("change", render);
   $("#preflight-job").addEventListener("click", preflight); $("#mark-ready").addEventListener("click", async () => { const result = await preflight(); if (result?.ready) transition("ready"); });
   $("#trash-job").addEventListener("click", async () => { if (!confirm("Move this job to trash? It will leave this Jobs workspace, but remains recoverable through the canonical store.")) return; try { const id = state.selected.id; await api(`/api/jobs/${encodeURIComponent(id)}/trash`, { method: "POST", body: JSON.stringify({ expectedRevision: state.selected.revision }) }); await refresh({ quiet: true }); closeJobDialog(firstListDestination()); toast("Job moved to trash"); } catch (error) { if (error.status === 409) await showConflict(); else showFormError(error.message); } });
-  $("#reload-latest").addEventListener("click", () => { if (!state.latest) return; state.selected = state.latest; fillForm(state.latest); $("#dialog-kicker").textContent = `CANONICAL · REVISION ${state.latest.revision}`; form.elements.role.focus(); toast("Loaded the latest canonical values"); });
-  $("#rebase-draft").addEventListener("click", () => { if (!state.latest || !state.draft) return; state.selected = state.latest; for (const [name, value] of Object.entries(state.draft)) if (form.elements[name]) form.elements[name].value = value; state.dirty = true; hideConflict(); $("#save-job").focus(); toast("Draft reapplied. Review it, then save against the latest revision."); });
+  $("#reload-latest").addEventListener("click", () => { if (!state.latest) return; state.selected = state.latest; state.draft = null; fillForm(state.latest); $("#dialog-kicker").textContent = `CANONICAL · REVISION ${state.latest.revision}`; form.elements.role.focus(); toast("Loaded the latest canonical values"); });
+  $("#rebase-draft").addEventListener("click", () => { if (!state.latest || !state.draft) return; const latest = state.latest; const draft = state.draft; state.selected = latest; fillForm(latest); for (const [name, value] of Object.entries(draft)) if (form.elements[name]) form.elements[name].value = value; state.dirtyFields = new Set(Object.keys(draft)); state.dirty = state.dirtyFields.size > 0; state.draft = null; hideConflict(); $("#save-job").focus(); toast("Your edited fields were reapplied to the latest canonical values. Review, then save."); });
   for (const button of document.querySelectorAll("[data-close]")) button.addEventListener("click", () => document.getElementById(button.dataset.close).close());
   $("#bulk-open").addEventListener("click", () => { $("#bulk-results").replaceChildren(); $("#bulk-dialog").showModal(); setTimeout(() => $("#bulk-form").elements.urls.focus(), 0); });
   $("#bulk-form").addEventListener("submit", async (event) => { event.preventDefault(); const urls = event.currentTarget.elements.urls.value.split(/\r?\n/).map((v) => v.trim()).filter(Boolean); try { const data = await api("/api/jobs/bulk", { method: "POST", body: JSON.stringify({ urls }) }); const holder = $("#bulk-results"); holder.replaceChildren(); for (const item of data.results) { const row = document.createElement("div"); row.className = `bulk-result${item.ok ? "" : " bad"}`; row.textContent = item.ok ? `Saved · ${item.url}` : `Not saved · ${item.url} · ${item.error}`; holder.append(row); } await refresh({ quiet: true }); } catch (error) { const row = document.createElement("div"); row.className = "bulk-result bad"; row.textContent = error.message; $("#bulk-results").replaceChildren(row); } });
   dialog.addEventListener("close", () => {
-    state.dirty = false; $("#sync-notice").classList.add("hidden");
+    state.dirty = false; state.dirtyFields.clear(); state.draft = null; $("#sync-notice").classList.add("hidden");
     const destination = state.focusAfterClose
       || (state.openerJobId ? jobButton(state.openerJobId) : null)
       || (state.opener?.isConnected ? state.opener : null)
