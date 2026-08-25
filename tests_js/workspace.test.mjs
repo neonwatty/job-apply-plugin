@@ -12,6 +12,28 @@ const REPO_ROOT = process.env.JOB_WORKSPACE_TEST_ROOT
   ? resolve(process.env.JOB_WORKSPACE_TEST_ROOT)
   : SOURCE_ROOT;
 const PYTHON = process.env.PYTHON || "python3";
+
+function minimalSyntheticPdf() {
+  const header = "%PDF-1.7\n";
+  const objects = [
+    "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
+    "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
+    "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >>\nendobj\n",
+  ];
+  const offsets = [];
+  let body = header;
+  for (const object of objects) {
+    offsets.push(Buffer.byteLength(body));
+    body += object;
+  }
+  const xrefOffset = Buffer.byteLength(body);
+  const entries = offsets.map((offset) => `${String(offset).padStart(10, "0")} 00000 n \n`).join("");
+  return Buffer.from(
+    `${body}xref\n0 4\n0000000000 65535 f \n${entries}`
+      + `trailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`,
+  );
+}
+
 const {
   ApiError,
   FACT_SAVE_REVISION_RETRIES,
@@ -22,10 +44,13 @@ const {
   formPatch,
   patchForPaths,
   pointerValue,
+  resumeAssignmentText,
   safeSessionStorage,
   sessionToken,
   shouldRetryFactSave,
+  shouldUseResumeResponse,
   summarizeProvenance,
+  tagsFromInput,
   tokenFromHash,
   transitionsFor,
 } = await import(pathToFileURL(join(REPO_ROOT, "workspace", "app.js")).href);
@@ -95,6 +120,24 @@ test("form values become a supported Store patch", () => {
   assert.equal("status" in patch, false);
 });
 
+test("resume tag drafts are trimmed without inventing durable browser state", () => {
+  assert.deepEqual(tagsFromInput(" primary, remote, ,primary "), ["primary", "remote", "primary"]);
+});
+
+test("resume assignment copy uses canonical projection counts", () => {
+  assert.equal(
+    resumeAssignmentText({ assignedJobCount: 2, implicitJobCount: 1 }),
+    "2 explicitly assigned active jobs; 1 active job use this default.",
+  );
+  assert.equal(resumeAssignmentText({ assignedJobCount: 0, implicitJobCount: 0 }), "0 explicitly assigned active jobs.");
+});
+
+test("resume refresh results stay bound to their requested Active or Trash view", () => {
+  assert.equal(shouldUseResumeResponse(4, 4, false, false), true);
+  assert.equal(shouldUseResumeResponse(3, 4, false, false), false);
+  assert.equal(shouldUseResumeResponse(4, 4, false, true), false);
+});
+
 test("profile paths build selective patches and distinguish safe rebases from conflicts", () => {
   const base = { location: { city: "Phoenix", country: "US" }, skills: ["Python"], firstName: "Ada" };
   const latest = { location: { city: "Phoenix", country: "CA" }, skills: ["Python", "Rust"], firstName: "Grace" };
@@ -147,6 +190,9 @@ test("workspace markup has semantic dialogs, labels, live regions, and no remote
   assert.match(html, /<main(?:\s|>)/);
   assert.match(html, /<dialog id="job-dialog" aria-labelledby=/);
   assert.match(html, /id="facts-workspace"/);
+  assert.match(html, /id="resumes-workspace"/);
+  assert.match(html, /<dialog id="resume-dialog" aria-labelledby=/);
+  assert.match(html, /<dialog id="proposal-dialog" aria-labelledby=/);
   assert.match(html, /aria-label="Workspace sections"/);
   for (const path of ["\/firstName", "\/location\/city", "\/workHistory", "\/education", "\/skills", "\/preferences\/targetTitles", "\/preferences\/minBaseSalary", "\/preferences\/remotePreference", "\/preferences\/excludePatterns", "\/preferences\/defaultTimeRange"]) {
     assert.match(html, new RegExp(`data-path="${path}"`));
@@ -167,6 +213,22 @@ test("answer-memory documents guarded profile and preference mutations", async (
   const skill = await readFile(join(REPO_ROOT, "skills", "answer-memory", "SKILL.md"), "utf8");
   assert.match(skill, /profile-replace[\s\\]+--input <profile\.json> --expected-revision <revision>[\s\\]+--source <user\|resume\|agent\|migration>/);
   assert.match(skill, /preferences-set[\s\\]+--input <preferences\.json> --expected-revision <revision>[\s\\]+--source <user\|resume\|agent\|migration> \[--replace\]/);
+});
+
+test("job-apply direct URL workflow resolves canonical managed resume storage", async () => {
+  const skill = await readFile(join(REPO_ROOT, "skills", "job-apply", "SKILL.md"), "utf8");
+  const readme = await readFile(join(REPO_ROOT, "README.md"), "utf8");
+  assert.match(skill, /resume-import --input/);
+  assert.match(skill, /resume-resolve --id <resume-id>/);
+  assert.match(skill, /direct-URL mode[\s\S]{0,500}run `resume-resolve`/);
+  assert.match(skill, /full `resume-list` records as private tool output, not as a redacted projection/);
+  assert.match(skill, /summary containing only `id`, `label`, `tags`, `default`, `revision`, and `storageKind`/);
+  assert.match(skill, /never include a private path, managed filename, original filename, digest, or any other field/);
+  assert.doesNotMatch(skill, /inspect redacted metadata with `resume-list`/);
+  assert.match(skill, /Never use `profile\.resumePath` or a user source path for upload/);
+  assert.doesNotMatch(readme, /Every resume write uses an exact revision/);
+  assert.match(readme, /Import is a new-record operation protected by ID\/content uniqueness/);
+  assert.match(readme, /resume-resolve/);
 });
 
 test("styles include visible focus, reduced motion, contrast mode, and responsive behavior", async () => {
@@ -214,7 +276,7 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
   let browser;
   try {
     const resumePath = join(temporary, "resume.pdf");
-    await writeFile(resumePath, "resume");
+    await writeFile(resumePath, minimalSyntheticPdf());
     await cli("profile-replace", ["--expected-revision", "0", "--source", "resume"], {
       firstName: "Ada", lastName: "Example", email: "ada@example.invalid",
       location: { city: "Phoenix", country: "US", zip: "85001" }, skills: ["Python"],
@@ -234,6 +296,8 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     const startup = await waitForStartup(server);
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
+    const pageErrors = [];
+    page.on("pageerror", (error) => pageErrors.push(error));
     await page.goto(startup.url);
     await page.getByText("Canonical store connected").waitFor();
     await page.reload();
@@ -365,6 +429,90 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await page.unroute("**/api/profile");
     await page.getByRole("button", { name: "Save changes" }).click();
     await page.getByText("Profile is synchronized with the canonical store.").waitFor();
+    await page.getByRole("button", { name: "Resumes" }).click();
+    await page.getByRole("heading", { name: "Browser resume" }).waitFor();
+
+    const importForm = page.locator("#resume-import");
+    await importForm.getByLabel("Label").fill("Browser upload");
+    await importForm.getByLabel("Tags (comma separated)").fill("browser, text");
+    await importForm.getByLabel(/PDF, DOCX/).setInputFiles({ name: "private-browser-name.txt", mimeType: "text/plain", buffer: Buffer.from("browser private resume") });
+    await importForm.getByRole("button", { name: "Import resume" }).click();
+    await page.getByRole("heading", { name: "Browser upload" }).waitFor();
+    let resumes = await cli("resume-list");
+    const uploaded = resumes.find((resume) => resume.label === "Browser upload");
+    assert.ok(uploaded, "browser import must be visible to the CLI");
+    assert.notEqual(uploaded.originalFilename, "private-browser-name.txt");
+
+    const uploadCard = page.locator(".resume-card").filter({ hasText: "Browser upload" });
+    const manageUpload = uploadCard.getByRole("button", { name: "Manage" });
+    await manageUpload.click();
+    const resumeDialog = page.locator("#resume-dialog");
+    await resumeDialog.getByLabel("Label").fill("Preserved browser draft");
+    await resumeDialog.getByLabel("Replacement file").setInputFiles({ name: "replacement.txt", mimeType: "text/plain", buffer: Buffer.from("replacement draft") });
+    await cli("resume-update", ["--id", uploaded.id, "--expected-revision", String(uploaded.revision)], { tags: ["cli"] });
+    await page.locator("#resume-conflict").waitFor();
+    assert.equal(await resumeDialog.getByLabel("Label").inputValue(), "Preserved browser draft");
+    assert.equal(await resumeDialog.getByLabel("Replacement file").evaluate((input) => input.files.length), 1);
+    await page.getByRole("button", { name: "Refresh canonical revision" }).click();
+    assert.equal(await resumeDialog.getByLabel("Label").inputValue(), "Preserved browser draft");
+    await resumeDialog.getByRole("button", { name: "Save metadata" }).click();
+    await resumeDialog.waitFor({ state: "hidden" });
+    resumes = await cli("resume-list");
+    const finalResume = resumes.find((resume) => resume.id === uploaded.id);
+    assert.equal(finalResume.label, "Preserved browser draft");
+    assert.deepEqual(finalResume.tags, ["cli"]);
+
+    profile = await cli("profile-inspect");
+    profile = await cli("profile-patch", ["--expected-revision", String(profile.revision), "--source", "user"], { browserAncestor: "Canonical ancestor value" });
+    const proposalResume = await cli("resume-get", ["--id", "browser-resume"]);
+    const proposal = await cli("resume-proposal-create", ["--resume-id", proposalResume.id, "--expected-resume-revision", String(proposalResume.revision), "--expected-profile-revision", String(profile.revision)], { firstName: "Extracted browser fact", browserAutoFact: "Auto-filled browser fact", browserAncestor: { child: "Extracted child" } });
+    await page.locator("#resumes-refresh").click();
+    await page.locator(".resume-card").filter({ hasText: "Browser resume" }).getByRole("button", { name: "Manage" }).click();
+    assert.equal(await resumeDialog.getByLabel("Replacement file").evaluate((input) => input.files.length), 0);
+    const proposalResumeBeforeReadFailure = await cli("resume-get", ["--id", "browser-resume"]);
+    await resumeDialog.getByLabel("Replacement file").setInputFiles({ name: "unreadable.txt", mimeType: "text/plain", buffer: Buffer.from("unreadable") });
+    await page.evaluate(() => {
+      globalThis.__JobApplyOriginalFileReader = globalThis.FileReader;
+      globalThis.FileReader = class {
+        addEventListener(name, callback) { if (name === "error") this.onError = callback; }
+        readAsDataURL() { queueMicrotask(() => this.onError()); }
+      };
+    });
+    const errorsBeforeRead = pageErrors.length;
+    await resumeDialog.getByRole("button", { name: "Replace file" }).click();
+    await page.getByText("The selected file could not be read.").waitFor();
+    await page.evaluate(() => { globalThis.FileReader = globalThis.__JobApplyOriginalFileReader; delete globalThis.__JobApplyOriginalFileReader; });
+    assert.equal(pageErrors.length, errorsBeforeRead);
+    assert.equal((await cli("resume-get", ["--id", "browser-resume"])).revision, proposalResumeBeforeReadFailure.revision);
+    await resumeDialog.getByRole("button", { name: "Review", exact: true }).click();
+    await page.locator("#proposal-dialog[open]").waitFor();
+    const firstNameReview = page.locator(".proposal-row").filter({ has: page.locator("legend", { hasText: "/firstName" }) });
+    const ancestorReview = page.locator(".proposal-row").filter({ has: page.locator("legend", { hasText: "/browserAncestor/child" }) });
+    await firstNameReview.locator("select").selectOption("use_extracted");
+    await ancestorReview.locator("select").selectOption("use_extracted");
+    await ancestorReview.getByText('Using the extracted value will replace existing /browserAncestor: "Canonical ancestor value"').waitFor();
+    await page.getByRole("button", { name: "Apply selected decisions" }).click();
+    await page.getByText("Confirm that accepting /browserAncestor/child replaces /browserAncestor.").waitFor();
+    assert.equal((await cli("profile-inspect")).profile.browserAncestor, "Canonical ancestor value");
+    await ancestorReview.getByLabel("I confirm replacing /browserAncestor").check();
+    await page.getByRole("button", { name: "Apply selected decisions" }).click();
+    await page.locator("#proposal-dialog").waitFor({ state: "hidden" });
+    profile = await cli("profile-inspect");
+    assert.equal(profile.profile.firstName, "Extracted browser fact");
+    assert.equal(profile.profile.browserAutoFact, "Auto-filled browser fact");
+    assert.deepEqual(profile.profile.browserAncestor, { child: "Extracted child" });
+    assert.equal((await cli("resume-proposal-get", ["--id", proposal.id])).status, "completed");
+    await page.getByRole("button", { name: "Close resume details" }).click();
+    await page.route(/\/api\/resumes$/, async (route) => {
+      await new Promise((resolveDelay) => setTimeout(resolveDelay, 350));
+      await route.continue();
+    });
+    await page.locator("#resumes-refresh").click();
+    await page.locator("#resumes-trash").click();
+    await page.getByText("0 trashed resumes.").waitFor();
+    await page.waitForTimeout(500);
+    assert.equal(await page.getByRole("heading", { name: "Browser resume" }).count(), 0);
+    await page.unroute(/\/api\/resumes$/);
     await page.getByRole("button", { name: "Jobs" }).click();
 
     const cliButton = page.getByRole("button", { name: /CLI Engineer/ });

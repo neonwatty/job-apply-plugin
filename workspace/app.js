@@ -121,6 +121,29 @@ export function summarizeProvenance(records, path) {
   return { source: sources.length === 1 ? sources[0] : `mixed: ${sources.join(", ")}`, updatedAt };
 }
 
+export function tagsFromInput(value) {
+  return String(value || "").split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+export function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(String(reader.result).split(",", 2)[1] || ""));
+    reader.addEventListener("error", () => reject(new Error("The selected file could not be read.")));
+    reader.readAsDataURL(file);
+  });
+}
+
+export function resumeAssignmentText(resume) {
+  const explicit = Number.isInteger(resume?.assignedJobCount) ? resume.assignedJobCount : 0;
+  const implicit = Number.isInteger(resume?.implicitJobCount) ? resume.implicitJobCount : 0;
+  return `${explicit} explicitly assigned active job${explicit === 1 ? "" : "s"}${implicit ? `; ${implicit} active job${implicit === 1 ? "" : "s"} use this default` : ""}.`;
+}
+
+export function shouldUseResumeResponse(requestId, latestRequestId, requestedTrash, currentTrash) {
+  return requestId === latestRequestId && requestedTrash === currentTrash;
+}
+
 const hasDom = typeof document !== "undefined";
 
 if (hasDom) {
@@ -129,6 +152,7 @@ if (hasDom) {
   const api = createApi(token);
   const state = { jobs: [], resumes: [], selected: null, latest: null, draft: null, dirty: false, dirtyFields: new Set(), polling: false, opener: null, openerJobId: null, focusAfterClose: null };
   const profileState = { inspection: null, drafts: new Map(), draftBases: new Map(), atomic: new Set(), additionalAtomic: new Set(), deletions: new Set(), conflicts: [], latest: null, loaded: false };
+  const resumeState = { items: [], proposals: [], trash: false, loaded: false, loading: false, requestId: 0, selected: null, opener: null, proposal: null, dirtyMetadata: new Set() };
   const $ = (selector) => document.querySelector(selector);
   const form = $("#job-form");
   const dialog = $("#job-dialog");
@@ -352,11 +376,123 @@ if (hasDom) {
 
   async function showWorkspace(name) {
     const facts = name === "facts";
-    $("#jobs-workspace").classList.toggle("hidden", facts); $("#facts-workspace").classList.toggle("hidden", !facts);
-    $("#nav-jobs").classList.toggle("active", !facts); $("#nav-facts").classList.toggle("active", facts);
-    $("#nav-jobs").toggleAttribute("aria-current", !facts); $("#nav-facts").toggleAttribute("aria-current", facts);
-    document.title = `${facts ? "Facts" : "Jobs"} · Job Apply Workspace`;
+    const resumes = name === "resumes";
+    $("#jobs-workspace").classList.toggle("hidden", facts || resumes); $("#facts-workspace").classList.toggle("hidden", !facts); $("#resumes-workspace").classList.toggle("hidden", !resumes);
+    for (const section of ["jobs", "facts", "resumes"]) { const active = name === section; $(`#nav-${section}`).classList.toggle("active", active); $(`#nav-${section}`).toggleAttribute("aria-current", active); }
+    document.title = `${facts ? "Facts" : resumes ? "Resumes" : "Jobs"} · Job Apply Workspace`;
     if (facts && !profileState.loaded) await refreshProfile({ preserve: false });
+    if (resumes && !resumeState.loaded) await refreshResumes();
+  }
+
+  function resumeError(message, dialogError = false) { const node = $(dialogError ? "#resume-error" : "#resumes-error"); node.textContent = message; node.classList.remove("hidden"); }
+
+  function assignmentText(resume) {
+    return resumeAssignmentText(resume);
+  }
+
+  function proposalStatus(resumeId) {
+    const items = resumeState.proposals.filter((item) => item.resumeId === resumeId);
+    const pending = items.filter((item) => item.status === "pending");
+    return { items, text: pending.length ? `${pending.length} pending extraction review${pending.length === 1 ? "" : "s"} · ${pending.reduce((sum, item) => sum + item.pendingCount, 0)} conflicts` : items.length ? "Extraction review complete" : "No extraction proposal" };
+  }
+
+  function renderResumes() {
+    $("#resumes-loading").classList.add("hidden");
+    $("#resumes-active").classList.toggle("active", !resumeState.trash); $("#resumes-trash").classList.toggle("active", resumeState.trash);
+    $("#resume-import").classList.toggle("hidden", resumeState.trash);
+    $("#resumes-empty").classList.toggle("hidden", resumeState.items.length !== 0);
+    const list = $("#resume-list"); list.replaceChildren();
+    for (const resume of resumeState.items) {
+      const card = document.createElement("article"); card.className = "resume-card"; card.setAttribute("role", "listitem");
+      const heading = document.createElement("h3"); heading.textContent = resume.label || resume.id;
+      const meta = document.createElement("p"); meta.textContent = `${resume.mediaType || "External file"} · ${resume.observedSize ?? "unknown"} bytes${resume.default ? " · Default" : ""}`;
+      const tags = document.createElement("p"); tags.textContent = resume.tags?.length ? `Tags: ${resume.tags.join(", ")}` : "No tags";
+      const assignment = document.createElement("p"); assignment.textContent = assignmentText(resume);
+      const extraction = document.createElement("p"); extraction.textContent = proposalStatus(resume.id).text;
+      const open = document.createElement("button"); open.type = "button"; open.className = "button secondary"; open.textContent = "Manage"; open.addEventListener("click", () => openResume(resume.id, open));
+      card.append(heading, meta, tags, assignment, extraction, open); list.append(card);
+    }
+    $("#resumes-status").textContent = `${resumeState.items.length} ${resumeState.trash ? "trashed" : "active"} resume${resumeState.items.length === 1 ? "" : "s"}.`;
+  }
+
+  async function refreshResumes({ quiet = false } = {}) {
+    const requestedTrash = resumeState.trash;
+    const requestId = ++resumeState.requestId;
+    resumeState.loading = true; $("#resumes-loading").classList.remove("hidden");
+    try {
+      const [library, proposals] = await Promise.all([api(requestedTrash ? "/api/resumes/trash" : "/api/resumes"), api("/api/resume-proposals")]);
+      if (!shouldUseResumeResponse(requestId, resumeState.requestId, requestedTrash, resumeState.trash)) return;
+      resumeState.items = library.resumes; resumeState.proposals = proposals.proposals; resumeState.loaded = true; renderResumes();
+      if (resumeState.selected) {
+        const latest = resumeState.items.find((item) => item.id === resumeState.selected.id);
+        if (latest) {
+          resumeState.selected.assignedJobCount = latest.assignedJobCount;
+          resumeState.selected.implicitJobCount = latest.implicitJobCount;
+          $("#resume-assignment").textContent = assignmentText(latest);
+          if (latest.revision !== resumeState.selected.revision) { $("#resume-conflict").classList.remove("hidden"); $("#resume-conflict").focus(); }
+        }
+      }
+      if (!quiet) toast("Resumes refreshed from the canonical store");
+    } catch (error) { if (shouldUseResumeResponse(requestId, resumeState.requestId, requestedTrash, resumeState.trash)) { resumeError(error.message); $("#resumes-loading").classList.add("hidden"); } }
+    finally { if (requestId === resumeState.requestId) resumeState.loading = false; }
+  }
+
+  function renderResumeDialog(resume, preserve = false) {
+    const form = $("#resume-form");
+    const drafts = preserve ? new Map(
+      [...resumeState.dirtyMetadata].map((field) => [field, form.elements[field].value]),
+    ) : new Map();
+    resumeState.selected = resume; $("#resume-dialog-title").textContent = resume.label || resume.id;
+    form.elements.label.value = resume.label || ""; form.elements.tags.value = (resume.tags || []).join(", ");
+    for (const [field, value] of drafts) form.elements[field].value = value;
+    $("#resume-assignment").textContent = assignmentText(resume); const status = proposalStatus(resume.id); $("#resume-proposal-status").textContent = status.text;
+    $("#resume-default").classList.toggle("hidden", resume.default || Boolean(resume.deletedAt)); $("#resume-trash-action").classList.toggle("hidden", Boolean(resume.deletedAt)); $("#resume-restore").classList.toggle("hidden", !resume.deletedAt); $("#resume-delete").classList.toggle("hidden", !resume.deletedAt);
+    $("#resume-content").classList.toggle("hidden", resume.storageKind !== "managed" || Boolean(resume.deletedAt)); $("#resume-replace").classList.toggle("hidden", resume.storageKind !== "managed" || Boolean(resume.deletedAt)); $("#resume-adopt").classList.toggle("hidden", resume.storageKind === "managed" || Boolean(resume.deletedAt));
+    const holder = $("#resume-proposals"); holder.replaceChildren();
+    for (const proposal of status.items) { const row = document.createElement("div"); row.className = "proposal-summary"; const text = document.createElement("span"); text.textContent = `${proposal.status} · ${proposal.pendingCount} pending`; row.append(text); if (proposal.status === "pending") { const button = document.createElement("button"); button.type = "button"; button.className = "button secondary"; button.textContent = "Review"; button.addEventListener("click", () => openProposal(proposal.id)); row.append(button); } holder.append(row); }
+  }
+
+  function openResume(id, opener) { const resume = resumeState.items.find((item) => item.id === id); if (!resume) return; resumeState.opener = opener; resumeState.dirtyMetadata.clear(); $("#resume-form").elements.file.value = ""; $("#resume-error").classList.add("hidden"); $("#resume-conflict").classList.add("hidden"); renderResumeDialog(resume); $("#resume-dialog").showModal(); setTimeout(() => $("#resume-form").elements.label.focus(), 0); }
+
+  async function uploadEnvelope(file, metadata) { return { metadata, filename: file.name, content: await fileToBase64(file) }; }
+
+  async function mutateResume(action, body = null) {
+    const resume = resumeState.selected;
+    try {
+      const options = { method: "POST", body: JSON.stringify(body || { expectedRevision: resume.revision }) };
+      await api(`/api/resumes/${encodeURIComponent(resume.id)}/${action}`, options); await refresh({ quiet: true }); await refreshResumes({ quiet: true }); $("#resume-dialog").close(); toast(`Resume ${action} completed`);
+    } catch (error) { if (error.status === 409) { $("#resume-conflict").classList.remove("hidden"); $("#resume-conflict").focus(); } else resumeError(error.message, true); }
+  }
+
+  async function mutateResumeFile(action) {
+    const file = $("#resume-form").elements.file.files[0];
+    if (!file) { resumeError(`Choose a file to ${action} first.`, true); return; }
+    try {
+      const envelope = await uploadEnvelope(file, { expectedRevision: resumeState.selected.revision });
+      await mutateResume(action, envelope);
+    } catch (error) { resumeError(error.message, true); }
+  }
+
+  async function openProposal(id) {
+    try {
+      const proposal = await api(`/api/resume-proposals/${encodeURIComponent(id)}`); resumeState.proposal = proposal;
+      const holder = $("#proposal-rows"); holder.replaceChildren();
+      for (const path of proposal.pendingPaths) {
+        const row = document.createElement("fieldset"); row.className = "proposal-row"; const legend = document.createElement("legend"); legend.textContent = path;
+        const current = document.createElement("pre"); current.textContent = `Current: ${JSON.stringify(proposal.currentValues[path]?.value)}`;
+        const extracted = document.createElement("pre"); extracted.textContent = `Extracted: ${JSON.stringify(pointerValue(proposal.candidate, path))}`;
+        const label = document.createElement("label"); label.append("Decision "); const select = document.createElement("select"); select.name = path; select.append(new Option("Decide later", ""), new Option("Use extracted", "use_extracted"), new Option("Keep current", "keep_current")); label.append(select);
+        row.append(legend, current, extracted, label);
+        const replacement = proposal.replacementScopes?.[path];
+        if (replacement) {
+          const warning = document.createElement("p"); warning.className = "conflict"; warning.textContent = `Using the extracted value will replace existing ${replacement.path}: ${JSON.stringify(replacement.value)}`;
+          const confirmation = document.createElement("label"); const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.dataset.replacementPath = path; checkbox.value = replacement.path; confirmation.append(checkbox, ` I confirm replacing ${replacement.path}`);
+          row.append(warning, confirmation);
+        }
+        holder.append(row);
+      }
+      $("#proposal-submit").disabled = Boolean(proposal.staleReasons?.length); $("#proposal-error").textContent = proposal.staleReasons?.length ? "This proposal is stale and cannot be reviewed. Create a fresh proposal through the CLI." : ""; $("#proposal-error").classList.toggle("hidden", !proposal.staleReasons?.length); $("#proposal-dialog").showModal();
+    } catch (error) { resumeError(error.message, true); }
   }
 
   function metrics() {
@@ -522,7 +658,19 @@ if (hasDom) {
   function firstListDestination() { return $(".job-card") || $("#new-job"); }
 
   form.addEventListener("submit", save); form.addEventListener("input", (event) => { if (state.selected && event.target.name) { state.dirty = true; state.dirtyFields.add(event.target.name); } });
-  $("#nav-jobs").addEventListener("click", () => showWorkspace("jobs")); $("#nav-facts").addEventListener("click", () => showWorkspace("facts"));
+  $("#nav-jobs").addEventListener("click", () => showWorkspace("jobs")); $("#nav-facts").addEventListener("click", () => showWorkspace("facts")); $("#nav-resumes").addEventListener("click", () => showWorkspace("resumes"));
+  $("#resumes-refresh").addEventListener("click", () => refreshResumes());
+  $("#resumes-active").addEventListener("click", async () => { resumeState.trash = false; await refreshResumes(); });
+  $("#resumes-trash").addEventListener("click", async () => { resumeState.trash = true; await refreshResumes(); });
+  $("#resume-import").addEventListener("submit", async (event) => { event.preventDefault(); const current = event.currentTarget; const file = current.elements.file.files[0]; if (!file) return; try { const envelope = await uploadEnvelope(file, { label: current.elements.label.value, tags: tagsFromInput(current.elements.tags.value) }); await api("/api/resumes/import", { method: "POST", body: JSON.stringify(envelope) }); current.reset(); await refresh({ quiet: true }); await refreshResumes({ quiet: true }); toast("Resume imported into managed storage"); } catch (error) { resumeError(error.message); } });
+  $("#resume-form").addEventListener("input", (event) => { if (event.target.name === "label" || event.target.name === "tags") resumeState.dirtyMetadata.add(event.target.name); });
+  $("#resume-form").addEventListener("submit", async (event) => { event.preventDefault(); const resume = resumeState.selected; const patch = {}; if (resumeState.dirtyMetadata.has("label")) patch.label = event.currentTarget.elements.label.value; if (resumeState.dirtyMetadata.has("tags")) patch.tags = tagsFromInput(event.currentTarget.elements.tags.value); if (!Object.keys(patch).length) { resumeError("Change a metadata field before saving.", true); return; } try { await api(`/api/resumes/${encodeURIComponent(resume.id)}`, { method: "PATCH", body: JSON.stringify({ patch, expectedRevision: resume.revision }) }); resumeState.dirtyMetadata.clear(); await refreshResumes({ quiet: true }); $("#resume-dialog").close(); toast("Resume metadata saved"); } catch (error) { if (error.status === 409) { $("#resume-conflict").classList.remove("hidden"); $("#resume-conflict").focus(); } else resumeError(error.message, true); } });
+  $("#resume-replace").addEventListener("click", () => mutateResumeFile("replace"));
+  $("#resume-adopt").addEventListener("click", () => mutateResumeFile("adopt"));
+  $("#resume-default").addEventListener("click", () => mutateResume("default")); $("#resume-trash-action").addEventListener("click", () => { if (confirm("Move this resume to Trash? Assigned/default resume guards still apply.")) mutateResume("trash"); }); $("#resume-restore").addEventListener("click", () => mutateResume("restore")); $("#resume-delete").addEventListener("click", () => { if (confirm("Permanently delete this trashed resume and its managed file? This cannot be undone.")) mutateResume("delete"); });
+  $("#resume-conflict-refresh").addEventListener("click", async () => { try { const latest = await api(`/api/resumes/${encodeURIComponent(resumeState.selected.id)}`); renderResumeDialog(latest, true); $("#resume-conflict").classList.add("hidden"); $("#resume-form").elements.label.focus(); toast("Canonical revision refreshed; your draft and file selection were preserved"); } catch (error) { resumeError(error.message, true); } });
+  $("#resume-content").addEventListener("click", async () => { const resume = resumeState.selected; try { const response = await fetch(`/api/resumes/${encodeURIComponent(resume.id)}/content`, { headers: { Authorization: `Bearer ${token}` } }); if (!response.ok) { let payload = null; try { payload = await response.json(); } catch {} throw new ApiError(response.status, payload); } if (resume.mediaType?.startsWith("text/plain")) { $("#resume-preview").textContent = await response.text(); $("#preview-dialog").showModal(); } else { const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.target = "_blank"; link.rel = "noopener"; if (resume.mediaType?.includes("wordprocessingml")) link.download = `resume-${resume.id}.docx`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 60_000); } } catch (error) { resumeError(error.message, true); } });
+  $("#proposal-form").addEventListener("submit", async (event) => { event.preventDefault(); const proposal = resumeState.proposal; const decisions = {}; const replacementConfirmations = {}; for (const select of event.currentTarget.querySelectorAll("select[name]")) if (select.value) decisions[select.name] = select.value; if (!Object.keys(decisions).length) { $("#proposal-error").textContent = "Select at least one decision."; $("#proposal-error").classList.remove("hidden"); return; } for (const [path, decision] of Object.entries(decisions)) { const replacement = proposal.replacementScopes?.[path]; if (decision === "use_extracted" && replacement) { const checkbox = event.currentTarget.querySelector(`[data-replacement-path="${CSS.escape(path)}"]`); if (!checkbox?.checked) { $("#proposal-error").textContent = `Confirm that accepting ${path} replaces ${replacement.path}.`; $("#proposal-error").classList.remove("hidden"); return; } replacementConfirmations[path] = replacement.path; } } try { await api(`/api/resume-proposals/${encodeURIComponent(proposal.id)}/review`, { method: "POST", body: JSON.stringify({ decisions, replacementConfirmations, expectedRevision: proposal.revision, expectedProfileRevision: proposal.liveProfileRevision }) }); $("#proposal-dialog").close(); await refreshProfile({ preserve: true }); await refreshResumes({ quiet: true }); if (resumeState.selected) { const latest = resumeState.items.find((item) => item.id === resumeState.selected.id); if (latest) renderResumeDialog(latest, true); } toast("Selected extraction decisions applied to Facts"); } catch (error) { $("#proposal-error").textContent = error.status === 409 ? "The proposal or profile changed. Nothing was retried; refresh and review the latest canonical values." : error.message; $("#proposal-error").classList.remove("hidden"); } });
   $("#facts-form").addEventListener("input", (event) => { const control = event.target.closest("[data-path]"); if (control) markFactDirty(control); });
   $("#add-work").addEventListener("click", () => addRepeaterItem("/workHistory")); $("#add-education").addEventListener("click", () => addRepeaterItem("/education"));
   $("#facts-save").addEventListener("click", saveFacts); $("#facts-refresh").addEventListener("click", () => refreshProfile());
@@ -545,7 +693,8 @@ if (hasDom) {
     state.focusAfterClose = null; state.opener = null; state.openerJobId = null;
     setTimeout(() => destination?.focus(), 0);
   });
+  $("#resume-dialog").addEventListener("close", () => { const destination = resumeState.opener?.isConnected ? resumeState.opener : $("#resumes-refresh"); resumeState.selected = null; resumeState.opener = null; setTimeout(() => destination?.focus(), 0); });
 
   if (!token) { setConnection(false, "Workspace token missing — restart with the printed URL"); $("#loading").innerHTML = "<p>Open the complete URL printed by the workspace launcher.</p>"; }
-  else { refresh({ quiet: true }); setInterval(() => refresh({ quiet: true }), 4000); }
+  else { refresh({ quiet: true }); setInterval(() => { refresh({ quiet: true }); if (resumeState.loaded) refreshResumes({ quiet: true }); }, 4000); }
 }

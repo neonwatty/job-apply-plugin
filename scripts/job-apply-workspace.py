@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
 import importlib.util
 import json
 import os
@@ -20,6 +22,10 @@ from urllib.parse import unquote, urlsplit
 
 LOOPBACK = "127.0.0.1"
 MAX_BODY_BYTES = 64 * 1024
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+# Base64 is 4/3 of the decoded body. The small allowance covers the JSON
+# envelope, metadata, and escaping without making ordinary routes unbounded.
+MAX_UPLOAD_BODY_BYTES = ((MAX_UPLOAD_BYTES + 2) // 3) * 4 + MAX_BODY_BYTES
 MAX_BULK_URLS = 50
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_ROOT = ROOT / "workspace"
@@ -48,6 +54,74 @@ def load_store_module() -> Any:
 
 
 STORE_MODULE = load_store_module()
+
+
+def public_resume(record: dict[str, Any]) -> dict[str, Any]:
+    """Project resume metadata without filesystem or document identity data."""
+
+    hidden = {"path", "managedFile", "originalFilename", "digest"}
+    return {key: value for key, value in record.items() if key not in hidden}
+
+
+def public_resumes(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [public_resume(record) for record in records]
+
+
+def resume_projection(
+    record: dict[str, Any], jobs: list[dict[str, Any]], proposals: list[dict[str, Any]]
+) -> dict[str, Any]:
+    result = public_resume(record)
+    result["assignedJobCount"] = sum(
+        item.get("deletedAt") is None and item.get("resumeId") == record["id"]
+        for item in jobs
+    )
+    result["implicitJobCount"] = sum(
+        record.get("default") and item.get("deletedAt") is None and item.get("resumeId") is None
+        for item in jobs
+    )
+    related = [item for item in proposals if item.get("resumeId") == record["id"]]
+    result["proposalStatus"] = next(
+        ("pending" for item in related if item.get("status") == "pending"),
+        "completed" if related else None,
+    )
+    result["pendingConflictCount"] = sum(
+        len(item.get("pendingPaths", [])) for item in related if item.get("status") == "pending"
+    )
+    return result
+
+
+def public_proposal_summary(record: dict[str, Any]) -> dict[str, Any]:
+    allowed = {
+        "id", "resumeId", "resumeRevision", "profileRevision",
+        "resultProfileRevision", "status",
+        "revision", "createdAt", "updatedAt", "supersededBy", "staleReasons",
+    }
+    summary = {key: value for key, value in record.items() if key in allowed}
+    summary["autoFilledCount"] = len(record.get("autoFilledPaths", []))
+    summary["pendingCount"] = len(record.get("pendingPaths", []))
+    return summary
+
+
+def public_proposal_detail(
+    record: dict[str, Any], inspection: dict[str, Any]
+) -> dict[str, Any]:
+    detail = public_proposal_summary(record)
+    detail["candidate"] = record.get("candidate", {})
+    detail["pendingPaths"] = record.get("pendingPaths", [])
+    detail["liveProfileRevision"] = inspection["revision"]
+    current: dict[str, Any] = {}
+    replacements: dict[str, Any] = {}
+    for pointer in record.get("pendingPaths", []):
+        exists, value = STORE_MODULE._pointer_lookup(inspection["profile"], pointer)
+        current[pointer] = {"exists": exists, "value": value if exists else None}
+        replacement = STORE_MODULE._replacement_scope(
+            STORE_MODULE._pointer_baseline(inspection["profile"], pointer)
+        )
+        if replacement is not None:
+            replacements[pointer] = replacement
+    detail["currentValues"] = current
+    detail["replacementScopes"] = replacements
+    return detail
 
 
 class WorkspaceServer(ThreadingHTTPServer):
@@ -137,7 +211,7 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
             return None
         return decoded
 
-    def _read_json(self) -> dict[str, Any] | None:
+    def _read_json(self, max_bytes: int = MAX_BODY_BYTES) -> dict[str, Any] | None:
         if self.headers.get("Content-Type") != "application/json":
             self._error(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, "Content-Type must be application/json")
             return None
@@ -149,7 +223,7 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         if length < 0:
             self._error(HTTPStatus.LENGTH_REQUIRED, "a valid Content-Length is required")
             return None
-        if length > MAX_BODY_BYTES:
+        if length > max_bytes:
             self._error(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "request body is too large")
             return None
         try:
@@ -162,6 +236,30 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
             return None
         return payload
 
+    def _read_upload(self) -> tuple[dict[str, Any], str, bytes] | None:
+        payload = self._read_json(MAX_UPLOAD_BODY_BYTES)
+        if payload is None:
+            return None
+        if set(payload) != {"metadata", "filename", "content"}:
+            self._error(HTTPStatus.BAD_REQUEST, "upload body requires metadata, filename, and content")
+            return None
+        metadata, filename, encoded = payload["metadata"], payload["filename"], payload["content"]
+        if not isinstance(metadata, dict) or not isinstance(filename, str) or not isinstance(encoded, str):
+            self._error(HTTPStatus.BAD_REQUEST, "upload envelope fields have invalid types")
+            return None
+        if len(encoded) > ((MAX_UPLOAD_BYTES + 2) // 3) * 4 or any(char.isspace() for char in encoded):
+            self._error(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "encoded resume content is too large")
+            return None
+        try:
+            content = base64.b64decode(encoded.encode("ascii"), validate=True)
+        except (UnicodeEncodeError, binascii.Error):
+            self._error(HTTPStatus.BAD_REQUEST, "resume content must be strict base64")
+            return None
+        if len(content) > MAX_UPLOAD_BYTES:
+            self._error(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "decoded resume content is too large")
+            return None
+        return metadata, filename, content
+
     def _store_call(self, callback: Callable[[], Any]) -> None:
         try:
             result = callback()
@@ -169,6 +267,10 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
             message = str(error)
             if "revision conflict" in message:
                 self._error(HTTPStatus.CONFLICT, message, "revision_conflict")
+            elif "stale" in message:
+                self._error(HTTPStatus.CONFLICT, message, "stale_conflict")
+            elif "baseline changed" in message:
+                self._error(HTTPStatus.CONFLICT, message, "baseline_conflict")
             elif "does not exist" in message:
                 self._error(HTTPStatus.NOT_FOUND, message, "not_found")
             else:
@@ -236,16 +338,36 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         if path == "/api/state":
             self._store_call(lambda: {
                 "jobs": self.server.store.list_jobs(),
-                "resumes": self.server.store.list_resumes(),
+                "resumes": public_resumes(self.server.store.list_resumes()),
             })
             return
         if path == "/api/jobs":
             self._store_call(lambda: {"jobs": self.server.store.list_jobs()})
             return
         if path == "/api/resumes":
-            self._store_call(lambda: {"resumes": self.server.store.list_resumes()})
+            self._store_call(lambda: {"resumes": self._resume_list(False)})
+            return
+        if path == "/api/resumes/trash":
+            self._store_call(lambda: {"resumes": self._resume_list(True)})
+            return
+        if path == "/api/resume-proposals":
+            self._store_call(lambda: {
+                "proposals": [
+                    public_proposal_summary(item)
+                    for item in self.server.store.list_resume_proposals()
+                ]
+            })
             return
         parts = path.split("/")
+        if len(parts) == 4 and parts[1:3] == ["api", "resumes"]:
+            self._store_call(lambda: self._resume_projection(parts[3]))
+            return
+        if len(parts) == 5 and parts[1:3] == ["api", "resumes"] and parts[4] == "content":
+            self._send_resume_content(parts[3])
+            return
+        if len(parts) == 4 and parts[1:3] == ["api", "resume-proposals"]:
+            self._store_call(lambda: self._proposal_detail(parts[3]))
+            return
         if len(parts) == 4 and parts[1:3] == ["api", "jobs"]:
             job_id = parts[3]
             self._store_call(lambda: self._require_job(job_id))
@@ -261,6 +383,55 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
             raise STORE_MODULE.StoreError("job does not exist")
         return job
 
+    def _require_resume(self, resume_id: str, include_trashed: bool = False) -> dict[str, Any]:
+        resume = self.server.store.get_resume(resume_id, include_trashed=include_trashed)
+        if resume is None:
+            raise STORE_MODULE.StoreError("resume does not exist")
+        return resume
+
+    def _resume_list(self, trashed: bool) -> list[dict[str, Any]]:
+        jobs = self.server.store.list_jobs(include_trashed=True)
+        proposals = self.server.store.list_resume_proposals()
+        records = self.server.store.list_resumes(include_trashed=trashed)
+        if trashed:
+            records = [item for item in records if item.get("deletedAt") is not None]
+        return [resume_projection(item, jobs, proposals) for item in records]
+
+    def _resume_projection(self, resume_id: str) -> dict[str, Any]:
+        record = self._require_resume(resume_id, True)
+        return resume_projection(
+            record,
+            self.server.store.list_jobs(include_trashed=True),
+            self.server.store.list_resume_proposals(resume_id=resume_id),
+        )
+
+    def _proposal_detail(self, proposal_id: str) -> dict[str, Any]:
+        proposal = self.server.store.get_resume_proposal(proposal_id)
+        if proposal is None:
+            raise STORE_MODULE.StoreError("resume proposal does not exist")
+        return public_proposal_detail(proposal, self.server.store.inspect_profile())
+
+    def _send_resume_content(self, resume_id: str) -> None:
+        try:
+            record, content = self.server.store.read_resume_content(resume_id)
+        except STORE_MODULE.StoreError as error:
+            message = str(error)
+            self._error(
+                HTTPStatus.NOT_FOUND if "does not exist" in message else HTTPStatus.CONFLICT,
+                message,
+                "not_found" if "does not exist" in message else "content_unavailable",
+            )
+            return
+        extension = {value: key for key, value in STORE_MODULE.RESUME_MEDIA_TYPES.items()}[record["mediaType"]]
+        disposition = "attachment" if extension == ".docx" else "inline"
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", record["mediaType"])
+        self.send_header("Content-Length", str(len(content)))
+        self.send_header("Content-Disposition", f'{disposition}; filename="resume-{resume_id}{extension}"')
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(content)
+
     def do_POST(self) -> None:
         self._mutate("POST")
 
@@ -271,8 +442,28 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         path = self._path()
         if path is None or not self._authorized_api(mutation=True):
             return
-        payload = self._read_json()
+        route_parts = path.split("/")
+        is_upload = method == "POST" and (
+            path == "/api/resumes/import"
+            or (
+                len(route_parts) == 5
+                and route_parts[1:3] == ["api", "resumes"]
+                and route_parts[4] in {"replace", "adopt"}
+            )
+        )
+        upload = self._read_upload() if is_upload else None
+        payload = None if is_upload else self._read_json()
+        if is_upload and upload is None:
+            return
         if payload is None:
+            if not is_upload:
+                return
+            metadata, filename, content = upload
+            payload = metadata
+        if method == "POST" and path == "/api/resumes/import":
+            self._store_call(lambda: public_resume(
+                self.server.store.create_resume_bytes(payload, filename, content)
+            ))
             return
         if method == "PATCH" and path == "/api/profile":
             allowed = {"patch", "expectedRevision", "atomicPaths", "deletedPaths"}
@@ -332,6 +523,71 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
             self._bulk_create(payload)
             return
         parts = path.split("/")
+        if len(parts) == 4 and parts[1:3] == ["api", "resumes"] and method == "PATCH":
+            if (
+                set(payload) != {"patch", "expectedRevision"}
+                or not isinstance(payload.get("patch"), dict)
+                or not payload["patch"]
+                or set(payload["patch"]) - {"label", "tags"}
+            ):
+                self._error(HTTPStatus.BAD_REQUEST, "body requires patch and expectedRevision")
+                return
+            expected_revision = self._expected_revision(payload)
+            if expected_revision is None:
+                return
+            self._store_call(lambda: public_resume(self.server.store.update_resume(
+                parts[3], payload["patch"], expected_revision
+            )))
+            return
+        if len(parts) == 5 and parts[1:3] == ["api", "resumes"]:
+            resume_id, action = parts[3], parts[4]
+            if action in {"replace", "adopt"} and method == "POST":
+                if set(payload) != {"expectedRevision"}:
+                    self._error(HTTPStatus.BAD_REQUEST, f"{action} metadata requires expectedRevision")
+                    return
+                expected_revision = self._expected_revision(payload)
+                if expected_revision is None:
+                    return
+                operation = (
+                    self.server.store.update_resume_bytes if action == "replace"
+                    else self.server.store.adopt_resume_bytes
+                )
+                self._store_call(lambda: public_resume(operation(
+                    resume_id, filename, content, expected_revision
+                )))
+                return
+            if action in {"default", "trash", "restore", "delete"} and method == "POST":
+                if set(payload) != {"expectedRevision"}:
+                    self._error(HTTPStatus.BAD_REQUEST, f"{action} body requires expectedRevision")
+                    return
+                expected_revision = self._expected_revision(payload)
+                if expected_revision is None:
+                    return
+                operations = {
+                    "default": self.server.store.set_default_resume,
+                    "trash": self.server.store.trash_resume,
+                    "restore": self.server.store.restore_resume,
+                    "delete": self.server.store.delete_resume,
+                }
+                self._store_call(lambda: public_resume(operations[action](resume_id, expected_revision)))
+                return
+        if len(parts) == 5 and parts[1:3] == ["api", "resume-proposals"] and parts[4] == "review" and method == "POST":
+            if set(payload) - {"decisions", "replacementConfirmations", "expectedRevision", "expectedProfileRevision"} or not {"decisions", "expectedRevision", "expectedProfileRevision"} <= set(payload) or not isinstance(payload.get("decisions"), dict) or not isinstance(payload.get("replacementConfirmations", {}), dict):
+                self._error(HTTPStatus.BAD_REQUEST, "review body is invalid")
+                return
+            expected_revision = self._expected_revision(payload)
+            profile_revision = payload.get("expectedProfileRevision")
+            if expected_revision is None:
+                return
+            if not isinstance(profile_revision, int) or isinstance(profile_revision, bool) or profile_revision < 1:
+                self._error(HTTPStatus.BAD_REQUEST, "expectedProfileRevision must be a positive integer")
+                return
+            self._store_call(lambda: public_proposal_summary(
+                self.server.store.review_resume_proposal(
+                    parts[3], {"decisions": payload["decisions"], "replacementConfirmations": payload.get("replacementConfirmations", {})}, expected_revision, profile_revision
+                )
+            ))
+            return
         if len(parts) == 4 and parts[1:3] == ["api", "jobs"] and method == "PATCH":
             if set(payload) != {"patch", "expectedRevision"} or not isinstance(payload.get("patch"), dict):
                 self._error(HTTPStatus.BAD_REQUEST, "body requires patch and expectedRevision")

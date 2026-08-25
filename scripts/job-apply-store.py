@@ -8,6 +8,7 @@ never include stored values. The helper uses only the Python standard library.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import hmac
 import json
@@ -19,6 +20,7 @@ import sys
 import tempfile
 import unicodedata
 import uuid
+import zipfile
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -100,6 +102,19 @@ LEGACY_SEARCH_MAX_FILES = 100
 LEGACY_SEARCH_MAX_FILE_BYTES = 2 * 1024 * 1024
 LEGACY_SEARCH_MAX_TOTAL_BYTES = 20 * 1024 * 1024
 LEGACY_SEARCH_MAX_ENTRIES = 5_000
+RESUME_MAX_BYTES = 10 * 1024 * 1024
+UPLOAD_RECOVERY_GRACE_SECONDS = 5 * 60
+RESUME_MEDIA_TYPES = {
+    ".pdf": "application/pdf",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".txt": "text/plain; charset=utf-8",
+}
+EXTRACTION_MAX_BYTES = 256 * 1024
+EXTRACTION_MAX_DEPTH = 12
+EXTRACTION_MAX_LEAVES = 512
+EXTRACTION_MAX_STRING = 32 * 1024
+EXTRACTION_STATUSES = {"pending", "completed", "superseded"}
+EXTRACTION_DECISIONS = {"use_extracted", "keep_current"}
 
 
 class StoreError(Exception):
@@ -287,6 +302,63 @@ def observe_resume_file(path: str) -> dict[str, Any]:
         timespec="seconds"
     ).replace("+00:00", "Z")
     return {"exists": True, "size": metadata.st_size, "modifiedAt": modified}
+
+
+def _resume_modified_at(metadata: os.stat_result) -> str:
+    return datetime.fromtimestamp(metadata.st_mtime, timezone.utc).isoformat(
+        timespec="seconds"
+    ).replace("+00:00", "Z")
+
+
+def _validate_resume_bytes(path: Path, extension: str) -> tuple[str, int, str]:
+    """Validate a private staged copy without disclosing its path or content."""
+
+    media_type = RESUME_MEDIA_TYPES.get(extension)
+    if media_type is None:
+        raise StoreError("resume format must be PDF, DOCX, or UTF-8 TXT")
+    try:
+        metadata = path.stat()
+        size = metadata.st_size
+        if size > RESUME_MAX_BYTES:
+            raise StoreError("resume file exceeds the 10 MiB limit")
+        if size == 0:
+            raise StoreError("resume file is empty")
+        if extension == ".pdf":
+            with path.open("rb") as source:
+                if source.read(5) != b"%PDF-":
+                    raise StoreError("resume content does not match its extension")
+        elif extension == ".docx":
+            try:
+                with zipfile.ZipFile(path) as archive:
+                    names = set(archive.namelist())
+                    if "[Content_Types].xml" not in names or "word/document.xml" not in names:
+                        raise StoreError("resume content does not match its extension")
+                    bad_member = next(
+                        (
+                            name
+                            for name in names
+                            if name.startswith("/")
+                            or ".." in Path(name.replace("\\", "/")).parts
+                        ),
+                        None,
+                    )
+                    if bad_member is not None:
+                        raise StoreError("resume content does not match its extension")
+            except (OSError, zipfile.BadZipFile):
+                raise StoreError("resume content does not match its extension") from None
+        else:
+            data = path.read_bytes()
+            if b"\0" in data:
+                raise StoreError("resume content does not match its extension")
+            try:
+                data.decode("utf-8")
+            except UnicodeDecodeError:
+                raise StoreError("resume content does not match its extension") from None
+    except StoreError:
+        raise
+    except OSError:
+        raise StoreError("resume file could not be validated") from None
+    return media_type, size, _resume_modified_at(metadata)
 
 
 def _safe_session_id(application_id: str) -> str:
@@ -524,6 +596,169 @@ def _json_pointer_value(document: Any, pointer: str) -> Any:
             return None
         current = current[key]
     return current
+
+
+_MISSING = object()
+
+
+def _decode_json_pointer(pointer: str) -> list[str]:
+    if not isinstance(pointer, str) or not pointer.startswith("/") or pointer == "/":
+        raise StoreError("proposal path is invalid")
+    segments = []
+    for encoded in pointer.split("/")[1:]:
+        if not encoded or re.search(r"~(?![01])", encoded):
+            raise StoreError("proposal path is invalid")
+        segments.append(encoded.replace("~1", "/").replace("~0", "~"))
+    return segments
+
+
+def _pointer_lookup(document: Any, pointer: str) -> tuple[bool, Any]:
+    current = document
+    for key in _decode_json_pointer(pointer):
+        if not isinstance(current, dict) or key not in current:
+            return False, None
+        current = current[key]
+    return True, current
+
+
+def _pointer_baseline(document: dict[str, Any], pointer: str) -> dict[str, Any]:
+    segments = _decode_json_pointer(pointer)
+    current: Any = document
+    ancestors: list[dict[str, Any]] = []
+    encoded = ""
+    for key in segments[:-1]:
+        encoded += f"/{_json_pointer_segment(key)}"
+        exists = isinstance(current, dict) and key in current
+        value = current[key] if exists else None
+        baseline = {"path": encoded, "exists": exists}
+        if exists and isinstance(value, dict):
+            baseline["container"] = True
+            baseline["empty"] = not value
+        elif exists:
+            baseline["value"] = value
+        ancestors.append(baseline)
+        current = value if exists else _MISSING
+    exists, value = _pointer_lookup(document, pointer)
+    result: dict[str, Any] = {"exists": exists, "ancestors": ancestors}
+    if exists:
+        result["value"] = value
+    return result
+
+
+def _json_values_equal(left: Any, right: Any) -> bool:
+    """Compare JSON values without Python's boolean/number equivalence."""
+
+    if isinstance(left, bool) or isinstance(right, bool):
+        return isinstance(left, bool) and isinstance(right, bool) and left == right
+    if left is None or right is None:
+        return left is right
+    if isinstance(left, dict) or isinstance(right, dict):
+        return (
+            isinstance(left, dict)
+            and isinstance(right, dict)
+            and left.keys() == right.keys()
+            and all(_json_values_equal(left[key], right[key]) for key in left)
+        )
+    if isinstance(left, list) or isinstance(right, list):
+        return (
+            isinstance(left, list)
+            and isinstance(right, list)
+            and len(left) == len(right)
+            and all(
+                _json_values_equal(left_item, right_item)
+                for left_item, right_item in zip(left, right)
+            )
+        )
+    if isinstance(left, (int, float)) or isinstance(right, (int, float)):
+        return (
+            isinstance(left, (int, float))
+            and isinstance(right, (int, float))
+            and left == right
+        )
+    return isinstance(left, str) and isinstance(right, str) and left == right
+
+
+def _replacement_scope(baseline: dict[str, Any]) -> dict[str, Any] | None:
+    """Return the existing non-object ancestor a child acceptance would replace."""
+
+    for ancestor in baseline["ancestors"]:
+        if ancestor["exists"] and ancestor.get("container") is not True:
+            return {"path": ancestor["path"], "value": ancestor.get("value")}
+    return None
+
+
+def _set_pointer_value(
+    document: dict[str, Any], pointer: str, value: Any, *, replace_ancestors: bool
+) -> None:
+    segments = _decode_json_pointer(pointer)
+    current = document
+    for key in segments[:-1]:
+        child = current.get(key, _MISSING)
+        if child is _MISSING or child is None:
+            child = {}
+            current[key] = child
+        elif not isinstance(child, dict):
+            if not replace_ancestors:
+                raise StoreError("proposal path conflicts with an existing fact")
+            child = {}
+            current[key] = child
+        current = child
+    current[segments[-1]] = value
+
+
+def _candidate_leaf_paths(value: Any, prefix: str = "", depth: int = 0) -> list[str]:
+    if depth > EXTRACTION_MAX_DEPTH:
+        raise StoreError("proposal candidate exceeds structural limits")
+    if isinstance(value, str) and len(value.encode("utf-8")) > EXTRACTION_MAX_STRING:
+        raise StoreError("proposal candidate exceeds structural limits")
+    if value is None:
+        raise StoreError("proposal candidate values must not be null")
+    if isinstance(value, dict) and value:
+        paths: list[str] = []
+        for key, child in value.items():
+            if not isinstance(key, str) or not key:
+                raise StoreError("proposal candidate keys must be non-empty strings")
+            paths.extend(
+                _candidate_leaf_paths(
+                    child, f"{prefix}/{_json_pointer_segment(key)}", depth + 1
+                )
+            )
+        return paths
+    return [prefix]
+
+
+def _validated_candidate(value: Any) -> tuple[dict[str, Any], list[str]]:
+    candidate = _require_object(value, "proposal candidate")
+    if not candidate:
+        raise StoreError("proposal candidate must not be empty")
+    try:
+        encoded = json.dumps(
+            candidate,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+    except (TypeError, ValueError):
+        raise StoreError("proposal candidate must contain JSON values") from None
+    if len(encoded) > EXTRACTION_MAX_BYTES:
+        raise StoreError("proposal candidate exceeds structural limits")
+    paths = _candidate_leaf_paths(candidate)
+    if len(paths) > EXTRACTION_MAX_LEAVES:
+        raise StoreError("proposal candidate exceeds structural limits")
+    return candidate, sorted(paths)
+
+
+def _user_protects_path(provenance: dict[str, Any], path: str) -> bool:
+    return any(
+        record.get("source") == "user"
+        and (
+            path == protected
+            or path.startswith(f"{protected}/")
+            or protected.startswith(f"{path}/")
+        )
+        for protected, record in provenance.items()
+    )
 
 
 def _fact_leaf_paths(value: Any, prefix: str) -> list[str]:
@@ -832,6 +1067,11 @@ def _validate_resume_record(key: str, value: Any) -> dict[str, Any]:
         "id",
         "label",
         "path",
+        "storageKind",
+        "managedFile",
+        "originalFilename",
+        "mediaType",
+        "digest",
         "tags",
         "default",
         "observedSize",
@@ -848,8 +1088,40 @@ def _validate_resume_record(key: str, value: Any) -> dict[str, Any]:
     _safe_session_id(key)
     if not isinstance(record.get("label"), str) or not record["label"].strip():
         raise StoreError("resume label must be a non-empty string")
-    if record.get("path") != normalize_resume_path(record.get("path", "")):
-        raise StoreError("resume path is not normalized")
+    storage_kind = record.get("storageKind")
+    if storage_kind is None:
+        if record.get("path") != normalize_resume_path(record.get("path", "")):
+            raise StoreError("resume path is not normalized")
+        if any(
+            field in record
+            for field in ("managedFile", "originalFilename", "mediaType", "digest")
+        ):
+            raise StoreError("legacy resume record contains managed storage fields")
+    elif storage_kind == "managed":
+        if "path" in record:
+            raise StoreError("managed resume record must not contain a source path")
+        managed_file = record.get("managedFile")
+        expected_names = {f"{key}{extension}" for extension in RESUME_MEDIA_TYPES}
+        if not isinstance(managed_file, str) or managed_file not in expected_names:
+            raise StoreError("managed resume file identity is invalid")
+        original_filename = record.get("originalFilename")
+        if (
+            not isinstance(original_filename, str)
+            or not original_filename
+            or Path(original_filename).name != original_filename
+            or "\0" in original_filename
+        ):
+            raise StoreError("managed resume original filename is invalid")
+        extension = Path(managed_file).suffix.lower()
+        if record.get("mediaType") != RESUME_MEDIA_TYPES[extension]:
+            raise StoreError("managed resume media type is invalid")
+        digest = record.get("digest")
+        if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+            raise StoreError("managed resume digest is invalid")
+        if record.get("observedSize") is None or not record.get("observedModifiedAt"):
+            raise StoreError("managed resume observation is incomplete")
+    else:
+        raise StoreError("resume storage kind is unsupported")
     tags = record.get("tags", [])
     if not isinstance(tags, list) or not all(
         isinstance(item, str) and item.strip() for item in tags
@@ -886,6 +1158,141 @@ def _validate_resume_record(key: str, value: Any) -> dict[str, Any]:
     return record
 
 
+def _validate_extraction_proposal(key: str, value: Any) -> dict[str, Any]:
+    record = _require_object(value, "resume proposal")
+    allowed = {
+        "id",
+        "resumeId",
+        "resumeRevision",
+        "resumeDigest",
+        "profileRevision",
+        "resultProfileRevision",
+        "candidate",
+        "baselines",
+        "autoFilledPaths",
+        "pendingPaths",
+        "decisions",
+        "status",
+        "revision",
+        "createdAt",
+        "updatedAt",
+        "supersededBy",
+    }
+    if set(record) - allowed or record.get("id") != key:
+        raise StoreError("resume proposal record is invalid")
+    _safe_session_id(key)
+    _safe_session_id(record.get("resumeId", ""))
+    for field in ("resumeRevision", "profileRevision", "resultProfileRevision", "revision"):
+        number = record.get(field)
+        if not isinstance(number, int) or isinstance(number, bool) or number < 1:
+            raise StoreError("resume proposal revision is invalid")
+    digest = record.get("resumeDigest")
+    if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+        raise StoreError("resume proposal binding is invalid")
+    candidate, candidate_paths = _validated_candidate(record.get("candidate"))
+    baselines = _require_object(record.get("baselines"), "resume proposal baselines")
+    auto_paths = record.get("autoFilledPaths")
+    pending_paths = record.get("pendingPaths")
+    if not isinstance(auto_paths, list) or not isinstance(pending_paths, list):
+        raise StoreError("resume proposal paths are invalid")
+    if (
+        not all(isinstance(path, str) for path in auto_paths + pending_paths)
+        or len(set(auto_paths + pending_paths)) != len(auto_paths + pending_paths)
+        or not set(auto_paths + pending_paths) <= set(candidate_paths)
+        or set(baselines) != set(candidate_paths)
+    ):
+        raise StoreError("resume proposal paths are invalid")
+    for path, baseline in baselines.items():
+        segments = _decode_json_pointer(path)
+        item = _require_object(baseline, "resume proposal baseline")
+        allowed_baseline = {"exists", "ancestors", "value"}
+        if set(item) - allowed_baseline or not isinstance(
+            item.get("exists"), bool
+        ) or not isinstance(item.get("ancestors"), list):
+            raise StoreError("resume proposal baseline is invalid")
+        if item["exists"] != ("value" in item):
+            raise StoreError("resume proposal baseline is invalid")
+        if len(item["ancestors"]) != len(segments) - 1:
+            raise StoreError("resume proposal baseline is invalid")
+        expected_ancestor = ""
+        for index, ancestor in enumerate(item["ancestors"]):
+            expected_ancestor += f"/{_json_pointer_segment(segments[index])}"
+            ancestor_item = _require_object(
+                ancestor, "resume proposal ancestor baseline"
+            )
+            if (
+                set(ancestor_item) - {"path", "exists", "container", "empty", "value"}
+                or ancestor_item.get("path") != expected_ancestor
+                or not isinstance(ancestor_item.get("exists"), bool)
+            ):
+                raise StoreError("resume proposal baseline is invalid")
+            payload_fields = {
+                field for field in ("container", "value") if field in ancestor_item
+            }
+            if not ancestor_item["exists"] and payload_fields:
+                raise StoreError("resume proposal baseline is invalid")
+            if ancestor_item["exists"] and payload_fields not in (
+                {"container"},
+                {"value"},
+            ):
+                raise StoreError("resume proposal baseline is invalid")
+            if "container" in ancestor_item and ancestor_item["container"] is not True:
+                raise StoreError("resume proposal baseline is invalid")
+            if "container" in ancestor_item:
+                if not isinstance(ancestor_item.get("empty"), bool):
+                    raise StoreError("resume proposal baseline is invalid")
+            elif "empty" in ancestor_item:
+                raise StoreError("resume proposal baseline is invalid")
+    decisions = _require_object(record.get("decisions"), "resume proposal decisions")
+    for path, decision in decisions.items():
+        _decode_json_pointer(path)
+        item = _require_object(decision, "resume proposal decision")
+        if set(item) != {"decision", "decidedAt"} or item.get("decision") not in EXTRACTION_DECISIONS:
+            raise StoreError("resume proposal decision is invalid")
+        if not isinstance(item.get("decidedAt"), str) or not item["decidedAt"]:
+            raise StoreError("resume proposal decision is invalid")
+    if (
+        set(decisions) & set(pending_paths)
+        or set(decisions) | set(pending_paths) != set(candidate_paths) - set(auto_paths)
+    ):
+        raise StoreError("resume proposal decision paths are invalid")
+    status = record.get("status")
+    if status not in EXTRACTION_STATUSES:
+        raise StoreError("resume proposal status is invalid")
+    if status == "pending" and not pending_paths:
+        raise StoreError("pending resume proposal has no pending paths")
+    if status == "completed" and pending_paths:
+        raise StoreError("completed resume proposal has pending paths")
+    superseded_by = record.get("supersededBy")
+    if status == "superseded":
+        _safe_session_id(superseded_by or "")
+    elif superseded_by is not None:
+        raise StoreError("resume proposal supersession is invalid")
+    for field in ("createdAt", "updatedAt"):
+        if not isinstance(record.get(field), str) or not record[field]:
+            raise StoreError("resume proposal timestamp is invalid")
+    return record
+
+
+def _validate_extractions_document(document: dict[str, Any]) -> dict[str, Any]:
+    validate_version(document, "resume proposals")
+    if set(document) != {"schemaVersion", "proposals", "metadata"}:
+        raise StoreError("resume proposal store contains unsupported fields")
+    proposals = _require_object(document.get("proposals"), "resume proposals")
+    _require_object(document.get("metadata"), "resume proposal metadata")
+    for key, record in proposals.items():
+        if not isinstance(key, str):
+            raise StoreError("resume proposal index is invalid")
+        _validate_extraction_proposal(key, record)
+    pending_by_resume: set[str] = set()
+    for record in proposals.values():
+        if record["status"] == "pending":
+            if record["resumeId"] in pending_by_resume:
+                raise StoreError("resume proposal store has multiple pending proposals")
+            pending_by_resume.add(record["resumeId"])
+    return document
+
+
 def _read_input(path: str) -> dict[str, Any]:
     try:
         if path == "-":
@@ -905,6 +1312,9 @@ class Store:
         self.answers_path = self.root / "answers.json"
         self.jobs_path = self.root / "jobs.json"
         self.resumes_path = self.root / "resumes.json"
+        self.resume_files_path = self.root / "resume-files"
+        self.resume_extractions_path = self.root / "resume-extractions.json"
+        self.resume_extraction_journal_path = self.root / "resume-extraction-journal.json"
         self.history_path = self.root / "applications.jsonl"
         self.sessions_path = self.root / "sessions"
         self.coordinator_path = self.root / "coordinator.json"
@@ -952,6 +1362,10 @@ class Store:
 
         _ensure_private_dir(self.root)
         _ensure_private_dir(self.sessions_path)
+        _ensure_private_dir(self.resume_files_path)
+        if any(self.resume_files_path.iterdir()):
+            with exclusive_file_lock(self.store_lock_path):
+                self._recover_resume_files_locked()
         migrated = False
 
         if not self.profile_path.exists():
@@ -1026,6 +1440,10 @@ class Store:
                 self._roll_forward_locked()
                 self.read_history()
 
+        if self.resume_extraction_journal_path.exists():
+            with exclusive_file_lock(self.store_lock_path):
+                self._roll_forward_extraction_locked()
+
         return {"initialized": True, "migratedLegacyProfile": migrated, **self.paths()}
 
     def _validate_existing_documents(self) -> None:
@@ -1039,6 +1457,10 @@ class Store:
             self._load_jobs_document()
         if self.resumes_path.exists():
             self._load_resumes_document()
+        if self.resume_extractions_path.exists():
+            self._load_extractions_document()
+        if self.resume_extraction_journal_path.exists():
+            self._load_extraction_journal()
         coordinator_exists = (
             self.coordinator_path.exists() or self.coordinator_journal_path.exists()
         )
@@ -1186,6 +1608,404 @@ class Store:
         if active_defaults > 1:
             raise StoreError("resume store has more than one active default")
         return document
+
+    def _load_extractions_document(self) -> dict[str, Any]:
+        return _validate_extractions_document(
+            read_json_object(self.resume_extractions_path, "resume proposals")
+        )
+
+    def _load_extraction_journal(self) -> dict[str, Any]:
+        document = read_json_object(
+            self.resume_extraction_journal_path, "resume proposal journal"
+        )
+        validate_version(document, "resume proposal journal")
+        if set(document) != {"schemaVersion", "operation"}:
+            raise StoreError("resume proposal journal contains unsupported fields")
+        operation = document["operation"]
+        if operation is not None:
+            item = _require_object(operation, "resume proposal journal operation")
+            if set(item) != {
+                "kind",
+                "operationId",
+                "profileDocument",
+                "proposalsDocument",
+            } or item.get("kind") not in {"create", "review"}:
+                raise StoreError("resume proposal journal operation is invalid")
+            _safe_session_id(item.get("operationId", ""))
+            profile = _require_object(item.get("profileDocument"), "journal profile")
+            proposals = _require_object(
+                item.get("proposalsDocument"), "journal proposals"
+            )
+            self._validate_profile_document_value(profile)
+            _validate_extractions_document(proposals)
+        return document
+
+    @staticmethod
+    def _validate_profile_document_value(document: dict[str, Any]) -> None:
+        validate_version(document, "profile")
+        profile = _require_object(document.get("profile"), "profile.profile")
+        metadata = _require_object(document.get("metadata"), "profile.metadata")
+        if set(document) != {"schemaVersion", "profile", "metadata"}:
+            raise StoreError("profile contains unsupported fields")
+        revision = metadata.get("revision", 1)
+        if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
+            raise StoreError("profile revision must be a positive integer")
+        provenance = _require_object(
+            metadata.get("factProvenance", {}), "profile fact provenance"
+        )
+        for path, value in provenance.items():
+            if not isinstance(path, str) or not path.startswith("/"):
+                raise StoreError("profile fact provenance path is invalid")
+            record = _require_object(value, "profile fact provenance record")
+            if set(record) != {"source", "updatedAt"}:
+                raise StoreError("profile fact provenance record is invalid")
+            if record.get("source") not in FACT_SOURCES:
+                raise StoreError("profile fact provenance source is unsupported")
+            if not isinstance(record.get("updatedAt"), str) or not record["updatedAt"]:
+                raise StoreError("profile fact provenance timestamp is invalid")
+        _ = profile
+
+    def _ensure_extraction_files_locked(self) -> None:
+        if not self.resume_extractions_path.exists():
+            now = utc_now()
+            atomic_write_json(
+                self.resume_extractions_path,
+                {
+                    "schemaVersion": SCHEMA_VERSION,
+                    "proposals": {},
+                    "metadata": {"createdAt": now, "updatedAt": now},
+                },
+            )
+        if not self.resume_extraction_journal_path.exists():
+            atomic_write_json(
+                self.resume_extraction_journal_path,
+                {"schemaVersion": SCHEMA_VERSION, "operation": None},
+            )
+
+    def _roll_forward_extraction_locked(self) -> None:
+        journal = self._load_extraction_journal()
+        operation = journal["operation"]
+        if operation is None:
+            return
+        atomic_write_json(self.profile_path, operation["profileDocument"])
+        atomic_write_json(self.resume_extractions_path, operation["proposalsDocument"])
+        atomic_write_json(
+            self.resume_extraction_journal_path,
+            {"schemaVersion": SCHEMA_VERSION, "operation": None},
+        )
+
+    def _commit_extraction_operation_locked(
+        self,
+        kind: str,
+        profile_document: dict[str, Any],
+        proposals_document: dict[str, Any],
+    ) -> None:
+        operation = {
+            "kind": kind,
+            "operationId": f"extraction-{uuid.uuid4()}",
+            "profileDocument": profile_document,
+            "proposalsDocument": proposals_document,
+        }
+        atomic_write_json(
+            self.resume_extraction_journal_path,
+            {"schemaVersion": SCHEMA_VERSION, "operation": operation},
+        )
+        self._roll_forward_extraction_locked()
+
+    def _managed_resume_path(self, record: dict[str, Any]) -> Path:
+        if record.get("storageKind") != "managed":
+            raise StoreError("resume is not managed")
+        candidate = self.resume_files_path / record["managedFile"]
+        try:
+            if candidate.parent.resolve(strict=False) != self.resume_files_path.resolve(strict=False):
+                raise StoreError("managed resume file identity is invalid")
+        except OSError:
+            raise StoreError("managed resume file identity is invalid") from None
+        return candidate
+
+    def _resume_path(self, record: dict[str, Any]) -> Path:
+        if record.get("storageKind") == "managed":
+            return self._managed_resume_path(record)
+        return Path(record["path"])
+
+    def _resume_for_acquisition(self, record: dict[str, Any]) -> dict[str, Any]:
+        resolved = dict(record)
+        resolved["path"] = str(self._resume_path(record))
+        return resolved
+
+    @staticmethod
+    def _private_file_digest(path: Path) -> str | None:
+        flags = os.O_RDONLY | getattr(os, "O_BINARY", 0)
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        descriptor: int | None = None
+        try:
+            if path.is_symlink():
+                return None
+            descriptor = os.open(path, flags)
+            metadata = os.fstat(descriptor)
+            if not stat.S_ISREG(metadata.st_mode) or metadata.st_size > RESUME_MAX_BYTES:
+                return None
+            digest = hashlib.sha256()
+            while True:
+                chunk = os.read(descriptor, 1024 * 1024)
+                if not chunk:
+                    break
+                digest.update(chunk)
+            return digest.hexdigest()
+        except OSError:
+            return None
+        finally:
+            if descriptor is not None:
+                os.close(descriptor)
+
+    def _managed_resume_observation(self, record: dict[str, Any]) -> dict[str, Any]:
+        path = self._managed_resume_path(record)
+        digest = self._private_file_digest(path)
+        if digest is None:
+            return {"exists": False, "size": None, "modifiedAt": None, "digest": None}
+        observation = observe_resume_file(str(path))
+        observation["digest"] = digest
+        return observation
+
+    def _recover_resume_files_locked(self) -> None:
+        """Recover interrupted swaps and collect private staging artifacts."""
+
+        if not self.resumes_path.exists():
+            records: list[dict[str, Any]] = []
+        else:
+            records = list(self._load_resumes_document()["resumes"].values())
+        referenced = {
+            record["managedFile"]: record
+            for record in records
+            if record.get("storageKind") == "managed"
+        }
+        for temporary in self.resume_files_path.glob(".*.tmp"):
+            try:
+                temporary.unlink()
+            except OSError:
+                pass
+        recovery_cutoff = datetime.now(timezone.utc).timestamp() - UPLOAD_RECOVERY_GRACE_SECONDS
+        for temporary in self.resume_files_path.glob(".browser-upload.*"):
+            try:
+                if temporary.stat().st_mtime <= recovery_cutoff:
+                    temporary.unlink()
+            except OSError:
+                pass
+        for managed_file, record in referenced.items():
+            canonical = self.resume_files_path / managed_file
+            expected_digest = record["digest"]
+            quarantines = sorted(
+                self.resume_files_path.glob(f".{managed_file}.*.quarantine")
+            )
+            if self._private_file_digest(canonical) != expected_digest:
+                recoverable = next(
+                    (
+                        candidate
+                        for candidate in quarantines
+                        if self._private_file_digest(candidate) == expected_digest
+                    ),
+                    None,
+                )
+                if recoverable is not None:
+                    try:
+                        canonical.unlink()
+                    except FileNotFoundError:
+                        pass
+                    os.replace(recoverable, canonical)
+                    _set_private_mode(canonical, 0o600)
+            if self._private_file_digest(canonical) == expected_digest:
+                for quarantine in quarantines:
+                    try:
+                        quarantine.unlink()
+                    except OSError:
+                        pass
+        for quarantine in self.resume_files_path.glob(".*.quarantine"):
+            try:
+                quarantine.unlink()
+            except OSError:
+                pass
+        for candidate in self.resume_files_path.iterdir():
+            if candidate.name.startswith(".") or candidate.name in referenced:
+                continue
+            if candidate.suffix.lower() in RESUME_MEDIA_TYPES:
+                try:
+                    candidate.unlink()
+                except OSError:
+                    pass
+        _fsync_directory(self.resume_files_path)
+
+    def _stage_resume_import(self, source_value: Any, resume_id: str) -> dict[str, Any]:
+        source = Path(normalize_resume_path(source_value))
+        extension = source.suffix.lower()
+        if extension not in RESUME_MEDIA_TYPES:
+            raise StoreError("resume format must be PDF, DOCX, or UTF-8 TXT")
+        _ensure_private_dir(self.resume_files_path)
+        flags = os.O_RDONLY | getattr(os, "O_BINARY", 0)
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        staged_path: Path | None = None
+        descriptor: int | None = None
+        try:
+            try:
+                if source.is_symlink():
+                    raise StoreError("resume source must be a readable regular file")
+            except OSError:
+                raise StoreError("resume source must be a readable regular file") from None
+            try:
+                descriptor = os.open(source, flags)
+            except OSError:
+                raise StoreError("resume source must be a readable regular file") from None
+            before = os.fstat(descriptor)
+            if not stat.S_ISREG(before.st_mode):
+                raise StoreError("resume source must be a readable regular file")
+            if before.st_size > RESUME_MAX_BYTES:
+                raise StoreError("resume file exceeds the 10 MiB limit")
+            digest = hashlib.sha256()
+            with tempfile.NamedTemporaryFile(
+                mode="wb",
+                dir=self.resume_files_path,
+                prefix=f".{resume_id}.",
+                suffix=".tmp",
+                delete=False,
+            ) as staged:
+                staged_path = Path(staged.name)
+                total = 0
+                while True:
+                    chunk = os.read(descriptor, min(1024 * 1024, RESUME_MAX_BYTES + 1 - total))
+                    if not chunk:
+                        break
+                    total += len(chunk)
+                    if total > RESUME_MAX_BYTES:
+                        raise StoreError("resume file exceeds the 10 MiB limit")
+                    staged.write(chunk)
+                    digest.update(chunk)
+                staged.flush()
+                os.fsync(staged.fileno())
+            after = os.fstat(descriptor)
+            if (
+                before.st_dev,
+                before.st_ino,
+                before.st_size,
+                before.st_mtime_ns,
+            ) != (
+                after.st_dev,
+                after.st_ino,
+                after.st_size,
+                after.st_mtime_ns,
+            ):
+                raise StoreError("resume source changed during import")
+            _set_private_mode(staged_path, 0o600)
+            media_type, size, modified_at = _validate_resume_bytes(staged_path, extension)
+            result = {
+                "path": staged_path,
+                "managedFile": f"{resume_id}{extension}",
+                "originalFilename": source.name,
+                "mediaType": media_type,
+                "digest": digest.hexdigest(),
+                "observedSize": size,
+                "observedModifiedAt": modified_at,
+            }
+            staged_path = None
+            return result
+        finally:
+            if descriptor is not None:
+                os.close(descriptor)
+            if staged_path is not None and staged_path.exists():
+                try:
+                    staged_path.unlink()
+                except OSError:
+                    pass
+
+    @contextmanager
+    def _temporary_resume_source(self, original_filename: Any, content: bytes):
+        """Materialize bounded browser bytes privately for canonical path ingestion."""
+
+        if (
+            not isinstance(original_filename, str)
+            or not original_filename
+            or Path(original_filename).name != original_filename
+            or "\0" in original_filename
+        ):
+            raise StoreError("resume filename is invalid")
+        extension = Path(original_filename).suffix.lower()
+        if extension not in RESUME_MEDIA_TYPES:
+            raise StoreError("resume format must be PDF, DOCX, or UTF-8 TXT")
+        if not isinstance(content, bytes):
+            raise StoreError("resume content is invalid")
+        if len(content) > RESUME_MAX_BYTES:
+            raise StoreError("resume file exceeds the 10 MiB limit")
+        _ensure_private_dir(self.resume_files_path)
+        temporary_path: Path | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="wb",
+                dir=self.resume_files_path,
+                prefix=".browser-upload.",
+                suffix=extension,
+                delete=False,
+            ) as staged:
+                temporary_path = Path(staged.name)
+                staged.write(content)
+                staged.flush()
+                os.fsync(staged.fileno())
+            _set_private_mode(temporary_path, 0o600)
+            yield temporary_path
+        finally:
+            if temporary_path is not None:
+                try:
+                    temporary_path.unlink()
+                except OSError:
+                    # A successful canonical commit must stay successful. The
+                    # private orphan is collected after the recovery grace.
+                    pass
+
+    @contextmanager
+    def _staged_resume(self, source_value: Any, resume_id: str):
+        staged = self._stage_resume_import(source_value, resume_id)
+        try:
+            yield staged
+        finally:
+            try:
+                staged["path"].unlink()
+            except FileNotFoundError:
+                pass
+
+    def _install_staged_resume(
+        self,
+        staged: dict[str, Any],
+        destination: Path,
+        write_metadata,
+        previous: Path | None = None,
+    ) -> None:
+        quarantine: Path | None = None
+        installed = False
+        try:
+            if previous is not None and previous.exists():
+                quarantine = self.resume_files_path / f".{previous.name}.{uuid.uuid4().hex}.quarantine"
+                os.replace(previous, quarantine)
+            os.replace(staged["path"], destination)
+            installed = True
+            _set_private_mode(destination, 0o600)
+            _fsync_directory(self.resume_files_path)
+            write_metadata()
+        except Exception:
+            if installed:
+                try:
+                    destination.unlink()
+                except FileNotFoundError:
+                    pass
+            if quarantine is not None and quarantine.exists():
+                os.replace(quarantine, previous)
+            _fsync_directory(self.resume_files_path)
+            raise
+        else:
+            if quarantine is not None:
+                try:
+                    quarantine.unlink()
+                except OSError:
+                    pass
+            _fsync_directory(self.resume_files_path)
 
     def get_profile(self) -> dict[str, Any]:
         self.initialize()
@@ -1827,14 +2647,25 @@ class Store:
         if resume is None or resume.get("deletedAt") is not None:
             errors.append("resume_missing")
         else:
-            observation = observe_resume_file(resume["path"])
+            observation = (
+                self._managed_resume_observation(resume)
+                if resume.get("storageKind") == "managed"
+                else observe_resume_file(str(self._resume_path(resume)))
+            )
             if not observation["exists"]:
                 errors.append("resume_file_missing")
             elif (
                 observation["size"] != resume.get("observedSize")
                 or observation["modifiedAt"] != resume.get("observedModifiedAt")
+                or (
+                    resume.get("storageKind") == "managed"
+                    and observation.get("digest") != resume.get("digest")
+                )
             ):
-                warnings.append("resume_file_changed")
+                if resume.get("storageKind") == "managed":
+                    errors.append("resume_file_changed")
+                else:
+                    warnings.append("resume_file_changed")
         if not record.get("role"):
             warnings.append("role_missing")
         if not record.get("company"):
@@ -2981,7 +3812,9 @@ class Store:
             self._commit_coordinator_operation_locked(operation)
             return {
                 "job": self._load_jobs_document()["jobs"][job_id],
-                "resume": self._load_resumes_document()["resumes"][preflight["resumeId"]],
+                "resume": self._resume_for_acquisition(
+                    self._load_resumes_document()["resumes"][preflight["resumeId"]]
+                ),
                 "claim": self._public_claim(claim),
                 "token": token,
             }
@@ -3102,58 +3935,172 @@ class Store:
         resume_id = incoming.get("id") or f"resume-{uuid.uuid4()}"
         _safe_session_id(resume_id)
         label = incoming.get("label")
-        path = normalize_resume_path(incoming.get("path", ""))
         tags_input = incoming.get("tags", [])
         if not isinstance(tags_input, list):
             raise StoreError("resume tags must be a list")
         tags = [
             item.strip() if isinstance(item, str) else item for item in tags_input
         ]
-        observation = observe_resume_file(path)
         now = utc_now()
         with exclusive_file_lock(self.store_lock_path):
-            document = self._load_resumes_document()
-            if resume_id in document["resumes"]:
-                raise StoreError("resume id already exists")
-            if any(
-                item.get("deletedAt") is None and item.get("path") == path
-                for item in document["resumes"].values()
-            ):
-                raise StoreError("active resume path already exists")
-            active = [
-                item
-                for item in document["resumes"].values()
-                if item.get("deletedAt") is None
-            ]
-            make_default = incoming.get("default", not active)
-            if not isinstance(make_default, bool):
-                raise StoreError("resume default must be a boolean")
-            if make_default:
-                for key, item in list(document["resumes"].items()):
-                    if item.get("deletedAt") is None and item.get("default"):
-                        changed = dict(item)
-                        changed["default"] = False
-                        changed["revision"] += 1
-                        changed["updatedAt"] = now
-                        document["resumes"][key] = changed
-            record = {
-                "id": resume_id,
-                "label": label.strip() if isinstance(label, str) else label,
-                "path": path,
-                "tags": tags,
-                "default": make_default,
-                "observedSize": observation["size"],
-                "observedModifiedAt": observation["modifiedAt"],
-                "revision": 1,
-                "createdAt": now,
-                "updatedAt": now,
-                "deletedAt": None,
-            }
-            _validate_resume_record(resume_id, record)
-            document["resumes"][resume_id] = record
-            document["metadata"]["updatedAt"] = now
-            atomic_write_json(self.resumes_path, document)
+            with self._staged_resume(incoming.get("path", ""), resume_id) as staged:
+                document = self._load_resumes_document()
+                if resume_id in document["resumes"]:
+                    raise StoreError("resume id already exists")
+                if any(
+                    item.get("storageKind") == "managed"
+                    and item.get("digest") == staged["digest"]
+                    for item in document["resumes"].values()
+                ):
+                    raise StoreError("resume file is already managed")
+                active = [
+                    item
+                    for item in document["resumes"].values()
+                    if item.get("deletedAt") is None
+                ]
+                make_default = incoming.get("default", not active)
+                if not isinstance(make_default, bool):
+                    raise StoreError("resume default must be a boolean")
+                if make_default:
+                    for key, item in list(document["resumes"].items()):
+                        if item.get("deletedAt") is None and item.get("default"):
+                            changed = dict(item)
+                            changed["default"] = False
+                            changed["revision"] += 1
+                            changed["updatedAt"] = now
+                            document["resumes"][key] = changed
+                record = {
+                    "id": resume_id,
+                    "label": label.strip() if isinstance(label, str) else label,
+                    "storageKind": "managed",
+                    "managedFile": staged["managedFile"],
+                    "originalFilename": staged["originalFilename"],
+                    "mediaType": staged["mediaType"],
+                    "digest": staged["digest"],
+                    "tags": tags,
+                    "default": make_default,
+                    "observedSize": staged["observedSize"],
+                    "observedModifiedAt": staged["observedModifiedAt"],
+                    "revision": 1,
+                    "createdAt": now,
+                    "updatedAt": now,
+                    "deletedAt": None,
+                }
+                _validate_resume_record(resume_id, record)
+                document["resumes"][resume_id] = record
+                document["metadata"]["updatedAt"] = now
+                destination = self.resume_files_path / staged["managedFile"]
+                self._install_staged_resume(
+                    staged,
+                    destination,
+                    lambda: atomic_write_json(self.resumes_path, document),
+                )
         return record
+
+    def import_resume(self, incoming: dict[str, Any]) -> dict[str, Any]:
+        return self.create_resume(incoming)
+
+    def create_resume_bytes(
+        self, incoming: dict[str, Any], original_filename: str, content: bytes
+    ) -> dict[str, Any]:
+        with self._temporary_resume_source(original_filename, content) as source:
+            return self.create_resume({**incoming, "path": str(source)})
+
+    def update_resume_bytes(
+        self,
+        resume_id: str,
+        original_filename: str,
+        content: bytes,
+        expected_revision: int,
+    ) -> dict[str, Any]:
+        with self._temporary_resume_source(original_filename, content) as source:
+            return self.update_resume(
+                resume_id, {"path": str(source)}, expected_revision
+            )
+
+    def adopt_resume_bytes(
+        self,
+        resume_id: str,
+        original_filename: str,
+        content: bytes,
+        expected_revision: int,
+    ) -> dict[str, Any]:
+        with self._temporary_resume_source(original_filename, content) as source:
+            return self.adopt_resume(resume_id, str(source), expected_revision)
+
+    def read_resume_content(self, resume_id: str) -> tuple[dict[str, Any], bytes]:
+        record = self.get_resume(resume_id)
+        if record is None or record.get("storageKind") != "managed":
+            raise StoreError("managed resume does not exist")
+        path = self._managed_resume_path(record)
+        flags = os.O_RDONLY | getattr(os, "O_BINARY", 0)
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        descriptor: int | None = None
+        try:
+            if path.is_symlink():
+                raise OSError
+            descriptor = os.open(path, flags)
+            metadata = os.fstat(descriptor)
+            if not stat.S_ISREG(metadata.st_mode) or not 0 < metadata.st_size <= RESUME_MAX_BYTES:
+                raise OSError
+            chunks: list[bytes] = []
+            digest = hashlib.sha256()
+            total = 0
+            while True:
+                chunk = os.read(descriptor, min(1024 * 1024, RESUME_MAX_BYTES + 1 - total))
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > RESUME_MAX_BYTES:
+                    raise OSError
+                digest.update(chunk)
+                chunks.append(chunk)
+            if total != metadata.st_size or digest.hexdigest() != record["digest"]:
+                raise OSError
+        except OSError:
+            raise StoreError("managed resume content is unavailable") from None
+        finally:
+            if descriptor is not None:
+                os.close(descriptor)
+        content = b"".join(chunks)
+        return record, content
+
+    def resolve_resume(self, resume_id: str | None = None) -> dict[str, Any]:
+        """Resolve one active managed resume for trusted local file upload."""
+
+        self.initialize()
+        records = self._load_resumes_document()["resumes"]
+        if resume_id is None:
+            record = next(
+                (
+                    item
+                    for item in records.values()
+                    if item.get("deletedAt") is None and item.get("default")
+                ),
+                None,
+            )
+        else:
+            _safe_session_id(resume_id)
+            record = records.get(resume_id)
+            if record is not None and record.get("deletedAt") is not None:
+                record = None
+        if record is None:
+            raise StoreError("active resume does not exist")
+        if record.get("storageKind") != "managed":
+            raise StoreError("resume must be adopted before use")
+        observation = self._managed_resume_observation(record)
+        if (
+            not observation["exists"]
+            or observation.get("digest") != record["digest"]
+        ):
+            raise StoreError("managed resume content is unavailable")
+        return {
+            "id": record["id"],
+            "revision": record["revision"],
+            "mediaType": record["mediaType"],
+            "path": str(self._managed_resume_path(record)),
+        }
 
     def get_resume(
         self, resume_id: str, include_trashed: bool = False
@@ -3196,7 +4143,7 @@ class Store:
                 raise StoreError("resume does not exist")
             if current["revision"] != expected_revision:
                 raise StoreError("resume revision conflict")
-            updated = {**current, **patch}
+            updated = {**current, **{key: value for key, value in patch.items() if key != "path"}}
             if "label" in patch and isinstance(patch["label"], str):
                 updated["label"] = patch["label"].strip()
             if "tags" in patch:
@@ -3207,24 +4154,95 @@ class Store:
                     for item in patch["tags"]
                 ]
             if "path" in patch:
-                path = normalize_resume_path(patch["path"])
+                if current.get("storageKind") != "managed":
+                    raise StoreError("legacy resume bytes require resume-adopt")
+                with self._staged_resume(patch["path"], resume_id) as staged:
+                    if any(
+                        key != resume_id
+                        and item.get("storageKind") == "managed"
+                        and item.get("digest") == staged["digest"]
+                        for key, item in document["resumes"].items()
+                    ):
+                        raise StoreError("resume file is already managed")
+                    updated.update(
+                        {
+                            "managedFile": staged["managedFile"],
+                            "originalFilename": staged["originalFilename"],
+                            "mediaType": staged["mediaType"],
+                            "digest": staged["digest"],
+                            "observedSize": staged["observedSize"],
+                            "observedModifiedAt": staged["observedModifiedAt"],
+                        }
+                    )
+                    updated["revision"] = current["revision"] + 1
+                    updated["updatedAt"] = utc_now()
+                    _validate_resume_record(resume_id, updated)
+                    document["resumes"][resume_id] = updated
+                    document["metadata"]["updatedAt"] = updated["updatedAt"]
+                    old_path = self._managed_resume_path(current)
+                    destination = self.resume_files_path / staged["managedFile"]
+                    self._install_staged_resume(
+                        staged,
+                        destination,
+                        lambda: atomic_write_json(self.resumes_path, document),
+                        previous=old_path,
+                    )
+            else:
+                updated["revision"] = current["revision"] + 1
+                updated["updatedAt"] = utc_now()
+                _validate_resume_record(resume_id, updated)
+                document["resumes"][resume_id] = updated
+                document["metadata"]["updatedAt"] = updated["updatedAt"]
+                atomic_write_json(self.resumes_path, document)
+        return updated
+
+    def adopt_resume(
+        self, resume_id: str, source_path: str | None, expected_revision: int
+    ) -> dict[str, Any]:
+        self.initialize()
+        _safe_session_id(resume_id)
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_resumes_document()
+            current = document["resumes"].get(resume_id)
+            if current is None or current.get("deletedAt") is not None:
+                raise StoreError("resume does not exist")
+            if current["revision"] != expected_revision:
+                raise StoreError("resume revision conflict")
+            if current.get("storageKind") == "managed":
+                raise StoreError("resume is already managed")
+            staged = self._stage_resume_import(source_path or current["path"], resume_id)
+            try:
                 if any(
                     key != resume_id
-                    and item.get("deletedAt") is None
-                    and item.get("path") == path
+                    and item.get("storageKind") == "managed"
+                    and item.get("digest") == staged["digest"]
                     for key, item in document["resumes"].items()
                 ):
-                    raise StoreError("active resume path already exists")
-                observation = observe_resume_file(path)
-                updated["path"] = path
-                updated["observedSize"] = observation["size"]
-                updated["observedModifiedAt"] = observation["modifiedAt"]
-            updated["revision"] = current["revision"] + 1
-            updated["updatedAt"] = utc_now()
-            _validate_resume_record(resume_id, updated)
-            document["resumes"][resume_id] = updated
-            document["metadata"]["updatedAt"] = updated["updatedAt"]
-            atomic_write_json(self.resumes_path, document)
+                    raise StoreError("resume file is already managed")
+                updated = {key: value for key, value in current.items() if key != "path"}
+                updated.update(
+                    {
+                        "storageKind": "managed",
+                        "managedFile": staged["managedFile"],
+                        "originalFilename": staged["originalFilename"],
+                        "mediaType": staged["mediaType"],
+                        "digest": staged["digest"],
+                        "observedSize": staged["observedSize"],
+                        "observedModifiedAt": staged["observedModifiedAt"],
+                        "revision": current["revision"] + 1,
+                        "updatedAt": utc_now(),
+                    }
+                )
+                _validate_resume_record(resume_id, updated)
+                document["resumes"][resume_id] = updated
+                document["metadata"]["updatedAt"] = updated["updatedAt"]
+                self._install_staged_resume(
+                    staged,
+                    self.resume_files_path / staged["managedFile"],
+                    lambda: atomic_write_json(self.resumes_path, document),
+                )
+            finally:
+                staged["path"].unlink(missing_ok=True)
         return updated
 
     def set_default_resume(
@@ -3259,10 +4277,18 @@ class Store:
         record = self.get_resume(resume_id, include_trashed=True)
         if record is None:
             raise StoreError("resume does not exist")
-        current = observe_resume_file(record["path"])
+        current = (
+            self._managed_resume_observation(record)
+            if record.get("storageKind") == "managed"
+            else observe_resume_file(str(self._resume_path(record)))
+        )
         changed = (
             current["size"] != record.get("observedSize")
             or current["modifiedAt"] != record.get("observedModifiedAt")
+            or (
+                record.get("storageKind") == "managed"
+                and current.get("digest") != record.get("digest")
+            )
         )
         return {
             "id": resume_id,
@@ -3272,6 +4298,7 @@ class Store:
             "observedModifiedAt": record.get("observedModifiedAt"),
             "currentSize": current["size"],
             "currentModifiedAt": current["modifiedAt"],
+            "storageKind": record.get("storageKind", "external"),
         }
 
     def trash_resume(self, resume_id: str, expected_revision: int) -> dict[str, Any]:
@@ -3299,21 +4326,44 @@ class Store:
                 if any(
                     key != resume_id
                     and item.get("deletedAt") is None
-                    and item.get("path") == current["path"]
+                    and (
+                        (
+                            current.get("storageKind") == "managed"
+                            and item.get("storageKind") == "managed"
+                            and item.get("digest") == current.get("digest")
+                        )
+                        or (
+                            current.get("storageKind") is None
+                            and item.get("storageKind") is None
+                            and item.get("path") == current.get("path")
+                        )
+                    )
                     for key, item in document["resumes"].items()
                 ):
-                    raise StoreError("active resume path already exists")
+                    raise StoreError("active resume file already exists")
             else:
-                jobs = self._load_jobs_document()["jobs"].values()
+                jobs = list(self._load_jobs_document()["jobs"].values())
                 if any(
                     item.get("deletedAt") is None
                     and item.get("resumeId") == resume_id
                     for item in jobs
                 ):
                     raise StoreError("resume is assigned to an active job")
+                if current.get("default") and any(
+                    item.get("deletedAt") is None and item.get("resumeId") is None
+                    for item in jobs
+                ):
+                    raise StoreError("default resume is used by an active job")
             updated = dict(current)
             updated["deletedAt"] = None if restore else utc_now()
             if not restore:
+                updated["default"] = False
+            elif not any(
+                key != resume_id and item.get("deletedAt") is None
+                for key, item in document["resumes"].items()
+            ):
+                updated["default"] = True
+            else:
                 updated["default"] = False
             updated["revision"] = current["revision"] + 1
             updated["updatedAt"] = utc_now()
@@ -3340,10 +4390,335 @@ class Store:
                 for item in self._load_jobs_document()["jobs"].values()
             ):
                 raise StoreError("resume is still referenced by a job")
+            managed_path = (
+                self._managed_resume_path(current)
+                if current.get("storageKind") == "managed"
+                else None
+            )
+            quarantine: Path | None = None
+            if managed_path is not None and managed_path.exists():
+                quarantine = self.resume_files_path / f".{managed_path.name}.{uuid.uuid4().hex}.quarantine"
+                os.replace(managed_path, quarantine)
             del document["resumes"][resume_id]
             document["metadata"]["updatedAt"] = utc_now()
-            atomic_write_json(self.resumes_path, document)
+            try:
+                atomic_write_json(self.resumes_path, document)
+            except Exception:
+                if quarantine is not None and quarantine.exists():
+                    os.replace(quarantine, managed_path)
+                    _fsync_directory(self.resume_files_path)
+                raise
+            if quarantine is not None:
+                try:
+                    quarantine.unlink()
+                except OSError:
+                    pass
+                _fsync_directory(self.resume_files_path)
         return {"deleted": True, "id": resume_id}
+
+    def _proposal_stale_reasons(self, proposal: dict[str, Any]) -> list[str]:
+        resume = self._load_resumes_document()["resumes"].get(proposal["resumeId"])
+        if resume is None:
+            return ["resume_deleted"]
+        reasons: list[str] = []
+        if resume.get("deletedAt") is not None:
+            reasons.append("resume_trashed")
+        if resume.get("storageKind") != "managed":
+            reasons.append("resume_not_managed")
+            return reasons
+        if resume["revision"] != proposal["resumeRevision"]:
+            reasons.append("resume_revision_changed")
+        if resume["digest"] != proposal["resumeDigest"]:
+            reasons.append("resume_digest_changed")
+        observation = self._managed_resume_observation(resume)
+        if not observation["exists"]:
+            reasons.append("resume_file_missing")
+        elif observation.get("digest") != proposal["resumeDigest"]:
+            reasons.append("resume_file_changed")
+        return reasons
+
+    def _proposal_result(self, proposal: dict[str, Any]) -> dict[str, Any]:
+        result = dict(proposal)
+        reasons = self._proposal_stale_reasons(proposal)
+        result["stale"] = bool(reasons)
+        result["staleReasons"] = reasons
+        return result
+
+    def create_resume_proposal(
+        self,
+        resume_id: str,
+        candidate_input: dict[str, Any],
+        expected_resume_revision: int,
+        expected_profile_revision: int,
+        supersedes: str | None = None,
+    ) -> dict[str, Any]:
+        self.initialize()
+        _safe_session_id(resume_id)
+        candidate, candidate_paths = _validated_candidate(candidate_input)
+        with exclusive_file_lock(self.store_lock_path):
+            self._ensure_extraction_files_locked()
+            self._roll_forward_extraction_locked()
+            resumes = self._load_resumes_document()["resumes"]
+            resume = resumes.get(resume_id)
+            if resume is None or resume.get("deletedAt") is not None:
+                raise StoreError("resume does not exist")
+            if resume.get("storageKind") != "managed":
+                raise StoreError("resume must be adopted before extraction")
+            if resume["revision"] != expected_resume_revision:
+                raise StoreError("resume revision conflict")
+            observation = self._managed_resume_observation(resume)
+            if (
+                not observation["exists"]
+                or observation.get("digest") != resume["digest"]
+            ):
+                raise StoreError("resume file is not ready for extraction")
+            profile_document = self._load_profile_document()
+            profile_revision = profile_document["metadata"].get("revision", 1)
+            if profile_revision != expected_profile_revision:
+                raise StoreError("profile revision conflict")
+            proposals_document = self._load_extractions_document()
+            pending = next(
+                (
+                    proposal
+                    for proposal in proposals_document["proposals"].values()
+                    if proposal["resumeId"] == resume_id
+                    and proposal["status"] == "pending"
+                ),
+                None,
+            )
+            if pending is not None:
+                if supersedes != pending["id"]:
+                    raise StoreError("pending proposal requires explicit supersession")
+            elif supersedes is not None:
+                raise StoreError("proposal to supersede does not exist")
+
+            now = utc_now()
+            proposal_id = f"proposal-{uuid.uuid4()}"
+            profile = copy.deepcopy(profile_document["profile"])
+            provenance = dict(profile_document["metadata"].get("factProvenance", {}))
+            baselines = {
+                path: _pointer_baseline(profile_document["profile"], path)
+                for path in candidate_paths
+            }
+            auto_filled: list[str] = []
+            pending_paths: list[str] = []
+            for path in candidate_paths:
+                baseline = baselines[path]
+                ancestors_allow_fill = all(
+                    not ancestor["exists"]
+                    or (
+                        ancestor.get("container") is True
+                        and ancestor.get("empty") is False
+                    )
+                    or ("value" in ancestor and ancestor["value"] is None)
+                    for ancestor in baseline["ancestors"]
+                )
+                empty = not baseline["exists"] or baseline.get("value") is None
+                if empty and ancestors_allow_fill and not _user_protects_path(provenance, path):
+                    _exists, extracted = _pointer_lookup(candidate, path)
+                    _set_pointer_value(profile, path, extracted, replace_ancestors=False)
+                    auto_filled.append(path)
+                else:
+                    pending_paths.append(path)
+            result_profile_revision = profile_revision
+            if auto_filled:
+                metadata = dict(profile_document["metadata"])
+                metadata["revision"] = profile_revision + 1
+                metadata["updatedAt"] = now
+                metadata["factProvenance"] = _stamp_fact_provenance(
+                    provenance,
+                    auto_filled,
+                    "resume",
+                    now,
+                    profile_document["profile"],
+                )
+                profile_document = {
+                    "schemaVersion": SCHEMA_VERSION,
+                    "profile": profile,
+                    "metadata": metadata,
+                }
+                result_profile_revision = metadata["revision"]
+            if pending is not None:
+                replaced = dict(pending)
+                replaced.update(
+                    {
+                        "status": "superseded",
+                        "supersededBy": proposal_id,
+                        "revision": pending["revision"] + 1,
+                        "updatedAt": now,
+                    }
+                )
+                _validate_extraction_proposal(pending["id"], replaced)
+                proposals_document["proposals"][pending["id"]] = replaced
+            proposal = {
+                "id": proposal_id,
+                "resumeId": resume_id,
+                "resumeRevision": resume["revision"],
+                "resumeDigest": resume["digest"],
+                "profileRevision": profile_revision,
+                "resultProfileRevision": result_profile_revision,
+                "candidate": candidate,
+                "baselines": baselines,
+                "autoFilledPaths": auto_filled,
+                "pendingPaths": pending_paths,
+                "decisions": {},
+                "status": "pending" if pending_paths else "completed",
+                "revision": 1,
+                "createdAt": now,
+                "updatedAt": now,
+                "supersededBy": None,
+            }
+            _validate_extraction_proposal(proposal_id, proposal)
+            proposals_document["proposals"][proposal_id] = proposal
+            proposals_document["metadata"]["updatedAt"] = now
+            _validate_extractions_document(proposals_document)
+            self._commit_extraction_operation_locked(
+                "create", profile_document, proposals_document
+            )
+            return self._proposal_result(proposal)
+
+    def get_resume_proposal(self, proposal_id: str) -> dict[str, Any] | None:
+        self.initialize()
+        _safe_session_id(proposal_id)
+        if not self.resume_extractions_path.exists():
+            return None
+        proposal = self._load_extractions_document()["proposals"].get(proposal_id)
+        return self._proposal_result(proposal) if proposal is not None else None
+
+    def list_resume_proposals(
+        self, resume_id: str | None = None, status: str | None = None
+    ) -> list[dict[str, Any]]:
+        self.initialize()
+        if resume_id is not None:
+            _safe_session_id(resume_id)
+        if status is not None and status not in EXTRACTION_STATUSES:
+            raise StoreError("resume proposal status is unsupported")
+        if not self.resume_extractions_path.exists():
+            return []
+        records = [
+            self._proposal_result(proposal)
+            for proposal in self._load_extractions_document()["proposals"].values()
+            if (resume_id is None or proposal["resumeId"] == resume_id)
+            and (status is None or proposal["status"] == status)
+        ]
+        return sorted(records, key=lambda item: (item["createdAt"], item["id"]))
+
+    def review_resume_proposal(
+        self,
+        proposal_id: str,
+        decisions_input: dict[str, Any],
+        expected_revision: int,
+        expected_profile_revision: int,
+    ) -> dict[str, Any]:
+        self.initialize()
+        _safe_session_id(proposal_id)
+        decisions_object = _require_object(
+            decisions_input.get("decisions"), "proposal decisions"
+        )
+        confirmations = _require_object(
+            decisions_input.get("replacementConfirmations", {}),
+            "proposal replacement confirmations",
+        )
+        if set(decisions_input) - {"decisions", "replacementConfirmations"} or not decisions_object:
+            raise StoreError("proposal review must contain decisions")
+        if any(
+            not isinstance(path, str) or decision not in EXTRACTION_DECISIONS
+            for path, decision in decisions_object.items()
+        ):
+            raise StoreError("proposal review decision is unsupported")
+        with exclusive_file_lock(self.store_lock_path):
+            self._ensure_extraction_files_locked()
+            self._roll_forward_extraction_locked()
+            proposals_document = self._load_extractions_document()
+            current = proposals_document["proposals"].get(proposal_id)
+            if current is None:
+                raise StoreError("resume proposal does not exist")
+            if current["revision"] != expected_revision:
+                raise StoreError("resume proposal revision conflict")
+            if current["status"] != "pending":
+                raise StoreError("resume proposal is not pending")
+            if self._proposal_stale_reasons(current):
+                raise StoreError("resume proposal is stale")
+            if not set(decisions_object) <= set(current["pendingPaths"]):
+                raise StoreError("proposal review path is not pending")
+            profile_document = self._load_profile_document()
+            profile_revision = profile_document["metadata"].get("revision", 1)
+            if profile_revision != expected_profile_revision:
+                raise StoreError("profile revision conflict")
+            for path in decisions_object:
+                if not _json_values_equal(
+                    _pointer_baseline(profile_document["profile"], path),
+                    current["baselines"][path],
+                ):
+                    raise StoreError("proposal review baseline changed")
+            required_confirmations = {}
+            for path, decision in decisions_object.items():
+                if decision != "use_extracted":
+                    continue
+                replacement = _replacement_scope(current["baselines"][path])
+                if replacement is not None:
+                    required_confirmations[path] = replacement["path"]
+            if confirmations != required_confirmations:
+                raise StoreError("proposal review replacement confirmation is required")
+            now = utc_now()
+            profile = copy.deepcopy(profile_document["profile"])
+            accepted: list[str] = []
+            for path, decision in decisions_object.items():
+                if decision == "use_extracted":
+                    _exists, extracted = _pointer_lookup(current["candidate"], path)
+                    _set_pointer_value(profile, path, extracted, replace_ancestors=True)
+                    accepted.append(path)
+            result_profile_revision = profile_revision
+            if accepted:
+                metadata = dict(profile_document["metadata"])
+                metadata["revision"] = profile_revision + 1
+                metadata["updatedAt"] = now
+                metadata["factProvenance"] = _stamp_fact_provenance(
+                    dict(metadata.get("factProvenance", {})),
+                    accepted,
+                    "user",
+                    now,
+                    profile_document["profile"],
+                )
+                profile_document = {
+                    "schemaVersion": SCHEMA_VERSION,
+                    "profile": profile,
+                    "metadata": metadata,
+                }
+                result_profile_revision = metadata["revision"]
+            remaining = [
+                path for path in current["pendingPaths"] if path not in decisions_object
+            ]
+            baselines = dict(current["baselines"])
+            for path in remaining:
+                baselines[path] = _pointer_baseline(profile, path)
+            decisions = dict(current["decisions"])
+            decisions.update(
+                {
+                    path: {"decision": decision, "decidedAt": now}
+                    for path, decision in decisions_object.items()
+                }
+            )
+            updated = dict(current)
+            updated.update(
+                {
+                    "pendingPaths": remaining,
+                    "baselines": baselines,
+                    "decisions": decisions,
+                    "status": "pending" if remaining else "completed",
+                    "resultProfileRevision": result_profile_revision,
+                    "revision": current["revision"] + 1,
+                    "updatedAt": now,
+                }
+            )
+            _validate_extraction_proposal(proposal_id, updated)
+            proposals_document["proposals"][proposal_id] = updated
+            proposals_document["metadata"]["updatedAt"] = now
+            _validate_extractions_document(proposals_document)
+            self._commit_extraction_operation_locked(
+                "review", profile_document, proposals_document
+            )
+            return self._proposal_result(updated)
 
     def read_history(self) -> list[dict[str, Any]]:
         if not self.history_path.exists():
@@ -3785,15 +5160,23 @@ def build_parser() -> argparse.ArgumentParser:
 
     resume_create = commands.add_parser("resume-create")
     resume_create.add_argument("--input", required=True)
+    resume_import = commands.add_parser("resume-import")
+    resume_import.add_argument("--input", required=True)
     resume_get = commands.add_parser("resume-get")
     resume_get.add_argument("--id", required=True)
     resume_get.add_argument("--include-trashed", action="store_true")
+    resume_resolve = commands.add_parser("resume-resolve")
+    resume_resolve.add_argument("--id")
     resume_list = commands.add_parser("resume-list")
     resume_list.add_argument("--include-trashed", action="store_true")
     resume_update = commands.add_parser("resume-update")
     resume_update.add_argument("--id", required=True)
     resume_update.add_argument("--input", required=True)
     resume_update.add_argument("--expected-revision", required=True, type=int)
+    resume_adopt = commands.add_parser("resume-adopt")
+    resume_adopt.add_argument("--id", required=True)
+    resume_adopt.add_argument("--expected-revision", required=True, type=int)
+    resume_adopt.add_argument("--path")
     resume_default = commands.add_parser("resume-set-default")
     resume_default.add_argument("--id", required=True)
     resume_default.add_argument("--expected-revision", required=True, type=int)
@@ -3808,6 +5191,22 @@ def build_parser() -> argparse.ArgumentParser:
     resume_delete = commands.add_parser("resume-delete")
     resume_delete.add_argument("--id", required=True)
     resume_delete.add_argument("--expected-revision", required=True, type=int)
+    proposal_create = commands.add_parser("resume-proposal-create")
+    proposal_create.add_argument("--resume-id", required=True)
+    proposal_create.add_argument("--expected-resume-revision", required=True, type=int)
+    proposal_create.add_argument("--expected-profile-revision", required=True, type=int)
+    proposal_create.add_argument("--supersedes")
+    proposal_create.add_argument("--input", required=True)
+    proposal_get = commands.add_parser("resume-proposal-get")
+    proposal_get.add_argument("--id", required=True)
+    proposal_list = commands.add_parser("resume-proposal-list")
+    proposal_list.add_argument("--resume-id")
+    proposal_list.add_argument("--status")
+    proposal_review = commands.add_parser("resume-proposal-review")
+    proposal_review.add_argument("--id", required=True)
+    proposal_review.add_argument("--expected-revision", required=True, type=int)
+    proposal_review.add_argument("--expected-profile-revision", required=True, type=int)
+    proposal_review.add_argument("--input", required=True)
 
     history_append = commands.add_parser("history-append")
     history_append.add_argument("--input", required=True)
@@ -3945,14 +5344,20 @@ def run(args: argparse.Namespace) -> Any:
         return store.delete_job(args.id, args.expected_revision)
     if command == "resume-create":
         return store.create_resume(_read_input(args.input))
+    if command == "resume-import":
+        return store.import_resume(_read_input(args.input))
     if command == "resume-get":
         return store.get_resume(args.id, include_trashed=args.include_trashed)
+    if command == "resume-resolve":
+        return store.resolve_resume(args.id)
     if command == "resume-list":
         return store.list_resumes(include_trashed=args.include_trashed)
     if command == "resume-update":
         return store.update_resume(
             args.id, _read_input(args.input), args.expected_revision
         )
+    if command == "resume-adopt":
+        return store.adopt_resume(args.id, args.path, args.expected_revision)
     if command == "resume-set-default":
         return store.set_default_resume(args.id, args.expected_revision)
     if command == "resume-check":
@@ -3963,6 +5368,25 @@ def run(args: argparse.Namespace) -> Any:
         return store.restore_resume(args.id, args.expected_revision)
     if command == "resume-delete":
         return store.delete_resume(args.id, args.expected_revision)
+    if command == "resume-proposal-create":
+        return store.create_resume_proposal(
+            args.resume_id,
+            _read_input(args.input),
+            args.expected_resume_revision,
+            args.expected_profile_revision,
+            args.supersedes,
+        )
+    if command == "resume-proposal-get":
+        return store.get_resume_proposal(args.id)
+    if command == "resume-proposal-list":
+        return store.list_resume_proposals(args.resume_id, args.status)
+    if command == "resume-proposal-review":
+        return store.review_resume_proposal(
+            args.id,
+            _read_input(args.input),
+            args.expected_revision,
+            args.expected_profile_revision,
+        )
     if command == "history-append":
         return store.append_history(_read_input(args.input))
     if command == "history-list":

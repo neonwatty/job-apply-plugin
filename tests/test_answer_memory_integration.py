@@ -237,7 +237,7 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
             "user",
         )
         resume_path = self.home / "assigned-resume.pdf"
-        resume_path.write_bytes(b"synthetic resume")
+        resume_path.write_bytes(b"%PDF-1.7\nsynthetic resume")
         resume = self.write_input("resume.json", {
             "id": "assigned-resume", "label": "Assigned", "path": str(resume_path)
         })
@@ -287,6 +287,66 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
         self.assertNotIn(acquired["token"], serialized)
         self.assertNotIn("synthetic resume", serialized)
 
+    def test_resume_proposal_cli_autofills_and_reviews_conflicts(self):
+        self.json_store("init")
+        profile_input = self.write_input("proposal-profile.json", {"firstName": "Human"})
+        profile = self.json_store(
+            "profile-replace",
+            "--input",
+            str(profile_input),
+            "--expected-revision",
+            "1",
+            "--source",
+            "user",
+        )
+        resume_path = self.home / "proposal-resume.txt"
+        resume_path.write_text("synthetic proposal resume", encoding="utf-8")
+        resume_input = self.write_input(
+            "proposal-resume.json",
+            {"id": "proposal-cli", "label": "Proposal CLI", "path": str(resume_path)},
+        )
+        resume = self.json_store("resume-import", "--input", str(resume_input))
+        candidate_input = self.write_input(
+            "proposal-candidate.json",
+            {"firstName": "Extracted", "email": "synthetic@example.invalid"},
+        )
+        proposal = self.json_store(
+            "resume-proposal-create",
+            "--resume-id",
+            resume["id"],
+            "--expected-resume-revision",
+            str(resume["revision"]),
+            "--expected-profile-revision",
+            str(profile["revision"]),
+            "--input",
+            str(candidate_input),
+        )
+        self.assertEqual(proposal["autoFilledPaths"], ["/email"])
+        self.assertEqual(proposal["pendingPaths"], ["/firstName"])
+        self.assertEqual(
+            self.json_store("resume-proposal-get", "--id", proposal["id"])["id"],
+            proposal["id"],
+        )
+        self.assertEqual(len(self.json_store("resume-proposal-list")), 1)
+        review_input = self.write_input(
+            "proposal-review.json", {"decisions": {"/firstName": "use_extracted"}}
+        )
+        reviewed = self.json_store(
+            "resume-proposal-review",
+            "--id",
+            proposal["id"],
+            "--expected-revision",
+            str(proposal["revision"]),
+            "--expected-profile-revision",
+            str(proposal["resultProfileRevision"]),
+            "--input",
+            str(review_input),
+        )
+        self.assertEqual(reviewed["status"], "completed")
+        final_profile = self.json_store("profile-inspect")
+        self.assertEqual(final_profile["profile"]["firstName"], "Extracted")
+        self.assertEqual(final_profile["factProvenance"]["/firstName"]["source"], "user")
+
     def test_concurrent_cli_acquisition_allows_only_one_global_claim(self):
         self.json_store("init")
         profile = self.write_input("concurrent-profile.json", {"firstName": "Synthetic"})
@@ -300,7 +360,7 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
             "user",
         )
         resume_path = self.home / "concurrent-resume.pdf"
-        resume_path.write_bytes(b"resume")
+        resume_path.write_bytes(b"%PDF-1.7\nresume")
         resume = self.write_input("concurrent-resume.json", {
             "id": "concurrent-resume", "label": "Concurrent", "path": str(resume_path)
         })
