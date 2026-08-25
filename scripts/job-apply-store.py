@@ -2528,6 +2528,12 @@ class Store:
             raise StoreError("claim token is required")
         return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
+    @staticmethod
+    def _new_claim_token() -> str:
+        # Keep the full 32-byte random payload while ensuring argparse can
+        # always consume the bearer token as a separate option value.
+        return f"claim_{secrets.token_urlsafe(32)}"
+
     def _public_claim(self, claim: dict[str, Any] | None) -> dict[str, Any] | None:
         if claim is None:
             return None
@@ -2716,7 +2722,7 @@ class Store:
                 raise StoreError("job is not ready")
             now_dt = self._now_datetime()
             now = now_dt.isoformat(timespec="seconds").replace("+00:00", "Z")
-            token = secrets.token_urlsafe(32)
+            token = self._new_claim_token()
             claim = {
                 "claimId": str(uuid.uuid4()),
                 "jobId": job_id,
@@ -2770,7 +2776,7 @@ class Store:
                 raise StoreError("live claim cannot be recovered")
             now_dt = self._now_datetime()
             now = now_dt.isoformat(timespec="seconds").replace("+00:00", "Z")
-            token = secrets.token_urlsafe(32)
+            token = self._new_claim_token()
             claim = {
                 "claimId": str(uuid.uuid4()), "jobId": job_id,
                 "ownerLabel": owner_label.strip(), "tokenHash": self._token_hash(token),

@@ -65,3 +65,17 @@ jobs:
 
       - name: Check documentation links
         run: bash scripts/check-links.sh
+
+  windows-store-workspace:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify Windows workspace and canonical store lifecycle
+        run: python -m unittest -v tests.test_job_apply_workspace tests.test_job_apply_store

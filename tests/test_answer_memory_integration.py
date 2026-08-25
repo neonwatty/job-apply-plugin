@@ -166,10 +166,19 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
             for path in (ROOT / "skills").glob("*/SKILL.md")
         }
         self.assertEqual(
-            set(skills), {"answer-memory", "job-apply", "job-preferences", "job-search"}
+            set(skills),
+            {
+                "answer-memory",
+                "job-apply",
+                "job-preferences",
+                "job-search",
+                "job-workspace",
+            },
         )
-        for name, content in skills.items():
-            self.assertIn("job-apply-store.py", content, name)
+        for name in ("answer-memory", "job-apply", "job-preferences", "job-search"):
+            self.assertIn("job-apply-store.py", skills[name], name)
+        self.assertIn("job-apply-workspace.py", skills["job-workspace"])
+        self.assertIn("canonical Store contract", skills["job-workspace"])
         for name in ("job-apply", "job-preferences", "job-search"):
             self.assertNotIn("Read `~/.claude-job-profile.json`", skills[name])
             self.assertNotIn("Write the collected values into `~/.claude-job-profile.json`", skills[name])
