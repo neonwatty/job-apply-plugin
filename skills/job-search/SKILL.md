@@ -347,6 +347,23 @@ again. Never commit a stale or altered preview. Report conflicts and invalid
 items without attempting to invent a merge rule. Delete the temporary input when
 the interaction is finished.
 
+### Import existing timestamped reports
+
+When the user asks to migrate previously saved search reports, use the guided
+legacy commands instead of reconstructing JSON by hand. Run
+`legacy-jobs-preview` with no selection to discover supported `search-*.md`
+entries directly under `~/.claude-job-searches/`. Show valid and invalid items,
+ask which opaque item IDs to import, then run `legacy-jobs-preview` with the
+chosen IDs as repeatable `--select` options. Show its canonical decisions and
+ask for explicit confirmation of that exact selected preview. Commit with the
+same ordered `--select` options and `--confirm <preview-token>`.
+
+If commit reports drift, rediscover and preview again. Never import
+`application_queue.md`, accept a caller-selected source root, recurse, follow a
+symlink, edit a report, or infer another Markdown format. After commit, use the
+canonical job commands for all queue work; timestamped reports remain preserved
+compatibility artifacts rather than a synchronization source.
+
 ---
 
 ## Safety Rules

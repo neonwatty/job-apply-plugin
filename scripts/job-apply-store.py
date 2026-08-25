@@ -59,6 +59,7 @@ JOB_CLOSED_OUTCOMES = {
     "not_interested",
 }
 JOB_ORIGINS = {"human", "agent"}
+JOB_PROVENANCE_ORIGINS = JOB_ORIGINS | {"migration"}
 JOB_INGEST_FIELDS = {
     "url",
     "source",
@@ -90,6 +91,11 @@ REPLAY_ATS = {"ashby", "greenhouse", "lever", "linkedin-easy-apply"}
 SESSION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 CLAIM_LEASE_SECONDS = 300
 CLAIM_HEARTBEAT_SECONDS = 60
+LEGACY_SEARCH_ROOT = ".claude-job-searches"
+LEGACY_SEARCH_MAX_FILES = 100
+LEGACY_SEARCH_MAX_FILE_BYTES = 2 * 1024 * 1024
+LEGACY_SEARCH_MAX_TOTAL_BYTES = 20 * 1024 * 1024
+LEGACY_SEARCH_MAX_ENTRIES = 5_000
 
 
 class StoreError(Exception):
@@ -331,7 +337,7 @@ def _job_field_provenance(
     provenance: dict[str, Any], field: str
 ) -> dict[str, Any] | None:
     value = provenance.get(f"/{_json_pointer_segment(field)}")
-    if not isinstance(value, dict) or value.get("origin") not in JOB_ORIGINS:
+    if not isinstance(value, dict) or value.get("origin") not in JOB_PROVENANCE_ORIGINS:
         return None
     return value
 
@@ -343,6 +349,44 @@ def _agent_may_update_job_field(
     if authored is not None:
         return authored["origin"] == "agent"
     return not _nonempty_job_value(record.get(field))
+
+
+def _migration_may_update_job_field(
+    record: dict[str, Any], provenance: dict[str, Any], field: str
+) -> bool:
+    if not _nonempty_job_value(record.get(field)):
+        return True
+    authored = _job_field_provenance(provenance, field)
+    if authored is not None:
+        return authored["origin"] == "migration"
+    return False
+
+
+def _reject_supplied_migration_provenance(provenance: dict[str, Any]) -> None:
+    if any(
+        isinstance(value, dict) and value.get("origin") == "migration"
+        for value in provenance.values()
+    ):
+        raise StoreError("migration provenance is reserved for guided legacy imports")
+
+
+def _validate_migration_provenance_replacement(
+    current: dict[str, Any], replacement: dict[str, Any]
+) -> None:
+    protected_paths = {
+        path
+        for path in set(current) | set(replacement)
+        if (
+            isinstance(current.get(path), dict)
+            and current[path].get("origin") == "migration"
+        )
+        or (
+            isinstance(replacement.get(path), dict)
+            and replacement[path].get("origin") == "migration"
+        )
+    }
+    if any(current.get(path) != replacement.get(path) for path in protected_paths):
+        raise StoreError("migration provenance is reserved for guided legacy imports")
 
 
 def _stamp_job_provenance(
@@ -562,6 +606,7 @@ def _validate_job_record(key: str, value: Any) -> dict[str, Any]:
         "resumeId",
         "notes",
         "provenance",
+        "legacySources",
         "lastCheckedAt",
         "revision",
         "createdAt",
@@ -592,6 +637,32 @@ def _validate_job_record(key: str, value: Any) -> dict[str, Any]:
         raise StoreError("job revision must be a positive integer")
     provenance = record.get("provenance", {})
     _require_object(provenance, "job provenance")
+    legacy_sources = record.get("legacySources", [])
+    if not isinstance(legacy_sources, list):
+        raise StoreError("job legacySources must be an array")
+    for source in legacy_sources:
+        source = _require_object(source, "job legacy source")
+        if set(source) != {"sourceKind", "relativePath", "entryId", "sourceSha256"}:
+            raise StoreError("job legacy source contains unsupported fields")
+        if source.get("sourceKind") != "timestamped-search-report":
+            raise StoreError("job legacy source kind is unsupported")
+        relative_path = source.get("relativePath")
+        if (
+            not isinstance(relative_path, str)
+            or not relative_path
+            or Path(relative_path).name != relative_path
+            or not relative_path.startswith("search-")
+            or not relative_path.endswith(".md")
+        ):
+            raise StoreError("job legacy source path is invalid")
+        if not isinstance(source.get("entryId"), str) or not re.fullmatch(
+            r"legacy-entry-[0-9a-f]{24}", source["entryId"]
+        ):
+            raise StoreError("job legacy source entry id is invalid")
+        if not isinstance(source.get("sourceSha256"), str) or not re.fullmatch(
+            r"[0-9a-f]{64}", source["sourceSha256"]
+        ):
+            raise StoreError("job legacy source digest is invalid")
     _validate_optional_strings(
         record,
         {
@@ -1433,6 +1504,7 @@ class Store:
         incoming_provenance = _require_object(
             incoming.get("provenance", {}), "job provenance"
         )
+        _reject_supplied_migration_provenance(incoming_provenance)
         stamped_fields = {
             field
             for field in JOB_INGEST_FIELDS
@@ -1605,14 +1677,21 @@ class Store:
             provenance_changed = False
             if origin == "human" and "provenance" in patch:
                 provenance = _require_object(patch["provenance"], "job provenance")
+                _validate_migration_provenance_replacement(
+                    current_provenance, provenance
+                )
                 provenance_changed = provenance != current_provenance
             accepted: dict[str, Any] = {}
             for field, value in patch.items():
                 if field == "provenance":
                     continue
-                if origin == "agent" and not _nonempty_job_value(value):
+                if origin in {"agent", "migration"} and not _nonempty_job_value(value):
                     continue
                 if origin == "agent" and not _agent_may_update_job_field(
+                    current, current_provenance, field
+                ):
+                    continue
+                if origin == "migration" and not _migration_may_update_job_field(
                     current, current_provenance, field
                 ):
                     continue
@@ -1750,8 +1829,12 @@ class Store:
         payload: dict[str, Any],
         origin: str,
         now: str,
+        *,
+        _allow_migration: bool = False,
+        _target_ids: list[str | None] | None = None,
     ) -> tuple[dict[str, Any], list[dict[str, Any]], bool]:
-        origin = _job_origin(origin)
+        if not (_allow_migration and origin == "migration"):
+            origin = _job_origin(origin)
         raw_jobs = self._job_upsert_payload(payload)
         normalized: list[dict[str, Any] | None] = []
         errors: list[str | None] = []
@@ -1801,6 +1884,10 @@ class Store:
                 continue
 
             jobs = simulated["jobs"]
+            target_id = _target_ids[index] if _target_ids is not None else None
+            target_matches = (
+                [jobs[target_id]] if target_id is not None and target_id in jobs else []
+            )
             url_matches = [
                 record
                 for record in jobs.values()
@@ -1816,7 +1903,10 @@ class Store:
                 if source_identity is not None
                 else []
             )
-            matches = {record["id"]: record for record in url_matches + source_matches}
+            matches = {
+                record["id"]: record
+                for record in url_matches + source_matches + target_matches
+            }
             if (
                 len(url_matches) > 1
                 or len(source_matches) > 1
@@ -1834,26 +1924,48 @@ class Store:
 
             current = next(iter(matches.values()), None)
             if current is not None:
+                provenance = _require_object(
+                    current.get("provenance", {}), "job provenance"
+                )
                 current_source = self._source_identity(current)
+                source_changed = (
+                    _nonempty_job_value(current.get("source"))
+                    and _nonempty_job_value(item.get("source"))
+                    and _normalized_job_source(current.get("source"))
+                    != _normalized_job_source(item.get("source"))
+                )
+                source_id_changed = (
+                    _nonempty_job_value(current.get("sourceId"))
+                    and _nonempty_job_value(item.get("sourceId"))
+                    and current.get("sourceId", "").strip()
+                    != item.get("sourceId", "").strip()
+                )
+                migration_identity_refresh = origin == "migration" and (
+                    current.get("normalizedUrl") == item["normalizedUrl"]
+                    or target_id == current["id"]
+                )
+                migration_url_refresh = (
+                    origin == "migration"
+                    and target_id == current["id"]
+                    and _migration_may_update_job_field(
+                        current, provenance, "url"
+                    )
+                )
                 if (
-                    current.get("normalizedUrl") != item["normalizedUrl"]
-                    or (
-                        current_source is not None
-                        and source_identity is not None
-                        and current_source != source_identity
+                    (
+                        current.get("normalizedUrl") != item["normalizedUrl"]
+                        and not migration_url_refresh
                     )
                     or (
-                        _nonempty_job_value(current.get("source"))
-                        and _nonempty_job_value(item.get("source"))
-                        and _normalized_job_source(current.get("source"))
-                        != _normalized_job_source(item.get("source"))
+                        (
+                            current_source is not None
+                            and source_identity is not None
+                            and current_source != source_identity
+                        )
+                        or source_changed
+                        or source_id_changed
                     )
-                    or (
-                        _nonempty_job_value(current.get("sourceId"))
-                        and _nonempty_job_value(item.get("sourceId"))
-                        and current.get("sourceId", "").strip()
-                        != item.get("sourceId", "").strip()
-                    )
+                    and not migration_identity_refresh
                 ):
                     decisions.append(
                         {
@@ -1864,15 +1976,16 @@ class Store:
                         }
                     )
                     continue
-                provenance = _require_object(
-                    current.get("provenance", {}), "job provenance"
-                )
                 accepted: dict[str, Any] = {}
                 for field in JOB_INGEST_FIELDS:
-                    if field not in item or field == "url":
+                    if field not in item or (field == "url" and not migration_url_refresh):
                         continue
                     value = item[field]
                     if origin == "agent" and not _agent_may_update_job_field(
+                        current, provenance, field
+                    ):
+                        continue
+                    if origin == "migration" and not _migration_may_update_job_field(
                         current, provenance, field
                     ):
                         continue
@@ -1884,6 +1997,8 @@ class Store:
                     )
                     continue
                 updated = {**current, **accepted}
+                if "url" in accepted:
+                    updated["normalizedUrl"] = item["normalizedUrl"]
                 updated["provenance"] = _stamp_job_provenance(
                     provenance,
                     list(accepted),
@@ -1987,6 +2102,384 @@ class Store:
             if changed:
                 atomic_write_json(self.jobs_path, planned)
         return self._upsert_result(token, decisions, committed=changed)
+
+    @staticmethod
+    def _read_legacy_search_file(
+        root_descriptor: int | None,
+        root: Path,
+        name: str,
+        metadata: os.stat_result,
+    ) -> bytes:
+        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+        try:
+            descriptor = (
+                os.open(root / name, flags)
+                if root_descriptor is None
+                else os.open(name, flags, dir_fd=root_descriptor)
+            )
+        except OSError as error:
+            raise StoreError("legacy search report cannot be opened safely") from error
+        try:
+            opened = os.fstat(descriptor)
+            if (
+                not stat.S_ISREG(opened.st_mode)
+                or opened.st_dev != metadata.st_dev
+                or opened.st_ino != metadata.st_ino
+                or opened.st_size != metadata.st_size
+            ):
+                raise StoreError("legacy search report changed during discovery")
+            chunks: list[bytes] = []
+            total = 0
+            while True:
+                chunk = os.read(descriptor, min(65536, LEGACY_SEARCH_MAX_FILE_BYTES + 1 - total))
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                total += len(chunk)
+                if total > LEGACY_SEARCH_MAX_FILE_BYTES:
+                    raise StoreError("legacy search report exceeds the per-file byte limit")
+            closed = os.fstat(descriptor)
+            if closed.st_size != opened.st_size:
+                raise StoreError("legacy search report changed during discovery")
+            return b"".join(chunks)
+        finally:
+            os.close(descriptor)
+
+    @staticmethod
+    def _parse_legacy_search_report(
+        relative_path: str, source_sha256: str, text: str
+    ) -> list[dict[str, Any]]:
+        lines = text.splitlines()
+        starts = [index for index, line in enumerate(lines) if line.startswith("###")]
+        items: list[dict[str, Any]] = []
+        heading_identities = [
+            re.sub(r"^###\s+\d+\.\s*", "", lines[start]).strip()
+            for start in starts
+        ]
+        heading_totals = {
+            identity: heading_identities.count(identity)
+            for identity in set(heading_identities)
+        }
+        content_occurrences: dict[str, int] = {}
+        for ordinal, start in enumerate(starts, 1):
+            end = starts[ordinal] if ordinal < len(starts) else len(lines)
+            heading = lines[start]
+            heading_identity = heading_identities[ordinal - 1]
+            content_identity = heading_identity
+            if heading_totals[heading_identity] > 1:
+                content_identity = "\n".join(
+                    [heading_identity, *lines[start + 1 : end]]
+                ).strip()
+            content_occurrence = content_occurrences.get(content_identity, 0) + 1
+            content_occurrences[content_identity] = content_occurrence
+            entry_id = "legacy-entry-" + hashlib.sha256(
+                f"{relative_path}\0{content_identity}\0{content_occurrence}".encode("utf-8")
+            ).hexdigest()[:24]
+            item_id = "legacy-item-" + hashlib.sha256(
+                entry_id.encode("utf-8")
+            ).hexdigest()[:24]
+            locator = {
+                "sourceKind": "timestamped-search-report",
+                "relativePath": relative_path,
+                "entryId": entry_id,
+                "sourceSha256": source_sha256,
+            }
+
+            heading_match = re.fullmatch(r"###\s+\d+\.\s+(.+?)\s+—\s+(.+)", heading)
+            if heading_match is None:
+                items.append({"itemId": item_id, "state": "invalid", "reason": "unsupported_heading", "source": locator})
+                continue
+            role = heading_match.group(1).strip()
+            company = re.sub(r"\s+\(Score:\s*[^)]*\)\s*$", "", heading_match.group(2)).strip()
+            if not role or not company:
+                items.append({"itemId": item_id, "state": "invalid", "reason": "incomplete_heading", "source": locator})
+                continue
+
+            labels: dict[str, str] = {}
+            duplicate = False
+            for line in lines[start + 1 : end]:
+                field = re.fullmatch(r"- \*\*([^*]+)\*\*:\s*(.*)", line)
+                if field is None:
+                    continue
+                label = field.group(1).strip().lower()
+                if label in labels:
+                    duplicate = True
+                    break
+                labels[label] = field.group(2).strip()
+            if duplicate:
+                items.append({"itemId": item_id, "state": "invalid", "reason": "duplicate_field", "source": locator})
+                continue
+
+            url_candidates = []
+            for label in ("url", "apply"):
+                value = labels.get(label, "")
+                if re.fullmatch(r"https?://\S+", value):
+                    try:
+                        normalized = normalize_job_url(value)
+                    except StoreError:
+                        continue
+                    url_candidates.append((value, normalized))
+            unique_urls = {normalized for _value, normalized in url_candidates}
+            if not url_candidates:
+                items.append({"itemId": item_id, "state": "invalid", "reason": "missing_url", "source": locator})
+                continue
+            if len(unique_urls) != 1:
+                items.append({"itemId": item_id, "state": "invalid", "reason": "ambiguous_url", "source": locator})
+                continue
+
+            job: dict[str, Any] = {"url": url_candidates[0][0], "role": role, "company": company}
+            mappings = {
+                "source": "source",
+                "location": "location",
+                "salary": "compensation",
+                "description": "description",
+            }
+            for label, canonical in mappings.items():
+                if labels.get(label):
+                    job[canonical] = labels[label]
+            items.append({"itemId": item_id, "state": "valid", "source": locator, "job": job})
+        return items
+
+    def _discover_legacy_jobs(self) -> dict[str, Any]:
+        root = Path.home() / LEGACY_SEARCH_ROOT
+        try:
+            root_metadata = root.lstat()
+        except FileNotFoundError:
+            return {"root": f"~/{LEGACY_SEARCH_ROOT}", "manifest": [], "items": []}
+        except OSError as error:
+            raise StoreError("legacy search root cannot be inspected") from error
+        if not stat.S_ISDIR(root_metadata.st_mode) or stat.S_ISLNK(root_metadata.st_mode):
+            raise StoreError("legacy search root must be a regular directory")
+
+        root_descriptor: int | None = None
+        if os.name != "nt":
+            root_flags = (
+                os.O_RDONLY
+                | getattr(os, "O_DIRECTORY", 0)
+                | getattr(os, "O_NOFOLLOW", 0)
+            )
+            try:
+                root_descriptor = os.open(root, root_flags)
+            except OSError as error:
+                raise StoreError("legacy search root cannot be opened safely") from error
+        manifest: list[dict[str, Any]] = []
+        items: list[dict[str, Any]] = []
+        aggregate = 0
+        try:
+            opened_root = (
+                root.lstat()
+                if root_descriptor is None
+                else os.fstat(root_descriptor)
+            )
+            if (
+                not stat.S_ISDIR(opened_root.st_mode)
+                or opened_root.st_dev != root_metadata.st_dev
+                or opened_root.st_ino != root_metadata.st_ino
+            ):
+                raise StoreError("legacy search root changed during discovery")
+            paths = sorted(
+                name
+                for name in os.listdir(root if root_descriptor is None else root_descriptor)
+                if name.startswith("search-") and name.endswith(".md")
+            )
+            if len(paths) > LEGACY_SEARCH_MAX_FILES:
+                raise StoreError("legacy search discovery exceeds the file limit")
+            for name in paths:
+                try:
+                    metadata = (
+                        (root / name).lstat()
+                        if root_descriptor is None
+                        else os.stat(
+                            name, dir_fd=root_descriptor, follow_symlinks=False
+                        )
+                    )
+                except OSError as error:
+                    raise StoreError("legacy search report cannot be inspected") from error
+                if not stat.S_ISREG(metadata.st_mode) or stat.S_ISLNK(metadata.st_mode):
+                    raise StoreError("legacy search reports must be regular files")
+                if metadata.st_size > LEGACY_SEARCH_MAX_FILE_BYTES:
+                    raise StoreError("legacy search report exceeds the per-file byte limit")
+                aggregate += metadata.st_size
+                if aggregate > LEGACY_SEARCH_MAX_TOTAL_BYTES:
+                    raise StoreError("legacy search discovery exceeds the aggregate byte limit")
+                raw = self._read_legacy_search_file(
+                    root_descriptor, root, name, metadata
+                )
+                try:
+                    decoded = raw.decode("utf-8")
+                except UnicodeDecodeError as error:
+                    raise StoreError("legacy search report is not valid UTF-8") from error
+                digest = hashlib.sha256(raw).hexdigest()
+                manifest.append({"relativePath": name, "sourceSha256": digest, "size": len(raw)})
+                items.extend(self._parse_legacy_search_report(name, digest, decoded))
+                if len(items) > LEGACY_SEARCH_MAX_ENTRIES:
+                    raise StoreError("legacy search discovery exceeds the entry limit")
+        finally:
+            if root_descriptor is not None:
+                os.close(root_descriptor)
+        if root_descriptor is None:
+            try:
+                closed_root = root.lstat()
+            except OSError as error:
+                raise StoreError("legacy search root changed during discovery") from error
+            if (
+                not stat.S_ISDIR(closed_root.st_mode)
+                or closed_root.st_dev != root_metadata.st_dev
+                or closed_root.st_ino != root_metadata.st_ino
+            ):
+                raise StoreError("legacy search root changed during discovery")
+        return {"root": f"~/{LEGACY_SEARCH_ROOT}", "manifest": manifest, "items": items}
+
+    def _migration_jobs_snapshot(self) -> tuple[dict[str, Any], Any]:
+        if self.jobs_path.exists():
+            document = self._load_jobs_document()
+            return document, document
+        document = {
+            "schemaVersion": SCHEMA_VERSION,
+            "jobs": {},
+            "metadata": {"createdAt": "1970-01-01T00:00:00Z", "updatedAt": "1970-01-01T00:00:00Z"},
+        }
+        return document, {"state": "missing"}
+
+    @staticmethod
+    def _selected_legacy_items(discovery: dict[str, Any], selected: list[str]) -> list[dict[str, Any]]:
+        if len(selected) != len(set(selected)):
+            raise StoreError("legacy job selection contains duplicate item ids")
+        indexed = {item["itemId"]: item for item in discovery["items"]}
+        chosen: list[dict[str, Any]] = []
+        for item_id in selected:
+            item = indexed.get(item_id)
+            if item is None:
+                raise StoreError("legacy job selection contains an unknown item id")
+            if item["state"] != "valid":
+                raise StoreError("legacy job selection contains an invalid item")
+            chosen.append(item)
+        return chosen
+
+    @staticmethod
+    def _legacy_jobs_token(
+        discovery: dict[str, Any], selected: list[str], chosen: list[dict[str, Any]], snapshot: Any
+    ) -> str:
+        bound = {
+            "version": 1,
+            "origin": "migration",
+            "selection": selected,
+            "payloads": [item["job"] for item in chosen],
+            "selectedLocators": [item["source"] for item in chosen],
+            "manifest": discovery["manifest"],
+            "jobsSnapshot": snapshot,
+        }
+        return "legacy-jobs-v1." + hashlib.sha256(_canonical_json(bound).encode("utf-8")).hexdigest()
+
+    def _plan_legacy_jobs(
+        self, document: dict[str, Any], chosen: list[dict[str, Any]], now: str
+    ) -> tuple[dict[str, Any], list[dict[str, Any]], bool]:
+        payload = {"jobs": [item["job"] for item in chosen]}
+        target_ids: list[str | None] = []
+        for item in chosen:
+            locator = item["source"]
+            identity = (
+                locator["sourceKind"],
+                locator["relativePath"],
+                locator["entryId"],
+            )
+            matches = [
+                record["id"]
+                for record in document["jobs"].values()
+                if any(
+                    (
+                        source["sourceKind"],
+                        source["relativePath"],
+                        source["entryId"],
+                    )
+                    == identity
+                    for source in record.get("legacySources", [])
+                )
+            ]
+            if len(matches) > 1:
+                raise StoreError("legacy source locator resolves to multiple jobs")
+            target_ids.append(matches[0] if matches else None)
+        planned, decisions, changed = self._plan_job_upsert(
+            document,
+            payload,
+            "migration",
+            now,
+            _allow_migration=True,
+            _target_ids=target_ids,
+        )
+        for item, decision in zip(chosen, decisions):
+            decision["itemId"] = item["itemId"]
+            if decision["action"] in {"conflict", "invalid"}:
+                continue
+            record = planned["jobs"][decision["id"]]
+            sources = list(record.get("legacySources", []))
+            locator = item["source"]
+            identity = (locator["sourceKind"], locator["relativePath"], locator["entryId"])
+            replaced = False
+            merged = []
+            for source in sources:
+                source_identity = (source["sourceKind"], source["relativePath"], source["entryId"])
+                if source_identity == identity:
+                    merged.append(locator)
+                    replaced = True
+                else:
+                    merged.append(source)
+            if not replaced:
+                merged.append(locator)
+            merged.sort(key=lambda source: (source["relativePath"], source["entryId"]))
+            if merged != sources:
+                record["legacySources"] = merged
+                if decision["action"] == "noop":
+                    record["revision"] += 1
+                    record["updatedAt"] = now
+                    decision["action"] = "update"
+                    decision["fields"] = ["legacySources"]
+                elif decision["action"] == "update":
+                    decision["fields"] = sorted(set(decision.get("fields", [])) | {"legacySources"})
+                changed = True
+                planned["metadata"]["updatedAt"] = now
+                _validate_job_record(record["id"], record)
+        if document["metadata"].get("createdAt") == "1970-01-01T00:00:00Z" and changed:
+            planned["metadata"]["createdAt"] = now
+        return planned, decisions, changed
+
+    @staticmethod
+    def _legacy_result(
+        discovery: dict[str, Any], selected: list[str], decisions: list[dict[str, Any]] | None = None,
+        token: str | None = None, committed: bool = False,
+    ) -> dict[str, Any]:
+        result = {"root": discovery["root"], "manifest": discovery["manifest"], "items": discovery["items"], "selected": selected, "committed": committed}
+        if decisions is not None:
+            counts = {action: 0 for action in ("create", "update", "noop", "conflict", "invalid")}
+            for decision in decisions:
+                counts[decision["action"]] += 1
+            result.update({"token": token, "summary": counts, "decisions": decisions})
+        return result
+
+    def preview_legacy_jobs(self, selected: list[str]) -> dict[str, Any]:
+        discovery = self._discover_legacy_jobs()
+        if not selected:
+            return self._legacy_result(discovery, [])
+        chosen = self._selected_legacy_items(discovery, selected)
+        document, snapshot = self._migration_jobs_snapshot()
+        token = self._legacy_jobs_token(discovery, selected, chosen, snapshot)
+        _planned, decisions, _changed = self._plan_legacy_jobs(document, chosen, utc_now())
+        return self._legacy_result(discovery, selected, decisions, token)
+
+    def commit_legacy_jobs(self, selected: list[str], token: str) -> dict[str, Any]:
+        if not selected or not isinstance(token, str) or not token:
+            raise StoreError("legacy job commit requires selection and a preview token")
+        with exclusive_file_lock(self.store_lock_path):
+            discovery = self._discover_legacy_jobs()
+            chosen = self._selected_legacy_items(discovery, selected)
+            document, snapshot = self._migration_jobs_snapshot()
+            expected = self._legacy_jobs_token(discovery, selected, chosen, snapshot)
+            if not hmac.compare_digest(token, expected):
+                raise StoreError("legacy job preview token rejected because the source, selection, input, or store drifted")
+            planned, decisions, changed = self._plan_legacy_jobs(document, chosen, utc_now())
+            if changed:
+                atomic_write_json(self.jobs_path, planned)
+        return self._legacy_result(discovery, selected, decisions, token, changed)
 
     def transition_job(
         self,
@@ -2987,6 +3480,11 @@ def build_parser() -> argparse.ArgumentParser:
     job_upsert_commit.add_argument("--input", required=True)
     job_upsert_commit.add_argument("--origin", choices=sorted(JOB_ORIGINS), required=True)
     job_upsert_commit.add_argument("--token", required=True)
+    legacy_jobs_preview = commands.add_parser("legacy-jobs-preview")
+    legacy_jobs_preview.add_argument("--select", action="append", default=[])
+    legacy_jobs_commit = commands.add_parser("legacy-jobs-commit")
+    legacy_jobs_commit.add_argument("--select", action="append", required=True)
+    legacy_jobs_commit.add_argument("--confirm", required=True)
     job_get = commands.add_parser("job-get")
     job_get.add_argument("--id", required=True)
     job_get.add_argument("--include-trashed", action="store_true")
@@ -3144,6 +3642,10 @@ def run(args: argparse.Namespace) -> Any:
         return store.commit_job_upsert(
             _read_input(args.input), args.origin, args.token
         )
+    if command == "legacy-jobs-preview":
+        return store.preview_legacy_jobs(args.select)
+    if command == "legacy-jobs-commit":
+        return store.commit_legacy_jobs(args.select, args.confirm)
     if command == "job-get":
         return store.get_job(args.id, include_trashed=args.include_trashed)
     if command == "job-list":
