@@ -4314,6 +4314,86 @@ class Store:
             "heartbeatSeconds": CLAIM_HEARTBEAT_SECONDS,
         }
 
+    def get_job_activity(self, job_id: str) -> dict[str, Any]:
+        """Return a selected-job-only, value-free application activity view."""
+        self.initialize()
+        self._ensure_coordinator_files()
+        job_id = _safe_session_id(job_id)
+        with exclusive_file_lock(self.store_lock_path):
+            job = self._load_jobs_document()["jobs"].get(job_id)
+            if job is None or job.get("deletedAt") is not None:
+                raise StoreError("job does not exist")
+
+            session = None
+            session_path = self._session_path(job_id)
+            if session_path.exists():
+                stored_session = read_json_object(session_path, "session")
+                validate_version(stored_session, "session")
+                _validate_session_document(stored_session)
+                if stored_session["applicationId"] != job_id:
+                    raise StoreError("session application id does not match path")
+                session = {
+                    key: stored_session[key]
+                    for key in ("status", "step", "createdAt", "updatedAt")
+                    if key in stored_session
+                }
+                session["pendingInformation"] = [
+                    {
+                        key: pending[key]
+                        for key in ("question", "state", "sensitive")
+                        if key in pending
+                    }
+                    for pending in stored_session.get("pendingFields", [])
+                ]
+
+            persisted_claim = self._load_coordinator_document()["claim"]
+            selected_claim = (
+                persisted_claim
+                if persisted_claim is not None and persisted_claim["jobId"] == job_id
+                else None
+            )
+            if selected_claim is not None:
+                expired = self._now_datetime() >= self._parse_time(
+                    selected_claim["expiresAt"]
+                )
+                claim = {
+                    "state": "expired" if expired else "active",
+                    "acquiredAt": selected_claim["acquiredAt"],
+                    "heartbeatAt": selected_claim["heartbeatAt"],
+                    "expiresAt": selected_claim["expiresAt"],
+                }
+            elif job["status"] == "in_progress":
+                claim = {"state": "interrupted"}
+            else:
+                claim = {"state": "none"}
+            if claim["state"] == "expired":
+                claim["recoveryGuidance"] = (
+                    "Resume this attempt with the CLI claim-recover command for this job."
+                )
+            elif claim["state"] == "interrupted":
+                claim["recoveryGuidance"] = (
+                    "Reset this claimless attempt with the CLI job-transition command "
+                    f"to needs_info using revision {job['revision']}; resolve any missing "
+                    "information, then mark it ready for a new agent attempt."
+                )
+
+            history = []
+            for event in self.read_history():
+                if event["applicationId"] != job_id:
+                    continue
+                history.append({
+                    key: event[key]
+                    for key in ("event", "status", "company", "role", "ats", "at")
+                    if key in event
+                })
+
+            return {
+                "job": {"status": job["status"], "revision": job["revision"]},
+                "session": session,
+                "claim": claim,
+                "history": history,
+            }
+
     def _require_claim_locked(
         self, job_id: str, token: str, allow_expired: bool = False
     ) -> dict[str, Any]:

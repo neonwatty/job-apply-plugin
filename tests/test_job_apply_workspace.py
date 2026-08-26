@@ -160,6 +160,66 @@ class WorkspaceServerTests(unittest.TestCase):
         self.assertEqual(self.server.store.get_job(ui_job["id"])["notes"], "human note")
         self.assertEqual(updated["revision"], 2)
 
+    def test_job_activity_endpoint_is_selected_job_only_and_redacted(self):
+        self.server.store.replace_profile(
+            {"firstName": "Ada"},
+            expected_revision=self.server.store.inspect_profile()["revision"],
+            source="user",
+        )
+        resume_path = Path(self.temporary.name) / "activity-resume.pdf"
+        resume_path.write_bytes(b"%PDF-1.7\nactivity")
+        self.server.store.create_resume(
+            {"id": "activity-resume", "label": "Activity", "path": str(resume_path)}
+        )
+        job = self.create_job(
+            "https://example.com/jobs/activity",
+            role="Engineer", company="Acme",
+        )
+        ready = self.server.store.transition_job(job["id"], "ready", job["revision"])
+        acquired = self.server.store.acquire_ready_job(
+            job["id"], "private-api-owner", ready["revision"]
+        )
+        self.server.store.save_claim_progress(job["id"], acquired["token"], {
+            "status": "active", "step": "questions",
+            "answerKeys": ["private.api.answer"],
+            "pendingFields": [{
+                "question": "Do you need sponsorship?", "state": "missing",
+                "answerKey": "private.api.answer", "sensitive": True,
+            }],
+        })
+        unrelated = self.create_job(
+            "https://example.com/jobs/unrelated", role="Unrelated", company="Elsewhere"
+        )
+
+        status, _headers, activity = self.request(
+            "GET", f"/api/jobs/{job['id']}/activity", origin=False
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(activity["job"]["status"], "in_progress")
+        self.assertEqual(activity["claim"]["state"], "active")
+        self.assertEqual(activity["session"]["pendingInformation"], [{
+            "question": "Do you need sponsorship?", "state": "missing", "sensitive": True,
+        }])
+        serialized = json.dumps(activity)
+        for forbidden in (
+            acquired["token"], "private-api-owner", "private.api.answer",
+            "tokenHash", "claimId", "ownerLabel", "answerKey", "answerKeys",
+            "operationId", "browserState",
+        ):
+            self.assertNotIn(forbidden, serialized)
+
+        status, _headers, unrelated_activity = self.request(
+            "GET", f"/api/jobs/{unrelated['id']}/activity", origin=False
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(unrelated_activity["claim"], {"state": "none"})
+        self.assertNotIn(job["id"], json.dumps(unrelated_activity))
+
+        status, _headers, missing = self.request(
+            "GET", "/api/jobs/does-not-exist/activity", origin=False
+        )
+        self.assertEqual((status, missing["error"]["code"]), (404, "not_found"))
+
     def test_unified_trash_is_redacted_deterministic_and_closes_job_lifecycle_parity(self):
         job = self.create_job(
             "https://private.example/jobs/secret",

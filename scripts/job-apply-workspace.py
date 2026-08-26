@@ -589,6 +589,9 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
             job_id = parts[3]
             self._store_call(lambda: self._require_job(job_id))
             return
+        if len(parts) == 5 and parts[1:3] == ["api", "jobs"] and parts[4] == "activity":
+            self._store_call(lambda: self.server.store.get_job_activity(parts[3]))
+            return
         if len(parts) == 5 and parts[1:3] == ["api", "jobs"] and parts[4] == "preflight":
             self._store_call(lambda: self.server.store.preflight_job(parts[3]))
             return
