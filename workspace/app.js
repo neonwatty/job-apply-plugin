@@ -680,7 +680,7 @@ if (hasDom) {
         if (latest) {
           resumeState.selected.assignedJobCount = latest.assignedJobCount;
           resumeState.selected.implicitJobCount = latest.implicitJobCount;
-          $("#resume-assignment").textContent = assignmentText(latest);
+          renderResumeDialog(resumeState.selected, true);
           if (latest.revision !== resumeState.selected.revision) { $("#resume-conflict").classList.remove("hidden"); $("#resume-conflict").focus(); }
         }
       }
