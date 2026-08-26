@@ -1041,12 +1041,20 @@ if (hasDom) {
     const panel = $("#preflight-panel"), body = $("#preflight-results"); body.replaceChildren();
     const summary = document.createElement("p"); summary.textContent = result.ready ? "No blocking issues. This job can be handed to a Job Apply agent." : "Resolve the blocking issues before marking this job ready."; body.append(summary);
     for (const [label, items] of [["Blocking", result.errors], ["Warnings", result.warnings]]) if (items.length) { const h = document.createElement("strong"); h.textContent = label; const ul = document.createElement("ul"); for (const code of items) { const li = document.createElement("li"); li.textContent = issueText[code] || code; ul.append(li); } body.append(h, ul); }
-    panel.classList.remove("hidden"); $("#mark-ready").classList.toggle("hidden", !result.ready || !canMarkReadyFrom(state.selected?.status));
+    const activityJob = state.activityJobId === state.selected?.id ? state.activity?.job : null;
+    const currentStatus = activityJob?.revision >= state.selected?.revision
+      ? activityJob.status
+      : state.selected?.status;
+    panel.classList.remove("hidden"); $("#mark-ready").classList.toggle("hidden", !result.ready || !canMarkReadyFrom(currentStatus));
   }
 
   async function transition(status, userConfirmed = false, closedOutcome = null) {
     try {
-      const body = { status, expectedRevision: state.selected.revision, userConfirmed };
+      const activityRevision = state.activityJobId === state.selected.id
+        ? state.activity?.job?.revision
+        : null;
+      const expectedRevision = Math.max(state.selected.revision, activityRevision ?? 0);
+      const body = { status, expectedRevision, userConfirmed };
       if (closedOutcome !== null) body.closedOutcome = closedOutcome;
       const updated = await api(`/api/jobs/${encodeURIComponent(state.selected.id)}/transition`, { method: "POST", body: JSON.stringify(body) });
       state.selected = updated; await refresh({ quiet: true }); closeJobDialog(null, updated.id); toast(`Job moved to ${statusLabel(status)}`);
@@ -1093,7 +1101,26 @@ if (hasDom) {
     $("#activity-recovery").classList.add("hidden");
     $("#activity-progress").classList.add("hidden");
     $("#activity-history-list").replaceChildren();
+    $("#activity-history-empty").textContent = "No agent activity has been recorded for this job.";
     $("#activity-history-empty").classList.remove("hidden");
+  }
+
+  function renderActivityUnavailable(error) {
+    state.activity = null;
+    $("#activity-current-status").className = "status";
+    $("#activity-current-status").textContent = "Unavailable";
+    $("#activity-summary").textContent = `Durable activity could not be refreshed: ${error.message}`;
+    $("#activity-claim").textContent = "Agent attempt information is unavailable until refresh succeeds.";
+    $("#activity-recovery").textContent = "";
+    $("#activity-recovery").classList.add("hidden");
+    $("#activity-progress").classList.add("hidden");
+    $("#activity-progress-details").replaceChildren();
+    $("#activity-pending").replaceChildren();
+    $("#activity-pending-wrap").classList.add("hidden");
+    $("#activity-history-list").replaceChildren();
+    $("#activity-history-empty").textContent = "Application history is unavailable until refresh succeeds.";
+    $("#activity-history-empty").classList.remove("hidden");
+    $("#activity-live").textContent = "Durable application activity is unavailable.";
   }
 
   function renderActivity(activity, announce = true) {
@@ -1142,15 +1169,12 @@ if (hasDom) {
       const at = document.createElement("time"); at.dateTime = event.at || ""; at.textContent = formatActivityTime(event.at);
       row.append(summary, at); historyList.append(row);
     }
+    $("#activity-history-empty").textContent = "No agent activity has been recorded for this job.";
     $("#activity-history-empty").classList.toggle("hidden", historyList.children.length !== 0);
 
-    if (!state.dirty && state.selected && (state.selected.status !== status || state.selected.revision !== activity.job.revision)) {
-      state.selected = { ...state.selected, status, revision: activity.job.revision };
-      const listed = state.jobs.find((job) => job.id === state.selected.id);
-      if (listed) Object.assign(listed, { status, revision: activity.job.revision });
+    if (state.selected && (state.selected.status !== status || state.selected.revision !== activity.job.revision)) {
       $("#dialog-kicker").textContent = `${statusLabel(status).toUpperCase()} · REVISION ${activity.job.revision}`;
-      renderJobControls(state.selected);
-      render();
+      renderJobControls({ ...state.selected, status });
     }
     const message = activityAnnouncement(previous, activity);
     if (announce && message) $("#activity-live").textContent = message;
@@ -1166,7 +1190,7 @@ if (hasDom) {
       },
       (error) => {
         if (!dialog.open || state.selected?.id !== jobId) return;
-        $("#activity-summary").textContent = `Durable activity could not be refreshed: ${error.message}`;
+        renderActivityUnavailable(error);
       },
     );
   }

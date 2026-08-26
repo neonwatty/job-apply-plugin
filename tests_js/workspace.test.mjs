@@ -455,6 +455,49 @@ test("open Job detail polling keeps the latest selected activity and announces o
     const jobDialog = page.locator("#job-dialog");
     const activityPanel = jobDialog.getByRole("region", { name: "Application activity" });
     await activityPanel.getByText(/Canonical status ready/).waitFor();
+
+    const activityPattern = `**/api/jobs/${pollingJob.id}/activity`;
+    const failActivity = (route) => route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { code: "activity_unavailable", message: "activity unavailable for test" } }),
+    });
+    await page.keyboard.press("Escape");
+    await jobDialog.waitFor({ state: "hidden" });
+    await page.route(activityPattern, failActivity);
+    await pollingCard.focus();
+    await page.keyboard.press("Enter");
+    await activityPanel.getByText(/Durable activity could not be refreshed/).waitFor();
+    assert.match(await activityPanel.innerText(), /Agent attempt information is unavailable until refresh succeeds/);
+    assert.match(await activityPanel.innerText(), /Application history is unavailable until refresh succeeds/);
+    assert.equal(await activityPanel.getByText("No agent activity has been recorded for this job.").isVisible(), false);
+    await page.unroute(activityPattern, failActivity);
+    await page.keyboard.press("Escape");
+    await jobDialog.waitFor({ state: "hidden" });
+    await pollingCard.focus();
+    await page.keyboard.press("Enter");
+    await activityPanel.getByText(/Canonical status ready/).waitFor();
+
+    const statePattern = "**/api/state";
+    const failStateRefresh = (route) => route.abort();
+    await page.route(statePattern, failStateRefresh);
+    pollingJob = await cli("job-update", ["--id", pollingJob.id, "--expected-revision", String(pollingJob.revision), "--origin", "human"], { notes: "CLI concurrent note" });
+    await page.keyboard.press("Escape");
+    await jobDialog.waitFor({ state: "hidden" });
+    await pollingCard.focus();
+    await page.keyboard.press("Enter");
+    await activityPanel.getByText(new RegExp(`Canonical status ready · revision ${pollingJob.revision}`)).waitFor();
+    await jobDialog.getByLabel("Role", { exact: true }).fill("Stale browser draft");
+    await page.getByRole("button", { name: "Save job" }).click();
+    const maskedRevisionConflict = page.locator("#conflict");
+    await maskedRevisionConflict.waitFor();
+    const canonicalAfterConflict = await cli("job-get", ["--id", pollingJob.id]);
+    assert.equal(canonicalAfterConflict.role, "Polling Engineer");
+    assert.equal(canonicalAfterConflict.notes, "CLI concurrent note");
+    await page.getByRole("button", { name: "Load canonical values" }).click();
+    assert.equal(await jobDialog.getByLabel("Notes", { exact: true }).inputValue(), "CLI concurrent note");
+    await page.unroute(statePattern, failStateRefresh);
+
     await page.evaluate(() => {
       globalThis.__activityLiveMutations = [];
       const live = document.querySelector("#activity-live");
