@@ -114,6 +114,10 @@ test("activity responses never regress a newer canonical Job detail revision", (
   assert.equal(shouldUseActivityResponse({ job: { id: "job-one", status: "in_progress", revision: 7 } }, selected), false);
   assert.equal(shouldUseActivityResponse({ job: { id: "job-one", status: "awaiting_review", revision: 8 } }, selected), true);
   assert.equal(shouldUseActivityResponse({ job: { id: "job-one", status: "applied", revision: 9 } }, selected), true);
+  const listed = { id: "job-one", status: "applied", revision: 10 };
+  assert.equal(shouldUseActivityResponse({ job: { id: "job-one", status: "applied", revision: 9 } }, selected, listed), false);
+  assert.equal(shouldUseActivityResponse({ job: { id: "job-one", status: "applied", revision: 10 } }, selected, listed), true);
+  assert.equal(shouldUseActivityResponse(null, selected, listed), false);
 });
 
 test("unified Trash helpers ignore stale success and failure side effects", async () => {

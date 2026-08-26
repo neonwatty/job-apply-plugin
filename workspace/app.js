@@ -132,8 +132,13 @@ export function canMarkReadyFrom(status) {
   return status === "saved" || status === "needs_info";
 }
 
-export function shouldUseActivityResponse(activity, selected) {
-  return !selected || activity?.job?.revision >= selected.revision;
+export function shouldUseActivityResponse(activity, ...knownJobs) {
+  const responseJob = activity?.job;
+  if (!Number.isInteger(responseJob?.revision)) return false;
+  const knownRevision = Math.max(0, ...knownJobs
+    .filter((job) => Number.isInteger(job?.revision))
+    .map((job) => job.revision));
+  return responseJob.revision >= knownRevision;
 }
 
 export function createApi(token, fetchImpl = globalThis.fetch) {
@@ -1131,7 +1136,8 @@ if (hasDom) {
   }
 
   function renderActivity(activity, announce = true) {
-    if (!shouldUseActivityResponse(activity, state.selected)) return;
+    const listed = state.jobs.find((job) => job.id === state.selected?.id);
+    if (!shouldUseActivityResponse(activity, state.selected, listed, state.latest, state.activity?.job)) return;
     const recovered = state.activityUnavailable;
     state.activityUnavailable = false;
     const previous = state.activityJobId === state.selected?.id ? state.activity : null;
