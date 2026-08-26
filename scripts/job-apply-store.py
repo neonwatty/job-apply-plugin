@@ -31,6 +31,7 @@ from urllib.parse import urlsplit, urlunsplit
 SCHEMA_VERSION = 1
 STORE_ENV = "JOB_APPLY_STORE_DIR"
 ANSWER_STATES = {"confirmed", "inferred", "missing", "sensitive"}
+ANSWER_REVIEW_STATUSES = {"accepted", "pending", "declined"}
 SENSITIVITY_LEVELS = {"none", "personal", "high"}
 HISTORY_EVENTS = {
     "started",
@@ -808,6 +809,12 @@ def _validate_answer_record(key: str, value: Any) -> dict[str, Any]:
         raise StoreError("answer record key does not match its index")
     if record.get("state") not in ANSWER_STATES:
         raise StoreError("answer record state is unsupported")
+    review_status = record.get("reviewStatus", "accepted")
+    if (
+        not isinstance(review_status, str)
+        or review_status not in ANSWER_REVIEW_STATUSES
+    ):
+        raise StoreError("answer record review status is unsupported")
     sensitivity = record.get("sensitivity", "none")
     if sensitivity not in SENSITIVITY_LEVELS:
         raise StoreError("answer record sensitivity is unsupported")
@@ -840,13 +847,49 @@ def _validate_answer_record(key: str, value: Any) -> dict[str, Any]:
             "updatedAt",
             "rememberedWithConsentAt",
             "deletedAt",
+            "observedAt",
+            "lastObservedAt",
+            "reviewedAt",
         },
         "answer record",
     )
     revision = record.get("revision", 1)
     if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
         raise StoreError("answer revision must be a positive integer")
+    observation_count = record.get("observationCount", 0)
+    if (
+        not isinstance(observation_count, int)
+        or isinstance(observation_count, bool)
+        or observation_count < 0
+    ):
+        raise StoreError("answer observation count must be a non-negative integer")
     return record
+
+
+def _validate_answer_redirects(
+    redirects: Any, answers: dict[str, Any]
+) -> dict[str, Any]:
+    records = _require_object(redirects, "answer redirects")
+    for source_key, raw in records.items():
+        if not isinstance(source_key, str) or not source_key:
+            raise StoreError("answer redirect source is invalid")
+        redirect = _require_object(raw, "answer redirect")
+        if set(redirect) != {"targetKey", "mergedAt"}:
+            raise StoreError("answer redirect contains unsupported fields")
+        target_key = redirect.get("targetKey")
+        if (
+            not isinstance(target_key, str)
+            or not target_key
+            or target_key == source_key
+            or source_key in answers
+            or target_key not in answers
+            or answers[target_key].get("deletedAt") is not None
+            or target_key in records
+        ):
+            raise StoreError("answer redirect is not flattened to an active answer")
+        if not isinstance(redirect.get("mergedAt"), str) or not redirect["mergedAt"]:
+            raise StoreError("answer redirect timestamp is invalid")
+    return records
 
 
 def _validate_history_event(event: dict[str, Any]) -> None:
@@ -1397,6 +1440,7 @@ class Store:
                 {
                     "schemaVersion": SCHEMA_VERSION,
                     "answers": {},
+                    "redirects": {},
                     "metadata": {"createdAt": now, "updatedAt": now},
                 },
             )
@@ -1507,6 +1551,40 @@ class Store:
         if operation is not None:
             operation = _require_object(operation, "coordinator journal operation")
             kind = operation.get("kind")
+            if kind == "answer_merge":
+                expected = {
+                    "kind", "operationId", "at", "winnerKey", "sourceKey",
+                    "expectedWinnerRevision", "expectedSourceRevision", "sessions",
+                    "resultClaim",
+                }
+                if set(operation) != expected:
+                    raise StoreError("coordinator answer merge operation is invalid")
+                for field in ("operationId", "at", "winnerKey", "sourceKey"):
+                    if not isinstance(operation.get(field), str) or not operation[field]:
+                        raise StoreError("coordinator answer merge operation is invalid")
+                if operation["winnerKey"] == operation["sourceKey"]:
+                    raise StoreError("coordinator answer merge identity is invalid")
+                for field in ("expectedWinnerRevision", "expectedSourceRevision"):
+                    revision = operation.get(field)
+                    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
+                        raise StoreError("coordinator answer merge revision is invalid")
+                sessions = operation.get("sessions")
+                if not isinstance(sessions, list):
+                    raise StoreError("coordinator answer merge sessions are invalid")
+                identities: set[str] = set()
+                for session in sessions:
+                    session_document = _require_object(
+                        session, "coordinator answer merge session"
+                    )
+                    _validate_session_document(session_document)
+                    identity = session_document["applicationId"]
+                    if identity in identities:
+                        raise StoreError("coordinator answer merge sessions are duplicated")
+                    identities.add(identity)
+                result_claim = operation.get("resultClaim")
+                if result_claim is not None:
+                    _validate_claim_record(result_claim)
+                return document
             common = {"kind", "operationId", "jobId", "at", "historyEvent", "resultClaim"}
             transition = {"sourceStatus", "targetStatus", "expectedRevision"}
             expected = common | (transition if kind == "acquire" else set())
@@ -1580,6 +1658,7 @@ class Store:
             if not isinstance(key, str) or not key:
                 raise StoreError("answer index keys must be non-empty strings")
             _validate_answer_record(key, record)
+        _validate_answer_redirects(document.get("redirects", {}), answers)
         return document
 
     def _load_jobs_document(self) -> dict[str, Any]:
@@ -2199,31 +2278,175 @@ class Store:
         view.setdefault("revision", 1)
         view.setdefault("createdAt", record.get("updatedAt"))
         view.setdefault("deletedAt", None)
+        view.setdefault("reviewStatus", "accepted")
+        view.setdefault("observationCount", 0)
         return view
 
-    def get_answer(
-        self, key: str, include_trashed: bool = False
+    @staticmethod
+    def _answer_is_sensitive(record: dict[str, Any]) -> bool:
+        return record.get("state") == "sensitive" or record.get("sensitivity", "none") != "none"
+
+    @staticmethod
+    def _answer_redirects(document: dict[str, Any]) -> dict[str, Any]:
+        return _validate_answer_redirects(
+            document.get("redirects", {}), document["answers"]
+        )
+
+    @classmethod
+    def _resolve_answer_key_in_document(
+        cls, document: dict[str, Any], key: str
+    ) -> str:
+        redirect = cls._answer_redirects(document).get(key)
+        return redirect["targetKey"] if redirect is not None else key
+
+    def _answer_reference_counts(
+        self,
+        document: dict[str, Any] | None = None,
+        sessions: list[dict[str, Any]] | None = None,
+        history: list[dict[str, Any]] | None = None,
+    ) -> dict[str, dict[str, int]]:
+        document = document or self._load_answers_document()
+        counts: dict[str, dict[str, int]] = {}
+        for session in sessions if sessions is not None else self._list_sessions_uninitialized():
+            keys = set(session.get("answerKeys", []))
+            keys.update(
+                field.get("answerKey")
+                for field in session.get("pendingFields", [])
+                if isinstance(field.get("answerKey"), str)
+            )
+            for key in keys:
+                resolved = self._resolve_answer_key_in_document(document, key)
+                counts.setdefault(resolved, {"sessions": 0, "history": 0})["sessions"] += 1
+        for event in history if history is not None else self.read_history():
+            for key in set(event.get("answerKeys", [])):
+                resolved = self._resolve_answer_key_in_document(document, key)
+                counts.setdefault(resolved, {"sessions": 0, "history": 0})["history"] += 1
+        return counts
+
+    def _answer_projection(
+        self, record: dict[str, Any], counts: dict[str, dict[str, int]] | None = None
+    ) -> dict[str, Any]:
+        view = self._answer_view(record)
+        projected = {key: value for key, value in view.items() if key != "value"}
+        projected["hasValue"] = view.get("value") is not None
+        projected["valueRedacted"] = self._answer_is_sensitive(view) and projected["hasValue"]
+        references = (counts or {}).get(view["key"], {"sessions": 0, "history": 0})
+        projected["referenceCounts"] = {
+            "sessions": references["sessions"],
+            "history": references["history"],
+            "total": references["sessions"] + references["history"],
+        }
+        return projected
+
+    def answer_detail_projection(
+        self,
+        record: dict[str, Any],
+        document: dict[str, Any],
+        reveal_value: bool = False,
+    ) -> dict[str, Any]:
+        projected = self._answer_projection(
+            record, self._answer_reference_counts(document=document)
+        )
+        if reveal_value or not self._answer_is_sensitive(record):
+            projected["value"] = record.get("value")
+        return projected
+
+    def _answer_mutation_projection(
+        self, record: dict[str, Any], counts: dict[str, dict[str, int]]
+    ) -> dict[str, Any]:
+        projected = self._answer_projection(record, counts)
+        if not self._answer_is_sensitive(record):
+            projected["value"] = record.get("value")
+        return projected
+
+    def _get_answer_record(
+        self,
+        key: str,
+        include_trashed: bool = False,
+        document: dict[str, Any] | None = None,
     ) -> dict[str, Any] | None:
-        self.initialize()
-        answers = self._load_answers_document()["answers"]
-        answer = answers.get(key)
+        document = document or self._load_answers_document()
+        resolved = self._resolve_answer_key_in_document(document, key)
+        answer = document["answers"].get(resolved)
         if answer is None or (
             answer.get("deletedAt") is not None and not include_trashed
         ):
             return None
         return self._answer_view(_require_object(answer, "answer record"))
 
-    def list_answers(
-        self, state: str | None = None, include_trashed: bool = False
+    @staticmethod
+    def _answer_candidates(record: dict[str, Any]) -> set[str]:
+        values: list[str] = []
+        if isinstance(record.get("question"), str) and record["question"].strip():
+            values.append(record["question"])
+        values.extend(
+            alias
+            for alias in record.get("aliases", [])
+            if isinstance(alias, str) and alias.strip()
+        )
+        return {normalize_question(value) for value in values}
+
+    def _reject_answer_collisions(
+        self,
+        answers: dict[str, Any],
+        candidate: dict[str, Any],
+        key: str,
+        redirects: dict[str, Any] | None = None,
+        redirect_targets: set[str] | None = None,
+    ) -> None:
+        candidate_names = self._answer_candidates(candidate)
+        permitted_redirect_targets = redirect_targets or {key}
+        for other_key, raw in answers.items():
+            if other_key == key:
+                continue
+            other = _require_object(raw, "answer record")
+            if _json_values_equal(other.get("scope", {}), candidate.get("scope", {})) and candidate_names & self._answer_candidates(other):
+                raise StoreError("answer question or alias collides within scope")
+        for normalized in candidate_names:
+            retired_key = answer_key(normalized, candidate.get("scope", {}))
+            redirect = (redirects or {}).get(retired_key)
+            if redirect is not None and redirect.get("targetKey") not in permitted_redirect_targets:
+                raise StoreError("answer question or alias is a retired redirect identity")
+
+    def get_answer(
+        self, key: str, include_trashed: bool = False
+    ) -> dict[str, Any] | None:
+        self.initialize()
+        document = self._load_answers_document()
+        resolved = self._resolve_answer_key_in_document(document, key)
+        answer = self._get_answer_record(key, include_trashed, document=document)
+        if answer is None:
+            return None
+        projection = self.answer_detail_projection(answer, document=document)
+        if resolved != key:
+            projection["redirectedFrom"] = key
+        return projection
+
+    def _list_answer_records(
+        self,
+        state: str | None = None,
+        include_trashed: bool = False,
+        review_status: str | None = "accepted",
+        document: dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
         self.initialize()
-        if state is not None and state not in ANSWER_STATES:
+        if state is not None and (
+            not isinstance(state, str) or state not in ANSWER_STATES
+        ):
             raise StoreError("answer state is unsupported")
+        if review_status is not None and (
+            not isinstance(review_status, str)
+            or review_status not in ANSWER_REVIEW_STATUSES
+        ):
+            raise StoreError("answer review status is unsupported")
+        document = document or self._load_answers_document()
         records = []
-        for record in self._load_answers_document()["answers"].values():
+        for record in document["answers"].values():
             if record.get("deletedAt") is not None and not include_trashed:
                 continue
             if state is not None and record.get("state") != state:
+                continue
+            if review_status is not None and record.get("reviewStatus", "accepted") != review_status:
                 continue
             records.append(self._answer_view(record))
         return sorted(
@@ -2234,6 +2457,77 @@ class Store:
             ),
         )
 
+    def list_answers(
+        self,
+        state: str | None = None,
+        include_trashed: bool = False,
+        review_status: str | None = "accepted",
+    ) -> list[dict[str, Any]]:
+        self.initialize()
+        document = self._load_answers_document()
+        records = self._list_answer_records(
+            state, include_trashed, review_status, document=document
+        )
+        counts = self._answer_reference_counts(document=document)
+        return [self._answer_projection(record, counts) for record in records]
+
+    def query_answers(
+        self,
+        query: str = "",
+        state: str | None = None,
+        review_status: str | None = "accepted",
+        include_trashed: bool = False,
+        trashed_only: bool = False,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> dict[str, Any]:
+        self.initialize()
+        if not isinstance(query, str):
+            raise StoreError("answer query must be a string")
+        if not isinstance(include_trashed, bool) or not isinstance(trashed_only, bool):
+            raise StoreError("answer trash filters must be booleans")
+        if not isinstance(offset, int) or isinstance(offset, bool) or offset < 0:
+            raise StoreError("answer offset must be a non-negative integer")
+        if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= 200:
+            raise StoreError("answer limit must be between 1 and 200")
+        needle = normalize_question(query) if query.strip() else ""
+        if trashed_only and not include_trashed:
+            raise StoreError("trashed-only query requires include trashed")
+        document = self._load_answers_document()
+        records = self._list_answer_records(
+            state, include_trashed, review_status, document=document
+        )
+        if trashed_only:
+            records = [item for item in records if item.get("deletedAt") is not None]
+        if needle:
+            records = [
+                item for item in records
+                if any(needle in candidate for candidate in self._answer_candidates(item))
+            ]
+        counts = self._answer_reference_counts(document=document)
+        page = records[offset : offset + limit]
+        return {
+            "items": [self._answer_projection(item, counts) for item in page],
+            "total": len(records),
+            "offset": offset,
+            "limit": limit,
+            "hasMore": offset + len(page) < len(records),
+        }
+
+    def reveal_answer(self, key: str) -> dict[str, Any]:
+        self.initialize()
+        document = self._load_answers_document()
+        resolved = self._resolve_answer_key_in_document(document, key)
+        answer = self._get_answer_record(key, document=document)
+        if answer is None:
+            raise StoreError("answer does not exist")
+        revealed = self.answer_detail_projection(
+            answer, document=document, reveal_value=True
+        )
+        if resolved != key:
+            revealed["redirectedFrom"] = key
+        return revealed
+
     def find_answer(
         self, question: str, scope: dict[str, Any] | None = None
     ) -> dict[str, Any] | None:
@@ -2242,26 +2536,34 @@ class Store:
         document = self._load_answers_document()
         for record in document["answers"].values():
             item = _require_object(record, "answer record")
-            if item.get("deletedAt") is not None:
-                continue
-            candidates = []
-            if isinstance(item.get("question"), str):
-                candidates.append(normalize_question(item["question"]))
-            aliases = item.get("aliases", [])
-            if not isinstance(aliases, list) or not all(
-                isinstance(alias, str) for alias in aliases
+            if (
+                item.get("deletedAt") is not None
+                or item.get("reviewStatus", "accepted") != "accepted"
             ):
-                raise StoreError("answer record aliases must be strings")
-            candidates.extend(normalize_question(alias) for alias in aliases)
-            if normalized in candidates and item.get("scope", {}) == (scope or {}):
-                return self._answer_view(item)
-        direct = document["answers"].get(answer_key(question, scope))
-        if direct is None or direct.get("deletedAt") is not None:
+                continue
+            candidates = self._answer_candidates(item)
+            if normalized in candidates and _json_values_equal(item.get("scope", {}), scope or {}):
+                return self.answer_detail_projection(item, document=document)
+        computed_key = answer_key(question, scope)
+        resolved_key = self._resolve_answer_key_in_document(document, computed_key)
+        direct = document["answers"].get(resolved_key)
+        if (
+            direct is None
+            or not _json_values_equal(direct.get("scope", {}), scope or {})
+            or direct.get("deletedAt") is not None
+            or direct.get("reviewStatus", "accepted") != "accepted"
+        ):
             return None
-        return self._answer_view(direct)
+        projected = self.answer_detail_projection(direct, document=document)
+        if resolved_key != computed_key:
+            projected["redirectedFrom"] = computed_key
+        return projected
 
     def put_answer(
-        self, incoming: dict[str, Any], remember_sensitive: bool = False
+        self,
+        incoming: dict[str, Any],
+        remember_sensitive: bool = False,
+        expected_revision: int | None = None,
     ) -> dict[str, Any]:
         self.initialize()
         question = incoming.get("question")
@@ -2275,6 +2577,12 @@ class Store:
             key = answer_key(question, scope)
         if not isinstance(key, str) or not key.strip():
             raise StoreError("answer key must be a non-empty string")
+        current_review_status = incoming.get("reviewStatus", "accepted")
+        if (
+            not isinstance(current_review_status, str)
+            or current_review_status not in ANSWER_REVIEW_STATUSES
+        ):
+            raise StoreError("answer review status is unsupported")
 
         state = incoming.get("state")
         if state not in ANSWER_STATES:
@@ -2310,9 +2618,24 @@ class Store:
 
         with exclusive_file_lock(self.store_lock_path):
             document = self._load_answers_document()
+            if key in self._answer_redirects(document):
+                raise StoreError("answer key was merged and cannot be resurrected")
             current = document["answers"].get(key)
             if current is not None and current.get("deletedAt") is not None:
                 raise StoreError("answer is trashed")
+            if current is not None:
+                if (
+                    not isinstance(expected_revision, int)
+                    or isinstance(expected_revision, bool)
+                    or expected_revision < 1
+                ):
+                    raise StoreError("existing answer put requires expected revision")
+                if current.get("revision", 1) != expected_revision:
+                    raise StoreError("answer revision conflict")
+            elif current_review_status != "accepted":
+                raise StoreError(
+                    "new answers created through put must have accepted review status"
+                )
             now = utc_now()
             record = dict(_require_object(current or {}, "answer record"))
             record.update(
@@ -2325,6 +2648,11 @@ class Store:
                     "source": incoming.get("source", "user"),
                     "scope": scope,
                     "sensitivity": sensitivity,
+                    "reviewStatus": (
+                        record.get("reviewStatus", "accepted")
+                        if current is not None
+                        else incoming.get("reviewStatus", "accepted")
+                    ),
                     "createdAt": record.get("createdAt") or now,
                     "updatedAt": now,
                     "deletedAt": None,
@@ -2333,6 +2661,18 @@ class Store:
                     ),
                 }
             )
+            if current is None:
+                record["observationCount"] = incoming.get("observationCount", 0)
+                for field in ("observedAt", "lastObservedAt", "reviewedAt"):
+                    if field in incoming:
+                        record[field] = incoming[field]
+            else:
+                record["observationCount"] = current.get("observationCount", 0)
+                for field in ("observedAt", "lastObservedAt", "reviewedAt"):
+                    if field in current:
+                        record[field] = current[field]
+                    else:
+                        record.pop(field, None)
             if state == "confirmed":
                 record["confirmedAt"] = incoming.get("confirmedAt") or now
             else:
@@ -2343,10 +2683,14 @@ class Store:
                 record.pop("rememberedWithConsentAt", None)
 
             _validate_answer_record(key, record)
+            self._reject_answer_collisions(
+                document["answers"], record, key, self._answer_redirects(document)
+            )
+            counts = self._answer_reference_counts(document=document)
             document["answers"][key] = record
             document["metadata"]["updatedAt"] = now
             atomic_write_json(self.answers_path, document)
-        return record
+        return self._answer_mutation_projection(record, counts)
 
     def update_answer(
         self,
@@ -2354,6 +2698,7 @@ class Store:
         patch: dict[str, Any],
         expected_revision: int,
         remember_sensitive: bool = False,
+        _review_status_transition: str | None = None,
     ) -> dict[str, Any]:
         self.initialize()
         if not isinstance(key, str) or not key:
@@ -2367,7 +2712,11 @@ class Store:
             "scope",
             "sensitivity",
         }
-        if not patch or set(patch) - allowed:
+        if (
+            (not patch and _review_status_transition is None)
+            or set(patch) - allowed
+            or _review_status_transition not in {None, "accepted", "declined"}
+        ):
             raise StoreError("answer patch contains unsupported fields")
         with exclusive_file_lock(self.store_lock_path):
             document = self._load_answers_document()
@@ -2377,6 +2726,11 @@ class Store:
             revision = current.get("revision", 1)
             if revision != expected_revision:
                 raise StoreError("answer revision conflict")
+            if (
+                _review_status_transition is not None
+                and current.get("reviewStatus", "accepted") != "pending"
+            ):
+                raise StoreError("only pending answers can be reviewed")
             updated = {**current, **patch}
             aliases = updated.get("aliases", [])
             if not isinstance(aliases, list) or not all(
@@ -2422,6 +2776,9 @@ class Store:
             updated["createdAt"] = current.get("createdAt") or current.get("updatedAt") or now
             updated["updatedAt"] = now
             updated["deletedAt"] = None
+            if _review_status_transition is not None:
+                updated["reviewStatus"] = _review_status_transition
+                updated["reviewedAt"] = now
             if state == "confirmed":
                 if state != current.get("state") or value != current.get("value"):
                     updated["confirmedAt"] = now
@@ -2435,10 +2792,312 @@ class Store:
             else:
                 updated.pop("rememberedWithConsentAt", None)
             _validate_answer_record(key, updated)
+            self._reject_answer_collisions(
+                document["answers"], updated, key, self._answer_redirects(document)
+            )
+            counts = self._answer_reference_counts(document=document)
             document["answers"][key] = updated
             document["metadata"]["updatedAt"] = now
             atomic_write_json(self.answers_path, document)
-        return self._answer_view(updated)
+        return self._answer_mutation_projection(updated, counts)
+
+    def observe_answer(self, incoming: dict[str, Any]) -> dict[str, Any]:
+        question = incoming.get("question")
+        scope = incoming.get("scope", {})
+        state = incoming.get("state", "inferred" if incoming.get("value") is not None else "missing")
+        if not isinstance(question, str) or not isinstance(scope, dict):
+            raise StoreError("observed answer requires question and object scope")
+        if state not in {"missing", "inferred"}:
+            raise StoreError("observed answer state must be missing or inferred")
+        if incoming.get("value") is not None and incoming.get("sensitivity", "none") != "none":
+            raise StoreError("sensitive observed values require review and fresh remember consent")
+        self.initialize()
+        now = utc_now()
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_answers_document()
+            normalized = normalize_question(question)
+            current = next(
+                (
+                    record for record in document["answers"].values()
+                    if _json_values_equal(record.get("scope", {}), scope)
+                    and normalized in self._answer_candidates(record)
+                ),
+                None,
+            )
+            if current is not None:
+                key = current["key"]
+            else:
+                computed_key = answer_key(question, scope)
+                key = self._resolve_answer_key_in_document(document, computed_key)
+                current = document["answers"].get(key)
+                if current is not None and not _json_values_equal(current.get("scope", {}), scope):
+                    raise StoreError(
+                        "observed answer derived key is occupied by a different scope"
+                    )
+            if current is not None:
+                if current.get("deletedAt") is not None:
+                    raise StoreError("observed answer is trashed")
+                updated = dict(current)
+                updated["reviewStatus"] = current.get("reviewStatus", "accepted")
+                updated["lastObservedAt"] = now
+                updated["observedAt"] = updated.get("observedAt") or now
+                updated["observationCount"] = updated.get("observationCount", 0) + 1
+                updated["updatedAt"] = now
+                updated["revision"] = updated.get("revision", 1) + 1
+                _validate_answer_record(key, updated)
+                document["answers"][key] = updated
+            else:
+                payload = {
+                    **incoming,
+                    "key": key,
+                    "state": state,
+                    "reviewStatus": "pending",
+                    "observedAt": now,
+                    "lastObservedAt": now,
+                    "observationCount": 1,
+                    "source": incoming.get("source", "agent"),
+                }
+                value = payload.get("value")
+                if state == "missing" and value is not None:
+                    raise StoreError("missing answers cannot contain a value")
+                updated = {
+                    "key": key,
+                    "question": question,
+                    "aliases": [],
+                    "value": value,
+                    "state": state,
+                    "source": payload["source"],
+                    "scope": scope,
+                    "sensitivity": payload.get("sensitivity", "none"),
+                    "reviewStatus": "pending",
+                    "observedAt": now,
+                    "lastObservedAt": now,
+                    "observationCount": 1,
+                    "confirmedAt": None,
+                    "createdAt": now,
+                    "updatedAt": now,
+                    "deletedAt": None,
+                    "revision": 1,
+                }
+                _validate_answer_record(key, updated)
+                self._reject_answer_collisions(
+                    document["answers"], updated, key, self._answer_redirects(document)
+                )
+                document["answers"][key] = updated
+            counts = self._answer_reference_counts(document=document)
+            document["metadata"]["updatedAt"] = now
+            atomic_write_json(self.answers_path, document)
+        return self._answer_mutation_projection(updated, counts)
+
+    def review_answer(
+        self,
+        key: str,
+        review_status: str,
+        expected_revision: int,
+        patch: dict[str, Any] | None = None,
+        remember_sensitive: bool = False,
+    ) -> dict[str, Any]:
+        if not isinstance(review_status, str) or review_status not in {
+            "accepted",
+            "declined",
+        }:
+            raise StoreError("answer review decision must be accepted or declined")
+        if patch is not None and "reviewStatus" in patch:
+            raise StoreError("answer review patch cannot set review status")
+        return self.update_answer(
+            key,
+            patch or {},
+            expected_revision,
+            remember_sensitive=remember_sensitive,
+            _review_status_transition=review_status,
+        )
+
+    @staticmethod
+    def _merged_observation_field(
+        winner: dict[str, Any], source: dict[str, Any], field: str, earliest: bool
+    ) -> str | None:
+        values = [
+            value for value in (winner.get(field), source.get(field))
+            if isinstance(value, str) and value
+        ]
+        if not values:
+            return None
+        return min(values) if earliest else max(values)
+
+    def _apply_answer_merge_locked(
+        self, document: dict[str, Any], operation: dict[str, Any]
+    ) -> dict[str, Any]:
+        winner_key = operation["winnerKey"]
+        source_key = operation["sourceKey"]
+        expected_winner = operation["expectedWinnerRevision"]
+        expected_source = operation["expectedSourceRevision"]
+        redirects = document.setdefault("redirects", {})
+        winner = document["answers"].get(winner_key)
+        source = document["answers"].get(source_key)
+        if source is None:
+            redirect = redirects.get(source_key)
+            if (
+                redirect is None
+                or redirect.get("targetKey") != winner_key
+                or winner is None
+                or winner.get("revision", 1) != expected_winner + 1
+            ):
+                raise StoreError("coordinator answer merge cannot be reconciled")
+            return self._answer_view(winner)
+        if winner is None:
+            raise StoreError("answer merge winner does not exist")
+        if (
+            winner.get("revision", 1) != expected_winner
+            or source.get("revision", 1) != expected_source
+        ):
+            raise StoreError("answer merge revision conflict")
+        if winner.get("deletedAt") is not None or source.get("deletedAt") is not None:
+            raise StoreError("answer merge records must be active")
+        if winner.get("reviewStatus", "accepted") != "accepted":
+            raise StoreError("answer merge winner must be accepted")
+        if not _json_values_equal(winner.get("scope", {}), source.get("scope", {})):
+            raise StoreError("answer merge requires exact matching scope")
+
+        aliases: list[str] = []
+        winner_question_value = winner.get("question")
+        winner_question = normalize_question(
+            winner_question_value
+            if isinstance(winner_question_value, str) and winner_question_value.strip()
+            else winner_key
+        )
+        for value in [
+            *winner.get("aliases", []),
+            source.get("question"),
+            *source.get("aliases", []),
+        ]:
+            if not isinstance(value, str) or not value.strip():
+                continue
+            normalized = normalize_question(value)
+            if normalized != winner_question and normalized not in aliases:
+                aliases.append(normalized)
+        merged = dict(winner)
+        merged["aliases"] = aliases
+        merged["observationCount"] = (
+            winner.get("observationCount", 0) + source.get("observationCount", 0)
+        )
+        for field, earliest in (("observedAt", True), ("lastObservedAt", False)):
+            value = self._merged_observation_field(winner, source, field, earliest)
+            if value is None:
+                merged.pop(field, None)
+            else:
+                merged[field] = value
+        merged["revision"] = expected_winner + 1
+        merged["updatedAt"] = operation["at"]
+        _validate_answer_record(winner_key, merged)
+        collision_candidates = {
+            key: value for key, value in document["answers"].items()
+            if key != source_key
+        }
+        self._reject_answer_collisions(
+            collision_candidates,
+            merged,
+            winner_key,
+            redirects,
+            {winner_key, source_key},
+        )
+        document["answers"][winner_key] = merged
+        del document["answers"][source_key]
+        for redirect in redirects.values():
+            if redirect["targetKey"] == source_key:
+                redirect["targetKey"] = winner_key
+        redirects[source_key] = {
+            "targetKey": winner_key,
+            "mergedAt": operation["at"],
+        }
+        document["metadata"]["updatedAt"] = operation["at"]
+        _validate_answer_redirects(redirects, document["answers"])
+        return self._answer_view(merged)
+
+    @staticmethod
+    def _rewrite_session_answer_key(
+        session: dict[str, Any], source_key: str, winner_key: str, at: str
+    ) -> dict[str, Any]:
+        rewritten = copy.deepcopy(session)
+        keys: list[str] = []
+        for key in rewritten.get("answerKeys", []):
+            key = winner_key if key == source_key else key
+            if key not in keys:
+                keys.append(key)
+        rewritten["answerKeys"] = keys
+        for field in rewritten.get("pendingFields", []):
+            if field.get("answerKey") == source_key:
+                field["answerKey"] = winner_key
+        rewritten["updatedAt"] = at
+        _validate_session_document(rewritten)
+        return rewritten
+
+    def merge_answers(
+        self,
+        winner_key: str,
+        source_key: str,
+        expected_winner_revision: int,
+        expected_source_revision: int,
+    ) -> dict[str, Any]:
+        self.initialize()
+        self._ensure_coordinator_files()
+        if not all(isinstance(key, str) and key for key in (winner_key, source_key)):
+            raise StoreError("answer merge keys must be non-empty strings")
+        if winner_key == source_key:
+            raise StoreError("answer merge requires distinct records")
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_answers_document()
+            redirects = self._answer_redirects(document)
+            if winner_key in redirects or source_key in redirects:
+                raise StoreError("answer merge records must be canonical active records")
+            winner = document["answers"].get(winner_key)
+            source = document["answers"].get(source_key)
+            if winner is None or source is None:
+                raise StoreError("answer merge record does not exist")
+            # Validate every semantic and collision condition against an in-memory
+            # operation before the crash-recovery journal can become durable.
+            now = utc_now()
+            preview = {
+                "kind": "answer_merge",
+                "operationId": uuid.uuid4().hex,
+                "at": now,
+                "winnerKey": winner_key,
+                "sourceKey": source_key,
+                "expectedWinnerRevision": expected_winner_revision,
+                "expectedSourceRevision": expected_source_revision,
+                "sessions": [],
+                "resultClaim": self._load_coordinator_document()["claim"],
+            }
+            preview_document = copy.deepcopy(document)
+            preview_merged = self._apply_answer_merge_locked(preview_document, preview)
+            sessions = []
+            all_sessions = self._list_sessions_uninitialized()
+            for session in all_sessions:
+                if source_key in session.get("answerKeys", []) or any(
+                    field.get("answerKey") == source_key
+                    for field in session.get("pendingFields", [])
+                ):
+                    sessions.append(
+                        self._rewrite_session_answer_key(
+                            session, source_key, winner_key, now
+                        )
+                    )
+            preview["sessions"] = sessions
+            rewritten_by_id = {
+                session["applicationId"]: session for session in sessions
+            }
+            projected_sessions = [
+                rewritten_by_id.get(session["applicationId"], session)
+                for session in all_sessions
+            ]
+            counts = self._answer_reference_counts(
+                document=preview_document,
+                sessions=projected_sessions,
+                history=self.read_history(),
+            )
+            self._commit_coordinator_operation_locked(preview)
+            result = self._answer_projection(preview_merged, counts)
+            result["mergedFrom"] = source_key
+            return result
 
     def trash_answer(self, key: str, expected_revision: int) -> dict[str, Any]:
         return self._set_answer_deleted(key, expected_revision, restore=False)
@@ -2454,6 +3113,7 @@ class Store:
             raise StoreError("answer key must be a non-empty string")
         with exclusive_file_lock(self.store_lock_path):
             document = self._load_answers_document()
+            redirects = self._answer_redirects(document)
             current = document["answers"].get(key)
             if current is None:
                 raise StoreError("answer does not exist")
@@ -2462,16 +3122,24 @@ class Store:
                 raise StoreError("answer revision conflict")
             is_trashed = current.get("deletedAt") is not None
             if restore == (not is_trashed):
-                return self._answer_view(current)
-            updated = dict(current)
-            updated["deletedAt"] = None if restore else utc_now()
-            updated["revision"] = revision + 1
-            updated["updatedAt"] = utc_now()
-            _validate_answer_record(key, updated)
-            document["answers"][key] = updated
-            document["metadata"]["updatedAt"] = updated["updatedAt"]
-            atomic_write_json(self.answers_path, document)
-        return self._answer_view(updated)
+                updated = dict(current)
+            else:
+                if not restore and any(
+                    redirect["targetKey"] == key for redirect in redirects.values()
+                ):
+                    raise StoreError("answer is the target of an immutable redirect")
+                updated = dict(current)
+                updated["deletedAt"] = None if restore else utc_now()
+                updated["revision"] = revision + 1
+                updated["updatedAt"] = utc_now()
+                _validate_answer_record(key, updated)
+                counts = self._answer_reference_counts(document=document)
+                document["answers"][key] = updated
+                document["metadata"]["updatedAt"] = updated["updatedAt"]
+                atomic_write_json(self.answers_path, document)
+            if restore == (not is_trashed):
+                counts = self._answer_reference_counts(document=document)
+        return self._answer_mutation_projection(updated, counts)
 
     def delete_answer(self, key: str, expected_revision: int) -> dict[str, Any]:
         self.initialize()
@@ -2479,6 +3147,9 @@ class Store:
             raise StoreError("answer key must be a non-empty string")
         with exclusive_file_lock(self.store_lock_path):
             document = self._load_answers_document()
+            redirects = self._answer_redirects(document)
+            if key in redirects:
+                raise StoreError("merged answer redirects are immutable")
             current = document["answers"].get(key)
             if current is None:
                 return {"deleted": False, "key": key}
@@ -2487,12 +3158,18 @@ class Store:
                 raise StoreError("answer revision conflict")
             if current.get("deletedAt") is None:
                 raise StoreError("answer must be trashed before permanent deletion")
+            if any(
+                redirect["targetKey"] == key for redirect in redirects.values()
+            ):
+                raise StoreError("answer is the target of an immutable redirect")
             for session in self._list_sessions_uninitialized():
                 if key in session.get("answerKeys", []) or any(
                     field.get("answerKey") == key
                     for field in session.get("pendingFields", [])
                 ):
                     raise StoreError("answer is referenced by an active session")
+            if any(key in event.get("answerKeys", []) for event in self.read_history()):
+                raise StoreError("answer is referenced by application history")
             del document["answers"][key]
             document["metadata"]["updatedAt"] = utc_now()
             atomic_write_json(self.answers_path, document)
@@ -3716,6 +4393,23 @@ class Store:
         operation = journal["operation"]
         if operation is None:
             return
+        if operation["kind"] == "answer_merge":
+            answers = self._load_answers_document()
+            self._apply_answer_merge_locked(answers, operation)
+            atomic_write_json(self.answers_path, answers)
+            for session in operation["sessions"]:
+                atomic_write_json(
+                    self._session_path(session["applicationId"]), session
+                )
+            atomic_write_json(
+                self.coordinator_path,
+                {"schemaVersion": SCHEMA_VERSION, "claim": operation["resultClaim"]},
+            )
+            atomic_write_json(
+                self.coordinator_journal_path,
+                {"schemaVersion": SCHEMA_VERSION, "operation": None},
+            )
+            return
         job_id = _safe_session_id(operation.get("jobId", ""))
         if "targetStatus" in operation:
             jobs = self._load_jobs_document()
@@ -4767,20 +5461,15 @@ class Store:
             "answerKeys": answer_keys,
         }
         _validate_history_event(event)
-        encoded = (json.dumps(event, sort_keys=True, ensure_ascii=False) + "\n").encode(
-            "utf-8"
-        )
-        descriptor = os.open(
-            self.history_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600
-        )
-        try:
-            written = os.write(descriptor, encoded)
-            if written != len(encoded):
-                raise StoreError("history append was incomplete")
-            os.fsync(descriptor)
-        finally:
-            os.close(descriptor)
-        _set_private_mode(self.history_path, 0o600)
+        with exclusive_file_lock(self.store_lock_path):
+            answers = self._load_answers_document()
+            for key in event["answerKeys"]:
+                resolved = self._resolve_answer_key_in_document(answers, key)
+                if resolved not in answers["answers"]:
+                    raise StoreError(
+                        "history answerKey does not reference an existing answer"
+                    )
+            self._append_history_event_idempotent_locked(event)
         return event
 
     def record_replay_transition(
@@ -5068,6 +5757,7 @@ def build_parser() -> argparse.ArgumentParser:
     key.add_argument("--scope", default="{}")
     put = commands.add_parser("answer-put")
     put.add_argument("--input", required=True)
+    put.add_argument("--expected-revision", type=int)
     put.add_argument("--remember-sensitive", action="store_true")
     get = commands.add_parser("answer-get")
     get.add_argument("--key", required=True)
@@ -5077,7 +5767,24 @@ def build_parser() -> argparse.ArgumentParser:
     find.add_argument("--scope", default="{}")
     answer_list = commands.add_parser("answer-list")
     answer_list.add_argument("--state")
+    answer_review_filter = answer_list.add_mutually_exclusive_group()
+    answer_review_filter.add_argument("--review-status", choices=sorted(ANSWER_REVIEW_STATUSES), default="accepted")
+    answer_review_filter.add_argument("--all-review-statuses", action="store_true")
+    answer_list.add_argument("--query", default="")
+    answer_list.add_argument("--offset", type=int, default=0)
+    answer_list.add_argument("--limit", type=int, default=50)
     answer_list.add_argument("--include-trashed", action="store_true")
+    answer_list.add_argument("--trashed-only", action="store_true")
+    answer_reveal = commands.add_parser("answer-reveal")
+    answer_reveal.add_argument("--key", required=True)
+    answer_observe = commands.add_parser("answer-observe")
+    answer_observe.add_argument("--input", required=True)
+    answer_review = commands.add_parser("answer-review")
+    answer_review.add_argument("--key", required=True)
+    answer_review.add_argument("--decision", required=True, choices=["accepted", "declined"])
+    answer_review.add_argument("--expected-revision", required=True, type=int)
+    answer_review.add_argument("--input")
+    answer_review.add_argument("--remember-sensitive", action="store_true")
     answer_update = commands.add_parser("answer-update")
     answer_update.add_argument("--key", required=True)
     answer_update.add_argument("--input", required=True)
@@ -5092,6 +5799,11 @@ def build_parser() -> argparse.ArgumentParser:
     answer_delete = commands.add_parser("answer-delete")
     answer_delete.add_argument("--key", required=True)
     answer_delete.add_argument("--expected-revision", required=True, type=int)
+    answer_merge = commands.add_parser("answer-merge")
+    answer_merge.add_argument("--winner-key", required=True)
+    answer_merge.add_argument("--source-key", required=True)
+    answer_merge.add_argument("--expected-winner-revision", required=True, type=int)
+    answer_merge.add_argument("--expected-source-revision", required=True, type=int)
 
     job_create = commands.add_parser("job-create")
     job_create.add_argument("--input", required=True)
@@ -5264,14 +5976,36 @@ def run(args: argparse.Namespace) -> Any:
         return {"key": answer_key(args.question, _scope(args.scope))}
     if command == "answer-put":
         return store.put_answer(
-            _read_input(args.input), remember_sensitive=args.remember_sensitive
+            _read_input(args.input),
+            remember_sensitive=args.remember_sensitive,
+            expected_revision=args.expected_revision,
         )
     if command == "answer-get":
         return store.get_answer(args.key, include_trashed=args.include_trashed)
     if command == "answer-find":
         return store.find_answer(args.question, _scope(args.scope))
     if command == "answer-list":
-        return store.list_answers(args.state, include_trashed=args.include_trashed)
+        return store.query_answers(
+            query=args.query,
+            state=args.state,
+            review_status=None if args.all_review_statuses else args.review_status,
+            include_trashed=args.include_trashed,
+            trashed_only=args.trashed_only,
+            offset=args.offset,
+            limit=args.limit,
+        )
+    if command == "answer-reveal":
+        return store.reveal_answer(args.key)
+    if command == "answer-observe":
+        return store.observe_answer(_read_input(args.input))
+    if command == "answer-review":
+        return store.review_answer(
+            args.key,
+            args.decision,
+            args.expected_revision,
+            _read_input(args.input) if args.input else None,
+            remember_sensitive=args.remember_sensitive,
+        )
     if command == "answer-update":
         return store.update_answer(
             args.key,
@@ -5285,6 +6019,13 @@ def run(args: argparse.Namespace) -> Any:
         return store.restore_answer(args.key, args.expected_revision)
     if command == "answer-delete":
         return store.delete_answer(args.key, args.expected_revision)
+    if command == "answer-merge":
+        return store.merge_answers(
+            args.winner_key,
+            args.source_key,
+            args.expected_winner_revision,
+            args.expected_source_revision,
+        )
     if command == "job-create":
         return store.create_job(_read_input(args.input), origin=args.origin)
     if command == "job-upsert-preview":

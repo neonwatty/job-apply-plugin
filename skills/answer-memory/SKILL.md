@@ -223,16 +223,27 @@ python3 "<plugin-root>/scripts/job-apply-store.py" answer-find \
   --scope '{"country":"US"}'
 ```
 
-Store a reviewed non-sensitive answer with `answer-put --input <answer.json>`. The helper owns stable keys and aliases; omit `key` for a dynamic question unless a documented semantic key already exists.
+Store a new reviewed non-sensitive answer with `answer-put --input <answer.json>`. Put creates accepted records only; use `answer-observe` to create pending records and `answer-review` to decline them. Updating through put requires `--expected-revision`; prefer selective `answer-update`. The helper owns stable keys and aliases and rejects normalized question/alias collisions inside the same exact scope.
 
 For the shared answer-library surface, list and selectively edit records through
 the helper. Existing records without explicit revisions are exposed as revision
 1 and gain durable revision metadata on their next mutation.
 
 ```bash
-python3 "<plugin-root>/scripts/job-apply-store.py" answer-list [--state <state>]
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-list [--state <state>] \
+  [--review-status <accepted|pending|declined> | --all-review-statuses] \
+  [--query <text>] [--offset <n>] [--limit <n>] \
+  [--include-trashed] [--trashed-only]
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-observe --input <observation.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-review \
+  --key <answer-key> --decision <accepted|declined> \
+  --expected-revision <revision> [--input <patch.json>] [--remember-sensitive]
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-reveal --key <answer-key>
 python3 "<plugin-root>/scripts/job-apply-store.py" answer-update \
   --key <answer-key> --expected-revision <revision> --input <patch.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-merge \
+  --winner-key <accepted-winner-key> --source-key <active-duplicate-key> \
+  --expected-winner-revision <revision> --expected-source-revision <revision>
 python3 "<plugin-root>/scripts/job-apply-store.py" answer-trash \
   --key <answer-key> --expected-revision <revision>
 python3 "<plugin-root>/scripts/job-apply-store.py" answer-restore \
@@ -241,10 +252,9 @@ python3 "<plugin-root>/scripts/job-apply-store.py" answer-delete \
   --key <answer-key> --expected-revision <revision>
 ```
 
-Normal lookup and listing hide trashed answers. Use `--include-trashed` only for
-an explicit trash-management workflow. Permanent deletion requires an
-already-trashed record and fails while an active resumable session references the
-answer key.
+Legacy active records without `reviewStatus` are accepted without changing their stable keys or scopes. `answer-observe` creates a stable pending `missing` or `inferred` record; repeated observations update value-free observation metadata. This lock-serialized, additive observation update is the sole existing-record mutation that intentionally takes no expected revision: it changes only observation count/timestamps and never replaces canonical answer fields. Derived-key and redirect lookup must still match the record's current exact scope; an occupied historical key at another scope fails observation without mutation. Declined records stay durable for deduplication and are hidden from default views. Generic put/update operations cannot create or transition pending/declined review status; only `answer-review` can transition a pending record to accepted or declined. Every list item omits `value`, including non-sensitive answers, and reports reference counts. Permanent deletion requires trash and fails on any session or append-only history reference.
+
+`answer-merge` requires an explicit accepted winner, an active duplicate source, exact matching scopes, and both current revisions. It preserves the winner value, sensitive-consent marker, source/provenance, state, and confirmation metadata; discards the source value; transfers the normalized source question and aliases; and combines only value-free observation counts/timestamps. A third-record alias collision fails before mutation. Mutable sessions are rewritten atomically through the existing crash-recovery coordinator. History is never rewritten: the removed key becomes a permanent flattened value-free redirect, and reads/reference counts resolve it to the winner. Redirect targets must remain active and cannot be trashed. Never try to reuse, restore, delete, or resurrect a merged source key.
 
 ### Sensitive answers require two decisions
 

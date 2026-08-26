@@ -18,6 +18,7 @@
       <button id="nav-jobs" class="nav-link active" type="button" aria-current="page">Jobs</button>
       <button id="nav-facts" class="nav-link" type="button">Facts</button>
       <button id="nav-resumes" class="nav-link" type="button">Resumes</button>
+      <button id="nav-answers" class="nav-link" type="button">Answers</button>
     </nav>
     <div class="connection" aria-live="polite">
       <span id="connection-dot" class="dot"></span>
@@ -134,7 +135,51 @@
         <p id="resumes-error" class="error hidden" role="alert"></p>
       </section>
     </div>
+
+    <div id="answers-workspace" class="hidden">
+      <section class="hero" aria-labelledby="answers-title">
+        <div><p class="eyebrow">Answers Workspace</p><h2 id="answers-title">Reusable answers, reviewed by you.</h2><p>Observed questions and reusable answers share one canonical local record. Sensitive values stay hidden until you explicitly reveal them.</p></div>
+        <div class="hero-actions"><button id="answers-refresh" class="button secondary" type="button">Refresh</button><button id="answer-new" class="button primary" type="button">New answer</button></div>
+      </section>
+      <section class="answers-panel" aria-labelledby="answer-library-heading">
+        <div class="panel-heading"><div><p class="eyebrow">CANONICAL LIBRARY</p><h2 id="answer-library-heading">Answers</h2></div><div class="filters"><label>Search <input id="answer-search" type="search" placeholder="Question or alias"></label><label>View <select id="answer-view"><option value="accepted">Library</option><option value="pending">Observed inbox</option><option value="declined">Declined</option><option value="trash">Trash</option></select></label><label>State <select id="answer-state-filter"><option value="">All states</option><option value="confirmed">Confirmed</option><option value="inferred">Inferred</option><option value="missing">Missing</option><option value="sensitive">Sensitive</option></select></label></div></div>
+        <p id="answers-status" class="notice" role="status" aria-live="polite">Open Answers to load the canonical library.</p>
+        <div id="answers-empty" class="empty-state hidden"><h3>No answers in this view</h3><p>Create an answer or wait for an agent to observe a question.</p></div>
+        <div id="answer-list" class="answer-list" role="list"></div>
+        <div class="button-row pagination"><button id="answers-previous" class="button secondary" type="button">Previous</button><button id="answers-next" class="button secondary" type="button">Next</button></div>
+        <p id="answers-error" class="error hidden" role="alert"></p>
+      </section>
+    </div>
   </main>
+
+  <dialog id="answer-dialog" aria-labelledby="answer-dialog-title">
+    <form id="answer-form" class="dialog-shell">
+      <div class="dialog-heading"><div><p id="answer-kicker" class="eyebrow">CANONICAL RECORD</p><h2 id="answer-dialog-title">Answer details</h2></div><button class="icon-button" type="button" data-close="answer-dialog" aria-label="Close answer details">×</button></div>
+      <div id="answer-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>This answer changed elsewhere</h3><p>Your unsaved form remains visible. Refresh the canonical revision, review your values, and save again.</p><button id="answer-conflict-refresh" class="button secondary" type="button">Refresh canonical revision</button></div>
+      <div class="form-grid">
+        <label class="wide">Question <input name="question" required autocomplete="off"></label>
+        <label class="wide">Aliases (one per line) <textarea name="aliases" rows="3"></textarea></label>
+        <label>State <select name="state"><option value="confirmed">Confirmed</option><option value="inferred">Inferred</option><option value="missing">Missing</option><option value="sensitive">Sensitive</option></select></label>
+        <label>Sensitivity <select name="sensitivity"><option value="none">None</option><option value="personal">Personal</option><option value="high">High</option></select></label>
+        <label class="wide">Scope (JSON object) <textarea name="scope" rows="3">{}</textarea></label>
+        <label class="wide">Value <textarea name="value" rows="4"></textarea></label>
+        <label id="remember-sensitive-label" class="wide hidden"><span><input name="rememberSensitive" type="checkbox"> I freshly consent to retaining this sensitive value in the local canonical store.</span></label>
+      </div>
+      <p id="answer-reference-counts"></p><p id="answer-error" class="error hidden" role="alert"></p>
+      <div class="dialog-footer"><div class="button-row"><button id="answer-reveal" class="button secondary hidden" type="button">Reveal sensitive value</button><button id="answer-merge" class="button secondary hidden" type="button">Merge duplicate…</button><button id="answer-accept" class="button secondary hidden" type="button">Accept</button><button id="answer-decline" class="button danger hidden" type="button">Decline</button><button id="answer-trash" class="button danger hidden" type="button">Move to trash</button><button id="answer-restore" class="button secondary hidden" type="button">Restore</button><button id="answer-delete" class="button danger hidden" type="button">Delete permanently</button></div><button id="answer-save" class="button primary" type="submit">Save answer</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="answer-merge-dialog" aria-labelledby="answer-merge-title">
+    <form id="answer-merge-form" class="dialog-shell">
+      <div class="dialog-heading"><div><p class="eyebrow">REDIRECT DUPLICATE</p><h2 id="answer-merge-title">Choose the accepted winner</h2></div><button class="icon-button" type="button" data-close="answer-merge-dialog" aria-label="Close answer merge">×</button></div>
+      <p id="answer-merge-source"></p>
+      <p>Only redacted metadata is shown. The selected winner keeps its value, consent, provenance, and exact scope; the duplicate becomes an immutable redirect.</p>
+      <label>Accepted winner <select id="answer-merge-winner" name="winnerKey" required></select></label>
+      <p id="answer-merge-error" class="error hidden" role="alert"></p>
+      <div class="dialog-footer"><button class="button secondary" type="button" data-close="answer-merge-dialog">Cancel</button><button id="answer-merge-confirm" class="button danger" type="submit">Merge into selected winner</button></div>
+    </form>
+  </dialog>
 
   <dialog id="job-dialog" aria-labelledby="job-dialog-title">
     <form id="job-form" class="dialog-shell">

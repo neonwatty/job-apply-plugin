@@ -9,6 +9,7 @@ import binascii
 import importlib.util
 import json
 import os
+import re
 import secrets
 import signal
 import sys
@@ -206,9 +207,28 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         except UnicodeError:
             self._error(HTTPStatus.BAD_REQUEST, "request path is invalid")
             return None
-        if decoded != parsed.path or "\\" in decoded or ".." in decoded:
-            self._error(HTTPStatus.NOT_FOUND, "route not found", "not_found")
+        if re.search(r"%(?![0-9A-Fa-f]{2})", parsed.path):
+            self._error(HTTPStatus.BAD_REQUEST, "request path is invalid")
             return None
+        return parsed.path
+
+    @staticmethod
+    def _answer_key(raw_segment: str) -> str:
+        return unquote(raw_segment, errors="strict")
+
+    @staticmethod
+    def _encoded_answer_key(raw_segment: str) -> str:
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", raw_segment):
+            raise STORE_MODULE.StoreError("encoded answer key is invalid")
+        padding = "=" * (-len(raw_segment) % 4)
+        try:
+            decoded = base64.b64decode(
+                raw_segment + padding, altchars=b"-_", validate=True
+            ).decode("utf-8")
+        except (binascii.Error, UnicodeDecodeError, ValueError):
+            raise STORE_MODULE.StoreError("encoded answer key is invalid") from None
+        if not decoded:
+            raise STORE_MODULE.StoreError("encoded answer key is invalid")
         return decoded
 
     def _read_json(self, max_bytes: int = MAX_BODY_BYTES) -> dict[str, Any] | None:
@@ -358,7 +378,30 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
                 ]
             })
             return
+        if path == "/api/answers":
+            self._store_call(lambda: self.server.store.query_answers())
+            return
         parts = path.split("/")
+        if len(parts) == 5 and parts[1:4] == ["api", "answers", "by-key"]:
+            def encoded_answer_detail() -> dict[str, Any]:
+                answer = self.server.store.get_answer(
+                    self._encoded_answer_key(parts[4]), include_trashed=True
+                )
+                if answer is None:
+                    raise STORE_MODULE.StoreError("answer does not exist")
+                return answer
+            self._store_call(encoded_answer_detail)
+            return
+        if len(parts) == 4 and parts[1:3] == ["api", "answers"]:
+            def answer_detail() -> dict[str, Any]:
+                answer = self.server.store.get_answer(
+                    self._answer_key(parts[3]), include_trashed=True
+                )
+                if answer is None:
+                    raise STORE_MODULE.StoreError("answer does not exist")
+                return answer
+            self._store_call(answer_detail)
+            return
         if len(parts) == 4 and parts[1:3] == ["api", "resumes"]:
             self._store_call(lambda: self._resume_projection(parts[3]))
             return
@@ -519,10 +562,150 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
                 return
             self._store_call(lambda: self.server.store.create_job(job, origin="human"))
             return
+        if method == "POST" and path == "/api/answers/query":
+            allowed = {"query", "state", "reviewStatus", "includeTrashed", "trashedOnly", "offset", "limit"}
+            if set(payload) - allowed:
+                self._error(HTTPStatus.BAD_REQUEST, "answer query contains unsupported fields")
+                return
+            self._store_call(lambda: self.server.store.query_answers(
+                query=payload.get("query", ""), state=payload.get("state"),
+                review_status=payload.get("reviewStatus", "accepted"),
+                include_trashed=payload.get("includeTrashed", False),
+                trashed_only=payload.get("trashedOnly", False),
+                offset=payload.get("offset", 0), limit=payload.get("limit", 50),
+            ))
+            return
+        if method == "POST" and path == "/api/answers":
+            if set(payload) - {"answer", "expectedRevision", "rememberSensitive"} or not isinstance(payload.get("answer"), dict):
+                self._error(HTTPStatus.BAD_REQUEST, "body requires an answer object")
+                return
+            if "rememberSensitive" in payload and not isinstance(
+                payload["rememberSensitive"], bool
+            ):
+                self._error(HTTPStatus.BAD_REQUEST, "rememberSensitive must be a boolean")
+                return
+            self._store_call(lambda: self.server.store.put_answer(
+                payload["answer"], payload.get("rememberSensitive", False), payload.get("expectedRevision")
+            ))
+            return
+        if method == "POST" and path == "/api/answers/observe":
+            if set(payload) != {"answer"} or not isinstance(payload.get("answer"), dict):
+                self._error(HTTPStatus.BAD_REQUEST, "body must contain only an answer object")
+                return
+            self._store_call(lambda: self.server.store.observe_answer(payload["answer"]))
+            return
         if method == "POST" and path == "/api/jobs/bulk":
             self._bulk_create(payload)
             return
         parts = path.split("/")
+        encoded_answer_route = (
+            len(parts) in {5, 6}
+            and parts[1:4] == ["api", "answers", "by-key"]
+        )
+        legacy_answer_route = len(parts) in {4, 5} and parts[1:3] == ["api", "answers"]
+        if method == "PATCH" and (
+            (encoded_answer_route and len(parts) == 5)
+            or (legacy_answer_route and len(parts) == 4)
+        ):
+            if set(payload) - {"patch", "expectedRevision", "rememberSensitive"} or not isinstance(payload.get("patch"), dict):
+                self._error(HTTPStatus.BAD_REQUEST, "body requires patch and expectedRevision")
+                return
+            expected_revision = self._expected_revision(payload)
+            if expected_revision is None:
+                return
+            if "rememberSensitive" in payload and not isinstance(
+                payload["rememberSensitive"], bool
+            ):
+                self._error(HTTPStatus.BAD_REQUEST, "rememberSensitive must be a boolean")
+                return
+            self._store_call(lambda: self.server.store.update_answer(
+                (
+                    self._encoded_answer_key(parts[4])
+                    if encoded_answer_route
+                    else self._answer_key(parts[3])
+                ),
+                payload["patch"], expected_revision,
+                payload.get("rememberSensitive", False)
+            ))
+            return
+        if method == "POST" and (
+            (encoded_answer_route and len(parts) == 6)
+            or (legacy_answer_route and len(parts) == 5)
+        ):
+            try:
+                answer_id, action = (
+                    (self._encoded_answer_key(parts[4]), parts[5])
+                    if encoded_answer_route
+                    else (self._answer_key(parts[3]), parts[4])
+                )
+            except STORE_MODULE.StoreError as error:
+                self._error(HTTPStatus.BAD_REQUEST, str(error))
+                return
+            if action == "reveal":
+                if payload:
+                    self._error(HTTPStatus.BAD_REQUEST, "reveal body must be empty")
+                    return
+                self._store_call(lambda: self.server.store.reveal_answer(answer_id))
+                return
+            if action == "merge":
+                allowed = {
+                    "winnerKey", "expectedWinnerRevision", "expectedSourceRevision"
+                }
+                if set(payload) != allowed:
+                    self._error(HTTPStatus.BAD_REQUEST, "answer merge body is invalid")
+                    return
+                winner_key = payload.get("winnerKey")
+                winner_revision = payload.get("expectedWinnerRevision")
+                source_revision = payload.get("expectedSourceRevision")
+                if (
+                    not isinstance(winner_key, str)
+                    or not winner_key
+                    or not isinstance(winner_revision, int)
+                    or isinstance(winner_revision, bool)
+                    or winner_revision < 1
+                    or not isinstance(source_revision, int)
+                    or isinstance(source_revision, bool)
+                    or source_revision < 1
+                ):
+                    self._error(HTTPStatus.BAD_REQUEST, "answer merge body is invalid")
+                    return
+                self._store_call(lambda: self.server.store.merge_answers(
+                    winner_key, answer_id, winner_revision, source_revision
+                ))
+                return
+            expected_revision = self._expected_revision(payload)
+            if expected_revision is None:
+                return
+            if action in {"accept", "decline"}:
+                allowed = {"expectedRevision", "patch", "rememberSensitive"}
+                if set(payload) - allowed or not isinstance(payload.get("patch", {}), dict):
+                    self._error(HTTPStatus.BAD_REQUEST, "answer review body is invalid")
+                    return
+                if "rememberSensitive" in payload and not isinstance(
+                    payload["rememberSensitive"], bool
+                ):
+                    self._error(HTTPStatus.BAD_REQUEST, "rememberSensitive must be a boolean")
+                    return
+                self._store_call(lambda: self.server.store.review_answer(
+                    answer_id, "accepted" if action == "accept" else "declined",
+                    expected_revision, payload.get("patch"), payload.get("rememberSensitive", False),
+                ))
+                return
+            if set(payload) != {"expectedRevision"}:
+                self._error(HTTPStatus.BAD_REQUEST, f"{action} body requires expectedRevision")
+                return
+            operations = {
+                "trash": self.server.store.trash_answer,
+                "restore": self.server.store.restore_answer,
+                "delete": self.server.store.delete_answer,
+            }
+            if action in operations:
+                operation = operations[action]
+                self._store_call(lambda: (
+                    operation(answer_id, expected_revision)
+                    if action == "delete" else operation(answer_id, expected_revision)
+                ))
+                return
         if len(parts) == 4 and parts[1:3] == ["api", "resumes"] and method == "PATCH":
             if (
                 set(payload) != {"patch", "expectedRevision"}

@@ -71,6 +71,55 @@ commit = json.loads(subprocess.run(
 if not commit.get("committed") or commit.get("summary", {}).get("create") != 1:
     raise SystemExit("legacy migration selected commit smoke failed")
 
+answer_store = smoke_root / "answers-store"
+answer_base = [sys.executable, str(root / "scripts" / "job-apply-store.py"), "--root", str(answer_store)]
+def answer_command(command, payload=None, *arguments):
+    input_path = smoke_root / f"answer-{command}.json"
+    final = [*answer_base, command, *arguments]
+    if payload is not None:
+        input_path.write_text(json.dumps(payload), encoding="utf-8")
+        final.extend(["--input", str(input_path)])
+    return json.loads(subprocess.run(final, check=True, capture_output=True, text=True).stdout)
+
+observed = answer_command("answer-observe", {"question": "Smoke observed question?", "state": "missing", "scope": {"ats": "smoke"}})
+concurrent_input = smoke_root / "answer-observe-concurrent.json"
+concurrent_input.write_text(json.dumps({"question": "Smoke observed question!", "state": "missing", "scope": {"ats": "smoke"}}), encoding="utf-8")
+processes = [subprocess.Popen(
+    [*answer_base, "answer-observe", "--input", str(concurrent_input)],
+    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+) for _ in range(8)]
+concurrent_results = []
+for process in processes:
+    stdout, stderr = process.communicate()
+    if process.returncode != 0:
+        raise SystemExit(f"packaged concurrent answer observation failed: {stderr}")
+    concurrent_results.append(json.loads(stdout))
+observed = answer_command("answer-get", None, "--key", observed["key"])
+if observed.get("observationCount") != 9 or len({item["revision"] for item in concurrent_results}) != 8:
+    raise SystemExit("packaged concurrent answer observations were not additive")
+accepted = answer_command("answer-review", {"value": "Reusable", "state": "confirmed"}, "--key", observed["key"], "--decision", "accepted", "--expected-revision", str(observed["revision"]))
+sensitive = answer_command("answer-put", {"question": "Smoke sensitive question?", "state": "sensitive", "value": "private-smoke-answer", "sensitivity": "high"}, "--remember-sensitive")
+library = answer_command("answer-list")
+detail = answer_command("answer-get", None, "--key", sensitive["key"])
+found = answer_command("answer-find", None, "--question", "Smoke sensitive question?", "--scope", "{}")
+if library.get("total") != 2 or any("private-smoke-answer" in json.dumps(result) for result in (sensitive, library, detail, found)):
+    raise SystemExit("packaged answer aggregate redaction failed")
+declined = answer_command("answer-observe", {"question": "Smoke declined lookup?", "state": "missing"})
+answer_command("answer-review", None, "--key", declined["key"], "--decision", "declined", "--expected-revision", str(declined["revision"]))
+if answer_command("answer-find", None, "--question", "Smoke declined lookup?", "--scope", "{}") is not None:
+    raise SystemExit("packaged default answer lookup reused a declined record")
+revealed = answer_command("answer-reveal", None, "--key", sensitive["key"])
+if revealed.get("value") != "private-smoke-answer":
+    raise SystemExit("packaged explicit sensitive reveal failed")
+history = answer_command("history-append", {"applicationId": "answer-smoke", "event": "reviewed", "answerKeys": [accepted["key"]]})
+trashed = answer_command("answer-trash", None, "--key", accepted["key"], "--expected-revision", str(accepted["revision"]))
+trash_page = answer_command("answer-list", None, "--all-review-statuses", "--include-trashed", "--trashed-only", "--offset", "0", "--limit", "1")
+if trash_page.get("total") != 1 or trash_page.get("items", [{}])[0].get("key") != accepted["key"]:
+    raise SystemExit("packaged answer trash filtering or pagination failed")
+blocked = subprocess.run([*answer_base, "answer-delete", "--key", accepted["key"], "--expected-revision", str(trashed["revision"])], capture_output=True, text=True)
+if blocked.returncode == 0 or "application history" not in blocked.stderr or "Reusable" in blocked.stderr:
+    raise SystemExit("packaged history-guarded answer deletion failed")
+
 from qa.contracts import ContractError, validate_fixture
 from qa.privacy import PrivacyError, scan_tree
 from qa.promote import (
@@ -394,6 +443,7 @@ PY
 python3 - "$SMOKE_FIXTURE_DIR" "$SMOKE_TEMP_ROOT" <<'PY'
 import base64
 import http.client
+import importlib.util
 import json
 import signal
 import subprocess
@@ -407,6 +457,40 @@ launcher = fixture / "scripts" / "job-apply-workspace.py"
 assets = [fixture / "workspace" / name for name in ("index.html", "app.js", "styles.css")]
 if not launcher.is_file() or not all(asset.is_file() for asset in assets):
     raise SystemExit("packaged fixture is missing the Jobs workspace launcher or assets")
+
+store_spec = importlib.util.spec_from_file_location("packaged_merge_store", fixture / "scripts" / "job-apply-store.py")
+store_module = importlib.util.module_from_spec(store_spec)
+store_spec.loader.exec_module(store_module)
+recovery_store = store_module.Store(smoke_root / "merge-recovery-store", smoke_root / "no-legacy")
+winner = recovery_store.put_answer({"question": "Packaged merge winner?", "state": "sensitive", "value": "packaged-winner-secret", "sensitivity": "high"}, remember_sensitive=True)
+source = recovery_store.put_answer({"question": "Packaged merge duplicate?", "state": "confirmed", "value": "packaged-source-discarded"})
+recovery_store.save_session("packaged-merge", {"status": "active", "answerKeys": [source["key"]]})
+recovery_store.append_history({"applicationId": "packaged-merge", "event": "reviewed", "answerKeys": [source["key"]]})
+real_atomic_write = store_module.atomic_write_json
+interrupted = False
+def interrupt_merge(path, payload):
+    global interrupted
+    if path == recovery_store._session_path("packaged-merge") and not interrupted:
+        interrupted = True
+        raise OSError("synthetic packaged merge interruption")
+    return real_atomic_write(path, payload)
+store_module.atomic_write_json = interrupt_merge
+try:
+    recovery_store.merge_answers(winner["key"], source["key"], winner["revision"], source["revision"])
+    raise SystemExit("packaged merge recovery did not interrupt")
+except OSError:
+    pass
+finally:
+    store_module.atomic_write_json = real_atomic_write
+recovered_store = store_module.Store(recovery_store.root, smoke_root / "no-legacy")
+recovered_store.initialize()
+merged = recovered_store.get_answer(winner["key"])
+redirected = recovered_store.get_answer(source["key"])
+session = recovered_store.load_session("packaged-merge")
+if redirected.get("key") != winner["key"] or session.get("answerKeys") != [winner["key"]] or merged.get("referenceCounts", {}).get("history") != 1:
+    raise SystemExit("packaged merge recovery or immutable-history resolution failed")
+if "packaged-source-discarded" in recovery_store.answers_path.read_text(encoding="utf-8") or "packaged-winner-secret" in recovery_store.coordinator_journal_path.read_text(encoding="utf-8"):
+    raise SystemExit("packaged merge recovery retained a source value or journaled an answer value")
 process = subprocess.Popen(
     [sys.executable, str(launcher), "--root", str(smoke_root / "workspace-store"), "--port", "0", "--no-open", "--json"],
     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
@@ -526,7 +610,7 @@ finally:
     if process.poll() is None:
         process.terminate()
         process.wait(timeout=5)
-print("Packaged Jobs, Facts, managed resume, and extraction store launch passed")
+print("Packaged Jobs, Facts, managed resume, extraction, Answers merge recovery, and store launch passed")
 PY
 
 echo "Running Playwright and CLI walkthrough against packaged fixture"

@@ -1,12 +1,12 @@
 ---
 name: job-workspace
-description: Start the optional local Jobs, Facts, and Resumes workspace shared with Job Apply agents and the canonical store.
+description: Start the optional local Jobs, Facts, Resumes, and Answers workspace shared with Job Apply agents and the canonical store.
 allowed-tools: Bash
 ---
 
 # Job Workspace
 
-Start the packaged, local-only companion when the user asks to review or edit canonical profile facts and preferences; manage canonical resume metadata, private files, defaults, trash, or extraction conflicts; or view, organize, edit, preflight, or prepare canonical jobs in a browser.
+Start the packaged, local-only companion when the user asks to manage canonical Jobs, Facts, Resumes, or reusable Answers and observed questions in a browser.
 
 ## Launch
 
@@ -27,6 +27,8 @@ The launcher chooses a free port, binds only to `127.0.0.1`, opens the browser, 
 - Never bind the workspace to another host or proxy it onto a network.
 - The Jobs surface can create, edit, organize, preflight, mark ready, and move Jobs records to recoverable trash. The Facts surface selectively edits the canonical profile and preferences with provenance and explicit conflict choices.
 - The Resumes surface imports bounded PDF, DOCX, or UTF-8 TXT bytes into the private canonical managed library; edits labels/tags; replaces or explicitly adopts a file; manages defaults and guarded Trash; previews authenticated PDF/TXT; downloads DOCX; and reviews existing agent-created extraction proposals. Browser source paths and filenames are not retained.
+- The Answers surface uses only canonical `answers.json` records. It provides a redacted searchable library and observed-question inbox, explicit sensitive reveal, fresh retention consent, optimistic conflicts, review decisions, reference counts, guarded Trash/deletion, and explicit accepted-winner merge at exact scope/revisions. Merge options and results are redacted. The browser may temporarily display a non-sensitive detail value or an explicitly revealed sensitive value in the open dialog, but it clears that field when the dialog closes and never persists answer values or browser-owned answer state.
+- Aggregate answer responses omit every value. A detail response may include a non-sensitive value; a sensitive value requires the explicit reveal action. Declined observations remain durable and hidden from default library/inbox views.
 - Resume lists omit bytes, paths, file identities, digests, and proposal values. Content delivery is authenticated, no-store, fixed-MIME, and limited to canonical active managed IDs. The browser cannot browse arbitrary paths.
 - Resume and proposal conflicts are never retried. Preserve metadata drafts and file selections, refresh the canonical revision, and require explicit reapplication or reconfirmation. Accepted extraction decisions refresh Facts and remain user-provenanced.
 - V1 does not parse, author, edit, generate, or tailor resume content; author extraction proposals; sync to cloud storage; or maintain browser-owned durable application data.

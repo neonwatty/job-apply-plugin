@@ -111,20 +111,23 @@ Known semantic fields may use documented keys. Dynamic questions receive `questi
 
 Only a non-sensitive `confirmed` answer with matching scope may be reused without asking. `inferred`, `missing`, and every `sensitive` record require review. A stored sensitive value must carry the helper-generated consent timestamp, and the agent still reconfirms it before use.
 
-Answer records are listable and carry optimistic revisions for shared CLI/UX
-editing. Existing version-1 records without an explicit revision are treated as
-revision 1 and gain stored revision metadata on their next mutation. Normal get,
-find, and list operations hide trashed records.
+Answer records carry orthogonal `reviewStatus` (`accepted`, `pending`, or `declined`) and optimistic revisions. Legacy active records default to accepted; their stable key and exact scope do not change. Generic put creates accepted records only. Observed questions are canonical pending missing/inferred answer records, never a second store; only dedicated review can decline them. Declined records remain durable to deduplicate later observations. Within one exact scope, normalized questions and aliases cannot collide across records. Derived-key and redirect fallback must match the target record's current exact scope; observation fails without mutation when a historical stable key is occupied at another scope.
+
+Search/list projections are stable, paginated, strictly type-check query filters, and omit all answer values while reporting `hasValue`, redaction state, and value-free session/history reference counts. Get, find, and mutation responses also omit retained sensitive values; only explicit reveal of an active record returns one. Repeated or concurrent observations add counts and timestamps under the store lock without replacing canonical answer fields. This lock-serialized additive `answer-observe` path is the sole existing-record exception to expected-revision input; every other mutation of an existing record, including put/upsert, requires its revision. Generic put/update operations cannot transition `reviewStatus`; only the dedicated review operation can move a pending record to accepted or declined.
+
+Browser answer routes carry the full UTF-8 key in a base64url path segment so valid explicit keys such as `.` and `..` never pass through browser dot-segment normalization; authentication, exact-origin mutation checks, and route allowlisting remain unchanged. Detail, find, list, and explicit reveal resolve redirects, records, values, projection metadata, and reference-key interpretation from one Answers document snapshot. A reveal response is applied only when both the open dialog and response still have the requested canonical identity; a concurrent merge response is never placed into the source dialog. Overlapping detail requests are sequenced, and merge is blocked while the source form has an unsaved draft so a draft is never silently retargeted or discarded.
+
+Answer merge requires an explicitly selected accepted winner and an active duplicate source at the same exact scope and at both exact revisions. The winner retains its value, consent, provenance, sensitivity, state, and confirmation metadata. The source value is removed; its normalized question/aliases transfer after a pre-mutation third-record collision check; and only observation count plus earliest/latest timestamps are combined. The source becomes one permanent value-free redirect directly to an active canonical winner. Redirects cannot chain, cycle, dangle, be deleted, target a trashed record, or resurrect a merged key; a redirect target cannot be trashed.
+
+The existing coordinator journal serializes the Answers document transition with rewrites of every mutable session `answerKeys` and pending-field `answerKey`. Its merge operation contains only keys, revisions, timestamps, the unchanged claim, and closed value-free session documents—never an answer value. Recovery rolls the operation forward idempotently after any interrupted write. Append-only history is never rewritten; reads, reference counts, and deletion guards resolve its old keys through redirects. A redirect target cannot be permanently deleted.
 
 Changing a retained sensitive value requires a fresh field-specific remember
 decision. Updating non-value metadata on an already consented sensitive record
-preserves its consent marker. Permanent deletion requires recoverable trash first
-and fails while a resumable session references the answer key. Minimal history
-may retain the value-free key after the reusable answer is deleted.
+preserves its consent marker. Permanent deletion requires recoverable trash first and fails while any session or append-only application-history event references the answer key. History is never rewritten to enable deletion.
 
 ## Data minimization
 
-History and sessions reference answer keys instead of copying values. Their input schemas are closed: arbitrary nested applicant payloads are rejected. Credentials, browser state, CAPTCHA/MFA data, and payment information are never valid storage inputs.
+History and sessions reference answer keys instead of copying values. Standalone history append is serialized with answer deletion and accepts each new answer reference only when its key is an existing answer or immutable redirect; whichever operation wins the lock makes a concurrent append/delete attempt fail safely. Existing append-only lines remain unchanged. Their input schemas are closed: arbitrary nested applicant payloads are rejected. Credentials, browser state, CAPTCHA/MFA data, and payment information are never valid storage inputs.
 
 ## Approved replay lifecycle
 

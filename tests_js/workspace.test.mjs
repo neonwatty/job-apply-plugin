@@ -36,8 +36,17 @@ function minimalSyntheticPdf() {
 
 const {
   ApiError,
+  answerApiPath,
   FACT_SAVE_REVISION_RETRIES,
   canMarkReadyFrom,
+  answerNeedsFreshConsent,
+  answerSummary,
+  canApplyAnswerReveal,
+  canApplyAnswerDialogResponse,
+  canApplyAnswerDialogMutation,
+  canRefreshAnswerDraft,
+  canRevealAnswer,
+  sameAnswerScope,
   createApi,
   conflictingPaths,
   filterJobs,
@@ -106,6 +115,34 @@ test("jobs filter by status and human-visible fields", () => {
   assert.deepEqual(filterJobs(jobs, "acme", ""), [jobs[0]]);
   assert.deepEqual(filterJobs(jobs, "remote", "saved"), [jobs[1]]);
   assert.deepEqual(filterJobs(jobs, "engineer", "saved"), []);
+});
+
+test("answer summaries preserve aggregate redaction and fresh-consent boundaries", () => {
+  assert.equal(answerSummary({ valueRedacted: true, hasValue: true }), "Sensitive value hidden — reveal explicitly to view");
+  assert.equal(answerSummary({ valueRedacted: false, hasValue: true }), "Value retained");
+  assert.equal(answerNeedsFreshConsent("sensitive", "high", true), true);
+  assert.equal(answerNeedsFreshConsent("confirmed", "personal", true), true);
+  assert.equal(answerNeedsFreshConsent("confirmed", "none", true), false);
+  assert.equal(canRevealAnswer({ valueRedacted: true, deletedAt: null }), true);
+  assert.equal(canRevealAnswer({ valueRedacted: true, deletedAt: "2026-08-25T00:00:00Z" }), false);
+  assert.equal(canRefreshAnswerDraft({ key: "source" }, { key: "source", revision: 2 }), true);
+  assert.equal(canRefreshAnswerDraft({ key: "source" }, { key: "winner", redirectedFrom: "source" }), false);
+  assert.equal(canApplyAnswerReveal({ key: "source" }, "source", { key: "source", value: "private" }), true);
+  assert.equal(canApplyAnswerReveal({ key: "source" }, "source", { key: "winner", redirectedFrom: "source", value: "winner-private" }), false);
+  assert.equal(canApplyAnswerReveal({ key: "another" }, "source", { key: "source", value: "private" }), false);
+  assert.equal(canApplyAnswerDialogResponse({ key: "source" }, "source", 4, 4), true);
+  assert.equal(canApplyAnswerDialogResponse({ key: "source" }, "source", 4, 5), false);
+  assert.equal(canApplyAnswerDialogResponse({ key: "another" }, "source", 4, 4), false);
+  assert.equal(canApplyAnswerDialogResponse({ key: "source" }, "source", 4, 4, false), false);
+  assert.equal(canApplyAnswerDialogMutation({ key: "source" }, "source", 7, 7), true);
+  assert.equal(canApplyAnswerDialogMutation({ key: "source" }, "source", 7, 8), false);
+  assert.equal(canApplyAnswerDialogMutation({ key: "another" }, "source", 7, 7), false);
+  assert.equal(canApplyAnswerDialogMutation(null, null, 7, 7), true);
+  assert.equal(canApplyAnswerDialogMutation({ key: "source" }, "source", 7, 7, false), false);
+  assert.equal(sameAnswerScope({ country: "US", ats: { name: "x" } }, { ats: { name: "x" }, country: "US" }), true);
+  assert.equal(sameAnswerScope({ country: "US" }, { country: "CA" }), false);
+  assert.equal(answerApiPath(".."), "/api/answers/by-key/Li4");
+  assert.equal(answerApiPath("résumé/回答", "reveal").includes("."), false);
 });
 
 test("form values become a supported Store patch", () => {
@@ -191,6 +228,12 @@ test("workspace markup has semantic dialogs, labels, live regions, and no remote
   assert.match(html, /<dialog id="job-dialog" aria-labelledby=/);
   assert.match(html, /id="facts-workspace"/);
   assert.match(html, /id="resumes-workspace"/);
+  assert.match(html, /id="answers-workspace"/);
+  assert.match(html, /<dialog id="answer-dialog" aria-labelledby=/);
+  assert.match(html, /<dialog id="answer-merge-dialog" aria-labelledby=/);
+  assert.match(html, /id="answer-merge-winner"/);
+  assert.match(html, /id="answer-reveal"/);
+  assert.match(html, /name="rememberSensitive"/);
   assert.match(html, /<dialog id="resume-dialog" aria-labelledby=/);
   assert.match(html, /<dialog id="proposal-dialog" aria-labelledby=/);
   assert.match(html, /aria-label="Workspace sections"/);
@@ -213,6 +256,21 @@ test("answer-memory documents guarded profile and preference mutations", async (
   const skill = await readFile(join(REPO_ROOT, "skills", "answer-memory", "SKILL.md"), "utf8");
   assert.match(skill, /profile-replace[\s\\]+--input <profile\.json> --expected-revision <revision>[\s\\]+--source <user\|resume\|agent\|migration>/);
   assert.match(skill, /preferences-set[\s\\]+--input <preferences\.json> --expected-revision <revision>[\s\\]+--source <user\|resume\|agent\|migration> \[--replace\]/);
+  assert.match(skill, /sole existing-record mutation that intentionally takes no expected revision/);
+  assert.match(skill, /--winner-key <accepted-winner-key> --source-key <active-duplicate-key>/);
+  assert.doesNotMatch(skill, /--source-key <accepted-duplicate-key>/);
+});
+
+test("answer browser routes encode canonical keys at every path boundary", async () => {
+  const app = await readFile(join(REPO_ROOT, "workspace", "app.js"), "utf8");
+  for (const expression of [
+    "answerApiPath(answer.key, action)",
+    "answerApiPath(selected.key)",
+    "answerApiPath(source.key, \"merge\")",
+  ]) {
+    assert.ok(app.includes(expression), expression);
+  }
+  assert.doesNotMatch(app, /encodeURIComponent\((?:answer|selected|source)\.key\)/);
 });
 
 test("job-apply direct URL workflow resolves canonical managed resume storage", async () => {
@@ -686,6 +744,200 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await page.locator("#job-dialog").waitFor({ state: "hidden" });
     await page.waitForFunction((id) => document.activeElement?.dataset?.id === id, uiJob.id);
     assert.equal((await cli("job-get", ["--id", cliJob.id])), null);
+
+    const cliObserved = await cli("answer-observe", [], { question: "Will you relocate for this role?", state: "missing", scope: { ats: "browser" } });
+    await page.getByRole("button", { name: "Answers" }).click();
+    await page.locator("#answer-view").selectOption("pending");
+    await page.getByRole("heading", { name: "Will you relocate for this role?" }).waitFor();
+    const observedCard = page.locator(".answer-card").filter({ hasText: "Will you relocate for this role?" });
+    assert.equal(await observedCard.getAttribute("role"), null);
+    assert.equal(await observedCard.locator("xpath=..").getAttribute("role"), "listitem");
+    await observedCard.click();
+    await page.locator("#answer-dialog[open]").waitFor();
+    await page.locator("#answer-dialog").getByLabel("State").selectOption("sensitive");
+    await page.locator("#answer-dialog").getByLabel("Sensitivity").selectOption("high");
+    await page.locator("#answer-dialog").getByLabel("Value", { exact: true }).fill("relocation-sensitive-draft");
+    await page.locator("#answer-dialog").getByLabel(/freshly consent/).check();
+    await page.locator("#answer-dialog").getByRole("button", { name: "Accept", exact: true }).click();
+    await page.locator("#answer-dialog").waitFor({ state: "hidden" });
+    const acceptedObserved = await cli("answer-get", ["--key", cliObserved.key]);
+    assert.equal(acceptedObserved.reviewStatus, "accepted");
+    assert.equal("value" in acceptedObserved, false);
+    assert.equal((await cli("answer-reveal", ["--key", cliObserved.key])).value, "relocation-sensitive-draft");
+    assert.equal(await page.evaluate(() => document.activeElement?.id), "answer-new");
+
+    await page.locator("#answer-view").selectOption("accepted");
+    const questionless = await cli("answer-put", [], { key: "explicit-questionless", state: "missing" });
+    const reservedObserved = await cli("answer-put", [], { key: "observed", question: "Reserved observed browser key?", state: "confirmed", value: "observed value" });
+    const reservedTrash = await cli("answer-put", [], { key: "trash", question: "Reserved trash browser key?", state: "confirmed", value: "trash value" });
+    const dotOnly = await cli("answer-put", [], { key: "..", state: "missing" });
+    const slowDetail = await cli("answer-put", [], { question: "Slow answer detail?", state: "missing" });
+    const fastDetail = await cli("answer-put", [], { question: "Fast answer detail?", state: "missing" });
+    await page.getByRole("button", { name: "Refresh" }).click();
+
+    const slowDetailRoute = `**${answerApiPath(slowDetail.key)}`;
+    await page.route(slowDetailRoute, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      await route.continue();
+    });
+    await page.locator(`.answer-card[data-key="${slowDetail.key}"]`).click();
+    await page.locator(`.answer-card[data-key="${fastDetail.key}"]`).click();
+    await page.locator("#answer-dialog[open]").waitFor();
+    assert.equal(await page.locator("#answer-dialog").getByLabel("Question").inputValue(), "Fast answer detail?");
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    assert.equal(await page.locator("#answer-dialog").getByLabel("Question").inputValue(), "Fast answer detail?");
+    await page.locator("#answer-dialog").getByRole("button", { name: "Close answer details" }).click();
+    await page.unroute(slowDetailRoute);
+
+    await page.locator(`.answer-card[data-key="${dotOnly.key}"]`).click();
+    await page.locator("#answer-dialog").getByLabel("Aliases (one per line)").fill("dot-only browser alias");
+    await page.locator("#answer-dialog").getByRole("button", { name: "Save answer" }).click();
+    await page.locator("#answer-dialog").waitFor({ state: "hidden" });
+    assert.deepEqual((await cli("answer-get", ["--key", dotOnly.key])).aliases, ["dot only browser alias"]);
+    await page.locator(`.answer-card[data-key="${dotOnly.key}"]`).click();
+    page.once("dialog", (prompt) => prompt.accept());
+    await page.locator("#answer-dialog").getByRole("button", { name: "Move to trash" }).click();
+    await page.locator("#answer-dialog").waitFor({ state: "hidden" });
+    await page.locator("#answer-view").selectOption("trash");
+    await page.locator(`.answer-card[data-key="${dotOnly.key}"]`).click();
+    await page.locator("#answer-dialog").getByRole("button", { name: "Restore" }).click();
+    await page.locator("#answer-dialog").waitFor({ state: "hidden" });
+    await page.locator("#answer-view").selectOption("accepted");
+
+    await page.locator(`.answer-card[data-key="${questionless.key}"]`).click();
+    assert.equal(await page.locator("#answer-dialog").getByLabel("Question").getAttribute("required"), null);
+    await page.locator("#answer-dialog").getByLabel("Aliases (one per line)").fill("questionless browser alias");
+    await page.locator("#answer-dialog").getByRole("button", { name: "Save answer" }).click();
+    await page.locator("#answer-dialog").waitFor({ state: "hidden" });
+    assert.deepEqual((await cli("answer-get", ["--key", questionless.key])).aliases, ["questionless browser alias"]);
+    await page.locator(`.answer-card[data-key="${questionless.key}"]`).click();
+    await page.locator("#answer-dialog").getByRole("button", { name: "Merge duplicate…" }).click();
+    await page.locator("#answer-merge-dialog").waitFor({ state: "visible" });
+    const questionlessMergeCopy = await page.locator("#answer-merge-source").innerText();
+    assert.equal(questionlessMergeCopy.includes(`Question not recorded (explicit key: ${questionless.key})`), true);
+    assert.equal(questionlessMergeCopy.includes("· accepted · revision 2"), true);
+    assert.equal(questionlessMergeCopy.includes("It has no retained value to discard."), true);
+    await page.locator("#answer-merge-dialog").getByRole("button", { name: "Cancel" }).click();
+    await page.locator("#answer-dialog").getByRole("button", { name: "Close answer details" }).click();
+    await page.locator("#answer-dialog").waitFor({ state: "hidden" });
+    await page.locator(`.answer-card[data-key="${reservedObserved.key}"]`).click();
+    await page.locator("#answer-dialog").getByLabel("Aliases (one per line)").fill("reserved observed alias");
+    await page.locator("#answer-dialog").getByRole("button", { name: "Save answer" }).click();
+    await page.locator("#answer-dialog").waitFor({ state: "hidden" });
+    assert.deepEqual((await cli("answer-get", ["--key", reservedObserved.key])).aliases, ["reserved observed alias"]);
+    await page.locator(".answer-card").filter({ hasText: "Reserved trash browser key?" }).click();
+    page.once("dialog", (prompt) => prompt.accept());
+    await page.locator("#answer-dialog").getByRole("button", { name: "Move to trash" }).click();
+    await page.locator("#answer-dialog").waitFor({ state: "hidden" });
+    await page.locator("#answer-view").selectOption("trash");
+    await page.locator(".answer-card").filter({ hasText: "Reserved trash browser key?" }).click();
+    await page.locator("#answer-dialog").getByRole("button", { name: "Restore" }).click();
+    await page.locator("#answer-dialog").waitFor({ state: "hidden" });
+    assert.equal((await cli("answer-get", ["--key", reservedTrash.key])).deletedAt, null);
+    await page.locator("#answer-view").selectOption("accepted");
+    await page.getByRole("button", { name: "New answer" }).click();
+    const answerDialog = page.locator("#answer-dialog");
+    await answerDialog.getByLabel("Question").fill("Browser reusable answer?");
+    await answerDialog.getByLabel("Value", { exact: true }).fill("Browser reusable value");
+    await answerDialog.getByRole("button", { name: "Save answer" }).click();
+    await answerDialog.waitFor({ state: "hidden" });
+    let browserAnswer = await cli("answer-find", ["--question", "Browser reusable answer?", "--scope", "{}"]);
+    assert.equal(browserAnswer.value, "Browser reusable value");
+
+    await page.getByRole("button", { name: "New answer" }).click();
+    await answerDialog.getByLabel("Question").fill("Browser private answer?");
+    await answerDialog.getByLabel("State").selectOption("sensitive");
+    await answerDialog.getByLabel("Sensitivity").selectOption("high");
+    await answerDialog.getByLabel("Value", { exact: true }).fill("browser-sensitive-secret");
+    await answerDialog.getByLabel(/freshly consent/).check();
+    await answerDialog.getByRole("button", { name: "Save answer" }).click();
+    await answerDialog.waitFor({ state: "hidden" });
+    const cliLibrary = await cli("answer-list");
+    const sensitiveAnswer = await cli("answer-find", ["--question", "Browser private answer?", "--scope", "{}"]);
+    assert.equal(JSON.stringify(cliLibrary).includes("browser-sensitive-secret"), false);
+    assert.equal("value" in sensitiveAnswer, false);
+    const sensitiveCard = page.locator(".answer-card").filter({ hasText: "Browser private answer?" });
+    assert.equal((await sensitiveCard.innerText()).includes("browser-sensitive-secret"), false);
+    await sensitiveCard.click();
+    await page.locator("#answer-dialog[open]").waitFor();
+    assert.equal(await answerDialog.getByLabel("Value", { exact: true }).inputValue(), "");
+    await answerDialog.getByRole("button", { name: "Reveal sensitive value" }).click();
+    await page.waitForFunction(() => document.querySelector("#answer-form [name=value]")?.value === "browser-sensitive-secret");
+    assert.equal(await answerDialog.getByLabel("Value", { exact: true }).inputValue(), "browser-sensitive-secret");
+    await answerDialog.getByRole("button", { name: "Close answer details" }).click();
+    await page.waitForFunction((key) => document.activeElement?.dataset?.key === key, sensitiveAnswer.key);
+
+    const duplicate = await cli("answer-put", [], { question: "Duplicate browser reusable answer?", state: "confirmed", value: "discarded-browser-duplicate" });
+    await page.getByRole("button", { name: "Refresh" }).click();
+    const duplicateCard = page.locator(".answer-card").filter({ hasText: "Duplicate browser reusable answer?" });
+    await duplicateCard.click();
+    await answerDialog.getByLabel("Aliases (one per line)").fill("unsaved source merge draft");
+    await answerDialog.getByRole("button", { name: "Merge duplicate…" }).click();
+    await answerDialog.getByText("Save this draft or close the answer details to discard it before merging.").waitFor();
+    assert.equal(await page.locator("#answer-merge-dialog").isVisible(), false);
+    assert.equal(await answerDialog.getByLabel("Aliases (one per line)").inputValue(), "unsaved source merge draft");
+    await answerDialog.getByRole("button", { name: "Close answer details" }).click();
+    await duplicateCard.click();
+    await answerDialog.getByRole("button", { name: "Merge duplicate…" }).click();
+    const mergeDialog = page.locator("#answer-merge-dialog");
+    await mergeDialog.waitFor({ state: "visible" });
+    assert.equal((await mergeDialog.innerText()).includes("Browser reusable value"), false);
+    assert.equal((await mergeDialog.innerText()).includes("discarded-browser-duplicate"), false);
+    await mergeDialog.getByLabel("Accepted winner").selectOption(browserAnswer.key);
+    await mergeDialog.getByRole("button", { name: "Merge into selected winner" }).click();
+    await mergeDialog.waitFor({ state: "hidden" });
+    await answerDialog.waitFor({ state: "hidden" });
+    const redirectedDuplicate = await cli("answer-get", ["--key", duplicate.key]);
+    assert.equal(redirectedDuplicate.key, browserAnswer.key);
+    assert.equal(redirectedDuplicate.redirectedFrom, duplicate.key);
+    assert.equal((await cli("answer-reveal", ["--key", duplicate.key])).value, "Browser reusable value");
+    browserAnswer = await cli("answer-get", ["--key", browserAnswer.key]);
+    const afterMerge = await cli("answer-list");
+    assert.equal(JSON.stringify(afterMerge).includes("discarded-browser-duplicate"), false);
+
+    await page.route("**/api/answers/query", async (route) => {
+      const query = route.request().postDataJSON()?.query;
+      if (query === "Browser reusable") await new Promise((resolve) => setTimeout(resolve, 250));
+      await route.continue();
+    });
+    await page.locator("#answer-search").fill("Browser reusable");
+    await page.locator("#answer-search").fill("No canonical answer matches this");
+    await page.waitForFunction(() => document.querySelector("#answers-status")?.textContent?.startsWith("0 canonical"));
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    assert.equal(await page.locator(".answer-card").count(), 0);
+    await page.unroute("**/api/answers/query");
+    await page.locator("#answer-search").fill("");
+    await page.getByRole("heading", { name: "Browser reusable answer?" }).waitFor();
+    await page.locator("#answer-state-filter").selectOption("sensitive");
+    await page.waitForFunction(() => ![...document.querySelectorAll(".answer-card")].some((card) => card.textContent?.includes("Browser reusable answer?")));
+    assert.equal(await page.locator(".answer-card").filter({ hasText: "Browser private answer?" }).count(), 1);
+    assert.equal(await page.locator(".answer-card").filter({ hasText: "Browser reusable answer?" }).count(), 0);
+    await page.locator("#answer-state-filter").selectOption("");
+    await page.getByRole("heading", { name: "Browser reusable answer?" }).waitFor();
+
+    const reusableCard = page.locator(".answer-card").filter({ hasText: "Browser reusable answer?" });
+    await reusableCard.click();
+    await answerDialog.getByLabel("Aliases (one per line)").fill("Browser alias draft");
+    browserAnswer = await cli("answer-update", ["--key", browserAnswer.key, "--expected-revision", String(browserAnswer.revision)], { source: "agent" });
+    await answerDialog.getByRole("button", { name: "Save answer" }).click();
+    await page.locator("#answer-conflict").waitFor();
+    assert.equal(await answerDialog.getByLabel("Aliases (one per line)").inputValue(), "Browser alias draft");
+    await page.locator("#answer-conflict").getByRole("button", { name: "Refresh canonical revision" }).click();
+    assert.equal(await answerDialog.getByLabel("Aliases (one per line)").inputValue(), "Browser alias draft");
+    await answerDialog.getByRole("button", { name: "Save answer" }).click();
+    await answerDialog.waitFor({ state: "hidden" });
+    browserAnswer = await cli("answer-find", ["--question", "Browser alias draft", "--scope", "{}"]);
+    assert.equal(browserAnswer.source, "agent");
+
+    await cli("history-append", [], { applicationId: "browser-answer-history", event: "reviewed", answerKeys: [browserAnswer.key] });
+    await page.locator(".answer-card").filter({ hasText: "Browser reusable answer?" }).click();
+    page.once("dialog", (prompt) => prompt.accept());
+    await answerDialog.getByRole("button", { name: "Move to trash" }).click();
+    await answerDialog.getByText("answer is the target of an immutable redirect").waitFor();
+    const activeRedirectTarget = await cli("answer-get", ["--key", browserAnswer.key, "--include-trashed"]);
+    assert.equal(activeRedirectTarget.key, browserAnswer.key);
+    assert.equal(activeRedirectTarget.deletedAt, null);
+    await answerDialog.getByRole("button", { name: "Close answer details" }).click();
 
     await browser.close(); browser = null;
     server.kill("SIGINT");
