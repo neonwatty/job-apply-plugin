@@ -62,6 +62,7 @@ const {
   safeSessionStorage,
   sessionToken,
   shouldRetryFactSave,
+  shouldUseActivityResponse,
   shouldUseResumeResponse,
   summarizeProvenance,
   tagsFromInput,
@@ -106,6 +107,13 @@ test("application activity announcements are latest-only and non-duplicative", (
   assert.match(activityAnnouncement(before, active), /history updated/);
   assert.equal(activitySignature(active), activitySignature(structuredClone(active)));
   assert.equal(activitySignature(active).includes("ownerLabel"), false);
+});
+
+test("activity responses never regress a newer canonical Job detail revision", () => {
+  const selected = { id: "job-one", status: "awaiting_review", revision: 8 };
+  assert.equal(shouldUseActivityResponse({ job: { id: "job-one", status: "in_progress", revision: 7 } }, selected), false);
+  assert.equal(shouldUseActivityResponse({ job: { id: "job-one", status: "awaiting_review", revision: 8 } }, selected), true);
+  assert.equal(shouldUseActivityResponse({ job: { id: "job-one", status: "applied", revision: 9 } }, selected), true);
 });
 
 test("unified Trash helpers ignore stale success and failure side effects", async () => {
