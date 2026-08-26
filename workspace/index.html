@@ -19,6 +19,7 @@
       <button id="nav-facts" class="nav-link" type="button">Facts</button>
       <button id="nav-resumes" class="nav-link" type="button">Resumes</button>
       <button id="nav-answers" class="nav-link" type="button">Answers</button>
+      <button id="nav-trash" class="nav-link" type="button">Trash <span id="trash-nav-count" aria-label="trashed records">0</span></button>
     </nav>
     <div class="connection" aria-live="polite">
       <span id="connection-dot" class="dot"></span>
@@ -150,7 +151,34 @@
         <p id="answers-error" class="error hidden" role="alert"></p>
       </section>
     </div>
+
+    <div id="trash-workspace" class="hidden">
+      <section class="hero" aria-labelledby="trash-title">
+        <div><p class="eyebrow">Unified recovery</p><h2 id="trash-title">Trash</h2><p>Restore or permanently delete one canonical record at a time. Application history and audit evidence are never deleted here.</p></div>
+        <div class="hero-actions"><button id="trash-refresh" class="button secondary" type="button">Refresh</button></div>
+      </section>
+      <section class="trash-panel" aria-labelledby="trash-list-heading">
+        <div class="panel-heading"><div><p class="eyebrow">RECOVERABLE RECORDS</p><h2 id="trash-list-heading">Jobs, resumes, and answers</h2></div><label>Type <select id="trash-type-filter"><option value="">All types</option><option value="job">Jobs</option><option value="resume">Resumes</option><option value="answer">Answers</option></select></label></div>
+        <div id="trash-counts" class="trash-counts" aria-live="polite"></div>
+        <p id="trash-status" class="notice" role="status">Open Trash to load canonical records.</p>
+        <div id="trash-empty" class="empty-state hidden"><h3>Trash is empty</h3><p>Records moved to trash remain recoverable until you explicitly delete them.</p></div>
+        <div id="trash-list" class="trash-list" role="list"></div>
+        <p id="trash-error" class="error hidden" role="alert"></p>
+      </section>
+    </div>
   </main>
+
+  <dialog id="trash-delete-dialog" aria-labelledby="trash-delete-title">
+    <form id="trash-delete-form" class="dialog-shell compact">
+      <div class="dialog-heading"><div><p class="eyebrow">PERMANENT INDIVIDUAL DELETION</p><h2 id="trash-delete-title">Confirm permanent deletion</h2></div><button class="icon-button" type="button" data-close="trash-delete-dialog" aria-label="Close permanent deletion confirmation">×</button></div>
+      <p id="trash-delete-identity"></p>
+      <p id="trash-delete-impact"></p>
+      <label>Type <strong id="trash-delete-phrase"></strong> to continue <input id="trash-delete-input" name="confirmation" autocomplete="off" required></label>
+      <div id="trash-delete-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>This record changed elsewhere</h3><p>Nothing was deleted and the request was not retried. Refresh Trash and review the latest record.</p><button id="trash-conflict-refresh" class="button secondary" type="button">Refresh Trash</button></div>
+      <p id="trash-delete-error" class="error hidden" role="alert"></p>
+      <div class="dialog-footer"><button class="button secondary" type="button" data-close="trash-delete-dialog">Cancel</button><button id="trash-delete-confirm" class="button danger" type="submit">Delete permanently</button></div>
+    </form>
+  </dialog>
 
   <dialog id="answer-dialog" aria-labelledby="answer-dialog-title">
     <form id="answer-form" class="dialog-shell">

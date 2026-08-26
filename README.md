@@ -12,7 +12,7 @@ AI-powered job application assistant for Claude Code and Codex that fills job ap
 | `job-apply:answer-memory` | Safely manage your local profile, reusable answers, application history, and resumable sessions |
 | `job-apply:job-search` | Search LinkedIn, Hacker News, and Twitter/X for jobs, then rank results against your preferences |
 | `job-apply:job-preferences` | Set the titles, salary, remote-work, and filtering preferences used by job search |
-| `job-apply:job-workspace` | Open the optional local Jobs, Facts, Resumes, and Answers workspace shared with Job Apply agents |
+| `job-apply:job-workspace` | Open the optional local Jobs, Facts, Resumes, Answers, and unified Trash workspace shared with Job Apply agents |
 
 Invoke skills with `$job-apply:...` in Codex or `/job-apply:...` in Claude Code.
 
@@ -146,7 +146,7 @@ Results are automatically saved to `~/.claude-job-searches/`. Both Codex and Cla
 
 ### Local Jobs, Facts, Resumes, and Answers Workspace
 
-The optional workspace gives you keyboard-accessible Jobs, Facts, Resumes, and Answers views backed by the same canonical records used by the CLI skills. From the plugin directory, start it with one command:
+The optional workspace gives you keyboard-accessible Jobs, Facts, Resumes, Answers, and unified Trash views backed by the same canonical records used by the CLI skills. From the plugin directory, start it with one command:
 
 ```bash
 python3 scripts/job-apply-workspace.py
@@ -155,6 +155,8 @@ python3 scripts/job-apply-workspace.py
 The launcher binds only to `127.0.0.1`, chooses a free port, opens the complete authenticated URL in your default browser, and stops cleanly with Ctrl-C. It requires Python 3 but no Node runtime, account, cloud service, telemetry, or separate database.
 
 Use **Jobs** to manage the opportunity queue, **Facts** to selectively edit profile data, and **Resumes** to manage private canonical files and extraction review. Use **Answers** to search the reusable library, review observed questions, create and selectively edit answers, accept or decline observations, and manage guarded Trash. Observed questions are pending records in `answers.json`, not a second inbox database. Declined records remain durable for deduplication and are hidden from the default library. Generic put creates accepted library records only; pending creation belongs to observation, and declined creation belongs to dedicated review.
+
+Use the top-level **Trash** view to see deterministic redacted projections and exact counts for trashed jobs, resumes, and answers. Restore and permanent delete use the same canonical Store helpers as the CLI and require the record's exact revision. Permanent deletion is always one record at a time in an accessible identity-bound dialog and requires the exact type-specific phrase `DELETE JOB`, `DELETE RESUME`, or `DELETE ANSWER`. Deleting a managed resume permanently deletes its managed file with the canonical resume record; other record types remove only the selected canonical record. No deletion cascades or erases application history, sessions, or audit evidence. Live claims, nonterminal job sessions, resume references, answer references, duplicate active identities, and stale revisions produce distinct redacted explanations without automatic retry or disclosure of linked identifiers. CLI users can select only trashed jobs or resumes with `job-list --trashed-only` and `resume-list --trashed-only`; answers retain `answer-list --include-trashed --trashed-only`.
 
 Duplicate answers can be merged only by explicitly selecting an accepted winner. Both records must have the same exact scope and current revisions. The winner keeps its value, sensitivity consent, source/provenance, and confirmation metadata; the source value is removed, its normalized question and aliases transfer, and its value-free observation metadata is combined. Active session references are rewritten through the crash-recoverable coordinator while append-only history remains unchanged and resolves through a permanent flattened, value-free redirect. Derived-key and redirect fallback never crosses the record's current exact scope; an observation fails safely when an old stable key is occupied at another scope. Redirect targets remain active and cannot be trashed.
 

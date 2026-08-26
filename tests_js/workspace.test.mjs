@@ -48,9 +48,12 @@ const {
   canRevealAnswer,
   sameAnswerScope,
   createApi,
+  createLatestRequestCoordinator,
   conflictingPaths,
   filterJobs,
   formPatch,
+  filterTrashItems,
+  lifecycleErrorText,
   patchForPaths,
   pointerValue,
   resumeAssignmentText,
@@ -60,9 +63,77 @@ const {
   shouldUseResumeResponse,
   summarizeProvenance,
   tagsFromInput,
+  trashBlockerText,
   tokenFromHash,
   transitionsFor,
+  typedDeletePhrase,
 } = await import(pathToFileURL(join(REPO_ROOT, "workspace", "app.js")).href);
+
+test("unified Trash helpers filter types and require exact type-specific phrases", () => {
+  const items = [
+    { type: "job", blockerCounts: { claims: 0, nonterminalSessions: 1 } },
+    { type: "resume", blockerCounts: { jobReferences: 0 } },
+  ];
+  assert.deepEqual(filterTrashItems(items, "job"), [items[0]]);
+  assert.deepEqual(filterTrashItems(items, ""), items);
+  assert.equal(typedDeletePhrase("answer"), "DELETE ANSWER");
+  assert.equal(trashBlockerText(items[0]), "1 protected reference");
+  assert.equal(trashBlockerText(items[1]), "No known references");
+  const blocker = new ApiError(409, { error: { code: "history_reference_blocked", message: "Protected history blocks deletion.", recordType: "answer", operation: "delete", counts: { sessions: 0, history: 2 } } });
+  assert.equal(blocker.recordType, "answer");
+  assert.equal(blocker.operation, "delete");
+  assert.equal(lifecycleErrorText(blocker), "Protected history blocks deletion. (2 protected references.)");
+  assert.match(lifecycleErrorText(new ApiError(409, { error: { code: "revision_conflict", message: "ignored" } })), /changed elsewhere.*Nothing was retried/);
+});
+
+test("unified Trash helpers ignore stale success and failure side effects", async () => {
+  const deferred = () => {
+    let resolvePromise;
+    let rejectPromise;
+    const promise = new Promise((resolve, reject) => { resolvePromise = resolve; rejectPromise = reject; });
+    return { promise, resolve: resolvePromise, reject: rejectPromise };
+  };
+  const state = {
+    items: [], counts: { job: 0, resume: 0, answer: 0 }, loaded: false,
+    rendered: [], connection: "starting", error: "starting", toasts: [],
+  };
+  const applySuccess = (result) => {
+    state.items = result.items;
+    state.counts = result.counts;
+    state.loaded = true;
+    state.rendered = result.items.map((item) => item.label);
+    state.connection = "online";
+    state.error = null;
+    state.toasts.push("refreshed");
+  };
+  const applyFailure = (error) => {
+    state.connection = "offline";
+    state.error = error.message;
+  };
+  const coordinator = createLatestRequestCoordinator();
+
+  const staleSuccess = deferred();
+  const latestSuccess = deferred();
+  const staleSuccessRun = coordinator.run(() => staleSuccess.promise, applySuccess, applyFailure);
+  const latestSuccessRun = coordinator.run(() => latestSuccess.promise, applySuccess, applyFailure);
+  latestSuccess.resolve({ items: [{ type: "job", label: "new canonical item" }], counts: { job: 1, resume: 0, answer: 0 } });
+  assert.equal(await latestSuccessRun, true);
+  const afterLatestSuccess = structuredClone(state);
+  staleSuccess.resolve({ items: [{ type: "answer", label: "stale item" }], counts: { job: 0, resume: 0, answer: 1 } });
+  assert.equal(await staleSuccessRun, false);
+  assert.deepEqual(state, afterLatestSuccess);
+
+  const staleFailure = deferred();
+  const newestSuccess = deferred();
+  const staleFailureRun = coordinator.run(() => staleFailure.promise, applySuccess, applyFailure);
+  const newestSuccessRun = coordinator.run(() => newestSuccess.promise, applySuccess, applyFailure);
+  newestSuccess.resolve({ items: [{ type: "resume", label: "newest canonical item" }], counts: { job: 0, resume: 1, answer: 0 } });
+  assert.equal(await newestSuccessRun, true);
+  const afterNewestSuccess = structuredClone(state);
+  staleFailure.reject(new Error("stale connection failure"));
+  assert.equal(await staleFailureRun, false);
+  assert.deepEqual(state, afterNewestSuccess);
+});
 
 test("fragment token is decoded without accepting unrelated URL data", () => {
   assert.equal(tokenFromHash("#token=abc%20123"), "abc 123");
@@ -297,7 +368,7 @@ test("styles include visible focus, reduced motion, contrast mode, and responsiv
   assert.match(css, /@media \(max-width:/);
 });
 
-test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus, and shutdown", { timeout: 60_000 }, async () => {
+test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus, and shutdown", { timeout: 90_000 }, async () => {
   const temporary = await mkdtemp(join(tmpdir(), "job-workspace-browser-"));
   const storeRoot = join(temporary, "store");
   const storeScript = join(REPO_ROOT, "scripts", "job-apply-store.py");
@@ -535,7 +606,7 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await manageLifecycleUpload().click();
     page.once("dialog", (prompt) => prompt.accept());
     await resumeDialog.getByRole("button", { name: "Move to trash" }).click();
-    await page.getByText("default resume is used by an active job").waitFor();
+    await page.getByText("This default resume is in use by active jobs. Assign another default first.").waitFor();
     await resumeDialog.getByRole("button", { name: "Close resume details" }).click();
 
     await page.getByRole("button", { name: "Jobs" }).click();
@@ -555,7 +626,7 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await manageLifecycleUpload().click();
     page.once("dialog", (prompt) => prompt.accept());
     await resumeDialog.getByRole("button", { name: "Move to trash" }).click();
-    await page.getByText("resume is assigned to an active job").waitFor();
+    await page.getByText("This resume is assigned to an active job. Reassign that job first.").waitFor();
     await resumeDialog.getByRole("button", { name: "Close resume details" }).click();
 
     await page.getByRole("button", { name: "Jobs" }).click();
@@ -588,8 +659,14 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await resumeDialog.waitFor({ state: "hidden" });
     await page.locator("#resumes-trash").click();
     await page.locator(".resume-card").filter({ hasText: "Preserved browser draft" }).getByRole("button", { name: "Manage" }).click();
-    page.once("dialog", (prompt) => prompt.accept());
     await resumeDialog.getByRole("button", { name: "Delete permanently" }).click();
+    const deleteDialog = page.locator("#trash-delete-dialog");
+    await deleteDialog.waitFor({ state: "visible" });
+    assert.equal(await deleteDialog.locator("#trash-delete-identity").textContent(), "resume: Preserved browser draft");
+    assert.equal(await deleteDialog.getByRole("button", { name: "Delete permanently" }).isDisabled(), true);
+    await deleteDialog.getByLabel(/Type DELETE RESUME/).fill("DELETE RESUME");
+    await deleteDialog.getByRole("button", { name: "Delete permanently" }).click();
+    await deleteDialog.waitFor({ state: "hidden" });
     await resumeDialog.waitFor({ state: "hidden" });
     assert.equal(await cli("resume-get", ["--id", uploaded.id, "--include-trashed"]), null);
     await page.locator("#resumes-active").click();
@@ -744,6 +821,8 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await page.locator("#job-dialog").waitFor({ state: "hidden" });
     await page.waitForFunction((id) => document.activeElement?.dataset?.id === id, uiJob.id);
     assert.equal((await cli("job-get", ["--id", cliJob.id])), null);
+    const trashedCliJob = await cli("job-get", ["--id", cliJob.id, "--include-trashed"]);
+    await cli("job-restore", ["--id", cliJob.id, "--expected-revision", String(trashedCliJob.revision)]);
 
     const cliObserved = await cli("answer-observe", [], { question: "Will you relocate for this role?", state: "missing", scope: { ats: "browser" } });
     await page.getByRole("button", { name: "Answers" }).click();
@@ -821,9 +900,22 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await page.locator("#answer-dialog").getByRole("button", { name: "Close answer details" }).click();
     await page.locator("#answer-dialog").waitFor({ state: "hidden" });
     await page.locator(`.answer-card[data-key="${reservedObserved.key}"]`).click();
-    await page.locator("#answer-dialog").getByLabel("Aliases (one per line)").fill("reserved observed alias");
-    await page.locator("#answer-dialog").getByRole("button", { name: "Save answer" }).click();
-    await page.locator("#answer-dialog").waitFor({ state: "hidden" });
+    const reservedObservedDialog = page.locator("#answer-dialog");
+    await reservedObservedDialog.waitFor({ state: "visible" });
+    assert.equal(await reservedObservedDialog.getByLabel("Question").inputValue(), "Reserved observed browser key?");
+    const reservedObservedAliases = reservedObservedDialog.getByLabel("Aliases (one per line)");
+    await reservedObservedAliases.fill("reserved observed alias");
+    assert.equal(await reservedObservedAliases.inputValue(), "reserved observed alias");
+    const reservedObservedPath = answerApiPath(reservedObserved.key);
+    const reservedObservedPatch = page.waitForResponse((response) => {
+      const request = response.request();
+      return new URL(response.url()).pathname === reservedObservedPath && request.method() === "PATCH";
+    });
+    await reservedObservedDialog.getByRole("button", { name: "Save answer" }).click();
+    const reservedObservedResponse = await reservedObservedPatch;
+    assert.equal(reservedObservedResponse.status(), 200);
+    assert.deepEqual(reservedObservedResponse.request().postDataJSON().patch, { aliases: ["reserved observed alias"] });
+    await reservedObservedDialog.waitFor({ state: "hidden" });
     assert.deepEqual((await cli("answer-get", ["--key", reservedObserved.key])).aliases, ["reserved observed alias"]);
     await page.locator(".answer-card").filter({ hasText: "Reserved trash browser key?" }).click();
     page.once("dialog", (prompt) => prompt.accept());
@@ -933,11 +1025,96 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await page.locator(".answer-card").filter({ hasText: "Browser reusable answer?" }).click();
     page.once("dialog", (prompt) => prompt.accept());
     await answerDialog.getByRole("button", { name: "Move to trash" }).click();
-    await answerDialog.getByText("answer is the target of an immutable redirect").waitFor();
+    await answerDialog.getByText("This answer is a canonical redirect target and cannot be moved or deleted.").waitFor();
     const activeRedirectTarget = await cli("answer-get", ["--key", browserAnswer.key, "--include-trashed"]);
     assert.equal(activeRedirectTarget.key, browserAnswer.key);
     assert.equal(activeRedirectTarget.deletedAt, null);
     await answerDialog.getByRole("button", { name: "Close answer details" }).click();
+
+    // The packaged smoke selects this test by name, so this is the source and
+    // packaged proof for the top-level unified Trash lifecycle.
+    const trashJob = await cli("job-create", [], { id: "trash-ui-job", url: "https://private.example/jobs/trash-ui", role: "Trash UI job" });
+    await cli("job-trash", ["--id", trashJob.id, "--expected-revision", String(trashJob.revision)]);
+    const trashResumePath = join(temporary, "private-trash-resume.txt");
+    await writeFile(trashResumePath, "private trash resume bytes");
+    const trashResume = await cli("resume-create", [], { id: "trash-ui-resume", label: "Trash UI resume", path: trashResumePath });
+    await cli("resume-trash", ["--id", trashResume.id, "--expected-revision", String(trashResume.revision)]);
+    const trashAnswer = await cli("answer-put", [], { question: "Trash UI answer?", state: "confirmed", value: "private-trash-answer" });
+    await cli("answer-trash", ["--key", trashAnswer.key, "--expected-revision", String(trashAnswer.revision)]);
+    const protectedAnswer = await cli("answer-put", [], { question: "Protected Trash UI answer?", state: "confirmed", value: "protected-private-answer" });
+    await cli("history-append", [], { applicationId: "trash-ui-history", event: "reviewed", answerKeys: [protectedAnswer.key] });
+    await cli("answer-trash", ["--key", protectedAnswer.key, "--expected-revision", String(protectedAnswer.revision)]);
+
+    await page.locator("#nav-trash").click();
+    await page.locator("#trash-refresh").click();
+    await page.getByText("1 jobs · 1 resumes · 2 answers").waitFor();
+    const trashWorkspaceText = await page.locator("#trash-workspace").innerText();
+    for (const privateValue of ["private.example", "private-trash-answer", "protected-private-answer", "private-trash-resume.txt"]) {
+      assert.equal(trashWorkspaceText.includes(privateValue), false);
+    }
+    const typeFilter = page.locator("#trash-type-filter");
+    await typeFilter.selectOption("job");
+    assert.equal(await page.locator(".trash-card").count(), 1);
+    assert.match(await page.locator(".trash-card").innerText(), /Trash UI job/);
+
+    // Restore persists canonically, then a stale destructive request is never retried.
+    await page.locator(".trash-card").getByRole("button", { name: "Restore" }).click();
+    let currentTrashJob = await cli("job-get", ["--id", trashJob.id]);
+    assert.equal(currentTrashJob.deletedAt, null);
+    currentTrashJob = await cli("job-trash", ["--id", currentTrashJob.id, "--expected-revision", String(currentTrashJob.revision)]);
+    await page.locator("#trash-refresh").click();
+    const staleJobCard = page.locator(".trash-card").filter({ hasText: "Trash UI job" });
+    const refreshedJob = await cli("job-restore", ["--id", currentTrashJob.id, "--expected-revision", String(currentTrashJob.revision)]);
+    currentTrashJob = await cli("job-trash", ["--id", refreshedJob.id, "--expected-revision", String(refreshedJob.revision)]);
+    await staleJobCard.getByRole("button", { name: "Delete permanently…" }).click();
+    let trashDeleteDialog = page.locator("#trash-delete-dialog");
+    await trashDeleteDialog.getByLabel(/Type DELETE JOB/).fill("DELETE JOB");
+    await trashDeleteDialog.getByRole("button", { name: "Delete permanently" }).click();
+    await page.locator("#trash-delete-conflict").waitFor();
+    assert.match(await page.locator("#trash-delete-conflict").innerText(), /Nothing was deleted.*not retried/s);
+    assert.ok(await cli("job-get", ["--id", currentTrashJob.id, "--include-trashed"]));
+    await page.locator("#trash-conflict-refresh").click();
+
+    // Exact typed deletion removes only the refreshed selected job.
+    await page.locator(".trash-card").filter({ hasText: "Trash UI job" }).getByRole("button", { name: "Delete permanently…" }).click();
+    await trashDeleteDialog.getByLabel(/Type DELETE JOB/).fill("DELETE JOB");
+    await trashDeleteDialog.getByRole("button", { name: "Delete permanently" }).click();
+    await trashDeleteDialog.waitFor({ state: "hidden" });
+    assert.equal(await cli("job-get", ["--id", currentTrashJob.id, "--include-trashed"]), null);
+
+    // Resume restore persists; its confirmation discloses managed-file destruction.
+    await typeFilter.selectOption("resume");
+    await page.locator(".trash-card").filter({ hasText: "Trash UI resume" }).getByRole("button", { name: "Restore" }).click();
+    let currentTrashResume = await cli("resume-get", ["--id", trashResume.id]);
+    assert.equal(currentTrashResume.deletedAt, null);
+    currentTrashResume = await cli("resume-trash", ["--id", currentTrashResume.id, "--expected-revision", String(currentTrashResume.revision)]);
+    await page.locator("#trash-refresh").click();
+    await page.locator(".trash-card").filter({ hasText: "Trash UI resume" }).getByRole("button", { name: "Delete permanently…" }).click();
+    assert.match(await page.locator("#trash-delete-impact").innerText(), /managed resume file.*unrelated jobs.*history, sessions, or audit evidence/);
+    await trashDeleteDialog.getByLabel(/Type DELETE RESUME/).fill("DELETE RESUME");
+    await trashDeleteDialog.getByRole("button", { name: "Delete permanently" }).click();
+    await trashDeleteDialog.waitFor({ state: "hidden" });
+    assert.equal(await cli("resume-get", ["--id", currentTrashResume.id, "--include-trashed"]), null);
+
+    // Answer restore persists, while protected history produces actionable blocker copy.
+    await typeFilter.selectOption("answer");
+    const trashAnswerCard = page.locator(".trash-card").filter({ has: page.getByRole("heading", { name: "Trash UI answer?", exact: true }) });
+    await trashAnswerCard.getByRole("button", { name: "Restore" }).click();
+    let currentTrashAnswer = await cli("answer-get", ["--key", trashAnswer.key]);
+    assert.equal(currentTrashAnswer.deletedAt, null);
+    currentTrashAnswer = await cli("answer-trash", ["--key", currentTrashAnswer.key, "--expected-revision", String(currentTrashAnswer.revision)]);
+    await page.locator("#trash-refresh").click();
+    await page.locator(".trash-card").filter({ hasText: "Protected Trash UI answer?" }).getByRole("button", { name: "Delete permanently…" }).click();
+    await trashDeleteDialog.getByLabel(/Type DELETE ANSWER/).fill("DELETE ANSWER");
+    await trashDeleteDialog.getByRole("button", { name: "Delete permanently" }).click();
+    await page.locator("#trash-delete-error").getByText(/protected application history.*1 protected reference/i).waitFor();
+    assert.ok(await cli("answer-get", ["--key", protectedAnswer.key, "--include-trashed"]));
+    await trashDeleteDialog.getByRole("button", { name: "Cancel" }).click();
+    await trashAnswerCard.getByRole("button", { name: "Delete permanently…" }).click();
+    await trashDeleteDialog.getByLabel(/Type DELETE ANSWER/).fill("DELETE ANSWER");
+    await trashDeleteDialog.getByRole("button", { name: "Delete permanently" }).click();
+    await trashDeleteDialog.waitFor({ state: "hidden" });
+    assert.equal(await cli("answer-get", ["--key", currentTrashAnswer.key, "--include-trashed"]), null);
 
     await browser.close(); browser = null;
     server.kill("SIGINT");

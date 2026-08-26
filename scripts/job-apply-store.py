@@ -3281,14 +3281,21 @@ class Store:
         return _require_object(record, "job record")
 
     def list_jobs(
-        self, status: str | None = None, include_trashed: bool = False
+        self,
+        status: str | None = None,
+        include_trashed: bool = False,
+        trashed_only: bool = False,
     ) -> list[dict[str, Any]]:
         self.initialize()
         if status is not None and status not in JOB_STATUSES:
             raise StoreError("job status is unsupported")
+        if trashed_only:
+            include_trashed = True
         records = []
         for record in self._load_jobs_document()["jobs"].values():
             if record.get("deletedAt") is not None and not include_trashed:
+                continue
+            if trashed_only and record.get("deletedAt") is None:
                 continue
             if status is not None and record.get("status") != status:
                 continue
@@ -4616,6 +4623,15 @@ class Store:
             self._require_job_unclaimed_locked(job_id)
             if current.get("deletedAt") is None:
                 raise StoreError("job must be trashed before permanent deletion")
+            session_path = self._session_path(job_id)
+            if session_path.exists():
+                session = read_json_object(session_path, "session")
+                validate_version(session, "session")
+                _validate_session_document(session)
+                if session["applicationId"] != job_id:
+                    raise StoreError("session application id does not match path")
+                if session["status"] not in {"completed", "abandoned"}:
+                    raise StoreError("job is referenced by a nonterminal application session")
             del document["jobs"][job_id]
             document["metadata"]["updatedAt"] = utc_now()
             atomic_write_json(self.jobs_path, document)
@@ -4806,12 +4822,17 @@ class Store:
             return None
         return _require_object(record, "resume record")
 
-    def list_resumes(self, include_trashed: bool = False) -> list[dict[str, Any]]:
+    def list_resumes(
+        self, include_trashed: bool = False, trashed_only: bool = False
+    ) -> list[dict[str, Any]]:
         self.initialize()
+        if trashed_only:
+            include_trashed = True
         records = [
             record
             for record in self._load_resumes_document()["resumes"].values()
-            if include_trashed or record.get("deletedAt") is None
+            if (include_trashed or record.get("deletedAt") is None)
+            and (not trashed_only or record.get("deletedAt") is not None)
         ]
         return sorted(
             records,
@@ -5826,6 +5847,7 @@ def build_parser() -> argparse.ArgumentParser:
     job_list = commands.add_parser("job-list")
     job_list.add_argument("--status")
     job_list.add_argument("--include-trashed", action="store_true")
+    job_list.add_argument("--trashed-only", action="store_true")
     job_preflight = commands.add_parser("job-preflight")
     job_preflight.add_argument("--id", required=True)
     job_update = commands.add_parser("job-update")
@@ -5881,6 +5903,7 @@ def build_parser() -> argparse.ArgumentParser:
     resume_resolve.add_argument("--id")
     resume_list = commands.add_parser("resume-list")
     resume_list.add_argument("--include-trashed", action="store_true")
+    resume_list.add_argument("--trashed-only", action="store_true")
     resume_update = commands.add_parser("resume-update")
     resume_update.add_argument("--id", required=True)
     resume_update.add_argument("--input", required=True)
@@ -6041,7 +6064,11 @@ def run(args: argparse.Namespace) -> Any:
     if command == "job-get":
         return store.get_job(args.id, include_trashed=args.include_trashed)
     if command == "job-list":
-        return store.list_jobs(args.status, include_trashed=args.include_trashed)
+        return store.list_jobs(
+            args.status,
+            include_trashed=args.include_trashed,
+            trashed_only=args.trashed_only,
+        )
     if command == "job-preflight":
         return store.preflight_job(args.id)
     if command == "job-update":
@@ -6092,7 +6119,10 @@ def run(args: argparse.Namespace) -> Any:
     if command == "resume-resolve":
         return store.resolve_resume(args.id)
     if command == "resume-list":
-        return store.list_resumes(include_trashed=args.include_trashed)
+        return store.list_resumes(
+            include_trashed=args.include_trashed,
+            trashed_only=args.trashed_only,
+        )
     if command == "resume-update":
         return store.update_resume(
             args.id, _read_input(args.input), args.expected_revision
