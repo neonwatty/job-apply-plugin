@@ -12,7 +12,7 @@ AI-powered job application assistant for Claude Code and Codex that fills job ap
 | `job-apply:answer-memory` | Safely manage your local profile, reusable answers, application history, and resumable sessions |
 | `job-apply:job-search` | Search LinkedIn, Hacker News, and Twitter/X for jobs, then rank results against your preferences |
 | `job-apply:job-preferences` | Set the titles, salary, remote-work, and filtering preferences used by job search |
-| `job-apply:job-workspace` | Open the optional local Jobs and Facts workspace shared with Job Apply agents |
+| `job-apply:job-workspace` | Open the optional local Jobs, Facts, Resumes, and Answers workspace shared with Job Apply agents |
 
 Invoke skills with `$job-apply:...` in Codex or `/job-apply:...` in Claude Code.
 
@@ -144,9 +144,9 @@ First run `$job-apply:job-preferences` to save your search preferences. Then use
 
 Results are automatically saved to `~/.claude-job-searches/`. Both Codex and Claude Code use this legacy-compatible path.
 
-### Local Jobs, Facts, and Resumes Workspace
+### Local Jobs, Facts, Resumes, and Answers Workspace
 
-The optional workspace gives you keyboard-accessible Jobs, Facts, and Resumes views backed by the same canonical records used by the CLI skills. From the plugin directory, start it with one command:
+The optional workspace gives you keyboard-accessible Jobs, Facts, Resumes, and Answers views backed by the same canonical records used by the CLI skills. From the plugin directory, start it with one command:
 
 ```bash
 python3 scripts/job-apply-workspace.py
@@ -154,7 +154,11 @@ python3 scripts/job-apply-workspace.py
 
 The launcher binds only to `127.0.0.1`, chooses a free port, opens the complete authenticated URL in your default browser, and stops cleanly with Ctrl-C. It requires Python 3 but no Node runtime, account, cloud service, telemetry, or separate database.
 
-Use **Jobs** to capture one job or paste multiple URLs, filter and edit records, assign an existing resume, run readiness checks, mark valid jobs ready for agent handoff, and move a job to recoverable trash. Use **Facts** to review provenance and selectively edit identity, contact, location, professional links, history, education, skills, search preferences, and existing forward-compatible facts. Use **Resumes** to import a PDF, DOCX, or UTF-8 TXT file (10 MiB maximum), edit labels and tags, replace or explicitly adopt bytes, choose a default, see active-job references, preview PDF/TXT, download DOCX, review agent-created extraction conflicts, and manage guarded Trash. Browser imports are privately staged into the same canonical managed library used by CLI commands; source paths and browser filenames are not retained or exposed.
+Use **Jobs** to manage the opportunity queue, **Facts** to selectively edit profile data, and **Resumes** to manage private canonical files and extraction review. Use **Answers** to search the reusable library, review observed questions, create and selectively edit answers, accept or decline observations, and manage guarded Trash. Observed questions are pending records in `answers.json`, not a second inbox database. Declined records remain durable for deduplication and are hidden from the default library. Generic put creates accepted library records only; pending creation belongs to observation, and declined creation belongs to dedicated review.
+
+Duplicate answers can be merged only by explicitly selecting an accepted winner. Both records must have the same exact scope and current revisions. The winner keeps its value, sensitivity consent, source/provenance, and confirmation metadata; the source value is removed, its normalized question and aliases transfer, and its value-free observation metadata is combined. Active session references are rewritten through the crash-recoverable coordinator while append-only history remains unchanged and resolves through a permanent flattened, value-free redirect. Derived-key and redirect fallback never crosses the record's current exact scope; an observation fails safely when an old stable key is occupied at another scope. Redirect targets remain active and cannot be trashed.
+
+Answer aggregate lists never contain values. Sensitive values are also absent from get, find, and mutation responses and are displayed only after an explicit Reveal action. A changed sensitive value is retained only with fresh field-specific consent. Existing-answer writes use exact revisions; concurrent observations only add counts/timestamps and never replace canonical fields; permanent deletion is blocked by either a session or append-only history reference.
 
 Every mutation of an existing resume or proposal checks the target record's exact revision. Import is a new-record operation protected by ID/content uniqueness rather than an expected revision. Making a resume default checks the selected resume revision, then atomically advances any prior default as part of the compound change; it does not separately require the prior default's revision. If CLI or agent work changes a target record, the browser does not retry or overwrite it: only metadata fields actually edited in the browser remain as drafts, while untouched fields refresh from the canonical record; selected files also stay in place until you explicitly refresh and reapply them. Proposal review can decide a subset of pending paths; accepted values refresh Facts with user provenance. If accepting a child path would replace an existing scalar or array ancestor, the review discloses that ancestor and its current value and requires a separate confirmation of the exact replacement scope. Aggregate lists never contain resume bytes, file identities, or extracted values, and content requests require the in-memory workspace token and are returned with no-store and fixed content types.
 

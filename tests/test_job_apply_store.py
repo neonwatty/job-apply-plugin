@@ -497,7 +497,7 @@ class StoreTests(unittest.TestCase):
         placeholder = self.store.put_answer(
             {"question": "Disability disclosure?", "state": "sensitive", "value": None}
         )
-        self.assertIsNone(placeholder["value"])
+        self.assertNotIn("value", placeholder)
         with self.assertRaises(STORE_MODULE.StoreError):
             self.store.put_answer(
                 {
@@ -513,8 +513,10 @@ class StoreTests(unittest.TestCase):
                 "value": "Prefer not to answer",
             },
             remember_sensitive=True,
+            expected_revision=placeholder["revision"],
         )
         self.assertIn("rememberedWithConsentAt", remembered)
+        self.assertNotIn("value", remembered)
 
     def test_answer_list_update_revisions_and_recoverable_delete(self):
         answer = self.store.put_answer(
@@ -526,7 +528,10 @@ class StoreTests(unittest.TestCase):
             }
         )
         self.assertEqual(answer["revision"], 1)
-        self.assertEqual(self.store.list_answers(), [answer])
+        listed = self.store.list_answers()
+        self.assertEqual([item["key"] for item in listed], [answer["key"]])
+        self.assertNotIn("value", listed[0])
+        self.assertTrue(listed[0]["hasValue"])
         updated = self.store.update_answer(
             answer["key"],
             {"value": "July", "aliases": ["Start date", "START DATE"]},
@@ -588,7 +593,8 @@ class StoreTests(unittest.TestCase):
             expected_revision=unchanged["revision"],
             remember_sensitive=True,
         )
-        self.assertEqual(changed["value"], "250K")
+        self.assertNotIn("value", changed)
+        self.assertEqual(self.store.reveal_answer(answer["key"])["value"], "250K")
         self.assertIn("rememberedWithConsentAt", changed)
 
     def test_answer_permanent_delete_rejects_live_session_reference(self):
@@ -612,6 +618,812 @@ class StoreTests(unittest.TestCase):
                 answer["key"], expected_revision=trashed["revision"]
             )["deleted"]
         )
+
+    def test_observed_answer_review_dedup_collision_and_legacy_status(self):
+        observed = self.store.observe_answer(
+            {"question": "Will you relocate?", "state": "missing", "scope": {"role": "engineering"}}
+        )
+        self.assertEqual((observed["reviewStatus"], observed["observationCount"]), ("pending", 1))
+        repeated = self.store.observe_answer(
+            {"question": "Will you relocate!", "state": "missing", "scope": {"role": "engineering"}}
+        )
+        self.assertEqual((repeated["key"], repeated["observationCount"]), (observed["key"], 2))
+        declined = self.store.review_answer(observed["key"], "declined", repeated["revision"])
+        deduplicated = self.store.observe_answer(
+            {"question": "Will you relocate?", "state": "missing", "scope": {"role": "engineering"}}
+        )
+        self.assertEqual((deduplicated["reviewStatus"], deduplicated["observationCount"]), ("declined", 3))
+        self.assertEqual(self.store.list_answers(), [])
+        self.assertEqual(self.store.list_answers(review_status="declined")[0]["key"], declined["key"])
+
+        other = self.store.put_answer(
+            {"question": "Preferred location?", "aliases": ["Where do you want to work?"], "state": "missing"}
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "collides within scope"):
+            self.store.put_answer(
+                {"question": "Another question?", "aliases": ["WHERE DO YOU WANT TO WORK"], "state": "missing"}
+            )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "expected revision"):
+            self.store.put_answer(
+                {"question": "Preferred location?", "state": "missing", "key": other["key"]}
+            )
+
+        document = json.loads(self.store.answers_path.read_text(encoding="utf-8"))
+        document["answers"][other["key"]].pop("reviewStatus", None)
+        self.store.answers_path.write_text(json.dumps(document), encoding="utf-8")
+        legacy = self.store.get_answer(other["key"])
+        self.assertEqual((legacy["reviewStatus"], legacy["key"], legacy["scope"]), ("accepted", other["key"], {}))
+
+    def test_observation_resolves_retired_computed_key_without_resurrection(self):
+        winner = self.store.put_answer(
+            {"question": "Canonical relocation answer?", "state": "confirmed", "value": "Yes"}
+        )
+        source = self.store.put_answer(
+            {"question": "Can you relocate?", "state": "missing"}
+        )
+        merged = self.store.merge_answers(
+            winner["key"], source["key"], winner["revision"], source["revision"]
+        )
+
+        # Remove the transferred source identity so only the immutable redirect,
+        # rather than the normal candidate scan, can resolve this observation.
+        document = json.loads(self.store.answers_path.read_text(encoding="utf-8"))
+        document["answers"][winner["key"]]["aliases"] = []
+        self.store.answers_path.write_text(json.dumps(document), encoding="utf-8")
+        self.assertNotIn(
+            STORE_MODULE.normalize_question("Can you relocate?"),
+            self.store._answer_candidates(document["answers"][winner["key"]]),
+        )
+        found = self.store.find_answer("Can you relocate?")
+        self.assertEqual(
+            (found["key"], found["redirectedFrom"]),
+            (winner["key"], source["key"]),
+        )
+
+        observed = self.store.observe_answer(
+            {"question": "Can you relocate?", "state": "missing"}
+        )
+
+        self.assertEqual(observed["key"], winner["key"])
+        self.assertEqual(observed["observationCount"], merged["observationCount"] + 1)
+        document = json.loads(self.store.answers_path.read_text(encoding="utf-8"))
+        self.assertNotIn(source["key"], document["answers"])
+        self.assertEqual(document["redirects"][source["key"]]["targetKey"], winner["key"])
+
+    def test_retired_computed_identity_cannot_be_reclaimed_by_explicit_key(self):
+        winner = self.store.put_answer(
+            {"question": "Canonical relocation answer?", "state": "confirmed", "value": "Yes"}
+        )
+        source = self.store.put_answer(
+            {"question": "Can you relocate?", "state": "missing"}
+        )
+        merged = self.store.merge_answers(
+            winner["key"], source["key"], winner["revision"], source["revision"]
+        )
+        updated = self.store.update_answer(
+            winner["key"], {"aliases": []}, merged["revision"]
+        )
+
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "retired redirect identity"):
+            self.store.put_answer(
+                {
+                    "key": "explicit.relocation",
+                    "question": "Can you relocate?",
+                    "state": "missing",
+                }
+            )
+
+        found = self.store.find_answer("Can you relocate?")
+        self.assertEqual((found["key"], found["redirectedFrom"]), (winner["key"], source["key"]))
+        self.assertEqual(self.store.get_answer(winner["key"])["revision"], updated["revision"])
+
+    def test_boolean_and_number_scopes_are_distinct_for_answers_and_merge(self):
+        boolean = self.store.put_answer(
+            {"question": "Scope identity?", "scope": {"flag": True}, "state": "missing"}
+        )
+        number = self.store.put_answer(
+            {"question": "Scope identity?", "scope": {"flag": 1}, "state": "missing"}
+        )
+
+        self.assertNotEqual(boolean["key"], number["key"])
+        self.assertEqual(self.store.find_answer("Scope identity?", {"flag": True})["key"], boolean["key"])
+        self.assertEqual(self.store.find_answer("Scope identity?", {"flag": 1})["key"], number["key"])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "exact matching scope"):
+            self.store.merge_answers(
+                boolean["key"], number["key"], boolean["revision"], number["revision"]
+            )
+
+    def test_existing_put_cannot_rewrite_observation_or_review_metadata(self):
+        observed = self.store.observe_answer(
+            {"question": "Have you used Python?", "state": "missing"}
+        )
+        updated = self.store.put_answer(
+            {
+                "key": observed["key"],
+                "question": observed["question"],
+                "state": "missing",
+                "observationCount": 999,
+                "observedAt": "1900-01-01T00:00:00Z",
+                "lastObservedAt": "2999-01-01T00:00:00Z",
+                "reviewedAt": "1900-01-01T00:00:00Z",
+            },
+            expected_revision=observed["revision"],
+        )
+
+        self.assertEqual(updated["observationCount"], observed["observationCount"])
+        self.assertEqual(updated["observedAt"], observed["observedAt"])
+        self.assertEqual(updated["lastObservedAt"], observed["lastObservedAt"])
+        self.assertNotIn("reviewedAt", updated)
+
+    def test_legacy_blank_questions_are_ignored_during_candidate_scans(self):
+        legacy = self.store.put_answer(
+            {"key": "legacy.questionless", "question": "   ", "state": "missing"}
+        )
+
+        created = self.store.put_answer(
+            {"question": "Current candidate?", "state": "missing"}
+        )
+        observed = self.store.observe_answer(
+            {"question": "Another current candidate?", "state": "missing"}
+        )
+
+        self.assertEqual(self.store.get_answer(legacy["key"])["question"], "   ")
+        self.assertEqual(self.store.find_answer("Current candidate?")["key"], created["key"])
+        self.assertEqual(observed["reviewStatus"], "pending")
+
+    def test_non_string_review_statuses_raise_safe_store_errors(self):
+        answer = self.store.put_answer(
+            {"question": "Review status validation?", "state": "missing"}
+        )
+
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "review status is unsupported"):
+            self.store.query_answers(review_status=[])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "state is unsupported"):
+            self.store.query_answers(state=[])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "decision must be accepted or declined"):
+            self.store.review_answer(answer["key"], {}, answer["revision"])
+
+        document = json.loads(self.store.answers_path.read_text(encoding="utf-8"))
+        document["answers"][answer["key"]]["reviewStatus"] = []
+        self.store.answers_path.write_text(json.dumps(document), encoding="utf-8")
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "review status is unsupported"):
+            self.store.list_answers()
+
+    def test_answer_put_preserves_existing_review_status_with_exact_revision(self):
+        pending = self.store.observe_answer(
+            {"question": "Put review boundary?", "state": "missing"}
+        )
+        pending_updated = self.store.put_answer(
+            {
+                "key": pending["key"],
+                "question": pending["question"],
+                "state": "confirmed",
+                "value": "draft",
+                "reviewStatus": "accepted",
+            },
+            expected_revision=pending["revision"],
+        )
+        self.assertEqual(
+            (
+                pending_updated["reviewStatus"],
+                pending_updated["revision"],
+                pending_updated["observationCount"],
+                pending_updated["observedAt"],
+            ),
+            ("pending", pending["revision"] + 1, 1, pending["observedAt"]),
+        )
+
+        accepted = self.store.put_answer(
+            {
+                "question": "Accepted put review boundary?",
+                "state": "confirmed",
+                "value": "canonical",
+            }
+        )
+        for attempted_status, value in (
+            ("declined", "decline attempt"),
+            ("pending", "pending attempt"),
+        ):
+            accepted = self.store.put_answer(
+                {
+                    "key": accepted["key"],
+                    "question": accepted["question"],
+                    "state": "confirmed",
+                    "value": value,
+                    "reviewStatus": attempted_status,
+                },
+                expected_revision=accepted["revision"],
+            )
+            self.assertEqual(accepted["reviewStatus"], "accepted")
+
+        for attempted_status in ("declined", "pending"):
+            with self.assertRaisesRegex(
+                STORE_MODULE.StoreError, "created through put must have accepted"
+            ):
+                self.store.put_answer(
+                    {
+                        "question": f"New {attempted_status} put behavior?",
+                        "state": "missing",
+                        "reviewStatus": attempted_status,
+                    }
+                )
+
+    def test_default_lookup_is_accepted_only_and_sensitive_non_reveal_paths_are_strict(self):
+        pending = self.store.observe_answer(
+            {"question": "Pending lookup?", "state": "inferred", "value": "draft"}
+        )
+        self.assertIsNone(self.store.find_answer("Pending lookup?", {}))
+        declined = self.store.review_answer(
+            pending["key"], "declined", pending["revision"]
+        )
+        self.assertIsNone(self.store.find_answer("Pending lookup?", {}))
+        self.assertEqual(declined["reviewStatus"], "declined")
+
+        secret = "strictly-private-answer"
+        created = self.store.put_answer(
+            {
+                "question": "Sensitive lookup?",
+                "state": "sensitive",
+                "value": secret,
+                "sensitivity": "high",
+            },
+            remember_sensitive=True,
+        )
+        for result in (
+            created,
+            self.store.get_answer(created["key"]),
+            self.store.find_answer("Sensitive lookup?", {}),
+            self.store.list_answers(),
+        ):
+            self.assertNotIn(secret, json.dumps(result))
+        self.assertEqual(self.store.reveal_answer(created["key"])["value"], secret)
+
+    def test_derived_key_resolution_never_crosses_current_exact_scope(self):
+        direct = self.store.put_answer(
+            {
+                "question": "Scope-edited direct identity?",
+                "state": "confirmed",
+                "value": "direct",
+                "scope": {"country": "US"},
+            }
+        )
+        direct = self.store.update_answer(
+            direct["key"], {"scope": {"country": "CA"}}, direct["revision"]
+        )
+        self.assertIsNone(
+            self.store.find_answer(
+                "Scope-edited direct identity?", {"country": "US"}
+            )
+        )
+        before_direct_observe = self.store.answers_path.read_bytes()
+        with self.assertRaisesRegex(
+            STORE_MODULE.StoreError, "derived key is occupied by a different scope"
+        ):
+            self.store.observe_answer(
+                {
+                    "question": "Scope-edited direct identity?",
+                    "state": "missing",
+                    "scope": {"country": "US"},
+                }
+            )
+        self.assertEqual(self.store.answers_path.read_bytes(), before_direct_observe)
+        self.assertEqual(
+            self.store.get_answer(direct["key"])["scope"], {"country": "CA"}
+        )
+
+        winner = self.store.put_answer(
+            {
+                "question": "Scope-edited redirect winner?",
+                "state": "confirmed",
+                "value": "winner",
+                "scope": {"country": "US"},
+            }
+        )
+        source = self.store.put_answer(
+            {
+                "question": "Scope-edited redirect source?",
+                "state": "missing",
+                "scope": {"country": "US"},
+            }
+        )
+        winner = self.store.merge_answers(
+            winner["key"], source["key"], winner["revision"], source["revision"]
+        )
+        winner = self.store.update_answer(
+            winner["key"], {"scope": {"country": "GB"}}, winner["revision"]
+        )
+        self.assertIsNone(
+            self.store.find_answer(
+                "Scope-edited redirect source?", {"country": "US"}
+            )
+        )
+        before_redirect_observe = self.store.answers_path.read_bytes()
+        with self.assertRaisesRegex(
+            STORE_MODULE.StoreError, "derived key is occupied by a different scope"
+        ):
+            self.store.observe_answer(
+                {
+                    "question": "Scope-edited redirect source?",
+                    "state": "missing",
+                    "scope": {"country": "US"},
+                }
+            )
+        self.assertEqual(self.store.answers_path.read_bytes(), before_redirect_observe)
+        self.assertEqual(
+            self.store.get_answer(winner["key"])["scope"], {"country": "GB"}
+        )
+
+    def test_concurrent_observation_ingestion_is_additive_and_preserves_canonical_fields(self):
+        accepted = self.store.put_answer(
+            {
+                "question": "Concurrent observation?",
+                "state": "confirmed",
+                "value": "canonical",
+                "source": "user",
+            }
+        )
+
+        def observe(_index):
+            return STORE_MODULE.Store(self.root, self.legacy).observe_answer(
+                {
+                    "question": "Concurrent observation!",
+                    "state": "missing",
+                    "source": "agent",
+                }
+            )
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            results = list(executor.map(observe, range(16)))
+        final = self.store.get_answer(accepted["key"])
+        self.assertEqual(final["observationCount"], 16)
+        self.assertEqual((final["state"], final["value"], final["source"]), ("confirmed", "canonical", "user"))
+        self.assertEqual(len({item["revision"] for item in results}), 16)
+
+    def test_answer_query_filters_trashed_records_before_stable_pagination(self):
+        answers = [
+            self.store.put_answer(
+                {"question": f"Paged answer {index}?", "state": "confirmed", "value": str(index)}
+            )
+            for index in range(5)
+        ]
+        for answer in answers[1:4]:
+            self.store.trash_answer(answer["key"], answer["revision"])
+        first = self.store.query_answers(
+            review_status=None, include_trashed=True, trashed_only=True, offset=0, limit=2
+        )
+        second = self.store.query_answers(
+            review_status=None, include_trashed=True, trashed_only=True, offset=2, limit=2
+        )
+        self.assertEqual((first["total"], first["hasMore"], second["hasMore"]), (3, True, False))
+        self.assertEqual(
+            [item["key"] for item in first["items"] + second["items"]],
+            [answer["key"] for answer in answers[1:4]],
+        )
+
+    def test_answer_projection_redacts_values_counts_references_and_history_blocks_delete(self):
+        answer = self.store.put_answer(
+            {"question": "Compensation?", "state": "sensitive", "value": "private salary", "sensitivity": "high"},
+            remember_sensitive=True,
+        )
+        self.store.save_session("answer-session", {"status": "active", "answerKeys": [answer["key"]]})
+        self.store.append_history({"applicationId": "answer-history", "event": "reviewed", "answerKeys": [answer["key"]]})
+        projection = self.store.query_answers()
+        self.assertNotIn("private salary", json.dumps(projection))
+        self.assertEqual(projection["items"][0]["referenceCounts"], {"sessions": 1, "history": 1, "total": 2})
+        self.assertEqual(self.store.reveal_answer(answer["key"])["value"], "private salary")
+        trashed = self.store.trash_answer(answer["key"], answer["revision"])
+        self.store.delete_session("answer-session")
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "application history"):
+            self.store.delete_answer(answer["key"], trashed["revision"])
+
+    def test_history_append_and_permanent_answer_delete_are_serialized(self):
+        append_first = self.store.put_answer(
+            {"question": "Append wins deletion race?", "state": "missing"}
+        )
+        append_first = self.store.trash_answer(
+            append_first["key"], append_first["revision"]
+        )
+        append_entered = threading.Event()
+        allow_append = threading.Event()
+        original_append = self.store._append_history_event_idempotent_locked
+
+        def paused_append(event):
+            append_entered.set()
+            self.assertTrue(allow_append.wait(timeout=2))
+            original_append(event)
+
+        with mock.patch.object(
+            self.store,
+            "_append_history_event_idempotent_locked",
+            side_effect=paused_append,
+        ):
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                append_future = executor.submit(
+                    self.store.append_history,
+                    {
+                        "applicationId": "append-wins",
+                        "event": "reviewed",
+                        "answerKeys": [append_first["key"]],
+                    },
+                )
+                self.assertTrue(append_entered.wait(timeout=2))
+                delete_future = executor.submit(
+                    self.store.delete_answer,
+                    append_first["key"],
+                    append_first["revision"],
+                )
+                time.sleep(0.05)
+                self.assertFalse(delete_future.done())
+                allow_append.set()
+                self.assertEqual(append_future.result()["answerKeys"], [append_first["key"]])
+                with self.assertRaisesRegex(STORE_MODULE.StoreError, "application history"):
+                    delete_future.result()
+
+        delete_first = self.store.put_answer(
+            {"question": "Deletion wins append race?", "state": "missing"}
+        )
+        delete_first = self.store.trash_answer(
+            delete_first["key"], delete_first["revision"]
+        )
+        self.assertTrue(
+            self.store.delete_answer(delete_first["key"], delete_first["revision"])["deleted"]
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "existing answer"):
+            self.store.append_history(
+                {
+                    "applicationId": "delete-wins",
+                    "event": "reviewed",
+                    "answerKeys": [delete_first["key"]],
+                }
+            )
+
+    def test_answer_merge_preserves_winner_redirects_history_and_recovers_sessions(self):
+        winner = self.store.put_answer(
+            {
+                "question": "Canonical compensation preference?",
+                "aliases": ["preferred compensation"],
+                "state": "sensitive",
+                "value": "winner-private-value",
+                "sensitivity": "high",
+                "scope": {"country": "US"},
+                "source": "user",
+                "observationCount": 2,
+                "observedAt": "2026-08-20T00:00:00Z",
+                "lastObservedAt": "2026-08-22T00:00:00Z",
+            },
+            remember_sensitive=True,
+        )
+        source = self.store.put_answer(
+            {
+                "question": "What compensation do you expect?",
+                "aliases": ["salary expectation"],
+                "state": "confirmed",
+                "value": "discarded-source-value",
+                "scope": {"country": "US"},
+                "source": "agent",
+                "observationCount": 3,
+                "observedAt": "2026-08-18T00:00:00Z",
+                "lastObservedAt": "2026-08-24T00:00:00Z",
+            }
+        )
+        winner_before = self.store.reveal_answer(winner["key"])
+        self.store.save_session(
+            "merge-session",
+            {
+                "status": "active",
+                "answerKeys": [source["key"], winner["key"], source["key"]],
+                "pendingFields": [
+                    {"question": "Compensation?", "answerKey": source["key"]}
+                ],
+            },
+        )
+        self.store.append_history(
+            {
+                "applicationId": "merge-history",
+                "event": "reviewed",
+                "answerKeys": [source["key"]],
+            }
+        )
+
+        real_atomic_write = STORE_MODULE.atomic_write_json
+        interrupted = False
+
+        def interrupt_session_write(path, payload):
+            nonlocal interrupted
+            if path == self.store._session_path("merge-session") and not interrupted:
+                interrupted = True
+                raise OSError("simulated merge interruption")
+            return real_atomic_write(path, payload)
+
+        with mock.patch.object(STORE_MODULE, "atomic_write_json", side_effect=interrupt_session_write):
+            with self.assertRaisesRegex(OSError, "simulated merge interruption"):
+                self.store.merge_answers(
+                    winner["key"], source["key"], winner["revision"], source["revision"]
+                )
+
+        journal_text = self.store.coordinator_journal_path.read_text(encoding="utf-8")
+        self.assertNotIn("winner-private-value", journal_text)
+        self.assertNotIn("discarded-source-value", journal_text)
+        recovered = STORE_MODULE.Store(self.root, self.legacy)
+        recovered.initialize()
+        merged = recovered.get_answer(winner["key"])
+        self.assertEqual((merged["revision"], merged["observationCount"]), (2, 5))
+        self.assertEqual((merged["observedAt"], merged["lastObservedAt"]), (
+            "2026-08-18T00:00:00Z", "2026-08-24T00:00:00Z"
+        ))
+        self.assertEqual(recovered.reveal_answer(winner["key"])["value"], "winner-private-value")
+        self.assertEqual(recovered.reveal_answer(winner["key"])["source"], winner_before["source"])
+        self.assertEqual(
+            recovered.reveal_answer(winner["key"])["rememberedWithConsentAt"],
+            winner_before["rememberedWithConsentAt"],
+        )
+        self.assertNotIn("discarded-source-value", recovered.answers_path.read_text(encoding="utf-8"))
+        redirected = recovered.get_answer(source["key"])
+        self.assertEqual((redirected["key"], redirected["redirectedFrom"]), (winner["key"], source["key"]))
+        self.assertIn("what compensation do you expect", merged["aliases"])
+        session = recovered.load_session("merge-session")
+        self.assertEqual(session["answerKeys"], [winner["key"]])
+        self.assertEqual(session["pendingFields"][0]["answerKey"], winner["key"])
+        self.assertEqual(merged["referenceCounts"], {"sessions": 1, "history": 1, "total": 2})
+        self.assertEqual(recovered.read_history()[0]["answerKeys"], [source["key"]])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "immutable redirect"):
+            recovered.trash_answer(winner["key"], merged["revision"])
+        self.assertIsNone(recovered.get_answer(winner["key"])["deletedAt"])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "cannot be resurrected"):
+            recovered.put_answer(
+                {"key": source["key"], "question": "Resurrect?", "state": "confirmed", "value": "No"}
+            )
+        invalid = json.loads(recovered.answers_path.read_text(encoding="utf-8"))
+        invalid["answers"][winner["key"]]["deletedAt"] = "2026-08-25T00:00:00Z"
+        recovered.answers_path.write_text(json.dumps(invalid), encoding="utf-8")
+        with self.assertRaisesRegex(
+            STORE_MODULE.StoreError, "flattened to an active answer"
+        ):
+            recovered.get_answer(winner["key"], include_trashed=True)
+
+    def test_answer_merge_acknowledges_from_precommit_projection_without_winner_reread(self):
+        winner = self.store.put_answer(
+            {"question": "Merge acknowledgment winner?", "state": "confirmed", "value": "winner"}
+        )
+        source = self.store.put_answer(
+            {"question": "Merge acknowledgment source?", "state": "missing"}
+        )
+
+        with mock.patch.object(
+            self.store,
+            "_get_answer_record",
+            side_effect=OSError("synthetic post-commit winner reread failure"),
+        ):
+            merged = self.store.merge_answers(
+                winner["key"], source["key"], winner["revision"], source["revision"]
+            )
+
+        self.assertEqual((merged["key"], merged["mergedFrom"]), (winner["key"], source["key"]))
+        self.assertEqual(merged["revision"], winner["revision"] + 1)
+
+    def test_get_answer_resolves_redirect_and_detail_from_one_document_snapshot(self):
+        winner = self.store.put_answer(
+            {"question": "Snapshot winner?", "state": "confirmed", "value": "winner"}
+        )
+        source = self.store.put_answer(
+            {"question": "Snapshot source?", "state": "confirmed", "value": "source"}
+        )
+        before_merge = json.loads(self.store.answers_path.read_text(encoding="utf-8"))
+        self.store.merge_answers(
+            winner["key"], source["key"], winner["revision"], source["revision"]
+        )
+        after_merge = json.loads(self.store.answers_path.read_text(encoding="utf-8"))
+        snapshots = [after_merge, before_merge]
+
+        with (
+            mock.patch.object(self.store, "initialize"),
+            mock.patch.object(
+                self.store,
+                "_load_answers_document",
+                side_effect=lambda: snapshots.pop(0),
+            ) as load_document,
+        ):
+            detail = self.store.get_answer(source["key"])
+
+        self.assertEqual(load_document.call_count, 1)
+        self.assertEqual(
+            (detail["key"], detail["redirectedFrom"], detail["value"]),
+            (winner["key"], source["key"], "winner"),
+        )
+
+    def test_answer_reveal_find_and_collections_use_one_answers_snapshot_during_merge(self):
+        winner = self.store.put_answer(
+            {
+                "question": "Concurrent snapshot winner?",
+                "state": "sensitive",
+                "value": "winner-private-snapshot",
+                "sensitivity": "high",
+            },
+            remember_sensitive=True,
+        )
+        source = self.store.put_answer(
+            {"question": "Concurrent snapshot source?", "state": "missing"}
+        )
+        self.store.append_history(
+            {
+                "applicationId": "concurrent-snapshot-history",
+                "event": "reviewed",
+                "answerKeys": [source["key"]],
+            }
+        )
+        before_merge = json.loads(self.store.answers_path.read_text(encoding="utf-8"))
+        self.store.merge_answers(
+            winner["key"], source["key"], winner["revision"], source["revision"]
+        )
+        after_merge = json.loads(self.store.answers_path.read_text(encoding="utf-8"))
+
+        def from_concurrent_snapshots(operation):
+            snapshots = [after_merge, before_merge]
+            with (
+                mock.patch.object(self.store, "initialize"),
+                mock.patch.object(
+                    self.store,
+                    "_load_answers_document",
+                    side_effect=lambda: snapshots.pop(0),
+                ) as load_document,
+            ):
+                projected = operation()
+            self.assertEqual(load_document.call_count, 1)
+            return projected
+
+        revealed = from_concurrent_snapshots(
+            lambda: self.store.reveal_answer(source["key"])
+        )
+        self.assertEqual(
+            (revealed["key"], revealed["redirectedFrom"], revealed["value"]),
+            (winner["key"], source["key"], "winner-private-snapshot"),
+        )
+        self.assertEqual(
+            revealed["referenceCounts"], {"sessions": 0, "history": 1, "total": 1}
+        )
+
+        found = from_concurrent_snapshots(
+            lambda: self.store.find_answer("Concurrent snapshot source?", {})
+        )
+        self.assertEqual(found["key"], winner["key"])
+        self.assertEqual(
+            found["referenceCounts"], {"sessions": 0, "history": 1, "total": 1}
+        )
+        self.assertNotIn("value", found)
+
+        listed = from_concurrent_snapshots(lambda: self.store.list_answers())
+        self.assertEqual([item["key"] for item in listed], [winner["key"]])
+        self.assertEqual(
+            listed[0]["referenceCounts"], {"sessions": 0, "history": 1, "total": 1}
+        )
+
+        queried = from_concurrent_snapshots(lambda: self.store.query_answers())
+        self.assertEqual([item["key"] for item in queried["items"]], [winner["key"]])
+        self.assertEqual(
+            queried["items"][0]["referenceCounts"],
+            {"sessions": 0, "history": 1, "total": 1},
+        )
+
+    def test_answer_merge_rejects_scope_stale_and_third_record_collision_before_mutation(self):
+        winner = self.store.put_answer(
+            {"question": "Winner?", "state": "confirmed", "value": "winner", "scope": {"x": 1}}
+        )
+        source = self.store.put_answer(
+            {"question": "Source?", "state": "confirmed", "value": "source", "scope": {"x": 1}}
+        )
+        other_scope = self.store.put_answer(
+            {"question": "Other scope?", "state": "confirmed", "value": "other", "scope": {"x": 2}}
+        )
+        before = self.store.answers_path.read_bytes()
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "exact matching scope"):
+            self.store.merge_answers(winner["key"], other_scope["key"], winner["revision"], other_scope["revision"])
+        self.assertEqual(self.store.answers_path.read_bytes(), before)
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "revision conflict"):
+            self.store.merge_answers(winner["key"], source["key"], winner["revision"] + 1, source["revision"])
+        self.assertEqual(self.store.answers_path.read_bytes(), before)
+
+        third = self.store.put_answer(
+            {"question": "Third?", "state": "confirmed", "value": "third", "scope": {"x": 1}}
+        )
+        document = json.loads(self.store.answers_path.read_text(encoding="utf-8"))
+        document["answers"][third["key"]]["aliases"] = ["Source?"]
+        self.store.answers_path.write_text(json.dumps(document), encoding="utf-8")
+        collision_before = self.store.answers_path.read_bytes()
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "collides within scope"):
+            self.store.merge_answers(winner["key"], source["key"], winner["revision"], source["revision"])
+        self.assertEqual(self.store.answers_path.read_bytes(), collision_before)
+
+    def test_repeated_answer_merges_flatten_every_inbound_redirect(self):
+        first = self.store.put_answer(
+            {"question": "First duplicate?", "state": "confirmed", "value": "first"}
+        )
+        second = self.store.put_answer(
+            {"question": "Second duplicate?", "state": "confirmed", "value": "second"}
+        )
+        final = self.store.put_answer(
+            {"question": "Final canonical?", "state": "confirmed", "value": "final"}
+        )
+        self.store.save_session(
+            "flattened-redirect-session",
+            {"status": "active", "answerKeys": [first["key"]]},
+        )
+        self.store.append_history(
+            {
+                "applicationId": "flattened-redirect-history",
+                "event": "reviewed",
+                "answerKeys": [first["key"]],
+            }
+        )
+
+        second = self.store.merge_answers(
+            second["key"], first["key"], second["revision"], first["revision"]
+        )
+        final = self.store.merge_answers(
+            final["key"], second["key"], final["revision"], second["revision"]
+        )
+
+        document = json.loads(self.store.answers_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            {key: redirect["targetKey"] for key, redirect in document["redirects"].items()},
+            {first["key"]: final["key"], second["key"]: final["key"]},
+        )
+        self.assertEqual(self.store.get_answer(first["key"])["key"], final["key"])
+        self.assertEqual(self.store.load_session("flattened-redirect-session")["answerKeys"], [final["key"]])
+        self.assertEqual(final["referenceCounts"], {"sessions": 1, "history": 1, "total": 2})
+
+    def test_generic_answer_update_cannot_change_review_status(self):
+        pending = self.store.observe_answer(
+            {"question": "Review transition only?", "state": "missing"}
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "unsupported fields"):
+            self.store.update_answer(
+                pending["key"],
+                {"reviewStatus": "accepted"},
+                pending["revision"],
+            )
+        accepted = self.store.review_answer(
+            pending["key"], "accepted", pending["revision"]
+        )
+        self.assertEqual(accepted["reviewStatus"], "accepted")
+
+    def test_answer_mutation_projection_scans_references_before_commit(self):
+        answer = self.store.put_answer(
+            {
+                "question": "Precommit reference projection?",
+                "state": "sensitive",
+                "value": "private-reference-value",
+                "sensitivity": "high",
+            },
+            remember_sensitive=True,
+        )
+        self.store.save_session(
+            "precommit-projection-session",
+            {"status": "active", "answerKeys": [answer["key"]]},
+        )
+        self.store.append_history(
+            {
+                "applicationId": "precommit-projection-history",
+                "event": "reviewed",
+                "answerKeys": [answer["key"]],
+            }
+        )
+        original_counts = self.store._answer_reference_counts
+
+        def reject_postcommit_scan(*args, **kwargs):
+            persisted = json.loads(self.store.answers_path.read_text(encoding="utf-8"))
+            if persisted["answers"][answer["key"]].get("revision", 1) > answer["revision"]:
+                raise OSError("synthetic post-commit reference failure")
+            return original_counts(*args, **kwargs)
+
+        with mock.patch.object(
+            self.store, "_answer_reference_counts", side_effect=reject_postcommit_scan
+        ):
+            updated = self.store.update_answer(
+                answer["key"], {"aliases": ["Projection alias"]}, answer["revision"]
+            )
+        self.assertEqual(updated["referenceCounts"], {"sessions": 1, "history": 1, "total": 2})
+        self.assertTrue(updated["valueRedacted"])
+        self.assertNotIn("value", updated)
 
     def test_profile_noop_and_answer_delete_do_not_reenter_coordinator_lock(self):
         self.store.replace_profile(
@@ -2974,6 +3786,9 @@ class StoreTests(unittest.TestCase):
         )
 
     def test_history_is_minimal_parseable_and_rejects_answer_values(self):
+        answer = self.store.put_answer(
+            {"key": "work_authorization.us", "state": "missing"}
+        )
         event = self.store.append_history(
             {
                 "applicationId": "acme-role-1",
@@ -2983,7 +3798,7 @@ class StoreTests(unittest.TestCase):
                 "answerKeys": ["work_authorization.us"],
             }
         )
-        self.assertEqual(event["answerKeys"], ["work_authorization.us"])
+        self.assertEqual(event["answerKeys"], [answer["key"]])
         parsed = self.store.read_history()
         self.assertEqual(len(parsed), 1)
         self.assertNotIn("value", parsed[0])
@@ -3413,7 +4228,10 @@ class StoreTests(unittest.TestCase):
             capture_output=True,
             text=True,
         )
-        self.assertEqual(json.loads(listed.stdout), [json.loads(updated.stdout)])
+        projection = json.loads(listed.stdout)
+        self.assertEqual(projection["total"], 1)
+        self.assertEqual(projection["items"][0]["key"], json.loads(updated.stdout)["key"])
+        self.assertNotIn("value", projection["items"][0])
 
     def test_paths_exposes_separate_inert_policy_root_without_changing_v1_store(self):
         self.store.initialize()

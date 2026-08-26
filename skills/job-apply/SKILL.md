@@ -133,7 +133,7 @@ immediately after the helper consumes them.
 2. **Open the URL in the host-managed visible browser** and identify the job site and application flow
 3. **Pause for user-only steps** if login, password, CAPTCHA, MFA, consent, or account creation appears
 4. **Open the application form**; if an Apply link opens an external portal, continue in that visible host-managed tab
-5. **Read the form** and fill profile-backed fields; for recurring questions call `answer-find` with the exact visible question and relevant scope
+5. **Read the form** and fill profile-backed fields; for recurring questions call `answer-find` with the exact visible question and relevant scope. The helper resolves immutable merged-key redirects without rewriting history. If no record matches, ingest the value-free question (or an inferred candidate) with `answer-observe`; never create a separate question inbox or copy its answer into session/history metadata.
 6. **Reuse only matching, non-sensitive `confirmed` answers**. Show and confirm `inferred` answers, ask for `missing` answers, and reconfirm every `sensitive` answer before entry
 7. **Separate fill consent from remember consent** for salary, work authorization, visa status, demographic information, disability disclosure, and similar answers. Use `--remember-sensitive` only after explicit field-specific permission to remember
 8. **Upload the resume** through the visible file control and verify the selected filename
