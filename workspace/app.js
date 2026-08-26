@@ -3,6 +3,9 @@ export class ApiError extends Error {
     super(payload?.error?.message || `Workspace request failed (${status})`);
     this.status = status;
     this.code = payload?.error?.code || "request_error";
+    this.recordType = payload?.error?.recordType || null;
+    this.operation = payload?.error?.operation || null;
+    this.counts = payload?.error?.counts || {};
   }
 }
 
@@ -141,6 +144,24 @@ export function createApi(token, fetchImpl = globalThis.fetch) {
   };
 }
 
+export function createLatestRequestCoordinator() {
+  let latestRequest = 0;
+  return {
+    async run(load, onSuccess, onFailure) {
+      const requestId = ++latestRequest;
+      try {
+        const value = await load();
+        if (requestId !== latestRequest) return false;
+        onSuccess(value);
+      } catch (error) {
+        if (requestId !== latestRequest) return false;
+        onFailure(error);
+      }
+      return true;
+    },
+  };
+}
+
 export function pointerValue(value, pointer) {
   return pointer.split("/").slice(1).reduce((item, segment) => {
     const key = segment.replaceAll("~1", "/").replaceAll("~0", "~");
@@ -203,6 +224,35 @@ export function resumeAssignmentText(resume) {
   return `${explicit} explicitly assigned active job${explicit === 1 ? "" : "s"}${implicit ? `; ${implicit} active job${implicit === 1 ? "" : "s"} use this default` : ""}.`;
 }
 
+export function typedDeletePhrase(type) {
+  return `DELETE ${String(type || "").toUpperCase()}`;
+}
+
+export function filterTrashItems(items, type = "") {
+  return (items || []).filter((item) => !type || item.type === type);
+}
+
+export function trashBlockerText(item) {
+  const counts = item?.blockerCounts || {};
+  const total = Object.values(counts).reduce(
+    (sum, value) => sum + (Number.isInteger(value) ? value : 0), 0,
+  );
+  return total ? `${total} protected reference${total === 1 ? "" : "s"}` : "No known references";
+}
+
+export function lifecycleErrorText(error) {
+  if (error?.code === "revision_conflict") {
+    return "This record changed elsewhere. Nothing was retried; refresh Trash and review the latest revision.";
+  }
+  const protectedCount = Object.values(error?.counts || {}).reduce(
+    (sum, value) => sum + (Number.isInteger(value) ? value : 0), 0,
+  );
+  const suffix = protectedCount
+    ? ` (${protectedCount} protected reference${protectedCount === 1 ? "" : "s"}.)`
+    : "";
+  return `${error?.message || "The lifecycle operation was rejected."}${suffix}`;
+}
+
 export function shouldUseResumeResponse(requestId, latestRequestId, requestedTrash, currentTrash) {
   return requestId === latestRequestId && requestedTrash === currentTrash;
 }
@@ -217,6 +267,8 @@ if (hasDom) {
   const profileState = { inspection: null, drafts: new Map(), draftBases: new Map(), atomic: new Set(), additionalAtomic: new Set(), deletions: new Set(), conflicts: [], latest: null, loaded: false };
   const resumeState = { items: [], proposals: [], trash: false, loaded: false, loading: false, requestId: 0, selected: null, opener: null, proposal: null, dirtyMetadata: new Set() };
   const answerState = { items: [], loaded: false, selected: null, offset: 0, limit: 25, total: 0, dirty: new Set(), opener: null, requestSequence: 0, detailRequestSequence: 0, dialogGeneration: 0, mergeRequestSequence: 0, mergeSource: null, mergeCandidates: [], busyControls: null };
+  const trashState = { items: [], counts: { job: 0, resume: 0, answer: 0 }, loaded: false, selected: null, opener: null };
+  const trashRefreshCoordinator = createLatestRequestCoordinator();
   const $ = (selector) => document.querySelector(selector);
   const form = $("#job-form");
   const dialog = $("#job-dialog");
@@ -438,16 +490,92 @@ if (hasDom) {
     if (useMine) saveFacts(); else $("#facts-save").focus();
   }
 
+  function trashActionPath(item, action) {
+    if (item.type === "answer") return answerApiPath(item.id, action);
+    return `/api/${item.type === "resume" ? "resumes" : "jobs"}/${encodeURIComponent(item.id)}/${action}`;
+  }
+
+  function renderTrash() {
+    const type = $("#trash-type-filter").value;
+    const items = filterTrashItems(trashState.items, type);
+    $("#trash-nav-count").textContent = String(trashState.items.length);
+    $("#trash-counts").textContent = `${trashState.counts.job} jobs · ${trashState.counts.resume} resumes · ${trashState.counts.answer} answers`;
+    $("#trash-status").textContent = `${items.length} trashed ${type || "record"}${items.length === 1 ? "" : "s"} in this view.`;
+    $("#trash-empty").classList.toggle("hidden", items.length !== 0);
+    const list = $("#trash-list"); list.replaceChildren();
+    for (const item of items) {
+      const card = document.createElement("article"); card.className = "trash-card"; card.setAttribute("role", "listitem");
+      const body = document.createElement("div"); const kind = document.createElement("p"); kind.className = "eyebrow"; kind.textContent = item.type;
+      const heading = document.createElement("h3"); heading.textContent = item.label; const detail = document.createElement("p"); detail.textContent = trashBlockerText(item); body.append(kind, heading, detail);
+      const actions = document.createElement("div"); actions.className = "button-row";
+      const restore = document.createElement("button"); restore.type = "button"; restore.className = "button secondary"; restore.textContent = "Restore";
+      restore.addEventListener("click", () => restoreTrashItem(item, restore));
+      const remove = document.createElement("button"); remove.type = "button"; remove.className = "button danger"; remove.textContent = "Delete permanently…";
+      remove.addEventListener("click", () => openTrashDelete(item, remove)); actions.append(restore, remove); card.append(body, actions); list.append(card);
+    }
+  }
+
+  async function refreshTrash({ quiet = false } = {}) {
+    await trashRefreshCoordinator.run(
+      () => api("/api/trash"),
+      (result) => {
+        trashState.items = result.items; trashState.counts = result.counts; trashState.loaded = true; renderTrash(); setConnection(true);
+        $("#trash-error").classList.add("hidden"); if (!quiet) toast("Trash refreshed from the canonical store");
+      },
+      (error) => { const node = $("#trash-error"); node.textContent = error.message; node.classList.remove("hidden"); setConnection(false, error.message); },
+    );
+  }
+
+  async function restoreTrashItem(item, control) {
+    control.disabled = true;
+    try {
+      await api(trashActionPath(item, "restore"), { method: "POST", body: JSON.stringify({ expectedRevision: item.revision }) });
+      await Promise.all([refresh({ quiet: true }), refreshTrash({ quiet: true })]); toast(`${item.type} restored`);
+    } catch (error) {
+      const node = $("#trash-error"); node.textContent = lifecycleErrorText(error); node.classList.remove("hidden");
+      if (error.code === "revision_conflict") await refreshTrash({ quiet: true });
+    } finally { control.disabled = false; }
+  }
+
+  function openTrashDelete(item, opener) {
+    trashState.selected = { ...item }; trashState.opener = opener;
+    const phrase = typedDeletePhrase(item.type); $("#trash-delete-identity").textContent = `${item.type}: ${item.label}`; $("#trash-delete-phrase").textContent = phrase;
+    $("#trash-delete-impact").textContent = item.type === "resume"
+      ? "This permanently deletes the selected canonical resume record and its managed resume file. It does not affect unrelated jobs or erase application history, sessions, or audit evidence."
+      : "This permanently deletes only the selected canonical record. It does not cascade or erase application history, sessions, or audit evidence.";
+    $("#trash-delete-input").value = ""; $("#trash-delete-confirm").disabled = true; $("#trash-delete-error").classList.add("hidden"); $("#trash-delete-conflict").classList.add("hidden");
+    $("#trash-delete-dialog").showModal(); setTimeout(() => $("#trash-delete-input").focus(), 0);
+  }
+
+  async function submitTrashDelete(event) {
+    event.preventDefault(); const item = trashState.selected; if (!item) return;
+    if ($("#trash-delete-input").value !== typedDeletePhrase(item.type)) return;
+    $("#trash-delete-confirm").disabled = true;
+    try {
+      await api(trashActionPath(item, "delete"), { method: "POST", body: JSON.stringify({ expectedRevision: item.revision }) });
+      $("#trash-delete-dialog").close();
+      if (item.type === "answer" && $("#answer-dialog").open) $("#answer-dialog").close();
+      if (item.type === "resume" && $("#resume-dialog").open) $("#resume-dialog").close();
+      await Promise.all([refresh({ quiet: true }), refreshTrash({ quiet: true }), answerState.loaded ? refreshAnswers() : Promise.resolve(), resumeState.loaded ? refreshResumes({ quiet: true }) : Promise.resolve()]); toast(`${item.type} permanently deleted`);
+    } catch (error) {
+      if (error.code === "revision_conflict") { $("#trash-delete-conflict").classList.remove("hidden"); $("#trash-delete-conflict").focus(); }
+      else { $("#trash-delete-error").textContent = lifecycleErrorText(error); $("#trash-delete-error").classList.remove("hidden"); }
+      $("#trash-delete-confirm").disabled = false;
+    }
+  }
+
   async function showWorkspace(name) {
     const facts = name === "facts";
     const resumes = name === "resumes";
     const answers = name === "answers";
-    $("#jobs-workspace").classList.toggle("hidden", facts || resumes || answers); $("#facts-workspace").classList.toggle("hidden", !facts); $("#resumes-workspace").classList.toggle("hidden", !resumes); $("#answers-workspace").classList.toggle("hidden", !answers);
-    for (const section of ["jobs", "facts", "resumes", "answers"]) { const active = name === section; $(`#nav-${section}`).classList.toggle("active", active); $(`#nav-${section}`).toggleAttribute("aria-current", active); }
-    document.title = `${facts ? "Facts" : resumes ? "Resumes" : answers ? "Answers" : "Jobs"} · Job Apply Workspace`;
+    const trash = name === "trash";
+    $("#jobs-workspace").classList.toggle("hidden", facts || resumes || answers || trash); $("#facts-workspace").classList.toggle("hidden", !facts); $("#resumes-workspace").classList.toggle("hidden", !resumes); $("#answers-workspace").classList.toggle("hidden", !answers); $("#trash-workspace").classList.toggle("hidden", !trash);
+    for (const section of ["jobs", "facts", "resumes", "answers", "trash"]) { const active = name === section; $(`#nav-${section}`).classList.toggle("active", active); $(`#nav-${section}`).toggleAttribute("aria-current", active); }
+    document.title = `${facts ? "Facts" : resumes ? "Resumes" : answers ? "Answers" : trash ? "Trash" : "Jobs"} · Job Apply Workspace`;
     if (facts && !profileState.loaded) await refreshProfile({ preserve: false });
     if (resumes && !resumeState.loaded) await refreshResumes();
     if (answers && !answerState.loaded) await refreshAnswers();
+    if (trash && !trashState.loaded) await refreshTrash();
   }
 
   function answerError(message, dialogError = false) { const node = $(dialogError ? "#answer-error" : "#answers-error"); node.textContent = message; node.classList.remove("hidden"); }
@@ -564,7 +692,7 @@ if (hasDom) {
       if (currentDialog) { answerState.opener = null; $("#answer-dialog").close(); }
       await refreshAnswers({ reset: true }); if (currentDialog) $("#answer-new").focus(); toast(`Answer ${action === "accept" ? "accepted" : action === "decline" ? "declined" : `${action}d`}`);
     }
-    catch (error) { if (!canApplyAnswerDialogMutation(answerState.selected, answer.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) { toast(error.message); return; } if (error.status === 409) { $("#answer-conflict").classList.remove("hidden"); $("#answer-conflict").focus(); } else answerError(error.message, true); }
+    catch (error) { if (!canApplyAnswerDialogMutation(answerState.selected, answer.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) { toast(error.message); return; } if (error.code === "revision_conflict") { $("#answer-conflict").classList.remove("hidden"); $("#answer-conflict").focus(); } else answerError(lifecycleErrorText(error), true); }
     finally { if (canApplyAnswerDialogMutation(answerState.selected, answer.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) setAnswerBusy(false); }
   }
 
@@ -713,7 +841,7 @@ if (hasDom) {
     try {
       const options = { method: "POST", body: JSON.stringify(body || { expectedRevision: resume.revision }) };
       await api(`/api/resumes/${encodeURIComponent(resume.id)}/${action}`, options); await refresh({ quiet: true }); await refreshResumes({ quiet: true }); $("#resume-dialog").close(); toast(`Resume ${action} completed`);
-    } catch (error) { if (error.status === 409) { $("#resume-conflict").classList.remove("hidden"); $("#resume-conflict").focus(); } else resumeError(error.message, true); }
+    } catch (error) { if (error.code === "revision_conflict") { $("#resume-conflict").classList.remove("hidden"); $("#resume-conflict").focus(); } else resumeError(lifecycleErrorText(error), true); }
   }
 
   async function mutateResumeFile(action) {
@@ -910,14 +1038,18 @@ if (hasDom) {
   function firstListDestination() { return $(".job-card") || $("#new-job"); }
 
   form.addEventListener("submit", save); form.addEventListener("input", (event) => { if (state.selected && event.target.name) { state.dirty = true; state.dirtyFields.add(event.target.name); } });
-  $("#nav-jobs").addEventListener("click", () => showWorkspace("jobs")); $("#nav-facts").addEventListener("click", () => showWorkspace("facts")); $("#nav-resumes").addEventListener("click", () => showWorkspace("resumes")); $("#nav-answers").addEventListener("click", () => showWorkspace("answers"));
+  $("#nav-jobs").addEventListener("click", () => showWorkspace("jobs")); $("#nav-facts").addEventListener("click", () => showWorkspace("facts")); $("#nav-resumes").addEventListener("click", () => showWorkspace("resumes")); $("#nav-answers").addEventListener("click", () => showWorkspace("answers")); $("#nav-trash").addEventListener("click", () => showWorkspace("trash"));
+  $("#trash-refresh").addEventListener("click", () => refreshTrash()); $("#trash-type-filter").addEventListener("change", renderTrash);
+  $("#trash-delete-input").addEventListener("input", () => { $("#trash-delete-confirm").disabled = $("#trash-delete-input").value !== typedDeletePhrase(trashState.selected?.type); });
+  $("#trash-delete-form").addEventListener("submit", submitTrashDelete);
+  $("#trash-conflict-refresh").addEventListener("click", async () => { $("#trash-delete-dialog").close(); await refreshTrash({ quiet: true }); $("#trash-list").focus(); });
   $("#answers-refresh").addEventListener("click", () => refreshAnswers()); $("#answer-new").addEventListener("click", newAnswer); $("#answer-search").addEventListener("input", () => refreshAnswers({ reset: true })); $("#answer-view").addEventListener("change", () => refreshAnswers({ reset: true })); $("#answer-state-filter").addEventListener("change", () => refreshAnswers({ reset: true }));
   $("#answers-previous").addEventListener("click", () => { answerState.offset = Math.max(0, answerState.offset - answerState.limit); refreshAnswers(); }); $("#answers-next").addEventListener("click", () => { answerState.offset += answerState.limit; refreshAnswers(); });
   $("#answer-form").addEventListener("submit", saveAnswer); $("#answer-form").addEventListener("input", (event) => { if (event.target.name && event.target.name !== "rememberSensitive") answerState.dirty.add(event.target.name); if (["state", "sensitivity"].includes(event.target.name)) syncSensitiveConsent(); });
   $("#answer-reveal").addEventListener("click", async () => { const requestedKey = answerState.selected.key; const dialogGeneration = answerState.dialogGeneration; setAnswerBusy(true); try { const revealed = await api(answerApiPath(requestedKey, "reveal"), { method: "POST", body: "{}" }); if (!canApplyAnswerDialogResponse(answerState.selected, requestedKey, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) return; if (!canApplyAnswerReveal(answerState.selected, requestedKey, revealed)) { answerError("This answer changed identity while its value was being revealed. Nothing was placed in the dialog; close it and review the canonical answer.", true); return; } $("#answer-form").elements.value.value = revealed.value ?? ""; $("#answer-reveal").classList.add("hidden"); toast("Sensitive value revealed for this dialog"); } catch (error) { if (canApplyAnswerDialogResponse(answerState.selected, requestedKey, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) answerError(error.message, true); } finally { if (canApplyAnswerDialogResponse(answerState.selected, requestedKey, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) setAnswerBusy(false); } });
   $("#answer-merge").addEventListener("click", openAnswerMerge); $("#answer-merge-form").addEventListener("submit", submitAnswerMerge);
   $("#answer-merge-dialog").addEventListener("close", () => { if ($("#answer-merge-dialog").open) return; answerState.mergeRequestSequence += 1; answerState.mergeSource = null; answerState.mergeCandidates = []; });
-  $("#answer-accept").addEventListener("click", () => answerAction("accept")); $("#answer-decline").addEventListener("click", () => answerAction("decline")); $("#answer-trash").addEventListener("click", () => { if (confirm("Move this answer to trash?")) answerAction("trash"); }); $("#answer-restore").addEventListener("click", () => answerAction("restore")); $("#answer-delete").addEventListener("click", () => { if (confirm("Permanently delete this answer? Referenced records cannot be deleted.")) answerAction("delete"); });
+  $("#answer-accept").addEventListener("click", () => answerAction("accept")); $("#answer-decline").addEventListener("click", () => answerAction("decline")); $("#answer-trash").addEventListener("click", () => { if (confirm("Move this answer to trash?")) answerAction("trash"); }); $("#answer-restore").addEventListener("click", () => answerAction("restore")); $("#answer-delete").addEventListener("click", () => openTrashDelete({ type: "answer", id: answerState.selected.key, revision: answerState.selected.revision, label: answerState.selected.question || answerState.selected.key }, $("#answer-delete")));
   $("#answer-conflict-refresh").addEventListener("click", async () => { const selected = answerState.selected; const dialogGeneration = answerState.dialogGeneration; setAnswerBusy(true); try { const latest = await api(answerApiPath(selected.key)); if (!canApplyAnswerDialogResponse(answerState.selected, selected.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) return; if (!canRefreshAnswerDraft(selected, latest)) { answerError("This source answer changed identity while its canonical revision was being refreshed. Its preserved draft was not retargeted; close this dialog and review the current answer separately.", true); return; } answerState.selected = latest; $("#answer-conflict").classList.add("hidden"); $("#answer-kicker").textContent = `CANONICAL · REVISION ${answerState.selected.revision} · DRAFT PRESERVED`; toast("Canonical revision refreshed; review your preserved draft"); } catch (error) { if (canApplyAnswerDialogResponse(answerState.selected, selected.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) answerError(error.message, true); } finally { if (canApplyAnswerDialogResponse(answerState.selected, selected.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) setAnswerBusy(false); } });
   $("#answer-dialog").addEventListener("close", () => { if ($("#answer-dialog").open) return; setAnswerBusy(false); answerState.dialogGeneration += 1; answerState.mergeRequestSequence += 1; answerState.mergeSource = null; answerState.selected = null; answerState.dirty.clear(); $("#answer-form").elements.value.value = ""; $("#answer-form").elements.rememberSensitive.checked = false; const target = answerState.opener?.isConnected ? answerState.opener : $("#answer-new"); target.focus(); answerState.opener = null; });
   $("#resumes-refresh").addEventListener("click", () => refreshResumes());
@@ -928,7 +1060,7 @@ if (hasDom) {
   $("#resume-form").addEventListener("submit", async (event) => { event.preventDefault(); const resume = resumeState.selected; const patch = {}; if (resumeState.dirtyMetadata.has("label")) patch.label = event.currentTarget.elements.label.value; if (resumeState.dirtyMetadata.has("tags")) patch.tags = tagsFromInput(event.currentTarget.elements.tags.value); if (!Object.keys(patch).length) { resumeError("Change a metadata field before saving.", true); return; } try { await api(`/api/resumes/${encodeURIComponent(resume.id)}`, { method: "PATCH", body: JSON.stringify({ patch, expectedRevision: resume.revision }) }); resumeState.dirtyMetadata.clear(); await refreshResumes({ quiet: true }); $("#resume-dialog").close(); toast("Resume metadata saved"); } catch (error) { if (error.status === 409) { $("#resume-conflict").classList.remove("hidden"); $("#resume-conflict").focus(); } else resumeError(error.message, true); } });
   $("#resume-replace").addEventListener("click", () => mutateResumeFile("replace"));
   $("#resume-adopt").addEventListener("click", () => mutateResumeFile("adopt"));
-  $("#resume-default").addEventListener("click", () => mutateResume("default")); $("#resume-trash-action").addEventListener("click", () => { if (confirm("Move this resume to Trash? Assigned/default resume guards still apply.")) mutateResume("trash"); }); $("#resume-restore").addEventListener("click", () => mutateResume("restore")); $("#resume-delete").addEventListener("click", () => { if (confirm("Permanently delete this trashed resume and its managed file? This cannot be undone.")) mutateResume("delete"); });
+  $("#resume-default").addEventListener("click", () => mutateResume("default")); $("#resume-trash-action").addEventListener("click", () => { if (confirm("Move this resume to Trash? Assigned/default resume guards still apply.")) mutateResume("trash"); }); $("#resume-restore").addEventListener("click", () => mutateResume("restore")); $("#resume-delete").addEventListener("click", () => openTrashDelete({ type: "resume", id: resumeState.selected.id, revision: resumeState.selected.revision, label: resumeState.selected.label || resumeState.selected.id }, $("#resume-delete")));
   $("#resume-conflict-refresh").addEventListener("click", async () => { try { const latest = await api(`/api/resumes/${encodeURIComponent(resumeState.selected.id)}`); renderResumeDialog(latest, true); $("#resume-conflict").classList.add("hidden"); $("#resume-form").elements.label.focus(); toast("Canonical revision refreshed; your draft and file selection were preserved"); } catch (error) { resumeError(error.message, true); } });
   $("#resume-content").addEventListener("click", async () => { const resume = resumeState.selected; try { const response = await fetch(`/api/resumes/${encodeURIComponent(resume.id)}/content`, { headers: { Authorization: `Bearer ${token}` } }); if (!response.ok) { let payload = null; try { payload = await response.json(); } catch {} throw new ApiError(response.status, payload); } if (resume.mediaType?.startsWith("text/plain")) { $("#resume-preview").textContent = await response.text(); $("#preview-dialog").showModal(); } else { const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.target = "_blank"; link.rel = "noopener"; if (resume.mediaType?.includes("wordprocessingml")) link.download = `resume-${resume.id}.docx`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 60_000); } } catch (error) { resumeError(error.message, true); } });
   $("#proposal-form").addEventListener("submit", async (event) => { event.preventDefault(); const proposal = resumeState.proposal; const decisions = {}; const replacementConfirmations = {}; for (const select of event.currentTarget.querySelectorAll("select[name]")) if (select.value) decisions[select.name] = select.value; if (!Object.keys(decisions).length) { $("#proposal-error").textContent = "Select at least one decision."; $("#proposal-error").classList.remove("hidden"); return; } for (const [path, decision] of Object.entries(decisions)) { const replacement = proposal.replacementScopes?.[path]; if (decision === "use_extracted" && replacement) { const checkbox = event.currentTarget.querySelector(`[data-replacement-path="${CSS.escape(path)}"]`); if (!checkbox?.checked) { $("#proposal-error").textContent = `Confirm that accepting ${path} replaces ${replacement.path}.`; $("#proposal-error").classList.remove("hidden"); return; } replacementConfirmations[path] = replacement.path; } } try { await api(`/api/resume-proposals/${encodeURIComponent(proposal.id)}/review`, { method: "POST", body: JSON.stringify({ decisions, replacementConfirmations, expectedRevision: proposal.revision, expectedProfileRevision: proposal.liveProfileRevision }) }); $("#proposal-dialog").close(); await refreshProfile({ preserve: true }); await refreshResumes({ quiet: true }); if (resumeState.selected) { const latest = resumeState.items.find((item) => item.id === resumeState.selected.id); if (latest) renderResumeDialog(latest, true); } toast("Selected extraction decisions applied to Facts"); } catch (error) { $("#proposal-error").textContent = error.status === 409 ? "The proposal or profile changed. Nothing was retried; refresh and review the latest canonical values." : error.message; $("#proposal-error").classList.remove("hidden"); } });
@@ -939,7 +1071,7 @@ if (hasDom) {
   $("#new-job").addEventListener("click", openNew); $("#empty-create").addEventListener("click", openNew); $("#refresh").addEventListener("click", () => refresh());
   $("#search").addEventListener("input", render); $("#status-filter").addEventListener("change", render);
   $("#preflight-job").addEventListener("click", preflight); $("#mark-ready").addEventListener("click", async () => { const result = await preflight(); if (result?.ready) transition("ready"); });
-  $("#trash-job").addEventListener("click", async () => { if (!confirm("Move this job to trash? It will leave this Jobs workspace, but remains recoverable through the canonical store.")) return; try { const id = state.selected.id; await api(`/api/jobs/${encodeURIComponent(id)}/trash`, { method: "POST", body: JSON.stringify({ expectedRevision: state.selected.revision }) }); await refresh({ quiet: true }); closeJobDialog(firstListDestination()); toast("Job moved to trash"); } catch (error) { if (error.status === 409) await showConflict(); else showFormError(error.message); } });
+  $("#trash-job").addEventListener("click", async () => { if (!confirm("Move this job to trash? It will leave this Jobs workspace, but remains recoverable through the canonical store.")) return; try { const id = state.selected.id; await api(`/api/jobs/${encodeURIComponent(id)}/trash`, { method: "POST", body: JSON.stringify({ expectedRevision: state.selected.revision }) }); await refresh({ quiet: true }); closeJobDialog(firstListDestination()); toast("Job moved to trash"); } catch (error) { if (error.code === "revision_conflict") await showConflict(); else showFormError(lifecycleErrorText(error)); } });
   $("#reload-latest").addEventListener("click", () => { if (!state.latest) return; state.selected = state.latest; state.draft = null; fillForm(state.latest); renderJobControls(state.latest); $("#dialog-kicker").textContent = `CANONICAL · REVISION ${state.latest.revision}`; form.elements.role.focus(); toast("Loaded the latest canonical values"); });
   $("#rebase-draft").addEventListener("click", () => { if (!state.latest || !state.draft) return; const latest = state.latest; const draft = state.draft; state.selected = latest; fillForm(latest); renderJobControls(latest); for (const [name, value] of Object.entries(draft)) if (form.elements[name]) form.elements[name].value = value; state.dirtyFields = new Set(Object.keys(draft)); state.dirty = state.dirtyFields.size > 0; state.draft = null; hideConflict(); $("#save-job").focus(); toast("Your edited fields were reapplied to the latest canonical values. Review, then save."); });
   for (const button of document.querySelectorAll("[data-close]")) button.addEventListener("click", () => document.getElementById(button.dataset.close).close());
@@ -955,7 +1087,8 @@ if (hasDom) {
     setTimeout(() => destination?.focus(), 0);
   });
   $("#resume-dialog").addEventListener("close", () => { const destination = resumeState.opener?.isConnected ? resumeState.opener : $("#resumes-refresh"); resumeState.selected = null; resumeState.opener = null; setTimeout(() => destination?.focus(), 0); });
+  $("#trash-delete-dialog").addEventListener("close", () => { const destination = trashState.opener?.isConnected ? trashState.opener : $("#nav-trash"); trashState.selected = null; trashState.opener = null; setTimeout(() => destination?.focus(), 0); });
 
   if (!token) { setConnection(false, "Workspace token missing — restart with the printed URL"); $("#loading").innerHTML = "<p>Open the complete URL printed by the workspace launcher.</p>"; }
-  else { refresh({ quiet: true }); setInterval(() => { refresh({ quiet: true }); if (resumeState.loaded) refreshResumes({ quiet: true }); }, 4000); }
+  else { refresh({ quiet: true }); refreshTrash({ quiet: true }); setInterval(() => { refresh({ quiet: true }); if (resumeState.loaded) refreshResumes({ quiet: true }); if (trashState.loaded) refreshTrash({ quiet: true }); }, 4000); }
 }

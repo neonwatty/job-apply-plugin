@@ -160,6 +160,141 @@ class WorkspaceServerTests(unittest.TestCase):
         self.assertEqual(self.server.store.get_job(ui_job["id"])["notes"], "human note")
         self.assertEqual(updated["revision"], 2)
 
+    def test_unified_trash_is_redacted_deterministic_and_closes_job_lifecycle_parity(self):
+        job = self.create_job(
+            "https://private.example/jobs/secret",
+            role="Engineer",
+            company="Acme",
+            notes="private job note",
+        )
+        job = self.server.store.trash_job(job["id"], job["revision"])
+        source = Path(self.temporary.name) / "private-resume-name.txt"
+        source.write_text("private resume content", encoding="utf-8")
+        resume = self.server.store.create_resume(
+            {"id": "trash-resume", "label": "Primary", "path": str(source)}
+        )
+        resume = self.server.store.trash_resume(resume["id"], resume["revision"])
+        answer = self.server.store.put_answer(
+            {
+                "question": "Private reusable answer?",
+                "state": "sensitive",
+                "sensitivity": "high",
+                "value": "private answer value",
+            },
+            remember_sensitive=True,
+        )
+        answer = self.server.store.trash_answer(answer["key"], answer["revision"])
+
+        status, _headers, trash = self.request("GET", "/api/trash", origin=False)
+        self.assertEqual((status, trash["counts"], trash["total"]), (200, {"job": 1, "resume": 1, "answer": 1}, 3))
+        self.assertEqual(
+            [(item["type"], item["id"]) for item in trash["items"]],
+            sorted((item["type"], item["id"]) for item in trash["items"]),
+        )
+        serialized = json.dumps(trash)
+        for private in (
+            "https://private.example/jobs/secret",
+            "private job note",
+            str(source),
+            source.name,
+            "private resume content",
+            "private answer value",
+        ):
+            self.assertNotIn(private, serialized)
+        status, _headers, hidden_detail = self.request(
+            "GET", f"/api/jobs/{job['id']}", origin=False
+        )
+        self.assertEqual((status, hidden_detail["error"]["code"]), (404, "not_found"))
+        self.assertNotIn("private.example", json.dumps(hidden_detail))
+
+        status, _headers, restored = self.request(
+            "POST", f"/api/jobs/{job['id']}/restore", {"expectedRevision": job["revision"]}
+        )
+        self.assertEqual((status, restored["deletedAt"]), (200, None))
+        status, _headers, stale = self.request(
+            "POST", f"/api/jobs/{job['id']}/trash", {"expectedRevision": job["revision"]}
+        )
+        self.assertEqual((status, stale["error"]["code"]), (409, "revision_conflict"))
+        self.assertEqual(
+            (stale["error"]["recordType"], stale["error"]["operation"], stale["error"]["counts"]),
+            ("job", "trash", {}),
+        )
+        trashed = self.server.store.trash_job(restored["id"], restored["revision"])
+        status, _headers, deleted = self.request(
+            "POST", f"/api/jobs/{job['id']}/delete", {"expectedRevision": trashed["revision"]}
+        )
+        self.assertEqual((status, deleted), (200, {"deleted": True, "id": job["id"]}))
+
+    def test_job_delete_api_fails_closed_with_redacted_nonterminal_session_code(self):
+        self.server.store.save_session(
+            "protected-job",
+            {"status": "review", "answerKeys": [], "pendingFields": []},
+        )
+        job = self.create_job(
+            "https://private.example/jobs/protected", id="protected-job"
+        )
+        job = self.server.store.trash_job(job["id"], job["revision"])
+        status, _headers, blocked = self.request(
+            "POST", f"/api/jobs/{job['id']}/delete", {"expectedRevision": job["revision"]}
+        )
+        self.assertEqual((status, blocked["error"]["code"]), (409, "session_reference_blocked"))
+        self.assertEqual(
+            (blocked["error"]["recordType"], blocked["error"]["operation"], blocked["error"]["counts"]),
+            ("job", "delete", {"nonterminalSessions": 1}),
+        )
+        self.assertNotIn("protected-job", json.dumps(blocked))
+        self.assertIsNotNone(self.server.store.get_job(job["id"], include_trashed=True))
+
+    def test_restore_blockers_are_operation_aware_and_redacted(self):
+        first = self.server.store.create_resume_bytes(
+            {"id": "first-restore", "label": "First"}, "first.txt", b"first bytes"
+        )
+        second = self.server.store.create_resume_bytes(
+            {"id": "second-restore", "label": "Second"}, "second.txt", b"second bytes"
+        )
+        job = self.create_job(
+            "https://private.example/jobs/restore-blocked",
+            resumeId=second["id"],
+        )
+        job = self.server.store.trash_job(job["id"], job["revision"])
+        second = self.server.store.trash_resume(second["id"], second["revision"])
+        status, _headers, blocked_job = self.request(
+            "POST", f"/api/jobs/{job['id']}/restore", {"expectedRevision": job["revision"]}
+        )
+        self.assertEqual(
+            (
+                status,
+                blocked_job["error"]["code"],
+                blocked_job["error"]["recordType"],
+                blocked_job["error"]["operation"],
+                blocked_job["error"]["counts"],
+            ),
+            (409, "assigned_resume_blocked", "job", "restore", {"unavailableAssignedResumes": 1}),
+        )
+        self.assertNotIn("second-restore", json.dumps(blocked_job))
+
+        with mock.patch.object(
+            self.server.store,
+            "restore_resume",
+            side_effect=WORKSPACE.STORE_MODULE.StoreError(
+                "active resume file already exists"
+            ),
+        ):
+            status, _headers, blocked_resume = self.request(
+                "POST", f"/api/resumes/{second['id']}/restore", {"expectedRevision": second["revision"]}
+            )
+        self.assertEqual(
+            (
+                status,
+                blocked_resume["error"]["code"],
+                blocked_resume["error"]["recordType"],
+                blocked_resume["error"]["operation"],
+                blocked_resume["error"]["counts"],
+            ),
+            (409, "duplicate_active_blocked", "resume", "restore", {"duplicateActiveRecords": 1}),
+        )
+        self.assertNotIn("first-restore", json.dumps(blocked_resume))
+
     def test_answer_api_redaction_review_conflict_reveal_and_history_guard(self):
         status, _headers, observed = self.request(
             "POST", "/api/answers/observe",
@@ -206,7 +341,11 @@ class WorkspaceServerTests(unittest.TestCase):
         status, _headers, trashed = self.request("POST", f"/api/answers/{accepted['key']}/trash", {"expectedRevision": accepted["revision"]})
         self.assertEqual(status, 200)
         status, _headers, blocked = self.request("POST", f"/api/answers/{accepted['key']}/delete", {"expectedRevision": trashed["revision"]})
-        self.assertEqual(status, 400, blocked)
+        self.assertEqual((status, blocked["error"]["code"]), (409, "history_reference_blocked"))
+        self.assertEqual(
+            (blocked["error"]["recordType"], blocked["error"]["operation"], blocked["error"]["counts"]),
+            ("answer", "delete", {"sessions": 0, "history": 1}),
+        )
         self.assertNotIn("Yes", json.dumps(blocked))
 
     def test_encoded_answer_routes_round_trip_dot_only_keys_without_weakening_guards(self):
@@ -612,14 +751,18 @@ class WorkspaceServerTests(unittest.TestCase):
             job["id"], {"resumeId": "browser-resume"}, job["revision"]
         )
         status, _headers, body = self.request("POST", "/api/resumes/browser-resume/trash", {"expectedRevision": replaced["revision"]})
-        self.assertEqual(status, 400, body)
+        self.assertEqual((status, body["error"]["code"]), (409, "job_reference_blocked"))
         self.server.store.trash_job(job["id"], job["revision"])
         status, _headers, trashed = self.request("POST", "/api/resumes/browser-resume/trash", {"expectedRevision": replaced["revision"]})
         self.assertEqual(status, 200, trashed)
         status, _headers, _body = self.request("GET", "/api/resumes/browser-resume/content", origin=False)
         self.assertEqual(status, 404)
         status, _headers, body = self.request("POST", "/api/resumes/browser-resume/delete", {"expectedRevision": trashed["revision"]})
-        self.assertEqual(status, 400, body)  # trashed job still retains a reference
+        self.assertEqual((status, body["error"]["code"]), (409, "job_reference_blocked"))  # trashed job still retains a reference
+        self.assertEqual(
+            (body["error"]["recordType"], body["error"]["operation"], body["error"]["counts"]),
+            ("resume", "delete", {"jobReferences": 1}),
+        )
         self.server.store.delete_job(job["id"], job["revision"] + 1)
         status, _headers, restored = self.request("POST", "/api/resumes/browser-resume/restore", {"expectedRevision": trashed["revision"]})
         self.assertEqual(status, 200, restored)
@@ -862,15 +1005,20 @@ class WorkspaceServerTests(unittest.TestCase):
         status, _headers, closed = self.request("POST", f"/api/jobs/{job['id']}/transition", {"status": "closed", "closedOutcome": "withdrawn", "expectedRevision": ready["revision"]})
         self.assertEqual((status, closed["status"], closed["closedOutcome"]), (200, "closed", "withdrawn"))
 
-    def test_trash_is_guarded_and_no_restore_or_delete_routes_exist(self):
+    def test_job_trash_restore_and_delete_routes_share_exact_revisions(self):
         job = self.create_job()
         status, _headers, trashed = self.request("POST", f"/api/jobs/{job['id']}/trash", {"expectedRevision": job["revision"]})
         self.assertEqual(status, 200)
         self.assertIsNotNone(trashed["deletedAt"])
         self.assertIsNone(self.server.store.get_job(job["id"]))
-        for action in ("restore", "delete"):
-            status, _headers, _body = self.request("POST", f"/api/jobs/{job['id']}/{action}", {"expectedRevision": trashed["revision"]})
-            self.assertEqual(status, 404)
+        status, _headers, restored = self.request("POST", f"/api/jobs/{job['id']}/restore", {"expectedRevision": trashed["revision"]})
+        self.assertEqual((status, restored["deletedAt"]), (200, None))
+        status, _headers, stale = self.request("POST", f"/api/jobs/{job['id']}/trash", {"expectedRevision": trashed["revision"]})
+        self.assertEqual((status, stale["error"]["code"]), (409, "revision_conflict"))
+        status, _headers, trashed = self.request("POST", f"/api/jobs/{job['id']}/trash", {"expectedRevision": restored["revision"]})
+        self.assertEqual(status, 200)
+        status, _headers, deleted = self.request("POST", f"/api/jobs/{job['id']}/delete", {"expectedRevision": trashed["revision"]})
+        self.assertEqual((status, deleted), (200, {"deleted": True, "id": job["id"]}))
 
 
 class WorkspaceProcessTests(unittest.TestCase):

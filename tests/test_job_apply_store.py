@@ -2979,6 +2979,52 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(result, {"deleted": True, "id": job["id"]})
         self.assertIsNone(self.store.get_job(job["id"], include_trashed=True))
 
+    def test_trash_only_filters_are_symmetric_and_job_delete_blocks_nonterminal_session(self):
+        self.store.save_session(
+            "session-job",
+            {"status": "active", "answerKeys": [], "pendingFields": []},
+        )
+        active_job = self.store.create_job(
+            {"id": "active-job", "url": "https://example.com/jobs/active"}
+        )
+        session_job = self.store.create_job(
+            {"id": "session-job", "url": "https://example.com/jobs/session"}
+        )
+        trashed_job = self.store.trash_job(
+            session_job["id"], session_job["revision"]
+        )
+        self.assertEqual(
+            [item["id"] for item in self.store.list_jobs(trashed_only=True)],
+            ["session-job"],
+        )
+        self.assertEqual([item["id"] for item in self.store.list_jobs()], [active_job["id"]])
+        with self.assertRaisesRegex(
+            STORE_MODULE.StoreError, "nonterminal application session"
+        ):
+            self.store.delete_job(trashed_job["id"], trashed_job["revision"])
+        self.assertIsNotNone(
+            self.store.get_job(trashed_job["id"], include_trashed=True)
+        )
+
+        first_path = self.home / "first-trash-filter.pdf"
+        second_path = self.home / "second-trash-filter.pdf"
+        first_path.write_bytes(b"%PDF-1.7\nfirst")
+        second_path.write_bytes(b"%PDF-1.7\nsecond")
+        first = self.store.create_resume(
+            {"id": "active-resume", "label": "Active", "path": str(first_path)}
+        )
+        second = self.store.create_resume(
+            {"id": "trash-resume", "label": "Trash", "path": str(second_path)}
+        )
+        second = self.store.trash_resume(second["id"], second["revision"])
+        self.assertEqual(
+            [item["id"] for item in self.store.list_resumes(trashed_only=True)],
+            [second["id"]],
+        )
+        self.assertEqual(
+            [item["id"] for item in self.store.list_resumes()], [first["id"]]
+        )
+
     def test_tampered_job_store_fails_closed(self):
         self.store.initialize()
         document = json.loads(self.store.jobs_path.read_text(encoding="utf-8"))

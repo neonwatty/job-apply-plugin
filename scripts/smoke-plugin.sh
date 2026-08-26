@@ -504,8 +504,8 @@ try:
     connection.request("GET", "/", headers={"Host": host})
     response = connection.getresponse()
     markup = response.read()
-    if response.status != 200 or any(label not in markup for label in (b"Jobs Workspace", b"Facts Workspace", b"Resumes Workspace")):
-        raise SystemExit("packaged workspace did not serve its Jobs, Facts, and Resumes UI")
+    if response.status != 200 or any(label not in markup for label in (b"Jobs Workspace", b"Facts Workspace", b"Resumes Workspace", b"Unified recovery")):
+        raise SystemExit("packaged workspace did not serve its Jobs, Facts, Resumes, and Trash UI")
     connection.request("GET", "/api/state", headers={"Host": host, "Authorization": f"Bearer {token}"})
     response = connection.getresponse()
     state = json.loads(response.read())
@@ -516,6 +516,35 @@ try:
     profile = json.loads(response.read())
     if response.status != 200 or profile.get("profile") != {} or profile.get("revision") != 1:
         raise SystemExit("packaged workspace did not inspect the canonical profile")
+    store_cli = [sys.executable, str(fixture / "scripts" / "job-apply-store.py"), "--root", str(smoke_root / "workspace-store")]
+    created_job = json.loads(subprocess.run(
+        [*store_cli, "job-create", "--input", "-"],
+        input=json.dumps({"id": "trash-smoke-job", "url": "https://private.example/jobs/trash-smoke", "role": "Trash smoke"}),
+        capture_output=True, text=True, check=True,
+    ).stdout)
+    trashed_job = json.loads(subprocess.run(
+        [*store_cli, "job-trash", "--id", created_job["id"], "--expected-revision", str(created_job["revision"])],
+        capture_output=True, text=True, check=True,
+    ).stdout)
+    trash_only = json.loads(subprocess.run(
+        [*store_cli, "job-list", "--trashed-only"], capture_output=True, text=True, check=True,
+    ).stdout)
+    if [item.get("id") for item in trash_only] != [created_job["id"]]:
+        raise SystemExit("packaged job trash-only CLI filtering failed")
+    connection.request("GET", "/api/trash", headers={"Host": host, "Authorization": f"Bearer {token}"})
+    response = connection.getresponse()
+    unified = json.loads(response.read())
+    if response.status != 200 or unified.get("counts", {}).get("job") != 1 or "private.example" in json.dumps(unified):
+        raise SystemExit("packaged unified Trash projection was missing or exposed a job URL")
+    restore_body = json.dumps({"expectedRevision": trashed_job["revision"]}).encode()
+    connection.request("POST", f"/api/jobs/{created_job['id']}/restore", body=restore_body, headers={
+        "Host": host, "Authorization": f"Bearer {token}", "Origin": f"http://{host}",
+        "Content-Type": "application/json", "Content-Length": str(len(restore_body)),
+    })
+    response = connection.getresponse()
+    restored_job = json.loads(response.read())
+    if response.status != 200 or restored_job.get("deletedAt") is not None:
+        raise SystemExit("packaged workspace job restore parity failed")
     source = smoke_root / "managed-smoke.txt"
     source.write_text("packaged managed resume", encoding="utf-8")
     created = subprocess.run(
@@ -610,14 +639,14 @@ finally:
     if process.poll() is None:
         process.terminate()
         process.wait(timeout=5)
-print("Packaged Jobs, Facts, managed resume, extraction, Answers merge recovery, and store launch passed")
+print("Packaged Jobs, Facts, managed resume, extraction, Answers merge recovery, unified Trash API, and store launch passed")
 PY
 
 echo "Running Playwright and CLI walkthrough against packaged fixture"
 JOB_WORKSPACE_TEST_ROOT="$SMOKE_FIXTURE_DIR" \
   node --test --test-name-pattern='real browser and CLI share CRUD' \
   "$REPO_ROOT/tests_js/workspace.test.mjs"
-echo "Packaged Playwright and CLI walkthrough passed"
+echo "Packaged Playwright and CLI walkthrough, including unified Trash for jobs, resumes, and answers, passed"
 
 python3 - "$SMOKE_FIXTURE_DIR/.claude-plugin/marketplace.json" <<'PY'
 import json

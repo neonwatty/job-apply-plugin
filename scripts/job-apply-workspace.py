@@ -91,6 +91,75 @@ def resume_projection(
     return result
 
 
+def unified_trash_projection(store: Any) -> dict[str, Any]:
+    """Return one deterministic, redacted view of every recoverable record."""
+
+    jobs = store.list_jobs(include_trashed=True)
+    resumes = store.list_resumes(include_trashed=True)
+    answers = store.list_answers(include_trashed=True, review_status=None)
+    sessions = {item["applicationId"]: item for item in store.list_sessions()}
+    claim = store.claim_status()["claim"]
+    items: list[dict[str, Any]] = []
+    for record in jobs:
+        if record.get("deletedAt") is None:
+            continue
+        session = sessions.get(record["id"])
+        items.append({
+            "type": "job",
+            "id": record["id"],
+            "revision": record["revision"],
+            "deletedAt": record["deletedAt"],
+            "label": record.get("role") or record.get("company") or "Untitled job",
+            "secondaryLabel": record.get("company") or "",
+            "status": record.get("status", "saved"),
+            "blockerCounts": {
+                "claims": int(claim is not None and claim.get("jobId") == record["id"]),
+                "nonterminalSessions": int(
+                    session is not None
+                    and session.get("status") not in {"completed", "abandoned"}
+                ),
+            },
+        })
+    for record in resumes:
+        if record.get("deletedAt") is None:
+            continue
+        items.append({
+            "type": "resume",
+            "id": record["id"],
+            "revision": record["revision"],
+            "deletedAt": record["deletedAt"],
+            "label": record.get("label") or "Untitled resume",
+            "blockerCounts": {
+                "jobReferences": sum(
+                    job.get("resumeId") == record["id"] for job in jobs
+                ),
+            },
+        })
+    for record in answers:
+        if record.get("deletedAt") is None:
+            continue
+        references = record.get("referenceCounts", {})
+        items.append({
+            "type": "answer",
+            "id": record["key"],
+            "revision": record["revision"],
+            "deletedAt": record["deletedAt"],
+            "label": record.get("question") or record["key"],
+            "state": record.get("state"),
+            "reviewStatus": record.get("reviewStatus"),
+            "blockerCounts": {
+                "sessions": references.get("sessions", 0),
+                "history": references.get("history", 0),
+            },
+        })
+    items.sort(key=lambda item: (item["type"], item["label"].casefold(), item["id"]))
+    counts = {
+        kind: sum(item["type"] == kind for item in items)
+        for kind in ("job", "resume", "answer")
+    }
+    return {"items": items, "counts": counts, "total": len(items)}
+
+
 def public_proposal_summary(record: dict[str, Any]) -> dict[str, Any]:
     allowed = {
         "id", "resumeId", "resumeRevision", "profileRevision",
@@ -172,11 +241,20 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         body = (json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n").encode()
         self._send_bytes(status, body, "application/json; charset=utf-8")
 
-    def _error(self, status: int, message: str, code: str = "request_error") -> None:
+    def _error(
+        self,
+        status: int,
+        message: str,
+        code: str = "request_error",
+        details: dict[str, Any] | None = None,
+    ) -> None:
         # Error paths may reject before reading a request body. Never let unread,
         # attacker-controlled bytes become another HTTP/1.1 request.
         self.close_connection = True
-        self._json(status, {"error": {"code": code, "message": message}})
+        payload = {"code": code, "message": message}
+        if details:
+            payload.update(details)
+        self._json(status, {"error": payload})
 
     def _valid_host(self) -> bool:
         if self.headers.get("Host") != self.server.expected_host:
@@ -293,12 +371,105 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
                 self._error(HTTPStatus.CONFLICT, message, "baseline_conflict")
             elif "does not exist" in message:
                 self._error(HTTPStatus.NOT_FOUND, message, "not_found")
+            elif "nonterminal application session" in message:
+                self._error(HTTPStatus.CONFLICT, message, "session_reference_blocked")
+            elif "claimed job" in message:
+                self._error(HTTPStatus.CONFLICT, message, "claim_blocked")
+            elif "referenced by an active session" in message:
+                self._error(HTTPStatus.CONFLICT, message, "session_reference_blocked")
+            elif "referenced by durable history" in message:
+                self._error(HTTPStatus.CONFLICT, message, "history_reference_blocked")
+            elif "referenced by a job" in message:
+                self._error(HTTPStatus.CONFLICT, message, "job_reference_blocked")
+            elif "active job URL already exists" in message:
+                self._error(HTTPStatus.CONFLICT, message, "duplicate_active_blocked")
             else:
                 self._error(HTTPStatus.BAD_REQUEST, message, "store_rejected")
         except OSError:
             self._error(HTTPStatus.INTERNAL_SERVER_ERROR, "storage operation failed", "storage_error")
         else:
             self._json(HTTPStatus.OK, result)
+
+    def _lifecycle_call(
+        self,
+        record_type: str,
+        operation: str,
+        record_id: str,
+        callback: Callable[[], Any],
+        projection: Callable[[Any], Any] | None = None,
+    ) -> None:
+        try:
+            result = callback()
+        except STORE_MODULE.StoreError as error:
+            message = str(error)
+            code, safe_message, counts = self._lifecycle_blocker(
+                record_type, operation, record_id, message
+            )
+            status = (
+                HTTPStatus.NOT_FOUND if code == "not_found"
+                else HTTPStatus.CONFLICT if code != "store_rejected"
+                else HTTPStatus.BAD_REQUEST
+            )
+            self._error(status, safe_message, code, {
+                "recordType": record_type,
+                "operation": operation,
+                "counts": counts,
+            })
+        except OSError:
+            self._error(HTTPStatus.INTERNAL_SERVER_ERROR, "storage operation failed", "storage_error")
+        else:
+            self._json(HTTPStatus.OK, projection(result) if projection else result)
+
+    def _lifecycle_blocker(
+        self, record_type: str, operation: str, record_id: str, message: str
+    ) -> tuple[str, str, dict[str, int]]:
+        if "revision conflict" in message:
+            return "revision_conflict", "This record changed elsewhere. Refresh and review the latest revision.", {}
+        if "does not exist" in message and message != "assigned resume does not exist":
+            return "not_found", "This record no longer exists.", {}
+        mappings = (
+            ("claimed job", "claim_blocked", "This job has a coordinator claim that must be released or completed first.", lambda: {"claims": 1}),
+            ("nonterminal application session", "session_reference_blocked", "This job has a nonterminal application session that must be completed or abandoned first.", lambda: {"nonterminalSessions": 1}),
+            ("referenced by an active session", "session_reference_blocked", "This answer is referenced by an active session and cannot be permanently deleted.", lambda: self._answer_reference_counts(record_id)),
+            ("referenced by application history", "history_reference_blocked", "This answer is referenced by protected application history and cannot be permanently deleted.", lambda: self._answer_reference_counts(record_id)),
+            ("still referenced by a job", "job_reference_blocked", "This resume is referenced by one or more jobs. Reassign or delete those jobs first.", lambda: self._resume_reference_counts(record_id)),
+            ("active job URL already exists", "duplicate_active_blocked", "An active job with the same canonical identity already exists.", lambda: {"duplicateActiveRecords": 1}),
+            ("active resume file already exists", "duplicate_active_blocked", "An active resume with the same canonical file identity already exists.", lambda: {"duplicateActiveRecords": 1}),
+            ("assigned resume does not exist", "assigned_resume_blocked", "This job's assigned resume is unavailable. Restore or reassign that resume first.", lambda: {"unavailableAssignedResumes": 1}),
+            ("answer is the target of an immutable redirect", "redirect_target_blocked", "This answer is a canonical redirect target and cannot be moved or deleted.", lambda: {}),
+            ("resume is assigned to an active job", "job_reference_blocked", "This resume is assigned to an active job. Reassign that job first.", lambda: self._resume_reference_counts(record_id, active_only=True)),
+            ("default resume is used by an active job", "default_reference_blocked", "This default resume is in use by active jobs. Assign another default first.", lambda: self._resume_reference_counts(record_id, active_only=True)),
+        )
+        for fragment, code, safe_message, counts_factory in mappings:
+            if fragment in message:
+                return code, safe_message, counts_factory()
+        return "store_rejected", "The canonical store rejected this lifecycle operation.", {}
+
+    def _answer_reference_counts(self, key: str) -> dict[str, int]:
+        answer = self.server.store.get_answer(key, include_trashed=True)
+        references = answer.get("referenceCounts", {}) if answer else {}
+        return {
+            "sessions": int(references.get("sessions", 0)),
+            "history": int(references.get("history", 0)),
+        }
+
+    def _resume_reference_counts(
+        self, resume_id: str, active_only: bool = False
+    ) -> dict[str, int]:
+        jobs = self.server.store.list_jobs(include_trashed=True)
+        references = sum(
+            job.get("resumeId") == resume_id
+            and (not active_only or job.get("deletedAt") is None)
+            for job in jobs
+        )
+        if active_only:
+            resume = self.server.store.get_resume(resume_id, include_trashed=True)
+            if resume and resume.get("default"):
+                references += sum(
+                    job.get("resumeId") is None and job.get("deletedAt") is None
+                    for job in jobs
+                )
+        return {"jobReferences": references}
 
     def _expected_revision(self, payload: dict[str, Any]) -> int | None:
         revision = payload.get("expectedRevision")
@@ -364,6 +535,9 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         if path == "/api/jobs":
             self._store_call(lambda: {"jobs": self.server.store.list_jobs()})
             return
+        if path == "/api/trash":
+            self._store_call(lambda: unified_trash_projection(self.server.store))
+            return
         if path == "/api/resumes":
             self._store_call(lambda: {"resumes": self._resume_list(False)})
             return
@@ -420,8 +594,10 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
             return
         self._error(HTTPStatus.NOT_FOUND, "route not found", "not_found")
 
-    def _require_job(self, job_id: str) -> dict[str, Any]:
-        job = self.server.store.get_job(job_id)
+    def _require_job(
+        self, job_id: str, include_trashed: bool = False
+    ) -> dict[str, Any]:
+        job = self.server.store.get_job(job_id, include_trashed=include_trashed)
         if job is None:
             raise STORE_MODULE.StoreError("job does not exist")
         return job
@@ -701,10 +877,10 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
             }
             if action in operations:
                 operation = operations[action]
-                self._store_call(lambda: (
-                    operation(answer_id, expected_revision)
-                    if action == "delete" else operation(answer_id, expected_revision)
-                ))
+                self._lifecycle_call(
+                    "answer", action, answer_id,
+                    lambda: operation(answer_id, expected_revision),
+                )
                 return
         if len(parts) == 4 and parts[1:3] == ["api", "resumes"] and method == "PATCH":
             if (
@@ -752,7 +928,11 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
                     "restore": self.server.store.restore_resume,
                     "delete": self.server.store.delete_resume,
                 }
-                self._store_call(lambda: public_resume(operations[action](resume_id, expected_revision)))
+                self._lifecycle_call(
+                    "resume", action, resume_id,
+                    lambda: operations[action](resume_id, expected_revision),
+                    public_resume,
+                )
                 return
         if len(parts) == 5 and parts[1:3] == ["api", "resume-proposals"] and parts[4] == "review" and method == "POST":
             if set(payload) - {"decisions", "replacementConfirmations", "expectedRevision", "expectedProfileRevision"} or not {"decisions", "expectedRevision", "expectedProfileRevision"} <= set(payload) or not isinstance(payload.get("decisions"), dict) or not isinstance(payload.get("replacementConfirmations", {}), dict):
@@ -809,14 +989,22 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
                     user_confirmed=payload.get("userConfirmed") is True,
                 ))
                 return
-            if action == "trash" and method == "POST":
+            if action in {"trash", "restore", "delete"} and method == "POST":
                 if set(payload) != {"expectedRevision"}:
-                    self._error(HTTPStatus.BAD_REQUEST, "trash body requires expectedRevision")
+                    self._error(HTTPStatus.BAD_REQUEST, f"{action} body requires expectedRevision")
                     return
                 expected_revision = self._expected_revision(payload)
                 if expected_revision is None:
                     return
-                self._store_call(lambda: self.server.store.trash_job(job_id, expected_revision))
+                operations = {
+                    "trash": self.server.store.trash_job,
+                    "restore": self.server.store.restore_job,
+                    "delete": self.server.store.delete_job,
+                }
+                self._lifecycle_call(
+                    "job", action, job_id,
+                    lambda: operations[action](job_id, expected_revision),
+                )
                 return
         self._error(HTTPStatus.NOT_FOUND, "route not found", "not_found")
 
