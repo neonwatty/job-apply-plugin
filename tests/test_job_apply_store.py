@@ -2631,6 +2631,81 @@ class StoreTests(unittest.TestCase):
             ["job-started", "claim-recovered"],
         )
 
+    def test_job_activity_projection_tracks_lifecycle_and_strictly_redacts_secrets(self):
+        instant = [datetime(2026, 8, 24, tzinfo=timezone.utc)]
+        self.store = STORE_MODULE.Store(self.root, self.legacy, clock=lambda: instant[0])
+        ready = self._make_ready_job()
+        other = self.store.create_job({
+            "id": "other-job", "url": "https://example.com/jobs/other",
+            "role": "Other role", "company": "Other company",
+        })
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "private-owner", ready["revision"]
+        )
+        progress = {
+            "status": "active",
+            "step": "questions",
+            "answerKeys": ["private.answer.key"],
+            "pendingFields": [{
+                "question": "Are you authorized to work here?",
+                "state": "missing",
+                "answerKey": "private.answer.key",
+                "sensitive": True,
+            }],
+        }
+        self.store.save_claim_progress(ready["id"], acquired["token"], progress)
+
+        activity = self.store.get_job_activity(ready["id"])
+        self.assertEqual(
+            (activity["job"]["status"], activity["claim"]["state"]),
+            ("in_progress", "active"),
+        )
+        self.assertEqual(activity["session"]["step"], "questions")
+        self.assertEqual(activity["session"]["pendingInformation"], [{
+            "question": "Are you authorized to work here?",
+            "state": "missing",
+            "sensitive": True,
+        }])
+        self.assertEqual(
+            [event["event"] for event in activity["history"]], ["job-started"]
+        )
+        serialized = json.dumps(activity)
+        for forbidden in (
+            acquired["token"], "private-owner", "private.answer.key",
+            "tokenHash", "claimId", "ownerLabel", "answerKey", "answerKeys",
+            "operationId", "resultClaim", "browserState",
+        ):
+            self.assertNotIn(forbidden, serialized)
+
+        unrelated = self.store.get_job_activity(other["id"])
+        self.assertEqual(unrelated["claim"], {"state": "none"})
+        self.assertNotIn(ready["id"], json.dumps(unrelated))
+
+        instant[0] += timedelta(seconds=STORE_MODULE.CLAIM_LEASE_SECONDS + 1)
+        expired = self.store.get_job_activity(ready["id"])
+        self.assertEqual(expired["claim"]["state"], "expired")
+        self.assertIn("claim-recover", expired["claim"]["recoveryGuidance"])
+        recovered = self.store.recover_claim(ready["id"], "replacement-owner")
+        renewed = self.store.get_job_activity(ready["id"])
+        self.assertEqual(renewed["claim"]["state"], "active")
+        self.assertEqual(
+            [event["event"] for event in renewed["history"]],
+            ["job-started", "claim-recovered"],
+        )
+        self.assertNotIn(recovered["token"], json.dumps(renewed))
+
+        handed = self.store.handoff_claimed_job(
+            ready["id"], recovered["token"], "needs_info", progress,
+            recovered["job"]["revision"],
+        )
+        handed_activity = self.store.get_job_activity(ready["id"])
+        self.assertEqual(handed_activity["job"]["revision"], handed["job"]["revision"])
+        self.assertEqual(handed_activity["claim"], {"state": "none"})
+        self.assertEqual(
+            [event["event"] for event in handed_activity["history"]],
+            ["job-started", "claim-recovered", "job-blocked"],
+        )
+
     def test_acquire_and_recover_tokens_are_cli_safe_when_random_payload_leads_hyphen(self):
         instant = [datetime(2026, 8, 24, tzinfo=timezone.utc)]
         self.store = STORE_MODULE.Store(self.root, self.legacy, clock=lambda: instant[0])

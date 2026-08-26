@@ -241,6 +241,32 @@
         <label class="wide">Notes <textarea name="notes" rows="3"></textarea></label>
         <label class="wide">Description <textarea name="description" rows="5"></textarea></label>
       </div>
+      <section id="application-activity" class="application-activity hidden" aria-labelledby="application-activity-heading" tabindex="-1">
+        <div class="activity-heading">
+          <div>
+            <p class="eyebrow">DURABLE APPLICATION RECORD</p>
+            <h3 id="application-activity-heading">Application activity</h3>
+          </div>
+          <span id="activity-current-status" class="status">Saved</span>
+        </div>
+        <p id="activity-live" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></p>
+        <p id="activity-summary" class="activity-summary"></p>
+        <p id="activity-claim" class="activity-claim"></p>
+        <p id="activity-recovery" class="notice hidden"></p>
+        <div id="activity-progress" class="activity-progress hidden">
+          <h4>Resumable progress</h4>
+          <dl id="activity-progress-details"></dl>
+          <div id="activity-pending-wrap" class="hidden">
+            <h4>Pending information</h4>
+            <ul id="activity-pending"></ul>
+          </div>
+        </div>
+        <div class="activity-history">
+          <h4>Read-only history</h4>
+          <p id="activity-history-empty" class="activity-empty">No agent activity has been recorded for this job.</p>
+          <ol id="activity-history-list"></ol>
+        </div>
+      </section>
       <section id="preflight-panel" class="preflight hidden" aria-labelledby="preflight-heading">
         <h3 id="preflight-heading">Ready check</h3><div id="preflight-results"></div>
       </section>
