@@ -471,12 +471,29 @@ test("open Job detail polling keeps the latest selected activity and announces o
     assert.match(await activityPanel.innerText(), /Agent attempt information is unavailable until refresh succeeds/);
     assert.match(await activityPanel.innerText(), /Application history is unavailable until refresh succeeds/);
     assert.equal(await activityPanel.getByText("No agent activity has been recorded for this job.").isVisible(), false);
+    await page.evaluate(() => {
+      globalThis.__activityRecoveryMutations = [];
+      const live = document.querySelector("#activity-live");
+      globalThis.__activityRecoveryObserver = new MutationObserver(() => {
+        globalThis.__activityRecoveryMutations.push(live.textContent);
+      });
+      globalThis.__activityRecoveryObserver.observe(live, { childList: true, characterData: true, subtree: true });
+    });
+    await page.waitForTimeout(4_500);
+    assert.deepEqual(await page.evaluate(() => [...globalThis.__activityRecoveryMutations]), []);
     await page.unroute(activityPattern, failActivity);
-    await page.keyboard.press("Escape");
-    await jobDialog.waitFor({ state: "hidden" });
-    await pollingCard.focus();
-    await page.keyboard.press("Enter");
     await activityPanel.getByText(/Canonical status ready/).waitFor();
+    await page.waitForFunction(() => globalThis.__activityRecoveryMutations?.length === 1);
+    assert.deepEqual(
+      await page.evaluate(() => [...globalThis.__activityRecoveryMutations]),
+      ["Durable application activity is available again."],
+    );
+    await page.waitForTimeout(4_500);
+    assert.deepEqual(
+      await page.evaluate(() => [...globalThis.__activityRecoveryMutations]),
+      ["Durable application activity is available again."],
+    );
+    await page.evaluate(() => globalThis.__activityRecoveryObserver?.disconnect());
 
     const statePattern = "**/api/state";
     const failStateRefresh = (route) => route.abort();

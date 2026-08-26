@@ -289,7 +289,7 @@ if (hasDom) {
   const token = sessionToken(location.hash, safeSessionStorage(globalThis));
   if (location.hash) history.replaceState(null, "", location.pathname);
   const api = createApi(token);
-  const state = { jobs: [], resumes: [], selected: null, latest: null, draft: null, dirty: false, dirtyFields: new Set(), polling: false, opener: null, openerJobId: null, focusAfterClose: null, focusAfterCloseJobId: null, activity: null, activityJobId: null };
+  const state = { jobs: [], resumes: [], selected: null, latest: null, draft: null, dirty: false, dirtyFields: new Set(), polling: false, opener: null, openerJobId: null, focusAfterClose: null, focusAfterCloseJobId: null, activity: null, activityJobId: null, activityUnavailable: false };
   const profileState = { inspection: null, drafts: new Map(), draftBases: new Map(), atomic: new Set(), additionalAtomic: new Set(), deletions: new Set(), conflicts: [], latest: null, loaded: false };
   const resumeState = { items: [], proposals: [], trash: false, loaded: false, loading: false, requestId: 0, selected: null, opener: null, proposal: null, dirtyMetadata: new Set() };
   const answerState = { items: [], loaded: false, selected: null, offset: 0, limit: 25, total: 0, dirty: new Set(), opener: null, requestSequence: 0, detailRequestSequence: 0, dialogGeneration: 0, mergeRequestSequence: 0, mergeSource: null, mergeCandidates: [], busyControls: null };
@@ -1093,6 +1093,7 @@ if (hasDom) {
   };
 
   function prepareActivity(job) {
+    state.activityUnavailable = false;
     $("#application-activity").classList.remove("hidden");
     $("#activity-current-status").className = `status ${job.status}`;
     $("#activity-current-status").textContent = statusLabel(job.status);
@@ -1106,6 +1107,8 @@ if (hasDom) {
   }
 
   function renderActivityUnavailable(error) {
+    const firstFailure = !state.activityUnavailable;
+    state.activityUnavailable = true;
     state.activity = null;
     $("#activity-current-status").className = "status";
     $("#activity-current-status").textContent = "Unavailable";
@@ -1120,10 +1123,12 @@ if (hasDom) {
     $("#activity-history-list").replaceChildren();
     $("#activity-history-empty").textContent = "Application history is unavailable until refresh succeeds.";
     $("#activity-history-empty").classList.remove("hidden");
-    $("#activity-live").textContent = "Durable application activity is unavailable.";
+    if (firstFailure) $("#activity-live").textContent = "Durable application activity is unavailable.";
   }
 
   function renderActivity(activity, announce = true) {
+    const recovered = state.activityUnavailable;
+    state.activityUnavailable = false;
     const previous = state.activityJobId === state.selected?.id ? state.activity : null;
     state.activity = activity; state.activityJobId = state.selected?.id || null;
     const status = activity.job.status;
@@ -1176,7 +1181,9 @@ if (hasDom) {
       $("#dialog-kicker").textContent = `${statusLabel(status).toUpperCase()} · REVISION ${activity.job.revision}`;
       renderJobControls({ ...state.selected, status });
     }
-    const message = activityAnnouncement(previous, activity);
+    const message = recovered
+      ? "Durable application activity is available again."
+      : activityAnnouncement(previous, activity);
     if (announce && message) $("#activity-live").textContent = message;
   }
 
@@ -1254,7 +1261,7 @@ if (hasDom) {
     closeJobDialog();
   });
   dialog.addEventListener("close", () => {
-    activityRefreshCoordinator.invalidate(); state.activity = null; state.activityJobId = null; $("#activity-live").textContent = "";
+    activityRefreshCoordinator.invalidate(); state.activity = null; state.activityJobId = null; state.activityUnavailable = false; $("#activity-live").textContent = "";
     state.dirty = false; state.dirtyFields.clear(); state.draft = null; $("#sync-notice").classList.add("hidden");
     const destinationJobId = state.focusAfterCloseJobId || state.focusAfterClose?.dataset?.id || state.openerJobId;
     const destinationFallback = state.focusAfterClose || state.opener || $("#new-job");

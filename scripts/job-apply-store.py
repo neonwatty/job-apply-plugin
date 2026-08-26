@@ -4366,9 +4366,15 @@ class Store:
                 claim = {"state": "interrupted"}
             else:
                 claim = {"state": "none"}
-            if claim["state"] in {"expired", "interrupted"}:
+            if claim["state"] == "expired":
                 claim["recoveryGuidance"] = (
                     "Resume this attempt with the CLI claim-recover command for this job."
+                )
+            elif claim["state"] == "interrupted":
+                claim["recoveryGuidance"] = (
+                    "Reset this claimless attempt with the CLI job-transition command "
+                    f"to needs_info using revision {job['revision']}; resolve any missing "
+                    "information, then mark it ready for a new agent attempt."
                 )
 
             history = []

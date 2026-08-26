@@ -2681,6 +2681,18 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(unrelated["claim"], {"state": "none"})
         self.assertNotIn(ready["id"], json.dumps(unrelated))
 
+        coordinator = self.store._load_coordinator_document()
+        STORE_MODULE.atomic_write_json(
+            self.store.coordinator_path,
+            {"schemaVersion": STORE_MODULE.SCHEMA_VERSION, "claim": None},
+        )
+        interrupted = self.store.get_job_activity(ready["id"])
+        self.assertEqual(interrupted["claim"]["state"], "interrupted")
+        self.assertIn("job-transition", interrupted["claim"]["recoveryGuidance"])
+        self.assertIn("needs_info", interrupted["claim"]["recoveryGuidance"])
+        self.assertNotIn("claim-recover", interrupted["claim"]["recoveryGuidance"])
+        STORE_MODULE.atomic_write_json(self.store.coordinator_path, coordinator)
+
         instant[0] += timedelta(seconds=STORE_MODULE.CLAIM_LEASE_SECONDS + 1)
         expired = self.store.get_job_activity(ready["id"])
         self.assertEqual(expired["claim"]["state"], "expired")
