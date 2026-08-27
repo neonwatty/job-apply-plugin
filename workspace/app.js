@@ -321,7 +321,7 @@ if (hasDom) {
   const resumeState = { items: [], proposals: [], trash: false, loaded: false, loading: false, requestId: 0, selected: null, opener: null, proposal: null, dirtyMetadata: new Set() };
   const answerState = { items: [], loaded: false, selected: null, offset: 0, limit: 25, total: 0, dirty: new Set(), opener: null, requestSequence: 0, detailRequestSequence: 0, dialogGeneration: 0, mergeRequestSequence: 0, mergeSource: null, mergeCandidates: [], busyControls: null };
   const trashState = { items: [], counts: { job: 0, resume: 0, answer: 0 }, loaded: false, selected: null, opener: null };
-  const attentionState = { items: [], snapshotSignature: "", loaded: false, unavailable: false };
+  const attentionState = { items: [], snapshotSignature: "", loaded: false, unavailable: false, detailRequestSequence: 0 };
   const trashRefreshCoordinator = createLatestRequestCoordinator();
   const activityRefreshCoordinator = createLatestRequestCoordinator();
   const attentionRefreshCoordinator = createLatestRequestCoordinator();
@@ -690,8 +690,10 @@ if (hasDom) {
 
   async function openAttentionJob(jobId, opener) {
     if (attentionState.unavailable) return;
+    const requestSequence = ++attentionState.detailRequestSequence;
     try {
       const detail = await api(`/api/jobs/${encodeURIComponent(jobId)}`);
+      if (requestSequence !== attentionState.detailRequestSequence) return;
       const index = state.jobs.findIndex((item) => item.id === jobId);
       const job = newestCanonicalJob(index === -1 ? null : state.jobs[index], detail);
       if (index === -1) state.jobs.push(job); else state.jobs[index] = job;
@@ -699,6 +701,7 @@ if (hasDom) {
       await showWorkspace("jobs");
       openExisting(jobId, opener);
     } catch (error) {
+      if (requestSequence !== attentionState.detailRequestSequence) return;
       $("#attention-live").textContent = `Job details could not be opened: ${error.message}`;
     }
   }
@@ -1395,5 +1398,5 @@ if (hasDom) {
   $("#trash-delete-dialog").addEventListener("close", () => { const destination = trashState.opener?.isConnected ? trashState.opener : $("#nav-trash"); trashState.selected = null; trashState.opener = null; setTimeout(() => destination?.focus(), 0); });
 
   if (!token) { setConnection(false, "Workspace token missing — restart with the printed URL"); $("#loading").innerHTML = "<p>Open the complete URL printed by the workspace launcher.</p>"; }
-  else { refresh({ quiet: true }); refreshTrash({ quiet: true }); setInterval(() => { refresh({ quiet: true }); if (attentionState.loaded) refreshAttention({ quiet: true }); if (dialog.open && state.selected) loadActivity(); if (resumeState.loaded) refreshResumes({ quiet: true }); if (trashState.loaded) refreshTrash({ quiet: true }); }, 4000); }
+  else { refresh({ quiet: true }); refreshAttention({ quiet: true }); refreshTrash({ quiet: true }); setInterval(() => { refresh({ quiet: true }); refreshAttention({ quiet: true }); if (dialog.open && state.selected) loadActivity(); if (resumeState.loaded) refreshResumes({ quiet: true }); if (trashState.loaded) refreshTrash({ quiet: true }); }, 4000); }
 }

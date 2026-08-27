@@ -767,6 +767,7 @@ test("Needs Attention browser and CLI walkthrough converges all canonical reason
     });
     await page.goto(startup.url);
     await page.getByText("Canonical store connected").waitFor();
+    await page.locator("#attention-nav-count").getByText("4", { exact: true }).waitFor();
     await page.getByRole("button", { name: /Needs Attention/ }).click();
     await page.getByText("4 jobs").waitFor();
     assert.deepEqual(await page.locator(".attention-reason").allTextContents(), [
@@ -777,6 +778,34 @@ test("Needs Attention browser and CLI walkthrough converges all canonical reason
     const attentionDom = await page.locator("#attention-workspace").innerText();
     for (const value of forbidden) assert.equal(attentionDom.includes(value), false, value);
     for (const payload of payloads) for (const value of forbidden) assert.equal(JSON.stringify(payload).includes(value), false, value);
+
+    let releaseEarlierSelection;
+    let earlierSelectionSeenResolve;
+    const earlierSelectionSeen = new Promise((resolveSeen) => { earlierSelectionSeenResolve = resolveSeen; });
+    const releaseEarlierSelectionPromise = new Promise((resolveRelease) => { releaseEarlierSelection = resolveRelease; });
+    const expiredDetailPattern = `**/api/jobs/${expired.id}`;
+    const delayExpiredDetail = async (route) => {
+      if (route.request().method() !== "GET") { await route.continue(); return; }
+      const response = await route.fetch();
+      earlierSelectionSeenResolve();
+      await releaseEarlierSelectionPromise;
+      await route.fulfill({ response });
+    };
+    await page.route(expiredDetailPattern, delayExpiredDetail);
+    await page.locator('[data-attention-id="expired-attention"]').click();
+    await earlierSelectionSeen;
+    await page.locator('[data-attention-id="review-attention"]').click();
+    await page.locator("#job-dialog[open]").waitFor();
+    assert.equal(await page.locator("#job-dialog").getByRole("heading", { name: "Review attention" }).count(), 1);
+    const earlierSelectionResponse = page.waitForResponse((response) => new URL(response.url()).pathname === `/api/jobs/${expired.id}` && response.ok());
+    releaseEarlierSelection();
+    await earlierSelectionResponse;
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(await page.locator("#job-dialog").getByRole("heading", { name: "Review attention" }).count(), 1);
+    await page.getByRole("button", { name: "Close job details" }).click();
+    await page.locator("#job-dialog").waitFor({ state: "hidden" });
+    await page.waitForFunction(() => document.activeElement?.dataset?.attentionId === "review-attention");
+    await page.unroute(expiredDetailPattern, delayExpiredDetail);
 
     let releaseStaleDetail;
     let staleDetailSeenResolve;
