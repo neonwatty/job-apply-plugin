@@ -4681,12 +4681,23 @@ class StoreTests(unittest.TestCase):
         })
         self.store.transition_job(job["id"], "ready", job["revision"])
         managed_path = self.store.resume_files_path / resume["managedFile"]
+        cache_identity = STORE_MODULE._managed_resume_digest_cache_identity
+        posix_cache_identity = lambda metadata: (
+            cache_identity(metadata, platform_name="posix")
+        )
 
-        with mock.patch.object(
-            self.store,
-            "_private_file_digest",
-            wraps=self.store._private_file_digest,
-        ) as digest:
+        with (
+            mock.patch.object(
+                STORE_MODULE,
+                "_managed_resume_digest_cache_identity",
+                side_effect=posix_cache_identity,
+            ),
+            mock.patch.object(
+                self.store,
+                "_private_file_digest",
+                wraps=self.store._private_file_digest,
+            ) as digest,
+        ):
             first = self.store.owner_beta_overview()
             second = self.store.owner_beta_overview()
             self.assertEqual(first["nextAction"], "handoff_ready_job")
