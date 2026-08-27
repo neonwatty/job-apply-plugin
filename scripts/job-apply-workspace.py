@@ -532,6 +532,9 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
                 "resumes": public_resumes(self.server.store.list_resumes()),
             })
             return
+        if path == "/api/attention":
+            self._store_call(self.server.store.list_needs_attention)
+            return
         if path == "/api/jobs":
             self._store_call(lambda: {"jobs": self.server.store.list_jobs()})
             return

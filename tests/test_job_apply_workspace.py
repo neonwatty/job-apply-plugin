@@ -1065,6 +1065,46 @@ class WorkspaceServerTests(unittest.TestCase):
         status, _headers, closed = self.request("POST", f"/api/jobs/{job['id']}/transition", {"status": "closed", "closedOutcome": "withdrawn", "expectedRevision": ready["revision"]})
         self.assertEqual((status, closed["status"], closed["closedOutcome"]), (200, "closed", "withdrawn"))
 
+    def test_attention_api_is_authenticated_canonical_and_privacy_minimized(self):
+        job = self.create_job(
+            url="https://example.com/jobs/attention-api",
+            id="attention-api",
+            role="Platform Engineer",
+            company="Acme",
+            priority=4,
+        )
+        needs = self.server.store.transition_job(
+            job["id"], "needs_info", job["revision"]
+        )
+        status, _headers, body = self.request(
+            "GET", "/api/attention", token=False, origin=False
+        )
+        self.assertEqual((status, body["error"]["code"]), (401, "token_rejected"))
+        status, _headers, projection = self.request(
+            "GET", "/api/attention", origin=False
+        )
+        self.assertEqual(status, 200)
+        self.assertRegex(projection["snapshotSignature"], r"^[0-9a-f]{64}$")
+        self.assertEqual(len(projection["items"]), 1)
+        row = projection["items"][0]
+        self.assertEqual(
+            (row["jobId"], row["reasonCode"], row["revision"]),
+            (needs["id"], "needs_information", needs["revision"]),
+        )
+        self.assertEqual(set(row), {
+            "jobId", "role", "company", "status", "revision", "priority",
+            "reasonCode", "reasonLabel", "attentionAt", "guidance",
+            "missingInformationCount",
+        })
+        self.server.store.transition_job(job["id"], "saved", needs["revision"])
+        status, _headers, resolved = self.request(
+            "GET", "/api/attention", origin=False
+        )
+        self.assertEqual((status, resolved["items"]), (200, []))
+        self.assertNotEqual(
+            projection["snapshotSignature"], resolved["snapshotSignature"]
+        )
+
     def test_job_trash_restore_and_delete_routes_share_exact_revisions(self):
         job = self.create_job()
         status, _headers, trashed = self.request("POST", f"/api/jobs/{job['id']}/trash", {"expectedRevision": job["revision"]})

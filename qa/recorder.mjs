@@ -1959,6 +1959,10 @@ async function runRecord(rawOptions) {
       server.listen(0, "127.0.0.1", resolve);
     });
     const port = server.address().port;
+    const signalPromise = new Promise((resolve) => {
+      process.once("SIGINT", resolve);
+      process.once("SIGTERM", resolve);
+    });
     controlPath = path.join(options.output, "control.json");
     await broker.writeJson("write-exclusive", "control.json", { port, token: activeToken });
 
@@ -1987,10 +1991,6 @@ async function runRecord(rawOptions) {
       return quiescePromise;
     };
 
-    const signalPromise = new Promise((resolve) => {
-      process.once("SIGINT", resolve);
-      process.once("SIGTERM", resolve);
-    });
     const stopReason = await Promise.race([signalPromise, stopPromise, brokerFailurePromise]);
     if (stopReason === "broker-failed") {
       throw new RecorderError("filesystem broker unavailable");

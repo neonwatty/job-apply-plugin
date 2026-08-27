@@ -22,6 +22,7 @@ python3 "$REPO_ROOT/scripts/job-apply-store.py" --help >/dev/null
 python3 - "$REPO_ROOT" "$SMOKE_TEMP_ROOT" <<'PY'
 import json
 import hashlib
+import importlib.util
 import os
 import re
 import stat
@@ -119,6 +120,64 @@ if trash_page.get("total") != 1 or trash_page.get("items", [{}])[0].get("key") !
 blocked = subprocess.run([*answer_base, "answer-delete", "--key", accepted["key"], "--expected-revision", str(trashed["revision"])], capture_output=True, text=True)
 if blocked.returncode == 0 or "application history" not in blocked.stderr or "Reusable" in blocked.stderr:
     raise SystemExit("packaged history-guarded answer deletion failed")
+
+attention_store = smoke_root / "attention-store"
+attention_base = [sys.executable, str(root / "scripts" / "job-apply-store.py"), "--root", str(attention_store)]
+attention_counter = 0
+def attention_command(command, payload=None, *arguments):
+    global attention_counter
+    final = [*attention_base, command, *arguments]
+    if payload is not None:
+        input_path = smoke_root / f"attention-{attention_counter}.json"
+        attention_counter += 1
+        input_path.write_text(json.dumps(payload), encoding="utf-8")
+        final.extend(["--input", str(input_path)])
+    return json.loads(subprocess.run(final, check=True, capture_output=True, text=True).stdout)
+
+attention_command("profile-replace", {"firstName": "Ada"}, "--expected-revision", "0", "--source", "user")
+attention_resume = smoke_root / "attention-resume.pdf"
+attention_resume.write_bytes(b"%PDF-1.7\nattention smoke")
+attention_command("resume-create", {"id": "attention-resume", "label": "Attention", "path": str(attention_resume)})
+def attention_ready(job_id, priority):
+    created = attention_command("job-create", {"id": job_id, "url": f"https://example.com/jobs/{job_id}", "role": job_id, "company": "Smoke Co", "priority": priority})
+    return attention_command("job-transition", None, "--id", job_id, "--status", "ready", "--expected-revision", str(created["revision"]))
+
+review = attention_ready("review-smoke", 5)
+review_claim = attention_command("job-acquire", None, "--id", review["id"], "--owner", "private-review-owner", "--expected-revision", str(review["revision"]))
+review = attention_command("claim-handoff", {"status": "review", "step": "review", "pendingFields": []}, "--id", review["id"], "--token", review_claim["token"], "--status", "awaiting_review", "--expected-revision", str(review_claim["job"]["revision"]))["job"]
+needs = attention_ready("needs-smoke", 4)
+needs_claim = attention_command("job-acquire", None, "--id", needs["id"], "--owner", "private-needs-owner", "--expected-revision", str(needs["revision"]))
+needs = attention_command("claim-handoff", {"status": "active", "step": "questions", "answerKeys": ["private.answer.key"], "pendingFields": [{"question": "Private question?", "state": "missing", "answerKey": "private.answer.key", "sensitive": True}]}, "--id", needs["id"], "--token", needs_claim["token"], "--status", "needs_info", "--expected-revision", str(needs_claim["job"]["revision"]))["job"]
+interrupted = attention_ready("interrupted-smoke", 3)
+interrupted_claim = attention_command("job-acquire", None, "--id", interrupted["id"], "--owner", "private-interrupted-owner", "--expected-revision", str(interrupted["revision"]))
+interrupted = interrupted_claim["job"]
+coordinator_path = attention_store / "coordinator.json"
+coordinator_path.write_text(json.dumps({"schemaVersion": 1, "claim": None}), encoding="utf-8")
+expired = attention_ready("expired-smoke", 1)
+expired_claim = attention_command("job-acquire", None, "--id", expired["id"], "--owner", "private-expired-owner", "--expected-revision", str(expired["revision"]))
+coordinator = json.loads(coordinator_path.read_text(encoding="utf-8"))
+coordinator["claim"]["expiresAt"] = "2000-01-01T00:00:00Z"
+coordinator_path.write_text(json.dumps(coordinator), encoding="utf-8")
+
+store_spec = importlib.util.spec_from_file_location("smoke_job_apply_store", root / "scripts" / "job-apply-store.py")
+store_module = importlib.util.module_from_spec(store_spec)
+store_spec.loader.exec_module(store_module)
+attention_projection = store_module.Store(attention_store).list_needs_attention()
+if [item["reasonCode"] for item in attention_projection["items"]] != ["expired_agent_attempt", "claimless_interrupted_attempt", "awaiting_human_review", "needs_information"]:
+    raise SystemExit("packaged Needs Attention taxonomy or ordering failed")
+attention_serialized = json.dumps(attention_projection)
+for forbidden in (expired_claim["token"], "private-expired-owner", "Private question?", "private.answer.key", "claimId", "ownerLabel", "answerKey", "sensitive", "operationId"):
+    if forbidden in attention_serialized:
+        raise SystemExit("packaged Needs Attention projection leaked private coordinator or answer data")
+recovered = attention_command("claim-recover", None, "--id", expired["id"], "--owner", "replacement-owner")
+interrupted = attention_command("job-transition", None, "--id", interrupted["id"], "--status", "needs_info", "--expected-revision", str(interrupted["revision"]))
+attention_command("job-transition", None, "--id", interrupted["id"], "--status", "saved", "--expected-revision", str(interrupted["revision"]))
+attention_command("job-transition", None, "--id", needs["id"], "--status", "saved", "--expected-revision", str(needs["revision"]))
+attention_command("job-transition", None, "--id", review["id"], "--status", "applied", "--expected-revision", str(review["revision"]), "--user-confirmed")
+if store_module.Store(attention_store).list_needs_attention()["items"]:
+    raise SystemExit("packaged Needs Attention resolutions did not converge to empty")
+if recovered["job"]["id"] != expired["id"]:
+    raise SystemExit("packaged expired claim recovery targeted the wrong job")
 
 from qa.contracts import ContractError, validate_fixture
 from qa.privacy import PrivacyError, scan_tree
@@ -644,9 +703,9 @@ PY
 
 echo "Running Playwright and CLI walkthrough against packaged fixture"
 JOB_WORKSPACE_TEST_ROOT="$SMOKE_FIXTURE_DIR" \
-  node --test --test-name-pattern='real browser and CLI share CRUD' \
+  node --test --test-name-pattern='real browser and CLI share CRUD|Needs Attention browser and CLI walkthrough' \
   "$REPO_ROOT/tests_js/workspace.test.mjs"
-echo "Packaged Playwright and CLI walkthrough, including unified Trash for jobs, resumes, and answers, passed"
+echo "Packaged Playwright and CLI walkthrough, including Needs Attention and unified Trash, passed"
 
 python3 - "$SMOKE_FIXTURE_DIR/.claude-plugin/marketplace.json" <<'PY'
 import json

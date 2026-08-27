@@ -141,6 +141,14 @@ export function shouldUseActivityResponse(activity, ...knownJobs) {
   return responseJob.revision >= knownRevision;
 }
 
+export function newestCanonicalJob(current, incoming) {
+  if (!current) return incoming;
+  if (!incoming || current.id !== incoming.id) return current;
+  const currentRevision = Number.isInteger(current.revision) ? current.revision : 0;
+  const incomingRevision = Number.isInteger(incoming.revision) ? incoming.revision : 0;
+  return incomingRevision >= currentRevision ? incoming : current;
+}
+
 export function createApi(token, fetchImpl = globalThis.fetch) {
   return async function api(path, options = {}) {
     const headers = { Authorization: `Bearer ${token}`, ...(options.headers || {}) };
@@ -195,6 +203,16 @@ export function activityAnnouncement(previous, current) {
   if (previous.session?.updatedAt !== current.session?.updatedAt && current.session?.step) changes.push(`Progress updated at ${current.session.step}.`);
   if ((previous.history || []).length !== (current.history || []).length) changes.push("Application history updated.");
   return changes.join(" ");
+}
+
+export function attentionMembershipSignature(projection) {
+  return JSON.stringify((projection?.items || []).map((item) => [item.jobId, item.reasonCode]));
+}
+
+export function attentionAnnouncement(previous, current) {
+  if (!previous || attentionMembershipSignature(previous) === attentionMembershipSignature(current)) return "";
+  const count = current?.items?.length || 0;
+  return `Needs Attention queue updated. ${count} job${count === 1 ? "" : "s"} now require action.`;
 }
 
 export function pointerValue(value, pointer) {
@@ -298,13 +316,15 @@ if (hasDom) {
   const token = sessionToken(location.hash, safeSessionStorage(globalThis));
   if (location.hash) history.replaceState(null, "", location.pathname);
   const api = createApi(token);
-  const state = { jobs: [], resumes: [], selected: null, latest: null, draft: null, dirty: false, dirtyFields: new Set(), polling: false, opener: null, openerJobId: null, focusAfterClose: null, focusAfterCloseJobId: null, activity: null, activityJobId: null, activityUnavailable: false };
+  const state = { jobs: [], resumes: [], selected: null, latest: null, draft: null, dirty: false, dirtyFields: new Set(), polling: false, opener: null, openerJobId: null, focusAfterClose: null, focusAfterCloseJobId: null, activity: null, activityJobId: null, activityUnavailable: false, attentionReturnJobId: null, navigationGeneration: 0 };
   const profileState = { inspection: null, drafts: new Map(), draftBases: new Map(), atomic: new Set(), additionalAtomic: new Set(), deletions: new Set(), conflicts: [], latest: null, loaded: false };
   const resumeState = { items: [], proposals: [], trash: false, loaded: false, loading: false, requestId: 0, selected: null, opener: null, proposal: null, dirtyMetadata: new Set() };
   const answerState = { items: [], loaded: false, selected: null, offset: 0, limit: 25, total: 0, dirty: new Set(), opener: null, requestSequence: 0, detailRequestSequence: 0, dialogGeneration: 0, mergeRequestSequence: 0, mergeSource: null, mergeCandidates: [], busyControls: null };
   const trashState = { items: [], counts: { job: 0, resume: 0, answer: 0 }, loaded: false, selected: null, opener: null };
+  const attentionState = { items: [], snapshotSignature: "", loaded: false, unavailable: false, detailRequestSequence: 0 };
   const trashRefreshCoordinator = createLatestRequestCoordinator();
   const activityRefreshCoordinator = createLatestRequestCoordinator();
+  const attentionRefreshCoordinator = createLatestRequestCoordinator();
   const jobCardRenderKeys = new WeakMap();
   const $ = (selector) => document.querySelector(selector);
   const form = $("#job-form");
@@ -602,17 +622,94 @@ if (hasDom) {
   }
 
   async function showWorkspace(name) {
+    const attention = name === "attention";
     const facts = name === "facts";
     const resumes = name === "resumes";
     const answers = name === "answers";
     const trash = name === "trash";
-    $("#jobs-workspace").classList.toggle("hidden", facts || resumes || answers || trash); $("#facts-workspace").classList.toggle("hidden", !facts); $("#resumes-workspace").classList.toggle("hidden", !resumes); $("#answers-workspace").classList.toggle("hidden", !answers); $("#trash-workspace").classList.toggle("hidden", !trash);
-    for (const section of ["jobs", "facts", "resumes", "answers", "trash"]) { const active = name === section; $(`#nav-${section}`).classList.toggle("active", active); $(`#nav-${section}`).toggleAttribute("aria-current", active); }
-    document.title = `${facts ? "Facts" : resumes ? "Resumes" : answers ? "Answers" : trash ? "Trash" : "Jobs"} · Job Apply Workspace`;
+    $("#jobs-workspace").classList.toggle("hidden", attention || facts || resumes || answers || trash); $("#attention-workspace").classList.toggle("hidden", !attention); $("#facts-workspace").classList.toggle("hidden", !facts); $("#resumes-workspace").classList.toggle("hidden", !resumes); $("#answers-workspace").classList.toggle("hidden", !answers); $("#trash-workspace").classList.toggle("hidden", !trash);
+    for (const section of ["jobs", "attention", "facts", "resumes", "answers", "trash"]) { const active = name === section; $(`#nav-${section}`).classList.toggle("active", active); $(`#nav-${section}`).toggleAttribute("aria-current", active); }
+    document.title = `${attention ? "Needs Attention" : facts ? "Facts" : resumes ? "Resumes" : answers ? "Answers" : trash ? "Trash" : "Jobs"} · Job Apply Workspace`;
+    if (attention && !attentionState.loaded) await refreshAttention();
     if (facts && !profileState.loaded) await refreshProfile({ preserve: false });
     if (resumes && !resumeState.loaded) await refreshResumes();
     if (answers && !answerState.loaded) await refreshAnswers();
     if (trash && !trashState.loaded) await refreshTrash();
+  }
+
+  function navigateWorkspace(name) {
+    state.navigationGeneration += 1;
+    attentionState.detailRequestSequence += 1;
+    return showWorkspace(name);
+  }
+
+  function attentionButton(jobId) { return document.querySelector(`[data-attention-id="${CSS.escape(jobId)}"]`); }
+
+  function renderAttention() {
+    const list = $("#attention-list");
+    const focusedId = document.activeElement instanceof HTMLElement ? document.activeElement.dataset.attentionId : null;
+    list.replaceChildren();
+    for (const item of attentionState.items) {
+      const wrapper = document.createElement("div"); wrapper.className = "attention-item"; wrapper.setAttribute("role", "listitem");
+      const button = document.createElement("button"); button.type = "button"; button.className = "attention-card"; button.dataset.attentionId = item.jobId; button.disabled = attentionState.unavailable;
+      const heading = document.createElement("h3"); heading.textContent = item.role || "Untitled opportunity";
+      const company = document.createElement("p"); company.className = "attention-company"; company.textContent = item.company || "Company not set";
+      const reason = document.createElement("strong"); reason.className = `attention-reason ${item.reasonCode}`; reason.textContent = item.reasonLabel;
+      const guidance = document.createElement("p"); guidance.textContent = item.guidance;
+      const metadata = document.createElement("p"); metadata.className = "attention-meta";
+      const missing = item.reasonCode === "needs_information" ? ` · ${item.missingInformationCount} missing information item${item.missingInformationCount === 1 ? "" : "s"}` : "";
+      metadata.textContent = `Priority ${item.priority} · ${statusLabel(item.status)} · since ${formatActivityTime(item.attentionAt)}${missing}`;
+      const action = document.createElement("span"); action.className = "attention-action"; action.textContent = attentionState.unavailable ? "Unavailable until refresh" : "Open Job details";
+      button.append(heading, company, reason, guidance, metadata, action);
+      button.addEventListener("click", () => openAttentionJob(item.jobId, button)); wrapper.append(button); list.append(wrapper);
+    }
+    $("#attention-count").textContent = `${attentionState.items.length} job${attentionState.items.length === 1 ? "" : "s"}`;
+    $("#attention-nav-count").textContent = String(attentionState.items.length);
+    $("#attention-loading").classList.add("hidden");
+    $("#attention-empty").classList.toggle("hidden", attentionState.items.length !== 0 || attentionState.unavailable);
+    list.classList.toggle("hidden", attentionState.items.length === 0);
+    list.setAttribute("aria-busy", "false");
+    $("#attention-unavailable").classList.toggle("hidden", !attentionState.unavailable);
+    if (focusedId) attentionButton(focusedId)?.focus();
+  }
+
+  async function refreshAttention({ quiet = false } = {}) {
+    if (!attentionState.loaded) { $("#attention-loading").classList.remove("hidden"); $("#attention-list").setAttribute("aria-busy", "true"); }
+    return attentionRefreshCoordinator.run(
+      () => api("/api/attention"),
+      (projection) => {
+        const previous = attentionState.loaded ? { items: attentionState.items, snapshotSignature: attentionState.snapshotSignature } : null;
+        const recovered = attentionState.unavailable;
+        attentionState.items = projection.items; attentionState.snapshotSignature = projection.snapshotSignature; attentionState.loaded = true; attentionState.unavailable = false;
+        renderAttention(); setConnection(true);
+        const announcement = recovered ? "Needs Attention data is available again." : attentionAnnouncement(previous, projection);
+        if (announcement) $("#attention-live").textContent = announcement;
+        if (!quiet) toast("Needs Attention refreshed from the canonical store");
+      },
+      (error) => {
+        const firstFailure = !attentionState.unavailable;
+        attentionState.unavailable = true; renderAttention(); setConnection(false, error.message);
+        if (firstFailure) $("#attention-live").textContent = "Needs Attention data is unavailable. Row actions are disabled.";
+      },
+    );
+  }
+
+  async function openAttentionJob(jobId, opener) {
+    if (attentionState.unavailable) return;
+    const requestSequence = ++attentionState.detailRequestSequence;
+    try {
+      const detail = await api(`/api/jobs/${encodeURIComponent(jobId)}`);
+      if (requestSequence !== attentionState.detailRequestSequence) return;
+      const index = state.jobs.findIndex((item) => item.id === jobId);
+      const job = newestCanonicalJob(index === -1 ? null : state.jobs[index], detail);
+      if (index === -1) state.jobs.push(job); else state.jobs[index] = job;
+      state.attentionReturnJobId = jobId;
+      await showWorkspace("jobs");
+      openExisting(jobId, opener);
+    } catch (error) {
+      if (requestSequence !== attentionState.detailRequestSequence) return;
+      $("#attention-live").textContent = `Job details could not be opened: ${error.message}`;
+    }
   }
 
   function answerError(message, dialogError = false) { const node = $(dialogError ? "#answer-error" : "#answers-error"); node.textContent = message; node.classList.remove("hidden"); }
@@ -998,9 +1095,9 @@ if (hasDom) {
     dialog.showModal(); setTimeout(() => form.elements.url.focus(), 0);
   }
 
-  function openExisting(id) {
+  function openExisting(id, opener = null) {
     const job = state.jobs.find((item) => item.id === id); if (!job) return;
-    rememberOpener(id);
+    rememberOpener(id, opener);
     state.selected = job; state.latest = null; state.draft = null; fillForm(job); $("#job-dialog-title").textContent = job.role || "Job details"; $("#dialog-kicker").textContent = `${statusLabel(job.status).toUpperCase()} · REVISION ${job.revision}`;
     state.activity = null; state.activityJobId = id; prepareActivity(job); renderJobControls(job); dialog.showModal(); loadActivity(id); setTimeout(() => form.elements.role.focus(), 0);
   }
@@ -1214,8 +1311,8 @@ if (hasDom) {
   }
 
   function jobButton(id) { return document.querySelector(`[data-id="${CSS.escape(id)}"]`); }
-  function rememberOpener(jobId = null) {
-    state.opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  function rememberOpener(jobId = null, opener = null) {
+    state.opener = opener || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     state.openerJobId = jobId;
     state.focusAfterClose = null;
     state.focusAfterCloseJobId = null;
@@ -1228,7 +1325,8 @@ if (hasDom) {
   function firstListDestination() { return $(".job-card") || $("#new-job"); }
 
   form.addEventListener("submit", save); form.addEventListener("input", (event) => { if (state.selected && event.target.name) { state.dirty = true; state.dirtyFields.add(event.target.name); } });
-  $("#nav-jobs").addEventListener("click", () => showWorkspace("jobs")); $("#nav-facts").addEventListener("click", () => showWorkspace("facts")); $("#nav-resumes").addEventListener("click", () => showWorkspace("resumes")); $("#nav-answers").addEventListener("click", () => showWorkspace("answers")); $("#nav-trash").addEventListener("click", () => showWorkspace("trash"));
+  $("#nav-jobs").addEventListener("click", () => navigateWorkspace("jobs")); $("#nav-attention").addEventListener("click", () => navigateWorkspace("attention")); $("#nav-facts").addEventListener("click", () => navigateWorkspace("facts")); $("#nav-resumes").addEventListener("click", () => navigateWorkspace("resumes")); $("#nav-answers").addEventListener("click", () => navigateWorkspace("answers")); $("#nav-trash").addEventListener("click", () => navigateWorkspace("trash"));
+  $("#attention-refresh").addEventListener("click", () => refreshAttention());
   $("#trash-refresh").addEventListener("click", () => refreshTrash()); $("#trash-type-filter").addEventListener("change", renderTrash);
   $("#trash-delete-input").addEventListener("input", () => { $("#trash-delete-confirm").disabled = $("#trash-delete-input").value !== typedDeletePhrase(trashState.selected?.type); });
   $("#trash-delete-form").addEventListener("submit", submitTrashDelete);
@@ -1274,12 +1372,22 @@ if (hasDom) {
   dialog.addEventListener("close", () => {
     activityRefreshCoordinator.invalidate(); state.activity = null; state.activityJobId = null; state.activityUnavailable = false; $("#activity-live").textContent = "";
     state.dirty = false; state.dirtyFields.clear(); state.draft = null; $("#sync-notice").classList.add("hidden");
+    const attentionReturnJobId = state.attentionReturnJobId;
+    const attentionReturnGeneration = state.navigationGeneration;
+    state.attentionReturnJobId = null;
     const destinationJobId = state.focusAfterCloseJobId || state.focusAfterClose?.dataset?.id || state.openerJobId;
     const destinationFallback = state.focusAfterClose || state.opener || $("#new-job");
     state.focusAfterClose = null; state.focusAfterCloseJobId = null; state.opener = null; state.openerJobId = null;
     render();
     queueMicrotask(() => {
       if (dialog.open || document.querySelector("dialog[open]")) return;
+      if (attentionReturnJobId) {
+        refreshAttention({ quiet: true }).then(() => {
+          if (attentionReturnGeneration !== state.navigationGeneration) return;
+          showWorkspace("attention").then(() => (attentionButton(attentionReturnJobId) || $("#nav-attention")).focus());
+        });
+        return;
+      }
       const currentDestination = (destinationJobId ? jobButton(destinationJobId) : null)
         || (destinationFallback?.isConnected ? destinationFallback : null)
         || $("#new-job");
@@ -1298,5 +1406,5 @@ if (hasDom) {
   $("#trash-delete-dialog").addEventListener("close", () => { const destination = trashState.opener?.isConnected ? trashState.opener : $("#nav-trash"); trashState.selected = null; trashState.opener = null; setTimeout(() => destination?.focus(), 0); });
 
   if (!token) { setConnection(false, "Workspace token missing — restart with the printed URL"); $("#loading").innerHTML = "<p>Open the complete URL printed by the workspace launcher.</p>"; }
-  else { refresh({ quiet: true }); refreshTrash({ quiet: true }); setInterval(() => { refresh({ quiet: true }); if (dialog.open && state.selected) loadActivity(); if (resumeState.loaded) refreshResumes({ quiet: true }); if (trashState.loaded) refreshTrash({ quiet: true }); }, 4000); }
+  else { refresh({ quiet: true }); refreshAttention({ quiet: true }); refreshTrash({ quiet: true }); setInterval(() => { refresh({ quiet: true }); refreshAttention({ quiet: true }); if (dialog.open && state.selected) loadActivity(); if (resumeState.loaded) refreshResumes({ quiet: true }); if (trashState.loaded) refreshTrash({ quiet: true }); }, 4000); }
 }
