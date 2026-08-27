@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <title>Jobs · Job Apply Workspace</title>
+  <title>Overview · Job Apply Workspace</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -15,7 +15,8 @@
       <h1>Job Apply</h1>
     </div>
     <nav class="workspace-nav" aria-label="Workspace sections">
-      <button id="nav-jobs" class="nav-link active" type="button" aria-current="page">Jobs</button>
+      <button id="nav-overview" class="nav-link active" type="button" aria-current="page">Overview</button>
+      <button id="nav-jobs" class="nav-link" type="button">Jobs</button>
       <button id="nav-attention" class="nav-link" type="button">Needs Attention <span id="attention-nav-count" aria-label="attention count">0</span></button>
       <button id="nav-facts" class="nav-link" type="button">Facts</button>
       <button id="nav-resumes" class="nav-link" type="button">Resumes</button>
@@ -29,7 +30,45 @@
   </header>
 
   <main id="workspace-content">
-    <div id="jobs-workspace">
+    <div id="overview-workspace">
+      <section class="hero overview-hero" aria-labelledby="overview-title">
+        <div><p class="eyebrow">PRIVATE OWNER WORKSPACE</p><h2 id="overview-title">Know what to do next.</h2><p>Your setup and next step are derived from the canonical local Store. This browser keeps no onboarding-complete flag and never submits an application.</p></div>
+        <div class="hero-actions"><button id="overview-refresh" class="button secondary" type="button">Refresh</button></div>
+      </section>
+      <div id="boot-recovery" class="recovery-panel hidden" role="alert" tabindex="-1">
+        <p class="eyebrow">STORE RECOVERY</p><h2 id="boot-recovery-title">Your data is unavailable, so this workspace is read-only.</h2>
+        <p id="boot-recovery-summary"></p><p id="boot-recovery-guidance"></p>
+        <p>No canonical values or filesystem paths were exposed to this browser. Nothing was automatically repaired, downgraded, or overwritten. Stop this workspace before restoring a known-good backup.</p>
+      </div>
+      <p id="overview-unavailable" class="error overview-unavailable hidden" role="alert">Overview is unavailable. Setup and next-step guidance are hidden until a refresh succeeds.</p>
+      <section id="overview-ready" class="overview-grid hidden" aria-labelledby="next-step-heading">
+        <article class="next-step-card">
+          <p class="eyebrow">NEXT STEP</p><h2 id="next-step-heading">Loading…</h2><p id="next-step-copy"></p>
+          <button id="next-step-action" class="button primary" type="button">Open workspace</button>
+        </article>
+        <article class="setup-card" aria-labelledby="setup-heading">
+          <p class="eyebrow">SETUP</p><h2 id="setup-heading">Local foundation</h2>
+          <ul class="setup-checklist"><li id="setup-resume">Resume</li><li id="setup-facts">Reviewed facts</li></ul>
+          <p id="overview-counts" class="overview-counts"></p>
+        </article>
+        <article class="handoff-card" aria-labelledby="handoff-heading">
+          <p class="eyebrow">READY-JOB HANDOFF</p><h2 id="handoff-heading">Start an application agent</h2>
+          <p>When a job is Ready, use one supported copy-only invocation. The workspace does not detect your host, run commands, or submit.</p>
+          <div class="invocation"><span>Codex</span><code>$job-apply:job-apply</code><button class="button secondary copy-invocation" data-copy="$job-apply:job-apply" type="button">Copy Codex invocation</button></div>
+          <div class="invocation"><span>Claude Code</span><code>/job-apply:job-apply</code><button class="button secondary copy-invocation" data-copy="/job-apply:job-apply" type="button">Copy Claude Code invocation</button></div>
+          <label class="clipboard-fallback hidden" role="alert">Clipboard unavailable. Select and copy this invocation manually. <input class="clipboard-fallback-value" readonly aria-label="Invocation to copy"></label>
+          <p class="safety-note">The agent stops for final review. Only you may submit on the third-party site.</p>
+        </article>
+        <article class="recovery-card" aria-labelledby="recovery-heading">
+          <p class="eyebrow">RESTART &amp; RECOVERY</p><h2 id="recovery-heading">Canonical state survives this browser</h2>
+          <p>Restart the launcher to reconnect. Stale revision conflicts preserve your draft and require review; interrupted attempts appear in Needs Attention; Trash restores individual records.</p>
+          <div class="button-row"><button class="button secondary overview-link" data-workspace="attention" type="button">Open Needs Attention</button><button class="button secondary overview-link" data-workspace="trash" type="button">Open Trash</button></div>
+        </article>
+      </section>
+      <p id="overview-live" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></p>
+    </div>
+
+    <div id="jobs-workspace" class="hidden">
     <section class="hero" aria-labelledby="workspace-title">
       <div>
         <p class="eyebrow">Jobs Workspace</p>
@@ -285,6 +324,12 @@
       </section>
       <section id="preflight-panel" class="preflight hidden" aria-labelledby="preflight-heading">
         <h3 id="preflight-heading">Ready check</h3><div id="preflight-results"></div>
+      </section>
+      <section id="ready-handoff" class="handoff-card compact-handoff hidden" aria-labelledby="ready-handoff-heading">
+        <p class="eyebrow">READY FOR AN AGENT</p><h3 id="ready-handoff-heading">Continue outside this workspace</h3>
+        <p>Copy the invocation for your host. No command runs here, and only you may submit.</p>
+        <div class="button-row"><button class="button secondary copy-invocation" data-copy="$job-apply:job-apply" type="button">Copy Codex invocation</button><button class="button secondary copy-invocation" data-copy="/job-apply:job-apply" type="button">Copy Claude Code invocation</button></div>
+        <label class="clipboard-fallback hidden" role="alert">Clipboard unavailable. Select and copy this invocation manually. <input class="clipboard-fallback-value" readonly aria-label="Invocation to copy"></label>
       </section>
       <p id="form-error" class="error hidden" role="alert"></p>
       <div class="dialog-footer">

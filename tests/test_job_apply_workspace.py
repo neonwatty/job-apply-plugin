@@ -98,6 +98,191 @@ class WorkspaceServerTests(unittest.TestCase):
         self.assertEqual(status, 403)
         self.assertEqual(self.server.store.list_jobs(), [])
 
+    def test_owner_beta_boot_and_overview_are_authenticated_and_value_free(self):
+        status, _headers, body = self.request("GET", "/api/boot", token=False, origin=False)
+        self.assertEqual((status, body["error"]["code"]), (401, "token_rejected"))
+        status, _headers, boot = self.request("GET", "/api/boot", origin=False)
+        self.assertEqual((status, boot), (200, {"status": "ready", "code": "ready"}))
+        status, _headers, overview = self.request("GET", "/api/overview", origin=False)
+        self.assertEqual(status, 200)
+        self.assertEqual((overview["nextAction"], overview["targetWorkspace"]), ("import_resume", "resumes"))
+        self.assertEqual(set(overview), {"setup", "counts", "nextAction", "targetWorkspace"})
+
+    def test_owner_beta_degraded_startup_serves_static_recovery_and_blocks_store_access(self):
+        degraded_root = Path(self.temporary.name) / "degraded-store"
+        degraded_root.mkdir()
+        private_marker = "owner-private-path-and-value"
+        (degraded_root / "jobs.json").write_text(private_marker, encoding="utf-8")
+        server = WORKSPACE.WorkspaceServer(degraded_root, 0, token="degraded-token")
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            old_server = self.server
+            self.server = server
+            status, _headers, asset = self.request("GET", "/", token=False, origin=False)
+            self.assertEqual(status, 200)
+            self.assertIn(b"STORE RECOVERY", asset)
+            status, _headers, boot = self.request("GET", "/api/boot", origin=False)
+            self.assertEqual((status, boot["status"], boot["code"]), (200, "degraded", "corrupt_store"))
+            self.assertNotIn(private_marker, json.dumps(boot))
+            status, _headers, error = self.request("GET", "/api/overview", origin=False)
+            self.assertEqual((status, error["error"]["code"]), (503, "store_unavailable"))
+            status, _headers, error = self.request("POST", "/api/jobs", {"job": {"url": "https://example.invalid"}})
+            self.assertEqual((status, error["error"]["code"]), (503, "store_unavailable"))
+            self.assertEqual((degraded_root / "jobs.json").read_text(encoding="utf-8"), private_marker)
+            self.assertEqual(WORKSPACE.degraded_boot_status(WORKSPACE.STORE_MODULE.StoreError("uses unsupported future schemaVersion 2"))["code"], "future_store")
+            self.server = old_server
+        finally:
+            self.server = old_server
+            server.shutdown(); server.server_close(); thread.join(timeout=2)
+
+    def test_owner_beta_invalid_utf8_enters_sanitized_degraded_recovery(self):
+        degraded_root = Path(self.temporary.name) / "invalid-utf8-store"
+        degraded_root.mkdir()
+        private_bytes = b"\xff\xfeowner-private-invalid-utf8"
+        (degraded_root / "jobs.json").write_bytes(private_bytes)
+
+        server = WORKSPACE.WorkspaceServer(
+            degraded_root, 0, token="invalid-utf8-token"
+        )
+        try:
+            self.assertEqual(
+                (server.boot_status["status"], server.boot_status["code"]),
+                ("degraded", "corrupt_store"),
+            )
+            serialized = json.dumps(server.boot_status)
+            self.assertNotIn("owner-private-invalid-utf8", serialized)
+            self.assertNotIn(str(degraded_root), serialized)
+            self.assertEqual((degraded_root / "jobs.json").read_bytes(), private_bytes)
+        finally:
+            server.server_close()
+
+    def test_owner_beta_invalid_utf8_history_enters_sanitized_degraded_recovery(self):
+        degraded_root = Path(self.temporary.name) / "invalid-utf8-history-store"
+        degraded_root.mkdir()
+        private_bytes = b"\xff\xfeowner-private-invalid-history"
+        (degraded_root / "applications.jsonl").write_bytes(private_bytes)
+
+        server = WORKSPACE.WorkspaceServer(
+            degraded_root, 0, token="invalid-history-token"
+        )
+        try:
+            self.assertEqual(
+                (server.boot_status["status"], server.boot_status["code"]),
+                ("degraded", "corrupt_store"),
+            )
+            serialized = json.dumps(server.boot_status)
+            self.assertNotIn("owner-private-invalid-history", serialized)
+            self.assertNotIn(str(degraded_root), serialized)
+            self.assertEqual(
+                (degraded_root / "applications.jsonl").read_bytes(), private_bytes
+            )
+        finally:
+            server.server_close()
+
+    def test_owner_beta_startup_rejects_semantically_invalid_claim_timestamps_without_mutation(self):
+        base_claim = {
+            "claimId": "claim-one",
+            "jobId": "owner-job",
+            "ownerLabel": "owner",
+            "tokenHash": "a" * 64,
+            "acquiredAt": "2026-08-27T09:00:00-07:00",
+            "heartbeatAt": "2026-08-27T16:01:00Z",
+            "expiresAt": "2026-08-27T16:06:00+00:00",
+        }
+        invalid_cases = {
+            "malformed-acquisition": {"acquiredAt": "2026-02-30T16:00:00Z"},
+            "timezone-naive": {"heartbeatAt": "2026-08-27T16:01:00"},
+            "malformed-expiry": {"expiresAt": "not-a-time"},
+        }
+        for label, patch in invalid_cases.items():
+            with self.subTest(label=label):
+                root = Path(self.temporary.name) / f"invalid-claim-{label}"
+                root.mkdir()
+                coordinator = root / "coordinator.json"
+                coordinator.write_text(json.dumps({
+                    "schemaVersion": 1,
+                    "claim": {**base_claim, **patch},
+                }), encoding="utf-8")
+                before = coordinator.read_bytes()
+                server = WORKSPACE.WorkspaceServer(root, 0, token="claim-token")
+                try:
+                    self.assertEqual(
+                        (server.boot_status["status"], server.boot_status["code"]),
+                        ("degraded", "corrupt_store"),
+                    )
+                    self.assertEqual(coordinator.read_bytes(), before)
+                    self.assertEqual(sorted(path.name for path in root.iterdir()), ["coordinator.json"])
+                finally:
+                    server.server_close()
+
+        valid_root = Path(self.temporary.name) / "valid-offset-claim"
+        valid_root.mkdir()
+        (valid_root / "coordinator.json").write_text(json.dumps({
+            "schemaVersion": 1,
+            "claim": base_claim,
+        }), encoding="utf-8")
+        server = WORKSPACE.WorkspaceServer(valid_root, 0, token="valid-claim-token")
+        try:
+            self.assertEqual(server.boot_status, {"status": "ready", "code": "ready"})
+        finally:
+            server.server_close()
+
+    def test_owner_beta_corrupt_and_future_sessions_enter_sanitized_degraded_recovery(self):
+        for label, payload, expected_code in (
+            ("corrupt", b'{"private":"owner-session-value"', "corrupt_store"),
+            (
+                "future",
+                json.dumps({
+                    "schemaVersion": 99,
+                    "applicationId": "owner-session",
+                    "status": "active",
+                    "answerKeys": [],
+                    "pendingFields": [],
+                }).encode(),
+                "future_store",
+            ),
+        ):
+            with self.subTest(label=label):
+                degraded_root = Path(self.temporary.name) / f"{label}-session-store"
+                sessions = degraded_root / "sessions"
+                sessions.mkdir(parents=True)
+                session_path = sessions / "owner-session.json"
+                session_path.write_bytes(payload)
+                server = WORKSPACE.WorkspaceServer(
+                    degraded_root, 0, token=f"{label}-session-token"
+                )
+                try:
+                    self.assertEqual(
+                        (server.boot_status["status"], server.boot_status["code"]),
+                        ("degraded", expected_code),
+                    )
+                    serialized = json.dumps(server.boot_status)
+                    self.assertNotIn("owner-session-value", serialized)
+                    self.assertNotIn(str(degraded_root), serialized)
+                    self.assertEqual(session_path.read_bytes(), payload)
+                finally:
+                    server.server_close()
+
+    def test_owner_beta_initialization_failure_aborts_instead_of_claiming_degraded_safety(self):
+        root = Path(self.temporary.name) / "partial-initialization"
+        marker = root / "initialization-started"
+
+        def fail_after_mutation(_store):
+            root.mkdir()
+            marker.write_text("partial", encoding="utf-8")
+            raise WORKSPACE.STORE_MODULE.StoreError("simulated initialization failure")
+
+        with mock.patch.object(
+            WORKSPACE.STORE_MODULE.Store, "initialize", fail_after_mutation
+        ):
+            with self.assertRaisesRegex(
+                WORKSPACE.STORE_MODULE.StoreError,
+                "simulated initialization failure",
+            ):
+                WORKSPACE.WorkspaceServer(root, 0, token="must-not-serve")
+        self.assertTrue(marker.is_file())
+
     def test_rejects_host_options_content_type_malformed_and_oversized_requests(self):
         status, _headers, body = self.request("GET", "/", token=False, origin=False, host=f"localhost:{self.server.server_port}")
         self.assertEqual((status, body["error"]["code"]), (403, "host_rejected"))

@@ -98,6 +98,7 @@ REPLAY_ATS = {"ashby", "greenhouse", "lever", "linkedin-easy-apply"}
 SESSION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 CLAIM_LEASE_SECONDS = 300
 CLAIM_HEARTBEAT_SECONDS = 60
+OVERVIEW_DIGEST_CACHE_SECONDS = 30
 LEGACY_SEARCH_ROOT = ".claude-job-searches"
 LEGACY_SEARCH_MAX_FILES = 100
 LEGACY_SEARCH_MAX_FILE_BYTES = 2 * 1024 * 1024
@@ -229,7 +230,7 @@ def read_json_object(path: Path, label: str) -> dict[str, Any]:
     try:
         with path.open(encoding="utf-8") as source:
             value = json.load(source)
-    except (OSError, json.JSONDecodeError) as error:
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
         raise StoreError(f"cannot read valid {label} JSON at {path}") from error
     return _require_object(value, label)
 
@@ -370,6 +371,31 @@ def _safe_session_id(application_id: str) -> str:
     ):
         raise StoreError("application id contains unsupported characters")
     return application_id
+
+
+def _is_reparse_point(metadata: os.stat_result) -> bool:
+    attributes = getattr(metadata, "st_file_attributes", 0)
+    marker = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+    return bool(attributes & marker)
+
+
+def _managed_resume_digest_cache_identity(
+    metadata: os.stat_result,
+    *,
+    platform_name: str | None = None,
+) -> tuple[int, int, int, int, int] | None:
+    """Return metadata that reliably changes after in-place content writes."""
+
+    if (os.name if platform_name is None else platform_name) == "nt":
+        # Python exposes Windows creation time as st_ctime, not change time.
+        return None
+    return (
+        metadata.st_dev,
+        metadata.st_ino,
+        metadata.st_size,
+        metadata.st_mtime_ns,
+        metadata.st_ctime_ns,
+    )
 
 
 def _validate_optional_strings(
@@ -990,7 +1016,19 @@ def _validate_claim_record(value: Any) -> dict[str, Any]:
     ):
         raise StoreError("coordinator claim is invalid")
     _safe_session_id(claim["jobId"])
+    for field in ("acquiredAt", "heartbeatAt", "expiresAt"):
+        _parse_coordinator_time(claim[field])
     return claim
+
+
+def _parse_coordinator_time(value: str) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (AttributeError, ValueError) as error:
+        raise StoreError("coordinator timestamp is invalid") from error
+    if parsed.tzinfo is None:
+        raise StoreError("coordinator timestamp is invalid")
+    return parsed.astimezone(timezone.utc)
 
 
 def _validate_job_record(key: str, value: Any) -> dict[str, Any]:
@@ -1370,6 +1408,7 @@ class Store:
             else Path.home() / ".claude-job-profile.json"
         )
         self.clock = clock or (lambda: datetime.now(timezone.utc))
+        self._overview_resume_digest_cache: dict[str, dict[str, Any]] = {}
 
     def _now_datetime(self) -> datetime:
         value = self.clock()
@@ -1490,6 +1529,11 @@ class Store:
 
         return {"initialized": True, "migratedLegacyProfile": migrated, **self.paths()}
 
+    def validate_workspace_startup(self) -> None:
+        """Validate existing documents without creating, repairing, or migrating state."""
+
+        self._validate_existing_documents()
+
     def _validate_existing_documents(self) -> None:
         """Validate existing store documents without creating or repairing files."""
 
@@ -1505,6 +1549,8 @@ class Store:
             self._load_extractions_document()
         if self.resume_extraction_journal_path.exists():
             self._load_extraction_journal()
+        if self.sessions_path.exists():
+            self._validate_existing_session_documents()
         coordinator_exists = (
             self.coordinator_path.exists() or self.coordinator_journal_path.exists()
         )
@@ -1514,6 +1560,104 @@ class Store:
             self._load_coordinator_document()
         if self.coordinator_journal_path.exists():
             self._load_coordinator_journal()
+
+    def _validate_existing_session_documents(self) -> None:
+        """Validate canonical session files without following or changing identities."""
+
+        try:
+            directory_metadata = self.sessions_path.lstat()
+        except OSError:
+            raise StoreError("canonical sessions directory cannot be validated") from None
+        if stat.S_ISLNK(directory_metadata.st_mode) or _is_reparse_point(directory_metadata) or not stat.S_ISDIR(
+            directory_metadata.st_mode
+        ):
+            raise StoreError("canonical sessions directory is invalid")
+        directory: int | None = None
+        if os.name != "nt":
+            directory_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+            if hasattr(os, "O_NOFOLLOW"):
+                directory_flags |= os.O_NOFOLLOW
+            try:
+                directory = os.open(self.sessions_path, directory_flags)
+            except OSError:
+                raise StoreError("canonical sessions directory cannot be validated") from None
+        try:
+            opened_directory = (
+                self.sessions_path.lstat()
+                if directory is None
+                else os.fstat(directory)
+            )
+            if (
+                stat.S_ISLNK(opened_directory.st_mode)
+                or _is_reparse_point(opened_directory)
+                or not stat.S_ISDIR(opened_directory.st_mode)
+                or opened_directory.st_dev != directory_metadata.st_dev
+                or opened_directory.st_ino != directory_metadata.st_ino
+            ):
+                raise StoreError("canonical sessions directory identity changed")
+            for name in sorted(os.listdir(self.sessions_path if directory is None else directory)):
+                if not name.endswith(".json"):
+                    continue
+                application_id = _safe_session_id(name[:-5])
+                try:
+                    metadata = (
+                        (self.sessions_path / name).lstat()
+                        if directory is None
+                        else os.stat(name, dir_fd=directory, follow_symlinks=False)
+                    )
+                except OSError:
+                    raise StoreError("canonical session cannot be validated") from None
+                if stat.S_ISLNK(metadata.st_mode) or _is_reparse_point(metadata) or not stat.S_ISREG(metadata.st_mode):
+                    raise StoreError("canonical session must be a regular file")
+                flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+                try:
+                    descriptor = (
+                        os.open(self.sessions_path / name, flags)
+                        if directory is None
+                        else os.open(name, flags, dir_fd=directory)
+                    )
+                except OSError:
+                    raise StoreError("canonical session cannot be validated") from None
+                try:
+                    opened = os.fstat(descriptor)
+                    if (
+                        opened.st_dev != metadata.st_dev
+                        or opened.st_ino != metadata.st_ino
+                        or not stat.S_ISREG(opened.st_mode)
+                        or _is_reparse_point(opened)
+                    ):
+                        raise StoreError("canonical session identity changed")
+                    try:
+                        with os.fdopen(descriptor, encoding="utf-8") as source:
+                            descriptor = -1
+                            session = _require_object(json.load(source), "session")
+                    except (OSError, UnicodeError, json.JSONDecodeError):
+                        raise StoreError("cannot read valid session JSON") from None
+                finally:
+                    if descriptor >= 0:
+                        os.close(descriptor)
+                validate_version(session, "session")
+                _validate_session_document(session)
+                if session["applicationId"] != application_id:
+                    raise StoreError("session application id does not match path")
+            closed_directory = self.sessions_path.lstat()
+            if (
+                stat.S_ISLNK(closed_directory.st_mode)
+                or _is_reparse_point(closed_directory)
+                or not stat.S_ISDIR(closed_directory.st_mode)
+                or closed_directory.st_dev != directory_metadata.st_dev
+                or closed_directory.st_ino != directory_metadata.st_ino
+            ):
+                raise StoreError("canonical sessions directory identity changed")
+        finally:
+            if directory is not None:
+                os.close(directory)
+
+    @staticmethod
+    def _has_application_facts(profile: dict[str, Any]) -> bool:
+        """Distinguish applicant facts from search-only preferences."""
+
+        return any(key != "preferences" for key in profile)
 
     def _ensure_coordinator_files_locked(self) -> None:
         if not self.coordinator_path.exists():
@@ -1838,13 +1982,71 @@ class Store:
             if descriptor is not None:
                 os.close(descriptor)
 
-    def _managed_resume_observation(self, record: dict[str, Any]) -> dict[str, Any]:
+    def _managed_resume_observation(
+        self,
+        record: dict[str, Any],
+        *,
+        digest_cache: dict[str, dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         path = self._managed_resume_path(record)
+        cache_key = record["id"]
+        try:
+            metadata = path.lstat()
+        except OSError:
+            return {"exists": False, "size": None, "modifiedAt": None, "digest": None}
+        if path.is_symlink() or not stat.S_ISREG(metadata.st_mode) or metadata.st_size > RESUME_MAX_BYTES:
+            return {"exists": False, "size": None, "modifiedAt": None, "digest": None}
+        identity = (
+            metadata.st_dev,
+            metadata.st_ino,
+            metadata.st_size,
+            metadata.st_mtime_ns,
+            metadata.st_ctime_ns,
+        )
+        cache_identity = _managed_resume_digest_cache_identity(metadata)
+        now = self._now_datetime()
+        cached = digest_cache.get(cache_key) if digest_cache is not None else None
+        if (
+            cache_identity is not None
+            and cached is not None
+            and cached.get("identity") == cache_identity
+            and timedelta(0) <= now - cached["checkedAt"] < timedelta(seconds=OVERVIEW_DIGEST_CACHE_SECONDS)
+        ):
+            return {
+                "exists": True,
+                "size": metadata.st_size,
+                "modifiedAt": _resume_modified_at(metadata),
+                "digest": cached["digest"],
+            }
         digest = self._private_file_digest(path)
         if digest is None:
             return {"exists": False, "size": None, "modifiedAt": None, "digest": None}
-        observation = observe_resume_file(str(path))
-        observation["digest"] = digest
+        try:
+            after = path.lstat()
+        except OSError:
+            return {"exists": False, "size": None, "modifiedAt": None, "digest": None}
+        after_identity = (
+            after.st_dev,
+            after.st_ino,
+            after.st_size,
+            after.st_mtime_ns,
+            after.st_ctime_ns,
+        )
+        if after_identity != identity or not stat.S_ISREG(after.st_mode):
+            return {"exists": False, "size": None, "modifiedAt": None, "digest": None}
+        observation = {
+            "exists": True,
+            "size": after.st_size,
+            "modifiedAt": _resume_modified_at(after),
+            "digest": digest,
+        }
+        after_cache_identity = _managed_resume_digest_cache_identity(after)
+        if digest_cache is not None and after_cache_identity is not None:
+            digest_cache[cache_key] = {
+                "identity": after_cache_identity,
+                "digest": digest,
+                "checkedAt": now,
+            }
         return observation
 
     def _recover_resume_files_locked(self) -> None:
@@ -1877,6 +2079,8 @@ class Store:
             quarantines = sorted(
                 self.resume_files_path.glob(f".{managed_file}.*.quarantine")
             )
+            if not quarantines:
+                continue
             if self._private_file_digest(canonical) != expected_digest:
                 recoverable = next(
                     (
@@ -3309,6 +3513,93 @@ class Store:
             ),
         )
 
+    def owner_beta_overview(self) -> dict[str, Any]:
+        """Return a value-free, Store-derived projection for the companion landing page."""
+
+        self.initialize()
+        self._ensure_coordinator_files()
+        with exclusive_file_lock(self.store_lock_path):
+            profile = self._load_profile_document()["profile"]
+            jobs = [
+                item for item in self._load_jobs_document()["jobs"].values()
+                if item.get("deletedAt") is None
+            ]
+            resumes = [
+                item for item in self._load_resumes_document()["resumes"].values()
+                if item.get("deletedAt") is None
+            ]
+            answers = [
+                item for item in self._load_answers_document()["answers"].values()
+                if item.get("deletedAt") is None
+                and item.get("reviewStatus", "accepted") == "accepted"
+            ]
+            claim = self._load_coordinator_document()["claim"]
+            now = self._now_datetime()
+            attention_count = 0
+            for job in jobs:
+                status = job["status"]
+                if status in {"needs_info", "awaiting_review"}:
+                    attention_count += 1
+                elif status == "in_progress":
+                    owns_job = claim is not None and claim["jobId"] == job["id"]
+                    if not owns_job or now >= self._parse_time(claim["expiresAt"]):
+                        attention_count += 1
+
+            live_claim = (
+                claim is not None
+                and now < self._parse_time(claim["expiresAt"])
+            )
+            acquirable_ready_count = 0
+            if not live_claim:
+                resumes_by_id = {resume["id"]: resume for resume in resumes}
+                active_resume_ids = set(resumes_by_id)
+                self._overview_resume_digest_cache = {
+                    key: value
+                    for key, value in self._overview_resume_digest_cache.items()
+                    if key in active_resume_ids
+                }
+                resume_observations: dict[str, dict[str, Any]] = {}
+                acquirable_ready_count = sum(
+                    self._preflight_job_record(
+                        item,
+                        profile=profile,
+                        resumes=resumes_by_id,
+                        resume_observations=resume_observations,
+                        managed_digest_cache=self._overview_resume_digest_cache,
+                    )["ready"]
+                    for item in jobs
+                    if item["status"] == "ready"
+                )
+            counts = {
+                "jobs": len(jobs),
+                "readyJobs": sum(item["status"] == "ready" for item in jobs),
+                "attentionJobs": attention_count,
+                "resumes": len(resumes),
+                "answers": len(answers),
+            }
+            setup = {
+                "hasProfileFacts": self._has_application_facts(profile),
+                "hasResume": bool(resumes),
+            }
+            if not setup["hasResume"]:
+                next_action, target = "import_resume", "resumes"
+            elif not setup["hasProfileFacts"]:
+                next_action, target = "review_facts", "facts"
+            elif counts["attentionJobs"]:
+                next_action, target = "resolve_attention", "attention"
+            elif acquirable_ready_count:
+                next_action, target = "handoff_ready_job", "jobs"
+            elif not counts["jobs"]:
+                next_action, target = "capture_job", "jobs"
+            else:
+                next_action, target = "prepare_job", "jobs"
+            return {
+                "setup": setup,
+                "counts": counts,
+                "nextAction": next_action,
+                "targetWorkspace": target,
+            }
+
     def list_needs_attention(self) -> dict[str, Any]:
         """Return one coherent, privacy-minimized cross-job attention snapshot."""
 
@@ -3405,13 +3696,23 @@ class Store:
                 "snapshotSignature": hashlib.sha256(serialized).hexdigest(),
             }
 
-    def _preflight_job_record(self, record: dict[str, Any]) -> dict[str, Any]:
+    def _preflight_job_record(
+        self,
+        record: dict[str, Any],
+        *,
+        profile: dict[str, Any] | None = None,
+        resumes: dict[str, dict[str, Any]] | None = None,
+        resume_observations: dict[str, dict[str, Any]] | None = None,
+        managed_digest_cache: dict[str, dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         errors: list[str] = []
         warnings: list[str] = []
-        profile = self._load_profile_document()["profile"]
-        if not profile:
+        if profile is None:
+            profile = self._load_profile_document()["profile"]
+        if not self._has_application_facts(profile):
             errors.append("profile_empty")
-        resumes = self._load_resumes_document()["resumes"]
+        if resumes is None:
+            resumes = self._load_resumes_document()["resumes"]
         resume_id = record.get("resumeId")
         if resume_id is None:
             default = next(
@@ -3427,11 +3728,19 @@ class Store:
         if resume is None or resume.get("deletedAt") is not None:
             errors.append("resume_missing")
         else:
-            observation = (
-                self._managed_resume_observation(resume)
-                if resume.get("storageKind") == "managed"
-                else observe_resume_file(str(self._resume_path(resume)))
-            )
+            observation = None
+            if resume_observations is not None:
+                observation = resume_observations.get(resume["id"])
+            if observation is None:
+                observation = (
+                    self._managed_resume_observation(
+                        resume, digest_cache=managed_digest_cache
+                    )
+                    if resume.get("storageKind") == "managed"
+                    else observe_resume_file(str(self._resume_path(resume)))
+                )
+                if resume_observations is not None:
+                    resume_observations[resume["id"]] = observation
             if not observation["exists"]:
                 errors.append("resume_file_missing")
             elif (
@@ -4392,13 +4701,7 @@ class Store:
 
     @staticmethod
     def _parse_time(value: str) -> datetime:
-        try:
-            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except (AttributeError, ValueError) as error:
-            raise StoreError("coordinator timestamp is invalid") from error
-        if parsed.tzinfo is None:
-            raise StoreError("coordinator timestamp is invalid")
-        return parsed.astimezone(timezone.utc)
+        return _parse_coordinator_time(value)
 
     def claim_status(self) -> dict[str, Any]:
         self.initialize()
@@ -5625,7 +5928,7 @@ class Store:
                     validate_version(event, f"history line {number}")
                     _validate_history_event(event)
                     events.append(event)
-        except (OSError, json.JSONDecodeError) as error:
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
             raise StoreError(f"cannot read valid history JSONL at {self.history_path}") from error
         return events
 

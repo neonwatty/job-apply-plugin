@@ -59,6 +59,7 @@ const {
   filterTrashItems,
   lifecycleErrorText,
   newestCanonicalJob,
+  ownerBetaNextStep,
   patchForPaths,
   pointerValue,
   resumeAssignmentText,
@@ -74,6 +75,474 @@ const {
   transitionsFor,
   typedDeletePhrase,
 } = await import(pathToFileURL(join(REPO_ROOT, "workspace", "app.js")).href);
+
+test("owner beta next actions stay closed and human-readable", () => {
+  assert.deepEqual(ownerBetaNextStep("import_resume"), [
+    "Import a resume",
+    "Add a private managed resume so agents have an approved document to use.",
+  ]);
+  assert.match(ownerBetaNextStep("handoff_ready_job")[1], /acquire the canonical Ready job/);
+  assert.deepEqual(ownerBetaNextStep("unknown"), [
+    "Review the workspace",
+    "Refresh the canonical Store and choose a workspace section.",
+  ]);
+});
+
+test("owner beta clean packaged browser and CLI journey survives restart and fails closed for recovery", { timeout: 90_000 }, async () => {
+  const temporary = await mkdtemp(join(tmpdir(), "job-owner-beta-"));
+  const storeRoot = join(temporary, "store");
+  const storeScript = join(REPO_ROOT, "scripts", "job-apply-store.py");
+  let inputCounter = 0;
+  const cli = async (command, args = [], payload) => {
+    const finalArgs = [storeScript, "--root", storeRoot, command, ...args];
+    if (payload !== undefined) {
+      const inputPath = join(temporary, `owner-input-${inputCounter++}.json`);
+      await writeFile(inputPath, JSON.stringify(payload));
+      finalArgs.push("--input", inputPath);
+    }
+    const result = spawnSync(PYTHON, finalArgs, { cwd: REPO_ROOT, encoding: "utf8" });
+    assert.equal(result.status, 0, `${command}: ${result.stderr}`);
+    return JSON.parse(result.stdout);
+  };
+  const waitForStartup = (child) => new Promise((resolveStartup, rejectStartup) => {
+    let stdout = ""; let stderr = "";
+    const timer = setTimeout(() => rejectStartup(new Error(`workspace startup timed out: ${stderr}`)), 10_000);
+    child.stdout.setEncoding("utf8"); child.stderr.setEncoding("utf8");
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk; const newline = stdout.indexOf("\n"); if (newline < 0) return;
+      clearTimeout(timer);
+      try { resolveStartup(JSON.parse(stdout.slice(0, newline))); } catch (error) { rejectStartup(error); }
+    });
+    child.once("exit", (code) => { clearTimeout(timer); rejectStartup(new Error(`workspace exited during startup (${code}): ${stderr}`)); });
+  });
+  const launch = async () => {
+    const child = spawn(PYTHON, [join(REPO_ROOT, "scripts", "job-apply-workspace.py"), "--root", storeRoot, "--port", "0", "--no-open", "--json"], { cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"] });
+    return { child, startup: await waitForStartup(child) };
+  };
+  const stop = async (child) => {
+    child.kill("SIGINT");
+    assert.equal(await new Promise((resolveExit) => child.once("exit", resolveExit)), 0);
+  };
+
+  let running; let browser;
+  try {
+    running = await launch();
+    browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.addInitScript(() => {
+      globalThis.__workspaceIntervals = [];
+      globalThis.setInterval = (callback, delay) => {
+        globalThis.__workspaceIntervals.push({ callback, delay });
+        return globalThis.__workspaceIntervals.length;
+      };
+    });
+    await page.goto(running.startup.url);
+    await page.getByRole("heading", { name: "Import a resume" }).waitFor();
+    assert.match(await page.locator("#overview-workspace").innerText(), /0 jobs.*0 ready.*0 need attention/);
+    assert.equal(await page.getByRole("button", { name: "Copy Codex invocation" }).getAttribute("data-copy"), "$job-apply:job-apply");
+    assert.equal(await page.getByRole("button", { name: "Copy Claude Code invocation" }).getAttribute("data-copy"), "/job-apply:job-apply");
+
+    const bootPattern = "**/api/boot";
+    await page.route(bootPattern, (route) => route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { code: "boot_unavailable", message: "transient boot failure" } }),
+    }));
+    await page.reload();
+    await page.getByText("Workspace startup failed: transient boot failure", { exact: true }).waitFor();
+    assert.equal(await page.evaluate(() => globalThis.__workspaceIntervals.length), 0);
+    await page.unroute(bootPattern);
+    await page.locator("#overview-refresh").click();
+    await page.getByRole("heading", { name: "Import a resume" }).waitFor();
+    await page.waitForFunction(() => globalThis.__workspaceIntervals?.some(({ delay }) => delay === 4000));
+    await page.locator("#overview-refresh").click();
+    assert.equal(
+      await page.evaluate(() => globalThis.__workspaceIntervals.filter(({ delay }) => delay === 4000).length),
+      1,
+    );
+
+    const overviewPattern = "**/api/overview";
+    await page.route(overviewPattern, (route) => route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { code: "overview_unavailable", message: "unavailable for owner beta test" } }),
+    }));
+    await page.reload();
+    await page.locator("#overview-unavailable").waitFor({ state: "visible" });
+    assert.equal(await page.locator("#overview-ready").isVisible(), false);
+    assert.equal(await page.locator("#connection-label").innerText(), "Overview unavailable — refresh to retry");
+    await page.unroute(overviewPattern);
+    await page.locator("#overview-refresh").click();
+    await page.getByRole("heading", { name: "Import a resume" }).waitFor();
+    assert.equal(await page.locator("#overview-unavailable").isVisible(), false);
+
+    const pendingOverviewRoutes = [];
+    let resolveFirstOverview;
+    let resolveSecondOverview;
+    const firstOverviewSeen = new Promise((resolve) => { resolveFirstOverview = resolve; });
+    const secondOverviewSeen = new Promise((resolve) => { resolveSecondOverview = resolve; });
+    await page.route(overviewPattern, (route) => {
+      pendingOverviewRoutes.push(route);
+      if (pendingOverviewRoutes.length === 1) resolveFirstOverview();
+      if (pendingOverviewRoutes.length === 2) resolveSecondOverview();
+    });
+    await page.locator("#overview-refresh").click();
+    await firstOverviewSeen;
+    await page.locator("#overview-refresh").click();
+    await secondOverviewSeen;
+    const projection = (nextAction, targetWorkspace) => ({
+      setup: { hasProfileFacts: false, hasResume: true },
+      counts: { jobs: 0, readyJobs: 0, attentionJobs: 0, resumes: 1, answers: 0 },
+      nextAction,
+      targetWorkspace,
+    });
+    await pendingOverviewRoutes[1].fulfill({
+      status: 200, contentType: "application/json",
+      body: JSON.stringify(projection("review_facts", "facts")),
+    });
+    await page.getByRole("heading", { name: "Review your application facts" }).waitFor();
+    await pendingOverviewRoutes[0].fulfill({
+      status: 200, contentType: "application/json",
+      body: JSON.stringify(projection("import_resume", "resumes")),
+    });
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(await page.locator("#next-step-heading").innerText(), "Review your application facts");
+    await page.unroute(overviewPattern);
+    await page.locator("#overview-refresh").click();
+    await page.getByRole("heading", { name: "Import a resume" }).waitFor();
+
+    const resumePath = join(temporary, "owner-resume.pdf");
+    await writeFile(resumePath, minimalSyntheticPdf());
+    await cli("profile-replace", ["--expected-revision", "1", "--source", "user"], { firstName: "Owner" });
+    let ownerResume = await cli("resume-create", [], { id: "owner-beta-resume", label: "Owner beta resume", path: resumePath });
+    await page.locator("#overview-refresh").click();
+    await page.getByRole("heading", { name: "Capture your first job" }).waitFor();
+
+    let job = await cli("job-create", [], { id: "owner-beta-job", url: "https://example.invalid/jobs/owner", role: "Owner Beta Engineer" });
+    job = await cli("job-transition", ["--id", job.id, "--status", "ready", "--expected-revision", String(job.revision)]);
+    await page.locator("#overview-refresh").click();
+    await page.getByRole("heading", { name: "Hand off a ready job" }).waitFor();
+    await page.locator("#nav-jobs").click();
+    await page.locator("#refresh").click();
+    await page.getByRole("button", { name: /Owner Beta Engineer/ }).click();
+    const readyHandoff = page.locator("#ready-handoff");
+    const jobDialog = page.locator("#job-dialog");
+    const preflightPattern = `**/api/jobs/${job.id}/preflight`;
+    await readyHandoff.waitFor({ state: "visible" });
+
+    await page.route(preflightPattern, (route) => route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { code: "preflight_unavailable", message: "latest preflight unavailable" } }),
+    }));
+    await jobDialog.getByRole("button", { name: "Run ready check" }).click();
+    await jobDialog.getByText("latest preflight unavailable", { exact: true }).waitFor();
+    assert.equal(await readyHandoff.isVisible(), false);
+    assert.equal(await page.locator("#preflight-panel").isVisible(), false);
+    await page.unroute(preflightPattern);
+    await jobDialog.getByRole("button", { name: "Run ready check" }).click();
+    await readyHandoff.waitFor({ state: "visible" });
+    assert.equal(await page.locator("#form-error").isVisible(), false);
+
+    await page.route("**/api/jobs/**", async (route) => {
+      const requestUrl = new URL(route.request().url());
+      if (requestUrl.pathname === `/api/jobs/${job.id}` && route.request().method() === "PATCH") {
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ error: { code: "save_unavailable", message: "unrelated save unavailable" } }),
+        });
+        return;
+      }
+      await route.continue();
+    });
+    await jobDialog.getByLabel("Notes", { exact: true }).fill("Unsaved note survives preflight success");
+    await jobDialog.getByRole("button", { name: "Save job" }).click();
+    await jobDialog.getByText("unrelated save unavailable", { exact: true }).waitFor();
+    await jobDialog.getByRole("button", { name: "Run ready check" }).click();
+    await readyHandoff.waitFor({ state: "visible" });
+    assert.equal(await page.locator("#form-error").innerText(), "unrelated save unavailable");
+    assert.equal(await page.locator("#form-error").isVisible(), true);
+    await page.unroute("**/api/jobs/**");
+
+    await page.waitForFunction(() => globalThis.__workspaceIntervals?.some(({ delay }) => delay === 4000));
+    const runWorkspacePoll = () => page.evaluate(() => {
+      const interval = globalThis.__workspaceIntervals.find(({ delay }) => delay === 4000);
+      interval.callback();
+    });
+    let releaseOlderReadyPreflight;
+    let olderReadyPreflightSeenResolve;
+    const olderReadyPreflightSeen = new Promise((resolve) => { olderReadyPreflightSeenResolve = resolve; });
+    const olderReadyPreflightRelease = new Promise((resolve) => { releaseOlderReadyPreflight = resolve; });
+    await page.route(preflightPattern, async (route) => {
+      const response = await route.fetch();
+      olderReadyPreflightSeenResolve();
+      await olderReadyPreflightRelease;
+      await route.fulfill({ response });
+    });
+    await runWorkspacePoll();
+    await olderReadyPreflightSeen;
+    assert.equal(await readyHandoff.isVisible(), true);
+
+    await jobDialog.getByLabel("Role", { exact: true }).fill("Preserved external-trash draft");
+    job = await cli("job-trash", ["--id", job.id, "--expected-revision", String(job.revision)]);
+    const statePattern = "**/api/state";
+    let releaseAbsentState;
+    const absentStateRelease = new Promise((resolve) => { releaseAbsentState = resolve; });
+    await page.route(statePattern, async (route) => {
+      const response = await route.fetch();
+      await absentStateRelease;
+      await route.fulfill({ response });
+    });
+    const missingActivityResponse = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === `/api/jobs/${job.id}/activity`
+    ));
+    await runWorkspacePoll();
+    assert.equal((await missingActivityResponse).status(), 404);
+    await jobDialog.getByText(/Durable activity could not be refreshed/).waitFor();
+    assert.equal(await jobDialog.isVisible(), true);
+    assert.equal(await readyHandoff.isVisible(), false);
+    assert.equal(await jobDialog.getByLabel("Role", { exact: true }).inputValue(), "Preserved external-trash draft");
+    const absentStateResponse = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === "/api/state" && response.ok()
+    ));
+    const absentPreflightResponse = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === `/api/jobs/${job.id}/preflight`
+    ));
+    releaseAbsentState();
+    releaseOlderReadyPreflight();
+    await Promise.all([absentStateResponse, absentPreflightResponse]);
+    await page.unroute(statePattern);
+    await page.unroute(preflightPattern);
+    assert.equal(await readyHandoff.isVisible(), false);
+
+    job = await cli("job-restore", ["--id", job.id, "--expected-revision", String(job.revision)]);
+    const restoredStateResponse = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === "/api/state" && response.ok()
+    ));
+    await page.evaluate(() => document.querySelector("#refresh").click());
+    await restoredStateResponse;
+    assert.equal(await readyHandoff.isVisible(), false);
+    assert.equal(await jobDialog.getByLabel("Role", { exact: true }).inputValue(), "Preserved external-trash draft");
+    await page.getByRole("button", { name: "Close job details" }).click();
+    await jobDialog.waitFor({ state: "hidden" });
+    await page.getByRole("button", { name: /Owner Beta Engineer/ }).click();
+    await readyHandoff.waitFor({ state: "visible" });
+
+    await writeFile(join(storeRoot, "resume-files", ownerResume.managedFile), "polling dependency changed");
+    const dependencyPreflightResponse = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === `/api/jobs/${job.id}/preflight`
+    ));
+    await runWorkspacePoll();
+    await dependencyPreflightResponse;
+    await jobDialog.getByText("The resume file changed since it was added", { exact: true }).waitFor();
+    assert.equal(await readyHandoff.isVisible(), false);
+    ownerResume = await cli(
+      "resume-update",
+      ["--id", ownerResume.id, "--expected-revision", String(ownerResume.revision)],
+      { path: resumePath },
+    );
+    const repairedDependencyPreflightResponse = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === `/api/jobs/${job.id}/preflight`
+    ));
+    await runWorkspacePoll();
+    await repairedDependencyPreflightResponse;
+    await readyHandoff.waitFor({ state: "visible" });
+
+    let releaseOlderCanonicalPreflight;
+    let olderCanonicalPreflightSeenResolve;
+    const olderCanonicalPreflightSeen = new Promise((resolve) => { olderCanonicalPreflightSeenResolve = resolve; });
+    const olderCanonicalPreflightRelease = new Promise((resolve) => { releaseOlderCanonicalPreflight = resolve; });
+    await page.route(preflightPattern, async (route) => {
+      const response = await route.fetch();
+      olderCanonicalPreflightSeenResolve();
+      await olderCanonicalPreflightRelease;
+      await route.fulfill({ response });
+    });
+    await jobDialog.getByRole("button", { name: "Run ready check" }).click();
+    await olderCanonicalPreflightSeen;
+    job = await cli(
+      "job-update",
+      ["--id", job.id, "--expected-revision", String(job.revision), "--origin", "human"],
+      { notes: "newer canonical freshness note" },
+    );
+    const newerStateResponse = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === "/api/state" && response.ok()
+    ));
+    await page.evaluate(() => document.querySelector("#refresh").click());
+    await newerStateResponse;
+    await jobDialog.getByLabel("Role", { exact: true }).fill("Stale preflight draft");
+    await jobDialog.getByRole("button", { name: "Save job" }).click();
+    await page.locator("#conflict").waitFor({ state: "visible" });
+    const olderCanonicalPreflightResponse = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === `/api/jobs/${job.id}/preflight`
+    ));
+    releaseOlderCanonicalPreflight();
+    await olderCanonicalPreflightResponse;
+    assert.equal(await readyHandoff.isVisible(), false);
+    await page.getByRole("button", { name: "Load canonical values" }).click();
+    await page.unroute(preflightPattern);
+    await jobDialog.getByRole("button", { name: "Run ready check" }).click();
+    await readyHandoff.waitFor({ state: "visible" });
+
+    let releaseNewerCanonicalPreflight;
+    let newerCanonicalPreflightSeenResolve;
+    const newerCanonicalPreflightSeen = new Promise((resolve) => { newerCanonicalPreflightSeenResolve = resolve; });
+    const newerCanonicalPreflightRelease = new Promise((resolve) => { releaseNewerCanonicalPreflight = resolve; });
+    await page.route(preflightPattern, async (route) => {
+      newerCanonicalPreflightSeenResolve();
+      await newerCanonicalPreflightRelease;
+      await route.continue();
+    });
+    await jobDialog.getByLabel("Role", { exact: true }).fill("Draft retained across newer preflight");
+    await jobDialog.getByRole("button", { name: "Run ready check" }).click();
+    await newerCanonicalPreflightSeen;
+    job = await cli(
+      "job-update",
+      ["--id", job.id, "--expected-revision", String(job.revision), "--origin", "human"],
+      { notes: "preflight proves browser revision stale" },
+    );
+    const newerCanonicalPreflightResponse = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === `/api/jobs/${job.id}/preflight`
+    ));
+    releaseNewerCanonicalPreflight();
+    await newerCanonicalPreflightResponse;
+    assert.equal(await readyHandoff.isVisible(), false);
+    assert.equal(await jobDialog.getByLabel("Role", { exact: true }).inputValue(), "Draft retained across newer preflight");
+    await page.unroute(preflightPattern);
+    await page.evaluate(() => document.querySelector("#refresh").click());
+
+    await page.getByRole("button", { name: "Close job details" }).click();
+    await jobDialog.waitFor({ state: "hidden" });
+
+    await writeFile(join(storeRoot, "resume-files", ownerResume.managedFile), "tampered owner resume");
+    await page.getByRole("button", { name: /Owner Beta Engineer/ }).click();
+    await jobDialog.getByText("The resume file changed since it was added", { exact: true }).waitFor();
+    assert.equal(await readyHandoff.isVisible(), false);
+    await page.getByRole("button", { name: "Close job details" }).click();
+    await jobDialog.waitFor({ state: "hidden" });
+    ownerResume = await cli(
+      "resume-update",
+      ["--id", ownerResume.id, "--expected-revision", String(ownerResume.revision)],
+      { path: resumePath },
+    );
+
+    let releaseStalePreflight;
+    let stalePreflightSeenResolve;
+    const stalePreflightSeen = new Promise((resolve) => { stalePreflightSeenResolve = resolve; });
+    const stalePreflightRelease = new Promise((resolve) => { releaseStalePreflight = resolve; });
+    await page.route(preflightPattern, async (route) => {
+      stalePreflightSeenResolve();
+      await stalePreflightRelease;
+      await route.continue();
+    });
+    await page.getByRole("button", { name: /Owner Beta Engineer/ }).click();
+    await stalePreflightSeen;
+    await page.getByRole("button", { name: "Close job details" }).click();
+    await jobDialog.waitFor({ state: "hidden" });
+    await page.locator("#new-job").click();
+    await jobDialog.waitFor({ state: "visible" });
+    const stalePreflightResponse = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === `/api/jobs/${job.id}/preflight`
+    ));
+    releaseStalePreflight();
+    await stalePreflightResponse;
+    assert.equal(await readyHandoff.isVisible(), false);
+    await page.getByRole("button", { name: "Close job details" }).click();
+    await jobDialog.waitFor({ state: "hidden" });
+    await page.unroute(preflightPattern);
+
+    await page.getByRole("button", { name: /Owner Beta Engineer/ }).click();
+    await readyHandoff.waitFor({ state: "visible" });
+    await page.evaluate(() => Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: () => Promise.reject(new Error("clipboard denied")) },
+    }));
+    await readyHandoff.getByRole("button", { name: "Copy Codex invocation" }).click();
+    const readyFallback = readyHandoff.locator(".clipboard-fallback");
+    await readyFallback.waitFor({ state: "visible" });
+    const readyFallbackValue = readyFallback.getByLabel("Invocation to copy");
+    assert.equal(await readyFallbackValue.inputValue(), "$job-apply:job-apply");
+    assert.equal(await readyFallbackValue.evaluate((input) => document.activeElement === input), true);
+    assert.deepEqual(await readyFallbackValue.evaluate((input) => [input.selectionStart, input.selectionEnd]), [0, "$job-apply:job-apply".length]);
+
+    const codexCopy = readyHandoff.getByRole("button", { name: "Copy Codex invocation" });
+    const claudeCopy = readyHandoff.getByRole("button", { name: "Copy Claude Code invocation" });
+    await page.evaluate(() => {
+      globalThis.ownerBetaClipboardAttempts = [];
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: { writeText: (text) => new Promise((resolve, reject) => {
+          globalThis.ownerBetaClipboardAttempts.push({ text, resolve, reject });
+        }) },
+      });
+    });
+    await codexCopy.click();
+    await claudeCopy.click();
+    await page.waitForFunction(() => globalThis.ownerBetaClipboardAttempts.length === 2);
+    await page.evaluate(() => globalThis.ownerBetaClipboardAttempts[1].reject(new Error("latest denied")));
+    await readyFallback.waitFor({ state: "visible" });
+    assert.equal(await readyFallbackValue.inputValue(), "/job-apply:job-apply");
+    await page.evaluate(() => globalThis.ownerBetaClipboardAttempts[0].resolve());
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(await readyFallback.isVisible(), true);
+    assert.equal(await readyFallbackValue.inputValue(), "/job-apply:job-apply");
+
+    await codexCopy.click();
+    await claudeCopy.click();
+    await page.waitForFunction(() => globalThis.ownerBetaClipboardAttempts.length === 4);
+    await page.evaluate(() => globalThis.ownerBetaClipboardAttempts[3].resolve());
+    await readyFallback.waitFor({ state: "hidden" });
+    await page.getByText("Claude Code invocation copied", { exact: true }).waitFor();
+    await page.evaluate(() => globalThis.ownerBetaClipboardAttempts[2].reject(new Error("older denied")));
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(await readyFallback.isVisible(), false);
+    assert.equal(await page.locator("#toast").innerText(), "Claude Code invocation copied");
+
+    await page.getByRole("button", { name: "Close job details" }).click();
+    await jobDialog.waitFor({ state: "hidden" });
+    await page.locator("#new-job").click();
+    await jobDialog.waitFor({ state: "visible" });
+    assert.equal(await readyHandoff.isVisible(), false);
+    await page.getByRole("button", { name: "Close job details" }).click();
+    await jobDialog.waitFor({ state: "hidden" });
+    await page.locator("#nav-overview").click();
+    const claim = await cli("job-acquire", ["--id", job.id, "--owner", "owner-beta-agent", "--expected-revision", String(job.revision)]);
+    job = (await cli("claim-handoff", ["--id", job.id, "--token", claim.token, "--status", "needs_info", "--expected-revision", String(claim.job.revision)], {
+      status: "active", step: "questions", answerKeys: [], pendingFields: [{ question: "Work authorization?", state: "missing", sensitive: true }],
+    })).job;
+    await page.locator("#overview-refresh").click();
+    await page.getByRole("heading", { name: "Resolve Needs Attention" }).waitFor();
+
+    await stop(running.child); running = null;
+    running = await launch();
+    await page.goto(running.startup.url);
+    await page.getByRole("heading", { name: "Resolve Needs Attention" }).waitFor();
+    await page.locator("#nav-attention").click();
+    await page.getByText("Needs information", { exact: true }).waitFor();
+    job = await cli("job-transition", ["--id", job.id, "--status", "saved", "--expected-revision", String(job.revision)]);
+    await page.getByRole("button", { name: "Overview", exact: true }).click();
+    await page.locator("#overview-refresh").click();
+    await page.getByRole("heading", { name: "Prepare the next job" }).waitFor();
+
+    await stop(running.child); running = null;
+    const privateCorruption = "owner-private-corrupt-value-and-path";
+    await writeFile(join(storeRoot, "jobs.json"), privateCorruption);
+    running = await launch();
+    await page.goto(running.startup.url);
+    await page.getByRole("heading", { name: /workspace is read-only/ }).waitFor();
+    const recovery = await page.locator("#boot-recovery").innerText();
+    assert.match(recovery, /No canonical values or filesystem paths were exposed to this browser/);
+    assert.match(recovery, /Nothing was automatically repaired, downgraded, or overwritten/);
+    assert.equal(recovery.includes(privateCorruption), false);
+    assert.equal(await page.getByRole("button", { name: "Jobs", exact: true }).isDisabled(), true);
+  } finally {
+    if (browser) await browser.close();
+    if (running?.child && running.child.exitCode === null) await stop(running.child);
+    await rm(temporary, { recursive: true, force: true });
+  }
+});
 
 test("unified Trash helpers filter types and require exact type-specific phrases", () => {
   const items = [
@@ -485,15 +954,34 @@ test("open Job detail polling keeps the latest selected activity and announces o
     });
     await page.goto(startup.url);
     await page.getByText("Canonical store connected").waitFor();
+    await page.getByRole("button", { name: "Jobs", exact: true }).click();
 
     const pollingCard = page.getByRole("button", { name: /Polling Engineer/ });
+    const activityPattern = `**/api/jobs/${pollingJob.id}/activity`;
+    let releaseInitialEqualActivity;
+    let initialEqualActivitySeenResolve;
+    const initialEqualActivitySeen = new Promise((resolve) => { initialEqualActivitySeenResolve = resolve; });
+    const initialEqualActivityRelease = new Promise((resolve) => { releaseInitialEqualActivity = resolve; });
+    await page.route(activityPattern, async (route) => {
+      const response = await route.fetch();
+      initialEqualActivitySeenResolve();
+      await initialEqualActivityRelease;
+      await route.fulfill({ response });
+    });
     await pollingCard.focus();
     await page.keyboard.press("Enter");
     const jobDialog = page.locator("#job-dialog");
     const activityPanel = jobDialog.getByRole("region", { name: "Application activity" });
+    const readyHandoff = jobDialog.locator("#ready-handoff");
+    await initialEqualActivitySeen;
+    await readyHandoff.waitFor({ state: "visible" });
+    releaseInitialEqualActivity();
     await activityPanel.getByText(/Canonical status ready/).waitFor();
+    assert.equal(await readyHandoff.isVisible(), true);
+    await page.unroute(activityPattern);
+    await page.waitForTimeout(4_500);
+    assert.equal(await readyHandoff.isVisible(), true);
 
-    const activityPattern = `**/api/jobs/${pollingJob.id}/activity`;
     const failActivity = (route) => route.fulfill({
       status: 503,
       contentType: "application/json",
@@ -753,6 +1241,8 @@ test("Needs Attention browser and CLI walkthrough converges all canonical reason
     const expiredClaim = await cli("job-acquire", ["--id", expired.id, "--owner", "private-expired-owner", "--expected-revision", String(expired.revision)]);
     expired = expiredClaim.job;
     const coordinator = JSON.parse(await readFile(coordinatorPath, "utf8"));
+    coordinator.claim.acquiredAt = "1999-12-31T23:58:00Z";
+    coordinator.claim.heartbeatAt = "1999-12-31T23:59:00Z";
     coordinator.claim.expiresAt = "2000-01-01T00:00:00Z";
     await writeFile(coordinatorPath, JSON.stringify(coordinator));
 
@@ -768,8 +1258,8 @@ test("Needs Attention browser and CLI walkthrough converges all canonical reason
     await page.goto(startup.url);
     await page.getByText("Canonical store connected").waitFor();
     await page.locator("#attention-nav-count").getByText("4", { exact: true }).waitFor();
-    await page.getByRole("button", { name: /Needs Attention/ }).click();
-    await page.getByText("4 jobs").waitFor();
+    await page.locator("#nav-attention").click();
+    await page.locator("#attention-count").getByText("4 jobs", { exact: true }).waitFor();
     assert.deepEqual(await page.locator(".attention-reason").allTextContents(), [
       "Expired agent attempt", "Interrupted agent attempt", "Awaiting your review", "Needs information",
     ]);
@@ -804,7 +1294,7 @@ test("Needs Attention browser and CLI walkthrough converges all canonical reason
     assert.match(await page.title(), /^Facts/);
     await page.unroute(abandonedDetailPattern, delayAbandonedDetail);
     await page.getByRole("button", { name: /Needs Attention/ }).click();
-    await page.getByText("4 jobs").waitFor();
+    await page.locator("#attention-count").getByText("4 jobs", { exact: true }).waitFor();
 
     let releaseEarlierSelection;
     let earlierSelectionSeenResolve;
@@ -864,7 +1354,7 @@ test("Needs Attention browser and CLI walkthrough converges all canonical reason
     assert.equal(await page.locator("#facts-workspace.hidden").count(), 0);
     await page.unroute("**/api/attention", delayNextAttention);
     await page.getByRole("button", { name: /Needs Attention/ }).click();
-    await page.getByText("4 jobs").waitFor();
+    await page.locator("#attention-count").getByText("4 jobs", { exact: true }).waitFor();
 
     let releaseStaleDetail;
     let staleDetailSeenResolve;
@@ -1445,6 +1935,8 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     claim = await cli("job-acquire", ["--id", uiJob.id, "--owner", "private-recovery-owner", "--expected-revision", String(activityJob.revision)]);
     const coordinatorPath = join(storeRoot, "coordinator.json");
     const coordinator = JSON.parse(await readFile(coordinatorPath, "utf8"));
+    coordinator.claim.acquiredAt = "1999-12-31T23:58:00Z";
+    coordinator.claim.heartbeatAt = "1999-12-31T23:59:00Z";
     coordinator.claim.expiresAt = "2000-01-01T00:00:00Z";
     await writeFile(coordinatorPath, JSON.stringify(coordinator));
     await activityCard().click();
@@ -1541,9 +2033,18 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await page.unroute(slowDetailRoute);
 
     await page.locator(`.answer-card[data-key="${dotOnly.key}"]`).click();
-    await page.locator("#answer-dialog").getByLabel("Aliases (one per line)").fill("dot-only browser alias");
-    await page.locator("#answer-dialog").getByRole("button", { name: "Save answer" }).click();
-    await page.locator("#answer-dialog").waitFor({ state: "hidden" });
+    const dotOnlyDialog = page.locator("#answer-dialog");
+    await dotOnlyDialog.waitFor({ state: "visible" });
+    await dotOnlyDialog.getByLabel("Aliases (one per line)").fill("dot-only browser alias");
+    const dotOnlyPath = answerApiPath(dotOnly.key);
+    const dotOnlyPatch = page.waitForResponse((response) => {
+      const request = response.request();
+      return new URL(response.url()).pathname === dotOnlyPath && request.method() === "PATCH";
+    });
+    await dotOnlyDialog.getByRole("button", { name: "Save answer" }).click();
+    const dotOnlyResponse = await dotOnlyPatch;
+    assert.equal(dotOnlyResponse.status(), 200);
+    await dotOnlyDialog.waitFor({ state: "hidden" });
     assert.deepEqual((await cli("answer-get", ["--key", dotOnly.key])).aliases, ["dot only browser alias"]);
     await page.locator(`.answer-card[data-key="${dotOnly.key}"]`).click();
     page.once("dialog", (prompt) => prompt.accept());
@@ -1556,10 +2057,19 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await page.locator("#answer-view").selectOption("accepted");
 
     await page.locator(`.answer-card[data-key="${questionless.key}"]`).click();
-    assert.equal(await page.locator("#answer-dialog").getByLabel("Question").getAttribute("required"), null);
-    await page.locator("#answer-dialog").getByLabel("Aliases (one per line)").fill("questionless browser alias");
-    await page.locator("#answer-dialog").getByRole("button", { name: "Save answer" }).click();
-    await page.locator("#answer-dialog").waitFor({ state: "hidden" });
+    const questionlessDialog = page.locator("#answer-dialog");
+    await questionlessDialog.waitFor({ state: "visible" });
+    assert.equal(await questionlessDialog.getByLabel("Question").getAttribute("required"), null);
+    await questionlessDialog.getByLabel("Aliases (one per line)").fill("questionless browser alias");
+    const questionlessPath = answerApiPath(questionless.key);
+    const questionlessPatch = page.waitForResponse((response) => {
+      const request = response.request();
+      return new URL(response.url()).pathname === questionlessPath && request.method() === "PATCH";
+    });
+    await questionlessDialog.getByRole("button", { name: "Save answer" }).click();
+    const questionlessResponse = await questionlessPatch;
+    assert.equal(questionlessResponse.status(), 200);
+    await questionlessDialog.waitFor({ state: "hidden" });
     assert.deepEqual((await cli("answer-get", ["--key", questionless.key])).aliases, ["questionless browser alias"]);
     await page.locator(`.answer-card[data-key="${questionless.key}"]`).click();
     await page.locator("#answer-dialog").getByRole("button", { name: "Merge duplicate…" }).click();
@@ -1745,7 +2255,10 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await page.locator("#trash-delete-conflict").waitFor();
     assert.match(await page.locator("#trash-delete-conflict").innerText(), /Nothing was deleted.*not retried/s);
     assert.ok(await cli("job-get", ["--id", currentTrashJob.id, "--include-trashed"]));
+    const refreshedTrashResponse = page.waitForResponse((response) => new URL(response.url()).pathname === "/api/trash" && response.ok());
     await page.locator("#trash-conflict-refresh").click();
+    await refreshedTrashResponse;
+    await trashDeleteDialog.waitFor({ state: "hidden" });
 
     // Exact typed deletion removes only the refreshed selected job.
     await page.locator(".trash-card").filter({ hasText: "Trash UI job" }).getByRole("button", { name: "Delete permanently…" }).click();

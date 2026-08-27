@@ -703,7 +703,7 @@ PY
 
 echo "Running Playwright and CLI walkthrough against packaged fixture"
 JOB_WORKSPACE_TEST_ROOT="$SMOKE_FIXTURE_DIR" \
-  node --test --test-name-pattern='real browser and CLI share CRUD|Needs Attention browser and CLI walkthrough' \
+  node --test --test-name-pattern='owner beta clean packaged|real browser and CLI share CRUD|Needs Attention browser and CLI walkthrough' \
   "$REPO_ROOT/tests_js/workspace.test.mjs"
 echo "Packaged Playwright and CLI walkthrough, including Needs Attention and unified Trash, passed"
 

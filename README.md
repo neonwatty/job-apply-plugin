@@ -144,15 +144,28 @@ First run `$job-apply:job-preferences` to save your search preferences. Then use
 
 Results are automatically saved to `~/.claude-job-searches/`. Both Codex and Claude Code use this legacy-compatible path.
 
-### Local Jobs, Facts, Resumes, and Answers Workspace
+### Local Companion Workspace
 
-The optional workspace gives you keyboard-accessible Jobs, Facts, Resumes, Answers, and unified Trash views backed by the same canonical records used by the CLI skills. From the plugin directory, start it with one command:
+The optional workspace gives you keyboard-accessible **Overview**, **Jobs**, **Needs Attention**, **Facts**, **Resumes**, **Answers**, **Application Activity**, and unified **Trash** views backed by the same canonical records used by the CLI skills. From the plugin directory, start it with one command:
 
 ```bash
 python3 scripts/job-apply-workspace.py
 ```
 
 The launcher binds only to `127.0.0.1`, chooses a free port, opens the complete authenticated URL in your default browser, and stops cleanly with Ctrl-C. It requires Python 3 but no Node runtime, account, cloud service, telemetry, or separate database.
+
+Start on **Overview**. It derives setup readiness and one next action from counts and booleans under the canonical Store lock; it does not expose profile values, paths, record IDs, claims, or secrets, and it never stores an onboarding-complete flag in the browser. A new owner is guided to import a resume, review Facts, capture and prepare a job, resolve Needs Attention, or hand off a Ready job as the current Store state requires.
+
+For a Ready job, copy the invocation for the host you already use. These are static, separately labelled, copy-only commands; the workspace does not detect a host, run a command, embed a terminal, or interpolate credentials:
+
+```text
+Codex:       $job-apply:job-apply
+Claude Code: /job-apply:job-apply
+```
+
+The agent acquires the Ready job from the canonical Store. Watch durable progress in **Application Activity** and use **Needs Attention** for missing information, human review, expired claims, or interrupted attempts. The agent stops before final submission; only you may submit on the third-party site.
+
+Closing the tab or restarting the launcher does not erase progress because the browser owns no durable workflow state. On restart, use the complete newly printed URL. Revision conflicts keep drafts visible and require explicit review; interrupted work is routed to Needs Attention; trashed records remain individually recoverable. If read-only startup validation recognizes an unavailable, corrupt, or future-version Store, the server fails closed: it serves only the static workspace and sanitized recovery status, blocks canonical reads and mutations, and exposes no canonical values, filesystem paths, or raw exceptions to the browser. It does not automatically repair, downgrade, or overwrite the Store. If initialization itself fails after validation, startup aborts instead of presenting a degraded no-mutation claim. Stop the workspace, preserve the Store directory, and restore a known-good backup or use the matching Job Apply version.
 
 Use **Jobs** to manage the opportunity queue, **Facts** to selectively edit profile data, and **Resumes** to manage private canonical files and extraction review. Use **Answers** to search the reusable library, review observed questions, create and selectively edit answers, accept or decline observations, and manage guarded Trash. Observed questions are pending records in `answers.json`, not a second inbox database. Declined records remain durable for deduplication and are hidden from the default library. Generic put creates accepted library records only; pending creation belongs to observation, and declined creation belongs to dedicated review.
 
