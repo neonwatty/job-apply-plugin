@@ -135,39 +135,54 @@
         <div class="hero-actions"><button id="facts-refresh" class="button secondary" type="button">Refresh</button><button id="facts-save" class="button primary" type="button">Save changes</button></div>
       </section>
       <p id="facts-status" class="notice" role="status">Open Facts to load the canonical profile.</p>
+      <section class="facts-organizer" aria-labelledby="facts-organizer-title">
+        <div class="facts-organizer-heading"><div><p class="eyebrow">SAVED VIEWS</p><h2 id="facts-organizer-title">Focus the facts you need</h2><p>Built-in sections and custom groups change only this view. Canonical facts stay in place.</p></div><div class="button-row"><button id="fact-group-edit" class="button secondary hidden" type="button">Edit group</button><button id="fact-group-new" class="button primary" type="button">New group</button></div></div>
+        <div id="fact-group-nav" class="fact-group-nav" role="toolbar" aria-label="Fact views">
+          <button class="fact-group-chip active" type="button" data-fact-view="all" aria-pressed="true">All facts</button>
+          <button class="fact-group-chip" type="button" data-fact-view="identity" aria-pressed="false">Identity &amp; contact</button>
+          <button class="fact-group-chip" type="button" data-fact-view="location" aria-pressed="false">Location</button>
+          <button class="fact-group-chip" type="button" data-fact-view="links" aria-pressed="false">Professional links</button>
+          <button class="fact-group-chip" type="button" data-fact-view="experience" aria-pressed="false">Experience &amp; skills</button>
+          <button class="fact-group-chip" type="button" data-fact-view="preferences" aria-pressed="false">Search preferences</button>
+          <button class="fact-group-chip" type="button" data-fact-view="additional" aria-pressed="false">Additional facts</button>
+          <span id="custom-fact-groups" class="custom-fact-groups"></span>
+        </div>
+        <p id="fact-view-status" class="visually-hidden" role="status" aria-live="polite">Showing all facts.</p>
+      </section>
       <section class="facts-panel" aria-labelledby="facts-form-title">
         <div class="panel-heading"><div><p class="eyebrow">CANONICAL PROFILE</p><h2 id="facts-form-title">Applicant facts</h2></div><p id="facts-revision">Revision —</p></div>
+        <div id="fact-view-empty" class="empty-state compact-empty hidden"><span class="empty-icon" aria-hidden="true">◇</span><h3>No matching facts yet</h3><p>This saved view still exists. Edit the group to add current canonical fact paths.</p></div>
         <form id="facts-form">
-          <fieldset><legend>Identity and contact</legend><div class="form-grid">
+          <fieldset data-fact-section="identity"><legend>Identity and contact</legend><div class="form-grid">
             <label>First name <input data-path="/firstName" autocomplete="given-name"><small data-provenance="/firstName"></small></label>
             <label>Last name <input data-path="/lastName" autocomplete="family-name"><small data-provenance="/lastName"></small></label>
             <label>Email <input data-path="/email" type="email" autocomplete="email"><small data-provenance="/email"></small></label>
             <label>Phone <input data-path="/phone" type="tel" autocomplete="tel"><small data-provenance="/phone"></small></label>
           </div></fieldset>
-          <fieldset><legend>Location</legend><div class="form-grid">
+          <fieldset data-fact-section="location"><legend>Location</legend><div class="form-grid">
             <label>City <input data-path="/location/city" autocomplete="address-level2"><small data-provenance="/location/city"></small></label>
             <label>State or region <input data-path="/location/state" autocomplete="address-level1"><small data-provenance="/location/state"></small></label>
             <label>Country <input data-path="/location/country" autocomplete="country-name"><small data-provenance="/location/country"></small></label>
             <label>Postal code <input data-path="/location/zip" autocomplete="postal-code"><small data-provenance="/location/zip"></small></label>
           </div></fieldset>
-          <fieldset><legend>Professional links</legend><div class="form-grid">
+          <fieldset data-fact-section="links"><legend>Professional links</legend><div class="form-grid">
             <label>LinkedIn URL <input data-path="/linkedInUrl" type="url"><small data-provenance="/linkedInUrl"></small></label>
             <label>Portfolio URL <input data-path="/portfolioUrl" type="url"><small data-provenance="/portfolioUrl"></small></label>
             <label>GitHub URL <input data-path="/githubUrl" type="url"><small data-provenance="/githubUrl"></small></label>
           </div></fieldset>
-          <fieldset><legend>Experience and skills</legend><div class="form-grid">
+          <fieldset data-fact-section="experience"><legend>Experience and skills</legend><div class="form-grid">
             <section class="repeater wide" aria-labelledby="work-history-heading"><div class="repeater-heading"><h3 id="work-history-heading">Work history</h3><button id="add-work" class="button secondary" type="button">Add position</button></div><div id="work-history" data-path="/workHistory" data-repeater="work" data-atomic></div><small data-provenance="/workHistory"></small></section>
             <section class="repeater wide" aria-labelledby="education-heading"><div class="repeater-heading"><h3 id="education-heading">Education</h3><button id="add-education" class="button secondary" type="button">Add education</button></div><div id="education-list" data-path="/education" data-repeater="education" data-atomic></div><small data-provenance="/education"></small></section>
             <label class="wide">Skills (one per line) <textarea data-path="/skills" data-lines data-atomic rows="4"></textarea><small data-provenance="/skills"></small></label>
           </div></fieldset>
-          <fieldset><legend>Search preferences</legend><div class="form-grid">
+          <fieldset data-fact-section="preferences"><legend>Search preferences</legend><div class="form-grid">
             <label class="wide">Target titles (one per line) <textarea data-path="/preferences/targetTitles" data-lines data-atomic rows="3"></textarea><small data-provenance="/preferences/targetTitles"></small></label>
             <label>Minimum base salary <input data-path="/preferences/minBaseSalary" type="text" inputmode="numeric"><small data-provenance="/preferences/minBaseSalary"></small></label>
             <label>Remote preference <input data-path="/preferences/remotePreference"><small data-provenance="/preferences/remotePreference"></small></label>
             <label class="wide">Exclude patterns (one per line) <textarea data-path="/preferences/excludePatterns" data-lines data-atomic rows="3"></textarea><small data-provenance="/preferences/excludePatterns"></small></label>
             <label>Default time range <input data-path="/preferences/defaultTimeRange"><small data-provenance="/preferences/defaultTimeRange"></small></label>
           </div></fieldset>
-          <fieldset><legend>Additional facts</legend><p>Existing forward-compatible facts can be edited as JSON or explicitly deleted.</p><div id="additional-facts"></div></fieldset>
+          <fieldset data-fact-section="additional"><legend>Additional facts</legend><p>Existing forward-compatible facts can be edited as JSON or explicitly deleted.</p><div id="additional-facts"></div></fieldset>
         </form>
         <div id="facts-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>Some facts changed elsewhere</h3><p>Choose whether conflicting fields keep the latest canonical value or replace it with your draft. Structured values are never reapplied automatically.</p><ul id="facts-conflict-list"></ul><div class="button-row"><button id="facts-use-latest" class="button secondary" type="button">Use latest for conflicts</button><button id="facts-use-mine" class="button primary" type="button">Use my values for conflicts</button></div></div>
         <p id="facts-error" class="error hidden" role="alert"></p>
@@ -372,6 +387,18 @@
 
   <dialog id="proposal-dialog" aria-labelledby="proposal-title">
     <form id="proposal-form" class="dialog-shell"><div class="dialog-heading"><div><p class="eyebrow">EXTRACTION REVIEW</p><h2 id="proposal-title">Review proposed facts</h2></div><button class="icon-button" type="button" data-close="proposal-dialog" aria-label="Close extraction review">×</button></div><p>Choose only the paths you want to decide now. Unselected paths stay pending.</p><div id="proposal-rows"></div><p id="proposal-error" class="error hidden" role="alert"></p><div class="dialog-footer"><span></span><button id="proposal-submit" class="button primary" type="submit">Apply selected decisions</button></div></form>
+  </dialog>
+
+  <dialog id="fact-group-dialog" aria-labelledby="fact-group-dialog-title">
+    <form id="fact-group-form" class="dialog-shell compact">
+      <div class="dialog-heading"><div><p class="eyebrow">SAVED FACT VIEW</p><h2 id="fact-group-dialog-title">Create fact group</h2></div><button class="icon-button" type="button" data-close="fact-group-dialog" aria-label="Close fact group editor">×</button></div>
+      <p>Choose canonical fact paths to show together. This changes organization only; facts are never moved or deleted.</p>
+      <div class="form-grid"><label>Group name <input name="label" maxlength="80" required></label><label>Display order <input name="order" type="number" min="0" max="1000000" step="1" required></label></div>
+      <fieldset class="fact-path-picker"><legend>Facts in this group</legend><div id="fact-group-paths"></div></fieldset>
+      <div id="fact-group-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>This group changed elsewhere</h3><p>Your choices remain visible. Close the editor, reopen the latest group, and apply them again.</p></div>
+      <p id="fact-group-error" class="error hidden" role="alert"></p>
+      <div class="dialog-footer"><button id="fact-group-delete" class="button danger hidden" type="button">Remove group</button><div class="button-row"><button class="button secondary" type="button" data-close="fact-group-dialog">Cancel</button><button id="fact-group-save" class="button primary" type="submit">Save group</button></div></div>
+    </form>
   </dialog>
 
   <dialog id="preview-dialog" aria-labelledby="preview-title"><div class="dialog-shell"><div class="dialog-heading"><h2 id="preview-title">Text resume preview</h2><button class="icon-button" type="button" data-close="preview-dialog" aria-label="Close preview">×</button></div><pre id="resume-preview" class="resume-preview"></pre></div></dialog>

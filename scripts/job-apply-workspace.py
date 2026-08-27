@@ -569,6 +569,9 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         if path == "/api/profile":
             self._store_call(self.server.store.inspect_profile)
             return
+        if path == "/api/fact-groups":
+            self._store_call(lambda: {"groups": self.server.store.list_fact_groups()})
+            return
         if path == "/api/state":
             self._store_call(lambda: {
                 "jobs": self.server.store.list_jobs(),
@@ -602,6 +605,14 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
             self._store_call(lambda: self.server.store.query_answers())
             return
         parts = path.split("/")
+        if len(parts) == 4 and parts[1:3] == ["api", "fact-groups"]:
+            def fact_group_detail() -> dict[str, Any]:
+                group = self.server.store.get_fact_group(parts[3])
+                if group is None:
+                    raise STORE_MODULE.StoreError("fact group does not exist")
+                return group
+            self._store_call(fact_group_detail)
+            return
         if len(parts) == 5 and parts[1:4] == ["api", "answers", "by-key"]:
             def encoded_answer_detail() -> dict[str, Any]:
                 answer = self.server.store.get_answer(
@@ -787,6 +798,12 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
                 )
             )
             return
+        if method == "POST" and path == "/api/fact-groups":
+            if set(payload) != {"group"} or not isinstance(payload.get("group"), dict):
+                self._error(HTTPStatus.BAD_REQUEST, "body must contain only a fact group object")
+                return
+            self._store_call(lambda: self.server.store.create_fact_group(payload["group"]))
+            return
         if method == "POST" and path == "/api/jobs":
             job = payload.get("job")
             if not isinstance(job, dict) or set(payload) != {"job"}:
@@ -830,6 +847,33 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
             self._bulk_create(payload)
             return
         parts = path.split("/")
+        if len(parts) == 4 and parts[1:3] == ["api", "fact-groups"] and method == "PATCH":
+            if set(payload) != {"patch", "expectedRevision"} or not isinstance(payload.get("patch"), dict):
+                self._error(HTTPStatus.BAD_REQUEST, "body requires patch and expectedRevision")
+                return
+            expected_revision = self._expected_revision(payload)
+            if expected_revision is None:
+                return
+            self._store_call(lambda: self.server.store.update_fact_group(
+                parts[3], payload["patch"], expected_revision
+            ))
+            return
+        if (
+            len(parts) == 5
+            and parts[1:3] == ["api", "fact-groups"]
+            and parts[4] == "delete"
+            and method == "POST"
+        ):
+            if set(payload) != {"expectedRevision"}:
+                self._error(HTTPStatus.BAD_REQUEST, "delete body requires expectedRevision")
+                return
+            expected_revision = self._expected_revision(payload)
+            if expected_revision is None:
+                return
+            self._store_call(lambda: self.server.store.delete_fact_group(
+                parts[3], expected_revision
+            ))
+            return
         encoded_answer_route = (
             len(parts) in {5, 6}
             and parts[1:4] == ["api", "answers", "by-key"]

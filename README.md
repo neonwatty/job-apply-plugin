@@ -167,7 +167,7 @@ The agent acquires the Ready job from the canonical Store. Watch durable progres
 
 Closing the tab or restarting the launcher does not erase progress because the browser owns no durable workflow state. On restart, use the complete newly printed URL. Revision conflicts keep drafts visible and require explicit review; interrupted work is routed to Needs Attention; trashed records remain individually recoverable. If read-only startup validation recognizes an unavailable, corrupt, or future-version Store, the server fails closed: it serves only the static workspace and sanitized recovery status, blocks canonical reads and mutations, and exposes no canonical values, filesystem paths, or raw exceptions to the browser. It does not automatically repair, downgrade, or overwrite the Store. If initialization itself fails after validation, startup aborts instead of presenting a degraded no-mutation claim. Stop the workspace, preserve the Store directory, and restore a known-good backup or use the matching Job Apply version.
 
-Use **Jobs** to manage the opportunity queue, **Facts** to selectively edit profile data, and **Resumes** to manage private canonical files and extraction review. Use **Answers** to search the reusable library, review observed questions, create and selectively edit answers, accept or decline observations, and manage guarded Trash. Observed questions are pending records in `answers.json`, not a second inbox database. Declined records remain durable for deduplication and are hidden from the default library. Generic put creates accepted library records only; pending creation belongs to observation, and declined creation belongs to dedicated review.
+Use **Jobs** to manage the opportunity queue, **Facts** to selectively edit profile data, and **Resumes** to manage private canonical files and extraction review. Facts includes compact built-in views plus durable custom groups shared with the CLI. Groups reference canonical fact paths and can be created, renamed, reordered, edited, and removed without moving or deleting the underlying applicant facts. Use **Answers** to search the reusable library, review observed questions, create and selectively edit answers, accept or decline observations, and manage guarded Trash. Observed questions are pending records in `answers.json`, not a second inbox database. Declined records remain durable for deduplication and are hidden from the default library. Generic put creates accepted library records only; pending creation belongs to observation, and declined creation belongs to dedicated review.
 
 Use the top-level **Trash** view to see deterministic redacted projections and exact counts for trashed jobs, resumes, and answers. Restore and permanent delete use the same canonical Store helpers as the CLI and require the record's exact revision. Permanent deletion is always one record at a time in an accessible identity-bound dialog and requires the exact type-specific phrase `DELETE JOB`, `DELETE RESUME`, or `DELETE ANSWER`. Deleting a managed resume permanently deletes its managed file with the canonical resume record; other record types remove only the selected canonical record. No deletion cascades or erases application history, sessions, or audit evidence. Live claims, nonterminal job sessions, resume references, answer references, duplicate active identities, and stale revisions produce distinct redacted explanations without automatic retry or disclosure of linked identifiers. CLI users can select only trashed jobs or resumes with `job-list --trashed-only` and `resume-list --trashed-only`; answers retain `answer-list --include-trashed --trashed-only`.
 
@@ -199,6 +199,7 @@ Job Apply stores data as **plaintext local files** under `~/.job-apply/`:
 ```text
 ~/.job-apply/
   profile.json
+  fact-groups.json
   answers.json
   jobs.json
   resumes.json
@@ -215,6 +216,7 @@ Job Apply stores data as **plaintext local files** under `~/.job-apply/`:
 | File | Purpose |
 |------|---------|
 | `profile.json` | Resume facts and job-search preferences |
+| `fact-groups.json` | Revisioned saved views that organize canonical profile paths without owning or deleting facts |
 | `answers.json` | Revisioned reusable answers with confirmation, source, scope, sensitivity, and trash state |
 | `jobs.json` | Canonical job records, application status, revisions, and recoverable trash state |
 | `resumes.json` | Versioned resume metadata, labels, defaults, digests, and file observations |

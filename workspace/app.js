@@ -329,6 +329,7 @@ if (hasDom) {
   const api = createApi(token);
   const state = { jobs: [], activeJobsLoaded: false, resumes: [], selected: null, latest: null, draft: null, dirty: false, dirtyFields: new Set(), polling: false, pollIntervalId: null, opener: null, openerJobId: null, focusAfterClose: null, focusAfterCloseJobId: null, activity: null, activityJobId: null, activityUnavailable: false, attentionReturnJobId: null, navigationGeneration: 0, preflightRequestSequence: 0, preflightPolling: false, preflightError: null, readyHandoffProof: null };
   const profileState = { inspection: null, drafts: new Map(), draftBases: new Map(), atomic: new Set(), additionalAtomic: new Set(), deletions: new Set(), conflicts: [], latest: null, loaded: false };
+  const factGroupState = { items: [], selectedView: "all", selected: null, editing: null, loaded: false, opener: null, requestSequence: 0 };
   const resumeState = { items: [], proposals: [], trash: false, loaded: false, loading: false, requestId: 0, selected: null, opener: null, proposal: null, dirtyMetadata: new Set() };
   const answerState = { items: [], loaded: false, selected: null, offset: 0, limit: 25, total: 0, dirty: new Set(), opener: null, requestSequence: 0, detailRequestSequence: 0, dialogGeneration: 0, mergeRequestSequence: 0, mergeSource: null, mergeCandidates: [], busyControls: null };
   const trashState = { items: [], counts: { job: 0, resume: 0, answer: 0 }, loaded: false, selected: null, opener: null };
@@ -480,6 +481,145 @@ if (hasDom) {
   const decodePointer = (value) => String(value).replaceAll("~1", "/").replaceAll("~0", "~");
   const equalJson = (left, right) => JSON.stringify(left) === JSON.stringify(right);
 
+  function factPathLabel(control) {
+    if (control.dataset.label) return control.dataset.label;
+    const label = control.closest("label");
+    if (label) {
+      const text = [...label.childNodes].find((node) => node.nodeType === Node.TEXT_NODE)?.textContent?.trim();
+      if (text) return text;
+    }
+    const repeater = control.closest(".repeater")?.querySelector("h3")?.textContent?.trim();
+    return repeater || control.dataset.path;
+  }
+
+  function availableFactPaths() {
+    const seen = new Set();
+    const paths = [];
+    for (const control of document.querySelectorAll("#facts-form [data-path]")) {
+      const path = control.dataset.path;
+      if (!path || seen.has(path)) continue;
+      seen.add(path); paths.push({ path, label: factPathLabel(control) });
+    }
+    return paths.sort((left, right) => left.label.localeCompare(right.label) || left.path.localeCompare(right.path));
+  }
+
+  function factPathWrapper(control) {
+    return control.closest(".additional-fact") || control.closest(".repeater") || control.closest("label") || control;
+  }
+
+  function renderFactGroupNav() {
+    const holder = $("#custom-fact-groups"); holder.replaceChildren();
+    for (const group of factGroupState.items) {
+      const button = document.createElement("button"); button.type = "button"; button.className = "fact-group-chip";
+      button.dataset.factView = `custom:${group.id}`; button.dataset.groupId = group.id; button.textContent = group.label;
+      button.setAttribute("aria-pressed", "false"); button.addEventListener("click", () => applyFactView(button.dataset.factView)); holder.append(button);
+    }
+    applyFactView(factGroupState.selectedView, { announce: false });
+  }
+
+  function applyFactView(view, { announce = true } = {}) {
+    const customId = view.startsWith("custom:") ? view.slice(7) : null;
+    const custom = customId ? factGroupState.items.find((group) => group.id === customId) : null;
+    if (customId && !custom) view = "all";
+    factGroupState.selectedView = view;
+    factGroupState.selected = custom || null;
+    for (const control of document.querySelectorAll("#facts-form [data-path]")) factPathWrapper(control).removeAttribute("data-fact-path-hidden");
+    const fieldsets = [...document.querySelectorAll("#facts-form [data-fact-section]")];
+    for (const fieldset of fieldsets) fieldset.classList.remove("fact-view-hidden");
+    let visibleControls = document.querySelectorAll("#facts-form [data-path]").length;
+    if (view !== "all" && !custom) {
+      for (const fieldset of fieldsets) fieldset.classList.toggle("fact-view-hidden", fieldset.dataset.factSection !== view);
+      visibleControls = document.querySelectorAll(`#facts-form [data-fact-section="${CSS.escape(view)}"] [data-path]`).length;
+    } else if (custom) {
+      const selectedPaths = new Set(custom.paths);
+      visibleControls = 0;
+      for (const fieldset of fieldsets) {
+        let fieldsetMatches = 0;
+        for (const control of fieldset.querySelectorAll("[data-path]")) {
+          const matches = selectedPaths.has(control.dataset.path);
+          factPathWrapper(control).toggleAttribute("data-fact-path-hidden", !matches);
+          if (matches) fieldsetMatches += 1;
+        }
+        fieldset.classList.toggle("fact-view-hidden", fieldsetMatches === 0);
+        visibleControls += fieldsetMatches;
+      }
+    }
+    for (const button of document.querySelectorAll("[data-fact-view]")) {
+      const active = button.dataset.factView === view;
+      button.classList.toggle("active", active); button.setAttribute("aria-pressed", String(active));
+    }
+    $("#fact-group-edit").classList.toggle("hidden", !custom);
+    $("#fact-view-empty").classList.toggle("hidden", visibleControls > 0);
+    $("#facts-form").classList.toggle("hidden", visibleControls === 0);
+    const label = custom?.label || (document.querySelector(`[data-fact-view="${CSS.escape(view)}"]`)?.textContent || "All facts").trim();
+    if (announce) $("#fact-view-status").textContent = `Showing ${label}. ${visibleControls} fact field${visibleControls === 1 ? "" : "s"} available.`;
+  }
+
+  async function refreshFactGroups({ quiet = false } = {}) {
+    const request = ++factGroupState.requestSequence;
+    try {
+      const result = await api("/api/fact-groups");
+      if (request !== factGroupState.requestSequence) return;
+      factGroupState.items = result.groups; factGroupState.loaded = true; renderFactGroupNav();
+      if (!quiet) toast("Fact groups refreshed from the canonical store");
+    } catch (error) {
+      if (request !== factGroupState.requestSequence) return;
+      const node = $("#facts-error"); node.textContent = error.message; node.classList.remove("hidden");
+    }
+  }
+
+  function renderFactGroupPicker(selectedPaths = []) {
+    const selected = new Set(selectedPaths); const holder = $("#fact-group-paths"); holder.replaceChildren();
+    for (const item of availableFactPaths()) {
+      const label = document.createElement("label"); const input = document.createElement("input"); input.type = "checkbox"; input.name = "paths"; input.value = item.path; input.checked = selected.has(item.path);
+      const copy = document.createElement("span"); const name = document.createElement("strong"); name.textContent = item.label; const path = document.createElement("code"); path.textContent = item.path; copy.append(name, path); label.append(input, copy); holder.append(label);
+    }
+  }
+
+  function openFactGroup(group = null, opener = null) {
+    factGroupState.editing = group; factGroupState.opener = opener || document.activeElement;
+    const form = $("#fact-group-form"); form.reset();
+    form.elements.label.value = group?.label || "";
+    form.elements.order.value = String(group?.order ?? (Math.max(...factGroupState.items.map((item) => item.order), -100) + 100));
+    renderFactGroupPicker(group?.paths || []);
+    $("#fact-group-dialog-title").textContent = group ? "Edit fact group" : "Create fact group";
+    $("#fact-group-delete").classList.toggle("hidden", !group);
+    $("#fact-group-conflict").classList.add("hidden"); $("#fact-group-error").classList.add("hidden");
+    $("#fact-group-dialog").showModal(); setTimeout(() => form.elements.label.focus(), 0);
+  }
+
+  async function saveFactGroup(event) {
+    event.preventDefault(); const form = event.currentTarget;
+    const paths = [...form.elements.paths].filter((input) => input.checked).map((input) => input.value);
+    if (!paths.length) { const node = $("#fact-group-error"); node.textContent = "Choose at least one canonical fact."; node.classList.remove("hidden"); return; }
+    const group = { label: form.elements.label.value, paths, order: Number(form.elements.order.value) };
+    const selected = factGroupState.editing;
+    const endpoint = selected ? `/api/fact-groups/${encodeURIComponent(selected.id)}` : "/api/fact-groups";
+    const options = selected
+      ? { method: "PATCH", body: JSON.stringify({ patch: group, expectedRevision: selected.revision }) }
+      : { method: "POST", body: JSON.stringify({ group }) };
+    $("#fact-group-save").disabled = true;
+    try {
+      const saved = await api(endpoint, options); factGroupState.selectedView = `custom:${saved.id}`;
+      await refreshFactGroups({ quiet: true }); $("#fact-group-dialog").close(); toast(`Fact group ${selected ? "updated" : "created"}`);
+    } catch (error) {
+      if (error.status === 409) { $("#fact-group-conflict").classList.remove("hidden"); $("#fact-group-conflict").focus(); }
+      else { const node = $("#fact-group-error"); node.textContent = error.message; node.classList.remove("hidden"); }
+    } finally { $("#fact-group-save").disabled = false; }
+  }
+
+  async function deleteFactGroup() {
+    const group = factGroupState.editing;
+    if (!group || !confirm("Remove this saved fact view? Canonical applicant facts will not be changed.")) return;
+    try {
+      await api(`/api/fact-groups/${encodeURIComponent(group.id)}/delete`, { method: "POST", body: JSON.stringify({ expectedRevision: group.revision }) });
+      factGroupState.selectedView = "all"; await refreshFactGroups({ quiet: true }); $("#fact-group-dialog").close(); toast("Fact group removed; canonical facts were unchanged");
+    } catch (error) {
+      if (error.status === 409) { $("#fact-group-conflict").classList.remove("hidden"); $("#fact-group-conflict").focus(); }
+      else { const node = $("#fact-group-error"); node.textContent = error.message; node.classList.remove("hidden"); }
+    }
+  }
+
   function provenanceFor(path) {
     return summarizeProvenance(profileState.inspection?.factProvenance, path);
   }
@@ -602,6 +742,7 @@ if (hasDom) {
         }
       }
     }
+    applyFactView(factGroupState.selectedView, { announce: false });
     $("#facts-revision").textContent = `Revision ${inspection.revision}`;
     $("#facts-status").textContent = profileState.drafts.size ? "Draft changes are preserved against the latest profile." : "Profile is synchronized with the canonical store.";
     $("#facts-conflict").classList.add("hidden"); $("#facts-error").classList.add("hidden");
@@ -767,7 +908,10 @@ if (hasDom) {
     document.title = `${overview ? "Overview" : attention ? "Needs Attention" : facts ? "Facts" : resumes ? "Resumes" : answers ? "Answers" : trash ? "Trash" : "Jobs"} · Job Apply Workspace`;
     if (overview && !overviewState.available) await refreshOverview({ quiet: true });
     if (attention && !attentionState.loaded) await refreshAttention();
-    if (facts && !profileState.loaded) await refreshProfile({ preserve: false });
+    if (facts && (!profileState.loaded || !factGroupState.loaded)) await Promise.all([
+      profileState.loaded ? Promise.resolve() : refreshProfile({ preserve: false }),
+      factGroupState.loaded ? Promise.resolve() : refreshFactGroups({ quiet: true }),
+    ]);
     if (resumes && !resumeState.loaded) await refreshResumes();
     if (answers && !answerState.loaded) await refreshAnswers();
     if (trash && !trashState.loaded) await refreshTrash();
@@ -1529,6 +1673,7 @@ if (hasDom) {
     }
     if (resumeState.loaded) refreshResumes({ quiet: true });
     if (trashState.loaded) refreshTrash({ quiet: true });
+    if (factGroupState.loaded) refreshFactGroups({ quiet: true });
   }
 
   function ensureWorkspacePolling() {
@@ -1569,6 +1714,12 @@ if (hasDom) {
   $("#resume-conflict-refresh").addEventListener("click", async () => { try { const latest = await api(`/api/resumes/${encodeURIComponent(resumeState.selected.id)}`); renderResumeDialog(latest, true); $("#resume-conflict").classList.add("hidden"); $("#resume-form").elements.label.focus(); toast("Canonical revision refreshed; your draft and file selection were preserved"); } catch (error) { resumeError(error.message, true); } });
   $("#resume-content").addEventListener("click", async () => { const resume = resumeState.selected; try { const response = await fetch(`/api/resumes/${encodeURIComponent(resume.id)}/content`, { headers: { Authorization: `Bearer ${token}` } }); if (!response.ok) { let payload = null; try { payload = await response.json(); } catch {} throw new ApiError(response.status, payload); } if (resume.mediaType?.startsWith("text/plain")) { $("#resume-preview").textContent = await response.text(); $("#preview-dialog").showModal(); } else { const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.target = "_blank"; link.rel = "noopener"; if (resume.mediaType?.includes("wordprocessingml")) link.download = `resume-${resume.id}.docx`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 60_000); } } catch (error) { resumeError(error.message, true); } });
   $("#proposal-form").addEventListener("submit", async (event) => { event.preventDefault(); const proposal = resumeState.proposal; const decisions = {}; const replacementConfirmations = {}; for (const select of event.currentTarget.querySelectorAll("select[name]")) if (select.value) decisions[select.name] = select.value; if (!Object.keys(decisions).length) { $("#proposal-error").textContent = "Select at least one decision."; $("#proposal-error").classList.remove("hidden"); return; } for (const [path, decision] of Object.entries(decisions)) { const replacement = proposal.replacementScopes?.[path]; if (decision === "use_extracted" && replacement) { const checkbox = event.currentTarget.querySelector(`[data-replacement-path="${CSS.escape(path)}"]`); if (!checkbox?.checked) { $("#proposal-error").textContent = `Confirm that accepting ${path} replaces ${replacement.path}.`; $("#proposal-error").classList.remove("hidden"); return; } replacementConfirmations[path] = replacement.path; } } try { await api(`/api/resume-proposals/${encodeURIComponent(proposal.id)}/review`, { method: "POST", body: JSON.stringify({ decisions, replacementConfirmations, expectedRevision: proposal.revision, expectedProfileRevision: proposal.liveProfileRevision }) }); $("#proposal-dialog").close(); await refreshProfile({ preserve: true }); await refreshResumes({ quiet: true }); if (resumeState.selected) { const latest = resumeState.items.find((item) => item.id === resumeState.selected.id); if (latest) renderResumeDialog(latest, true); } toast("Selected extraction decisions applied to Facts"); } catch (error) { $("#proposal-error").textContent = error.status === 409 ? "The proposal or profile changed. Nothing was retried; refresh and review the latest canonical values." : error.message; $("#proposal-error").classList.remove("hidden"); } });
+  for (const button of document.querySelectorAll("#fact-group-nav > [data-fact-view]")) button.addEventListener("click", () => applyFactView(button.dataset.factView));
+  $("#fact-group-new").addEventListener("click", (event) => openFactGroup(null, event.currentTarget));
+  $("#fact-group-edit").addEventListener("click", (event) => { const group = factGroupState.items.find((item) => `custom:${item.id}` === factGroupState.selectedView); if (group) openFactGroup(group, event.currentTarget); });
+  $("#fact-group-form").addEventListener("submit", saveFactGroup);
+  $("#fact-group-delete").addEventListener("click", deleteFactGroup);
+  $("#fact-group-dialog").addEventListener("close", () => { factGroupState.editing = null; const target = factGroupState.opener?.isConnected ? factGroupState.opener : $("#fact-group-new"); factGroupState.opener = null; target.focus(); });
   $("#facts-form").addEventListener("input", (event) => { const control = event.target.closest("[data-path]"); if (control) markFactDirty(control); });
   $("#add-work").addEventListener("click", () => addRepeaterItem("/workHistory")); $("#add-education").addEventListener("click", () => addRepeaterItem("/education"));
   $("#facts-save").addEventListener("click", saveFacts); $("#facts-refresh").addEventListener("click", () => refreshProfile());
