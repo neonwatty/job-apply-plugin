@@ -215,6 +215,17 @@ export function attentionAnnouncement(previous, current) {
   return `Needs Attention queue updated. ${count} job${count === 1 ? "" : "s"} now require action.`;
 }
 
+export function ownerBetaNextStep(action) {
+  return ({
+    import_resume: ["Import a resume", "Add a private managed resume so agents have an approved document to use."],
+    review_facts: ["Review your application facts", "Confirm the local facts agents may use before you prepare a job."],
+    resolve_attention: ["Resolve Needs Attention", "A job needs human review, missing information, or interrupted-work recovery."],
+    handoff_ready_job: ["Hand off a ready job", "Copy the supported invocation below and let the agent acquire the canonical Ready job."],
+    capture_job: ["Capture your first job", "Save an opportunity, run its ready check, and mark it Ready for an agent."],
+    prepare_job: ["Prepare the next job", "Open Jobs, complete missing setup, run the ready check, and mark a job Ready."],
+  })[action] || ["Review the workspace", "Refresh the canonical Store and choose a workspace section."];
+}
+
 export function pointerValue(value, pointer) {
   return pointer.split("/").slice(1).reduce((item, segment) => {
     const key = segment.replaceAll("~1", "/").replaceAll("~0", "~");
@@ -316,16 +327,19 @@ if (hasDom) {
   const token = sessionToken(location.hash, safeSessionStorage(globalThis));
   if (location.hash) history.replaceState(null, "", location.pathname);
   const api = createApi(token);
-  const state = { jobs: [], resumes: [], selected: null, latest: null, draft: null, dirty: false, dirtyFields: new Set(), polling: false, opener: null, openerJobId: null, focusAfterClose: null, focusAfterCloseJobId: null, activity: null, activityJobId: null, activityUnavailable: false, attentionReturnJobId: null, navigationGeneration: 0 };
+  const state = { jobs: [], activeJobsLoaded: false, resumes: [], selected: null, latest: null, draft: null, dirty: false, dirtyFields: new Set(), polling: false, pollIntervalId: null, opener: null, openerJobId: null, focusAfterClose: null, focusAfterCloseJobId: null, activity: null, activityJobId: null, activityUnavailable: false, attentionReturnJobId: null, navigationGeneration: 0, preflightRequestSequence: 0, preflightPolling: false, preflightError: null, readyHandoffProof: null };
   const profileState = { inspection: null, drafts: new Map(), draftBases: new Map(), atomic: new Set(), additionalAtomic: new Set(), deletions: new Set(), conflicts: [], latest: null, loaded: false };
   const resumeState = { items: [], proposals: [], trash: false, loaded: false, loading: false, requestId: 0, selected: null, opener: null, proposal: null, dirtyMetadata: new Set() };
   const answerState = { items: [], loaded: false, selected: null, offset: 0, limit: 25, total: 0, dirty: new Set(), opener: null, requestSequence: 0, detailRequestSequence: 0, dialogGeneration: 0, mergeRequestSequence: 0, mergeSource: null, mergeCandidates: [], busyControls: null };
   const trashState = { items: [], counts: { job: 0, resume: 0, answer: 0 }, loaded: false, selected: null, opener: null };
   const attentionState = { items: [], snapshotSignature: "", loaded: false, unavailable: false, detailRequestSequence: 0 };
+  const overviewState = { projection: null, available: false, degraded: false, unavailable: false };
   const trashRefreshCoordinator = createLatestRequestCoordinator();
   const activityRefreshCoordinator = createLatestRequestCoordinator();
   const attentionRefreshCoordinator = createLatestRequestCoordinator();
+  const overviewRefreshCoordinator = createLatestRequestCoordinator();
   const jobCardRenderKeys = new WeakMap();
+  const copyInvocationSequences = new WeakMap();
   const $ = (selector) => document.querySelector(selector);
   const form = $("#job-form");
   const dialog = $("#job-dialog");
@@ -338,7 +352,127 @@ if (hasDom) {
   }
 
   function setConnection(online, message = online ? "Canonical store connected" : "Connection lost") {
+    if (online && overviewState.unavailable) return;
     $("#connection-dot").classList.toggle("online", online); $("#connection-label").textContent = message;
+  }
+
+  function freshestKnownJob(jobId) {
+    if (!jobId) return null;
+    const listed = state.jobs.find((job) => job.id === jobId);
+    if (state.activeJobsLoaded && !listed) return null;
+    const candidates = [
+      listed,
+      state.selected?.id === jobId ? state.selected : null,
+      state.latest?.id === jobId ? state.latest : null,
+      state.activityJobId === jobId ? state.activity?.job : null,
+    ].filter((job) => job && Number.isInteger(job.revision));
+    if (!candidates.length) return null;
+    const revision = Math.max(...candidates.map((job) => job.revision));
+    const statuses = new Set(candidates.filter((job) => job.revision === revision).map((job) => job.status));
+    return { id: jobId, revision, status: statuses.size === 1 ? [...statuses][0] : null };
+  }
+
+  function syncReadyHandoff() {
+    const selectedId = state.selected?.id;
+    const authoritativelyAbsent = Boolean(
+      dialog.open
+      && selectedId
+      && state.activeJobsLoaded
+      && !state.jobs.some((job) => job.id === selectedId),
+    );
+    if (authoritativelyAbsent) state.readyHandoffProof = null;
+    const current = dialog.open ? freshestKnownJob(selectedId) : null;
+    const proof = state.readyHandoffProof;
+    const visible = Boolean(
+      proof
+      && current
+      && proof.id === current.id
+      && proof.revision === current.revision
+      && current.status === "ready",
+    );
+    $("#ready-handoff").classList.toggle("hidden", !visible);
+  }
+
+  function clearPreflightReadiness({ hidePanel = true } = {}) {
+    state.readyHandoffProof = null;
+    $("#mark-ready").classList.add("hidden");
+    $("#ready-handoff").classList.add("hidden");
+    if (hidePanel) {
+      $("#preflight-panel").classList.add("hidden");
+      $("#preflight-results").replaceChildren();
+    }
+  }
+
+  function renderOverview(projection) {
+    overviewState.projection = projection; overviewState.available = true;
+    const [heading, copy] = ownerBetaNextStep(projection.nextAction);
+    $("#next-step-heading").textContent = heading;
+    $("#next-step-copy").textContent = copy;
+    $("#next-step-action").dataset.workspace = projection.targetWorkspace;
+    $("#setup-resume").textContent = `${projection.setup.hasResume ? "✓" : "○"} Resume ${projection.setup.hasResume ? "available" : "needed"}`;
+    $("#setup-facts").textContent = `${projection.setup.hasProfileFacts ? "✓" : "○"} Application facts ${projection.setup.hasProfileFacts ? "available" : "need review"}`;
+    $("#setup-resume").classList.toggle("complete", projection.setup.hasResume);
+    $("#setup-facts").classList.toggle("complete", projection.setup.hasProfileFacts);
+    const counts = projection.counts;
+    $("#overview-counts").textContent = `${counts.jobs} jobs · ${counts.readyJobs} ready · ${counts.attentionJobs} need attention · ${counts.resumes} resumes · ${counts.answers} reviewed answers`;
+    $("#overview-ready").classList.remove("hidden");
+  }
+
+  async function refreshOverview({ quiet = false } = {}) {
+    if (overviewState.degraded) return;
+    return overviewRefreshCoordinator.run(
+      () => api("/api/overview"),
+      (projection) => {
+        const recovered = overviewState.unavailable;
+        overviewState.unavailable = false;
+        $("#overview-unavailable").classList.add("hidden");
+        renderOverview(projection); setConnection(true);
+        ensureWorkspacePolling();
+        if (recovered) $("#overview-live").textContent = "Overview is available again.";
+        if (!quiet) toast("Overview refreshed from the canonical store");
+      },
+      () => {
+        overviewState.unavailable = true; overviewState.available = false;
+        $("#overview-ready").classList.add("hidden");
+        $("#overview-unavailable").classList.remove("hidden");
+        setConnection(false, "Overview unavailable — refresh to retry");
+        $("#overview-live").textContent = "Overview is unavailable. Next-step guidance is hidden until refresh succeeds.";
+      },
+    );
+  }
+
+  function renderDegradedBoot(boot) {
+    overviewState.degraded = true;
+    $("#overview-ready").classList.add("hidden");
+    $("#boot-recovery-summary").textContent = boot.summary;
+    $("#boot-recovery-guidance").textContent = boot.guidance;
+    $("#boot-recovery").classList.remove("hidden");
+    $("#boot-recovery").focus();
+    for (const button of document.querySelectorAll(".workspace-nav button:not(#nav-overview)")) button.disabled = true;
+    $("#overview-refresh").disabled = true;
+    setConnection(false, "Canonical store unavailable — recovery guidance shown");
+  }
+
+  async function copyInvocation(button) {
+    const surface = button.closest(".handoff-card");
+    const sequence = (copyInvocationSequences.get(surface) || 0) + 1;
+    copyInvocationSequences.set(surface, sequence);
+    const fallback = surface?.querySelector(".clipboard-fallback");
+    const fallbackValue = fallback?.querySelector(".clipboard-fallback-value");
+    try {
+      await navigator.clipboard.writeText(button.dataset.copy);
+      if (copyInvocationSequences.get(surface) !== sequence) return;
+      fallback?.classList.add("hidden");
+      toast(`${button.textContent.replace(/^Copy /, "")} copied`);
+    } catch {
+      if (copyInvocationSequences.get(surface) !== sequence) return;
+      if (fallback && fallbackValue) {
+        fallbackValue.value = button.dataset.copy;
+        fallback.classList.remove("hidden");
+        fallbackValue.focus(); fallbackValue.select();
+      }
+      $("#overview-live").textContent = "Clipboard unavailable. A selectable invocation is shown in the active handoff surface.";
+    }
   }
 
   const namedTopLevel = new Set(["firstName", "lastName", "email", "phone", "location", "linkedInUrl", "portfolioUrl", "githubUrl", "workHistory", "education", "skills", "preferences"]);
@@ -622,14 +756,16 @@ if (hasDom) {
   }
 
   async function showWorkspace(name) {
+    const overview = name === "overview";
     const attention = name === "attention";
     const facts = name === "facts";
     const resumes = name === "resumes";
     const answers = name === "answers";
     const trash = name === "trash";
-    $("#jobs-workspace").classList.toggle("hidden", attention || facts || resumes || answers || trash); $("#attention-workspace").classList.toggle("hidden", !attention); $("#facts-workspace").classList.toggle("hidden", !facts); $("#resumes-workspace").classList.toggle("hidden", !resumes); $("#answers-workspace").classList.toggle("hidden", !answers); $("#trash-workspace").classList.toggle("hidden", !trash);
-    for (const section of ["jobs", "attention", "facts", "resumes", "answers", "trash"]) { const active = name === section; $(`#nav-${section}`).classList.toggle("active", active); $(`#nav-${section}`).toggleAttribute("aria-current", active); }
-    document.title = `${attention ? "Needs Attention" : facts ? "Facts" : resumes ? "Resumes" : answers ? "Answers" : trash ? "Trash" : "Jobs"} · Job Apply Workspace`;
+    $("#overview-workspace").classList.toggle("hidden", !overview); $("#jobs-workspace").classList.toggle("hidden", overview || attention || facts || resumes || answers || trash); $("#attention-workspace").classList.toggle("hidden", !attention); $("#facts-workspace").classList.toggle("hidden", !facts); $("#resumes-workspace").classList.toggle("hidden", !resumes); $("#answers-workspace").classList.toggle("hidden", !answers); $("#trash-workspace").classList.toggle("hidden", !trash);
+    for (const section of ["overview", "jobs", "attention", "facts", "resumes", "answers", "trash"]) { const active = name === section; $(`#nav-${section}`).classList.toggle("active", active); $(`#nav-${section}`).toggleAttribute("aria-current", active); }
+    document.title = `${overview ? "Overview" : attention ? "Needs Attention" : facts ? "Facts" : resumes ? "Resumes" : answers ? "Answers" : trash ? "Trash" : "Jobs"} · Job Apply Workspace`;
+    if (overview && !overviewState.available) await refreshOverview({ quiet: true });
     if (attention && !attentionState.loaded) await refreshAttention();
     if (facts && !profileState.loaded) await refreshProfile({ preserve: false });
     if (resumes && !resumeState.loaded) await refreshResumes();
@@ -1069,7 +1205,8 @@ if (hasDom) {
           state.latest = latest; $("#sync-notice").textContent = "A canonical job changed while your draft is open. Your draft has not been replaced."; $("#sync-notice").classList.remove("hidden");
         }
       }
-      state.jobs = data.jobs; state.resumes = data.resumes; render(); setConnection(true);
+      state.jobs = data.jobs; state.activeJobsLoaded = true; state.resumes = data.resumes; render(); setConnection(true);
+      syncReadyHandoff();
       if (!quiet) toast("Jobs refreshed from the canonical store");
     } catch (error) {
       setConnection(false, error.message); if (!quiet) showFormError(error.message);
@@ -1084,26 +1221,30 @@ if (hasDom) {
 
   function fillForm(job) {
     for (const field of ["url", "role", "company", "location", "workplaceType", "employmentType", "compensation", "notes", "description", "priority"]) form.elements[field].value = job?.[field] ?? (field === "priority" ? 0 : "");
-    fillResumeOptions(job?.resumeId); state.dirty = false; state.dirtyFields.clear(); hideConflict(); $("#form-error").classList.add("hidden");
+    fillResumeOptions(job?.resumeId); state.dirty = false; state.dirtyFields.clear(); state.preflightError = null; hideConflict(); $("#form-error").classList.add("hidden");
   }
 
   function openNew() {
     rememberOpener();
+    state.preflightRequestSequence += 1;
+    clearPreflightReadiness();
     state.selected = null; state.latest = null; state.draft = null; fillForm(null); $("#job-dialog-title").textContent = "Capture a job"; $("#dialog-kicker").textContent = "NEW CANONICAL RECORD";
     state.activity = null; state.activityJobId = null; activityRefreshCoordinator.invalidate();
-    for (const id of ["trash-job", "preflight-job", "mark-ready", "status-actions", "application-activity"]) $("#" + id).classList.add("hidden");
+    for (const id of ["trash-job", "preflight-job", "mark-ready", "status-actions", "application-activity", "ready-handoff"]) $("#" + id).classList.add("hidden");
     dialog.showModal(); setTimeout(() => form.elements.url.focus(), 0);
   }
 
   function openExisting(id, opener = null) {
     const job = state.jobs.find((item) => item.id === id); if (!job) return;
+    state.preflightRequestSequence += 1;
+    clearPreflightReadiness();
     rememberOpener(id, opener);
     state.selected = job; state.latest = null; state.draft = null; fillForm(job); $("#job-dialog-title").textContent = job.role || "Job details"; $("#dialog-kicker").textContent = `${statusLabel(job.status).toUpperCase()} · REVISION ${job.revision}`;
-    state.activity = null; state.activityJobId = id; prepareActivity(job); renderJobControls(job); dialog.showModal(); loadActivity(id); setTimeout(() => form.elements.role.focus(), 0);
+    state.activity = null; state.activityJobId = id; prepareActivity(job); renderJobControls(job); dialog.showModal(); loadActivity(id); if (job.status === "ready") preflight(); setTimeout(() => form.elements.role.focus(), 0);
   }
 
   function currentValues() { return Object.fromEntries(new FormData(form).entries()); }
-  function showFormError(message) { const node = $("#form-error"); node.textContent = message; node.classList.remove("hidden"); }
+  function showFormError(message, preflightError = null) { state.preflightError = preflightError; const node = $("#form-error"); node.textContent = message; node.classList.remove("hidden"); }
   function hideConflict() { $("#conflict").classList.add("hidden"); $("#conflict-latest").replaceChildren(); $("#reload-latest").disabled = false; $("#rebase-draft").disabled = false; }
 
   async function showConflict() {
@@ -1113,6 +1254,7 @@ if (hasDom) {
     $("#reload-latest").disabled = false; $("#rebase-draft").disabled = false;
     try {
       state.latest = await api(`/api/jobs/${encodeURIComponent(state.selected.id)}`);
+      syncReadyHandoff();
     } catch (error) {
       state.latest = null;
       const message = document.createElement("p"); message.textContent = `Latest canonical values could not be loaded: ${error.message}. Your draft is still here; try Save again after the connection recovers.`; holder.append(message);
@@ -1136,10 +1278,47 @@ if (hasDom) {
     } finally { $("#save-job").disabled = false; }
   }
 
-  async function preflight() {
-    if (!state.selected) return; try {
-      const result = await api(`/api/jobs/${encodeURIComponent(state.selected.id)}/preflight`); renderPreflight(result); return result;
-    } catch (error) { showFormError(error.message); return null; }
+  async function preflight({ clearAtStart = true } = {}) {
+    if (!state.selected) return;
+    const requestedId = state.selected.id;
+    const requestSequence = ++state.preflightRequestSequence;
+    if (clearAtStart) clearPreflightReadiness();
+    try {
+      const result = await api(`/api/jobs/${encodeURIComponent(requestedId)}/preflight`);
+      const current = freshestKnownJob(requestedId);
+      if (
+        requestSequence !== state.preflightRequestSequence
+        || !dialog.open
+        || state.selected?.id !== requestedId
+        || result.id !== requestedId
+        || !current
+      ) return null;
+      if (result.revision !== current.revision) {
+        if (result.revision > current.revision) {
+          clearPreflightReadiness({ hidePanel: false });
+        }
+        return null;
+      }
+      if (
+        state.preflightError?.id === requestedId
+        && state.preflightError.requestSequence < requestSequence
+      ) {
+        state.preflightError = null;
+        $("#form-error").textContent = "";
+        $("#form-error").classList.add("hidden");
+      }
+      renderPreflight(result); return result;
+    } catch (error) {
+      if (
+        requestSequence === state.preflightRequestSequence
+        && dialog.open
+        && state.selected?.id === requestedId
+      ) {
+        clearPreflightReadiness();
+        showFormError(error.message, { id: requestedId, requestSequence });
+      }
+      return null;
+    }
   }
 
   const issueText = { profile_empty: "Complete your applicant profile", resume_missing: "Assign an active resume", resume_file_missing: "The resume file cannot be found", resume_file_changed: "The resume file changed since it was added", role_missing: "Add a role for clearer handoff", company_missing: "Add a company for clearer handoff" };
@@ -1147,11 +1326,14 @@ if (hasDom) {
     const panel = $("#preflight-panel"), body = $("#preflight-results"); body.replaceChildren();
     const summary = document.createElement("p"); summary.textContent = result.ready ? "No blocking issues. This job can be handed to a Job Apply agent." : "Resolve the blocking issues before marking this job ready."; body.append(summary);
     for (const [label, items] of [["Blocking", result.errors], ["Warnings", result.warnings]]) if (items.length) { const h = document.createElement("strong"); h.textContent = label; const ul = document.createElement("ul"); for (const code of items) { const li = document.createElement("li"); li.textContent = issueText[code] || code; ul.append(li); } body.append(h, ul); }
-    const activityJob = state.activityJobId === state.selected?.id ? state.activity?.job : null;
-    const currentStatus = activityJob?.revision >= state.selected?.revision
-      ? activityJob.status
-      : state.selected?.status;
-    panel.classList.remove("hidden"); $("#mark-ready").classList.toggle("hidden", !result.ready || !canMarkReadyFrom(currentStatus));
+    const current = freshestKnownJob(state.selected?.id);
+    const currentStatus = current?.status;
+    panel.classList.remove("hidden");
+    $("#mark-ready").classList.toggle("hidden", !result.ready || !canMarkReadyFrom(currentStatus));
+    state.readyHandoffProof = result.ready && currentStatus === "ready" && result.revision === current?.revision
+      ? { id: result.id, revision: result.revision }
+      : null;
+    syncReadyHandoff();
   }
 
   async function transition(status, userConfirmed = false, closedOutcome = null) {
@@ -1189,6 +1371,7 @@ if (hasDom) {
     $("#trash-job").classList.toggle("hidden", job.status === "in_progress");
     $("#preflight-job").classList.remove("hidden");
     $("#mark-ready").classList.toggle("hidden", !canMarkReadyFrom(job.status));
+    syncReadyHandoff();
     renderStatusActions(job);
   }
 
@@ -1229,11 +1412,17 @@ if (hasDom) {
     $("#activity-history-list").replaceChildren();
     $("#activity-history-empty").textContent = "Application history is unavailable until refresh succeeds.";
     $("#activity-history-empty").classList.remove("hidden");
+    syncReadyHandoff();
     if (firstFailure) $("#activity-live").textContent = "Durable application activity is unavailable.";
   }
 
   function renderActivity(activity, announce = true) {
     const listed = state.jobs.find((job) => job.id === state.selected?.id);
+    if (state.activeJobsLoaded && !listed) {
+      state.readyHandoffProof = null;
+      syncReadyHandoff();
+      return;
+    }
     if (!shouldUseActivityResponse(activity, state.selected, listed, state.latest, state.activity?.job)) return;
     const recovered = state.activityUnavailable;
     state.activityUnavailable = false;
@@ -1287,8 +1476,9 @@ if (hasDom) {
 
     if (state.selected && (state.selected.status !== status || state.selected.revision !== activity.job.revision)) {
       $("#dialog-kicker").textContent = `${statusLabel(status).toUpperCase()} · REVISION ${activity.job.revision}`;
-      renderJobControls({ ...state.selected, status });
+      renderJobControls({ ...state.selected, status, revision: activity.job.revision });
     }
+    syncReadyHandoff();
     const message = recovered
       ? "Durable application activity is available again."
       : activityAnnouncement(previous, activity);
@@ -1305,6 +1495,10 @@ if (hasDom) {
       },
       (error) => {
         if (!dialog.open || state.selected?.id !== jobId) return;
+        if (error.status === 404 || error.code === "not_found") {
+          state.preflightRequestSequence += 1;
+          clearPreflightReadiness({ hidePanel: false });
+        }
         renderActivityUnavailable(error);
       },
     );
@@ -1322,10 +1516,33 @@ if (hasDom) {
     state.focusAfterCloseJobId = destinationJobId || destination?.dataset?.id || null;
     dialog.close();
   }
+
+  function pollWorkspace() {
+    refreshOverview({ quiet: true }); refresh({ quiet: true }); refreshAttention({ quiet: true });
+    if (dialog.open && state.selected) {
+      loadActivity();
+      const listed = state.jobs.find((job) => job.id === state.selected.id);
+      if (listed?.status === "ready" && !state.preflightPolling) {
+        state.preflightPolling = true;
+        preflight({ clearAtStart: false }).finally(() => { state.preflightPolling = false; });
+      }
+    }
+    if (resumeState.loaded) refreshResumes({ quiet: true });
+    if (trashState.loaded) refreshTrash({ quiet: true });
+  }
+
+  function ensureWorkspacePolling() {
+    if (state.pollIntervalId !== null) return;
+    state.pollIntervalId = setInterval(pollWorkspace, 4000);
+  }
   function firstListDestination() { return $(".job-card") || $("#new-job"); }
 
   form.addEventListener("submit", save); form.addEventListener("input", (event) => { if (state.selected && event.target.name) { state.dirty = true; state.dirtyFields.add(event.target.name); } });
-  $("#nav-jobs").addEventListener("click", () => navigateWorkspace("jobs")); $("#nav-attention").addEventListener("click", () => navigateWorkspace("attention")); $("#nav-facts").addEventListener("click", () => navigateWorkspace("facts")); $("#nav-resumes").addEventListener("click", () => navigateWorkspace("resumes")); $("#nav-answers").addEventListener("click", () => navigateWorkspace("answers")); $("#nav-trash").addEventListener("click", () => navigateWorkspace("trash"));
+  $("#nav-overview").addEventListener("click", () => navigateWorkspace("overview")); $("#nav-jobs").addEventListener("click", () => navigateWorkspace("jobs")); $("#nav-attention").addEventListener("click", () => navigateWorkspace("attention")); $("#nav-facts").addEventListener("click", () => navigateWorkspace("facts")); $("#nav-resumes").addEventListener("click", () => navigateWorkspace("resumes")); $("#nav-answers").addEventListener("click", () => navigateWorkspace("answers")); $("#nav-trash").addEventListener("click", () => navigateWorkspace("trash"));
+  $("#overview-refresh").addEventListener("click", () => refreshOverview());
+  $("#next-step-action").addEventListener("click", (event) => navigateWorkspace(event.currentTarget.dataset.workspace));
+  for (const button of document.querySelectorAll(".overview-link")) button.addEventListener("click", () => navigateWorkspace(button.dataset.workspace));
+  for (const button of document.querySelectorAll(".copy-invocation")) button.addEventListener("click", () => copyInvocation(button));
   $("#attention-refresh").addEventListener("click", () => refreshAttention());
   $("#trash-refresh").addEventListener("click", () => refreshTrash()); $("#trash-type-filter").addEventListener("change", renderTrash);
   $("#trash-delete-input").addEventListener("input", () => { $("#trash-delete-confirm").disabled = $("#trash-delete-input").value !== typedDeletePhrase(trashState.selected?.type); });
@@ -1370,6 +1587,8 @@ if (hasDom) {
     closeJobDialog();
   });
   dialog.addEventListener("close", () => {
+    state.preflightRequestSequence += 1;
+    clearPreflightReadiness();
     activityRefreshCoordinator.invalidate(); state.activity = null; state.activityJobId = null; state.activityUnavailable = false; $("#activity-live").textContent = "";
     state.dirty = false; state.dirtyFields.clear(); state.draft = null; $("#sync-notice").classList.add("hidden");
     const attentionReturnJobId = state.attentionReturnJobId;
@@ -1405,6 +1624,20 @@ if (hasDom) {
   $("#resume-dialog").addEventListener("close", () => { const destination = resumeState.opener?.isConnected ? resumeState.opener : $("#resumes-refresh"); resumeState.selected = null; resumeState.opener = null; setTimeout(() => destination?.focus(), 0); });
   $("#trash-delete-dialog").addEventListener("close", () => { const destination = trashState.opener?.isConnected ? trashState.opener : $("#nav-trash"); trashState.selected = null; trashState.opener = null; setTimeout(() => destination?.focus(), 0); });
 
-  if (!token) { setConnection(false, "Workspace token missing — restart with the printed URL"); $("#loading").innerHTML = "<p>Open the complete URL printed by the workspace launcher.</p>"; }
-  else { refresh({ quiet: true }); refreshAttention({ quiet: true }); refreshTrash({ quiet: true }); setInterval(() => { refresh({ quiet: true }); refreshAttention({ quiet: true }); if (dialog.open && state.selected) loadActivity(); if (resumeState.loaded) refreshResumes({ quiet: true }); if (trashState.loaded) refreshTrash({ quiet: true }); }, 4000); }
+  if (!token) {
+    setConnection(false, "Workspace token missing — restart with the printed URL");
+    $("#overview-live").textContent = "Open the complete URL printed by the workspace launcher.";
+  } else {
+    (async () => {
+      try {
+        const boot = await api("/api/boot");
+        if (boot.status !== "ready") { renderDegradedBoot(boot); return; }
+        ensureWorkspacePolling();
+        await Promise.all([refreshOverview({ quiet: true }), refresh({ quiet: true }), refreshAttention({ quiet: true }), refreshTrash({ quiet: true })]);
+      } catch (error) {
+        setConnection(false, error.message);
+        $("#overview-live").textContent = `Workspace startup failed: ${error.message}`;
+      }
+    })();
+  }
 }

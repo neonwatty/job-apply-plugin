@@ -1,12 +1,12 @@
 ---
 name: job-workspace
-description: Start the optional local Jobs, Facts, Resumes, Answers, and unified Trash workspace shared with Job Apply agents and the canonical store.
+description: Start the optional local Overview, Jobs, Needs Attention, Facts, Resumes, Answers, Application Activity, and unified Trash workspace shared with Job Apply agents and the canonical store.
 allowed-tools: Bash
 ---
 
 # Job Workspace
 
-Start the packaged, local-only companion when the user asks to manage canonical Jobs, Facts, Resumes, reusable Answers and observed questions, or recoverable Trash in a browser.
+Start the packaged, local-only companion when the user asks to review their next step, manage canonical Jobs, Facts, Resumes, reusable Answers and observed questions, supervise Application Activity or Needs Attention, or recover Trash in a browser.
 
 ## Launch
 
@@ -25,6 +25,11 @@ The launcher chooses a free port, binds only to `127.0.0.1`, opens the browser, 
 
 - Never copy the printed fragment token into chat, logs, or another URL. If the browser did not open, tell the user to open the complete URL printed locally by the launcher.
 - Never bind the workspace to another host or proxy it onto a network.
+- Overview is a value-free Store-derived projection of setup, counts, and one closed next action. It owns no completion flag or durable browser state. Use its contextual links to continue in the canonical workspace.
+- A Ready job is handed to an existing host with one static copy-only invocation: Codex uses `$job-apply:job-apply`; Claude Code uses `/job-apply:job-apply`. Never detect the host, execute these commands, interpolate credentials, or imply that the workspace or agent performs final submission.
+- Application Activity is the selected job's durable, value-free progress view. Needs Attention is the canonical cross-job queue for missing information, human review, and interrupted or expired attempts. Only the human may confirm a third-party submission.
+- Restart with the complete newly printed URL. Canonical state survives because the browser owns no workflow data. Revision conflicts preserve drafts for explicit review, interrupted attempts route to Needs Attention, and Trash restores one record at a time.
+- Unavailable, corrupt, or future-version failures recognized during read-only startup validation serve only static assets and sanitized recovery status. Canonical reads and mutations remain blocked, and no values, filesystem paths, or raw exceptions are exposed to the browser. Never automatically repair, downgrade, or overwrite the Store. If initialization fails after validation, abort startup instead of presenting degraded recovery; stop the workspace and preserve the Store before using a known-good backup or matching version.
 - The Jobs surface can create, edit, organize, preflight, mark ready, and move Jobs records to recoverable trash. The Facts surface selectively edits the canonical profile and preferences with provenance and explicit conflict choices.
 - The Resumes surface imports bounded PDF, DOCX, or UTF-8 TXT bytes into the private canonical managed library; edits labels/tags; replaces or explicitly adopts a file; manages defaults and guarded Trash; previews authenticated PDF/TXT; downloads DOCX; and reviews existing agent-created extraction proposals. Browser source paths and filenames are not retained.
 - The Answers surface uses only canonical `answers.json` records. It provides a redacted searchable library and observed-question inbox, explicit sensitive reveal, fresh retention consent, optimistic conflicts, review decisions, reference counts, guarded Trash/deletion, and explicit accepted-winner merge at exact scope/revisions. Merge options and results are redacted. The browser may temporarily display a non-sensitive detail value or an explicitly revealed sensitive value in the open dialog, but it clears that field when the dialog closes and never persists answer values or browser-owned answer state.

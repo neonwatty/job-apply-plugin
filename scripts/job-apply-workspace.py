@@ -200,10 +200,40 @@ class WorkspaceServer(ThreadingHTTPServer):
 
     def __init__(self, root: Path, port: int, token: str | None = None):
         self.store = STORE_MODULE.Store(root)
-        self.store.initialize()
+        self.boot_status = {"status": "ready", "code": "ready"}
+        try:
+            self.store.validate_workspace_startup()
+        except (OSError, STORE_MODULE.StoreError) as error:
+            self.boot_status = degraded_boot_status(error)
+        else:
+            # Only read-only validation failures become degraded workspaces.
+            # Initialization may migrate or repair state, so any failure there
+            # aborts startup instead of making a no-mutation recovery claim.
+            self.store.initialize()
         self.token = token or secrets.token_urlsafe(32)
         super().__init__((LOOPBACK, port), WorkspaceHandler)
         self.origin, self.expected_host = loopback_authority(self.server_port)
+
+
+def degraded_boot_status(error: Exception) -> dict[str, str]:
+    """Classify startup failures without exposing exceptions, values, or paths."""
+
+    message = str(error).lower()
+    if "future schemaversion" in message:
+        code = "future_store"
+        summary = "This store was created by a newer Job Apply version."
+    elif any(word in message for word in ("valid", "invalid", "corrupt", "tampered", "schema")):
+        code = "corrupt_store"
+        summary = "The local store could not be validated."
+    else:
+        code = "unavailable_store"
+        summary = "The local store is unavailable."
+    return {
+        "status": "degraded",
+        "code": code,
+        "summary": summary,
+        "guidance": "Stop the workspace, preserve the store directory, and use a known-good backup or the matching Job Apply version. No data was repaired or changed.",
+    }
 
 
 class WorkspaceHandler(BaseHTTPRequestHandler):
@@ -523,6 +553,19 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         self._send_bytes(HTTPStatus.OK, body, asset[1])
 
     def _get_api(self, path: str) -> None:
+        if path == "/api/boot":
+            self._json(HTTPStatus.OK, self.server.boot_status)
+            return
+        if self.server.boot_status["status"] != "ready":
+            self._error(
+                HTTPStatus.SERVICE_UNAVAILABLE,
+                "canonical store is unavailable",
+                "store_unavailable",
+            )
+            return
+        if path == "/api/overview":
+            self._store_call(self.server.store.owner_beta_overview)
+            return
         if path == "/api/profile":
             self._store_call(self.server.store.inspect_profile)
             return
@@ -666,6 +709,13 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
     def _mutate(self, method: str) -> None:
         path = self._path()
         if path is None or not self._authorized_api(mutation=True):
+            return
+        if self.server.boot_status["status"] != "ready":
+            self._error(
+                HTTPStatus.SERVICE_UNAVAILABLE,
+                "canonical store is unavailable",
+                "store_unavailable",
+            )
             return
         route_parts = path.split("/")
         is_upload = method == "POST" and (
