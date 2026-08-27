@@ -89,6 +89,8 @@ JOB_TRANSITIONS = {
     "closed": {"saved"},
 }
 FACT_SOURCES = {"user", "resume", "agent", "migration"}
+FACT_GROUP_ID = re.compile(r"^[a-f0-9]{32}$")
+FACT_GROUP_MAX_PATHS = 128
 PROFILE_NAMED_TOP_LEVEL = {
     "firstName", "lastName", "email", "phone", "location", "linkedInUrl",
     "portfolioUrl", "githubUrl", "workHistory", "education", "skills", "preferences",
@@ -133,6 +135,64 @@ def _require_object(value: Any, label: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise StoreError(f"{label} must be a JSON object")
     return value
+
+
+def _fact_group_label(value: Any) -> str:
+    if not isinstance(value, str):
+        raise StoreError("fact group label must be a string")
+    label = value.strip()
+    if not label or len(label) > 80 or any(ord(char) < 32 for char in label):
+        raise StoreError("fact group label must contain 1 to 80 printable characters")
+    return label
+
+
+def _fact_group_paths(value: Any) -> list[str]:
+    if (
+        not isinstance(value, list)
+        or not value
+        or len(value) > FACT_GROUP_MAX_PATHS
+        or not all(isinstance(path, str) for path in value)
+        or len(set(value)) != len(value)
+    ):
+        raise StoreError(
+            f"fact group paths must contain 1 to {FACT_GROUP_MAX_PATHS} unique JSON pointers"
+        )
+    for path in value:
+        try:
+            _decode_json_pointer(path)
+        except StoreError:
+            raise StoreError("fact group path is invalid") from None
+    return list(value)
+
+
+def _fact_group_order(value: Any) -> int:
+    if (
+        not isinstance(value, int)
+        or isinstance(value, bool)
+        or value < 0
+        or value > 1_000_000
+    ):
+        raise StoreError("fact group order must be an integer between 0 and 1000000")
+    return value
+
+
+def _validate_fact_group_record(group_id: str, value: Any) -> dict[str, Any]:
+    if not isinstance(group_id, str) or FACT_GROUP_ID.fullmatch(group_id) is None:
+        raise StoreError("fact group id is invalid")
+    record = _require_object(value, "fact group record")
+    expected = {"id", "label", "paths", "order", "revision", "createdAt", "updatedAt"}
+    if set(record) != expected or record.get("id") != group_id:
+        raise StoreError("fact group record is invalid")
+    _fact_group_label(record.get("label"))
+    _fact_group_paths(record.get("paths"))
+    _fact_group_order(record.get("order"))
+    revision = record.get("revision")
+    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
+        raise StoreError("fact group revision must be a positive integer")
+    for field in ("createdAt", "updatedAt"):
+        if not isinstance(record.get(field), str) or not record[field]:
+            raise StoreError("fact group timestamp is invalid")
+    return record
 
 
 def _set_private_mode(path: Path, mode: int) -> None:
@@ -1390,6 +1450,7 @@ class Store:
     def __init__(self, root: Path, legacy_profile: Path | None = None, clock=None):
         self.root = root.expanduser()
         self.profile_path = self.root / "profile.json"
+        self.fact_groups_path = self.root / "fact-groups.json"
         self.answers_path = self.root / "answers.json"
         self.jobs_path = self.root / "jobs.json"
         self.resumes_path = self.root / "resumes.json"
@@ -1426,6 +1487,7 @@ class Store:
             "schemaVersion": SCHEMA_VERSION,
             "root": str(self.root),
             "profile": str(self.profile_path),
+            "factGroups": str(self.fact_groups_path),
             "answers": str(self.answers_path),
             "jobs": str(self.jobs_path),
             "resumes": str(self.resumes_path),
@@ -1480,6 +1542,17 @@ class Store:
                     "schemaVersion": SCHEMA_VERSION,
                     "answers": {},
                     "redirects": {},
+                    "metadata": {"createdAt": now, "updatedAt": now},
+                },
+            )
+
+        if not self.fact_groups_path.exists():
+            now = utc_now()
+            atomic_write_json(
+                self.fact_groups_path,
+                {
+                    "schemaVersion": SCHEMA_VERSION,
+                    "groups": {},
                     "metadata": {"createdAt": now, "updatedAt": now},
                 },
             )
@@ -1539,6 +1612,8 @@ class Store:
 
         if self.profile_path.exists():
             self._load_profile_document()
+        if self.fact_groups_path.exists():
+            self._load_fact_groups_document()
         if self.answers_path.exists():
             self._load_answers_document()
         if self.jobs_path.exists():
@@ -1791,6 +1866,22 @@ class Store:
                 raise StoreError("profile fact provenance source is unsupported")
             if not isinstance(record.get("updatedAt"), str) or not record["updatedAt"]:
                 raise StoreError("profile fact provenance timestamp is invalid")
+        return document
+
+    def _load_fact_groups_document(self) -> dict[str, Any]:
+        document = read_json_object(self.fact_groups_path, "fact groups")
+        validate_version(document, "fact groups")
+        if set(document) != {"schemaVersion", "groups", "metadata"}:
+            raise StoreError("fact groups contains unsupported fields")
+        groups = _require_object(document.get("groups"), "fact groups.groups")
+        metadata = _require_object(document.get("metadata"), "fact groups.metadata")
+        if set(metadata) != {"createdAt", "updatedAt"}:
+            raise StoreError("fact groups metadata is invalid")
+        for field in ("createdAt", "updatedAt"):
+            if not isinstance(metadata.get(field), str) or not metadata[field]:
+                raise StoreError("fact groups metadata timestamp is invalid")
+        for key, record in groups.items():
+            _validate_fact_group_record(key, record)
         return document
 
     def _load_answers_document(self) -> dict[str, Any]:
@@ -2475,6 +2566,126 @@ class Store:
             metadata["updatedAt"] = now
             atomic_write_json(self.profile_path, document)
         return self._profile_inspection(document)
+
+    @staticmethod
+    def _fact_group_sort_key(record: dict[str, Any]) -> tuple[Any, ...]:
+        return (record["order"], record["label"].casefold(), record["id"])
+
+    @staticmethod
+    def _reject_fact_group_label_collision(
+        groups: dict[str, Any], label: str, *, exclude_id: str | None = None
+    ) -> None:
+        identity = label.casefold()
+        if any(
+            key != exclude_id and record["label"].casefold() == identity
+            for key, record in groups.items()
+        ):
+            raise StoreError("active fact group label already exists")
+
+    def list_fact_groups(self) -> list[dict[str, Any]]:
+        self.initialize()
+        document = self._load_fact_groups_document()
+        return sorted(
+            (dict(record) for record in document["groups"].values()),
+            key=self._fact_group_sort_key,
+        )
+
+    def get_fact_group(self, group_id: str) -> dict[str, Any] | None:
+        self.initialize()
+        if FACT_GROUP_ID.fullmatch(group_id or "") is None:
+            raise StoreError("fact group id is invalid")
+        record = self._load_fact_groups_document()["groups"].get(group_id)
+        return dict(record) if record is not None else None
+
+    def create_fact_group(self, incoming: dict[str, Any]) -> dict[str, Any]:
+        payload = _require_object(incoming, "fact group")
+        if set(payload) - {"label", "paths", "order"} or not {"label", "paths"} <= set(payload):
+            raise StoreError("fact group requires label and paths")
+        label = _fact_group_label(payload.get("label"))
+        paths = _fact_group_paths(payload.get("paths"))
+        requested_order = payload.get("order")
+        if requested_order is not None:
+            requested_order = _fact_group_order(requested_order)
+        self.initialize()
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_fact_groups_document()
+            groups = document["groups"]
+            self._reject_fact_group_label_collision(groups, label)
+            order = requested_order
+            if order is None:
+                order = max((record["order"] for record in groups.values()), default=-100) + 100
+            group_id = uuid.uuid4().hex
+            now = self._now()
+            record = {
+                "id": group_id,
+                "label": label,
+                "paths": paths,
+                "order": order,
+                "revision": 1,
+                "createdAt": now,
+                "updatedAt": now,
+            }
+            groups[group_id] = record
+            document["metadata"]["updatedAt"] = now
+            atomic_write_json(self.fact_groups_path, document)
+        return dict(record)
+
+    def update_fact_group(
+        self, group_id: str, patch: dict[str, Any], expected_revision: int
+    ) -> dict[str, Any]:
+        if FACT_GROUP_ID.fullmatch(group_id or "") is None:
+            raise StoreError("fact group id is invalid")
+        incoming = _require_object(patch, "fact group patch")
+        if not incoming or set(incoming) - {"label", "paths", "order"}:
+            raise StoreError("fact group patch must contain label, paths, or order")
+        if not isinstance(expected_revision, int) or isinstance(expected_revision, bool) or expected_revision < 1:
+            raise StoreError("fact group expected revision must be a positive integer")
+        self.initialize()
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_fact_groups_document()
+            groups = document["groups"]
+            current = groups.get(group_id)
+            if current is None:
+                raise StoreError("fact group does not exist")
+            if current["revision"] != expected_revision:
+                raise StoreError("fact group revision conflict")
+            updated = dict(current)
+            if "label" in incoming:
+                updated["label"] = _fact_group_label(incoming["label"])
+                self._reject_fact_group_label_collision(
+                    groups, updated["label"], exclude_id=group_id
+                )
+            if "paths" in incoming:
+                updated["paths"] = _fact_group_paths(incoming["paths"])
+            if "order" in incoming:
+                updated["order"] = _fact_group_order(incoming["order"])
+            if all(updated[field] == current[field] for field in ("label", "paths", "order")):
+                return dict(current)
+            now = self._now()
+            updated["revision"] = current["revision"] + 1
+            updated["updatedAt"] = now
+            groups[group_id] = updated
+            document["metadata"]["updatedAt"] = now
+            atomic_write_json(self.fact_groups_path, document)
+        return dict(updated)
+
+    def delete_fact_group(self, group_id: str, expected_revision: int) -> dict[str, Any]:
+        if FACT_GROUP_ID.fullmatch(group_id or "") is None:
+            raise StoreError("fact group id is invalid")
+        if not isinstance(expected_revision, int) or isinstance(expected_revision, bool) or expected_revision < 1:
+            raise StoreError("fact group expected revision must be a positive integer")
+        self.initialize()
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_fact_groups_document()
+            current = document["groups"].get(group_id)
+            if current is None:
+                raise StoreError("fact group does not exist")
+            if current["revision"] != expected_revision:
+                raise StoreError("fact group revision conflict")
+            del document["groups"][group_id]
+            document["metadata"]["updatedAt"] = self._now()
+            atomic_write_json(self.fact_groups_path, document)
+        return {"deleted": True, "id": group_id}
 
     @staticmethod
     def _answer_view(record: dict[str, Any]) -> dict[str, Any]:
@@ -6245,6 +6456,18 @@ def build_parser() -> argparse.ArgumentParser:
     profile_patch.add_argument("--input", required=True)
     profile_patch.add_argument("--expected-revision", required=True, type=int)
     profile_patch.add_argument("--source", required=True, choices=sorted(FACT_SOURCES))
+    commands.add_parser("fact-group-list")
+    fact_group_get = commands.add_parser("fact-group-get")
+    fact_group_get.add_argument("--id", required=True)
+    fact_group_create = commands.add_parser("fact-group-create")
+    fact_group_create.add_argument("--input", required=True)
+    fact_group_update = commands.add_parser("fact-group-update")
+    fact_group_update.add_argument("--id", required=True)
+    fact_group_update.add_argument("--input", required=True)
+    fact_group_update.add_argument("--expected-revision", required=True, type=int)
+    fact_group_delete = commands.add_parser("fact-group-delete")
+    fact_group_delete.add_argument("--id", required=True)
+    fact_group_delete.add_argument("--expected-revision", required=True, type=int)
     commands.add_parser("preferences-get")
     preferences_set = commands.add_parser("preferences-set")
     preferences_set.add_argument("--input", required=True)
@@ -6468,6 +6691,18 @@ def run(args: argparse.Namespace) -> Any:
         return store.patch_profile(
             _read_input(args.input), args.expected_revision, args.source
         )
+    if command == "fact-group-list":
+        return store.list_fact_groups()
+    if command == "fact-group-get":
+        return store.get_fact_group(args.id)
+    if command == "fact-group-create":
+        return store.create_fact_group(_read_input(args.input))
+    if command == "fact-group-update":
+        return store.update_fact_group(
+            args.id, _read_input(args.input), args.expected_revision
+        )
+    if command == "fact-group-delete":
+        return store.delete_fact_group(args.id, args.expected_revision)
     if command == "preferences-get":
         return store.get_preferences()
     if command == "preferences-set":

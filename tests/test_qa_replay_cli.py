@@ -2010,6 +2010,7 @@ class CommittedScenarioTests(unittest.TestCase):
                         ".store.lock",
                         "answers.json",
                         "applications.jsonl",
+                        "fact-groups.json",
                         "jobs.json",
                         "profile.json",
                         "resumes.json",

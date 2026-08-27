@@ -1197,6 +1197,40 @@ class WorkspaceServerTests(unittest.TestCase):
         self.assertEqual((status, body["error"]["code"]), (409, "revision_conflict"))
         self.assertEqual(self.server.store.inspect_profile()["revision"], advanced["revision"])
 
+    def test_fact_group_api_has_browser_cli_crud_parity_without_mutating_profile(self):
+        profile = self.server.store.patch_profile(
+            {"firstName": "Synthetic", "skills": ["Python"]}, 1, "user"
+        )
+        status, _headers, created = self.request(
+            "POST",
+            "/api/fact-groups",
+            {"group": {"label": "Core facts", "paths": ["/firstName", "/skills"], "order": 10}},
+        )
+        self.assertEqual(status, 200, created)
+        status, _headers, listing = self.request("GET", "/api/fact-groups", origin=False)
+        self.assertEqual((status, listing["groups"]), (200, [created]))
+        self.assertEqual(self.server.store.get_fact_group(created["id"]), created)
+
+        status, _headers, updated = self.request(
+            "PATCH",
+            f"/api/fact-groups/{created['id']}",
+            {"patch": {"label": "Focused facts", "paths": ["/skills"], "order": 20}, "expectedRevision": created["revision"]},
+        )
+        self.assertEqual((status, updated["revision"]), (200, 2))
+        status, _headers, conflict = self.request(
+            "PATCH",
+            f"/api/fact-groups/{created['id']}",
+            {"patch": {"label": "Stale"}, "expectedRevision": created["revision"]},
+        )
+        self.assertEqual((status, conflict["error"]["code"]), (409, "revision_conflict"))
+        status, _headers, deleted = self.request(
+            "POST",
+            f"/api/fact-groups/{created['id']}/delete",
+            {"expectedRevision": updated["revision"]},
+        )
+        self.assertEqual((status, deleted), (200, {"deleted": True, "id": created["id"]}))
+        self.assertEqual(self.server.store.inspect_profile(), profile)
+
     def test_revision_conflict_is_409_and_never_overwrites_canonical_data(self):
         job = self.create_job(role="Original")
         cli = self.server.store.update_job(job["id"], {"role": "CLI edit"}, job["revision"])
