@@ -16,6 +16,7 @@
     </div>
     <nav class="workspace-nav" aria-label="Workspace sections">
       <button id="nav-jobs" class="nav-link active" type="button" aria-current="page">Jobs</button>
+      <button id="nav-attention" class="nav-link" type="button">Needs Attention <span id="attention-nav-count" aria-label="attention count">0</span></button>
       <button id="nav-facts" class="nav-link" type="button">Facts</button>
       <button id="nav-resumes" class="nav-link" type="button">Resumes</button>
       <button id="nav-answers" class="nav-link" type="button">Answers</button>
@@ -72,6 +73,21 @@
       </div>
       <div id="job-list" class="job-list hidden" role="list"></div>
     </section>
+    </div>
+
+    <div id="attention-workspace" class="hidden">
+      <section class="hero" aria-labelledby="attention-title">
+        <div><p class="eyebrow">Needs Attention</p><h2 id="attention-title">A calm queue for human intervention.</h2><p>Every row is derived from the canonical local Store. Open a job to use its existing resolution actions.</p></div>
+        <div class="hero-actions"><button id="attention-refresh" class="button secondary" type="button">Refresh</button></div>
+      </section>
+      <section class="attention-panel" aria-labelledby="attention-list-heading">
+        <div class="panel-heading"><div><p class="eyebrow">CANONICAL QUEUE</p><h2 id="attention-list-heading">Jobs requiring action</h2></div><p id="attention-count">0 jobs</p></div>
+        <p id="attention-live" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></p>
+        <div id="attention-loading" class="empty-state"><span class="spinner" aria-hidden="true"></span><p>Loading the canonical attention queue…</p></div>
+        <div id="attention-empty" class="empty-state hidden"><span class="empty-icon" aria-hidden="true">✓</span><h3>Nothing needs your attention</h3><p>Agent-owned and ordinary pipeline work stay out of this queue.</p></div>
+        <div id="attention-unavailable" class="error hidden" role="alert"><strong>Attention data is unavailable.</strong> Stale rows cannot be opened until a refresh succeeds.</div>
+        <div id="attention-list" class="attention-list hidden" role="list" aria-busy="true"></div>
+      </section>
     </div>
 
     <div id="facts-workspace" class="hidden">

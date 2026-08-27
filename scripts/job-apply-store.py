@@ -3309,6 +3309,102 @@ class Store:
             ),
         )
 
+    def list_needs_attention(self) -> dict[str, Any]:
+        """Return one coherent, privacy-minimized cross-job attention snapshot."""
+
+        self.initialize()
+        self._ensure_coordinator_files()
+        reason_rank = {
+            "expired_agent_attempt": 0,
+            "claimless_interrupted_attempt": 1,
+            "awaiting_human_review": 2,
+            "needs_information": 3,
+        }
+        reason_details = {
+            "expired_agent_attempt": (
+                "Expired agent attempt",
+                "Resume this attempt with the CLI claim-recover command for this job.",
+            ),
+            "claimless_interrupted_attempt": (
+                "Interrupted agent attempt",
+                "Reset this claimless attempt to needs_info with the revision-bound CLI job-transition command, then resolve it before starting a new attempt.",
+            ),
+            "awaiting_human_review": (
+                "Awaiting your review",
+                "Open Job details. After you personally submit on the third-party site, confirm Applied, or close the job with an outcome.",
+            ),
+            "needs_information": (
+                "Needs information",
+                "Open Job details and resolve the missing facts, resume, or answers, then run preflight and mark the job ready.",
+            ),
+        }
+        with exclusive_file_lock(self.store_lock_path):
+            jobs = self._load_jobs_document()["jobs"]
+            persisted_claim = self._load_coordinator_document()["claim"]
+            now = self._now_datetime()
+            rows: list[dict[str, Any]] = []
+            for job in jobs.values():
+                if job.get("deletedAt") is not None:
+                    continue
+                reason_code = None
+                attention_at = job["updatedAt"]
+                if job["status"] == "in_progress":
+                    selected_claim = (
+                        persisted_claim
+                        if persisted_claim is not None
+                        and persisted_claim["jobId"] == job["id"]
+                        else None
+                    )
+                    if selected_claim is None:
+                        reason_code = "claimless_interrupted_attempt"
+                    elif now >= self._parse_time(selected_claim["expiresAt"]):
+                        reason_code = "expired_agent_attempt"
+                        attention_at = selected_claim["expiresAt"]
+                elif job["status"] == "awaiting_review":
+                    reason_code = "awaiting_human_review"
+                elif job["status"] == "needs_info":
+                    reason_code = "needs_information"
+                if reason_code is None:
+                    continue
+
+                missing_count = 0
+                if reason_code == "needs_information":
+                    session_path = self._session_path(job["id"])
+                    if session_path.exists():
+                        session = read_json_object(session_path, "session")
+                        validate_version(session, "session")
+                        _validate_session_document(session)
+                        if session["applicationId"] != job["id"]:
+                            raise StoreError("session application id does not match path")
+                        missing_count = len(session.get("pendingFields", []))
+                reason_label, guidance = reason_details[reason_code]
+                rows.append({
+                    "jobId": job["id"],
+                    "role": job.get("role"),
+                    "company": job.get("company"),
+                    "status": job["status"],
+                    "revision": job["revision"],
+                    "priority": job.get("priority", 0),
+                    "reasonCode": reason_code,
+                    "reasonLabel": reason_label,
+                    "attentionAt": attention_at,
+                    "guidance": guidance,
+                    "missingInformationCount": missing_count,
+                })
+            rows.sort(key=lambda item: (
+                reason_rank[item["reasonCode"]],
+                -item["priority"],
+                item["attentionAt"],
+                item["jobId"],
+            ))
+            serialized = json.dumps(
+                rows, ensure_ascii=False, separators=(",", ":"), sort_keys=True
+            ).encode("utf-8")
+            return {
+                "items": rows,
+                "snapshotSignature": hashlib.sha256(serialized).hexdigest(),
+            }
+
     def _preflight_job_record(self, record: dict[str, Any]) -> dict[str, Any]:
         errors: list[str] = []
         warnings: list[str] = []

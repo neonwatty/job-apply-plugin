@@ -2718,6 +2718,111 @@ class StoreTests(unittest.TestCase):
             ["job-started", "claim-recovered", "job-blocked"],
         )
 
+    def test_needs_attention_snapshot_is_complete_ordered_redacted_and_converges(self):
+        instant = [datetime(2026, 8, 26, 12, 0, tzinfo=timezone.utc)]
+        self.store = STORE_MODULE.Store(self.root, self.legacy, clock=lambda: instant[0])
+        self.store.replace_profile(
+            {"firstName": "Ada"}, expected_revision=0, source="user"
+        )
+        resume_path = self.home / "attention.pdf"
+        resume_path.write_bytes(b"%PDF-1.7\nattention")
+        self.store.create_resume(
+            {"id": "attention-resume", "label": "Attention", "path": str(resume_path)}
+        )
+
+        def ready(job_id, priority):
+            created = self.store.create_job({
+                "id": job_id,
+                "url": f"https://example.com/jobs/{job_id}",
+                "role": f"Role {job_id}",
+                "company": f"Company {job_id}",
+                "priority": priority,
+            })
+            return self.store.transition_job(job_id, "ready", created["revision"])
+
+        review_ready = ready("review-job", 5)
+        review_claim = self.store.acquire_ready_job(
+            review_ready["id"], "private-review-owner", review_ready["revision"]
+        )
+        review = self.store.handoff_claimed_job(
+            review_ready["id"], review_claim["token"], "awaiting_review",
+            {"status": "review", "step": "review", "pendingFields": []},
+            review_claim["job"]["revision"],
+        )["job"]
+
+        needs_ready = ready("needs-job", 4)
+        needs_claim = self.store.acquire_ready_job(
+            needs_ready["id"], "private-needs-owner", needs_ready["revision"]
+        )
+        needs = self.store.handoff_claimed_job(
+            needs_ready["id"], needs_claim["token"], "needs_info",
+            {
+                "status": "active",
+                "step": "questions",
+                "answerKeys": ["secret.answer.key"],
+                "pendingFields": [
+                    {"question": "Private question?", "state": "missing", "answerKey": "secret.answer.key", "sensitive": True},
+                    {"question": "Another private question?", "state": "missing", "answerKey": "other.secret", "sensitive": False},
+                ],
+            },
+            needs_claim["job"]["revision"],
+        )["job"]
+
+        interrupted_ready = ready("interrupted-job", 3)
+        self.store.acquire_ready_job(
+            interrupted_ready["id"], "private-interrupted-owner", interrupted_ready["revision"]
+        )
+        STORE_MODULE.atomic_write_json(
+            self.store.coordinator_path,
+            {"schemaVersion": STORE_MODULE.SCHEMA_VERSION, "claim": None},
+        )
+
+        expired_ready = ready("expired-job", 1)
+        expired_claim = self.store.acquire_ready_job(
+            expired_ready["id"], "private-expired-owner", expired_ready["revision"]
+        )
+        instant[0] += timedelta(seconds=STORE_MODULE.CLAIM_LEASE_SECONDS + 1)
+
+        projection = self.store.list_needs_attention()
+        self.assertEqual(
+            [item["reasonCode"] for item in projection["items"]],
+            [
+                "expired_agent_attempt",
+                "claimless_interrupted_attempt",
+                "awaiting_human_review",
+                "needs_information",
+            ],
+        )
+        allowed = {
+            "jobId", "role", "company", "status", "revision", "priority",
+            "reasonCode", "reasonLabel", "attentionAt", "guidance",
+            "missingInformationCount",
+        }
+        self.assertTrue(all(set(item) == allowed for item in projection["items"]))
+        self.assertEqual(projection["items"][-1]["missingInformationCount"], 2)
+        self.assertEqual(projection, self.store.list_needs_attention())
+        serialized = json.dumps(projection)
+        for forbidden in (
+            expired_claim["token"], "private-expired-owner", "private-review-owner",
+            "Private question?", "secret.answer.key", "answerKey", "sensitive",
+            "tokenHash", "claimId", "ownerLabel", "operationId", "browserState",
+        ):
+            self.assertNotIn(forbidden, serialized)
+
+        recovered = self.store.recover_claim("expired-job", "replacement-owner")
+        handed = self.store.handoff_claimed_job(
+            "expired-job", recovered["token"], "awaiting_review",
+            {"status": "review", "step": "review", "pendingFields": []},
+            recovered["job"]["revision"],
+        )["job"]
+        self.store.transition_job("expired-job", "applied", handed["revision"], user_confirmed=True)
+        interrupted = self.store.get_job("interrupted-job")
+        interrupted = self.store.transition_job("interrupted-job", "needs_info", interrupted["revision"])
+        self.store.transition_job("interrupted-job", "saved", interrupted["revision"])
+        self.store.transition_job("review-job", "applied", review["revision"], user_confirmed=True)
+        self.store.transition_job("needs-job", "saved", needs["revision"])
+        self.assertEqual(self.store.list_needs_attention()["items"], [])
+
     def test_acquire_and_recover_tokens_are_cli_safe_when_random_payload_leads_hyphen(self):
         instant = [datetime(2026, 8, 24, tzinfo=timezone.utc)]
         self.store = STORE_MODULE.Store(self.root, self.legacy, clock=lambda: instant[0])
