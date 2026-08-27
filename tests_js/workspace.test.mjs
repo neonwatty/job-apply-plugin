@@ -779,6 +779,33 @@ test("Needs Attention browser and CLI walkthrough converges all canonical reason
     for (const value of forbidden) assert.equal(attentionDom.includes(value), false, value);
     for (const payload of payloads) for (const value of forbidden) assert.equal(JSON.stringify(payload).includes(value), false, value);
 
+    let releaseAbandonedDetail;
+    let abandonedDetailSeenResolve;
+    const abandonedDetailSeen = new Promise((resolveSeen) => { abandonedDetailSeenResolve = resolveSeen; });
+    const releaseAbandonedDetailPromise = new Promise((resolveRelease) => { releaseAbandonedDetail = resolveRelease; });
+    const abandonedDetailPattern = `**/api/jobs/${expired.id}`;
+    const delayAbandonedDetail = async (route) => {
+      if (route.request().method() !== "GET") { await route.continue(); return; }
+      const response = await route.fetch();
+      abandonedDetailSeenResolve();
+      await releaseAbandonedDetailPromise;
+      await route.fulfill({ response });
+    };
+    await page.route(abandonedDetailPattern, delayAbandonedDetail);
+    await page.locator('[data-attention-id="expired-attention"]').click();
+    await abandonedDetailSeen;
+    await page.getByRole("button", { name: "Facts", exact: true }).click();
+    await page.getByRole("heading", { name: "Your canonical application facts." }).waitFor();
+    const abandonedDetailResponse = page.waitForResponse((response) => new URL(response.url()).pathname === `/api/jobs/${expired.id}` && response.ok());
+    releaseAbandonedDetail();
+    await abandonedDetailResponse;
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(await page.locator("#job-dialog[open]").count(), 0);
+    assert.match(await page.title(), /^Facts/);
+    await page.unroute(abandonedDetailPattern, delayAbandonedDetail);
+    await page.getByRole("button", { name: /Needs Attention/ }).click();
+    await page.getByText("4 jobs").waitFor();
+
     let releaseEarlierSelection;
     let earlierSelectionSeenResolve;
     const earlierSelectionSeen = new Promise((resolveSeen) => { earlierSelectionSeenResolve = resolveSeen; });
@@ -806,6 +833,38 @@ test("Needs Attention browser and CLI walkthrough converges all canonical reason
     await page.locator("#job-dialog").waitFor({ state: "hidden" });
     await page.waitForFunction(() => document.activeElement?.dataset?.attentionId === "review-attention");
     await page.unroute(expiredDetailPattern, delayExpiredDetail);
+
+    await page.locator('[data-attention-id="review-attention"]').click();
+    await page.locator("#job-dialog[open]").waitFor();
+    let delayAttentionReturn = false;
+    let attentionReturnSeenResolve;
+    let releaseAttentionReturn;
+    const attentionReturnSeen = new Promise((resolveSeen) => { attentionReturnSeenResolve = resolveSeen; });
+    const releaseAttentionReturnPromise = new Promise((resolveRelease) => { releaseAttentionReturn = resolveRelease; });
+    const delayNextAttention = async (route) => {
+      if (!delayAttentionReturn || route.request().method() !== "GET") { await route.continue(); return; }
+      delayAttentionReturn = false;
+      const response = await route.fetch();
+      attentionReturnSeenResolve();
+      await releaseAttentionReturnPromise;
+      await route.fulfill({ response });
+    };
+    await page.route("**/api/attention", delayNextAttention);
+    delayAttentionReturn = true;
+    await page.getByRole("button", { name: "Close job details" }).click();
+    await page.locator("#job-dialog").waitFor({ state: "hidden" });
+    await attentionReturnSeen;
+    await page.getByRole("button", { name: "Facts", exact: true }).click();
+    await page.getByRole("heading", { name: "Your canonical application facts." }).waitFor();
+    const attentionReturnResponse = page.waitForResponse((response) => new URL(response.url()).pathname === "/api/attention" && response.ok());
+    releaseAttentionReturn();
+    await attentionReturnResponse;
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.match(await page.title(), /^Facts/);
+    assert.equal(await page.locator("#facts-workspace.hidden").count(), 0);
+    await page.unroute("**/api/attention", delayNextAttention);
+    await page.getByRole("button", { name: /Needs Attention/ }).click();
+    await page.getByText("4 jobs").waitFor();
 
     let releaseStaleDetail;
     let staleDetailSeenResolve;
