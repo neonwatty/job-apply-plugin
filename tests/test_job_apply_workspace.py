@@ -326,6 +326,69 @@ class WorkspaceServerTests(unittest.TestCase):
         finally:
             server.server_close()
 
+    def test_owner_beta_pending_answer_merge_with_malformed_history_degrades_without_mutation(self):
+        recovery_root = Path(self.temporary.name) / "pending-answer-merge"
+        store = WORKSPACE.STORE_MODULE.Store(recovery_root)
+        store.initialize()
+        store.claim_status()
+        winner = store.put_answer({
+            "question": "Canonical availability?",
+            "state": "confirmed",
+            "value": "Yes",
+        })
+        source = store.put_answer({
+            "question": "When can you start?",
+            "state": "missing",
+        })
+
+        real_atomic_write = WORKSPACE.STORE_MODULE.atomic_write_json
+
+        def interrupt_answer_write(path, payload):
+            if path == store.answers_path:
+                raise OSError("simulated interrupted answer merge")
+            return real_atomic_write(path, payload)
+
+        with mock.patch.object(
+            WORKSPACE.STORE_MODULE,
+            "atomic_write_json",
+            side_effect=interrupt_answer_write,
+        ):
+            with self.assertRaisesRegex(OSError, "interrupted answer merge"):
+                store.merge_answers(
+                    winner["key"],
+                    source["key"],
+                    winner["revision"],
+                    source["revision"],
+                )
+
+        self.assertEqual(
+            store._load_coordinator_journal()["operation"]["kind"],
+            "answer_merge",
+        )
+        store.history_path.write_text('{"schemaVersion":1\n', encoding="utf-8")
+        before = {
+            path.relative_to(recovery_root): path.read_bytes()
+            for path in recovery_root.rglob("*")
+            if path.is_file()
+        }
+
+        server = WORKSPACE.WorkspaceServer(
+            recovery_root, 0, token="pending-answer-merge-token"
+        )
+        try:
+            self.assertEqual(
+                (server.boot_status["status"], server.boot_status["code"]),
+                ("degraded", "corrupt_store"),
+            )
+            after = {
+                path.relative_to(recovery_root): path.read_bytes()
+                for path in recovery_root.rglob("*")
+                if path.is_file()
+            }
+            self.assertEqual(after, before)
+        finally:
+            server.server_close()
+
     def test_owner_beta_startup_rejects_semantically_invalid_claim_timestamps_without_mutation(self):
         base_claim = {
             "claimId": "claim-one",

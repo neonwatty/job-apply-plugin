@@ -1652,12 +1652,18 @@ class Store:
         coordinator_journal = None
         if self.coordinator_journal_path.exists():
             coordinator_journal = self._load_coordinator_journal()
+        pending_operation = (
+            coordinator_journal["operation"]
+            if coordinator_journal is not None
+            else None
+        )
+        pending_history_write = (
+            pending_operation is not None
+            and pending_operation.get("historyEvent") is not None
+        )
         if (
             self.history_path.exists()
-            and (
-                coordinator_journal is None
-                or coordinator_journal["operation"] is None
-            )
+            and not pending_history_write
         ):
             self.read_history()
 
