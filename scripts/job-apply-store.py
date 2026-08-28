@@ -298,7 +298,7 @@ def read_json_object(path: Path, label: str) -> dict[str, Any]:
 
 def validate_version(document: dict[str, Any], label: str) -> None:
     version = document.get("schemaVersion")
-    if not isinstance(version, int):
+    if isinstance(version, bool) or not isinstance(version, int):
         raise StoreError(f"{label} has no valid schemaVersion")
     if version > SCHEMA_VERSION:
         raise StoreError(f"{label} uses unsupported future schemaVersion {version}")

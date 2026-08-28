@@ -4370,6 +4370,7 @@ class StoreTests(unittest.TestCase):
             "at": "2026-08-28T00:00:00Z",
         }
         invalid_cases = {
+            "boolean schema": {**valid, "schemaVersion": True},
             "future schema": {**valid, "schemaVersion": 2},
             "extra credential": {**valid, "password": "private"},
             "nested private value": {**valid, "company": {"value": "private"}},

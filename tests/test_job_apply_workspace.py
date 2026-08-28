@@ -228,6 +228,7 @@ class WorkspaceServerTests(unittest.TestCase):
             "at": "2026-08-28T00:00:00Z",
         }
         invalid_events = (
+            {**valid, "schemaVersion": True},
             {key: value for key, value in valid.items() if key != "eventId"},
             {**valid, "eventId": ""},
             {key: value for key, value in valid.items() if key != "at"},
