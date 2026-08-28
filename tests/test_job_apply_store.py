@@ -4374,6 +4374,17 @@ class StoreTests(unittest.TestCase):
             "extra credential": {**valid, "password": "private"},
             "nested private value": {**valid, "company": {"value": "private"}},
             "invalid answer references": {**valid, "answerKeys": [{"key": "private"}]},
+            "missing event identity": {
+                key: value for key, value in valid.items() if key != "eventId"
+            },
+            "empty event identity": {**valid, "eventId": ""},
+            "missing audit timestamp": {
+                key: value for key, value in valid.items() if key != "at"
+            },
+            "empty audit timestamp": {**valid, "at": ""},
+            "missing answer references": {
+                key: value for key, value in valid.items() if key != "answerKeys"
+            },
             "uppercase identifier": {**valid, "event": "Future-Event"},
             "unicode identifier": {**valid, "event": "futuré-event"},
             "overlong identifier": {**valid, "event": "f" * 65},

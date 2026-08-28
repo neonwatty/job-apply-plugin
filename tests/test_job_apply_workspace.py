@@ -218,6 +218,43 @@ class WorkspaceServerTests(unittest.TestCase):
         finally:
             server.server_close()
 
+    def test_owner_beta_incomplete_future_history_enters_degraded_recovery_without_mutation(self):
+        valid = {
+            "schemaVersion": 1,
+            "eventId": "future-workspace-event",
+            "applicationId": "future-workspace-job",
+            "event": "future-safe-event",
+            "answerKeys": [],
+            "at": "2026-08-28T00:00:00Z",
+        }
+        invalid_events = (
+            {key: value for key, value in valid.items() if key != "eventId"},
+            {**valid, "eventId": ""},
+            {key: value for key, value in valid.items() if key != "at"},
+            {**valid, "at": ""},
+            {key: value for key, value in valid.items() if key != "answerKeys"},
+        )
+
+        for index, event in enumerate(invalid_events):
+            with self.subTest(event=event):
+                degraded_root = Path(self.temporary.name) / f"incomplete-history-{index}"
+                degraded_root.mkdir()
+                history_path = degraded_root / "applications.jsonl"
+                history_path.write_text(json.dumps(event) + "\n", encoding="utf-8")
+                before = history_path.read_bytes()
+
+                server = WORKSPACE.WorkspaceServer(
+                    degraded_root, 0, token=f"incomplete-history-token-{index}"
+                )
+                try:
+                    self.assertEqual(
+                        (server.boot_status["status"], server.boot_status["code"]),
+                        ("degraded", "corrupt_store"),
+                    )
+                    self.assertEqual(history_path.read_bytes(), before)
+                finally:
+                    server.server_close()
+
     def test_owner_beta_startup_rejects_semantically_invalid_claim_timestamps_without_mutation(self):
         base_claim = {
             "claimId": "claim-one",

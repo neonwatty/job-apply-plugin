@@ -1003,14 +1003,18 @@ def _validate_history_event_record(event: dict[str, Any]) -> None:
         or not HISTORY_EVENT_IDENTIFIER.fullmatch(event_name)
     ):
         raise StoreError("history event type is invalid")
-    answer_keys = event.get("answerKeys", [])
+    if not isinstance(event.get("eventId"), str) or not event["eventId"]:
+        raise StoreError("history event id is invalid")
+    if not isinstance(event.get("at"), str) or not event["at"]:
+        raise StoreError("history event timestamp is invalid")
+    answer_keys = event.get("answerKeys")
     if not isinstance(answer_keys, list) or not all(
         isinstance(item, str) for item in answer_keys
     ):
-        raise StoreError("history answerKeys must be strings")
+        raise StoreError("history answerKeys list is invalid")
     _validate_optional_strings(
         event,
-        {"eventId", "company", "role", "ats", "status", "at"},
+        {"company", "role", "ats", "status"},
         "history event",
     )
 

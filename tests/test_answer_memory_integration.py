@@ -537,6 +537,32 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
         }
         self.assertEqual(after, before)
 
+    def test_cli_history_rejects_future_events_without_complete_audit_envelope(self):
+        self.json_store("init")
+        history_path = self.home / ".job-apply" / "applications.jsonl"
+        valid = {
+            "schemaVersion": 1,
+            "eventId": "future-cli-event",
+            "applicationId": "future-cli-application",
+            "event": "future-safe-event",
+            "answerKeys": [],
+            "at": "2026-08-28T00:00:00Z",
+        }
+        invalid_events = (
+            {key: value for key, value in valid.items() if key != "eventId"},
+            {**valid, "eventId": ""},
+            {key: value for key, value in valid.items() if key != "at"},
+            {**valid, "at": ""},
+            {key: value for key, value in valid.items() if key != "answerKeys"},
+        )
+
+        for event in invalid_events:
+            with self.subTest(event=event):
+                history_path.write_text(json.dumps(event) + "\n", encoding="utf-8")
+                completed = self.run_store("history-list", check=False)
+                self.assertNotEqual(completed.returncode, 0)
+                self.assertNotIn("future-cli-application", completed.stderr)
+
     def test_resume_proposal_cli_autofills_and_reviews_conflicts(self):
         self.json_store("init")
         profile_input = self.write_input("proposal-profile.json", {"firstName": "Human"})
