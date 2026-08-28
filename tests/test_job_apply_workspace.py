@@ -180,6 +180,44 @@ class WorkspaceServerTests(unittest.TestCase):
         finally:
             server.server_close()
 
+    def test_owner_beta_safe_future_history_starts_ready_without_mutation(self):
+        compatibility_root = Path(self.temporary.name) / "future-history-store"
+        store = WORKSPACE.STORE_MODULE.Store(compatibility_root)
+        store.initialize()
+        store.claim_status()
+        future_event = {
+            "schemaVersion": 1,
+            "eventId": "future-workspace-event",
+            "applicationId": "future-workspace-job",
+            "event": "future-safe-event",
+            "status": "future-status",
+            "answerKeys": [],
+            "at": "2026-08-28T00:00:00Z",
+        }
+        store.history_path.write_text(
+            json.dumps(future_event) + "\n", encoding="utf-8"
+        )
+        before = {
+            path.relative_to(compatibility_root): path.read_bytes()
+            for path in compatibility_root.rglob("*")
+            if path.is_file()
+        }
+
+        server = WORKSPACE.WorkspaceServer(
+            compatibility_root, 0, token="future-history-token"
+        )
+        try:
+            self.assertEqual(server.boot_status, {"status": "ready", "code": "ready"})
+            self.assertEqual(server.store.read_history(), [future_event])
+            after = {
+                path.relative_to(compatibility_root): path.read_bytes()
+                for path in compatibility_root.rglob("*")
+                if path.is_file()
+            }
+            self.assertEqual(after, before)
+        finally:
+            server.server_close()
+
     def test_owner_beta_startup_rejects_semantically_invalid_claim_timestamps_without_mutation(self):
         base_claim = {
             "claimId": "claim-one",

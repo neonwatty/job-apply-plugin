@@ -5,14 +5,21 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SMOKE_TEMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/job-apply-smoke.XXXXXX")"
 SMOKE_CLAUDE_CONFIG_DIR="$SMOKE_TEMP_ROOT/claude-config"
 SMOKE_CODEX_HOME="$SMOKE_TEMP_ROOT/codex-home"
+SMOKE_CODEX_UPGRADE_HOME="$SMOKE_TEMP_ROOT/codex-upgrade-home"
 SMOKE_FIXTURE_DIR="$SMOKE_TEMP_ROOT/plugin-fixture"
+SMOKE_UPGRADE_FIXTURE_DIR="$SMOKE_TEMP_ROOT/plugin-upgrade-fixture"
 
 cleanup() {
   rm -rf -- "$SMOKE_TEMP_ROOT"
 }
 trap cleanup EXIT
 
-mkdir -p "$SMOKE_CLAUDE_CONFIG_DIR" "$SMOKE_CODEX_HOME" "$SMOKE_FIXTURE_DIR"
+mkdir -p \
+  "$SMOKE_CLAUDE_CONFIG_DIR" \
+  "$SMOKE_CODEX_HOME" \
+  "$SMOKE_CODEX_UPGRADE_HOME" \
+  "$SMOKE_FIXTURE_DIR" \
+  "$SMOKE_UPGRADE_FIXTURE_DIR"
 
 echo "Validating plugin manifest"
 claude plugin validate "$REPO_ROOT"
@@ -499,6 +506,120 @@ for generated in fixture.rglob("*"):
 print("Packaged fixture exclusions passed")
 PY
 
+echo "Creating isolated prior-version Codex upgrade fixture"
+cp -R "$SMOKE_FIXTURE_DIR/." "$SMOKE_UPGRADE_FIXTURE_DIR"
+python3 - "$SMOKE_UPGRADE_FIXTURE_DIR" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+fixture = Path(sys.argv[1])
+manifest_path = fixture / ".codex-plugin" / "plugin.json"
+manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+manifest["version"] = "1.1.0"
+manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+(fixture / "scripts" / "job-apply-store.py").write_text(
+    "# isolated-old-version-sentinel\n", encoding="utf-8"
+)
+PY
+
+CODEX_HOME="$SMOKE_CODEX_UPGRADE_HOME" codex plugin marketplace add \
+  "$SMOKE_UPGRADE_FIXTURE_DIR" --json \
+  > "$SMOKE_TEMP_ROOT/codex-upgrade-marketplace-add.json"
+CODEX_HOME="$SMOKE_CODEX_UPGRADE_HOME" codex plugin add \
+  job-apply@neonwatty-plugins --json \
+  > "$SMOKE_TEMP_ROOT/codex-upgrade-old-plugin-add.json"
+
+python3 - "$SMOKE_CODEX_UPGRADE_HOME" <<'PY'
+import sys
+from pathlib import Path
+
+cache = (
+    Path(sys.argv[1])
+    / "plugins" / "cache" / "neonwatty-plugins" / "job-apply" / "1.1.0"
+)
+if cache.name != "1.1.0" or not cache.is_dir():
+    raise SystemExit("isolated prior Codex version directory was not selected")
+if (cache / "scripts" / "job-apply-store.py").read_text(encoding="utf-8") != "# isolated-old-version-sentinel\n":
+    raise SystemExit("isolated prior Codex sentinel bytes were not installed")
+print("Isolated prior Codex package installed")
+PY
+
+python3 - "$SMOKE_FIXTURE_DIR" "$SMOKE_UPGRADE_FIXTURE_DIR" <<'PY'
+import shutil
+import sys
+from pathlib import Path
+
+source = Path(sys.argv[1])
+target = Path(sys.argv[2])
+critical = (
+    ".codex-plugin/plugin.json",
+    "scripts/job-apply-store.py",
+    "scripts/job-apply-workspace.py",
+    "skills/answer-memory/SKILL.md",
+    "skills/job-apply/SKILL.md",
+    "workspace/app.js",
+)
+for relative in critical:
+    shutil.copy2(source / relative, target / relative)
+PY
+
+CODEX_HOME="$SMOKE_CODEX_UPGRADE_HOME" codex plugin add \
+  job-apply@neonwatty-plugins --json \
+  > "$SMOKE_TEMP_ROOT/codex-upgrade-new-plugin-add.json"
+CODEX_HOME="$SMOKE_CODEX_UPGRADE_HOME" codex plugin list --json \
+  > "$SMOKE_TEMP_ROOT/codex-upgrade-plugin-list.json"
+
+python3 - \
+  "$SMOKE_TEMP_ROOT/codex-upgrade-plugin-list.json" \
+  "$SMOKE_CODEX_UPGRADE_HOME" \
+  "$SMOKE_FIXTURE_DIR" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+plugins = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+match = next(
+    (
+        plugin
+        for plugin in plugins.get("installed", [])
+        if plugin.get("pluginId") == "job-apply@neonwatty-plugins"
+    ),
+    None,
+)
+if not match or not match.get("enabled"):
+    raise SystemExit("isolated upgraded Codex plugin is not selected")
+
+source = Path(sys.argv[3])
+version = json.loads(
+    (source / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
+)["version"]
+if match.get("version") != version:
+    raise SystemExit("isolated upgraded Codex selection does not match the manifest version")
+installed = (
+    Path(sys.argv[2])
+    / "plugins" / "cache" / "neonwatty-plugins" / "job-apply" / version
+)
+if installed.name != version or not installed.is_dir():
+    raise SystemExit("upgraded Codex version directory does not match the manifest")
+critical = (
+    ".codex-plugin/plugin.json",
+    "scripts/job-apply-store.py",
+    "scripts/job-apply-workspace.py",
+    "skills/answer-memory/SKILL.md",
+    "skills/job-apply/SKILL.md",
+    "workspace/app.js",
+)
+for relative in critical:
+    if (installed / relative).read_bytes() != (source / relative).read_bytes():
+        raise SystemExit(f"upgraded Codex bytes differ for {relative}")
+if b"isolated-old-version-sentinel" in (
+    installed / "scripts" / "job-apply-store.py"
+).read_bytes():
+    raise SystemExit("upgraded Codex package retained prior sentinel bytes")
+print("Isolated Codex old-to-new replacement and critical-byte parity passed")
+PY
+
 python3 - "$SMOKE_FIXTURE_DIR" "$SMOKE_TEMP_ROOT" <<'PY'
 import base64
 import http.client
@@ -752,7 +873,10 @@ CODEX_HOME="$SMOKE_CODEX_HOME" codex plugin add job-apply@neonwatty-plugins --js
 CODEX_HOME="$SMOKE_CODEX_HOME" codex plugin list --json \
   > "$SMOKE_TEMP_ROOT/codex-plugin-list.json"
 
-python3 - "$SMOKE_TEMP_ROOT/codex-plugin-list.json" "$SMOKE_CODEX_HOME" <<'PY'
+python3 - \
+  "$SMOKE_TEMP_ROOT/codex-plugin-list.json" \
+  "$SMOKE_CODEX_HOME" \
+  "$SMOKE_FIXTURE_DIR" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -770,6 +894,14 @@ cache_root = Path(sys.argv[2]) / "plugins" / "cache" / "neonwatty-plugins" / "jo
 versions = [path for path in cache_root.iterdir() if path.is_dir()]
 if len(versions) != 1:
     raise SystemExit(f"expected one isolated Codex plugin version, found {len(versions)}")
+source = Path(sys.argv[3])
+manifest_version = json.loads(
+    (source / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
+)["version"]
+if match.get("version") != manifest_version:
+    raise SystemExit("installed Codex selection does not match the manifest version")
+if versions[0].name != manifest_version:
+    raise SystemExit("installed Codex version directory does not match the manifest")
 
 expected = {"answer-memory", "job-apply", "job-search", "job-preferences", "job-workspace"}
 installed_skills = {
@@ -781,7 +913,18 @@ if installed_skills != expected:
         f"got {sorted(installed_skills)}"
     )
 
-print("Isolated Codex marketplace install passed")
+for relative in (
+    ".codex-plugin/plugin.json",
+    "scripts/job-apply-store.py",
+    "scripts/job-apply-workspace.py",
+    "skills/answer-memory/SKILL.md",
+    "skills/job-apply/SKILL.md",
+    "workspace/app.js",
+):
+    if (versions[0] / relative).read_bytes() != (source / relative).read_bytes():
+        raise SystemExit(f"installed Codex bytes differ for {relative}")
+
+print("Isolated Codex marketplace install and critical-byte parity passed")
 PY
 
 echo "Plugin smoke checks passed"

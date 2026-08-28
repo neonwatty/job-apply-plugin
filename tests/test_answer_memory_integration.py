@@ -489,6 +489,54 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
         self.assertNotIn(acquired["token"], serialized)
         self.assertNotIn("synthetic resume", serialized)
 
+    def test_cli_commands_read_safe_future_history_without_rewriting_store(self):
+        self.json_store("init")
+        self.json_store("claim-status")
+        history_path = self.home / ".job-apply" / "applications.jsonl"
+        events = [
+            {
+                "schemaVersion": 1,
+                "eventId": f"coordinator-event-{index}",
+                "applicationId": "compatibility-job",
+                "event": event,
+                "status": status,
+                "answerKeys": [],
+                "at": f"2026-08-28T00:0{index}:00Z",
+            }
+            for index, (event, status) in enumerate(
+                (
+                    ("job-started", "in_progress"),
+                    ("claim-recovered", "in_progress"),
+                    ("job-blocked", "needs_info"),
+                    ("future-safe-event", "future-status"),
+                ),
+                1,
+            )
+        ]
+        history_path.write_text(
+            "".join(json.dumps(event) + "\n" for event in events),
+            encoding="utf-8",
+        )
+        store_root = self.home / ".job-apply"
+        before = {
+            path.relative_to(store_root): path.read_bytes()
+            for path in store_root.rglob("*")
+            if path.is_file()
+        }
+
+        self.json_store("init")
+        self.assertEqual(self.json_store("profile-get"), {})
+        self.assertEqual(self.json_store("job-list"), [])
+        self.assertIsNone(self.json_store("claim-status")["claim"])
+        self.assertEqual(self.json_store("history-list"), events)
+
+        after = {
+            path.relative_to(store_root): path.read_bytes()
+            for path in store_root.rglob("*")
+            if path.is_file()
+        }
+        self.assertEqual(after, before)
+
     def test_resume_proposal_cli_autofills_and_reviews_conflicts(self):
         self.json_store("init")
         profile_input = self.write_input("proposal-profile.json", {"firstName": "Human"})
