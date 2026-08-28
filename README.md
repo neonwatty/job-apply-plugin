@@ -68,6 +68,12 @@ codex plugin add job-apply@neonwatty-plugins
 
 Start a new Codex task after installation, then invoke `$job-apply:job-apply`.
 
+When testing an unreleased branch, first check out the exact commit in an isolated
+worktree and pass that worktree's absolute path to `codex plugin marketplace add`.
+After installing, confirm that `codex plugin list --json` selects the manifest's
+version directory and start a new Codex task. This keeps branch tests tied to one
+explicit candidate instead of a previously cached package with the same version.
+
 ### Claude Code
 
 ```bash

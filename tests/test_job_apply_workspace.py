@@ -180,6 +180,216 @@ class WorkspaceServerTests(unittest.TestCase):
         finally:
             server.server_close()
 
+    def test_owner_beta_safe_future_history_starts_ready_without_mutation(self):
+        compatibility_root = Path(self.temporary.name) / "future-history-store"
+        store = WORKSPACE.STORE_MODULE.Store(compatibility_root)
+        store.initialize()
+        store.claim_status()
+        future_event = {
+            "schemaVersion": 1,
+            "eventId": "future-workspace-event",
+            "applicationId": "future-workspace-job",
+            "event": "future-safe-event",
+            "status": "future-status",
+            "answerKeys": [],
+            "at": "2026-08-28T00:00:00Z",
+        }
+        store.history_path.write_text(
+            json.dumps(future_event) + "\n", encoding="utf-8"
+        )
+        before = {
+            path.relative_to(compatibility_root): path.read_bytes()
+            for path in compatibility_root.rglob("*")
+            if path.is_file()
+        }
+
+        server = WORKSPACE.WorkspaceServer(
+            compatibility_root, 0, token="future-history-token"
+        )
+        try:
+            self.assertEqual(server.boot_status, {"status": "ready", "code": "ready"})
+            self.assertEqual(server.store.read_history(), [future_event])
+            after = {
+                path.relative_to(compatibility_root): path.read_bytes()
+                for path in compatibility_root.rglob("*")
+                if path.is_file()
+            }
+            self.assertEqual(after, before)
+        finally:
+            server.server_close()
+
+    def test_owner_beta_incomplete_future_history_enters_degraded_recovery_without_mutation(self):
+        valid = {
+            "schemaVersion": 1,
+            "eventId": "future-workspace-event",
+            "applicationId": "future-workspace-job",
+            "event": "future-safe-event",
+            "answerKeys": [],
+            "at": "2026-08-28T00:00:00Z",
+        }
+        invalid_events = (
+            {**valid, "schemaVersion": True},
+            {key: value for key, value in valid.items() if key != "eventId"},
+            {**valid, "eventId": ""},
+            {key: value for key, value in valid.items() if key != "at"},
+            {**valid, "at": ""},
+            {key: value for key, value in valid.items() if key != "answerKeys"},
+        )
+
+        for index, event in enumerate(invalid_events):
+            with self.subTest(event=event):
+                degraded_root = Path(self.temporary.name) / f"incomplete-history-{index}"
+                store = WORKSPACE.STORE_MODULE.Store(degraded_root)
+                store.initialize()
+                store.claim_status()
+                history_path = store.history_path
+                history_path.write_text(json.dumps(event) + "\n", encoding="utf-8")
+                before = {
+                    path.relative_to(degraded_root): path.read_bytes()
+                    for path in degraded_root.rglob("*")
+                    if path.is_file()
+                }
+
+                server = WORKSPACE.WorkspaceServer(
+                    degraded_root, 0, token=f"incomplete-history-token-{index}"
+                )
+                try:
+                    self.assertEqual(
+                        (server.boot_status["status"], server.boot_status["code"]),
+                        ("degraded", "corrupt_store"),
+                    )
+                    after = {
+                        path.relative_to(degraded_root): path.read_bytes()
+                        for path in degraded_root.rglob("*")
+                        if path.is_file()
+                    }
+                    self.assertEqual(after, before)
+                finally:
+                    server.server_close()
+
+    def test_owner_beta_pending_coordinator_history_repair_starts_ready(self):
+        recovery_root = Path(self.temporary.name) / "pending-history-recovery"
+        store = WORKSPACE.STORE_MODULE.Store(recovery_root)
+        store.initialize()
+        store.replace_profile(
+            {"firstName": "Ada"}, expected_revision=1, source="user"
+        )
+        resume_path = Path(self.temporary.name) / "recovery-resume.pdf"
+        resume_path.write_bytes(b"%PDF-1.7\nrecovery")
+        resume = store.create_resume(
+            {"id": "recovery", "label": "Recovery", "path": str(resume_path)}
+        )
+        job = store.create_job({
+            "id": "recovery-job",
+            "url": "https://example.com/jobs/recovery",
+            "resumeId": resume["id"],
+        })
+        ready = store.transition_job(job["id"], "ready", job["revision"])
+
+        def append_partial_then_crash(event):
+            encoded = (
+                json.dumps(event, sort_keys=True, ensure_ascii=False) + "\n"
+            ).encode("utf-8")
+            descriptor = os.open(
+                store.history_path,
+                os.O_WRONLY | os.O_CREAT | os.O_APPEND,
+                0o600,
+            )
+            try:
+                os.write(descriptor, encoded[: len(encoded) // 2])
+                os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
+            raise OSError("simulated process crash after partial append")
+
+        with mock.patch.object(
+            store,
+            "_append_history_event_idempotent_locked",
+            side_effect=append_partial_then_crash,
+        ):
+            with self.assertRaisesRegex(OSError, "partial append"):
+                store.acquire_ready_job(job["id"], "codex", ready["revision"])
+
+        self.assertFalse(store.history_path.read_bytes().endswith(b"\n"))
+        server = WORKSPACE.WorkspaceServer(
+            recovery_root, 0, token="pending-history-recovery-token"
+        )
+        try:
+            self.assertEqual(server.boot_status, {"status": "ready", "code": "ready"})
+            self.assertEqual(server.store.get_job(job["id"])["status"], "in_progress")
+            self.assertEqual(
+                [event["event"] for event in server.store.read_history()],
+                ["job-started"],
+            )
+            self.assertIsNone(
+                server.store._load_coordinator_journal()["operation"]
+            )
+        finally:
+            server.server_close()
+
+    def test_owner_beta_pending_answer_merge_with_malformed_history_degrades_without_mutation(self):
+        recovery_root = Path(self.temporary.name) / "pending-answer-merge"
+        store = WORKSPACE.STORE_MODULE.Store(recovery_root)
+        store.initialize()
+        store.claim_status()
+        winner = store.put_answer({
+            "question": "Canonical availability?",
+            "state": "confirmed",
+            "value": "Yes",
+        })
+        source = store.put_answer({
+            "question": "When can you start?",
+            "state": "missing",
+        })
+
+        real_atomic_write = WORKSPACE.STORE_MODULE.atomic_write_json
+
+        def interrupt_answer_write(path, payload):
+            if path == store.answers_path:
+                raise OSError("simulated interrupted answer merge")
+            return real_atomic_write(path, payload)
+
+        with mock.patch.object(
+            WORKSPACE.STORE_MODULE,
+            "atomic_write_json",
+            side_effect=interrupt_answer_write,
+        ):
+            with self.assertRaisesRegex(OSError, "interrupted answer merge"):
+                store.merge_answers(
+                    winner["key"],
+                    source["key"],
+                    winner["revision"],
+                    source["revision"],
+                )
+
+        self.assertEqual(
+            store._load_coordinator_journal()["operation"]["kind"],
+            "answer_merge",
+        )
+        store.history_path.write_text('{"schemaVersion":1\n', encoding="utf-8")
+        before = {
+            path.relative_to(recovery_root): path.read_bytes()
+            for path in recovery_root.rglob("*")
+            if path.is_file()
+        }
+
+        server = WORKSPACE.WorkspaceServer(
+            recovery_root, 0, token="pending-answer-merge-token"
+        )
+        try:
+            self.assertEqual(
+                (server.boot_status["status"], server.boot_status["code"]),
+                ("degraded", "corrupt_store"),
+            )
+            after = {
+                path.relative_to(recovery_root): path.read_bytes()
+                for path in recovery_root.rglob("*")
+                if path.is_file()
+            }
+            self.assertEqual(after, before)
+        finally:
+            server.server_close()
+
     def test_owner_beta_startup_rejects_semantically_invalid_claim_timestamps_without_mutation(self):
         base_claim = {
             "claimId": "claim-one",

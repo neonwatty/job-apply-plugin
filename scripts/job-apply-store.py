@@ -44,6 +44,7 @@ HISTORY_EVENTS = {
     "claim-recovered",
     "job-blocked",
 }
+HISTORY_EVENT_IDENTIFIER = re.compile(r"^[a-z][a-z0-9-]{0,63}$", re.ASCII)
 SESSION_STATUSES = {"active", "review", "completed", "abandoned"}
 JOB_STATUSES = {
     "saved",
@@ -297,7 +298,7 @@ def read_json_object(path: Path, label: str) -> dict[str, Any]:
 
 def validate_version(document: dict[str, Any], label: str) -> None:
     version = document.get("schemaVersion")
-    if not isinstance(version, int):
+    if isinstance(version, bool) or not isinstance(version, int):
         raise StoreError(f"{label} has no valid schemaVersion")
     if version > SCHEMA_VERSION:
         raise StoreError(f"{label} uses unsupported future schemaVersion {version}")
@@ -978,7 +979,9 @@ def _validate_answer_redirects(
     return records
 
 
-def _validate_history_event(event: dict[str, Any]) -> None:
+def _validate_history_event_record(event: dict[str, Any]) -> None:
+    """Validate the value-free history schema without assigning event semantics."""
+
     allowed = {
         "schemaVersion",
         "eventId",
@@ -994,18 +997,36 @@ def _validate_history_event(event: dict[str, Any]) -> None:
     if set(event) - allowed:
         raise StoreError("history event contains unsupported fields")
     _safe_session_id(event.get("applicationId", ""))
-    if event.get("event") not in HISTORY_EVENTS:
-        raise StoreError("history event type is unsupported")
-    answer_keys = event.get("answerKeys", [])
+    event_name = event.get("event")
+    if (
+        not isinstance(event_name, str)
+        or not HISTORY_EVENT_IDENTIFIER.fullmatch(event_name)
+    ):
+        raise StoreError("history event type is invalid")
+    if not isinstance(event.get("eventId"), str) or not event["eventId"]:
+        raise StoreError("history event id is invalid")
+    if not isinstance(event.get("at"), str) or not event["at"]:
+        raise StoreError("history event timestamp is invalid")
+    answer_keys = event.get("answerKeys")
     if not isinstance(answer_keys, list) or not all(
         isinstance(item, str) for item in answer_keys
     ):
-        raise StoreError("history answerKeys must be strings")
+        raise StoreError("history answerKeys list is invalid")
     _validate_optional_strings(
         event,
-        {"eventId", "company", "role", "ats", "status", "at"},
+        {"company", "role", "ats", "status"},
         "history event",
     )
+
+
+def _validate_history_event_for_write(event: dict[str, Any]) -> None:
+    """Apply this helper version's strict event-name write policy."""
+
+    _validate_history_event_record(event)
+    if not isinstance(event.get("eventId"), str) or not event["eventId"]:
+        raise StoreError("history event id is invalid")
+    if event["event"] not in HISTORY_EVENTS:
+        raise StoreError("history event type is unsupported")
 
 
 def _validate_session_document(session: dict[str, Any]) -> None:
@@ -1626,15 +1647,25 @@ class Store:
             self._load_extraction_journal()
         if self.sessions_path.exists():
             self._validate_existing_session_documents()
-        coordinator_exists = (
-            self.coordinator_path.exists() or self.coordinator_journal_path.exists()
-        )
-        if self.history_path.exists() and not coordinator_exists:
-            self.read_history()
         if self.coordinator_path.exists():
             self._load_coordinator_document()
+        coordinator_journal = None
         if self.coordinator_journal_path.exists():
-            self._load_coordinator_journal()
+            coordinator_journal = self._load_coordinator_journal()
+        pending_operation = (
+            coordinator_journal["operation"]
+            if coordinator_journal is not None
+            else None
+        )
+        pending_history_write = (
+            pending_operation is not None
+            and pending_operation.get("historyEvent") is not None
+        )
+        if (
+            self.history_path.exists()
+            and not pending_history_write
+        ):
+            self.read_history()
 
     def _validate_existing_session_documents(self) -> None:
         """Validate canonical session files without following or changing identities."""
@@ -1818,7 +1849,7 @@ class Store:
             ):
                 raise StoreError("coordinator journal operation is invalid")
             event = _require_object(operation.get("historyEvent"), "coordinator history event")
-            _validate_history_event(event)
+            _validate_history_event_for_write(event)
             if event.get("applicationId") != job_id:
                 raise StoreError("coordinator history identity does not match")
             if kind in {"acquire", "handoff"}:
@@ -5041,14 +5072,26 @@ class Store:
         for field in ("company", "role", "ats"):
             if isinstance(job.get(field), str):
                 record[field] = job[field]
-        _validate_history_event(record)
+        _validate_history_event_for_write(record)
         return record
 
+    def _history_event_is_idempotent_locked(self, event: dict[str, Any]) -> bool:
+        _validate_history_event_for_write(event)
+        matching = [
+            item
+            for item in self.read_history()
+            if item.get("eventId") == event["eventId"]
+        ]
+        if not matching:
+            return False
+        normalized = _canonical_json(event)
+        if all(_canonical_json(item) == normalized for item in matching):
+            return True
+        raise StoreError("history event id collision")
+
     def _append_history_event_idempotent_locked(self, event: dict[str, Any]) -> None:
-        existing = self.read_history()
-        if any(item.get("eventId") == event["eventId"] for item in existing):
+        if self._history_event_is_idempotent_locked(event):
             return
-        _validate_history_event(event)
         encoded = (json.dumps(event, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8")
         descriptor = os.open(
             self.history_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600
@@ -5107,6 +5150,9 @@ class Store:
                 {"schemaVersion": SCHEMA_VERSION, "operation": None},
             )
             return
+        event = operation.get("historyEvent")
+        if event is not None:
+            self._history_event_is_idempotent_locked(event)
         job_id = _safe_session_id(operation.get("jobId", ""))
         if "targetStatus" in operation:
             jobs = self._load_jobs_document()
@@ -5135,7 +5181,6 @@ class Store:
         if session is not None:
             _validate_session_document(session)
             atomic_write_json(self._session_path(job_id), session)
-        event = operation.get("historyEvent")
         if event is not None:
             self._append_history_event_idempotent_locked(event)
         atomic_write_json(
@@ -5148,6 +5193,9 @@ class Store:
         )
 
     def _commit_coordinator_operation_locked(self, operation: dict[str, Any]) -> None:
+        event = operation.get("historyEvent")
+        if event is not None:
+            self._history_event_is_idempotent_locked(event)
         atomic_write_json(
             self.coordinator_journal_path,
             {"schemaVersion": SCHEMA_VERSION, "operation": operation},
@@ -6137,7 +6185,7 @@ class Store:
                     event = json.loads(line)
                     _require_object(event, f"history line {number}")
                     validate_version(event, f"history line {number}")
-                    _validate_history_event(event)
+                    _validate_history_event_record(event)
                     events.append(event)
         except (OSError, UnicodeError, json.JSONDecodeError) as error:
             raise StoreError(f"cannot read valid history JSONL at {self.history_path}") from error
@@ -6171,7 +6219,7 @@ class Store:
             "event": event_name,
             "answerKeys": answer_keys,
         }
-        _validate_history_event(event)
+        _validate_history_event_for_write(event)
         with exclusive_file_lock(self.store_lock_path):
             answers = self._load_answers_document()
             for key in event["answerKeys"]:
@@ -6202,7 +6250,10 @@ class Store:
         self.initialize()
         history = self.read_history()
         application_events = [
-            event for event in history if event["applicationId"] == application_id
+            event
+            for event in history
+            if event["applicationId"] == application_id
+            and event["event"] in HISTORY_EVENTS
         ]
         if any(
             event.get("ats") not in {None, ats} for event in application_events

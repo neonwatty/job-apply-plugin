@@ -489,6 +489,81 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
         self.assertNotIn(acquired["token"], serialized)
         self.assertNotIn("synthetic resume", serialized)
 
+    def test_cli_commands_read_safe_future_history_without_rewriting_store(self):
+        self.json_store("init")
+        self.json_store("claim-status")
+        history_path = self.home / ".job-apply" / "applications.jsonl"
+        events = [
+            {
+                "schemaVersion": 1,
+                "eventId": f"coordinator-event-{index}",
+                "applicationId": "compatibility-job",
+                "event": event,
+                "status": status,
+                "answerKeys": [],
+                "at": f"2026-08-28T00:0{index}:00Z",
+            }
+            for index, (event, status) in enumerate(
+                (
+                    ("job-started", "in_progress"),
+                    ("claim-recovered", "in_progress"),
+                    ("job-blocked", "needs_info"),
+                    ("future-safe-event", "future-status"),
+                ),
+                1,
+            )
+        ]
+        history_path.write_text(
+            "".join(json.dumps(event) + "\n" for event in events),
+            encoding="utf-8",
+        )
+        store_root = self.home / ".job-apply"
+        before = {
+            path.relative_to(store_root): path.read_bytes()
+            for path in store_root.rglob("*")
+            if path.is_file()
+        }
+
+        self.json_store("init")
+        self.assertEqual(self.json_store("profile-get"), {})
+        self.assertEqual(self.json_store("job-list"), [])
+        self.assertIsNone(self.json_store("claim-status")["claim"])
+        self.assertEqual(self.json_store("history-list"), events)
+
+        after = {
+            path.relative_to(store_root): path.read_bytes()
+            for path in store_root.rglob("*")
+            if path.is_file()
+        }
+        self.assertEqual(after, before)
+
+    def test_cli_history_rejects_future_events_without_complete_audit_envelope(self):
+        self.json_store("init")
+        history_path = self.home / ".job-apply" / "applications.jsonl"
+        valid = {
+            "schemaVersion": 1,
+            "eventId": "future-cli-event",
+            "applicationId": "future-cli-application",
+            "event": "future-safe-event",
+            "answerKeys": [],
+            "at": "2026-08-28T00:00:00Z",
+        }
+        invalid_events = (
+            {**valid, "schemaVersion": True},
+            {key: value for key, value in valid.items() if key != "eventId"},
+            {**valid, "eventId": ""},
+            {key: value for key, value in valid.items() if key != "at"},
+            {**valid, "at": ""},
+            {key: value for key, value in valid.items() if key != "answerKeys"},
+        )
+
+        for event in invalid_events:
+            with self.subTest(event=event):
+                history_path.write_text(json.dumps(event) + "\n", encoding="utf-8")
+                completed = self.run_store("history-list", check=False)
+                self.assertNotEqual(completed.returncode, 0)
+                self.assertNotIn("future-cli-application", completed.stderr)
+
     def test_resume_proposal_cli_autofills_and_reviews_conflicts(self):
         self.json_store("init")
         profile_input = self.write_input("proposal-profile.json", {"firstName": "Human"})
