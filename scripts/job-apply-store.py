@@ -1647,15 +1647,19 @@ class Store:
             self._load_extraction_journal()
         if self.sessions_path.exists():
             self._validate_existing_session_documents()
-        coordinator_exists = (
-            self.coordinator_path.exists() or self.coordinator_journal_path.exists()
-        )
-        if self.history_path.exists() and not coordinator_exists:
-            self.read_history()
         if self.coordinator_path.exists():
             self._load_coordinator_document()
+        coordinator_journal = None
         if self.coordinator_journal_path.exists():
-            self._load_coordinator_journal()
+            coordinator_journal = self._load_coordinator_journal()
+        if (
+            self.history_path.exists()
+            and (
+                coordinator_journal is None
+                or coordinator_journal["operation"] is None
+            )
+        ):
+            self.read_history()
 
     def _validate_existing_session_documents(self) -> None:
         """Validate canonical session files without following or changing identities."""
