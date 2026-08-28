@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 import json
 import os
@@ -3376,6 +3377,27 @@ class StoreTests(unittest.TestCase):
             self.store.create_resume(
                 {"id": "oversized", "label": "Oversized", "path": str(oversized)}
             )
+
+    def test_owner_like_redacted_pdf_is_a_reproducible_managed_resume_fixture(self):
+        source = ROOT / "qa" / "testdata" / "resumes" / "owner-like-redacted.pdf"
+        content = source.read_bytes()
+        expected_digest = (
+            "aa5db02218f2eb40ab26521fb614b8bc"
+            "86527fa11ee1c531b5555f6b54aad551"
+        )
+
+        self.assertEqual(hashlib.sha256(content).hexdigest(), expected_digest)
+        created = self.store.import_resume(
+            {"id": "owner-like", "label": "Owner-like redacted", "path": str(source)}
+        )
+
+        self.assertEqual(created["storageKind"], "managed")
+        self.assertEqual(created["mediaType"], STORE_MODULE.RESUME_MEDIA_TYPES[".pdf"])
+        self.assertEqual(created["digest"], expected_digest)
+        self.assertNotIn("path", created)
+        stored_record, stored_content = self.store.read_resume_content(created["id"])
+        self.assertEqual(stored_record["digest"], expected_digest)
+        self.assertEqual(stored_content, content)
 
     def test_failed_managed_staging_is_removed_immediately(self):
         source = self.home / "cleanup.txt"
