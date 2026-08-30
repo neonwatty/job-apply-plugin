@@ -30,6 +30,9 @@ jobs:
       - name: Run Python tests
         run: python3 -m unittest discover -s tests -v
 
+      - name: Verify portable account automation control plane on Linux
+        run: python3 -m unittest -v tests.test_job_apply_accounts tests.test_job_apply_credentials tests.test_job_apply_account_executor tests.test_job_apply_account_canary tests.test_job_apply_account_canary_executor tests.test_job_apply_account_flows tests.test_qa_account tests.test_job_apply_trusted_fill tests.test_job_apply_store tests.test_job_apply_workspace
+
       - name: Run deterministic LinkedIn screening replay
         run: npm run test:qa-screening
 
@@ -77,5 +80,29 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Verify Windows workspace and canonical store lifecycle
-        run: python -m unittest -v tests.test_job_apply_workspace tests.test_job_apply_store
+      - name: Verify Windows workspace, canonical store, and account control plane
+        run: python -m unittest -v tests.test_job_apply_accounts tests.test_job_apply_credentials tests.test_job_apply_account_executor tests.test_job_apply_account_canary tests.test_job_apply_account_canary_executor tests.test_job_apply_account_flows tests.test_qa_account tests.test_job_apply_workspace tests.test_job_apply_store
+
+  macos-credential-helper:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install QA dependencies and browser
+        run: npm ci && npx playwright install chromium
+      - name: Typecheck isolated Security.framework helper
+        run: xcrun swiftc -typecheck native/macos/job_apply_credential_helper.swift native/macos/job_apply_browser_bridge.swift native/macos/job_apply_account_flow_helper.swift native/macos/job_apply_credential_helper_tests.swift native/macos/job_apply_credential_helper_main.swift
+      - name: Verify native helper boundary
+        run: python3 -m unittest -v tests.test_macos_credential_helper tests.test_macos_account_flow_helper
+      - name: Verify observed browser, Store, and native account walkthrough
+        env:
+          JOB_APPLY_OWNER_APPROVED_VISIBLE_BROWSER_TESTS: '1'
+        run: python3 scripts/qa-account.py verify-all --provider macos-keychain --owner-approved-visible-browser-tests --json
+      - name: Verify Oracle email-only account-flow boundary
+        env:
+          JOB_APPLY_OWNER_APPROVED_VISIBLE_BROWSER_TESTS: '1'
+        run: python3 scripts/qa-account.py verify-oracle-email-only --automation-provider macos-accessibility --owner-approved-visible-browser-tests --json

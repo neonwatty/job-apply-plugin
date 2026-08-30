@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Synthetic Account Portal</title><link rel="stylesheet" href="/styles.css"></head>
+<body data-account-mode="__ACCOUNT_MODE__">
+  <main>
+    <p class="kicker">SYNTHETIC LOOPBACK ONLY</p>
+    <h1>Employer account safety portal</h1>
+    <p id="portal-state" role="status" aria-live="polite">Portal state is observed independently after native completion.</p>
+    <section id="password-account" aria-labelledby="protected-heading">
+      <h2 id="protected-heading">Protected native credential field</h2>
+      <label for="job-apply-secure-control">Synthetic password control</label>
+      <input id="job-apply-secure-control" type="password" autocomplete="off" aria-label="job-apply-operation:__OPERATION__">
+      <output id="secure-control" aria-live="polite">Empty — native boundary required</output>
+      <p>No credential value is represented in this document or sent over HTTP.</p>
+    </section>
+    <button id="simulate" type="button">Focus protected synthetic control</button>
+    <section id="email-only-account" hidden aria-labelledby="email-only-heading">
+      <h2 id="email-only-heading">Oracle Recruiting candidate profile</h2>
+      <button id="job-apply-focus-decoy" type="button">Synthetic focus decoy</button>
+      <section id="oracle-form:v1" aria-label="Oracle candidate profile account form">
+        <label for="job-apply-email-control">Email address</label>
+        <input id="job-apply-email-control" type="email" autocomplete="off" aria-label="job-apply-operation:__OPERATION__">
+        <label><input id="job-apply-terms-control" type="checkbox"> Accept exact synthetic recruiting terms</label>
+        <p id="job-apply-terms-document">Synthetic recruiting terms version oracle-email-only-v1.</p>
+        <button id="job-apply-next-control" type="button">Next — create candidate profile only</button>
+        <button id="job-apply-final-tripwire" type="button" disabled>Submit application (forbidden tripwire)</button>
+      </section>
+      <p>Email is removed immediately after the single non-final Next action and is never sent over HTTP.</p>
+    </section>
+    <p id="result" role="status" aria-live="polite"></p>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body></html>

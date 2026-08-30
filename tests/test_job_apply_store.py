@@ -30,6 +30,7 @@ class StoreTests(unittest.TestCase):
         self.root = self.home / ".job-apply"
         self.legacy = self.home / ".claude-job-profile.json"
         self.store = STORE_MODULE.Store(self.root, self.legacy)
+        self._observer_outcomes = {}
 
     def tearDown(self):
         self.temporary.cleanup()
@@ -3916,6 +3917,11 @@ class StoreTests(unittest.TestCase):
         created = self.store.create_resume(
             {"id": "stable", "label": "Stable", "path": str(source)}
         )
+        metadata_only = self.store.update_resume(
+            created["id"], {"label": "Stable metadata"}, created["revision"]
+        )
+        self.assertEqual(metadata_only["contentRevision"], created["contentRevision"])
+        created = metadata_only
         duplicate = self.home / "duplicate.pdf"
         duplicate.write_bytes(source.read_bytes())
         with self.assertRaisesRegex(STORE_MODULE.StoreError, "already managed"):
@@ -3936,6 +3942,7 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(updated["id"], created["id"])
         self.assertEqual(updated["revision"], created["revision"] + 1)
         self.assertNotEqual(updated["digest"], created["digest"])
+        self.assertNotEqual(updated["contentRevision"], created["contentRevision"])
         self.assertFalse((self.store.resume_files_path / created["managedFile"]).exists())
 
         failed_source = self.home / "failed.txt"
@@ -5120,6 +5127,614 @@ class StoreTests(unittest.TestCase):
         self.assertNotIn("Traceback", completed.stderr)
         self.assertNotIn("Ada private data", completed.stderr)
         self.assertIn("storage operation failed", completed.stderr)
+
+    def test_automation_settings_are_closed_revisioned_and_cli_addressable(self):
+        initial = self.store.get_automation_settings()
+        self.assertEqual((initial["enabled"], initial["revision"]), (False, 1))
+        updated = self.store.update_automation_settings(
+            {
+                "enabled": True,
+                "automaticAccountCreation": True,
+                "signupEmail": "owner@example.com",
+                "passwordStrategy": "unique_per_realm",
+            },
+            1,
+        )
+        self.assertEqual(updated["revision"], 2)
+        public = self.store.get_automation_settings(public=True)
+        self.assertNotIn("signupEmail", public)
+        self.assertTrue(public["signupEmailConfigured"])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "revision conflict"):
+            self.store.update_automation_settings({"enabled": False}, 1)
+        for patch in ({"credential": None}, {"token": None}, {"signupEmail": "invalid"}):
+            with self.assertRaises(STORE_MODULE.StoreError):
+                self.store.update_automation_settings(patch, 2)
+
+        completed = subprocess.run(
+            [sys.executable, str(SCRIPT), "--root", str(self.root), "automation-capability", "--platform", "linux"],
+            check=True, capture_output=True, text=True,
+        )
+        capability = json.loads(completed.stdout)
+        self.assertEqual(capability["state"], "unsupported")
+        self.assertIsNone(capability["providerId"])
+        self.assertFalse(capability["credentialOperationsReady"])
+
+        for command in ("automation-settings-get",):
+            completed = subprocess.run(
+                [sys.executable, str(SCRIPT), "--root", str(self.root), command],
+                check=True, capture_output=True, text=True,
+            )
+            projection = json.loads(completed.stdout)
+            self.assertNotIn("signupEmail", projection)
+            self.assertTrue(projection["signupEmailConfigured"])
+            self.assertNotIn("owner@example.com", completed.stdout + completed.stderr)
+
+    def test_employer_accounts_require_proven_realms_and_expose_redacted_projection(self):
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "unresolved"):
+            self.store.create_employer_account("https://jobs.example.com/acme/1")
+        created = self.store.create_employer_account(
+            "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/One",
+            "realm-owner@example.com",
+        )
+        self.assertEqual(created["lifecycleState"], "discovered")
+        self.assertIsNone(created["providerId"])
+        self.assertIsNone(created["credentialRef"])
+        self.assertIsNone(created["credentialVersion"])
+        public = self.store.get_employer_account(created["realmRef"], public=True)
+        self.assertNotIn("descriptor", public)
+        self.assertNotIn("signupEmailOverride", public)
+        self.assertNotIn("credentialRef", public)
+        self.assertTrue(public["signupEmailOverrideConfigured"])
+        self.assertFalse(public["providerAssigned"])
+        oracle = self.store.create_employer_account(
+            "https://tenant.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/jobsearch/job/331081/apply/email"
+        )
+        self.assertEqual(oracle["adapterId"], "oracle-recruiting")
+        self.assertEqual(oracle["flowKind"], "email_only_candidate_profile")
+        self.assertFalse(oracle["credentialRequired"])
+        self.assertEqual(
+            (oracle["providerId"], oracle["credentialRef"], oracle["credentialVersion"]),
+            (None, None, None),
+        )
+        oracle_public = self.store.get_employer_account(oracle["realmRef"], public=True)
+        self.assertFalse(oracle_public["credentialRequired"])
+        self.assertNotIn("descriptor", oracle_public)
+        for rejected_url in (
+            "https://person@acme.wd5.myworkdayjobs.com/jobs/one",
+            "https://acme.wd5.myworkdayjobs.com/jobs/one?session-id=",
+            "https://wd5.myworkday.com/wday/authgwy/acme/login.htmld",
+        ):
+            with self.assertRaisesRegex(STORE_MODULE.StoreError, "unresolved"):
+                self.store.create_employer_account(rejected_url)
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "already exists"):
+            self.store.create_employer_account(
+                "https://acme.wd5.myworkdayjobs.com/fr-FR/Careers/job/Two"
+            )
+        updated = self.store.update_employer_account(
+            created["realmRef"], {"signupEmailOverride": None}, 1
+        )
+        self.assertEqual(updated["revision"], 2)
+
+        cli_commands = (
+            ["employer-account-list"],
+            ["employer-account-get", "--realm-ref", created["realmRef"]],
+        )
+        for arguments in cli_commands:
+            completed = subprocess.run(
+                [sys.executable, str(SCRIPT), "--root", str(self.root), *arguments],
+                check=True, capture_output=True, text=True,
+            )
+            self.assertNotIn("realm-owner@example.com", completed.stdout + completed.stderr)
+            self.assertNotIn('"signupEmailOverride"', completed.stdout)
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "only change"):
+            self.store.update_employer_account(
+                created["realmRef"], {"lifecycleState": "active"}, 2
+            )
+
+    def test_profile_email_copy_is_internal_revisioned_and_redacted(self):
+        self.store.initialize()
+        profile = self.store.replace_profile(
+            {"email": "private@example.invalid"},
+            self.store.inspect_profile()["revision"], "user",
+        )
+        settings = self.store.get_automation_settings()
+        copied = self.store.copy_profile_email_to_automation_settings(
+            profile["revision"], settings["revision"], public=True,
+        )
+        self.assertTrue(copied["signupEmailConfigured"])
+        self.assertNotIn("signupEmail", copied)
+        self.assertNotIn("private", json.dumps(copied))
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "revision conflict"):
+            self.store.copy_profile_email_to_automation_settings(
+                profile["revision"], settings["revision"], public=True,
+            )
+        current = self.store.get_automation_settings()
+        completed = subprocess.run([
+            sys.executable, str(SCRIPT), "--root", str(self.root),
+            "automation-settings-copy-profile-email",
+            "--expected-profile-revision", str(profile["revision"]),
+            "--expected-settings-revision", str(current["revision"]),
+        ], check=True, capture_output=True, text=True)
+        self.assertNotIn("private", completed.stdout + completed.stderr)
+        self.assertNotIn("signupEmail\"", completed.stdout)
+
+    def test_oracle_email_only_execution_is_provider_free_burned_and_non_retryable(self):
+        class Provider:
+            provider_id = "macos-accessibility"
+            def __init__(self, outcome="active", fail=False):
+                self.outcome = outcome; self.fail = fail; self.invocations = 0
+            def execute_email_only(self, _request, private_email):
+                self.invocations += 1
+                identity = private_email()
+                if self.fail or "@" not in identity:
+                    raise ValueError("synthetic failure")
+                identity = None
+                return {
+                    "providerId": self.provider_id, "outcome": self.outcome,
+                    "retryAllowed": False, "finalActionAuthorized": False,
+                    "emailRemoved": True, "termsAccepted": True,
+                    "nextActivations": 1, "credentialProviderInvocations": 0,
+                }
+
+        def prepared(store, suffix):
+            store.replace_profile({"firstName": "Synthetic"}, store.inspect_profile()["revision"], "user")
+            resume_path = self.home / f"oracle-{suffix}.txt"; resume_path.write_text("Synthetic", encoding="utf-8")
+            resume = store.create_resume({"id": f"oracle-{suffix}", "label": "Synthetic", "path": str(resume_path)})
+            url = f"https://tenant.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/jobsearch/job/{1 if suffix == 'success' else 2}/apply/email"
+            job = store.create_job({"id": f"oracle-job-{suffix}", "url": url, "role": "Synthetic", "company": "Synthetic", "resumeId": resume["id"]})
+            ready = store.transition_job(job["id"], "ready", job["revision"])
+            acquired = store.acquire_ready_job(job["id"], "oracle-test", ready["revision"])
+            settings = store.get_automation_settings()
+            settings = store.update_automation_settings({"enabled": True, "automaticAccountCreation": True, "signupEmail": "private@example.invalid"}, settings["revision"])
+            realm = store.resolve_account_realm(url); account = store.create_employer_account(url)
+            controls = {
+                "accountFormFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint("oracle-form:v1"),
+                "emailControlFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint("oracle-email:v1"),
+                "termsControlFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint("oracle-terms-control:v1"),
+                "termsDocumentFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint("oracle-terms-document:v1"),
+                "nextControlFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint("oracle-next-non-final:v1"),
+                "passwordControlFingerprint": None, "createAccountControlFingerprint": None,
+            }
+            packet = {
+                "jobId": job["id"], "jobRevision": acquired["job"]["revision"],
+                "expectedClaimId": acquired["claim"]["claimId"],
+                "realmRef": realm["realmRef"], "realmDescriptor": realm["descriptor"],
+                "flowKind": "email_only_candidate_profile", "accountRevision": account["revision"],
+                "settingsRevision": settings["revision"],
+                "portalUrl": "http://127.0.0.1:49152/synthetic-oracle?operation=" + ("a" * 64),
+                **controls,
+            }
+            packet["accountCreationControlsFingerprint"] = STORE_MODULE.ACCOUNT_FLOWS_MODULE.aggregate_controls(packet)
+            return packet, realm
+
+        self.store.initialize()
+        packet, _realm = prepared(self.store, "success")
+        provider = Provider()
+        result = self.store.execute_synthetic_email_only_account(
+            packet, provider=provider,
+            test_authority=STORE_MODULE.ACCOUNT_FLOWS_MODULE.synthetic_test_authority(),
+        )
+        self.assertTrue(result["authorized"])
+        self.assertEqual(result["account"]["lifecycleState"], "active")
+        self.assertEqual(result["credentialProviderInvocations"], 0)
+        self.assertEqual(provider.invocations, 1)
+        self.assertFalse(result["finalActionAuthorized"])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "revision conflict|cannot be attempted again"):
+            self.store.execute_synthetic_email_only_account(
+                packet, provider=provider,
+                test_authority=STORE_MODULE.ACCOUNT_FLOWS_MODULE.synthetic_test_authority(),
+            )
+
+        second = STORE_MODULE.Store(self.home / ".job-apply-ambiguous", self.home / ".legacy-ambiguous.json")
+        second.initialize(); failed_packet, _ = prepared(second, "failure")
+        failed = second.execute_synthetic_email_only_account(
+            failed_packet, provider=Provider(fail=True),
+            test_authority=STORE_MODULE.ACCOUNT_FLOWS_MODULE.synthetic_test_authority(),
+        )
+        self.assertEqual(failed["reasonCode"], "ambiguous")
+        self.assertFalse(failed["retryAllowed"])
+        self.assertTrue(failed["attentionHandoff"])
+        self.assertIsNone(second._load_account_operation_journal()["operation"])
+
+    def test_live_oracle_composes_journal_t007_private_email_and_closed_outcome(self):
+        self.store.initialize()
+        self.store.replace_profile({"email": "private@example.invalid"}, 1, "user")
+        resume_path = self.home / "live-oracle.txt"; resume_path.write_text("Synthetic", encoding="utf-8")
+        resume = self.store.create_resume({"id": "live-oracle", "label": "Synthetic", "path": str(resume_path)})
+        url = "https://tenant.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/jobsearch/job/7/apply/email"
+        job = self.store.create_job({"id": "live-oracle-job", "url": url, "role": "Synthetic", "company": "Synthetic", "resumeId": resume["id"]})
+        ready = self.store.transition_job(job["id"], "ready", job["revision"])
+        acquired = self.store.acquire_ready_job(job["id"], "live-oracle-test", ready["revision"])
+        settings = self.store.get_automation_settings()
+        settings = self.store.update_automation_settings(
+            {"enabled": True, "automaticAccountCreation": True, "signupEmail": "private@example.invalid"},
+            settings["revision"],
+        )
+        realm = self.store.resolve_account_realm(url); account = self.store.create_employer_account(url)
+        controls = {
+            "accountFormFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint("form"),
+            "emailControlFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint("email"),
+            "termsControlFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint("terms"),
+            "termsDocumentFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint("document"),
+            "nextControlFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint("next"),
+        }
+        aggregate = STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint(":".join(controls.values()))
+        portal_name = "Oracle Recruiting"
+        binding = {
+            "jobId": job["id"], "jobRevision": acquired["job"]["revision"],
+            "claimId": acquired["claim"]["claimId"],
+            "realmRef": realm["realmRef"], "accountRevision": account["revision"],
+            "settingsRevision": settings["revision"],
+            "portalFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint(url),
+            "portalNameFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint(portal_name),
+            "accountCreationControlsFingerprint": aggregate, "approvalRevision": 1,
+            "flowKind": "email_only_candidate_profile", **controls,
+            "passwordControlFingerprint": None, "createAccountControlFingerprint": None,
+        }
+        request = {
+            "capabilityRef": "canary_" + "c" * 64, "binding": binding,
+            "portalName": portal_name, "portalUrl": url, **controls,
+            "passwordControlFingerprint": None, "createAccountControlFingerprint": None,
+        }
+        sequence = []
+        class Authority:
+            def attempt(inner, capability, exact_binding, *, now):
+                inner.operation = self.store._load_account_operation_journal()["operation"]
+                self.assertIsNotNone(inner.operation)
+                sequence.append("authority")
+                return {"accountCreationAuthorized": True}
+        class Provider:
+            provider_id = "macos-accessibility"
+            def execute_email_only(inner, packet, private_email):
+                self.assertEqual(sequence, ["authority"])
+                self.assertTrue(packet["operationFingerprint"].startswith("sha256:"))
+                identity = private_email(); self.assertEqual(identity, "private@example.invalid"); identity = None
+                sequence.append("native")
+                return {"providerId": inner.provider_id, "outcome": "verification_required",
+                        "retryAllowed": False, "finalActionAuthorized": False,
+                        "emailRemoved": True, "termsAccepted": True, "nextActivations": 1,
+                        "credentialProviderInvocations": 0}
+        result = self.store.execute_live_email_only_account(
+            request, authority=Authority(), provider=Provider(),
+            now=datetime(2026, 8, 30, tzinfo=timezone.utc),
+        )
+        self.assertEqual(sequence, ["authority", "native"])
+        self.assertEqual(result["reasonCode"], "verification_required")
+        self.assertFalse(result["retryAllowed"])
+        self.assertEqual(result["credentialProviderInvocations"], 0)
+        self.assertNotIn("private", json.dumps(result))
+        self.assertIsNone(self.store._load_account_operation_journal()["operation"])
+
+    def test_trusted_fill_approval_rechecks_canonical_state_and_denial_hands_off_claim(self):
+        resume_path = self.home / "trusted-fill-resume.txt"
+        resume_path.write_text("Synthetic resume", encoding="utf-8")
+        self.store.replace_profile({"firstName": "Synthetic"}, 0, "user")
+        resume = self.store.create_resume({"id": "trusted-fill-resume", "label": "Synthetic", "path": str(resume_path)})
+        job = self.store.create_job({
+            "id": "trusted-fill-job", "url": "https://acme.wd5.myworkdayjobs.com/en-US/jobs/one",
+            "role": "Engineer", "company": "Synthetic", "resumeId": resume["id"],
+        })
+        ready = self.store.transition_job(job["id"], "ready", job["revision"])
+        acquired = self.store.acquire_ready_job(job["id"], "trusted-fill-test", ready["revision"])
+        realm = self.store.resolve_account_realm(job["url"])
+        fingerprint = lambda char: "sha256:" + char * 64
+        approval = self.store.approve_trusted_fill({
+            "jobId": job["id"], "expectedJobRevision": acquired["job"]["revision"],
+            "realmRef": realm["realmRef"], "answerRefs": [],
+            "observedQuestionFingerprint": fingerprint("1"),
+            "observedControlFingerprint": fingerprint("2"), "formFingerprint": fingerprint("3"),
+            "allowedOperations": ["fill_text"], "durationMinutes": 30,
+        })
+        self.assertEqual(approval["jobRevision"], acquired["job"]["revision"])
+        self.assertEqual(approval["resumeRevision"], resume["revision"])
+        self.assertEqual(approval["resumeContentRevision"], resume["contentRevision"])
+        self.assertIsInstance(approval["resumeContentRevision"], str)
+        self.assertNotEqual(approval["resumeContentRevision"], approval["resumeRevision"])
+        self.assertEqual(approval["profileRevision"], 1)
+        self.assertNotIn(job["url"], json.dumps(approval))
+        evaluation = {
+            "jobId": job["id"], "expectedApprovalRevision": approval["approvalRevision"],
+            "observedQuestionFingerprint": fingerprint("1"),
+            "observedControlFingerprint": fingerprint("2"), "formFingerprint": fingerprint("3"),
+            "fieldOperations": ["fill_text"], "authenticationRequired": False,
+            "consentRequired": False, "credentialFieldsPresent": False,
+            "finalControlsPresent": False, "unseenQuestions": False, "unseenControls": False,
+        }
+        authorized = self.store.evaluate_trusted_fill(evaluation)
+        self.assertTrue(authorized["authorized"])
+        denied = self.store.evaluate_trusted_fill({**evaluation, "unseenControls": True})
+        self.assertEqual((denied["authorized"], denied["retryAllowed"], denied["attentionHandoff"]), (False, False, True))
+        self.assertEqual(self.store.get_job(job["id"])["status"], "needs_info")
+        self.assertIsNone(self.store.claim_status()["claim"])
+        session = self.store.load_session(job["id"])
+        self.assertEqual(session["step"], "trusted_fill_denied:unseen_controls")
+        self.assertNotIn(acquired["token"], json.dumps(denied))
+
+    def _trusted_fill_fixture(self, suffix: str, answer_refs=None):
+        resume_path = self.home / f"trusted-fill-{suffix}.txt"
+        resume_path.write_text(f"Synthetic resume {suffix}", encoding="utf-8")
+        self.store.replace_profile(
+            {"firstName": "Synthetic"},
+            self.store.inspect_profile()["revision"],
+            "user",
+        )
+        resume = self.store.create_resume({
+            "id": f"trusted-resume-{suffix}", "label": "Synthetic",
+            "path": str(resume_path),
+        })
+        job = self.store.create_job({
+            "id": f"trusted-job-{suffix}",
+            "url": f"https://acme.wd5.myworkdayjobs.com/jobs/{suffix}",
+            "role": "Engineer", "company": "Synthetic", "resumeId": resume["id"],
+        })
+        ready = self.store.transition_job(job["id"], "ready", job["revision"])
+        acquired = self.store.acquire_ready_job(job["id"], "trusted-fill-test", ready["revision"])
+        fingerprint = lambda char: "sha256:" + char * 64
+        approval = self.store.approve_trusted_fill({
+            "jobId": job["id"], "expectedJobRevision": acquired["job"]["revision"],
+            "realmRef": self.store.resolve_account_realm(job["url"])["realmRef"],
+            "answerRefs": answer_refs or [], "observedQuestionFingerprint": fingerprint("1"),
+            "observedControlFingerprint": fingerprint("2"),
+            "formFingerprint": fingerprint("3"),
+            "allowedOperations": ["fill_text"], "durationMinutes": 30,
+        })
+        evaluation = {
+            "jobId": job["id"], "expectedApprovalRevision": approval["approvalRevision"],
+            "observedQuestionFingerprint": fingerprint("1"),
+            "observedControlFingerprint": fingerprint("2"),
+            "formFingerprint": fingerprint("3"), "fieldOperations": ["fill_text"],
+            "authenticationRequired": False, "consentRequired": False,
+            "credentialFieldsPresent": False, "finalControlsPresent": False,
+            "unseenQuestions": False, "unseenControls": False,
+        }
+        return resume, job, acquired, approval, evaluation
+
+    def test_trusted_fill_denies_expired_or_replaced_claim_without_handing_off_new_owner(self):
+        _resume, job, _acquired, approval, evaluation = self._trusted_fill_fixture("claim")
+        coordinator = self.store._load_coordinator_document()
+        coordinator["claim"]["claimId"] = "22222222-2222-4222-8222-222222222222"
+        STORE_MODULE.atomic_write_json(self.store.coordinator_path, coordinator)
+        denied = self.store.evaluate_trusted_fill(evaluation)
+        self.assertEqual(
+            (denied["authorized"], denied["reasonCode"], denied["attentionHandoff"]),
+            (False, "claim_binding_mismatch", False),
+        )
+        self.assertEqual(self.store.get_job(job["id"])["status"], "in_progress")
+
+        expires = self.store._parse_time(coordinator["claim"]["expiresAt"])
+        with mock.patch.object(self.store, "_now_datetime", return_value=expires):
+            expired = self.store.evaluate_trusted_fill(evaluation)
+        self.assertEqual(
+            (expired["authorized"], expired["reasonCode"], expired["attentionHandoff"]),
+            (False, "claim_missing_or_expired", False),
+        )
+        self.assertEqual(approval["claimId"], _acquired["claim"]["claimId"])
+
+    def test_trusted_fill_trashed_answer_converges_to_attention(self):
+        answer = self.store.put_answer({
+            "key": "question.one", "question": "Question one?",
+            "state": "confirmed", "value": "Yes", "source": "user",
+        })
+        _resume, job, _acquired, _approval, evaluation = self._trusted_fill_fixture(
+            "answer", [answer["key"]]
+        )
+        self.store.trash_answer(answer["key"], answer["revision"])
+        denied = self.store.evaluate_trusted_fill(evaluation)
+        self.assertEqual(
+            (denied["authorized"], denied["reasonCode"], denied["attentionHandoff"]),
+            (False, "answer_binding_invalid", True),
+        )
+        self.assertEqual(self.store.get_job(job["id"])["status"], "needs_info")
+        self.assertIsNone(self.store.claim_status()["claim"])
+
+    def test_trusted_fill_post_approval_byte_drift_denies_and_converges_claim(self):
+        resume, job, acquired, _approval, evaluation = self._trusted_fill_fixture("drift")
+        managed_path = self.store.resume_files_path / resume["managedFile"]
+        managed_path.write_bytes(b"Deterministic changed resume bytes")
+
+        denied = self.store.evaluate_trusted_fill(evaluation)
+
+        self.assertEqual(
+            (denied["authorized"], denied["reasonCode"], denied["retryAllowed"], denied["attentionHandoff"]),
+            (False, "resume_content_changed", False, True),
+        )
+        self.assertEqual(self.store.get_job(job["id"])["status"], "needs_info")
+        self.assertIsNone(self.store.claim_status()["claim"])
+        self.assertEqual(
+            self.store.load_session(job["id"])["step"],
+            "trusted_fill_denied:resume_content_changed",
+        )
+        self.assertNotIn(acquired["token"], json.dumps(denied))
+
+    def test_trusted_fill_missing_content_and_observation_failure_deny_to_attention(self):
+        resume, job, _acquired, _approval, evaluation = self._trusted_fill_fixture("missing")
+        (self.store.resume_files_path / resume["managedFile"]).unlink()
+        denied = self.store.evaluate_trusted_fill(evaluation)
+        self.assertEqual(
+            (denied["reasonCode"], denied["retryAllowed"], denied["attentionHandoff"]),
+            ("resume_content_missing", False, True),
+        )
+        self.assertEqual(self.store.get_job(job["id"])["status"], "needs_info")
+
+        self.store = STORE_MODULE.Store(self.root / "observation", self.legacy)
+        _resume, observed_job, _acquired, _approval, observed_evaluation = self._trusted_fill_fixture("observation")
+        with mock.patch.object(
+            self.store, "_managed_resume_observation", side_effect=OSError("synthetic")
+        ):
+            denied = self.store.evaluate_trusted_fill(observed_evaluation)
+        self.assertEqual(
+            (denied["reasonCode"], denied["retryAllowed"], denied["attentionHandoff"]),
+            ("resume_observation_failed", False, True),
+        )
+        self.assertEqual(self.store.get_job(observed_job["id"])["status"], "needs_info")
+        self.assertIsNone(self.store.claim_status()["claim"])
+
+    def test_trusted_fill_legacy_resume_denies_approval_and_converges_claim(self):
+        self.store.replace_profile({"firstName": "Synthetic"}, 0, "user")
+        external = self.home / "legacy-trusted.txt"
+        external.write_text("Legacy synthetic resume", encoding="utf-8")
+        observation = STORE_MODULE.observe_resume_file(str(external))
+        document = self.store._load_resumes_document()
+        document["resumes"]["legacy-trusted"] = {
+            "id": "legacy-trusted", "label": "Legacy", "path": str(external),
+            "tags": [], "default": True, "observedSize": observation["size"],
+            "observedModifiedAt": observation["modifiedAt"], "revision": 1,
+            "createdAt": "2026-08-29T00:00:00Z", "updatedAt": "2026-08-29T00:00:00Z",
+            "deletedAt": None,
+        }
+        STORE_MODULE.atomic_write_json(self.store.resumes_path, document)
+        job = self.store.create_job({
+            "id": "legacy-trusted-job",
+            "url": "https://acme.wd5.myworkdayjobs.com/jobs/legacy",
+            "role": "Engineer", "company": "Synthetic", "resumeId": "legacy-trusted",
+        })
+        ready = self.store.transition_job(job["id"], "ready", job["revision"])
+        acquired = self.store.acquire_ready_job(job["id"], "trusted-fill-test", ready["revision"])
+        fingerprint = lambda char: "sha256:" + char * 64
+        denied = self.store.approve_trusted_fill({
+            "jobId": job["id"], "expectedJobRevision": acquired["job"]["revision"],
+            "realmRef": self.store.resolve_account_realm(job["url"])["realmRef"],
+            "answerRefs": [], "observedQuestionFingerprint": fingerprint("1"),
+            "observedControlFingerprint": fingerprint("2"),
+            "formFingerprint": fingerprint("3"), "allowedOperations": ["fill_text"],
+            "durationMinutes": 30,
+        })
+        self.assertEqual(
+            (denied["authorized"], denied["reasonCode"], denied["retryAllowed"], denied["attentionHandoff"]),
+            (False, "resume_content_unverifiable", False, True),
+        )
+        self.assertEqual(self.store.get_job(job["id"])["status"], "needs_info")
+        self.assertIsNone(self.store.claim_status()["claim"])
+        self.assertIsNone(self.store.trusted_fill_status(job["id"]))
+
+    def test_trusted_fill_revoke_requires_exact_approval_revision(self):
+        # Pure revision behavior is covered without needing a browser or executor.
+        self.store.initialize(); self.store._ensure_trusted_fill_document()
+        self.assertEqual(self.store.trusted_fill_status("missing-job", public=True), {"status": "missing", "approvalRevision": None})
+
+    def _synthetic_account_fixture(self, outcome="success", suffix="one"):
+        source = self.home / f"account-{suffix}.txt"
+        source.write_text(f"Synthetic resume {suffix}", encoding="utf-8")
+        self.store.replace_profile(
+            {"firstName": "Synthetic"}, self.store.inspect_profile()["revision"], "user"
+        )
+        resume = self.store.create_resume({"id": f"account-resume-{suffix}", "label": "Synthetic", "path": str(source)})
+        job = self.store.create_job({
+            "id": f"account-job-{suffix}",
+            "url": f"https://acme.wd5.myworkdayjobs.com/jobs/{suffix}",
+            "role": "Engineer", "company": "Synthetic", "resumeId": resume["id"],
+        })
+        ready = self.store.transition_job(job["id"], "ready", job["revision"])
+        acquired = self.store.acquire_ready_job(job["id"], "account-test", ready["revision"])
+        settings = self.store.get_automation_settings()
+        if not settings["enabled"]:
+            settings = self.store.update_automation_settings(
+                {"enabled": True, "automaticAccountCreation": True, "signupEmail": "synthetic@example.invalid"},
+                settings["revision"],
+            )
+        realm = self.store.resolve_account_realm(job["url"])
+        account = self.store.get_employer_account(realm["realmRef"])
+        if account is None:
+            account = self.store.create_employer_account(job["url"])
+        base_target = "http://127.0.0.1:43123/synthetic-account"
+        control = STORE_MODULE.ACCOUNT_EXECUTOR_MODULE.synthetic_proofs(base_target, outcome)["secureControlFingerprint"]
+        operation = STORE_MODULE.ACCOUNT_EXECUTOR_MODULE.operation_fingerprint(base_target, realm["realmRef"], control)
+        target = base_target + "?operation=" + operation.removeprefix("sha256:")
+        self._observer_outcomes[operation.removeprefix("sha256:")] = outcome
+        proofs = STORE_MODULE.ACCOUNT_EXECUTOR_MODULE.synthetic_proofs(target, outcome)
+        packet = {
+            "jobId": job["id"], "expectedJobRevision": acquired["job"]["revision"],
+            "expectedClaimId": acquired["claim"]["claimId"], "realmRef": realm["realmRef"],
+            "realmDescriptor": realm["descriptor"], "expectedSettingsRevision": settings["revision"],
+            "expectedAccountRevision": account["revision"], "syntheticTargetUrl": target,
+            **proofs,
+        }
+        return job, acquired, account, packet
+
+    def _synthetic_account_observer(self, target, _token):
+        operation = __import__("urllib.parse", fromlist=["parse_qs", "urlsplit"]).parse_qs(
+            __import__("urllib.parse", fromlist=["urlsplit"]).urlsplit(target).query
+        )["operation"][0]
+        outcome = self._observer_outcomes[operation]
+        proofs = STORE_MODULE.ACCOUNT_EXECUTOR_MODULE.synthetic_proofs(target, outcome)
+        return {
+            "portalState": outcome,
+            "lifecycleState": STORE_MODULE.ACCOUNT_EXECUTOR_MODULE.OUTCOMES[outcome],
+            "formFingerprint": proofs["observedFormFingerprint"],
+            "controlFingerprint": proofs["observedControlFingerprint"],
+        }
+
+    def test_synthetic_account_success_is_journaled_redacted_and_same_realm_reuses(self):
+        job, acquired, account, packet = self._synthetic_account_fixture()
+        provider = STORE_MODULE.CREDENTIALS_MODULE.synthetic_provider_for_tests(STORE_MODULE.CREDENTIALS_MODULE.synthetic_test_authority())
+        result = self.store.execute_synthetic_account(packet, provider=provider, observer=self._synthetic_account_observer, test_authority=STORE_MODULE.CREDENTIALS_MODULE.synthetic_test_authority())
+        self.assertEqual((result["authorized"], result["reasonCode"], result["retryAllowed"]), (True, "active", False))
+        self.assertTrue(result["secureControlCleared"])
+        self.assertFalse(result["finalActionAuthorized"])
+        self.assertEqual(self.store.account_operation_status(), {"status": "idle", "operation": None})
+        public = self.store.get_employer_account(account["realmRef"], public=True)
+        self.assertEqual(public["lifecycleState"], "active")
+        self.assertNotIn("credentialRef", public)
+
+        handed = self.store.handoff_claimed_job(
+            job["id"], acquired["token"], "awaiting_review",
+            {"status": "review", "step": "non-final-review"}, acquired["job"]["revision"],
+        )
+        self.assertEqual(handed["job"]["status"], "awaiting_review")
+        _job2, _acquired2, _account2, packet2 = self._synthetic_account_fixture("reuse", "two")
+        reused = self.store.execute_synthetic_account(packet2, provider=provider, observer=self._synthetic_account_observer, test_authority=STORE_MODULE.CREDENTIALS_MODULE.synthetic_test_authority())
+        self.assertTrue(reused["authorized"]); self.assertTrue(reused["reused"])
+        self.assertEqual(reused["account"]["realmRef"], public["realmRef"])
+
+    def test_synthetic_account_ambiguity_is_permanent_and_restart_recovery_never_infers_success(self):
+        job, _acquired, account, packet = self._synthetic_account_fixture("ambiguity", "ambiguous")
+        provider = STORE_MODULE.CREDENTIALS_MODULE.synthetic_provider_for_tests(STORE_MODULE.CREDENTIALS_MODULE.synthetic_test_authority())
+        denied = self.store.execute_synthetic_account(packet, provider=provider, observer=self._synthetic_account_observer, test_authority=STORE_MODULE.CREDENTIALS_MODULE.synthetic_test_authority())
+        self.assertEqual((denied["reasonCode"], denied["retryAllowed"], denied["attentionHandoff"]), ("ambiguous", False, True))
+        self.assertEqual(self.store.get_job(job["id"])["status"], "needs_info")
+        self.assertEqual(self.store.get_employer_account(account["realmRef"])["lifecycleState"], "ambiguous")
+
+        self.store = STORE_MODULE.Store(self.root / "restart", self.legacy)
+        restart_job, _restart_acquired, restart_account, restart_packet = self._synthetic_account_fixture("restart", "restart")
+        operation = {
+            "operationId": "synthetic-restart", "jobId": restart_job["id"],
+            "jobRevision": restart_packet["expectedJobRevision"],
+            # The stranded operation may belong to the expired pre-recovery claim.
+            "claimId": "expired-claim", "realmRef": restart_account["realmRef"],
+            "accountRevision": restart_account["revision"],
+            "settingsRevision": restart_packet["expectedSettingsRevision"], "stage": "prepared",
+            "outcomeCode": "ambiguity", "startedAt": "2026-08-29T00:00:00Z",
+        }
+        STORE_MODULE.atomic_write_json(
+            self.store.account_operation_journal_path,
+            {"schemaVersion": 1, "operation": operation},
+        )
+        recovered = self.store.recover_account_operation()
+        self.assertEqual((recovered["status"], recovered["retryAllowed"]), ("ambiguous", False))
+        self.assertEqual(self.store.get_employer_account(restart_account["realmRef"])["lifecycleState"], "ambiguous")
+        self.assertEqual(self.store.get_job(restart_job["id"])["status"], "needs_info")
+        self.assertIsNone(self.store.claim_status()["claim"])
+
+    def test_account_attention_failure_keeps_recovery_journal(self):
+        _job, _acquired, account, packet = self._synthetic_account_fixture(
+            "ambiguity", "handoff-failure"
+        )
+        provider = STORE_MODULE.CREDENTIALS_MODULE.synthetic_provider_for_tests(
+            STORE_MODULE.CREDENTIALS_MODULE.synthetic_test_authority()
+        )
+        with mock.patch.object(
+            self.store, "_account_attention_handoff_locked",
+            side_effect=STORE_MODULE.StoreError("synthetic handoff failure"),
+        ), self.assertRaisesRegex(STORE_MODULE.StoreError, "synthetic handoff failure"):
+            self.store.execute_synthetic_account(
+                packet, provider=provider, observer=self._synthetic_account_observer,
+                test_authority=STORE_MODULE.CREDENTIALS_MODULE.synthetic_test_authority(),
+            )
+        self.assertIsNotNone(self.store._load_account_operation_journal()["operation"])
+        self.assertEqual(
+            self.store.get_employer_account(account["realmRef"])["lifecycleState"],
+            "ambiguous",
+        )
 
 
 if __name__ == "__main__":

@@ -90,6 +90,53 @@ async function waitForFile(filename, timeoutMs = 5000) {
   throw new Error("file wait timed out");
 }
 
+async function waitForDevToolsActivePort(filename, child, timeoutMs = 5000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null || child.signalCode !== null) {
+      throw new Error(
+        `Chromium exited before publishing DevToolsActivePort (code=${child.exitCode}, signal=${child.signalCode})`,
+      );
+    }
+    try {
+      const record = await readFile(filename, "utf8");
+      const match = /^(\d+)\r?\n\/devtools\/browser\/[A-Za-z0-9._-]+(?:\r?\n)?$/.exec(record);
+      const port = match ? Number(match[1]) : 0;
+      if (
+        Number.isSafeInteger(port)
+        && port >= 1
+        && port <= 65535
+      ) {
+        return port;
+      }
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  throw new Error("DevToolsActivePort wait timed out");
+}
+
+async function waitForInitialPageTarget(port, expectedUrl, child, timeoutMs = 10000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null || child.signalCode !== null) {
+      throw new Error(`Chromium exited before publishing its initial page target (code=${child.exitCode}, signal=${child.signalCode})`);
+    }
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(500) });
+      if (response.ok) {
+        const targets = await response.json();
+        if (Array.isArray(targets) && targets.some((target) => target?.type === "page" && target.url === expectedUrl)) return;
+      }
+    } catch (error) {
+      if (error?.name !== "TimeoutError" && error?.cause?.code !== "ECONNREFUSED") throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  throw new Error("initial Chromium page target wait timed out");
+}
+
 async function runNode(args, timeoutMs = 5000) {
   const child = spawn(process.execPath, args, { cwd: root });
   let stdout = "";
@@ -168,8 +215,8 @@ async function startIndependentChromium(t, url, extraArgs = []) {
     });
   });
   const activePort = path.join(profile, "DevToolsActivePort");
-  await waitForFile(activePort, 10000);
-  const [port] = (await readFile(activePort, "utf8")).split("\n");
+  const port = await waitForDevToolsActivePort(activePort, browserProcess, 10000);
+  await waitForInitialPageTarget(port, url, browserProcess, 10000);
   return {
     browserProcess,
     cdpUrl: `http://127.0.0.1:${port}`,

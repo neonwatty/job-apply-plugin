@@ -21,6 +21,7 @@
       <button id="nav-facts" class="nav-link" type="button">Facts</button>
       <button id="nav-resumes" class="nav-link" type="button">Resumes</button>
       <button id="nav-answers" class="nav-link" type="button">Answers</button>
+      <button id="nav-automation" class="nav-link" type="button">Automation</button>
       <button id="nav-trash" class="nav-link" type="button">Trash <span id="trash-nav-count" aria-label="trashed records">0</span></button>
     </nav>
     <div class="connection" aria-live="polite">
@@ -234,6 +235,69 @@
         <div id="trash-empty" class="empty-state hidden"><h3>Trash is empty</h3><p>Records moved to trash remain recoverable until you explicitly delete them.</p></div>
         <div id="trash-list" class="trash-list" role="list"></div>
         <p id="trash-error" class="error hidden" role="alert"></p>
+      </section>
+    </div>
+
+    <div id="automation-workspace" class="hidden">
+      <section class="hero" aria-labelledby="automation-title">
+        <div><p class="eyebrow">Companion Automation</p><h2 id="automation-title">Account controls that fail closed.</h2><p>This surface shows redacted settings, tenant metadata, and protected-operation recovery. Account execution is limited to the committed loopback synthetic portal; no live target or final application action is reachable.</p></div>
+        <div class="hero-actions"><button id="automation-refresh" class="button secondary" type="button">Refresh</button></div>
+      </section>
+      <section class="automation-panel" aria-labelledby="automation-settings-title">
+        <div class="panel-heading"><div><p class="eyebrow">CONTROL PLANE</p><h2 id="automation-settings-title">Automation settings</h2></div><p id="automation-revision">Revision —</p></div>
+        <p id="automation-capability" class="notice" role="status">Open Automation to check local capability.</p>
+        <form id="automation-form" class="automation-form">
+          <label><span><input name="enabled" type="checkbox"> Enable companion automation controls</span></label>
+          <label><span><input name="automaticAccountCreation" type="checkbox"> Allow protected synthetic account creation</span></label>
+          <label>Global signup email <input name="signupEmail" type="email" autocomplete="email" placeholder="Leave blank to keep the current setting"><small id="automation-email-status">Not configured</small></label>
+          <label>Password strategy <select name="passwordStrategy"><option value="unique_per_realm">Unique per employer realm</option><option value="shared">Shared credential version</option><option value="custom">Custom per realm</option><option value="ask_each_time">Ask each time</option></select></label>
+          <div class="button-row"><button class="button primary" type="submit">Save settings</button><button id="automation-copy-profile-email" class="button secondary" type="button">Copy profile email once</button><button id="automation-clear-email" class="button secondary" type="button">Clear signup email</button></div>
+          <p class="safety-note">Copying is an explicit one-time snapshot. Later profile edits do not change the signup email, and the copied value is never returned by this action.</p>
+        </form>
+        <div id="automation-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>Settings changed elsewhere</h3><p>Nothing was retried. Refresh and review the latest revision.</p></div>
+        <p id="automation-error" class="error hidden" role="alert"></p>
+      </section>
+      <section class="automation-panel" aria-labelledby="realm-heading">
+        <div class="panel-heading"><div><p class="eyebrow">EMPLOYER REALMS</p><h2 id="realm-heading">Tenant-scoped account metadata</h2></div></div>
+        <form id="realm-form" class="automation-form">
+          <label>Exact employer portal URL <input name="url" type="url" required placeholder="https://tenant.wd5.myworkdayjobs.com/… or an Oracle Recruiting job URL"></label>
+          <label>Optional signup email override <input name="signupEmailOverride" type="email" autocomplete="email"></label>
+          <button class="button primary" type="submit">Add resolved realm</button>
+        </form>
+        <p class="safety-note">Unknown hosts and unproven tenant paths are rejected. Employer names and ATS families are never used as a fallback.</p>
+        <div id="automation-accounts" class="automation-accounts" role="list"></div>
+      </section>
+      <section class="automation-panel" aria-labelledby="account-operation-heading">
+        <div class="panel-heading"><div><p class="eyebrow">PROTECTED OPERATION</p><h2 id="account-operation-heading">Account operation recovery</h2></div></div>
+        <p class="safety-note">Recovery never infers success. A stranded operation becomes permanently ambiguous and cannot retry, rotate, or provision again.</p>
+        <div id="account-operation-status" class="notice" role="status" aria-live="polite">No operation status loaded.</div>
+        <div class="button-row"><button id="account-operation-refresh" class="button secondary" type="button">Refresh operation status</button><button id="account-operation-recover" class="button danger" type="button" disabled>Mark stranded operation ambiguous</button></div>
+        <p id="account-operation-error" class="error hidden" role="alert"></p>
+      </section>
+      <section class="automation-panel" aria-labelledby="trusted-fill-heading">
+        <div class="panel-heading"><div><p class="eyebrow">GROUNDED TRUSTED FILL</p><h2 id="trusted-fill-heading">Approve exact non-final field operations</h2></div></div>
+        <p class="safety-note">This inert authority evaluates fingerprints only. It cannot operate a browser, authenticate, accept consent, enter credentials, navigate, or activate Submit, Send, Apply, or any equivalent final control.</p>
+        <form id="trusted-fill-form" class="automation-form">
+          <div class="form-grid">
+            <label>Claimed job ID <input name="jobId" required></label>
+            <label>Expected job revision <input name="expectedJobRevision" type="number" min="1" required></label>
+            <label class="wide">Portal realm reference <input name="realmRef" pattern="[0-9a-f]{64}" required></label>
+            <label class="wide">Accepted answer references (one per line) <textarea name="answerRefs" rows="3"></textarea></label>
+            <label class="wide">Observed question fingerprint <input name="observedQuestionFingerprint" pattern="sha256:[0-9a-f]{64}" required></label>
+            <label class="wide">Observed control fingerprint <input name="observedControlFingerprint" pattern="sha256:[0-9a-f]{64}" required></label>
+            <label class="wide">Form fingerprint <input name="formFingerprint" pattern="sha256:[0-9a-f]{64}" required></label>
+            <label>Duration in minutes <input name="durationMinutes" type="number" min="1" max="60" value="30" required></label>
+          </div>
+          <fieldset><legend>Allowed non-final operations</legend><label><span><input name="allowedOperations" value="fill_text" type="checkbox"> Fill text</span></label><label><span><input name="allowedOperations" value="select_option" type="checkbox"> Select option</span></label><label><span><input name="allowedOperations" value="toggle_non_consent" type="checkbox"> Toggle a non-consent field</span></label><label><span><input name="allowedOperations" value="upload_approved_resume" type="checkbox"> Upload the approved resume</span></label></fieldset>
+          <button class="button primary" type="submit">Approve exact packet</button>
+        </form>
+        <form id="trusted-fill-status-form" class="automation-form">
+          <label>Job ID for status or revocation <input name="jobId" required></label>
+          <div class="button-row"><button class="button secondary" type="submit">Check approval status</button><button id="trusted-fill-revoke" class="button secondary" type="button" disabled>Revoke approval</button></div>
+        </form>
+        <div id="trusted-fill-status" class="notice" role="status" aria-live="polite">No approval loaded.</div>
+        <div id="trusted-fill-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>Approval changed elsewhere</h3><p>Nothing was retried. Refresh its exact status before another action.</p></div>
+        <p id="trusted-fill-error" class="error hidden" role="alert"></p>
       </section>
     </div>
   </main>

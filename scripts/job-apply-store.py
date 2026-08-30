@@ -11,6 +11,7 @@ import argparse
 import copy
 import hashlib
 import hmac
+import importlib.util
 import json
 import os
 import re
@@ -122,8 +123,181 @@ EXTRACTION_STATUSES = {"pending", "completed", "superseded"}
 EXTRACTION_DECISIONS = {"use_extracted", "keep_current"}
 
 
+def _load_accounts_module() -> Any:
+    path = Path(__file__).with_name("job_apply_accounts.py")
+    spec = importlib.util.spec_from_file_location("job_apply_accounts", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("account contracts are unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+ACCOUNTS_MODULE = _load_accounts_module()
+
+
+def _load_account_flows_macos_module() -> Any:
+    path = Path(__file__).with_name("job_apply_account_flows_macos.py")
+    spec = importlib.util.spec_from_file_location("job_apply_account_flows_macos", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("account flow contracts are unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+ACCOUNT_FLOWS_MACOS_MODULE = _load_account_flows_macos_module()
+
+
+def _load_account_flows_module() -> Any:
+    path = Path(__file__).with_name("job_apply_account_flows.py")
+    spec = importlib.util.spec_from_file_location("job_apply_account_flows", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("account flow contracts are unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+ACCOUNT_FLOWS_MODULE = _load_account_flows_module()
+
+
+def _load_trusted_fill_module() -> Any:
+    path = Path(__file__).with_name("job_apply_trusted_fill.py")
+    spec = importlib.util.spec_from_file_location("job_apply_trusted_fill", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("trusted fill contracts are unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+TRUSTED_FILL_MODULE = _load_trusted_fill_module()
+
+
+def _load_local_module(name: str) -> Any:
+    path = Path(__file__).with_name(f"{name}.py")
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("account executor contracts are unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+CREDENTIALS_MODULE = _load_local_module("job_apply_credentials")
+CREDENTIALS_MACOS_MODULE = _load_local_module("job_apply_credentials_macos")
+ACCOUNT_EXECUTOR_MODULE = _load_local_module("job_apply_account_executor")
+CANARY_EXECUTOR_MODULE = _load_local_module("job_apply_account_canary_executor")
+EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+
+
 class StoreError(Exception):
     """An expected, safe-to-display storage failure."""
+
+
+class TrustedFillCurrentError(StoreError):
+    """A value-free canonical-state denial that requires claim handoff."""
+
+    def __init__(self, reason_code: str):
+        super().__init__("trusted fill canonical state is unavailable")
+        self.reason_code = reason_code
+
+
+def _optional_email(value: Any, label: str) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise StoreError(f"{label} must be an email address or null")
+    normalized = value.strip()
+    if len(normalized) > 254 or EMAIL_PATTERN.fullmatch(normalized) is None:
+        raise StoreError(f"{label} must be a valid email address")
+    return normalized
+
+
+def _validate_automation_settings_record(value: Any) -> dict[str, Any]:
+    record = _require_object(value, "automation settings")
+    expected = {
+        "enabled", "automaticAccountCreation", "signupEmail", "passwordStrategy",
+        "revision", "createdAt", "updatedAt",
+    }
+    if set(record) != expected:
+        raise StoreError("automation settings contain unsupported fields")
+    if not isinstance(record["enabled"], bool) or not isinstance(record["automaticAccountCreation"], bool):
+        raise StoreError("automation settings switches must be booleans")
+    _optional_email(record["signupEmail"], "signup email")
+    if record["passwordStrategy"] not in ACCOUNTS_MODULE.PASSWORD_STRATEGIES:
+        raise StoreError("password strategy is unsupported")
+    revision = record["revision"]
+    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
+        raise StoreError("automation settings revision must be a positive integer")
+    for field in ("createdAt", "updatedAt"):
+        if not isinstance(record[field], str) or not record[field]:
+            raise StoreError("automation settings timestamp is invalid")
+    return record
+
+
+def _validate_employer_account_record(key: str, value: Any) -> dict[str, Any]:
+    record = _require_object(value, "employer account")
+    legacy_expected = {
+        "realmRef", "adapterId", "descriptorVersion", "descriptor",
+        "signupEmailOverride", "providerId", "credentialRef", "credentialVersion",
+        "lifecycleState", "revision", "createdAt", "updatedAt",
+    }
+    expected = legacy_expected | {"flowKind", "credentialRequired"}
+    if set(record) not in (legacy_expected, expected) or record.get("realmRef") != key:
+        raise StoreError("employer account record is invalid")
+    if not re.fullmatch(r"[0-9a-f]{64}", key):
+        raise StoreError("employer account realm reference is invalid")
+    descriptor = record["descriptor"]
+    adapter_id = record["adapterId"]
+    flow_kind = record.get("flowKind", ACCOUNTS_MODULE.FLOW_PASSWORD)
+    credential_required = record.get("credentialRequired", True)
+    descriptor_prefix = f"{adapter_id}:v{ACCOUNTS_MODULE.REALM_DESCRIPTOR_VERSION}:"
+    if (
+        adapter_id not in {"workday", "oracle-recruiting"}
+        or flow_kind != ({"workday": ACCOUNTS_MODULE.FLOW_PASSWORD, "oracle-recruiting": ACCOUNTS_MODULE.FLOW_EMAIL_ONLY}[adapter_id])
+        or credential_required is not (adapter_id == "workday")
+        or record["descriptorVersion"] != ACCOUNTS_MODULE.REALM_DESCRIPTOR_VERSION
+        or not isinstance(descriptor, str)
+        or not descriptor.startswith(descriptor_prefix)
+        or hashlib.sha256(descriptor.encode("utf-8")).hexdigest() != key
+    ):
+        raise StoreError("employer account realm descriptor is invalid")
+    _optional_email(record["signupEmailOverride"], "signup email override")
+    provider_id = record["providerId"]
+    credential_ref = record["credentialRef"]
+    credential_version = record["credentialVersion"]
+    lifecycle = record["lifecycleState"]
+    if lifecycle not in ACCOUNTS_MODULE.LIFECYCLE_STATES:
+        raise StoreError("account lifecycle state is invalid")
+    if provider_id is None:
+        provider_free_states = (
+            {"discovered", "signup_in_progress", "active", "verification_required", "failed_definitive", "ambiguous"}
+            if flow_kind == ACCOUNTS_MODULE.FLOW_EMAIL_ONLY else {"discovered", "ambiguous"}
+        )
+        if credential_ref is not None or credential_version is not None or lifecycle not in provider_free_states:
+            raise StoreError("credential metadata requires the protected provider")
+    elif flow_kind == ACCOUNTS_MODULE.FLOW_EMAIL_ONLY:
+        raise StoreError("email-only account cannot have protected credential metadata")
+    elif (
+        not isinstance(provider_id, str)
+        or re.fullmatch(r"[a-z][a-z0-9-]{2,63}", provider_id) is None
+        or not isinstance(credential_ref, str)
+        or CREDENTIALS_MODULE.OPAQUE_REF.fullmatch(credential_ref) is None
+        or not isinstance(credential_version, int)
+        or isinstance(credential_version, bool)
+        or credential_version < 1
+        or lifecycle == "discovered"
+    ):
+        raise StoreError("protected credential metadata is invalid")
+    revision = record["revision"]
+    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
+        raise StoreError("employer account revision must be a positive integer")
+    for field in ("createdAt", "updatedAt"):
+        if not isinstance(record[field], str) or not record[field]:
+            raise StoreError("employer account timestamp is invalid")
+    return record
 
 
 def utc_now() -> str:
@@ -1234,6 +1408,7 @@ def _validate_resume_record(key: str, value: Any) -> dict[str, Any]:
         "originalFilename",
         "mediaType",
         "digest",
+        "contentRevision",
         "tags",
         "default",
         "observedSize",
@@ -1256,7 +1431,10 @@ def _validate_resume_record(key: str, value: Any) -> dict[str, Any]:
             raise StoreError("resume path is not normalized")
         if any(
             field in record
-            for field in ("managedFile", "originalFilename", "mediaType", "digest")
+            for field in (
+                "managedFile", "originalFilename", "mediaType", "digest",
+                "contentRevision",
+            )
         ):
             raise StoreError("legacy resume record contains managed storage fields")
     elif storage_kind == "managed":
@@ -1280,6 +1458,12 @@ def _validate_resume_record(key: str, value: Any) -> dict[str, Any]:
         digest = record.get("digest")
         if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
             raise StoreError("managed resume digest is invalid")
+        content_revision = record.get("contentRevision")
+        if content_revision is not None:
+            try:
+                TRUSTED_FILL_MODULE.validate_content_revision(content_revision)
+            except TRUSTED_FILL_MODULE.TrustedFillError as error:
+                raise StoreError(str(error)) from None
         if record.get("observedSize") is None or not record.get("observedModifiedAt"):
             raise StoreError("managed resume observation is incomplete")
     else:
@@ -1482,6 +1666,10 @@ class Store:
         self.sessions_path = self.root / "sessions"
         self.coordinator_path = self.root / "coordinator.json"
         self.coordinator_journal_path = self.root / "coordinator-journal.json"
+        self.automation_settings_path = self.root / "automation-settings.json"
+        self.employer_accounts_path = self.root / "employer-accounts.json"
+        self.account_operation_journal_path = self.root / "account-operation-journal.json"
+        self.trusted_fill_path = self.root / "trusted-fill.json"
         self.store_lock_path = self.root / ".store.lock"
         self.auto_submit_policy_path = self.root / "auto-submit"
         self.legacy_profile = (
@@ -1516,6 +1704,10 @@ class Store:
             "sessions": str(self.sessions_path),
             "coordinator": str(self.coordinator_path),
             "coordinatorJournal": str(self.coordinator_journal_path),
+            "automationSettings": str(self.automation_settings_path),
+            "employerAccounts": str(self.employer_accounts_path),
+            "accountOperationJournal": str(self.account_operation_journal_path),
+            "trustedFill": str(self.trusted_fill_path),
             "autoSubmitPolicy": str(self.auto_submit_policy_path),
             "legacyProfile": str(self.legacy_profile),
         }
@@ -1641,6 +1833,14 @@ class Store:
             self._load_jobs_document()
         if self.resumes_path.exists():
             self._load_resumes_document()
+        if self.automation_settings_path.exists():
+            self._load_automation_settings_document()
+        if self.employer_accounts_path.exists():
+            self._load_employer_accounts_document()
+        if self.account_operation_journal_path.exists():
+            self._load_account_operation_journal()
+        if self.trusted_fill_path.exists():
+            self._load_trusted_fill_document()
         if self.resume_extractions_path.exists():
             self._load_extractions_document()
         if self.resume_extraction_journal_path.exists():
@@ -1954,6 +2154,78 @@ class Store:
             raise StoreError("resume store has more than one active default")
         return document
 
+    def _load_automation_settings_document(self) -> dict[str, Any]:
+        document = read_json_object(self.automation_settings_path, "automation settings")
+        validate_version(document, "automation settings")
+        if set(document) != {"schemaVersion", "settings"}:
+            raise StoreError("automation settings document contains unsupported fields")
+        _validate_automation_settings_record(document.get("settings"))
+        return document
+
+    def _load_employer_accounts_document(self) -> dict[str, Any]:
+        document = read_json_object(self.employer_accounts_path, "employer accounts")
+        validate_version(document, "employer accounts")
+        if set(document) != {"schemaVersion", "accounts", "metadata"}:
+            raise StoreError("employer accounts document contains unsupported fields")
+        accounts = _require_object(document.get("accounts"), "employer accounts")
+        metadata = _require_object(document.get("metadata"), "employer account metadata")
+        if set(metadata) != {"createdAt", "updatedAt"}:
+            raise StoreError("employer account metadata is invalid")
+        for field in ("createdAt", "updatedAt"):
+            if not isinstance(metadata[field], str) or not metadata[field]:
+                raise StoreError("employer account metadata timestamp is invalid")
+        for key, record in accounts.items():
+            _validate_employer_account_record(key, record)
+        return document
+
+    def _load_account_operation_journal(self) -> dict[str, Any]:
+        document = read_json_object(self.account_operation_journal_path, "account operation journal")
+        validate_version(document, "account operation journal")
+        if set(document) != {"schemaVersion", "operation"}:
+            raise StoreError("account operation journal contains unsupported fields")
+        operation = document["operation"]
+        if operation is None:
+            return document
+        expected = {
+            "operationId", "jobId", "jobRevision", "claimId", "realmRef",
+            "accountRevision", "settingsRevision", "stage", "outcomeCode", "startedAt",
+        }
+        if not isinstance(operation, dict) or set(operation) != expected:
+            raise StoreError("account operation journal is invalid")
+        for field in ("operationId", "jobId", "claimId", "realmRef", "stage", "outcomeCode", "startedAt"):
+            if not isinstance(operation[field], str) or not operation[field]:
+                raise StoreError("account operation journal binding is invalid")
+        for field in ("jobRevision", "accountRevision", "settingsRevision"):
+            if not isinstance(operation[field], int) or isinstance(operation[field], bool) or operation[field] < 1:
+                raise StoreError("account operation journal revision is invalid")
+        if operation["stage"] not in {"prepared", "credential_provisioned", "signup_in_progress"}:
+            raise StoreError("account operation journal stage is invalid")
+        if operation["outcomeCode"] not in {*ACCOUNT_EXECUTOR_MODULE.OUTCOMES, "observed_pending"}:
+            raise StoreError("account operation journal outcome is invalid")
+        return document
+
+    def _load_trusted_fill_document(self) -> dict[str, Any]:
+        document = read_json_object(self.trusted_fill_path, "trusted fill approvals")
+        validate_version(document, "trusted fill approvals")
+        if set(document) != {"schemaVersion", "approvals", "metadata"}:
+            raise StoreError("trusted fill approval document contains unsupported fields")
+        approvals = _require_object(document.get("approvals"), "trusted fill approvals")
+        metadata = _require_object(document.get("metadata"), "trusted fill metadata")
+        if set(metadata) != {"createdAt", "updatedAt"}:
+            raise StoreError("trusted fill metadata is invalid")
+        for field in ("createdAt", "updatedAt"):
+            if not isinstance(metadata[field], str) or not metadata[field]:
+                raise StoreError("trusted fill metadata timestamp is invalid")
+        for job_id, approval in approvals.items():
+            _safe_session_id(job_id)
+            try:
+                TRUSTED_FILL_MODULE.validate_approval(approval)
+            except TRUSTED_FILL_MODULE.TrustedFillError as error:
+                raise StoreError(str(error)) from None
+            if approval["jobId"] != job_id:
+                raise StoreError("trusted fill approval job identity is invalid")
+        return document
+
     def _load_extractions_document(self) -> dict[str, Any]:
         return _validate_extractions_document(
             read_json_object(self.resume_extractions_path, "resume proposals")
@@ -2170,6 +2442,12 @@ class Store:
                 "checkedAt": now,
             }
         return observation
+
+    @staticmethod
+    def _new_resume_content_revision() -> str:
+        """Create an opaque content identity unrelated to bytes or metadata revision."""
+
+        return "content_" + secrets.token_urlsafe(32)
 
     def _recover_resume_files_locked(self) -> None:
         """Recover interrupted swaps and collect private staging artifacts."""
@@ -5425,6 +5703,7 @@ class Store:
                     "originalFilename": staged["originalFilename"],
                     "mediaType": staged["mediaType"],
                     "digest": staged["digest"],
+                    "contentRevision": self._new_resume_content_revision(),
                     "tags": tags,
                     "default": make_default,
                     "observedSize": staged["observedSize"],
@@ -5623,6 +5902,7 @@ class Store:
                             "originalFilename": staged["originalFilename"],
                             "mediaType": staged["mediaType"],
                             "digest": staged["digest"],
+                            "contentRevision": self._new_resume_content_revision(),
                             "observedSize": staged["observedSize"],
                             "observedModifiedAt": staged["observedModifiedAt"],
                         }
@@ -5680,6 +5960,7 @@ class Store:
                         "originalFilename": staged["originalFilename"],
                         "mediaType": staged["mediaType"],
                         "digest": staged["digest"],
+                        "contentRevision": self._new_resume_content_revision(),
                         "observedSize": staged["observedSize"],
                         "observedModifiedAt": staged["observedModifiedAt"],
                         "revision": current["revision"] + 1,
@@ -6479,6 +6760,987 @@ class Store:
             raise StoreError("canonical job sessions require a coordinator operation")
 
 
+    def _ensure_account_control_documents(self) -> None:
+        with exclusive_file_lock(self.store_lock_path):
+            if not self.automation_settings_path.exists():
+                now = self._now()
+                atomic_write_json(
+                    self.automation_settings_path,
+                    {
+                        "schemaVersion": SCHEMA_VERSION,
+                        "settings": {
+                            "enabled": False,
+                            "automaticAccountCreation": False,
+                            "signupEmail": None,
+                            "passwordStrategy": "unique_per_realm",
+                            "revision": 1,
+                            "createdAt": now,
+                            "updatedAt": now,
+                        },
+                    },
+                )
+            if not self.employer_accounts_path.exists():
+                now = self._now()
+                atomic_write_json(
+                    self.employer_accounts_path,
+                    {
+                        "schemaVersion": SCHEMA_VERSION,
+                        "accounts": {},
+                        "metadata": {"createdAt": now, "updatedAt": now},
+                    },
+                )
+            if not self.account_operation_journal_path.exists():
+                atomic_write_json(
+                    self.account_operation_journal_path,
+                    {"schemaVersion": SCHEMA_VERSION, "operation": None},
+                )
+
+    def get_automation_settings(self, *, public: bool = False, companion: bool = False) -> dict[str, Any]:
+        self.initialize()
+        self._ensure_account_control_documents()
+        record = copy.deepcopy(self._load_automation_settings_document()["settings"])
+        if companion:
+            return ACCOUNTS_MODULE.companion_settings(record)
+        return ACCOUNTS_MODULE.public_settings(record) if public else record
+
+    def update_automation_settings(
+        self, patch: dict[str, Any], expected_revision: int, *, public: bool = False
+    ) -> dict[str, Any]:
+        incoming = _require_object(patch, "automation settings patch")
+        allowed = {"enabled", "automaticAccountCreation", "signupEmail", "passwordStrategy"}
+        if not incoming or set(incoming) - allowed:
+            raise StoreError("automation settings patch contains unsupported fields")
+        self.initialize()
+        self._ensure_account_control_documents()
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_automation_settings_document()
+            current = document["settings"]
+            if current["revision"] != expected_revision:
+                raise StoreError("automation settings revision conflict")
+            updated = dict(current)
+            updated.update(incoming)
+            if "signupEmail" in incoming:
+                updated["signupEmail"] = _optional_email(incoming["signupEmail"], "signup email")
+            updated["revision"] = current["revision"] + 1
+            updated["updatedAt"] = self._now()
+            _validate_automation_settings_record(updated)
+            atomic_write_json(
+                self.automation_settings_path,
+                {"schemaVersion": SCHEMA_VERSION, "settings": updated},
+            )
+        result = copy.deepcopy(updated)
+        return ACCOUNTS_MODULE.public_settings(result) if public else result
+
+    def copy_profile_email_to_automation_settings(
+        self, expected_profile_revision: int, expected_settings_revision: int,
+        *, public: bool = True,
+    ) -> dict[str, Any]:
+        """Copy the canonical profile email internally without returning it."""
+
+        self.initialize()
+        self._ensure_account_control_documents()
+        with exclusive_file_lock(self.store_lock_path):
+            profile_document = self._load_profile_document()
+            settings_document = self._load_automation_settings_document()
+            if profile_document["metadata"].get("revision", 1) != expected_profile_revision:
+                raise StoreError("profile revision conflict")
+            current = settings_document["settings"]
+            if current["revision"] != expected_settings_revision:
+                raise StoreError("automation settings revision conflict")
+            email = _optional_email(profile_document["profile"].get("email"), "profile email")
+            if email is None:
+                raise StoreError("canonical profile email is unavailable")
+            updated = {
+                **current, "signupEmail": email,
+                "revision": current["revision"] + 1, "updatedAt": self._now(),
+            }
+            _validate_automation_settings_record(updated)
+            atomic_write_json(
+                self.automation_settings_path,
+                {"schemaVersion": SCHEMA_VERSION, "settings": updated},
+            )
+        # The copied identity never crosses the method boundary.
+        return ACCOUNTS_MODULE.public_settings(updated) if public else {"copied": True, "revision": updated["revision"]}
+
+    def automation_capability(self, platform: str | None = None) -> dict[str, Any]:
+        credential = ACCOUNTS_MODULE.discover_capability(
+            platform or sys.platform, CREDENTIALS_MACOS_MODULE.ADAPTER_REGISTRY
+        )
+        account_flow = ACCOUNTS_MODULE.discover_account_flow_capability(
+            platform or sys.platform, ACCOUNT_FLOWS_MACOS_MODULE.ADAPTER_REGISTRY
+        )
+        return {**credential, "accountFlowAutomation": account_flow}
+
+    def resolve_account_realm(self, portal_url: str) -> dict[str, Any]:
+        return ACCOUNTS_MODULE.normalize_realm(portal_url)
+
+    def list_employer_accounts(self, *, public: bool = False, companion: bool = False) -> list[dict[str, Any]]:
+        self.initialize()
+        self._ensure_account_control_documents()
+        accounts = list(self._load_employer_accounts_document()["accounts"].values())
+        accounts.sort(key=lambda item: item["realmRef"])
+        records = copy.deepcopy(accounts)
+        if companion:
+            return [ACCOUNTS_MODULE.public_account(item) for item in records]
+        return [ACCOUNTS_MODULE.public_account(item) for item in records] if public else records
+
+    def get_employer_account(self, realm_ref: str, *, public: bool = False) -> dict[str, Any] | None:
+        self.initialize()
+        self._ensure_account_control_documents()
+        record = self._load_employer_accounts_document()["accounts"].get(realm_ref)
+        if record is None:
+            return None
+        result = copy.deepcopy(record)
+        return ACCOUNTS_MODULE.public_account(result) if public else result
+
+    def create_employer_account(
+        self, portal_url: str, signup_email_override: str | None = None, *, public: bool = False
+    ) -> dict[str, Any]:
+        realm = self.resolve_account_realm(portal_url)
+        if realm["status"] != "resolved":
+            raise StoreError("employer account realm is unresolved")
+        override = _optional_email(signup_email_override, "signup email override")
+        self.initialize()
+        self._ensure_account_control_documents()
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_employer_accounts_document()
+            if realm["realmRef"] in document["accounts"]:
+                raise StoreError("employer account already exists")
+            now = self._now()
+            record = {
+                "realmRef": realm["realmRef"],
+                "adapterId": realm["adapterId"],
+                "descriptorVersion": realm["descriptorVersion"],
+                "descriptor": realm["descriptor"],
+                "flowKind": realm.get("flowKind", ACCOUNTS_MODULE.FLOW_PASSWORD),
+                "credentialRequired": realm.get("credentialRequired", True),
+                "signupEmailOverride": override,
+                "providerId": None,
+                "credentialRef": None,
+                "credentialVersion": None,
+                "lifecycleState": "discovered",
+                "revision": 1,
+                "createdAt": now,
+                "updatedAt": now,
+            }
+            _validate_employer_account_record(realm["realmRef"], record)
+            document["accounts"][realm["realmRef"]] = record
+            document["metadata"]["updatedAt"] = now
+            atomic_write_json(self.employer_accounts_path, document)
+        result = copy.deepcopy(record)
+        return ACCOUNTS_MODULE.public_account(result) if public else result
+
+    def update_employer_account(
+        self, realm_ref: str, patch: dict[str, Any], expected_revision: int, *, public: bool = False
+    ) -> dict[str, Any]:
+        incoming = _require_object(patch, "employer account patch")
+        if set(incoming) != {"signupEmailOverride"}:
+            raise StoreError("employer account patch may only change signup email override")
+        override = _optional_email(incoming["signupEmailOverride"], "signup email override")
+        self.initialize()
+        self._ensure_account_control_documents()
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_employer_accounts_document()
+            current = document["accounts"].get(realm_ref)
+            if current is None:
+                raise StoreError("employer account does not exist")
+            if current["revision"] != expected_revision:
+                raise StoreError("employer account revision conflict")
+            updated = dict(current)
+            updated.update({
+                "signupEmailOverride": override,
+                "revision": current["revision"] + 1,
+                "updatedAt": self._now(),
+            })
+            _validate_employer_account_record(realm_ref, updated)
+            document["accounts"][realm_ref] = updated
+            document["metadata"]["updatedAt"] = updated["updatedAt"]
+            atomic_write_json(self.employer_accounts_path, document)
+        result = copy.deepcopy(updated)
+        return ACCOUNTS_MODULE.public_account(result) if public else result
+
+    def account_operation_status(self) -> dict[str, Any]:
+        self.initialize()
+        self._ensure_account_control_documents()
+        operation = self._load_account_operation_journal()["operation"]
+        if operation is None:
+            return {"status": "idle", "operation": None}
+        return {
+            "status": "recovery_required",
+            "operation": {
+                "operationId": operation["operationId"],
+                "jobId": operation["jobId"],
+                "realmRef": operation["realmRef"],
+                "stage": operation["stage"],
+                "outcomeCode": operation["outcomeCode"],
+            },
+        }
+
+    def recover_account_operation(self) -> dict[str, Any]:
+        """Fail a stranded protected operation closed; never infer success."""
+
+        self.initialize()
+        self._ensure_account_control_documents()
+        with exclusive_file_lock(self.store_lock_path):
+            journal = self._load_account_operation_journal()
+            operation = journal["operation"]
+            if operation is None:
+                return {"status": "idle", "recovered": False}
+            accounts = self._load_employer_accounts_document()
+            account = accounts["accounts"].get(operation["realmRef"])
+            if account is None:
+                raise StoreError("account operation realm is unavailable")
+            if account["lifecycleState"] != "ambiguous":
+                account = dict(account)
+                account["lifecycleState"] = "ambiguous"
+                account["revision"] += 1
+                account["updatedAt"] = self._now()
+                _validate_employer_account_record(account["realmRef"], account)
+                accounts["accounts"][account["realmRef"]] = account
+                accounts["metadata"]["updatedAt"] = account["updatedAt"]
+                atomic_write_json(self.employer_accounts_path, accounts)
+            jobs = self._load_jobs_document()["jobs"]
+            job = jobs.get(operation["jobId"])
+            if job is None or job.get("deletedAt") is not None:
+                raise StoreError("account operation job is unavailable")
+            recovered_job = None
+            if job["status"] == "in_progress":
+                claim = self._load_coordinator_document()["claim"]
+                if (
+                    claim is None or claim["jobId"] != job["id"]
+                    or self._now_datetime() >= self._parse_time(claim["expiresAt"])
+                ):
+                    raise StoreError("account operation recovery requires a live same-job claim")
+                recovered_job = self._account_attention_handoff_locked(job, "ambiguous_recovery")
+            elif job["status"] != "needs_info":
+                raise StoreError("account operation job cannot be reconciled")
+            self._clear_account_operation_locked(operation)
+            result = {
+                "status": "ambiguous", "recovered": True,
+                "account": ACCOUNTS_MODULE.public_account(account),
+                "retryAllowed": False,
+            }
+            if recovered_job is not None:
+                result["job"] = {
+                    "id": recovered_job["id"], "status": recovered_job["status"],
+                    "revision": recovered_job["revision"],
+                }
+            return result
+
+    def _clear_account_operation_locked(self, operation: dict[str, Any]) -> None:
+        current = self._load_account_operation_journal()["operation"]
+        if current is None or current["operationId"] != operation["operationId"]:
+            raise StoreError("account operation journal changed before completion")
+        atomic_write_json(
+            self.account_operation_journal_path,
+            {"schemaVersion": SCHEMA_VERSION, "operation": None},
+        )
+
+    def _write_account_stage_locked(
+        self, account: dict[str, Any], lifecycle: str, operation: dict[str, Any], stage: str,
+        *, provider_id: str | None = None, credential_ref: str | None = None,
+        credential_version: int | None = None,
+    ) -> dict[str, Any]:
+        accounts = self._load_employer_accounts_document()
+        current = accounts["accounts"].get(account["realmRef"])
+        if current is None or current["revision"] != account["revision"]:
+            raise StoreError("employer account revision conflict")
+        updated = dict(current)
+        updated.update({
+            "lifecycleState": lifecycle,
+            "revision": current["revision"] + 1,
+            "updatedAt": self._now(),
+        })
+        if provider_id is not None:
+            updated.update({
+                "providerId": provider_id,
+                "credentialRef": credential_ref,
+                "credentialVersion": credential_version,
+            })
+        _validate_employer_account_record(updated["realmRef"], updated)
+        accounts["accounts"][updated["realmRef"]] = updated
+        accounts["metadata"]["updatedAt"] = updated["updatedAt"]
+        atomic_write_json(self.employer_accounts_path, accounts)
+        operation = {**operation, "stage": stage, "accountRevision": updated["revision"]}
+        journal = {"schemaVersion": SCHEMA_VERSION, "operation": operation}
+        atomic_write_json(self.account_operation_journal_path, journal)
+        return updated
+
+    def _account_attention_handoff_locked(self, job: dict[str, Any], reason: str) -> dict[str, Any]:
+        claim = self._load_coordinator_document()["claim"]
+        if claim is None or claim["jobId"] != job["id"] or self._now_datetime() >= self._parse_time(claim["expiresAt"]):
+            raise StoreError("account denial requires the live claimed job")
+        now = self._now()
+        session = self._build_session(job["id"], {
+            "status": "active", "step": f"account_automation_denied:{reason}",
+            "answerKeys": [], "pendingFields": [],
+        }, now)
+        operation_id = str(uuid.uuid4())
+        self._commit_coordinator_operation_locked({
+            "kind": "handoff", "operationId": operation_id, "jobId": job["id"],
+            "sourceStatus": "in_progress", "targetStatus": "needs_info",
+            "expectedRevision": job["revision"], "at": now, "session": session,
+            "historyEvent": self._history_event_for_operation(
+                operation_id, job, "job-blocked", "needs_info", now
+            ),
+            "resultClaim": None,
+        })
+        return self._load_jobs_document()["jobs"][job["id"]]
+
+    def execute_synthetic_account(
+        self, incoming: dict[str, Any], *, provider: Any | None = None,
+        observer: Any | None = None, public: bool = False,
+        test_authority: object | None = None,
+    ) -> dict[str, Any]:
+        try:
+            packet = ACCOUNT_EXECUTOR_MODULE.validate_request(incoming)
+        except ACCOUNT_EXECUTOR_MODULE.AccountExecutorError as error:
+            raise StoreError(str(error)) from None
+        self.initialize()
+        self._ensure_account_control_documents()
+        self._ensure_coordinator_files()
+        if provider is None:
+            raise StoreError("native protected provider injection is required")
+        provider_id = getattr(provider, "provider_id", None)
+        synthetic_authorized = (
+            provider_id == "synthetic-protected"
+            and test_authority is CREDENTIALS_MODULE.synthetic_test_authority()
+            and not public
+        )
+        if provider_id == "synthetic-protected" and not synthetic_authorized:
+            raise StoreError("synthetic provider is test-only")
+        if not synthetic_authorized and (
+            not sys.platform.startswith("darwin") or provider_id != "macos-keychain"
+        ):
+            raise StoreError("native account execution is unsupported on this platform")
+        protected_provider = provider
+        with exclusive_file_lock(self.store_lock_path):
+            if self._load_account_operation_journal()["operation"] is not None:
+                raise StoreError("account operation requires explicit recovery")
+            claim = self._load_coordinator_document()["claim"]
+            job = self._load_jobs_document()["jobs"].get(packet["jobId"])
+            if (
+                claim is None or claim["jobId"] != packet["jobId"]
+                or claim["claimId"] != packet["expectedClaimId"]
+                or self._now_datetime() >= self._parse_time(claim["expiresAt"])
+                or job is None or job.get("deletedAt") is not None
+                or job["status"] != "in_progress"
+                or job["revision"] != packet["expectedJobRevision"]
+            ):
+                raise StoreError("account execution requires the exact live claimed job")
+            realm = ACCOUNTS_MODULE.normalize_realm(job["url"])
+            if (
+                realm["status"] != "resolved" or realm["realmRef"] != packet["realmRef"]
+                or realm["descriptor"] != packet["realmDescriptor"]
+            ):
+                raise StoreError("account execution realm binding mismatch")
+            expected_target = self._trusted_fill_fingerprint(packet["syntheticTargetUrl"])
+            if expected_target != packet["syntheticTargetFingerprint"]:
+                raise StoreError("synthetic target fingerprint mismatch")
+            settings = self._load_automation_settings_document()["settings"]
+            accounts = self._load_employer_accounts_document()
+            account = accounts["accounts"].get(packet["realmRef"])
+            if account is None:
+                raise StoreError("employer account does not exist")
+            if settings["revision"] != packet["expectedSettingsRevision"] or account["revision"] != packet["expectedAccountRevision"]:
+                raise StoreError("account execution revision conflict")
+            if not settings["enabled"] or not settings["automaticAccountCreation"]:
+                raise StoreError("account automation is disabled")
+            if account["signupEmailOverride"] is None and settings["signupEmail"] is None:
+                raise StoreError("effective signup email is required")
+            if account["lifecycleState"] in ACCOUNT_EXECUTOR_MODULE.TERMINAL_NO_RETRY:
+                raise StoreError("account lifecycle permanently requires human attention")
+            strategy = settings["passwordStrategy"]
+            if strategy in {"custom", "ask_each_time"}:
+                handed_off = self._account_attention_handoff_locked(job, "password_strategy")
+                return {
+                    "authorized": False, "reasonCode": "password_strategy_requires_human",
+                    "retryAllowed": False, "attentionHandoff": True,
+                    "job": {"id": handed_off["id"], "status": handed_off["status"], "revision": handed_off["revision"]},
+                }
+            operation = {
+                "operationId": str(uuid.uuid4()), "jobId": job["id"],
+                "jobRevision": job["revision"], "claimId": claim["claimId"],
+                "realmRef": account["realmRef"], "accountRevision": account["revision"],
+                "settingsRevision": settings["revision"], "stage": "prepared",
+                "outcomeCode": "observed_pending", "startedAt": self._now(),
+            }
+            atomic_write_json(
+                self.account_operation_journal_path,
+                {"schemaVersion": SCHEMA_VERSION, "operation": operation},
+            )
+            try:
+                result = ACCOUNT_EXECUTOR_MODULE.execute_non_final(
+                    packet, protected_provider, strategy, account["credentialRef"],
+                    observer or ACCOUNT_EXECUTOR_MODULE.observe_synthetic_portal,
+                )
+            except Exception:
+                ambiguous = self._write_account_stage_locked(
+                    account, "ambiguous", operation, "signup_in_progress"
+                )
+                handed_off = self._account_attention_handoff_locked(job, "ambiguous")
+                self._clear_account_operation_locked(operation)
+                return {
+                    "authorized": False, "reasonCode": "ambiguous",
+                    "retryAllowed": False, "attentionHandoff": True,
+                    "account": ACCOUNTS_MODULE.public_account(ambiguous),
+                    "job": {"id": handed_off["id"], "status": handed_off["status"], "revision": handed_off["revision"]},
+                }
+            account = self._write_account_stage_locked(
+                account, "credential_provisioned", operation, "credential_provisioned",
+                provider_id=result["providerId"], credential_ref=result["credentialRef"],
+                credential_version=result["credentialVersion"],
+            )
+            account = self._write_account_stage_locked(
+                account, "signup_in_progress", operation, "signup_in_progress"
+            )
+            account = self._write_account_stage_locked(
+                account, result["lifecycleState"], operation, "signup_in_progress"
+            )
+            attention = result["lifecycleState"] != "active"
+            response = {
+                "authorized": result["lifecycleState"] == "active",
+                "reasonCode": result["lifecycleState"], "retryAllowed": False,
+                "attentionHandoff": attention, "reused": result["reused"],
+                "secureControlCleared": result["secureControlCleared"],
+                "finalActionAuthorized": False,
+                "account": ACCOUNTS_MODULE.public_account(account),
+            }
+            if attention:
+                handed_off = self._account_attention_handoff_locked(job, result["lifecycleState"])
+                response["job"] = {
+                    "id": handed_off["id"], "status": handed_off["status"],
+                    "revision": handed_off["revision"],
+                }
+            self._clear_account_operation_locked(operation)
+            return response
+
+    def execute_synthetic_email_only_account(
+        self, incoming: dict[str, Any], *, provider: Any,
+        test_authority: object | None = None,
+    ) -> dict[str, Any]:
+        """Execute one loopback Oracle email-only flow without credentials."""
+
+        try:
+            packet = ACCOUNT_FLOWS_MODULE.validate_email_only_request(incoming, allow_loopback=True)
+        except ACCOUNT_FLOWS_MODULE.AccountFlowError as error:
+            raise StoreError(str(error)) from None
+        if (
+            test_authority is not ACCOUNT_FLOWS_MODULE.synthetic_test_authority()
+            or getattr(provider, "provider_id", None) != "macos-accessibility"
+        ):
+            raise StoreError("synthetic account-flow provider is test-only")
+        self.initialize()
+        self._ensure_account_control_documents()
+        self._ensure_coordinator_files()
+        with exclusive_file_lock(self.store_lock_path):
+            if self._load_account_operation_journal()["operation"] is not None:
+                raise StoreError("account operation requires explicit recovery")
+            claim = self._load_coordinator_document()["claim"]
+            job = self._load_jobs_document()["jobs"].get(packet["jobId"])
+            if (
+                claim is None or claim["jobId"] != packet["jobId"]
+                or claim["claimId"] != packet["expectedClaimId"]
+                or self._now_datetime() >= self._parse_time(claim["expiresAt"])
+                or job is None or job.get("deletedAt") is not None
+                or job["status"] != "in_progress" or job["revision"] != packet["jobRevision"]
+            ):
+                raise StoreError("email-only execution requires the exact live claimed job")
+            realm = ACCOUNTS_MODULE.normalize_realm(job["url"])
+            if (
+                realm.get("status") != "resolved"
+                or realm.get("adapterId") != "oracle-recruiting"
+                or realm.get("flowKind") != ACCOUNTS_MODULE.FLOW_EMAIL_ONLY
+                or realm.get("realmRef") != packet["realmRef"]
+                or realm.get("descriptor") != packet["realmDescriptor"]
+            ):
+                raise StoreError("email-only execution realm binding mismatch")
+            settings = self._load_automation_settings_document()["settings"]
+            account = self._load_employer_accounts_document()["accounts"].get(packet["realmRef"])
+            if (
+                account is None or account["revision"] != packet["accountRevision"]
+                or settings["revision"] != packet["settingsRevision"]
+            ):
+                raise StoreError("email-only execution revision conflict")
+            if not settings["enabled"] or not settings["automaticAccountCreation"]:
+                raise StoreError("account automation is disabled")
+            if account.get("flowKind") != ACCOUNTS_MODULE.FLOW_EMAIL_ONLY or account.get("credentialRequired") is not False:
+                raise StoreError("email-only account metadata is invalid")
+            if account["providerId"] is not None or account["credentialRef"] is not None or account["credentialVersion"] is not None:
+                raise StoreError("email-only execution forbids credential metadata")
+            if account["lifecycleState"] != "discovered":
+                raise StoreError("email-only account cannot be attempted again")
+            effective_email = account["signupEmailOverride"] or settings["signupEmail"]
+            if effective_email is None:
+                raise StoreError("effective signup email is required")
+            operation = {
+                "operationId": str(uuid.uuid4()), "jobId": job["id"],
+                "jobRevision": job["revision"], "claimId": claim["claimId"],
+                "realmRef": account["realmRef"], "accountRevision": account["revision"],
+                "settingsRevision": settings["revision"], "stage": "prepared",
+                "outcomeCode": "observed_pending", "startedAt": self._now(),
+            }
+            # Durable burn precedes every portal effect.
+            atomic_write_json(self.account_operation_journal_path, {"schemaVersion": SCHEMA_VERSION, "operation": operation})
+            account = self._write_account_stage_locked(account, "signup_in_progress", operation, "signup_in_progress")
+            try:
+                result = ACCOUNT_FLOWS_MODULE.execute_email_only(
+                    {**packet, "accountRevision": packet["accountRevision"]}, provider,
+                    lambda: effective_email, allow_loopback=True,
+                )
+            except Exception:
+                ambiguous = self._write_account_stage_locked(account, "ambiguous", operation, "signup_in_progress")
+                handed_off = self._account_attention_handoff_locked(job, "ambiguous")
+                self._clear_account_operation_locked(operation)
+                return {
+                    "authorized": False, "reasonCode": "ambiguous", "retryAllowed": False,
+                    "attentionHandoff": True, "finalActionAuthorized": False,
+                    "credentialProviderInvocations": 0,
+                    "account": ACCOUNTS_MODULE.public_account(ambiguous),
+                    "job": {"id": handed_off["id"], "status": handed_off["status"], "revision": handed_off["revision"]},
+                }
+            account = self._write_account_stage_locked(
+                account, result["lifecycleState"], operation, "signup_in_progress"
+            )
+            attention = result["lifecycleState"] != "active"
+            response = {
+                "authorized": not attention, "reasonCode": result["lifecycleState"],
+                "retryAllowed": False, "attentionHandoff": attention,
+                "finalActionAuthorized": False, "emailRemoved": result["emailRemoved"],
+                "termsAccepted": result["termsAccepted"], "nextActivations": result["nextActivations"],
+                "credentialProviderInvocations": 0,
+                "account": ACCOUNTS_MODULE.public_account(account),
+            }
+            if attention:
+                handed_off = self._account_attention_handoff_locked(job, result["lifecycleState"])
+                response["job"] = {"id": handed_off["id"], "status": handed_off["status"], "revision": handed_off["revision"]}
+            self._clear_account_operation_locked(operation)
+            return response
+
+    def execute_live_email_only_account(
+        self, incoming: dict[str, Any], *, authority: Any, provider: Any,
+        now: datetime,
+    ) -> dict[str, Any]:
+        """Consume one exact T007 capability and run one query-free Oracle attempt.
+
+        This method is intentionally not exposed through the JSON CLI or HTTP.
+        Capability material and the canonical signup identity remain inside the
+        process. The durable journal is written before T007 is consumed, and
+        both burns precede every browser effect.
+        """
+
+        try:
+            request = CANARY_EXECUTOR_MODULE.validate_live_request(incoming)
+        except CANARY_EXECUTOR_MODULE.LiveCanaryExecutorError as error:
+            raise StoreError(str(error)) from None
+        if request["binding"].get("flowKind") != ACCOUNTS_MODULE.FLOW_EMAIL_ONLY:
+            raise StoreError("live email-only canary binding is invalid")
+        if not sys.platform.startswith("darwin") or getattr(provider, "provider_id", None) != "macos-accessibility":
+            raise StoreError("native account execution is unsupported on this platform")
+        self.initialize()
+        self._ensure_account_control_documents()
+        self._ensure_coordinator_files()
+        binding = request["binding"]
+        with exclusive_file_lock(self.store_lock_path):
+            if self._load_account_operation_journal()["operation"] is not None:
+                raise StoreError("account operation requires explicit recovery")
+            claim = self._load_coordinator_document()["claim"]
+            job = self._load_jobs_document()["jobs"].get(binding["jobId"])
+            if (
+                claim is None or claim["jobId"] != binding["jobId"]
+                or claim["claimId"] != binding["claimId"]
+                or self._now_datetime() >= self._parse_time(claim["expiresAt"])
+                or job is None or job.get("deletedAt") is not None
+                or job["status"] != "in_progress" or job["revision"] != binding["jobRevision"]
+            ):
+                raise StoreError("live email-only execution requires the exact live claimed job")
+            if job["url"] != request["portalUrl"]:
+                raise StoreError("live email-only portal URL drifted")
+            realm = ACCOUNTS_MODULE.normalize_realm(job["url"])
+            settings = self._load_automation_settings_document()["settings"]
+            account = self._load_employer_accounts_document()["accounts"].get(binding["realmRef"])
+            if (
+                realm.get("status") != "resolved"
+                or realm.get("adapterId") != "oracle-recruiting"
+                or realm.get("realmRef") != binding["realmRef"]
+                or account is None or account["descriptor"] != realm.get("descriptor")
+                or account["revision"] != binding["accountRevision"]
+                or settings["revision"] != binding["settingsRevision"]
+            ):
+                raise StoreError("live email-only canonical binding drifted")
+            if not settings["enabled"] or not settings["automaticAccountCreation"]:
+                raise StoreError("account automation is disabled")
+            if (
+                account.get("flowKind") != ACCOUNTS_MODULE.FLOW_EMAIL_ONLY
+                or account.get("credentialRequired") is not False
+                or account["providerId"] is not None
+                or account["credentialRef"] is not None
+                or account["credentialVersion"] is not None
+            ):
+                raise StoreError("live email-only account metadata is invalid")
+            if account["lifecycleState"] != "discovered":
+                raise StoreError("live email-only account cannot be attempted again")
+            effective_email = account["signupEmailOverride"] or settings["signupEmail"]
+            if effective_email is None:
+                raise StoreError("effective signup email is required")
+            operation_id = str(uuid.uuid4())
+            operation_fingerprint = "sha256:" + hashlib.sha256(operation_id.encode("ascii")).hexdigest()
+            operation = {
+                "operationId": operation_id, "jobId": job["id"],
+                "jobRevision": job["revision"], "claimId": claim["claimId"],
+                "realmRef": account["realmRef"], "accountRevision": account["revision"],
+                "settingsRevision": settings["revision"], "stage": "prepared",
+                "outcomeCode": "observed_pending", "startedAt": self._now(),
+            }
+            atomic_write_json(
+                self.account_operation_journal_path,
+                {"schemaVersion": SCHEMA_VERSION, "operation": operation},
+            )
+            # The hash-only T007 ledger is consumed after the write-ahead burn
+            # and before signup_in_progress or any native browser effect.
+            authority.attempt(request["capabilityRef"], binding, now=now)
+            account = self._write_account_stage_locked(
+                account, "signup_in_progress", operation, "signup_in_progress"
+            )
+            flow_packet = {
+                "jobId": job["id"], "jobRevision": job["revision"],
+                "expectedClaimId": claim["claimId"], "realmRef": realm["realmRef"],
+                "realmDescriptor": realm["descriptor"], "flowKind": ACCOUNTS_MODULE.FLOW_EMAIL_ONLY,
+                "accountRevision": binding["accountRevision"],
+                "settingsRevision": settings["revision"], "portalUrl": request["portalUrl"],
+                "accountFormFingerprint": request["accountFormFingerprint"],
+                "emailControlFingerprint": request["emailControlFingerprint"],
+                "termsControlFingerprint": request["termsControlFingerprint"],
+                "termsDocumentFingerprint": request["termsDocumentFingerprint"],
+                "nextControlFingerprint": request["nextControlFingerprint"],
+                "passwordControlFingerprint": None, "createAccountControlFingerprint": None,
+                "accountCreationControlsFingerprint": binding["accountCreationControlsFingerprint"],
+            }
+            try:
+                result = ACCOUNT_FLOWS_MODULE.execute_email_only(
+                    flow_packet, provider, lambda: effective_email,
+                    operation_fingerprint=operation_fingerprint,
+                )
+            except Exception:
+                ambiguous = self._write_account_stage_locked(account, "ambiguous", operation, "signup_in_progress")
+                handed_off = self._account_attention_handoff_locked(job, "ambiguous")
+                self._clear_account_operation_locked(operation)
+                return {
+                    "authorized": False, "reasonCode": "ambiguous", "retryAllowed": False,
+                    "attentionHandoff": True, "finalActionAuthorized": False,
+                    "credentialProviderInvocations": 0,
+                    "account": ACCOUNTS_MODULE.public_account(ambiguous),
+                    "job": {"id": handed_off["id"], "status": handed_off["status"], "revision": handed_off["revision"]},
+                }
+            account = self._write_account_stage_locked(account, result["lifecycleState"], operation, "signup_in_progress")
+            attention = result["lifecycleState"] != "active"
+            response = {
+                "authorized": not attention, "reasonCode": result["lifecycleState"],
+                "retryAllowed": False, "attentionHandoff": attention,
+                "finalActionAuthorized": False, "emailRemoved": result["emailRemoved"],
+                "termsAccepted": result["termsAccepted"], "nextActivations": result["nextActivations"],
+                "credentialProviderInvocations": 0,
+                "account": ACCOUNTS_MODULE.public_account(account),
+            }
+            if attention:
+                handed_off = self._account_attention_handoff_locked(job, result["lifecycleState"])
+                response["job"] = {"id": handed_off["id"], "status": handed_off["status"], "revision": handed_off["revision"]}
+            self._clear_account_operation_locked(operation)
+            return response
+
+    def _ensure_trusted_fill_document(self) -> None:
+        with exclusive_file_lock(self.store_lock_path):
+            if self.trusted_fill_path.exists():
+                return
+            now = self._now()
+            atomic_write_json(self.trusted_fill_path, {
+                "schemaVersion": SCHEMA_VERSION,
+                "approvals": {},
+                "metadata": {"createdAt": now, "updatedAt": now},
+            })
+
+    @staticmethod
+    def _trusted_fill_fingerprint(value: str) -> str:
+        return "sha256:" + hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+    def _trusted_fill_current_locked(
+        self, job_id: str, answer_refs: list[str]
+    ) -> dict[str, Any]:
+        jobs = self._load_jobs_document()["jobs"]
+        job = jobs.get(job_id)
+        if job is None or job.get("deletedAt") is not None or job["status"] != "in_progress":
+            raise StoreError("trusted fill requires an in-progress claimed job")
+        realm = ACCOUNTS_MODULE.normalize_realm(job["url"])
+        if realm["status"] != "resolved":
+            raise StoreError("trusted fill portal realm is unresolved")
+        try:
+            preflight = self._preflight_job_record(job)
+        except Exception:
+            raise TrustedFillCurrentError("resume_observation_failed") from None
+        if not preflight["ready"]:
+            if "resume_file_missing" in preflight["errors"] or "resume_missing" in preflight["errors"]:
+                reason = "resume_content_missing"
+            elif "resume_file_changed" in preflight["errors"]:
+                reason = "resume_content_changed"
+            else:
+                reason = "resume_preflight_not_ready"
+            raise TrustedFillCurrentError(reason)
+        if preflight["resumeId"] is None:
+            raise TrustedFillCurrentError("resume_content_missing")
+        resume = self._load_resumes_document()["resumes"].get(preflight["resumeId"])
+        if resume is None or resume.get("deletedAt") is not None:
+            raise TrustedFillCurrentError("resume_content_missing")
+        if resume.get("storageKind") != "managed":
+            raise TrustedFillCurrentError("resume_content_unverifiable")
+        try:
+            content_revision = TRUSTED_FILL_MODULE.validate_content_revision(
+                resume.get("contentRevision")
+            )
+        except TRUSTED_FILL_MODULE.TrustedFillError:
+            raise TrustedFillCurrentError("resume_content_unverifiable") from None
+        profile_revision = self._load_profile_document()["metadata"].get("revision", 1)
+        answers = self._load_answers_document()["answers"]
+        answer_bindings = []
+        for answer_ref in sorted(answer_refs):
+            answer = answers.get(answer_ref)
+            if (
+                answer is None or answer.get("deletedAt") is not None
+                or answer.get("reviewStatus", "accepted") != "accepted"
+            ):
+                raise TrustedFillCurrentError("answer_binding_invalid")
+            answer_bindings.append({
+                "answerRef": answer_ref,
+                "questionRevision": answer["revision"],
+                "answerRevision": answer["revision"],
+            })
+        settings = self._load_automation_settings_document()["settings"]
+        account = self._load_employer_accounts_document()["accounts"].get(realm["realmRef"])
+        return {
+            "jobId": job_id,
+            "jobRevision": job["revision"],
+            "realmRef": realm["realmRef"],
+            "urlFingerprint": self._trusted_fill_fingerprint(job["normalizedUrl"]),
+            "resumeId": resume["id"],
+            "resumeRevision": resume["revision"],
+            "resumeContentRevision": content_revision,
+            "profileRevision": profile_revision,
+            "vitalFactRevision": profile_revision,
+            "answerBindings": answer_bindings,
+            "automationSettingsRevision": settings["revision"],
+            "employerAccountRevision": account["revision"] if account is not None else None,
+            "policyRevision": TRUSTED_FILL_MODULE.POLICY_REVISION,
+        }
+
+    def approve_trusted_fill(self, incoming: dict[str, Any], *, public: bool = False) -> dict[str, Any]:
+        packet = _require_object(incoming, "trusted fill approval request")
+        required = {
+            "jobId", "expectedJobRevision", "realmRef", "answerRefs",
+            "observedQuestionFingerprint", "observedControlFingerprint",
+            "formFingerprint", "allowedOperations", "durationMinutes",
+        }
+        if set(packet) != required:
+            raise StoreError("trusted fill approval request contains unsupported fields")
+        job_id = _safe_session_id(packet.get("jobId", ""))
+        if not isinstance(packet.get("answerRefs"), list) or not all(isinstance(item, str) for item in packet["answerRefs"]):
+            raise StoreError("trusted fill answer references must be a list of strings")
+        if len(packet["answerRefs"]) != len(set(packet["answerRefs"])):
+            raise StoreError("trusted fill answer references contain duplicates")
+        self.initialize()
+        self._ensure_account_control_documents()
+        self._ensure_coordinator_files()
+        self._ensure_trusted_fill_document()
+        with exclusive_file_lock(self.store_lock_path):
+            claim = self._load_coordinator_document()["claim"]
+            if (
+                claim is None or claim["jobId"] != job_id
+                or self._now_datetime() >= self._parse_time(claim["expiresAt"])
+            ):
+                raise StoreError("trusted fill approval requires the live claimed job")
+            try:
+                current = self._trusted_fill_current_locked(job_id, packet["answerRefs"])
+            except TrustedFillCurrentError as error:
+                job = self._load_jobs_document()["jobs"][job_id]
+                handed_off = self._trusted_fill_attention_handoff_locked(
+                    job, error.reason_code
+                )
+                return {
+                    "authorized": False,
+                    "reasonCode": error.reason_code,
+                    "retryAllowed": False,
+                    "attentionHandoff": True,
+                    "job": {
+                        "id": handed_off["id"],
+                        "status": handed_off["status"],
+                        "revision": handed_off["revision"],
+                    },
+                }
+            current["claimId"] = claim["claimId"]
+            if current["jobRevision"] != packet.get("expectedJobRevision"):
+                raise StoreError("job revision conflict")
+            if current["realmRef"] != packet.get("realmRef"):
+                raise StoreError("trusted fill realm binding mismatch")
+            document = self._load_trusted_fill_document()
+            previous = document["approvals"].get(job_id)
+            if previous is not None and previous["status"] == "active" and self._now_datetime() < TRUSTED_FILL_MODULE._time(previous["expiresAt"], "approval expiresAt"):
+                raise StoreError("active trusted fill approval already exists")
+            bindings = {
+                **current,
+                "observedQuestionFingerprint": packet["observedQuestionFingerprint"],
+                "observedControlFingerprint": packet["observedControlFingerprint"],
+                "formFingerprint": packet["formFingerprint"],
+                "allowedOperations": packet["allowedOperations"],
+            }
+            approval_revision = 1 if previous is None else previous["approvalRevision"] + 1
+            try:
+                approval = TRUSTED_FILL_MODULE.create_approval(
+                    bindings, packet["durationMinutes"], approval_revision, self._now_datetime()
+                )
+            except TRUSTED_FILL_MODULE.TrustedFillError as error:
+                raise StoreError(str(error)) from None
+            document["approvals"][job_id] = approval
+            document["metadata"]["updatedAt"] = self._now()
+            atomic_write_json(self.trusted_fill_path, document)
+        return TRUSTED_FILL_MODULE.public_status(approval, self._now_datetime()) if public else approval
+
+    def trusted_fill_status(self, job_id: str, *, public: bool = False) -> dict[str, Any] | None:
+        self.initialize()
+        self._ensure_trusted_fill_document()
+        _safe_session_id(job_id)
+        record = self._load_trusted_fill_document()["approvals"].get(job_id)
+        if public:
+            return TRUSTED_FILL_MODULE.public_status(record, self._now_datetime())
+        return copy.deepcopy(record) if record is not None else None
+
+    def revoke_trusted_fill(
+        self, job_id: str, expected_approval_revision: int, *, public: bool = False
+    ) -> dict[str, Any]:
+        self.initialize()
+        self._ensure_trusted_fill_document()
+        _safe_session_id(job_id)
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_trusted_fill_document()
+            record = document["approvals"].get(job_id)
+            if record is None:
+                raise StoreError("trusted fill approval does not exist")
+            try:
+                updated = TRUSTED_FILL_MODULE.revoke_approval(
+                    record, expected_approval_revision, self._now_datetime()
+                )
+            except TRUSTED_FILL_MODULE.TrustedFillError as error:
+                raise StoreError(str(error)) from None
+            document["approvals"][job_id] = updated
+            document["metadata"]["updatedAt"] = self._now()
+            atomic_write_json(self.trusted_fill_path, document)
+        return TRUSTED_FILL_MODULE.public_status(updated, self._now_datetime()) if public else updated
+
+    def _trusted_fill_attention_handoff_locked(
+        self, job: dict[str, Any], reason_code: str
+    ) -> dict[str, Any]:
+        claim = self._load_coordinator_document()["claim"]
+        if (
+            claim is None or claim["jobId"] != job["id"]
+            or self._now_datetime() >= self._parse_time(claim["expiresAt"])
+        ):
+            raise StoreError("trusted fill denial requires the live claimed job")
+        now = self._now()
+        session = self._build_session(job["id"], {
+            "status": "active",
+            "step": f"trusted_fill_denied:{reason_code}",
+            "answerKeys": [],
+            "pendingFields": [],
+        }, now)
+        operation_id = str(uuid.uuid4())
+        self._commit_coordinator_operation_locked({
+            "kind": "handoff", "operationId": operation_id, "jobId": job["id"],
+            "sourceStatus": "in_progress", "targetStatus": "needs_info",
+            "expectedRevision": job["revision"], "at": now, "session": session,
+            "historyEvent": self._history_event_for_operation(
+                operation_id, job, "job-blocked", "needs_info", now
+            ),
+            "resultClaim": None,
+        })
+        return self._load_jobs_document()["jobs"][job["id"]]
+
+    def evaluate_trusted_fill(self, incoming: dict[str, Any], *, public: bool = False) -> dict[str, Any]:
+        observed = _require_object(incoming, "trusted fill evaluation")
+        required = {
+            "jobId", "expectedApprovalRevision", "observedQuestionFingerprint",
+            "observedControlFingerprint", "formFingerprint", "fieldOperations",
+            "authenticationRequired", "consentRequired", "credentialFieldsPresent",
+            "finalControlsPresent", "unseenQuestions", "unseenControls",
+        }
+        if set(observed) != required:
+            raise StoreError("trusted fill evaluation contains unsupported fields")
+        for field in (
+            "authenticationRequired", "consentRequired", "credentialFieldsPresent",
+            "finalControlsPresent", "unseenQuestions", "unseenControls",
+        ):
+            if not isinstance(observed[field], bool):
+                raise StoreError("trusted fill evaluation flags must be booleans")
+        job_id = _safe_session_id(observed.get("jobId", ""))
+        self.initialize()
+        self._ensure_account_control_documents()
+        self._ensure_coordinator_files()
+        self._ensure_trusted_fill_document()
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_trusted_fill_document()
+            approval = document["approvals"].get(job_id)
+            job = self._load_jobs_document()["jobs"].get(job_id)
+            claim = self._load_coordinator_document()["claim"]
+            if job is None or job.get("deletedAt") is not None or job["status"] != "in_progress":
+                raise StoreError("trusted fill evaluation requires an in-progress job")
+            if (
+                claim is None or claim["jobId"] != job_id
+                or self._now_datetime() >= self._parse_time(claim["expiresAt"])
+            ):
+                return {
+                    "authorized": False,
+                    "reasonCode": "claim_missing_or_expired",
+                    "retryAllowed": False,
+                    "attentionHandoff": False,
+                }
+            if approval is None:
+                decision = {"authorized": False, "reasonCode": "approval_missing", "retryAllowed": False}
+            elif approval["approvalRevision"] != observed.get("expectedApprovalRevision"):
+                decision = {"authorized": False, "reasonCode": "approval_revision_mismatch", "retryAllowed": False}
+            elif approval["claimId"] != claim["claimId"]:
+                return {
+                    "authorized": False,
+                    "reasonCode": "claim_binding_mismatch",
+                    "retryAllowed": False,
+                    "attentionHandoff": False,
+                }
+            else:
+                try:
+                    current = self._trusted_fill_current_locked(
+                        job_id, [item["answerRef"] for item in approval["answerBindings"]]
+                    )
+                except TrustedFillCurrentError as error:
+                    decision = {
+                        "authorized": False,
+                        "reasonCode": error.reason_code,
+                        "retryAllowed": False,
+                    }
+                else:
+                    current["claimId"] = claim["claimId"]
+                    try:
+                        decision = TRUSTED_FILL_MODULE.evaluate_approval(
+                            approval, current, observed, self._now_datetime()
+                        )
+                    except TRUSTED_FILL_MODULE.TrustedFillError as error:
+                        raise StoreError(str(error)) from None
+            if not decision["authorized"]:
+                handed_off = self._trusted_fill_attention_handoff_locked(job, decision["reasonCode"])
+                decision = {
+                    **decision,
+                    "attentionHandoff": True,
+                    "job": {"id": handed_off["id"], "status": handed_off["status"], "revision": handed_off["revision"]},
+                }
+            else:
+                decision["attentionHandoff"] = False
+        return decision
+
+
 def _scope(value: str) -> dict[str, Any]:
     try:
         return _require_object(json.loads(value), "scope")
@@ -6713,6 +7975,40 @@ def build_parser() -> argparse.ArgumentParser:
     commands.add_parser("session-list")
     session_delete = commands.add_parser("session-delete")
     session_delete.add_argument("--id", required=True)
+    commands.add_parser("automation-settings-get")
+    automation_update = commands.add_parser("automation-settings-update")
+    automation_update.add_argument("--input", required=True)
+    automation_update.add_argument("--expected-revision", required=True, type=int)
+    automation_copy_email = commands.add_parser("automation-settings-copy-profile-email")
+    automation_copy_email.add_argument("--expected-profile-revision", required=True, type=int)
+    automation_copy_email.add_argument("--expected-settings-revision", required=True, type=int)
+    automation_capability = commands.add_parser("automation-capability")
+    automation_capability.add_argument("--platform", choices=["darwin", "linux", "win32"])
+    realm_resolve = commands.add_parser("account-realm-resolve")
+    realm_resolve.add_argument("--url", required=True)
+    commands.add_parser("employer-account-list")
+    account_get = commands.add_parser("employer-account-get")
+    account_get.add_argument("--realm-ref", required=True)
+    account_create = commands.add_parser("employer-account-create")
+    account_create.add_argument("--url", required=True)
+    account_create.add_argument("--input")
+    account_update = commands.add_parser("employer-account-update")
+    account_update.add_argument("--realm-ref", required=True)
+    account_update.add_argument("--input", required=True)
+    account_update.add_argument("--expected-revision", required=True, type=int)
+    account_execute = commands.add_parser("employer-account-execute-synthetic")
+    account_execute.add_argument("--input", required=True)
+    commands.add_parser("employer-account-operation-status")
+    commands.add_parser("employer-account-operation-recover")
+    trusted_approve = commands.add_parser("trusted-fill-approve")
+    trusted_approve.add_argument("--input", required=True)
+    trusted_status = commands.add_parser("trusted-fill-status")
+    trusted_status.add_argument("--id", required=True)
+    trusted_evaluate = commands.add_parser("trusted-fill-evaluate")
+    trusted_evaluate.add_argument("--input", required=True)
+    trusted_revoke = commands.add_parser("trusted-fill-revoke")
+    trusted_revoke.add_argument("--id", required=True)
+    trusted_revoke.add_argument("--expected-approval-revision", required=True, type=int)
     return parser
 
 
@@ -6940,6 +8236,49 @@ def run(args: argparse.Namespace) -> Any:
         return store.list_sessions()
     if command == "session-delete":
         return store.delete_session(args.id)
+    if command == "automation-settings-get":
+        return store.get_automation_settings(public=True)
+    if command == "automation-settings-update":
+        return store.update_automation_settings(
+            _read_input(args.input), args.expected_revision, public=True
+        )
+    if command == "automation-settings-copy-profile-email":
+        return store.copy_profile_email_to_automation_settings(
+            args.expected_profile_revision, args.expected_settings_revision,
+        )
+    if command == "automation-capability":
+        return store.automation_capability(args.platform)
+    if command == "account-realm-resolve":
+        return store.resolve_account_realm(args.url)
+    if command == "employer-account-list":
+        return store.list_employer_accounts(public=True)
+    if command == "employer-account-get":
+        return store.get_employer_account(args.realm_ref, public=True)
+    if command == "employer-account-create":
+        metadata = _read_input(args.input) if args.input else {}
+        if set(metadata) - {"signupEmailOverride"}:
+            raise StoreError("employer account input contains unsupported fields")
+        return store.create_employer_account(
+            args.url, metadata.get("signupEmailOverride"), public=True
+        )
+    if command == "employer-account-update":
+        return store.update_employer_account(
+            args.realm_ref, _read_input(args.input), args.expected_revision, public=True
+        )
+    if command == "employer-account-execute-synthetic":
+        return store.execute_synthetic_account(_read_input(args.input))
+    if command == "employer-account-operation-status":
+        return store.account_operation_status()
+    if command == "employer-account-operation-recover":
+        return store.recover_account_operation()
+    if command == "trusted-fill-approve":
+        return store.approve_trusted_fill(_read_input(args.input))
+    if command == "trusted-fill-status":
+        return store.trusted_fill_status(args.id)
+    if command == "trusted-fill-evaluate":
+        return store.evaluate_trusted_fill(_read_input(args.input))
+    if command == "trusted-fill-revoke":
+        return store.revoke_trusted_fill(args.id, args.expected_approval_revision)
     raise StoreError("unsupported command")
 
 

@@ -180,6 +180,46 @@ export function createLatestRequestCoordinator() {
   };
 }
 
+export function employerAccountOverrideRequest(account, email, clear = false) {
+  if (!account || typeof account.realmRef !== "string" || !Number.isInteger(account.revision) || account.revision < 1) {
+    throw new TypeError("A canonical employer account revision is required");
+  }
+  return {
+    path: `/api/employer-accounts/${encodeURIComponent(account.realmRef)}`,
+    options: {
+      method: "PATCH",
+      body: JSON.stringify({
+        patch: { signupEmailOverride: clear ? null : String(email || "").trim() },
+        expectedRevision: account.revision,
+      }),
+    },
+  };
+}
+
+export function trustedFillApprovalPacket(values) {
+  return {
+    jobId: String(values.jobId || "").trim(),
+    expectedJobRevision: Number(values.expectedJobRevision),
+    realmRef: String(values.realmRef || "").trim(),
+    answerRefs: String(values.answerRefs || "").split(/\r?\n/).map((item) => item.trim()).filter(Boolean),
+    observedQuestionFingerprint: String(values.observedQuestionFingerprint || "").trim(),
+    observedControlFingerprint: String(values.observedControlFingerprint || "").trim(),
+    formFingerprint: String(values.formFingerprint || "").trim(),
+    allowedOperations: [...(values.allowedOperations || [])].sort(),
+    durationMinutes: Number(values.durationMinutes),
+  };
+}
+
+export function trustedFillRevokeRequest(status) {
+  if (!status || typeof status.jobId !== "string" || !Number.isInteger(status.approvalRevision) || status.approvalRevision < 1) {
+    throw new TypeError("A canonical Trusted Fill approval revision is required");
+  }
+  return {
+    path: `/api/trusted-fill/${encodeURIComponent(status.jobId)}/revoke`,
+    options: { method: "POST", body: JSON.stringify({ expectedApprovalRevision: status.approvalRevision }) },
+  };
+}
+
 export function activitySignature(activity) {
   if (!activity) return "";
   return JSON.stringify({
@@ -335,6 +375,9 @@ if (hasDom) {
   const trashState = { items: [], counts: { job: 0, resume: 0, answer: 0 }, loaded: false, selected: null, opener: null };
   const attentionState = { items: [], snapshotSignature: "", loaded: false, unavailable: false, detailRequestSequence: 0 };
   const overviewState = { projection: null, available: false, degraded: false, unavailable: false };
+  const automationState = { projection: null, loaded: false };
+  const accountOperationState = { status: null };
+  const trustedFillState = { status: null };
   const trashRefreshCoordinator = createLatestRequestCoordinator();
   const activityRefreshCoordinator = createLatestRequestCoordinator();
   const attentionRefreshCoordinator = createLatestRequestCoordinator();
@@ -896,16 +939,193 @@ if (hasDom) {
     }
   }
 
+  function renderAutomation(projection) {
+    automationState.projection = projection; automationState.loaded = true;
+    const settings = projection.settings;
+    const form = $("#automation-form");
+    form.elements.enabled.checked = settings.enabled;
+    form.elements.automaticAccountCreation.checked = settings.automaticAccountCreation;
+    form.elements.signupEmail.value = "";
+    form.elements.signupEmail.placeholder = settings.signupEmailConfigured
+      ? "Configured; enter a replacement"
+      : "Not configured";
+    form.elements.passwordStrategy.value = settings.passwordStrategy;
+    $("#automation-revision").textContent = `Revision ${settings.revision}`;
+    $("#automation-email-status").textContent = settings.signupEmailConfigured ? "Configured; value remains hidden" : "Not configured";
+    const capability = projection.capability;
+    const accountFlow = capability.accountFlowAutomation || {};
+    const capabilityReason = capability.reasonCode ? capability.reasonCode.replaceAll("_", " ") : capability.state;
+    $("#automation-capability").textContent = `${capability.syntheticOperationsReady ? "Protected synthetic operations available" : "Protected synthetic operations unavailable"} · ${accountFlow.emailOnlyCandidateProfileReady ? "Mac email-only candidate-profile automation available" : "Email-only candidate-profile automation unavailable"} · live credential operations unavailable · ${capabilityReason}. Ordinary Job Apply workflows remain available.`;
+    const list = $("#automation-accounts"); list.replaceChildren();
+    for (const account of projection.accounts) {
+      const card = document.createElement("article"); card.className = "automation-account"; card.setAttribute("role", "listitem");
+      const realmLabel = account.adapterId === "oracle-recruiting" ? "Oracle Recruiting site" : "Workday realm";
+      const title = document.createElement("h3"); title.textContent = `${realmLabel} · ${account.realmRef.slice(0, 12)}…`;
+      const detail = document.createElement("p"); detail.textContent = `${account.lifecycleState.replaceAll("_", " ")} · revision ${account.revision} · ${account.signupEmailOverrideConfigured ? "email override configured" : "global email setting"} · ${String(account.flowKind || "password_candidate_account").replaceAll("_", " ")}`;
+      const status = document.createElement("p"); status.textContent = account.credentialRequired === false ? "Email-only candidate profile; no password is created or stored." : (account.providerAssigned ? "Protected credential metadata assigned; value remains inaccessible." : "Credential not provisioned.");
+      const form = document.createElement("form"); form.className = "realm-override-form"; form.setAttribute("aria-label", `Edit signup email override for ${realmLabel} ${account.realmRef.slice(0, 12)}`);
+      const label = document.createElement("label"); label.textContent = "Signup email override";
+      const input = document.createElement("input"); input.type = "email"; input.autocomplete = "email"; input.value = account.signupEmailOverride || ""; input.placeholder = "Use global signup email"; label.append(input);
+      const actions = document.createElement("div"); actions.className = "button-row";
+      const save = document.createElement("button"); save.type = "submit"; save.className = "button secondary"; save.textContent = "Save override";
+      const clear = document.createElement("button"); clear.type = "button"; clear.className = "button secondary"; clear.textContent = "Clear override";
+      const feedback = document.createElement("p"); feedback.className = "realm-override-feedback visually-hidden"; feedback.setAttribute("role", "status"); feedback.setAttribute("aria-live", "polite");
+      const conflict = document.createElement("div"); conflict.className = "conflict hidden"; conflict.setAttribute("role", "alert"); conflict.tabIndex = -1; conflict.textContent = "This realm changed elsewhere. Nothing was retried. Refresh and review the latest revision.";
+      const submit = async (clearValue) => {
+        conflict.classList.add("hidden"); feedback.classList.add("visually-hidden");
+        if (!clearValue && !input.value.trim()) { feedback.textContent = "Enter an email override or choose Clear override."; feedback.classList.remove("visually-hidden"); return; }
+        const request = employerAccountOverrideRequest(account, input.value, clearValue);
+        try { await api(request.path, request.options); await refreshAutomation({ quiet: true }); toast(clearValue ? "Realm email override cleared" : "Realm email override saved"); }
+        catch (error) {
+          if (error.code === "revision_conflict") { conflict.classList.remove("hidden"); conflict.focus(); }
+          else { feedback.textContent = error.message; feedback.classList.remove("visually-hidden"); }
+        }
+      };
+      form.addEventListener("submit", (event) => { event.preventDefault(); submit(false); });
+      clear.addEventListener("click", () => submit(true)); actions.append(save, clear); form.append(label, actions, feedback, conflict);
+      card.append(title, detail, status, form); list.append(card);
+    }
+    if (!projection.accounts.length) {
+      const empty = document.createElement("p"); empty.className = "empty-state compact-empty"; empty.textContent = "No employer realms recorded yet."; list.append(empty);
+    }
+  }
+
+  async function refreshAutomation({ quiet = false } = {}) {
+    try {
+      const projection = await api("/api/automation"); renderAutomation(projection);
+      $("#automation-error").classList.add("hidden"); $("#automation-conflict").classList.add("hidden");
+      if (!quiet) toast("Automation controls refreshed");
+    } catch (error) {
+      $("#automation-error").textContent = error.message; $("#automation-error").classList.remove("hidden");
+    }
+  }
+
+  function renderAccountOperation(status) {
+    accountOperationState.status = status;
+    const pending = status?.status === "recovery_required";
+    $("#account-operation-status").textContent = pending
+      ? `Recovery required · ${status.operation.stage.replaceAll("_", " ")} · realm ${status.operation.realmRef.slice(0, 12)}…`
+      : "No protected account operation is pending.";
+    $("#account-operation-recover").disabled = !pending;
+  }
+
+  async function refreshAccountOperation() {
+    try { renderAccountOperation(await api("/api/account-operation")); $("#account-operation-error").classList.add("hidden"); }
+    catch (error) { $("#account-operation-error").textContent = error.message; $("#account-operation-error").classList.remove("hidden"); }
+  }
+
+  async function recoverAccountOperation() {
+    try {
+      const result = await api("/api/account-operation/recover", { method: "POST", body: "{}" });
+      renderAccountOperation({ status: "idle", operation: null }); await refreshAutomation({ quiet: true });
+      toast(result.recovered ? "Stranded account operation marked ambiguous" : "No stranded operation found");
+    } catch (error) { $("#account-operation-error").textContent = error.message; $("#account-operation-error").classList.remove("hidden"); }
+  }
+
+  async function saveAutomation(event, clearEmail = false) {
+    event?.preventDefault(); const current = automationState.projection?.settings; if (!current) return;
+    const form = $("#automation-form");
+    const patch = {
+      enabled: form.elements.enabled.checked,
+      automaticAccountCreation: form.elements.automaticAccountCreation.checked,
+      passwordStrategy: form.elements.passwordStrategy.value,
+    };
+    if (clearEmail) patch.signupEmail = null;
+    else if (form.elements.signupEmail.value.trim()) patch.signupEmail = form.elements.signupEmail.value.trim();
+    try {
+      await api("/api/automation/settings", { method: "PATCH", body: JSON.stringify({ patch, expectedRevision: current.revision }) });
+      await refreshAutomation({ quiet: true }); toast("Automation settings saved");
+    } catch (error) {
+      if (error.code === "revision_conflict") { $("#automation-conflict").classList.remove("hidden"); $("#automation-conflict").focus(); }
+      else { $("#automation-error").textContent = error.message; $("#automation-error").classList.remove("hidden"); }
+    }
+  }
+
+  async function copyProfileEmailToAutomation() {
+    const settings = automationState.projection?.settings;
+    const profileRevision = automationState.projection?.profileRevision;
+    if (!settings || !Number.isInteger(profileRevision)) return;
+    try {
+      await api("/api/automation/settings/copy-profile-email", {
+        method: "POST",
+        body: JSON.stringify({
+          expectedProfileRevision: profileRevision,
+          expectedSettingsRevision: settings.revision,
+        }),
+      });
+      await refreshAutomation({ quiet: true });
+      toast("Profile email copied once; future profile edits stay independent");
+    } catch (error) {
+      if (error.code === "revision_conflict") { $("#automation-conflict").classList.remove("hidden"); $("#automation-conflict").focus(); }
+      else { $("#automation-error").textContent = error.message; $("#automation-error").classList.remove("hidden"); }
+    }
+  }
+
+  async function addEmployerRealm(event) {
+    event.preventDefault(); const form = event.currentTarget;
+    const payload = { url: form.elements.url.value };
+    if (form.elements.signupEmailOverride.value.trim()) payload.signupEmailOverride = form.elements.signupEmailOverride.value.trim();
+    try {
+      await api("/api/employer-accounts", { method: "POST", body: JSON.stringify(payload) });
+      form.reset(); await refreshAutomation({ quiet: true }); toast("Resolved employer realm added");
+    } catch (error) {
+      $("#automation-error").textContent = error.message; $("#automation-error").classList.remove("hidden");
+    }
+  }
+
+  function renderTrustedFillStatus(status) {
+    trustedFillState.status = status;
+    const node = $("#trusted-fill-status");
+    if (!status || status.status === "missing") node.textContent = "No approval exists for this job.";
+    else node.textContent = `${status.status.replaceAll("_", " ")} · approval revision ${status.approvalRevision} · expires ${status.expiresAt}`;
+    $("#trusted-fill-revoke").disabled = status?.status !== "active";
+  }
+
+  async function approveTrustedFill(event) {
+    event.preventDefault(); const form = event.currentTarget;
+    const allowedOperations = [...form.querySelectorAll('input[name="allowedOperations"]:checked')].map((item) => item.value);
+    const packet = trustedFillApprovalPacket({
+      jobId: form.elements.jobId.value, expectedJobRevision: form.elements.expectedJobRevision.value,
+      realmRef: form.elements.realmRef.value, answerRefs: form.elements.answerRefs.value,
+      observedQuestionFingerprint: form.elements.observedQuestionFingerprint.value,
+      observedControlFingerprint: form.elements.observedControlFingerprint.value,
+      formFingerprint: form.elements.formFingerprint.value, allowedOperations,
+      durationMinutes: form.elements.durationMinutes.value,
+    });
+    if (!allowedOperations.length) { $("#trusted-fill-error").textContent = "Select at least one non-final operation."; $("#trusted-fill-error").classList.remove("hidden"); return; }
+    try {
+      const status = await api("/api/trusted-fill/approve", { method: "POST", body: JSON.stringify(packet) });
+      $("#trusted-fill-status-form").elements.jobId.value = packet.jobId; renderTrustedFillStatus(status);
+      $("#trusted-fill-error").classList.add("hidden"); toast("Exact Trusted Fill packet approved");
+    } catch (error) { $("#trusted-fill-error").textContent = error.message; $("#trusted-fill-error").classList.remove("hidden"); }
+  }
+
+  async function loadTrustedFillStatus(event) {
+    event?.preventDefault(); const jobId = $("#trusted-fill-status-form").elements.jobId.value.trim();
+    try { renderTrustedFillStatus(await api(`/api/trusted-fill/${encodeURIComponent(jobId)}`)); $("#trusted-fill-error").classList.add("hidden"); }
+    catch (error) { $("#trusted-fill-error").textContent = error.message; $("#trusted-fill-error").classList.remove("hidden"); }
+  }
+
+  async function revokeTrustedFill() {
+    const request = trustedFillRevokeRequest(trustedFillState.status);
+    try { renderTrustedFillStatus(await api(request.path, request.options)); $("#trusted-fill-conflict").classList.add("hidden"); toast("Trusted Fill approval revoked"); }
+    catch (error) {
+      if (error.code === "revision_conflict") { $("#trusted-fill-conflict").classList.remove("hidden"); $("#trusted-fill-conflict").focus(); }
+      else { $("#trusted-fill-error").textContent = error.message; $("#trusted-fill-error").classList.remove("hidden"); }
+    }
+  }
+
   async function showWorkspace(name) {
     const overview = name === "overview";
     const attention = name === "attention";
     const facts = name === "facts";
     const resumes = name === "resumes";
     const answers = name === "answers";
+    const automation = name === "automation";
     const trash = name === "trash";
-    $("#overview-workspace").classList.toggle("hidden", !overview); $("#jobs-workspace").classList.toggle("hidden", overview || attention || facts || resumes || answers || trash); $("#attention-workspace").classList.toggle("hidden", !attention); $("#facts-workspace").classList.toggle("hidden", !facts); $("#resumes-workspace").classList.toggle("hidden", !resumes); $("#answers-workspace").classList.toggle("hidden", !answers); $("#trash-workspace").classList.toggle("hidden", !trash);
-    for (const section of ["overview", "jobs", "attention", "facts", "resumes", "answers", "trash"]) { const active = name === section; $(`#nav-${section}`).classList.toggle("active", active); $(`#nav-${section}`).toggleAttribute("aria-current", active); }
-    document.title = `${overview ? "Overview" : attention ? "Needs Attention" : facts ? "Facts" : resumes ? "Resumes" : answers ? "Answers" : trash ? "Trash" : "Jobs"} · Job Apply Workspace`;
+    $("#overview-workspace").classList.toggle("hidden", !overview); $("#jobs-workspace").classList.toggle("hidden", overview || attention || facts || resumes || answers || automation || trash); $("#attention-workspace").classList.toggle("hidden", !attention); $("#facts-workspace").classList.toggle("hidden", !facts); $("#resumes-workspace").classList.toggle("hidden", !resumes); $("#answers-workspace").classList.toggle("hidden", !answers); $("#automation-workspace").classList.toggle("hidden", !automation); $("#trash-workspace").classList.toggle("hidden", !trash);
+    for (const section of ["overview", "jobs", "attention", "facts", "resumes", "answers", "automation", "trash"]) { const active = name === section; $(`#nav-${section}`).classList.toggle("active", active); $(`#nav-${section}`).toggleAttribute("aria-current", active); }
+    document.title = `${overview ? "Overview" : attention ? "Needs Attention" : facts ? "Facts" : resumes ? "Resumes" : answers ? "Answers" : automation ? "Automation" : trash ? "Trash" : "Jobs"} · Job Apply Workspace`;
     if (overview && !overviewState.available) await refreshOverview({ quiet: true });
     if (attention && !attentionState.loaded) await refreshAttention();
     if (facts && (!profileState.loaded || !factGroupState.loaded)) await Promise.all([
@@ -914,6 +1134,7 @@ if (hasDom) {
     ]);
     if (resumes && !resumeState.loaded) await refreshResumes();
     if (answers && !answerState.loaded) await refreshAnswers();
+    if (automation && !automationState.loaded) await Promise.all([refreshAutomation(), refreshAccountOperation()]);
     if (trash && !trashState.loaded) await refreshTrash();
   }
 
@@ -1683,7 +1904,17 @@ if (hasDom) {
   function firstListDestination() { return $(".job-card") || $("#new-job"); }
 
   form.addEventListener("submit", save); form.addEventListener("input", (event) => { if (state.selected && event.target.name) { state.dirty = true; state.dirtyFields.add(event.target.name); } });
-  $("#nav-overview").addEventListener("click", () => navigateWorkspace("overview")); $("#nav-jobs").addEventListener("click", () => navigateWorkspace("jobs")); $("#nav-attention").addEventListener("click", () => navigateWorkspace("attention")); $("#nav-facts").addEventListener("click", () => navigateWorkspace("facts")); $("#nav-resumes").addEventListener("click", () => navigateWorkspace("resumes")); $("#nav-answers").addEventListener("click", () => navigateWorkspace("answers")); $("#nav-trash").addEventListener("click", () => navigateWorkspace("trash"));
+  $("#nav-overview").addEventListener("click", () => navigateWorkspace("overview")); $("#nav-jobs").addEventListener("click", () => navigateWorkspace("jobs")); $("#nav-attention").addEventListener("click", () => navigateWorkspace("attention")); $("#nav-facts").addEventListener("click", () => navigateWorkspace("facts")); $("#nav-resumes").addEventListener("click", () => navigateWorkspace("resumes")); $("#nav-answers").addEventListener("click", () => navigateWorkspace("answers")); $("#nav-automation").addEventListener("click", () => navigateWorkspace("automation")); $("#nav-trash").addEventListener("click", () => navigateWorkspace("trash"));
+  $("#automation-refresh").addEventListener("click", () => refreshAutomation());
+  $("#automation-form").addEventListener("submit", saveAutomation);
+  $("#automation-copy-profile-email").addEventListener("click", copyProfileEmailToAutomation);
+  $("#automation-clear-email").addEventListener("click", (event) => saveAutomation(event, true));
+  $("#account-operation-refresh").addEventListener("click", refreshAccountOperation);
+  $("#account-operation-recover").addEventListener("click", recoverAccountOperation);
+  $("#realm-form").addEventListener("submit", addEmployerRealm);
+  $("#trusted-fill-form").addEventListener("submit", approveTrustedFill);
+  $("#trusted-fill-status-form").addEventListener("submit", loadTrustedFillStatus);
+  $("#trusted-fill-revoke").addEventListener("click", revokeTrustedFill);
   $("#overview-refresh").addEventListener("click", () => refreshOverview());
   $("#next-step-action").addEventListener("click", (event) => navigateWorkspace(event.currentTarget.dataset.workspace));
   for (const button of document.querySelectorAll(".overview-link")) button.addEventListener("click", () => navigateWorkspace(button.dataset.workspace));
