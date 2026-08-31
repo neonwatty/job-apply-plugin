@@ -29,6 +29,7 @@ class MacOSCredentialHelperTests(unittest.TestCase):
         self.assertIn("com.openai.job-apply.accounts.v1.", source)
         self.assertNotRegex(source, r"func\s+(get|reveal|copy|export)")
 
+    @unittest.skipUnless(__import__("sys").platform.startswith("darwin"), "macOS Keychain required")
     def test_compiled_isolated_keychain_integration_is_silent_and_cleans_up(self):
         spec = importlib.util.spec_from_file_location("credentials_native_test", ROOT / "scripts" / "job_apply_credentials_macos.py")
         module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)

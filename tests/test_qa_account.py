@@ -25,6 +25,7 @@ QA = load("qa_account_test", ROOT / "scripts/qa-account.py")
 
 
 class SyntheticAccountQATests(unittest.TestCase):
+    @unittest.skipUnless(hasattr(socket, "AF_UNIX"), "Unix-domain sockets required")
     def test_registration_retirement_is_owned_by_exact_generation(self):
         server = SERVER.SyntheticAccountServer(0)
         operation = "9" * 64
@@ -92,6 +93,7 @@ class SyntheticAccountQATests(unittest.TestCase):
         self.assertEqual({item["scenario"] for item in result["scenarios"]}, set(ORACLE.SCENARIOS))
         self.assertNotIn("password", json.dumps(result).lower())
 
+    @unittest.skipUnless(hasattr(socket, "AF_UNIX"), "Unix-domain sockets required")
     def test_visible_portal_accepts_no_http_submission(self):
         server = SERVER.SyntheticAccountServer(0)
         thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
@@ -112,6 +114,7 @@ class SyntheticAccountQATests(unittest.TestCase):
         finally:
             server.shutdown(); server.server_close(); thread.join(timeout=2)
 
+    @unittest.skipUnless(hasattr(socket, "AF_UNIX"), "Unix-domain sockets required")
     def test_browser_observations_cannot_publish_before_native_effect(self):
         server = SERVER.SyntheticAccountServer(0)
         thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()

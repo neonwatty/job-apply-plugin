@@ -67,6 +67,7 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         self.assertNotIn("NativeMacOSAccessibilityProvider(\n                    str(binary)",
                          (ROOT / "scripts/qa-account.py").read_text(encoding="utf-8"))
 
+    @unittest.skipUnless(__import__("sys").platform.startswith("darwin"), "Swift macOS toolchain required")
     def test_native_contract_typechecks_with_existing_boundary(self):
         completed = subprocess.run([
             "xcrun", "swiftc", "-typecheck",
@@ -78,6 +79,7 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         ], capture_output=True, check=False)
         self.assertEqual(completed.returncode, 0, completed.stderr.decode(errors="replace"))
 
+    @unittest.skipUnless(__import__("sys").platform.startswith("darwin"), "Swift macOS toolchain required")
     def test_native_adversarial_fixtures_execute_silently(self):
         with __import__("tempfile").TemporaryDirectory() as directory:
             binary = Path(directory) / "oracle-fixtures"

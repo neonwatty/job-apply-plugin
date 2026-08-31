@@ -5394,10 +5394,11 @@ class StoreTests(unittest.TestCase):
                         "retryAllowed": False, "finalActionAuthorized": False,
                         "emailRemoved": True, "termsAccepted": True, "nextActivations": 1,
                         "credentialProviderInvocations": 0}
-        result = self.store.execute_live_email_only_account(
-            request, authority=Authority(), provider=Provider(),
-            now=datetime(2026, 8, 30, tzinfo=timezone.utc),
-        )
+        with mock.patch.object(STORE_MODULE.sys, "platform", "darwin"):
+            result = self.store.execute_live_email_only_account(
+                request, authority=Authority(), provider=Provider(),
+                now=datetime(2026, 8, 30, tzinfo=timezone.utc),
+            )
         self.assertEqual(sequence, ["authority", "native"])
         self.assertEqual(result["reasonCode"], "verification_required")
         self.assertFalse(result["retryAllowed"])

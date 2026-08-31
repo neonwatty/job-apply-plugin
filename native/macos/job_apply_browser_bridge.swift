@@ -145,33 +145,33 @@ final class MacOSBrowserSecureInputBridge: NativeSecureInputBoundary {
               running.activate(options: [.activateAllWindows]) else {
             throw BrowserBridgeDiagnostic.failedClosed("browser_activation")
         }
-        usleep(150_000)
         let application = AXUIElementCreateApplication(expected.browserProcessIdentifier)
-        var focusedValue: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(application, kAXFocusedUIElementAttribute as CFString, &focusedValue) == .success,
-              let focusedValue else { throw BrowserBridgeDiagnostic.failedClosed("focused_control") }
-        let focused = unsafeBitCast(focusedValue, to: AXUIElement.self)
-        let role = stringAttribute(focused, kAXRoleAttribute as CFString)
-        let subrole = stringAttribute(focused, kAXSubroleAttribute as CFString)
-        guard role == (kAXTextFieldRole as String), subrole == (kAXSecureTextFieldSubrole as String) else {
-            throw BrowserBridgeDiagnostic.failedClosed("secure_control_role")
-        }
-        guard stringAttribute(focused, "AXDOMIdentifier" as CFString) == "job-apply-secure-control" else {
-            throw BrowserBridgeDiagnostic.failedClosed("secure_control_identity")
-        }
-        guard observedPageURL(from: focused) == expected.targetURL else { throw BrowserBridgeDiagnostic.failedClosed("browser_origin") }
         let exactIdentity = "job-apply-operation:\(expected.operationFingerprint)"
-        let candidates = [
-            stringAttribute(focused, kAXTitleAttribute as CFString),
-            stringAttribute(focused, kAXHelpAttribute as CFString),
-            stringAttribute(focused, kAXDescriptionAttribute as CFString),
-        ].compactMap { $0 }
-        guard candidates.contains(exactIdentity) else {
-            let observedDigest = SHA256.hash(data: Data(candidates.joined(separator: "|").utf8)).map { String(format: "%02x", $0) }.joined()
-            let expectedDigest = SHA256.hash(data: Data(exactIdentity.utf8)).map { String(format: "%02x", $0) }.joined()
-            throw BrowserBridgeDiagnostic.failedClosed("operation_identity_\(observedDigest)_\(expectedDigest)")
+        // A freshly launched signed browser may briefly report its chrome or
+        // address bar as focused after activation. Poll only the read-only
+        // pre-effect observation; no fill or other browser effect is retried.
+        for _ in 0..<20 {
+            var focusedValue: CFTypeRef?
+            if AXUIElementCopyAttributeValue(
+                application, kAXFocusedUIElementAttribute as CFString, &focusedValue
+            ) == .success, let focusedValue {
+                let focused = unsafeBitCast(focusedValue, to: AXUIElement.self)
+                let candidates = [
+                    stringAttribute(focused, kAXTitleAttribute as CFString),
+                    stringAttribute(focused, kAXHelpAttribute as CFString),
+                    stringAttribute(focused, kAXDescriptionAttribute as CFString),
+                ].compactMap { $0 }
+                if stringAttribute(focused, kAXRoleAttribute as CFString) == (kAXTextFieldRole as String),
+                   stringAttribute(focused, kAXSubroleAttribute as CFString) == (kAXSecureTextFieldSubrole as String),
+                   stringAttribute(focused, "AXDOMIdentifier" as CFString) == "job-apply-secure-control",
+                   observedPageURL(from: focused) == expected.targetURL,
+                   candidates.contains(exactIdentity) {
+                    return ObservedSecureControl(element: focused)
+                }
+            }
+            usleep(50_000)
         }
-        return ObservedSecureControl(element: focused)
+        throw BrowserBridgeDiagnostic.failedClosed("focused_control")
     }
 
     private func secureValueIsEmpty(_ element: AXUIElement) throws -> Bool {

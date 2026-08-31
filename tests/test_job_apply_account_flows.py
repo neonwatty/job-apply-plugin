@@ -67,6 +67,7 @@ class AccountFlowTests(unittest.TestCase):
         self.assertEqual(result["lifecycleState"], "ambiguous")
         self.assertFalse(result["retryAllowed"])
 
+    @unittest.skipUnless(sys.platform.startswith("darwin"), "macOS native helper required")
     def test_native_provider_cannot_be_constructed_from_an_arbitrary_signed_helper(self):
         with self.assertRaisesRegex(ValueError, "reviewed source constructor"):
             MAC.NativeMacOSAccessibilityProvider("/tmp/substituted-helper", 42)
