@@ -12,7 +12,6 @@ import struct
 import subprocess
 import tempfile
 import threading
-import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
@@ -93,6 +92,7 @@ class SyntheticAccountServer(ThreadingHTTPServer):
         self._registrations: dict[str, tuple[int, str]] = {}
         self._registration_lock = threading.Lock()
         self._registration_generation = 0
+        self._native_stages: dict[str, str] = {}
         self._transition_index = 0
         self._oracle_transition_index = 0
         self._native_identity = self._signed_identity(native_helper_path) if native_helper_path else None
@@ -238,28 +238,42 @@ class SyntheticAccountServer(ThreadingHTTPServer):
             raise ValueError("native peer executable is unavailable")
         return str(Path(os.fsdecode(buffer.value)).resolve(strict=True))
 
-    def _peer_is_exact_native_helper(self, channel: socket.socket) -> bool:
+    def _peer_is_exact_native_helper(self, channel: socket.socket, operation: str) -> bool:
         if self._native_identity is None:
+            self._native_stages[operation] = "identity_unconfigured"
             return False
-        # A newly launched helper can connect before Security.framework has
-        # published its dynamic code object. Retry only that read-only, exact
-        # identity proof; every attempt retains the same path, static-signing,
-        # and running-process requirements.
-        for attempt in range(20):
-            try:
-                pid = self._peer_pid(channel)
-                path = self._process_path(pid)
-                if (
-                    path == self._native_identity[0]
-                    and self._signed_identity(path) == self._native_identity
-                    and self._dynamic_signed_identity(pid) == self._native_identity
-                ):
-                    return True
-            except (OSError, ValueError):
-                pass
-            if attempt < 19:
-                time.sleep(0.05)
-        return False
+        try:
+            pid = self._peer_pid(channel)
+        except (OSError, ValueError):
+            self._native_stages[operation] = "peer_pid_unavailable"
+            return False
+        try:
+            path = self._process_path(pid)
+        except (OSError, ValueError):
+            self._native_stages[operation] = "peer_path_unavailable"
+            return False
+        if path != self._native_identity[0]:
+            self._native_stages[operation] = "peer_path_mismatch"
+            return False
+        try:
+            if self._signed_identity(path) != self._native_identity:
+                self._native_stages[operation] = "static_identity_mismatch"
+                return False
+        except (OSError, ValueError):
+            self._native_stages[operation] = "static_identity_unavailable"
+            return False
+        try:
+            if self._dynamic_signed_identity(pid) != self._native_identity:
+                self._native_stages[operation] = "dynamic_identity_mismatch"
+                return False
+        except (OSError, ValueError):
+            self._native_stages[operation] = "dynamic_identity_unavailable"
+            return False
+        self._native_stages[operation] = "peer_authenticated"
+        return True
+
+    def native_stage(self, operation: str) -> str:
+        return self._native_stages.get(operation, "not_started")
 
     def record_observation(self, token: str, observation: dict) -> None:
         self._observations[token] = observation
@@ -285,6 +299,7 @@ class SyntheticAccountServer(ThreadingHTTPServer):
             self._registration_generation += 1
             generation = self._registration_generation
             self._registrations[operation] = (generation, mode)
+            self._native_stages[operation] = "listener_ready"
             self._socket_roots.add(socket_root)
         threading.Thread(
             target=self._receive_native_attestation,
@@ -311,7 +326,8 @@ class SyntheticAccountServer(ThreadingHTTPServer):
             listener.settimeout(5)
             channel, _ = listener.accept()
             channel.settimeout(5)
-            if not self._peer_is_exact_native_helper(channel):
+            self._native_stages[operation] = "peer_connected"
+            if not self._peer_is_exact_native_helper(channel, operation):
                 return
             payload = b""
             while len(payload) <= 2048 and not payload.endswith(b"\n"):
@@ -320,7 +336,9 @@ class SyntheticAccountServer(ThreadingHTTPServer):
                     return
                 payload += part
             if len(payload) > 2048 or not payload.endswith(b"\n"):
+                self._native_stages[operation] = "payload_unavailable"
                 return
+            self._native_stages[operation] = "payload_received"
             attestation = json.loads(payload)
             with self._registration_lock:
                 registered = self._registrations.get(operation)
@@ -345,7 +363,9 @@ class SyntheticAccountServer(ThreadingHTTPServer):
                 "credentialProviderInvocations": 0,
             })
             if attestation != expected:
+                self._native_stages[operation] = "attestation_mismatch"
                 return
+            self._native_stages[operation] = "attestation_validated"
             with self._registration_lock:
                 if mode == "oracle-email-only":
                     transitions = ("success", "verification", "definitive_failure", "ambiguity")
@@ -377,11 +397,13 @@ class SyntheticAccountServer(ThreadingHTTPServer):
                     "nextActivations": 1, "credentialProviderInvocations": 0,
                 })
             self.record_observation(operation, observation)
+            self._native_stages[operation] = "observation_recorded"
             # A repeated scenario can intentionally reuse the same operation
             # fingerprint. Retire the completed registration before the causal
             # acknowledgment releases the helper to prepare that next run.
             self._retire_native_operation(operation, generation)
             channel.sendall(b"\x01")
+            self._native_stages[operation] = "acknowledged"
         except (OSError, ValueError, json.JSONDecodeError):
             return
         finally:

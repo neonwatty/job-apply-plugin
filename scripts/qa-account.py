@@ -247,6 +247,7 @@ def _workday_scenario_result(scenario: str, actual: dict) -> dict:
             "observerStage": actual.get("qaObserverStage"),
             "nativeTransitionAdvanced": actual.get("qaNativeTransitionAdvanced"),
             "observationPending": actual.get("qaObservationPending"),
+            "nativeStage": actual.get("qaNativeStage"),
         }
     return evaluated
 
@@ -288,7 +289,13 @@ def verify_all(provider: str, *, owner_approved_visible_browser_tests: bool = Fa
                             operation.removeprefix("sha256:")
                         )
                         native_channels[operation.removeprefix("sha256:")] = socket_path
-                        _focus_browser(cdp_url, target)
+                        try:
+                            _focus_browser(cdp_url, target)
+                        except ValueError as error:
+                            raise ValueError(
+                                f"synthetic browser focus failed closed for {scenario}; "
+                                f"native stage {server.native_stage(operation.removeprefix('sha256:'))}"
+                            ) from error
                         cleanup.add(("unique_per_realm", realm))
                     transition_before = server._transition_index
                     actual = _store_walkthrough(base, scenario, target, native_provider)
@@ -297,6 +304,9 @@ def verify_all(provider: str, *, owner_approved_visible_browser_tests: bool = Fa
                     )
                     actual["qaObservationPending"] = (
                         operation.removeprefix("sha256:") in server._observations
+                    )
+                    actual["qaNativeStage"] = server.native_stage(
+                        operation.removeprefix("sha256:")
                     )
                     evaluated = _workday_scenario_result(scenario, actual)
                     results.append({**evaluated, "evidenceSource": "browser-store-native"})

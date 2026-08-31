@@ -86,8 +86,8 @@ class MacOSCredentialHelperTests(unittest.TestCase):
         ):
             self.assertIn(required, server)
         self.assertNotIn("socketpair", server)
-        self.assertIn("for attempt in range(20)", server)
-        self.assertIn("time.sleep(0.05)", server)
+        self.assertIn("dynamic_identity_unavailable", server)
+        self.assertIn("attestation_validated", server)
 
     def test_live_native_vocabulary_is_closed_account_creation_only_and_disabled(self):
         source = (ROOT / "native/macos/job_apply_browser_bridge.swift").read_text(encoding="utf-8")
