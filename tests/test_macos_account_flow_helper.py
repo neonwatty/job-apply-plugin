@@ -45,6 +45,8 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         self.assertIn("CFEqual(reattestedEmail, exactControl)", source)
         self.assertIn("oracleCausalSuccessorDecision", source)
         self.assertIn("oracleExactEmailControlIdentityRemoved", source)
+        self.assertIn("oracleQueryBearingLivePortalRejectionsPass", source)
+        self.assertIn("privateEmailDescriptor: -1", source)
         self.assertIn("exactEmailControlIdentityRemoved", source)
         self.assertIn("guard emailRemovedAttested else", source)
         self.assertNotIn('"emailRemovedAttested": true', source)

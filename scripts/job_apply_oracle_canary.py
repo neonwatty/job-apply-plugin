@@ -32,17 +32,39 @@ EXECUTOR = _sibling("job_apply_account_canary_executor")
 class PrivateOracleCanarySession:
     """One browser-bound, exact reviewed-helper session."""
 
-    __slots__ = ("_provider", "_executor")
+    __slots__ = ("_provider", "_executor", "_authority", "_store")
 
-    def __init__(self, provider: Any, executor: Any):
+    def __init__(self, provider: Any, executor: Any, authority: Any, store: Any):
         self._provider = provider
         self._executor = executor
+        self._authority = authority
+        self._store = store
 
-    def prepare(self, portal_url: str, realm_ref: str, realm_descriptor: str) -> dict[str, Any]:
+    def prepare(
+        self, portal_url: str, realm_ref: str, realm_descriptor: str, *,
+        portal_name: str, preparation_scope: dict[str, Any],
+        preparation_approval_ref: str,
+    ) -> dict[str, Any]:
+        """Consume exact durable read-only approval before opening the page."""
+        self._store.revalidate_live_email_only_preparation_scope(
+            preparation_scope, portal_url, portal_name, realm_descriptor,
+        )
+        self._authority.authorize_preparation(
+            preparation_scope, preparation_approval_ref,
+        )
         return self._provider.prepare_email_only(portal_url, realm_ref, realm_descriptor)
 
     def execute(self, request: dict[str, Any], *, now: datetime) -> dict[str, Any]:
         return self._executor.execute(request, now=now)
+
+    def execute_approved(
+        self, request: dict[str, Any], approval_ref: str, *,
+        owner_label: str, now: datetime,
+    ) -> dict[str, Any]:
+        """Acquire/recover and consume short-lived authority immediately."""
+        return self._executor.execute_approved(
+            request, approval_ref, owner_label=owner_label, now=now,
+        )
 
 
 def create_private_oracle_canary_session(
@@ -56,5 +78,6 @@ def create_private_oracle_canary_session(
         browser_process_identifier, build_directory=build_directory,
     )
     return PrivateOracleCanarySession(
-        provider, EXECUTOR.LiveAccountCanaryExecutor(authority, store, provider)
+        provider, EXECUTOR.LiveAccountCanaryExecutor(authority, store, provider),
+        authority, store,
     )

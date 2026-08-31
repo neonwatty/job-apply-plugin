@@ -111,7 +111,7 @@ class AccountCanaryAuthorityTests(unittest.TestCase):
             with mock.patch.object(CANARY.os, "write", side_effect=short_write):
                 ledger.record_exact_approval("approval_" + "a" * 64, self.binding())
             persisted = json.loads(path.read_text(encoding="utf-8"))
-            self.assertEqual(len(persisted["approvals"]), 1)
+            self.assertEqual(len(persisted["finalApprovals"]), 1)
 
     def test_claim_rotation_changes_the_exact_canary_binding(self):
         rotated = {
@@ -122,3 +122,57 @@ class AccountCanaryAuthorityTests(unittest.TestCase):
             CANARY.binding_digest(self.binding()),
             CANARY.binding_digest(rotated),
         )
+        self.assertEqual(
+            CANARY.final_scope_digest(CANARY._without_claim(self.binding())),
+            CANARY.final_scope_digest(CANARY._without_claim(rotated)),
+        )
+
+    def test_preparation_and_final_approvals_are_domain_separated_one_shots(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "private-ledger.json"
+            ledger = CANARY.DurableT007ApprovalLedger(path)
+            authority = CANARY.OneAttemptCanaryAuthority(ledger)
+            stable = CANARY._without_claim(self.binding())
+            prepare = CANARY.preparation_scope(stable)
+            preparation_ref = "preparation_" + "1" * 64
+            final_ref = "approval_" + "2" * 64
+            ledger.record_preparation_approval(preparation_ref, prepare)
+            ledger.record_exact_approval(final_ref, stable)
+            self.assertNotEqual(
+                CANARY.preparation_digest(prepare), CANARY.final_scope_digest(stable)
+            )
+            prepared = authority.authorize_preparation(prepare, preparation_ref)
+            self.assertTrue(prepared["readOnlyPreparationAuthorized"])
+            self.assertFalse(prepared["accountCreationAuthorized"])
+            with self.assertRaises(CANARY.CanaryAuthorityError):
+                authority.authorize_preparation(prepare, preparation_ref)
+
+            rotated = CANARY.execution_binding(
+                stable, "22222222-2222-4222-8222-222222222222"
+            )
+            capability = authority.issue(
+                rotated, final_ref, now=datetime(2026, 8, 29, tzinfo=timezone.utc)
+            )
+            self.assertFalse(capability["finalActionAuthorized"])
+            self.assertTrue(authority.attempt(
+                capability["capabilityRef"], rotated,
+                now=datetime(2026, 8, 29, tzinfo=timezone.utc),
+            )["accountCreationAuthorized"])
+
+    def test_legacy_claim_bound_approval_migrates_consumed_fail_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "private-ledger.json"
+            approval = "approval_" + "3" * 64
+            path.write_text(json.dumps({
+                "schemaVersion": 1,
+                "approvals": {CANARY._private_digest(approval): {
+                    "bindingDigest": "sha256:" + "4" * 64, "consumed": False,
+                }},
+                "attempts": {},
+            }), encoding="utf-8")
+            ledger = CANARY.DurableT007ApprovalLedger(path)
+            with self.assertRaises(CANARY.CanaryAuthorityError):
+                CANARY.OneAttemptCanaryAuthority(ledger).issue(
+                    self.binding(), approval,
+                    now=datetime(2026, 8, 29, tzinfo=timezone.utc),
+                )

@@ -170,6 +170,103 @@ class LiveCanaryExecutorTests(unittest.TestCase):
             with self.subTest(query=query), self.assertRaises(EXECUTOR.LiveCanaryExecutorError):
                 EXECUTOR.validate_live_request(self.request(capability, binding=self.binding(url), url=url))
 
+    def test_stable_approval_survives_claim_rotation_then_issues_immediately(self):
+        url = "https://tenant.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/jobsearch/job/1/apply/email"
+        name = "Oracle Recruiting"
+        components = {
+            "accountFormFingerprint": "sha256:" + "1" * 64,
+            "emailControlFingerprint": "sha256:" + "2" * 64,
+            "termsControlFingerprint": "sha256:" + "3" * 64,
+            "termsDocumentFingerprint": "sha256:" + "5" * 64,
+            "nextControlFingerprint": "sha256:" + "4" * 64,
+        }
+        aggregate = "sha256:" + hashlib.sha256(":".join(components.values()).encode()).hexdigest()
+        execution = {
+            **self.binding(url, name), **components,
+            "realmRef": EXECUTOR.ACCOUNTS.normalize_realm(url)["realmRef"],
+            "accountCreationControlsFingerprint": aggregate,
+            "passwordControlFingerprint": None, "createAccountControlFingerprint": None,
+            "flowKind": "email_only_candidate_profile",
+        }
+        stable = CANARY._without_claim(execution)
+        request = {
+            "binding": stable, "portalName": name, "portalUrl": url, **components,
+            "passwordControlFingerprint": None, "createAccountControlFingerprint": None,
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            ledger = CANARY.DurableT007ApprovalLedger(Path(directory) / "private-ledger.json")
+            approval = "approval_" + "6" * 64
+            ledger.record_exact_approval(approval, stable)
+            authority = CANARY.OneAttemptCanaryAuthority(ledger)
+            sequence = []
+            rotated_claim = "22222222-2222-4222-8222-222222222222"
+
+            class Store:
+                def acquire_or_recover_live_email_only_claim(inner, exact, *, owner_label):
+                    self.assertEqual(exact["binding"], stable)
+                    self.assertEqual(owner_label, "oracle-canary")
+                    sequence.append("claim")
+                    return {"claimId": rotated_claim, "expiresAt": "2026-08-29T00:05:00Z"}
+
+                def prepare_live_email_only_account_execution(inner, exact, binding):
+                    self.assertEqual(sequence, ["claim"])
+                    self.assertEqual(exact["binding"], stable)
+                    self.assertEqual(binding["claimId"], rotated_claim)
+                    sequence.append("prepare")
+
+                def execute_live_email_only_account(inner, exact, *, authority, provider, now):
+                    self.assertEqual(sequence, ["claim", "prepare"])
+                    self.assertEqual(exact["binding"]["claimId"], rotated_claim)
+                    authority.attempt(exact["capabilityRef"], exact["binding"], now=now)
+                    sequence.append("execute")
+                    return {"authorized": True, "finalActionAuthorized": False}
+
+            class Provider: provider_id = "macos-accessibility"
+            result = EXECUTOR.LiveAccountCanaryExecutor(
+                authority, Store(), Provider()
+            ).execute_approved(
+                request, approval, owner_label="oracle-canary",
+                now=datetime(2026, 8, 29, tzinfo=timezone.utc),
+            )
+            self.assertEqual(sequence, ["claim", "prepare", "execute"])
+            self.assertFalse(result["finalActionAuthorized"])
+
+    def test_read_only_preparation_burns_exact_approval_before_provider(self):
+        stable = CANARY._without_claim(self.binding())
+        scope = CANARY.preparation_scope(stable)
+        with tempfile.TemporaryDirectory() as directory:
+            ledger = CANARY.DurableT007ApprovalLedger(Path(directory) / "private-ledger.json")
+            approval = "preparation_" + "7" * 64
+            ledger.record_preparation_approval(approval, scope)
+            authority = CANARY.OneAttemptCanaryAuthority(ledger)
+            sequence = []
+
+            class Store:
+                def revalidate_live_email_only_preparation_scope(
+                    inner, exact, url, name, descriptor
+                ):
+                    self.assertEqual(exact, scope)
+                    self.assertEqual(descriptor, "descriptor")
+                    sequence.append("store")
+
+            class Provider:
+                def prepare_email_only(inner, url, realm, descriptor):
+                    with self.assertRaises(CANARY.CanaryAuthorityError):
+                        authority.authorize_preparation(scope, approval)
+                    sequence.append("provider")
+                    return {"prepared": True}
+
+            session = ORACLE_SESSION.PrivateOracleCanarySession(
+                Provider(), object(), authority, Store()
+            )
+            result = session.prepare(
+                "https://example.invalid/path", scope["realmRef"], "descriptor",
+                portal_name="Example Careers", preparation_scope=scope,
+                preparation_approval_ref=approval,
+            )
+            self.assertEqual(result, {"prepared": True})
+            self.assertEqual(sequence, ["store", "provider"])
+
     def test_private_oracle_session_has_no_helper_or_provider_override(self):
         import inspect
         signature = inspect.signature(ORACLE_SESSION.create_private_oracle_canary_session)

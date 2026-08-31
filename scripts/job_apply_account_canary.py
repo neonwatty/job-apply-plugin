@@ -38,9 +38,13 @@ class CanaryAuthorityError(ValueError):
 
 
 class ExactT007ApprovalLedger(Protocol):
+    def consume_preparation_approval(
+        self, approval_ref: str, preparation_digest: str,
+    ) -> bool: ...
+
     def consume_approval_and_issue(
-        self, approval_ref: str, binding_digest: str, capability_digest: str,
-        expires_at: datetime,
+        self, approval_ref: str, approval_scope_digest: str,
+        execution_binding_digest: str, capability_digest: str, expires_at: datetime,
     ) -> bool: ...
 
     def consume_attempt(
@@ -106,9 +110,72 @@ def validate_binding(value: Any) -> dict[str, Any]:
     return dict(value)
 
 
+def _without_claim(binding: dict[str, Any]) -> dict[str, Any]:
+    exact = validate_binding(binding)
+    return {key: item for key, item in exact.items() if key != "claimId"}
+
+
+def validate_final_scope(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict) or "claimId" in value:
+        raise CanaryAuthorityError("claim-independent final scope is invalid")
+    # Reuse the closed execution validator with a syntactically valid sentinel,
+    # then remove it. The sentinel is never persisted or accepted as execution.
+    return _without_claim({**value, "claimId": "00000000-0000-4000-8000-000000000000"})
+
+
+def validate_preparation_scope(value: Any) -> dict[str, Any]:
+    fields = {
+        "jobId", "jobRevision", "realmRef", "accountRevision",
+        "settingsRevision", "portalFingerprint", "portalNameFingerprint",
+        "approvalRevision",
+    }
+    if not isinstance(value, dict) or set(value) != fields:
+        raise CanaryAuthorityError("claim-independent preparation scope is invalid")
+    if not isinstance(value["jobId"], str) or not value["jobId"]:
+        raise CanaryAuthorityError("canary job binding is invalid")
+    if not isinstance(value["realmRef"], str) or REALM_REF.fullmatch(value["realmRef"]) is None:
+        raise CanaryAuthorityError("canary realm binding is invalid")
+    for field in ("portalFingerprint", "portalNameFingerprint"):
+        if not isinstance(value[field], str) or FINGERPRINT.fullmatch(value[field]) is None:
+            raise CanaryAuthorityError("canary portal binding is invalid")
+    if not all(_positive(value[field]) for field in (
+        "jobRevision", "accountRevision", "settingsRevision", "approvalRevision"
+    )):
+        raise CanaryAuthorityError("canary revision binding is invalid")
+    return dict(value)
+
+
+def preparation_scope(binding: dict[str, Any]) -> dict[str, Any]:
+    source = validate_final_scope(binding) if "claimId" not in binding else _without_claim(binding)
+    return validate_preparation_scope({
+        key: source[key] for key in (
+            "jobId", "jobRevision", "realmRef", "accountRevision",
+            "settingsRevision", "portalFingerprint", "portalNameFingerprint",
+            "approvalRevision",
+        )
+    })
+
+
+def execution_binding(final_scope: dict[str, Any], claim_id: str) -> dict[str, Any]:
+    return validate_binding({**validate_final_scope(final_scope), "claimId": claim_id})
+
+
+def _domain_digest(domain: str, value: dict[str, Any]) -> str:
+    canonical = json.dumps(value, sort_keys=True, separators=(",", ":"))
+    payload = f"job-apply-account-canary:{domain}:v1\0{canonical}".encode("utf-8")
+    return "sha256:" + hashlib.sha256(payload).hexdigest()
+
+
+def preparation_digest(binding: dict[str, Any]) -> str:
+    return _domain_digest("read-only-preparation", validate_preparation_scope(binding))
+
+
+def final_scope_digest(binding: dict[str, Any]) -> str:
+    return _domain_digest("final-owner-approval", validate_final_scope(binding))
+
+
 def binding_digest(binding: dict[str, Any]) -> str:
-    canonical = json.dumps(validate_binding(binding), sort_keys=True, separators=(",", ":"))
-    return "sha256:" + hashlib.sha256(canonical.encode()).hexdigest()
+    return _domain_digest("claim-bound-execution", validate_binding(binding))
 
 
 def _private_digest(value: str) -> str:
@@ -124,7 +191,10 @@ class DurableT007ApprovalLedger:
 
     @staticmethod
     def _empty() -> dict[str, Any]:
-        return {"schemaVersion": 1, "approvals": {}, "attempts": {}}
+        return {
+            "schemaVersion": 2, "preparationApprovals": {},
+            "finalApprovals": {}, "attempts": {},
+        }
 
     def _read_locked(self) -> dict[str, Any]:
         if not self.path.exists():
@@ -135,9 +205,30 @@ class DurableT007ApprovalLedger:
             value = json.loads(self.path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as error:
             raise CanaryAuthorityError("private approval ledger is invalid") from error
-        if not isinstance(value, dict) or set(value) != {"schemaVersion", "approvals", "attempts"} or value["schemaVersion"] != 1:
+        if (
+            isinstance(value, dict) and value.get("schemaVersion") == 1
+            and set(value) == {"schemaVersion", "approvals", "attempts"}
+            and isinstance(value.get("approvals"), dict)
+            and isinstance(value.get("attempts"), dict)
+        ):
+            # Legacy approvals included a rotating claim. Fail closed by
+            # importing every one as consumed; attempts remain burned.
+            return {
+                "schemaVersion": 2,
+                "preparationApprovals": {},
+                "finalApprovals": {
+                    key: {"scopeDigest": item.get("bindingDigest"), "consumed": True}
+                    for key, item in value["approvals"].items()
+                    if isinstance(item, dict)
+                },
+                "attempts": value["attempts"],
+            }
+        expected = {"schemaVersion", "preparationApprovals", "finalApprovals", "attempts"}
+        if not isinstance(value, dict) or set(value) != expected or value["schemaVersion"] != 2:
             raise CanaryAuthorityError("private approval ledger is invalid")
-        if not isinstance(value["approvals"], dict) or not isinstance(value["attempts"], dict):
+        if not all(isinstance(value[field], dict) for field in (
+            "preparationApprovals", "finalApprovals", "attempts"
+        )):
             raise CanaryAuthorityError("private approval ledger is invalid")
         return value
 
@@ -205,37 +296,68 @@ class DurableT007ApprovalLedger:
             os.close(descriptor)
             thread_lock.release()
 
-    def record_exact_approval(self, approval_ref: str, binding: dict[str, Any]) -> None:
-        if not isinstance(approval_ref, str) or re.fullmatch(r"approval_[0-9a-f]{64}", approval_ref) is None:
-            raise CanaryAuthorityError("exact private T007 approval is required")
-        digest = binding_digest(binding)
+    def _record_approval(
+        self, collection: str, approval_ref: str, digest: str, prefix: str,
+    ) -> None:
+        if not isinstance(approval_ref, str) or re.fullmatch(prefix + r"[0-9a-f]{64}", approval_ref) is None:
+            raise CanaryAuthorityError("exact private canary approval is required")
         key = _private_digest(approval_ref)
         descriptor = self._locked()
         try:
             value = self._read_locked()
-            if key in value["approvals"]:
-                raise CanaryAuthorityError("exact private T007 approval already exists")
-            value["approvals"][key] = {"bindingDigest": digest, "consumed": False}
+            if key in value[collection]:
+                raise CanaryAuthorityError("exact private canary approval already exists")
+            value[collection][key] = {"scopeDigest": digest, "consumed": False}
             self._write_locked(value)
         finally:
             self._unlock_close(descriptor)
 
+    def record_preparation_approval(self, approval_ref: str, binding: dict[str, Any]) -> None:
+        self._record_approval(
+            "preparationApprovals", approval_ref,
+            preparation_digest(validate_preparation_scope(binding)), r"preparation_",
+        )
+
+    def consume_preparation_approval(self, approval_ref: str, exact_digest: str) -> bool:
+        key = _private_digest(approval_ref)
+        descriptor = self._locked()
+        try:
+            value = self._read_locked()
+            approval = value["preparationApprovals"].get(key)
+            if not isinstance(approval, dict) or approval != {
+                "scopeDigest": exact_digest, "consumed": False,
+            }:
+                return False
+            approval["consumed"] = True
+            self._write_locked(value)
+            return True
+        finally:
+            self._unlock_close(descriptor)
+
+    def record_exact_approval(self, approval_ref: str, binding: dict[str, Any]) -> None:
+        if not isinstance(approval_ref, str) or re.fullmatch(r"approval_[0-9a-f]{64}", approval_ref) is None:
+            raise CanaryAuthorityError("exact private T007 approval is required")
+        scope = validate_final_scope(binding) if "claimId" not in binding else _without_claim(binding)
+        self._record_approval(
+            "finalApprovals", approval_ref, final_scope_digest(scope), r"approval_",
+        )
+
     def consume_approval_and_issue(
-        self, approval_ref: str, exact_binding_digest: str, capability_digest: str,
-        expires_at: datetime,
+        self, approval_ref: str, approval_scope_digest: str,
+        execution_binding_digest: str, capability_digest: str, expires_at: datetime,
     ) -> bool:
         approval_key = _private_digest(approval_ref)
         descriptor = self._locked()
         try:
             value = self._read_locked()
-            approval = value["approvals"].get(approval_key)
+            approval = value["finalApprovals"].get(approval_key)
             if not isinstance(approval, dict) or approval != {
-                "bindingDigest": exact_binding_digest, "consumed": False,
+                "scopeDigest": approval_scope_digest, "consumed": False,
             } or capability_digest in value["attempts"]:
                 return False
             approval["consumed"] = True
             value["attempts"][capability_digest] = {
-                "bindingDigest": exact_binding_digest,
+                "bindingDigest": execution_binding_digest,
                 "expiresAt": expires_at.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
                 "attempted": False,
             }
@@ -269,8 +391,21 @@ class OneAttemptCanaryAuthority:
     def __init__(self, approval_ledger: ExactT007ApprovalLedger):
         self._ledger = approval_ledger
 
+    def authorize_preparation(self, binding: dict[str, Any], approval_ref: str) -> dict[str, Any]:
+        exact = validate_preparation_scope(binding)
+        if not self._ledger.consume_preparation_approval(
+            approval_ref, preparation_digest(exact)
+        ):
+            raise CanaryAuthorityError("exact private read-only preparation approval is required")
+        return {
+            "readOnlyPreparationAuthorized": True,
+            "accountCreationAuthorized": False,
+            "finalActionAuthorized": False,
+        }
+
     def issue(self, binding: dict[str, Any], approval_ref: str, *, now: datetime, ttl_seconds: int = 300) -> dict[str, Any]:
         exact = validate_binding(binding)
+        stable_digest = final_scope_digest(_without_claim(exact))
         digest = binding_digest(exact)
         if not isinstance(approval_ref, str) or not re.fullmatch(r"approval_[0-9a-f]{64}", approval_ref):
             raise CanaryAuthorityError("exact private T007 approval is required")
@@ -280,7 +415,7 @@ class OneAttemptCanaryAuthority:
         capability_ref = "canary_" + nonce
         expires = now.astimezone(timezone.utc) + timedelta(seconds=ttl_seconds)
         if not self._ledger.consume_approval_and_issue(
-            approval_ref, digest, _private_digest(capability_ref), expires,
+            approval_ref, stable_digest, digest, _private_digest(capability_ref), expires,
         ):
             raise CanaryAuthorityError("exact private T007 approval is required")
         return {

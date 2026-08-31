@@ -69,6 +69,55 @@ struct OracleReviewedControlShape {
     }
 }
 
+/// Quietly proves that both native entry paths reject a query-bearing live
+/// Oracle URL before accessibility or private-channel work can begin.
+func oracleQueryBearingLivePortalRejectionsPass() -> Bool {
+    let descriptor = "oracle-recruiting:v1:tenant.fa.us2.oraclecloud.com:jobsearch"
+    let realmReference = NativeEmailOnlyBinding.fingerprint(descriptor)
+        .replacingOccurrences(of: "sha256:", with: "")
+    let portalURL = "https://tenant.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/jobsearch/job/7/apply/email?candidate=unexpected"
+    let placeholder = NativeEmailOnlyBinding.fingerprint("query-rejection-placeholder")
+    let aggregate = NativeEmailOnlyBinding.fingerprint(
+        [placeholder, placeholder, placeholder, placeholder, placeholder]
+            .joined(separator: ":")
+    )
+    let binding = NativeEmailOnlyBinding(
+        browserProcessIdentifier: 2, portalURL: portalURL,
+        realmReference: realmReference, realmDescriptor: descriptor,
+        accountFormFingerprint: placeholder, emailControlFingerprint: placeholder,
+        termsControlFingerprint: placeholder, termsDocumentFingerprint: placeholder,
+        nextControlFingerprint: placeholder, accountCreationControlsFingerprint: aggregate,
+        passwordControlFingerprint: nil, createAccountControlFingerprint: nil,
+        jobRevision: 1, accountRevision: 1, settingsRevision: 1,
+        operationFingerprint: placeholder,
+        nativeAttestationSocketPath: "/tmp/job-apply-query-rejection"
+    )
+
+    do {
+        _ = try MacOSAccessibilityAccountFlowHelper().prepare(
+            browserProcessIdentifier: 2, portalURL: portalURL,
+            realmReference: realmReference, realmDescriptor: descriptor
+        )
+        return false
+    } catch AccountFlowHelperError.invalidBinding {
+        // Expected before the preparation path can inspect a browser.
+    } catch {
+        return false
+    }
+
+    do {
+        try MacOSAccessibilityAccountFlowHelper().execute(
+            binding, privateEmailDescriptor: -1
+        )
+        return false
+    } catch AccountFlowHelperError.requestBinding {
+        // Expected before the execution path can read the private descriptor.
+        return true
+    } catch {
+        return false
+    }
+}
+
 /// Executable, value-free regressions for the live fail-closed predicates.
 func oracleAccountFlowAdversarialFixturesPass() -> Bool {
     let exact = OracleReviewedControlShape(
@@ -93,7 +142,8 @@ func oracleAccountFlowAdversarialFixturesPass() -> Bool {
     )
     let termsBefore = NativeEmailOnlyBinding.fingerprint("AXLink|terms|https://terms.invalid/v1")
     let termsAfter = NativeEmailOnlyBinding.fingerprint("AXLink|terms|https://terms.invalid/v2")
-    return exact.isExact && !unintendedEmail.isExact && !extraRequired.isExact && !extraAction.isExact
+    return oracleQueryBearingLivePortalRejectionsPass()
+        && exact.isExact && !unintendedEmail.isExact && !extraRequired.isExact && !extraAction.isExact
         && termsBefore != termsAfter
         && oracleCausalSuccessorDecision(
             boundPage: "bound", before: ["bound": "a", "other": "z"],

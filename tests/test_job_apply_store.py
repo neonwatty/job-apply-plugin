@@ -5376,6 +5376,23 @@ class StoreTests(unittest.TestCase):
             "portalName": portal_name, "portalUrl": url, **controls,
             "passwordControlFingerprint": None, "createAccountControlFingerprint": None,
         }
+        stable_request = {
+            key: value for key, value in request.items() if key != "capabilityRef"
+        }
+        stable_request["binding"] = {
+            key: value for key, value in binding.items() if key != "claimId"
+        }
+        validated = self.store.revalidate_live_email_only_stable_scope(stable_request)
+        self.assertTrue(validated["valid"])
+        coordinator = self.store._load_coordinator_document()
+        coordinator["claim"]["expiresAt"] = "2000-01-01T00:00:00Z"
+        STORE_MODULE.atomic_write_json(self.store.coordinator_path, coordinator)
+        renewed = self.store.acquire_or_recover_live_email_only_claim(
+            stable_request, owner_label="live-oracle-test"
+        )
+        self.assertNotEqual(renewed["claimId"], binding["claimId"])
+        binding = {**binding, "claimId": renewed["claimId"]}
+        request = {**request, "binding": binding}
         sequence = []
         class Authority:
             def attempt(inner, capability, exact_binding, *, now):
@@ -5405,6 +5422,391 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(result["credentialProviderInvocations"], 0)
         self.assertNotIn("private", json.dumps(result))
         self.assertIsNone(self.store._load_account_operation_journal()["operation"])
+
+    def _live_oracle_adversarial_fixture(self, label):
+        root = self.home / f"live-oracle-adversarial-{label}"
+        store = STORE_MODULE.Store(root, self.home / f"legacy-{label}.json")
+        store.initialize()
+        store.replace_profile(
+            {"firstName": "Synthetic"}, store.inspect_profile()["revision"], "user"
+        )
+        resume_path = self.home / f"live-oracle-adversarial-{label}.txt"
+        resume_path.write_text("Synthetic", encoding="utf-8")
+        resume = store.create_resume({
+            "id": f"resume-{label}", "label": "Synthetic", "path": str(resume_path),
+        })
+        oracle_job_number = int(hashlib.sha256(label.encode("utf-8")).hexdigest()[:8], 16)
+        url = (
+            "https://tenant.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/"
+            f"en/sites/jobsearch/job/{oracle_job_number}/apply/email"
+        )
+        job = store.create_job({
+            "id": f"job-{label}", "url": url, "role": "Synthetic",
+            "company": "Synthetic", "resumeId": resume["id"],
+        })
+        ready = store.transition_job(job["id"], "ready", job["revision"])
+        acquired = store.acquire_ready_job(job["id"], "oracle-adversarial", ready["revision"])
+        settings = store.get_automation_settings()
+        settings = store.update_automation_settings({
+            "enabled": True, "automaticAccountCreation": True,
+            "signupEmail": "synthetic-owner@example.invalid",
+        }, settings["revision"])
+        realm = store.resolve_account_realm(url)
+        account = store.create_employer_account(url)
+        controls = {
+            "accountFormFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint("form"),
+            "emailControlFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint("email"),
+            "termsControlFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint("terms"),
+            "termsDocumentFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint("document"),
+            "nextControlFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint("next"),
+        }
+        portal_name = "Oracle Recruiting"
+        binding = {
+            "jobId": job["id"], "jobRevision": acquired["job"]["revision"],
+            "realmRef": realm["realmRef"], "accountRevision": account["revision"],
+            "settingsRevision": settings["revision"],
+            "portalFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint(url),
+            "portalNameFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint(portal_name),
+            "accountCreationControlsFingerprint": STORE_MODULE.ACCOUNT_FLOWS_MODULE.fingerprint(
+                ":".join(controls.values())
+            ),
+            "approvalRevision": 1, "flowKind": "email_only_candidate_profile",
+            **controls, "passwordControlFingerprint": None,
+            "createAccountControlFingerprint": None,
+        }
+        request = {
+            "binding": binding, "portalName": portal_name, "portalUrl": url,
+            **controls, "passwordControlFingerprint": None,
+            "createAccountControlFingerprint": None,
+        }
+        return store, request, acquired["claim"]["claimId"]
+
+    @staticmethod
+    def _expire_live_claim(store):
+        coordinator = store._load_coordinator_document()
+        coordinator["claim"]["expiresAt"] = "2000-01-01T00:00:00Z"
+        STORE_MODULE.atomic_write_json(store.coordinator_path, coordinator)
+
+    def test_live_oracle_multi_expiry_concurrency_and_safety_matrix(self):
+        store, stable_request, original_claim = self._live_oracle_adversarial_fixture("62")
+        authority_module = STORE_MODULE.CANARY_EXECUTOR_MODULE.CANARY
+        ledger_path = self.home / "live-oracle-adversarial-ledger.json"
+        ledger = authority_module.DurableT007ApprovalLedger(ledger_path)
+        authority = authority_module.OneAttemptCanaryAuthority(ledger)
+
+        self._expire_live_claim(store)
+        first = store.acquire_or_recover_live_email_only_claim(
+            stable_request, owner_label="oracle-adversarial"
+        )["claimId"]
+        self._expire_live_claim(store)
+        newest = store.acquire_or_recover_live_email_only_claim(
+            stable_request, owner_label="oracle-adversarial"
+        )["claimId"]
+        self.assertEqual(len({original_claim, first, newest}), 3)
+
+        provider_calls = []
+
+        class Provider:
+            provider_id = "macos-accessibility"
+
+            def execute_email_only(inner, packet, private_email):
+                provider_calls.append(packet["expectedClaimId"])
+                self.assertEqual(packet["expectedClaimId"], newest)
+                self.assertEqual(private_email(), "synthetic-owner@example.invalid")
+                return {
+                    "providerId": inner.provider_id, "outcome": "active",
+                    "retryAllowed": False, "finalActionAuthorized": False,
+                    "emailRemoved": True, "termsAccepted": True,
+                    "nextActivations": 1, "credentialProviderInvocations": 0,
+                }
+
+        # Both superseded claims fail before authority consumption or effects.
+        for index, stale_claim in enumerate((original_claim, first), start=1):
+            approval = "approval_" + str(index) * 64
+            ledger.record_exact_approval(approval, stable_request["binding"])
+            stale_binding = authority_module.execution_binding(
+                stable_request["binding"], stale_claim
+            )
+            capability = authority.issue(
+                stale_binding, approval,
+                now=datetime(2026, 8, 31, tzinfo=timezone.utc),
+            )["capabilityRef"]
+            with mock.patch.object(STORE_MODULE.sys, "platform", "darwin"), self.assertRaisesRegex(
+                STORE_MODULE.StoreError, "exact live claimed job"
+            ):
+                store.execute_live_email_only_account(
+                    {**stable_request, "binding": stale_binding, "capabilityRef": capability},
+                    authority=authority, provider=Provider(),
+                    now=datetime(2026, 8, 31, tzinfo=timezone.utc),
+                )
+        self.assertEqual(provider_calls, [])
+
+        approval = "approval_" + "a" * 64
+        ledger.record_exact_approval(approval, stable_request["binding"])
+        executor = STORE_MODULE.CANARY_EXECUTOR_MODULE.LiveAccountCanaryExecutor(
+            authority, store, Provider()
+        )
+
+        def race():
+            try:
+                return executor.execute_approved(
+                    stable_request, approval, owner_label="oracle-adversarial",
+                    now=datetime(2026, 8, 31, tzinfo=timezone.utc),
+                )
+            except Exception as error:
+                return type(error).__name__
+
+        with mock.patch.object(STORE_MODULE.sys, "platform", "darwin"):
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                outcomes = list(pool.map(lambda _index: race(), range(2)))
+        successes = [item for item in outcomes if isinstance(item, dict)]
+        self.assertEqual(len(successes), 1)
+        self.assertEqual(provider_calls, [newest])
+        self.assertFalse(successes[0]["finalActionAuthorized"])
+        self.assertFalse(successes[0]["retryAllowed"])
+        persisted_ledger = ledger_path.read_text(encoding="utf-8")
+        self.assertNotIn(approval, persisted_ledger)
+        self.assertNotIn("synthetic-owner", persisted_ledger)
+
+        # The closed request vocabulary rejects portal, terms, credential, realm,
+        # and final-action drift without consulting Store state or a provider.
+        validator = STORE_MODULE.CANARY_EXECUTOR_MODULE.validate_stable_live_request
+        for label, mutation in (
+            ("query", {"portalUrl": stable_request["portalUrl"] + "?token=forbidden"}),
+            ("provider-shape", {"passwordControlFingerprint": "sha256:" + "f" * 64}),
+            ("terms", {"termsDocumentFingerprint": "sha256:" + "e" * 64}),
+            ("final", {"action": "submit_application"}),
+            ("realm", {"binding": {**stable_request["binding"], "realmRef": "f" * 64}}),
+        ):
+            with self.subTest(label=label), self.assertRaises(
+                STORE_MODULE.CANARY_EXECUTOR_MODULE.LiveCanaryExecutorError
+            ):
+                validator({**stable_request, **mutation})
+
+    def test_live_oracle_crash_restart_pre_effect_boundaries_are_fail_closed(self):
+        authority_module = STORE_MODULE.CANARY_EXECUTOR_MODULE.CANARY
+
+        for boundary in ("journal", "authority", "account-stage", "native-entry"):
+            with self.subTest(boundary=boundary):
+                store, stable_request, claim_id = self._live_oracle_adversarial_fixture(
+                    f"62-{boundary}"
+                )
+                ledger = authority_module.DurableT007ApprovalLedger(
+                    self.home / f"live-oracle-crash-{boundary}.json"
+                )
+                authority = authority_module.OneAttemptCanaryAuthority(ledger)
+                approval = "approval_" + {
+                    "journal": "b", "authority": "c",
+                    "account-stage": "d", "native-entry": "e",
+                }[boundary] * 64
+                ledger.record_exact_approval(approval, stable_request["binding"])
+                binding = authority_module.execution_binding(stable_request["binding"], claim_id)
+                capability = authority.issue(
+                    binding, approval, now=datetime(2026, 8, 31, tzinfo=timezone.utc)
+                )["capabilityRef"]
+                request = {**stable_request, "binding": binding, "capabilityRef": capability}
+                provider_calls = []
+
+                class Provider:
+                    provider_id = "macos-accessibility"
+
+                    def execute_email_only(inner, _packet, _private_email):
+                        provider_calls.append("entered")
+                        raise KeyboardInterrupt("synthetic pre-effect crash")
+
+                original_atomic = STORE_MODULE.atomic_write_json
+
+                def crash_atomic(path, payload):
+                    operation = payload.get("operation") if isinstance(payload, dict) else None
+                    if boundary == "journal" and path == store.account_operation_journal_path and operation is not None:
+                        raise OSError("synthetic journal crash")
+                    return original_atomic(path, payload)
+
+                if boundary == "authority":
+                    authority.attempt = mock.Mock(side_effect=KeyboardInterrupt("synthetic authority crash"))
+                stage_patch = mock.patch.object(store, "_write_account_stage_locked", wraps=store._write_account_stage_locked)
+                if boundary == "account-stage":
+                    stage_patch = mock.patch.object(
+                        store, "_write_account_stage_locked",
+                        side_effect=KeyboardInterrupt("synthetic account-stage crash"),
+                    )
+                flow_patch = mock.patch.object(
+                    STORE_MODULE.ACCOUNT_FLOWS_MODULE, "execute_email_only",
+                    side_effect=KeyboardInterrupt("synthetic native-entry crash"),
+                ) if boundary == "native-entry" else mock.patch.object(
+                    STORE_MODULE.ACCOUNT_FLOWS_MODULE, "execute_email_only",
+                    wraps=STORE_MODULE.ACCOUNT_FLOWS_MODULE.execute_email_only,
+                )
+
+                with mock.patch.object(STORE_MODULE.sys, "platform", "darwin"), mock.patch.object(
+                    STORE_MODULE, "atomic_write_json", side_effect=crash_atomic
+                ), stage_patch, flow_patch:
+                    expected = OSError if boundary == "journal" else KeyboardInterrupt
+                    with self.assertRaises(expected):
+                        store.execute_live_email_only_account(
+                            request, authority=authority, provider=Provider(),
+                            now=datetime(2026, 8, 31, tzinfo=timezone.utc),
+                        )
+
+                operation = store._load_account_operation_journal()["operation"]
+                if boundary == "journal":
+                    self.assertIsNone(operation)
+                    self.assertEqual(provider_calls, [])
+                    continue
+                self.assertIsNotNone(operation)
+                self.assertEqual(provider_calls, [])
+                restarted = STORE_MODULE.Store(store.root, store.legacy_profile)
+                recovered = restarted.recover_account_operation()
+                self.assertEqual((recovered["status"], recovered["retryAllowed"]), ("ambiguous", False))
+                self.assertEqual(restarted.get_job(stable_request["binding"]["jobId"])["status"], "needs_info")
+                self.assertIsNone(restarted._load_account_operation_journal()["operation"])
+
+    def test_live_oracle_execute_approved_integrated_crash_restart_oracle(self):
+        authority_module = STORE_MODULE.CANARY_EXECUTOR_MODULE.CANARY
+        now = datetime(2026, 8, 31, tzinfo=timezone.utc)
+
+        for boundary in (
+            "journal-before-consumption", "issuance-before-commit",
+            "issuance-after-commit", "provider-entry",
+        ):
+            with self.subTest(boundary=boundary):
+                store, stable_request, original_claim = self._live_oracle_adversarial_fixture(
+                    f"64-{boundary}"
+                )
+                self._expire_live_claim(store)
+                ledger_path = self.home / f"live-oracle-integrated-{boundary}.json"
+                ledger = authority_module.DurableT007ApprovalLedger(ledger_path)
+                authority = authority_module.OneAttemptCanaryAuthority(ledger)
+                approval = "approval_" + {
+                    "journal-before-consumption": "1",
+                    "issuance-before-commit": "2",
+                    "issuance-after-commit": "3",
+                    "provider-entry": "4",
+                }[boundary] * 64
+                ledger.record_exact_approval(approval, stable_request["binding"])
+                provider_claims = []
+
+                class Provider:
+                    provider_id = "macos-accessibility"
+
+                    def execute_email_only(inner, packet, private_email):
+                        provider_claims.append(packet["expectedClaimId"])
+                        self.assertNotEqual(packet["expectedClaimId"], original_claim)
+                        self.assertEqual(private_email(), "synthetic-owner@example.invalid")
+                        if boundary == "provider-entry":
+                            raise KeyboardInterrupt("synthetic crash after provider entry")
+                        return {
+                            "providerId": inner.provider_id, "outcome": "active",
+                            "retryAllowed": False, "finalActionAuthorized": False,
+                            "emailRemoved": True, "termsAccepted": True,
+                            "nextActivations": 1, "credentialProviderInvocations": 0,
+                        }
+
+                executor = STORE_MODULE.CANARY_EXECUTOR_MODULE.LiveAccountCanaryExecutor(
+                    authority, store, Provider()
+                )
+                original_atomic = STORE_MODULE.atomic_write_json
+
+                def journal_crash(path, payload):
+                    operation = payload.get("operation") if isinstance(payload, dict) else None
+                    if (
+                        boundary == "journal-before-consumption"
+                        and path == store.account_operation_journal_path
+                        and operation is not None
+                    ):
+                        raise OSError("synthetic crash before durable journal")
+                    return original_atomic(path, payload)
+
+                original_ledger_write = ledger._write_locked
+
+                def issuance_write(value):
+                    if boundary == "issuance-before-commit" and any(
+                        item.get("consumed") is True
+                        for item in value["finalApprovals"].values()
+                    ):
+                        raise OSError("synthetic crash before atomic issuance commit")
+                    return original_ledger_write(value)
+
+                original_issue = authority.issue
+
+                def issuance_return_lost(*args, **kwargs):
+                    original_issue(*args, **kwargs)
+                    raise KeyboardInterrupt("synthetic crash after atomic issuance commit")
+
+                issue_patch = mock.patch.object(authority, "issue", wraps=authority.issue)
+                if boundary == "issuance-after-commit":
+                    issue_patch = mock.patch.object(
+                        authority, "issue", side_effect=issuance_return_lost
+                    )
+
+                with mock.patch.object(STORE_MODULE.sys, "platform", "darwin"), mock.patch.object(
+                    STORE_MODULE, "atomic_write_json", side_effect=journal_crash
+                ), mock.patch.object(
+                    ledger, "_write_locked", side_effect=issuance_write
+                ), issue_patch:
+                    expected = (
+                        OSError if boundary in (
+                            "journal-before-consumption", "issuance-before-commit"
+                        ) else KeyboardInterrupt
+                    )
+                    with self.assertRaises(expected):
+                        executor.execute_approved(
+                            stable_request, approval, owner_label="oracle-adversarial", now=now
+                        )
+
+                restarted = STORE_MODULE.Store(store.root, store.legacy_profile)
+                restarted_ledger = authority_module.DurableT007ApprovalLedger(ledger_path)
+                restarted_authority = authority_module.OneAttemptCanaryAuthority(
+                    restarted_ledger
+                )
+                restarted_executor = (
+                    STORE_MODULE.CANARY_EXECUTOR_MODULE.LiveAccountCanaryExecutor(
+                        restarted_authority, restarted, Provider()
+                    )
+                )
+
+                if boundary in (
+                    "journal-before-consumption", "issuance-before-commit"
+                ):
+                    with mock.patch.object(STORE_MODULE.sys, "platform", "darwin"):
+                        result = restarted_executor.execute_approved(
+                            stable_request, approval,
+                            owner_label="oracle-adversarial", now=now,
+                        )
+                    self.assertTrue(result["authorized"])
+                    self.assertFalse(result["retryAllowed"])
+                    self.assertEqual(len(provider_claims), 1)
+                    self.assertIsNone(
+                        restarted._load_account_operation_journal()["operation"]
+                    )
+                else:
+                    self.assertIsNotNone(
+                        restarted._load_account_operation_journal()["operation"]
+                    )
+                    recovered = restarted.recover_account_operation()
+                    self.assertEqual(
+                        (recovered["status"], recovered["retryAllowed"]),
+                        ("ambiguous", False),
+                    )
+                    self.assertEqual(
+                        restarted.get_job(stable_request["binding"]["jobId"])["status"],
+                        "needs_info",
+                    )
+                    with self.assertRaises((
+                        authority_module.CanaryAuthorityError, STORE_MODULE.StoreError,
+                    )):
+                        restarted_executor.execute_approved(
+                            stable_request, approval,
+                            owner_label="oracle-adversarial", now=now,
+                        )
+                    self.assertEqual(
+                        len(provider_claims), 1 if boundary == "provider-entry" else 0
+                    )
+
+                durable = ledger_path.read_text(encoding="utf-8")
+                self.assertNotIn(approval, durable)
+                self.assertNotIn("synthetic-owner", durable)
+                self.assertNotIn("canary_", durable)
 
     def test_trusted_fill_approval_rechecks_canonical_state_and_denial_hands_off_claim(self):
         resume_path = self.home / "trusted-fill-resume.txt"
@@ -5715,6 +6117,46 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(self.store.get_employer_account(restart_account["realmRef"])["lifecycleState"], "ambiguous")
         self.assertEqual(self.store.get_job(restart_job["id"])["status"], "needs_info")
         self.assertIsNone(self.store.claim_status()["claim"])
+
+    def test_stranded_account_operation_converges_after_explicit_expired_claim_recovery(self):
+        job, acquired, account, packet = self._synthetic_account_fixture(
+            "restart", "expired-claim"
+        )
+        operation = {
+            "operationId": "synthetic-expired-claim-restart",
+            "jobId": job["id"], "jobRevision": packet["expectedJobRevision"],
+            "claimId": acquired["claim"]["claimId"],
+            "realmRef": account["realmRef"], "accountRevision": account["revision"],
+            "settingsRevision": packet["expectedSettingsRevision"], "stage": "prepared",
+            "outcomeCode": "observed_pending", "startedAt": "2026-08-29T00:00:00Z",
+        }
+        STORE_MODULE.atomic_write_json(
+            self.store.account_operation_journal_path,
+            {"schemaVersion": 1, "operation": operation},
+        )
+        coordinator = self.store._load_coordinator_document()
+        coordinator["claim"]["expiresAt"] = "2000-01-01T00:00:00Z"
+        STORE_MODULE.atomic_write_json(self.store.coordinator_path, coordinator)
+
+        with self.assertRaisesRegex(
+            STORE_MODULE.StoreError,
+            "account operation recovery requires a live same-job claim",
+        ):
+            self.store.recover_account_operation()
+        self.assertIsNotNone(self.store._load_account_operation_journal()["operation"])
+        self.assertEqual(self.store.get_job(job["id"])["status"], "in_progress")
+        self.assertEqual(
+            self.store.get_employer_account(account["realmRef"])["lifecycleState"],
+            "ambiguous",
+        )
+
+        recovered_claim = self.store.recover_claim(job["id"], "recovery-agent")
+        self.assertNotEqual(recovered_claim["claim"]["claimId"], operation["claimId"])
+        recovered = self.store.recover_account_operation()
+        self.assertEqual((recovered["status"], recovered["retryAllowed"]), ("ambiguous", False))
+        self.assertEqual(recovered["job"]["status"], "needs_info")
+        self.assertIsNone(self.store.claim_status()["claim"])
+        self.assertIsNone(self.store._load_account_operation_journal()["operation"])
 
     def test_account_attention_failure_keeps_recovery_journal(self):
         _job, _acquired, account, packet = self._synthetic_account_fixture(
