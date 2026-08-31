@@ -11,6 +11,7 @@ import time
 import unittest
 import urllib.error
 import urllib.request
+from unittest import mock
 from pathlib import Path
 
 
@@ -25,6 +26,23 @@ QA = load("qa_account_test", ROOT / "scripts/qa-account.py")
 
 
 class SyntheticAccountQATests(unittest.TestCase):
+    def test_native_peer_identity_retries_transient_dynamic_code_publication(self):
+        server = object.__new__(SERVER.SyntheticAccountServer)
+        server._native_identity = ("/tmp/signed-helper", "helper-id", "A" * 40)
+        with (
+            mock.patch.object(server, "_peer_pid", return_value=42),
+            mock.patch.object(server, "_process_path", return_value="/tmp/signed-helper"),
+            mock.patch.object(server, "_signed_identity", return_value=server._native_identity),
+            mock.patch.object(
+                server, "_dynamic_signed_identity",
+                side_effect=[ValueError("not published"), server._native_identity],
+            ) as dynamic_identity,
+            mock.patch.object(SERVER.time, "sleep") as delay,
+        ):
+            self.assertTrue(server._peer_is_exact_native_helper(object()))
+        self.assertEqual(dynamic_identity.call_count, 2)
+        delay.assert_called_once_with(0.05)
+
     @unittest.skipUnless(hasattr(socket, "AF_UNIX"), "Unix-domain sockets required")
     def test_registration_retirement_is_owned_by_exact_generation(self):
         server = SERVER.SyntheticAccountServer(0)

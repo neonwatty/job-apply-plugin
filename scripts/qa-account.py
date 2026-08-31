@@ -167,26 +167,6 @@ def _native_provider(binary: Path, browser_process_identifier: int, namespace: s
     return CREDENTIALS_MACOS.MacOSSecurityFrameworkProvider(bridge)
 
 
-def _prepare_password_browser(
-    binary: Path, browser_process_identifier: int, target: str, realm: str,
-    control: str, operation: str, socket_path: str,
-) -> None:
-    """Bounded read-only native readiness check; no credential or effect exists."""
-
-    command = [
-        str(binary), "compound-prepare", str(browser_process_identifier), target,
-        realm, control, operation, socket_path,
-    ]
-    for _ in range(3):
-        completed = subprocess.run(command, capture_output=True, check=False)
-        if completed.stdout or completed.stderr:
-            raise ValueError("native browser preflight emitted output")
-        if completed.returncode == 0:
-            return
-        time.sleep(0.1)
-    raise ValueError("native browser preflight failed closed")
-
-
 def _store_walkthrough(base: Path, scenario: str, target: str, provider) -> dict:
     root = base / scenario / "store"
     legacy = base / scenario / "legacy.json"
@@ -309,10 +289,6 @@ def verify_all(provider: str, *, owner_approved_visible_browser_tests: bool = Fa
                         )
                         native_channels[operation.removeprefix("sha256:")] = socket_path
                         _focus_browser(cdp_url, target)
-                        _prepare_password_browser(
-                            binary, browser_process.pid, target, realm, control,
-                            operation, socket_path,
-                        )
                         cleanup.add(("unique_per_realm", realm))
                     transition_before = server._transition_index
                     actual = _store_walkthrough(base, scenario, target, native_provider)

@@ -12,6 +12,7 @@ import struct
 import subprocess
 import tempfile
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
@@ -240,16 +241,25 @@ class SyntheticAccountServer(ThreadingHTTPServer):
     def _peer_is_exact_native_helper(self, channel: socket.socket) -> bool:
         if self._native_identity is None:
             return False
-        try:
-            pid = self._peer_pid(channel)
-            path = self._process_path(pid)
-            return (
-                path == self._native_identity[0]
-                and self._signed_identity(path) == self._native_identity
-                and self._dynamic_signed_identity(pid) == self._native_identity
-            )
-        except (OSError, ValueError):
-            return False
+        # A newly launched helper can connect before Security.framework has
+        # published its dynamic code object. Retry only that read-only, exact
+        # identity proof; every attempt retains the same path, static-signing,
+        # and running-process requirements.
+        for attempt in range(20):
+            try:
+                pid = self._peer_pid(channel)
+                path = self._process_path(pid)
+                if (
+                    path == self._native_identity[0]
+                    and self._signed_identity(path) == self._native_identity
+                    and self._dynamic_signed_identity(pid) == self._native_identity
+                ):
+                    return True
+            except (OSError, ValueError):
+                pass
+            if attempt < 19:
+                time.sleep(0.05)
+        return False
 
     def record_observation(self, token: str, observation: dict) -> None:
         self._observations[token] = observation
