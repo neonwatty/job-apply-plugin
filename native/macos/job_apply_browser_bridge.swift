@@ -235,6 +235,13 @@ final class MacOSBrowserSecureInputBridge: NativeSecureInputBoundary {
         }
     }
 
+    /// Read-only readiness check for a freshly launched trusted browser. This
+    /// performs the complete identity/origin/control binding without creating
+    /// a credential, mutating a control, or publishing an attestation.
+    func prepare() throws {
+        _ = try independentlyObserve()
+    }
+
     func fillAndClear(_ generatedBytes: UnsafeRawBufferPointer) throws {
         guard generatedBytes.count == 32 else { throw ProtectedCredentialError.secureInput }
         let before = try independentlyObserve()

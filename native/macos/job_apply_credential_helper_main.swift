@@ -73,6 +73,16 @@ enum IsolatedCredentialIntegrationMain {
                   receipt.reused == expectedReused, receipt.filled,
                   bridge.completedEffect
             else { throw ProtectedCredentialError.invalidBinding }
+        case "compound-prepare":
+            guard arguments.count == 8, let browserPID = Int32(arguments[2]) else {
+                throw ProtectedCredentialError.invalidBinding
+            }
+            let bridge = try MacOSBrowserSecureInputBridge(expected: NativeBrowserBinding(
+                browserProcessIdentifier: browserPID, targetURL: arguments[3],
+                realmReference: arguments[4], controlFingerprint: arguments[5],
+                operationFingerprint: arguments[6], nativeAttestationSocketPath: arguments[7]
+            ))
+            try bridge.prepare()
         case "oracle-email-only":
             guard arguments.count == 18,
                   let browserPID = Int32(arguments[2]),

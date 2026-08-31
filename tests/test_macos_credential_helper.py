@@ -71,6 +71,9 @@ class MacOSCredentialHelperTests(unittest.TestCase):
         self.assertNotIn("portalState", source)
         self.assertNotIn("URLSession", source)
         self.assertIn("secureValueIsEmpty(after.element)", source)
+        self.assertIn("func prepare() throws", source)
+        self.assertIn('case "compound-prepare"',
+                      (ROOT / "native/macos/job_apply_credential_helper_main.swift").read_text(encoding="utf-8"))
         self.assertLess(source.rindex("secureValueIsEmpty(after.element)"), source.rindex("publishVerifiedObservation()"))
 
     def test_native_attestation_uses_authenticated_local_peer_not_inherited_descriptor(self):
