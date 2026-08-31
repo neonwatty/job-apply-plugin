@@ -95,7 +95,9 @@ class SyntheticAccountQATests(unittest.TestCase):
         server = (ROOT / "qa/account_server.py").read_text(encoding="utf-8")
         self.assertEqual(source.count("timeout=12"), 2)
         self.assertEqual(source.count("for _ in range(3):"), 2)
-        self.assertIn("context.pages()[0] ?? await context.newPage()", source)
+        self.assertEqual(source.count("const page = await context.newPage();"), 2)
+        self.assertEqual(source.count("if (existing !== page) await existing.close();"), 2)
+        self.assertNotIn("context.pages()[0] ?? await context.newPage()", source)
         self.assertIn("listener.settimeout(45)", server)
         self.assertEqual(source.count("provider.provision_or_reuse_and_fill"), 0)
 

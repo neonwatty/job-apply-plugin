@@ -117,9 +117,12 @@ def _focus_browser(cdp_url: str, url: str) -> None:
 import { chromium } from "playwright";
 const browser = await chromium.connectOverCDP(process.argv[2]);
 const context = browser.contexts()[0];
-const page = context.pages()[0] ?? await context.newPage();
+const page = await context.newPage();
 page.setDefaultTimeout(5000);
 await page.goto(process.argv[1], {waitUntil: "domcontentloaded", timeout: 10000});
+for (const existing of context.pages()) {
+    if (existing !== page) await existing.close();
+}
 await page.getByRole("button", {name: "Focus protected synthetic control"}).click();
 await page.locator("#job-apply-secure-control").evaluate((element) => element.focus());
 await page.bringToFront();
@@ -148,9 +151,12 @@ def _open_oracle_browser(cdp_url: str, url: str) -> None:
 import { chromium } from "playwright";
 const browser = await chromium.connectOverCDP(process.argv[2]);
 const context = browser.contexts()[0];
-const page = context.pages()[0] ?? await context.newPage();
+const page = await context.newPage();
 page.setDefaultTimeout(5000);
 await page.goto(process.argv[1], {waitUntil: "domcontentloaded", timeout: 10000});
+for (const existing of context.pages()) {
+    if (existing !== page) await existing.close();
+}
 await page.locator("#job-apply-email-control").waitFor();
 await page.locator("#job-apply-focus-decoy").focus();
 if (await page.evaluate(() => document.activeElement?.id) !== "job-apply-focus-decoy") process.exit(7);
