@@ -36,7 +36,21 @@ main { width: min(1180px, 92vw); margin: 0 auto 5rem; }
 .metrics div { padding: 1.25rem 1.5rem; border-right: 1px solid rgba(255,255,255,.16); display: flex; align-items: baseline; gap: .75rem; }
 .metrics strong { font: 500 2rem Georgia, serif; }.metrics span { color: #c9ded5; font-size: .82rem; }
 .jobs-panel { background: var(--panel); min-height: 410px; padding: clamp(1.2rem, 3vw, 2rem); border-radius: 0 0 20px 20px; box-shadow: var(--shadow); }
-.facts-panel, .resumes-panel, .answers-panel, .trash-panel, .attention-panel, .next-step-card, .setup-card, .handoff-card, .recovery-card, .recovery-panel { background: var(--panel); padding: clamp(1.2rem, 3vw, 2rem); border-radius: 20px; box-shadow: var(--shadow); }
+.facts-panel, .resumes-panel, .answers-panel, .trash-panel, .attention-panel, .automation-panel, .next-step-card, .setup-card, .handoff-card, .recovery-card, .recovery-panel { background: var(--panel); padding: clamp(1.2rem, 3vw, 2rem); border-radius: 20px; box-shadow: var(--shadow); }
+.automation-panel { margin-bottom: 1rem; }
+.automation-form { display: grid; gap: 1rem; max-width: 720px; margin-top: 1.25rem; }
+.automation-form label span { display: flex; align-items: start; gap: .65rem; }
+.automation-form input[type="checkbox"] { width: auto; margin-top: .1rem; }
+.automation-form fieldset { margin: 0; padding: 1rem; border: 1px solid var(--line); border-radius: 12px; }
+.automation-form fieldset legend { padding: 0 .4rem; font-weight: 800; }
+.automation-form fieldset label + label { margin-top: .6rem; }
+.automation-accounts { display: grid; gap: .8rem; margin-top: 1rem; }
+.automation-account { padding: 1rem; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb,var(--panel) 94%,var(--mint)); }
+.automation-account h3 { margin: 0 0 .4rem; font: 600 1.1rem Georgia,serif; }
+.automation-account p { margin: .25rem 0; color: var(--muted); overflow-wrap: anywhere; }
+.realm-override-form { display: grid; gap: .7rem; margin-top: .9rem; padding-top: .9rem; border-top: 1px solid var(--line); }
+.realm-override-form .button-row { margin-top: 0; }
+.realm-override-feedback { color: var(--danger); font-weight: 700; }
 .overview-hero { padding-bottom: 1.5rem; }
 .overview-grid { display: grid; grid-template-columns: 1.25fr .75fr; gap: 1rem; }
 .overview-grid article { min-width: 0; }

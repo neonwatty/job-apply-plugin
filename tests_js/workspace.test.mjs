@@ -53,6 +53,7 @@ const {
   sameAnswerScope,
   createApi,
   createLatestRequestCoordinator,
+  employerAccountOverrideRequest,
   conflictingPaths,
   filterJobs,
   formPatch,
@@ -70,11 +71,45 @@ const {
   shouldUseResumeResponse,
   summarizeProvenance,
   tagsFromInput,
+  trustedFillApprovalPacket,
+  trustedFillRevokeRequest,
   trashBlockerText,
   tokenFromHash,
   transitionsFor,
   typedDeletePhrase,
 } = await import(pathToFileURL(join(REPO_ROOT, "workspace", "app.js")).href);
+
+test("realm email override requests bind the exact account revision and explicit clear", () => {
+  const account = { realmRef: "a".repeat(64), revision: 7 };
+  const save = employerAccountOverrideRequest(account, " owner@example.com ");
+  assert.equal(save.path, `/api/employer-accounts/${"a".repeat(64)}`);
+  assert.deepEqual(JSON.parse(save.options.body), {
+    patch: { signupEmailOverride: "owner@example.com" },
+    expectedRevision: 7,
+  });
+  assert.deepEqual(JSON.parse(employerAccountOverrideRequest(account, "", true).options.body), {
+    patch: { signupEmailOverride: null },
+    expectedRevision: 7,
+  });
+  assert.throws(() => employerAccountOverrideRequest({ realmRef: account.realmRef, revision: 0 }, ""), /canonical employer account revision/);
+});
+
+test("Trusted Fill browser requests remain fingerprint-only and revision-bound", () => {
+  const fingerprint = (char) => `sha256:${char.repeat(64)}`;
+  const packet = trustedFillApprovalPacket({
+    jobId: "job-one", expectedJobRevision: "4", realmRef: "a".repeat(64),
+    answerRefs: "question.b\nquestion.a\n", observedQuestionFingerprint: fingerprint("1"),
+    observedControlFingerprint: fingerprint("2"), formFingerprint: fingerprint("3"),
+    allowedOperations: ["select_option", "fill_text"], durationMinutes: "30",
+  });
+  assert.deepEqual(packet.answerRefs, ["question.b", "question.a"]);
+  assert.deepEqual(packet.allowedOperations, ["fill_text", "select_option"]);
+  assert.equal(packet.expectedJobRevision, 4);
+  const revoke = trustedFillRevokeRequest({ jobId: "job-one", approvalRevision: 7 });
+  assert.equal(revoke.path, "/api/trusted-fill/job-one/revoke");
+  assert.deepEqual(JSON.parse(revoke.options.body), { expectedApprovalRevision: 7 });
+  assert.throws(() => trustedFillRevokeRequest({ jobId: "job-one", approvalRevision: 0 }), /canonical Trusted Fill approval revision/);
+});
 
 test("owner beta next actions stay closed and human-readable", () => {
   assert.deepEqual(ownerBetaNextStep("import_resume"), [
@@ -142,6 +177,29 @@ test("owner beta clean packaged browser and CLI journey survives restart and fai
     assert.match(await page.locator("#overview-workspace").innerText(), /0 jobs.*0 ready.*0 need attention/);
     assert.equal(await page.getByRole("button", { name: "Copy Codex invocation" }).getAttribute("data-copy"), "$job-apply:job-apply");
     assert.equal(await page.getByRole("button", { name: "Copy Claude Code invocation" }).getAttribute("data-copy"), "/job-apply:job-apply");
+
+    await page.getByRole("button", { name: "Automation" }).click();
+    await page.getByRole("heading", { name: "Account controls that fail closed." }).waitFor();
+    await page.getByLabel("Exact employer portal URL").fill("https://acme.wd5.myworkdayjobs.com/en-US/jobs/one");
+    await page.getByLabel("Optional signup email override").fill("realm@example.com");
+    await page.getByRole("button", { name: "Add resolved realm" }).click();
+    const overrideForm = page.getByRole("form", { name: /Edit signup email override for Workday realm/ });
+    await overrideForm.waitFor();
+    await overrideForm.getByLabel("Signup email override").fill("replacement@example.com");
+    await overrideForm.getByRole("button", { name: "Save override" }).click();
+    await page.getByText(/discovered · revision 2 · email override configured/).waitFor();
+    const account = (await cli("employer-account-list"))[0];
+    await cli(
+      "employer-account-update",
+      ["--realm-ref", account.realmRef, "--expected-revision", String(account.revision)],
+      { signupEmailOverride: null },
+    );
+    await overrideForm.getByLabel("Signup email override").fill("newer@example.com");
+    await overrideForm.getByRole("button", { name: "Save override" }).click();
+    const realmConflict = overrideForm.getByRole("alert");
+    await realmConflict.waitFor();
+    assert.equal(await realmConflict.evaluate((element) => element === document.activeElement), true);
+    await page.getByRole("button", { name: "Overview" }).click();
 
     const bootPattern = "**/api/boot";
     await page.route(bootPattern, (route) => route.fulfill({

@@ -60,7 +60,7 @@ STORE_MODULE = load_store_module()
 def public_resume(record: dict[str, Any]) -> dict[str, Any]:
     """Project resume metadata without filesystem or document identity data."""
 
-    hidden = {"path", "managedFile", "originalFilename", "digest"}
+    hidden = {"path", "managedFile", "originalFilename", "digest", "contentRevision"}
     return {key: value for key, value in record.items() if key not in hidden}
 
 
@@ -569,6 +569,17 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         if path == "/api/profile":
             self._store_call(self.server.store.inspect_profile)
             return
+        if path == "/api/automation":
+            self._store_call(lambda: {
+                "settings": self.server.store.get_automation_settings(companion=True),
+                "capability": self.server.store.automation_capability(),
+                "accounts": self.server.store.list_employer_accounts(companion=True),
+                "profileRevision": self.server.store.inspect_profile()["revision"],
+            })
+            return
+        if path == "/api/account-operation":
+            self._store_call(self.server.store.account_operation_status)
+            return
         if path == "/api/fact-groups":
             self._store_call(lambda: {"groups": self.server.store.list_fact_groups()})
             return
@@ -605,6 +616,17 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
             self._store_call(lambda: self.server.store.query_answers())
             return
         parts = path.split("/")
+        if len(parts) == 4 and parts[1:3] == ["api", "trusted-fill"]:
+            self._store_call(lambda: self.server.store.trusted_fill_status(parts[3], public=True))
+            return
+        if len(parts) == 4 and parts[1:3] == ["api", "employer-accounts"]:
+            def employer_account_detail() -> dict[str, Any]:
+                account = self.server.store.get_employer_account(parts[3], public=True)
+                if account is None:
+                    raise STORE_MODULE.StoreError("employer account does not exist")
+                return account
+            self._store_call(employer_account_detail)
+            return
         if len(parts) == 4 and parts[1:3] == ["api", "fact-groups"]:
             def fact_group_detail() -> dict[str, Any]:
                 group = self.server.store.get_fact_group(parts[3])
@@ -749,6 +771,89 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         if method == "POST" and path == "/api/resumes/import":
             self._store_call(lambda: public_resume(
                 self.server.store.create_resume_bytes(payload, filename, content)
+            ))
+            return
+        if method == "POST" and path == "/api/automation/realm-resolve":
+            if set(payload) != {"url"} or not isinstance(payload.get("url"), str):
+                self._error(HTTPStatus.BAD_REQUEST, "body must contain only a portal URL")
+                return
+            self._store_call(lambda: self.server.store.resolve_account_realm(payload["url"]))
+            return
+        if method == "POST" and path == "/api/trusted-fill/approve":
+            self._store_call(lambda: self.server.store.approve_trusted_fill(payload, public=True))
+            return
+        if method == "POST" and path == "/api/account-operation/execute-synthetic":
+            self._store_call(lambda: self.server.store.execute_synthetic_account(payload, public=True))
+            return
+        if method == "POST" and path == "/api/account-operation/recover":
+            if payload != {}:
+                self._error(HTTPStatus.BAD_REQUEST, "account recovery body must be empty")
+                return
+            self._store_call(self.server.store.recover_account_operation)
+            return
+        if method == "POST" and path == "/api/trusted-fill/evaluate":
+            self._store_call(lambda: self.server.store.evaluate_trusted_fill(payload, public=True))
+            return
+        if (
+            method == "POST" and len(route_parts) == 5
+            and route_parts[1:3] == ["api", "trusted-fill"]
+            and route_parts[4] == "revoke"
+        ):
+            if set(payload) != {"expectedApprovalRevision"}:
+                self._error(HTTPStatus.BAD_REQUEST, "body must contain only expectedApprovalRevision")
+                return
+            expected_revision = payload.get("expectedApprovalRevision")
+            if not isinstance(expected_revision, int) or isinstance(expected_revision, bool) or expected_revision < 1:
+                self._error(HTTPStatus.BAD_REQUEST, "expectedApprovalRevision must be a positive integer")
+                return
+            self._store_call(lambda: self.server.store.revoke_trusted_fill(
+                route_parts[3], expected_revision, public=True
+            ))
+            return
+        if method == "PATCH" and path == "/api/automation/settings":
+            if set(payload) != {"patch", "expectedRevision"} or not isinstance(payload.get("patch"), dict):
+                self._error(HTTPStatus.BAD_REQUEST, "body must contain a settings patch and expectedRevision")
+                return
+            expected_revision = self._expected_revision(payload)
+            if expected_revision is None:
+                return
+            self._store_call(lambda: self.server.store.update_automation_settings(
+                payload["patch"], expected_revision, public=True
+            ))
+            return
+        if method == "POST" and path == "/api/automation/settings/copy-profile-email":
+            if set(payload) != {"expectedProfileRevision", "expectedSettingsRevision"}:
+                self._error(HTTPStatus.BAD_REQUEST, "body must contain exact profile and settings revisions")
+                return
+            profile_revision = payload.get("expectedProfileRevision")
+            settings_revision = payload.get("expectedSettingsRevision")
+            if any(
+                not isinstance(value, int) or isinstance(value, bool) or value < 1
+                for value in (profile_revision, settings_revision)
+            ):
+                self._error(HTTPStatus.BAD_REQUEST, "profile and settings revisions must be positive integers")
+                return
+            self._store_call(lambda: self.server.store.copy_profile_email_to_automation_settings(
+                profile_revision, settings_revision, public=True,
+            ))
+            return
+        if method == "POST" and path == "/api/employer-accounts":
+            if set(payload) - {"url", "signupEmailOverride"} or "url" not in payload or not isinstance(payload["url"], str):
+                self._error(HTTPStatus.BAD_REQUEST, "body must contain a portal URL and optional signup email override")
+                return
+            self._store_call(lambda: self.server.store.create_employer_account(
+                payload["url"], payload.get("signupEmailOverride"), public=True
+            ))
+            return
+        if method == "PATCH" and len(route_parts) == 4 and route_parts[1:3] == ["api", "employer-accounts"]:
+            if set(payload) != {"patch", "expectedRevision"} or not isinstance(payload.get("patch"), dict):
+                self._error(HTTPStatus.BAD_REQUEST, "body must contain an account patch and expectedRevision")
+                return
+            expected_revision = self._expected_revision(payload)
+            if expected_revision is None:
+                return
+            self._store_call(lambda: self.server.store.update_employer_account(
+                route_parts[3], payload["patch"], expected_revision, public=True
             ))
             return
         if method == "PATCH" and path == "/api/profile":
