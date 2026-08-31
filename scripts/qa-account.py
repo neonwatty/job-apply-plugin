@@ -42,12 +42,37 @@ VISIBLE_BROWSER_APPROVAL_ERROR = (
     "visible browser verification is disabled; explicit current-turn owner approval "
     "and --owner-approved-visible-browser-tests are required"
 )
+VISIBLE_BROWSER_DEPENDENCY_ERROR = (
+    "visible browser verification dependencies are unavailable; run from a dependency-complete "
+    "exact candidate checkout"
+)
 
 
 def _require_visible_browser_approval(owner_approved: bool) -> None:
     """Refuse before compiling helpers, starting servers, or launching a browser."""
     if not owner_approved:
         raise ValueError(VISIBLE_BROWSER_APPROVAL_ERROR)
+
+
+def _require_browser_test_dependencies() -> None:
+    """Refuse before any helper, server, browser, Store, or native setup."""
+    try:
+        completed = subprocess.run(
+            [
+                "node", "--input-type=module", "--eval",
+                'import { chromium } from "playwright"; if (!chromium) process.exit(9)',
+            ],
+            cwd=ROOT,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        raise ValueError(VISIBLE_BROWSER_DEPENDENCY_ERROR) from None
+    if completed.returncode:
+        raise ValueError(VISIBLE_BROWSER_DEPENDENCY_ERROR)
 
 
 def _compile_native(binary: Path) -> None:
@@ -278,6 +303,7 @@ def verify_all(provider: str, *, owner_approved_visible_browser_tests: bool = Fa
     _require_visible_browser_approval(owner_approved_visible_browser_tests)
     if provider != "macos-keychain" or not sys.platform.startswith("darwin"):
         raise ValueError("synthetic provider selection is unsupported")
+    _require_browser_test_dependencies()
     with tempfile.TemporaryDirectory() as directory:
         server = None
         thread = None
@@ -370,6 +396,7 @@ def verify_oracle_email_only(provider: str, *, owner_approved_visible_browser_te
     _require_visible_browser_approval(owner_approved_visible_browser_tests)
     if provider != "macos-accessibility" or not sys.platform.startswith("darwin"):
         raise ValueError("Oracle email-only automation provider is unsupported")
+    _require_browser_test_dependencies()
     descriptor = "oracle-recruiting:v1:synthetic.fa.us2.oraclecloud.com:jobsearch"
     realm = __import__("hashlib").sha256(descriptor.encode()).hexdigest()
     controls = {

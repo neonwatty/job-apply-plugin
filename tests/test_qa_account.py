@@ -12,6 +12,7 @@ import unittest
 import urllib.error
 import urllib.request
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,6 +26,37 @@ QA = load("qa_account_test", ROOT / "scripts/qa-account.py")
 
 
 class SyntheticAccountQATests(unittest.TestCase):
+    def test_workday_missing_playwright_refuses_before_external_setup(self):
+        missing = subprocess.CompletedProcess([], 1)
+        with mock.patch.object(QA.sys, "platform", "darwin"), \
+             mock.patch.object(QA.subprocess, "run", return_value=missing) as run, \
+             mock.patch.object(QA, "_compile_native") as compile_native, \
+             mock.patch.object(QA, "_start_browser") as start_browser:
+            with self.assertRaisesRegex(ValueError, "dependencies are unavailable"):
+                QA.verify_all(
+                    "macos-keychain", owner_approved_visible_browser_tests=True,
+                )
+        run.assert_called_once()
+        compile_native.assert_not_called()
+        start_browser.assert_not_called()
+
+    def test_oracle_missing_playwright_refuses_before_external_setup(self):
+        missing = subprocess.CompletedProcess([], 1)
+        with mock.patch.object(QA.sys, "platform", "darwin"), \
+             mock.patch.object(QA.subprocess, "run", return_value=missing) as run, \
+             mock.patch.object(QA, "_start_browser") as start_browser, \
+             mock.patch.object(
+                 QA.ACCOUNT_FLOWS_MACOS.NativeMacOSAccessibilityProvider,
+                 "from_reviewed_sources",
+             ) as build_native:
+            with self.assertRaisesRegex(ValueError, "dependencies are unavailable"):
+                QA.verify_oracle_email_only(
+                    "macos-accessibility", owner_approved_visible_browser_tests=True,
+                )
+        run.assert_called_once()
+        start_browser.assert_not_called()
+        build_native.assert_not_called()
+
     @unittest.skipUnless(hasattr(socket, "AF_UNIX"), "Unix-domain sockets required")
     def test_registration_retirement_is_owned_by_exact_generation(self):
         server = SERVER.SyntheticAccountServer(0)
