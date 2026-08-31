@@ -12,6 +12,8 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         for case_name, status in (
             ("requestBinding", 28), ("browserBinding", 29), ("pageBinding", 30),
             ("controlBinding", 31), ("stateBinding", 32), ("causalBinding", 33),
+            ("browserProcessBinding", 34), ("browserIdentityBinding", 35),
+            ("accessibilityBinding", 36), ("activationBinding", 37),
         ):
             self.assertIn(f"AccountFlowHelperError.{case_name}", source)
             self.assertIn(f"Darwin.exit({status})", source)

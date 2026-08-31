@@ -9,6 +9,7 @@ enum AccountFlowHelperError: Error {
     case invalidBinding, privateChannel, effectFailed
     case emailEffect, termsEffect, nextEffect, clearingEffect
     case requestBinding, browserBinding, pageBinding, controlBinding, stateBinding, causalBinding
+    case browserProcessBinding, browserIdentityBinding, accessibilityBinding, activationBinding
 }
 
 enum OracleCausalSuccessorDecision: Equatable {
@@ -385,7 +386,7 @@ private final class OracleEmailOnlyEffect {
         return true
     }
 
-    private func activateReviewedBrowser() -> Bool {
+    private func activateReviewedBrowser() throws {
         // A freshly launched signed browser can briefly exist before AppKit and
         // Security.framework expose a consistent running/active view. Poll only
         // this pre-effect proof; no form control is read or mutated here.
@@ -395,11 +396,16 @@ private final class OracleEmailOnlyEffect {
                let running = NSRunningApplication(
                     processIdentifier: binding.browserProcessIdentifier
                ), running.activate(options: [.activateAllWindows]) {
-                return true
+                return
             }
             usleep(50_000)
         }
-        return false
+        guard kill(binding.browserProcessIdentifier, 0) == 0,
+              NSRunningApplication(processIdentifier: binding.browserProcessIdentifier) != nil
+        else { throw AccountFlowHelperError.browserProcessBinding }
+        guard AXIsProcessTrusted() else { throw AccountFlowHelperError.accessibilityBinding }
+        guard signedBrowser() else { throw AccountFlowHelperError.browserIdentityBinding }
+        throw AccountFlowHelperError.activationBinding
     }
 
     private func reviewedControls(_ form: AXUIElement) throws ->
@@ -452,8 +458,8 @@ private final class OracleEmailOnlyEffect {
     }
 
     func prepare() throws -> [String: Any] {
-        guard !binding.isSynthetic, activateReviewedBrowser()
-        else { throw AccountFlowHelperError.invalidBinding }
+        guard !binding.isSynthetic else { throw AccountFlowHelperError.invalidBinding }
+        try activateReviewedBrowser()
         usleep(150_000)
         let page = try boundPage()
         let candidates = elements(page).filter {
@@ -622,8 +628,7 @@ private final class OracleEmailOnlyEffect {
     }
 
     func perform(email: String) throws {
-        guard activateReviewedBrowser()
-        else { throw AccountFlowHelperError.browserBinding }
+        try activateReviewedBrowser()
         usleep(150_000)
         let page: AXUIElement
         do {
