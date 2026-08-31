@@ -214,12 +214,24 @@ def _store_walkthrough(base: Path, scenario: str, target: str, provider) -> dict
         "expectedAccountRevision": account["revision"], "syntheticTargetUrl": target,
         **proofs,
     }
-    result = store.execute_synthetic_account(packet, provider=provider)
+    observer_stage = "not_started"
+
+    def observed_portal(target_url: str, operation_fingerprint: str) -> dict:
+        nonlocal observer_stage
+        observer_stage = "started"
+        observed = EXECUTOR.observe_synthetic_portal(target_url, operation_fingerprint)
+        observer_stage = "completed"
+        return observed
+
+    result = store.execute_synthetic_account(
+        packet, provider=provider, observer=observed_portal
+    )
     return {
         "lifecycleState": result["account"]["lifecycleState"],
         "retryAllowed": result["retryAllowed"],
         "finalActionAuthorized": result.get("finalActionAuthorized", False),
         "secureControlCleared": result.get("secureControlCleared", False),
+        "qaObserverStage": observer_stage,
     }
 
 
@@ -232,6 +244,9 @@ def _workday_scenario_result(scenario: str, actual: dict) -> dict:
             "retryDenied": actual.get("retryAllowed") is False,
             "finalActionDenied": actual.get("finalActionAuthorized") is False,
             "nativeControlCleared": actual.get("secureControlCleared") is True,
+            "observerStage": actual.get("qaObserverStage"),
+            "nativeTransitionAdvanced": actual.get("qaNativeTransitionAdvanced"),
+            "observationPending": actual.get("qaObservationPending"),
         }
     return evaluated
 
@@ -274,7 +289,14 @@ def verify_all(provider: str, *, owner_approved_visible_browser_tests: bool = Fa
                         )
                         _focus_browser(cdp_url, target)
                         cleanup.add(("unique_per_realm", realm))
+                    transition_before = server._transition_index
                     actual = _store_walkthrough(base, scenario, target, native_provider)
+                    actual["qaNativeTransitionAdvanced"] = (
+                        server._transition_index > transition_before
+                    )
+                    actual["qaObservationPending"] = (
+                        operation.removeprefix("sha256:") in server._observations
+                    )
                     evaluated = _workday_scenario_result(scenario, actual)
                     results.append({**evaluated, "evidenceSource": "browser-store-native"})
             finally:

@@ -53,6 +53,8 @@ class SyntheticAccountQATests(unittest.TestCase):
             "expectedLifecycle": "active", "observedLifecycle": "ambiguous",
             "retryDenied": True, "finalActionDenied": True,
             "nativeControlCleared": True,
+            "observerStage": None, "nativeTransitionAdvanced": None,
+            "observationPending": None,
         })
         self.assertNotIn("@", json.dumps(result))
 
