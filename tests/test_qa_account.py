@@ -74,6 +74,41 @@ class SyntheticAccountQATests(unittest.TestCase):
             forged.connect(socket_path); forged.close()
         server.server_close()
 
+    @unittest.skipUnless(hasattr(socket, "AF_UNIX"), "Unix-domain sockets required")
+    def test_prepared_operation_abandonment_requires_exact_lease(self):
+        server = SERVER.SyntheticAccountServer(0)
+        operation = "8" * 64
+        socket_path = server.prepare_native_operation(operation)
+        generation, leased_socket = server.prepared_native_operation_lease(
+            operation, socket_path,
+        )
+        self.assertFalse(server.abandon_native_operation(operation, generation + 1, leased_socket))
+        self.assertFalse(server.abandon_native_operation(operation, generation, leased_socket + ".other"))
+        self.assertTrue(server.operation_is_registered(operation))
+        self.assertTrue(server.abandon_native_operation(operation, generation, leased_socket))
+        self.assertFalse(server.operation_is_registered(operation))
+        forged = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        forged.connect(socket_path); forged.close()
+        server.server_close()
+
+    @unittest.skipUnless(hasattr(socket, "AF_UNIX"), "Unix-domain sockets required")
+    def test_abandoned_generation_cannot_retire_replacement(self):
+        server = SERVER.SyntheticAccountServer(0)
+        operation = "7" * 64
+        first_socket = server.prepare_native_operation(operation)
+        first_generation, _ = server.prepared_native_operation_lease(operation, first_socket)
+        self.assertTrue(server.abandon_native_operation(operation, first_generation, first_socket))
+        second_socket = server.prepare_native_operation(operation)
+        second_generation, _ = server.prepared_native_operation_lease(operation, second_socket)
+        self.assertNotEqual(first_generation, second_generation)
+        self.assertFalse(server.abandon_native_operation(operation, first_generation, first_socket))
+        self.assertTrue(server.operation_is_registered(operation))
+        self.assertTrue(server.abandon_native_operation(operation, second_generation, second_socket))
+        for socket_path in (first_socket, second_socket):
+            forged = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            forged.connect(socket_path); forged.close()
+        server.server_close()
+
     def test_workday_mismatch_has_value_free_scenario_diagnostics(self):
         result = QA._workday_scenario_result("success", {
             "lifecycleState": "ambiguous", "retryAllowed": False,

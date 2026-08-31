@@ -341,35 +341,43 @@ def verify_all(provider: str, *, owner_approved_visible_browser_tests: bool = Fa
                     control = EXECUTOR.synthetic_proofs(base_target, scenario)["secureControlFingerprint"]
                     operation = EXECUTOR.operation_fingerprint(base_target, realm, control)
                     target = base_target + "?operation=" + operation.removeprefix("sha256:")
-                    if scenario != "restart":
-                        socket_path = server.prepare_native_operation(
-                            operation.removeprefix("sha256:")
+                    operation_key = operation.removeprefix("sha256:")
+                    operation_lease = None
+                    try:
+                        if scenario != "restart":
+                            socket_path = server.prepare_native_operation(operation_key)
+                            operation_lease = server.prepared_native_operation_lease(
+                                operation_key, socket_path,
+                            )
+                            native_channels[operation_key] = socket_path
+                            try:
+                                _focus_browser(cdp_url, target)
+                            except ValueError as error:
+                                raise ValueError(
+                                    f"synthetic browser focus failed closed for {scenario}; "
+                                    f"native stage {server.native_stage(operation_key)}"
+                                ) from error
+                            cleanup.add(("unique_per_realm", realm))
+                        transition_before = server._transition_index
+                        actual = _store_walkthrough(base, scenario, target, native_provider)
+                        actual["qaNativeTransitionAdvanced"] = (
+                            server._transition_index > transition_before
                         )
-                        native_channels[operation.removeprefix("sha256:")] = socket_path
-                        try:
-                            _focus_browser(cdp_url, target)
-                        except ValueError as error:
-                            raise ValueError(
-                                f"synthetic browser focus failed closed for {scenario}; "
-                                f"native stage {server.native_stage(operation.removeprefix('sha256:'))}"
-                            ) from error
-                        cleanup.add(("unique_per_realm", realm))
-                    transition_before = server._transition_index
-                    actual = _store_walkthrough(base, scenario, target, native_provider)
-                    actual["qaNativeTransitionAdvanced"] = (
-                        server._transition_index > transition_before
-                    )
-                    actual["qaObservationPending"] = (
-                        operation.removeprefix("sha256:") in server._observations
-                    )
-                    actual["qaNativeStage"] = server.native_stage(
-                        operation.removeprefix("sha256:")
-                    )
-                    actual["qaHelperStage"] = helper_stages.get(
-                        operation.removeprefix("sha256:"), "not_started"
-                    )
-                    evaluated = _workday_scenario_result(scenario, actual)
-                    results.append({**evaluated, "evidenceSource": "browser-store-native"})
+                        actual["qaObservationPending"] = operation_key in server._observations
+                        actual["qaNativeStage"] = server.native_stage(operation_key)
+                        actual["qaHelperStage"] = helper_stages.get(
+                            operation_key, "not_started"
+                        )
+                        evaluated = _workday_scenario_result(scenario, actual)
+                        results.append({**evaluated, "evidenceSource": "browser-store-native"})
+                    finally:
+                        if operation_lease is not None:
+                            registered_socket = native_channels.get(operation_key)
+                            if registered_socket == operation_lease[1]:
+                                native_channels.pop(operation_key, None)
+                            server.abandon_native_operation(
+                                operation_key, operation_lease[0], operation_lease[1],
+                            )
             finally:
                 for strategy, realm in cleanup:
                     completed = subprocess.run([str(binary), "cleanup", strategy, realm, namespace], capture_output=True)

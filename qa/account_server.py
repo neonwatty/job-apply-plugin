@@ -89,7 +89,7 @@ class SyntheticAccountServer(ThreadingHTTPServer):
 
     def __init__(self, port: int = 0, *, native_helper_path: str | Path | None = None):
         self._observations = {}
-        self._registrations: dict[str, tuple[int, str]] = {}
+        self._registrations: dict[str, tuple[int, str, str]] = {}
         self._registration_lock = threading.Lock()
         self._registration_generation = 0
         self._native_stages: dict[str, str] = {}
@@ -298,7 +298,7 @@ class SyntheticAccountServer(ThreadingHTTPServer):
                 raise ValueError("synthetic native operation already exists")
             self._registration_generation += 1
             generation = self._registration_generation
-            self._registrations[operation] = (generation, mode)
+            self._registrations[operation] = (generation, mode, socket_path)
             self._native_stages[operation] = "listener_ready"
             self._socket_roots.add(socket_root)
         threading.Thread(
@@ -310,6 +310,27 @@ class SyntheticAccountServer(ThreadingHTTPServer):
     def operation_is_registered(self, operation: str) -> bool:
         with self._registration_lock:
             return operation in self._registrations
+
+    def prepared_native_operation_lease(self, operation: str, socket_path: str) -> tuple[int, str]:
+        """Return the exact generation/socket lease for one prepared operation."""
+        with self._registration_lock:
+            registered = self._registrations.get(operation)
+            if registered is None or registered[2] != socket_path:
+                raise ValueError("synthetic native operation lease is unavailable")
+            return registered[0], registered[2]
+
+    def abandon_native_operation(self, operation: str, generation: int, socket_path: str) -> bool:
+        """Retire only the still-owned generation/socket lease for one scenario."""
+        with self._registration_lock:
+            registered = self._registrations.get(operation)
+            if (
+                registered is None
+                or registered[0] != generation
+                or registered[2] != socket_path
+            ):
+                return False
+            del self._registrations[operation]
+            return True
 
     def _retire_native_operation(self, operation: str, generation: int) -> bool:
         """Retire only the registration generation owned by one listener."""
@@ -346,6 +367,8 @@ class SyntheticAccountServer(ThreadingHTTPServer):
             with self._registration_lock:
                 registered = self._registrations.get(operation)
                 mode = registered[1] if registered is not None and registered[0] == generation else None
+            if mode is None:
+                return
             expected = ({
                 "operationFingerprint": "sha256:" + operation,
                 "nativeOriginAttested": True,
