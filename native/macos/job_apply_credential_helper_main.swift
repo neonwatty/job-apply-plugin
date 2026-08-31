@@ -59,20 +59,35 @@ enum IsolatedCredentialIntegrationMain {
             guard arguments[10] == "new" || expectedReused,
                   expectedReference == (try MacOSProtectedCredentialHelper.credentialReference(strategy: strategy, realmRef: realm))
             else { throw ProtectedCredentialError.invalidBinding }
-            let bridge = try MacOSBrowserSecureInputBridge(expected: NativeBrowserBinding(
-                browserProcessIdentifier: browserPID, targetURL: target,
-                realmReference: realm, controlFingerprint: control,
-                operationFingerprint: operation,
-                nativeAttestationSocketPath: arguments[11]
-            ))
-            let receipt = try helper.provisionOrReuseAndFill(
-                strategy: strategy, realmRef: realm, isolatedNamespace: namespace,
-                secureInput: bridge
-            )
-            guard receipt.credentialReference == expectedReference,
-                  receipt.reused == expectedReused, receipt.filled,
-                  bridge.completedEffect
-            else { throw ProtectedCredentialError.invalidBinding }
+            do {
+                let bridge = try MacOSBrowserSecureInputBridge(expected: NativeBrowserBinding(
+                    browserProcessIdentifier: browserPID, targetURL: target,
+                    realmReference: realm, controlFingerprint: control,
+                    operationFingerprint: operation,
+                    nativeAttestationSocketPath: arguments[11]
+                ))
+                let receipt = try helper.provisionOrReuseAndFill(
+                    strategy: strategy, realmRef: realm, isolatedNamespace: namespace,
+                    secureInput: bridge
+                )
+                guard receipt.credentialReference == expectedReference,
+                      receipt.reused == expectedReused, receipt.filled,
+                      bridge.completedEffect
+                else { throw ProtectedCredentialError.invalidBinding }
+            } catch BrowserBridgeDiagnostic.failedClosed(let stage) {
+                let status = [
+                    "browser_process": 43, "browser_identity": 44,
+                    "accessibility_trust": 45, "browser_activation": 46,
+                    "focused_control": 47,
+                ][stage] ?? 48
+                Darwin.exit(Int32(status))
+            } catch ProtectedCredentialError.invalidBinding {
+                Darwin.exit(40)
+            } catch ProtectedCredentialError.keychain {
+                Darwin.exit(41)
+            } catch ProtectedCredentialError.secureInput {
+                Darwin.exit(42)
+            }
         case "oracle-email-only":
             guard arguments.count == 18,
                   let browserPID = Int32(arguments[2]),

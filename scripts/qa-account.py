@@ -134,7 +134,10 @@ process.exit(0);
     time.sleep(0.15)
 
 
-def _native_provider(binary: Path, browser_process_identifier: int, namespace: str, native_channels: dict[str, object]):
+def _native_provider(
+    binary: Path, browser_process_identifier: int, namespace: str,
+    native_channels: dict[str, object], helper_stages: dict[str, str],
+):
     provisioned: set[str] = set()
 
     def bridge(request: dict) -> dict:
@@ -156,7 +159,11 @@ def _native_provider(binary: Path, browser_process_identifier: int, namespace: s
             capture_output=True, check=False,
         )
         if completed.returncode or completed.stdout or completed.stderr:
+            helper_stages[operation] = (
+                f"exit_{completed.returncode}" if completed.returncode else "unexpected_output"
+            )
             raise ValueError("native protected operation failed closed")
+        helper_stages[operation] = "completed"
         provisioned.add(expected)
         return {
             "providerId": "macos-keychain", "credentialRef": expected,
@@ -248,6 +255,7 @@ def _workday_scenario_result(scenario: str, actual: dict) -> dict:
             "nativeTransitionAdvanced": actual.get("qaNativeTransitionAdvanced"),
             "observationPending": actual.get("qaObservationPending"),
             "nativeStage": actual.get("qaNativeStage"),
+            "helperStage": actual.get("qaHelperStage"),
         }
     return evaluated
 
@@ -274,7 +282,10 @@ def verify_all(provider: str, *, owner_approved_visible_browser_tests: bool = Fa
             try:
                 namespace = "test_" + base.name.replace("-", "_")
                 native_channels = {}
-                native_provider = _native_provider(binary, browser_process.pid, namespace, native_channels)
+                helper_stages = {}
+                native_provider = _native_provider(
+                    binary, browser_process.pid, namespace, native_channels, helper_stages,
+                )
                 results = []
                 for scenario in ORACLE.SCENARIOS:
                     tenant = "success" if scenario == "reuse" else scenario.replace("_", "-")
@@ -307,6 +318,9 @@ def verify_all(provider: str, *, owner_approved_visible_browser_tests: bool = Fa
                     )
                     actual["qaNativeStage"] = server.native_stage(
                         operation.removeprefix("sha256:")
+                    )
+                    actual["qaHelperStage"] = helper_stages.get(
+                        operation.removeprefix("sha256:"), "not_started"
                     )
                     evaluated = _workday_scenario_result(scenario, actual)
                     results.append({**evaluated, "evidenceSource": "browser-store-native"})

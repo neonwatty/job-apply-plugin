@@ -72,6 +72,9 @@ class MacOSCredentialHelperTests(unittest.TestCase):
         self.assertNotIn("URLSession", source)
         self.assertIn("secureValueIsEmpty(after.element)", source)
         self.assertLess(source.rindex("secureValueIsEmpty(after.element)"), source.rindex("publishVerifiedObservation()"))
+        main = (ROOT / "native/macos/job_apply_credential_helper_main.swift").read_text(encoding="utf-8")
+        for status in range(40, 49):
+            self.assertIn(str(status), main)
 
     def test_native_attestation_uses_authenticated_local_peer_not_inherited_descriptor(self):
         bridge = (ROOT / "native/macos/job_apply_browser_bridge.swift").read_text(encoding="utf-8")
