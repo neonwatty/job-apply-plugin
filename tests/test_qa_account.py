@@ -58,6 +58,15 @@ class SyntheticAccountQATests(unittest.TestCase):
         })
         self.assertNotIn("@", json.dumps(result))
 
+    def test_visible_browser_setup_is_bounded_without_retrying_native_effects(self):
+        source = (ROOT / "scripts/qa-account.py").read_text(encoding="utf-8")
+        server = (ROOT / "qa/account_server.py").read_text(encoding="utf-8")
+        self.assertEqual(source.count("timeout=12"), 2)
+        self.assertEqual(source.count("for _ in range(3):"), 2)
+        self.assertIn("context.pages()[0] ?? await context.newPage()", source)
+        self.assertIn("listener.settimeout(45)", server)
+        self.assertEqual(source.count("provider.provision_or_reuse_and_fill"), 0)
+
     @unittest.skipUnless(
         os.environ.get("JOB_APPLY_OWNER_APPROVED_VISIBLE_BROWSER_TESTS") == "1",
         "visible browser tests require dedicated opt-in",

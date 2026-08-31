@@ -323,7 +323,10 @@ class SyntheticAccountServer(ThreadingHTTPServer):
     def _receive_native_attestation(self, listener: socket.socket, operation: str, generation: int, socket_path: str, socket_root: str) -> None:
         channel = None
         try:
-            listener.settimeout(5)
+            # Browser/CDP preparation is bounded separately by the harness and
+            # happens after this exact operation is registered so the page can
+            # be served. Keep the one-use listener alive across that window.
+            listener.settimeout(45)
             channel, _ = listener.accept()
             channel.settimeout(5)
             self._native_stages[operation] = "peer_connected"

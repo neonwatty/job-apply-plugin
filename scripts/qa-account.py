@@ -92,23 +92,30 @@ def _focus_browser(cdp_url: str, url: str) -> None:
 import { chromium } from "playwright";
 const browser = await chromium.connectOverCDP(process.argv[2]);
 const context = browser.contexts()[0];
-for (const page of context.pages()) await page.close();
-const page = await context.newPage();
-await page.goto(process.argv[1]);
+const page = context.pages()[0] ?? await context.newPage();
+page.setDefaultTimeout(5000);
+await page.goto(process.argv[1], {waitUntil: "domcontentloaded", timeout: 10000});
 await page.getByRole("button", {name: "Focus protected synthetic control"}).click();
 await page.locator("#job-apply-secure-control").evaluate((element) => element.focus());
 await page.bringToFront();
 process.exit(0);
 '''
-    completed = subprocess.run(
-        ["node", "--input-type=module", "--eval", script, url, cdp_url],
-        cwd=ROOT, capture_output=True, text=True, check=False,
-    )
-    if completed.returncode or completed.stderr:
-        raise ValueError("synthetic browser observation failed closed")
-    if completed.stdout:
-        raise ValueError("synthetic browser focus emitted output")
-    time.sleep(0.15)
+    for _ in range(3):
+        try:
+            completed = subprocess.run(
+                ["node", "--input-type=module", "--eval", script, url, cdp_url],
+                cwd=ROOT, capture_output=True, text=True, check=False, timeout=12,
+            )
+        except subprocess.TimeoutExpired:
+            time.sleep(0.1)
+            continue
+        if completed.stdout:
+            raise ValueError("synthetic browser focus emitted output")
+        if not completed.returncode and not completed.stderr:
+            time.sleep(0.15)
+            return
+        time.sleep(0.1)
+    raise ValueError("synthetic browser observation failed closed")
 
 
 def _open_oracle_browser(cdp_url: str, url: str) -> None:
@@ -116,22 +123,29 @@ def _open_oracle_browser(cdp_url: str, url: str) -> None:
 import { chromium } from "playwright";
 const browser = await chromium.connectOverCDP(process.argv[2]);
 const context = browser.contexts()[0];
-for (const page of context.pages()) await page.close();
-const page = await context.newPage();
-await page.goto(process.argv[1]);
+const page = context.pages()[0] ?? await context.newPage();
+page.setDefaultTimeout(5000);
+await page.goto(process.argv[1], {waitUntil: "domcontentloaded", timeout: 10000});
 await page.locator("#job-apply-email-control").waitFor();
 await page.locator("#job-apply-focus-decoy").focus();
 if (await page.evaluate(() => document.activeElement?.id) !== "job-apply-focus-decoy") process.exit(7);
 await page.bringToFront();
 process.exit(0);
 '''
-    completed = subprocess.run(
-        ["node", "--input-type=module", "--eval", script, url, cdp_url],
-        cwd=ROOT, capture_output=True, text=True, check=False,
-    )
-    if completed.returncode or completed.stdout or completed.stderr:
-        raise ValueError("synthetic Oracle browser observation failed closed")
-    time.sleep(0.15)
+    for _ in range(3):
+        try:
+            completed = subprocess.run(
+                ["node", "--input-type=module", "--eval", script, url, cdp_url],
+                cwd=ROOT, capture_output=True, text=True, check=False, timeout=12,
+            )
+        except subprocess.TimeoutExpired:
+            time.sleep(0.1)
+            continue
+        if not completed.returncode and not completed.stdout and not completed.stderr:
+            time.sleep(0.15)
+            return
+        time.sleep(0.1)
+    raise ValueError("synthetic Oracle browser observation failed closed")
 
 
 def _native_provider(
