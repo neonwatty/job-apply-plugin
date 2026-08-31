@@ -385,6 +385,23 @@ private final class OracleEmailOnlyEffect {
         return true
     }
 
+    private func activateReviewedBrowser() -> Bool {
+        // A freshly launched signed browser can briefly exist before AppKit and
+        // Security.framework expose a consistent running/active view. Poll only
+        // this pre-effect proof; no form control is read or mutated here.
+        for _ in 0..<20 {
+            if kill(binding.browserProcessIdentifier, 0) == 0,
+               AXIsProcessTrusted(), signedBrowser(),
+               let running = NSRunningApplication(
+                    processIdentifier: binding.browserProcessIdentifier
+               ), running.activate(options: [.activateAllWindows]) {
+                return true
+            }
+            usleep(50_000)
+        }
+        return false
+    }
+
     private func reviewedControls(_ form: AXUIElement) throws ->
         (email: AXUIElement, terms: AXUIElement, document: AXUIElement, next: AXUIElement) {
         let all = elements(form)
@@ -435,10 +452,7 @@ private final class OracleEmailOnlyEffect {
     }
 
     func prepare() throws -> [String: Any] {
-        guard !binding.isSynthetic, kill(binding.browserProcessIdentifier, 0) == 0,
-              signedBrowser(), AXIsProcessTrusted(),
-              let running = NSRunningApplication(processIdentifier: binding.browserProcessIdentifier),
-              running.activate(options: [.activateAllWindows])
+        guard !binding.isSynthetic, activateReviewedBrowser()
         else { throw AccountFlowHelperError.invalidBinding }
         usleep(150_000)
         let page = try boundPage()
@@ -608,9 +622,7 @@ private final class OracleEmailOnlyEffect {
     }
 
     func perform(email: String) throws {
-        guard kill(binding.browserProcessIdentifier, 0) == 0, signedBrowser(), AXIsProcessTrusted(),
-              let running = NSRunningApplication(processIdentifier: binding.browserProcessIdentifier),
-              running.activate(options: [.activateAllWindows])
+        guard activateReviewedBrowser()
         else { throw AccountFlowHelperError.browserBinding }
         usleep(150_000)
         let page: AXUIElement
