@@ -7317,6 +7317,227 @@ class Store:
             self._clear_account_operation_locked(operation)
             return response
 
+    def _validate_live_email_only_stable_locked(
+        self, request: dict[str, Any]
+    ) -> dict[str, Any]:
+        binding = request["binding"]
+        job = self._load_jobs_document()["jobs"].get(binding["jobId"])
+        if (
+            job is None or job.get("deletedAt") is not None
+            or not (
+                (job["status"] == "in_progress" and job["revision"] == binding["jobRevision"])
+                or (job["status"] == "ready" and job["revision"] + 1 == binding["jobRevision"])
+            )
+        ):
+            raise StoreError("live email-only stable job binding drifted")
+        if job["url"] != request["portalUrl"]:
+            raise StoreError("live email-only portal URL drifted")
+        realm = ACCOUNTS_MODULE.normalize_realm(job["url"])
+        settings = self._load_automation_settings_document()["settings"]
+        account = self._load_employer_accounts_document()["accounts"].get(binding["realmRef"])
+        if (
+            realm.get("status") != "resolved"
+            or realm.get("adapterId") != "oracle-recruiting"
+            or realm.get("realmRef") != binding["realmRef"]
+            or account is None or account["descriptor"] != realm.get("descriptor")
+            or account["revision"] != binding["accountRevision"]
+            or settings["revision"] != binding["settingsRevision"]
+        ):
+            raise StoreError("live email-only canonical binding drifted")
+        if not settings["enabled"] or not settings["automaticAccountCreation"]:
+            raise StoreError("account automation is disabled")
+        if (
+            account.get("flowKind") != ACCOUNTS_MODULE.FLOW_EMAIL_ONLY
+            or account.get("credentialRequired") is not False
+            or account["providerId"] is not None
+            or account["credentialRef"] is not None
+            or account["credentialVersion"] is not None
+        ):
+            raise StoreError("live email-only account metadata is invalid")
+        if account["lifecycleState"] != "discovered":
+            raise StoreError("live email-only account cannot be attempted again")
+        if account["signupEmailOverride"] is None and settings["signupEmail"] is None:
+            raise StoreError("effective signup email is required")
+        return {"job": job, "realm": realm, "settings": settings, "account": account}
+
+    def revalidate_live_email_only_stable_scope(
+        self, incoming: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Recheck a claim-independent final scope without revealing values."""
+        try:
+            request = CANARY_EXECUTOR_MODULE.validate_stable_live_request(incoming)
+        except CANARY_EXECUTOR_MODULE.LiveCanaryExecutorError as error:
+            raise StoreError(str(error)) from None
+        self.initialize()
+        self._ensure_account_control_documents()
+        self._ensure_coordinator_files()
+        with exclusive_file_lock(self.store_lock_path):
+            current = self._validate_live_email_only_stable_locked(request)
+            operation = self._load_account_operation_journal()["operation"]
+            if operation is not None:
+                resumable = {
+                    "jobId": current["job"]["id"],
+                    "jobRevision": request["binding"]["jobRevision"],
+                    "realmRef": current["account"]["realmRef"],
+                    "accountRevision": current["account"]["revision"],
+                    "settingsRevision": current["settings"]["revision"],
+                    "stage": "prepared", "outcomeCode": "observed_pending",
+                }
+                if any(operation.get(field) != value for field, value in resumable.items()):
+                    raise StoreError("account operation requires explicit recovery")
+            return {
+                "valid": True, "jobId": current["job"]["id"],
+                "jobRevision": request["binding"]["jobRevision"],
+                "accountRevision": current["account"]["revision"],
+                "settingsRevision": current["settings"]["revision"],
+                "finalActionAuthorized": False,
+            }
+
+    def revalidate_live_email_only_preparation_scope(
+        self, scope: dict[str, Any], portal_url: str, portal_name: str,
+        realm_descriptor: str,
+    ) -> dict[str, Any]:
+        """Recheck stable canonical scope before any read-only page access."""
+        try:
+            exact = CANARY_EXECUTOR_MODULE.CANARY.validate_preparation_scope(scope)
+        except CANARY_EXECUTOR_MODULE.CANARY.CanaryAuthorityError as error:
+            raise StoreError(str(error)) from None
+        try:
+            portal = urlsplit(portal_url)
+            port = portal.port
+        except (TypeError, ValueError):
+            raise StoreError("live email-only preparation portal binding drifted") from None
+        if (
+            not isinstance(portal_url, str) or not isinstance(portal_name, str)
+            or portal.scheme != "https" or not portal.hostname
+            or portal.username is not None or portal.password is not None
+            or portal.query or portal.fragment or not portal.path.startswith("/")
+            or (port is not None and port != 443)
+            or self._trusted_fill_fingerprint(portal_url) != exact["portalFingerprint"]
+            or self._trusted_fill_fingerprint(portal_name) != exact["portalNameFingerprint"]
+        ):
+            raise StoreError("live email-only preparation portal binding drifted")
+        self.initialize()
+        self._ensure_account_control_documents()
+        self._ensure_coordinator_files()
+        with exclusive_file_lock(self.store_lock_path):
+            job = self._load_jobs_document()["jobs"].get(exact["jobId"])
+            if (
+                job is None or job.get("deletedAt") is not None
+                or job["url"] != portal_url
+                or not (
+                    (job["status"] == "in_progress" and job["revision"] == exact["jobRevision"])
+                    or (job["status"] == "ready" and job["revision"] + 1 == exact["jobRevision"])
+                )
+            ):
+                raise StoreError("live email-only preparation job binding drifted")
+            realm = ACCOUNTS_MODULE.normalize_realm(job["url"])
+            settings = self._load_automation_settings_document()["settings"]
+            account = self._load_employer_accounts_document()["accounts"].get(exact["realmRef"])
+            if (
+                realm.get("status") != "resolved" or realm.get("adapterId") != "oracle-recruiting"
+                or realm.get("realmRef") != exact["realmRef"] or account is None
+                or realm.get("descriptor") != realm_descriptor
+                or account.get("descriptor") != realm.get("descriptor")
+                or account.get("revision") != exact["accountRevision"]
+                or settings.get("revision") != exact["settingsRevision"]
+                or account.get("lifecycleState") != "discovered"
+                or account.get("flowKind") != ACCOUNTS_MODULE.FLOW_EMAIL_ONLY
+                or account.get("credentialRequired") is not False
+                or not settings.get("enabled") or not settings.get("automaticAccountCreation")
+                or (account.get("signupEmailOverride") is None and settings.get("signupEmail") is None)
+            ):
+                raise StoreError("live email-only preparation canonical binding drifted")
+            if self._load_account_operation_journal()["operation"] is not None:
+                raise StoreError("account operation requires explicit recovery")
+            return {
+                "valid": True, "jobId": job["id"],
+                "jobRevision": exact["jobRevision"], "finalActionAuthorized": False,
+            }
+
+    def acquire_or_recover_live_email_only_claim(
+        self, incoming: dict[str, Any], *, owner_label: str,
+    ) -> dict[str, Any]:
+        """Create fresh short-lived execution authority after stable approval."""
+        stable = self.revalidate_live_email_only_stable_scope(incoming)
+        status = self.claim_status()["claim"]
+        if status is None:
+            job = self.get_job(stable["jobId"])
+            if job["status"] != "ready":
+                raise StoreError("live email-only claim cannot be acquired")
+            acquired = self.acquire_ready_job(job["id"], owner_label, job["revision"])
+            claim = acquired["claim"]
+        elif status["jobId"] != stable["jobId"]:
+            raise StoreError("another job claim blocks live email-only execution")
+        elif status["expired"]:
+            claim = self.recover_claim(stable["jobId"], owner_label)["claim"]
+        elif status["ownerLabel"] != owner_label.strip():
+            raise StoreError("live email-only claim belongs to another owner")
+        else:
+            claim = status
+        # Close the acquisition/recovery race by rechecking every stable field.
+        self.revalidate_live_email_only_stable_scope(incoming)
+        return {"claimId": claim["claimId"], "expiresAt": claim["expiresAt"]}
+
+    def prepare_live_email_only_account_execution(
+        self, incoming: dict[str, Any], binding: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Durably stage one exact attempt before consuming owner authority."""
+
+        try:
+            stable = CANARY_EXECUTOR_MODULE.validate_stable_live_request(incoming)
+            exact_binding = CANARY_EXECUTOR_MODULE.CANARY.validate_binding(binding)
+        except (
+            CANARY_EXECUTOR_MODULE.LiveCanaryExecutorError,
+            CANARY_EXECUTOR_MODULE.CANARY.CanaryAuthorityError,
+        ) as error:
+            raise StoreError(str(error)) from None
+        if CANARY_EXECUTOR_MODULE.CANARY._without_claim(exact_binding) != stable["binding"]:
+            raise StoreError("live email-only execution binding drifted")
+        self.initialize()
+        self._ensure_account_control_documents()
+        self._ensure_coordinator_files()
+        with exclusive_file_lock(self.store_lock_path):
+            claim = self._load_coordinator_document()["claim"]
+            job = self._load_jobs_document()["jobs"].get(exact_binding["jobId"])
+            account = self._load_employer_accounts_document()["accounts"].get(
+                exact_binding["realmRef"]
+            )
+            settings = self._load_automation_settings_document()["settings"]
+            if (
+                claim is None or claim["jobId"] != exact_binding["jobId"]
+                or claim["claimId"] != exact_binding["claimId"]
+                or self._now_datetime() >= self._parse_time(claim["expiresAt"])
+                or job is None or job.get("deletedAt") is not None
+                or job["status"] != "in_progress"
+                or job["revision"] != exact_binding["jobRevision"]
+                or job["url"] != stable["portalUrl"]
+                or account is None or account["revision"] != exact_binding["accountRevision"]
+                or settings["revision"] != exact_binding["settingsRevision"]
+                or account["lifecycleState"] != "discovered"
+            ):
+                raise StoreError("live email-only execution preparation drifted")
+            operation = self._load_account_operation_journal()["operation"]
+            expected = {
+                "jobId": job["id"], "jobRevision": job["revision"],
+                "claimId": claim["claimId"], "realmRef": account["realmRef"],
+                "accountRevision": account["revision"],
+                "settingsRevision": settings["revision"], "stage": "prepared",
+                "outcomeCode": "observed_pending",
+            }
+            if operation is not None:
+                if any(operation.get(field) != value for field, value in expected.items()):
+                    raise StoreError("account operation requires explicit recovery")
+                return {"prepared": True, "reused": True}
+            operation_id = str(uuid.uuid4())
+            atomic_write_json(
+                self.account_operation_journal_path,
+                {"schemaVersion": SCHEMA_VERSION, "operation": {
+                    "operationId": operation_id, **expected, "startedAt": self._now(),
+                }},
+            )
+            return {"prepared": True, "reused": False}
+
     def execute_live_email_only_account(
         self, incoming: dict[str, Any], *, authority: Any, provider: Any,
         now: datetime,
@@ -7342,8 +7563,7 @@ class Store:
         self._ensure_coordinator_files()
         binding = request["binding"]
         with exclusive_file_lock(self.store_lock_path):
-            if self._load_account_operation_journal()["operation"] is not None:
-                raise StoreError("account operation requires explicit recovery")
+            prepared_operation = self._load_account_operation_journal()["operation"]
             claim = self._load_coordinator_document()["claim"]
             job = self._load_jobs_document()["jobs"].get(binding["jobId"])
             if (
@@ -7383,19 +7603,32 @@ class Store:
             effective_email = account["signupEmailOverride"] or settings["signupEmail"]
             if effective_email is None:
                 raise StoreError("effective signup email is required")
-            operation_id = str(uuid.uuid4())
-            operation_fingerprint = "sha256:" + hashlib.sha256(operation_id.encode("ascii")).hexdigest()
-            operation = {
-                "operationId": operation_id, "jobId": job["id"],
-                "jobRevision": job["revision"], "claimId": claim["claimId"],
-                "realmRef": account["realmRef"], "accountRevision": account["revision"],
+            expected_operation = {
+                "jobId": job["id"], "jobRevision": job["revision"],
+                "claimId": claim["claimId"], "realmRef": account["realmRef"],
+                "accountRevision": account["revision"],
                 "settingsRevision": settings["revision"], "stage": "prepared",
-                "outcomeCode": "observed_pending", "startedAt": self._now(),
+                "outcomeCode": "observed_pending",
             }
-            atomic_write_json(
-                self.account_operation_journal_path,
-                {"schemaVersion": SCHEMA_VERSION, "operation": operation},
-            )
+            if prepared_operation is None:
+                operation_id = str(uuid.uuid4())
+                operation = {
+                    "operationId": operation_id, **expected_operation,
+                    "startedAt": self._now(),
+                }
+                atomic_write_json(
+                    self.account_operation_journal_path,
+                    {"schemaVersion": SCHEMA_VERSION, "operation": operation},
+                )
+            else:
+                if any(
+                    prepared_operation.get(field) != value
+                    for field, value in expected_operation.items()
+                ):
+                    raise StoreError("account operation requires explicit recovery")
+                operation = prepared_operation
+                operation_id = operation["operationId"]
+            operation_fingerprint = "sha256:" + hashlib.sha256(operation_id.encode("ascii")).hexdigest()
             # The hash-only T007 ledger is consumed after the write-ahead burn
             # and before signup_in_progress or any native browser effect.
             authority.attempt(request["capabilityRef"], binding, now=now)

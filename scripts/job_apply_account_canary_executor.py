@@ -54,6 +54,20 @@ def _accounts_module():
 ACCOUNTS = _accounts_module()
 
 
+def _canary_module():
+    spec = importlib.util.spec_from_file_location(
+        "job_apply_account_canary_executor_authority",
+        Path(__file__).with_name("job_apply_account_canary.py"),
+    )
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+CANARY = _canary_module()
+
+
 def _fingerprint(value: str) -> str:
     return "sha256:" + hashlib.sha256(value.encode("utf-8")).hexdigest()
 
@@ -132,6 +146,27 @@ def validate_live_request(value: Any) -> dict[str, Any]:
     return {**value, "portalUrl": canonical_url}
 
 
+def validate_stable_live_request(value: Any) -> dict[str, Any]:
+    """Validate the claim-independent, final owner-approved request."""
+    if not isinstance(value, dict) or "capabilityRef" in value:
+        raise LiveCanaryExecutorError("stable live canary request is invalid")
+    binding = value.get("binding")
+    try:
+        final_scope = CANARY.validate_final_scope(binding)
+        exact_binding = CANARY.execution_binding(
+            final_scope, "00000000-0000-4000-8000-000000000000"
+        )
+        exact = validate_live_request({
+            **value, "binding": exact_binding,
+            "capabilityRef": "canary_" + "0" * 64,
+        })
+    except (CANARY.CanaryAuthorityError, LiveCanaryExecutorError) as error:
+        raise LiveCanaryExecutorError(str(error)) from None
+    exact.pop("capabilityRef")
+    exact["binding"] = final_scope
+    return exact
+
+
 class LiveAccountCanaryExecutor:
     """Closed Store-owned T007 boundary with one native email-only adapter."""
 
@@ -146,4 +181,24 @@ class LiveAccountCanaryExecutor:
             raise LiveCanaryExecutorError("live account canary native boundary is unavailable")
         return self._store.execute_live_email_only_account(
             exact, authority=self._authority, provider=self._native_provider, now=now,
+        )
+
+    def execute_approved(
+        self, request: dict[str, Any], approval_ref: str, *,
+        owner_label: str, now: datetime,
+    ) -> dict[str, Any]:
+        """Acquire/recover, issue, and execute contiguously after stable approval."""
+        exact = validate_stable_live_request(request)
+        claim = self._store.acquire_or_recover_live_email_only_claim(
+            exact, owner_label=owner_label,
+        )
+        binding = CANARY.execution_binding(exact["binding"], claim["claimId"])
+        # Make the top-level attempt recoverable before the separately durable
+        # authority ledger is consumed. A retry may safely resume this exact
+        # prepared operation only while the approval remains unconsumed.
+        self._store.prepare_live_email_only_account_execution(exact, binding)
+        capability = self._authority.issue(binding, approval_ref, now=now)
+        return self.execute(
+            {**exact, "binding": binding, "capabilityRef": capability["capabilityRef"]},
+            now=now,
         )
