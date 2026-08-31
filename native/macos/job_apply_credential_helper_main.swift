@@ -111,6 +111,18 @@ enum IsolatedCredentialIntegrationMain {
                 Darwin.exit(26)
             } catch AccountFlowHelperError.clearingEffect {
                 Darwin.exit(27)
+            } catch AccountFlowHelperError.requestBinding {
+                Darwin.exit(28)
+            } catch AccountFlowHelperError.browserBinding {
+                Darwin.exit(29)
+            } catch AccountFlowHelperError.pageBinding {
+                Darwin.exit(30)
+            } catch AccountFlowHelperError.controlBinding {
+                Darwin.exit(31)
+            } catch AccountFlowHelperError.stateBinding {
+                Darwin.exit(32)
+            } catch AccountFlowHelperError.causalBinding {
+                Darwin.exit(33)
             }
         case "oracle-email-only-prepare":
             guard arguments.count == 6, let browserPID = Int32(arguments[2])

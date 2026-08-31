@@ -7,6 +7,15 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class MacOSAccountFlowHelperTests(unittest.TestCase):
+    def test_native_failure_statuses_distinguish_value_free_binding_stages(self):
+        source = (ROOT / "native/macos/job_apply_credential_helper_main.swift").read_text(encoding="utf-8")
+        for case_name, status in (
+            ("requestBinding", 28), ("browserBinding", 29), ("pageBinding", 30),
+            ("controlBinding", 31), ("stateBinding", 32), ("causalBinding", 33),
+        ):
+            self.assertIn(f"AccountFlowHelperError.{case_name}", source)
+            self.assertIn(f"Darwin.exit({status})", source)
+
     # These contract tests are intentionally quiet. Visible/native integration
     # lives behind the separately owner-approved qa-account gate.
     def test_native_email_only_contract_is_value_free_and_closed(self):

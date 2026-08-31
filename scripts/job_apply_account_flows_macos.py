@@ -263,7 +263,9 @@ class NativeMacOSAccessibilityProvider:
             attestation = self._read_attestation(listener, child.pid, operation) if listener is not None else None
             stdout, stderr = child.communicate(timeout=10)
             if child.returncode or stdout or stderr:
-                status = child.returncode if child.returncode in {21, 22, 23, 24, 25, 26, 27} else 20
+                status = child.returncode if child.returncode in {
+                    21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+                } else 20
                 raise ValueError(f"native Oracle account flow failed closed ({status})")
             if attestation is None:
                 observation_url = f"http://127.0.0.1:{portal.port}/observations/by-operation/{operation_hex}"

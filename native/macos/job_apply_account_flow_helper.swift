@@ -8,6 +8,7 @@ import Security
 enum AccountFlowHelperError: Error {
     case invalidBinding, privateChannel, effectFailed
     case emailEffect, termsEffect, nextEffect, clearingEffect
+    case requestBinding, browserBinding, pageBinding, controlBinding, stateBinding, causalBinding
 }
 
 enum OracleCausalSuccessorDecision: Equatable {
@@ -209,7 +210,11 @@ struct MacOSAccessibilityAccountFlowHelper {
     static let providerIdentifier = "macos-accessibility"
 
     func execute(_ binding: NativeEmailOnlyBinding, privateEmailDescriptor: Int32) throws {
-        try binding.validate()
+        do {
+            try binding.validate()
+        } catch {
+            throw AccountFlowHelperError.requestBinding
+        }
         var emailBytes = Data()
         var chunk = [UInt8](repeating: 0, count: 256)
         while emailBytes.count <= 254 {
@@ -606,41 +611,57 @@ private final class OracleEmailOnlyEffect {
         guard kill(binding.browserProcessIdentifier, 0) == 0, signedBrowser(), AXIsProcessTrusted(),
               let running = NSRunningApplication(processIdentifier: binding.browserProcessIdentifier),
               running.activate(options: [.activateAllWindows])
-        else { throw AccountFlowHelperError.invalidBinding }
+        else { throw AccountFlowHelperError.browserBinding }
         usleep(150_000)
-        let page = try boundPage()
+        let page: AXUIElement
+        do {
+            page = try boundPage()
+        } catch {
+            throw AccountFlowHelperError.pageBinding
+        }
         let pageElements = elements(page)
         guard pageElements.filter({ string($0, kAXSubroleAttribute as CFString) == (kAXSecureTextFieldSubrole as String) }).isEmpty
-        else { throw AccountFlowHelperError.invalidBinding }
-        let accountForm = try exactAccountForm(page)
-        let formElements = elements(accountForm)
-        let emailControl = try (binding.isSynthetic
-            ? exact(formElements, id: "job-apply-email-control")
-            : exact(formElements, fingerprint: binding.emailControlFingerprint))
-        let termsControl = try (binding.isSynthetic
-            ? exact(formElements, id: "job-apply-terms-control")
-            : exact(formElements, fingerprint: binding.termsControlFingerprint))
-        _ = try (binding.isSynthetic
-            ? exact(formElements, id: "job-apply-terms-document")
-            : exact(formElements, fingerprint: binding.termsDocumentFingerprint))
-        let nextControl = try (binding.isSynthetic
-            ? exact(formElements, id: "job-apply-next-control")
-            : exact(formElements, fingerprint: binding.nextControlFingerprint))
-        let finalControl = binding.isSynthetic ? try exact(formElements, id: "job-apply-final-tripwire") : nil
-        if !binding.isSynthetic {
-            let reviewed = try reviewedControls(accountForm)
-            guard reviewedFingerprint(reviewed.email) == binding.emailControlFingerprint,
-                  reviewedFingerprint(reviewed.terms) == binding.termsControlFingerprint,
-                  reviewedFingerprint(reviewed.document) == binding.termsDocumentFingerprint,
-                  reviewedFingerprint(reviewed.next) == binding.nextControlFingerprint
-            else { throw AccountFlowHelperError.invalidBinding }
+        else { throw AccountFlowHelperError.controlBinding }
+        let accountForm: AXUIElement
+        let emailControl: AXUIElement
+        let termsControl: AXUIElement
+        let nextControl: AXUIElement
+        let finalControl: AXUIElement?
+        do {
+            accountForm = try exactAccountForm(page)
+            let formElements = elements(accountForm)
+            emailControl = try (binding.isSynthetic
+                ? exact(formElements, id: "job-apply-email-control")
+                : exact(formElements, fingerprint: binding.emailControlFingerprint))
+            termsControl = try (binding.isSynthetic
+                ? exact(formElements, id: "job-apply-terms-control")
+                : exact(formElements, fingerprint: binding.termsControlFingerprint))
+            _ = try (binding.isSynthetic
+                ? exact(formElements, id: "job-apply-terms-document")
+                : exact(formElements, fingerprint: binding.termsDocumentFingerprint))
+            nextControl = try (binding.isSynthetic
+                ? exact(formElements, id: "job-apply-next-control")
+                : exact(formElements, fingerprint: binding.nextControlFingerprint))
+            finalControl = binding.isSynthetic ? try exact(formElements, id: "job-apply-final-tripwire") : nil
+            if !binding.isSynthetic {
+                let reviewed = try reviewedControls(accountForm)
+                guard reviewedFingerprint(reviewed.email) == binding.emailControlFingerprint,
+                      reviewedFingerprint(reviewed.terms) == binding.termsControlFingerprint,
+                      reviewedFingerprint(reviewed.document) == binding.termsDocumentFingerprint,
+                      reviewedFingerprint(reviewed.next) == binding.nextControlFingerprint
+                else { throw AccountFlowHelperError.controlBinding }
+            }
+        } catch AccountFlowHelperError.controlBinding {
+            throw AccountFlowHelperError.controlBinding
+        } catch {
+            throw AccountFlowHelperError.controlBinding
         }
         guard string(emailControl, kAXRoleAttribute as CFString) == (kAXTextFieldRole as String),
               string(termsControl, kAXRoleAttribute as CFString) == (kAXCheckBoxRole as String),
               string(termsControl, kAXValueAttribute as CFString) == "0",
               string(nextControl, kAXRoleAttribute as CFString) == (kAXButtonRole as String),
               finalControl == nil || string(finalControl!, kAXEnabledAttribute as CFString) != "1"
-        else { throw AccountFlowHelperError.invalidBinding }
+        else { throw AccountFlowHelperError.stateBinding }
         guard string(emailControl, kAXValueAttribute as CFString) == "" else { throw AccountFlowHelperError.emailEffect }
         var effectCompleted = false
         defer {
@@ -662,7 +683,7 @@ private final class OracleEmailOnlyEffect {
         let preActionRealmPages = binding.isSynthetic ? [:] : (realmPageSnapshot() ?? [:])
         let boundPageIdentity = String(CFHash(page))
         if !binding.isSynthetic {
-            guard preActionRealmPages[boundPageIdentity] != nil else { throw AccountFlowHelperError.invalidBinding }
+            guard preActionRealmPages[boundPageIdentity] != nil else { throw AccountFlowHelperError.causalBinding }
         }
         guard AXUIElementPerformAction(nextControl, kAXPressAction as CFString) == .success
         else { throw AccountFlowHelperError.nextEffect }
