@@ -382,6 +382,27 @@ class CleanupProposalTests(unittest.TestCase):
         ]
         self.assertEqual(MATCH.propose_cleanup(candidates=records), [])
 
+    def test_cleanup_requires_one_unique_winner_for_each_pending_duplicate(self):
+        shared_question = "Does the applicant have permission to work?"
+        records = [
+            candidate("a", shared_question),
+            candidate("b", shared_question),
+            candidate(
+                "c",
+                shared_question,
+                state="missing",
+                review_status="pending",
+                value_state="missing",
+            ),
+        ]
+        before = copy.deepcopy(records)
+
+        self.assertEqual(MATCH.propose_cleanup(candidates=records), [])
+        self.assertEqual(
+            MATCH.propose_cleanup(candidates=list(reversed(records))), []
+        )
+        self.assertEqual(records, before)
+
     def test_cleanup_rejects_scope_or_sensitivity_drift(self):
         winner = candidate("a", "Does the applicant have permission to work?")
         drifted = candidate(

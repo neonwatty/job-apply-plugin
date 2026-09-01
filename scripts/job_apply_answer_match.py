@@ -632,7 +632,7 @@ def propose_cleanup(
     if len(keys) != len(set(keys)):
         raise AnswerMatchError("candidate keys are not unique")
 
-    proposals = []
+    proposals_by_duplicate: dict[str, list[dict[str, Any]]] = {}
     for winner in records:
         winner_reasons = _candidate_policy_reasons(winner)
         if not {
@@ -672,7 +672,7 @@ def propose_cleanup(
                 "cleanup_duplicate_pending",
                 *match["reasonCodes"],
             ]
-            proposals.append(
+            proposals_by_duplicate.setdefault(duplicate_key, []).append(
                 {
                     "winnerKey": winner_key,
                     "duplicateKey": duplicate_key,
@@ -681,6 +681,11 @@ def propose_cleanup(
                 }
             )
 
+    proposals = [
+        duplicate_proposals[0]
+        for duplicate_proposals in proposals_by_duplicate.values()
+        if len(duplicate_proposals) == 1
+    ]
     proposals.sort(key=lambda item: (item["winnerKey"], item["duplicateKey"]))
     return proposals
 
