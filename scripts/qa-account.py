@@ -94,6 +94,7 @@ def _start_browser(profile: Path) -> tuple[subprocess.Popen, str]:
         raise ValueError("exact signed synthetic browser is unavailable")
     child = subprocess.Popen([
         executable, "--no-first-run", "--no-default-browser-check", "--force-renderer-accessibility",
+        "--disable-background-networking", "--disable-component-update",
         "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=0",
         f"--user-data-dir={profile}", "about:blank",
     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

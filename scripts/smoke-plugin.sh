@@ -25,6 +25,9 @@ echo "Validating plugin manifest"
 claude plugin validate "$REPO_ROOT"
 
 python3 "$REPO_ROOT/scripts/job-apply-store.py" --help >/dev/null
+python3 "$REPO_ROOT/scripts/job-apply-task.py" --help >/dev/null
+python3 "$REPO_ROOT/scripts/job-apply-attempt.py" --help >/dev/null
+node "$REPO_ROOT/qa/unified_task_spine_oracle.mjs" --json >/dev/null
 
 python3 - "$REPO_ROOT" "$SMOKE_TEMP_ROOT" <<'PY'
 import json
@@ -555,6 +558,8 @@ target = Path(sys.argv[2])
 critical = (
     ".codex-plugin/plugin.json",
     "scripts/job-apply-store.py",
+    "scripts/job-apply-task.py",
+    "scripts/job-apply-attempt.py",
     "scripts/job-apply-workspace.py",
     "skills/answer-memory/SKILL.md",
     "skills/job-apply/SKILL.md",
@@ -605,6 +610,8 @@ if installed.name != version or not installed.is_dir():
 critical = (
     ".codex-plugin/plugin.json",
     "scripts/job-apply-store.py",
+    "scripts/job-apply-task.py",
+    "scripts/job-apply-attempt.py",
     "scripts/job-apply-workspace.py",
     "skills/answer-memory/SKILL.md",
     "skills/job-apply/SKILL.md",
@@ -916,6 +923,8 @@ if installed_skills != expected:
 for relative in (
     ".codex-plugin/plugin.json",
     "scripts/job-apply-store.py",
+    "scripts/job-apply-task.py",
+    "scripts/job-apply-attempt.py",
     "scripts/job-apply-workspace.py",
     "skills/answer-memory/SKILL.md",
     "skills/job-apply/SKILL.md",

@@ -645,6 +645,15 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
                 return answer
             self._store_call(encoded_answer_detail)
             return
+        if (
+            len(parts) == 6
+            and parts[1:3] == ["api", "jobs"]
+            and parts[4] == "pending-answers"
+        ):
+            self._store_call(
+                lambda: self.server.store.pending_answer_detail(parts[3], parts[5])
+            )
+            return
         if len(parts) == 4 and parts[1:3] == ["api", "answers"]:
             def answer_detail() -> dict[str, Any]:
                 answer = self.server.store.get_answer(
@@ -952,6 +961,28 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
             self._bulk_create(payload)
             return
         parts = path.split("/")
+        if (
+            method == "POST" and len(parts) == 5
+            and parts[1:3] == ["api", "jobs"]
+            and parts[4] == "resolve-pending-answer"
+        ):
+            required = {
+                "reference", "expectedJobRevision", "expectedSessionRevision",
+                "expectedAnswerRevision", "ownerConfirmed",
+            }
+            if set(payload) != required or payload.get("ownerConfirmed") is not True:
+                self._error(HTTPStatus.BAD_REQUEST, "body requires an explicit owner-confirmed exact-revision recheck")
+                return
+            revisions = [payload.get(name) for name in ("expectedJobRevision", "expectedSessionRevision", "expectedAnswerRevision")]
+            if any(not isinstance(value, int) or isinstance(value, bool) or value < 1 for value in revisions):
+                self._error(HTTPStatus.BAD_REQUEST, "all expected revisions must be positive integers")
+                return
+            self._store_call(lambda: self.server.store.resolve_pending_answer(
+                parts[3], payload["reference"], payload["expectedJobRevision"],
+                payload["expectedSessionRevision"], payload["expectedAnswerRevision"],
+                owner_confirmed=True,
+            ))
+            return
         if len(parts) == 4 and parts[1:3] == ["api", "fact-groups"] and method == "PATCH":
             if set(payload) != {"patch", "expectedRevision"} or not isinstance(payload.get("patch"), dict):
                 self._error(HTTPStatus.BAD_REQUEST, "body requires patch and expectedRevision")

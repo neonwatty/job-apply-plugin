@@ -755,9 +755,14 @@ class WorkspaceServerTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(activity["job"]["status"], "in_progress")
         self.assertEqual(activity["claim"]["state"], "active")
-        self.assertEqual(activity["session"]["pendingInformation"], [{
+        self.assertEqual(activity["session"]["pendingInformation"][0] | {"reference": "opaque"}, {
             "question": "Do you need sponsorship?", "state": "missing", "sensitive": True,
-        }])
+            "reference": "opaque", "resolutionEligible": False,
+        })
+        self.assertRegex(
+            activity["session"]["pendingInformation"][0]["reference"],
+            r"^pending_[a-f0-9]{32}$",
+        )
         serialized = json.dumps(activity)
         for forbidden in (
             acquired["token"], "private-api-owner", "private.api.answer",
@@ -772,6 +777,58 @@ class WorkspaceServerTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(unrelated_activity["claim"], {"state": "none"})
         self.assertNotIn(job["id"], json.dumps(unrelated_activity))
+
+    def test_pending_answer_route_uses_opaque_durable_reference_not_question_text(self):
+        self.server.store.replace_profile(
+            {"firstName": "Ada"},
+            expected_revision=self.server.store.inspect_profile()["revision"],
+            source="user",
+        )
+        resume_path = Path(self.temporary.name) / "pending-answer.pdf"
+        resume_path.write_bytes(b"%PDF-1.7\npending-answer")
+        self.server.store.create_resume(
+            {"id": "pending-answer-resume", "label": "Pending", "path": str(resume_path)}
+        )
+        job = self.create_job(
+            "https://example.com/jobs/pending-answer", role="Pending", company="Acme"
+        )
+        ready = self.server.store.transition_job(job["id"], "ready", job["revision"])
+        acquired = self.server.store.acquire_ready_job(job["id"], "owner", ready["revision"])
+        pending = {
+            "status": "active", "step": "questions", "answerKeys": [],
+            "pendingFields": [{
+                "question": "Same visible wording?", "state": "missing",
+                "answerKey": "durable.target", "sensitive": False,
+            }],
+        }
+        self.server.store.save_claim_progress(job["id"], acquired["token"], pending)
+        self.server.store.handoff_claimed_job(
+            job["id"], acquired["token"], "needs_info", pending,
+            acquired["job"]["revision"],
+        )
+        self.server.store.put_answer({
+            "key": "durable.decoy", "question": "Same visible wording?",
+            "scope": {"decoy": True}, "state": "confirmed", "value": "wrong",
+        })
+        target = self.server.store.put_answer({
+            "key": "durable.target", "question": "Canonical target wording",
+            "state": "missing",
+        })
+        activity = self.server.store.get_job_activity(job["id"])
+        reference = activity["session"]["pendingInformation"][0]["reference"]
+        self.assertNotIn("durable", reference)
+        route = f"/api/jobs/{job['id']}/pending-answers/{quote(reference, safe='')}"
+        status, _headers, detail = self.request("GET", route, origin=False)
+        self.assertEqual((status, detail["key"], detail["revision"]), (200, target["key"], target["revision"]))
+        status, _headers, unauthorized = self.request(
+            "GET", route, token=False, origin=False
+        )
+        self.assertEqual((status, unauthorized["error"]["code"]), (401, "token_rejected"))
+        status, _headers, stale = self.request(
+            "GET", f"/api/jobs/{job['id']}/pending-answers/pending_{'0' * 32}",
+            origin=False,
+        )
+        self.assertEqual((status, stale["error"]["code"]), (409, "stale_conflict"))
 
         status, _headers, missing = self.request(
             "GET", "/api/jobs/does-not-exist/activity", origin=False
@@ -1686,7 +1743,7 @@ class WorkspaceServerTests(unittest.TestCase):
         self.assertEqual(set(row), {
             "jobId", "role", "company", "status", "revision", "priority",
             "reasonCode", "reasonLabel", "attentionAt", "guidance",
-            "missingInformationCount",
+            "missingInformationCount", "sessionRevision",
         })
         self.server.store.transition_job(job["id"], "saved", needs["revision"])
         status, _headers, resolved = self.request(

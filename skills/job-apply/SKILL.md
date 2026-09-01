@@ -32,14 +32,18 @@ Then wait for the user to provide the path before proceeding with profile extrac
 
 **If the profile contains applicant data**, first determine the application mode:
 
-- If the user supplied a job URL, do not create a canonical job or claim implicitly. Resolve the active canonical managed resume with `resume-resolve` before browser work as described below.
-- If no URL was supplied, run `claim-status` before listing ready jobs. If it returns a live claim, identify the claimed job and do not start another one. If it returns an expired claim, identify the returned claimed job ID and ask whether to recover that exact job; after confirmation run `claim-recover --id <claimed-job-id> --owner <owner-label>`. If there is no claim, run `job-list --status ready`. If ready jobs exist, show their role, company, and URL and ask the user to select one (offer the first priority-sorted result). If none exist, use the existing URL prompt below.
+- The authenticated loopback QA replay above is the only exception to canonical URL intake. Keep using its resolved run ID and coordinator lifecycle; do not create a canonical job for that synthetic fixture.
+- If the user supplied a job URL, the required ordinary behavior is canonical intake: put only the supported canonical job fields in a private temporary JSON object, run `python3 "<plugin-root>/scripts/job-apply-task.py" [--root <resolved-root>] intake --input <private-temp.json>`, and immediately remove the input. Do this before any browser work. A conflict, invalid identity, unavailable store, or any other non-success result stops the workflow without opening a browser. Retain only the returned canonical job ID, status, and revision; the task result never returns the URL or an upsert token.
+- For ordinary discussion or when no URL was supplied, run `job-apply-task.py ... snapshot`. List and compare only its canonical jobs and Needs Attention projection. Do not run the legacy `job-list --status ready` command as the ordinary agent discussion surface. Never infer a choice from priority, ordering, a URL mention, or model preference: ask the owner to choose one exact canonical job unless their current request already explicitly names that exact job as the application target.
+- After an explicit owner choice, run `job-apply-task.py ... select --id <job-id> --expected-revision <displayed-revision> --owner-confirmed`. This exact-revision operation re-runs readiness preflight, marks an eligible saved or needs-info job Ready, and returns a stable no-op when the exact job is already Ready. On success, discard the pre-select displayed revision and retain the exact revision returned in `select.job.revision`; pass that returned revision, unchanged, to the private attempt helper described below. Any stale revision, failed preflight, conflict, unavailable record, or other non-success result stops without browser work; do not run `job-acquire`, do not start an attempt, and refresh the task snapshot to discuss the changed state rather than retrying against unseen data.
+- Before starting the selected Ready job, run `claim-status`. If it returns any live or expired claim, identify only the claimed job and stop: the ordinary agent route cannot recover, steal, clear, or replace it. An interrupted attempt remains for explicit expiry/recovery outside this skill. If there is no claim, start only the explicitly selected canonical job as described below.
+- If the exact job is `needs_info` with a pending answer reference, first inspect `job-apply-task.py ... activity --id <job-id>`. Route the owner to the canonical Answers editor; do not infer, reveal, or copy an answer value. After the owner has explicitly saved an accepted, confirmed, non-sensitive answer, run `job-apply-task.py ... resolve-pending-answer --id <job-id> --reference <pending-reference> --expected-job-revision <activity-job-revision> --expected-session-revision <activity-session-revision> --expected-answer-revision <pending-answer-revision> --owner-confirmed`. Never use this operation for missing, inferred, declined, sensitive, unreferenced, or changed answers. Never retry a stale failure: refresh activity, preserve any browser draft, and ask the owner to review the changed canonical state. The result remains `needs_info` while any blocker remains; when it returns the exact job as Ready, pass that returned revision unchanged to a new private attempt helper process. The same job/session and assigned-or-default managed resume identity continue across blocking, resolution, the new private attempt, and awaiting-review handoff; do not substitute a resume or source path. This recheck does not open a portal or authorize any final action.
 
-For a selected ready job, retain its displayed revision, create a short non-sensitive owner label for this agent run, and run `job-acquire --id <job-id> --owner <owner-label> --expected-revision <revision>`. This single operation rejects a stale selection, re-runs preflight, fails closed if the assigned/default managed resume no longer matches its canonical bytes or observation, resolves the job's assigned resume before the active default, creates the exclusive 300-second claim, moves `ready` to `in_progress`, and records `job-started`. Retain the returned post-acquisition job revision for the eventual handoff. The machine-readable result returns the bearer token on stdout; treat it as ephemeral sensitive output, never repeat it in user-facing text, and never place it in logs, saved sessions, or temporary files. Use the returned job URL and returned resume path for the application; do not substitute `profile.resumePath`.
+For a selected Ready job, use only the exact revision returned by the successful `select` result, create a short non-sensitive owner label for this agent run, and run one short launcher client: `python3 "<plugin-root>/scripts/job-apply-attempt.py" [--root <resolved-root>] start --id <job-id> --owner <owner-label> --expected-revision <select.job.revision>`. Never use the pre-select displayed revision. The client returns one redacted failure or `acquired` with the exact job URL/revision and managed resume identity/path needed for the application, then exits. Acquisition starts one OS-detached broker scoped to the resolved Store. No launcher, stdin, PTY, tool session, or conversational process must remain alive. The broker privately acquires once, retains the bearer only in memory, automatically heartbeats at least every 60 seconds, and accepts later stateless clients only through its OS-user-restricted Store socket. It never accepts a different job, revision, owner, Store, or claim. Never invoke the Store's raw acquire, recovery, heartbeat, progress, or handoff commands in an ordinary workflow: in particular, never run `job-acquire --id <job-id> --owner <owner-label> --expected-revision <select.job.revision>`. Never put claim authority in argv, environment, input, output, files, runtime metadata, diagnostics, reports, or receipts.
 
-If acquisition reports a claim, run `claim-status` because the global claim can belong to a different job. Do not work around a live claim. For an expired claim, use the claimed job ID returned by `claim-status`, ask whether to resume that exact job, and only then run `claim-recover --id <claimed-job-id> --owner <owner-label>`. Recovery never steals a live claim. Retain the recovered job revision for handoff. Run `claim-heartbeat --id <job-id> --token <token>` at least every 60 seconds while actively working.
+To request an immediate heartbeat from any later conversational turn, run a fresh client: `python3 "<plugin-root>/scripts/job-apply-attempt.py" [--root <resolved-root>] heartbeat` and require one successful `heartbeat` response. The client exits immediately; the detached broker continues independently. A rejected command or unavailable broker stops browser work. Broker loss leaves the exact existing claim untouched for expiry and explicit recovery; a new launcher cannot adopt, replace, recover, or reset it.
 
-**If the profile contains applicant data and neither a supplied URL nor a selected ready job is available**, say:
+**If the profile contains applicant data and neither an ingested URL nor an explicitly selected canonical job is available**, say:
 
 > Welcome back! Your local Job Apply profile and answer memory are ready.
 >
@@ -55,7 +59,7 @@ If acquisition reports a claim, run `claim-status` because the global claim can 
 ## Required Input
 
 - **Resume source file path**: Needed only to import a new canonical managed PDF, DOCX, or TXT resume
-- **Application target**: Either a selected canonical `ready` job or a supplied job URL
+- **Application target**: A supplied URL ingested into one canonical job, or an explicitly selected canonical job
 
 ## Profile Storage
 
@@ -155,7 +159,7 @@ immediately after the helper consumes them.
 
 ### Phase 2: Application Filling
 
-1. **Initialize and load storage** through the bundled `answer-memory` skill; use `profile-get`, then check `session-list` for resumable work matching this application. In selected-ready mode, use the acquired canonical job ID as the application/session ID and the resume returned by `job-acquire`. In direct-URL mode, keep the URL-derived application/session ID but run `resume-resolve` to obtain the active default managed resume path. If it cannot resolve a default, treat the full `resume-list` records as private tool output, not as a redacted projection: never print, quote, log, or present those records to the user. If user choice is required, present a summary containing only `id`, `label`, `tags`, `default`, `revision`, and `storageKind`; never include a private path, managed filename, original filename, digest, or any other field. Resolve the user-selected active managed ID, or explicitly adopt a selected legacy record with `resume-adopt --id <id> --expected-revision <revision>` before resolving it. If no suitable record exists, ask the user for a source file, import it with `resume-import`, then resolve its returned ID. Never use `profile.resumePath` or a user source path for upload.
+1. **Initialize and load storage** through the bundled `answer-memory` skill; use `profile-get`, then inspect `job-apply-task.py ... activity --id <job-id>` for resumable work on the exact selected canonical job. For every ordinary application, use the acquired canonical job ID as the application/session ID and the managed resume returned by the private helper. If no suitable managed resume exists, ask the user for a source file, import it with `resume-import`, then return to exact-revision task selection. Never use `profile.resumePath`, a URL-derived session ID, or a user source path for upload. The authenticated loopback QA replay remains the only synthetic coordinator exception.
 2. **Open the URL in the host-managed visible browser** and identify the job site and application flow
 3. **Pause for user-only steps** if login, password, CAPTCHA, MFA, consent, or account creation appears
 4. **Open the application form**; if an Apply link opens an external portal, continue in that visible host-managed tab
@@ -163,13 +167,32 @@ immediately after the helper consumes them.
 6. **Reuse only matching, non-sensitive `confirmed` answers**. Show and confirm `inferred` answers, ask for `missing` answers, and reconfirm every `sensitive` answer before entry
 7. **Separate fill consent from remember consent** for salary, work authorization, visa status, demographic information, disability disclosure, and similar answers. Use `--remember-sensitive` only after explicit field-specific permission to remember
 8. **Upload the resume** through the visible file control and verify the selected filename
-9. **Save resumable progress**. In selected-ready mode use claim-gated `claim-progress --id <job-id> --token <token> --input <session.json>`; in direct-URL mode continue to use `session-save`. Store answer keys and pending-field states, never answer values.
+9. **Save resumable progress** by putting only the value-free session object in a private temporary JSON file, running `python3 "<plugin-root>/scripts/job-apply-attempt.py" [--root <resolved-root>] progress --input <private-temp.json>`, requiring `progress_saved`, and immediately removing the input. The session may contain only canonical answer keys and pending-field states, never answer values. Do not add an ID, revision, owner, Store, claim, command, or authority field. This is a new stateless client; it does not need the launcher process or any earlier tool session. The authenticated loopback QA replay uses only its documented coordinator commands.
 10. **Handle inaccessible controls** using the optional fallback rules above, or leave the field for the user
 11. **Advance through non-final steps** only when the control is clearly Next, Continue, Save, or Review
 12. **Stop at final review** before any Submit, Send, or equivalent final-action button
-13. **Complete the durable handoff**. In selected-ready mode, pass the post-acquisition (or post-recovery) job revision retained before browser work to `claim-handoff --id <job-id> --token <token> --status awaiting_review --expected-revision <retained-revision> --input <review-session.json>`. The session JSON must contain only value-free review metadata. This atomically saves the review session, records `reviewed`, moves the canonical job to `awaiting_review`, and releases the claim. A revision conflict means the user or another client changed the job; stop and re-evaluate instead of reloading and retrying with an unseen revision. In direct-URL mode retain the existing minimal `reviewed` history event (or the required coordinator `reviewed` command for approved local QA). Summarize every entered value, identify anything incomplete or uncertain, and tell the user to inspect the page and submit manually.
+13. **Complete the durable handoff** by putting only the value-free review session object in a private temporary JSON file, running a fresh client `python3 "<plugin-root>/scripts/job-apply-attempt.py" [--root <resolved-root>] handoff --status awaiting_review --input <private-temp.json>`, requiring one `handed_off` response, and immediately removing the input. The broker uses its privately retained post-acquisition revision, atomically saves the review session, records `reviewed`, moves the canonical job to `awaiting_review`, releases the claim, and exits. Never fall back to the former raw route `claim-handoff --id <job-id> --token <token> --status awaiting_review --input <review-session.json>`. A rejected handoff means stop and re-evaluate instead of reloading and retrying against unseen state. The authenticated loopback QA replay instead uses only its required `reviewed` coordinator command. Give only a value-free completion summary: name field groups and their status (complete, incomplete, or uncertain), never echo applicant values, and tell the user to inspect the visible page and submit manually.
 
-If selected-ready work needs a user answer, first prepare a session containing only question/state/answer-key/sensitivity metadata, then use `claim-handoff --id <job-id> --token <token> --status needs_info --expected-revision <retained-revision> --input <needs-info-session.json>`. Do not reload the job revision first; a conflict must expose concurrent changes. This atomically moves the job to `needs_info`, records `job-blocked`, and releases the claim. After the user supplies the missing information, transition `needs_info` to `ready` with the current revision (preflight is enforced), then acquire a fresh claim. Never retain a claim while waiting for the user. If the process crashes, leave the record intact for explicit stale recovery; never delete or silently clear a claim.
+### Post-readiness action-time consent
+
+Action-time consent has a closed, one-use state transition:
+
+1. Before the exact application form is visibly ready, consent is `not_ready`. Earlier approval, a URL or job selection, consent from another application, and blanket future consent are invalid and cannot authorize entering data.
+2. After the visible form is read, establish `ready_unconfirmed` only when the exact data scope, destination, purpose, remembered-answer use, and review-only limit are known. Ask for explicit action-time consent unless the owner's current message was sent after that visible readiness and already explicitly authorizes those same bounds.
+3. That matching post-readiness authorization transitions once to `consent_consumed` for the bounded filling pass. Proceed without asking for the same confirmation again. It is not reusable for another job, destination, purpose, attempt, or future application.
+4. A material change to the data scope, destination, or purpose invalidates the consumed consent. Read the changed visible state and obtain new explicit post-change consent before entering more data. Ordinary page progression within the unchanged bounds, a value-free status update, or the final manual-review handoff is not a material change and must not trigger duplicate confirmation.
+
+This action-time consent does not replace field-specific sensitive-answer consent, remember consent, login or account consent, or the manual final-action boundary. Never echo raw applicant values in chat, summaries, diagnostics, or receipts. Describe only field names or groups, counts, and states such as complete, incomplete, uncertain, or awaiting owner input. The values remain visible only in the owner-visible form where they were entered.
+
+If selected-ready work needs one non-sensitive user answer, put this exact session object in a private temporary JSON file (substituting only the exact visible question and its canonical answer key):
+
+```json
+{"status":"active","step":"questions","answerKeys":[],"pendingFields":[{"question":"How did you hear about this opportunity?","state":"missing","answerKey":"source.discovery","sensitive":false}]}
+```
+
+The object contains only `status`, `step`, `answerKeys`, and exactly one `pendingFields` item; and that item contains only `question`, `state`, `answerKey`, and `sensitive`. Run `python3 "<plugin-root>/scripts/job-apply-attempt.py" [--root <resolved-root>] handoff --status needs_info --input <private-temp.json>`, require `handed_off`, and immediately remove the input. Never include an answer value, profile value, job or application ID, revision, owner, Store or claim data, path, URL, token, reference, browser state, or other metadata. A missing profile-backed fact such as a LinkedIn URL is not an answer-backed pending field: stop and have the owner correct the canonical profile separately rather than putting it in this payload.
+
+Do not reload the job revision before this handoff; a conflict must expose concurrent changes. The broker atomically moves the job to `needs_info`, records `job-blocked`, releases the claim, emits one `handed_off` response, and exits. After the user supplies the missing information, use the exact-revision task resolution route above; if it becomes Ready, start a fresh detached broker for that same exact job. Never retain a broker or claim while waiting for the user. If the broker is lost, leave the record intact for explicit stale recovery; never delete or silently clear a claim.
 
 User confirmation never authorizes this skill to click Submit, Send, or any equivalent final-action button.
 
@@ -193,7 +216,7 @@ User confirmation never authorizes this skill to click Submit, Send, or any equi
    - Work authorization questions (dropdowns)
    - Custom screening questions (varies by employer)
 4. Click "Next" to advance, "Review" on final step
-5. Stop on the review page, summarize all entered fields, and leave "Submit application" untouched for the user
+5. Stop on the review page, give a value-free field-name/status summary, and leave "Submit application" untouched for the user
 
 **Field patterns to look for:**
 - `input[name*="phone"]` - Phone number
@@ -220,7 +243,7 @@ User confirmation never authorizes this skill to click Submit, Send, or any equi
 6. Education section similar pattern
 7. Handle custom questions at bottom
 8. Upload the resume through the visible file control and confirm the filename
-9. Stop before the final "Submit Application" button, summarize the fields, and hand control to the user
+9. Stop before the final "Submit Application" button, give a value-free field-name/status summary, and hand control to the user
 
 **Field patterns:**
 - Standard `<input>` and `<select>` elements
@@ -241,7 +264,7 @@ User confirmation never authorizes this skill to click Submit, Send, or any equi
 4. **Location combobox**: Type the location to trigger suggestions, then click the matching option
 5. **Resume upload**: Use the resume field, not the separate autofill file input, and verify the filename
 6. Review all visible values
-7. Stop before the final action, summarize the fields, and let the user submit manually
+7. Stop before the final action, give a value-free field-name/status summary, and let the user submit manually
 
 ### Lever
 
@@ -273,7 +296,7 @@ User confirmation never authorizes this skill to click Submit, Send, or any equi
 4. Correct any mis-parsed fields
 5. **Location combobox**: Clear existing value, type the correct location, wait for dropdown, click match
 6. Fill any remaining required fields
-7. Review the parsed and entered values, stop before the final action, and let the user submit manually
+7. Review the visible form without echoing its values, give a value-free field-name/status summary, stop before the final action, and let the user submit manually
 
 ### Workday
 
@@ -327,7 +350,7 @@ User confirmation never authorizes this skill to click Submit, Send, or any equi
 2. Fill standard fields and use visible controls for dropdowns, radio buttons, and checkboxes.
 3. Upload the resume through the page's file control and verify the displayed filename.
 4. After each non-final Next, Continue, or Save action, read the new page before proceeding.
-5. When Review, Submit, Send, or an equivalent final action appears, stop and summarize the application for the user.
+5. When Review, Submit, Send, or an equivalent final action appears, stop and give the user only a value-free field-name/status summary.
 
 ### Separate Playwright Integration (Claude Code Optional Fallback Only)
 
