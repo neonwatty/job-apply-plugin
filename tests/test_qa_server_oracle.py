@@ -13,8 +13,9 @@ from urllib.parse import urlsplit
 
 from qa.compiler import compile_capture
 from qa.contracts import LEVER_CONTROL_PROFILE, generic_control
-from qa.oracle import OracleError, evaluate_run
+from qa.oracle import OracleError, evaluate_form_readiness, evaluate_run
 from qa.server import ReplayHTTPServer
+from scripts.job_apply_form_readiness import make_readiness_observation
 from scripts.job_apply_policy import PolicyStore, confirmation_authority_revision
 
 
@@ -1379,6 +1380,77 @@ class SemanticOracleTests(unittest.TestCase):
                 self.evaluate()
         self.assertTrue(swapped)
         self.assertNotIn("OUTSIDE SECRET", str(caught.exception))
+
+
+class FormReadinessOracleTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.fixture = json.loads(
+            (
+                ROOT
+                / "qa/fixtures/greenhouse-form-readiness-v1/fixture.json"
+            ).read_text(encoding="utf-8")
+        )
+        cls.states = {
+            "contact.first_name": "complete",
+            "contact.phone_country": "complete",
+            "resume.file": "accepted",
+            "authorization.sponsorship_select": "complete",
+        }
+
+    def test_readiness_oracle_returns_only_closed_replay_evidence(self):
+        observation = make_readiness_observation(
+            self.fixture,
+            self.states,
+            observation_revision=4,
+            upload_capability="external-runtime-unavailable",
+        )
+        report = evaluate_form_readiness(
+            self.fixture,
+            observation,
+            expected_observation_revision=4,
+        )
+        self.assertEqual(report["status"], "ready")
+        self.assertEqual(report["proofScope"], "repository-replay-only")
+        self.assertEqual(report["blockerCodes"], [])
+        serialized = json.dumps(report).lower()
+        for forbidden in ("filename", "filepath", "https://", "browser", "value"):
+            self.assertNotIn(forbidden, serialized)
+
+    def test_readiness_oracle_preserves_value_free_failure_categories(self):
+        states = dict(self.states)
+        states["resume.file"] = "missing"
+        observation = make_readiness_observation(
+            self.fixture,
+            states,
+            observation_revision=4,
+            upload_capability="external-runtime-unavailable",
+        )
+        report = evaluate_form_readiness(
+            self.fixture,
+            observation,
+            expected_observation_revision=4,
+        )
+        self.assertEqual(report["status"], "blocked")
+        self.assertEqual(report["fallbackCode"], "owner-upload-required")
+        self.assertIn("required-upload-missing", report["blockerCodes"])
+
+    def test_readiness_oracle_closes_malformed_diagnostics(self):
+        observation = make_readiness_observation(
+            self.fixture,
+            self.states,
+            observation_revision=4,
+        )
+        observation["privateValue"] = "ORACLE SECRET"
+        with self.assertRaisesRegex(
+            OracleError, "^invalid form readiness evidence$"
+        ) as raised:
+            evaluate_form_readiness(
+                self.fixture,
+                observation,
+                expected_observation_revision=4,
+            )
+        self.assertNotIn("ORACLE SECRET", str(raised.exception))
 
 
 if __name__ == "__main__":
