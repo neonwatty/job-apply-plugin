@@ -1,7 +1,17 @@
 import copy
+import json
+from pathlib import Path
 import unittest
 
-from qa.contracts import ContractError, generic_control, validate_fixture
+from qa.contracts import (
+    ContractError,
+    generic_control,
+    validate_fixture,
+    validate_readiness_observation,
+)
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 class ContractTests(unittest.TestCase):
@@ -599,6 +609,98 @@ class ContractTests(unittest.TestCase):
                 del fixture[key]
                 with self.assertRaises(ContractError):
                     validate_fixture(fixture)
+
+    def test_committed_greenhouse_readiness_fixture_is_closed(self):
+        fixture = json.loads(
+            (
+                ROOT
+                / "qa/fixtures/greenhouse-form-readiness-v1/fixture.json"
+            ).read_text(encoding="utf-8")
+        )
+        self.assertIsNone(validate_fixture(fixture))
+        self.assertEqual(fixture["platformFamily"], "greenhouse")
+        self.assertEqual(
+            [
+                control["role"]
+                for step in fixture["steps"]
+                for control in step["controls"]
+            ],
+            ["textbox", "combobox", "file", "combobox", "textbox"],
+        )
+
+    def test_readiness_observation_contract_is_closed_and_revisioned(self):
+        fixture = self.valid_greenhouse_fixture()
+        observation = {
+            "schemaVersion": 1,
+            "platformFamily": "greenhouse",
+            "observationRevision": 3,
+            "adapterState": "accessible",
+            "uploadCapability": "available",
+            "controls": [
+                {
+                    "controlId": "contact.first_name",
+                    "kind": "text",
+                    "state": "complete",
+                    "observationRevision": 3,
+                },
+                {
+                    "controlId": "contact.phone_country",
+                    "kind": "selection",
+                    "state": "complete",
+                    "observationRevision": 3,
+                },
+                {
+                    "controlId": "resume.file",
+                    "kind": "upload",
+                    "state": "accepted",
+                    "observationRevision": 3,
+                },
+            ],
+            "validationErrorControlIds": [],
+            "finalControlState": "available",
+        }
+        self.assertIsNone(validate_readiness_observation(observation, fixture))
+
+        private = copy.deepcopy(observation)
+        private["controls"][0]["value"] = "PRIVATE"
+        with self.assertRaisesRegex(
+            ContractError, "^unknown readiness control key: value$"
+        ) as raised:
+            validate_readiness_observation(private, fixture)
+        self.assertNotIn("PRIVATE", str(raised.exception))
+
+    def test_readiness_observation_rejects_kind_and_platform_drift(self):
+        fixture = self.valid_greenhouse_fixture()
+        base = {
+            "schemaVersion": 1,
+            "platformFamily": "greenhouse",
+            "observationRevision": 1,
+            "adapterState": "accessible",
+            "uploadCapability": "not-required",
+            "controls": [
+                {
+                    "controlId": "contact.first_name",
+                    "kind": "text",
+                    "state": "complete",
+                    "observationRevision": 1,
+                }
+            ],
+            "validationErrorControlIds": [],
+            "finalControlState": "available",
+        }
+        wrong_kind = copy.deepcopy(base)
+        wrong_kind["controls"][0]["kind"] = "upload"
+        with self.assertRaisesRegex(
+            ContractError, "^readiness control kind mismatch$"
+        ):
+            validate_readiness_observation(wrong_kind, fixture)
+
+        wrong_platform = copy.deepcopy(base)
+        wrong_platform["platformFamily"] = "ashby"
+        with self.assertRaisesRegex(
+            ContractError, "^readiness platform family mismatch$"
+        ):
+            validate_readiness_observation(wrong_platform, fixture)
 
 
 if __name__ == "__main__":

@@ -11,6 +11,10 @@ import stat
 from typing import Any
 
 from qa.contracts import validate_fixture
+from scripts.job_apply_form_readiness import (
+    FormReadinessError,
+    evaluate_readiness,
+)
 
 
 MAX_EVENTS = 10_000
@@ -78,6 +82,24 @@ APPLICATION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 
 class OracleError(ValueError):
     """An invalid untrusted oracle input with a stable, value-free diagnostic."""
+
+
+def evaluate_form_readiness(
+    fixture: dict[str, Any],
+    observation: dict[str, Any],
+    *,
+    expected_observation_revision: int,
+) -> dict[str, Any]:
+    """Evaluate the repository replay contract with a closed diagnostic."""
+
+    try:
+        return evaluate_readiness(
+            fixture,
+            observation,
+            expected_observation_revision=expected_observation_revision,
+        )
+    except (FormReadinessError, TypeError, ValueError):
+        raise OracleError("invalid form readiness evidence") from None
 
 
 def _has_forbidden_value_key(key: str) -> bool:
