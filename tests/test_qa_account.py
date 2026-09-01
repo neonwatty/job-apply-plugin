@@ -1,7 +1,6 @@
 import importlib.util
 import json
 import os
-import shutil
 import socket
 import subprocess
 import tempfile
@@ -291,7 +290,79 @@ class SyntheticAccountQATests(unittest.TestCase):
             operation = "e" * 64
             socket_path = server.prepare_native_operation(operation)
             os.replace(binary, preserved)
-            shutil.copy2(sys.executable, binary)
+            attacker_source = root / "adversarial-peer.c"
+            attacker_source.write_text(r'''
+#include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/un.h>
+#include <time.h>
+#include <unistd.h>
+
+static int send_all(int descriptor, const char *value, size_t length) {
+    while (length > 0) {
+        ssize_t sent = send(descriptor, value, length, 0);
+        if (sent < 0 && errno == EINTR) continue;
+        if (sent < 0 && (errno == EPIPE || errno == ECONNRESET)) return 1;
+        if (sent <= 0) return -1;
+        value += sent;
+        length -= (size_t)sent;
+    }
+    return 0;
+}
+
+int main(int argc, char **argv) {
+    if (argc != 5) return 2;
+    int marker = open(argv[2], O_WRONLY | O_CREAT | O_EXCL, 0600);
+    if (marker < 0 || close(marker) != 0) return 3;
+    struct timespec pause = {0, 10000000};
+    for (int attempt = 0; access(argv[3], F_OK) != 0; attempt++) {
+        if (attempt >= 500) return 4;
+        nanosleep(&pause, NULL);
+    }
+    int channel = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (channel < 0) return 5;
+    int no_sigpipe = 1;
+    setsockopt(channel, SOL_SOCKET, SO_NOSIGPIPE, &no_sigpipe, sizeof(no_sigpipe));
+    struct timeval timeout = {3, 0};
+    setsockopt(channel, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+    struct sockaddr_un address;
+    memset(&address, 0, sizeof(address));
+    address.sun_family = AF_UNIX;
+    if (strlen(argv[1]) >= sizeof(address.sun_path)) { close(channel); return 5; }
+    memcpy(address.sun_path, argv[1], strlen(argv[1]) + 1);
+    if (connect(channel, (struct sockaddr *)&address, sizeof(address)) != 0) {
+        close(channel); return 5;
+    }
+    int sent = send_all(channel, argv[4], strlen(argv[4]));
+    if (sent == 0) sent = send_all(channel, "\n", 1);
+    if (sent > 0) { close(channel); return 0; }
+    if (sent < 0) { close(channel); return 5; }
+    shutdown(channel, SHUT_WR);
+    char acknowledgment;
+    ssize_t received;
+    do { received = recv(channel, &acknowledgment, 1, 0); }
+    while (received < 0 && errno == EINTR);
+    int saved_errno = errno;
+    close(channel);
+    if (received == 0 || (received < 0 && saved_errno == ECONNRESET)) return 0;
+    return received > 0 ? 6 : 5;
+}
+''', encoding="utf-8")
+            compiled = subprocess.run(
+                ["xcrun", "clang", "-O2", "-Wall", "-Werror", "-o", str(binary),
+                 str(attacker_source)],
+                capture_output=True, check=False,
+            )
+            self.assertEqual(
+                (compiled.returncode, compiled.stdout, compiled.stderr), (0, b"", b"")
+            )
             payload = json.dumps({
                 "operationFingerprint": "sha256:" + operation,
                 "nativeOriginAttested": True,
@@ -301,49 +372,32 @@ class SyntheticAccountQATests(unittest.TestCase):
                 "afterClearAttested": True,
                 "secureControlCleared": True,
             }, sort_keys=True)
-            attacker_script = r'''
-import pathlib, socket, sys, time
-socket_path, ready_path, release_path, payload = sys.argv[1:]
-pathlib.Path(ready_path).touch()
-deadline = time.monotonic() + 5
-while not pathlib.Path(release_path).exists():
-    if time.monotonic() >= deadline:
-        raise SystemExit(4)
-    time.sleep(0.01)
-channel = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-channel.settimeout(3)
-channel.connect(socket_path)
-channel.sendall(payload.encode("utf-8") + b"\n")
-channel.shutdown(socket.SHUT_WR)
-try:
-    acknowledgment = channel.recv(1)
-except socket.timeout:
-    raise SystemExit(5)
-finally:
-    channel.close()
-raise SystemExit(6 if acknowledgment else 0)
-'''
-            attacker = subprocess.Popen([
-                str(binary), "-c", attacker_script, socket_path,
-                str(ready), str(release), payload,
-            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            try:
-                deadline = time.monotonic() + 5
-                while not ready.exists() and time.monotonic() < deadline:
-                    if attacker.poll() is not None:
-                        break
-                    time.sleep(0.01)
-                self.assertTrue(ready.exists(), "path-swapped peer did not become ready")
-                os.replace(preserved, binary)
-                release.touch()
-                stdout, stderr = attacker.communicate(timeout=5)
-                self.assertEqual(attacker.returncode, 0, stderr.decode(errors="replace"))
-                self.assertEqual((stdout, stderr), (b"", b""))
-                self.assertIsNone(server.consume_observation(operation))
-                self.assertEqual(server._signed_identity(binary), server._native_identity)
-            finally:
-                if attacker.poll() is None:
-                    attacker.kill(); attacker.wait(timeout=2)
-                if preserved.exists():
+            with tempfile.TemporaryFile() as attacker_stderr:
+                attacker = subprocess.Popen([
+                    str(binary), socket_path, str(ready), str(release), payload,
+                ], stdout=subprocess.DEVNULL, stderr=attacker_stderr)
+                try:
+                    deadline = time.monotonic() + 5
+                    while not ready.exists() and time.monotonic() < deadline:
+                        if attacker.poll() is not None:
+                            break
+                        time.sleep(0.01)
+                    self.assertTrue(ready.exists(), "path-swapped peer did not become ready")
+                    self.assertIsNone(attacker.poll(), "adversarial peer exited before restoration")
                     os.replace(preserved, binary)
-                server.server_close()
+                    release.touch()
+                    attacker.wait(timeout=5)
+                    attacker_stderr.seek(0)
+                    stderr = attacker_stderr.read()
+                    self.assertEqual(attacker.returncode, 0, stderr.decode(errors="replace"))
+                    self.assertEqual(stderr, b"")
+                    self.assertIsNone(server.consume_observation(operation))
+                    self.assertEqual(server._signed_identity(binary), server._native_identity)
+                finally:
+                    release.touch()
+                    if attacker.poll() is None:
+                        attacker.kill()
+                    attacker.wait(timeout=2)
+                    if preserved.exists():
+                        os.replace(preserved, binary)
+                    server.server_close()

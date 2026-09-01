@@ -100,6 +100,7 @@ PROFILE_NAMED_TOP_LEVEL = {
 REPLAY_TRANSITIONS = {"started", "reviewed"}
 REPLAY_ATS = {"ashby", "greenhouse", "lever", "linkedin-easy-apply"}
 SESSION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+PENDING_REFERENCE = re.compile(r"^pending_[a-f0-9]{32}$")
 CLAIM_LEASE_SECONDS = 300
 CLAIM_HEARTBEAT_SECONDS = 60
 OVERVIEW_DIGEST_CACHE_SECONDS = 30
@@ -1231,7 +1232,7 @@ def _validate_session_document(session: dict[str, Any]) -> None:
     pending_fields = session.get("pendingFields", [])
     if not isinstance(pending_fields, list):
         raise StoreError("session pendingFields must be a list")
-    pending_allowed = {"question", "state", "answerKey", "sensitive"}
+    pending_allowed = {"question", "state", "answerKey", "sensitive", "reference"}
     for value in pending_fields:
         field = _require_object(value, "pending field")
         if set(field) - pending_allowed:
@@ -1243,6 +1244,8 @@ def _validate_session_document(session: dict[str, Any]) -> None:
             raise StoreError("pending field state is unsupported")
         if "sensitive" in field and not isinstance(field["sensitive"], bool):
             raise StoreError("pending field sensitive must be a boolean")
+        if "reference" not in field or not isinstance(field["reference"], str) or PENDING_REFERENCE.fullmatch(field["reference"]) is None:
+            raise StoreError("pending field reference is invalid")
     _validate_optional_strings(
         session,
         {
@@ -2034,6 +2037,31 @@ class Store:
                 result_claim = operation.get("resultClaim")
                 if result_claim is not None:
                     _validate_claim_record(result_claim)
+                return document
+            if kind == "answer_resolution":
+                expected = {
+                    "kind", "operationId", "jobId", "at", "answerKey",
+                    "expectedJobRevision", "expectedSessionRevision",
+                    "expectedAnswerRevision", "sourceStatus", "targetStatus",
+                    "session", "resultClaim",
+                }
+                if set(operation) != expected:
+                    raise StoreError("coordinator answer resolution operation is invalid")
+                job_id = _safe_session_id(operation.get("jobId", ""))
+                if not all(isinstance(operation.get(field), str) and operation[field] for field in ("operationId", "at", "answerKey")):
+                    raise StoreError("coordinator answer resolution operation is invalid")
+                for field in ("expectedJobRevision", "expectedSessionRevision", "expectedAnswerRevision"):
+                    revision = operation.get(field)
+                    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
+                        raise StoreError("coordinator answer resolution revision is invalid")
+                if operation.get("sourceStatus") != "needs_info" or operation.get("targetStatus") not in {"needs_info", "ready"}:
+                    raise StoreError("coordinator answer resolution transition is invalid")
+                session = _require_object(operation.get("session"), "coordinator session")
+                _validate_session_document(session)
+                if session.get("applicationId") != job_id:
+                    raise StoreError("coordinator answer resolution session is invalid")
+                if operation.get("resultClaim") is not None:
+                    raise StoreError("coordinator answer resolution cannot create a claim")
                 return document
             common = {"kind", "operationId", "jobId", "at", "historyEvent", "resultClaim"}
             transition = {"sourceStatus", "targetStatus", "expectedRevision"}
@@ -4033,6 +4061,145 @@ class Store:
             ),
         )
 
+    @staticmethod
+    def _task_job_projection(record: dict[str, Any]) -> dict[str, Any]:
+        """Project one canonical job without URLs, notes, or provenance."""
+
+        return {
+            key: record[key]
+            for key in (
+                "id", "role", "company", "location", "workplaceType",
+                "employmentType", "status", "priority", "revision", "createdAt",
+                "updatedAt",
+            )
+            if key in record
+        }
+
+    def task_snapshot(self) -> dict[str, Any]:
+        """Return the shared, Store-owned task view used for job discussion."""
+
+        self.initialize()
+        self._ensure_coordinator_files()
+        with exclusive_file_lock(self.store_lock_path):
+            profile = self._load_profile_document()["profile"]
+            jobs = [
+                item for item in self._load_jobs_document()["jobs"].values()
+                if item.get("deletedAt") is None
+            ]
+            resumes = [
+                item for item in self._load_resumes_document()["resumes"].values()
+                if item.get("deletedAt") is None
+            ]
+            answers = [
+                item for item in self._load_answers_document()["answers"].values()
+                if item.get("deletedAt") is None
+                and item.get("reviewStatus", "accepted") == "accepted"
+            ]
+            claim = self._load_coordinator_document()["claim"]
+            now = self._now_datetime()
+            overview = self._owner_beta_overview_locked(
+                profile, jobs, resumes, answers, claim, now
+            )
+            projected_jobs = [
+                self._task_job_projection(item)
+                for item in sorted(
+                    jobs,
+                    key=lambda item: (
+                        -item.get("priority", 0),
+                        item.get("createdAt", ""),
+                        item["id"],
+                    ),
+                )
+            ]
+            attention = self._needs_attention_locked(
+                {item["id"]: item for item in jobs}, claim, now
+            )
+        signature_input = {
+            "overview": overview,
+            "jobs": projected_jobs,
+            "attentionSignature": attention["snapshotSignature"],
+        }
+        return {
+            "overview": overview,
+            "jobs": projected_jobs,
+            "attention": attention,
+            "snapshotSignature": hashlib.sha256(
+                _canonical_json(signature_input).encode("utf-8")
+            ).hexdigest(),
+        }
+
+    def intake_task_job(
+        self, incoming: dict[str, Any], origin: str = "agent"
+    ) -> dict[str, Any]:
+        """Atomically resolve or create exactly one active canonical job."""
+
+        self.initialize()
+        origin = _job_origin(origin)
+        payload = {"jobs": [incoming]}
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_jobs_document()
+            planned, decisions, changed = self._plan_job_upsert(
+                document, payload, origin, utc_now()
+            )
+            if len(decisions) != 1:
+                raise StoreError("task intake did not resolve exactly one job")
+            decision = decisions[0]
+            if decision["action"] in {"conflict", "invalid"}:
+                raise StoreError(f"task intake {decision['action']}")
+            job_id = decision.get("id")
+            record = planned["jobs"].get(job_id)
+            if (
+                not isinstance(job_id, str)
+                or record is None
+                or record.get("deletedAt") is not None
+            ):
+                raise StoreError("task intake did not resolve one active job")
+            if changed:
+                atomic_write_json(self.jobs_path, planned)
+        return {
+            "action": decision["action"],
+            "job": self._task_job_projection(record),
+        }
+
+    def select_task_job_ready(
+        self, job_id: str, expected_revision: int, owner_confirmed: bool
+    ) -> dict[str, Any]:
+        """Apply an explicit, revision-bound owner choice to one canonical job."""
+
+        self.initialize()
+        _safe_session_id(job_id)
+        if owner_confirmed is not True:
+            raise StoreError("task selection requires owner confirmation")
+        if not isinstance(expected_revision, int) or isinstance(expected_revision, bool):
+            raise StoreError("task selection requires an exact revision")
+        with exclusive_file_lock(self.store_lock_path):
+            document = self._load_jobs_document()
+            current = document["jobs"].get(job_id)
+            if current is None or current.get("deletedAt") is not None:
+                raise StoreError("task selection job is unavailable")
+            if current["revision"] != expected_revision:
+                raise StoreError("task selection revision conflict")
+            self._require_job_unclaimed_locked(job_id)
+            if current["status"] not in {"saved", "needs_info", "ready"}:
+                raise StoreError("task selection job is unavailable")
+            if not self._preflight_job_record(current)["ready"]:
+                raise StoreError("task selection preflight failed")
+            if current["status"] == "ready":
+                return {
+                    "action": "noop",
+                    "job": self._task_job_projection(current),
+                }
+            updated = dict(current)
+            updated["status"] = "ready"
+            updated["closedOutcome"] = None
+            updated["revision"] += 1
+            updated["updatedAt"] = utc_now()
+            _validate_job_record(job_id, updated)
+            document["jobs"][job_id] = updated
+            document["metadata"]["updatedAt"] = updated["updatedAt"]
+            atomic_write_json(self.jobs_path, document)
+        return {"action": "ready", "job": self._task_job_projection(updated)}
+
     def owner_beta_overview(self) -> dict[str, Any]:
         """Return a value-free, Store-derived projection for the companion landing page."""
 
@@ -4055,76 +4222,106 @@ class Store:
             ]
             claim = self._load_coordinator_document()["claim"]
             now = self._now_datetime()
-            attention_count = 0
-            for job in jobs:
-                status = job["status"]
-                if status in {"needs_info", "awaiting_review"}:
-                    attention_count += 1
-                elif status == "in_progress":
-                    owns_job = claim is not None and claim["jobId"] == job["id"]
-                    if not owns_job or now >= self._parse_time(claim["expiresAt"]):
-                        attention_count += 1
-
-            live_claim = (
-                claim is not None
-                and now < self._parse_time(claim["expiresAt"])
+            return self._owner_beta_overview_locked(
+                profile, jobs, resumes, answers, claim, now
             )
-            acquirable_ready_count = 0
-            if not live_claim:
-                resumes_by_id = {resume["id"]: resume for resume in resumes}
-                active_resume_ids = set(resumes_by_id)
-                self._overview_resume_digest_cache = {
-                    key: value
-                    for key, value in self._overview_resume_digest_cache.items()
-                    if key in active_resume_ids
-                }
-                resume_observations: dict[str, dict[str, Any]] = {}
-                acquirable_ready_count = sum(
-                    self._preflight_job_record(
-                        item,
-                        profile=profile,
-                        resumes=resumes_by_id,
-                        resume_observations=resume_observations,
-                        managed_digest_cache=self._overview_resume_digest_cache,
-                    )["ready"]
-                    for item in jobs
-                    if item["status"] == "ready"
-                )
-            counts = {
-                "jobs": len(jobs),
-                "readyJobs": sum(item["status"] == "ready" for item in jobs),
-                "attentionJobs": attention_count,
-                "resumes": len(resumes),
-                "answers": len(answers),
+
+    def _owner_beta_overview_locked(
+        self,
+        profile: dict[str, Any],
+        jobs: list[dict[str, Any]],
+        resumes: list[dict[str, Any]],
+        answers: list[dict[str, Any]],
+        claim: dict[str, Any] | None,
+        now: datetime,
+    ) -> dict[str, Any]:
+        """Derive the canonical overview from documents already read under the lock."""
+
+        attention_count = 0
+        for job in jobs:
+            status = job["status"]
+            if status in {"needs_info", "awaiting_review"}:
+                attention_count += 1
+            elif status == "in_progress":
+                owns_job = claim is not None and claim["jobId"] == job["id"]
+                if not owns_job or now >= self._parse_time(claim["expiresAt"]):
+                    attention_count += 1
+
+        live_claim = (
+            claim is not None
+            and now < self._parse_time(claim["expiresAt"])
+        )
+        acquirable_ready_count = 0
+        if not live_claim:
+            resumes_by_id = {resume["id"]: resume for resume in resumes}
+            active_resume_ids = set(resumes_by_id)
+            self._overview_resume_digest_cache = {
+                key: value
+                for key, value in self._overview_resume_digest_cache.items()
+                if key in active_resume_ids
             }
-            setup = {
-                "hasProfileFacts": self._has_application_facts(profile),
-                "hasResume": bool(resumes),
-            }
-            if not setup["hasResume"]:
-                next_action, target = "import_resume", "resumes"
-            elif not setup["hasProfileFacts"]:
-                next_action, target = "review_facts", "facts"
-            elif counts["attentionJobs"]:
-                next_action, target = "resolve_attention", "attention"
-            elif acquirable_ready_count:
-                next_action, target = "handoff_ready_job", "jobs"
-            elif not counts["jobs"]:
-                next_action, target = "capture_job", "jobs"
-            else:
-                next_action, target = "prepare_job", "jobs"
-            return {
-                "setup": setup,
-                "counts": counts,
-                "nextAction": next_action,
-                "targetWorkspace": target,
-            }
+            resume_observations: dict[str, dict[str, Any]] = {}
+            acquirable_ready_count = sum(
+                self._preflight_job_record(
+                    item,
+                    profile=profile,
+                    resumes=resumes_by_id,
+                    resume_observations=resume_observations,
+                    managed_digest_cache=self._overview_resume_digest_cache,
+                )["ready"]
+                for item in jobs
+                if item["status"] == "ready"
+            )
+        counts = {
+            "jobs": len(jobs),
+            "readyJobs": sum(item["status"] == "ready" for item in jobs),
+            "attentionJobs": attention_count,
+            "resumes": len(resumes),
+            "answers": len(answers),
+        }
+        setup = {
+            "hasProfileFacts": self._has_application_facts(profile),
+            "hasResume": bool(resumes),
+        }
+        if not setup["hasResume"]:
+            next_action, target = "import_resume", "resumes"
+        elif not setup["hasProfileFacts"]:
+            next_action, target = "review_facts", "facts"
+        elif counts["attentionJobs"]:
+            next_action, target = "resolve_attention", "attention"
+        elif acquirable_ready_count:
+            next_action, target = "handoff_ready_job", "jobs"
+        elif not counts["jobs"]:
+            next_action, target = "capture_job", "jobs"
+        else:
+            next_action, target = "prepare_job", "jobs"
+        return {
+            "setup": setup,
+            "counts": counts,
+            "nextAction": next_action,
+            "targetWorkspace": target,
+        }
 
     def list_needs_attention(self) -> dict[str, Any]:
         """Return one coherent, privacy-minimized cross-job attention snapshot."""
 
         self.initialize()
         self._ensure_coordinator_files()
+        with exclusive_file_lock(self.store_lock_path):
+            jobs = self._load_jobs_document()["jobs"]
+            persisted_claim = self._load_coordinator_document()["claim"]
+            return self._needs_attention_locked(
+                jobs, persisted_claim, self._now_datetime()
+            )
+
+    def _needs_attention_locked(
+        self,
+        jobs: dict[str, dict[str, Any]],
+        persisted_claim: dict[str, Any] | None,
+        now: datetime,
+    ) -> dict[str, Any]:
+        """Derive attention rows from documents already read under the Store lock."""
+
         reason_rank = {
             "expired_agent_attempt": 0,
             "claimless_interrupted_attempt": 1,
@@ -4149,72 +4346,71 @@ class Store:
                 "Open Job details and resolve the missing facts, resume, or answers, then run preflight and mark the job ready.",
             ),
         }
-        with exclusive_file_lock(self.store_lock_path):
-            jobs = self._load_jobs_document()["jobs"]
-            persisted_claim = self._load_coordinator_document()["claim"]
-            now = self._now_datetime()
-            rows: list[dict[str, Any]] = []
-            for job in jobs.values():
-                if job.get("deletedAt") is not None:
-                    continue
-                reason_code = None
-                attention_at = job["updatedAt"]
-                if job["status"] == "in_progress":
-                    selected_claim = (
-                        persisted_claim
-                        if persisted_claim is not None
-                        and persisted_claim["jobId"] == job["id"]
-                        else None
-                    )
-                    if selected_claim is None:
-                        reason_code = "claimless_interrupted_attempt"
-                    elif now >= self._parse_time(selected_claim["expiresAt"]):
-                        reason_code = "expired_agent_attempt"
-                        attention_at = selected_claim["expiresAt"]
-                elif job["status"] == "awaiting_review":
-                    reason_code = "awaiting_human_review"
-                elif job["status"] == "needs_info":
-                    reason_code = "needs_information"
-                if reason_code is None:
-                    continue
+        rows: list[dict[str, Any]] = []
+        for job in jobs.values():
+            if job.get("deletedAt") is not None:
+                continue
+            reason_code = None
+            attention_at = job["updatedAt"]
+            if job["status"] == "in_progress":
+                selected_claim = (
+                    persisted_claim
+                    if persisted_claim is not None
+                    and persisted_claim["jobId"] == job["id"]
+                    else None
+                )
+                if selected_claim is None:
+                    reason_code = "claimless_interrupted_attempt"
+                elif now >= self._parse_time(selected_claim["expiresAt"]):
+                    reason_code = "expired_agent_attempt"
+                    attention_at = selected_claim["expiresAt"]
+            elif job["status"] == "awaiting_review":
+                reason_code = "awaiting_human_review"
+            elif job["status"] == "needs_info":
+                reason_code = "needs_information"
+            if reason_code is None:
+                continue
 
-                missing_count = 0
-                if reason_code == "needs_information":
-                    session_path = self._session_path(job["id"])
-                    if session_path.exists():
-                        session = read_json_object(session_path, "session")
-                        validate_version(session, "session")
-                        _validate_session_document(session)
-                        if session["applicationId"] != job["id"]:
-                            raise StoreError("session application id does not match path")
-                        missing_count = len(session.get("pendingFields", []))
-                reason_label, guidance = reason_details[reason_code]
-                rows.append({
-                    "jobId": job["id"],
-                    "role": job.get("role"),
-                    "company": job.get("company"),
-                    "status": job["status"],
-                    "revision": job["revision"],
-                    "priority": job.get("priority", 0),
-                    "reasonCode": reason_code,
-                    "reasonLabel": reason_label,
-                    "attentionAt": attention_at,
-                    "guidance": guidance,
-                    "missingInformationCount": missing_count,
-                })
-            rows.sort(key=lambda item: (
-                reason_rank[item["reasonCode"]],
-                -item["priority"],
-                item["attentionAt"],
-                item["jobId"],
-            ))
-            serialized = json.dumps(
-                rows, ensure_ascii=False, separators=(",", ":"), sort_keys=True
-            ).encode("utf-8")
-            return {
-                "items": rows,
-                "snapshotSignature": hashlib.sha256(serialized).hexdigest(),
-            }
+            missing_count = 0
+            session_revision = None
+            if reason_code == "needs_information":
+                session_path = self._session_path(job["id"])
+                if session_path.exists():
+                    session = read_json_object(session_path, "session")
+                    validate_version(session, "session")
+                    _validate_session_document(session)
+                    if session["applicationId"] != job["id"]:
+                        raise StoreError("session application id does not match path")
+                    missing_count = len(session.get("pendingFields", []))
+                    session_revision = self._session_revision(session)
+            reason_label, guidance = reason_details[reason_code]
+            rows.append({
+                "jobId": job["id"],
+                "role": job.get("role"),
+                "company": job.get("company"),
+                "status": job["status"],
+                "revision": job["revision"],
+                "priority": job.get("priority", 0),
+                "reasonCode": reason_code,
+                "reasonLabel": reason_label,
+                "attentionAt": attention_at,
+                "guidance": guidance,
+                "missingInformationCount": missing_count,
+                "sessionRevision": session_revision,
+            })
+        rows.sort(key=lambda item: (
+            reason_rank[item["reasonCode"]],
+            -item["priority"],
+            item["attentionAt"],
+            item["jobId"],
+        ))
+        serialized = json.dumps(
+            rows, ensure_ascii=False, separators=(",", ":"), sort_keys=True
+        ).encode("utf-8")
+        return {
+            "items": rows,
+            "snapshotSignature": hashlib.sha256(serialized).hexdigest(),
+        }
 
     def _preflight_job_record(
         self,
@@ -5244,6 +5440,7 @@ class Store:
                 raise StoreError("job does not exist")
 
             session = None
+            answers_document = self._load_answers_document()
             session_path = self._session_path(job_id)
             if session_path.exists():
                 stored_session = read_json_object(session_path, "session")
@@ -5256,12 +5453,13 @@ class Store:
                     for key in ("status", "step", "createdAt", "updatedAt")
                     if key in stored_session
                 }
+                session["revision"] = self._session_revision(stored_session)
                 session["pendingInformation"] = [
                     {
                         key: pending[key]
                         for key in ("question", "state", "sensitive")
                         if key in pending
-                    }
+                    } | self._pending_resolution_projection(pending, answers_document)
                     for pending in stored_session.get("pendingFields", [])
                 ]
 
@@ -5312,6 +5510,68 @@ class Store:
                 "claim": claim,
                 "history": history,
             }
+
+    @staticmethod
+    def _session_revision(session: dict[str, Any]) -> int:
+        """Return a stable positive JSON/JavaScript-safe revision token."""
+        digest = hashlib.sha256(_canonical_json(session).encode("utf-8")).hexdigest()
+        return int(digest[:13], 16) + 1
+
+    def _pending_resolution_projection(
+        self, field: dict[str, Any], answers: dict[str, Any]
+    ) -> dict[str, Any]:
+        projection: dict[str, Any] = {"reference": field["reference"]}
+        key = field.get("answerKey")
+        if not isinstance(key, str) or not key:
+            return projection | {"resolutionEligible": False}
+        resolved = self._resolve_answer_key_in_document(answers, key)
+        answer = answers["answers"].get(resolved)
+        if answer is None or answer.get("deletedAt") is not None:
+            return projection | {"resolutionEligible": False}
+        projection["answerRevision"] = answer.get("revision", 1)
+        projection["resolutionEligible"] = bool(
+            field.get("sensitive") is not True
+            and field.get("state") != "sensitive"
+            and answer.get("reviewStatus", "accepted") == "accepted"
+            and answer.get("state") == "confirmed"
+            and answer.get("value") is not None
+            and not self._answer_is_sensitive(answer)
+        )
+        return projection
+
+    def pending_answer_detail(self, job_id: str, reference: str) -> dict[str, Any]:
+        """Resolve an opaque durable pending reference to its canonical answer."""
+        self.initialize()
+        job_id = _safe_session_id(job_id)
+        if not isinstance(reference, str) or PENDING_REFERENCE.fullmatch(reference) is None:
+            raise StoreError("pending question reference is invalid")
+        with exclusive_file_lock(self.store_lock_path):
+            job = self._load_jobs_document()["jobs"].get(job_id)
+            if job is None or job.get("deletedAt") is not None:
+                raise StoreError("job does not exist")
+            path = self._session_path(job_id)
+            if not path.exists():
+                raise StoreError("answer resolution session does not exist")
+            session = read_json_object(path, "session")
+            validate_version(session, "session")
+            _validate_session_document(session)
+            field = next(
+                (
+                    item for item in session.get("pendingFields", [])
+                    if item.get("reference") == reference
+                ),
+                None,
+            )
+            if field is None:
+                raise StoreError("pending question reference is stale")
+            key = field.get("answerKey")
+            if not isinstance(key, str) or not key:
+                raise StoreError("pending question has no referenced answer")
+            answers = self._load_answers_document()
+            answer = self._get_answer_record(key, document=answers)
+            if answer is None:
+                raise StoreError("referenced answer does not exist")
+            return self.answer_detail_projection(answer, answers)
 
     def _require_claim_locked(
         self, job_id: str, token: str, allow_expired: bool = False
@@ -5428,6 +5688,38 @@ class Store:
                 {"schemaVersion": SCHEMA_VERSION, "operation": None},
             )
             return
+        if operation["kind"] == "answer_resolution":
+            job_id = operation["jobId"]
+            jobs = self._load_jobs_document()
+            current = jobs["jobs"].get(job_id)
+            if current is None or current.get("deletedAt") is not None:
+                raise StoreError("coordinator journal references a missing job")
+            expected = operation["expectedJobRevision"]
+            if current["revision"] == expected:
+                if current["status"] != operation["sourceStatus"]:
+                    raise StoreError("coordinator journal source status drifted")
+                updated = dict(current)
+                updated["status"] = operation["targetStatus"]
+                updated["closedOutcome"] = None
+                updated["revision"] = expected + 1
+                updated["updatedAt"] = operation["at"]
+                _validate_job_record(job_id, updated)
+                jobs["jobs"][job_id] = updated
+                jobs["metadata"]["updatedAt"] = operation["at"]
+                atomic_write_json(self.jobs_path, jobs)
+            elif not (current["revision"] == expected + 1 and current["status"] == operation["targetStatus"]):
+                raise StoreError("coordinator journal cannot be reconciled")
+            session = operation["session"]
+            path = self._session_path(job_id)
+            existing = read_json_object(path, "session")
+            existing_revision = self._session_revision(existing)
+            if existing_revision == operation["expectedSessionRevision"]:
+                atomic_write_json(path, session)
+            elif _canonical_json(existing) != _canonical_json(session):
+                raise StoreError("coordinator session cannot be reconciled")
+            atomic_write_json(self.coordinator_path, {"schemaVersion": SCHEMA_VERSION, "claim": None})
+            atomic_write_json(self.coordinator_journal_path, {"schemaVersion": SCHEMA_VERSION, "operation": None})
+            return
         event = operation.get("historyEvent")
         if event is not None:
             self._history_event_is_idempotent_locked(event)
@@ -5479,6 +5771,101 @@ class Store:
             {"schemaVersion": SCHEMA_VERSION, "operation": operation},
         )
         self._roll_forward_locked()
+
+    def resolve_pending_answer(
+        self, job_id: str, reference: str, expected_job_revision: int,
+        expected_session_revision: int, expected_answer_revision: int,
+        owner_confirmed: bool = False,
+    ) -> dict[str, Any]:
+        """Recheck one pending question without copying its answer value."""
+        self.initialize()
+        self._ensure_coordinator_files()
+        job_id = _safe_session_id(job_id)
+        if not owner_confirmed:
+            raise StoreError("answer resolution requires explicit owner confirmation")
+        if not isinstance(reference, str) or PENDING_REFERENCE.fullmatch(reference) is None:
+            raise StoreError("pending question reference is invalid")
+        for revision in (expected_job_revision, expected_session_revision, expected_answer_revision):
+            if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
+                raise StoreError("answer resolution revision is invalid")
+        with exclusive_file_lock(self.store_lock_path):
+            self._require_job_unclaimed_locked(job_id)
+            jobs = self._load_jobs_document()
+            job = jobs["jobs"].get(job_id)
+            if job is None or job.get("deletedAt") is not None:
+                raise StoreError("job does not exist")
+            if job["revision"] != expected_job_revision:
+                raise StoreError("job revision conflict")
+            if job["status"] != "needs_info":
+                raise StoreError("answer resolution requires a needs_info job")
+            path = self._session_path(job_id)
+            if not path.exists():
+                raise StoreError("answer resolution session does not exist")
+            session = read_json_object(path, "session")
+            validate_version(session, "session")
+            _validate_session_document(session)
+            if self._session_revision(session) != expected_session_revision:
+                raise StoreError("session revision conflict")
+            pending = session.get("pendingFields", [])
+            matching = [
+                (index, field) for index, field in enumerate(pending)
+                if field.get("reference") == reference
+            ]
+            if len(matching) != 1:
+                raise StoreError("pending question reference is stale")
+            index, field = matching[0]
+            key = field.get("answerKey")
+            if not isinstance(key, str) or not key:
+                raise StoreError("pending question has no referenced answer")
+            if field.get("sensitive") is True or field.get("state") == "sensitive":
+                raise StoreError("sensitive pending answers require reconfirmation")
+            answers = self._load_answers_document()
+            resolved_key = self._resolve_answer_key_in_document(answers, key)
+            answer = answers["answers"].get(resolved_key)
+            if answer is None or answer.get("deletedAt") is not None:
+                raise StoreError("referenced answer does not exist")
+            if answer.get("revision", 1) != expected_answer_revision:
+                raise StoreError("answer revision conflict")
+            if answer.get("reviewStatus", "accepted") != "accepted" or answer.get("state") != "confirmed" or answer.get("value") is None:
+                raise StoreError("referenced answer is not accepted and confirmed")
+            if self._answer_is_sensitive(answer):
+                raise StoreError("sensitive pending answers require reconfirmation")
+            now = self._now()
+            updated_session = copy.deepcopy(session)
+            del updated_session["pendingFields"][index]
+            answer_keys = list(updated_session.get("answerKeys", []))
+            if resolved_key not in answer_keys:
+                answer_keys.append(resolved_key)
+            updated_session["answerKeys"] = answer_keys
+            updated_session["updatedAt"] = now
+            _validate_session_document(updated_session)
+            target = "needs_info"
+            if not updated_session["pendingFields"]:
+                if not self._preflight_job_record(job)["ready"]:
+                    raise StoreError("job preflight failed after answer resolution")
+                target = "ready"
+            self._commit_coordinator_operation_locked({
+                "kind": "answer_resolution", "operationId": str(uuid.uuid4()),
+                "jobId": job_id, "at": now, "answerKey": resolved_key,
+                "expectedJobRevision": expected_job_revision,
+                "expectedSessionRevision": expected_session_revision,
+                "expectedAnswerRevision": expected_answer_revision,
+                "sourceStatus": "needs_info", "targetStatus": target,
+                "session": updated_session, "resultClaim": None,
+            })
+            result_job = self._load_jobs_document()["jobs"][job_id]
+            return {
+                "job": {"id": job_id, "status": result_job["status"], "revision": result_job["revision"]},
+                "session": {
+                    "revision": self._session_revision(updated_session),
+                    "pendingInformation": [
+                        {key: item[key] for key in ("question", "state", "sensitive") if key in item}
+                        | self._pending_resolution_projection(item, answers)
+                        for item in updated_session["pendingFields"]
+                    ],
+                },
+                "resolved": True, "ready": target == "ready",
+            }
 
     def acquire_ready_job(
         self, job_id: str, owner_label: str, expected_revision: int
@@ -6625,16 +7012,36 @@ class Store:
             raise StoreError("session answerKeys must be strings")
         path = self._session_path(application_id)
         created_at = incoming.get("createdAt")
+        existing = None
         if path.exists():
             existing = read_json_object(path, "session")
             _validate_session_document(existing)
             created_at = created_at or existing.get("createdAt")
+        pending_input = incoming.get("pendingFields", [])
+        if not isinstance(pending_input, list):
+            raise StoreError("session pendingFields must be a list")
+        reusable: dict[str, list[str]] = {}
+        if existing is not None:
+            for field in existing.get("pendingFields", []):
+                key = field.get("answerKey")
+                if isinstance(key, str) and key:
+                    reusable.setdefault(key, []).append(field["reference"])
+        pending_fields = []
+        for value in pending_input:
+            field = _require_object(value, "pending field")
+            if set(field) - {"question", "state", "answerKey", "sensitive"}:
+                raise StoreError("pending field contains unsupported fields")
+            copied = copy.deepcopy(field)
+            key = copied.get("answerKey")
+            references = reusable.get(key, []) if isinstance(key, str) else []
+            copied["reference"] = references.pop(0) if references else f"pending_{uuid.uuid4().hex}"
+            pending_fields.append(copied)
         timestamp = now or utc_now()
         session = {
             "schemaVersion": SCHEMA_VERSION, **incoming,
             "applicationId": application_id, "status": status,
             "answerKeys": answer_keys,
-            "pendingFields": incoming.get("pendingFields", []),
+            "pendingFields": pending_fields,
             "createdAt": created_at or timestamp, "updatedAt": timestamp,
         }
         _validate_session_document(session)

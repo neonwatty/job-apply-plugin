@@ -2715,11 +2715,17 @@ class StoreTests(unittest.TestCase):
             ("in_progress", "active"),
         )
         self.assertEqual(activity["session"]["step"], "questions")
-        self.assertEqual(activity["session"]["pendingInformation"], [{
+        self.assertEqual(activity["session"]["pendingInformation"][0] | {"reference": "opaque"}, {
             "question": "Are you authorized to work here?",
             "state": "missing",
             "sensitive": True,
-        }])
+            "reference": "opaque",
+            "resolutionEligible": False,
+        })
+        self.assertRegex(
+            activity["session"]["pendingInformation"][0]["reference"],
+            r"^pending_[a-f0-9]{32}$",
+        )
         self.assertEqual(
             [event["event"] for event in activity["history"]], ["job-started"]
         )
@@ -2850,7 +2856,7 @@ class StoreTests(unittest.TestCase):
         allowed = {
             "jobId", "role", "company", "status", "revision", "priority",
             "reasonCode", "reasonLabel", "attentionAt", "guidance",
-            "missingInformationCount",
+            "missingInformationCount", "sessionRevision",
         }
         self.assertTrue(all(set(item) == allowed for item in projection["items"]))
         self.assertEqual(projection["items"][-1]["missingInformationCount"], 2)
@@ -2956,6 +2962,222 @@ class StoreTests(unittest.TestCase):
         self.assertNotIn(acquired["token"], stored)
         self.assertNotIn("250K", stored)
         self.assertEqual([event["event"] for event in self.store.read_history()], ["job-started", "job-blocked"])
+
+    def test_pending_answer_recheck_preserves_exact_resume_and_resumes_to_review(self):
+        self._make_ready_job(assigned=True)
+        resume_before = self.store.get_resume("assigned-resume")
+        resume_bytes_before = (
+            self.store.resume_files_path / resume_before["managedFile"]
+        ).read_bytes()
+        ready = self.store.get_job("ready-job")
+        acquired = self.store.acquire_ready_job("ready-job", "first-owner", ready["revision"])
+        pending = {
+            "status": "active", "step": "questions", "answerKeys": [],
+            "pendingFields": [
+                {"question": "Authorization?", "state": "missing", "answerKey": "question.safe", "sensitive": False},
+                {"question": "Availability?", "state": "missing", "answerKey": "question.second", "sensitive": False},
+            ],
+        }
+        self.store.save_claim_progress("ready-job", acquired["token"], pending)
+        blocked = self.store.handoff_claimed_job(
+            "ready-job", acquired["token"], "needs_info", pending,
+            acquired["job"]["revision"],
+        )
+        answer = self.store.put_answer({
+            "key": "question.safe", "question": "Authorization?",
+            "state": "confirmed", "value": "private accepted value",
+        })
+        second_answer = self.store.put_answer({
+            "key": "question.second", "question": "Availability?",
+            "state": "confirmed", "value": "another private value",
+        })
+        activity = self.store.get_job_activity("ready-job")
+        reference = activity["session"]["pendingInformation"][0]["reference"]
+        resolved = self.store.resolve_pending_answer(
+            "ready-job", reference, blocked["job"]["revision"],
+            activity["session"]["revision"], answer["revision"], True,
+        )
+        self.assertFalse(resolved["ready"])
+        self.assertEqual(resolved["job"]["status"], "needs_info")
+        self.assertEqual(len(resolved["session"]["pendingInformation"]), 1)
+        final_reference = resolved["session"]["pendingInformation"][0]["reference"]
+        managed_path = self.store.resume_files_path / resume_before["managedFile"]
+        state_before_changed_resume = (
+            self.store.jobs_path.read_bytes(),
+            self.store._session_path("ready-job").read_bytes(),
+        )
+        managed_path.write_bytes(b"changed resume bytes")
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "preflight failed"):
+            self.store.resolve_pending_answer(
+                "ready-job", final_reference, resolved["job"]["revision"],
+                resolved["session"]["revision"], second_answer["revision"], True,
+            )
+        self.assertEqual(
+            (self.store.jobs_path.read_bytes(), self.store._session_path("ready-job").read_bytes()),
+            state_before_changed_resume,
+        )
+        managed_path.write_bytes(resume_bytes_before)
+        resolved = self.store.resolve_pending_answer(
+            "ready-job", final_reference, resolved["job"]["revision"],
+            resolved["session"]["revision"], second_answer["revision"], True,
+        )
+        self.assertTrue(resolved["ready"])
+        self.assertEqual(resolved["session"]["pendingInformation"], [])
+        serialized = json.dumps(resolved) + self.store.history_path.read_text(encoding="utf-8") + self.store._session_path("ready-job").read_text(encoding="utf-8")
+        self.assertNotIn("private accepted value", serialized)
+        self.assertNotIn("another private value", serialized)
+        resumed = self.store.acquire_ready_job(
+            "ready-job", "second-owner", resolved["job"]["revision"]
+        )
+        for field in ("id", "revision", "contentRevision", "digest"):
+            self.assertEqual(resumed["resume"][field], acquired["resume"][field])
+            self.assertEqual(resumed["resume"][field], resume_before[field])
+        self.assertEqual(
+            (self.store.resume_files_path / resume_before["managedFile"]).read_bytes(),
+            resume_bytes_before,
+        )
+        reviewed = self.store.handoff_claimed_job(
+            "ready-job", resumed["token"], "awaiting_review",
+            {"status": "review", "step": "review", "pendingFields": []},
+            resumed["job"]["revision"],
+        )
+        self.assertEqual(reviewed["job"]["status"], "awaiting_review")
+        self.assertEqual(
+            [event["event"] for event in self.store.read_history()],
+            ["job-started", "job-blocked", "job-started", "reviewed"],
+        )
+
+    def test_pending_answer_resolution_negative_matrix_is_side_effect_free(self):
+        self._make_ready_job()
+        ready = self.store.get_job("ready-job")
+        safe = self.store.put_answer({"key": "safe", "state": "confirmed", "value": "private"})
+        self.store.put_answer({"key": "unconfirmed", "state": "missing"})
+        observed = self.store.observe_answer({
+            "question": "Declined?", "scope": {"kind": "declined"},
+            "state": "missing",
+        })
+        self.store.review_answer(observed["key"], "declined", observed["revision"])
+        self.store.put_answer(
+            {"key": "sensitive", "state": "sensitive", "sensitivity": "high", "value": "secret"},
+            remember_sensitive=True,
+        )
+        acquired = self.store.acquire_ready_job("ready-job", "owner", ready["revision"])
+        pending = {
+            "status": "active", "step": "questions", "answerKeys": [],
+            "pendingFields": [
+                {"question": "Safe?", "state": "missing", "answerKey": "safe", "sensitive": False},
+                {"question": "Missing?", "state": "missing", "answerKey": "absent", "sensitive": False},
+                {"question": "Unconfirmed?", "state": "missing", "answerKey": "unconfirmed", "sensitive": False},
+                {"question": "Declined?", "state": "missing", "answerKey": observed["key"], "sensitive": False},
+                {"question": "Sensitive?", "state": "missing", "answerKey": "sensitive", "sensitive": False},
+            ],
+        }
+        self.store.save_claim_progress("ready-job", acquired["token"], pending)
+        blocked = self.store.handoff_claimed_job(
+            "ready-job", acquired["token"], "needs_info", pending,
+            acquired["job"]["revision"],
+        )
+        activity = self.store.get_job_activity("ready-job")
+        references = [item["reference"] for item in activity["session"]["pendingInformation"]]
+        baseline = {
+            path: path.read_bytes()
+            for path in (
+                self.store.jobs_path, self.store._session_path("ready-job"),
+                self.store.coordinator_path, self.store.coordinator_journal_path,
+                self.store.history_path,
+            )
+        }
+        attempts = [
+            (references[0], blocked["job"]["revision"], activity["session"]["revision"], safe["revision"], False, "owner confirmation"),
+            (references[0], blocked["job"]["revision"] + 1, activity["session"]["revision"], safe["revision"], True, "job revision conflict"),
+            (references[0], blocked["job"]["revision"], activity["session"]["revision"] + 1, safe["revision"], True, "session revision conflict"),
+            (references[0], blocked["job"]["revision"], activity["session"]["revision"], safe["revision"] + 1, True, "answer revision conflict"),
+            (f"pending_{'0' * 32}", blocked["job"]["revision"], activity["session"]["revision"], safe["revision"], True, "reference is stale"),
+        ]
+        answer_revisions = [safe["revision"], 1, 1, 2, 1]
+        expected_messages = [None, "does not exist", "not accepted and confirmed", "not accepted and confirmed", "not accepted and confirmed"]
+        for reference, revision, message in zip(references, answer_revisions, expected_messages):
+            if message is None:
+                continue
+            attempts.append((reference, blocked["job"]["revision"], activity["session"]["revision"], revision, True, message))
+        for reference, job_revision, session_revision, answer_revision, confirmed, message in attempts:
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(STORE_MODULE.StoreError, message):
+                    self.store.resolve_pending_answer(
+                        "ready-job", reference, job_revision, session_revision,
+                        answer_revision, confirmed,
+                    )
+                for path, content in baseline.items():
+                    self.assertEqual(path.read_bytes(), content)
+
+    def test_answer_resolution_journal_recovers_idempotently_before_and_after_each_write(self):
+        original_write = STORE_MODULE.atomic_write_json
+        for fail_at in range(1, 6):
+            for timing in ("before", "after"):
+                with self.subTest(fail_at=fail_at, timing=timing), tempfile.TemporaryDirectory() as temporary:
+                    root = Path(temporary) / "store"
+                    store = STORE_MODULE.Store(root, Path(temporary) / "legacy.json")
+                    store.replace_profile(
+                        {"firstName": "Ada"},
+                        expected_revision=store.inspect_profile()["revision"],
+                        source="user",
+                    )
+                    resume_path = Path(temporary) / "resume.pdf"
+                    resume_path.write_bytes(b"%PDF-1.7\njournal")
+                    store.create_resume({"id": "resume", "label": "Resume", "path": str(resume_path)})
+                    job = store.create_job({
+                        "id": "journal-job", "url": "https://example.com/jobs/journal",
+                        "role": "Engineer", "company": "Acme",
+                    })
+                    job = store.transition_job(job["id"], "ready", job["revision"])
+                    acquired = store.acquire_ready_job(job["id"], "owner", job["revision"])
+                    pending = {
+                        "status": "active", "step": "questions", "pendingFields": [{
+                            "question": "Authorization?", "state": "missing",
+                            "answerKey": "safe", "sensitive": False,
+                        }],
+                    }
+                    store.save_claim_progress(job["id"], acquired["token"], pending)
+                    blocked = store.handoff_claimed_job(
+                        job["id"], acquired["token"], "needs_info", pending,
+                        acquired["job"]["revision"],
+                    )
+                    answer = store.put_answer({"key": "safe", "state": "confirmed", "value": "private"})
+                    activity = store.get_job_activity(job["id"])
+                    reference = activity["session"]["pendingInformation"][0]["reference"]
+                    calls = {"count": 0}
+
+                    def interrupted_write(path, payload):
+                        calls["count"] += 1
+                        if calls["count"] == fail_at and timing == "before":
+                            raise OSError("simulated answer-resolution interruption")
+                        result = original_write(path, payload)
+                        if calls["count"] == fail_at and timing == "after":
+                            raise OSError("simulated answer-resolution interruption")
+                        return result
+
+                    with mock.patch.object(STORE_MODULE, "atomic_write_json", side_effect=interrupted_write):
+                        with self.assertRaisesRegex(OSError, "simulated answer-resolution interruption"):
+                            store.resolve_pending_answer(
+                                job["id"], reference, blocked["job"]["revision"],
+                                activity["session"]["revision"], answer["revision"], True,
+                            )
+
+                    repaired = STORE_MODULE.Store(root, Path(temporary) / "legacy.json")
+                    repaired_activity = repaired.get_job_activity(job["id"])
+                    if fail_at == 1 and timing == "before":
+                        self.assertEqual(repaired.get_job(job["id"])["status"], "needs_info")
+                        repaired.resolve_pending_answer(
+                            job["id"], reference, blocked["job"]["revision"],
+                            activity["session"]["revision"], answer["revision"], True,
+                        )
+                    self.assertEqual(repaired.get_job(job["id"])["status"], "ready")
+                    self.assertEqual(repaired.get_job_activity(job["id"])["session"]["pendingInformation"], [])
+                    revision = repaired.get_job(job["id"])["revision"]
+                    repaired.get_job_activity(job["id"])
+                    repaired.initialize()
+                    self.assertEqual(repaired.get_job(job["id"])["revision"], revision)
+                    self.assertIsNone(repaired._load_coordinator_journal()["operation"])
 
     def test_coordinator_journal_rolls_forward_after_partial_failure_without_duplicates(self):
         self._make_ready_job()

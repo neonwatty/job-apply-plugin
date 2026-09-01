@@ -1,5 +1,7 @@
 # Job Apply Plugin for Codex and Claude Code
 
+Run the isolated cross-client task-spine oracle with `npm run qa:unified-task-spine`. It uses a temporary synthetic Store, the shipped CLIs, an authenticated loopback Companion server, and Playwright; its single JSON report is value-free and cleanup-closed, and it never enables a final application action.
+
 [![Discord](https://img.shields.io/badge/Discord-Join%20Server-7289da?style=flat&logo=discord&logoColor=white)](https://discord.gg/7xsxU4ZG6A)
 
 AI-powered job application assistant for Claude Code and Codex that fills job applications on LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday using visible browser automation.
@@ -234,7 +236,7 @@ Job Apply stores data as **plaintext local files** under `~/.job-apply/`:
 | `coordinator-journal.json` | Value-free idempotent roll-forward record for lifecycle handoffs |
 | `sessions/*.json` | Resumable workflow metadata and answer-key references |
 
-The coordinator files are created only when the ready-job claim workflow is first used; direct-URL applications keep the legacy store shape.
+The coordinator files are created only when the ready-job claim workflow is first used. Ordinary URL applications are first ingested as canonical jobs and use the same canonical job ID for selection, claims, sessions, activity, and review handoff. Authenticated loopback QA replay is the only synthetic exception.
 
 These files can include sensitive personal information such as:
 
@@ -259,6 +261,12 @@ chmod 600 ~/.job-apply/resume-extractions.json ~/.job-apply/resume-extraction-jo
 On first use, an existing `~/.claude-job-profile.json` is copied into the new versioned profile without modifying or deleting the legacy file. Once `~/.job-apply/profile.json` exists it is authoritative; later legacy-file changes are not re-imported. Verify the new profile before deciding whether to archive or remove the old file.
 
 All plugin skills access this data through the bundled `scripts/job-apply-store.py` helper. Canonical JSON updates are atomic, corrupt or future-version files fail closed, and application history and sessions do not duplicate reusable answer values.
+
+The packaged `scripts/job-apply-task.py` helper is the ordinary agent-facing job protocol. `snapshot` returns one redacted Store-owned overview/jobs/attention view; `activity --id <job-id>` returns value-free activity for one exact canonical job. `intake --input <private-json>` atomically resolves or creates exactly one active job without returning its URL or the Store's upsert token. After the owner explicitly chooses a displayed job, `select --id <job-id> --expected-revision <revision> --owner-confirmed` rechecks preflight and marks it Ready, or returns a stable no-op when that exact revision is already Ready. All failures are stable machine-readable JSON; identity conflicts, trashed matches, stale revisions, unavailable jobs, and failed preflight stop before browser work.
+
+The packaged `scripts/job-apply-attempt.py` helper uses a detached broker scoped to one Store and exact selected attempt. A short `start` client launches the broker, acquires the exact job and revision, returns the redacted application inputs, and exits; no launcher, stdin stream, terminal, or conversational process stays attached. The broker retains claim authority only in memory, heartbeats automatically, and accepts later stateless `heartbeat`, value-free `progress`, and `handoff` clients through its OS-user-restricted Store socket. It cannot switch jobs, Stores, revisions, owners, or claims. Its argv, environment, JSON responses, diagnostics, and durable files never carry the raw claim authority. A successful `awaiting_review` or `needs_info` handoff saves the value-free session, releases the claim, and causes the broker to exit.
+
+When an exact managed attempt is blocked by a referenced non-sensitive question, send a value-free `needs_info` handoff so the broker releases the claim and exits, then inspect `activity --id <job-id>`. Edit and accept the answer in Companion's canonical Answers library and explicitly resolve that pending reference against the exact job, session, and answer revisions shown there. The Store rechecks all three revisions under its lock, removes only that pending reference, and never copies the answer value into the session, journal result, history, activity, or diagnostics. The job stays in Needs Attention while another blocker remains; with no blockers it becomes Ready only after preflight. Use the returned exact Ready revision with a fresh `start` client, which creates a fresh broker acquisition for the same canonical job; the assigned/default managed resume binding and resumable session continue through the next `job-started` and `reviewed` handoff. Missing, inferred, declined, sensitive, or stale answers fail closed without retry. Refresh and review canonical state; browser drafts are not overwritten. This flow opens no portal and performs no final action.
 
 New resume records import a private managed copy rather than retaining the source
 path. Imports accept PDF, DOCX, and UTF-8 TXT files up to 10 MiB, reject duplicate

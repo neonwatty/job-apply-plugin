@@ -371,7 +371,7 @@ if (hasDom) {
   const profileState = { inspection: null, drafts: new Map(), draftBases: new Map(), atomic: new Set(), additionalAtomic: new Set(), deletions: new Set(), conflicts: [], latest: null, loaded: false };
   const factGroupState = { items: [], selectedView: "all", selected: null, editing: null, loaded: false, opener: null, requestSequence: 0 };
   const resumeState = { items: [], proposals: [], trash: false, loaded: false, loading: false, requestId: 0, selected: null, opener: null, proposal: null, dirtyMetadata: new Set() };
-  const answerState = { items: [], loaded: false, selected: null, offset: 0, limit: 25, total: 0, dirty: new Set(), opener: null, requestSequence: 0, detailRequestSequence: 0, dialogGeneration: 0, mergeRequestSequence: 0, mergeSource: null, mergeCandidates: [], busyControls: null };
+  const answerState = { items: [], loaded: false, selected: null, offset: 0, limit: 25, total: 0, dirty: new Set(), opener: null, pendingJobId: null, pendingReference: null, requestSequence: 0, detailRequestSequence: 0, dialogGeneration: 0, mergeRequestSequence: 0, mergeSource: null, mergeCandidates: [], busyControls: null };
   const trashState = { items: [], counts: { job: 0, resume: 0, answer: 0 }, loaded: false, selected: null, opener: null };
   const attentionState = { items: [], snapshotSignature: "", loaded: false, unavailable: false, detailRequestSequence: 0 };
   const overviewState = { projection: null, available: false, degraded: false, unavailable: false };
@@ -1157,11 +1157,16 @@ if (hasDom) {
       const company = document.createElement("p"); company.className = "attention-company"; company.textContent = item.company || "Company not set";
       const reason = document.createElement("strong"); reason.className = `attention-reason ${item.reasonCode}`; reason.textContent = item.reasonLabel;
       const guidance = document.createElement("p"); guidance.textContent = item.guidance;
+      const pendingQuestion = item.pendingInformation?.[0]?.question;
+      const question = document.createElement("p"); question.className = "attention-question";
+      question.textContent = pendingQuestion ? `Pending: ${pendingQuestion}` : "";
       const metadata = document.createElement("p"); metadata.className = "attention-meta";
       const missing = item.reasonCode === "needs_information" ? ` · ${item.missingInformationCount} missing information item${item.missingInformationCount === 1 ? "" : "s"}` : "";
       metadata.textContent = `Priority ${item.priority} · ${statusLabel(item.status)} · since ${formatActivityTime(item.attentionAt)}${missing}`;
       const action = document.createElement("span"); action.className = "attention-action"; action.textContent = attentionState.unavailable ? "Unavailable until refresh" : "Open Job details";
-      button.append(heading, company, reason, guidance, metadata, action);
+      button.append(heading, company, reason, guidance);
+      if (pendingQuestion) button.append(question);
+      button.append(metadata, action);
       button.addEventListener("click", () => openAttentionJob(item.jobId, button)); wrapper.append(button); list.append(wrapper);
     }
     $("#attention-count").textContent = `${attentionState.items.length} job${attentionState.items.length === 1 ? "" : "s"}`;
@@ -1274,17 +1279,22 @@ if (hasDom) {
     $("#answer-reference-counts").textContent = answer ? `${answer.referenceCounts?.sessions || 0} session and ${answer.referenceCounts?.history || 0} history references.` : "";
   }
 
+  function showAnswerDetail(selected, opener, pendingJobId = null, pendingReference = null) {
+    answerState.dialogGeneration += 1; answerState.opener = opener || document.activeElement;
+    answerState.pendingJobId = pendingJobId; answerState.pendingReference = pendingReference; answerState.selected = selected; populateAnswerForm(selected);
+    $("#answer-kicker").textContent = `CANONICAL · REVISION ${selected.revision}`; $("#answer-dialog").showModal(); setTimeout(() => $("#answer-form").elements.question.focus(), 0);
+  }
+
   async function openAnswer(answer, opener) {
     const requestSequence = ++answerState.detailRequestSequence;
     const requestedOpener = opener || document.activeElement;
     try {
       const selected = await api(answerApiPath(answer.key));
       if (requestSequence !== answerState.detailRequestSequence) return;
-      answerState.dialogGeneration += 1; answerState.opener = requestedOpener; answerState.selected = selected; populateAnswerForm(selected);
-      $("#answer-kicker").textContent = `CANONICAL · REVISION ${selected.revision}`; $("#answer-dialog").showModal(); setTimeout(() => $("#answer-form").elements.question.focus(), 0);
+      showAnswerDetail(selected, requestedOpener);
     } catch (error) { if (requestSequence === answerState.detailRequestSequence) answerError(error.message); }
   }
-  function newAnswer() { answerState.detailRequestSequence += 1; answerState.dialogGeneration += 1; answerState.selected = null; answerState.opener = document.activeElement; populateAnswerForm(null); $("#answer-kicker").textContent = "NEW CANONICAL RECORD"; $("#answer-dialog").showModal(); setTimeout(() => $("#answer-form").elements.question.focus(), 0); }
+  function newAnswer() { answerState.detailRequestSequence += 1; answerState.dialogGeneration += 1; answerState.selected = null; answerState.opener = document.activeElement; answerState.pendingJobId = null; answerState.pendingReference = null; populateAnswerForm(null); $("#answer-kicker").textContent = "NEW CANONICAL RECORD"; $("#answer-dialog").showModal(); setTimeout(() => $("#answer-form").elements.question.focus(), 0); }
 
   function answerFormPayload(onlyDirty = false) {
     const form = $("#answer-form"); let scope; try { scope = JSON.parse(form.elements.scope.value); } catch { throw new Error("Scope must be a valid JSON object."); } if (!scope || Array.isArray(scope) || typeof scope !== "object") throw new Error("Scope must be a JSON object.");
@@ -1307,9 +1317,10 @@ if (hasDom) {
         ? await api(answerApiPath(selected.key), { method: "PATCH", body: JSON.stringify({ patch: answer, expectedRevision: selected.revision, rememberSensitive }) })
         : await api("/api/answers", { method: "POST", body: JSON.stringify({ answer, rememberSensitive }) });
       const currentDialog = canApplyAnswerDialogMutation(answerState.selected, requestedKey, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open);
-      if (currentDialog) { answerState.opener = null; $("#answer-dialog").close(); }
+      const pendingReturn = Boolean(answerState.pendingJobId && dialog.open);
+      if (currentDialog) { if (!pendingReturn) answerState.opener = null; $("#answer-dialog").close(); }
       await refreshAnswers({ reset: true });
-      if (currentDialog) (document.querySelector(`.answer-card[data-key="${CSS.escape(result.key)}"]`) || $("#answer-new")).focus();
+      if (currentDialog && !pendingReturn) (document.querySelector(`.answer-card[data-key="${CSS.escape(result.key)}"]`) || $("#answer-new")).focus();
       toast(`Answer ${selected ? "updated" : "created"}`); return result;
     } catch (error) { if (!canApplyAnswerDialogMutation(answerState.selected, requestedKey, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) { toast(error.message); return; } if (error.status === 409) { $("#answer-conflict").classList.remove("hidden"); $("#answer-conflict").focus(); } else answerError(error.message, true); }
     finally { if (canApplyAnswerDialogMutation(answerState.selected, requestedKey, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) setAnswerBusy(false); }
@@ -1324,8 +1335,9 @@ if (hasDom) {
       if (action === "accept") { payload.patch = answerFormPayload(true); payload.rememberSensitive = $("#answer-form").elements.rememberSensitive.checked; }
       await api(answerApiPath(answer.key, action), { method: "POST", body: JSON.stringify(payload) });
       const currentDialog = canApplyAnswerDialogMutation(answerState.selected, answer.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open);
-      if (currentDialog) { answerState.opener = null; $("#answer-dialog").close(); }
-      await refreshAnswers({ reset: true }); if (currentDialog) $("#answer-new").focus(); toast(`Answer ${action === "accept" ? "accepted" : action === "decline" ? "declined" : `${action}d`}`);
+      const pendingReturn = Boolean(answerState.pendingJobId && dialog.open);
+      if (currentDialog) { if (!pendingReturn) answerState.opener = null; $("#answer-dialog").close(); }
+      await refreshAnswers({ reset: true }); if (currentDialog && !pendingReturn) $("#answer-new").focus(); toast(`Answer ${action === "accept" ? "accepted" : action === "decline" ? "declined" : `${action}d`}`);
     }
     catch (error) { if (!canApplyAnswerDialogMutation(answerState.selected, answer.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) { toast(error.message); return; } if (error.code === "revision_conflict") { $("#answer-conflict").classList.remove("hidden"); $("#answer-conflict").focus(); } else answerError(lifecycleErrorText(error), true); }
     finally { if (canApplyAnswerDialogMutation(answerState.selected, answer.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) setAnswerBusy(false); }
@@ -1821,7 +1833,18 @@ if (hasDom) {
       const pending = $("#activity-pending"); pending.replaceChildren();
       for (const item of activity.session.pendingInformation || []) {
         const row = document.createElement("li");
-        row.textContent = `${item.question || "Information requested"} · ${statusLabel(item.state || "missing")}${item.sensitive ? " · sensitive" : ""}`;
+        const text = document.createElement("span");
+        text.textContent = `${item.question || "Information requested"} · ${statusLabel(item.state || "missing")}${item.sensitive ? " · sensitive" : ""}`;
+        const actions = document.createElement("span"); actions.className = "pending-actions";
+        const edit = document.createElement("button"); edit.type = "button"; edit.className = "button secondary"; edit.textContent = "Open in Answers";
+        edit.dataset.pendingReference = item.reference;
+        edit.addEventListener("click", () => openPendingAnswerEditor(item)); actions.append(edit);
+        if (item.resolutionEligible && Number.isInteger(item.answerRevision)) {
+          const recheck = document.createElement("button"); recheck.type = "button"; recheck.className = "button accent"; recheck.textContent = "Recheck this revision";
+          recheck.dataset.pendingReference = item.reference;
+          recheck.addEventListener("click", () => recheckPendingAnswer(item, recheck)); actions.append(recheck);
+        }
+        row.append(text, actions);
         pending.append(row);
       }
       $("#activity-pending-wrap").classList.toggle("hidden", pending.children.length === 0);
@@ -1848,6 +1871,52 @@ if (hasDom) {
       ? "Durable application activity is available again."
       : activityAnnouncement(previous, activity);
     if (announce && message) $("#activity-live").textContent = message;
+  }
+
+  async function openPendingAnswerEditor(item) {
+    if (!dialog.open || !state.selected || !item.reference) return;
+    const jobId = state.selected.id;
+    const opener = document.activeElement;
+    const requestSequence = ++answerState.detailRequestSequence;
+    try {
+      const selected = await api(`/api/jobs/${encodeURIComponent(jobId)}/pending-answers/${encodeURIComponent(item.reference)}`);
+      if (requestSequence !== answerState.detailRequestSequence || !dialog.open || state.selected?.id !== jobId) return;
+      showAnswerDetail(selected, opener, jobId, item.reference);
+    } catch (error) {
+      if (requestSequence === answerState.detailRequestSequence && dialog.open && state.selected?.id === jobId) showFormError(error.message);
+    }
+  }
+
+  async function recheckPendingAnswer(item, button) {
+    if (!state.selected || !state.activity?.session || !item.reference) return;
+    button.disabled = true;
+    try {
+      const result = await api(`/api/jobs/${encodeURIComponent(state.selected.id)}/resolve-pending-answer`, {
+        method: "POST",
+        body: JSON.stringify({
+          reference: item.reference,
+          expectedJobRevision: state.activity.job.revision,
+          expectedSessionRevision: state.activity.session.revision,
+          expectedAnswerRevision: item.answerRevision,
+          ownerConfirmed: true,
+        }),
+      });
+      state.selected = { ...state.selected, status: result.job.status, revision: result.job.revision };
+      const index = state.jobs.findIndex((job) => job.id === state.selected.id);
+      if (index !== -1) state.jobs[index] = newestCanonicalJob(state.jobs[index], state.selected);
+      await Promise.all([loadActivity(state.selected.id), refreshAttention({ quiet: true }), refresh({ quiet: true })]);
+      toast(result.ready ? "Question resolved; the exact job is Ready" : "Question resolved; other blockers remain");
+    } catch (error) {
+      if (error.status === 409 || error.code === "revision_conflict") {
+        $("#form-error").textContent = "Canonical state changed. Your job draft is preserved; review the refreshed pending question before rechecking.";
+        $("#form-error").classList.remove("hidden");
+        await loadActivity(state.selected.id, { announce: false });
+      } else {
+        $("#form-error").textContent = error.message; $("#form-error").classList.remove("hidden");
+      }
+    } finally {
+      if (button.isConnected) button.disabled = false;
+    }
   }
 
   function loadActivity(jobId = state.selected?.id, { announce = true } = {}) {
@@ -1932,7 +2001,7 @@ if (hasDom) {
   $("#answer-merge-dialog").addEventListener("close", () => { if ($("#answer-merge-dialog").open) return; answerState.mergeRequestSequence += 1; answerState.mergeSource = null; answerState.mergeCandidates = []; });
   $("#answer-accept").addEventListener("click", () => answerAction("accept")); $("#answer-decline").addEventListener("click", () => answerAction("decline")); $("#answer-trash").addEventListener("click", () => { if (confirm("Move this answer to trash?")) answerAction("trash"); }); $("#answer-restore").addEventListener("click", () => answerAction("restore")); $("#answer-delete").addEventListener("click", () => openTrashDelete({ type: "answer", id: answerState.selected.key, revision: answerState.selected.revision, label: answerState.selected.question || answerState.selected.key }, $("#answer-delete")));
   $("#answer-conflict-refresh").addEventListener("click", async () => { const selected = answerState.selected; const dialogGeneration = answerState.dialogGeneration; setAnswerBusy(true); try { const latest = await api(answerApiPath(selected.key)); if (!canApplyAnswerDialogResponse(answerState.selected, selected.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) return; if (!canRefreshAnswerDraft(selected, latest)) { answerError("This source answer changed identity while its canonical revision was being refreshed. Its preserved draft was not retargeted; close this dialog and review the current answer separately.", true); return; } answerState.selected = latest; $("#answer-conflict").classList.add("hidden"); $("#answer-kicker").textContent = `CANONICAL · REVISION ${answerState.selected.revision} · DRAFT PRESERVED`; toast("Canonical revision refreshed; review your preserved draft"); } catch (error) { if (canApplyAnswerDialogResponse(answerState.selected, selected.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) answerError(error.message, true); } finally { if (canApplyAnswerDialogResponse(answerState.selected, selected.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) setAnswerBusy(false); } });
-  $("#answer-dialog").addEventListener("close", () => { if ($("#answer-dialog").open) return; setAnswerBusy(false); answerState.dialogGeneration += 1; answerState.mergeRequestSequence += 1; answerState.mergeSource = null; answerState.selected = null; answerState.dirty.clear(); $("#answer-form").elements.value.value = ""; $("#answer-form").elements.rememberSensitive.checked = false; const target = answerState.opener?.isConnected ? answerState.opener : $("#answer-new"); target.focus(); answerState.opener = null; });
+  $("#answer-dialog").addEventListener("close", () => { if ($("#answer-dialog").open) return; setAnswerBusy(false); answerState.dialogGeneration += 1; answerState.mergeRequestSequence += 1; answerState.mergeSource = null; answerState.selected = null; answerState.dirty.clear(); $("#answer-form").elements.value.value = ""; $("#answer-form").elements.rememberSensitive.checked = false; const pendingJobId = answerState.pendingJobId; const pendingReference = answerState.pendingReference; const target = answerState.opener?.isConnected ? answerState.opener : $("#answer-new"); answerState.pendingJobId = null; answerState.pendingReference = null; answerState.opener = null; if (pendingJobId && dialog.open && state.selected?.id === pendingJobId) { Promise.all([loadActivity(pendingJobId, { announce: false }), refreshAttention({ quiet: true })]).finally(() => { const refreshedTarget = pendingReference ? document.querySelector(`[data-pending-reference="${CSS.escape(pendingReference)}"]`) : null; if (dialog.open && state.selected?.id === pendingJobId) (target?.isConnected ? target : refreshedTarget)?.focus(); }); } else target.focus(); });
   $("#resumes-refresh").addEventListener("click", () => refreshResumes());
   $("#resumes-active").addEventListener("click", async () => { resumeState.trash = false; await refreshResumes(); });
   $("#resumes-trash").addEventListener("click", async () => { resumeState.trash = true; await refreshResumes(); });

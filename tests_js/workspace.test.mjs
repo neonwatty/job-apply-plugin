@@ -930,20 +930,25 @@ test("answer browser routes encode canonical keys at every path boundary", async
   assert.doesNotMatch(app, /encodeURIComponent\((?:answer|selected|source)\.key\)/);
 });
 
-test("job-apply direct URL workflow resolves canonical managed resume storage", async () => {
+test("job-apply routes every ordinary URL through the canonical task protocol", async () => {
   const skill = await readFile(join(REPO_ROOT, "skills", "job-apply", "SKILL.md"), "utf8");
   const readme = await readFile(join(REPO_ROOT, "README.md"), "utf8");
   assert.match(skill, /resume-import --input/);
   assert.match(skill, /resume-resolve --id <resume-id>/);
-  assert.match(skill, /direct-URL mode[\s\S]{0,500}run `resume-resolve`/);
-  assert.match(skill, /full `resume-list` records as private tool output, not as a redacted projection/);
-  assert.match(skill, /summary containing only `id`, `label`, `tags`, `default`, `revision`, and `storageKind`/);
-  assert.match(skill, /never include a private path, managed filename, original filename, digest, or any other field/);
-  assert.doesNotMatch(skill, /inspect redacted metadata with `resume-list`/);
-  assert.match(skill, /Never use `profile\.resumePath` or a user source path for upload/);
+  assert.match(skill, /job-apply-task\.py[\s\S]{0,300}intake --input/);
+  assert.match(skill, /job-apply-task\.py \.\.\. snapshot/);
+  assert.match(skill, /select --id <job-id> --expected-revision <displayed-revision> --owner-confirmed/);
+  assert.match(skill, /discard the pre-select displayed revision and retain the exact revision returned in `select\.job\.revision`/);
+  assert.match(skill, /job-acquire --id <job-id> --owner <owner-label> --expected-revision <select\.job\.revision>/);
+  assert.match(skill, /other non-success result stops without browser work; do not run `job-acquire`/);
+  assert.match(skill, /Never infer a choice from priority/);
+  assert.match(skill, /use the acquired canonical job ID as the application\/session ID/);
+  assert.doesNotMatch(skill, /direct-URL mode|URL-derived application\/session ID/);
+  assert.match(skill, /Never use `profile\.resumePath`, a URL-derived session ID, or a user source path for upload/);
   assert.doesNotMatch(readme, /Every resume write uses an exact revision/);
   assert.match(readme, /Import is a new-record operation protected by ID\/content uniqueness/);
   assert.match(readme, /resume-resolve/);
+  assert.match(readme, /scripts\/job-apply-task\.py/);
 });
 
 test("styles include visible focus, reduced motion, contrast mode, and responsive behavior", async () => {
@@ -1357,7 +1362,7 @@ test("Needs Attention browser and CLI walkthrough converges all canonical reason
     assert.equal(await page.locator("#job-dialog[open]").count(), 0);
     assert.match(await page.title(), /^Facts/);
     await page.unroute(abandonedDetailPattern, delayAbandonedDetail);
-    await page.getByRole("button", { name: /Needs Attention/ }).click();
+    await page.locator("#nav-attention").click();
     await page.locator("#attention-count").getByText("4 jobs", { exact: true }).waitFor();
 
     let releaseEarlierSelection;
@@ -1611,6 +1616,94 @@ test("Facts saved views organize canonical paths without owning facts", { timeou
     assert.equal((await cli("fact-group-list")).some((group) => group.id === browserGroup.id), false);
     const finalProfile = await cli("profile-inspect");
     assert.deepEqual(finalProfile.profile, profile.profile);
+    assert.equal(pageErrors.length, 0, pageErrors.map(String).join("\n"));
+  } finally {
+    if (browser) await browser.close();
+    if (server && server.exitCode === null) { server.kill("SIGINT"); await new Promise((resolveExit) => server.once("exit", resolveExit)); }
+    await rm(temporary, { recursive: true, force: true });
+  }
+});
+
+test("pending answer browser journey preserves Job draft and reaches Ready, reacquisition, and awaiting review", { timeout: 60_000 }, async () => {
+  const temporary = await mkdtemp(join(tmpdir(), "pending-answer-browser-"));
+  const storeRoot = join(temporary, "store");
+  const storeScript = join(REPO_ROOT, "scripts", "job-apply-store.py");
+  let inputCounter = 0;
+  const cli = async (command, args = [], payload) => {
+    const finalArgs = [storeScript, "--root", storeRoot, command, ...args];
+    if (payload !== undefined) {
+      const inputPath = join(temporary, `pending-${inputCounter++}.json`);
+      await writeFile(inputPath, JSON.stringify(payload)); finalArgs.push("--input", inputPath);
+    }
+    const result = spawnSync(PYTHON, finalArgs, { cwd: REPO_ROOT, encoding: "utf8" });
+    assert.equal(result.status, 0, `${command}: ${result.stderr}`); return JSON.parse(result.stdout);
+  };
+  const waitForStartup = (child) => new Promise((resolveStartup, rejectStartup) => {
+    let stdout = ""; let stderr = "";
+    const timer = setTimeout(() => rejectStartup(new Error(`workspace startup timed out: ${stderr}`)), 10_000);
+    child.stdout.setEncoding("utf8"); child.stderr.setEncoding("utf8"); child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.stdout.on("data", (chunk) => { stdout += chunk; const newline = stdout.indexOf("\n"); if (newline < 0) return; clearTimeout(timer); try { resolveStartup(JSON.parse(stdout.slice(0, newline))); } catch (error) { rejectStartup(error); } });
+    child.once("exit", (code) => { clearTimeout(timer); rejectStartup(new Error(`workspace exited during startup (${code}): ${stderr}`)); });
+  });
+
+  let server; let browser;
+  try {
+    await cli("profile-replace", ["--expected-revision", "0", "--source", "user"], { firstName: "Synthetic" });
+    const resumePath = join(temporary, "resume.pdf"); await writeFile(resumePath, minimalSyntheticPdf());
+    const resume = await cli("resume-create", [], { id: "pending-resume", label: "Pending resume", path: resumePath });
+    let job = await cli("job-create", [], { id: "pending-job", url: "https://example.invalid/jobs/pending", role: "Pending Journey", company: "Synthetic", resumeId: resume.id });
+    job = await cli("job-transition", ["--id", job.id, "--status", "ready", "--expected-revision", String(job.revision)]);
+    const first = await cli("job-acquire", ["--id", job.id, "--owner", "first-owner", "--expected-revision", String(job.revision)]);
+    const pendingPayload = { status: "active", step: "questions", answerKeys: [], pendingFields: [{ question: "Shared visible wording?", state: "missing", answerKey: "durable.target", sensitive: false }] };
+    await cli("claim-progress", ["--id", job.id, "--token", first.token], pendingPayload);
+    job = (await cli("claim-handoff", ["--id", job.id, "--token", first.token, "--status", "needs_info", "--expected-revision", String(first.job.revision)], pendingPayload)).job;
+    await cli("answer-put", [], { key: "durable.decoy", question: "Shared visible wording?", scope: { decoy: true }, state: "confirmed", value: "decoy" });
+    await cli("answer-put", [], { key: "durable.target", question: "Different canonical wording", state: "missing" });
+
+    server = spawn(PYTHON, [join(REPO_ROOT, "scripts", "job-apply-workspace.py"), "--root", storeRoot, "--port", "0", "--no-open", "--json"], { cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"] });
+    const startup = await waitForStartup(server);
+    browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage(); const pageErrors = []; page.on("pageerror", (error) => pageErrors.push(error));
+    await page.addInitScript(() => { globalThis.setInterval = () => 0; });
+    await page.goto(startup.url); await page.getByText("Canonical store connected").waitFor();
+    await page.locator("#nav-attention").click();
+    await page.getByRole("button", { name: /Pending Journey/ }).click();
+    const jobDialog = page.locator("#job-dialog"); const answerDialog = page.locator("#answer-dialog");
+    await jobDialog.getByLabel("Notes").fill("unsaved browser draft");
+    const openAnswer = jobDialog.getByRole("button", { name: "Open in Answers" });
+    await openAnswer.click();
+    await answerDialog.waitFor({ state: "visible" });
+    assert.equal(await jobDialog.isVisible(), true);
+    assert.equal(await answerDialog.getByLabel("Question").inputValue(), "Different canonical wording");
+    assert.equal(await jobDialog.getByLabel("Notes").inputValue(), "unsaved browser draft");
+    await answerDialog.getByLabel("State").selectOption("confirmed");
+    await answerDialog.getByLabel("Value", { exact: true }).fill("accepted synthetic value");
+    await answerDialog.getByRole("button", { name: "Save answer" }).click();
+    await answerDialog.waitFor({ state: "hidden" });
+    assert.equal(await jobDialog.isVisible(), true);
+    assert.equal(await jobDialog.getByLabel("Notes").inputValue(), "unsaved browser draft");
+    await openAnswer.waitFor();
+    assert.equal(await openAnswer.evaluate((button) => document.activeElement === button), true);
+    await jobDialog.getByRole("button", { name: "Recheck this revision" }).click();
+    await jobDialog.getByText(/Canonical status ready/i).waitFor();
+    assert.equal((await cli("job-get", ["--id", job.id])).status, "ready");
+    assert.equal(await jobDialog.getByLabel("Notes").inputValue(), "unsaved browser draft");
+    await jobDialog.getByRole("button", { name: "Close job details" }).click();
+    await page.locator("#attention-workspace").waitFor({ state: "visible" });
+    assert.equal(await page.locator("#attention-list [data-attention-id='pending-job']").count(), 0);
+
+    job = await cli("job-get", ["--id", job.id]);
+    const second = await cli("job-acquire", ["--id", job.id, "--owner", "second-owner", "--expected-revision", String(job.revision)]);
+    for (const field of ["id", "revision", "contentRevision", "digest"]) assert.equal(second.resume[field], first.resume[field]);
+    assert.deepEqual(await readFile(second.resume.path), await readFile(first.resume.path));
+    job = (await cli("claim-handoff", ["--id", job.id, "--token", second.token, "--status", "awaiting_review", "--expected-revision", String(second.job.revision)], { status: "review", step: "review", pendingFields: [] })).job;
+    await page.getByRole("button", { name: "Jobs", exact: true }).click(); await page.locator("#refresh").click();
+    await page.getByRole("button", { name: /Pending Journey/ }).click();
+    await jobDialog.getByText(/Canonical status awaiting review/i).waitFor();
+    const events = await cli("history-list");
+    assert.deepEqual(events.map((event) => event.event), ["job-started", "job-blocked", "job-started", "reviewed"]);
+    assert.equal(events.some((event) => ["completed", "applied"].includes(event.event) || event.status === "applied"), false);
+    assert.equal((await cli("job-get", ["--id", job.id])).status, "awaiting_review");
     assert.equal(pageErrors.length, 0, pageErrors.map(String).join("\n"));
   } finally {
     if (browser) await browser.close();
@@ -2088,7 +2181,8 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await activityCard().click();
     await activityPanel.getByText(/Canonical status needs info/).waitFor();
     assert.match(await activityPanel.innerText(), /job-blocked · needs info/i);
-    assert.equal(await activityPanel.locator("button").count(), 0);
+    assert.equal(await activityPanel.getByRole("button", { name: "Open in Answers" }).count(), 1);
+    assert.equal(await activityPanel.getByRole("button", { name: "Recheck this revision" }).count(), 0);
     await page.getByRole("button", { name: "Mark ready" }).click();
     await page.locator("#job-dialog").waitFor({ state: "hidden" });
 

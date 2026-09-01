@@ -1,0 +1,78 @@
+import re
+import unittest
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SKILL_PATH = ROOT / "skills" / "job-apply" / "SKILL.md"
+README_PATH = ROOT / "README.md"
+
+
+class JobApplySkillContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.skill = SKILL_PATH.read_text(encoding="utf-8")
+        cls.readme = README_PATH.read_text(encoding="utf-8")
+
+    def test_action_time_consent_requires_visible_readiness(self):
+        self.assertIn("Post-readiness action-time consent", self.skill)
+        self.assertIn("Before the exact application form is visibly ready", self.skill)
+        self.assertIn("blanket future consent are invalid", self.skill)
+        self.assertIn("current message was sent after that visible readiness", self.skill)
+
+    def test_matching_consent_is_consumed_once_without_duplicate_confirmation(self):
+        self.assertIn("transitions once to `consent_consumed`", self.skill)
+        self.assertIn("Proceed without asking for the same confirmation again", self.skill)
+        self.assertIn("It is not reusable for another job", self.skill)
+        self.assertIn("must not trigger duplicate confirmation", self.skill)
+
+    def test_only_material_scope_destination_or_purpose_change_reconfirms(self):
+        self.assertIn(
+            "A material change to the data scope, destination, or purpose invalidates the consumed consent",
+            self.skill,
+        )
+        self.assertIn("obtain new explicit post-change consent", self.skill)
+        self.assertIn("Ordinary page progression within the unchanged bounds", self.skill)
+
+    def test_user_facing_summaries_are_value_free(self):
+        self.assertIn("Never echo raw applicant values", self.skill)
+        self.assertIn("Describe only field names or groups, counts, and states", self.skill)
+        for unsafe in (
+            "Summarize every entered value",
+            "summarize all entered fields",
+            "summarize the fields",
+            "Review the parsed and entered values",
+            "summarize the application for the user",
+        ):
+            self.assertNotIn(unsafe, self.skill)
+
+    def test_attempt_helper_surface_remains_closed(self):
+        invocations = re.findall(
+            r"job-apply-attempt\.py[^`\n]*?\s(start|heartbeat|progress|handoff)(?:\s|`)",
+            self.skill,
+        )
+        self.assertTrue(invocations)
+        self.assertEqual(set(invocations), {"start", "heartbeat", "progress", "handoff"})
+        for forbidden in (" stop", " abort", " release", " recover", " adopt"):
+            self.assertNotRegex(self.skill, rf"job-apply-attempt\.py[^`\n]*{forbidden}\b")
+
+    def test_readme_documents_detached_broker_not_attached_stdin_process(self):
+        for required in (
+            "detached broker scoped to one Store and exact selected attempt",
+            "later stateless `heartbeat`, value-free `progress`, and `handoff` clients",
+            "`needs_info` handoff so the broker releases the claim and exits",
+            "exact job, session, and answer revisions shown there",
+            "fresh broker acquisition for the same canonical job",
+        ):
+            self.assertIn(required, self.readme)
+
+        for stale in (
+            "lifetime of one attached process",
+            "accepts only value-free progress and `needs_info` or `awaiting_review` handoff messages on stdin",
+            "Start a new private attempt process",
+        ):
+            self.assertNotIn(stale, self.readme)
+
+
+if __name__ == "__main__":
+    unittest.main()
