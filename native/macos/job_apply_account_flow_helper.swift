@@ -440,7 +440,7 @@ private final class OracleEmailOnlyEffect {
         // A freshly launched signed browser can briefly exist before AppKit and
         // Security.framework expose a consistent running/active view. Poll only
         // this pre-effect proof; no form control is read or mutated here.
-        for _ in 0..<20 {
+        for _ in 0..<100 {
             if kill(binding.browserProcessIdentifier, 0) == 0,
                AXIsProcessTrusted(), signedBrowser(),
                let running = NSRunningApplication(

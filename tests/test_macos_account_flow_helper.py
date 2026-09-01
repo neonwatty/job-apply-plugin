@@ -40,7 +40,7 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         self.assertIn("realmPageSnapshot", source)
         self.assertIn("classifyPostOutcome(_ successor: AXUIElement)", source)
         self.assertIn("activateReviewedBrowser", source)
-        self.assertIn("for _ in 0..<20", source)
+        self.assertIn("for _ in 0..<100", source)
         self.assertIn("AXUIElementSetAttributeValue(\n            exactControl, kAXValueAttribute", source)
         self.assertIn("CFEqual(reattestedEmail, exactControl)", source)
         self.assertIn("oracleCausalSuccessorDecision", source)
