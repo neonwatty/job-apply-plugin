@@ -1,4 +1,5 @@
 import json
+import importlib.util
 import os
 import subprocess
 import sys
@@ -9,6 +10,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "job-apply-store.py"
+READINESS_SPEC = importlib.util.spec_from_file_location(
+    "job_apply_form_readiness", ROOT / "scripts" / "job_apply_form_readiness.py"
+)
+READINESS = importlib.util.module_from_spec(READINESS_SPEC)
+READINESS_SPEC.loader.exec_module(READINESS)
 
 
 class AnswerMemoryIntegrationTests(unittest.TestCase):
@@ -43,6 +49,35 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
 
     def json_store(self, *arguments):
         return json.loads(self.run_store(*arguments).stdout)
+
+    def review_session(self, attempt_revision):
+        fixture = json.loads((
+            ROOT / "qa" / "fixtures" / "greenhouse-form-readiness-v1" / "fixture.json"
+        ).read_text(encoding="utf-8"))
+        observation = READINESS.make_readiness_observation(
+            fixture,
+            {
+                "contact.first_name": "complete",
+                "contact.phone_country": "complete",
+                "resume.file": "accepted",
+                "authorization.sponsorship_select": "complete",
+            },
+            observation_revision=13,
+        )
+        return {
+            "status": "review", "step": "review", "answerKeys": [],
+            "pendingFields": [], "attemptRevision": attempt_revision,
+            "readinessInput": {
+                "attemptRevision": attempt_revision,
+                "evidenceKind": "agent_attested_current_attempt",
+                "fixture": fixture,
+                "formManifest": READINESS.make_form_manifest(
+                    fixture, observation_revision=13
+                ),
+                "observation": observation,
+                "expectedObservationRevision": 13,
+            },
+        }
 
     def test_clean_room_documented_lifecycle(self):
         legacy = {
@@ -150,7 +185,9 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
         )
         resumed = self.json_store("session-load", "--id", "example-engineer")
         self.assertEqual(resumed["step"], "questions")
-        self.assertEqual(resumed["url"], "https://example.com/direct-job")
+        self.assertNotIn("url", resumed)
+        self.assertNotIn("company", resumed)
+        self.assertNotIn("role", resumed)
         self.assertNotIn("value", json.dumps(resumed))
 
         history_input = self.write_input(
@@ -420,9 +457,11 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
         self.assertIn("Auto-submit policy", skills["answer-memory"])
         self.assertIn("job-list --status ready", skills["job-apply"])
         self.assertIn("job-acquire", skills["job-apply"])
-        self.assertIn("claim-handoff --id <job-id> --token <token>", skills["job-apply"])
+        self.assertIn("job-apply-attempt.py", skills["job-apply"])
+        self.assertIn("Never fall back to raw `claim-handoff`", skills["job-apply"])
         self.assertIn("--status awaiting_review", skills["job-apply"])
-        self.assertIn("--input <review-session.json>", skills["job-apply"])
+        self.assertIn("--input <private-temp.json>", skills["job-apply"])
+        self.assertIn("agent_attested_current_attempt", skills["job-apply"])
         self.assertIn("If the user supplied a job URL", skills["job-apply"])
         self.assertIn("User confirmation never authorizes this skill to click Submit", skills["job-apply"])
 
@@ -467,10 +506,9 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
             "claim-progress", "--id", job["id"], "--token", acquired["token"],
             "--input", str(progress),
         )
-        review = self.write_input("review.json", {
-            "status": "review", "step": "review", "answerKeys": [],
-            "pendingFields": [],
-        })
+        review = self.write_input(
+            "review.json", self.review_session(acquired["job"]["revision"])
+        )
         handed = self.json_store(
             "claim-handoff", "--id", job["id"], "--token", acquired["token"],
             "--status", "awaiting_review", "--input", str(review),

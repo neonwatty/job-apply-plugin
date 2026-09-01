@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Deterministic, value-free application-form readiness evaluation.
+"""Deterministic, value-free application-form observation evaluation.
 
-This module evaluates repository-owned fixture observations only. It does not
-navigate a browser, transfer a file, inspect applicant data, or activate a final
-action. A passing replay report is never evidence that an external browser
-upload bridge works in a live application.
+This module validates closed fixture/observation packets. It does not establish
+where an observation came from, navigate a browser, transfer a file, inspect
+applicant data, or activate a final action. Callers must describe provenance
+honestly; a passing report is never independent proof of a live browser state.
 """
 
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Any, Iterable, Mapping
 
 from qa.contracts import (
@@ -20,7 +22,11 @@ from qa.contracts import (
 )
 
 
-PROOF_SCOPE = "repository-replay-only"
+PROOF_SCOPE = "closed-observation-only"
+FORM_MANIFEST_KEYS = {
+    "schemaVersion", "platformFamily", "observationRevision",
+    "requiredControlIds", "controlSetFingerprint", "complete",
+}
 
 
 class FormReadinessError(ValueError):
@@ -31,6 +37,67 @@ def _positive_revision(value: Any, label: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool) or value < 1:
         raise FormReadinessError(f"{label} must be a positive integer")
     return value
+
+
+def _required_control_ids(fixture: dict[str, Any]) -> list[str]:
+    return sorted(
+        control["id"]
+        for step in fixture["steps"]
+        for control in step["controls"]
+        if control["required"]
+    )
+
+
+def _control_set_fingerprint(platform_family: str, control_ids: list[str]) -> str:
+    payload = json.dumps(
+        {
+            "platformFamily": platform_family,
+            "requiredControlIds": control_ids,
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(payload).hexdigest()
+
+
+def make_form_manifest(
+    fixture: dict[str, Any], *, observation_revision: int
+) -> dict[str, Any]:
+    """Attest the complete required-control set observed for this form."""
+
+    revision = _positive_revision(observation_revision, "observation revision")
+    try:
+        validate_fixture(fixture)
+    except Exception:
+        raise FormReadinessError("invalid readiness fixture") from None
+    control_ids = _required_control_ids(fixture)
+    if not control_ids:
+        raise FormReadinessError("form manifest requires a required control")
+    return {
+        "schemaVersion": READINESS_SCHEMA_VERSION,
+        "platformFamily": fixture["platformFamily"],
+        "observationRevision": revision,
+        "requiredControlIds": control_ids,
+        "controlSetFingerprint": _control_set_fingerprint(
+            fixture["platformFamily"], control_ids
+        ),
+        "complete": True,
+    }
+
+
+def validate_form_manifest(
+    fixture: dict[str, Any], manifest: Any, *, expected_observation_revision: int
+) -> None:
+    """Fail closed unless the attested complete form exactly matches the fixture."""
+
+    expected = make_form_manifest(
+        fixture, observation_revision=expected_observation_revision
+    )
+    if not isinstance(manifest, dict) or set(manifest) != FORM_MANIFEST_KEYS:
+        raise FormReadinessError("invalid form manifest")
+    if manifest != expected:
+        raise FormReadinessError("form manifest does not match readiness fixture")
 
 
 def make_readiness_observation(
@@ -228,4 +295,3 @@ def evaluate_readiness(
         "blockerCodes": sorted(blockers),
         "fallbackCode": fallback_code,
     }
-

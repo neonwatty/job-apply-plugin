@@ -2,6 +2,7 @@
 
 import { strict as assert } from "node:assert";
 import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -78,6 +79,57 @@ function syntheticPdf() {
   const xrefOffset = Buffer.byteLength(body);
   const entries = offsets.map((offset) => `${String(offset).padStart(10, "0")} 00000 n \n`).join("");
   return Buffer.from(`${body}xref\n0 4\n0000000000 65535 f \n${entries}trailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`);
+}
+
+async function liveReviewSession(attemptRevision) {
+  const fixture = JSON.parse(await readFile(
+    join(REPO_ROOT, "qa", "fixtures", "greenhouse-form-readiness-v1", "fixture.json"),
+    "utf8",
+  ));
+  const observationRevision = 17;
+  const requiredControlIds = fixture.steps.flatMap((step) => step.controls)
+    .filter((control) => control.required)
+    .map((control) => control.id)
+    .sort();
+  const controlSetFingerprint = `sha256:${createHash("sha256").update(JSON.stringify({
+    platformFamily: fixture.platformFamily, requiredControlIds,
+  })).digest("hex")}`;
+  return {
+    status: "review",
+    step: "review",
+    pendingFields: [],
+    answerKeys: [],
+    attemptRevision,
+    readinessInput: {
+      attemptRevision,
+      evidenceKind: "agent_attested_current_attempt",
+      fixture,
+      formManifest: {
+        schemaVersion: 1,
+        platformFamily: fixture.platformFamily,
+        observationRevision,
+        requiredControlIds,
+        controlSetFingerprint,
+        complete: true,
+      },
+      expectedObservationRevision: observationRevision,
+      observation: {
+        schemaVersion: 1,
+        platformFamily: "greenhouse",
+        observationRevision,
+        adapterState: "accessible",
+        uploadCapability: "available",
+        controls: [
+          { controlId: "authorization.sponsorship_select", kind: "selection", state: "complete", observationRevision },
+          { controlId: "contact.first_name", kind: "text", state: "complete", observationRevision },
+          { controlId: "contact.phone_country", kind: "selection", state: "complete", observationRevision },
+          { controlId: "resume.file", kind: "upload", state: "accepted", observationRevision },
+        ],
+        validationErrorControlIds: [],
+        finalControlState: "available",
+      },
+    },
+  };
 }
 
 function waitForStartup(child) {
@@ -291,7 +343,7 @@ export async function runOracle() {
     await page.reload();
     await page.getByText("Canonical store connected").waitFor();
     await page.locator("#nav-attention").click();
-    await page.getByRole("button", { name: /UX First Role/ }).click();
+    await page.locator(`[data-attention-id="${selectedId}"]`).click();
     await jobDialog.getByText(/Canonical status needs info/i).waitFor();
     await jobDialog.getByRole("heading", { name: "Application activity" }).waitFor();
     await jobDialog.getByLabel("Notes").fill("unsaved synthetic draft");
@@ -326,7 +378,7 @@ export async function runOracle() {
     check(Buffer.compare(await readFile(second.resume.path), resumeBytesBefore) === 0, "resume_bytes_changed");
     await secondSession.send({
       command: "handoff", status: "awaiting_review",
-      session: { status: "review", step: "review", pendingFields: [] },
+      session: await liveReviewSession(second.job.revision),
     });
     await secondSession.completed();
 
@@ -336,7 +388,7 @@ export async function runOracle() {
     check(finalSnapshot.snapshot.jobs.find((job) => job.id === selectedId)?.status === "awaiting_review", "snapshot_not_awaiting_review");
     await page.getByRole("button", { name: "Jobs", exact: true }).click();
     await page.locator("#refresh").click();
-    await page.getByRole("button", { name: /UX First Role/ }).click();
+    await page.locator(`[data-id="${selectedId}"]`).click();
     await jobDialog.getByText(/Canonical status awaiting review/i).waitFor();
 
     jobs = await store("job-list");

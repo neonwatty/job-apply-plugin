@@ -72,6 +72,31 @@ class AttemptProtocolTests(unittest.TestCase):
             "--expected-revision", str(self.job["revision"]),
         )
 
+    def readiness_input(self, attempt_revision, evidence_kind="agent_attested_current_attempt"):
+        fixture = json.loads((
+            ROOT / "qa" / "fixtures" / "greenhouse-form-readiness-v1" / "fixture.json"
+        ).read_text(encoding="utf-8"))
+        observation = STORE.FORM_READINESS_MODULE.make_readiness_observation(
+            fixture,
+            {
+                "contact.first_name": "complete",
+                "contact.phone_country": "complete",
+                "resume.file": "accepted",
+                "authorization.sponsorship_select": "complete",
+            },
+            observation_revision=9,
+        )
+        return {
+            "attemptRevision": attempt_revision,
+            "evidenceKind": evidence_kind,
+            "fixture": fixture,
+            "formManifest": STORE.FORM_READINESS_MODULE.make_form_manifest(
+                fixture, observation_revision=9
+            ),
+            "observation": observation,
+            "expectedObservationRevision": 9,
+        }
+
     def test_launcher_group_can_die_and_later_independent_clients_finish_attempt(self):
         command = self.command(
             "start", "--id", self.job["id"], "--owner", "fresh-agent",
@@ -96,11 +121,32 @@ class AttemptProtocolTests(unittest.TestCase):
         self.assertEqual((heartbeat.returncode, response), (0, {"event": "heartbeat", "ok": True}))
         progress = {"status": "active", "step": "form", "answerKeys": [], "pendingFields": []}
         self.assertEqual(self.run_client("progress", payload=progress)[2]["event"], "progress_saved")
-        review = {"status": "review", "step": "review", "answerKeys": [], "pendingFields": []}
+        review = {
+            "status": "review", "step": "review", "answerKeys": [],
+            "pendingFields": [], "attemptRevision": self.job["revision"] + 1,
+            "readinessInput": self.readiness_input(self.job["revision"] + 1),
+        }
         response = self.run_client("handoff", "--status", "awaiting_review", payload=review)[2]
         self.assertEqual(response, {"event": "handed_off", "ok": True, "status": "awaiting_review"})
         self.assertEqual(self.store.get_job(self.job["id"])["status"], "awaiting_review")
         self.assertIsNone(self.store.claim_status()["claim"])
+
+    def test_awaiting_review_rejects_replay_or_stale_readiness_without_releasing_claim(self):
+        self.start()
+        attempt_revision = self.job["revision"] + 1
+        replay = {
+            "status": "review", "step": "review", "pendingFields": [],
+            "attemptRevision": attempt_revision,
+            "readinessInput": self.readiness_input(
+                attempt_revision, evidence_kind="repository_replay"
+            ),
+        }
+        response = self.run_client(
+            "handoff", "--status", "awaiting_review", payload=replay
+        )[2]
+        self.assertEqual(response, {"error": {"code": "request_rejected"}, "ok": False})
+        self.assertEqual(self.store.get_job(self.job["id"])["status"], "in_progress")
+        self.assertIsNotNone(self.store.claim_status()["claim"])
 
     def test_bearer_is_absent_from_clients_outputs_and_broker_runtime_metadata(self):
         command, result, acquired = self.start()
@@ -156,10 +202,14 @@ class AttemptProtocolTests(unittest.TestCase):
         self.assertIsNone(self.store.claim_status()["claim"])
         session = self.store.load_session(self.job["id"])
         self.assertEqual(
-            {key: value for key, value in session["pendingFields"][0].items() if key != "reference"},
-            payload["pendingFields"][0],
+            {
+                key: value for key, value in session["pendingFields"][0].items()
+                if key not in {"reference", "questionFingerprint"}
+            },
+            {key: value for key, value in payload["pendingFields"][0].items() if key != "question"},
         )
         self.assertRegex(session["pendingFields"][0]["reference"], r"^pending_[a-f0-9]{32}$")
+        self.assertRegex(session["pendingFields"][0]["questionFingerprint"], r"^[a-f0-9]{64}$")
         self.assertEqual([event["event"] for event in self.store.read_history()], ["job-started", "job-blocked"])
         visible = json.dumps(payload) + json.dumps(acquired) + " ".join(command)
         for forbidden in ("Private", "private resume", "token", "claim", "ownerLabel"):

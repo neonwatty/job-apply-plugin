@@ -43,6 +43,7 @@ from pathlib import Path
 root = Path(sys.argv[1])
 smoke_root = Path(sys.argv[2])
 sys.path.insert(0, str(root))
+from scripts.job_apply_form_readiness import make_form_manifest
 
 legacy_home = smoke_root / "legacy-home"
 legacy_reports = legacy_home / ".claude-job-searches"
@@ -154,7 +155,41 @@ def attention_ready(job_id, priority):
 
 review = attention_ready("review-smoke", 5)
 review_claim = attention_command("job-acquire", None, "--id", review["id"], "--owner", "private-review-owner", "--expected-revision", str(review["revision"]))
-review = attention_command("claim-handoff", {"status": "review", "step": "review", "pendingFields": []}, "--id", review["id"], "--token", review_claim["token"], "--status", "awaiting_review", "--expected-revision", str(review_claim["job"]["revision"]))["job"]
+review_attempt_revision = review_claim["job"]["revision"]
+review_observation_revision = 17
+review_fixture = json.loads((root / "qa" / "fixtures" / "greenhouse-form-readiness-v1" / "fixture.json").read_text(encoding="utf-8"))
+review_session = {
+    "status": "review",
+    "step": "review",
+    "pendingFields": [],
+    "answerKeys": [],
+    "attemptRevision": review_attempt_revision,
+    "readinessInput": {
+        "attemptRevision": review_attempt_revision,
+        "evidenceKind": "agent_attested_current_attempt",
+        "fixture": review_fixture,
+        "formManifest": make_form_manifest(
+            review_fixture, observation_revision=review_observation_revision
+        ),
+        "expectedObservationRevision": review_observation_revision,
+        "observation": {
+            "schemaVersion": 1,
+            "platformFamily": "greenhouse",
+            "observationRevision": review_observation_revision,
+            "adapterState": "accessible",
+            "uploadCapability": "available",
+            "controls": [
+                {"controlId": "authorization.sponsorship_select", "kind": "selection", "state": "complete", "observationRevision": review_observation_revision},
+                {"controlId": "contact.first_name", "kind": "text", "state": "complete", "observationRevision": review_observation_revision},
+                {"controlId": "contact.phone_country", "kind": "selection", "state": "complete", "observationRevision": review_observation_revision},
+                {"controlId": "resume.file", "kind": "upload", "state": "accepted", "observationRevision": review_observation_revision},
+            ],
+            "validationErrorControlIds": [],
+            "finalControlState": "available",
+        },
+    },
+}
+review = attention_command("claim-handoff", review_session, "--id", review["id"], "--token", review_claim["token"], "--status", "awaiting_review", "--expected-revision", str(review_attempt_revision))["job"]
 needs = attention_ready("needs-smoke", 4)
 needs_claim = attention_command("job-acquire", None, "--id", needs["id"], "--owner", "private-needs-owner", "--expected-revision", str(needs["revision"]))
 needs = attention_command("claim-handoff", {"status": "active", "step": "questions", "answerKeys": ["private.answer.key"], "pendingFields": [{"question": "Private question?", "state": "missing", "answerKey": "private.answer.key", "sensitive": True}]}, "--id", needs["id"], "--token", needs_claim["token"], "--status", "needs_info", "--expected-revision", str(needs_claim["job"]["revision"]))["job"]
@@ -176,7 +211,12 @@ attention_projection = store_module.Store(attention_store).list_needs_attention(
 if [item["reasonCode"] for item in attention_projection["items"]] != ["expired_agent_attempt", "claimless_interrupted_attempt", "awaiting_human_review", "needs_information"]:
     raise SystemExit("packaged Needs Attention taxonomy or ordering failed")
 attention_serialized = json.dumps(attention_projection)
-for forbidden in (expired_claim["token"], "private-expired-owner", "Private question?", "private.answer.key", "claimId", "ownerLabel", "answerKey", "sensitive", "operationId"):
+for forbidden in (
+    expired_claim["token"], "private-expired-owner", "private-review-owner",
+    "private-needs-owner", "Private question?", "private.answer.key", "answerKey",
+    "tokenHash", "claimId", "ownerLabel", "operationId", "browserState",
+    "Smoke Co",
+):
     if forbidden in attention_serialized:
         raise SystemExit("packaged Needs Attention projection leaked private coordinator or answer data")
 recovered = attention_command("claim-recover", None, "--id", expired["id"], "--owner", "replacement-owner")
@@ -391,6 +431,8 @@ if codex_manifest.get("name") != "job-apply":
     raise SystemExit(".codex-plugin/plugin.json name must be job-apply")
 if not re.fullmatch(r"\d+\.\d+\.\d+", codex_manifest.get("version", "")):
     raise SystemExit(".codex-plugin/plugin.json version must be strict SemVer")
+if codex_manifest["version"] != "1.3.0":
+    raise SystemExit("human-attention package identity must be 1.3.0")
 if codex_manifest.get("skills") != "./skills/":
     raise SystemExit(".codex-plugin/plugin.json must expose ./skills/")
 if codex_manifest.get("interface", {}).get("displayName") != "Job Apply":

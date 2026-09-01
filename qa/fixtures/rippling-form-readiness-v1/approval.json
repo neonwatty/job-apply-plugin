@@ -1,0 +1,8 @@
+{
+  "approvedAt": "2026-09-01T00:00:00Z",
+  "compilerVersion": "1.1.0",
+  "fixtureSha256": "0221133f8003e099636ed8da197733c74837a9aa921b0c4c7aa43419f52a7be8",
+  "reviewer": "qa-owner",
+  "scannerVersion": "1.0.0",
+  "schemaVersion": 1
+}

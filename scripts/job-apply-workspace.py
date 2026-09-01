@@ -615,6 +615,9 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         if path == "/api/answers":
             self._store_call(lambda: self.server.store.query_answers())
             return
+        if path == "/api/answers/cleanup-preview":
+            self._store_call(self.server.store.preview_answer_cleanup)
+            return
         parts = path.split("/")
         if len(parts) == 4 and parts[1:3] == ["api", "trusted-fill"]:
             self._store_call(lambda: self.server.store.trusted_fill_status(parts[3], public=True))
@@ -938,6 +941,17 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
                 offset=payload.get("offset", 0), limit=payload.get("limit", 50),
             ))
             return
+        if method == "POST" and path == "/api/answers/semantic":
+            self._store_call(lambda: self.server.store.semantic_answer_lookup(payload))
+            return
+        if method == "POST" and path == "/api/answers/cleanup-approve":
+            if set(payload) != {"approval", "ownerConfirmed"} or payload.get("ownerConfirmed") is not True or not isinstance(payload.get("approval"), dict):
+                self._error(HTTPStatus.BAD_REQUEST, "cleanup requires an explicit owner-approved preview")
+                return
+            self._store_call(lambda: self.server.store.approve_answer_cleanup(
+                payload["approval"], owner_confirmed=True
+            ))
+            return
         if method == "POST" and path == "/api/answers":
             if set(payload) - {"answer", "expectedRevision", "rememberSensitive"} or not isinstance(payload.get("answer"), dict):
                 self._error(HTTPStatus.BAD_REQUEST, "body requires an answer object")
@@ -982,6 +996,33 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
                 payload["expectedSessionRevision"], payload["expectedAnswerRevision"],
                 owner_confirmed=True,
             ))
+            return
+        if (
+            method == "POST" and len(parts) == 5
+            and parts[1:3] == ["api", "jobs"]
+            and parts[4] in {"approval-preview", "approval-approve"}
+        ):
+            required = {
+                "expectedJobRevision", "expectedSessionRevision", "decisions"
+            }
+            if parts[4] == "approval-approve":
+                required |= {"previewToken", "ownerConfirmed"}
+            if set(payload) != required or not isinstance(payload.get("decisions"), list):
+                self._error(HTTPStatus.BAD_REQUEST, "grouped approval body is invalid")
+                return
+            if parts[4] == "approval-preview":
+                self._store_call(lambda: self.server.store.preview_grouped_approval(
+                    parts[3], payload["expectedJobRevision"],
+                    payload["expectedSessionRevision"], payload["decisions"],
+                ))
+            elif payload.get("ownerConfirmed") is not True:
+                self._error(HTTPStatus.BAD_REQUEST, "grouped approval requires explicit owner confirmation")
+            else:
+                self._store_call(lambda: self.server.store.approve_grouped_approval(
+                    parts[3], payload["expectedJobRevision"],
+                    payload["expectedSessionRevision"], payload["decisions"],
+                    payload["previewToken"], owner_confirmed=True,
+                ))
             return
         if len(parts) == 4 and parts[1:3] == ["api", "fact-groups"] and method == "PATCH":
             if set(payload) != {"patch", "expectedRevision"} or not isinstance(payload.get("patch"), dict):
