@@ -3002,6 +3002,7 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(len(resolved["session"]["pendingInformation"]), 1)
         final_reference = resolved["session"]["pendingInformation"][0]["reference"]
         managed_path = self.store.resume_files_path / resume_before["managedFile"]
+        resume_metadata_before = managed_path.stat()
         state_before_changed_resume = (
             self.store.jobs_path.read_bytes(),
             self.store._session_path("ready-job").read_bytes(),
@@ -3017,6 +3018,10 @@ class StoreTests(unittest.TestCase):
             state_before_changed_resume,
         )
         managed_path.write_bytes(resume_bytes_before)
+        os.utime(
+            managed_path,
+            ns=(resume_metadata_before.st_atime_ns, resume_metadata_before.st_mtime_ns),
+        )
         resolved = self.store.resolve_pending_answer(
             "ready-job", final_reference, resolved["job"]["revision"],
             resolved["session"]["revision"], second_answer["revision"], True,
