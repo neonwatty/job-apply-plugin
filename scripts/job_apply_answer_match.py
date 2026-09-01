@@ -92,7 +92,6 @@ REASON_CODES = {
     "cleanup_duplicate_pending",
 }
 
-_ANSWER_KEY = re.compile(r"^question\.[0-9a-f]{64}$", re.ASCII)
 _FIELD_CLASS = re.compile(r"^[a-z][a-z0-9_]{0,63}$", re.ASCII)
 _WORD = re.compile(r"[^\W_]+", re.UNICODE)
 _NEGATIONS = {"no", "not", "never", "without", "neither", "nor"}
@@ -218,7 +217,7 @@ def _require_text(value: Any, label: str) -> str:
 
 def _answer_key(record: Mapping[str, Any]) -> str:
     key = record.get("answerKey", record.get("key"))
-    if not isinstance(key, str) or _ANSWER_KEY.fullmatch(key) is None:
+    if not isinstance(key, str) or not key.strip():
         raise AnswerMatchError("answer key is invalid")
     return key
 

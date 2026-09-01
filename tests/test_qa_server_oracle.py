@@ -96,6 +96,25 @@ def valid_session(application_id="application-1"):
     }
 
 
+def rich_replay_session(status="review", application_id="application-1"):
+    session = valid_session(application_id)
+    session.update(
+        {
+            "status": status,
+            "attemptRevision": None,
+            "readiness": None,
+            "blockers": [],
+            "approvals": [],
+            "browserHandoff": {
+                "state": "not_required" if status == "active" else "ready_for_owner",
+                "reasonCode": "none" if status == "active" else "final-review-required",
+                "revision": 1,
+            },
+        }
+    )
+    return session
+
+
 class OracleStore:
     def __init__(self, root):
         self.root = Path(root)
@@ -1194,6 +1213,125 @@ class SemanticOracleTests(unittest.TestCase):
                     self.evaluate()
                 self.assertNotIn("SESSION SECRET", str(caught.exception))
 
+    def test_legacy_and_exact_rich_replay_sessions_are_accepted(self):
+        session_path = self.store.sessions / "application-1.json"
+        for session in (
+            valid_session(),
+            rich_replay_session("active"),
+            rich_replay_session("review"),
+        ):
+            with self.subTest(status=session["status"], rich="browserHandoff" in session):
+                session_path.write_text(json.dumps(session), encoding="utf-8")
+                self.assertEqual(self.evaluate()["status"], "passed")
+
+    def test_rich_replay_session_extension_is_all_or_none(self):
+        session_path = self.store.sessions / "application-1.json"
+        for omitted in (
+            "attemptRevision",
+            "readiness",
+            "blockers",
+            "approvals",
+            "browserHandoff",
+        ):
+            session = rich_replay_session()
+            del session[omitted]
+            with self.subTest(omitted=omitted):
+                session_path.write_text(json.dumps(session), encoding="utf-8")
+                with self.assertRaisesRegex(OracleError, "invalid session artifact"):
+                    self.evaluate()
+
+    def test_rich_replay_session_rejects_malformed_pending_match_metadata(self):
+        session_path = self.store.sessions / "application-1.json"
+        cases = {
+            "reference": "not-opaque",
+            "fieldClass": {},
+            "matchConfidence": "bogus",
+            "matchReasonCodes": ["private-reason"],
+            "matchAnswerRevision": True,
+        }
+        for field, invalid in cases.items():
+            session = rich_replay_session()
+            session["pendingFields"][0][field] = invalid
+            with self.subTest(field=field):
+                session_path.write_text(json.dumps(session), encoding="utf-8")
+                with self.assertRaisesRegex(OracleError, "invalid session artifact"):
+                    self.evaluate()
+
+    def test_rich_replay_session_rejects_non_value_free_projection_fields(self):
+        session_path = self.store.sessions / "application-1.json"
+        mutations = {
+            "attemptRevision": 1,
+            "readiness": {},
+            "blockers": [{}],
+            "approvals": [{}],
+        }
+        for field, invalid in mutations.items():
+            session = rich_replay_session()
+            session[field] = invalid
+            with self.subTest(field=field):
+                session_path.write_text(json.dumps(session), encoding="utf-8")
+                with self.assertRaisesRegex(OracleError, "invalid session artifact"):
+                    self.evaluate()
+
+    def test_rich_replay_session_rejects_malformed_or_mismatched_handoff(self):
+        session_path = self.store.sessions / "application-1.json"
+        cases = {
+            "not-object": [],
+            "missing-key": {"state": "ready_for_owner", "revision": 1},
+            "extra-key": {
+                "state": "ready_for_owner",
+                "reasonCode": "final-review-required",
+                "revision": 1,
+                "extra": None,
+            },
+            "wrong-state": {
+                "state": "not_required",
+                "reasonCode": "final-review-required",
+                "revision": 1,
+            },
+            "wrong-reason": {
+                "state": "ready_for_owner",
+                "reasonCode": "none",
+                "revision": 1,
+            },
+            "wrong-revision": {
+                "state": "ready_for_owner",
+                "reasonCode": "final-review-required",
+                "revision": 2,
+            },
+            "boolean-revision": {
+                "state": "ready_for_owner",
+                "reasonCode": "final-review-required",
+                "revision": True,
+            },
+        }
+        for case, handoff in cases.items():
+            session = rich_replay_session()
+            session["browserHandoff"] = handoff
+            with self.subTest(case=case):
+                session_path.write_text(json.dumps(session), encoding="utf-8")
+                with self.assertRaisesRegex(OracleError, "invalid session artifact"):
+                    self.evaluate()
+
+        for status in ("completed", "abandoned"):
+            session = rich_replay_session(status)
+            with self.subTest(status=status):
+                session_path.write_text(json.dumps(session), encoding="utf-8")
+                with self.assertRaisesRegex(OracleError, "invalid session artifact"):
+                    self.evaluate()
+
+    def test_rich_replay_session_forbidden_nested_values_are_redacted_failures(self):
+        session = rich_replay_session()
+        session["blockers"] = [{"metadata": {"answerValue": "SESSION SECRET"}}]
+        session_path = self.store.sessions / "application-1.json"
+        session_path.write_text(json.dumps(session), encoding="utf-8")
+
+        report = self.evaluate()
+
+        self.assertEqual(report["assertions"]["session-value-free"], "failed")
+        self.assertIn("session-value-present", report["failureCategories"])
+        self.assertNotIn("SESSION SECRET", json.dumps(report))
+
     def test_value_bearing_sessions_are_scored_as_redacted_failures(self):
         deeply_nested = valid_session()
         deeply_nested["pendingFields"][0]["details"] = {
@@ -1411,7 +1549,7 @@ class FormReadinessOracleTests(unittest.TestCase):
             expected_observation_revision=4,
         )
         self.assertEqual(report["status"], "ready")
-        self.assertEqual(report["proofScope"], "repository-replay-only")
+        self.assertEqual(report["proofScope"], "closed-observation-only")
         self.assertEqual(report["blockerCodes"], [])
         serialized = json.dumps(report).lower()
         for forbidden in ("filename", "filepath", "https://", "browser", "value"):

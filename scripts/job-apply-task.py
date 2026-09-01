@@ -58,6 +58,24 @@ def build_parser() -> argparse.ArgumentParser:
     resolve.add_argument("--expected-session-revision", required=True, type=int)
     resolve.add_argument("--expected-answer-revision", required=True, type=int)
     resolve.add_argument("--owner-confirmed", action="store_true")
+    semantic = commands.add_parser("semantic-lookup")
+    semantic.add_argument("--input", required=True)
+    commands.add_parser("cleanup-preview")
+    cleanup = commands.add_parser("cleanup-approve")
+    cleanup.add_argument("--input", required=True)
+    cleanup.add_argument("--owner-confirmed", action="store_true")
+    approval_preview = commands.add_parser("approval-preview")
+    approval_preview.add_argument("--id", required=True)
+    approval_preview.add_argument("--expected-job-revision", required=True, type=int)
+    approval_preview.add_argument("--expected-session-revision", required=True, type=int)
+    approval_preview.add_argument("--input", required=True)
+    approval = commands.add_parser("approval-approve")
+    approval.add_argument("--id", required=True)
+    approval.add_argument("--expected-job-revision", required=True, type=int)
+    approval.add_argument("--expected-session-revision", required=True, type=int)
+    approval.add_argument("--preview-token", required=True)
+    approval.add_argument("--input", required=True)
+    approval.add_argument("--owner-confirmed", action="store_true")
     return parser
 
 
@@ -113,6 +131,43 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 args.owner_confirmed,
             ),
         }
+    if args.command == "semantic-lookup":
+        return {
+            "ok": True, "command": "semantic-lookup",
+            **store.semantic_answer_lookup(read_intake(args.input)),
+        }
+    if args.command == "cleanup-preview":
+        return {
+            "ok": True, "command": "cleanup-preview",
+            **store.preview_answer_cleanup(),
+        }
+    if args.command == "cleanup-approve":
+        return {
+            "ok": True, "command": "cleanup-approve",
+            **store.approve_answer_cleanup(
+                read_intake(args.input), owner_confirmed=args.owner_confirmed
+            ),
+        }
+    if args.command in {"approval-preview", "approval-approve"}:
+        payload = read_intake(args.input)
+        if set(payload) != {"decisions"} or not isinstance(payload["decisions"], list):
+            raise ValueError("invalid approval input")
+        if args.command == "approval-preview":
+            return {
+                "ok": True, "command": args.command,
+                **store.preview_grouped_approval(
+                    args.id, args.expected_job_revision,
+                    args.expected_session_revision, payload["decisions"],
+                ),
+            }
+        return {
+            "ok": True, "command": args.command,
+            **store.approve_grouped_approval(
+                args.id, args.expected_job_revision,
+                args.expected_session_revision, payload["decisions"],
+                args.preview_token, owner_confirmed=args.owner_confirmed,
+            ),
+        }
     raise ValueError("invalid command")
 
 
@@ -121,9 +176,9 @@ def classify(error: BaseException) -> tuple[str, str]:
         return "invalid_request", "The task request is invalid."
     if STORE is not None and isinstance(error, STORE.StoreError):
         message = str(error)
-        if "owner confirmation" in message:
+        if "owner confirmation" in message or "owner approval" in message:
             return "owner_confirmation_required", "Explicit owner confirmation is required."
-        if "revision conflict" in message:
+        if "revision conflict" in message or "preview is stale" in message:
             return "stale_revision", "A selected canonical revision is stale."
         if "reference is stale" in message:
             return "stale_revision", "The pending question reference is stale."

@@ -756,7 +756,7 @@ class WorkspaceServerTests(unittest.TestCase):
         self.assertEqual(activity["job"]["status"], "in_progress")
         self.assertEqual(activity["claim"]["state"], "active")
         self.assertEqual(activity["session"]["pendingInformation"][0] | {"reference": "opaque"}, {
-            "question": "Do you need sponsorship?", "state": "missing", "sensitive": True,
+            "state": "missing", "sensitive": True,
             "reference": "opaque", "resolutionEligible": False,
         })
         self.assertRegex(
@@ -1022,6 +1022,61 @@ class WorkspaceServerTests(unittest.TestCase):
             ("answer", "delete", {"sessions": 0, "history": 1}),
         )
         self.assertNotIn("Yes", json.dumps(blocked))
+
+    def test_semantic_lookup_and_cleanup_api_are_value_free_preview_then_explicit_approval(self):
+        status, _headers, winner = self.request(
+            "POST", "/api/answers",
+            {"answer": {
+                "question": "Does the applicant have permission to work in this jurisdiction?",
+                "state": "confirmed", "value": "PRIVATE WORKSPACE ANSWER",
+                "scope": {},
+            }},
+        )
+        self.assertEqual(status, 200)
+        status, _headers, duplicate = self.request(
+            "POST", "/api/answers/observe",
+            {"answer": {
+                "question": "Is employment authorization available in the country?",
+                "state": "missing", "scope": {},
+            }},
+        )
+        self.assertEqual(status, 200)
+        status, _headers, lookup = self.request(
+            "POST", "/api/answers/semantic",
+            {
+                "question": "Is employment authorization available in the country?",
+                "scope": {}, "fieldClass": "general", "sensitivity": "none",
+                "mode": "strict", "useAuthority": "accepted_record", "limit": 5,
+            },
+        )
+        self.assertEqual(status, 200)
+        self.assertTrue(lookup["candidates"])
+        self.assertNotIn("PRIVATE WORKSPACE ANSWER", json.dumps(lookup))
+
+        status, _headers, preview = self.request(
+            "GET", "/api/answers/cleanup-preview", origin=False
+        )
+        self.assertEqual((status, len(preview["proposals"])), (200, 1))
+        proposal = preview["proposals"][0]
+        approval = {
+            "previewToken": preview["previewToken"],
+            "winnerKey": proposal["winnerKey"],
+            "duplicateKey": proposal["duplicateKey"],
+            "winnerRevision": proposal["winnerRevision"],
+            "duplicateRevision": proposal["duplicateRevision"],
+        }
+        status, _headers, _rejected = self.request(
+            "POST", "/api/answers/cleanup-approve",
+            {"approval": approval, "ownerConfirmed": False},
+        )
+        self.assertEqual(status, 400)
+        status, _headers, approved = self.request(
+            "POST", "/api/answers/cleanup-approve",
+            {"approval": approval, "ownerConfirmed": True},
+        )
+        self.assertEqual((status, approved["approved"]), (200, True))
+        redirected = self.server.store.get_answer(duplicate["key"])
+        self.assertEqual(redirected["key"], winner["key"])
 
     def test_encoded_answer_routes_round_trip_dot_only_keys_without_weakening_guards(self):
         answer = self.server.store.put_answer({"key": "..", "state": "missing"})
@@ -1741,10 +1796,12 @@ class WorkspaceServerTests(unittest.TestCase):
             (needs["id"], "needs_information", needs["revision"]),
         )
         self.assertEqual(set(row), {
-            "jobId", "role", "company", "status", "revision", "priority",
+            "jobId", "status", "revision", "priority",
             "reasonCode", "reasonLabel", "attentionAt", "guidance",
-            "missingInformationCount", "sessionRevision",
+            "missingInformationCount", "sessionRevision", "session",
         })
+        self.assertNotIn("role", row)
+        self.assertNotIn("company", row)
         self.server.store.transition_job(job["id"], "saved", needs["revision"])
         status, _headers, resolved = self.request(
             "GET", "/api/attention", origin=False

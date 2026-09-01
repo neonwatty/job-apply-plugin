@@ -367,11 +367,11 @@ if (hasDom) {
   const token = sessionToken(location.hash, safeSessionStorage(globalThis));
   if (location.hash) history.replaceState(null, "", location.pathname);
   const api = createApi(token);
-  const state = { jobs: [], activeJobsLoaded: false, resumes: [], selected: null, latest: null, draft: null, dirty: false, dirtyFields: new Set(), polling: false, pollIntervalId: null, opener: null, openerJobId: null, focusAfterClose: null, focusAfterCloseJobId: null, activity: null, activityJobId: null, activityUnavailable: false, attentionReturnJobId: null, navigationGeneration: 0, preflightRequestSequence: 0, preflightPolling: false, preflightError: null, readyHandoffProof: null };
+  const state = { jobs: [], activeJobsLoaded: false, resumes: [], selected: null, latest: null, draft: null, dirty: false, dirtyFields: new Set(), polling: false, pollIntervalId: null, opener: null, openerJobId: null, focusAfterClose: null, focusAfterCloseJobId: null, activity: null, activityJobId: null, activityUnavailable: false, attentionReturnJobId: null, navigationGeneration: 0, preflightRequestSequence: 0, preflightPolling: false, preflightError: null, readyHandoffProof: null, groupedApprovalPreview: null, groupedApprovalRequest: null, groupedApprovalProjectionSignature: null, groupedApprovalRequestSequence: 0 };
   const profileState = { inspection: null, drafts: new Map(), draftBases: new Map(), atomic: new Set(), additionalAtomic: new Set(), deletions: new Set(), conflicts: [], latest: null, loaded: false };
   const factGroupState = { items: [], selectedView: "all", selected: null, editing: null, loaded: false, opener: null, requestSequence: 0 };
   const resumeState = { items: [], proposals: [], trash: false, loaded: false, loading: false, requestId: 0, selected: null, opener: null, proposal: null, dirtyMetadata: new Set() };
-  const answerState = { items: [], loaded: false, selected: null, offset: 0, limit: 25, total: 0, dirty: new Set(), opener: null, pendingJobId: null, pendingReference: null, requestSequence: 0, detailRequestSequence: 0, dialogGeneration: 0, mergeRequestSequence: 0, mergeSource: null, mergeCandidates: [], busyControls: null };
+  const answerState = { items: [], loaded: false, selected: null, offset: 0, limit: 25, total: 0, dirty: new Set(), opener: null, pendingJobId: null, pendingReference: null, requestSequence: 0, detailRequestSequence: 0, dialogGeneration: 0, mergeRequestSequence: 0, mergeSource: null, mergeCandidates: [], cleanupPreview: null, busyControls: null };
   const trashState = { items: [], counts: { job: 0, resume: 0, answer: 0 }, loaded: false, selected: null, opener: null };
   const attentionState = { items: [], snapshotSignature: "", loaded: false, unavailable: false, detailRequestSequence: 0 };
   const overviewState = { projection: null, available: false, degraded: false, unavailable: false };
@@ -1153,19 +1153,19 @@ if (hasDom) {
     for (const item of attentionState.items) {
       const wrapper = document.createElement("div"); wrapper.className = "attention-item"; wrapper.setAttribute("role", "listitem");
       const button = document.createElement("button"); button.type = "button"; button.className = "attention-card"; button.dataset.attentionId = item.jobId; button.disabled = attentionState.unavailable;
-      const heading = document.createElement("h3"); heading.textContent = item.role || "Untitled opportunity";
-      const company = document.createElement("p"); company.className = "attention-company"; company.textContent = item.company || "Company not set";
+      const heading = document.createElement("h3"); heading.textContent = "Application attention item";
       const reason = document.createElement("strong"); reason.className = `attention-reason ${item.reasonCode}`; reason.textContent = item.reasonLabel;
       const guidance = document.createElement("p"); guidance.textContent = item.guidance;
-      const pendingQuestion = item.pendingInformation?.[0]?.question;
-      const question = document.createElement("p"); question.className = "attention-question";
-      question.textContent = pendingQuestion ? `Pending: ${pendingQuestion}` : "";
+      const blockers = item.session?.blockers || [];
+      const blockerSummary = document.createElement("p"); blockerSummary.className = "attention-question";
+      blockerSummary.textContent = blockers.length ? `${blockers.length} typed blocker${blockers.length === 1 ? "" : "s"}: ${blockers.map((entry) => entry.code).join(", ")}` : "No typed blockers recorded.";
+      const handoff = document.createElement("p"); handoff.className = "attention-company";
+      handoff.textContent = item.session?.browserHandoff ? `Browser handoff: ${statusLabel(item.session.browserHandoff.state)} · ${item.session.browserHandoff.reasonCode}` : "Browser handoff not recorded";
       const metadata = document.createElement("p"); metadata.className = "attention-meta";
       const missing = item.reasonCode === "needs_information" ? ` · ${item.missingInformationCount} missing information item${item.missingInformationCount === 1 ? "" : "s"}` : "";
       metadata.textContent = `Priority ${item.priority} · ${statusLabel(item.status)} · since ${formatActivityTime(item.attentionAt)}${missing}`;
       const action = document.createElement("span"); action.className = "attention-action"; action.textContent = attentionState.unavailable ? "Unavailable until refresh" : "Open Job details";
-      button.append(heading, company, reason, guidance);
-      if (pendingQuestion) button.append(question);
+      button.append(heading, reason, guidance, blockerSummary, handoff);
       button.append(metadata, action);
       button.addEventListener("click", () => openAttentionJob(item.jobId, button)); wrapper.append(button); list.append(wrapper);
     }
@@ -1409,6 +1409,59 @@ if (hasDom) {
       error.textContent = exception.status === 409 ? "The source or winner changed. Nothing was merged; close and reopen to select current revisions." : exception.message;
       error.classList.remove("hidden"); error.focus();
     } finally { if (canApplyAnswerDialogMutation(answerState.selected, source.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) setAnswerBusy(false); }
+  }
+
+  async function openAnswerCleanup() {
+    const error = $("#answer-cleanup-error"); error.classList.add("hidden");
+    try {
+      const preview = await api("/api/answers/cleanup-preview");
+      answerState.cleanupPreview = preview;
+      const holder = $("#answer-cleanup-proposals"); holder.replaceChildren();
+      for (const [index, proposal] of preview.proposals.entries()) {
+        const label = document.createElement("label");
+        const input = document.createElement("input"); input.type = "radio"; input.name = "proposal"; input.value = String(index); input.required = true;
+        const copy = document.createElement("span");
+        copy.textContent = `${statusLabel(proposal.confidenceBand)} confidence · keep “${proposal.winnerQuestion}” (${proposal.winnerKey}) · merge “${proposal.duplicateQuestion}” (${proposal.duplicateKey})`;
+        label.append(input, copy); holder.append(label);
+      }
+      $("#answer-cleanup-confirm").disabled = preview.proposals.length === 0;
+      if (!preview.proposals.length) {
+        const empty = document.createElement("p"); empty.textContent = "No unambiguous cleanup proposals are available."; holder.append(empty);
+      }
+      $("#answer-cleanup-dialog").showModal();
+    } catch (exception) {
+      error.textContent = exception.message; error.classList.remove("hidden");
+      toast(`Cleanup preview failed: ${exception.message}`);
+    }
+  }
+
+  async function submitAnswerCleanup(event) {
+    event.preventDefault();
+    const preview = answerState.cleanupPreview;
+    const selected = event.currentTarget.elements.proposal?.value;
+    const proposal = preview?.proposals?.[Number(selected)];
+    if (!preview || !proposal) return;
+    try {
+      await api("/api/answers/cleanup-approve", {
+        method: "POST", body: JSON.stringify({
+          ownerConfirmed: true,
+          approval: {
+            previewToken: preview.previewToken,
+            winnerKey: proposal.winnerKey,
+            duplicateKey: proposal.duplicateKey,
+            winnerRevision: proposal.winnerRevision,
+            duplicateRevision: proposal.duplicateRevision,
+          },
+        }),
+      });
+      $("#answer-cleanup-dialog").close();
+      answerState.cleanupPreview = null;
+      await refreshAnswers({ reset: true });
+      toast("Exact cleanup proposal approved");
+    } catch (error) {
+      $("#answer-cleanup-error").textContent = error.message;
+      $("#answer-cleanup-error").classList.remove("hidden");
+    }
   }
 
   function resumeError(message, dialogError = false) { const node = $(dialogError ? "#resume-error" : "#resumes-error"); node.textContent = message; node.classList.remove("hidden"); }
@@ -1793,6 +1846,138 @@ if (hasDom) {
     if (firstFailure) $("#activity-live").textContent = "Durable application activity is unavailable.";
   }
 
+  function renderAttentionContract(session) {
+    const panel = $("#activity-attention-contract");
+    const readiness = session?.readiness;
+    const handoff = session?.browserHandoff;
+    const blockers = session?.blockers || [];
+    panel.classList.toggle("hidden", !session || (!readiness && !handoff && blockers.length === 0));
+    $("#activity-readiness").textContent = readiness
+      ? `Readiness ${statusLabel(readiness.status)} · ${statusLabel(readiness.evidenceKind)} · attempt revision ${readiness.attemptRevision} · observation revision ${readiness.observationRevision}.`
+      : "No readiness proof recorded.";
+    $("#activity-browser-handoff").textContent = handoff
+      ? `Browser handoff ${statusLabel(handoff.state)} · ${handoff.reasonCode} · revision ${handoff.revision}. No URL, tab, or browser state is retained.`
+      : "No browser handoff recorded.";
+    const list = $("#activity-blockers"); list.replaceChildren();
+    for (const blocker of blockers) {
+      const row = document.createElement("li"); row.textContent = `${statusLabel(blocker.type)} · ${blocker.code}`; list.append(row);
+    }
+    const approvalProjectionSignature = session ? JSON.stringify({
+      revision: session.revision,
+      approvals: session.approvals || [],
+      pendingInformation: (session.pendingInformation || []).map((item) => ({
+        reference: item.reference, answerKey: item.answerKey,
+        answerRevision: item.answerRevision,
+        resolutionEligible: item.resolutionEligible,
+        answerSensitivity: item.answerSensitivity,
+        state: item.state, sensitive: item.sensitive,
+        fieldClass: item.fieldClass,
+      })),
+    }) : null;
+    if (session && state.groupedApprovalProjectionSignature === approvalProjectionSignature) return;
+    state.groupedApprovalProjectionSignature = approvalProjectionSignature;
+    state.groupedApprovalRequestSequence += 1;
+    const eligible = (session?.pendingInformation || []).filter((item) => item.answerKey && item.reference);
+    const approvalsByReference = new Map(
+      (session?.approvals || []).map((approval) => [approval.reference, approval]),
+    );
+    const holder = $("#activity-approval-fields"); holder.replaceChildren();
+    for (const item of eligible) {
+      const approval = approvalsByReference.get(item.reference);
+      const sensitive = item.sensitive === true || item.state === "sensitive" || ["personal", "high"].includes(item.answerSensitivity);
+      const field = document.createElement("fieldset"); field.dataset.reference = item.reference; field.dataset.answerKey = item.answerKey; field.dataset.sensitive = String(sensitive); field.dataset.useAuthority = approval?.useAuthority || (sensitive ? "per_use" : "accepted_record");
+      const legend = document.createElement("legend"); legend.textContent = `${statusLabel(item.fieldClass || "general")} field`;
+      const current = document.createElement("label"); current.innerHTML = '<input type="checkbox" data-decision="currentUse"> Use the current canonical answer for this field';
+      const remember = document.createElement("label"); remember.innerHTML = '<input type="checkbox" data-decision="remember"> Remember this field decision';
+      const policy = document.createElement("label"); policy.textContent = "Reuse policy ";
+      const select = document.createElement("select"); select.dataset.decision = "policyMode"; select.append(new Option("Strict", "strict"), new Option("Bounded loose", "bounded_loose")); policy.append(select);
+      current.querySelector("input").checked = approval?.currentUse === true;
+      remember.querySelector("input").checked = approval?.remember === true;
+      select.value = approval?.policyMode || "strict";
+      field.append(legend, current, remember, policy); holder.append(field);
+    }
+    $("#activity-grouped-approval").classList.toggle("hidden", eligible.length === 0);
+    state.groupedApprovalPreview = null; state.groupedApprovalRequest = null;
+    $("#activity-approval-confirm").classList.add("hidden");
+    $("#activity-approval-summary").textContent = session?.approvals?.length
+      ? `${session.approvals.length} field-specific approval${session.approvals.length === 1 ? "" : "s"} recorded.`
+      : "";
+  }
+
+  function groupedApprovalDecisions() {
+    return [...$("#activity-approval-fields").querySelectorAll("fieldset")].map((field) => {
+      const currentUse = field.querySelector('[data-decision="currentUse"]').checked;
+      const defaultAuthority = field.dataset.sensitive === "true" ? "per_use" : "accepted_record";
+      return {
+        reference: field.dataset.reference,
+        answerKey: field.dataset.answerKey,
+        currentUse,
+        remember: field.querySelector('[data-decision="remember"]').checked,
+        policyMode: field.querySelector('[data-decision="policyMode"]').value,
+        useAuthority: currentUse ? (field.dataset.useAuthority === "none" ? defaultAuthority : field.dataset.useAuthority || defaultAuthority) : "none",
+        allowedSensitiveFieldClasses: [],
+      };
+    });
+  }
+
+  function invalidateGroupedApprovalPreview() {
+    state.groupedApprovalRequestSequence += 1;
+    state.groupedApprovalPreview = null;
+    state.groupedApprovalRequest = null;
+    $("#activity-approval-confirm").classList.add("hidden");
+    $("#activity-approval-summary").textContent =
+      "Selections changed. Preview the current decisions again before approval.";
+  }
+
+  async function previewGroupedApproval() {
+    if (!state.selected || !state.activity?.session) return;
+    const requestSequence = ++state.groupedApprovalRequestSequence;
+    const jobId = state.selected.id;
+    const jobRevision = state.activity.job.revision;
+    const sessionRevision = state.activity.session.revision;
+    const decisions = groupedApprovalDecisions();
+    try {
+      const preview = await api(`/api/jobs/${encodeURIComponent(jobId)}/approval-preview`, {
+        method: "POST", body: JSON.stringify({
+          expectedJobRevision: jobRevision,
+          expectedSessionRevision: sessionRevision,
+          decisions,
+        }),
+      });
+      if (
+        requestSequence !== state.groupedApprovalRequestSequence
+        || state.selected?.id !== jobId
+        || state.activity?.job?.revision !== jobRevision
+        || state.activity?.session?.revision !== sessionRevision
+      ) return;
+      state.groupedApprovalPreview = preview; state.groupedApprovalRequest = decisions;
+      $("#activity-approval-summary").textContent = `${preview.approvals.filter((item) => item.eligible).length} of ${preview.approvals.length} current-use decisions are eligible. Review, then approve this exact preview.`;
+      $("#activity-approval-confirm").classList.remove("hidden");
+    } catch (error) {
+      if (requestSequence === state.groupedApprovalRequestSequence) {
+        $("#activity-approval-summary").textContent = error.message;
+      }
+    }
+  }
+
+  async function approveGroupedApproval() {
+    const preview = state.groupedApprovalPreview;
+    if (!preview || !state.selected || !state.activity?.session) return;
+    try {
+      await api(`/api/jobs/${encodeURIComponent(state.selected.id)}/approval-approve`, {
+        method: "POST", body: JSON.stringify({
+          expectedJobRevision: preview.jobRevision,
+          expectedSessionRevision: preview.sessionRevision,
+          decisions: state.groupedApprovalRequest,
+          previewToken: preview.previewToken,
+          ownerConfirmed: true,
+        }),
+      });
+      await loadActivity(state.selected.id, { announce: false });
+      toast("Exact grouped approval recorded without changing the answer library");
+    } catch (error) { $("#activity-approval-summary").textContent = error.message; }
+  }
+
   function renderActivity(activity, announce = true) {
     const listed = state.jobs.find((job) => job.id === state.selected?.id);
     if (state.activeJobsLoaded && !listed) {
@@ -1848,8 +2033,10 @@ if (hasDom) {
         pending.append(row);
       }
       $("#activity-pending-wrap").classList.toggle("hidden", pending.children.length === 0);
+      renderAttentionContract(activity.session);
     } else {
       progress.classList.add("hidden");
+      renderAttentionContract(null);
     }
 
     const historyList = $("#activity-history-list"); historyList.replaceChildren();
@@ -1877,11 +2064,25 @@ if (hasDom) {
     if (!dialog.open || !state.selected || !item.reference) return;
     const jobId = state.selected.id;
     const opener = document.activeElement;
+    const preservedDraft = state.dirty
+      ? Object.fromEntries(
+        [...state.dirtyFields]
+          .filter((name) => form.elements[name])
+          .map((name) => [name, form.elements[name].value]),
+      )
+      : null;
     const requestSequence = ++answerState.detailRequestSequence;
     try {
       const selected = await api(`/api/jobs/${encodeURIComponent(jobId)}/pending-answers/${encodeURIComponent(item.reference)}`);
       if (requestSequence !== answerState.detailRequestSequence || !dialog.open || state.selected?.id !== jobId) return;
       showAnswerDetail(selected, opener, jobId, item.reference);
+      if (preservedDraft && dialog.open && state.selected?.id === jobId) {
+        for (const [name, value] of Object.entries(preservedDraft)) {
+          if (form.elements[name]) form.elements[name].value = value;
+        }
+        state.dirtyFields = new Set(Object.keys(preservedDraft));
+        state.dirty = state.dirtyFields.size > 0;
+      }
     } catch (error) {
       if (requestSequence === answerState.detailRequestSequence && dialog.open && state.selected?.id === jobId) showFormError(error.message);
     }
@@ -1993,11 +2194,13 @@ if (hasDom) {
   $("#trash-delete-input").addEventListener("input", () => { $("#trash-delete-confirm").disabled = $("#trash-delete-input").value !== typedDeletePhrase(trashState.selected?.type); });
   $("#trash-delete-form").addEventListener("submit", submitTrashDelete);
   $("#trash-conflict-refresh").addEventListener("click", async () => { $("#trash-delete-dialog").close(); await refreshTrash({ quiet: true }); $("#trash-list").focus(); });
-  $("#answers-refresh").addEventListener("click", () => refreshAnswers()); $("#answer-new").addEventListener("click", newAnswer); $("#answer-search").addEventListener("input", () => refreshAnswers({ reset: true })); $("#answer-view").addEventListener("change", () => refreshAnswers({ reset: true })); $("#answer-state-filter").addEventListener("change", () => refreshAnswers({ reset: true }));
+  $("#answers-cleanup").addEventListener("click", openAnswerCleanup); $("#answers-refresh").addEventListener("click", () => refreshAnswers()); $("#answer-new").addEventListener("click", newAnswer); $("#answer-search").addEventListener("input", () => refreshAnswers({ reset: true })); $("#answer-view").addEventListener("change", () => refreshAnswers({ reset: true })); $("#answer-state-filter").addEventListener("change", () => refreshAnswers({ reset: true }));
   $("#answers-previous").addEventListener("click", () => { answerState.offset = Math.max(0, answerState.offset - answerState.limit); refreshAnswers(); }); $("#answers-next").addEventListener("click", () => { answerState.offset += answerState.limit; refreshAnswers(); });
   $("#answer-form").addEventListener("submit", saveAnswer); $("#answer-form").addEventListener("input", (event) => { if (event.target.name && event.target.name !== "rememberSensitive") answerState.dirty.add(event.target.name); if (["state", "sensitivity"].includes(event.target.name)) syncSensitiveConsent(); });
   $("#answer-reveal").addEventListener("click", async () => { const requestedKey = answerState.selected.key; const dialogGeneration = answerState.dialogGeneration; setAnswerBusy(true); try { const revealed = await api(answerApiPath(requestedKey, "reveal"), { method: "POST", body: "{}" }); if (!canApplyAnswerDialogResponse(answerState.selected, requestedKey, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) return; if (!canApplyAnswerReveal(answerState.selected, requestedKey, revealed)) { answerError("This answer changed identity while its value was being revealed. Nothing was placed in the dialog; close it and review the canonical answer.", true); return; } $("#answer-form").elements.value.value = revealed.value ?? ""; $("#answer-reveal").classList.add("hidden"); toast("Sensitive value revealed for this dialog"); } catch (error) { if (canApplyAnswerDialogResponse(answerState.selected, requestedKey, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) answerError(error.message, true); } finally { if (canApplyAnswerDialogResponse(answerState.selected, requestedKey, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) setAnswerBusy(false); } });
   $("#answer-merge").addEventListener("click", openAnswerMerge); $("#answer-merge-form").addEventListener("submit", submitAnswerMerge);
+  $("#answer-cleanup-form").addEventListener("submit", submitAnswerCleanup);
+  $("#answer-cleanup-dialog").addEventListener("close", () => { answerState.cleanupPreview = null; });
   $("#answer-merge-dialog").addEventListener("close", () => { if ($("#answer-merge-dialog").open) return; answerState.mergeRequestSequence += 1; answerState.mergeSource = null; answerState.mergeCandidates = []; });
   $("#answer-accept").addEventListener("click", () => answerAction("accept")); $("#answer-decline").addEventListener("click", () => answerAction("decline")); $("#answer-trash").addEventListener("click", () => { if (confirm("Move this answer to trash?")) answerAction("trash"); }); $("#answer-restore").addEventListener("click", () => answerAction("restore")); $("#answer-delete").addEventListener("click", () => openTrashDelete({ type: "answer", id: answerState.selected.key, revision: answerState.selected.revision, label: answerState.selected.question || answerState.selected.key }, $("#answer-delete")));
   $("#answer-conflict-refresh").addEventListener("click", async () => { const selected = answerState.selected; const dialogGeneration = answerState.dialogGeneration; setAnswerBusy(true); try { const latest = await api(answerApiPath(selected.key)); if (!canApplyAnswerDialogResponse(answerState.selected, selected.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) return; if (!canRefreshAnswerDraft(selected, latest)) { answerError("This source answer changed identity while its canonical revision was being refreshed. Its preserved draft was not retargeted; close this dialog and review the current answer separately.", true); return; } answerState.selected = latest; $("#answer-conflict").classList.add("hidden"); $("#answer-kicker").textContent = `CANONICAL · REVISION ${answerState.selected.revision} · DRAFT PRESERVED`; toast("Canonical revision refreshed; review your preserved draft"); } catch (error) { if (canApplyAnswerDialogResponse(answerState.selected, selected.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) answerError(error.message, true); } finally { if (canApplyAnswerDialogResponse(answerState.selected, selected.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) setAnswerBusy(false); } });
@@ -2027,6 +2230,8 @@ if (hasDom) {
   $("#new-job").addEventListener("click", openNew); $("#empty-create").addEventListener("click", openNew); $("#refresh").addEventListener("click", () => refresh());
   $("#search").addEventListener("input", render); $("#status-filter").addEventListener("change", render);
   $("#preflight-job").addEventListener("click", preflight); $("#mark-ready").addEventListener("click", async () => { const result = await preflight(); if (result?.ready) transition("ready"); });
+  $("#activity-approval-preview").addEventListener("click", previewGroupedApproval); $("#activity-approval-confirm").addEventListener("click", approveGroupedApproval);
+  $("#activity-approval-fields").addEventListener("change", invalidateGroupedApprovalPreview);
   $("#trash-job").addEventListener("click", async () => { if (!confirm("Move this job to trash? It will leave this Jobs workspace, but remains recoverable through the canonical store.")) return; try { const id = state.selected.id; await api(`/api/jobs/${encodeURIComponent(id)}/trash`, { method: "POST", body: JSON.stringify({ expectedRevision: state.selected.revision }) }); await refresh({ quiet: true }); closeJobDialog(firstListDestination()); toast("Job moved to trash"); } catch (error) { if (error.code === "revision_conflict") await showConflict(); else showFormError(lifecycleErrorText(error)); } });
   $("#reload-latest").addEventListener("click", () => { if (!state.latest) return; state.selected = state.latest; state.draft = null; fillForm(state.latest); renderJobControls(state.latest); $("#dialog-kicker").textContent = `CANONICAL · REVISION ${state.latest.revision}`; form.elements.role.focus(); toast("Loaded the latest canonical values"); });
   $("#rebase-draft").addEventListener("click", () => { if (!state.latest || !state.draft) return; const latest = state.latest; const draft = state.draft; state.selected = latest; fillForm(latest); renderJobControls(latest); for (const [name, value] of Object.entries(draft)) if (form.elements[name]) form.elements[name].value = value; state.dirtyFields = new Set(Object.keys(draft)); state.dirty = state.dirtyFields.size > 0; state.draft = null; hideConflict(); $("#save-job").focus(); toast("Your edited fields were reapplied to the latest canonical values. Review, then save."); });

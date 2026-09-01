@@ -248,6 +248,8 @@ python3 "<plugin-root>/scripts/job-apply-store.py" answer-find \
   --scope '{"country":"US"}'
 ```
 
+For deterministic semantic candidates and bounded policy, prefer `answer-semantic-lookup --input <private-json>`. The question is ephemeral; the Store recomputes against current canonical records and returns only opaque keys, confidence bands, and closed reason codes. `strict` and `bounded_loose` never imply remember or final-action authority. Sensitive bounded policy additionally requires an explicitly allowlisted field class. `answer-cleanup-preview` is non-mutating. `answer-cleanup-approve --input <exact-preview-selection> --owner-confirmed` is the only semantic-cleanup mutation path and rechecks the complete current preview before a revision-safe coordinator merge.
+
 Store a new reviewed non-sensitive answer with `answer-put --input <answer.json>`. Put creates accepted records only; use `answer-observe` to create pending records and `answer-review` to decline them. Updating through put requires `--expected-revision`; prefer selective `answer-update`. The helper owns stable keys and aliases and rejects normalized question/alias collisions inside the same exact scope.
 
 For the shared answer-library surface, list and selectively edit records through
@@ -347,7 +349,7 @@ assumptions.
 
 ## Resumable sessions
 
-Use `session-save --id <application-id> --input <session.json>` after meaningful non-final progress. Sessions may contain ATS/role/step metadata, `answerKeys`, and pending-field descriptions; they must not contain answer values.
+Use `session-save --id <application-id> --input <session.json>` only for non-canonical standalone workflows. Canonical jobs use the coordinator/attempt broker. New writes strip question, role, company, and URL copies and persist only step/status, opaque answer references, typed blockers, a current-attempt readiness proof, field-specific approvals, and closed browser-handoff state. They must never contain answer/profile/resume values, employer/role identity, credentials, codes, filenames, paths, digests, URLs, tab IDs, or browser state. Older v1 sessions remain readable and are normalized on their next successful coordinator write; corrupt/future documents remain untouched.
 
 ```bash
 python3 "<plugin-root>/scripts/job-apply-store.py" session-list
@@ -372,7 +374,7 @@ python3 "<plugin-root>/scripts/job-apply-store.py" claim-handoff --id <job-id> -
 python3 "<plugin-root>/scripts/job-apply-store.py" claim-recover --id <same-job-id> --owner <owner-label>
 ```
 
-`job-acquire` requires the revision shown during selection, rechecks readiness under the global lock, and returns the resolved resume record, preferring the job's assigned resume over the active default. Terminal handoff likewise requires the post-acquisition or post-recovery revision retained by the caller; reloading just before handoff would mask a concurrent change. A stale revision fails without changing claim, job, history, or session state. A live claim is never stolen or silently released. Generic transition, trash, deletion, and session-mutation commands reject active canonical jobs. An expired claim can only be recovered explicitly for the same `in_progress` job; use `claim-status` to obtain that job ID. Recovery rotates the token and preserves its session and status. Heartbeat, progress, recovery, and both handoffs require canonical `in_progress` status. The session schema rejects explicit value fields, but allowed metadata strings cannot be classified semantically: callers must never encode answer values in `step`, question metadata, answer keys, or any other allowed string. The needs-info and review handoffs journal and roll forward job, history, session, and claim-release changes idempotently after a crash.
+`job-acquire` requires the revision shown during selection, rechecks preflight under the global lock, and returns the resolved resume record, preferring the job's assigned resume over the active default. Terminal handoff likewise requires the retained post-acquisition/recovery revision; reloading just before handoff would mask a concurrent change. `awaiting_review` additionally requires a Store-recomputed, complete `agent_attested_current_attempt` readiness report bound to that revision, with a complete observed required-control manifest exactly matching the selected bundled fixture, no unresolved fields or blockers, and the exact owner-review handoff. An additional required control or the absence of an exact fixture fails closed. This is an agent attestation over closed current-form observations, not independent browser-provenance proof. Replay evidence, stale/inaccessible controls, unresolved validation, upload fallback, or final-action activation rejects without mutation. A live claim is never stolen or silently released. Generic transition, trash, deletion, and session mutation reject active canonical jobs. Expired claims require explicit same-job recovery. Both handoffs journal and roll forward job, history, value-free session, and claim release idempotently after a crash.
 
 ## Safety rules
 

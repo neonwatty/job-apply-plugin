@@ -211,7 +211,7 @@
     <div id="answers-workspace" class="hidden">
       <section class="hero" aria-labelledby="answers-title">
         <div><p class="eyebrow">Answers Workspace</p><h2 id="answers-title">Reusable answers, reviewed by you.</h2><p>Observed questions and reusable answers share one canonical local record. Sensitive values stay hidden until you explicitly reveal them.</p></div>
-        <div class="hero-actions"><button id="answers-refresh" class="button secondary" type="button">Refresh</button><button id="answer-new" class="button primary" type="button">New answer</button></div>
+        <div class="hero-actions"><button id="answers-cleanup" class="button secondary" type="button">Preview cleanup</button><button id="answers-refresh" class="button secondary" type="button">Refresh</button><button id="answer-new" class="button primary" type="button">New answer</button></div>
       </section>
       <section class="answers-panel" aria-labelledby="answer-library-heading">
         <div class="panel-heading"><div><p class="eyebrow">CANONICAL LIBRARY</p><h2 id="answer-library-heading">Answers</h2></div><div class="filters"><label>Search <input id="answer-search" type="search" placeholder="Question or alias"></label><label>View <select id="answer-view"><option value="accepted">Library</option><option value="pending">Observed inbox</option><option value="declined">Declined</option><option value="trash">Trash</option></select></label><label>State <select id="answer-state-filter"><option value="">All states</option><option value="confirmed">Confirmed</option><option value="inferred">Inferred</option><option value="missing">Missing</option><option value="sensitive">Sensitive</option></select></label></div></div>
@@ -343,6 +343,16 @@
     </form>
   </dialog>
 
+  <dialog id="answer-cleanup-dialog" aria-labelledby="answer-cleanup-title">
+    <form id="answer-cleanup-form" class="dialog-shell">
+      <div class="dialog-heading"><div><p class="eyebrow">EXPLICIT CLEANUP</p><h2 id="answer-cleanup-title">Review semantic duplicate proposals</h2></div><button class="icon-button" type="button" data-close="answer-cleanup-dialog" aria-label="Close cleanup preview">×</button></div>
+      <p>Previewing never changes the answer library. Approve one exact revision-bound proposal at a time.</p>
+      <div id="answer-cleanup-proposals"></div>
+      <p id="answer-cleanup-error" class="error hidden" role="alert"></p>
+      <div class="dialog-footer"><button class="button secondary" type="button" data-close="answer-cleanup-dialog">Cancel</button><button id="answer-cleanup-confirm" class="button danger" type="submit">Approve selected cleanup</button></div>
+    </form>
+  </dialog>
+
   <dialog id="job-dialog" aria-labelledby="job-dialog-title">
     <form id="job-form" class="dialog-shell">
       <div class="dialog-heading">
@@ -394,6 +404,18 @@
             <h4>Pending information</h4>
             <ul id="activity-pending"></ul>
           </div>
+          <section id="activity-attention-contract" class="attention-contract hidden" aria-labelledby="activity-attention-contract-heading">
+            <h4 id="activity-attention-contract-heading">Human attention contract</h4>
+            <p id="activity-readiness"></p>
+            <p id="activity-browser-handoff"></p>
+            <ul id="activity-blockers"></ul>
+            <div id="activity-grouped-approval" class="hidden">
+              <p>Review each field independently. Current use, remembering, and reuse policy remain separate decisions.</p>
+              <div id="activity-approval-fields"></div>
+              <div class="button-row"><button id="activity-approval-preview" class="button secondary" type="button">Preview grouped approval</button><button id="activity-approval-confirm" class="button accent hidden" type="button">Approve exact preview</button></div>
+              <p id="activity-approval-summary" role="status"></p>
+            </div>
+          </section>
         </div>
         <div class="activity-history">
           <h4>Read-only history</h4>

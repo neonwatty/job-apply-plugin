@@ -62,7 +62,7 @@ class FormReadinessTests(unittest.TestCase):
                 "fallbackCode",
             },
         )
-        self.assertEqual(report["proofScope"], "repository-replay-only")
+        self.assertEqual(report["proofScope"], "closed-observation-only")
         self.assertEqual(report["status"], "ready")
         self.assertEqual(set(report["assertions"].values()), {"passed"})
         self.assertEqual(report["unresolvedControlIds"], [])
@@ -74,6 +74,41 @@ class FormReadinessTests(unittest.TestCase):
 
     def test_optional_control_may_be_absent(self):
         self.assertEqual(self.evaluate()["status"], "ready")
+
+    def test_form_manifest_is_closed_revision_bound_and_complete(self):
+        manifest = READINESS.make_form_manifest(
+            self.fixture, observation_revision=7
+        )
+        self.assertEqual(
+            manifest["requiredControlIds"], sorted(self.states)
+        )
+        self.assertRegex(
+            manifest["controlSetFingerprint"], r"^sha256:[0-9a-f]{64}$"
+        )
+        READINESS.validate_form_manifest(
+            self.fixture, manifest, expected_observation_revision=7
+        )
+        cases = []
+        for field, value in (
+            ("complete", False),
+            ("observationRevision", 8),
+            ("requiredControlIds", manifest["requiredControlIds"][:-1]),
+            ("controlSetFingerprint", "sha256:" + "0" * 64),
+        ):
+            candidate = copy.deepcopy(manifest)
+            candidate[field] = value
+            cases.append(candidate)
+        extra = copy.deepcopy(manifest)
+        extra["private"] = True
+        cases.append(extra)
+        for candidate in cases:
+            with self.subTest(candidate=candidate):
+                with self.assertRaises(READINESS.FormReadinessError):
+                    READINESS.validate_form_manifest(
+                        self.fixture,
+                        candidate,
+                        expected_observation_revision=7,
+                    )
 
     def test_missing_required_control_fails_closed(self):
         states = dict(self.states)

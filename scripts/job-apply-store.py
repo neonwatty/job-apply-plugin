@@ -47,6 +47,57 @@ HISTORY_EVENTS = {
 }
 HISTORY_EVENT_IDENTIFIER = re.compile(r"^[a-z][a-z0-9-]{0,63}$", re.ASCII)
 SESSION_STATUSES = {"active", "review", "completed", "abandoned"}
+ATTENTION_BLOCKER_TYPES = {
+    "readiness", "information", "upload", "validation", "browser_handoff",
+    "owner_review", "final_action",
+}
+READINESS_EVIDENCE_KINDS = {
+    "agent_attested_current_attempt", "repository_replay",
+}
+BROWSER_HANDOFF_STATES = {"not_required", "required", "ready_for_owner", "complete"}
+READINESS_BLOCKER_CODES = {
+    "readiness-evidence-stale", "form-observation-inaccessible",
+    "required-control-evidence-missing", "required-upload-missing",
+    "required-upload-rejected", "required-control-rejected",
+    "required-control-unresolved", "required-control-inaccessible",
+    "required-control-incomplete", "validation-error-present",
+    "final-action-activated", "final-control-inaccessible",
+    "final-control-unavailable", "external-upload-capability-unavailable",
+}
+AGENT_BLOCKER_CODES = {
+    "login-required", "captcha-required", "mfa-required",
+    "consent-required", "account-creation-required", "unsupported-control",
+    "owner-input-required", "browser-state-uncertain",
+}
+AGENT_BLOCKER_TYPE_BY_CODE = {
+    "login-required": "browser_handoff",
+    "captcha-required": "browser_handoff",
+    "mfa-required": "browser_handoff",
+    "account-creation-required": "browser_handoff",
+    "unsupported-control": "browser_handoff",
+    "browser-state-uncertain": "browser_handoff",
+    "consent-required": "owner_review",
+    "owner-input-required": "information",
+}
+ATTENTION_BLOCKER_CODES = (
+    READINESS_BLOCKER_CODES
+    | AGENT_BLOCKER_CODES
+    | {"answer-required", "sensitive-answer-required", "owner-upload-required"}
+)
+BROWSER_HANDOFF_REASON_CODES = (
+    AGENT_BLOCKER_CODES
+    | {
+        "none", "owner-upload-required", "final-review-required",
+        "form-observation-inaccessible", "required-control-inaccessible",
+    }
+)
+APPROVAL_POLICY_MODES = {"strict", "bounded_loose"}
+APPROVAL_USE_AUTHORITIES = {"none", "accepted_record", "per_use", "bounded_policy"}
+READINESS_ASSERTION_NAMES = {
+    "observation-current", "adapter-accessible", "required-controls-complete",
+    "required-uploads-accepted", "validation-clear", "final-control-available",
+    "final-action-untouched",
+}
 JOB_STATUSES = {
     "saved",
     "needs_info",
@@ -182,7 +233,18 @@ def _load_local_module(name: str) -> Any:
     if spec is None or spec.loader is None:
         raise RuntimeError("account executor contracts are unavailable")
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    # Dataclass-based frozen local contracts need their module namespace
+    # registered while annotations are resolved during import.
+    sys.modules.setdefault(name, module)
+    package_root = str(Path(__file__).resolve().parent.parent)
+    inserted = package_root not in sys.path
+    if inserted:
+        sys.path.insert(0, package_root)
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        if inserted:
+            sys.path.remove(package_root)
     return module
 
 
@@ -190,6 +252,8 @@ CREDENTIALS_MODULE = _load_local_module("job_apply_credentials")
 CREDENTIALS_MACOS_MODULE = _load_local_module("job_apply_credentials_macos")
 ACCOUNT_EXECUTOR_MODULE = _load_local_module("job_apply_account_executor")
 CANARY_EXECUTOR_MODULE = _load_local_module("job_apply_account_canary_executor")
+FORM_READINESS_MODULE = _load_local_module("job_apply_form_readiness")
+ANSWER_MATCH_MODULE = _load_local_module("job_apply_answer_match")
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 
@@ -652,6 +716,15 @@ def _canonical_json(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
+def _scope_fingerprint(value: dict[str, Any]) -> str:
+    return hashlib.sha256(_canonical_json(value).encode("utf-8")).hexdigest()
+
+
+def _question_fingerprint(value: str) -> str:
+    normalized = " ".join(value.split()).casefold()
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
 def _job_origin(origin: str) -> str:
     if origin not in JOB_ORIGINS:
         raise StoreError("job origin must be human or agent")
@@ -1080,6 +1153,12 @@ def _validate_answer_record(key: str, value: Any) -> dict[str, Any]:
     sensitivity = record.get("sensitivity", "none")
     if sensitivity not in SENSITIVITY_LEVELS:
         raise StoreError("answer record sensitivity is unsupported")
+    field_class = record.get("fieldClass", "general")
+    if (
+        not isinstance(field_class, str)
+        or re.fullmatch(r"[a-z][a-z0-9_]{0,63}", field_class) is None
+    ):
+        raise StoreError("answer record field class is invalid")
     question = record.get("question")
     if question is not None and not isinstance(question, str):
         raise StoreError("answer record question must be a string")
@@ -1216,6 +1295,11 @@ def _validate_session_document(session: dict[str, Any]) -> None:
         "step",
         "answerKeys",
         "pendingFields",
+        "attemptRevision",
+        "readiness",
+        "blockers",
+        "approvals",
+        "browserHandoff",
         "createdAt",
         "updatedAt",
     }
@@ -1232,7 +1316,11 @@ def _validate_session_document(session: dict[str, Any]) -> None:
     pending_fields = session.get("pendingFields", [])
     if not isinstance(pending_fields, list):
         raise StoreError("session pendingFields must be a list")
-    pending_allowed = {"question", "state", "answerKey", "sensitive", "reference"}
+    pending_allowed = {
+        "question", "state", "answerKey", "sensitive", "reference",
+        "fieldClass", "scopeFingerprint", "matchConfidence", "matchReasonCodes",
+        "matchAnswerRevision", "questionFingerprint",
+    }
     for value in pending_fields:
         field = _require_object(value, "pending field")
         if set(field) - pending_allowed:
@@ -1246,6 +1334,153 @@ def _validate_session_document(session: dict[str, Any]) -> None:
             raise StoreError("pending field sensitive must be a boolean")
         if "reference" not in field or not isinstance(field["reference"], str) or PENDING_REFERENCE.fullmatch(field["reference"]) is None:
             raise StoreError("pending field reference is invalid")
+        if "fieldClass" in field and (
+            not isinstance(field["fieldClass"], str)
+            or re.fullmatch(r"[a-z][a-z0-9_]{0,63}", field["fieldClass"]) is None
+        ):
+            raise StoreError("pending field class is invalid")
+        if "scopeFingerprint" in field and (
+            not isinstance(field["scopeFingerprint"], str)
+            or re.fullmatch(r"[0-9a-f]{64}", field["scopeFingerprint"]) is None
+        ):
+            raise StoreError("pending field scope fingerprint is invalid")
+        if "questionFingerprint" in field and (
+            not isinstance(field["questionFingerprint"], str)
+            or re.fullmatch(r"[0-9a-f]{64}", field["questionFingerprint"]) is None
+        ):
+            raise StoreError("pending field question fingerprint is invalid")
+        if "matchConfidence" in field and field["matchConfidence"] not in ANSWER_MATCH_MODULE.CONFIDENCE_BANDS:
+            raise StoreError("pending field confidence is invalid")
+        if "matchAnswerRevision" in field and (
+            not isinstance(field["matchAnswerRevision"], int)
+            or isinstance(field["matchAnswerRevision"], bool)
+            or field["matchAnswerRevision"] < 1
+        ):
+            raise StoreError("pending field match answer revision is invalid")
+        if "matchReasonCodes" in field and (
+            not isinstance(field["matchReasonCodes"], list)
+            or not all(code in ANSWER_MATCH_MODULE.REASON_CODES for code in field["matchReasonCodes"])
+        ):
+            raise StoreError("pending field match reasons are invalid")
+    attempt_revision = session.get("attemptRevision")
+    if attempt_revision is not None and (
+        not isinstance(attempt_revision, int)
+        or isinstance(attempt_revision, bool)
+        or attempt_revision < 1
+    ):
+        raise StoreError("session attempt revision is invalid")
+    readiness = session.get("readiness")
+    if readiness is not None:
+        readiness = _require_object(readiness, "session readiness")
+        required = {
+            "status", "evidenceKind", "attemptRevision", "observationRevision",
+            "controlSetFingerprint", "requiredControlCount", "assertions",
+            "blockerCodes", "fallbackCode",
+        }
+        if set(readiness) != required:
+            raise StoreError("session readiness contains unsupported fields")
+        if readiness["status"] not in {"ready", "blocked"} or readiness["evidenceKind"] not in READINESS_EVIDENCE_KINDS:
+            raise StoreError("session readiness is invalid")
+        if readiness["attemptRevision"] != attempt_revision:
+            raise StoreError("session readiness is not bound to this attempt")
+        if not isinstance(readiness["observationRevision"], int) or isinstance(readiness["observationRevision"], bool) or readiness["observationRevision"] < 1:
+            raise StoreError("session readiness observation revision is invalid")
+        if (
+            not isinstance(readiness["controlSetFingerprint"], str)
+            or re.fullmatch(r"sha256:[0-9a-f]{64}", readiness["controlSetFingerprint"])
+            is None
+            or not isinstance(readiness["requiredControlCount"], int)
+            or isinstance(readiness["requiredControlCount"], bool)
+            or readiness["requiredControlCount"] < 1
+        ):
+            raise StoreError("session readiness form manifest is invalid")
+        assertions = _require_object(readiness["assertions"], "session readiness assertions")
+        if set(assertions) != READINESS_ASSERTION_NAMES or not all(
+            value in {"passed", "failed"} for value in assertions.values()
+        ):
+            raise StoreError("session readiness assertions are invalid")
+        if (
+            not isinstance(readiness["blockerCodes"], list)
+            or len(readiness["blockerCodes"]) != len(set(readiness["blockerCodes"]))
+            or not all(code in READINESS_BLOCKER_CODES for code in readiness["blockerCodes"])
+        ):
+            raise StoreError("session readiness blockers are invalid")
+        if readiness["fallbackCode"] not in {None, "owner-upload-required"}:
+            raise StoreError("session readiness fallback is invalid")
+        all_passed = all(value == "passed" for value in assertions.values())
+        if (
+            (readiness["status"] == "ready") != all_passed
+            or (readiness["status"] == "ready" and readiness["blockerCodes"])
+            or (readiness["status"] == "blocked" and not readiness["blockerCodes"])
+        ):
+            raise StoreError("session readiness state is inconsistent")
+        upload_fallback = readiness["fallbackCode"] == "owner-upload-required"
+        if upload_fallback != (
+            "external-upload-capability-unavailable" in readiness["blockerCodes"]
+        ) or upload_fallback and "required-upload-missing" not in readiness["blockerCodes"]:
+            raise StoreError("session readiness fallback is inconsistent")
+    blockers = session.get("blockers", [])
+    if not isinstance(blockers, list):
+        raise StoreError("session blockers must be a list")
+    for blocker in blockers:
+        blocker = _require_object(blocker, "session blocker")
+        if set(blocker) - {"type", "code", "reference", "fieldClass", "sensitivity"}:
+            raise StoreError("session blocker contains unsupported fields")
+        if (
+            blocker.get("type") not in ATTENTION_BLOCKER_TYPES
+            or blocker.get("code") not in ATTENTION_BLOCKER_CODES
+        ):
+            raise StoreError("session blocker is invalid")
+        if "reference" in blocker and PENDING_REFERENCE.fullmatch(blocker["reference"]) is None:
+            raise StoreError("session blocker reference is invalid")
+        if blocker.get("sensitivity", "none") not in SENSITIVITY_LEVELS:
+            raise StoreError("session blocker sensitivity is invalid")
+    approvals = session.get("approvals", [])
+    if not isinstance(approvals, list):
+        raise StoreError("session approvals must be a list")
+    for approval in approvals:
+        approval = _require_object(approval, "session approval")
+        required = {
+            "reference", "answerKey", "currentUse", "remember", "policyMode", "useAuthority",
+            "eligible", "confidenceBand", "reasonCodes", "answerRevision",
+        }
+        if set(approval) != required or PENDING_REFERENCE.fullmatch(approval.get("reference", "")) is None:
+            raise StoreError("session approval is invalid")
+        if not isinstance(approval["answerKey"], str) or not approval["answerKey"]:
+            raise StoreError("session approval answer key is invalid")
+        if not isinstance(approval["currentUse"], bool) or not isinstance(approval["remember"], bool) or not isinstance(approval["eligible"], bool):
+            raise StoreError("session approval decisions must be booleans")
+        if approval["policyMode"] not in APPROVAL_POLICY_MODES or approval["useAuthority"] not in APPROVAL_USE_AUTHORITIES:
+            raise StoreError("session approval policy is invalid")
+        if approval["confidenceBand"] not in ANSWER_MATCH_MODULE.CONFIDENCE_BANDS:
+            raise StoreError("session approval confidence is invalid")
+        if not isinstance(approval["reasonCodes"], list) or not all(code in ANSWER_MATCH_MODULE.REASON_CODES for code in approval["reasonCodes"]):
+            raise StoreError("session approval reasons are invalid")
+        if not isinstance(approval["answerRevision"], int) or isinstance(approval["answerRevision"], bool) or approval["answerRevision"] < 1:
+            raise StoreError("session approval answer revision is invalid")
+    browser_handoff = session.get("browserHandoff")
+    if browser_handoff is not None:
+        browser_handoff = _require_object(browser_handoff, "browser handoff")
+        if set(browser_handoff) != {"state", "reasonCode", "revision"}:
+            raise StoreError("browser handoff contains unsupported fields")
+        if (
+            browser_handoff["state"] not in BROWSER_HANDOFF_STATES
+            or browser_handoff["reasonCode"] not in BROWSER_HANDOFF_REASON_CODES
+        ):
+            raise StoreError("browser handoff is invalid")
+        valid_reasons_by_state = {
+            "not_required": {"none"},
+            "complete": {"none"},
+            "ready_for_owner": {"final-review-required"},
+            "required": BROWSER_HANDOFF_REASON_CODES
+            - {"none", "final-review-required"},
+        }
+        if browser_handoff["reasonCode"] not in valid_reasons_by_state[
+            browser_handoff["state"]
+        ]:
+            raise StoreError("browser handoff is invalid")
+        if not isinstance(browser_handoff["revision"], int) or isinstance(browser_handoff["revision"], bool) or browser_handoff["revision"] < 1:
+            raise StoreError("browser handoff revision is invalid")
     _validate_optional_strings(
         session,
         {
@@ -3311,6 +3546,141 @@ class Store:
             projected["redirectedFrom"] = computed_key
         return projected
 
+    @staticmethod
+    def _semantic_candidate(record: dict[str, Any]) -> dict[str, Any]:
+        field_class = record.get("fieldClass", "general")
+        return {
+            "answerKey": record["key"],
+            "question": record.get("question"),
+            "aliases": [
+                alias for alias in record.get("aliases", [])
+                if isinstance(alias, str) and alias.strip()
+            ],
+            "scope": record.get("scope", {}),
+            "fieldClass": field_class,
+            "sensitivity": record.get("sensitivity", "none"),
+            "recordStatus": "deleted" if record.get("deletedAt") is not None else "active",
+            "reviewStatus": record.get("reviewStatus", "accepted"),
+            "state": record.get("state"),
+            "valueState": "seen" if record.get("value") is not None else "missing",
+        }
+
+    def semantic_answer_lookup(self, incoming: dict[str, Any]) -> dict[str, Any]:
+        """Recompute deterministic semantic reuse against current canonical answers."""
+
+        self.initialize()
+        packet = _require_object(incoming, "semantic lookup")
+        allowed = {
+            "question", "scope", "fieldClass", "sensitivity", "mode",
+            "useAuthority", "allowedSensitiveFieldClasses", "limit",
+        }
+        if set(packet) - allowed or not {
+            "question", "scope", "fieldClass", "sensitivity", "mode", "useAuthority"
+        } <= set(packet):
+            raise StoreError("semantic lookup contains unsupported fields")
+        document = self._load_answers_document()
+        field_class = packet["fieldClass"]
+        candidates = [
+            self._semantic_candidate(record)
+            for record in document["answers"].values()
+            if isinstance(record.get("key"), str)
+            and bool(record["key"].strip())
+            and isinstance(record.get("question"), str)
+            and record["question"].strip()
+        ]
+        try:
+            matches = ANSWER_MATCH_MODULE.rank_candidates(
+                question=packet["question"], scope=packet["scope"],
+                field_class=field_class, sensitivity=packet["sensitivity"],
+                candidates=candidates, limit=packet.get("limit", 5),
+            )
+            indexed = {item["answerKey"]: item for item in candidates}
+            decisions = [
+                ANSWER_MATCH_MODULE.evaluate_reuse(
+                    match=match, candidate=indexed[match["answerKey"]],
+                    scope=packet["scope"], field_class=field_class,
+                    sensitivity=packet["sensitivity"], mode=packet["mode"],
+                    use_authority=packet["useAuthority"],
+                    allowed_sensitive_field_classes=packet.get(
+                        "allowedSensitiveFieldClasses", []
+                    ),
+                )
+                for match in matches
+            ]
+        except Exception:
+            raise StoreError("semantic lookup is invalid") from None
+        return {"candidates": decisions, "mutated": False}
+
+    def _preview_answer_cleanup_document(
+        self, document: dict[str, Any]
+    ) -> dict[str, Any]:
+        candidates = []
+        for record in document["answers"].values():
+            if (
+                not isinstance(record.get("key"), str)
+                or not record["key"].strip()
+                or not isinstance(record.get("question"), str)
+                or not record["question"].strip()
+            ):
+                continue
+            candidates.append(self._semantic_candidate(record))
+        try:
+            proposed = ANSWER_MATCH_MODULE.propose_cleanup(candidates=candidates)
+        except Exception:
+            raise StoreError("answer cleanup preview is invalid") from None
+        revisions = {
+            key: record.get("revision", 1)
+            for key, record in document["answers"].items()
+        }
+        questions = {
+            key: record["question"]
+            for key, record in document["answers"].items()
+            if isinstance(record.get("question"), str) and record["question"].strip()
+        }
+        proposals = [
+            proposal | {
+                "winnerRevision": revisions[proposal["winnerKey"]],
+                "duplicateRevision": revisions[proposal["duplicateKey"]],
+                "winnerQuestion": questions[proposal["winnerKey"]],
+                "duplicateQuestion": questions[proposal["duplicateKey"]],
+            }
+            for proposal in proposed
+        ]
+        token = "answer-cleanup-v1." + hashlib.sha256(
+            _canonical_json({"proposals": proposals, "revisions": revisions}).encode("utf-8")
+        ).hexdigest()
+        return {"proposals": proposals, "previewToken": token, "mutated": False}
+
+    def preview_answer_cleanup(self) -> dict[str, Any]:
+        """Return a revision-bound, value-free duplicate cleanup preview."""
+
+        self.initialize()
+        with exclusive_file_lock(self.store_lock_path):
+            return self._preview_answer_cleanup_document(
+                self._load_answers_document()
+            )
+
+    def approve_answer_cleanup(
+        self, incoming: dict[str, Any], owner_confirmed: bool = False
+    ) -> dict[str, Any]:
+        packet = _require_object(incoming, "answer cleanup approval")
+        required = {
+            "previewToken", "winnerKey", "duplicateKey", "winnerRevision",
+            "duplicateRevision",
+        }
+        if (
+            set(packet) != required
+            or owner_confirmed is not True
+            or not isinstance(packet.get("previewToken"), str)
+        ):
+            raise StoreError("answer cleanup requires explicit owner approval")
+        merged = self.merge_answers(
+            packet["winnerKey"], packet["duplicateKey"],
+            packet["winnerRevision"], packet["duplicateRevision"],
+            cleanup_approval=packet,
+        )
+        return {"approved": True, "result": merged}
+
     def put_answer(
         self,
         incoming: dict[str, Any],
@@ -3365,7 +3735,7 @@ class Store:
         normalized_aliases: list[str] = []
         for alias in aliases:
             normalized = normalize_question(alias)
-            if normalized not in normalized_aliases:
+            if normalized and normalized not in normalized_aliases:
                 normalized_aliases.append(normalized)
 
         with exclusive_file_lock(self.store_lock_path):
@@ -3399,6 +3769,9 @@ class Store:
                     "state": state,
                     "source": incoming.get("source", "user"),
                     "scope": scope,
+                    "fieldClass": incoming.get(
+                        "fieldClass", record.get("fieldClass", "general")
+                    ),
                     "sensitivity": sensitivity,
                     "reviewStatus": (
                         record.get("reviewStatus", "accepted")
@@ -3462,6 +3835,7 @@ class Store:
             "state",
             "source",
             "scope",
+            "fieldClass",
             "sensitivity",
         }
         if (
@@ -3492,7 +3866,7 @@ class Store:
             normalized_aliases: list[str] = []
             for alias in aliases:
                 normalized = normalize_question(alias)
-                if normalized not in normalized_aliases:
+                if normalized and normalized not in normalized_aliases:
                     normalized_aliases.append(normalized)
             updated["aliases"] = normalized_aliases
             scope = updated.get("scope", {})
@@ -3620,6 +3994,7 @@ class Store:
                     "state": state,
                     "source": payload["source"],
                     "scope": scope,
+                    "fieldClass": payload.get("fieldClass", "general"),
                     "sensitivity": payload.get("sensitivity", "none"),
                     "reviewStatus": "pending",
                     "observedAt": now,
@@ -3779,6 +4154,14 @@ class Store:
         for field in rewritten.get("pendingFields", []):
             if field.get("answerKey") == source_key:
                 field["answerKey"] = winner_key
+                field.pop("matchConfidence", None)
+                field.pop("matchReasonCodes", None)
+                field.pop("matchAnswerRevision", None)
+        rewritten["approvals"] = [
+            approval
+            for approval in rewritten.get("approvals", [])
+            if approval.get("answerKey") != source_key
+        ]
         rewritten["updatedAt"] = at
         _validate_session_document(rewritten)
         return rewritten
@@ -3789,6 +4172,8 @@ class Store:
         source_key: str,
         expected_winner_revision: int,
         expected_source_revision: int,
+        *,
+        cleanup_approval: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         self.initialize()
         self._ensure_coordinator_files()
@@ -3798,6 +4183,27 @@ class Store:
             raise StoreError("answer merge requires distinct records")
         with exclusive_file_lock(self.store_lock_path):
             document = self._load_answers_document()
+            if cleanup_approval is not None:
+                current_preview = self._preview_answer_cleanup_document(document)
+                if not hmac.compare_digest(
+                    cleanup_approval["previewToken"],
+                    current_preview["previewToken"],
+                ):
+                    raise StoreError("answer cleanup preview is stale")
+                selected = {
+                    key: cleanup_approval[key]
+                    for key in (
+                        "winnerKey", "duplicateKey", "winnerRevision",
+                        "duplicateRevision",
+                    )
+                }
+                if not any(
+                    all(proposal.get(key) == value for key, value in selected.items())
+                    for proposal in current_preview["proposals"]
+                ):
+                    raise StoreError(
+                        "answer cleanup selection is not in the preview"
+                    )
             redirects = self._answer_redirects(document)
             if winner_key in redirects or source_key in redirects:
                 raise StoreError("answer merge records must be canonical active records")
@@ -4373,7 +4779,8 @@ class Store:
 
             missing_count = 0
             session_revision = None
-            if reason_code == "needs_information":
+            session_projection = None
+            if reason_code in {"needs_information", "awaiting_human_review"}:
                 session_path = self._session_path(job["id"])
                 if session_path.exists():
                     session = read_json_object(session_path, "session")
@@ -4383,11 +4790,16 @@ class Store:
                         raise StoreError("session application id does not match path")
                     missing_count = len(session.get("pendingFields", []))
                     session_revision = self._session_revision(session)
+                    session_projection = {
+                        key: copy.deepcopy(session[key])
+                        for key in (
+                            "attemptRevision", "readiness", "blockers", "browserHandoff",
+                        )
+                        if key in session
+                    }
             reason_label, guidance = reason_details[reason_code]
             rows.append({
                 "jobId": job["id"],
-                "role": job.get("role"),
-                "company": job.get("company"),
                 "status": job["status"],
                 "revision": job["revision"],
                 "priority": job.get("priority", 0),
@@ -4397,6 +4809,7 @@ class Store:
                 "guidance": guidance,
                 "missingInformationCount": missing_count,
                 "sessionRevision": session_revision,
+                "session": session_projection,
             })
         rows.sort(key=lambda item: (
             reason_rank[item["reasonCode"]],
@@ -5450,14 +5863,30 @@ class Store:
                     raise StoreError("session application id does not match path")
                 session = {
                     key: stored_session[key]
-                    for key in ("status", "step", "createdAt", "updatedAt")
+                    for key in (
+                        "status", "step", "attemptRevision", "readiness", "blockers",
+                        "approvals", "browserHandoff", "createdAt", "updatedAt",
+                    )
                     if key in stored_session
                 }
+                approval_attempt_is_current = (
+                    job["status"] in {"needs_info", "awaiting_review"}
+                    or job["status"] == "in_progress"
+                    and stored_session.get("attemptRevision") == job["revision"]
+                )
+                session["approvals"] = (
+                    self._current_session_approvals(stored_session, answers_document)
+                    if approval_attempt_is_current
+                    else []
+                )
                 session["revision"] = self._session_revision(stored_session)
                 session["pendingInformation"] = [
                     {
                         key: pending[key]
-                        for key in ("question", "state", "sensitive")
+                        for key in (
+                            "state", "sensitive", "fieldClass", "matchConfidence",
+                            "matchReasonCodes",
+                        )
                         if key in pending
                     } | self._pending_resolution_projection(pending, answers_document)
                     for pending in stored_session.get("pendingFields", [])
@@ -5500,7 +5929,7 @@ class Store:
                     continue
                 history.append({
                     key: event[key]
-                    for key in ("event", "status", "company", "role", "ats", "at")
+                    for key in ("event", "status", "ats", "at")
                     if key in event
                 })
 
@@ -5529,6 +5958,8 @@ class Store:
         if answer is None or answer.get("deletedAt") is not None:
             return projection | {"resolutionEligible": False}
         projection["answerRevision"] = answer.get("revision", 1)
+        projection["answerKey"] = resolved
+        projection["answerSensitivity"] = answer.get("sensitivity", "none")
         projection["resolutionEligible"] = bool(
             field.get("sensitive") is not True
             and field.get("state") != "sensitive"
@@ -5538,6 +5969,35 @@ class Store:
             and not self._answer_is_sensitive(answer)
         )
         return projection
+
+    def _current_session_approvals(
+        self, session: dict[str, Any], answers: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        pending = {
+            field["reference"]: field
+            for field in session.get("pendingFields", [])
+        }
+        current = []
+        for approval in session.get("approvals", []):
+            field = pending.get(approval.get("reference"))
+            field_key = field.get("answerKey") if field is not None else None
+            approval_key = approval.get("answerKey")
+            if not isinstance(field_key, str) or not isinstance(approval_key, str):
+                continue
+            resolved_field = self._resolve_answer_key_in_document(answers, field_key)
+            resolved_approval = self._resolve_answer_key_in_document(
+                answers, approval_key
+            )
+            answer = answers["answers"].get(resolved_field)
+            if (
+                resolved_field != resolved_approval
+                or answer is None
+                or answer.get("deletedAt") is not None
+                or answer.get("revision", 1) != approval.get("answerRevision")
+            ):
+                continue
+            current.append(copy.deepcopy(approval))
+        return current
 
     def pending_answer_detail(self, job_id: str, reference: str) -> dict[str, Any]:
         """Resolve an opaque durable pending reference to its canonical answer."""
@@ -5833,6 +6293,11 @@ class Store:
             now = self._now()
             updated_session = copy.deepcopy(session)
             del updated_session["pendingFields"][index]
+            updated_session["blockers"] = [
+                blocker
+                for blocker in updated_session.get("blockers", [])
+                if blocker.get("reference") != reference
+            ]
             answer_keys = list(updated_session.get("answerKeys", []))
             if resolved_key not in answer_keys:
                 answer_keys.append(resolved_key)
@@ -5840,7 +6305,12 @@ class Store:
             updated_session["updatedAt"] = now
             _validate_session_document(updated_session)
             target = "needs_info"
-            if not updated_session["pendingFields"]:
+            if (
+                not updated_session["pendingFields"]
+                and not updated_session.get("blockers", [])
+                and (updated_session.get("browserHandoff") or {}).get("state")
+                not in {"required", "ready_for_owner"}
+            ):
                 if not self._preflight_job_record(job)["ready"]:
                     raise StoreError("job preflight failed after answer resolution")
                 target = "ready"
@@ -6992,18 +7462,120 @@ class Store:
     def _session_path(self, application_id: str) -> Path:
         return self.sessions_path / f"{_safe_session_id(application_id)}.json"
 
+    @staticmethod
+    def _readiness_blocker_type(code: str) -> str:
+        if "upload" in code:
+            return "upload"
+        if "validation" in code:
+            return "validation"
+        if "final" in code:
+            return "final_action"
+        if "inaccessible" in code or code == "owner-upload-required":
+            return "browser_handoff"
+        return "readiness"
+
+    def _recompute_readiness(
+        self, raw: Any, expected_attempt_revision: int,
+        expected_ats: str | None = None,
+    ) -> dict[str, Any]:
+        packet = _require_object(raw, "readiness input")
+        required = {
+            "attemptRevision", "evidenceKind", "fixture", "observation",
+            "expectedObservationRevision", "formManifest",
+        }
+        if set(packet) != required:
+            raise StoreError("readiness input contains unsupported fields")
+        if packet.get("attemptRevision") != expected_attempt_revision:
+            raise StoreError("readiness input is not bound to the current attempt")
+        if packet.get("evidenceKind") not in READINESS_EVIDENCE_KINDS:
+            raise StoreError("readiness evidence kind is unsupported")
+        try:
+            fixture = _require_object(packet["fixture"], "readiness fixture")
+            fixture_id = fixture.get("id")
+            if (
+                not isinstance(fixture_id, str)
+                or re.fullmatch(r"[a-z0-9][a-z0-9-]{0,127}", fixture_id) is None
+            ):
+                raise StoreError("readiness fixture id is invalid")
+            fixture_path = (
+                Path(__file__).resolve().parent.parent
+                / "qa" / "fixtures" / fixture_id / "fixture.json"
+            )
+            trusted_fixture = read_json_object(fixture_path, "readiness fixture")
+            if not hmac.compare_digest(
+                _canonical_json(fixture), _canonical_json(trusted_fixture)
+            ):
+                raise StoreError("readiness fixture is not the bundled definition")
+            if (
+                isinstance(expected_ats, str)
+                and expected_ats
+                and fixture.get("platformFamily") != expected_ats
+            ):
+                raise StoreError("readiness fixture does not match the job ATS")
+            steps = fixture.get("steps")
+            if (
+                not isinstance(steps, list)
+                or not any(
+                    isinstance(control, dict) and control.get("required") is True
+                    for step in steps
+                    if isinstance(step, dict)
+                    for control in step.get("controls", [])
+                    if isinstance(step.get("controls", []), list)
+                )
+            ):
+                raise StoreError(
+                    "readiness evidence requires an observed required control"
+                )
+            FORM_READINESS_MODULE.validate_form_manifest(
+                fixture,
+                packet["formManifest"],
+                expected_observation_revision=packet["expectedObservationRevision"],
+            )
+            report = FORM_READINESS_MODULE.evaluate_readiness(
+                fixture, packet["observation"],
+                expected_observation_revision=packet["expectedObservationRevision"],
+            )
+        except Exception:
+            raise StoreError("readiness evidence is invalid") from None
+        return {
+            "status": report["status"],
+            "evidenceKind": packet["evidenceKind"],
+            "attemptRevision": expected_attempt_revision,
+            "observationRevision": report["observationRevision"],
+            "controlSetFingerprint": packet["formManifest"][
+                "controlSetFingerprint"
+            ],
+            "requiredControlCount": len(
+                packet["formManifest"]["requiredControlIds"]
+            ),
+            "assertions": report["assertions"],
+            "blockerCodes": report["blockerCodes"],
+            "fallbackCode": report["fallbackCode"],
+        }
+
     def _build_session(
-        self, application_id: str, incoming: dict[str, Any], now: str | None = None
+        self,
+        application_id: str,
+        incoming: dict[str, Any],
+        now: str | None = None,
+        *,
+        expected_attempt_revision: int | None = None,
+        expected_ats: str | None = None,
+        internal_approvals: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         allowed = {
             "applicationId", "status", "ats", "company", "role", "url", "step",
             "answerKeys", "pendingFields", "createdAt", "updatedAt",
+            "attemptRevision", "readinessInput", "blockers", "browserHandoff",
         }
         if set(incoming) - allowed:
             raise StoreError("session contains unsupported fields")
         application_id = _safe_session_id(application_id)
         if incoming.get("applicationId", application_id) != application_id:
             raise StoreError("session application id does not match path")
+        attempt_revision = incoming.get("attemptRevision", expected_attempt_revision)
+        if expected_attempt_revision is not None and attempt_revision != expected_attempt_revision:
+            raise StoreError("session is not bound to the current attempt")
         status = incoming.get("status", "active")
         if status not in SESSION_STATUSES:
             raise StoreError("session status is unsupported")
@@ -7020,28 +7592,208 @@ class Store:
         pending_input = incoming.get("pendingFields", [])
         if not isinstance(pending_input, list):
             raise StoreError("session pendingFields must be a list")
+        answers_document = self._load_answers_document()
         reusable: dict[str, list[str]] = {}
         if existing is not None:
             for field in existing.get("pendingFields", []):
-                key = field.get("answerKey")
-                if isinstance(key, str) and key:
-                    reusable.setdefault(key, []).append(field["reference"])
+                identity = {
+                    key: copy.deepcopy(value)
+                    for key, value in field.items()
+                    if key != "reference"
+                }
+                reusable.setdefault(_canonical_json(identity), []).append(
+                    field["reference"]
+                )
         pending_fields = []
         for value in pending_input:
             field = _require_object(value, "pending field")
-            if set(field) - {"question", "state", "answerKey", "sensitive"}:
+            if set(field) - {
+                "question", "state", "answerKey", "sensitive", "fieldClass",
+                "scope", "matchConfidence", "matchReasonCodes",
+            }:
                 raise StoreError("pending field contains unsupported fields")
             copied = copy.deepcopy(field)
-            key = copied.get("answerKey")
-            references = reusable.get(key, []) if isinstance(key, str) else []
+            # Question text is ephemeral adapter input. Durable sessions use
+            # only the opaque reference and closed metadata needed for review.
+            question = copied.pop("question", None)
+            if isinstance(question, str) and question.strip():
+                copied["questionFingerprint"] = _question_fingerprint(question)
+            raw_scope = copied.pop("scope", None)
+            if raw_scope is None:
+                ats = expected_ats or incoming.get("ats")
+                raw_scope = {"ats": ats} if isinstance(ats, str) and ats else {}
+            try:
+                scope_object = _require_object(raw_scope, "pending field scope")
+                if scope_object:
+                    copied["scopeFingerprint"] = _scope_fingerprint(scope_object)
+            except (TypeError, ValueError, OverflowError):
+                raise StoreError("pending field scope is invalid") from None
+            copied.pop("matchConfidence", None)
+            copied.pop("matchReasonCodes", None)
+            bound_key = copied.get("answerKey")
+            answer = (
+                self._get_answer_record(bound_key, document=answers_document)
+                if isinstance(bound_key, str) and bound_key
+                else None
+            )
+            if (
+                answer is not None
+                and isinstance(answer.get("question"), str)
+                and answer["question"].strip()
+                and isinstance(question, str)
+                and question.strip()
+            ):
+                try:
+                    match = ANSWER_MATCH_MODULE.rank_candidates(
+                        question=question, scope=scope_object,
+                        field_class=copied.get("fieldClass", "general"),
+                        sensitivity=(
+                            answer.get("sensitivity", "none")
+                            if answer.get("sensitivity", "none") != "none"
+                            else "high"
+                            if copied.get("sensitive") is True
+                            or copied.get("state") == "sensitive"
+                            else "none"
+                        ),
+                        candidates=[self._semantic_candidate(answer)], limit=1,
+                    )[0]
+                except Exception:
+                    raise StoreError("pending field semantic match is invalid") from None
+                copied["matchConfidence"] = match["confidenceBand"]
+                copied["matchReasonCodes"] = match["reasonCodes"]
+                copied["matchAnswerRevision"] = answer.get("revision", 1)
+            elif answer is not None:
+                copied["matchConfidence"] = "none"
+                copied["matchReasonCodes"] = ["no_semantic_match"]
+                copied["matchAnswerRevision"] = answer.get("revision", 1)
+            references = reusable.get(_canonical_json(copied), [])
             copied["reference"] = references.pop(0) if references else f"pending_{uuid.uuid4().hex}"
             pending_fields.append(copied)
         timestamp = now or utc_now()
+        readiness = None
+        if "readinessInput" in incoming:
+            if attempt_revision is None:
+                raise StoreError("readiness requires a current attempt revision")
+            readiness = self._recompute_readiness(
+                incoming["readinessInput"], attempt_revision, expected_ats
+            )
+        elif existing is not None and existing.get("attemptRevision") == attempt_revision:
+            readiness = copy.deepcopy(existing.get("readiness"))
+
+        blockers: list[dict[str, Any]] = []
+        for field in pending_fields:
+            blocker = {
+                "type": "information",
+                "code": "sensitive-answer-required"
+                if field.get("sensitive") is True or field.get("state") == "sensitive"
+                else "answer-required",
+                "reference": field["reference"],
+                "sensitivity": "high"
+                if field.get("sensitive") is True or field.get("state") == "sensitive"
+                else "none",
+            }
+            if "fieldClass" in field:
+                blocker["fieldClass"] = field["fieldClass"]
+            blockers.append(blocker)
+        if readiness is not None:
+            for code in readiness["blockerCodes"]:
+                blockers.append({"type": self._readiness_blocker_type(code), "code": code})
+            if readiness["fallbackCode"] is not None:
+                blockers.append({
+                    "type": "browser_handoff",
+                    "code": readiness["fallbackCode"],
+                })
+        supplied_blockers = incoming.get("blockers", [])
+        if not isinstance(supplied_blockers, list):
+            raise StoreError("session blockers must be a list")
+        for raw_blocker in supplied_blockers:
+            blocker = _require_object(raw_blocker, "session blocker")
+            if set(blocker) != {"type", "code"}:
+                raise StoreError("agent blockers must contain only closed type and code")
+            expected_type = AGENT_BLOCKER_TYPE_BY_CODE.get(blocker.get("code"))
+            if expected_type is None or blocker.get("type") != expected_type:
+                raise StoreError("session blocker is invalid")
+            blockers.append(copy.deepcopy(blocker))
+        blockers = list({
+            _canonical_json(item): item for item in blockers
+        }.values())
+        browser_blockers = [
+            blocker
+            for blocker in blockers
+            if blocker.get("type") == "browser_handoff"
+            and blocker.get("code") in BROWSER_HANDOFF_REASON_CODES
+        ]
+
+        browser_handoff = incoming.get("browserHandoff")
+        if browser_handoff is None:
+            if readiness is not None and readiness["fallbackCode"] is not None:
+                browser_handoff = {
+                    "state": "required", "reasonCode": readiness["fallbackCode"],
+                    "revision": 1,
+                }
+            elif browser_blockers:
+                browser_handoff = {
+                    "state": "required", "reasonCode": browser_blockers[0]["code"],
+                    "revision": 1,
+                }
+            elif status == "review":
+                browser_handoff = {
+                    "state": "ready_for_owner", "reasonCode": "final-review-required",
+                    "revision": 1,
+                }
+            else:
+                browser_handoff = {
+                    "state": "not_required", "reasonCode": "none", "revision": 1,
+                }
+        else:
+            browser_handoff = copy.deepcopy(
+                _require_object(browser_handoff, "browser handoff")
+            )
+            if set(browser_handoff) != {"state", "reasonCode", "revision"}:
+                raise StoreError("browser handoff contains unsupported fields")
+        if browser_blockers and browser_handoff.get("state") != "required":
+            raise StoreError("browser handoff contradicts browser blockers")
+
+        durable_input = {
+            key: copy.deepcopy(value)
+            for key, value in incoming.items()
+            if key not in {
+                "readinessInput", "blockers", "browserHandoff", "company", "role",
+                "url", "answerKeys", "pendingFields", "applicationId", "createdAt",
+                "updatedAt", "attemptRevision",
+            }
+        }
+        current_references = {field["reference"] for field in pending_fields}
+        carried_approvals = (
+            existing.get("approvals", [])
+            if existing is not None
+            and existing.get("attemptRevision") == attempt_revision
+            else []
+        )
+        carried_approvals = self._current_session_approvals(
+            {
+                "pendingFields": pending_fields,
+                "approvals": [
+                    approval for approval in carried_approvals
+                    if approval.get("reference") in current_references
+                ],
+            },
+            answers_document,
+        )
         session = {
-            "schemaVersion": SCHEMA_VERSION, **incoming,
+            "schemaVersion": SCHEMA_VERSION, **durable_input,
             "applicationId": application_id, "status": status,
             "answerKeys": answer_keys,
             "pendingFields": pending_fields,
+            "attemptRevision": attempt_revision,
+            "readiness": readiness,
+            "blockers": blockers,
+            "approvals": copy.deepcopy(
+                internal_approvals
+                if internal_approvals is not None
+                else carried_approvals
+            ),
+            "browserHandoff": browser_handoff,
             "createdAt": created_at or timestamp, "updatedAt": timestamp,
         }
         _validate_session_document(session)
@@ -7057,7 +7809,11 @@ class Store:
             job = self._load_jobs_document()["jobs"].get(job_id)
             if job is None or job.get("status") != "in_progress":
                 raise StoreError("claimed job is not in progress")
-            session = self._build_session(job_id, incoming, self._now())
+            session = self._build_session(
+                job_id, incoming, self._now(),
+                expected_attempt_revision=job["revision"],
+                expected_ats=job.get("ats"),
+            )
             if session["status"] != "active":
                 raise StoreError("claim progress session must remain active")
             atomic_write_json(self._session_path(job_id), session)
@@ -7083,10 +7839,42 @@ class Store:
             if job["revision"] != expected_revision:
                 raise StoreError("job revision conflict")
             now = self._now()
-            session = self._build_session(job_id, incoming, now)
+            session = self._build_session(
+                job_id, incoming, now,
+                expected_attempt_revision=job["revision"],
+                expected_ats=job.get("ats"),
+            )
             required_session_status = "active" if status == "needs_info" else "review"
             if session["status"] != required_session_status:
                 raise StoreError("handoff session status does not match job status")
+            if status == "awaiting_review":
+                if "readinessInput" not in incoming:
+                    raise StoreError(
+                        "awaiting_review requires fresh current live readiness input"
+                    )
+                readiness = session.get("readiness")
+                if (
+                    readiness is None
+                    or readiness.get("attemptRevision") != job["revision"]
+                    or readiness.get("evidenceKind")
+                    != "agent_attested_current_attempt"
+                    or readiness.get("status") != "ready"
+                    or readiness.get("blockerCodes")
+                    or any(
+                        value != "passed"
+                        for value in readiness.get("assertions", {}).values()
+                    )
+                    or session.get("pendingFields")
+                    or session.get("blockers")
+                    or session.get("browserHandoff") != {
+                        "state": "ready_for_owner",
+                        "reasonCode": "final-review-required",
+                        "revision": 1,
+                    }
+                ):
+                    raise StoreError(
+                        "awaiting_review requires complete current agent-attested readiness"
+                    )
             event_name = "job-blocked" if status == "needs_info" else "reviewed"
             operation_id = str(uuid.uuid4())
             self._commit_coordinator_operation_locked({
@@ -7101,6 +7889,229 @@ class Store:
                 "session": session,
                 "claim": None,
             }
+
+    def preview_grouped_approval(
+        self,
+        job_id: str,
+        expected_job_revision: int,
+        expected_session_revision: int,
+        decisions: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Preview field-specific current-use, remember, and policy decisions."""
+
+        self.initialize()
+        job_id = _safe_session_id(job_id)
+        if not isinstance(decisions, list) or not decisions:
+            raise StoreError("grouped approval requires at least one field decision")
+        with exclusive_file_lock(self.store_lock_path):
+            job = self._load_jobs_document()["jobs"].get(job_id)
+            if job is None or job.get("deletedAt") is not None:
+                raise StoreError("grouped approval job does not exist")
+            if job["revision"] != expected_job_revision:
+                raise StoreError("job revision conflict")
+            path = self._session_path(job_id)
+            if not path.exists():
+                raise StoreError("grouped approval session does not exist")
+            session = read_json_object(path, "session")
+            _validate_session_document(session)
+            if self._session_revision(session) != expected_session_revision:
+                raise StoreError("session revision conflict")
+            pending = {
+                field["reference"]: field
+                for field in session.get("pendingFields", [])
+            }
+            answers = self._load_answers_document()
+            projected: list[dict[str, Any]] = []
+            seen_references: set[str] = set()
+            for raw in decisions:
+                decision = _require_object(raw, "grouped approval decision")
+                required = {
+                    "reference", "answerKey", "currentUse", "remember",
+                    "policyMode", "useAuthority", "allowedSensitiveFieldClasses",
+                }
+                if set(decision) != required:
+                    raise StoreError("grouped approval decision contains unsupported fields")
+                if (
+                    not isinstance(decision.get("answerKey"), str)
+                    or not decision["answerKey"]
+                ):
+                    raise StoreError("grouped approval answer key is invalid")
+                reference = decision.get("reference")
+                if (
+                    not isinstance(reference, str)
+                    or PENDING_REFERENCE.fullmatch(reference) is None
+                    or reference in seen_references
+                    or reference not in pending
+                ):
+                    raise StoreError("grouped approval reference is invalid")
+                seen_references.add(reference)
+                if not isinstance(decision["currentUse"], bool) or not isinstance(decision["remember"], bool):
+                    raise StoreError("grouped approval decisions must be booleans")
+                if not decision["currentUse"] and decision["useAuthority"] != "none":
+                    raise StoreError("denied current use cannot carry reuse authority")
+                answer = self._get_answer_record(decision["answerKey"], document=answers)
+                if answer is None:
+                    raise StoreError("grouped approval answer is unavailable")
+                field = pending[reference]
+                bound_key = field.get("answerKey")
+                if (
+                    not isinstance(bound_key, str)
+                    or self._resolve_answer_key_in_document(answers, bound_key)
+                    != answer["key"]
+                ):
+                    raise StoreError(
+                        "grouped approval answer does not match pending field"
+                    )
+                field_class = field.get("fieldClass", "general")
+                answer_sensitivity = answer.get("sensitivity", "none")
+                sensitivity = (
+                    answer_sensitivity
+                    if answer_sensitivity != "none"
+                    else "high"
+                    if field.get("sensitive") is True
+                    or field.get("state") == "sensitive"
+                    else "none"
+                )
+                if field.get("matchAnswerRevision") != answer.get("revision", 1):
+                    raise StoreError("pending field semantic match is stale")
+                candidate = self._semantic_candidate(answer)
+                confidence = field.get("matchConfidence", "none")
+                match_reasons = field.get("matchReasonCodes") or [
+                    "no_semantic_match"
+                ]
+                match = {
+                    "answerKey": answer["key"],
+                    "confidenceBand": confidence,
+                    "reasonCodes": match_reasons,
+                }
+                try:
+                    policy = ANSWER_MATCH_MODULE.evaluate_reuse(
+                        match=match, candidate=candidate,
+                        scope=answer.get("scope", {}), field_class=field_class,
+                        sensitivity=sensitivity, mode=decision["policyMode"],
+                        use_authority=decision["useAuthority"],
+                        allowed_sensitive_field_classes=decision[
+                            "allowedSensitiveFieldClasses"
+                        ],
+                    )
+                except Exception:
+                    raise StoreError("grouped approval policy is invalid") from None
+                candidate_scope_fingerprint = _scope_fingerprint(
+                    answer.get("scope", {})
+                )
+                field_scope_fingerprint = field.get(
+                    "scopeFingerprint", _scope_fingerprint({})
+                )
+                if not hmac.compare_digest(
+                    candidate_scope_fingerprint, field_scope_fingerprint
+                ):
+                    policy["reasonCodes"] = [
+                        code
+                        for code in policy["reasonCodes"]
+                        if code not in {"reuse_eligible", "scope_match"}
+                    ]
+                    if "scope_mismatch" not in policy["reasonCodes"]:
+                        policy["reasonCodes"].append("scope_mismatch")
+                eligible = (
+                    decision["currentUse"]
+                    and "reuse_eligible" in policy["reasonCodes"]
+                )
+                projected.append({
+                    "reference": reference,
+                    "answerKey": answer["key"],
+                    "currentUse": decision["currentUse"],
+                    "remember": decision["remember"],
+                    "policyMode": decision["policyMode"],
+                    "useAuthority": decision["useAuthority"],
+                    "eligible": eligible,
+                    "confidenceBand": policy["confidenceBand"],
+                    "reasonCodes": policy["reasonCodes"],
+                    "answerRevision": answer.get("revision", 1),
+                })
+            projected.sort(key=lambda item: item["reference"])
+            token_input = {
+                "jobRevision": expected_job_revision,
+                "sessionRevision": expected_session_revision,
+                "approvals": projected,
+            }
+            token = "grouped-approval-v1." + hashlib.sha256(
+                _canonical_json(token_input).encode("utf-8")
+            ).hexdigest()
+            return {
+                **token_input, "previewToken": token, "mutated": False,
+            }
+
+    def approve_grouped_approval(
+        self,
+        job_id: str,
+        expected_job_revision: int,
+        expected_session_revision: int,
+        decisions: list[dict[str, Any]],
+        preview_token: str,
+        owner_confirmed: bool = False,
+    ) -> dict[str, Any]:
+        if owner_confirmed is not True:
+            raise StoreError("grouped approval requires explicit owner confirmation")
+        preview = self.preview_grouped_approval(
+            job_id, expected_job_revision, expected_session_revision, decisions
+        )
+        if not isinstance(preview_token, str) or not hmac.compare_digest(
+            preview_token, preview["previewToken"]
+        ):
+            raise StoreError("grouped approval preview is stale")
+        with exclusive_file_lock(self.store_lock_path):
+            job = self._load_jobs_document()["jobs"].get(job_id)
+            path = self._session_path(job_id)
+            if job is None or job.get("revision") != expected_job_revision or not path.exists():
+                raise StoreError("grouped approval state changed")
+            session = read_json_object(path, "session")
+            if self._session_revision(session) != expected_session_revision:
+                raise StoreError("session revision conflict")
+            pending = {
+                field["reference"]: field
+                for field in session.get("pendingFields", [])
+            }
+            answers = self._load_answers_document()
+            approvals_by_reference = {
+                approval["reference"]: approval for approval in preview["approvals"]
+            }
+            for decision in decisions:
+                reference = decision["reference"]
+                field = pending.get(reference)
+                answer = self._get_answer_record(
+                    decision["answerKey"], document=answers
+                )
+                if field is None or answer is None:
+                    raise StoreError("grouped approval state changed")
+                bound_key = field.get("answerKey")
+                if (
+                    not isinstance(bound_key, str)
+                    or self._resolve_answer_key_in_document(answers, bound_key)
+                    != answer["key"]
+                    or answer.get("revision", 1)
+                    != approvals_by_reference[reference]["answerRevision"]
+                ):
+                    raise StoreError("grouped approval state changed")
+            updated = copy.deepcopy(session)
+            approvals = {
+                approval["reference"]: copy.deepcopy(approval)
+                for approval in self._current_session_approvals(session, answers)
+            }
+            approvals.update({
+                approval["reference"]: copy.deepcopy(approval)
+                for approval in preview["approvals"]
+            })
+            updated["approvals"] = [
+                approvals[reference] for reference in sorted(approvals)
+            ]
+            updated["updatedAt"] = self._now()
+            _validate_session_document(updated)
+            atomic_write_json(path, updated)
+        return {
+            "approved": True,
+            "sessionRevision": self._session_revision(updated),
+            "approvals": copy.deepcopy(updated["approvals"]),
+        }
 
     def save_session(
         self, application_id: str, incoming: dict[str, Any]
@@ -7478,10 +8489,23 @@ class Store:
         if claim is None or claim["jobId"] != job["id"] or self._now_datetime() >= self._parse_time(claim["expiresAt"]):
             raise StoreError("account denial requires the live claimed job")
         now = self._now()
+        blocker_code = {
+            "password_strategy": "owner-input-required",
+            "reset_required": "owner-input-required",
+            "verification_required": "mfa-required",
+        }.get(reason, "browser-state-uncertain")
         session = self._build_session(job["id"], {
             "status": "active", "step": f"account_automation_denied:{reason}",
             "answerKeys": [], "pendingFields": [],
-        }, now)
+            "attemptRevision": job["revision"],
+            "blockers": [{
+                "type": AGENT_BLOCKER_TYPE_BY_CODE[blocker_code],
+                "code": blocker_code,
+            }],
+            "browserHandoff": {
+                "state": "required", "reasonCode": blocker_code, "revision": 1,
+            },
+        }, now, expected_attempt_revision=job["revision"], expected_ats=job.get("ats"))
         operation_id = str(uuid.uuid4())
         self._commit_coordinator_operation_locked({
             "kind": "handoff", "operationId": operation_id, "jobId": job["id"],
@@ -8283,12 +9307,35 @@ class Store:
         ):
             raise StoreError("trusted fill denial requires the live claimed job")
         now = self._now()
+        blocker_code = {
+            "authentication_required": "login-required",
+            "credential_fields_present": "login-required",
+            "consent_required": "consent-required",
+            "approval_missing": "owner-input-required",
+            "approval_revoked": "owner-input-required",
+            "approval_expired": "owner-input-required",
+            "approval_revision_mismatch": "owner-input-required",
+            "answer_binding_invalid": "owner-input-required",
+            "resume_content_missing": "owner-input-required",
+            "resume_content_unverifiable": "owner-input-required",
+            "resume_observation_failed": "owner-input-required",
+            "resume_preflight_not_ready": "owner-input-required",
+            "unseen_questions": "owner-input-required",
+        }.get(reason_code, "browser-state-uncertain")
         session = self._build_session(job["id"], {
             "status": "active",
             "step": f"trusted_fill_denied:{reason_code}",
             "answerKeys": [],
             "pendingFields": [],
-        }, now)
+            "attemptRevision": job["revision"],
+            "blockers": [{
+                "type": AGENT_BLOCKER_TYPE_BY_CODE[blocker_code],
+                "code": blocker_code,
+            }],
+            "browserHandoff": {
+                "state": "required", "reasonCode": blocker_code, "revision": 1,
+            },
+        }, now, expected_attempt_revision=job["revision"], expected_ats=job.get("ats"))
         operation_id = str(uuid.uuid4())
         self._commit_coordinator_operation_locked({
             "kind": "handoff", "operationId": operation_id, "jobId": job["id"],
@@ -8480,6 +9527,12 @@ def build_parser() -> argparse.ArgumentParser:
     answer_merge.add_argument("--source-key", required=True)
     answer_merge.add_argument("--expected-winner-revision", required=True, type=int)
     answer_merge.add_argument("--expected-source-revision", required=True, type=int)
+    semantic_lookup = commands.add_parser("answer-semantic-lookup")
+    semantic_lookup.add_argument("--input", required=True)
+    commands.add_parser("answer-cleanup-preview")
+    cleanup_approve = commands.add_parser("answer-cleanup-approve")
+    cleanup_approve.add_argument("--input", required=True)
+    cleanup_approve.add_argument("--owner-confirmed", action="store_true")
 
     job_create = commands.add_parser("job-create")
     job_create.add_argument("--input", required=True)
@@ -8537,6 +9590,18 @@ def build_parser() -> argparse.ArgumentParser:
     claim_handoff.add_argument("--status", required=True)
     claim_handoff.add_argument("--input", required=True)
     claim_handoff.add_argument("--expected-revision", required=True, type=int)
+    approval_preview = commands.add_parser("attention-approval-preview")
+    approval_preview.add_argument("--id", required=True)
+    approval_preview.add_argument("--expected-job-revision", required=True, type=int)
+    approval_preview.add_argument("--expected-session-revision", required=True, type=int)
+    approval_preview.add_argument("--input", required=True)
+    approval_commit = commands.add_parser("attention-approval-approve")
+    approval_commit.add_argument("--id", required=True)
+    approval_commit.add_argument("--expected-job-revision", required=True, type=int)
+    approval_commit.add_argument("--expected-session-revision", required=True, type=int)
+    approval_commit.add_argument("--preview-token", required=True)
+    approval_commit.add_argument("--input", required=True)
+    approval_commit.add_argument("--owner-confirmed", action="store_true")
     job_trash = commands.add_parser("job-trash")
     job_trash.add_argument("--id", required=True)
     job_trash.add_argument("--expected-revision", required=True, type=int)
@@ -8750,6 +9815,14 @@ def run(args: argparse.Namespace) -> Any:
             args.expected_winner_revision,
             args.expected_source_revision,
         )
+    if command == "answer-semantic-lookup":
+        return store.semantic_answer_lookup(_read_input(args.input))
+    if command == "answer-cleanup-preview":
+        return store.preview_answer_cleanup()
+    if command == "answer-cleanup-approve":
+        return store.approve_answer_cleanup(
+            _read_input(args.input), owner_confirmed=args.owner_confirmed
+        )
     if command == "job-create":
         return store.create_job(_read_input(args.input), origin=args.origin)
     if command == "job-upsert-preview":
@@ -8804,6 +9877,23 @@ def run(args: argparse.Namespace) -> Any:
             args.status,
             _read_input(args.input),
             args.expected_revision,
+        )
+    if command == "attention-approval-preview":
+        payload = _read_input(args.input)
+        if set(payload) != {"decisions"}:
+            raise StoreError("grouped approval input must contain decisions")
+        return store.preview_grouped_approval(
+            args.id, args.expected_job_revision, args.expected_session_revision,
+            payload["decisions"],
+        )
+    if command == "attention-approval-approve":
+        payload = _read_input(args.input)
+        if set(payload) != {"decisions"}:
+            raise StoreError("grouped approval input must contain decisions")
+        return store.approve_grouped_approval(
+            args.id, args.expected_job_revision, args.expected_session_revision,
+            payload["decisions"], args.preview_token,
+            owner_confirmed=args.owner_confirmed,
         )
     if command == "job-trash":
         return store.trash_job(args.id, args.expected_revision)

@@ -1,3 +1,4 @@
+import copy
 import hashlib
 import importlib.util
 import json
@@ -34,6 +35,39 @@ class StoreTests(unittest.TestCase):
 
     def tearDown(self):
         self.temporary.cleanup()
+
+    def review_session(
+        self, attempt_revision, step="review",
+        fixture_id="greenhouse-form-readiness-v1",
+    ):
+        fixture = json.loads((
+            ROOT / "qa" / "fixtures" / fixture_id / "fixture.json"
+        ).read_text(encoding="utf-8"))
+        control_states = {
+            control["id"]: "accepted" if control["role"] == "file" else "complete"
+            for fixture_step in fixture["steps"]
+            for control in fixture_step["controls"]
+            if control["required"]
+        }
+        observation = STORE_MODULE.FORM_READINESS_MODULE.make_readiness_observation(
+            fixture,
+            control_states,
+            observation_revision=11,
+        )
+        return {
+            "status": "review", "step": step, "pendingFields": [],
+            "attemptRevision": attempt_revision,
+            "readinessInput": {
+                "attemptRevision": attempt_revision,
+                "evidenceKind": "agent_attested_current_attempt",
+                "fixture": fixture,
+                "formManifest": STORE_MODULE.FORM_READINESS_MODULE.make_form_manifest(
+                    fixture, observation_revision=11
+                ),
+                "observation": observation,
+                "expectedObservationRevision": 11,
+            },
+        }
 
     def test_migrates_legacy_profile_once_and_preserves_unknown_fields(self):
         legacy = {
@@ -2514,7 +2548,7 @@ class StoreTests(unittest.TestCase):
         job = acquired["job"]
         handoff = self.store.handoff_claimed_job(
             job["id"], acquired["token"], "awaiting_review",
-            {"status": "review", "step": "review", "pendingFields": []},
+            self.review_session(job["revision"]),
             job["revision"],
         )
         job = handoff["job"]
@@ -2540,7 +2574,7 @@ class StoreTests(unittest.TestCase):
         )
         self.assertEqual((job["status"], job["closedOutcome"]), ("closed", "rejected"))
 
-    def _make_ready_job(self, job_id="ready-job", assigned=False):
+    def _make_ready_job(self, job_id="ready-job", assigned=False, ats=None):
         self.store.replace_profile(
             {"firstName": "Ada"},
             expected_revision=self.store.inspect_profile()["revision"],
@@ -2559,10 +2593,13 @@ class StoreTests(unittest.TestCase):
                 {"id": "assigned-resume", "label": "Assigned", "path": str(assigned_path)}
             )
             resume_id = assigned_resume["id"]
-        job = self.store.create_job({
+        payload = {
             "id": job_id, "url": f"https://example.com/jobs/{job_id}",
             "role": "Engineer", "company": "Acme", "resumeId": resume_id,
-        })
+        }
+        if ats is not None:
+            payload["ats"] = ats
+        job = self.store.create_job(payload)
         return self.store.transition_job(job_id, "ready", job["revision"])
 
     def test_ready_acquisition_is_exclusive_and_uses_assigned_resume(self):
@@ -2716,7 +2753,6 @@ class StoreTests(unittest.TestCase):
         )
         self.assertEqual(activity["session"]["step"], "questions")
         self.assertEqual(activity["session"]["pendingInformation"][0] | {"reference": "opaque"}, {
-            "question": "Are you authorized to work here?",
             "state": "missing",
             "sensitive": True,
             "reference": "opaque",
@@ -2806,7 +2842,7 @@ class StoreTests(unittest.TestCase):
         )
         review = self.store.handoff_claimed_job(
             review_ready["id"], review_claim["token"], "awaiting_review",
-            {"status": "review", "step": "review", "pendingFields": []},
+            self.review_session(review_claim["job"]["revision"]),
             review_claim["job"]["revision"],
         )["job"]
 
@@ -2854,9 +2890,9 @@ class StoreTests(unittest.TestCase):
             ],
         )
         allowed = {
-            "jobId", "role", "company", "status", "revision", "priority",
+            "jobId", "status", "revision", "priority",
             "reasonCode", "reasonLabel", "attentionAt", "guidance",
-            "missingInformationCount", "sessionRevision",
+            "missingInformationCount", "sessionRevision", "session",
         }
         self.assertTrue(all(set(item) == allowed for item in projection["items"]))
         self.assertEqual(projection["items"][-1]["missingInformationCount"], 2)
@@ -2864,15 +2900,16 @@ class StoreTests(unittest.TestCase):
         serialized = json.dumps(projection)
         for forbidden in (
             expired_claim["token"], "private-expired-owner", "private-review-owner",
-            "Private question?", "secret.answer.key", "answerKey", "sensitive",
+            "Private question?", "secret.answer.key", "answerKey",
             "tokenHash", "claimId", "ownerLabel", "operationId", "browserState",
+            "Role review-job", "Company review-job",
         ):
             self.assertNotIn(forbidden, serialized)
 
         recovered = self.store.recover_claim("expired-job", "replacement-owner")
         handed = self.store.handoff_claimed_job(
             "expired-job", recovered["token"], "awaiting_review",
-            {"status": "review", "step": "review", "pendingFields": []},
+            self.review_session(recovered["job"]["revision"]),
             recovered["job"]["revision"],
         )["job"]
         self.store.transition_job("expired-job", "applied", handed["revision"], user_confirmed=True)
@@ -3043,13 +3080,115 @@ class StoreTests(unittest.TestCase):
         )
         reviewed = self.store.handoff_claimed_job(
             "ready-job", resumed["token"], "awaiting_review",
-            {"status": "review", "step": "review", "pendingFields": []},
+            self.review_session(resumed["job"]["revision"]),
             resumed["job"]["revision"],
         )
         self.assertEqual(reviewed["job"]["status"], "awaiting_review")
         self.assertEqual(
             [event["event"] for event in self.store.read_history()],
             ["job-started", "job-blocked", "job-started", "reviewed"],
+        )
+
+    def test_resolving_last_answer_keeps_job_blocked_by_other_attention(self):
+        self._make_ready_job()
+        ready = self.store.get_job("ready-job")
+        answer = self.store.put_answer({
+            "question": "Authorization?", "state": "confirmed", "value": "yes",
+        })
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "blocked-resolution", ready["revision"]
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "session blocker is invalid"):
+            self.store.handoff_claimed_job(
+                ready["id"], acquired["token"], "needs_info", {
+                    "status": "active",
+                    "attemptRevision": acquired["job"]["revision"],
+                    "pendingFields": [{
+                        "question": "Authorization?", "state": "missing",
+                        "answerKey": answer["key"], "sensitive": False,
+                    }],
+                    "blockers": [{
+                        "type": "information", "code": "captcha-required",
+                    }],
+                }, acquired["job"]["revision"],
+            )
+        handed = self.store.handoff_claimed_job(
+            ready["id"], acquired["token"], "needs_info", {
+                "status": "active", "attemptRevision": acquired["job"]["revision"],
+                "pendingFields": [{
+                    "question": "Authorization?", "state": "missing",
+                    "answerKey": answer["key"], "sensitive": False,
+                }],
+                "blockers": [{"type": "browser_handoff", "code": "login-required"}],
+            }, acquired["job"]["revision"],
+        )
+        activity = self.store.get_job_activity(ready["id"])
+        resolved = self.store.resolve_pending_answer(
+            ready["id"],
+            activity["session"]["pendingInformation"][0]["reference"],
+            handed["job"]["revision"], activity["session"]["revision"],
+            answer["revision"], owner_confirmed=True,
+        )
+        self.assertFalse(resolved["ready"])
+        self.assertEqual(resolved["job"]["status"], "needs_info")
+        self.assertEqual(
+            self.store.get_job_activity(ready["id"])["session"]["blockers"],
+            [{"type": "browser_handoff", "code": "login-required"}],
+        )
+        self.assertEqual(
+            self.store.get_job_activity(ready["id"])["session"]["browserHandoff"],
+            {"state": "required", "reasonCode": "login-required", "revision": 1},
+        )
+
+    def test_resolving_last_answer_keeps_required_browser_handoff_blocked(self):
+        self._make_ready_job()
+        ready = self.store.get_job("ready-job")
+        answer = self.store.put_answer({
+            "question": "Authorization?", "state": "confirmed", "value": "yes",
+        })
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "browser-handoff-resolution", ready["revision"]
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "browser handoff is invalid"):
+            self.store.handoff_claimed_job(
+                ready["id"], acquired["token"], "needs_info", {
+                    "status": "active",
+                    "attemptRevision": acquired["job"]["revision"],
+                    "pendingFields": [{
+                        "question": "Authorization?", "state": "missing",
+                        "answerKey": answer["key"], "sensitive": False,
+                    }],
+                    "browserHandoff": {
+                        "state": "not_required", "reasonCode": "captcha-required",
+                        "revision": 1,
+                    },
+                }, acquired["job"]["revision"],
+            )
+        handed = self.store.handoff_claimed_job(
+            ready["id"], acquired["token"], "needs_info", {
+                "status": "active", "attemptRevision": acquired["job"]["revision"],
+                "pendingFields": [{
+                    "question": "Authorization?", "state": "missing",
+                    "answerKey": answer["key"], "sensitive": False,
+                }],
+                "browserHandoff": {
+                    "state": "required", "reasonCode": "captcha-required",
+                    "revision": 1,
+                },
+            }, acquired["job"]["revision"],
+        )
+        activity = self.store.get_job_activity(ready["id"])
+        resolved = self.store.resolve_pending_answer(
+            ready["id"],
+            activity["session"]["pendingInformation"][0]["reference"],
+            handed["job"]["revision"], activity["session"]["revision"],
+            answer["revision"], owner_confirmed=True,
+        )
+        self.assertFalse(resolved["ready"])
+        self.assertEqual(resolved["job"]["status"], "needs_info")
+        self.assertEqual(
+            self.store.get_job_activity(ready["id"])["session"]["browserHandoff"],
+            {"state": "required", "reasonCode": "captcha-required", "revision": 1},
         )
 
     def test_pending_answer_resolution_negative_matrix_is_side_effect_free(self):
@@ -3258,7 +3397,7 @@ class StoreTests(unittest.TestCase):
         updated = self.store.update_job(
             "ready-job", {"notes": "human update"}, acquired["job"]["revision"]
         )
-        review = {"status": "review", "step": "review", "pendingFields": []}
+        review = self.review_session(updated["revision"])
         with self.assertRaisesRegex(STORE_MODULE.StoreError, "revision conflict"):
             self.store.handoff_claimed_job(
                 "ready-job", acquired["token"], "awaiting_review", review,
@@ -3270,6 +3409,160 @@ class StoreTests(unittest.TestCase):
             updated["revision"],
         )
         self.assertEqual(handed["job"]["status"], "awaiting_review")
+
+    def test_awaiting_review_requires_fresh_readiness_input_on_handoff(self):
+        ready = self._make_ready_job()
+        acquired = self.store.acquire_ready_job(
+            "ready-job", "codex", ready["revision"]
+        )
+        progress = self.review_session(acquired["job"]["revision"])
+        progress["status"] = "active"
+        self.store.save_claim_progress(
+            "ready-job", acquired["token"], progress
+        )
+        with self.assertRaisesRegex(
+            STORE_MODULE.StoreError, "requires fresh current live readiness input"
+        ):
+            self.store.handoff_claimed_job(
+                "ready-job", acquired["token"], "awaiting_review",
+                {
+                    "status": "review", "step": "review",
+                    "attemptRevision": acquired["job"]["revision"],
+                    "pendingFields": [],
+                },
+                acquired["job"]["revision"],
+            )
+        self.assertEqual(self.store.get_job("ready-job")["status"], "in_progress")
+        self.assertIsNotNone(self.store.claim_status()["claim"])
+
+    def test_awaiting_review_rejects_readiness_fixture_for_another_ats(self):
+        ready = self._make_ready_job(ats="lever")
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "wrong-ats-readiness", ready["revision"]
+        )
+        with self.assertRaisesRegex(
+            STORE_MODULE.StoreError, "readiness evidence is invalid"
+        ):
+            self.store.handoff_claimed_job(
+                ready["id"], acquired["token"], "awaiting_review",
+                self.review_session(acquired["job"]["revision"]),
+                acquired["job"]["revision"],
+            )
+        self.assertEqual(self.store.get_job(ready["id"])["status"], "in_progress")
+        self.assertIsNotNone(self.store.claim_status()["claim"])
+
+    def test_advertised_workday_and_rippling_have_matching_readiness_handoffs(self):
+        for ats in ("workday", "rippling"):
+            with self.subTest(ats=ats):
+                self.store = STORE_MODULE.Store(
+                    self.root / ats, self.home / f"{ats}-legacy.json"
+                )
+                ready = self._make_ready_job(job_id=f"{ats}-job", ats=ats)
+                acquired = self.store.acquire_ready_job(
+                    ready["id"], f"{ats}-readiness", ready["revision"]
+                )
+                handed = self.store.handoff_claimed_job(
+                    ready["id"], acquired["token"], "awaiting_review",
+                    self.review_session(
+                        acquired["job"]["revision"],
+                        fixture_id=f"{ats}-form-readiness-v1",
+                    ),
+                    acquired["job"]["revision"],
+                )
+                self.assertEqual(handed["job"]["status"], "awaiting_review")
+                self.assertIsNone(self.store.claim_status()["claim"])
+
+    def test_readiness_rejects_fixture_without_any_observed_required_control(self):
+        ready = self._make_ready_job()
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "optional-fixture", ready["revision"]
+        )
+        review = self.review_session(acquired["job"]["revision"])
+        for step in review["readinessInput"]["fixture"]["steps"]:
+            for control in step.get("controls", []):
+                control["required"] = False
+        review["readinessInput"]["observation"]["controls"] = []
+        with self.assertRaisesRegex(
+            STORE_MODULE.StoreError, "readiness evidence is invalid"
+        ):
+            self.store.handoff_claimed_job(
+                ready["id"], acquired["token"], "awaiting_review", review,
+                acquired["job"]["revision"],
+            )
+        self.assertEqual(self.store.get_job(ready["id"])["status"], "in_progress")
+        self.assertIsNotNone(self.store.claim_status()["claim"])
+
+    def test_readiness_rejects_manifest_from_a_larger_same_ats_form(self):
+        ready = self._make_ready_job()
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "undercovered-form", ready["revision"]
+        )
+        review = self.review_session(acquired["job"]["revision"])
+        larger_fixture = json.loads((
+            ROOT / "qa" / "fixtures" / "greenhouse-single-page-2026-08-v1"
+            / "fixture.json"
+        ).read_text(encoding="utf-8"))
+        review["readinessInput"]["formManifest"] = (
+            STORE_MODULE.FORM_READINESS_MODULE.make_form_manifest(
+                larger_fixture, observation_revision=11
+            )
+        )
+        with self.assertRaisesRegex(
+            STORE_MODULE.StoreError, "readiness evidence is invalid"
+        ):
+            self.store.handoff_claimed_job(
+                ready["id"], acquired["token"], "awaiting_review", review,
+                acquired["job"]["revision"],
+            )
+        self.assertEqual(self.store.get_job(ready["id"])["status"], "in_progress")
+        self.assertIsNotNone(self.store.claim_status()["claim"])
+
+        unresolved = self.review_session(acquired["job"]["revision"])
+        unresolved["pendingFields"] = [{
+            "question": "Still unresolved?", "state": "missing",
+            "sensitive": False,
+        }]
+        with self.assertRaisesRegex(
+            STORE_MODULE.StoreError,
+            "requires complete current agent-attested readiness",
+        ):
+            self.store.handoff_claimed_job(
+                "ready-job", acquired["token"], "awaiting_review", unresolved,
+                acquired["job"]["revision"],
+            )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "session blocker is invalid"):
+            self.store.handoff_claimed_job(
+                "ready-job", acquired["token"], "needs_info",
+                {
+                    "status": "active", "step": "blocked",
+                    "attemptRevision": acquired["job"]["revision"],
+                    "pendingFields": [],
+                    "blockers": [{
+                        "type": "information", "code": "PRIVATE USER VALUE",
+                    }],
+                },
+                acquired["job"]["revision"],
+            )
+        self.assertIsNotNone(self.store.claim_status()["claim"])
+
+    def test_inaccessible_readiness_requires_browser_handoff(self):
+        ready = self._make_ready_job()
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "inaccessible-readiness", ready["revision"]
+        )
+        session = self.review_session(acquired["job"]["revision"])
+        session["status"] = "active"
+        session["readinessInput"]["observation"]["adapterState"] = "inaccessible"
+        handed = self.store.handoff_claimed_job(
+            ready["id"], acquired["token"], "needs_info", session,
+            acquired["job"]["revision"],
+        )
+        self.assertEqual(handed["job"]["status"], "needs_info")
+        self.assertEqual(handed["session"]["browserHandoff"], {
+            "state": "required",
+            "reasonCode": "form-observation-inaccessible",
+            "revision": 1,
+        })
 
     def test_acquisition_and_handoff_roll_forward_at_each_failure_boundary(self):
         original_write = STORE_MODULE.atomic_write_json
@@ -3353,7 +3646,7 @@ class StoreTests(unittest.TestCase):
                 with patcher, self.assertRaises(OSError):
                     store.handoff_claimed_job(
                         "job", acquired["token"], "awaiting_review",
-                        {"status": "review", "step": "review"},
+                        self.review_session(acquired["job"]["revision"]),
                         acquired["job"]["revision"],
                     )
                 repaired = STORE_MODULE.Store(store.root, self.legacy)
@@ -6078,6 +6371,19 @@ class StoreTests(unittest.TestCase):
         self.assertIsNone(self.store.claim_status()["claim"])
         session = self.store.load_session(job["id"])
         self.assertEqual(session["step"], "trusted_fill_denied:unseen_controls")
+        self.assertEqual(session["attemptRevision"], acquired["job"]["revision"])
+        self.assertEqual(
+            session["blockers"],
+            [{"type": "browser_handoff", "code": "browser-state-uncertain"}],
+        )
+        self.assertEqual(
+            session["browserHandoff"],
+            {
+                "state": "required",
+                "reasonCode": "browser-state-uncertain",
+                "revision": 1,
+            },
+        )
         self.assertNotIn(acquired["token"], json.dumps(denied))
 
     def _trusted_fill_fixture(self, suffix: str, answer_refs=None):
@@ -6308,7 +6614,7 @@ class StoreTests(unittest.TestCase):
 
         handed = self.store.handoff_claimed_job(
             job["id"], acquired["token"], "awaiting_review",
-            {"status": "review", "step": "non-final-review"}, acquired["job"]["revision"],
+            self.review_session(acquired["job"]["revision"], "non-final-review"), acquired["job"]["revision"],
         )
         self.assertEqual(handed["job"]["status"], "awaiting_review")
         _job2, _acquired2, _account2, packet2 = self._synthetic_account_fixture("reuse", "two")
@@ -6317,12 +6623,26 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(reused["account"]["realmRef"], public["realmRef"])
 
     def test_synthetic_account_ambiguity_is_permanent_and_restart_recovery_never_infers_success(self):
-        job, _acquired, account, packet = self._synthetic_account_fixture("ambiguity", "ambiguous")
+        job, acquired, account, packet = self._synthetic_account_fixture("ambiguity", "ambiguous")
         provider = STORE_MODULE.CREDENTIALS_MODULE.synthetic_provider_for_tests(STORE_MODULE.CREDENTIALS_MODULE.synthetic_test_authority())
         denied = self.store.execute_synthetic_account(packet, provider=provider, observer=self._synthetic_account_observer, test_authority=STORE_MODULE.CREDENTIALS_MODULE.synthetic_test_authority())
         self.assertEqual((denied["reasonCode"], denied["retryAllowed"], denied["attentionHandoff"]), ("ambiguous", False, True))
         self.assertEqual(self.store.get_job(job["id"])["status"], "needs_info")
         self.assertEqual(self.store.get_employer_account(account["realmRef"])["lifecycleState"], "ambiguous")
+        session = self.store.load_session(job["id"])
+        self.assertEqual(session["attemptRevision"], acquired["job"]["revision"])
+        self.assertEqual(
+            session["blockers"],
+            [{"type": "browser_handoff", "code": "browser-state-uncertain"}],
+        )
+        self.assertEqual(
+            session["browserHandoff"],
+            {
+                "state": "required",
+                "reasonCode": "browser-state-uncertain",
+                "revision": 1,
+            },
+        )
 
         self.store = STORE_MODULE.Store(self.root / "restart", self.legacy)
         restart_job, _restart_acquired, restart_account, restart_packet = self._synthetic_account_fixture("restart", "restart")
@@ -6405,6 +6725,787 @@ class StoreTests(unittest.TestCase):
             self.store.get_employer_account(account["realmRef"])["lifecycleState"],
             "ambiguous",
         )
+
+    def test_semantic_lookup_and_grouped_approval_are_current_value_free_and_field_specific(self):
+        ready = self._make_ready_job()
+        answer = self.store.put_answer({
+            "question": "Does the applicant have permission to work in this jurisdiction?",
+            "state": "confirmed", "value": "PRIVATE CURRENT USE VALUE",
+            "scope": {"ats": "greenhouse"}, "fieldClass": "authorization",
+        })
+        incompatible = self.store.semantic_answer_lookup({
+            "question": "Does the applicant have permission to work in this jurisdiction?",
+            "scope": {"ats": "greenhouse"}, "fieldClass": "relocation",
+            "sensitivity": "none", "mode": "strict",
+            "useAuthority": "accepted_record", "limit": 5,
+        })
+        self.assertNotIn(
+            "reuse_eligible", incompatible["candidates"][0]["reasonCodes"]
+        )
+        lookup = self.store.semantic_answer_lookup({
+            "question": "Is employment authorization available in the country?",
+            "scope": {"ats": "greenhouse"}, "fieldClass": "authorization",
+            "sensitivity": "none", "mode": "strict",
+            "useAuthority": "accepted_record", "limit": 5,
+        })
+        self.assertTrue(lookup["candidates"])
+        self.assertIn("reuse_eligible", lookup["candidates"][0]["reasonCodes"])
+        self.assertNotIn("PRIVATE CURRENT USE VALUE", json.dumps(lookup))
+
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "grouped-owner", ready["revision"]
+        )
+        handed = self.store.handoff_claimed_job(
+            ready["id"], acquired["token"], "needs_info",
+            {
+                "status": "active", "step": "questions",
+                "attemptRevision": acquired["job"]["revision"],
+                "pendingFields": [{
+                    "question": "Is employment authorization available in the country?",
+                    "state": "missing", "answerKey": answer["key"],
+                    "sensitive": False, "fieldClass": "authorization",
+                    "scope": {"ats": "greenhouse"},
+                    "matchConfidence": "high",
+                    "matchReasonCodes": [
+                        "match_semantic_high", "scope_match",
+                        "field_class_match", "sensitivity_match",
+                    ],
+                }],
+            },
+            acquired["job"]["revision"],
+        )
+        activity = self.store.get_job_activity(ready["id"])
+        reference = activity["session"]["pendingInformation"][0]["reference"]
+        decisions = [{
+            "reference": reference, "answerKey": answer["key"],
+            "currentUse": True, "remember": False, "policyMode": "strict",
+            "useAuthority": "accepted_record",
+            "allowedSensitiveFieldClasses": [],
+        }]
+        unrelated = self.store.put_answer({
+            "question": "Is relocation available?", "state": "confirmed",
+            "value": "PRIVATE UNRELATED VALUE", "scope": {"ats": "greenhouse"},
+            "fieldClass": "relocation",
+        })
+        mismatched = [{**decisions[0], "answerKey": unrelated["key"]}]
+        with self.assertRaisesRegex(
+            STORE_MODULE.StoreError, "does not match pending field"
+        ):
+            self.store.preview_grouped_approval(
+                ready["id"], handed["job"]["revision"],
+                activity["session"]["revision"], mismatched,
+            )
+        answers_before = self.store.answers_path.read_bytes()
+        preview = self.store.preview_grouped_approval(
+            ready["id"], handed["job"]["revision"],
+            activity["session"]["revision"], decisions,
+        )
+        self.assertTrue(preview["approvals"][0]["eligible"])
+        self.assertEqual(
+            (preview["approvals"][0]["currentUse"], preview["approvals"][0]["remember"], preview["approvals"][0]["policyMode"]),
+            (True, False, "strict"),
+        )
+        approved = self.store.approve_grouped_approval(
+            ready["id"], handed["job"]["revision"],
+            activity["session"]["revision"], decisions,
+            preview["previewToken"], owner_confirmed=True,
+        )
+        self.assertTrue(approved["approved"])
+        self.assertEqual(self.store.answers_path.read_bytes(), answers_before)
+        serialized = self.store._session_path(ready["id"]).read_text(encoding="utf-8")
+        self.assertNotIn(
+            "Is employment authorization available in the country?", serialized
+        )
+        self.assertNotIn("PRIVATE CURRENT USE VALUE", serialized)
+        self.assertNotIn("PRIVATE UNRELATED VALUE", serialized)
+
+        approved_activity = self.store.get_job_activity(ready["id"])
+        self.assertEqual(
+            approved_activity["session"]["approvals"][0]["answerKey"],
+            answer["key"],
+        )
+        attention_row = next(
+            item for item in self.store.list_needs_attention()["items"]
+            if item["jobId"] == ready["id"]
+        )
+        self.assertNotIn("approvals", attention_row["session"])
+        self.assertNotIn("answerKey", json.dumps(attention_row))
+        current_preview = self.store.preview_grouped_approval(
+            ready["id"], handed["job"]["revision"],
+            approved_activity["session"]["revision"], decisions,
+        )
+        original_preview = self.store.preview_grouped_approval
+
+        def preview_then_change_answer(*args, **kwargs):
+            result = original_preview(*args, **kwargs)
+            current = self.store.get_answer(answer["key"])
+            self.store.update_answer(
+                answer["key"], {"aliases": ["authorization eligibility"]},
+                expected_revision=current["revision"],
+            )
+            return result
+
+        with mock.patch.object(
+            self.store, "preview_grouped_approval",
+            side_effect=preview_then_change_answer,
+        ), self.assertRaisesRegex(
+            STORE_MODULE.StoreError, "grouped approval state changed"
+        ):
+            self.store.approve_grouped_approval(
+                ready["id"], handed["job"]["revision"],
+                approved_activity["session"]["revision"], decisions,
+                current_preview["previewToken"], owner_confirmed=True,
+            )
+        self.assertNotEqual(self.store.answers_path.read_bytes(), answers_before)
+        self.assertEqual(
+            self.store.get_job_activity(ready["id"])["session"]["approvals"],
+            [],
+        )
+        attention_row = next(
+            item for item in self.store.list_needs_attention()["items"]
+            if item["jobId"] == ready["id"]
+        )
+        self.assertNotIn("approvals", attention_row["session"])
+        with self.assertRaisesRegex(
+            STORE_MODULE.StoreError, "semantic match is stale"
+        ):
+            self.store.preview_grouped_approval(
+                ready["id"], handed["job"]["revision"],
+                approved_activity["session"]["revision"], decisions,
+            )
+        approved_activity = self.store.get_job_activity(ready["id"])
+        current_answer = self.store.get_answer(answer["key"])
+        resolved = self.store.resolve_pending_answer(
+            ready["id"], reference, handed["job"]["revision"],
+            approved_activity["session"]["revision"], current_answer["revision"],
+            owner_confirmed=True,
+        )
+        self.assertTrue(resolved["ready"])
+        resolved_activity = self.store.get_job_activity(ready["id"])
+        self.assertFalse(any(
+            blocker.get("reference") == reference
+            for blocker in resolved_activity["session"]["blockers"]
+        ))
+        reacquired = self.store.acquire_ready_job(
+            ready["id"], "next-attempt", resolved["job"]["revision"]
+        )
+        new_session = self.store.save_claim_progress(
+            ready["id"], reacquired["token"],
+            {
+                "status": "active", "step": "form", "pendingFields": [],
+                "attemptRevision": reacquired["job"]["revision"],
+            },
+        )
+        self.assertEqual(new_session["approvals"], [])
+
+    def test_grouped_approval_remains_current_for_redirected_pending_answer_key(self):
+        winner = self.store.put_answer({
+            "key": "authorization.winner", "question": "Are you authorized to work?",
+            "state": "confirmed", "value": "yes", "fieldClass": "authorization",
+        })
+        source = self.store.put_answer({
+            "key": "authorization.source", "question": "Do you have work authorization?",
+            "state": "confirmed", "value": "yes", "fieldClass": "authorization",
+        })
+        merged = self.store.merge_answers(
+            winner["key"], source["key"], winner["revision"], source["revision"]
+        )
+        ready = self._make_ready_job()
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "redirected-approval", ready["revision"]
+        )
+        handed = self.store.handoff_claimed_job(
+            ready["id"], acquired["token"], "needs_info", {
+                "status": "active", "attemptRevision": acquired["job"]["revision"],
+                "pendingFields": [{
+                    "question": "Do you have work authorization?", "state": "missing",
+                    "answerKey": source["key"], "sensitive": False,
+                    "fieldClass": "authorization",
+                }],
+            }, acquired["job"]["revision"],
+        )
+        activity = self.store.get_job_activity(ready["id"])
+        decision = {
+            "reference": activity["session"]["pendingInformation"][0]["reference"],
+            "answerKey": source["key"], "currentUse": True, "remember": False,
+            "policyMode": "strict", "useAuthority": "accepted_record",
+            "allowedSensitiveFieldClasses": [],
+        }
+        with self.assertRaisesRegex(
+            STORE_MODULE.StoreError, "answer key is invalid"
+        ):
+            self.store.preview_grouped_approval(
+                ready["id"], handed["job"]["revision"],
+                activity["session"]["revision"], [{**decision, "answerKey": {}}],
+            )
+        preview = self.store.preview_grouped_approval(
+            ready["id"], handed["job"]["revision"],
+            activity["session"]["revision"], [decision],
+        )
+        approved = self.store.approve_grouped_approval(
+            ready["id"], handed["job"]["revision"],
+            activity["session"]["revision"], [decision],
+            preview["previewToken"], owner_confirmed=True,
+        )
+        self.assertEqual(approved["approvals"][0]["answerKey"], merged["key"])
+        self.assertEqual(
+            self.store.get_job_activity(ready["id"])["session"]["approvals"],
+            approved["approvals"],
+        )
+
+    def test_grouped_approval_denies_answer_from_incompatible_field_scope(self):
+        ready = self._make_ready_job()
+        answer = self.store.put_answer({
+            "question": "Authorized?", "state": "confirmed", "value": "yes",
+            "scope": {"ats": "greenhouse"}, "fieldClass": "authorization",
+        })
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "scope-approval", ready["revision"]
+        )
+        handed = self.store.handoff_claimed_job(
+            ready["id"], acquired["token"], "needs_info", {
+                "status": "active", "attemptRevision": acquired["job"]["revision"],
+                "pendingFields": [{
+                    "question": "Authorized?", "state": "missing",
+                    "answerKey": answer["key"], "sensitive": False,
+                    "fieldClass": "authorization",
+                    "scope": {"ats": "lever", "email": "PRIVATE@example.com"},
+                }],
+            }, acquired["job"]["revision"],
+        )
+        serialized = self.store._session_path(ready["id"]).read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("PRIVATE@example.com", serialized)
+        self.assertNotIn('"email"', serialized)
+        self.assertIn("scopeFingerprint", serialized)
+        activity = self.store.get_job_activity(ready["id"])
+        preview = self.store.preview_grouped_approval(
+            ready["id"], handed["job"]["revision"],
+            activity["session"]["revision"], [{
+                "reference": activity["session"]["pendingInformation"][0]["reference"],
+                "answerKey": answer["key"], "currentUse": True,
+                "remember": False, "policyMode": "strict",
+                "useAuthority": "accepted_record",
+                "allowedSensitiveFieldClasses": [],
+            }],
+        )
+        self.assertFalse(preview["approvals"][0]["eligible"])
+        self.assertIn("scope_mismatch", preview["approvals"][0]["reasonCodes"])
+
+    def test_pending_field_omitted_scope_uses_canonical_job_ats(self):
+        ready = self._make_ready_job(ats="greenhouse")
+        answer = self.store.put_answer({
+            "question": "Authorized?", "state": "confirmed", "value": "yes",
+            "scope": {"ats": "greenhouse"}, "fieldClass": "authorization",
+        })
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "canonical-ats-scope", ready["revision"]
+        )
+        handed = self.store.handoff_claimed_job(
+            ready["id"], acquired["token"], "needs_info", {
+                "status": "active", "attemptRevision": acquired["job"]["revision"],
+                "pendingFields": [{
+                    "question": "Authorized?", "state": "missing",
+                    "answerKey": answer["key"], "sensitive": False,
+                    "fieldClass": "authorization",
+                }],
+            }, acquired["job"]["revision"],
+        )
+        activity = self.store.get_job_activity(ready["id"])
+        pending = activity["session"]["pendingInformation"][0]
+        preview = self.store.preview_grouped_approval(
+            ready["id"], handed["job"]["revision"],
+            activity["session"]["revision"], [{
+                "reference": pending["reference"], "answerKey": answer["key"],
+                "currentUse": True, "remember": False,
+                "policyMode": "strict", "useAuthority": "accepted_record",
+                "allowedSensitiveFieldClasses": [],
+            }],
+        )
+        self.assertTrue(preview["approvals"][0]["eligible"])
+        self.assertNotIn("scope_mismatch", preview["approvals"][0]["reasonCodes"])
+
+    def test_semantic_paths_ignore_empty_normalized_aliases(self):
+        answer = self.store.put_answer({
+            "question": "Can the applicant work here?", "aliases": ["???"],
+            "state": "confirmed", "value": "yes", "fieldClass": "authorization",
+        })
+        self.assertEqual(answer["aliases"], [])
+        lookup = self.store.semantic_answer_lookup({
+            "question": "Can the applicant work here?", "scope": {},
+            "fieldClass": "authorization", "sensitivity": "none",
+            "mode": "strict", "useAuthority": "accepted_record",
+        })
+        self.assertEqual(lookup["candidates"][0]["answerKey"], answer["key"])
+        self.assertEqual(self.store.preview_answer_cleanup()["proposals"], [])
+
+    def test_grouped_approval_preserves_personal_sensitivity(self):
+        ready = self._make_ready_job()
+        answer = self.store.put_answer({
+            "question": "Personal contact preference?", "state": "confirmed",
+            "value": "email", "fieldClass": "identity", "sensitivity": "personal",
+        }, remember_sensitive=True)
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "personal-sensitive", ready["revision"]
+        )
+        handed = self.store.handoff_claimed_job(
+            ready["id"], acquired["token"], "needs_info", {
+                "status": "active", "attemptRevision": acquired["job"]["revision"],
+                "pendingFields": [{
+                    "question": "Personal contact preference?", "state": "sensitive",
+                    "answerKey": answer["key"], "sensitive": True,
+                    "fieldClass": "identity",
+                }],
+            }, acquired["job"]["revision"],
+        )
+        activity = self.store.get_job_activity(ready["id"])
+        decision = [{
+            "reference": activity["session"]["pendingInformation"][0]["reference"],
+            "answerKey": answer["key"], "currentUse": True, "remember": False,
+            "policyMode": "strict", "useAuthority": "per_use",
+            "allowedSensitiveFieldClasses": [],
+        }]
+        preview = self.store.preview_grouped_approval(
+            ready["id"], handed["job"]["revision"],
+            activity["session"]["revision"], decision,
+        )
+        self.assertTrue(preview["approvals"][0]["eligible"])
+        self.assertIn("sensitivity_match", preview["approvals"][0]["reasonCodes"])
+        approved = self.store.approve_grouped_approval(
+            ready["id"], handed["job"]["revision"],
+            activity["session"]["revision"], decision,
+            preview["previewToken"], owner_confirmed=True,
+        )
+        self.assertEqual(approved["approvals"][0]["useAuthority"], "per_use")
+        ready_again = self.store.transition_job(
+            ready["id"], "ready", handed["job"]["revision"]
+        )
+        acquired_again = self.store.acquire_ready_job(
+            ready["id"], "new-sensitive-attempt", ready_again["revision"]
+        )
+        self.assertEqual(
+            self.store.get_job_activity(ready["id"])["session"]["approvals"], []
+        )
+        self.assertEqual(acquired_again["job"]["status"], "in_progress")
+
+    def test_answer_merge_cannot_transfer_source_approval_on_revision_collision(self):
+        ready = self._make_ready_job()
+        winner = self.store.put_answer({
+            "question": "Preferred winner?", "state": "confirmed",
+            "value": "WINNER PRIVATE VALUE",
+        })
+        source = self.store.put_answer({
+            "question": "Source answer?", "state": "confirmed",
+            "value": "SOURCE PRIVATE VALUE",
+        })
+        source = self.store.update_answer(
+            source["key"], {"aliases": ["source alias"]}, source["revision"]
+        )
+        self.assertEqual(source["revision"], winner["revision"] + 1)
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "merge-approval", ready["revision"]
+        )
+        handed = self.store.handoff_claimed_job(
+            ready["id"], acquired["token"], "needs_info", {
+                "status": "active", "attemptRevision": acquired["job"]["revision"],
+                "pendingFields": [{
+                    "question": "Source answer?", "state": "missing",
+                    "answerKey": source["key"], "sensitive": False,
+                    "fieldClass": "general",
+                }],
+            }, acquired["job"]["revision"],
+        )
+        activity = self.store.get_job_activity(ready["id"])
+        decision = [{
+            "reference": activity["session"]["pendingInformation"][0]["reference"],
+            "answerKey": source["key"], "currentUse": True, "remember": False,
+            "policyMode": "strict", "useAuthority": "accepted_record",
+            "allowedSensitiveFieldClasses": [],
+        }]
+        preview = self.store.preview_grouped_approval(
+            ready["id"], handed["job"]["revision"],
+            activity["session"]["revision"], decision,
+        )
+        self.store.approve_grouped_approval(
+            ready["id"], handed["job"]["revision"],
+            activity["session"]["revision"], decision,
+            preview["previewToken"], owner_confirmed=True,
+        )
+        self.store.merge_answers(
+            winner["key"], source["key"], winner["revision"], source["revision"]
+        )
+        merged_activity = self.store.get_job_activity(ready["id"])
+        self.assertEqual(merged_activity["session"]["approvals"], [])
+        self.assertEqual(
+            merged_activity["session"]["pendingInformation"][0]["answerKey"],
+            winner["key"],
+        )
+        with self.assertRaisesRegex(
+            STORE_MODULE.StoreError, "semantic match is stale"
+        ):
+            self.store.preview_grouped_approval(
+                ready["id"], handed["job"]["revision"],
+                merged_activity["session"]["revision"], [{
+                    **decision[0], "answerKey": winner["key"],
+                }],
+            )
+
+    def test_semantic_reuse_and_attention_projection_include_explicit_keys(self):
+        ready = self._make_ready_job()
+        answer = self.store.put_answer({
+            "key": "source.discovery",
+            "question": "How did you hear about this opportunity?",
+            "state": "confirmed", "value": "Referral", "fieldClass": "source",
+        })
+        lookup = self.store.semantic_answer_lookup({
+            "question": "How did you hear about this opportunity?", "scope": {},
+            "fieldClass": "source", "sensitivity": "none", "mode": "strict",
+            "useAuthority": "accepted_record",
+        })
+        self.assertEqual(lookup["candidates"][0]["answerKey"], answer["key"])
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "explicit-key", ready["revision"]
+        )
+        self.store.handoff_claimed_job(
+            ready["id"], acquired["token"], "needs_info", {
+                "status": "active", "attemptRevision": acquired["job"]["revision"],
+                "pendingFields": [{
+                    "question": "How did you hear about this opportunity?",
+                    "state": "missing", "answerKey": answer["key"],
+                    "sensitive": False, "fieldClass": "source",
+                }],
+            }, acquired["job"]["revision"],
+        )
+        pending = self.store.get_job_activity(ready["id"])["session"][
+            "pendingInformation"
+        ][0]
+        self.assertEqual(pending["answerKey"], "source.discovery")
+
+    def test_grouped_approval_recomputes_match_instead_of_trusting_agent_metadata(self):
+        ready = self._make_ready_job()
+        answer = self.store.put_answer({
+            "question": "Are you authorized to work?", "state": "confirmed",
+            "value": "yes", "fieldClass": "general",
+        })
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "unrelated-match", ready["revision"]
+        )
+        handed = self.store.handoff_claimed_job(
+            ready["id"], acquired["token"], "needs_info", {
+                "status": "active", "attemptRevision": acquired["job"]["revision"],
+                "pendingFields": [{
+                    "question": "What is your favorite color?", "state": "missing",
+                    "answerKey": answer["key"], "sensitive": False,
+                    "fieldClass": "general", "matchConfidence": "exact",
+                    "matchReasonCodes": [
+                        "match_exact_question", "scope_match",
+                        "field_class_match", "sensitivity_match",
+                    ],
+                }],
+            }, acquired["job"]["revision"],
+        )
+        activity = self.store.get_job_activity(ready["id"])
+        pending = activity["session"]["pendingInformation"][0]
+        self.assertEqual(pending["matchConfidence"], "none")
+        preview = self.store.preview_grouped_approval(
+            ready["id"], handed["job"]["revision"],
+            activity["session"]["revision"], [{
+                "reference": pending["reference"], "answerKey": answer["key"],
+                "currentUse": True, "remember": False,
+                "policyMode": "strict", "useAuthority": "accepted_record",
+                "allowedSensitiveFieldClasses": [],
+            }],
+        )
+        self.assertFalse(preview["approvals"][0]["eligible"])
+        self.assertNotIn(
+            "reuse_eligible", preview["approvals"][0]["reasonCodes"]
+        )
+
+    def test_cleanup_requires_exact_preview_and_owner_approval_before_mutation(self):
+        winner = self.store.put_answer({
+            "question": "Does the applicant have permission to work in this jurisdiction?",
+            "state": "confirmed", "value": "PRIVATE CLEANUP WINNER",
+            "scope": {},
+        })
+        duplicate = self.store.observe_answer({
+            "question": "Is employment authorization available in the country?",
+            "state": "missing", "scope": {},
+        })
+        before = self.store.answers_path.read_bytes()
+        preview = self.store.preview_answer_cleanup()
+        self.assertEqual(len(preview["proposals"]), 1)
+        self.assertEqual(self.store.answers_path.read_bytes(), before)
+        proposal = preview["proposals"][0]
+        self.assertEqual(proposal["winnerQuestion"], winner["question"])
+        self.assertEqual(proposal["duplicateQuestion"], duplicate["question"])
+        self.assertNotIn("PRIVATE CLEANUP WINNER", json.dumps(preview))
+        approval = {
+            "previewToken": preview["previewToken"],
+            "winnerKey": proposal["winnerKey"],
+            "duplicateKey": proposal["duplicateKey"],
+            "winnerRevision": proposal["winnerRevision"],
+            "duplicateRevision": proposal["duplicateRevision"],
+        }
+        with self.assertRaisesRegex(
+            STORE_MODULE.StoreError, "explicit owner approval"
+        ):
+            self.store.approve_answer_cleanup(
+                {**approval, "previewToken": 1}, owner_confirmed=True
+            )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "explicit owner approval"):
+            self.store.approve_answer_cleanup(approval)
+        self.assertEqual(self.store.answers_path.read_bytes(), before)
+        result = self.store.approve_answer_cleanup(approval, owner_confirmed=True)
+        self.assertTrue(result["approved"])
+        self.assertEqual(result["result"]["key"], winner["key"])
+        self.assertEqual(
+            self.store.get_answer(duplicate["key"])["redirectedFrom"],
+            duplicate["key"],
+        )
+
+    def test_partial_grouped_approval_preserves_other_field_decisions(self):
+        ready = self._make_ready_job()
+        answers = [
+            self.store.put_answer({
+                "question": f"Stored field {index}?", "state": "confirmed",
+                "value": f"PRIVATE VALUE {index}", "fieldClass": "general",
+            })
+            for index in (1, 2)
+        ]
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "partial-approval", ready["revision"]
+        )
+        handed = self.store.handoff_claimed_job(
+            ready["id"], acquired["token"], "needs_info",
+            {
+                "status": "active", "step": "questions",
+                "attemptRevision": acquired["job"]["revision"],
+                "pendingFields": [
+                    {
+                        "question": f"Field {index}?", "state": "missing",
+                        "answerKey": answer["key"], "sensitive": False,
+                        "fieldClass": "general", "matchConfidence": "exact",
+                    }
+                    for index, answer in enumerate(answers, 1)
+                ],
+            },
+            acquired["job"]["revision"],
+        )
+        activity = self.store.get_job_activity(ready["id"])
+        references = [
+            item["reference"]
+            for item in activity["session"]["pendingInformation"]
+        ]
+
+        for reference, answer in zip(references, answers):
+            decision = [{
+                "reference": reference, "answerKey": answer["key"],
+                "currentUse": False, "remember": False,
+                "policyMode": "strict", "useAuthority": "none",
+                "allowedSensitiveFieldClasses": [],
+            }]
+            preview = self.store.preview_grouped_approval(
+                ready["id"], handed["job"]["revision"],
+                activity["session"]["revision"], decision,
+            )
+            self.store.approve_grouped_approval(
+                ready["id"], handed["job"]["revision"],
+                activity["session"]["revision"], decision,
+                preview["previewToken"], owner_confirmed=True,
+            )
+            activity = self.store.get_job_activity(ready["id"])
+
+        self.assertEqual(
+            {item["reference"] for item in activity["session"]["approvals"]},
+            set(references),
+        )
+
+    def test_same_attempt_pending_reorder_cannot_transfer_field_approval(self):
+        ready = self._make_ready_job()
+        answer = self.store.put_answer({
+            "question": "Shared stored answer?", "state": "confirmed",
+            "value": "PRIVATE VALUE", "fieldClass": "general",
+        })
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "reorder-approval", ready["revision"]
+        )
+        fields = [
+            {
+                "question": "First field?", "state": "missing",
+                "answerKey": answer["key"], "sensitive": False,
+                "fieldClass": "general", "matchConfidence": "exact",
+            },
+            {
+                "question": "Second field?", "state": "missing",
+                "answerKey": answer["key"], "sensitive": True,
+                "fieldClass": "identity", "matchConfidence": "uncertain",
+            },
+        ]
+        first = self.store.save_claim_progress(
+            ready["id"], acquired["token"], {
+                "status": "active", "step": "questions",
+                "attemptRevision": acquired["job"]["revision"],
+                "pendingFields": fields,
+            },
+        )
+        approved_reference = first["pendingFields"][0]["reference"]
+        decision = [{
+            "reference": approved_reference, "answerKey": answer["key"],
+            "currentUse": False, "remember": False,
+            "policyMode": "strict", "useAuthority": "none",
+            "allowedSensitiveFieldClasses": [],
+        }]
+        preview = self.store.preview_grouped_approval(
+            ready["id"], acquired["job"]["revision"],
+            self.store._session_revision(first), decision,
+        )
+        self.store.approve_grouped_approval(
+            ready["id"], acquired["job"]["revision"],
+            self.store._session_revision(first), decision,
+            preview["previewToken"], owner_confirmed=True,
+        )
+
+        reordered = self.store.save_claim_progress(
+            ready["id"], acquired["token"], {
+                "status": "active", "step": "questions",
+                "attemptRevision": acquired["job"]["revision"],
+                "pendingFields": list(reversed(fields)),
+            },
+        )
+        by_class = {
+            field["fieldClass"]: field for field in reordered["pendingFields"]
+        }
+        self.assertEqual(by_class["general"]["reference"], approved_reference)
+        self.assertNotEqual(
+            by_class["identity"]["reference"], approved_reference
+        )
+        self.assertEqual(
+            [approval["reference"] for approval in reordered["approvals"]],
+            [approved_reference],
+        )
+
+        changed_question = self.store.save_claim_progress(
+            ready["id"], acquired["token"], {
+                "status": "active", "step": "questions",
+                "attemptRevision": acquired["job"]["revision"],
+                "pendingFields": [{
+                    **fields[0], "question": "A different visible question?",
+                }],
+            },
+        )
+        self.assertNotEqual(
+            changed_question["pendingFields"][0]["reference"], approved_reference
+        )
+        self.assertEqual(changed_question["approvals"], [])
+
+    def test_persisted_readiness_validation_rejects_inconsistent_or_open_state(self):
+        ready = self._make_ready_job()
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "readiness-validation", ready["revision"]
+        )
+        progress = self.review_session(acquired["job"]["revision"])
+        progress["status"] = "active"
+        session = self.store.save_claim_progress(
+            ready["id"], acquired["token"],
+            progress,
+        )
+        path = self.store._session_path(ready["id"])
+        cases = {
+            "failed-ready": lambda value: value["readiness"]["assertions"].update(
+                {"validation-clear": "failed"}
+            ),
+            "unknown-assertion": lambda value: value["readiness"]["assertions"].update(
+                {"private-check": "passed"}
+            ),
+            "unknown-blocker": lambda value: value["readiness"]["blockerCodes"].append(
+                "private-blocker"
+            ),
+            "unknown-fallback": lambda value: value["readiness"].update(
+                {"fallbackCode": "private-fallback"}
+            ),
+            "invalid-control-set-fingerprint": lambda value: value[
+                "readiness"
+            ].update({"controlSetFingerprint": "sha256:short"}),
+            "invalid-required-control-count": lambda value: value[
+                "readiness"
+            ].update({"requiredControlCount": True}),
+            "non-string-approval-answer-key": lambda value: value[
+                "approvals"
+            ].append({
+                "reference": "pending_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "answerKey": 123,
+                "currentUse": True,
+                "remember": False,
+                "policyMode": "bounded_loose",
+                "useAuthority": "per_use",
+                "eligible": True,
+                "confidenceBand": "exact",
+                "reasonCodes": ["match_exact_question"],
+                "answerRevision": 1,
+            }),
+        }
+        for case, mutate in cases.items():
+            malformed = copy.deepcopy(session)
+            mutate(malformed)
+            STORE_MODULE.atomic_write_json(path, malformed)
+            with self.subTest(case=case), self.assertRaises(STORE_MODULE.StoreError):
+                self.store.get_job_activity(ready["id"])
+        STORE_MODULE.atomic_write_json(path, session)
+
+    def test_cleanup_preview_validation_and_merge_share_one_lock(self):
+        winner = self.store.put_answer({
+            "question": "Does the applicant have permission to work in this jurisdiction?",
+            "state": "confirmed", "value": "PRIVATE WINNER",
+        })
+        duplicate = self.store.observe_answer({
+            "question": "Is employment authorization available in the country?",
+            "state": "missing",
+        })
+        preview = self.store.preview_answer_cleanup()
+        proposal = preview["proposals"][0]
+        packet = {
+            "previewToken": preview["previewToken"],
+            "winnerKey": proposal["winnerKey"],
+            "duplicateKey": proposal["duplicateKey"],
+            "winnerRevision": proposal["winnerRevision"],
+            "duplicateRevision": proposal["duplicateRevision"],
+        }
+        entered = threading.Event()
+        release = threading.Event()
+        original = self.store._preview_answer_cleanup_document
+
+        def paused_preview(document):
+            result = original(document)
+            entered.set()
+            self.assertTrue(release.wait(timeout=3))
+            return result
+
+        with mock.patch.object(
+            self.store, "_preview_answer_cleanup_document",
+            side_effect=paused_preview,
+        ), ThreadPoolExecutor(max_workers=2) as pool:
+            approval = pool.submit(
+                self.store.approve_answer_cleanup, packet, owner_confirmed=True
+            )
+            self.assertTrue(entered.wait(timeout=3))
+            concurrent = pool.submit(
+                self.store.put_answer,
+                {
+                    "question": "Does the applicant have work authorization in this jurisdiction?",
+                    "state": "confirmed", "value": "PRIVATE THIRD",
+                },
+            )
+            time.sleep(0.05)
+            self.assertFalse(concurrent.done())
+            release.set()
+            self.assertTrue(approval.result(timeout=3)["approved"])
+            self.assertIsNotNone(concurrent.result(timeout=3))
+        self.assertEqual(
+            self.store.get_answer(duplicate["key"])["redirectedFrom"],
+            duplicate["key"],
+        )
+        self.assertIsNotNone(self.store.get_answer(winner["key"]))
 
 
 if __name__ == "__main__":

@@ -266,11 +266,19 @@ LEVER_CONTROL_PROFILE = (
     ("eeo.disability", False),
 )
 LEVER_CONTROL_KINDS = {kind for kind, _required in LEVER_CONTROL_PROFILE}
+WORKDAY_CONTROL_KINDS = {
+    "contact.first_name", "contact.last_name", "contact.email", "resume.file",
+}
+RIPPLING_CONTROL_KINDS = {
+    "contact.full_name", "contact.email", "resume.file",
+}
 PLATFORM_CONTROL_KINDS = {
     "ashby": ASHBY_CONTROL_KINDS,
     "lever": LEVER_CONTROL_KINDS,
     "linkedin-easy-apply": LINKEDIN_CONTROL_KINDS,
     "greenhouse": GREENHOUSE_CONTROL_KINDS,
+    "workday": WORKDAY_CONTROL_KINDS,
+    "rippling": RIPPLING_CONTROL_KINDS,
 }
 
 FINAL_ACTION = {

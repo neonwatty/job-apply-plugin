@@ -11,6 +11,7 @@ import stat
 from typing import Any
 
 from qa.contracts import validate_fixture
+from scripts.job_apply_answer_match import CONFIDENCE_BANDS, REASON_CODES
 from scripts.job_apply_form_readiness import (
     FormReadinessError,
     evaluate_readiness,
@@ -74,7 +75,18 @@ SESSION_KEYS = {
     "createdAt",
     "updatedAt",
 }
-PENDING_KEYS = {"question", "state", "answerKey", "sensitive"}
+REPLAY_SESSION_EXTENSION_KEYS = {
+    "attemptRevision",
+    "readiness",
+    "blockers",
+    "approvals",
+    "browserHandoff",
+}
+PENDING_KEYS = {
+    "question", "state", "answerKey", "sensitive", "scopeFingerprint",
+    "questionFingerprint", "fieldClass", "matchConfidence", "matchReasonCodes",
+    "matchAnswerRevision", "reference",
+}
 SESSION_STATUSES = {"active", "review", "completed", "abandoned"}
 ANSWER_STATES = {"confirmed", "inferred", "missing", "sensitive"}
 APPLICATION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
@@ -369,7 +381,12 @@ def _history_results(
 
 def _validate_session(value: Any, expected_id: str) -> None:
     _inspect_json_tree(value, "invalid session artifact")
-    if not isinstance(value, dict) or set(value) - SESSION_KEYS:
+    if not isinstance(value, dict) or set(value) - (
+        SESSION_KEYS | REPLAY_SESSION_EXTENSION_KEYS
+    ):
+        raise OracleError("invalid session artifact")
+    extension_keys = set(value) & REPLAY_SESSION_EXTENSION_KEYS
+    if extension_keys and extension_keys != REPLAY_SESSION_EXTENSION_KEYS:
         raise OracleError("invalid session artifact")
     if (
         value.get("schemaVersion") != 1
@@ -409,6 +426,65 @@ def _validate_session(value: Any, expected_id: str) -> None:
         if "state" in pending and pending["state"] not in ANSWER_STATES:
             raise OracleError("invalid session artifact")
         if "sensitive" in pending and not isinstance(pending["sensitive"], bool):
+            raise OracleError("invalid session artifact")
+        if "scopeFingerprint" in pending and (
+            not isinstance(pending["scopeFingerprint"], str)
+            or re.fullmatch(r"[0-9a-f]{64}", pending["scopeFingerprint"]) is None
+        ):
+            raise OracleError("invalid session artifact")
+        for fingerprint in ("scopeFingerprint", "questionFingerprint"):
+            if fingerprint in pending and (
+                not isinstance(pending[fingerprint], str)
+                or re.fullmatch(r"[0-9a-f]{64}", pending[fingerprint]) is None
+            ):
+                raise OracleError("invalid session artifact")
+        if "reference" in pending and (
+            not isinstance(pending["reference"], str)
+            or re.fullmatch(r"pending_[a-f0-9]{32}", pending["reference"]) is None
+        ):
+            raise OracleError("invalid session artifact")
+        if "fieldClass" in pending and (
+            not isinstance(pending["fieldClass"], str)
+            or re.fullmatch(r"[a-z][a-z0-9_]{0,63}", pending["fieldClass"])
+            is None
+        ):
+            raise OracleError("invalid session artifact")
+        if (
+            "matchConfidence" in pending
+            and pending["matchConfidence"] not in CONFIDENCE_BANDS
+        ):
+            raise OracleError("invalid session artifact")
+        if "matchReasonCodes" in pending and (
+            not isinstance(pending["matchReasonCodes"], list)
+            or not all(code in REASON_CODES for code in pending["matchReasonCodes"])
+        ):
+            raise OracleError("invalid session artifact")
+        if "matchAnswerRevision" in pending and (
+            not isinstance(pending["matchAnswerRevision"], int)
+            or isinstance(pending["matchAnswerRevision"], bool)
+            or pending["matchAnswerRevision"] < 1
+        ):
+            raise OracleError("invalid session artifact")
+    if extension_keys:
+        handoff = value["browserHandoff"]
+        expected_handoff = {
+            "active": ("not_required", "none"),
+            "review": ("ready_for_owner", "final-review-required"),
+        }.get(value["status"])
+        if (
+            value["attemptRevision"] is not None
+            or value["readiness"] is not None
+            or value["blockers"] != []
+            or value["approvals"] != []
+            or not isinstance(handoff, dict)
+            or set(handoff) != {"state", "reasonCode", "revision"}
+            or expected_handoff is None
+            or (handoff.get("state"), handoff.get("reasonCode"))
+            != expected_handoff
+            or not isinstance(handoff.get("revision"), int)
+            or isinstance(handoff.get("revision"), bool)
+            or handoff["revision"] != 1
+        ):
             raise OracleError("invalid session artifact")
 
 

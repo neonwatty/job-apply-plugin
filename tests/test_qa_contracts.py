@@ -628,6 +628,18 @@ class ContractTests(unittest.TestCase):
             ["textbox", "combobox", "file", "combobox", "textbox"],
         )
 
+    def test_committed_workday_and_rippling_readiness_fixtures_are_closed(self):
+        for fixture_id, platform in (
+            ("workday-form-readiness-v1", "workday"),
+            ("rippling-form-readiness-v1", "rippling"),
+        ):
+            with self.subTest(platform=platform):
+                fixture = json.loads((
+                    ROOT / "qa" / "fixtures" / fixture_id / "fixture.json"
+                ).read_text(encoding="utf-8"))
+                self.assertIsNone(validate_fixture(fixture))
+                self.assertEqual(fixture["platformFamily"], platform)
+
     def test_readiness_observation_contract_is_closed_and_revisioned(self):
         fixture = self.valid_greenhouse_fixture()
         observation = {

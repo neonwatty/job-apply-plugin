@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import test from "node:test";
 import { chromium } from "playwright";
@@ -32,6 +33,57 @@ function minimalSyntheticPdf() {
     `${body}xref\n0 4\n0000000000 65535 f \n${entries}`
       + `trailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`,
   );
+}
+
+async function liveReviewSession(attemptRevision) {
+  const fixture = JSON.parse(await readFile(
+    join(REPO_ROOT, "qa", "fixtures", "greenhouse-form-readiness-v1", "fixture.json"),
+    "utf8",
+  ));
+  const observationRevision = 17;
+  const requiredControlIds = fixture.steps.flatMap((step) => step.controls)
+    .filter((control) => control.required)
+    .map((control) => control.id)
+    .sort();
+  const controlSetFingerprint = `sha256:${createHash("sha256").update(JSON.stringify({
+    platformFamily: fixture.platformFamily, requiredControlIds,
+  })).digest("hex")}`;
+  return {
+    status: "review",
+    step: "review",
+    pendingFields: [],
+    answerKeys: [],
+    attemptRevision,
+    readinessInput: {
+      attemptRevision,
+      evidenceKind: "agent_attested_current_attempt",
+      fixture,
+      formManifest: {
+        schemaVersion: 1,
+        platformFamily: fixture.platformFamily,
+        observationRevision,
+        requiredControlIds,
+        controlSetFingerprint,
+        complete: true,
+      },
+      expectedObservationRevision: observationRevision,
+      observation: {
+        schemaVersion: 1,
+        platformFamily: "greenhouse",
+        observationRevision,
+        adapterState: "accessible",
+        uploadCapability: "available",
+        controls: [
+          { controlId: "authorization.sponsorship_select", kind: "selection", state: "complete", observationRevision },
+          { controlId: "contact.first_name", kind: "text", state: "complete", observationRevision },
+          { controlId: "contact.phone_country", kind: "selection", state: "complete", observationRevision },
+          { controlId: "resume.file", kind: "upload", state: "accepted", observationRevision },
+        ],
+        validationErrorControlIds: [],
+        finalControlState: "available",
+      },
+    },
+  };
 }
 
 const {
@@ -878,6 +930,7 @@ test("status actions preserve guarded ready, acquire, and applied boundaries", (
 
 test("workspace markup has semantic dialogs, labels, live regions, and no remote assets", async () => {
   const html = await readFile(join(REPO_ROOT, "workspace", "index.html"), "utf8");
+  const app = await readFile(join(REPO_ROOT, "workspace", "app.js"), "utf8");
   assert.match(html, /<main(?:\s|>)/);
   assert.match(html, /<dialog id="job-dialog" aria-labelledby=/);
   assert.match(html, /id="facts-workspace"/);
@@ -907,6 +960,22 @@ test("workspace markup has semantic dialogs, labels, live regions, and no remote
   for (const name of ["url", "role", "company", "location", "priority", "resumeId", "notes", "description"]) {
     assert.match(html, new RegExp(`<(?:input|select|textarea) name="${name}"`));
   }
+  assert.match(app, /activity-approval-fields"\)\.addEventListener\("change", invalidateGroupedApprovalPreview\)/);
+  assert.match(app, /groupedApprovalProjectionSignature/);
+  assert.match(app, /answerRevision: item\.answerRevision/);
+  assert.match(app, /answerSensitivity: item\.answerSensitivity/);
+  assert.match(app, /fieldClass: item\.fieldClass/);
+  assert.match(app, /approvalsByReference\.get\(item\.reference\)/);
+  assert.match(app, /approval\?\.currentUse === true/);
+  assert.match(app, /\["personal", "high"\]\.includes\(item\.answerSensitivity\)/);
+  assert.match(app, /groupedApprovalRequestSequence/);
+  assert.match(app, /requestSequence !== state\.groupedApprovalRequestSequence/);
+  assert.match(app, /item\.sensitive === true \|\| item\.state === "sensitive"/);
+  assert.match(app, /Cleanup preview failed:/);
+  assert.match(app, /proposal\.winnerQuestion/);
+  assert.match(app, /proposal\.duplicateQuestion/);
+  assert.match(app, /proposal\.winnerKey/);
+  assert.match(app, /proposal\.duplicateKey/);
 });
 
 test("answer-memory documents guarded profile and preference mutations", async () => {
@@ -1124,7 +1193,7 @@ test("open Job detail polling keeps the latest selected activity and announces o
       pendingFields: [{ question: "Can you work in this location?", state: "missing", answerKey: "private.polling.answer", sensitive: true }],
     });
     await activityPanel.getByText(/Canonical status in progress/).waitFor();
-    await activityPanel.getByText("Can you work in this location? · missing · sensitive").waitFor();
+    await activityPanel.getByText("Information requested · missing · sensitive").waitFor();
     await page.waitForFunction(() => globalThis.__activityLiveMutations?.length === 1);
     const announced = await page.evaluate(() => [...globalThis.__activityLiveMutations]);
     assert.match(announced[0], /Status changed to in progress/);
@@ -1291,7 +1360,7 @@ test("Needs Attention browser and CLI walkthrough converges all canonical reason
 
     let review = await ready("review-attention", "Review attention", 5);
     const reviewClaim = await cli("job-acquire", ["--id", review.id, "--owner", "private-review-owner", "--expected-revision", String(review.revision)]);
-    review = (await cli("claim-handoff", ["--id", review.id, "--token", reviewClaim.token, "--status", "awaiting_review", "--expected-revision", String(reviewClaim.job.revision)], { status: "review", step: "review", pendingFields: [] })).job;
+    review = (await cli("claim-handoff", ["--id", review.id, "--token", reviewClaim.token, "--status", "awaiting_review", "--expected-revision", String(reviewClaim.job.revision)], await liveReviewSession(reviewClaim.job.revision))).job;
 
     let needs = await ready("needs-attention", "Needs attention", 4);
     const needsClaim = await cli("job-acquire", ["--id", needs.id, "--owner", "private-needs-owner", "--expected-revision", String(needs.revision)]);
@@ -1332,8 +1401,8 @@ test("Needs Attention browser and CLI walkthrough converges all canonical reason
     assert.deepEqual(await page.locator(".attention-reason").allTextContents(), [
       "Expired agent attempt", "Interrupted agent attempt", "Awaiting your review", "Needs information",
     ]);
-    assert.match(await page.locator(".attention-card").filter({ hasText: "Needs attention" }).innerText(), /1 missing information item/);
-    const forbidden = [expiredClaim.token, reviewClaim.token, "private-expired-owner", "private-review-owner", "Private sponsorship answer?", "private.answer.key", "tokenHash", "claimId", "ownerLabel", "answerKey", "sensitive", "operationId", "browserState"];
+    assert.match(await page.locator('[data-attention-id="needs-attention"]').innerText(), /1 missing information item/);
+    const forbidden = [expiredClaim.token, reviewClaim.token, "private-expired-owner", "private-review-owner", "Private sponsorship answer?", "private.answer.key", "tokenHash", "claimId", "ownerLabel", "answerKey", "operationId", "browserState"];
     const attentionDom = await page.locator("#attention-workspace").innerText();
     for (const value of forbidden) assert.equal(attentionDom.includes(value), false, value);
     for (const payload of payloads) for (const value of forbidden) assert.equal(JSON.stringify(payload).includes(value), false, value);
@@ -1667,7 +1736,7 @@ test("pending answer browser journey preserves Job draft and reaches Ready, reac
     await page.addInitScript(() => { globalThis.setInterval = () => 0; });
     await page.goto(startup.url); await page.getByText("Canonical store connected").waitFor();
     await page.locator("#nav-attention").click();
-    await page.getByRole("button", { name: /Pending Journey/ }).click();
+    await page.locator('[data-attention-id="pending-job"]').click();
     const jobDialog = page.locator("#job-dialog"); const answerDialog = page.locator("#answer-dialog");
     await jobDialog.getByLabel("Notes").fill("unsaved browser draft");
     const openAnswer = jobDialog.getByRole("button", { name: "Open in Answers" });
@@ -1699,7 +1768,7 @@ test("pending answer browser journey preserves Job draft and reaches Ready, reac
     const second = await cli("job-acquire", ["--id", job.id, "--owner", "second-owner", "--expected-revision", String(job.revision)]);
     for (const field of ["id", "revision", "contentRevision", "digest"]) assert.equal(second.resume[field], first.resume[field]);
     assert.deepEqual(await readFile(second.resume.path), await readFile(first.resume.path));
-    job = (await cli("claim-handoff", ["--id", job.id, "--token", second.token, "--status", "awaiting_review", "--expected-revision", String(second.job.revision)], { status: "review", step: "review", pendingFields: [] })).job;
+    job = (await cli("claim-handoff", ["--id", job.id, "--token", second.token, "--status", "awaiting_review", "--expected-revision", String(second.job.revision)], await liveReviewSession(second.job.revision))).job;
     await page.getByRole("button", { name: "Jobs", exact: true }).click(); await page.locator("#refresh").click();
     await page.getByRole("button", { name: /Pending Journey/ }).click();
     await jobDialog.getByText(/Canonical status awaiting review/i).waitFor();
@@ -2170,7 +2239,7 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
       pendingFields: [{ question: "Do you need sponsorship?", state: "missing", answerKey: "private.browser.answer", sensitive: true }],
     });
     await activityCard().click();
-    await activityPanel.getByText("Do you need sponsorship? · missing · sensitive").waitFor();
+    await activityPanel.getByText("Information requested · missing · sensitive").waitFor();
     const progressText = await activityPanel.innerText();
     assert.equal(progressText.includes("private.browser.answer"), false);
     assert.equal(progressText.includes("answerKey"), false);
@@ -2213,9 +2282,7 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await closeDetails.click();
 
     activityJob = await cli("job-get", ["--id", uiJob.id]);
-    await cli("claim-handoff", ["--id", uiJob.id, "--token", recovered.token, "--status", "awaiting_review", "--expected-revision", String(activityJob.revision)], {
-      status: "review", step: "review", pendingFields: [], answerKeys: [],
-    });
+    await cli("claim-handoff", ["--id", uiJob.id, "--token", recovered.token, "--status", "awaiting_review", "--expected-revision", String(activityJob.revision)], await liveReviewSession(activityJob.revision));
     await activityCard().click();
     await activityPanel.getByText(/Canonical status awaiting review/).waitFor();
     const statusActions = jobDialog.getByRole("region", { name: "Status actions" });

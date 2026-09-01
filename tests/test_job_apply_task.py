@@ -21,6 +21,7 @@ def load_module(name, path):
 
 
 STORE = load_module("job_apply_task_store_tests", ROOT / "scripts" / "job-apply-store.py")
+TASK = load_module("job_apply_task_protocol_tests", ROOT / "scripts" / "job-apply-task.py")
 
 
 class TaskProtocolTests(unittest.TestCase):
@@ -198,7 +199,8 @@ print(json.dumps({"revision": updated["revision"]}, sort_keys=True))
             self.assertEqual(snapshot["jobs"][0]["revision"], job["revision"])
             self.assertEqual(snapshot["jobs"][0]["role"], "Before")
             self.assertEqual(snapshot["attention"]["items"][0]["revision"], job["revision"])
-            self.assertEqual(snapshot["attention"]["items"][0]["role"], "Before")
+            self.assertNotIn("role", snapshot["attention"]["items"][0])
+            self.assertNotIn("company", snapshot["attention"]["items"][0])
             signature_input = {
                 "overview": snapshot["overview"],
                 "jobs": snapshot["jobs"],
@@ -304,6 +306,53 @@ print(json.dumps({"revision": updated["revision"]}, sort_keys=True))
         self.assertNotIn("private.invalid", json.dumps(failure))
         code, missing = self.command("activity", "--id", "job-missing", check=False)
         self.assertEqual((code, missing["error"]["code"]), (2, "job_unavailable"))
+
+    def test_preview_token_drift_is_classified_as_stale_revision(self):
+        for message in (
+            "answer cleanup preview is stale",
+            "grouped approval preview is stale",
+        ):
+            with self.subTest(message=message):
+                self.assertEqual(
+                    TASK.classify(TASK.store_module().StoreError(message))[0],
+                    "stale_revision",
+                )
+
+    def test_semantic_and_cleanup_commands_match_store_authority_boundaries(self):
+        winner = self.store.put_answer({
+            "question": "Does the applicant have permission to work in this jurisdiction?",
+            "state": "confirmed", "value": "PRIVATE TASK ANSWER", "scope": {},
+        })
+        duplicate = self.store.observe_answer({
+            "question": "Is employment authorization available in the country?",
+            "state": "missing", "scope": {},
+        })
+        _code, lookup = self.command("semantic-lookup", payload={
+            "question": "Is employment authorization available in the country?",
+            "scope": {}, "fieldClass": "general", "sensitivity": "none",
+            "mode": "strict", "useAuthority": "accepted_record", "limit": 5,
+        })
+        self.assertTrue(lookup["candidates"])
+        self.assertNotIn("PRIVATE TASK ANSWER", json.dumps(lookup))
+        _code, preview = self.command("cleanup-preview")
+        proposal = preview["proposals"][0]
+        approval = {
+            "previewToken": preview["previewToken"],
+            "winnerKey": proposal["winnerKey"],
+            "duplicateKey": proposal["duplicateKey"],
+            "winnerRevision": proposal["winnerRevision"],
+            "duplicateRevision": proposal["duplicateRevision"],
+        }
+        code, rejected = self.command(
+            "cleanup-approve", payload=approval, check=False
+        )
+        self.assertEqual((code, rejected["error"]["code"]), (2, "owner_confirmation_required"))
+        _code, approved = self.command(
+            "cleanup-approve", "--owner-confirmed", payload=approval
+        )
+        self.assertTrue(approved["approved"])
+        self.assertEqual(approved["result"]["key"], winner["key"])
+        self.assertEqual(self.store.get_answer(duplicate["key"])["key"], winner["key"])
 
     def test_store_module_initialization_failure_is_redacted_json(self):
         isolated = self.root / "isolated-helper"
