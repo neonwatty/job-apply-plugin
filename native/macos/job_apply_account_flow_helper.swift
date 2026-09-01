@@ -667,14 +667,22 @@ private final class OracleEmailOnlyEffect {
         guard AXUIElementSetAttributeValue(
             exactControl, kAXValueAttribute as CFString, email as CFString
         ) == .success else { throw AccountFlowHelperError.emailEffect }
-        let reattestedForm = try exactAccountForm(page)
-        let reattestedEmail = binding.isSynthetic
-            ? try exact(elements(reattestedForm), id: "job-apply-email-control")
-            : try reviewedControls(reattestedForm).email
-        guard CFEqual(reattestedEmail, exactControl),
-              binding.isSynthetic || reviewedFingerprint(reattestedEmail) == binding.emailControlFingerprint,
-              string(reattestedEmail, kAXValueAttribute as CFString) == email
-        else { throw AccountFlowHelperError.emailEffect }
+        // Chromium can acknowledge the single native write before its AX tree
+        // publishes the new value. Reobserve only; never repeat the effect.
+        for _ in 0..<20 {
+            if let reattestedForm = try? exactAccountForm(page),
+               let reattestedEmail = try? (binding.isSynthetic
+                    ? exact(elements(reattestedForm), id: "job-apply-email-control")
+                    : reviewedControls(reattestedForm).email),
+               CFEqual(reattestedEmail, exactControl),
+               (binding.isSynthetic
+                    || reviewedFingerprint(reattestedEmail) == binding.emailControlFingerprint),
+               string(reattestedEmail, kAXValueAttribute as CFString) == email {
+                return
+            }
+            usleep(50_000)
+        }
+        throw AccountFlowHelperError.emailEffect
     }
 
     func perform(email: String) throws {

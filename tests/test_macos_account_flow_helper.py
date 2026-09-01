@@ -42,6 +42,7 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         self.assertIn("activateReviewedBrowser", source)
         self.assertIn("for _ in 0..<100", source)
         self.assertIn("AXUIElementSetAttributeValue(\n            exactControl, kAXValueAttribute", source)
+        self.assertIn("Reobserve only; never repeat the effect", source)
         self.assertIn("CFEqual(reattestedEmail, exactControl)", source)
         self.assertIn("oracleCausalSuccessorDecision", source)
         self.assertIn("oracleExactEmailControlIdentityRemoved", source)
