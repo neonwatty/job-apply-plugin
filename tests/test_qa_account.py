@@ -135,6 +135,11 @@ class SyntheticAccountQATests(unittest.TestCase):
         self.assertIn("listener.settimeout(45)", server)
         self.assertEqual(source.count("provider.provision_or_reuse_and_fill"), 0)
 
+    def test_visible_browser_setup_disables_background_updates(self):
+        source = (ROOT / "scripts/qa-account.py").read_text(encoding="utf-8")
+        self.assertEqual(source.count('"--disable-background-networking"'), 1)
+        self.assertEqual(source.count('"--disable-component-update"'), 1)
+
     @unittest.skipUnless(
         os.environ.get("JOB_APPLY_OWNER_APPROVED_VISIBLE_BROWSER_TESTS") == "1",
         "visible browser tests require dedicated opt-in",

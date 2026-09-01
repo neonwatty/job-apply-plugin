@@ -1683,7 +1683,10 @@ test("pending answer browser journey preserves Job draft and reaches Ready, reac
     assert.equal(await jobDialog.isVisible(), true);
     assert.equal(await jobDialog.getByLabel("Notes").inputValue(), "unsaved browser draft");
     await openAnswer.waitFor();
-    assert.equal(await openAnswer.evaluate((button) => document.activeElement === button), true);
+    await page.waitForFunction(() => (
+      document.activeElement?.closest("#job-dialog")
+      && document.activeElement.textContent?.trim() === "Open in Answers"
+    ));
     await jobDialog.getByRole("button", { name: "Recheck this revision" }).click();
     await jobDialog.getByText(/Canonical status ready/i).waitFor();
     assert.equal((await cli("job-get", ["--id", job.id])).status, "ready");
@@ -2399,14 +2402,28 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     const duplicate = await cli("answer-put", [], { question: "Duplicate browser reusable answer?", state: "confirmed", value: "discarded-browser-duplicate" });
     await page.getByRole("button", { name: "Refresh" }).click();
     const duplicateCard = page.locator(".answer-card").filter({ hasText: "Duplicate browser reusable answer?" });
+    const duplicateDetailPath = answerApiPath(duplicate.key);
+    let duplicateDetailResponse = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === duplicateDetailPath
+      && response.request().method() === "GET"
+    ));
     await duplicateCard.click();
+    assert.equal((await duplicateDetailResponse).status(), 200);
+    await answerDialog.waitFor({ state: "visible" });
+    assert.equal(await answerDialog.getByLabel("Question").inputValue(), "Duplicate browser reusable answer?");
     await answerDialog.getByLabel("Aliases (one per line)").fill("unsaved source merge draft");
     await answerDialog.getByRole("button", { name: "Merge duplicate…" }).click();
     await answerDialog.getByText("Save this draft or close the answer details to discard it before merging.").waitFor();
     assert.equal(await page.locator("#answer-merge-dialog").isVisible(), false);
     assert.equal(await answerDialog.getByLabel("Aliases (one per line)").inputValue(), "unsaved source merge draft");
     await answerDialog.getByRole("button", { name: "Close answer details" }).click();
+    await answerDialog.waitFor({ state: "hidden" });
+    duplicateDetailResponse = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === duplicateDetailPath
+      && response.request().method() === "GET"
+    ));
     await duplicateCard.click();
+    assert.equal((await duplicateDetailResponse).status(), 200);
     await answerDialog.getByRole("button", { name: "Merge duplicate…" }).click();
     const mergeDialog = page.locator("#answer-merge-dialog");
     await mergeDialog.waitFor({ state: "visible" });
