@@ -36,7 +36,7 @@ class NativeMacOSWorkdayAccountProvider:
     _reviewed_sources = (
         "job_apply_credential_helper.swift", "job_apply_browser_bridge.swift",
         "job_apply_account_flow_helper.swift", "job_apply_workday_account_flow_helper.swift",
-        "job_apply_credential_helper_tests.swift", "job_apply_credential_helper_main.swift",
+        "job_apply_workday_account_flow_main.swift",
     )
 
     def __init__(self, binary: str, browser_process_identifier: int, socket_path: str | None = None,

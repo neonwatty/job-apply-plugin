@@ -95,7 +95,9 @@ jobs:
       - name: Install QA dependencies and browser
         run: npm ci && npx playwright install chromium
       - name: Typecheck isolated Security.framework helpers
-        run: xcrun swiftc -typecheck native/macos/job_apply_credential_helper.swift native/macos/job_apply_browser_bridge.swift native/macos/job_apply_account_flow_helper.swift native/macos/job_apply_workday_account_flow_helper.swift native/macos/job_apply_credential_helper_tests.swift native/macos/job_apply_credential_helper_main.swift
+        run: |
+          xcrun swiftc -typecheck native/macos/job_apply_credential_helper.swift native/macos/job_apply_browser_bridge.swift native/macos/job_apply_account_flow_helper.swift native/macos/job_apply_credential_helper_tests.swift native/macos/job_apply_credential_helper_main.swift
+          xcrun swiftc -typecheck native/macos/job_apply_credential_helper.swift native/macos/job_apply_workday_account_flow_helper.swift native/macos/job_apply_workday_account_flow_main.swift
       - name: Verify native helper boundary
         run: python3 -m unittest -v tests.test_macos_credential_helper tests.test_macos_account_flow_helper tests.test_macos_workday_account_flow_helper
       - name: Verify observed browser, Store, and native account walkthrough
