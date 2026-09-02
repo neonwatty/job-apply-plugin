@@ -4163,6 +4163,24 @@ class StoreTests(unittest.TestCase):
             acquired["job"]["revision"],
         )["job"]
 
+    def _replace_with_legacy_review_session(self, job, **overrides):
+        session = {
+            "schemaVersion": 1,
+            "applicationId": job["id"],
+            "status": "review",
+            "step": "final_review",
+            "answerKeys": [],
+            "pendingFields": [],
+            "createdAt": "2026-08-01T00:00:00Z",
+            "updatedAt": "2026-08-01T00:01:00Z",
+        }
+        session.update(overrides)
+        path = self.store._session_path(job["id"])
+        path.write_text(
+            json.dumps(session, separators=(",", ":")), encoding="utf-8"
+        )
+        return path
+
     def test_review_restart_is_explicit_atomic_and_preserves_prior_session(self):
         reviewed = self._make_reviewed_job()
         session_path = self.store._session_path(reviewed["id"])
@@ -4215,6 +4233,134 @@ class StoreTests(unittest.TestCase):
             reviewed["id"], restarted["token"], progress
         )
         self.assertNotEqual(session_path.read_bytes(), session_before)
+
+    def test_legacy_review_restart_requires_exact_absence_and_fresh_rebuild(self):
+        reviewed = self._make_reviewed_job()
+        session_path = self._replace_with_legacy_review_session(reviewed)
+        session_before = session_path.read_bytes()
+
+        restarted = self.store.restart_reviewed_job(
+            reviewed["id"], "legacy-rebuild-agent", reviewed["revision"], True
+        )
+        self.assertEqual(
+            (restarted["job"]["id"], restarted["job"]["status"], restarted["job"]["revision"]),
+            (reviewed["id"], "in_progress", reviewed["revision"] + 1),
+        )
+        self.assertEqual(session_path.read_bytes(), session_before)
+        self.assertEqual(
+            [event["event"] for event in self.store.read_history()],
+            ["job-started", "reviewed", "legacy-review-rebuild"],
+        )
+
+        stale = self.review_session(reviewed["revision"] - 1)
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "current attempt"):
+            self.store.handoff_claimed_job(
+                reviewed["id"], restarted["token"], "awaiting_review",
+                stale, restarted["job"]["revision"],
+            )
+        without_readiness = {
+            "status": "review", "step": "final_review", "pendingFields": [],
+            "attemptRevision": restarted["job"]["revision"],
+        }
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "fresh current"):
+            self.store.handoff_claimed_job(
+                reviewed["id"], restarted["token"], "awaiting_review",
+                without_readiness, restarted["job"]["revision"],
+            )
+        self.assertEqual(
+            self.store.get_job(reviewed["id"])["status"], "in_progress"
+        )
+        self.assertIsNotNone(self.store.claim_status()["claim"])
+
+        fresh = self.review_session(
+            restarted["job"]["revision"], step="final_review"
+        )
+        handed = self.store.handoff_claimed_job(
+            reviewed["id"], restarted["token"], "awaiting_review",
+            fresh, restarted["job"]["revision"],
+        )
+        self.assertEqual(handed["job"]["status"], "awaiting_review")
+        self.assertIsNone(self.store.claim_status()["claim"])
+
+    def test_legacy_review_restart_rejects_partial_null_and_contradictory_envelopes(self):
+        variants = {
+            "explicit null": {"attemptRevision": None},
+            "partial valid": {"attemptRevision": 2},
+            "malformed readiness": {"readiness": []},
+            "contradictory handoff": {
+                "browserHandoff": {
+                    "state": "required", "reasonCode": "login-required",
+                    "revision": 1,
+                },
+            },
+            "wrong step": {"step": "review"},
+            "pending work": {
+                "pendingFields": [{
+                    "state": "missing", "answerKey": "answer.missing",
+                    "sensitive": False,
+                }],
+            },
+        }
+        for label, overrides in variants.items():
+            with self.subTest(label=label):
+                self.store = STORE_MODULE.Store(
+                    self.root / hashlib.sha256(label.encode()).hexdigest()[:12],
+                    self.legacy,
+                )
+                reviewed = self._make_reviewed_job()
+                session_path = self._replace_with_legacy_review_session(
+                    reviewed, **overrides
+                )
+                before = {
+                    path: path.read_bytes()
+                    for path in (
+                        self.store.jobs_path,
+                        self.store.coordinator_path,
+                        self.store.coordinator_journal_path,
+                        self.store.history_path,
+                        session_path,
+                    )
+                }
+                with self.assertRaises(STORE_MODULE.StoreError):
+                    self.store.restart_reviewed_job(
+                        reviewed["id"], "legacy-agent", reviewed["revision"], True
+                    )
+                self.assertEqual(
+                    {path: path.read_bytes() for path in before}, before
+                )
+
+    def test_legacy_review_restart_rejects_newer_history_and_prior_restart(self):
+        reviewed = self._make_reviewed_job()
+        self._replace_with_legacy_review_session(reviewed)
+        self.store.append_history({
+            "applicationId": reviewed["id"], "event": "progressed",
+            "status": "awaiting_review", "answerKeys": [],
+        })
+        before = self.store.jobs_path.read_bytes()
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "reviewed history"):
+            self.store.restart_reviewed_job(
+                reviewed["id"], "legacy-agent", reviewed["revision"], True
+            )
+        self.assertEqual(self.store.jobs_path.read_bytes(), before)
+
+        self.store = STORE_MODULE.Store(self.root / "prior-restart", self.legacy)
+        reviewed = self._make_reviewed_job()
+        first = self.store.restart_reviewed_job(
+            reviewed["id"], "modern-agent", reviewed["revision"], True
+        )
+        reviewed_again = self.store.handoff_claimed_job(
+            reviewed["id"], first["token"], "awaiting_review",
+            self.review_session(first["job"]["revision"], step="final_review"),
+            first["job"]["revision"],
+        )["job"]
+        session_path = self._replace_with_legacy_review_session(reviewed_again)
+        session_before = session_path.read_bytes()
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "already used"):
+            self.store.restart_reviewed_job(
+                reviewed_again["id"], "legacy-agent",
+                reviewed_again["revision"], True,
+            )
+        self.assertEqual(session_path.read_bytes(), session_before)
 
     def test_review_restart_failure_matrix_is_side_effect_free(self):
         reviewed = self._make_reviewed_job()
@@ -4331,6 +4477,93 @@ class StoreTests(unittest.TestCase):
             ),
             1,
         )
+
+    def test_legacy_review_restart_has_one_concurrent_winner(self):
+        reviewed = self._make_reviewed_job()
+        session_path = self._replace_with_legacy_review_session(reviewed)
+        session_before = session_path.read_bytes()
+        gate = threading.Barrier(2)
+
+        def restart(owner):
+            gate.wait()
+            try:
+                return self.store.restart_reviewed_job(
+                    reviewed["id"], owner, reviewed["revision"], True
+                )
+            except STORE_MODULE.StoreError as error:
+                return str(error)
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            outcomes = list(pool.map(restart, ("agent-one", "agent-two")))
+        self.assertEqual(
+            (sum(isinstance(item, dict) for item in outcomes),
+             sum(isinstance(item, str) for item in outcomes)),
+            (1, 1),
+        )
+        self.assertEqual(session_path.read_bytes(), session_before)
+        self.assertEqual(
+            [event["event"] for event in self.store.read_history()].count(
+                "legacy-review-rebuild"
+            ),
+            1,
+        )
+
+    def test_legacy_review_restart_rolls_forward_without_rewriting_session(self):
+        original_write = STORE_MODULE.atomic_write_json
+        for boundary in ("jobs", "history", "coordinator", "journal-clear"):
+            with self.subTest(boundary=boundary):
+                self.store = STORE_MODULE.Store(
+                    self.root / f"legacy-review-restart-{boundary}", self.legacy
+                )
+                reviewed = self._make_reviewed_job()
+                session_path = self._replace_with_legacy_review_session(reviewed)
+                session_before = session_path.read_bytes()
+                failed = {"done": False}
+
+                def fail_once(path, payload):
+                    matches = (
+                        boundary == "jobs" and path == self.store.jobs_path
+                        or boundary == "coordinator"
+                        and path == self.store.coordinator_path
+                        and payload.get("claim") is not None
+                        or boundary == "journal-clear"
+                        and path == self.store.coordinator_journal_path
+                        and payload.get("operation") is None
+                    )
+                    if matches and not failed["done"]:
+                        failed["done"] = True
+                        raise OSError("simulated crash")
+                    return original_write(path, payload)
+
+                patcher = (
+                    mock.patch.object(
+                        self.store,
+                        "_append_history_event_idempotent_locked",
+                        side_effect=OSError("simulated crash"),
+                    )
+                    if boundary == "history"
+                    else mock.patch.object(
+                        STORE_MODULE, "atomic_write_json", side_effect=fail_once
+                    )
+                )
+                with patcher, self.assertRaises(OSError):
+                    self.store.restart_reviewed_job(
+                        reviewed["id"], "legacy-agent", reviewed["revision"], True
+                    )
+                repaired = STORE_MODULE.Store(self.store.root, self.legacy)
+                self.assertEqual(
+                    repaired.claim_status()["claim"]["jobId"], reviewed["id"]
+                )
+                self.assertEqual(
+                    repaired.get_job(reviewed["id"])["status"], "in_progress"
+                )
+                self.assertEqual(session_path.read_bytes(), session_before)
+                self.assertEqual(
+                    [event["event"] for event in repaired.read_history()].count(
+                        "legacy-review-rebuild"
+                    ),
+                    1,
+                )
 
     def test_review_restart_rolls_forward_without_rewriting_session(self):
         original_write = STORE_MODULE.atomic_write_json

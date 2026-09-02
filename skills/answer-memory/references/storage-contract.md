@@ -103,6 +103,8 @@ synchronization are unsupported.
 
 Current documents use `schemaVersion: 1`. A corrupt document, invalid shape, or future schema version causes the helper to fail non-destructively. Agents must not repair canonical files with text editing; preserve the file and explain the error.
 
+Review restart keeps modern evidence strict. The only legacy exception is a one-time rebuild when `attemptRevision`, `readiness`, and `browserHandoff` are all structurally absent from an exact `review`/`final_review` session with no pending work, the latest same-job history event is `reviewed`/`awaiting_review`, and no prior restart exists. Partial, explicit-null, malformed, or contradictory envelopes are rejected byte-identically. Acquisition preserves the legacy session bytes and records `legacy-review-rebuild`; fresh current-attempt readiness and browser handoff are required before the rebuilt attempt can return to review.
+
 Policy state is separately versioned and optional. A v1 answer/profile/history/session store with no policy directory remains valid and resolves to `review_only`. Missing, malformed, old, future, inaccessible, expired, revoked, killed, or mismatched policy state also resolves to `review_only`; it is never migrated into authority.
 
 ## Answer identity

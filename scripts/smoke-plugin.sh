@@ -208,6 +208,55 @@ review = attention_command(
     "--status", "awaiting_review",
     "--expected-revision", str(review_restart["job"]["revision"]),
 )["job"]
+legacy_review = attention_ready("legacy-review-smoke", 4)
+legacy_claim = attention_command(
+    "job-acquire", None,
+    "--id", legacy_review["id"], "--owner", "private-legacy-owner",
+    "--expected-revision", str(legacy_review["revision"]),
+)
+legacy_attempt_revision = legacy_claim["job"]["revision"]
+legacy_modern_review = json.loads(json.dumps(review_session))
+legacy_modern_review["attemptRevision"] = legacy_attempt_revision
+legacy_modern_review["readinessInput"]["attemptRevision"] = legacy_attempt_revision
+legacy_review = attention_command(
+    "claim-handoff", legacy_modern_review,
+    "--id", legacy_review["id"], "--token", legacy_claim["token"],
+    "--status", "awaiting_review",
+    "--expected-revision", str(legacy_attempt_revision),
+)["job"]
+legacy_session_path = attention_store / "sessions" / f"{legacy_review['id']}.json"
+legacy_session_path.write_text(json.dumps({
+    "schemaVersion": 1,
+    "applicationId": legacy_review["id"],
+    "status": "review",
+    "step": "final_review",
+    "answerKeys": [],
+    "pendingFields": [],
+    "createdAt": "2026-08-01T00:00:00Z",
+    "updatedAt": "2026-08-01T00:01:00Z",
+}, separators=(",", ":")), encoding="utf-8")
+legacy_session_bytes = legacy_session_path.read_bytes()
+legacy_restart = attention_command(
+    "job-review-restart", None,
+    "--id", legacy_review["id"], "--owner", "private-legacy-rebuild-owner",
+    "--expected-revision", str(legacy_review["revision"]),
+    "--owner-confirmed-not-submitted",
+)
+if (
+    legacy_restart["job"]["status"] != "in_progress"
+    or legacy_session_path.read_bytes() != legacy_session_bytes
+):
+    raise SystemExit("packaged legacy review rebuild did not preserve prior bytes")
+legacy_fresh_review = json.loads(json.dumps(review_session))
+legacy_fresh_review["step"] = "final_review"
+legacy_fresh_review["attemptRevision"] = legacy_restart["job"]["revision"]
+legacy_fresh_review["readinessInput"]["attemptRevision"] = legacy_restart["job"]["revision"]
+legacy_review = attention_command(
+    "claim-handoff", legacy_fresh_review,
+    "--id", legacy_review["id"], "--token", legacy_restart["token"],
+    "--status", "awaiting_review",
+    "--expected-revision", str(legacy_restart["job"]["revision"]),
+)["job"]
 needs = attention_ready("needs-smoke", 4)
 needs_claim = attention_command("job-acquire", None, "--id", needs["id"], "--owner", "private-needs-owner", "--expected-revision", str(needs["revision"]))
 needs = attention_command("claim-handoff", {"status": "active", "step": "questions", "answerKeys": ["private.answer.key"], "pendingFields": [{"question": "Private question?", "state": "missing", "answerKey": "private.answer.key", "sensitive": True}]}, "--id", needs["id"], "--token", needs_claim["token"], "--status", "needs_info", "--expected-revision", str(needs_claim["job"]["revision"]))["job"]
@@ -267,11 +316,13 @@ legacy_persisted = json.loads(legacy_session_path.read_text(encoding="utf-8"))
 if legacy_persisted != legacy_normalized or any("question" in field for field in legacy_persisted["pendingFields"]):
     raise SystemExit("packaged legacy session normalization was incomplete")
 attention_projection = store_module.Store(attention_store).list_needs_attention()
-if [item["reasonCode"] for item in attention_projection["items"]] != ["expired_agent_attempt", "claimless_interrupted_attempt", "awaiting_human_review", "needs_information"]:
+if [item["reasonCode"] for item in attention_projection["items"]] != ["expired_agent_attempt", "claimless_interrupted_attempt", "awaiting_human_review", "awaiting_human_review", "needs_information"]:
     raise SystemExit("packaged Needs Attention taxonomy or ordering failed")
 attention_serialized = json.dumps(attention_projection)
 for forbidden in (
-    expired_claim["token"], review_restart["token"], "private-expired-owner", "private-review-owner",
+    expired_claim["token"], review_restart["token"], legacy_restart["token"],
+    "private-expired-owner", "private-review-owner", "private-legacy-owner",
+    "private-legacy-rebuild-owner",
     "private-restart-owner",
     "private-needs-owner", "Private question?", "private.answer.key", "answerKey",
     "tokenHash", "claimId", "ownerLabel", "operationId", "browserState",
@@ -284,6 +335,7 @@ interrupted = attention_command("job-transition", None, "--id", interrupted["id"
 attention_command("job-transition", None, "--id", interrupted["id"], "--status", "saved", "--expected-revision", str(interrupted["revision"]))
 attention_command("job-transition", None, "--id", needs["id"], "--status", "saved", "--expected-revision", str(needs["revision"]))
 attention_command("job-transition", None, "--id", review["id"], "--status", "applied", "--expected-revision", str(review["revision"]), "--user-confirmed")
+attention_command("job-transition", None, "--id", legacy_review["id"], "--status", "applied", "--expected-revision", str(legacy_review["revision"]), "--user-confirmed")
 if store_module.Store(attention_store).list_needs_attention()["items"]:
     raise SystemExit("packaged Needs Attention resolutions did not converge to empty")
 if recovered["job"]["id"] != expired["id"]:
@@ -491,8 +543,8 @@ if codex_manifest.get("name") != "job-apply":
     raise SystemExit(".codex-plugin/plugin.json name must be job-apply")
 if not re.fullmatch(r"\d+\.\d+\.\d+", codex_manifest.get("version", "")):
     raise SystemExit(".codex-plugin/plugin.json version must be strict SemVer")
-if codex_manifest["version"] != "1.3.2":
-    raise SystemExit("review-restart package identity must be 1.3.2")
+if codex_manifest["version"] != "1.3.3":
+    raise SystemExit("legacy-review-restart package identity must be 1.3.3")
 if codex_manifest.get("skills") != "./skills/":
     raise SystemExit(".codex-plugin/plugin.json must expose ./skills/")
 if codex_manifest.get("interface", {}).get("displayName") != "Job Apply":
