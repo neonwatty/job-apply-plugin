@@ -114,11 +114,11 @@ jobs:
           node-version: '20'
       - name: Install QA dependencies and browser
         run: npm ci && npx playwright install chromium
-      - name: Verify Oracle email-only account-flow boundary
-        env:
-          JOB_APPLY_OWNER_APPROVED_VISIBLE_BROWSER_TESTS: '1'
-        run: python3 scripts/qa-account.py verify-oracle-email-only --automation-provider macos-accessibility --owner-approved-visible-browser-tests --json
       - name: Verify reviewed Workday account boundary
         run: |
           xcrun swiftc -typecheck native/macos/job_apply_credential_helper.swift native/macos/job_apply_workday_account_flow_helper.swift native/macos/job_apply_workday_account_flow_main.swift
           python3 -m unittest -v tests.test_macos_workday_account_flow_helper
+      - name: Verify Oracle email-only account-flow boundary
+        env:
+          JOB_APPLY_OWNER_APPROVED_VISIBLE_BROWSER_TESTS: '1'
+        run: python3 scripts/qa-account.py verify-oracle-email-only --automation-provider macos-accessibility --owner-approved-visible-browser-tests --json
