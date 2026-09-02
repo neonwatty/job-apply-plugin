@@ -554,6 +554,75 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
         )
         self.assertNotIn(restarted["token"], durable)
 
+    def test_legacy_review_restart_cli_is_one_time_and_byte_preserving(self):
+        self.json_store("init")
+        profile = self.write_input("legacy-profile.json", {"firstName": "Synthetic"})
+        self.json_store(
+            "profile-replace", "--input", str(profile), "--expected-revision",
+            str(self.json_store("profile-inspect")["revision"]), "--source", "user",
+        )
+        resume_path = self.home / "legacy-resume.pdf"
+        resume_path.write_bytes(b"%PDF-1.7\nlegacy rebuild fixture")
+        resume = self.write_input("legacy-resume.json", {
+            "id": "legacy-resume", "label": "Legacy", "path": str(resume_path),
+        })
+        self.json_store("resume-create", "--input", str(resume))
+        job_input = self.write_input("legacy-job.json", {
+            "id": "legacy-review-job",
+            "url": "https://example.com/jobs/legacy-review",
+            "resumeId": "legacy-resume",
+        })
+        job = self.json_store("job-create", "--input", str(job_input))
+        job = self.json_store(
+            "job-transition", "--id", job["id"], "--status", "ready",
+            "--expected-revision", str(job["revision"]),
+        )
+        acquired = self.json_store(
+            "job-acquire", "--id", job["id"], "--owner", "initial-agent",
+            "--expected-revision", str(job["revision"]),
+        )
+        review = self.write_input(
+            "legacy-initial-review.json",
+            self.review_session(acquired["job"]["revision"]),
+        )
+        reviewed = self.json_store(
+            "claim-handoff", "--id", job["id"], "--token", acquired["token"],
+            "--status", "awaiting_review", "--input", str(review),
+            "--expected-revision", str(acquired["job"]["revision"]),
+        )["job"]
+        session_path = self.home / ".job-apply" / "sessions" / f"{job['id']}.json"
+        session_path.write_text(json.dumps({
+            "schemaVersion": 1,
+            "applicationId": job["id"],
+            "status": "review",
+            "step": "final_review",
+            "answerKeys": [],
+            "pendingFields": [],
+            "createdAt": "2026-08-01T00:00:00Z",
+            "updatedAt": "2026-08-01T00:01:00Z",
+        }, separators=(",", ":")), encoding="utf-8")
+        session_before = session_path.read_bytes()
+
+        restarted = self.json_store(
+            "job-review-restart", "--id", job["id"], "--owner", "legacy-agent",
+            "--expected-revision", str(reviewed["revision"]),
+            "--owner-confirmed-not-submitted",
+        )
+        self.assertEqual(restarted["job"]["id"], job["id"])
+        self.assertEqual(restarted["job"]["status"], "in_progress")
+        self.assertEqual(session_path.read_bytes(), session_before)
+        self.assertEqual(
+            [event["event"] for event in self.json_store("history-list")],
+            ["job-started", "reviewed", "legacy-review-rebuild"],
+        )
+        durable = "\n".join(
+            (self.home / ".job-apply" / name).read_text(encoding="utf-8")
+            for name in (
+                "coordinator.json", "coordinator-journal.json", "applications.jsonl"
+            )
+        )
+        self.assertNotIn(restarted["token"], durable)
+
     def test_cli_commands_read_safe_future_history_without_rewriting_store(self):
         self.json_store("init")
         self.json_store("claim-status")

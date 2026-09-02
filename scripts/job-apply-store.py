@@ -43,6 +43,7 @@ HISTORY_EVENTS = {
     "failed",
     "job-started",
     "job-restarted",
+    "legacy-review-rebuild",
     "claim-recovered",
     "job-blocked",
 }
@@ -6536,33 +6537,53 @@ class Store:
             session_path = self._session_path(job_id)
             if not session_path.exists():
                 raise StoreError("review restart requires prior review evidence")
-            session = self._read_session_projection(
-                session_path, job_id, job.get("ats")
-            )
-            readiness = session.get("readiness")
-            if (
-                session.get("status") != "review"
-                or session.get("attemptRevision") != job["revision"] - 1
-                or session.get("pendingFields")
-                or session.get("blockers")
-                or readiness is None
-                or readiness.get("status") != "ready"
-                or readiness.get("evidenceKind")
-                != "agent_attested_current_attempt"
-                or readiness.get("attemptRevision")
-                != session.get("attemptRevision")
-                or readiness.get("blockerCodes")
-                or any(
-                    value != "passed"
-                    for value in readiness.get("assertions", {}).values()
-                )
-                or session.get("browserHandoff") != {
-                    "state": "ready_for_owner",
-                    "reasonCode": "final-review-required",
-                    "revision": 1,
-                }
-            ):
-                raise StoreError("review restart requires complete prior review evidence")
+            raw_session = read_json_object(session_path, "session")
+            validate_version(raw_session, "session")
+            session = _project_legacy_session(raw_session, job.get("ats"))
+            review_envelope = {
+                "attemptRevision", "readiness", "browserHandoff",
+            }
+            legacy_review_rebuild = not (review_envelope & set(raw_session))
+            if legacy_review_rebuild:
+                if (
+                    session.get("status") != "review"
+                    or session.get("step") != "final_review"
+                    or session.get("pendingFields")
+                    or session.get("blockers")
+                ):
+                    raise StoreError(
+                        "review restart requires complete prior review evidence"
+                    )
+            else:
+                # The modern 1.3.2 path remains strict. Any partial envelope,
+                # explicit null, malformed value, or contradictory evidence is
+                # rejected rather than being interpreted as legacy absence.
+                readiness = session.get("readiness")
+                if (
+                    session.get("status") != "review"
+                    or session.get("attemptRevision") != job["revision"] - 1
+                    or session.get("pendingFields")
+                    or session.get("blockers")
+                    or readiness is None
+                    or readiness.get("status") != "ready"
+                    or readiness.get("evidenceKind")
+                    != "agent_attested_current_attempt"
+                    or readiness.get("attemptRevision")
+                    != session.get("attemptRevision")
+                    or readiness.get("blockerCodes")
+                    or any(
+                        value != "passed"
+                        for value in readiness.get("assertions", {}).values()
+                    )
+                    or session.get("browserHandoff") != {
+                        "state": "ready_for_owner",
+                        "reasonCode": "final-review-required",
+                        "revision": 1,
+                    }
+                ):
+                    raise StoreError(
+                        "review restart requires complete prior review evidence"
+                    )
             job_history = [
                 event
                 for event in self.read_history()
@@ -6574,6 +6595,13 @@ class Store:
                 or job_history[-1].get("status") != "awaiting_review"
             ):
                 raise StoreError("review restart requires prior reviewed history")
+            if legacy_review_rebuild and any(
+                event.get("event") in {
+                    "job-restarted", "legacy-review-rebuild",
+                }
+                for event in job_history[:-1]
+            ):
+                raise StoreError("legacy review restart was already used")
 
             preflight = self._preflight_job_record(job)
             resumes = self._load_resumes_document()["resumes"]
@@ -6609,7 +6637,15 @@ class Store:
                 "expectedRevision": job["revision"],
                 "at": now,
                 "historyEvent": self._history_event_for_operation(
-                    operation_id, job, "job-restarted", "in_progress", now
+                    operation_id,
+                    job,
+                    (
+                        "legacy-review-rebuild"
+                        if legacy_review_rebuild
+                        else "job-restarted"
+                    ),
+                    "in_progress",
+                    now,
                 ),
                 "resultClaim": claim,
             }

@@ -200,6 +200,50 @@ class AttemptProtocolTests(unittest.TestCase):
             "job-restarted",
         )
 
+    def test_legacy_review_restart_broker_rebuilds_under_same_private_claim(self):
+        self.move_to_review()
+        session_path = self.store._session_path(self.job["id"])
+        legacy = {
+            "schemaVersion": 1,
+            "applicationId": self.job["id"],
+            "status": "review",
+            "step": "final_review",
+            "answerKeys": [],
+            "pendingFields": [],
+            "createdAt": "2026-08-01T00:00:00Z",
+            "updatedAt": "2026-08-01T00:01:00Z",
+        }
+        session_path.write_text(
+            json.dumps(legacy, separators=(",", ":")), encoding="utf-8"
+        )
+        session_before = session_path.read_bytes()
+
+        command, result, response = self.restart_review()
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(response["event"], "acquired")
+        self.assertEqual(response["attempt"]["job"]["id"], self.job["id"])
+        self.assertEqual(
+            response["attempt"]["job"]["revision"], self.job["revision"] + 1
+        )
+        self.assertEqual(session_path.read_bytes(), session_before)
+        self.assertNotIn("token", json.dumps(response).lower())
+        self.assertNotIn("claim", json.dumps(response).lower())
+        self.assertNotIn("token", " ".join(command).lower())
+
+        progress = {
+            "status": "active", "step": "form", "answerKeys": [],
+            "pendingFields": [],
+        }
+        saved = self.run_client("progress", payload=progress)[2]
+        self.assertEqual(saved, {"event": "progress_saved", "ok": True})
+        rebuilt = self.store.load_session(self.job["id"])
+        self.assertEqual(rebuilt["attemptRevision"], self.job["revision"] + 1)
+        self.assertIsNone(rebuilt["readiness"])
+        self.assertEqual(
+            [event["event"] for event in self.store.read_history()][-1],
+            "legacy-review-rebuild",
+        )
+
     def test_bearer_is_absent_from_clients_outputs_and_broker_runtime_metadata(self):
         command, result, acquired = self.start()
         self.assertEqual(result.returncode, 0)
