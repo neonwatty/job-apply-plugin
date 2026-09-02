@@ -152,6 +152,8 @@ REPLAY_TRANSITIONS = {"started", "reviewed"}
 REPLAY_ATS = {"ashby", "greenhouse", "lever", "linkedin-easy-apply"}
 SESSION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 PENDING_REFERENCE = re.compile(r"^pending_[a-f0-9]{32}$")
+LEGACY_PENDING_FIELD_KEYS = frozenset({"question", "state", "answerKey", "sensitive"})
+_ATS_UNSET = object()
 CLAIM_LEASE_SECONDS = 300
 CLAIM_HEARTBEAT_SECONDS = 60
 OVERVIEW_DIGEST_CACHE_SECONDS = 30
@@ -723,6 +725,100 @@ def _scope_fingerprint(value: dict[str, Any]) -> str:
 def _question_fingerprint(value: str) -> str:
     normalized = " ".join(value.split()).casefold()
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def _legacy_pending_reference(application_id: str, field: dict[str, Any]) -> str:
+    """Project a stable opaque identity without persisting or returning legacy text."""
+
+    digest = hashlib.sha256(
+        _canonical_json({"applicationId": application_id, "pendingField": field}).encode(
+            "utf-8"
+        )
+    ).hexdigest()
+    return f"pending_{digest[:32]}"
+
+
+def _project_legacy_session(
+    session: dict[str, Any], expected_ats: Any = _ATS_UNSET
+) -> dict[str, Any]:
+    """Return a value-free modern view of the exact closed 1.2 pending shape."""
+
+    pending_fields = session.get("pendingFields", [])
+    if not isinstance(pending_fields, list):
+        _validate_session_document(session)
+        return session
+    if not any(
+        isinstance(value, dict) and "reference" not in value
+        for value in pending_fields
+    ):
+        _validate_session_document(session)
+        return session
+
+    application_id = _safe_session_id(session.get("applicationId", ""))
+    if any(
+        isinstance(value, dict) and "reference" in value
+        for value in pending_fields
+    ):
+        raise StoreError("legacy and modern pending fields cannot be mixed")
+    _validate_optional_strings(session, {"company", "role", "url"}, "session")
+    canonical_ats_supplied = expected_ats is not _ATS_UNSET
+    ats = expected_ats if canonical_ats_supplied else session.get("ats")
+    legacy_scope_fingerprint = (
+        _scope_fingerprint({"ats": ats})
+        if isinstance(ats, str) and ats
+        else None
+    )
+    projected = copy.deepcopy(session)
+    if canonical_ats_supplied:
+        projected["ats"] = copy.deepcopy(expected_ats)
+    for legacy_job_field in ("company", "role", "url"):
+        projected.pop(legacy_job_field, None)
+    projected_fields: list[dict[str, Any]] = []
+    references: set[str] = set()
+    for value in pending_fields:
+        field = _require_object(value, "pending field")
+        if not set(field).issubset(LEGACY_PENDING_FIELD_KEYS):
+            raise StoreError("pending field reference is invalid")
+        _validate_optional_strings(
+            field, {"question", "state", "answerKey"}, "pending field"
+        )
+        if "state" in field and field["state"] not in ANSWER_STATES:
+            raise StoreError("pending field state is unsupported")
+        if "sensitive" in field and not isinstance(field["sensitive"], bool):
+            raise StoreError("pending field sensitive must be a boolean")
+        candidate = copy.deepcopy(field)
+        question = candidate.pop("question", None)
+        if isinstance(question, str) and question.strip():
+            candidate["questionFingerprint"] = _question_fingerprint(question)
+        if legacy_scope_fingerprint is not None:
+            candidate["scopeFingerprint"] = legacy_scope_fingerprint
+        candidate["reference"] = _legacy_pending_reference(application_id, field)
+        reference = candidate.get("reference")
+        if reference in references:
+            raise StoreError("pending field references must be unique")
+        references.add(reference)
+        projected_fields.append(candidate)
+    projected["pendingFields"] = projected_fields
+    _validate_session_document(projected)
+    return projected
+
+
+def _pending_reference_identity(field: dict[str, Any]) -> str:
+    """Match durable field meaning while excluding refreshed match evidence."""
+
+    return _canonical_json(
+        {
+            key: copy.deepcopy(value)
+            for key, value in field.items()
+            if key
+            not in {
+                "reference",
+                "matchConfidence",
+                "matchReasonCodes",
+                "matchAnswerRevision",
+            }
+        }
+    )
 
 
 def _job_origin(origin: str) -> str:
@@ -1321,6 +1417,7 @@ def _validate_session_document(session: dict[str, Any]) -> None:
         "fieldClass", "scopeFingerprint", "matchConfidence", "matchReasonCodes",
         "matchAnswerRevision", "questionFingerprint",
     }
+    pending_references: set[str] = set()
     for value in pending_fields:
         field = _require_object(value, "pending field")
         if set(field) - pending_allowed:
@@ -1334,6 +1431,9 @@ def _validate_session_document(session: dict[str, Any]) -> None:
             raise StoreError("pending field sensitive must be a boolean")
         if "reference" not in field or not isinstance(field["reference"], str) or PENDING_REFERENCE.fullmatch(field["reference"]) is None:
             raise StoreError("pending field reference is invalid")
+        if field["reference"] in pending_references:
+            raise StoreError("pending field references must be unique")
+        pending_references.add(field["reference"])
         if "fieldClass" in field and (
             not isinstance(field["fieldClass"], str)
             or re.fullmatch(r"[a-z][a-z0-9_]{0,63}", field["fieldClass"]) is None
@@ -2181,7 +2281,7 @@ class Store:
                     if descriptor >= 0:
                         os.close(descriptor)
                 validate_version(session, "session")
-                _validate_session_document(session)
+                _project_legacy_session(session)
                 if session["applicationId"] != application_id:
                     raise StoreError("session application id does not match path")
             closed_directory = self.sessions_path.lstat()
@@ -4783,11 +4883,9 @@ class Store:
             if reason_code in {"needs_information", "awaiting_human_review"}:
                 session_path = self._session_path(job["id"])
                 if session_path.exists():
-                    session = read_json_object(session_path, "session")
-                    validate_version(session, "session")
-                    _validate_session_document(session)
-                    if session["applicationId"] != job["id"]:
-                        raise StoreError("session application id does not match path")
+                    session = self._read_session_projection(
+                        session_path, job["id"], job.get("ats")
+                    )
                     missing_count = len(session.get("pendingFields", []))
                     session_revision = self._session_revision(session)
                     session_projection = {
@@ -5856,11 +5954,9 @@ class Store:
             answers_document = self._load_answers_document()
             session_path = self._session_path(job_id)
             if session_path.exists():
-                stored_session = read_json_object(session_path, "session")
-                validate_version(stored_session, "session")
-                _validate_session_document(stored_session)
-                if stored_session["applicationId"] != job_id:
-                    raise StoreError("session application id does not match path")
+                stored_session = self._read_session_projection(
+                    session_path, job_id, job.get("ats")
+                )
                 session = {
                     key: stored_session[key]
                     for key in (
@@ -6012,9 +6108,7 @@ class Store:
             path = self._session_path(job_id)
             if not path.exists():
                 raise StoreError("answer resolution session does not exist")
-            session = read_json_object(path, "session")
-            validate_version(session, "session")
-            _validate_session_document(session)
+            session = self._read_session_projection(path, job_id, job.get("ats"))
             field = next(
                 (
                     item for item in session.get("pendingFields", [])
@@ -6171,7 +6265,9 @@ class Store:
                 raise StoreError("coordinator journal cannot be reconciled")
             session = operation["session"]
             path = self._session_path(job_id)
-            existing = read_json_object(path, "session")
+            existing = self._read_session_projection(
+                path, job_id, current.get("ats")
+            )
             existing_revision = self._session_revision(existing)
             if existing_revision == operation["expectedSessionRevision"]:
                 atomic_write_json(path, session)
@@ -6261,9 +6357,7 @@ class Store:
             path = self._session_path(job_id)
             if not path.exists():
                 raise StoreError("answer resolution session does not exist")
-            session = read_json_object(path, "session")
-            validate_version(session, "session")
-            _validate_session_document(session)
+            session = self._read_session_projection(path, job_id, job.get("ats"))
             if self._session_revision(session) != expected_session_revision:
                 raise StoreError("session revision conflict")
             pending = session.get("pendingFields", [])
@@ -6498,11 +6592,9 @@ class Store:
                 raise StoreError("job must be trashed before permanent deletion")
             session_path = self._session_path(job_id)
             if session_path.exists():
-                session = read_json_object(session_path, "session")
-                validate_version(session, "session")
-                _validate_session_document(session)
-                if session["applicationId"] != job_id:
-                    raise StoreError("session application id does not match path")
+                session = self._read_session_projection(
+                    session_path, job_id, current.get("ats")
+                )
                 if session["status"] not in {"completed", "abandoned"}:
                     raise StoreError("job is referenced by a nonterminal application session")
             del document["jobs"][job_id]
@@ -7462,6 +7554,80 @@ class Store:
     def _session_path(self, application_id: str) -> Path:
         return self.sessions_path / f"{_safe_session_id(application_id)}.json"
 
+    def _read_session_projection(
+        self,
+        path: Path,
+        application_id: str | None = None,
+        expected_ats: Any = _ATS_UNSET,
+    ) -> dict[str, Any]:
+        session = read_json_object(path, "session")
+        validate_version(session, "session")
+        pending_fields = session.get("pendingFields", [])
+        if not isinstance(pending_fields, list):
+            _validate_session_document(session)
+        legacy_pending = any(
+            isinstance(value, dict) and "reference" not in value
+            for value in pending_fields
+        )
+        projected = _project_legacy_session(session, expected_ats)
+        if legacy_pending and self.answers_path.exists():
+            answers = self._load_answers_document()
+            ats = (
+                expected_ats
+                if expected_ats is not _ATS_UNSET
+                else session.get("ats")
+            )
+            scope = {"ats": ats} if isinstance(ats, str) and ats else {}
+            for raw, field in zip(
+                session.get("pendingFields", []), projected["pendingFields"]
+            ):
+                question = raw.get("question")
+                bound_key = raw.get("answerKey")
+                answer = (
+                    self._get_answer_record(bound_key, document=answers)
+                    if isinstance(bound_key, str) and bound_key
+                    else None
+                )
+                if answer is None:
+                    continue
+                if (
+                    isinstance(question, str)
+                    and question.strip()
+                    and isinstance(answer.get("question"), str)
+                    and answer["question"].strip()
+                ):
+                    try:
+                        match = ANSWER_MATCH_MODULE.rank_candidates(
+                            question=question,
+                            scope=scope,
+                            field_class="general",
+                            sensitivity=(
+                                answer.get("sensitivity", "none")
+                                if answer.get("sensitivity", "none") != "none"
+                                else "high"
+                                if raw.get("sensitive") is True
+                                or raw.get("state") == "sensitive"
+                                else "none"
+                            ),
+                            candidates=[self._semantic_candidate(answer)],
+                            limit=1,
+                        )[0]
+                    except Exception:
+                        raise StoreError(
+                            "pending field semantic match is invalid"
+                        ) from None
+                    field["matchConfidence"] = match["confidenceBand"]
+                    field["matchReasonCodes"] = match["reasonCodes"]
+                else:
+                    field["matchConfidence"] = "none"
+                    field["matchReasonCodes"] = ["no_semantic_match"]
+                field["matchAnswerRevision"] = answer.get("revision", 1)
+            _validate_session_document(projected)
+        expected_id = application_id if application_id is not None else path.stem
+        if projected["applicationId"] != expected_id:
+            raise StoreError("session application id does not match path")
+        return projected
+
     @staticmethod
     def _readiness_blocker_type(code: str) -> str:
         if "upload" in code:
@@ -7560,7 +7726,7 @@ class Store:
         now: str | None = None,
         *,
         expected_attempt_revision: int | None = None,
-        expected_ats: str | None = None,
+        expected_ats: Any = _ATS_UNSET,
         internal_approvals: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         allowed = {
@@ -7586,8 +7752,9 @@ class Store:
         created_at = incoming.get("createdAt")
         existing = None
         if path.exists():
-            existing = read_json_object(path, "session")
-            _validate_session_document(existing)
+            existing = self._read_session_projection(
+                path, application_id, expected_ats
+            )
             created_at = created_at or existing.get("createdAt")
         pending_input = incoming.get("pendingFields", [])
         if not isinstance(pending_input, list):
@@ -7596,12 +7763,7 @@ class Store:
         reusable: dict[str, list[str]] = {}
         if existing is not None:
             for field in existing.get("pendingFields", []):
-                identity = {
-                    key: copy.deepcopy(value)
-                    for key, value in field.items()
-                    if key != "reference"
-                }
-                reusable.setdefault(_canonical_json(identity), []).append(
+                reusable.setdefault(_pending_reference_identity(field), []).append(
                     field["reference"]
                 )
         pending_fields = []
@@ -7620,7 +7782,13 @@ class Store:
                 copied["questionFingerprint"] = _question_fingerprint(question)
             raw_scope = copied.pop("scope", None)
             if raw_scope is None:
-                ats = expected_ats or incoming.get("ats")
+                ats = (
+                    expected_ats
+                    if expected_ats is not _ATS_UNSET
+                    else incoming.get("ats")
+                    if "ats" in incoming
+                    else (existing or {}).get("ats")
+                )
                 raw_scope = {"ats": ats} if isinstance(ats, str) and ats else {}
             try:
                 scope_object = _require_object(raw_scope, "pending field scope")
@@ -7666,7 +7834,7 @@ class Store:
                 copied["matchConfidence"] = "none"
                 copied["matchReasonCodes"] = ["no_semantic_match"]
                 copied["matchAnswerRevision"] = answer.get("revision", 1)
-            references = reusable.get(_canonical_json(copied), [])
+            references = reusable.get(_pending_reference_identity(copied), [])
             copied["reference"] = references.pop(0) if references else f"pending_{uuid.uuid4().hex}"
             pending_fields.append(copied)
         timestamp = now or utc_now()
@@ -7763,6 +7931,10 @@ class Store:
                 "updatedAt", "attemptRevision",
             }
         }
+        if expected_ats is not _ATS_UNSET:
+            durable_input["ats"] = copy.deepcopy(expected_ats)
+        elif "ats" not in incoming and "ats" in (existing or {}):
+            durable_input["ats"] = copy.deepcopy(existing["ats"])
         current_references = {field["reference"] for field in pending_fields}
         carried_approvals = (
             existing.get("approvals", [])
@@ -7912,8 +8084,7 @@ class Store:
             path = self._session_path(job_id)
             if not path.exists():
                 raise StoreError("grouped approval session does not exist")
-            session = read_json_object(path, "session")
-            _validate_session_document(session)
+            session = self._read_session_projection(path, job_id, job.get("ats"))
             if self._session_revision(session) != expected_session_revision:
                 raise StoreError("session revision conflict")
             pending = {
@@ -8064,7 +8235,7 @@ class Store:
             path = self._session_path(job_id)
             if job is None or job.get("revision") != expected_job_revision or not path.exists():
                 raise StoreError("grouped approval state changed")
-            session = read_json_object(path, "session")
+            session = self._read_session_projection(path, job_id, job.get("ats"))
             if self._session_revision(session) != expected_session_revision:
                 raise StoreError("session revision conflict")
             pending = {
@@ -8129,12 +8300,13 @@ class Store:
         path = self._session_path(application_id)
         if not path.exists():
             raise StoreError("session does not exist")
-        session = read_json_object(path, "session")
-        validate_version(session, "session")
-        _validate_session_document(session)
-        if session["applicationId"] != application_id:
-            raise StoreError("session application id does not match path")
-        return session
+        job = (
+            self._load_jobs_document()["jobs"].get(application_id)
+            if self.jobs_path.exists()
+            else None
+        )
+        return self._read_session_projection(path, application_id, job.get("ats")) \
+            if job is not None else self._read_session_projection(path, application_id)
 
     def list_sessions(self) -> list[dict[str, Any]]:
         self.initialize()
@@ -8142,12 +8314,13 @@ class Store:
 
     def _list_sessions_uninitialized(self) -> list[dict[str, Any]]:
         sessions: list[dict[str, Any]] = []
+        jobs = (
+            self._load_jobs_document()["jobs"] if self.jobs_path.exists() else {}
+        )
         for path in sorted(self.sessions_path.glob("*.json")):
-            session = read_json_object(path, "session")
-            validate_version(session, "session")
-            _validate_session_document(session)
-            if path.stem != session["applicationId"]:
-                raise StoreError("session application id does not match path")
+            job = jobs.get(path.stem)
+            session = self._read_session_projection(path, path.stem, job.get("ats")) \
+                if job is not None else self._read_session_projection(path, path.stem)
             sessions.append(session)
         return sessions
 

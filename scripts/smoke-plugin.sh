@@ -207,6 +207,47 @@ coordinator_path.write_text(json.dumps(coordinator), encoding="utf-8")
 store_spec = importlib.util.spec_from_file_location("smoke_job_apply_store", root / "scripts" / "job-apply-store.py")
 store_module = importlib.util.module_from_spec(store_spec)
 store_spec.loader.exec_module(store_module)
+legacy_session_path = attention_store / "sessions" / "legacy-smoke.json"
+legacy_pending = [{
+    "question": "Private legacy compatibility question?",
+    "state": "missing",
+    "answerKey": "private.legacy.answer",
+    "sensitive": True,
+}]
+legacy_session_path.write_text(json.dumps({
+    "schemaVersion": 1,
+    "applicationId": "legacy-smoke",
+    "status": "active",
+    "ats": "greenhouse",
+    "step": "questions",
+    "answerKeys": ["private.legacy.answer"],
+    "pendingFields": legacy_pending,
+    "createdAt": "2026-08-01T00:00:00Z",
+    "updatedAt": "2026-08-01T00:01:00Z",
+}), encoding="utf-8")
+legacy_bytes = legacy_session_path.read_bytes()
+legacy_first = attention_command("session-load", None, "--id", "legacy-smoke")
+legacy_second = attention_command("session-load", None, "--id", "legacy-smoke")
+legacy_listed = attention_command("session-list")
+if legacy_first != legacy_second or legacy_session_path.read_bytes() != legacy_bytes:
+    raise SystemExit("packaged legacy session projection was unstable or mutated bytes")
+legacy_serialized = json.dumps([legacy_first, legacy_listed])
+if "Private legacy compatibility question?" in legacy_serialized or "private.legacy.answer" not in legacy_serialized:
+    raise SystemExit("packaged legacy session projection leaked question text or lost answer linkage")
+legacy_reference = legacy_first["pendingFields"][0].get("reference", "")
+if re.fullmatch(r"pending_[a-f0-9]{32}", legacy_reference) is None:
+    raise SystemExit("packaged legacy session projection did not create an opaque reference")
+legacy_normalized = attention_command("session-save", {
+    "status": "active",
+    "step": "questions",
+    "answerKeys": ["private.legacy.answer"],
+    "pendingFields": legacy_pending,
+}, "--id", "legacy-smoke")
+if legacy_normalized["pendingFields"][0].get("reference") != legacy_reference:
+    raise SystemExit("packaged legacy session normalization changed its projected reference")
+legacy_persisted = json.loads(legacy_session_path.read_text(encoding="utf-8"))
+if legacy_persisted != legacy_normalized or any("question" in field for field in legacy_persisted["pendingFields"]):
+    raise SystemExit("packaged legacy session normalization was incomplete")
 attention_projection = store_module.Store(attention_store).list_needs_attention()
 if [item["reasonCode"] for item in attention_projection["items"]] != ["expired_agent_attempt", "claimless_interrupted_attempt", "awaiting_human_review", "needs_information"]:
     raise SystemExit("packaged Needs Attention taxonomy or ordering failed")
@@ -431,8 +472,8 @@ if codex_manifest.get("name") != "job-apply":
     raise SystemExit(".codex-plugin/plugin.json name must be job-apply")
 if not re.fullmatch(r"\d+\.\d+\.\d+", codex_manifest.get("version", "")):
     raise SystemExit(".codex-plugin/plugin.json version must be strict SemVer")
-if codex_manifest["version"] != "1.3.0":
-    raise SystemExit("human-attention package identity must be 1.3.0")
+if codex_manifest["version"] != "1.3.1":
+    raise SystemExit("legacy-session compatibility package identity must be 1.3.1")
 if codex_manifest.get("skills") != "./skills/":
     raise SystemExit(".codex-plugin/plugin.json must expose ./skills/")
 if codex_manifest.get("interface", {}).get("displayName") != "Job Apply":
