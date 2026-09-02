@@ -167,6 +167,57 @@ def validate_stable_live_request(value: Any) -> dict[str, Any]:
     return exact
 
 
+def validate_live_password_request(value: Any) -> dict[str, Any]:
+    """Validate the exact Workday password-account canary request."""
+
+    exact = validate_live_request(value)
+    binding = exact["binding"]
+    if binding.get("flowKind") != "password_candidate_account":
+        raise LiveCanaryExecutorError("password canary flow binding is invalid")
+    resolved = ACCOUNTS.normalize_realm(exact["portalUrl"])
+    if (
+        resolved.get("status") != "resolved"
+        or resolved.get("adapterId") != "workday"
+        or resolved.get("realmRef") != binding.get("realmRef")
+        or resolved.get("flowKind") != binding.get("flowKind")
+    ):
+        raise LiveCanaryExecutorError("password canary realm binding is invalid")
+    component_fields = (
+        "accountFormFingerprint", "emailControlFingerprint",
+        "passwordControlFingerprint", "createAccountControlFingerprint",
+    )
+    aggregate = _fingerprint(":".join(exact[field] for field in component_fields))
+    if aggregate != binding.get("accountCreationControlsFingerprint"):
+        raise LiveCanaryExecutorError("password canary aggregate binding is invalid")
+    for field in component_fields:
+        if binding.get(field) != exact[field]:
+            raise LiveCanaryExecutorError("password canary component binding is invalid")
+    if binding.get("portalFingerprint") != _fingerprint(exact["portalUrl"]):
+        raise LiveCanaryExecutorError("password canary portal binding is invalid")
+    if binding.get("portalNameFingerprint") != _fingerprint(exact["portalName"]):
+        raise LiveCanaryExecutorError("password canary portal name binding is invalid")
+    return exact
+
+
+def validate_stable_live_password_request(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict) or "capabilityRef" in value:
+        raise LiveCanaryExecutorError("stable password canary request is invalid")
+    try:
+        final_scope = CANARY.validate_final_scope(value.get("binding"))
+        exact = validate_live_password_request({
+            **value,
+            "binding": CANARY.execution_binding(
+                final_scope, "00000000-0000-4000-8000-000000000000"
+            ),
+            "capabilityRef": "canary_" + "0" * 64,
+        })
+    except (CANARY.CanaryAuthorityError, LiveCanaryExecutorError) as error:
+        raise LiveCanaryExecutorError(str(error)) from None
+    exact.pop("capabilityRef")
+    exact["binding"] = final_scope
+    return exact
+
+
 class LiveAccountCanaryExecutor:
     """Closed Store-owned T007 boundary with one native email-only adapter."""
 
@@ -199,6 +250,32 @@ class LiveAccountCanaryExecutor:
         self._store.prepare_live_email_only_account_execution(exact, binding)
         capability = self._authority.issue(binding, approval_ref, now=now)
         return self.execute(
+            {**exact, "binding": binding, "capabilityRef": capability["capabilityRef"]},
+            now=now,
+        )
+
+    def execute_password(
+        self, request: dict[str, Any], *, now: datetime,
+    ) -> dict[str, Any]:
+        exact = validate_live_password_request(request)
+        if getattr(self._native_provider, "provider_id", None) != "macos-workday-account":
+            raise LiveCanaryExecutorError("live Workday native boundary is unavailable")
+        return self._store.execute_live_password_account(
+            exact, authority=self._authority, provider=self._native_provider, now=now,
+        )
+
+    def execute_approved_password(
+        self, request: dict[str, Any], approval_ref: str, *,
+        owner_label: str, now: datetime,
+    ) -> dict[str, Any]:
+        exact = validate_stable_live_password_request(request)
+        claim = self._store.acquire_or_recover_live_password_claim(
+            exact, owner_label=owner_label,
+        )
+        binding = CANARY.execution_binding(exact["binding"], claim["claimId"])
+        self._store.prepare_live_password_account_execution(exact, binding)
+        capability = self._authority.issue(binding, approval_ref, now=now)
+        return self.execute_password(
             {**exact, "binding": binding, "capabilityRef": capability["capabilityRef"]},
             now=now,
         )

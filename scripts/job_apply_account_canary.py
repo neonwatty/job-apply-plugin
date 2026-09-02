@@ -70,7 +70,14 @@ def validate_binding(value: Any) -> dict[str, Any]:
     oracle_fields = legacy_fields | {
         "flowKind", "termsDocumentFingerprint", *oracle_component_fields,
     }
-    if not isinstance(value, dict) or set(value) not in (legacy_fields, oracle_fields):
+    password_component_fields = {
+        "accountFormFingerprint", "emailControlFingerprint",
+        "passwordControlFingerprint", "createAccountControlFingerprint",
+    }
+    password_fields = legacy_fields | {"flowKind", *password_component_fields}
+    if not isinstance(value, dict) or set(value) not in (
+        legacy_fields, oracle_fields, password_fields
+    ):
         raise CanaryAuthorityError("canary binding is invalid")
     if set(value) == oracle_fields:
         if value["flowKind"] != "email_only_candidate_profile":
@@ -89,6 +96,19 @@ def validate_binding(value: Any) -> dict[str, Any]:
             "accountFormFingerprint", "emailControlFingerprint",
             "termsControlFingerprint", "termsDocumentFingerprint",
             "nextControlFingerprint",
+        ))
+        aggregate = "sha256:" + hashlib.sha256(components.encode("utf-8")).hexdigest()
+        if aggregate != value["accountCreationControlsFingerprint"]:
+            raise CanaryAuthorityError("canary aggregate control binding is invalid")
+    elif set(value) == password_fields:
+        if value["flowKind"] != "password_candidate_account":
+            raise CanaryAuthorityError("canary flow binding is invalid")
+        for field in password_component_fields:
+            if not isinstance(value[field], str) or FINGERPRINT.fullmatch(value[field]) is None:
+                raise CanaryAuthorityError("canary component binding is invalid")
+        components = ":".join(value[field] for field in (
+            "accountFormFingerprint", "emailControlFingerprint",
+            "passwordControlFingerprint", "createAccountControlFingerprint",
         ))
         aggregate = "sha256:" + hashlib.sha256(components.encode("utf-8")).hexdigest()
         if aggregate != value["accountCreationControlsFingerprint"]:
@@ -124,13 +144,18 @@ def validate_final_scope(value: Any) -> dict[str, Any]:
 
 
 def validate_preparation_scope(value: Any) -> dict[str, Any]:
-    fields = {
+    base_fields = {
         "jobId", "jobRevision", "realmRef", "accountRevision",
         "settingsRevision", "portalFingerprint", "portalNameFingerprint",
         "approvalRevision",
     }
-    if not isinstance(value, dict) or set(value) != fields:
+    fields = set(value) if isinstance(value, dict) else set()
+    if fields not in (base_fields, base_fields | {"flowKind"}):
         raise CanaryAuthorityError("claim-independent preparation scope is invalid")
+    if "flowKind" in value and value["flowKind"] not in {
+        "password_candidate_account", "email_only_candidate_profile"
+    }:
+        raise CanaryAuthorityError("canary flow binding is invalid")
     if not isinstance(value["jobId"], str) or not value["jobId"]:
         raise CanaryAuthorityError("canary job binding is invalid")
     if not isinstance(value["realmRef"], str) or REALM_REF.fullmatch(value["realmRef"]) is None:
@@ -147,13 +172,16 @@ def validate_preparation_scope(value: Any) -> dict[str, Any]:
 
 def preparation_scope(binding: dict[str, Any]) -> dict[str, Any]:
     source = validate_final_scope(binding) if "claimId" not in binding else _without_claim(binding)
-    return validate_preparation_scope({
+    scope = {
         key: source[key] for key in (
             "jobId", "jobRevision", "realmRef", "accountRevision",
             "settingsRevision", "portalFingerprint", "portalNameFingerprint",
             "approvalRevision",
         )
-    })
+    }
+    if "flowKind" in source:
+        scope["flowKind"] = source["flowKind"]
+    return validate_preparation_scope(scope)
 
 
 def execution_binding(final_scope: dict[str, Any], claim_id: str) -> dict[str, Any]:

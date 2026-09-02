@@ -6857,6 +6857,167 @@ class StoreTests(unittest.TestCase):
         self.assertTrue(failed["attentionHandoff"])
         self.assertIsNone(second._load_account_operation_journal()["operation"])
 
+    def _prepared_workday_canary(self, suffix, *, strategy="unique_per_realm"):
+        store = STORE_MODULE.Store(self.home / f".job-apply-workday-{suffix}", self.legacy)
+        store.initialize()
+        store.replace_profile(
+            {"firstName": "Synthetic"}, store.inspect_profile()["revision"], "user"
+        )
+        resume_path = self.home / f"workday-{suffix}.txt"
+        resume_path.write_text("Synthetic", encoding="utf-8")
+        resume = store.create_resume({
+            "id": f"workday-{suffix}", "label": "Synthetic", "path": str(resume_path),
+        })
+        url = f"https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/Phoenix/Engineer_{suffix}"
+        job = store.create_job({
+            "id": f"workday-job-{suffix}", "url": url, "role": "Synthetic",
+            "company": "Synthetic", "resumeId": resume["id"],
+        })
+        ready = store.transition_job(job["id"], "ready", job["revision"])
+        acquired = store.acquire_ready_job(job["id"], "workday-test", ready["revision"])
+        settings = store.get_automation_settings()
+        settings = store.update_automation_settings({
+            "enabled": True, "automaticAccountCreation": True,
+            "signupEmail": "private@example.invalid", "passwordStrategy": strategy,
+        }, settings["revision"])
+        realm = store.resolve_account_realm(url)
+        account = store.create_employer_account(url)
+        controls = {
+            "accountFormFingerprint": "sha256:" + "1" * 64,
+            "emailControlFingerprint": "sha256:" + "2" * 64,
+            "passwordControlFingerprint": "sha256:" + "3" * 64,
+            "createAccountControlFingerprint": "sha256:" + "4" * 64,
+        }
+        aggregate = "sha256:" + hashlib.sha256(
+            ":".join(controls.values()).encode()
+        ).hexdigest()
+        portal_name = "Acme Workday"
+        binding = {
+            "jobId": job["id"], "jobRevision": acquired["job"]["revision"],
+            "realmRef": realm["realmRef"], "accountRevision": account["revision"],
+            "settingsRevision": settings["revision"],
+            "portalFingerprint": "sha256:" + hashlib.sha256(url.encode()).hexdigest(),
+            "portalNameFingerprint": "sha256:" + hashlib.sha256(portal_name.encode()).hexdigest(),
+            "accountCreationControlsFingerprint": aggregate,
+            "approvalRevision": 1, "flowKind": "password_candidate_account",
+            **controls,
+        }
+        request = {
+            "binding": binding, "portalName": portal_name, "portalUrl": url, **controls,
+        }
+        return store, request, account
+
+    def test_live_workday_account_uses_private_email_and_reuses_active_realm(self):
+        store, request, account = self._prepared_workday_canary("success")
+        authority_module = STORE_MODULE.CANARY_EXECUTOR_MODULE.CANARY
+        ledger = authority_module.DurableT007ApprovalLedger(
+            self.home / "workday-success-ledger.json"
+        )
+        approval = "approval_" + "a" * 64
+        ledger.record_exact_approval(approval, request["binding"])
+        authority = authority_module.OneAttemptCanaryAuthority(ledger)
+        calls = []
+
+        class Provider:
+            provider_id = "macos-workday-account"
+
+            def execute(inner, packet, private_email):
+                calls.append(packet["expectedClaimId"])
+                self.assertEqual(private_email(), "private@example.invalid")
+                self.assertEqual(packet["strategy"], "unique_per_realm")
+                return {
+                    "providerId": inner.provider_id,
+                    "credentialProviderId": "macos-keychain",
+                    "credentialRef": STORE_MODULE.CREDENTIALS_MODULE.credential_reference(
+                        "unique_per_realm", account["realmRef"]
+                    ),
+                    "credentialVersion": 1, "reused": False,
+                    "outcome": "active", "retryAllowed": False,
+                    "finalActionAuthorized": False, "createAccountActivations": 1,
+                    "emailControlRemoved": True, "passwordControlRemoved": True,
+                }
+
+        executor = STORE_MODULE.CANARY_EXECUTOR_MODULE.LiveAccountCanaryExecutor(
+            authority, store, Provider()
+        )
+        with mock.patch.object(STORE_MODULE.sys, "platform", "darwin"):
+            result = executor.execute_approved_password(
+                request, approval, owner_label="workday-test",
+                now=datetime(2026, 9, 2, tzinfo=timezone.utc),
+            )
+        self.assertTrue(result["authorized"])
+        self.assertFalse(result["finalActionAuthorized"])
+        self.assertEqual(len(calls), 1)
+        persisted = store.get_employer_account(account["realmRef"])
+        self.assertEqual(persisted["lifecycleState"], "active")
+        self.assertEqual(persisted["providerId"], "macos-keychain")
+        self.assertEqual(store.account_operation_status()["status"], "idle")
+        self.assertEqual(
+            store.employer_account_flow_decision(request["binding"]["jobId"])["decision"],
+            "reuse_active",
+        )
+        self.assertNotIn("private@example.invalid", json.dumps(result))
+
+    def test_workday_non_unique_strategies_route_to_human_attention(self):
+        for strategy in ("shared", "custom", "ask_each_time"):
+            store, request, _account = self._prepared_workday_canary(
+                f"strategy-{strategy}", strategy=strategy
+            )
+            decision = store.employer_account_flow_decision(request["binding"]["jobId"])
+            self.assertEqual(decision["decision"], "human_attention_required")
+            self.assertEqual(decision["reasonCode"], "password_strategy_requires_human")
+
+    def test_live_workday_challenges_create_typed_durable_handoffs(self):
+        outcomes = {
+            "email_verification_required": "email-verification-required",
+            "captcha_required": "captcha-required",
+            "mfa_required": "mfa-required",
+            "password_reset_required": "owner-input-required",
+            "ambiguous": "browser-state-uncertain",
+        }
+        for index, (outcome, blocker) in enumerate(outcomes.items(), start=1):
+            with self.subTest(outcome=outcome):
+                store, request, account = self._prepared_workday_canary(f"outcome-{index}")
+                authority_module = STORE_MODULE.CANARY_EXECUTOR_MODULE.CANARY
+                ledger = authority_module.DurableT007ApprovalLedger(
+                    self.home / f"workday-outcome-{index}.json"
+                )
+                approval = "approval_" + str(index) * 64
+                ledger.record_exact_approval(approval, request["binding"])
+                authority = authority_module.OneAttemptCanaryAuthority(ledger)
+
+                class Provider:
+                    provider_id = "macos-workday-account"
+
+                    def execute(inner, _packet, private_email):
+                        self.assertEqual(private_email(), "private@example.invalid")
+                        return {
+                            "providerId": inner.provider_id,
+                            "credentialProviderId": "macos-keychain",
+                            "credentialRef": STORE_MODULE.CREDENTIALS_MODULE.credential_reference(
+                                "unique_per_realm", account["realmRef"]
+                            ),
+                            "credentialVersion": 1, "reused": False,
+                            "outcome": outcome, "retryAllowed": False,
+                            "finalActionAuthorized": False, "createAccountActivations": 1,
+                            "emailControlRemoved": True, "passwordControlRemoved": True,
+                        }
+
+                executor = STORE_MODULE.CANARY_EXECUTOR_MODULE.LiveAccountCanaryExecutor(
+                    authority, store, Provider()
+                )
+                with mock.patch.object(STORE_MODULE.sys, "platform", "darwin"):
+                    result = executor.execute_approved_password(
+                        request, approval, owner_label="workday-test",
+                        now=datetime(2026, 9, 2, tzinfo=timezone.utc),
+                    )
+                self.assertFalse(result["authorized"])
+                self.assertFalse(result["retryAllowed"])
+                job_id = request["binding"]["jobId"]
+                self.assertEqual(store.get_job(job_id)["status"], "needs_info")
+                session = store.load_session(job_id)
+                self.assertEqual(session["blockers"][0]["code"], blocker)
+                self.assertNotIn("private@example.invalid", json.dumps(session))
     def test_live_oracle_composes_journal_t007_private_email_and_closed_outcome(self):
         self.store.initialize()
         self.store.replace_profile({"email": "private@example.invalid"}, 1, "user")

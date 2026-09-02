@@ -81,6 +81,55 @@ class LiveCanaryExecutorTests(unittest.TestCase):
         for forbidden in ("final", "application", "submit_application", "arbitrary", "script", "selector"):
             self.assertNotIn(forbidden, vocabulary)
 
+    def test_workday_request_is_exact_and_delegates_only_to_password_store_boundary(self):
+        url = "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/Phoenix/Engineer_R1"
+        name = "Acme Workday"
+        controls = {
+            "accountFormFingerprint": "sha256:" + "1" * 64,
+            "emailControlFingerprint": "sha256:" + "2" * 64,
+            "passwordControlFingerprint": "sha256:" + "3" * 64,
+            "createAccountControlFingerprint": "sha256:" + "4" * 64,
+        }
+        aggregate = "sha256:" + hashlib.sha256(
+            ":".join(controls.values()).encode()
+        ).hexdigest()
+        binding = {
+            **self.binding(url, name), **controls,
+            "flowKind": "password_candidate_account",
+            "realmRef": EXECUTOR.ACCOUNTS.normalize_realm(url)["realmRef"],
+            "accountCreationControlsFingerprint": aggregate,
+        }
+        request = {
+            "capabilityRef": "canary_" + "a" * 64,
+            "binding": binding, "portalName": name, "portalUrl": url,
+            **controls,
+        }
+        exact = EXECUTOR.validate_live_password_request(request)
+        self.assertEqual(exact["binding"]["flowKind"], "password_candidate_account")
+        for patch in (
+            {"portalUrl": url + "?token=secret"},
+            {"portalName": "Other Workday"},
+            {"passwordControlFingerprint": "sha256:" + "8" * 64},
+            {"action": "submit_application"},
+        ):
+            with self.subTest(patch=patch), self.assertRaises(EXECUTOR.LiveCanaryExecutorError):
+                EXECUTOR.validate_live_password_request({**request, **patch})
+
+        class Store:
+            def execute_live_password_account(inner, exact_request, *, authority, provider, now):
+                self.assertEqual(exact_request, exact)
+                return {"authorized": True, "finalActionAuthorized": False}
+
+        class Provider:
+            provider_id = "macos-workday-account"
+
+        executor = EXECUTOR.LiveAccountCanaryExecutor(object(), Store(), Provider())
+        result = executor.execute_password(
+            request, now=datetime(2026, 9, 2, tzinfo=timezone.utc)
+        )
+        self.assertTrue(result["authorized"])
+        self.assertFalse(result["finalActionAuthorized"])
+
     def test_email_only_request_requires_exact_terms_and_null_credential_controls(self):
         capability = "canary_" + "c" * 64
         url = "https://tenant.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/jobsearch/job/1/apply/email"
