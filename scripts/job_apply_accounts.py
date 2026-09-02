@@ -237,7 +237,14 @@ def discover_account_flow_capability(platform: str, adapter_registry: tuple[Any,
         capability = {"providerId": None, "state": "unsupported", "reasonCode": "account_flow_not_implemented_linux"}
     else:
         capability = {"providerId": None, "state": "unsupported", "reasonCode": "platform_unsupported"}
-    return {**capability, "discoveryMode": "side_effect_free"}
+    return {
+        "productionSeamReady": False,
+        "liveExecutionEnabled": False,
+        "workdayPasswordAccountReady": False,
+        "greenhouseAccountlessClassificationReady": False,
+        **capability,
+        "discoveryMode": "side_effect_free",
+    }
 
 
 def public_settings(record: dict[str, Any]) -> dict[str, Any]:

@@ -115,10 +115,11 @@ class WorkspaceServerTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertFalse(projection["capability"]["credentialOperationsReady"])
         account_flow = projection["capability"]["accountFlowAutomation"]
-        self.assertTrue(account_flow["productionSeamReady"])
+        expected_macos = sys.platform.startswith("darwin")
+        self.assertEqual(account_flow["productionSeamReady"], expected_macos)
         self.assertFalse(account_flow["liveExecutionEnabled"])
-        self.assertTrue(account_flow["workdayPasswordAccountReady"])
-        self.assertTrue(account_flow["greenhouseAccountlessClassificationReady"])
+        self.assertEqual(account_flow["workdayPasswordAccountReady"], expected_macos)
+        self.assertEqual(account_flow["greenhouseAccountlessClassificationReady"], expected_macos)
         self.assertNotIn("signupEmail", projection["settings"])
 
         status, _headers, updated = self.request(
