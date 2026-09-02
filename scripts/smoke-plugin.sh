@@ -190,6 +190,24 @@ review_session = {
     },
 }
 review = attention_command("claim-handoff", review_session, "--id", review["id"], "--token", review_claim["token"], "--status", "awaiting_review", "--expected-revision", str(review_attempt_revision))["job"]
+review_session_path = attention_store / "sessions" / f"{review['id']}.json"
+review_session_bytes = review_session_path.read_bytes()
+review_restart = attention_command(
+    "job-review-restart", None,
+    "--id", review["id"], "--owner", "private-restart-owner",
+    "--expected-revision", str(review["revision"]),
+    "--owner-confirmed-not-submitted",
+)
+if review_restart["job"]["status"] != "in_progress" or review_session_path.read_bytes() != review_session_bytes:
+    raise SystemExit("packaged review restart did not atomically preserve prior review evidence")
+review_session["attemptRevision"] = review_restart["job"]["revision"]
+review_session["readinessInput"]["attemptRevision"] = review_restart["job"]["revision"]
+review = attention_command(
+    "claim-handoff", review_session,
+    "--id", review["id"], "--token", review_restart["token"],
+    "--status", "awaiting_review",
+    "--expected-revision", str(review_restart["job"]["revision"]),
+)["job"]
 needs = attention_ready("needs-smoke", 4)
 needs_claim = attention_command("job-acquire", None, "--id", needs["id"], "--owner", "private-needs-owner", "--expected-revision", str(needs["revision"]))
 needs = attention_command("claim-handoff", {"status": "active", "step": "questions", "answerKeys": ["private.answer.key"], "pendingFields": [{"question": "Private question?", "state": "missing", "answerKey": "private.answer.key", "sensitive": True}]}, "--id", needs["id"], "--token", needs_claim["token"], "--status", "needs_info", "--expected-revision", str(needs_claim["job"]["revision"]))["job"]
@@ -253,7 +271,8 @@ if [item["reasonCode"] for item in attention_projection["items"]] != ["expired_a
     raise SystemExit("packaged Needs Attention taxonomy or ordering failed")
 attention_serialized = json.dumps(attention_projection)
 for forbidden in (
-    expired_claim["token"], "private-expired-owner", "private-review-owner",
+    expired_claim["token"], review_restart["token"], "private-expired-owner", "private-review-owner",
+    "private-restart-owner",
     "private-needs-owner", "Private question?", "private.answer.key", "answerKey",
     "tokenHash", "claimId", "ownerLabel", "operationId", "browserState",
     "Smoke Co",
@@ -472,8 +491,8 @@ if codex_manifest.get("name") != "job-apply":
     raise SystemExit(".codex-plugin/plugin.json name must be job-apply")
 if not re.fullmatch(r"\d+\.\d+\.\d+", codex_manifest.get("version", "")):
     raise SystemExit(".codex-plugin/plugin.json version must be strict SemVer")
-if codex_manifest["version"] != "1.3.1":
-    raise SystemExit("legacy-session compatibility package identity must be 1.3.1")
+if codex_manifest["version"] != "1.3.2":
+    raise SystemExit("review-restart package identity must be 1.3.2")
 if codex_manifest.get("skills") != "./skills/":
     raise SystemExit(".codex-plugin/plugin.json must expose ./skills/")
 if codex_manifest.get("interface", {}).get("displayName") != "Job Apply":

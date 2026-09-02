@@ -42,6 +42,7 @@ HISTORY_EVENTS = {
     "abandoned",
     "failed",
     "job-started",
+    "job-restarted",
     "claim-recovered",
     "job-blocked",
 }
@@ -2400,10 +2401,10 @@ class Store:
                 return document
             common = {"kind", "operationId", "jobId", "at", "historyEvent", "resultClaim"}
             transition = {"sourceStatus", "targetStatus", "expectedRevision"}
-            expected = common | (transition if kind == "acquire" else set())
+            expected = common | (transition if kind in {"acquire", "review_restart"} else set())
             if kind == "handoff":
                 expected = common | transition | {"session"}
-            if kind not in {"acquire", "recover", "handoff"} or set(operation) != expected:
+            if kind not in {"acquire", "review_restart", "recover", "handoff"} or set(operation) != expected:
                 raise StoreError("coordinator journal operation is invalid")
             job_id = _safe_session_id(operation.get("jobId", ""))
             if not all(
@@ -2415,13 +2416,16 @@ class Store:
             _validate_history_event_for_write(event)
             if event.get("applicationId") != job_id:
                 raise StoreError("coordinator history identity does not match")
-            if kind in {"acquire", "handoff"}:
+            if kind in {"acquire", "review_restart", "handoff"}:
                 revision = operation.get("expectedRevision")
                 if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
                     raise StoreError("coordinator journal revision is invalid")
             if kind == "acquire":
                 if operation.get("sourceStatus") != "ready" or operation.get("targetStatus") != "in_progress":
                     raise StoreError("coordinator acquisition transition is invalid")
+            if kind == "review_restart":
+                if operation.get("sourceStatus") != "awaiting_review" or operation.get("targetStatus") != "in_progress":
+                    raise StoreError("coordinator review restart transition is invalid")
             if kind == "handoff":
                 if operation.get("sourceStatus") != "in_progress" or operation.get("targetStatus") not in {"needs_info", "awaiting_review"}:
                     raise StoreError("coordinator handoff transition is invalid")
@@ -6487,6 +6491,136 @@ class Store:
                 "token": token,
             }
 
+    def restart_reviewed_job(
+        self,
+        job_id: str,
+        owner_label: str,
+        expected_revision: int,
+        owner_confirmed_not_submitted: bool = False,
+    ) -> dict[str, Any]:
+        """Atomically reclaim one reviewed, owner-confirmed unsubmitted job."""
+
+        self.initialize()
+        self._ensure_coordinator_files()
+        job_id = _safe_session_id(job_id)
+        if owner_confirmed_not_submitted is not True:
+            raise StoreError(
+                "review restart requires explicit owner confirmation that the application was not submitted"
+            )
+        if not isinstance(owner_label, str) or not owner_label.strip():
+            raise StoreError("owner label must be a non-empty string")
+        if (
+            not isinstance(expected_revision, int)
+            or isinstance(expected_revision, bool)
+            or expected_revision < 1
+        ):
+            raise StoreError("job revision is invalid")
+
+        with exclusive_file_lock(self.store_lock_path):
+            coordinator = self._load_coordinator_document()
+            current_claim = coordinator["claim"]
+            if current_claim is not None:
+                if self._now_datetime() >= self._parse_time(current_claim["expiresAt"]):
+                    raise StoreError("expired claim requires explicit same-job recovery")
+                raise StoreError("another live job claim already exists")
+
+            jobs = self._load_jobs_document()
+            job = jobs["jobs"].get(job_id)
+            if job is None or job.get("deletedAt") is not None:
+                raise StoreError("job does not exist")
+            if job["revision"] != expected_revision:
+                raise StoreError("job revision conflict")
+            if job["status"] != "awaiting_review":
+                raise StoreError("review restart requires an awaiting_review job")
+
+            session_path = self._session_path(job_id)
+            if not session_path.exists():
+                raise StoreError("review restart requires prior review evidence")
+            session = self._read_session_projection(
+                session_path, job_id, job.get("ats")
+            )
+            readiness = session.get("readiness")
+            if (
+                session.get("status") != "review"
+                or session.get("attemptRevision") != job["revision"] - 1
+                or session.get("pendingFields")
+                or session.get("blockers")
+                or readiness is None
+                or readiness.get("status") != "ready"
+                or readiness.get("evidenceKind")
+                != "agent_attested_current_attempt"
+                or readiness.get("attemptRevision")
+                != session.get("attemptRevision")
+                or readiness.get("blockerCodes")
+                or any(
+                    value != "passed"
+                    for value in readiness.get("assertions", {}).values()
+                )
+                or session.get("browserHandoff") != {
+                    "state": "ready_for_owner",
+                    "reasonCode": "final-review-required",
+                    "revision": 1,
+                }
+            ):
+                raise StoreError("review restart requires complete prior review evidence")
+            job_history = [
+                event
+                for event in self.read_history()
+                if event.get("applicationId") == job_id
+            ]
+            if (
+                not job_history
+                or job_history[-1].get("event") != "reviewed"
+                or job_history[-1].get("status") != "awaiting_review"
+            ):
+                raise StoreError("review restart requires prior reviewed history")
+
+            preflight = self._preflight_job_record(job)
+            resumes = self._load_resumes_document()["resumes"]
+            resume = resumes.get(preflight.get("resumeId"))
+            if (
+                not preflight["ready"]
+                or resume is None
+                or resume.get("storageKind") != "managed"
+            ):
+                raise StoreError("job is not ready with a current managed resume")
+
+            now_dt = self._now_datetime()
+            now = now_dt.isoformat(timespec="seconds").replace("+00:00", "Z")
+            token = self._new_claim_token()
+            claim = {
+                "claimId": str(uuid.uuid4()),
+                "jobId": job_id,
+                "ownerLabel": owner_label.strip(),
+                "tokenHash": self._token_hash(token),
+                "acquiredAt": now,
+                "heartbeatAt": now,
+                "expiresAt": (
+                    now_dt + timedelta(seconds=CLAIM_LEASE_SECONDS)
+                ).isoformat(timespec="seconds").replace("+00:00", "Z"),
+            }
+            operation_id = str(uuid.uuid4())
+            operation = {
+                "kind": "review_restart",
+                "operationId": operation_id,
+                "jobId": job_id,
+                "sourceStatus": "awaiting_review",
+                "targetStatus": "in_progress",
+                "expectedRevision": job["revision"],
+                "at": now,
+                "historyEvent": self._history_event_for_operation(
+                    operation_id, job, "job-restarted", "in_progress", now
+                ),
+                "resultClaim": claim,
+            }
+            self._commit_coordinator_operation_locked(operation)
+            return {
+                "job": self._load_jobs_document()["jobs"][job_id],
+                "resume": self._resume_for_acquisition(resume),
+                "claim": self._public_claim(claim),
+                "token": token,
+            }
+
     def heartbeat_claim(self, job_id: str, token: str) -> dict[str, Any]:
         self.initialize()
         self._ensure_coordinator_files()
@@ -9746,6 +9880,13 @@ def build_parser() -> argparse.ArgumentParser:
     job_acquire.add_argument("--id", required=True)
     job_acquire.add_argument("--owner", required=True)
     job_acquire.add_argument("--expected-revision", required=True, type=int)
+    job_review_restart = commands.add_parser("job-review-restart")
+    job_review_restart.add_argument("--id", required=True)
+    job_review_restart.add_argument("--owner", required=True)
+    job_review_restart.add_argument("--expected-revision", required=True, type=int)
+    job_review_restart.add_argument(
+        "--owner-confirmed-not-submitted", action="store_true"
+    )
     commands.add_parser("claim-status")
     claim_heartbeat = commands.add_parser("claim-heartbeat")
     claim_heartbeat.add_argument("--id", required=True)
@@ -10035,6 +10176,13 @@ def run(args: argparse.Namespace) -> Any:
         )
     if command == "job-acquire":
         return store.acquire_ready_job(args.id, args.owner, args.expected_revision)
+    if command == "job-review-restart":
+        return store.restart_reviewed_job(
+            args.id,
+            args.owner,
+            args.expected_revision,
+            owner_confirmed_not_submitted=args.owner_confirmed_not_submitted,
+        )
     if command == "claim-status":
         return store.claim_status()
     if command == "claim-heartbeat":

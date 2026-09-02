@@ -65,6 +65,11 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--id", required=True)
     start.add_argument("--owner", required=True)
     start.add_argument("--expected-revision", required=True, type=int)
+    restart = commands.add_parser("restart-review")
+    restart.add_argument("--id", required=True)
+    restart.add_argument("--owner", required=True)
+    restart.add_argument("--expected-revision", required=True, type=int)
+    restart.add_argument("--owner-confirmed-not-submitted", action="store_true")
     commands.add_parser("heartbeat")
     progress = commands.add_parser("progress")
     progress.add_argument("--input", required=True)
@@ -183,13 +188,27 @@ class AttemptBroker:
     def acquire(self, request: dict[str, Any]) -> dict[str, Any]:
         if self._token is not None or self.job_id is not None:
             raise ValueError("attempt already acquired")
-        if set(request) != {"command", "id", "owner", "expectedRevision"}:
+        command = request.get("command")
+        expected = {"command", "id", "owner", "expectedRevision"}
+        if command == "restart-review":
+            expected.add("ownerConfirmedNotSubmitted")
+        if set(request) != expected:
             raise ValueError("invalid request")
-        if request["command"] != "start" or not isinstance(request["expectedRevision"], int):
+        if command not in {"start", "restart-review"} or not isinstance(request["expectedRevision"], int):
             raise ValueError("invalid request")
-        acquired = self.store.acquire_ready_job(
-            request["id"], request["owner"], request["expectedRevision"]
-        )
+        if command == "start":
+            acquired = self.store.acquire_ready_job(
+                request["id"], request["owner"], request["expectedRevision"]
+            )
+        else:
+            acquired = self.store.restart_reviewed_job(
+                request["id"],
+                request["owner"],
+                request["expectedRevision"],
+                owner_confirmed_not_submitted=request[
+                    "ownerConfirmedNotSubmitted"
+                ] is True,
+            )
         self.job_id = request["id"]
         self._token = acquired.pop("token")
         acquired.pop("claim", None)
@@ -369,11 +388,15 @@ def request_broker(root: Path, request: dict[str, Any], start: bool = False) -> 
 
 def run_client(args: argparse.Namespace) -> int:
     root = resolve_root(args.root)
-    if args.command == "start":
+    if args.command in {"start", "restart-review"}:
         request = {
-            "command": "start", "id": args.id, "owner": args.owner,
+            "command": args.command, "id": args.id, "owner": args.owner,
             "expectedRevision": args.expected_revision,
         }
+        if args.command == "restart-review":
+            request["ownerConfirmedNotSubmitted"] = (
+                args.owner_confirmed_not_submitted
+            )
     elif args.command == "heartbeat":
         request = {"command": "heartbeat"}
     elif args.command == "progress":
@@ -383,7 +406,9 @@ def run_client(args: argparse.Namespace) -> int:
             "command": "handoff", "status": args.status,
             "session": read_json_object(args.input),
         }
-    response = request_broker(root, request, start=args.command == "start")
+    response = request_broker(
+        root, request, start=args.command in {"start", "restart-review"}
+    )
     emit(response)
     return 0 if response.get("ok") else 2
 

@@ -72,6 +72,29 @@ class AttemptProtocolTests(unittest.TestCase):
             "--expected-revision", str(self.job["revision"]),
         )
 
+    def restart_review(self, confirmed=True):
+        args = [
+            "--id", self.job["id"], "--owner", "restart-agent",
+            "--expected-revision", str(self.job["revision"]),
+        ]
+        if confirmed:
+            args.append("--owner-confirmed-not-submitted")
+        return self.run_client("restart-review", *args)
+
+    def move_to_review(self):
+        self.start()
+        attempt_revision = self.job["revision"] + 1
+        payload = {
+            "status": "review", "step": "review", "pendingFields": [],
+            "attemptRevision": attempt_revision,
+            "readinessInput": self.readiness_input(attempt_revision),
+        }
+        response = self.run_client(
+            "handoff", "--status", "awaiting_review", payload=payload
+        )[2]
+        self.assertTrue(response["ok"])
+        self.job = self.store.get_job(self.job["id"])
+
     def readiness_input(self, attempt_revision, evidence_kind="agent_attested_current_attempt"):
         fixture = json.loads((
             ROOT / "qa" / "fixtures" / "greenhouse-form-readiness-v1" / "fixture.json"
@@ -147,6 +170,35 @@ class AttemptProtocolTests(unittest.TestCase):
         self.assertEqual(response, {"error": {"code": "request_rejected"}, "ok": False})
         self.assertEqual(self.store.get_job(self.job["id"])["status"], "in_progress")
         self.assertIsNotNone(self.store.claim_status()["claim"])
+
+    def test_review_restart_requires_explicit_not_submitted_and_retains_bearer(self):
+        self.move_to_review()
+        session_path = self.store._session_path(self.job["id"])
+        session_before = session_path.read_bytes()
+        history_before = self.store.history_path.read_bytes()
+
+        _command, rejected, response = self.restart_review(confirmed=False)
+        self.assertEqual(rejected.returncode, 2)
+        self.assertEqual(
+            response, {"error": {"code": "request_rejected"}, "ok": False}
+        )
+        self.assertEqual(self.store.get_job(self.job["id"]), self.job)
+        self.assertEqual(session_path.read_bytes(), session_before)
+        self.assertEqual(self.store.history_path.read_bytes(), history_before)
+
+        command, result, response = self.restart_review()
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(response["event"], "acquired")
+        self.assertEqual(response["attempt"]["job"]["revision"], self.job["revision"] + 1)
+        self.assertEqual(session_path.read_bytes(), session_before)
+        self.assertIsNotNone(self.store.claim_status()["claim"])
+        self.assertNotIn("token", json.dumps(response).lower())
+        self.assertNotIn("claim", json.dumps(response).lower())
+        self.assertNotIn("token", " ".join(command).lower())
+        self.assertEqual(
+            [event["event"] for event in self.store.read_history()][-1],
+            "job-restarted",
+        )
 
     def test_bearer_is_absent_from_clients_outputs_and_broker_runtime_metadata(self):
         command, result, acquired = self.start()
