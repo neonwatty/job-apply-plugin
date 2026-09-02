@@ -265,7 +265,10 @@ class NativeMacOSAccessibilityProvider:
                 identity = ""
                 os.close(write_descriptor); write_descriptor = -1
             attestation = self._read_attestation(listener, child.pid, operation) if listener is not None else None
-            stdout, stderr = child.communicate(timeout=10)
+            # The native action is never retried. Allow bounded time for slow
+            # macOS Accessibility propagation and authenticated cleanup after
+            # the one effect has already completed.
+            stdout, stderr = child.communicate(timeout=20)
             if child.returncode or stdout or stderr:
                 status = child.returncode if child.returncode in {
                     21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
