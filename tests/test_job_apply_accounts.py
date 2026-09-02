@@ -20,6 +20,51 @@ MAC_SPEC.loader.exec_module(MAC)
 
 
 class AccountContractTests(unittest.TestCase):
+    def test_flow_registry_classifies_reviewed_greenhouse_as_accountless(self):
+        expected = {
+            "status": "classified",
+            "adapterId": "greenhouse",
+            "flowKind": "account_not_required",
+            "credentialRequired": False,
+            "accountRequired": False,
+        }
+        for url in (
+            "https://boards.greenhouse.io/acme/jobs/12345",
+            "https://job-boards.greenhouse.io/acme_engineering/jobs/98765/",
+        ):
+            self.assertEqual(ACCOUNTS.classify_account_flow(url), expected)
+
+    def test_flow_registry_rejects_unreviewed_greenhouse_surfaces(self):
+        for url in (
+            "https://boards.greenhouse.io/acme",
+            "https://boards.greenhouse.io/acme/login",
+            "https://boards.greenhouse.io/acme/candidate-home",
+            "https://boards.greenhouse.io/acme/jobs/not-numeric",
+            "https://boards.greenhouse.io/acme/jobs/12345?token=secret",
+            "https://person@boards.greenhouse.io/acme/jobs/12345",
+            "http://boards.greenhouse.io/acme/jobs/12345",
+            "https://greenhouse.io/acme/jobs/12345",
+        ):
+            actual = ACCOUNTS.classify_account_flow(url)
+            self.assertEqual(actual["status"], "unresolved", url)
+
+    def test_flow_registry_preserves_credential_bearing_realm_identity(self):
+        workday = ACCOUNTS.classify_account_flow(
+            "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/Phoenix/Engineer_R1"
+        )
+        oracle = ACCOUNTS.classify_account_flow(
+            "https://acme.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/jobsearch/job/331081/apply/email"
+        )
+        self.assertEqual(
+            (workday["status"], workday["adapterId"], workday["flowKind"], workday["accountRequired"]),
+            ("classified", "workday", "password_candidate_account", True),
+        )
+        self.assertRegex(workday["realmRef"], r"^[0-9a-f]{64}$")
+        self.assertEqual(
+            (oracle["status"], oracle["adapterId"], oracle["flowKind"], oracle["accountRequired"]),
+            ("classified", "oracle-recruiting", "email_only_candidate_profile", True),
+        )
+
     def test_oracle_recruiting_realm_is_tenant_site_stable_and_strict(self):
         first = ACCOUNTS.normalize_realm("https://acme.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/jobsearch/job/331081/apply/email")
         second = ACCOUNTS.normalize_realm("https://acme.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/jobsearch/job/999999")

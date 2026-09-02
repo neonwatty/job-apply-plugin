@@ -8635,6 +8635,59 @@ class Store:
     def resolve_account_realm(self, portal_url: str) -> dict[str, Any]:
         return ACCOUNTS_MODULE.normalize_realm(portal_url)
 
+    def employer_account_flow_decision(self, job_id: str) -> dict[str, Any]:
+        """Return a value-free account decision for one canonical job."""
+
+        self.initialize()
+        self._ensure_account_control_documents()
+        with exclusive_file_lock(self.store_lock_path):
+            job = self._load_jobs_document()["jobs"].get(job_id)
+            if job is None or job.get("deletedAt") is not None:
+                raise StoreError("employer account flow job is unavailable")
+            classified = ACCOUNTS_MODULE.classify_account_flow(job["url"])
+            if classified.get("status") != "classified":
+                return {
+                    "jobId": job["id"],
+                    "decision": "human_attention_required",
+                    "adapterId": None,
+                    "flowKind": None,
+                    "accountRevision": None,
+                    "reasonCode": "account_flow_unresolved",
+                }
+            base = {
+                "jobId": job["id"],
+                "adapterId": classified["adapterId"],
+                "flowKind": classified["flowKind"],
+            }
+            if classified["accountRequired"] is False:
+                return {
+                    **base,
+                    "decision": "account_not_required",
+                    "accountRevision": None,
+                }
+            account = self._load_employer_accounts_document()["accounts"].get(
+                classified["realmRef"]
+            )
+            if account is None:
+                return {**base, "decision": "create_required", "accountRevision": None}
+            lifecycle = account["lifecycleState"]
+            if lifecycle == "active":
+                decision = "reuse_active"
+            elif lifecycle == "discovered":
+                decision = "create_required"
+            else:
+                return {
+                    **base,
+                    "decision": "human_attention_required",
+                    "accountRevision": account["revision"],
+                    "reasonCode": "account_lifecycle_requires_human",
+                }
+            return {
+                **base,
+                "decision": decision,
+                "accountRevision": account["revision"],
+            }
+
     def list_employer_accounts(self, *, public: bool = False, companion: bool = False) -> list[dict[str, Any]]:
         self.initialize()
         self._ensure_account_control_documents()

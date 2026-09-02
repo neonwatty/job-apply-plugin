@@ -6702,6 +6702,56 @@ class StoreTests(unittest.TestCase):
                 created["realmRef"], {"lifecycleState": "active"}, 2
             )
 
+    def test_employer_account_flow_decisions_are_value_free_and_fail_closed(self):
+        workday = self.store.create_job({
+            "id": "flow-workday", "role": "Engineer", "company": "Acme",
+            "url": "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/Phoenix/Engineer_R1",
+        })
+        greenhouse = self.store.create_job({
+            "id": "flow-greenhouse", "role": "Engineer", "company": "Acme",
+            "url": "https://boards.greenhouse.io/acme/jobs/12345",
+        })
+        unresolved = self.store.create_job({
+            "id": "flow-unknown", "role": "Engineer", "company": "Acme",
+            "url": "https://jobs.example.com/acme/12345",
+        })
+
+        create = self.store.employer_account_flow_decision(workday["id"])
+        accountless = self.store.employer_account_flow_decision(greenhouse["id"])
+        attention = self.store.employer_account_flow_decision(unresolved["id"])
+        self.assertEqual(create["decision"], "create_required")
+        self.assertEqual(accountless, {
+            "jobId": greenhouse["id"], "decision": "account_not_required",
+            "adapterId": "greenhouse", "flowKind": "account_not_required",
+            "accountRevision": None,
+        })
+        self.assertEqual(attention["decision"], "human_attention_required")
+        self.assertEqual(attention["reasonCode"], "account_flow_unresolved")
+        self.assertEqual(self.store.list_employer_accounts(), [])
+
+        account = self.store.create_employer_account(workday["url"])
+        discovered = self.store.employer_account_flow_decision(workday["id"])
+        self.assertEqual((discovered["decision"], discovered["accountRevision"]), ("create_required", 1))
+
+        document = self.store._load_employer_accounts_document()
+        active = document["accounts"][account["realmRef"]]
+        active["lifecycleState"] = "active"
+        active["providerId"] = "macos-keychain"
+        active["credentialRef"] = STORE_MODULE.CREDENTIALS_MODULE.credential_reference(
+            "unique_per_realm", account["realmRef"]
+        )
+        active["credentialVersion"] = 1
+        active["revision"] = 2
+        STORE_MODULE.atomic_write_json(self.store.employer_accounts_path, document)
+        reuse = self.store.employer_account_flow_decision(workday["id"])
+        self.assertEqual((reuse["decision"], reuse["accountRevision"]), ("reuse_active", 2))
+
+        serialized = json.dumps([create, accountless, attention, discovered, reuse])
+        for forbidden in (
+            "https://", "owner@", "signupEmail", "descriptor", "credentialRef", "providerId",
+        ):
+            self.assertNotIn(forbidden, serialized)
+
     def test_profile_email_copy_is_internal_revisioned_and_redacted(self):
         self.store.initialize()
         profile = self.store.replace_profile(
