@@ -26,6 +26,10 @@ class MacOSAccessibilityAdapter:
             "providerId": self.provider_id,
             "state": "available",
             "emailOnlyCandidateProfileReady": True,
+            "workdayPasswordAccountReady": True,
+            "greenhouseAccountlessClassificationReady": True,
+            "productionSeamReady": True,
+            "liveExecutionEnabled": False,
             "credentialOperationsReady": False,
         }
 

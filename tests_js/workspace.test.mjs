@@ -131,6 +131,13 @@ const {
   typedDeletePhrase,
 } = await import(pathToFileURL(join(REPO_ROOT, "workspace", "app.js")).href);
 
+test("automation UI describes reviewed ATS support without exposing live execution", async () => {
+  const html = await readFile(join(REPO_ROOT, "workspace", "index.html"), "utf8");
+  assert.match(html, /Workday seam remains disabled/);
+  assert.match(html, /Greenhouse applications need no account/);
+  assert.doesNotMatch(html, /id="[^\"]*(?:execute|run-live|create-account)[^\"]*"/i);
+});
+
 test("realm email override requests bind the exact account revision and explicit clear", () => {
   const account = { realmRef: "a".repeat(64), revision: 7 };
   const save = employerAccountOverrideRequest(account, " owner@example.com ");

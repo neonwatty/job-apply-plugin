@@ -114,6 +114,11 @@ class WorkspaceServerTests(unittest.TestCase):
         status, _headers, projection = self.request("GET", "/api/automation", origin=False)
         self.assertEqual(status, 200)
         self.assertFalse(projection["capability"]["credentialOperationsReady"])
+        account_flow = projection["capability"]["accountFlowAutomation"]
+        self.assertTrue(account_flow["productionSeamReady"])
+        self.assertFalse(account_flow["liveExecutionEnabled"])
+        self.assertTrue(account_flow["workdayPasswordAccountReady"])
+        self.assertTrue(account_flow["greenhouseAccountlessClassificationReady"])
         self.assertNotIn("signupEmail", projection["settings"])
 
         status, _headers, updated = self.request(

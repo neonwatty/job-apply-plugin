@@ -240,7 +240,7 @@
 
     <div id="automation-workspace" class="hidden">
       <section class="hero" aria-labelledby="automation-title">
-        <div><p class="eyebrow">Companion Automation</p><h2 id="automation-title">Account controls that fail closed.</h2><p>This surface shows redacted settings, tenant metadata, and protected-operation recovery. Account execution is limited to the committed loopback synthetic portal; no live target or final application action is reachable.</p></div>
+        <div><p class="eyebrow">Companion Automation</p><h2 id="automation-title">Account controls that fail closed.</h2><p>This surface shows redacted settings, tenant metadata, and protected-operation recovery. The reviewed macOS Workday seam remains disabled until a separate one-shot owner approval; ordinary Greenhouse applications need no account. No live execution control or final application action is reachable here.</p></div>
         <div class="hero-actions"><button id="automation-refresh" class="button secondary" type="button">Refresh</button></div>
       </section>
       <section class="automation-panel" aria-labelledby="automation-settings-title">
@@ -248,7 +248,7 @@
         <p id="automation-capability" class="notice" role="status">Open Automation to check local capability.</p>
         <form id="automation-form" class="automation-form">
           <label><span><input name="enabled" type="checkbox"> Enable companion automation controls</span></label>
-          <label><span><input name="automaticAccountCreation" type="checkbox"> Allow protected synthetic account creation</span></label>
+          <label><span><input name="automaticAccountCreation" type="checkbox"> Allow protected account preparation</span><small>Live Workday execution still requires a separate one-shot owner approval.</small></label>
           <label>Global signup email <input name="signupEmail" type="email" autocomplete="email" placeholder="Leave blank to keep the current setting"><small id="automation-email-status">Not configured</small></label>
           <label>Password strategy <select name="passwordStrategy"><option value="unique_per_realm">Unique per employer realm</option><option value="shared">Shared credential version</option><option value="custom">Custom per realm</option><option value="ask_each_time">Ask each time</option></select></label>
           <div class="button-row"><button class="button primary" type="submit">Save settings</button><button id="automation-copy-profile-email" class="button secondary" type="button">Copy profile email once</button><button id="automation-clear-email" class="button secondary" type="button">Clear signup email</button></div>

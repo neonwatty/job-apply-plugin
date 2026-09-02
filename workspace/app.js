@@ -955,7 +955,9 @@ if (hasDom) {
     const capability = projection.capability;
     const accountFlow = capability.accountFlowAutomation || {};
     const capabilityReason = capability.reasonCode ? capability.reasonCode.replaceAll("_", " ") : capability.state;
-    $("#automation-capability").textContent = `${capability.syntheticOperationsReady ? "Protected synthetic operations available" : "Protected synthetic operations unavailable"} · ${accountFlow.emailOnlyCandidateProfileReady ? "Mac email-only candidate-profile automation available" : "Email-only candidate-profile automation unavailable"} · live credential operations unavailable · ${capabilityReason}. Ordinary Job Apply workflows remain available.`;
+    const workday = accountFlow.workdayPasswordAccountReady ? "Reviewed Workday seam ready; live execution disabled" : "Workday account automation unavailable";
+    const greenhouse = accountFlow.greenhouseAccountlessClassificationReady ? "ordinary Greenhouse applications are accountless" : "Greenhouse account status unresolved";
+    $("#automation-capability").textContent = `${workday} · ${greenhouse} · ${accountFlow.emailOnlyCandidateProfileReady ? "Oracle candidate-profile seam ready" : "Oracle candidate-profile seam unavailable"} · ${capabilityReason}. Settings and recovery remain available here; no live execution control is exposed.`;
     const list = $("#automation-accounts"); list.replaceChildren();
     for (const account of projection.accounts) {
       const card = document.createElement("article"); card.className = "automation-account"; card.setAttribute("role", "listitem");

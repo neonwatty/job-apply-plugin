@@ -47,6 +47,8 @@ class CredentialProviderTests(unittest.TestCase):
         provider = MAC.MacOSSecurityFrameworkProvider()
         mac = provider.capability("darwin")
         self.assertEqual((mac["state"], mac["syntheticOperationsReady"], mac["credentialOperationsReady"]), ("available", True, False))
+        self.assertTrue(mac["productionSeamReady"])
+        self.assertFalse(mac["liveExecutionEnabled"])
         self.assertEqual(provider.capability("linux")["state"], "unsupported")
         with self.assertRaises(MAC.PORTABLE.CredentialProviderError):
             provider.provision_or_reuse_and_fill({})
