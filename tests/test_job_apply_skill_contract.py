@@ -13,6 +13,7 @@ class JobApplySkillContractTests(unittest.TestCase):
     def setUpClass(cls):
         cls.skill = SKILL_PATH.read_text(encoding="utf-8")
         cls.readme = README_PATH.read_text(encoding="utf-8")
+        cls.normalized = " ".join(cls.skill.split())
 
     def test_action_time_consent_requires_visible_readiness(self):
         self.assertIn("Post-readiness action-time consent", self.skill)
@@ -72,6 +73,28 @@ class JobApplySkillContractTests(unittest.TestCase):
             "Start a new private attempt process",
         ):
             self.assertNotIn(stale, self.readme)
+
+    def test_field_entry_requires_observed_persistence(self) -> None:
+        self.assertIn("attempted write, not proof", self.normalized)
+        self.assertIn("immediately read the control's current state", self.normalized)
+        self.assertIn("compare it privately with the intended value", self.normalized)
+        self.assertIn("merely because the browser operation returned no error", self.normalized)
+
+    def test_field_entry_recovery_is_bounded_and_rerender_safe(self) -> None:
+        self.assertIn("at most one safe", self.normalized)
+        self.assertIn("Do not repeat the same", self.normalized)
+        self.assertIn("Revalidate already-filled critical controls", self.normalized)
+        self.assertIn("Restore a cleared value at most once", self.normalized)
+
+    def test_failed_entry_is_not_misclassified_as_missing_data(self) -> None:
+        self.assertIn("do not ask the user for it again", self.normalized)
+        self.assertIn("`unsupported-control` with `owner-input-required`", self.normalized)
+        self.assertIn("browser handoff, not a missing-answer request", self.normalized)
+
+    def test_form_instances_and_consent_remain_separate(self) -> None:
+        self.assertIn("independent forms", self.normalized)
+        self.assertIn("requires fresh consent", self.normalized)
+        self.assertIn("Keep every final action untouched throughout recovery", self.normalized)
 
 
 if __name__ == "__main__":
