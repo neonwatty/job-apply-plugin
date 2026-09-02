@@ -197,6 +197,39 @@ Do not reload the job revision before this handoff; a conflict must expose concu
 
 User confirmation never authorizes this skill to click Submit, Send, or any equivalent final-action button.
 
+### Verified field entry
+
+Treat a browser write that returns without an error as an attempted write, not proof
+that the field accepted the value. Apply this bounded loop to every editable control:
+
+1. Resolve the intended value from the canonical profile or a permitted saved answer
+   before interacting with the control. If a permitted saved value exists, do not ask
+   the user for it again merely because browser entry fails.
+2. Identify the exact form instance being edited. An embedded application and a
+   separately opened fallback page are independent forms; never infer that a value,
+   selection, or upload present in one is present in the other.
+3. Perform one normal write, then immediately read the control's current state and
+   compare it privately with the intended value. Keep this verification value-free in
+   logs, progress, history, receipts, and user-facing summaries.
+4. If the value did not persist, inspect the control once and make at most one safe
+   alternate entry attempt supported by the visible browser, such as sequential
+   typing for a text control. Verify the control state again. Do not repeat the same
+   action after the bounded fallback fails.
+5. Revalidate already-filled critical controls after an upload, selection, navigation,
+   or other action that may rerender the form. Restore a cleared value at most once
+   using the same bounded loop.
+6. If a known value still cannot be entered, classify the blocker as
+   `unsupported-control` with `owner-input-required`, leave the visible form open,
+   save only value-free progress, and hand control to the user. This is a browser
+   handoff, not a missing-answer request. Never claim the field is complete merely
+   because the browser operation returned no error.
+
+An alternate entry method within the same form instance, application attempt,
+destination, and already-approved purpose does not require renewed fill consent.
+Opening or switching to another form instance is a new action surface and requires
+fresh consent before entering private data there. Keep every final action untouched
+throughout recovery.
+
 ---
 
 ## Platform-Specific Guidance
