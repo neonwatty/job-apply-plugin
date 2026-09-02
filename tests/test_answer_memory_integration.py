@@ -527,6 +527,33 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
         self.assertNotIn(acquired["token"], serialized)
         self.assertNotIn("synthetic resume", serialized)
 
+        session_path = self.home / ".job-apply" / "sessions" / f"{job['id']}.json"
+        session_before = session_path.read_bytes()
+        denied = self.run_store(
+            "job-review-restart", "--id", job["id"], "--owner", "restart-agent",
+            "--expected-revision", str(handed["job"]["revision"]), check=False,
+        )
+        self.assertEqual(denied.returncode, 2)
+        self.assertEqual(session_path.read_bytes(), session_before)
+        restarted = self.json_store(
+            "job-review-restart", "--id", job["id"], "--owner", "restart-agent",
+            "--expected-revision", str(handed["job"]["revision"]),
+            "--owner-confirmed-not-submitted",
+        )
+        self.assertEqual(restarted["job"]["status"], "in_progress")
+        self.assertEqual(session_path.read_bytes(), session_before)
+        self.assertEqual(
+            [item["event"] for item in self.json_store("history-list")],
+            ["job-started", "reviewed", "job-restarted"],
+        )
+        durable = "\n".join(
+            (self.home / ".job-apply" / name).read_text(encoding="utf-8")
+            for name in (
+                "coordinator.json", "coordinator-journal.json", "applications.jsonl"
+            )
+        )
+        self.assertNotIn(restarted["token"], durable)
+
     def test_cli_commands_read_safe_future_history_without_rewriting_store(self):
         self.json_store("init")
         self.json_store("claim-status")
