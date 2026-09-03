@@ -1071,6 +1071,30 @@ test("job-apply routes every ordinary URL through the canonical task protocol", 
   assert.match(readme, /scripts\/job-apply-task\.py/);
 });
 
+test("skill and documentation contracts keep extraction agent-owned and context-bounded", async () => {
+  const jobApply = await readFile(join(REPO_ROOT, "skills", "job-apply", "SKILL.md"), "utf8");
+  const workspaceSkill = await readFile(join(REPO_ROOT, "skills", "job-workspace", "SKILL.md"), "utf8");
+  const readme = await readFile(join(REPO_ROOT, "README.md"), "utf8");
+  const app = await readFile(join(REPO_ROOT, "workspace", "app.js"), "utf8");
+
+  assert.match(jobApply, /resume-extraction-request-list --status requested/);
+  assert.match(jobApply, /Never scan for extraction requests during every job application/);
+  assert.match(jobApply, /delete the permission-restricted candidate file/);
+  assert.match(jobApply, /Stop at proposal review/);
+  for (const text of [workspaceSkill, readme]) {
+    assert.match(text, /queues work for the next active Job Apply agent/);
+    assert.match(text, /does not start or launch an agent/);
+    assert.match(text, /cannot extract facts, complete or fail a request, or author a proposal/);
+  }
+
+  const requestRoutes = [...app.matchAll(/"(\/api\/resume-extraction-requests[^"`]*)"/g)]
+    .map((match) => match[1]);
+  assert.deepEqual([...new Set(requestRoutes)], ["/api/resume-extraction-requests"]);
+  assert.ok(app.includes('path += `/${encodeURIComponent(request.requestId)}/cancel`'));
+  assert.ok(app.includes('path += `/${encodeURIComponent(request.requestId)}/retry`'));
+  assert.doesNotMatch(app, /resume-extraction-requests[^\n]{0,100}\/(?:complete|fail|candidate)/);
+});
+
 test("styles include visible focus, reduced motion, contrast mode, and responsive behavior", async () => {
   const css = await readFile(join(REPO_ROOT, "workspace", "styles.css"), "utf8");
   assert.match(css, /:focus-visible/);

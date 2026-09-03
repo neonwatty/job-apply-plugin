@@ -5,6 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_PATH = ROOT / "skills" / "job-apply" / "SKILL.md"
+WORKSPACE_SKILL_PATH = ROOT / "skills" / "job-workspace" / "SKILL.md"
 README_PATH = ROOT / "README.md"
 
 
@@ -12,6 +13,7 @@ class JobApplySkillContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.skill = SKILL_PATH.read_text(encoding="utf-8")
+        cls.workspace_skill = WORKSPACE_SKILL_PATH.read_text(encoding="utf-8")
         cls.readme = README_PATH.read_text(encoding="utf-8")
         cls.normalized = " ".join(cls.skill.split())
 
@@ -95,6 +97,49 @@ class JobApplySkillContractTests(unittest.TestCase):
         self.assertIn("independent forms", self.normalized)
         self.assertIn("requires fresh consent", self.normalized)
         self.assertIn("Keep every final action untouched throughout recovery", self.normalized)
+
+    def test_resume_extraction_discovery_is_context_bounded(self) -> None:
+        self.assertIn("resume-extraction-request-list --status requested", self.skill)
+        self.assertIn("when the owner asks about resumes, facts, or onboarding", self.skill)
+        self.assertIn("when given an exact extraction request ID", self.skill)
+        self.assertIn("Never scan for extraction requests during every job application", self.skill)
+
+    def test_resume_extraction_fulfills_one_exact_request_privately(self) -> None:
+        for required in (
+            "resume-extraction-request-get --id <request-id>",
+            "resume-resolve --id <resume-id>",
+            "profile-inspect",
+            "resume-proposal-list --resume-id <resume-id>",
+            "resume-extraction-request-complete",
+            "--expected-pending-proposal-id <proposal-id>",
+            "delete the permission-restricted candidate file",
+            "Do not retry",
+            "Stop at proposal review",
+        ):
+            self.assertIn(required, self.skill)
+        self.assertIn("complete the exact request once", self.skill)
+
+    def test_resume_extraction_failure_reasons_are_closed(self) -> None:
+        self.assertIn("resume-extraction-request-fail", self.skill)
+        for reason in (
+            "content_unreadable",
+            "unsupported_resume",
+            "extraction_failed",
+            "candidate_invalid",
+            "interrupted",
+        ):
+            self.assertIn(f"`{reason}`", self.skill)
+
+    def test_workspace_queues_but_does_not_perform_extraction(self) -> None:
+        for required in (
+            "create, cancel, and retry extraction requests",
+            "queues work for the next active Job Apply agent",
+            "does not start or launch an agent",
+            "cannot extract facts, complete or fail a request, or author a proposal",
+        ):
+            self.assertIn(required, self.workspace_skill)
+            self.assertIn(required, self.readme)
+        self.assertNotIn("the workspace extracts", self.workspace_skill.lower())
 
 
 if __name__ == "__main__":
