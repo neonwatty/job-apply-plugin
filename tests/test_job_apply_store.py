@@ -5576,6 +5576,98 @@ class StoreTests(unittest.TestCase):
                     "cancelled",
                 )
 
+    def test_resume_request_replacement_recovers_every_hard_interruption_boundary(self):
+        class SimulatedPowerLoss(BaseException):
+            pass
+
+        for boundary in (
+            "pre-journal", "post-journal", "requests-write", "resumes-write",
+            "journal-clear",
+        ):
+            with self.subTest(boundary=boundary):
+                root = self.home / f"replacement-hard-interruption-{boundary}"
+                store = STORE_MODULE.Store(root, self.legacy)
+                original_content = f"original synthetic resume {boundary}".encode()
+                replacement_content = f"replacement synthetic resume {boundary}".encode()
+                source = self.home / f"replacement-original-{boundary}.txt"
+                replacement = self.home / f"replacement-new-{boundary}.txt"
+                source.write_bytes(original_content)
+                replacement.write_bytes(replacement_content)
+                resume = store.create_resume({
+                    "id": f"replacement-{boundary}", "label": "Replacement",
+                    "path": str(source),
+                })
+                request = store.create_resume_extraction_request(
+                    resume["id"], resume["revision"]
+                )
+                original_write = STORE_MODULE.atomic_write_json
+                journal_started = False
+                interrupted = False
+
+                def interrupt_boundary(path, payload):
+                    nonlocal journal_started, interrupted
+                    operation = payload.get("operation") if isinstance(payload, dict) else None
+                    starts_replacement = (
+                        path == store.resume_extraction_journal_path
+                        and isinstance(operation, dict)
+                        and operation.get("kind") == "resume-request-close"
+                    )
+                    if starts_replacement and boundary == "pre-journal" and not interrupted:
+                        interrupted = True
+                        raise SimulatedPowerLoss()
+                    result = original_write(path, payload)
+                    if starts_replacement:
+                        journal_started = True
+                        if boundary == "post-journal" and not interrupted:
+                            interrupted = True
+                            raise SimulatedPowerLoss()
+                    target = {
+                        "requests-write": store.resume_extraction_requests_path,
+                        "resumes-write": store.resumes_path,
+                        "journal-clear": store.resume_extraction_journal_path,
+                    }.get(boundary)
+                    if (
+                        target is not None and journal_started and path == target
+                        and not interrupted
+                        and (boundary != "journal-clear" or operation is None)
+                    ):
+                        interrupted = True
+                        raise SimulatedPowerLoss()
+                    return result
+
+                with mock.patch.object(
+                    STORE_MODULE, "atomic_write_json", side_effect=interrupt_boundary
+                ):
+                    with self.assertRaises(SimulatedPowerLoss):
+                        store.update_resume(
+                            resume["id"], {"path": str(replacement)}, resume["revision"]
+                        )
+
+                repaired = STORE_MODULE.Store(root, self.legacy)
+                repaired.initialize()
+                recovered_resume = repaired.get_resume(resume["id"])
+                recovered_request = repaired.get_resume_extraction_request(
+                    request["requestId"]
+                )
+                _record, recovered_content = repaired.read_resume_content(resume["id"])
+                self.assertEqual(
+                    recovered_resume["digest"], hashlib.sha256(recovered_content).hexdigest()
+                )
+                if boundary == "pre-journal":
+                    self.assertEqual(recovered_content, original_content)
+                    self.assertEqual(recovered_resume["revision"], resume["revision"])
+                    self.assertEqual(
+                        recovered_resume["contentRevision"], resume["contentRevision"]
+                    )
+                    self.assertEqual(recovered_request["status"], "requested")
+                else:
+                    self.assertEqual(recovered_content, replacement_content)
+                    self.assertEqual(recovered_resume["revision"], resume["revision"] + 1)
+                    self.assertNotEqual(
+                        recovered_resume["contentRevision"], resume["contentRevision"]
+                    )
+                    self.assertEqual(recovered_request["status"], "stale")
+
     def test_two_agents_cannot_complete_one_extraction_request(self):
         source = self.home / "two-agents.txt"
         source.write_text("synthetic two agent resume", encoding="utf-8")

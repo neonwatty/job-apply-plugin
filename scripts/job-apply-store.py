@@ -2151,6 +2151,13 @@ class Store:
         _ensure_private_dir(self.root)
         _ensure_private_dir(self.sessions_path)
         _ensure_private_dir(self.resume_files_path)
+        # A durable extraction operation may describe newly installed managed
+        # bytes. Apply its document snapshot before reconciling quarantines so
+        # file recovery uses the committed content identity, never stale resume
+        # metadata from before the replacement.
+        if self.resume_extraction_journal_path.exists():
+            with exclusive_file_lock(self.store_lock_path):
+                self._roll_forward_extraction_locked()
         if any(self.resume_files_path.iterdir()):
             with exclusive_file_lock(self.store_lock_path):
                 self._recover_resume_files_locked()
@@ -2239,10 +2246,6 @@ class Store:
                 self._repair_pending_history_tail_locked()
                 self._roll_forward_locked()
                 self.read_history()
-
-        if self.resume_extraction_journal_path.exists():
-            with exclusive_file_lock(self.store_lock_path):
-                self._roll_forward_extraction_locked()
 
         return {"initialized": True, "migratedLegacyProfile": migrated, **self.paths()}
 
