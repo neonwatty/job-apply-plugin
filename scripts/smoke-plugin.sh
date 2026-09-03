@@ -543,8 +543,8 @@ if codex_manifest.get("name") != "job-apply":
     raise SystemExit(".codex-plugin/plugin.json name must be job-apply")
 if not re.fullmatch(r"\d+\.\d+\.\d+", codex_manifest.get("version", "")):
     raise SystemExit(".codex-plugin/plugin.json version must be strict SemVer")
-if codex_manifest["version"] != "1.3.4":
-    raise SystemExit("integrated owner-beta package identity must be 1.3.4")
+if codex_manifest["version"] != "1.3.5":
+    raise SystemExit("resume-onboarding package identity must be 1.3.5")
 if codex_manifest.get("skills") != "./skills/":
     raise SystemExit(".codex-plugin/plugin.json must expose ./skills/")
 if codex_manifest.get("interface", {}).get("displayName") != "Job Apply":
