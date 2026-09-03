@@ -1,0 +1,401 @@
+version: 2
+
+goal:
+  title: "Resume Extraction Onboarding"
+  slug: "resume-extraction-onboarding"
+  kind: existing_plan
+  tranche: "Continuously implement and verify the complete approved resume extraction request and profile preparedness plan."
+  status: active
+  oracle:
+    signal: "The redacted-resume human request to agent completion to grouped review workflow passes its deterministic oracle, full regressions, packaged checks, and fresh-agent stop-at-review acceptance."
+    cadence: "after each Worker package and at final audit"
+    final_proof: "Receipts prove shared request/profile state, safe auto-fill and review, content staleness, cancellation/concurrency/recovery, value-free new outputs, browser boundary enforcement, and green Python, Node/browser, packaging, Linux, macOS, and Windows gates."
+  intake:
+    original_request: "Plan and build the missing UX-triggered resume extraction and onboarding workflow."
+    interpreted_outcome: "A person and Job Apply agent share one durable extraction-request, proposal-review, profile, and preparedness workflow through the canonical Store."
+    input_shape: existing_plan
+    audience: "Job Apply users and Job Apply agents"
+    authority: approved
+    proof_type: demo
+    completion_proof: "The deterministic redacted-resume oracle returns passed true, all required suites are green, and a fresh skill-driven agent completes only through proposal/review without private owner data or an application browser action."
+    likely_misfire: "Shipping a polished but browser-only queue, or declaring success after storage/API work without proving the full human-agent-human loop."
+    blind_spots_considered:
+      - "A queued request must not pretend an agent is actively extracting."
+      - "The existing opaque resume contentRevision must be reused; cosmetic metadata edits must not stale work."
+      - "Concurrent completion, cancellation, profile drift, and crash recovery must produce no partial write."
+      - "The browser must not complete/fail extraction or inject candidate/profile-revision data."
+      - "Existing explicitly invoked profile/proposal detail remains value-bearing while new request/preparedness outputs stay value-free."
+      - "Structured arrays require replacement confirmation and unknown facts remain visible in Additional."
+    existing_plan_facts:
+      - "Approved design: docs/superpowers/specs/2026-09-03-resume-extraction-onboarding-design.md"
+      - "Detailed plan: docs/superpowers/plans/2026-09-03-resume-extraction-onboarding.md"
+      - "Implement Store/CLI requests and atomic proposal completion before consumers."
+      - "Implement shared preparedness and authenticated Companion API after the Store contract is fixed."
+      - "Implement Resumes request/handoff and Facts readiness/grouped review against the fixed API."
+      - "Finish with agent instructions, packaged contracts, deterministic oracle, full regression, and fresh-agent acceptance."
+      - "A PR, merge, install, promotion, tag, or release is outside this local implementation tranche."
+
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+  planning_is_not_completion: true
+  queued_required_worker_blocks_completion: true
+  continuous_until_full_outcome: true
+  missing_input_or_credentials_do_not_stop_goal: true
+  exact_human_approval_can_terminal_wait: true
+  preserve_and_validate_existing_plan: true
+  intake_misfire_must_be_audited: true
+  goal_pressure_requires_oracle: true
+  no_completion_on_weak_proof: true
+  slice_policy:
+    max_consecutive_tiny_tasks: 2
+    prefer_vertical_slices: true
+    judge_picks_largest_safe_slice: true
+    worker_completes_whole_slice: true
+
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+
+visual_board:
+  selected: local
+  local:
+    status: live
+    url: "http://goalbuddy.localhost:41737/resume-extraction-onboarding/"
+    command: "node /Users/neonwatty/.codex/plugins/cache/goalbuddy/goalbuddy/0.4.3/skills/goal-prep/surfaces/local-goal-board/scripts/local-goal-board.mjs --goal docs/goals/resume-extraction-onboarding"
+
+active_task: T001
+
+tasks:
+  - id: T001
+    type: judge
+    assignee: Judge
+    status: active
+    reasoning_hint: high
+    objective: "Validate the approved design and nine-task implementation plan against the execution branch and current origin/staging, then confirm or safely adjust the first Worker scope."
+    inputs:
+      - "docs/superpowers/specs/2026-09-03-resume-extraction-onboarding-design.md"
+      - "docs/superpowers/plans/2026-09-03-resume-extraction-onboarding.md"
+      - "Current branch and worktree state"
+      - "Current origin/staging head"
+      - "Baseline verification recorded during prep: 21 Node/browser checks passed; 715 Python tests passed with 2 skipped"
+    constraints:
+      - "Read-only; do not edit implementation files."
+      - "Preserve the approved product, privacy, concurrency, and final-action boundaries."
+      - "Reject or revise a plan step that conflicts with current staging rather than executing it blindly."
+      - "Keep PR #43 and every unrelated worktree untouched."
+    expected_output:
+      - "Plan-valid or plan-adjustment decision"
+      - "Exact T002 allowed_files, verify commands, and stop_if conditions"
+      - "Any staging drift or pre-existing red gate"
+    receipt: null
+
+  - id: T002
+    type: worker
+    assignee: Worker
+    status: queued
+    reasoning_hint: medium
+    objective: "Implement the durable extraction-request document, read/create/lifecycle CLI, atomic request-to-proposal completion, content staleness, supersession, and crash recovery from implementation-plan Tasks 1 through 3."
+    inputs:
+      - "T001 receipt"
+      - "Approved design sections: Architecture 1-2, Data Contract, Concurrency and Recovery, Privacy and Security"
+      - "Implementation plan Tasks 1-3"
+    constraints:
+      - "Use test-driven development and preserve legacy proposal CLI behavior."
+      - "Reuse the existing opaque resume contentRevision; do not create a content hash or second revision system."
+      - "No durable processing state, automatic timeout, embedded model, workspace route, or UI edit."
+      - "New completion output is value-free; existing explicit proposal detail stays value-bearing."
+      - "Do not touch user-owned output/ or tmp/."
+    expected_output:
+      - "Working request and completion CLI contract"
+      - "Atomic old-or-new recovery proof"
+      - "Cancellation, retry, staleness, supersession, and two-agent conflict proof"
+      - "Compact receipt with commits and verification"
+    allowed_files:
+      - "scripts/job-apply-store.py"
+      - "tests/test_job_apply_store.py"
+      - "tests/test_answer_memory_integration.py"
+    verify:
+      - "python3 -m unittest -v tests.test_job_apply_store"
+      - "python3 -m unittest -v tests.test_answer_memory_integration"
+      - "git diff --check"
+    stop_if:
+      - "Current origin/staging changed incompatibly after T001 validation."
+      - "Atomicity requires files outside allowed_files."
+      - "Implementation would expose resume/fact values through new request or completion output."
+      - "Existing proposal behavior regresses or focused verification fails twice for the same reason."
+    receipt: null
+
+  - id: T003
+    type: judge
+    assignee: Judge
+    status: queued
+    reasoning_hint: high
+    objective: "Audit the Store/CLI milestone for schema closure, legacy compatibility, atomicity, privacy, and concurrency before activating consumers."
+    inputs:
+      - "T002 receipt"
+      - "T002 diff and commits"
+      - "Approved design and implementation-plan Tasks 1-3"
+    constraints:
+      - "Read-only; do not implement fixes."
+      - "Reject the milestone if metadata edits stale new work, if two writers can both win, or if recovery permits partial state."
+      - "Reject any new value-bearing request/completion output."
+    expected_output:
+      - "approved | changes_required"
+      - "Requirement-to-test mapping"
+      - "Exact repair task if changes are required"
+      - "T004 activation recommendation"
+    receipt: null
+
+  - id: T004
+    type: worker
+    assignee: Worker
+    status: queued
+    reasoning_hint: medium
+    objective: "Implement the Store-owned profile-preparedness projection and the authenticated, redacted Companion request/preparedness API from implementation-plan Tasks 4 and 5."
+    inputs:
+      - "T003 receipt"
+      - "Approved design sections: Profile-preparedness projection, Companion boundary, Data Contract, Privacy and Security"
+      - "Implementation plan Tasks 4-5"
+    constraints:
+      - "Preparedness contains no percentage, quality score, employability signal, or job-readiness claim."
+      - "Clients consume Store states/reason codes without recalculating them."
+      - "Browser routes are limited to list/create/cancel/retry/read preparedness."
+      - "No candidate, completion, failure, or profile-revision browser mutation."
+    expected_output:
+      - "Identical Store/CLI preparedness projection"
+      - "Authenticated and value-free Companion API"
+      - "Negative proof that browser completion/failure/candidate routes do not exist"
+      - "Compact receipt with commits and verification"
+    allowed_files:
+      - "scripts/job-apply-store.py"
+      - "scripts/job-apply-workspace.py"
+      - "tests/test_job_apply_store.py"
+      - "tests/test_answer_memory_integration.py"
+      - "tests/test_job_apply_workspace.py"
+    verify:
+      - "python3 -m unittest -v tests.test_job_apply_store tests.test_answer_memory_integration tests.test_job_apply_workspace"
+      - "git diff --check"
+    stop_if:
+      - "T003 requires a Store repair that is not completed."
+      - "The API needs a candidate-bearing browser route or another persistence owner."
+      - "A value-free projection cannot distinguish the approved setup/review states."
+      - "Focused verification fails twice for the same reason."
+    receipt: null
+
+  - id: T005
+    type: judge
+    assignee: Judge
+    status: queued
+    reasoning_hint: high
+    objective: "Audit preparedness semantics and the browser security boundary before any UX consumes the new API."
+    inputs:
+      - "T004 receipt"
+      - "T004 diff and API tests"
+      - "Approved design sections: Profile preparedness and Companion boundary"
+    constraints:
+      - "Read-only; do not implement."
+      - "Reject client-derived readiness, scores, leaked values, unauthenticated access, or hidden completion/failure routes."
+    expected_output:
+      - "approved | changes_required"
+      - "Store/CLI/API parity result"
+      - "Privacy and negative-route result"
+      - "T006 activation recommendation"
+    receipt: null
+
+  - id: T006
+    type: worker
+    assignee: Worker
+    status: queued
+    reasoning_hint: medium
+    objective: "Deliver the complete Companion milestone: honest Resumes request/handoff states, Profile readiness, grouped proposal review, safe bulk decisions, structured replacement confirmation, stale navigation, accessibility, and real-browser proof from implementation-plan Tasks 6 and 7."
+    inputs:
+      - "T005 receipt"
+      - "Approved design User Experience section"
+      - "Implementation plan Tasks 6-7"
+    constraints:
+      - "Waiting copy must never imply an agent is actively extracting."
+      - "The handoff contains only the opaque request ID."
+      - "No accept-all-extracted control; keep-all-current is allowed."
+      - "Unknown paths remain visible in Additional."
+      - "Partial review and existing revision-conflict behavior remain intact."
+      - "Do not alter Store or server contracts in this task."
+    expected_output:
+      - "Working Resumes request/cancel/retry/review experience"
+      - "Compact advisory Profile readiness panel"
+      - "Grouped, accessible, partial proposal review"
+      - "Playwright proof of the same canonical state through UI and CLI"
+      - "Compact receipt with commits and verification"
+    allowed_files:
+      - "workspace/index.html"
+      - "workspace/app.js"
+      - "workspace/styles.css"
+      - "tests_js/workspace.test.mjs"
+    verify:
+      - "node --test --test-concurrency=1 tests_js/workspace.test.mjs"
+      - "npm run test:qa-browser"
+      - "git diff --check"
+    stop_if:
+      - "T005 requires an API repair that is not completed."
+      - "The UX would need a new browser completion/candidate route."
+      - "A proposed bulk action could overwrite extracted values without explicit per-scope review."
+      - "Real-browser verification fails twice for the same reason."
+    receipt: null
+
+  - id: T007
+    type: judge
+    assignee: Judge
+    status: queued
+    reasoning_hint: high
+    objective: "Audit the Companion milestone for truthful state, usability, accessibility, shared canonical behavior, and preservation of review safety."
+    inputs:
+      - "T006 receipt"
+      - "T006 diff and real-browser evidence"
+      - "Approved design User Experience and Privacy sections"
+    constraints:
+      - "Read-only; do not implement."
+      - "Reject cosmetic success without the request-to-agent handoff, stale/retry path, and CLI parity."
+      - "Reject misleading progress, hidden unknown facts, automatic extracted-value acceptance, or a preparedness score."
+    expected_output:
+      - "approved | changes_required"
+      - "UX requirement and accessibility mapping"
+      - "Real-browser evidence assessment"
+      - "T008 activation recommendation"
+    receipt: null
+
+  - id: T008
+    type: worker
+    assignee: Worker
+    status: queued
+    reasoning_hint: medium
+    objective: "Update Job Apply and workspace agent instructions, README guidance, packaged smoke contracts, and skill tests so an agent discovers and safely fulfills extraction requests only in resume/facts/onboarding contexts."
+    inputs:
+      - "T007 receipt"
+      - "Approved design Agent boundary and Privacy sections"
+      - "Implementation plan Task 8"
+    constraints:
+      - "Agent uses the exact request and managed resume privately, completes once, deletes temporary candidate data, and stops at proposal review."
+      - "Do not scan for extraction requests during every job application."
+      - "Do not imply the workspace performs extraction or launches an agent."
+      - "Do not access a real Store, owner resume, browser profile, or network service in smoke tests."
+    expected_output:
+      - "Bounded request-fulfillment instructions"
+      - "Truthful workspace capability documentation"
+      - "Packaged command/skill contract proof"
+      - "Compact receipt with commits and verification"
+    allowed_files:
+      - "skills/job-apply/SKILL.md"
+      - "skills/job-workspace/SKILL.md"
+      - "README.md"
+      - "scripts/smoke-plugin.sh"
+      - "tests/test_job_apply_skill_contract.py"
+      - "tests_js/workspace.test.mjs"
+    verify:
+      - "python3 -m unittest -v tests.test_job_apply_skill_contract"
+      - "bash scripts/smoke-plugin.sh"
+      - "node --test --test-concurrency=1 tests_js/workspace.test.mjs"
+      - "git diff --check"
+    stop_if:
+      - "Documentation would broaden extraction into job application or browser execution."
+      - "A skill requires private data in request output or handoff text."
+      - "Packaging verification fails twice for the same reason."
+    receipt: null
+
+  - id: T009
+    type: worker
+    assignee: Worker
+    status: queued
+    reasoning_hint: medium
+    objective: "Implement and wire the deterministic redacted-resume end-to-end oracle, then run the complete local regression and packaging matrix from implementation-plan Task 9."
+    inputs:
+      - "T008 receipt"
+      - "Approved design Acceptance Proof"
+      - "Implementation plan Task 9"
+      - "Repository committed redacted resume fixture"
+    constraints:
+      - "Use only a temporary Store and the committed redacted fixture."
+      - "Emit a closed, value-free JSON receipt."
+      - "Do not invoke a model, live application browser, owner Store/resume, account automation, OS credential service, or final action."
+      - "Preserve all existing CI jobs and security settings."
+    expected_output:
+      - "npm run qa:resume-extraction-onboarding"
+      - "CI wiring in the existing protected validation workflow"
+      - "Green full Python, Node/browser, packaging, and diff-check matrix"
+      - "Compact receipt with commit and exact verification results"
+    allowed_files:
+      - "qa/resume_extraction_onboarding_oracle.py"
+      - "package.json"
+      - ".github/workflows/validate.yml"
+      - "tests/test_qa_contracts.py"
+      - "tests_js/workspace.test.mjs"
+    verify:
+      - "npm run qa:resume-extraction-onboarding"
+      - "npm run test:qa-browser"
+      - "python3 -m unittest discover -s tests -p 'test_*.py'"
+      - "bash scripts/smoke-plugin.sh"
+      - "git diff --check"
+    stop_if:
+      - "The oracle needs private owner data or any live external side effect."
+      - "CI wiring would weaken, bypass, or make an existing required job optional."
+      - "A full regression fails twice for the same new-code reason."
+      - "A failure is proven pre-existing and materially changes the completion oracle."
+    receipt: null
+
+  - id: T010
+    type: pm
+    assignee: PM
+    status: queued
+    reasoning_hint: high
+    objective: "Run the fresh skill-driven acceptance against a temporary Store and the redacted fixture, proving the agent discovers the opaque request, completes a proposal, deletes temporary candidate data, and stops before application/browser work."
+    inputs:
+      - "T009 receipt"
+      - "Installed plugin skill source from the execution branch"
+      - "Temporary Store and committed redacted fixture"
+    constraints:
+      - "Do not use the owner Store, owner resume, live browser, live job application, account automation, OS credentials, or final action."
+      - "Record only command names, opaque IDs, closed statuses, cleanup result, and pass/fail."
+      - "Do not edit product files; if acceptance fails, queue an exact bounded repair task."
+    expected_output:
+      - "Fresh-agent acceptance receipt"
+      - "Proof of request discovery and exactly-once completion"
+      - "Proof temporary candidate cleanup"
+      - "Proof of stop at proposal/review"
+    receipt: null
+
+  - id: T999
+    type: judge
+    assignee: Judge
+    status: queued
+    reasoning_hint: high
+    objective: "Audit the complete implementation and receipts against the original human-agent-human outcome and full oracle."
+    inputs:
+      - "All done task receipts"
+      - "Approved design and implementation plan"
+      - "Latest deterministic oracle receipt"
+      - "Latest full regression and packaging results"
+      - "T010 fresh-agent acceptance receipt"
+      - "Current branch diff and commit history"
+    constraints:
+      - "Read-only; do not implement."
+      - "Reject completion if required Worker work remains queued/active or any oracle layer is stale, red, absent, or value-bearing."
+      - "Reject completion if the browser can complete/fail extraction, if confirmed facts can be silently overwritten, or if the fresh agent crosses into application/browser work."
+      - "Do not require a PR, merge, install, promotion, tag, or release for this local implementation tranche."
+    expected_output:
+      - "complete | not_complete"
+      - "full_outcome_complete: true | false"
+      - "Requirement-to-receipt mapping"
+      - "Missing evidence and exact next task if not complete"
+    receipt: null
+
+checks:
+  dirty_fingerprint: "goal-prep-docs-only"
+  last_verification:
+    result: passed
+    task: null
+    commands:
+      - "npm run test:qa-browser (21 passed)"
+      - "python3 -m unittest discover -s tests -p 'test_*.py' (715 passed, 2 skipped)"
