@@ -291,7 +291,7 @@ An extraction request contains only:
   "status": "requested",
   "createdAt": "timestamp",
   "updatedAt": "timestamp",
-  "completedAt": null,
+  "closedAt": null,
   "proposalId": null,
   "failureReason": null,
   "supersedesRequestId": null
@@ -368,6 +368,10 @@ Proposal changes are grouped as:
 5. Education
 6. Skills
 7. Links
+
+Unknown forward-compatible top-level facts appear in a final Additional group;
+they must never be hidden merely because the first version does not recognize
+their schema path.
 
 For each conflict, the UX shows the current canonical value and provenance next
 to the extracted candidate, then offers **Keep current** or **Use extracted**.
@@ -471,8 +475,10 @@ data or activating an application browser flow:
 8. Replace the resume and prove the prior open request becomes stale.
 9. Prove cancellation, two-agent completion conflict, profile-revision conflict,
    and crash recovery leave no partial profile or proposal state.
-10. Prove request APIs, CLI output, logs, receipts, and handoff copy contain no
-    resume bytes, paths, filenames, digests, fact values, or raw errors.
+10. Prove request API/CLI output, preparedness API/CLI output, logs, receipts,
+    and handoff copy contain no resume bytes, paths, filenames, digests, fact
+    values, or raw errors. Existing explicitly invoked profile and proposal
+    detail commands retain their local value-bearing contract.
 11. Run a fresh skill-driven agent acceptance against the redacted resume that
     stops at proposal/review and performs no job application or browser action.
 12. Pass focused Store, CLI, Companion API, real-browser UX, packaging, Linux,
