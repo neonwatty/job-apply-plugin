@@ -5286,6 +5286,322 @@ class StoreTests(unittest.TestCase):
         )
         self.assertIsNone(journal["operation"])
 
+    def test_resume_extraction_request_create_and_single_open(self):
+        source = self.home / "request-private.txt"
+        source.write_text("private resume text", encoding="utf-8")
+        resume = self.store.create_resume(
+            {"id": "request-resume", "label": "Private label", "path": str(source)}
+        )
+        request = self.store.create_resume_extraction_request(
+            resume["id"], resume["revision"]
+        )
+        self.assertEqual(set(request), {
+            "requestId", "resumeId", "resumeContentRevision", "revision",
+            "status", "createdAt", "updatedAt", "closedAt", "proposalId",
+            "failureReason", "supersedesRequestId",
+        })
+        self.assertEqual(request["resumeContentRevision"], resume["contentRevision"])
+        self.assertEqual(request["status"], "requested")
+        self.assertEqual(
+            self.store.get_resume_extraction_request(request["requestId"]), request
+        )
+        self.assertEqual(self.store.list_resume_extraction_requests(), [request])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "open extraction request"):
+            self.store.create_resume_extraction_request(
+                resume["id"], resume["revision"]
+            )
+
+    def test_resume_extraction_request_document_rejects_invalid_records(self):
+        source = self.home / "invalid-request.txt"
+        source.write_text("synthetic invalid request", encoding="utf-8")
+        resume = self.store.create_resume(
+            {"id": "invalid-request-resume", "label": "Invalid", "path": str(source)}
+        )
+        request = self.store.create_resume_extraction_request(
+            resume["id"], resume["revision"]
+        )
+        document = json.loads(
+            self.store.resume_extraction_requests_path.read_text(encoding="utf-8")
+        )
+        document["requests"][request["requestId"]]["privateValue"] = "must reject"
+        self.store.resume_extraction_requests_path.write_text(
+            json.dumps(document), encoding="utf-8"
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "request is invalid"):
+            STORE_MODULE.Store(self.root, self.legacy).validate_workspace_startup()
+
+    def test_resume_extraction_request_assigns_legacy_content_revision(self):
+        source = self.home / "legacy-content-revision.txt"
+        source.write_text("synthetic legacy managed resume", encoding="utf-8")
+        resume = self.store.create_resume({
+            "id": "legacy-content-revision", "label": "Legacy", "path": str(source)
+        })
+        document = json.loads(self.store.resumes_path.read_text(encoding="utf-8"))
+        del document["resumes"][resume["id"]]["contentRevision"]
+        self.store.resumes_path.write_text(json.dumps(document), encoding="utf-8")
+        request = self.store.create_resume_extraction_request(
+            resume["id"], resume["revision"]
+        )
+        updated = self.store.get_resume(resume["id"])
+        self.assertEqual(updated["revision"], resume["revision"] + 1)
+        self.assertEqual(request["resumeContentRevision"], updated["contentRevision"])
+
+    def test_resume_extraction_request_lifecycle_and_content_staleness(self):
+        source = self.home / "lifecycle.txt"
+        source.write_text("synthetic lifecycle resume", encoding="utf-8")
+        resume = self.store.create_resume(
+            {"id": "lifecycle-resume", "label": "Lifecycle", "path": str(source)}
+        )
+        request = self.store.create_resume_extraction_request(
+            resume["id"], resume["revision"]
+        )
+        metadata = self.store.update_resume(
+            resume["id"], {"label": "Metadata only"}, resume["revision"]
+        )
+        self.assertEqual(
+            self.store.get_resume_extraction_request(request["requestId"])["status"],
+            "requested",
+        )
+        replacement = self.home / "replacement.txt"
+        replacement.write_text("changed synthetic lifecycle resume", encoding="utf-8")
+        changed = self.store.update_resume(
+            resume["id"], {"path": str(replacement)}, metadata["revision"]
+        )
+        stale = self.store.get_resume_extraction_request(request["requestId"])
+        self.assertEqual(stale["status"], "stale")
+        retried = self.store.retry_resume_extraction_request(
+            request["requestId"], stale["revision"], changed["revision"]
+        )
+        self.assertEqual(retried["supersedesRequestId"], request["requestId"])
+        cancelled = self.store.cancel_resume_extraction_request(
+            retried["requestId"], retried["revision"]
+        )
+        self.assertEqual(cancelled["status"], "cancelled")
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "request revision conflict"):
+            self.store.fail_resume_extraction_request(
+                retried["requestId"], "interrupted", retried["revision"]
+            )
+
+    def test_resume_extraction_request_trash_cancels_atomically(self):
+        source = self.home / "trash-request.txt"
+        source.write_text("synthetic trash request", encoding="utf-8")
+        resume = self.store.create_resume(
+            {"id": "trash-request-resume", "label": "Trash", "path": str(source)}
+        )
+        request = self.store.create_resume_extraction_request(
+            resume["id"], resume["revision"]
+        )
+        trashed = self.store.trash_resume(resume["id"], resume["revision"])
+        self.assertIsNotNone(trashed["deletedAt"])
+        self.assertEqual(
+            self.store.get_resume_extraction_request(request["requestId"])["status"],
+            "cancelled",
+        )
+
+    def test_resume_extraction_request_completion_is_atomic_and_value_free(self):
+        source = self.home / "completion.txt"
+        source.write_text("synthetic completion resume", encoding="utf-8")
+        resume = self.store.create_resume(
+            {"id": "completion-resume", "label": "Completion", "path": str(source)}
+        )
+        profile = self.store.patch_profile({"firstName": "Human"}, 1, "user")
+        request = self.store.create_resume_extraction_request(
+            resume["id"], resume["revision"]
+        )
+        result = self.store.complete_resume_extraction_request(
+            request["requestId"],
+            {"firstName": "Extracted", "email": "fixture@example.invalid"},
+            request["revision"], profile["revision"],
+        )
+        self.assertEqual(set(result), {"request", "proposalSummary"})
+        self.assertEqual(result["request"]["status"], "completed")
+        self.assertEqual(
+            set(result["proposalSummary"]),
+            {"id", "status", "revision", "autoFilledCount", "pendingCount"},
+        )
+        proposal = self.store.get_resume_proposal(result["proposalSummary"]["id"])
+        self.assertEqual(proposal["resumeContentRevision"], resume["contentRevision"])
+        self.assertIn("/email", proposal["autoFilledPaths"])
+        self.assertIn("/firstName", proposal["pendingPaths"])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "request revision conflict"):
+            self.store.complete_resume_extraction_request(
+                request["requestId"], {"email": "second@example.invalid"},
+                request["revision"], profile["revision"],
+            )
+        self.assertEqual(len(self.store.list_resume_proposals()), 1)
+        metadata = self.store.update_resume(
+            resume["id"], {"label": "Cosmetic"}, resume["revision"]
+        )
+        self.assertFalse(
+            self.store.get_resume_proposal(result["proposalSummary"]["id"])["stale"]
+        )
+        self.assertEqual(metadata["contentRevision"], resume["contentRevision"])
+
+    def test_resume_request_completion_conflicts_are_noops(self):
+        source = self.home / "completion-conflict.txt"
+        source.write_text("synthetic completion conflict", encoding="utf-8")
+        resume = self.store.create_resume(
+            {"id": "completion-conflict", "label": "Conflict", "path": str(source)}
+        )
+        request = self.store.create_resume_extraction_request(
+            resume["id"], resume["revision"]
+        )
+        profile = self.store.patch_profile({"firstName": "Human"}, 1, "user")
+        before_profile = self.store.inspect_profile()
+        for candidate, request_revision, profile_revision, message in (
+            ({}, request["revision"], profile["revision"], "candidate"),
+            ({"email": "private@example.invalid"}, request["revision"] + 1,
+             profile["revision"], "request revision conflict"),
+            ({"email": "private@example.invalid"}, request["revision"],
+             profile["revision"] + 1, "profile revision conflict"),
+        ):
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(STORE_MODULE.StoreError, message):
+                    self.store.complete_resume_extraction_request(
+                        request["requestId"], candidate, request_revision, profile_revision
+                    )
+                self.assertEqual(self.store.inspect_profile(), before_profile)
+                self.assertEqual(self.store.list_resume_proposals(), [])
+                self.assertEqual(
+                    self.store.get_resume_extraction_request(request["requestId"])["status"],
+                    "requested",
+                )
+
+    def test_resume_request_completion_journal_recovers_every_boundary(self):
+        for boundary in ("profile", "proposals", "requests", "clear"):
+            with self.subTest(boundary=boundary):
+                root = self.home / f"request-recovery-{boundary}"
+                store = STORE_MODULE.Store(root, self.legacy)
+                source = self.home / f"request-recovery-{boundary}.txt"
+                source.write_text(f"synthetic request recovery {boundary}", encoding="utf-8")
+                resume = store.create_resume({
+                    "id": f"request-recovery-{boundary}", "label": "Recovery",
+                    "path": str(source),
+                })
+                request = store.create_resume_extraction_request(
+                    resume["id"], resume["revision"]
+                )
+                original_write = STORE_MODULE.atomic_write_json
+                journal_started = False
+                failed = False
+
+                def fail_boundary_once(path, payload):
+                    nonlocal journal_started, failed
+                    operation = payload.get("operation") if isinstance(payload, dict) else None
+                    if path == store.resume_extraction_journal_path and operation is not None:
+                        journal_started = True
+                    target = {
+                        "profile": store.profile_path,
+                        "proposals": store.resume_extractions_path,
+                        "requests": store.resume_extraction_requests_path,
+                        "clear": store.resume_extraction_journal_path,
+                    }[boundary]
+                    should_fail = (
+                        not failed and journal_started and path == target
+                        and (boundary != "clear" or operation is None)
+                    )
+                    if should_fail:
+                        failed = True
+                        raise OSError("synthetic request journal failure")
+                    return original_write(path, payload)
+
+                with mock.patch.object(
+                    STORE_MODULE, "atomic_write_json", side_effect=fail_boundary_once
+                ):
+                    with self.assertRaises(OSError):
+                        store.complete_resume_extraction_request(
+                            request["requestId"], {"email": f"{boundary}@example.invalid"},
+                            request["revision"], 1,
+                        )
+                repaired = STORE_MODULE.Store(root, self.legacy)
+                repaired.initialize()
+                recovered_request = repaired.get_resume_extraction_request(
+                    request["requestId"]
+                )
+                self.assertEqual(recovered_request["status"], "completed")
+                self.assertEqual(len(repaired.list_resume_proposals()), 1)
+                self.assertEqual(
+                    repaired.inspect_profile()["profile"]["email"],
+                    f"{boundary}@example.invalid",
+                )
+
+    def test_resume_request_trash_journal_recovers_every_boundary(self):
+        for boundary in ("requests", "resumes", "clear"):
+            with self.subTest(boundary=boundary):
+                root = self.home / f"trash-recovery-{boundary}"
+                store = STORE_MODULE.Store(root, self.legacy)
+                source = self.home / f"trash-recovery-{boundary}.txt"
+                source.write_text(f"synthetic trash recovery {boundary}", encoding="utf-8")
+                resume = store.create_resume({
+                    "id": f"trash-recovery-{boundary}", "label": "Recovery",
+                    "path": str(source),
+                })
+                request = store.create_resume_extraction_request(
+                    resume["id"], resume["revision"]
+                )
+                original_write = STORE_MODULE.atomic_write_json
+                journal_started = False
+                failed = False
+
+                def fail_boundary_once(path, payload):
+                    nonlocal journal_started, failed
+                    operation = payload.get("operation") if isinstance(payload, dict) else None
+                    if path == store.resume_extraction_journal_path and operation is not None:
+                        journal_started = True
+                    target = {
+                        "requests": store.resume_extraction_requests_path,
+                        "resumes": store.resumes_path,
+                        "clear": store.resume_extraction_journal_path,
+                    }[boundary]
+                    if (
+                        not failed and journal_started and path == target
+                        and (boundary != "clear" or operation is None)
+                    ):
+                        failed = True
+                        raise OSError("synthetic trash journal failure")
+                    return original_write(path, payload)
+
+                with mock.patch.object(
+                    STORE_MODULE, "atomic_write_json", side_effect=fail_boundary_once
+                ):
+                    with self.assertRaises(OSError):
+                        store.trash_resume(resume["id"], resume["revision"])
+                repaired = STORE_MODULE.Store(root, self.legacy)
+                repaired.initialize()
+                self.assertIsNotNone(
+                    repaired.get_resume(resume["id"], include_trashed=True)["deletedAt"]
+                )
+                self.assertEqual(
+                    repaired.get_resume_extraction_request(request["requestId"])["status"],
+                    "cancelled",
+                )
+
+    def test_two_agents_cannot_complete_one_extraction_request(self):
+        source = self.home / "two-agents.txt"
+        source.write_text("synthetic two agent resume", encoding="utf-8")
+        resume = self.store.create_resume(
+            {"id": "two-agent-resume", "label": "Two agents", "path": str(source)}
+        )
+        request = self.store.create_resume_extraction_request(
+            resume["id"], resume["revision"]
+        )
+
+        def complete(index):
+            try:
+                return self.store.complete_resume_extraction_request(
+                    request["requestId"],
+                    {"email": f"agent-{index}@example.invalid"},
+                    request["revision"], 1,
+                )
+            except STORE_MODULE.StoreError as error:
+                return str(error)
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(executor.map(complete, (1, 2)))
+        self.assertEqual(sum(isinstance(item, dict) for item in results), 1)
+        self.assertEqual(sum(item == "request revision conflict" for item in results), 1)
+        self.assertEqual(len(self.store.list_resume_proposals()), 1)
+
     def test_resume_proposal_journal_recovers_every_commit_boundary(self):
         for boundary in ("profile", "proposals", "clear"):
             with self.subTest(boundary=boundary):

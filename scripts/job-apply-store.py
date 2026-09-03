@@ -179,6 +179,13 @@ EXTRACTION_MAX_LEAVES = 512
 EXTRACTION_MAX_STRING = 32 * 1024
 EXTRACTION_STATUSES = {"pending", "completed", "superseded"}
 EXTRACTION_DECISIONS = {"use_extracted", "keep_current"}
+EXTRACTION_REQUEST_STATUSES = {
+    "requested", "completed", "failed", "stale", "cancelled",
+}
+EXTRACTION_REQUEST_FAILURE_REASONS = {
+    "content_unreadable", "unsupported_resume", "extraction_failed",
+    "candidate_invalid", "interrupted",
+}
 
 
 def _load_accounts_module() -> Any:
@@ -1854,6 +1861,7 @@ def _validate_extraction_proposal(key: str, value: Any) -> dict[str, Any]:
         "resumeId",
         "resumeRevision",
         "resumeDigest",
+        "resumeContentRevision",
         "profileRevision",
         "resultProfileRevision",
         "candidate",
@@ -1878,6 +1886,12 @@ def _validate_extraction_proposal(key: str, value: Any) -> dict[str, Any]:
     digest = record.get("resumeDigest")
     if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
         raise StoreError("resume proposal binding is invalid")
+    content_revision = record.get("resumeContentRevision")
+    if content_revision is not None:
+        try:
+            TRUSTED_FILL_MODULE.validate_content_revision(content_revision)
+        except TRUSTED_FILL_MODULE.TrustedFillError as error:
+            raise StoreError(str(error)) from None
     candidate, candidate_paths = _validated_candidate(record.get("candidate"))
     baselines = _require_object(record.get("baselines"), "resume proposal baselines")
     auto_paths = record.get("autoFilledPaths")
@@ -1982,6 +1996,78 @@ def _validate_extractions_document(document: dict[str, Any]) -> dict[str, Any]:
     return document
 
 
+def _validate_extraction_request(key: str, value: Any) -> dict[str, Any]:
+    record = _require_object(value, "resume extraction request")
+    required = {
+        "requestId", "resumeId", "resumeContentRevision", "revision",
+        "status", "createdAt", "updatedAt", "closedAt", "proposalId",
+        "failureReason", "supersedesRequestId",
+    }
+    if set(record) != required or record.get("requestId") != key:
+        raise StoreError("resume extraction request is invalid")
+    _safe_session_id(key)
+    _safe_session_id(record.get("resumeId", ""))
+    try:
+        TRUSTED_FILL_MODULE.validate_content_revision(
+            record.get("resumeContentRevision")
+        )
+    except TRUSTED_FILL_MODULE.TrustedFillError as error:
+        raise StoreError(str(error)) from None
+    revision = record.get("revision")
+    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
+        raise StoreError("resume extraction request revision is invalid")
+    status = record.get("status")
+    if status not in EXTRACTION_REQUEST_STATUSES:
+        raise StoreError("resume extraction request status is invalid")
+    for field in ("createdAt", "updatedAt"):
+        if not isinstance(record.get(field), str) or not record[field]:
+            raise StoreError("resume extraction request timestamp is invalid")
+    terminal = status != "requested"
+    closed_at = record.get("closedAt")
+    if terminal != (isinstance(closed_at, str) and bool(closed_at)):
+        raise StoreError("resume extraction request closure is invalid")
+    proposal_id = record.get("proposalId")
+    if status == "completed":
+        _safe_session_id(proposal_id or "")
+    elif proposal_id is not None:
+        raise StoreError("resume extraction request proposal is invalid")
+    failure = record.get("failureReason")
+    if status == "failed":
+        if failure not in EXTRACTION_REQUEST_FAILURE_REASONS:
+            raise StoreError("resume extraction failure reason is invalid")
+    elif failure is not None:
+        raise StoreError("resume extraction failure reason is invalid")
+    supersedes = record.get("supersedesRequestId")
+    if supersedes is not None:
+        _safe_session_id(supersedes)
+        if supersedes == key:
+            raise StoreError("resume extraction supersession is invalid")
+    return record
+
+
+def _validate_extraction_requests_document(document: dict[str, Any]) -> dict[str, Any]:
+    validate_version(document, "resume extraction requests")
+    if set(document) != {"schemaVersion", "requests", "metadata"}:
+        raise StoreError("resume extraction request store contains unsupported fields")
+    requests = _require_object(document.get("requests"), "resume extraction requests")
+    metadata = _require_object(document.get("metadata"), "request metadata")
+    if set(metadata) != {"createdAt", "updatedAt"}:
+        raise StoreError("resume extraction request metadata is invalid")
+    for field in ("createdAt", "updatedAt"):
+        if not isinstance(metadata.get(field), str) or not metadata[field]:
+            raise StoreError("resume extraction request metadata is invalid")
+    open_by_resume: set[str] = set()
+    for key, record in requests.items():
+        if not isinstance(key, str):
+            raise StoreError("resume extraction request index is invalid")
+        item = _validate_extraction_request(key, record)
+        if item["status"] == "requested":
+            if item["resumeId"] in open_by_resume:
+                raise StoreError("resume extraction request store has multiple open requests")
+            open_by_resume.add(item["resumeId"])
+    return document
+
+
 def _read_input(path: str) -> dict[str, Any]:
     try:
         if path == "-":
@@ -2004,6 +2090,7 @@ class Store:
         self.resumes_path = self.root / "resumes.json"
         self.resume_files_path = self.root / "resume-files"
         self.resume_extractions_path = self.root / "resume-extractions.json"
+        self.resume_extraction_requests_path = self.root / "resume-extraction-requests.json"
         self.resume_extraction_journal_path = self.root / "resume-extraction-journal.json"
         self.history_path = self.root / "applications.jsonl"
         self.sessions_path = self.root / "sessions"
@@ -2043,6 +2130,7 @@ class Store:
             "answers": str(self.answers_path),
             "jobs": str(self.jobs_path),
             "resumes": str(self.resumes_path),
+            "resumeExtractionRequests": str(self.resume_extraction_requests_path),
             "history": str(self.history_path),
             "sessions": str(self.sessions_path),
             "coordinator": str(self.coordinator_path),
@@ -2186,6 +2274,8 @@ class Store:
             self._load_trusted_fill_document()
         if self.resume_extractions_path.exists():
             self._load_extractions_document()
+        if self.resume_extraction_requests_path.exists():
+            self._load_extraction_requests_document()
         if self.resume_extraction_journal_path.exists():
             self._load_extraction_journal()
         if self.sessions_path.exists():
@@ -2602,6 +2692,13 @@ class Store:
             read_json_object(self.resume_extractions_path, "resume proposals")
         )
 
+    def _load_extraction_requests_document(self) -> dict[str, Any]:
+        return _validate_extraction_requests_document(
+            read_json_object(
+                self.resume_extraction_requests_path, "resume extraction requests"
+            )
+        )
+
     def _load_extraction_journal(self) -> dict[str, Any]:
         document = read_json_object(
             self.resume_extraction_journal_path, "resume proposal journal"
@@ -2612,20 +2709,42 @@ class Store:
         operation = document["operation"]
         if operation is not None:
             item = _require_object(operation, "resume proposal journal operation")
-            if set(item) != {
+            legacy_keys = {
                 "kind",
                 "operationId",
                 "profileDocument",
                 "proposalsDocument",
-            } or item.get("kind") not in {"create", "review"}:
+            }
+            expanded_keys = legacy_keys | {"requestsDocument", "resumesDocument"}
+            if frozenset(item) not in {frozenset(legacy_keys), frozenset(expanded_keys)}:
+                raise StoreError("resume proposal journal operation is invalid")
+            if item.get("kind") not in {
+                "create", "review", "request-create", "request-close",
+                "request-retry", "request-complete", "resume-request-close",
+            }:
+                raise StoreError("resume proposal journal operation is invalid")
+            if set(item) == legacy_keys and item["kind"] not in {"create", "review"}:
                 raise StoreError("resume proposal journal operation is invalid")
             _safe_session_id(item.get("operationId", ""))
-            profile = _require_object(item.get("profileDocument"), "journal profile")
-            proposals = _require_object(
-                item.get("proposalsDocument"), "journal proposals"
-            )
-            self._validate_profile_document_value(profile)
-            _validate_extractions_document(proposals)
+            if item.get("profileDocument") is not None:
+                self._validate_profile_document_value(
+                    _require_object(item["profileDocument"], "journal profile")
+                )
+            if item.get("proposalsDocument") is not None:
+                _validate_extractions_document(
+                    _require_object(item["proposalsDocument"], "journal proposals")
+                )
+            if "requestsDocument" in item and item["requestsDocument"] is not None:
+                _validate_extraction_requests_document(
+                    _require_object(item["requestsDocument"], "journal requests")
+                )
+            if "resumesDocument" in item and item["resumesDocument"] is not None:
+                resumes = _require_object(item["resumesDocument"], "journal resumes")
+                validate_version(resumes, "resumes")
+                if set(resumes) != {"schemaVersion", "resumes", "metadata"}:
+                    raise StoreError("resume proposal journal operation is invalid")
+                for key, record in _require_object(resumes["resumes"], "resumes").items():
+                    _validate_resume_record(key, record)
         return document
 
     @staticmethod
@@ -2670,13 +2789,34 @@ class Store:
                 {"schemaVersion": SCHEMA_VERSION, "operation": None},
             )
 
+    def _ensure_extraction_requests_file_locked(self) -> None:
+        self._ensure_extraction_files_locked()
+        if not self.resume_extraction_requests_path.exists():
+            now = utc_now()
+            atomic_write_json(
+                self.resume_extraction_requests_path,
+                {
+                    "schemaVersion": SCHEMA_VERSION,
+                    "requests": {},
+                    "metadata": {"createdAt": now, "updatedAt": now},
+                },
+            )
+
     def _roll_forward_extraction_locked(self) -> None:
         journal = self._load_extraction_journal()
         operation = journal["operation"]
         if operation is None:
             return
-        atomic_write_json(self.profile_path, operation["profileDocument"])
-        atomic_write_json(self.resume_extractions_path, operation["proposalsDocument"])
+        if operation.get("profileDocument") is not None:
+            atomic_write_json(self.profile_path, operation["profileDocument"])
+        if operation.get("proposalsDocument") is not None:
+            atomic_write_json(self.resume_extractions_path, operation["proposalsDocument"])
+        if operation.get("requestsDocument") is not None:
+            atomic_write_json(
+                self.resume_extraction_requests_path, operation["requestsDocument"]
+            )
+        if operation.get("resumesDocument") is not None:
+            atomic_write_json(self.resumes_path, operation["resumesDocument"])
         atomic_write_json(
             self.resume_extraction_journal_path,
             {"schemaVersion": SCHEMA_VERSION, "operation": None},
@@ -2685,14 +2825,18 @@ class Store:
     def _commit_extraction_operation_locked(
         self,
         kind: str,
-        profile_document: dict[str, Any],
-        proposals_document: dict[str, Any],
+        profile_document: dict[str, Any] | None,
+        proposals_document: dict[str, Any] | None,
+        requests_document: dict[str, Any] | None = None,
+        resumes_document: dict[str, Any] | None = None,
     ) -> None:
         operation = {
             "kind": kind,
             "operationId": f"extraction-{uuid.uuid4()}",
             "profileDocument": profile_document,
             "proposalsDocument": proposals_document,
+            "requestsDocument": requests_document,
+            "resumesDocument": resumes_document,
         }
         atomic_write_json(
             self.resume_extraction_journal_path,
@@ -3031,6 +3175,7 @@ class Store:
         destination: Path,
         write_metadata,
         previous: Path | None = None,
+        rollback_metadata=None,
     ) -> None:
         quarantine: Path | None = None
         installed = False
@@ -3052,6 +3197,8 @@ class Store:
             if quarantine is not None and quarantine.exists():
                 os.replace(quarantine, previous)
             _fsync_directory(self.resume_files_path)
+            if rollback_metadata is not None:
+                rollback_metadata()
             raise
         else:
             if quarantine is not None:
@@ -6991,7 +7138,10 @@ class Store:
         if not patch or set(patch) - allowed:
             raise StoreError("resume patch contains unsupported fields")
         with exclusive_file_lock(self.store_lock_path):
+            if self.resume_extraction_journal_path.exists():
+                self._roll_forward_extraction_locked()
             document = self._load_resumes_document()
+            original_document = copy.deepcopy(document)
             current = document["resumes"].get(resume_id)
             if current is None or current.get("deletedAt") is not None:
                 raise StoreError("resume does not exist")
@@ -7034,13 +7184,48 @@ class Store:
                     _validate_resume_record(resume_id, updated)
                     document["resumes"][resume_id] = updated
                     document["metadata"]["updatedAt"] = updated["updatedAt"]
+                    requests_document = None
+                    original_requests_document = None
+                    if self.resume_extraction_requests_path.exists():
+                        requests_document = self._load_extraction_requests_document()
+                        original_requests_document = copy.deepcopy(requests_document)
+                        open_request = next((
+                            item for item in requests_document["requests"].values()
+                            if item["resumeId"] == resume_id
+                            and item["status"] == "requested"
+                        ), None)
+                        if open_request is not None:
+                            self._close_resume_extraction_request_locked(
+                                requests_document, open_request["requestId"],
+                                open_request["revision"], "stale",
+                            )
                     old_path = self._managed_resume_path(current)
                     destination = self.resume_files_path / staged["managedFile"]
+
+                    def rollback_documents() -> None:
+                        atomic_write_json(self.resumes_path, original_document)
+                        if original_requests_document is not None:
+                            atomic_write_json(
+                                self.resume_extraction_requests_path,
+                                original_requests_document,
+                            )
+                        if self.resume_extraction_journal_path.exists():
+                            atomic_write_json(
+                                self.resume_extraction_journal_path,
+                                {"schemaVersion": SCHEMA_VERSION, "operation": None},
+                            )
+
                     self._install_staged_resume(
                         staged,
                         destination,
-                        lambda: atomic_write_json(self.resumes_path, document),
+                        lambda: self._commit_extraction_operation_locked(
+                            "resume-request-close", None, None,
+                            requests_document, document,
+                        ) if requests_document is not None else atomic_write_json(
+                            self.resumes_path, document
+                        ),
                         previous=old_path,
+                        rollback_metadata=rollback_documents,
                     )
             else:
                 updated["revision"] = current["revision"] + 1
@@ -7057,6 +7242,8 @@ class Store:
         self.initialize()
         _safe_session_id(resume_id)
         with exclusive_file_lock(self.store_lock_path):
+            if self.resume_extraction_journal_path.exists():
+                self._roll_forward_extraction_locked()
             document = self._load_resumes_document()
             current = document["resumes"].get(resume_id)
             if current is None or current.get("deletedAt") is not None:
@@ -7169,6 +7356,8 @@ class Store:
         self.initialize()
         _safe_session_id(resume_id)
         with exclusive_file_lock(self.store_lock_path):
+            if self.resume_extraction_journal_path.exists():
+                self._roll_forward_extraction_locked()
             document = self._load_resumes_document()
             current = document["resumes"].get(resume_id)
             if current is None:
@@ -7226,13 +7415,32 @@ class Store:
             _validate_resume_record(resume_id, updated)
             document["resumes"][resume_id] = updated
             document["metadata"]["updatedAt"] = updated["updatedAt"]
-            atomic_write_json(self.resumes_path, document)
+            requests_document = None
+            if not restore and self.resume_extraction_requests_path.exists():
+                requests_document = self._load_extraction_requests_document()
+                open_request = next((
+                    item for item in requests_document["requests"].values()
+                    if item["resumeId"] == resume_id and item["status"] == "requested"
+                ), None)
+                if open_request is not None:
+                    self._close_resume_extraction_request_locked(
+                        requests_document, open_request["requestId"],
+                        open_request["revision"], "cancelled",
+                    )
+            if requests_document is not None:
+                self._commit_extraction_operation_locked(
+                    "resume-request-close", None, None, requests_document, document
+                )
+            else:
+                atomic_write_json(self.resumes_path, document)
         return updated
 
     def delete_resume(self, resume_id: str, expected_revision: int) -> dict[str, Any]:
         self.initialize()
         _safe_session_id(resume_id)
         with exclusive_file_lock(self.store_lock_path):
+            if self.resume_extraction_journal_path.exists():
+                self._roll_forward_extraction_locked()
             document = self._load_resumes_document()
             current = document["resumes"].get(resume_id)
             if current is None:
@@ -7241,6 +7449,11 @@ class Store:
                 raise StoreError("resume revision conflict")
             if current.get("deletedAt") is None:
                 raise StoreError("resume must be trashed before permanent deletion")
+            if self.resume_extraction_requests_path.exists() and any(
+                item["resumeId"] == resume_id and item["status"] == "requested"
+                for item in self._load_extraction_requests_document()["requests"].values()
+            ):
+                raise StoreError("resume has an open extraction request")
             if any(
                 item.get("resumeId") == resume_id
                 for item in self._load_jobs_document()["jobs"].values()
@@ -7272,6 +7485,189 @@ class Store:
                 _fsync_directory(self.resume_files_path)
         return {"deleted": True, "id": resume_id}
 
+    @staticmethod
+    def _new_extraction_request(
+        resume: dict[str, Any], supersedes: str | None = None
+    ) -> dict[str, Any]:
+        now = utc_now()
+        return {
+            "requestId": f"request-{uuid.uuid4()}",
+            "resumeId": resume["id"],
+            "resumeContentRevision": resume["contentRevision"],
+            "revision": 1,
+            "status": "requested",
+            "createdAt": now,
+            "updatedAt": now,
+            "closedAt": None,
+            "proposalId": None,
+            "failureReason": None,
+            "supersedesRequestId": supersedes,
+        }
+
+    def create_resume_extraction_request(
+        self, resume_id: str, expected_resume_revision: int
+    ) -> dict[str, Any]:
+        self.initialize()
+        _safe_session_id(resume_id)
+        with exclusive_file_lock(self.store_lock_path):
+            self._ensure_extraction_requests_file_locked()
+            self._roll_forward_extraction_locked()
+            resumes_document = self._load_resumes_document()
+            resume = resumes_document["resumes"].get(resume_id)
+            if resume is None or resume.get("deletedAt") is not None:
+                raise StoreError("resume does not exist")
+            if resume.get("storageKind") != "managed":
+                raise StoreError("resume must be adopted before extraction")
+            if resume["revision"] != expected_resume_revision:
+                raise StoreError("resume revision conflict")
+            observation = self._managed_resume_observation(resume)
+            if not observation["exists"] or observation.get("digest") != resume["digest"]:
+                raise StoreError("resume file is not ready for extraction")
+            requests_document = self._load_extraction_requests_document()
+            if any(
+                item["resumeId"] == resume_id and item["status"] == "requested"
+                for item in requests_document["requests"].values()
+            ):
+                raise StoreError("open extraction request already exists")
+            if resume.get("contentRevision") is None:
+                resume = dict(resume)
+                resume["contentRevision"] = self._new_resume_content_revision()
+                resume["revision"] += 1
+                resume["updatedAt"] = utc_now()
+                _validate_resume_record(resume_id, resume)
+                resumes_document["resumes"][resume_id] = resume
+                resumes_document["metadata"]["updatedAt"] = resume["updatedAt"]
+            request = self._new_extraction_request(resume)
+            _validate_extraction_request(request["requestId"], request)
+            requests_document["requests"][request["requestId"]] = request
+            requests_document["metadata"]["updatedAt"] = request["updatedAt"]
+            self._commit_extraction_operation_locked(
+                "request-create", None, None, requests_document,
+                resumes_document if resume["revision"] != expected_resume_revision else None,
+            )
+            return request
+
+    def get_resume_extraction_request(self, request_id: str) -> dict[str, Any] | None:
+        self.initialize()
+        _safe_session_id(request_id)
+        if not self.resume_extraction_requests_path.exists():
+            return None
+        return self._load_extraction_requests_document()["requests"].get(request_id)
+
+    def list_resume_extraction_requests(
+        self, resume_id: str | None = None, status: str | None = None
+    ) -> list[dict[str, Any]]:
+        self.initialize()
+        if resume_id is not None:
+            _safe_session_id(resume_id)
+        if status is not None and status not in EXTRACTION_REQUEST_STATUSES:
+            raise StoreError("resume extraction request status is unsupported")
+        if not self.resume_extraction_requests_path.exists():
+            return []
+        records = [
+            item
+            for item in self._load_extraction_requests_document()["requests"].values()
+            if (resume_id is None or item["resumeId"] == resume_id)
+            and (status is None or item["status"] == status)
+        ]
+        return sorted(records, key=lambda item: (item["createdAt"], item["requestId"]))
+
+    def _close_resume_extraction_request_locked(
+        self, requests_document: dict[str, Any], request_id: str,
+        expected_revision: int, status: str, failure_reason: str | None = None,
+        proposal_id: str | None = None,
+    ) -> dict[str, Any]:
+        current = requests_document["requests"].get(request_id)
+        if current is None:
+            raise StoreError("resume extraction request does not exist")
+        if current["revision"] != expected_revision:
+            raise StoreError("request revision conflict")
+        if current["status"] != "requested":
+            raise StoreError("resume extraction request is not open")
+        now = utc_now()
+        updated = {
+            **current, "status": status, "failureReason": failure_reason,
+            "proposalId": proposal_id, "revision": current["revision"] + 1,
+            "updatedAt": now, "closedAt": now,
+        }
+        _validate_extraction_request(request_id, updated)
+        requests_document["requests"][request_id] = updated
+        requests_document["metadata"]["updatedAt"] = now
+        return updated
+
+    def cancel_resume_extraction_request(
+        self, request_id: str, expected_revision: int
+    ) -> dict[str, Any]:
+        return self._close_extraction_request(request_id, expected_revision, "cancelled")
+
+    def fail_resume_extraction_request(
+        self, request_id: str, reason: str, expected_revision: int
+    ) -> dict[str, Any]:
+        if reason not in EXTRACTION_REQUEST_FAILURE_REASONS:
+            raise StoreError("resume extraction failure reason is unsupported")
+        return self._close_extraction_request(
+            request_id, expected_revision, "failed", reason
+        )
+
+    def _close_extraction_request(
+        self, request_id: str, expected_revision: int, status: str,
+        failure_reason: str | None = None,
+    ) -> dict[str, Any]:
+        self.initialize()
+        _safe_session_id(request_id)
+        with exclusive_file_lock(self.store_lock_path):
+            self._ensure_extraction_requests_file_locked()
+            self._roll_forward_extraction_locked()
+            document = self._load_extraction_requests_document()
+            updated = self._close_resume_extraction_request_locked(
+                document, request_id, expected_revision, status, failure_reason
+            )
+            self._commit_extraction_operation_locked(
+                "request-close", None, None, document
+            )
+            return updated
+
+    def retry_resume_extraction_request(
+        self, request_id: str, expected_revision: int,
+        expected_resume_revision: int,
+    ) -> dict[str, Any]:
+        self.initialize()
+        _safe_session_id(request_id)
+        with exclusive_file_lock(self.store_lock_path):
+            self._ensure_extraction_requests_file_locked()
+            self._roll_forward_extraction_locked()
+            document = self._load_extraction_requests_document()
+            current = document["requests"].get(request_id)
+            if current is None:
+                raise StoreError("resume extraction request does not exist")
+            if current["revision"] != expected_revision:
+                raise StoreError("request revision conflict")
+            if current["status"] not in {"failed", "stale"}:
+                raise StoreError("resume extraction request cannot be retried")
+            resume = self._load_resumes_document()["resumes"].get(current["resumeId"])
+            if resume is None or resume.get("deletedAt") is not None:
+                raise StoreError("resume does not exist")
+            if resume.get("storageKind") != "managed":
+                raise StoreError("resume must be adopted before extraction")
+            if resume["revision"] != expected_resume_revision:
+                raise StoreError("resume revision conflict")
+            observation = self._managed_resume_observation(resume)
+            if not observation["exists"] or observation.get("digest") != resume["digest"]:
+                raise StoreError("resume file is not ready for extraction")
+            if any(
+                item["resumeId"] == resume["id"] and item["status"] == "requested"
+                for item in document["requests"].values()
+            ):
+                raise StoreError("open extraction request already exists")
+            request = self._new_extraction_request(resume, request_id)
+            _validate_extraction_request(request["requestId"], request)
+            document["requests"][request["requestId"]] = request
+            document["metadata"]["updatedAt"] = request["updatedAt"]
+            self._commit_extraction_operation_locked(
+                "request-retry", None, None, document
+            )
+            return request
+
     def _proposal_stale_reasons(self, proposal: dict[str, Any]) -> list[str]:
         resume = self._load_resumes_document()["resumes"].get(proposal["resumeId"])
         if resume is None:
@@ -7282,14 +7678,19 @@ class Store:
         if resume.get("storageKind") != "managed":
             reasons.append("resume_not_managed")
             return reasons
-        if resume["revision"] != proposal["resumeRevision"]:
-            reasons.append("resume_revision_changed")
-        if resume["digest"] != proposal["resumeDigest"]:
-            reasons.append("resume_digest_changed")
+        content_revision = proposal.get("resumeContentRevision")
+        if content_revision is not None:
+            if resume.get("contentRevision") != content_revision:
+                reasons.append("resume_content_revision_changed")
+        else:
+            if resume["revision"] != proposal["resumeRevision"]:
+                reasons.append("resume_revision_changed")
+            if resume["digest"] != proposal["resumeDigest"]:
+                reasons.append("resume_digest_changed")
         observation = self._managed_resume_observation(resume)
         if not observation["exists"]:
             reasons.append("resume_file_missing")
-        elif observation.get("digest") != proposal["resumeDigest"]:
+        elif observation.get("digest") != resume["digest"]:
             reasons.append("resume_file_changed")
         return reasons
 
@@ -7299,6 +7700,98 @@ class Store:
         result["stale"] = bool(reasons)
         result["staleReasons"] = reasons
         return result
+
+    def _create_resume_proposal_locked(
+        self,
+        resume: dict[str, Any],
+        candidate_input: dict[str, Any],
+        profile_document: dict[str, Any],
+        proposals_document: dict[str, Any],
+        supersedes: str | None,
+        *,
+        bind_content_revision: bool,
+    ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+        candidate, candidate_paths = _validated_candidate(candidate_input)
+        profile_revision = profile_document["metadata"].get("revision", 1)
+        pending = next((
+            proposal for proposal in proposals_document["proposals"].values()
+            if proposal["resumeId"] == resume["id"] and proposal["status"] == "pending"
+        ), None)
+        if pending is not None:
+            if supersedes != pending["id"]:
+                raise StoreError("pending proposal requires explicit supersession")
+        elif supersedes is not None:
+            raise StoreError("proposal to supersede does not exist")
+        now = utc_now()
+        proposal_id = f"proposal-{uuid.uuid4()}"
+        profile = copy.deepcopy(profile_document["profile"])
+        provenance = dict(profile_document["metadata"].get("factProvenance", {}))
+        baselines = {
+            path: _pointer_baseline(profile_document["profile"], path)
+            for path in candidate_paths
+        }
+        auto_filled: list[str] = []
+        pending_paths: list[str] = []
+        for path in candidate_paths:
+            baseline = baselines[path]
+            ancestors_allow_fill = all(
+                not ancestor["exists"]
+                or (ancestor.get("container") is True and ancestor.get("empty") is False)
+                or ("value" in ancestor and ancestor["value"] is None)
+                for ancestor in baseline["ancestors"]
+            )
+            empty = not baseline["exists"] or baseline.get("value") is None
+            if empty and ancestors_allow_fill and not _user_protects_path(provenance, path):
+                _exists, extracted = _pointer_lookup(candidate, path)
+                _set_pointer_value(profile, path, extracted, replace_ancestors=False)
+                auto_filled.append(path)
+            else:
+                pending_paths.append(path)
+        result_profile_revision = profile_revision
+        if auto_filled:
+            metadata = dict(profile_document["metadata"])
+            metadata["revision"] = profile_revision + 1
+            metadata["updatedAt"] = now
+            metadata["factProvenance"] = _stamp_fact_provenance(
+                provenance, auto_filled, "resume", now, profile_document["profile"]
+            )
+            profile_document = {
+                "schemaVersion": SCHEMA_VERSION, "profile": profile, "metadata": metadata,
+            }
+            result_profile_revision = metadata["revision"]
+        if pending is not None:
+            replaced = dict(pending)
+            replaced.update({
+                "status": "superseded", "supersededBy": proposal_id,
+                "revision": pending["revision"] + 1, "updatedAt": now,
+            })
+            _validate_extraction_proposal(pending["id"], replaced)
+            proposals_document["proposals"][pending["id"]] = replaced
+        proposal = {
+            "id": proposal_id,
+            "resumeId": resume["id"],
+            "resumeRevision": resume["revision"],
+            "resumeDigest": resume["digest"],
+            "profileRevision": profile_revision,
+            "resultProfileRevision": result_profile_revision,
+            "candidate": candidate,
+            "baselines": baselines,
+            "autoFilledPaths": auto_filled,
+            "pendingPaths": pending_paths,
+            "decisions": {},
+            "status": "pending" if pending_paths else "completed",
+            "revision": 1,
+            "createdAt": now,
+            "updatedAt": now,
+            "supersededBy": None,
+        }
+        if bind_content_revision:
+            proposal["resumeContentRevision"] = resume["contentRevision"]
+        _validate_extraction_proposal(proposal_id, proposal)
+        proposals_document["proposals"][proposal_id] = proposal
+        proposals_document["metadata"]["updatedAt"] = now
+        _validate_extractions_document(proposals_document)
+        return profile_document, proposals_document, proposal
 
     def create_resume_proposal(
         self,
@@ -7310,7 +7803,7 @@ class Store:
     ) -> dict[str, Any]:
         self.initialize()
         _safe_session_id(resume_id)
-        candidate, candidate_paths = _validated_candidate(candidate_input)
+        _validated_candidate(candidate_input)
         with exclusive_file_lock(self.store_lock_path):
             self._ensure_extraction_files_locked()
             self._roll_forward_extraction_locked()
@@ -7333,105 +7826,79 @@ class Store:
             if profile_revision != expected_profile_revision:
                 raise StoreError("profile revision conflict")
             proposals_document = self._load_extractions_document()
-            pending = next(
-                (
-                    proposal
-                    for proposal in proposals_document["proposals"].values()
-                    if proposal["resumeId"] == resume_id
-                    and proposal["status"] == "pending"
-                ),
-                None,
+            profile_document, proposals_document, proposal = (
+                self._create_resume_proposal_locked(
+                    resume, candidate_input, profile_document,
+                    proposals_document, supersedes, bind_content_revision=False,
+                )
             )
-            if pending is not None:
-                if supersedes != pending["id"]:
-                    raise StoreError("pending proposal requires explicit supersession")
-            elif supersedes is not None:
-                raise StoreError("proposal to supersede does not exist")
-
-            now = utc_now()
-            proposal_id = f"proposal-{uuid.uuid4()}"
-            profile = copy.deepcopy(profile_document["profile"])
-            provenance = dict(profile_document["metadata"].get("factProvenance", {}))
-            baselines = {
-                path: _pointer_baseline(profile_document["profile"], path)
-                for path in candidate_paths
-            }
-            auto_filled: list[str] = []
-            pending_paths: list[str] = []
-            for path in candidate_paths:
-                baseline = baselines[path]
-                ancestors_allow_fill = all(
-                    not ancestor["exists"]
-                    or (
-                        ancestor.get("container") is True
-                        and ancestor.get("empty") is False
-                    )
-                    or ("value" in ancestor and ancestor["value"] is None)
-                    for ancestor in baseline["ancestors"]
-                )
-                empty = not baseline["exists"] or baseline.get("value") is None
-                if empty and ancestors_allow_fill and not _user_protects_path(provenance, path):
-                    _exists, extracted = _pointer_lookup(candidate, path)
-                    _set_pointer_value(profile, path, extracted, replace_ancestors=False)
-                    auto_filled.append(path)
-                else:
-                    pending_paths.append(path)
-            result_profile_revision = profile_revision
-            if auto_filled:
-                metadata = dict(profile_document["metadata"])
-                metadata["revision"] = profile_revision + 1
-                metadata["updatedAt"] = now
-                metadata["factProvenance"] = _stamp_fact_provenance(
-                    provenance,
-                    auto_filled,
-                    "resume",
-                    now,
-                    profile_document["profile"],
-                )
-                profile_document = {
-                    "schemaVersion": SCHEMA_VERSION,
-                    "profile": profile,
-                    "metadata": metadata,
-                }
-                result_profile_revision = metadata["revision"]
-            if pending is not None:
-                replaced = dict(pending)
-                replaced.update(
-                    {
-                        "status": "superseded",
-                        "supersededBy": proposal_id,
-                        "revision": pending["revision"] + 1,
-                        "updatedAt": now,
-                    }
-                )
-                _validate_extraction_proposal(pending["id"], replaced)
-                proposals_document["proposals"][pending["id"]] = replaced
-            proposal = {
-                "id": proposal_id,
-                "resumeId": resume_id,
-                "resumeRevision": resume["revision"],
-                "resumeDigest": resume["digest"],
-                "profileRevision": profile_revision,
-                "resultProfileRevision": result_profile_revision,
-                "candidate": candidate,
-                "baselines": baselines,
-                "autoFilledPaths": auto_filled,
-                "pendingPaths": pending_paths,
-                "decisions": {},
-                "status": "pending" if pending_paths else "completed",
-                "revision": 1,
-                "createdAt": now,
-                "updatedAt": now,
-                "supersededBy": None,
-            }
-            _validate_extraction_proposal(proposal_id, proposal)
-            proposals_document["proposals"][proposal_id] = proposal
-            proposals_document["metadata"]["updatedAt"] = now
-            _validate_extractions_document(proposals_document)
             self._commit_extraction_operation_locked(
                 "create", profile_document, proposals_document
             )
             return self._proposal_result(proposal)
+
+    def complete_resume_extraction_request(
+        self,
+        request_id: str,
+        candidate_input: dict[str, Any],
+        expected_request_revision: int,
+        expected_profile_revision: int,
+        expected_pending_proposal_id: str | None = None,
+    ) -> dict[str, Any]:
+        self.initialize()
+        _safe_session_id(request_id)
+        if expected_pending_proposal_id is not None:
+            _safe_session_id(expected_pending_proposal_id)
+        _validated_candidate(candidate_input)
+        with exclusive_file_lock(self.store_lock_path):
+            self._ensure_extraction_requests_file_locked()
+            self._roll_forward_extraction_locked()
+            requests_document = self._load_extraction_requests_document()
+            request = requests_document["requests"].get(request_id)
+            if request is None:
+                raise StoreError("resume extraction request does not exist")
+            if request["revision"] != expected_request_revision:
+                raise StoreError("request revision conflict")
+            if request["status"] != "requested":
+                raise StoreError("resume extraction request is not open")
+            resume = self._load_resumes_document()["resumes"].get(request["resumeId"])
+            if resume is None or resume.get("deletedAt") is not None:
+                raise StoreError("resume does not exist")
+            if resume.get("storageKind") != "managed":
+                raise StoreError("resume must be adopted before extraction")
+            if resume.get("contentRevision") != request["resumeContentRevision"]:
+                raise StoreError("resume content revision conflict")
+            observation = self._managed_resume_observation(resume)
+            if not observation["exists"] or observation.get("digest") != resume["digest"]:
+                raise StoreError("resume file is not ready for extraction")
+            profile_document = self._load_profile_document()
+            if profile_document["metadata"].get("revision", 1) != expected_profile_revision:
+                raise StoreError("profile revision conflict")
+            proposals_document = self._load_extractions_document()
+            profile_document, proposals_document, proposal = (
+                self._create_resume_proposal_locked(
+                    resume, candidate_input, profile_document, proposals_document,
+                    expected_pending_proposal_id, bind_content_revision=True,
+                )
+            )
+            completed = self._close_resume_extraction_request_locked(
+                requests_document, request_id, expected_request_revision,
+                "completed", proposal_id=proposal["id"],
+            )
+            self._commit_extraction_operation_locked(
+                "request-complete", profile_document, proposals_document,
+                requests_document,
+            )
+            return {
+                "request": completed,
+                "proposalSummary": {
+                    "id": proposal["id"],
+                    "status": proposal["status"],
+                    "revision": proposal["revision"],
+                    "autoFilledCount": len(proposal["autoFilledPaths"]),
+                    "pendingCount": len(proposal["pendingPaths"]),
+                },
+            }
 
     def get_resume_proposal(self, proposal_id: str) -> dict[str, Any] | None:
         self.initialize()
@@ -10340,6 +10807,33 @@ def build_parser() -> argparse.ArgumentParser:
     resume_delete = commands.add_parser("resume-delete")
     resume_delete.add_argument("--id", required=True)
     resume_delete.add_argument("--expected-revision", required=True, type=int)
+    request_create = commands.add_parser("resume-extraction-request-create")
+    request_create.add_argument("--resume-id", required=True)
+    request_create.add_argument("--expected-resume-revision", required=True, type=int)
+    request_get = commands.add_parser("resume-extraction-request-get")
+    request_get.add_argument("--id", required=True)
+    request_list = commands.add_parser("resume-extraction-request-list")
+    request_list.add_argument("--resume-id")
+    request_list.add_argument("--status", choices=sorted(EXTRACTION_REQUEST_STATUSES))
+    request_cancel = commands.add_parser("resume-extraction-request-cancel")
+    request_cancel.add_argument("--id", required=True)
+    request_cancel.add_argument("--expected-revision", required=True, type=int)
+    request_fail = commands.add_parser("resume-extraction-request-fail")
+    request_fail.add_argument("--id", required=True)
+    request_fail.add_argument(
+        "--reason", required=True, choices=sorted(EXTRACTION_REQUEST_FAILURE_REASONS)
+    )
+    request_fail.add_argument("--expected-revision", required=True, type=int)
+    request_retry = commands.add_parser("resume-extraction-request-retry")
+    request_retry.add_argument("--id", required=True)
+    request_retry.add_argument("--expected-revision", required=True, type=int)
+    request_retry.add_argument("--expected-resume-revision", required=True, type=int)
+    request_complete = commands.add_parser("resume-extraction-request-complete")
+    request_complete.add_argument("--id", required=True)
+    request_complete.add_argument("--input", required=True)
+    request_complete.add_argument("--expected-request-revision", required=True, type=int)
+    request_complete.add_argument("--expected-profile-revision", required=True, type=int)
+    request_complete.add_argument("--expected-pending-proposal-id")
     proposal_create = commands.add_parser("resume-proposal-create")
     proposal_create.add_argument("--resume-id", required=True)
     proposal_create.add_argument("--expected-resume-revision", required=True, type=int)
@@ -10631,6 +11125,29 @@ def run(args: argparse.Namespace) -> Any:
         return store.restore_resume(args.id, args.expected_revision)
     if command == "resume-delete":
         return store.delete_resume(args.id, args.expected_revision)
+    if command == "resume-extraction-request-create":
+        return store.create_resume_extraction_request(
+            args.resume_id, args.expected_resume_revision
+        )
+    if command == "resume-extraction-request-get":
+        return store.get_resume_extraction_request(args.id)
+    if command == "resume-extraction-request-list":
+        return store.list_resume_extraction_requests(args.resume_id, args.status)
+    if command == "resume-extraction-request-cancel":
+        return store.cancel_resume_extraction_request(args.id, args.expected_revision)
+    if command == "resume-extraction-request-fail":
+        return store.fail_resume_extraction_request(
+            args.id, args.reason, args.expected_revision
+        )
+    if command == "resume-extraction-request-retry":
+        return store.retry_resume_extraction_request(
+            args.id, args.expected_revision, args.expected_resume_revision
+        )
+    if command == "resume-extraction-request-complete":
+        return store.complete_resume_extraction_request(
+            args.id, _read_input(args.input), args.expected_request_revision,
+            args.expected_profile_revision, args.expected_pending_proposal_id,
+        )
     if command == "resume-proposal-create":
         return store.create_resume_proposal(
             args.resume_id,
