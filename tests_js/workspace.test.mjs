@@ -1095,6 +1095,31 @@ test("skill and documentation contracts keep extraction agent-owned and context-
   assert.doesNotMatch(app, /resume-extraction-requests[^\n]{0,100}\/(?:complete|fail|candidate)/);
 });
 
+test("resume extraction onboarding oracle is packaged in every protected OS validation job", async () => {
+  const packageJson = JSON.parse(await readFile(join(REPO_ROOT, "package.json"), "utf8"));
+  assert.equal(
+    packageJson.scripts["qa:resume-extraction-onboarding"],
+    "python3 qa/resume_extraction_onboarding_oracle.py --json",
+  );
+
+  const workflow = await readFile(join(REPO_ROOT, ".github", "workflows", "validate.yml"), "utf8");
+  const command = "run: npm run qa:resume-extraction-onboarding";
+  assert.equal(workflow.split(command).length - 1, 4);
+  const jobs = [
+    "validate", "windows-store-workspace", "macos-credential-helper",
+    "macos-account-flow-helper",
+  ];
+  const starts = jobs.map((job) => workflow.indexOf(`  ${job}:`));
+  for (const [index, job] of jobs.entries()) {
+    const start = starts[index];
+    assert.notEqual(start, -1, job);
+    const next = starts[index + 1] ?? -1;
+    const block = workflow.slice(start, next === -1 ? undefined : next);
+    assert.ok(block.includes(command), job);
+  }
+  assert.match(workflow, /pull_request:\n\s+branches: \[main, staging\]/);
+});
+
 test("styles include visible focus, reduced motion, contrast mode, and responsive behavior", async () => {
   const css = await readFile(join(REPO_ROOT, "workspace", "styles.css"), "utf8");
   assert.match(css, /:focus-visible/);

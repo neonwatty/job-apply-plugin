@@ -1,6 +1,9 @@
 import copy
 import json
 from pathlib import Path
+import subprocess
+import sys
+import tempfile
 import unittest
 
 from qa.contracts import (
@@ -12,6 +15,7 @@ from qa.contracts import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+RESUME_ONBOARDING_ORACLE = ROOT / "qa" / "resume_extraction_onboarding_oracle.py"
 
 
 class ContractTests(unittest.TestCase):
@@ -713,6 +717,73 @@ class ContractTests(unittest.TestCase):
             ContractError, "^readiness platform family mismatch$"
         ):
             validate_readiness_observation(wrong_platform, fixture)
+
+
+class ResumeExtractionOnboardingOracleTest(unittest.TestCase):
+    def test_oracle_emits_only_closed_value_free_proof(self):
+        completed = subprocess.run(
+            [sys.executable, str(RESUME_ONBOARDING_ORACLE), "--json"],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(completed.stderr, "")
+        receipt = json.loads(completed.stdout)
+        self.assertEqual(
+            set(receipt),
+            {
+                "requestShared", "autofillObserved", "conflictsReviewed",
+                "profileShared", "contentChangeStaled", "racesRejected",
+                "privacyVerified", "agentStoppedAtReview", "passed",
+            },
+        )
+        self.assertTrue(all(receipt.values()))
+        serialized = completed.stdout.lower()
+        for forbidden in (
+            "owner-like-redacted", "candidate", "fixture@example", "digest",
+            "contentrevision", "traceback", str(Path.home()).lower(),
+        ):
+            self.assertNotIn(forbidden, serialized)
+
+    def test_oracle_rejects_absolute_fixture_and_non_temporary_store(self):
+        fixture = ROOT / "qa" / "testdata" / "resumes" / "owner-like-redacted.pdf"
+        for args in (
+            ("--fixture", str(fixture)),
+            ("--store-root", str(Path.home() / ".job-apply")),
+        ):
+            with self.subTest(args=args):
+                completed = subprocess.run(
+                    [sys.executable, str(RESUME_ONBOARDING_ORACLE), "--json", *args],
+                    cwd=ROOT,
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                )
+                self.assertNotEqual(completed.returncode, 0)
+                self.assertNotIn(str(Path.home()), completed.stdout + completed.stderr)
+                receipt = json.loads(completed.stdout)
+                self.assertEqual(set(receipt), {
+                    "requestShared", "autofillObserved", "conflictsReviewed",
+                    "profileShared", "contentChangeStaled", "racesRejected",
+                    "privacyVerified", "agentStoppedAtReview", "passed",
+                })
+                self.assertFalse(receipt["passed"])
+
+        with tempfile.TemporaryDirectory(prefix="resume-oracle-contract-") as temporary:
+            completed = subprocess.run(
+                [
+                    sys.executable, str(RESUME_ONBOARDING_ORACLE), "--json",
+                    "--store-root", str(Path(temporary) / "store"),
+                ],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertTrue(json.loads(completed.stdout)["passed"])
 
 
 if __name__ == "__main__":
