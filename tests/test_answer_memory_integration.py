@@ -796,6 +796,41 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
         )
         self.assertNotIn("candidate-private@example.invalid", json.dumps(completed))
 
+    def test_profile_preparedness_cli_matches_store(self):
+        self.json_store("init")
+        source = self.home / "preparedness-cli-private.txt"
+        source.write_text("preparedness cli private bytes", encoding="utf-8")
+        resume_input = self.write_input("preparedness-resume.json", {
+            "id": "preparedness-cli", "label": "Preparedness Private Label",
+            "path": str(source),
+        })
+        resume = self.json_store("resume-import", "--input", str(resume_input))
+        profile_input = self.write_input("preparedness-profile.json", {
+            "firstName": "Private First", "lastName": "Private Last",
+            "email": "private-cli@example.invalid", "skills": ["Private Skill"],
+        })
+        self.json_store(
+            "profile-replace", "--input", str(profile_input),
+            "--expected-revision", "1", "--source", "user",
+        )
+        request = self.json_store(
+            "resume-extraction-request-create", "--resume-id", resume["id"],
+            "--expected-resume-revision", str(resume["revision"]),
+        )
+        projection = self.json_store("profile-preparedness-get")
+        self.assertEqual(
+            set(projection), {"essentialSetup", "commonCoverage", "reviewHealth"}
+        )
+        self.assertEqual(projection["reviewHealth"][0]["requestId"], request["requestId"])
+        serialized = json.dumps(projection, sort_keys=True).lower()
+        for forbidden in (
+            "score", "percent", "employability", "job_ready", "private first",
+            "private last", "private-cli@example.invalid", "private skill",
+            source.name.lower(), str(source).lower(), resume["digest"],
+            "preparedness cli private bytes", "preparedness private label",
+        ):
+            self.assertNotIn(forbidden, serialized)
+
     def test_concurrent_cli_acquisition_allows_only_one_global_claim(self):
         self.json_store("init")
         profile = self.write_input("concurrent-profile.json", {"firstName": "Synthetic"})

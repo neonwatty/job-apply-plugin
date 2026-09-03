@@ -1013,6 +1013,19 @@ def _changed_json_pointer_paths(
     return [prefix or "/"] if current != replacement else []
 
 
+def _meaningfully_present(value: Any) -> bool:
+    """Return whether a profile value carries non-blank user information."""
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, list):
+        return any(_meaningfully_present(item) for item in value)
+    if isinstance(value, dict):
+        return any(_meaningfully_present(item) for item in value.values())
+    return True
+
+
 def _protect_user_provenance(
     provenance: dict[str, Any], changed: list[str], source: str
 ) -> None:
@@ -3218,6 +3231,128 @@ class Store:
     def inspect_profile(self) -> dict[str, Any]:
         self.initialize()
         return self._profile_inspection(self._load_profile_document())
+
+    def profile_preparedness(self) -> dict[str, Any]:
+        """Project value-free setup, coverage, and review state from Store data."""
+        self.initialize()
+        with exclusive_file_lock(self.store_lock_path):
+            profile_document = self._load_profile_document()
+            profile = profile_document["profile"]
+            provenance = profile_document["metadata"].get("factProvenance", {})
+            resumes = self._load_resumes_document()["resumes"]
+            default_resume = next((
+                item for item in resumes.values()
+                if item.get("default") and item.get("deletedAt") is None
+            ), None)
+
+            essential_setup = []
+            for item_id, key in (
+                ("first_name", "firstName"),
+                ("last_name", "lastName"),
+                ("email", "email"),
+            ):
+                present = _meaningfully_present(profile.get(key))
+                essential_setup.append({
+                    "id": item_id,
+                    "paths": [f"/{key}"],
+                    "state": "present" if present else "blocked",
+                    "reasonCode": None if present else f"{item_id}_missing",
+                })
+
+            resume_item: dict[str, Any] = {
+                "id": "default_resume", "state": "blocked",
+                "reasonCode": "default_resume_missing",
+            }
+            if default_resume is not None:
+                resume_item["resumeId"] = default_resume["id"]
+                if default_resume.get("storageKind") != "managed":
+                    resume_item["reasonCode"] = "default_resume_unreadable"
+                else:
+                    observation = self._managed_resume_observation(default_resume)
+                    if not observation["exists"]:
+                        resume_item["reasonCode"] = "default_resume_unreadable"
+                    elif observation.get("digest") != default_resume.get("digest"):
+                        resume_item["reasonCode"] = "default_resume_changed"
+                    else:
+                        resume_item.update({"state": "present", "reasonCode": None})
+            essential_setup.append(resume_item)
+
+            coverage_groups = (
+                ("phone", ("phone",)),
+                ("location", ("location",)),
+                ("work_history", ("workHistory",)),
+                ("education", ("education",)),
+                ("skills", ("skills",)),
+                ("professional_links", ("linkedInUrl", "portfolioUrl", "githubUrl")),
+            )
+            common_coverage = []
+            for item_id, keys in coverage_groups:
+                present = any(_meaningfully_present(profile.get(key)) for key in keys)
+                common_coverage.append({
+                    "id": item_id,
+                    "paths": [f"/{key}" for key in keys],
+                    "state": "present" if present else "not_present",
+                    "reasonCode": None if present else f"{item_id}_missing",
+                })
+
+            requests = (
+                self._load_extraction_requests_document()["requests"].values()
+                if self.resume_extraction_requests_path.exists() else []
+            )
+            review_health: list[dict[str, Any]] = []
+            for request in requests:
+                status = request["status"]
+                if status not in {"requested", "failed", "stale"}:
+                    continue
+                item = {
+                    "kind": "extraction_request",
+                    "reasonCode": {
+                        "requested": "extraction_requested",
+                        "failed": "extraction_failed",
+                        "stale": "extraction_stale",
+                    }[status],
+                    "resumeId": request["resumeId"],
+                    "requestId": request["requestId"],
+                }
+                if status == "failed":
+                    item["failureReason"] = request["failureReason"]
+                review_health.append(item)
+
+            proposals = (
+                self._load_extractions_document()["proposals"].values()
+                if self.resume_extractions_path.exists() else []
+            )
+            for proposal in proposals:
+                if proposal["status"] != "pending" or not proposal["pendingPaths"]:
+                    continue
+                review_health.append({
+                    "kind": "resume_proposal",
+                    "reasonCode": "unresolved_conflicts",
+                    "resumeId": proposal["resumeId"],
+                    "proposalId": proposal["id"],
+                    "count": len(proposal["pendingPaths"]),
+                })
+                protected_count = sum(
+                    _user_protects_path(provenance, path)
+                    for path in proposal["pendingPaths"]
+                )
+                if protected_count:
+                    review_health.append({
+                        "kind": "resume_proposal",
+                        "reasonCode": "human_protected_facts_retained",
+                        "resumeId": proposal["resumeId"],
+                        "proposalId": proposal["id"],
+                        "count": protected_count,
+                    })
+            review_health.sort(key=lambda item: (
+                item["kind"], item["reasonCode"],
+                item.get("requestId", item.get("proposalId", "")),
+            ))
+            return {
+                "essentialSetup": essential_setup,
+                "commonCoverage": common_coverage,
+                "reviewHealth": review_health,
+            }
 
     @staticmethod
     def _profile_inspection(document: dict[str, Any]) -> dict[str, Any]:
@@ -10837,6 +10972,7 @@ def build_parser() -> argparse.ArgumentParser:
     request_complete.add_argument("--expected-request-revision", required=True, type=int)
     request_complete.add_argument("--expected-profile-revision", required=True, type=int)
     request_complete.add_argument("--expected-pending-proposal-id")
+    commands.add_parser("profile-preparedness-get")
     proposal_create = commands.add_parser("resume-proposal-create")
     proposal_create.add_argument("--resume-id", required=True)
     proposal_create.add_argument("--expected-resume-revision", required=True, type=int)
@@ -11151,6 +11287,8 @@ def run(args: argparse.Namespace) -> Any:
             args.id, _read_input(args.input), args.expected_request_revision,
             args.expected_profile_revision, args.expected_pending_proposal_id,
         )
+    if command == "profile-preparedness-get":
+        return store.profile_preparedness()
     if command == "resume-proposal-create":
         return store.create_resume_proposal(
             args.resume_id,

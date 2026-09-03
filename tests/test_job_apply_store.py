@@ -5104,6 +5104,87 @@ class StoreTests(unittest.TestCase):
             },
         )
 
+    def test_profile_preparedness_is_value_free_and_deterministic(self):
+        empty = self.store.profile_preparedness()
+        self.assertEqual(
+            set(empty), {"essentialSetup", "commonCoverage", "reviewHealth"}
+        )
+        self.assertEqual(
+            [item["id"] for item in empty["essentialSetup"]],
+            ["first_name", "last_name", "email", "default_resume"],
+        )
+        self.assertEqual(
+            [item["id"] for item in empty["commonCoverage"]],
+            ["phone", "location", "work_history", "education", "skills", "professional_links"],
+        )
+        source = self.home / "preparedness-private-name.txt"
+        source.write_text("preparedness private resume bytes", encoding="utf-8")
+        resume = self.store.create_resume({
+            "id": "preparedness-resume", "label": "Private Preparedness Label",
+            "path": str(source),
+        })
+        profile = self.store.replace_profile({
+            "firstName": "  ", "lastName": "Private Last", "email": "private@example.invalid",
+            "phone": "Private Phone", "location": {"city": "Private City"},
+            "workHistory": [{"company": "Private Company"}],
+            "education": [{"school": "Private School"}], "skills": ["Private Skill"],
+            "portfolioUrl": "https://private.example.invalid", "blankObject": {"value": "   "},
+        }, 1, "user")
+        projection = self.store.profile_preparedness()
+        essentials = {item["id"]: item for item in projection["essentialSetup"]}
+        coverage = {item["id"]: item for item in projection["commonCoverage"]}
+        self.assertEqual(essentials["first_name"]["state"], "blocked")
+        self.assertEqual(essentials["last_name"]["state"], "present")
+        self.assertEqual(essentials["default_resume"]["state"], "present")
+        self.assertTrue(all(item["state"] == "present" for item in coverage.values()))
+        serialized = json.dumps(projection, sort_keys=True).lower()
+        for forbidden in (
+            "score", "percent", "employability", "job_ready", "private last",
+            "private phone", "private city", "private company", "private school",
+            "private skill", "private.example", source.name, str(source).lower(),
+            resume["digest"], "preparedness private resume bytes",
+        ):
+            self.assertNotIn(forbidden, serialized)
+
+        managed = self.root / "resume-files" / resume["managedFile"]
+        managed.write_text("changed private bytes", encoding="utf-8")
+        changed = {item["id"]: item for item in self.store.profile_preparedness()["essentialSetup"]}
+        self.assertEqual(changed["default_resume"]["reasonCode"], "default_resume_changed")
+        managed.unlink()
+        unreadable = {item["id"]: item for item in self.store.profile_preparedness()["essentialSetup"]}
+        self.assertEqual(unreadable["default_resume"]["reasonCode"], "default_resume_unreadable")
+        self.assertEqual(profile["profile"]["lastName"], "Private Last")
+
+    def test_profile_preparedness_reports_review_health(self):
+        source = self.home / "health.txt"
+        source.write_text("health resume", encoding="utf-8")
+        resume = self.store.create_resume({
+            "id": "health-resume", "label": "Health", "path": str(source)
+        })
+        request = self.store.create_resume_extraction_request(resume["id"], resume["revision"])
+        requested = self.store.profile_preparedness()["reviewHealth"]
+        self.assertEqual(requested[0]["reasonCode"], "extraction_requested")
+        self.assertEqual(requested[0]["requestId"], request["requestId"])
+        failed = self.store.fail_resume_extraction_request(
+            request["requestId"], "interrupted", request["revision"]
+        )
+        profile = self.store.patch_profile({"firstName": "Human Private"}, 1, "user")
+        proposal = self.store.create_resume_proposal(
+            resume["id"], {"firstName": "Candidate Private"},
+            resume["revision"], profile["revision"],
+        )
+        health = self.store.profile_preparedness()["reviewHealth"]
+        self.assertEqual(
+            {item["reasonCode"] for item in health},
+            {"extraction_failed", "unresolved_conflicts", "human_protected_facts_retained"},
+        )
+        self.assertTrue(any(item.get("failureReason") == "interrupted" for item in health))
+        self.assertTrue(any(item.get("proposalId") == proposal["id"] for item in health))
+        serialized = json.dumps(health)
+        self.assertNotIn("Human Private", serialized)
+        self.assertNotIn("Candidate Private", serialized)
+        self.assertEqual(failed["status"], "failed")
+
     def test_resume_proposal_autofill_review_and_stale_baselines(self):
         source = self.home / "proposal.txt"
         source.write_text("synthetic proposal resume", encoding="utf-8")
