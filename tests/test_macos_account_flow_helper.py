@@ -36,6 +36,26 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         self.assertNotIn("URL", diagnostic_section)
         self.assertNotIn("Data", diagnostic_section)
 
+    def test_signed_browser_identity_uses_unique_regular_file_equivalence(self):
+        helper = (ROOT / "native/macos/job_apply_account_flow_helper.swift").read_text(encoding="utf-8")
+        fixtures = (ROOT / "native/macos/job_apply_credential_helper_tests.swift").read_text(encoding="utf-8")
+        self.assertIn("metadata.st_mode & S_IFMT == S_IFREG", helper)
+        self.assertIn("device: metadata.st_dev, inode: metadata.st_ino", helper)
+        self.assertIn("matches.count == 1", helper)
+        self.assertIn("literalAnchorIdentities: Dictionary(", helper)
+        self.assertIn("SecStaticCodeCreateWithPath(path as CFURL", helper)
+        self.assertIn("SecCSFlags(rawValue: (1 << 0) | (1 << 4))", helper)
+        self.assertIn("kSecGuestAttributePid as String: binding.browserProcessIdentifier", helper)
+        self.assertEqual(helper.count("oracleTrustedExecutableProof("), 3)
+        self.assertNotIn("guard path == executable", helper)
+        for case in (
+            'literalAnchorIdentities: ["/literal/reviewed": nil',
+            'literalAnchorIdentities: ["/literal/reviewed": reviewed, "/literal/other": reviewed]',
+            "processIdentity: reviewed, runningIdentity: other",
+            "processIdentity: changed, runningIdentity: changed",
+        ):
+            self.assertIn(case, fixtures)
+
     # These contract tests are intentionally quiet. Visible/native integration
     # lives behind the separately owner-approved qa-account gate.
     def test_native_email_only_contract_is_value_free_and_closed(self):

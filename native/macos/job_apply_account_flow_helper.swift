@@ -35,6 +35,60 @@ enum OracleCausalSuccessorDecision: Equatable {
     case selected(String)
 }
 
+struct OracleExecutableFileIdentity: Equatable {
+    let device: dev_t
+    let inode: ino_t
+}
+
+struct OracleTrustedExecutableProof: Equatable {
+    let literalPath: String
+    let requirement: String
+    let identity: OracleExecutableFileIdentity
+}
+
+private func oracleRegularExecutableIdentity(atPath path: String) -> OracleExecutableFileIdentity? {
+    var metadata = stat()
+    guard path.withCString({ fstatat(AT_FDCWD, $0, &metadata, 0) }) == 0,
+          metadata.st_mode & S_IFMT == S_IFREG
+    else { return nil }
+    return OracleExecutableFileIdentity(device: metadata.st_dev, inode: metadata.st_ino)
+}
+
+func oracleUniqueTrustedExecutableProof(
+    processIdentity: OracleExecutableFileIdentity?,
+    runningIdentity: OracleExecutableFileIdentity?,
+    literalAnchorIdentities: [String: OracleExecutableFileIdentity?],
+    trusted: [String: String]
+) -> OracleTrustedExecutableProof? {
+    guard let processIdentity, let runningIdentity, processIdentity == runningIdentity else {
+        return nil
+    }
+    let matches = trusted.compactMap { literalPath, requirement -> OracleTrustedExecutableProof? in
+        guard let anchorIdentity = literalAnchorIdentities[literalPath] ?? nil,
+              anchorIdentity == processIdentity
+        else { return nil }
+        return OracleTrustedExecutableProof(
+            literalPath: literalPath, requirement: requirement, identity: anchorIdentity
+        )
+    }
+    return matches.count == 1 ? matches[0] : nil
+}
+
+private func oracleTrustedExecutableProof(
+    processPath: String, runningPath: String, trusted: [String: String]
+) -> OracleTrustedExecutableProof? {
+    oracleUniqueTrustedExecutableProof(
+        processIdentity: oracleRegularExecutableIdentity(atPath: processPath),
+        runningIdentity: oracleRegularExecutableIdentity(atPath: runningPath),
+        literalAnchorIdentities: Dictionary(
+            uniqueKeysWithValues: trusted.keys.map {
+                ($0, oracleRegularExecutableIdentity(atPath: $0))
+            }
+        ),
+        trusted: trusted
+    )
+}
+
 /// Value-free decision for the post-action identity-removal attestation. The
 /// private identity is compared in memory only and is never returned, logged,
 /// or included in a fingerprint. An unreadable or ambiguous exact control
@@ -160,6 +214,7 @@ func oracleAccountFlowAdversarialFixturesPass() -> Bool {
     let termsBefore = NativeEmailOnlyBinding.fingerprint("AXLink|terms|https://terms.invalid/v1")
     let termsAfter = NativeEmailOnlyBinding.fingerprint("AXLink|terms|https://terms.invalid/v2")
     return oracleQueryBearingLivePortalRejectionsPass()
+        && oracleExecutableIdentityAdversarialFixturesPass()
         && exact.isExact && !unintendedEmail.isExact && !extraRequired.isExact && !extraAction.isExact
         && termsBefore != termsAfter
         && oracleCausalSuccessorDecision(
@@ -437,15 +492,19 @@ private final class OracleEmailOnlyEffect {
         else { return .processExecutable }
         guard let running = NSRunningApplication(processIdentifier: binding.browserProcessIdentifier)
         else { return .runningApplication }
-        guard let executable = running.executableURL?.resolvingSymlinksInPath().standardizedFileURL
+        guard let executable = running.executableURL
         else { return .runningExecutable }
-        let path = URL(fileURLWithPath: String(cString: buffer)).resolvingSymlinksInPath().standardizedFileURL
+        let processPath = String(cString: buffer)
         let trusted = [
             "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome": "identifier \"com.google.Chrome\" and anchor apple generic and certificate leaf[subject.OU] = \"EQHXZ8M8AV\"",
             "/Applications/Safari.app/Contents/MacOS/Safari": "identifier \"com.apple.Safari\" and anchor apple",
         ]
-        guard path == executable else { return .executableMatch }
-        guard let text = trusted[path.path] else { return .trustedBrowser }
+        guard let proof = oracleTrustedExecutableProof(
+            processPath: processPath, runningPath: executable.path, trusted: trusted
+        ) else { return .executableMatch }
+        guard let text = trusted[proof.literalPath], text == proof.requirement
+        else { return .trustedBrowser }
+        let path = URL(fileURLWithPath: proof.literalPath)
         var requirement: SecRequirement?, staticCode: SecStaticCode?, dynamicCode: SecCode?
         guard SecRequirementCreateWithString(text as CFString, [], &requirement) == errSecSuccess,
               let requirement else { return .requirement }
@@ -461,6 +520,20 @@ private final class OracleEmailOnlyEffect {
         guard SecCodeCheckValidity(
             dynamicCode, SecCSFlags(rawValue: 1 << 4), requirement
         ) == errSecSuccess else { return .dynamicValidity }
+        var confirmedBuffer = [CChar](repeating: 0, count: Int(MAXPATHLEN * 4))
+        guard proc_pidpath(
+            binding.browserProcessIdentifier, &confirmedBuffer, UInt32(confirmedBuffer.count)
+        ) > 0 else { return .processExecutable }
+        guard let confirmedRunning = NSRunningApplication(
+            processIdentifier: binding.browserProcessIdentifier
+        ) else { return .runningApplication }
+        guard let confirmedExecutable = confirmedRunning.executableURL
+        else { return .runningExecutable }
+        guard oracleTrustedExecutableProof(
+            processPath: String(cString: confirmedBuffer),
+            runningPath: confirmedExecutable.path,
+            trusted: trusted
+        ) == proof else { return .executableMatch }
         return nil
     }
 

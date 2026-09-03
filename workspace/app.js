@@ -387,7 +387,7 @@ if (hasDom) {
   const token = sessionToken(location.hash, safeSessionStorage(globalThis));
   if (location.hash) history.replaceState(null, "", location.pathname);
   const api = createApi(token);
-  const state = { jobs: [], activeJobsLoaded: false, resumes: [], selected: null, latest: null, draft: null, dirty: false, dirtyFields: new Set(), refreshPromise: null, pollIntervalId: null, opener: null, openerJobId: null, focusAfterClose: null, focusAfterCloseJobId: null, activity: null, activityJobId: null, activityUnavailable: false, attentionReturnJobId: null, navigationGeneration: 0, jobDialogGeneration: 0, dependencyObservation: 0, preflightRequestSequence: 0, preflightPolling: false, preflightError: null, readyHandoffProof: null, groupedApprovalPreview: null, groupedApprovalRequest: null, groupedApprovalProjectionSignature: null, groupedApprovalRequestSequence: 0 };
+  const state = { jobs: [], activeJobsLoaded: false, resumes: [], selected: null, latest: null, draft: null, dirty: false, dirtyFields: new Set(), refreshPromise: null, refreshEpoch: 0, canonicalStateCurrent: false, pollIntervalId: null, opener: null, openerJobId: null, focusAfterClose: null, focusAfterCloseJobId: null, activity: null, activityJobId: null, activityUnavailable: false, attentionReturnJobId: null, navigationGeneration: 0, jobDialogGeneration: 0, dependencyObservation: 0, preflightRequestSequence: 0, preflightPolling: false, preflightError: null, readyHandoffProof: null, groupedApprovalPreview: null, groupedApprovalRequest: null, groupedApprovalProjectionSignature: null, groupedApprovalRequestSequence: 0 };
   const profileState = { inspection: null, drafts: new Map(), draftBases: new Map(), atomic: new Set(), additionalAtomic: new Set(), deletions: new Set(), conflicts: [], latest: null, loaded: false };
   const factGroupState = { items: [], selectedView: "all", selected: null, editing: null, loaded: false, opener: null, requestSequence: 0 };
   const resumeState = { items: [], proposals: [], trash: false, loaded: false, loading: false, requestId: 0, selected: null, opener: null, proposal: null, dirtyMetadata: new Set() };
@@ -449,10 +449,12 @@ if (hasDom) {
     const proof = state.readyHandoffProof;
     const visible = Boolean(
       proof
+      && state.canonicalStateCurrent
       && current
       && proof.id === current.id
       && proof.revision === current.revision
       && proof.dialogGeneration === state.jobDialogGeneration
+      && proof.refreshEpoch === state.refreshEpoch
       && proof.dependencyObservation === state.dependencyObservation
       && current.status === "ready",
     );
@@ -1651,6 +1653,15 @@ if (hasDom) {
 
   function refresh({ quiet = false } = {}) {
     if (state.refreshPromise) return state.refreshPromise;
+    state.refreshEpoch += 1;
+    state.canonicalStateCurrent = false;
+    state.preflightRequestSequence += 1;
+    clearPreflightReadiness();
+    if (state.preflightError) {
+      state.preflightError = null;
+      $("#form-error").textContent = "";
+      $("#form-error").classList.add("hidden");
+    }
     state.refreshPromise = (async () => {
       try {
         const data = await api("/api/state");
@@ -1664,10 +1675,12 @@ if (hasDom) {
         state.jobs = data.jobs.map((job) => newestCanonicalJob(previousJobs.get(job.id), job));
         state.activeJobsLoaded = true; state.resumes = data.resumes;
         state.dependencyObservation += 1;
+        state.canonicalStateCurrent = true;
         render(); setConnection(true);
         syncReadyHandoff();
         if (!quiet) toast("Jobs refreshed from the canonical store");
       } catch (error) {
+        state.canonicalStateCurrent = false;
         setConnection(false, error.message); if (!quiet) showFormError(error.message);
       }
     })().finally(() => { state.refreshPromise = null; });
@@ -1742,9 +1755,10 @@ if (hasDom) {
   }
 
   async function preflight({ clearAtStart = true } = {}) {
-    if (!state.selected) return;
+    if (!state.selected || !state.canonicalStateCurrent) return null;
     const requestedId = state.selected.id;
     const requestedRevision = freshestKnownJob(requestedId)?.revision;
+    const refreshEpoch = state.refreshEpoch;
     const dependencyObservation = state.dependencyObservation;
     const dialogGeneration = state.jobDialogGeneration;
     if (!Number.isInteger(requestedRevision)) return null;
@@ -1759,6 +1773,8 @@ if (hasDom) {
         || state.selected?.id !== requestedId
         || result.id !== requestedId
         || state.jobDialogGeneration !== dialogGeneration
+        || !state.canonicalStateCurrent
+        || state.refreshEpoch !== refreshEpoch
         || state.dependencyObservation !== dependencyObservation
         || !current
       ) return null;
@@ -1776,13 +1792,15 @@ if (hasDom) {
         $("#form-error").textContent = "";
         $("#form-error").classList.add("hidden");
       }
-      renderPreflight(result, { dialogGeneration, dependencyObservation }); return result;
+      renderPreflight(result, { dialogGeneration, refreshEpoch, dependencyObservation }); return result;
     } catch (error) {
       if (
         requestSequence === state.preflightRequestSequence
         && dialog.open
         && state.selected?.id === requestedId
         && state.jobDialogGeneration === dialogGeneration
+        && state.canonicalStateCurrent
+        && state.refreshEpoch === refreshEpoch
         && state.dependencyObservation === dependencyObservation
         && freshestKnownJob(requestedId)?.revision === requestedRevision
       ) {
@@ -1794,7 +1812,7 @@ if (hasDom) {
   }
 
   const issueText = { profile_empty: "Complete your applicant profile", resume_missing: "Assign an active resume", resume_file_missing: "The resume file cannot be found", resume_file_changed: "The resume file changed since it was added", role_missing: "Add a role for clearer handoff", company_missing: "Add a company for clearer handoff" };
-  function renderPreflight(result, { dialogGeneration, dependencyObservation }) {
+  function renderPreflight(result, { dialogGeneration, refreshEpoch, dependencyObservation }) {
     const panel = $("#preflight-panel"), body = $("#preflight-results"); body.replaceChildren();
     const summary = document.createElement("p"); summary.textContent = result.ready ? "No blocking issues. This job can be handed to a Job Apply agent." : "Resolve the blocking issues before marking this job ready."; body.append(summary);
     for (const [label, items] of [["Blocking", result.errors], ["Warnings", result.warnings]]) if (items.length) { const h = document.createElement("strong"); h.textContent = label; const ul = document.createElement("ul"); for (const code of items) { const li = document.createElement("li"); li.textContent = issueText[code] || code; ul.append(li); } body.append(h, ul); }
@@ -1803,7 +1821,7 @@ if (hasDom) {
     panel.classList.remove("hidden");
     $("#mark-ready").classList.toggle("hidden", !result.ready || !canMarkReadyFrom(currentStatus));
     state.readyHandoffProof = result.ready && currentStatus === "ready" && result.revision === current?.revision
-      ? { id: result.id, revision: result.revision, dialogGeneration, dependencyObservation }
+      ? { id: result.id, revision: result.revision, dialogGeneration, refreshEpoch, dependencyObservation }
       : null;
     syncReadyHandoff();
   }
@@ -2187,7 +2205,7 @@ if (hasDom) {
     await refresh({ quiet: true });
     if (dialog.open && state.selected) {
       const listed = state.jobs.find((job) => job.id === state.selected.id);
-      if (listed?.status === "ready" && !state.preflightPolling) {
+      if (state.canonicalStateCurrent && listed?.status === "ready" && !state.preflightPolling) {
         state.preflightPolling = true;
         try {
           await preflight({ clearAtStart: false });

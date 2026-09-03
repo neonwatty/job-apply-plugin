@@ -393,6 +393,154 @@ test("owner beta clean packaged browser and CLI journey survives restart and fai
     await readyHandoff.waitFor({ state: "visible" });
     assert.equal(await page.locator("#form-error").isVisible(), false);
 
+    await jobDialog.getByLabel("Notes", { exact: true }).fill("Unsaved note survives a failed refresh");
+    const epochStatePattern = "**/api/state";
+    let guardedPreflightRequests = 0;
+    let holdRecoveryPreflight = false;
+    let recoveryPreflightSeenResolve;
+    let releaseRecoveryPreflightResolve;
+    const recoveryPreflightSeen = new Promise((resolve) => { recoveryPreflightSeenResolve = resolve; });
+    const releaseRecoveryPreflight = new Promise((resolve) => { releaseRecoveryPreflightResolve = resolve; });
+    await page.route(preflightPattern, async (route) => {
+      guardedPreflightRequests += 1;
+      if (holdRecoveryPreflight) {
+        recoveryPreflightSeenResolve();
+        await releaseRecoveryPreflight;
+      }
+      await route.continue();
+    });
+    const heldFailedStateRoutes = [];
+    let failedStateSeenResolve;
+    let secondFailedStateSeenResolve;
+    const failedStateSeen = new Promise((resolve) => { failedStateSeenResolve = resolve; });
+    const secondFailedStateSeen = new Promise((resolve) => { secondFailedStateSeenResolve = resolve; });
+    await page.route(epochStatePattern, (route) => {
+      heldFailedStateRoutes.push(route);
+      failedStateSeenResolve();
+      if (heldFailedStateRoutes.length === 2) secondFailedStateSeenResolve();
+    });
+    const failedStateResponse = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === "/api/state" && response.status() === 503
+    ));
+    await page.evaluate(() => {
+      document.querySelector("#refresh").click();
+      document.querySelector("#refresh").click();
+    });
+    assert.equal(await readyHandoff.isVisible(), false);
+    assert.equal(await page.locator("#preflight-panel").isVisible(), false);
+    assert.equal(await page.locator("#mark-ready").isVisible(), false);
+    assert.equal(await jobDialog.getByLabel("Notes", { exact: true }).inputValue(), "Unsaved note survives a failed refresh");
+    await failedStateSeen;
+    assert.equal(heldFailedStateRoutes.length, 1);
+    await jobDialog.getByRole("button", { name: "Run ready check" }).click();
+    assert.equal(guardedPreflightRequests, 0);
+    await heldFailedStateRoutes[0].fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { code: "state_unavailable", message: "canonical refresh unavailable" } }),
+    });
+    await failedStateResponse;
+    await jobDialog.getByText("canonical refresh unavailable", { exact: true }).waitFor();
+    assert.equal(await readyHandoff.isVisible(), false);
+    assert.equal(await page.locator("#preflight-panel").isVisible(), false);
+    assert.equal(await jobDialog.getByLabel("Notes", { exact: true }).inputValue(), "Unsaved note survives a failed refresh");
+    await jobDialog.getByRole("button", { name: "Run ready check" }).click();
+    assert.equal(guardedPreflightRequests, 0);
+
+    const failedPollResponse = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === "/api/state" && response.status() === 503
+    ));
+    const failedPoll = page.evaluate(() => {
+      const interval = globalThis.__workspaceIntervals.find(({ delay }) => delay === 4000);
+      return interval.callback();
+    });
+    await secondFailedStateSeen;
+    assert.equal(guardedPreflightRequests, 0);
+    await heldFailedStateRoutes[1].fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { code: "state_unavailable", message: "canonical polling refresh unavailable" } }),
+    });
+    await failedPollResponse;
+    await failedPoll;
+    assert.equal(guardedPreflightRequests, 0);
+    assert.equal(await readyHandoff.isVisible(), false);
+    assert.equal(await page.locator("#preflight-panel").isVisible(), false);
+
+    await page.unroute(epochStatePattern);
+    const recoveryStateResponse = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === "/api/state" && response.ok()
+    ));
+    holdRecoveryPreflight = true;
+    const recoveryPoll = page.evaluate(() => {
+      const interval = globalThis.__workspaceIntervals.find(({ delay }) => delay === 4000);
+      return interval.callback();
+    });
+    await recoveryStateResponse;
+    await recoveryPreflightSeen;
+    assert.equal(await readyHandoff.isVisible(), false);
+    assert.equal(await page.locator("#preflight-panel").isVisible(), false);
+    assert.equal(guardedPreflightRequests, 1);
+    releaseRecoveryPreflightResolve();
+    await recoveryPoll;
+    await readyHandoff.waitFor({ state: "visible" });
+    assert.equal(guardedPreflightRequests, 1);
+    assert.equal(await jobDialog.getByLabel("Notes", { exact: true }).inputValue(), "Unsaved note survives a failed refresh");
+    await page.unroute(preflightPattern);
+    await page.getByRole("button", { name: "Close job details" }).click();
+    await jobDialog.waitFor({ state: "hidden" });
+    await page.getByRole("button", { name: /Owner Beta Engineer/ }).click();
+    await readyHandoff.waitFor({ state: "visible" });
+
+    for (const staleOutcome of ["success", "error"]) {
+      let stalePreflightSeenResolve;
+      let releaseStalePreflightResolve;
+      const stalePreflightSeen = new Promise((resolve) => { stalePreflightSeenResolve = resolve; });
+      const releaseStalePreflight = new Promise((resolve) => { releaseStalePreflightResolve = resolve; });
+      await page.route(preflightPattern, async (route) => {
+        stalePreflightSeenResolve();
+        await releaseStalePreflight;
+        if (staleOutcome === "success") await route.continue();
+        else await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ error: { code: "stale_preflight", message: "stale preflight error" } }),
+        });
+      });
+      await jobDialog.getByRole("button", { name: "Run ready check" }).click();
+      await stalePreflightSeen;
+
+      let heldStateRoute;
+      let heldStateSeenResolve;
+      const heldStateSeen = new Promise((resolve) => { heldStateSeenResolve = resolve; });
+      await page.route(epochStatePattern, (route) => {
+        heldStateRoute = route;
+        heldStateSeenResolve();
+      });
+      const heldStateResponse = page.waitForResponse((response) => (
+        new URL(response.url()).pathname === "/api/state" && response.ok()
+      ));
+      await page.evaluate(() => { document.querySelector("#toast").textContent = ""; });
+      await page.locator("#refresh").evaluate((button) => button.click());
+      await heldStateSeen;
+      const stalePreflightResponse = page.waitForResponse((response) => (
+        new URL(response.url()).pathname === `/api/jobs/${job.id}/preflight`
+      ));
+      releaseStalePreflightResolve();
+      await stalePreflightResponse;
+      assert.equal(await page.locator("#preflight-panel").isVisible(), false);
+      assert.equal(await readyHandoff.isVisible(), false);
+      assert.equal(await page.locator("#mark-ready").isVisible(), false);
+      assert.equal(await jobDialog.getByText("stale preflight error", { exact: true }).isVisible(), false);
+      await heldStateRoute.continue();
+      await heldStateResponse;
+      await page.getByText("Jobs refreshed from the canonical store", { exact: true }).waitFor();
+      await page.unroute(epochStatePattern);
+      await page.unroute(preflightPattern);
+      await jobDialog.getByRole("button", { name: "Run ready check" }).click();
+      await readyHandoff.waitFor({ state: "visible" });
+    }
+
     await page.route("**/api/jobs/**", async (route) => {
       const requestUrl = new URL(route.request().url());
       if (requestUrl.pathname === `/api/jobs/${job.id}` && route.request().method() === "PATCH") {
