@@ -31,6 +31,10 @@ enum OracleBrowserIdentitySubstage: Int, Error {
     case secondProofChanged = 49
     case processIdentityUnavailable = 50
     case runningIdentityUnavailable = 51
+    case processLiteralAnchorOnly = 52
+    case runningLiteralAnchorOnly = 53
+    case noLiteralAnchorMatch = 54
+    case literalAnchorMatchAmbiguous = 55
 }
 
 enum OracleCausalSuccessorDecision: Equatable {
@@ -54,6 +58,10 @@ enum OracleTrustedExecutableProofDecision: Equatable {
     case processIdentityUnavailable
     case runningIdentityUnavailable
     case processRunningMismatch
+    case processLiteralAnchorOnly
+    case runningLiteralAnchorOnly
+    case noLiteralAnchorMatch
+    case literalAnchorMatchAmbiguous
     case literalAnchorUnproven
     case proven(OracleTrustedExecutableProof)
 }
@@ -74,7 +82,28 @@ func oracleTrustedExecutableProofDecision(
 ) -> OracleTrustedExecutableProofDecision {
     guard let processIdentity else { return .processIdentityUnavailable }
     guard let runningIdentity else { return .runningIdentityUnavailable }
-    guard processIdentity == runningIdentity else { return .processRunningMismatch }
+    guard processIdentity == runningIdentity else {
+        let processMatches = trusted.keys.filter { literalPath in
+            guard let anchorIdentity = literalAnchorIdentities[literalPath] ?? nil
+            else { return false }
+            return anchorIdentity == processIdentity
+        }.count
+        let runningMatches = trusted.keys.filter { literalPath in
+            guard let anchorIdentity = literalAnchorIdentities[literalPath] ?? nil
+            else { return false }
+            return anchorIdentity == runningIdentity
+        }.count
+        switch (processMatches, runningMatches) {
+        case (1, 0):
+            return .processLiteralAnchorOnly
+        case (0, 1):
+            return .runningLiteralAnchorOnly
+        case (0, 0):
+            return .noLiteralAnchorMatch
+        default:
+            return .literalAnchorMatchAmbiguous
+        }
+    }
     let matches = trusted.compactMap { literalPath, requirement -> OracleTrustedExecutableProof? in
         guard let anchorIdentity = literalAnchorIdentities[literalPath] ?? nil,
               anchorIdentity == processIdentity
@@ -155,10 +184,26 @@ func oracleExecutableIdentityAdversarialFixturesPass() -> Bool {
             trusted: trusted
         ) == .runningIdentityUnavailable
         && oracleTrustedExecutableProofDecision(
+            processIdentity: reviewed, runningIdentity: changed,
+            literalAnchorIdentities: ["/literal/reviewed": reviewed, "/literal/other": other],
+            trusted: trusted
+        ) == .processLiteralAnchorOnly
+        && oracleTrustedExecutableProofDecision(
+            processIdentity: changed, runningIdentity: reviewed,
+            literalAnchorIdentities: ["/literal/reviewed": reviewed, "/literal/other": other],
+            trusted: trusted
+        ) == .runningLiteralAnchorOnly
+        && oracleTrustedExecutableProofDecision(
+            processIdentity: changed,
+            runningIdentity: OracleExecutableFileIdentity(device: 8, inode: 12),
+            literalAnchorIdentities: ["/literal/reviewed": reviewed, "/literal/other": other],
+            trusted: trusted
+        ) == .noLiteralAnchorMatch
+        && oracleTrustedExecutableProofDecision(
             processIdentity: reviewed, runningIdentity: other,
             literalAnchorIdentities: ["/literal/reviewed": reviewed, "/literal/other": other],
             trusted: trusted
-        ) == .processRunningMismatch
+        ) == .literalAnchorMatchAmbiguous
         && oracleTrustedExecutableProofDecision(
             processIdentity: reviewed, runningIdentity: reviewed,
             literalAnchorIdentities: ["/literal/reviewed": nil, "/literal/other": other],
@@ -625,6 +670,14 @@ private final class OracleEmailOnlyEffect {
             return .runningIdentityUnavailable
         case .processRunningMismatch:
             return .processRunningMismatch
+        case .processLiteralAnchorOnly:
+            return .processLiteralAnchorOnly
+        case .runningLiteralAnchorOnly:
+            return .runningLiteralAnchorOnly
+        case .noLiteralAnchorMatch:
+            return .noLiteralAnchorMatch
+        case .literalAnchorMatchAmbiguous:
+            return .literalAnchorMatchAmbiguous
         case .literalAnchorUnproven:
             return .literalAnchorUnproven
         case .proven(let establishedProof):

@@ -28,6 +28,8 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
             ("staticValidity", 45), ("dynamicCode", 46), ("dynamicValidity", 47),
             ("literalAnchorUnproven", 48), ("secondProofChanged", 49),
             ("processIdentityUnavailable", 50), ("runningIdentityUnavailable", 51),
+            ("processLiteralAnchorOnly", 52), ("runningLiteralAnchorOnly", 53),
+            ("noLiteralAnchorMatch", 54), ("literalAnchorMatchAmbiguous", 55),
         )
         for case_name, status in expected:
             self.assertIn(f"case {case_name} = {status}", helper)
@@ -40,6 +42,10 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         self.assertIn("case .processRunningMismatch:\n            return .processRunningMismatch", helper)
         self.assertIn("case .processIdentityUnavailable:\n            return .processIdentityUnavailable", helper)
         self.assertIn("case .runningIdentityUnavailable:\n            return .runningIdentityUnavailable", helper)
+        self.assertIn("case .processLiteralAnchorOnly:\n            return .processLiteralAnchorOnly", helper)
+        self.assertIn("case .runningLiteralAnchorOnly:\n            return .runningLiteralAnchorOnly", helper)
+        self.assertIn("case .noLiteralAnchorMatch:\n            return .noLiteralAnchorMatch", helper)
+        self.assertIn("case .literalAnchorMatchAmbiguous:\n            return .literalAnchorMatchAmbiguous", helper)
         self.assertIn("case .literalAnchorUnproven:\n            return .literalAnchorUnproven", helper)
         self.assertIn(") else { return .secondProofChanged }", helper)
 
@@ -53,7 +59,7 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         self.assertIn("SecStaticCodeCreateWithPath(path as CFURL", helper)
         self.assertIn("SecCSFlags(rawValue: (1 << 0) | (1 << 4))", helper)
         self.assertIn("kSecGuestAttributePid as String: binding.browserProcessIdentifier", helper)
-        self.assertEqual(helper.count("oracleTrustedExecutableProofDecision("), 12)
+        self.assertEqual(helper.count("oracleTrustedExecutableProofDecision("), 15)
         self.assertNotIn("guard path == executable", helper)
         for case in (
             'literalAnchorIdentities: ["/literal/reviewed": nil',
@@ -64,9 +70,13 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
             self.assertIn(case, helper)
         self.assertEqual(helper.count("func oracleExecutableIdentityAdversarialFixturesPass()"), 1)
         self.assertNotIn("oracleExecutableIdentityAdversarialFixturesPass", test_support)
-        self.assertIn(") == .processRunningMismatch", helper)
+        self.assertNotIn(") == .processRunningMismatch", helper)
         self.assertIn(") == .processIdentityUnavailable", helper)
         self.assertIn(") == .runningIdentityUnavailable", helper)
+        self.assertIn(") == .processLiteralAnchorOnly", helper)
+        self.assertIn(") == .runningLiteralAnchorOnly", helper)
+        self.assertIn(") == .noLiteralAnchorMatch", helper)
+        self.assertIn(") == .literalAnchorMatchAmbiguous", helper)
         self.assertEqual(helper.count(") == .literalAnchorUnproven"), 2)
         self.assertIn("!oracleSecondExecutableProofMatches(", helper)
 

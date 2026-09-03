@@ -139,6 +139,10 @@ class AccountFlowTests(unittest.TestCase):
             49: "browser_identity_second_proof_changed",
             50: "browser_identity_process_identity_unavailable",
             51: "browser_identity_running_identity_unavailable",
+            52: "browser_identity_process_literal_anchor_only",
+            53: "browser_identity_running_literal_anchor_only",
+            54: "browser_identity_no_literal_anchor_match",
+            55: "browser_identity_literal_anchor_match_ambiguous",
         }
         self.assertEqual(
             {status: MAC.NativeMacOSAccessibilityProvider._closed_failure_codes[status]
