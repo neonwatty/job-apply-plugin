@@ -226,6 +226,10 @@ that the field accepted the value. Apply this bounded loop to every editable con
    handoff, not a missing-answer request. Never claim the field is complete merely
    because the browser operation returned no error.
 
+Record and describe this outcome as **Browser action required**. Tell the user that
+the saved information is already known and that the visible browser control needs
+their action; do not direct them to add, edit, or repeat the answer in Companion.
+
 An alternate entry method within the same form instance, application attempt,
 destination, and already-approved purpose does not require renewed fill consent.
 Opening or switching to another form instance is a new action surface and requires

@@ -255,6 +255,26 @@ export function attentionAnnouncement(previous, current) {
   return `Needs Attention queue updated. ${count} job${count === 1 ? "" : "s"} now require action.`;
 }
 
+export function attentionMissingInformationText(item) {
+  if (item?.reasonCode !== "needs_information") return "";
+  const count = Number.isInteger(item.missingInformationCount) ? item.missingInformationCount : 0;
+  return ` · ${count} missing information item${count === 1 ? "" : "s"}`;
+}
+
+export function attentionBlockerSummary(item) {
+  const blockers = item?.session?.blockers || [];
+  const knownDataBrowserFailure = item?.reasonCode === "browser_action_required"
+    && blockers.length === 2
+    && blockers.some((entry) => entry.type === "browser_handoff" && entry.code === "unsupported-control")
+    && blockers.some((entry) => entry.type === "information" && entry.code === "owner-input-required");
+  if (knownDataBrowserFailure) {
+    return "Browser action required: unsupported control. Saved information is already known.";
+  }
+  return blockers.length
+    ? `${blockers.length} typed blocker${blockers.length === 1 ? "" : "s"}: ${blockers.map((entry) => entry.code).join(", ")}`
+    : "No typed blockers recorded.";
+}
+
 export function ownerBetaNextStep(action) {
   return ({
     import_resume: ["Import a resume", "Add a private managed resume so agents have an approved document to use."],
@@ -367,7 +387,7 @@ if (hasDom) {
   const token = sessionToken(location.hash, safeSessionStorage(globalThis));
   if (location.hash) history.replaceState(null, "", location.pathname);
   const api = createApi(token);
-  const state = { jobs: [], activeJobsLoaded: false, resumes: [], selected: null, latest: null, draft: null, dirty: false, dirtyFields: new Set(), polling: false, pollIntervalId: null, opener: null, openerJobId: null, focusAfterClose: null, focusAfterCloseJobId: null, activity: null, activityJobId: null, activityUnavailable: false, attentionReturnJobId: null, navigationGeneration: 0, preflightRequestSequence: 0, preflightPolling: false, preflightError: null, readyHandoffProof: null, groupedApprovalPreview: null, groupedApprovalRequest: null, groupedApprovalProjectionSignature: null, groupedApprovalRequestSequence: 0 };
+  const state = { jobs: [], activeJobsLoaded: false, resumes: [], selected: null, latest: null, draft: null, dirty: false, dirtyFields: new Set(), refreshPromise: null, refreshEpoch: 0, canonicalStateCurrent: false, pollIntervalId: null, opener: null, openerJobId: null, focusAfterClose: null, focusAfterCloseJobId: null, activity: null, activityJobId: null, activityUnavailable: false, attentionReturnJobId: null, navigationGeneration: 0, jobDialogGeneration: 0, dependencyObservation: 0, preflightRequestSequence: 0, preflightPolling: false, preflightError: null, readyHandoffProof: null, groupedApprovalPreview: null, groupedApprovalRequest: null, groupedApprovalProjectionSignature: null, groupedApprovalRequestSequence: 0 };
   const profileState = { inspection: null, drafts: new Map(), draftBases: new Map(), atomic: new Set(), additionalAtomic: new Set(), deletions: new Set(), conflicts: [], latest: null, loaded: false };
   const factGroupState = { items: [], selectedView: "all", selected: null, editing: null, loaded: false, opener: null, requestSequence: 0 };
   const resumeState = { items: [], proposals: [], trash: false, loaded: false, loading: false, requestId: 0, selected: null, opener: null, proposal: null, dirtyMetadata: new Set() };
@@ -429,9 +449,13 @@ if (hasDom) {
     const proof = state.readyHandoffProof;
     const visible = Boolean(
       proof
+      && state.canonicalStateCurrent
       && current
       && proof.id === current.id
       && proof.revision === current.revision
+      && proof.dialogGeneration === state.jobDialogGeneration
+      && proof.refreshEpoch === state.refreshEpoch
+      && proof.dependencyObservation === state.dependencyObservation
       && current.status === "ready",
     );
     $("#ready-handoff").classList.toggle("hidden", !visible);
@@ -1160,11 +1184,11 @@ if (hasDom) {
       const guidance = document.createElement("p"); guidance.textContent = item.guidance;
       const blockers = item.session?.blockers || [];
       const blockerSummary = document.createElement("p"); blockerSummary.className = "attention-question";
-      blockerSummary.textContent = blockers.length ? `${blockers.length} typed blocker${blockers.length === 1 ? "" : "s"}: ${blockers.map((entry) => entry.code).join(", ")}` : "No typed blockers recorded.";
+      blockerSummary.textContent = attentionBlockerSummary(item);
       const handoff = document.createElement("p"); handoff.className = "attention-company";
       handoff.textContent = item.session?.browserHandoff ? `Browser handoff: ${statusLabel(item.session.browserHandoff.state)} · ${item.session.browserHandoff.reasonCode}` : "Browser handoff not recorded";
       const metadata = document.createElement("p"); metadata.className = "attention-meta";
-      const missing = item.reasonCode === "needs_information" ? ` · ${item.missingInformationCount} missing information item${item.missingInformationCount === 1 ? "" : "s"}` : "";
+      const missing = attentionMissingInformationText(item);
       metadata.textContent = `Priority ${item.priority} · ${statusLabel(item.status)} · since ${formatActivityTime(item.attentionAt)}${missing}`;
       const action = document.createElement("span"); action.className = "attention-action"; action.textContent = attentionState.unavailable ? "Unavailable until refresh" : "Open Job details";
       button.append(heading, reason, guidance, blockerSummary, handoff);
@@ -1627,22 +1651,40 @@ if (hasDom) {
     if (focusedJobId) jobButton(focusedJobId)?.focus();
   }
 
-  async function refresh({ quiet = false } = {}) {
-    if (state.polling) return; state.polling = true;
-    try {
-      const data = await api("/api/state");
-      if (state.dirty && state.selected) {
-        const latest = data.jobs.find((job) => job.id === state.selected.id);
-        if (latest && latest.revision !== state.selected.revision) {
-          state.latest = latest; $("#sync-notice").textContent = "A canonical job changed while your draft is open. Your draft has not been replaced."; $("#sync-notice").classList.remove("hidden");
+  function refresh({ quiet = false } = {}) {
+    if (state.refreshPromise) return state.refreshPromise;
+    state.refreshEpoch += 1;
+    state.canonicalStateCurrent = false;
+    state.preflightRequestSequence += 1;
+    clearPreflightReadiness();
+    if (state.preflightError) {
+      state.preflightError = null;
+      $("#form-error").textContent = "";
+      $("#form-error").classList.add("hidden");
+    }
+    state.refreshPromise = (async () => {
+      try {
+        const data = await api("/api/state");
+        if (state.dirty && state.selected) {
+          const latest = data.jobs.find((job) => job.id === state.selected.id);
+          if (latest && latest.revision > state.selected.revision) {
+            state.latest = latest; $("#sync-notice").textContent = "A canonical job changed while your draft is open. Your draft has not been replaced."; $("#sync-notice").classList.remove("hidden");
+          }
         }
+        const previousJobs = new Map(state.jobs.map((job) => [job.id, job]));
+        state.jobs = data.jobs.map((job) => newestCanonicalJob(previousJobs.get(job.id), job));
+        state.activeJobsLoaded = true; state.resumes = data.resumes;
+        state.dependencyObservation += 1;
+        state.canonicalStateCurrent = true;
+        render(); setConnection(true);
+        syncReadyHandoff();
+        if (!quiet) toast("Jobs refreshed from the canonical store");
+      } catch (error) {
+        state.canonicalStateCurrent = false;
+        setConnection(false, error.message); if (!quiet) showFormError(error.message);
       }
-      state.jobs = data.jobs; state.activeJobsLoaded = true; state.resumes = data.resumes; render(); setConnection(true);
-      syncReadyHandoff();
-      if (!quiet) toast("Jobs refreshed from the canonical store");
-    } catch (error) {
-      setConnection(false, error.message); if (!quiet) showFormError(error.message);
-    } finally { state.polling = false; }
+    })().finally(() => { state.refreshPromise = null; });
+    return state.refreshPromise;
   }
 
   function fillResumeOptions(selected) {
@@ -1658,6 +1700,7 @@ if (hasDom) {
 
   function openNew() {
     rememberOpener();
+    state.jobDialogGeneration += 1;
     state.preflightRequestSequence += 1;
     clearPreflightReadiness();
     state.selected = null; state.latest = null; state.draft = null; fillForm(null); $("#job-dialog-title").textContent = "Capture a job"; $("#dialog-kicker").textContent = "NEW CANONICAL RECORD";
@@ -1668,6 +1711,7 @@ if (hasDom) {
 
   function openExisting(id, opener = null) {
     const job = state.jobs.find((item) => item.id === id); if (!job) return;
+    state.jobDialogGeneration += 1;
     state.preflightRequestSequence += 1;
     clearPreflightReadiness();
     rememberOpener(id, opener);
@@ -1711,8 +1755,13 @@ if (hasDom) {
   }
 
   async function preflight({ clearAtStart = true } = {}) {
-    if (!state.selected) return;
+    if (!state.selected || !state.canonicalStateCurrent) return null;
     const requestedId = state.selected.id;
+    const requestedRevision = freshestKnownJob(requestedId)?.revision;
+    const refreshEpoch = state.refreshEpoch;
+    const dependencyObservation = state.dependencyObservation;
+    const dialogGeneration = state.jobDialogGeneration;
+    if (!Number.isInteger(requestedRevision)) return null;
     const requestSequence = ++state.preflightRequestSequence;
     if (clearAtStart) clearPreflightReadiness();
     try {
@@ -1723,9 +1772,13 @@ if (hasDom) {
         || !dialog.open
         || state.selected?.id !== requestedId
         || result.id !== requestedId
+        || state.jobDialogGeneration !== dialogGeneration
+        || !state.canonicalStateCurrent
+        || state.refreshEpoch !== refreshEpoch
+        || state.dependencyObservation !== dependencyObservation
         || !current
       ) return null;
-      if (result.revision !== current.revision) {
+      if (current.revision !== requestedRevision || result.revision !== requestedRevision) {
         if (result.revision > current.revision) {
           clearPreflightReadiness({ hidePanel: false });
         }
@@ -1739,12 +1792,17 @@ if (hasDom) {
         $("#form-error").textContent = "";
         $("#form-error").classList.add("hidden");
       }
-      renderPreflight(result); return result;
+      renderPreflight(result, { dialogGeneration, refreshEpoch, dependencyObservation }); return result;
     } catch (error) {
       if (
         requestSequence === state.preflightRequestSequence
         && dialog.open
         && state.selected?.id === requestedId
+        && state.jobDialogGeneration === dialogGeneration
+        && state.canonicalStateCurrent
+        && state.refreshEpoch === refreshEpoch
+        && state.dependencyObservation === dependencyObservation
+        && freshestKnownJob(requestedId)?.revision === requestedRevision
       ) {
         clearPreflightReadiness();
         showFormError(error.message, { id: requestedId, requestSequence });
@@ -1754,7 +1812,7 @@ if (hasDom) {
   }
 
   const issueText = { profile_empty: "Complete your applicant profile", resume_missing: "Assign an active resume", resume_file_missing: "The resume file cannot be found", resume_file_changed: "The resume file changed since it was added", role_missing: "Add a role for clearer handoff", company_missing: "Add a company for clearer handoff" };
-  function renderPreflight(result) {
+  function renderPreflight(result, { dialogGeneration, refreshEpoch, dependencyObservation }) {
     const panel = $("#preflight-panel"), body = $("#preflight-results"); body.replaceChildren();
     const summary = document.createElement("p"); summary.textContent = result.ready ? "No blocking issues. This job can be handed to a Job Apply agent." : "Resolve the blocking issues before marking this job ready."; body.append(summary);
     for (const [label, items] of [["Blocking", result.errors], ["Warnings", result.warnings]]) if (items.length) { const h = document.createElement("strong"); h.textContent = label; const ul = document.createElement("ul"); for (const code of items) { const li = document.createElement("li"); li.textContent = issueText[code] || code; ul.append(li); } body.append(h, ul); }
@@ -1763,7 +1821,7 @@ if (hasDom) {
     panel.classList.remove("hidden");
     $("#mark-ready").classList.toggle("hidden", !result.ready || !canMarkReadyFrom(currentStatus));
     state.readyHandoffProof = result.ready && currentStatus === "ready" && result.revision === current?.revision
-      ? { id: result.id, revision: result.revision }
+      ? { id: result.id, revision: result.revision, dialogGeneration, refreshEpoch, dependencyObservation }
       : null;
     syncReadyHandoff();
   }
@@ -2065,28 +2123,15 @@ if (hasDom) {
   async function openPendingAnswerEditor(item) {
     if (!dialog.open || !state.selected || !item.reference) return;
     const jobId = state.selected.id;
+    const jobDialogGeneration = state.jobDialogGeneration;
     const opener = document.activeElement;
-    const preservedDraft = state.dirty
-      ? Object.fromEntries(
-        [...state.dirtyFields]
-          .filter((name) => form.elements[name])
-          .map((name) => [name, form.elements[name].value]),
-      )
-      : null;
     const requestSequence = ++answerState.detailRequestSequence;
     try {
       const selected = await api(`/api/jobs/${encodeURIComponent(jobId)}/pending-answers/${encodeURIComponent(item.reference)}`);
-      if (requestSequence !== answerState.detailRequestSequence || !dialog.open || state.selected?.id !== jobId) return;
+      if (requestSequence !== answerState.detailRequestSequence || !dialog.open || state.selected?.id !== jobId || state.jobDialogGeneration !== jobDialogGeneration) return;
       showAnswerDetail(selected, opener, jobId, item.reference);
-      if (preservedDraft && dialog.open && state.selected?.id === jobId) {
-        for (const [name, value] of Object.entries(preservedDraft)) {
-          if (form.elements[name]) form.elements[name].value = value;
-        }
-        state.dirtyFields = new Set(Object.keys(preservedDraft));
-        state.dirty = state.dirtyFields.size > 0;
-      }
     } catch (error) {
-      if (requestSequence === answerState.detailRequestSequence && dialog.open && state.selected?.id === jobId) showFormError(error.message);
+      if (requestSequence === answerState.detailRequestSequence && dialog.open && state.selected?.id === jobId && state.jobDialogGeneration === jobDialogGeneration) showFormError(error.message);
     }
   }
 
@@ -2154,14 +2199,19 @@ if (hasDom) {
     dialog.close();
   }
 
-  function pollWorkspace() {
-    refreshOverview({ quiet: true }); refresh({ quiet: true }); refreshAttention({ quiet: true });
+  async function pollWorkspace() {
+    refreshOverview({ quiet: true }); refreshAttention({ quiet: true });
+    if (dialog.open && state.selected) loadActivity();
+    await refresh({ quiet: true });
     if (dialog.open && state.selected) {
-      loadActivity();
       const listed = state.jobs.find((job) => job.id === state.selected.id);
-      if (listed?.status === "ready" && !state.preflightPolling) {
+      if (state.canonicalStateCurrent && listed?.status === "ready" && !state.preflightPolling) {
         state.preflightPolling = true;
-        preflight({ clearAtStart: false }).finally(() => { state.preflightPolling = false; });
+        try {
+          await preflight({ clearAtStart: false });
+        } finally {
+          state.preflightPolling = false;
+        }
       }
     }
     if (resumeState.loaded) refreshResumes({ quiet: true });
@@ -2245,6 +2295,7 @@ if (hasDom) {
     closeJobDialog();
   });
   dialog.addEventListener("close", () => {
+    state.jobDialogGeneration += 1;
     state.preflightRequestSequence += 1;
     clearPreflightReadiness();
     activityRefreshCoordinator.invalidate(); state.activity = null; state.activityJobId = null; state.activityUnavailable = false; $("#activity-live").textContent = "";

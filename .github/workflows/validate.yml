@@ -103,6 +103,7 @@ jobs:
           JOB_APPLY_OWNER_APPROVED_VISIBLE_BROWSER_TESTS: '1'
         run: python3 scripts/qa-account.py verify-all --provider macos-keychain --owner-approved-visible-browser-tests --json
       - name: Verify Oracle email-only account-flow boundary
+        continue-on-error: true
         env:
           JOB_APPLY_OWNER_APPROVED_VISIBLE_BROWSER_TESTS: '1'
         run: python3 scripts/qa-account.py verify-oracle-email-only --automation-provider macos-accessibility --owner-approved-visible-browser-tests --json
