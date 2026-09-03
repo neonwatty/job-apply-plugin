@@ -12,11 +12,29 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         for case_name, status in (
             ("requestBinding", 28), ("browserBinding", 29), ("pageBinding", 30),
             ("controlBinding", 31), ("stateBinding", 32), ("causalBinding", 33),
-            ("browserProcessBinding", 34), ("browserIdentityBinding", 35),
+            ("browserProcessBinding", 34),
             ("accessibilityBinding", 36), ("activationBinding", 37),
         ):
             self.assertIn(f"AccountFlowHelperError.{case_name}", source)
             self.assertIn(f"Darwin.exit({status})", source)
+
+    def test_signed_browser_identity_substages_are_closed_and_value_free(self):
+        helper = (ROOT / "native/macos/job_apply_account_flow_helper.swift").read_text(encoding="utf-8")
+        entrypoint = (ROOT / "native/macos/job_apply_credential_helper_main.swift").read_text(encoding="utf-8")
+        expected = (
+            ("processExecutable", 38), ("runningApplication", 39),
+            ("runningExecutable", 40), ("executableMatch", 41),
+            ("trustedBrowser", 42), ("requirement", 43), ("staticCode", 44),
+            ("staticValidity", 45), ("dynamicCode", 46), ("dynamicValidity", 47),
+        )
+        for case_name, status in expected:
+            self.assertIn(f"case {case_name} = {status}", helper)
+        self.assertIn("browserIdentityBinding(let substage)", entrypoint)
+        self.assertIn("Darwin.exit(Int32(substage.rawValue))", entrypoint)
+        diagnostic_section = helper.split("enum OracleBrowserIdentitySubstage", 1)[1].split("}", 1)[0]
+        self.assertNotIn("String", diagnostic_section)
+        self.assertNotIn("URL", diagnostic_section)
+        self.assertNotIn("Data", diagnostic_section)
 
     # These contract tests are intentionally quiet. Visible/native integration
     # lives behind the separately owner-approved qa-account gate.

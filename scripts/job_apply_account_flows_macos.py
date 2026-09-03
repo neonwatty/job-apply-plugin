@@ -76,6 +76,24 @@ class NativeMacOSAccessibilityProvider:
         "job_apply_credential_helper_tests.swift",
         "job_apply_credential_helper_main.swift",
     )
+    _closed_failure_codes = {
+        21: "request_binding", 22: "private_channel", 23: "effect",
+        24: "email_effect", 25: "terms_effect", 26: "next_effect",
+        27: "clearing_effect", 28: "request_binding_stage",
+        29: "browser_binding", 30: "page_binding", 31: "control_binding",
+        32: "state_binding", 33: "causal_binding", 34: "browser_process",
+        36: "accessibility_trust", 37: "browser_activation",
+        38: "browser_identity_process_executable",
+        39: "browser_identity_running_application",
+        40: "browser_identity_running_executable",
+        41: "browser_identity_executable_match",
+        42: "browser_identity_trusted_browser",
+        43: "browser_identity_requirement",
+        44: "browser_identity_static_code",
+        45: "browser_identity_static_validity",
+        46: "browser_identity_dynamic_code",
+        47: "browser_identity_dynamic_validity",
+    }
 
     def __init__(
         self, binary: str, browser_process_identifier: int, socket_path: str | None = None,
@@ -267,11 +285,8 @@ class NativeMacOSAccessibilityProvider:
             attestation = self._read_attestation(listener, child.pid, operation) if listener is not None else None
             stdout, stderr = child.communicate(timeout=30)
             if child.returncode or stdout or stderr:
-                status = child.returncode if child.returncode in {
-                    21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
-                    34, 35, 36, 37,
-                } else 20
-                raise ValueError(f"native Oracle account flow failed closed ({status})")
+                diagnostic = self._closed_failure_codes.get(child.returncode, "unclassified")
+                raise ValueError(f"native Oracle account flow failed closed ({diagnostic})")
             if attestation is None:
                 observation_url = f"http://127.0.0.1:{portal.port}/observations/by-operation/{operation_hex}"
                 with urllib.request.urlopen(observation_url, timeout=2) as response:

@@ -9,7 +9,24 @@ enum AccountFlowHelperError: Error {
     case invalidBinding, privateChannel, effectFailed
     case emailEffect, termsEffect, nextEffect, clearingEffect
     case requestBinding, browserBinding, pageBinding, controlBinding, stateBinding, causalBinding
-    case browserProcessBinding, browserIdentityBinding, accessibilityBinding, activationBinding
+    case browserProcessBinding, browserIdentityBinding(OracleBrowserIdentitySubstage)
+    case accessibilityBinding, activationBinding
+}
+
+/// Closed, value-free substages for the signed-browser identity proof. These
+/// cases identify only which predicate failed; they never carry an observed
+/// path, signing value, process metadata, or other mutable/private state.
+enum OracleBrowserIdentitySubstage: Int, Error {
+    case processExecutable = 38
+    case runningApplication = 39
+    case runningExecutable = 40
+    case executableMatch = 41
+    case trustedBrowser = 42
+    case requirement = 43
+    case staticCode = 44
+    case staticValidity = 45
+    case dynamicCode = 46
+    case dynamicValidity = 47
 }
 
 enum OracleCausalSuccessorDecision: Equatable {
@@ -414,26 +431,37 @@ private final class OracleEmailOnlyEffect {
         return try exact(pageElements, fingerprint: binding.accountFormFingerprint)
     }
 
-    private func signedBrowser() -> Bool {
+    private func signedBrowserIdentityFailure() -> OracleBrowserIdentitySubstage? {
         var buffer = [CChar](repeating: 0, count: Int(MAXPATHLEN * 4))
-        guard proc_pidpath(binding.browserProcessIdentifier, &buffer, UInt32(buffer.count)) > 0,
-              let running = NSRunningApplication(processIdentifier: binding.browserProcessIdentifier),
-              let executable = running.executableURL?.resolvingSymlinksInPath().standardizedFileURL
-        else { return false }
+        guard proc_pidpath(binding.browserProcessIdentifier, &buffer, UInt32(buffer.count)) > 0
+        else { return .processExecutable }
+        guard let running = NSRunningApplication(processIdentifier: binding.browserProcessIdentifier)
+        else { return .runningApplication }
+        guard let executable = running.executableURL?.resolvingSymlinksInPath().standardizedFileURL
+        else { return .runningExecutable }
         let path = URL(fileURLWithPath: String(cString: buffer)).resolvingSymlinksInPath().standardizedFileURL
         let trusted = [
             "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome": "identifier \"com.google.Chrome\" and anchor apple generic and certificate leaf[subject.OU] = \"EQHXZ8M8AV\"",
             "/Applications/Safari.app/Contents/MacOS/Safari": "identifier \"com.apple.Safari\" and anchor apple",
         ]
-        guard path == executable, let text = trusted[path.path] else { return false }
+        guard path == executable else { return .executableMatch }
+        guard let text = trusted[path.path] else { return .trustedBrowser }
         var requirement: SecRequirement?, staticCode: SecStaticCode?, dynamicCode: SecCode?
-        guard SecRequirementCreateWithString(text as CFString, [], &requirement) == errSecSuccess, let requirement,
-              SecStaticCodeCreateWithPath(path as CFURL, [], &staticCode) == errSecSuccess, let staticCode,
-              SecStaticCodeCheckValidity(staticCode, SecCSFlags(rawValue: (1 << 0) | (1 << 4)), requirement) == errSecSuccess,
-              SecCodeCopyGuestWithAttributes(nil, [kSecGuestAttributePid as String: binding.browserProcessIdentifier] as CFDictionary, [], &dynamicCode) == errSecSuccess, let dynamicCode,
-              SecCodeCheckValidity(dynamicCode, SecCSFlags(rawValue: 1 << 4), requirement) == errSecSuccess
-        else { return false }
-        return true
+        guard SecRequirementCreateWithString(text as CFString, [], &requirement) == errSecSuccess,
+              let requirement else { return .requirement }
+        guard SecStaticCodeCreateWithPath(path as CFURL, [], &staticCode) == errSecSuccess,
+              let staticCode else { return .staticCode }
+        guard SecStaticCodeCheckValidity(
+            staticCode, SecCSFlags(rawValue: (1 << 0) | (1 << 4)), requirement
+        ) == errSecSuccess else { return .staticValidity }
+        guard SecCodeCopyGuestWithAttributes(
+            nil, [kSecGuestAttributePid as String: binding.browserProcessIdentifier] as CFDictionary,
+            [], &dynamicCode
+        ) == errSecSuccess, let dynamicCode else { return .dynamicCode }
+        guard SecCodeCheckValidity(
+            dynamicCode, SecCSFlags(rawValue: 1 << 4), requirement
+        ) == errSecSuccess else { return .dynamicValidity }
+        return nil
     }
 
     private func activateReviewedBrowser() throws {
@@ -442,7 +470,7 @@ private final class OracleEmailOnlyEffect {
         // this pre-effect proof; no form control is read or mutated here.
         for _ in 0..<100 {
             if kill(binding.browserProcessIdentifier, 0) == 0,
-               AXIsProcessTrusted(), signedBrowser(),
+               AXIsProcessTrusted(), signedBrowserIdentityFailure() == nil,
                let running = NSRunningApplication(
                     processIdentifier: binding.browserProcessIdentifier
                ), running.activate(options: [.activateAllWindows]) {
@@ -454,7 +482,9 @@ private final class OracleEmailOnlyEffect {
               NSRunningApplication(processIdentifier: binding.browserProcessIdentifier) != nil
         else { throw AccountFlowHelperError.browserProcessBinding }
         guard AXIsProcessTrusted() else { throw AccountFlowHelperError.accessibilityBinding }
-        guard signedBrowser() else { throw AccountFlowHelperError.browserIdentityBinding }
+        if let substage = signedBrowserIdentityFailure() {
+            throw AccountFlowHelperError.browserIdentityBinding(substage)
+        }
         throw AccountFlowHelperError.activationBinding
     }
 

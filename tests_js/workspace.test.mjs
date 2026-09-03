@@ -431,7 +431,7 @@ test("owner beta clean packaged browser and CLI journey survives restart and fai
     });
     await runWorkspacePoll();
     await olderReadyPreflightSeen;
-    assert.equal(await readyHandoff.isVisible(), true);
+    assert.equal(await readyHandoff.isVisible(), false);
 
     await jobDialog.getByLabel("Role", { exact: true }).fill("Preserved external-trash draft");
     job = await cli("job-trash", ["--id", job.id, "--expected-revision", String(job.revision)]);
@@ -496,6 +496,43 @@ test("owner beta clean packaged browser and CLI journey survives restart and fai
     ));
     await runWorkspacePoll();
     await repairedDependencyPreflightResponse;
+    await readyHandoff.waitFor({ state: "visible" });
+
+    let releaseDependencyStalePreflight;
+    let dependencyStalePreflightSeenResolve;
+    const dependencyStalePreflightSeen = new Promise((resolve) => { dependencyStalePreflightSeenResolve = resolve; });
+    const dependencyStalePreflightRelease = new Promise((resolve) => { releaseDependencyStalePreflight = resolve; });
+    await page.route(preflightPattern, async (route) => {
+      const response = await route.fetch();
+      dependencyStalePreflightSeenResolve();
+      await dependencyStalePreflightRelease;
+      await route.fulfill({ response });
+    });
+    await jobDialog.getByRole("button", { name: "Run ready check" }).click();
+    await dependencyStalePreflightSeen;
+    await writeFile(join(storeRoot, "resume-files", ownerResume.managedFile), "newer dependency failure");
+    const newerDependencyState = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === "/api/state" && response.ok()
+    ));
+    await page.locator("#refresh").evaluate((button) => button.click());
+    await newerDependencyState;
+    const dependencyStalePreflightResponse = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === `/api/jobs/${job.id}/preflight`
+    ));
+    releaseDependencyStalePreflight();
+    await dependencyStalePreflightResponse;
+    assert.equal(await readyHandoff.isVisible(), false);
+    assert.equal(await page.locator("#preflight-panel").isVisible(), false);
+    await page.unroute(preflightPattern);
+    await jobDialog.getByRole("button", { name: "Run ready check" }).click();
+    await jobDialog.getByText("The resume file changed since it was added", { exact: true }).waitFor();
+    assert.equal(await readyHandoff.isVisible(), false);
+    ownerResume = await cli(
+      "resume-update",
+      ["--id", ownerResume.id, "--expected-revision", String(ownerResume.revision)],
+      { path: resumePath },
+    );
+    await jobDialog.getByRole("button", { name: "Run ready check" }).click();
     await readyHandoff.waitFor({ state: "visible" });
 
     let releaseOlderCanonicalPreflight;
@@ -1778,17 +1815,32 @@ test("pending answer browser journey preserves Job draft and reaches Ready, reac
     const jobDialog = page.locator("#job-dialog"); const answerDialog = page.locator("#answer-dialog");
     await jobDialog.getByLabel("Notes").fill("unsaved browser draft");
     const openAnswer = jobDialog.getByRole("button", { name: "Open in Answers" });
+    let releasePendingAnswer;
+    let pendingAnswerSeenResolve;
+    const pendingAnswerSeen = new Promise((resolve) => { pendingAnswerSeenResolve = resolve; });
+    const pendingAnswerRelease = new Promise((resolve) => { releasePendingAnswer = resolve; });
+    const pendingAnswerPattern = `**/api/jobs/${job.id}/pending-answers/**`;
+    await page.route(pendingAnswerPattern, async (route) => {
+      const response = await route.fetch();
+      pendingAnswerSeenResolve();
+      await pendingAnswerRelease;
+      await route.fulfill({ response });
+    });
     await openAnswer.click();
+    await pendingAnswerSeen;
+    await jobDialog.getByLabel("Notes").fill("newest unsaved browser draft");
+    releasePendingAnswer();
     await answerDialog.waitFor({ state: "visible" });
+    await page.unroute(pendingAnswerPattern);
     assert.equal(await jobDialog.isVisible(), true);
     assert.equal(await answerDialog.getByLabel("Question").inputValue(), "Different canonical wording");
-    assert.equal(await jobDialog.getByLabel("Notes").inputValue(), "unsaved browser draft");
+    assert.equal(await jobDialog.getByLabel("Notes").inputValue(), "newest unsaved browser draft");
     await answerDialog.getByLabel("State").selectOption("confirmed");
     await answerDialog.getByLabel("Value", { exact: true }).fill("accepted synthetic value");
     await answerDialog.getByRole("button", { name: "Save answer" }).click();
     await answerDialog.waitFor({ state: "hidden" });
     assert.equal(await jobDialog.isVisible(), true);
-    assert.equal(await jobDialog.getByLabel("Notes").inputValue(), "unsaved browser draft");
+    assert.equal(await jobDialog.getByLabel("Notes").inputValue(), "newest unsaved browser draft");
     await openAnswer.waitFor();
     await page.waitForFunction(() => (
       document.activeElement?.closest("#job-dialog")
@@ -1797,7 +1849,7 @@ test("pending answer browser journey preserves Job draft and reaches Ready, reac
     await jobDialog.getByRole("button", { name: "Recheck this revision" }).click();
     await jobDialog.getByText(/Canonical status ready/i).waitFor();
     assert.equal((await cli("job-get", ["--id", job.id])).status, "ready");
-    assert.equal(await jobDialog.getByLabel("Notes").inputValue(), "unsaved browser draft");
+    assert.equal(await jobDialog.getByLabel("Notes").inputValue(), "newest unsaved browser draft");
     await jobDialog.getByRole("button", { name: "Close job details" }).click();
     await page.locator("#attention-workspace").waitFor({ state: "visible" });
     assert.equal(await page.locator("#attention-list [data-attention-id='pending-job']").count(), 0);
@@ -2382,16 +2434,27 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     await page.getByRole("button", { name: "Refresh" }).click();
 
     const slowDetailRoute = `**${answerApiPath(slowDetail.key)}`;
+    let releaseSlowDetail;
+    let slowDetailSeenResolve;
+    const slowDetailSeen = new Promise((resolve) => { slowDetailSeenResolve = resolve; });
+    const slowDetailRelease = new Promise((resolve) => { releaseSlowDetail = resolve; });
     await page.route(slowDetailRoute, async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 250));
-      await route.continue();
+      const response = await route.fetch();
+      slowDetailSeenResolve();
+      await slowDetailRelease;
+      await route.fulfill({ response });
     });
     await page.locator(`.answer-card[data-key="${slowDetail.key}"]`).click();
+    await slowDetailSeen;
     await page.locator(`.answer-card[data-key="${fastDetail.key}"]`).click();
     await page.locator("#answer-dialog[open]").waitFor();
     assert.equal(await page.locator("#answer-dialog").getByLabel("Question").inputValue(), "Fast answer detail?");
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await page.locator("#answer-dialog").getByLabel("Aliases (one per line)").fill("newest answer draft");
+    const slowDetailResponse = page.waitForResponse((response) => new URL(response.url()).pathname === answerApiPath(slowDetail.key));
+    releaseSlowDetail();
+    await slowDetailResponse;
     assert.equal(await page.locator("#answer-dialog").getByLabel("Question").inputValue(), "Fast answer detail?");
+    assert.equal(await page.locator("#answer-dialog").getByLabel("Aliases (one per line)").inputValue(), "newest answer draft");
     await page.locator("#answer-dialog").getByRole("button", { name: "Close answer details" }).click();
     await page.unroute(slowDetailRoute);
 
@@ -2546,15 +2609,31 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     const afterMerge = await cli("answer-list");
     assert.equal(JSON.stringify(afterMerge).includes("discarded-browser-duplicate"), false);
 
+    let releaseOlderAnswerQuery;
+    let olderAnswerQuerySeenResolve;
+    const olderAnswerQuerySeen = new Promise((resolve) => { olderAnswerQuerySeenResolve = resolve; });
+    const olderAnswerQueryRelease = new Promise((resolve) => { releaseOlderAnswerQuery = resolve; });
     await page.route("**/api/answers/query", async (route) => {
       const query = route.request().postDataJSON()?.query;
-      if (query === "Browser reusable") await new Promise((resolve) => setTimeout(resolve, 250));
+      if (query === "Browser reusable") {
+        const response = await route.fetch();
+        olderAnswerQuerySeenResolve();
+        await olderAnswerQueryRelease;
+        await route.fulfill({ response });
+        return;
+      }
       await route.continue();
     });
     await page.locator("#answer-search").fill("Browser reusable");
+    await olderAnswerQuerySeen;
     await page.locator("#answer-search").fill("No canonical answer matches this");
     await page.waitForFunction(() => document.querySelector("#answers-status")?.textContent?.startsWith("0 canonical"));
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    const olderAnswerQueryResponse = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === "/api/answers/query"
+      && response.request().postDataJSON()?.query === "Browser reusable"
+    ));
+    releaseOlderAnswerQuery();
+    await olderAnswerQueryResponse;
     assert.equal(await page.locator(".answer-card").count(), 0);
     await page.unroute("**/api/answers/query");
     await page.locator("#answer-search").fill("");

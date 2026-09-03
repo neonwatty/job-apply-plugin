@@ -140,8 +140,8 @@ enum IsolatedCredentialIntegrationMain {
                 Darwin.exit(33)
             } catch AccountFlowHelperError.browserProcessBinding {
                 Darwin.exit(34)
-            } catch AccountFlowHelperError.browserIdentityBinding {
-                Darwin.exit(35)
+            } catch AccountFlowHelperError.browserIdentityBinding(let substage) {
+                Darwin.exit(Int32(substage.rawValue))
             } catch AccountFlowHelperError.accessibilityBinding {
                 Darwin.exit(36)
             } catch AccountFlowHelperError.activationBinding {
