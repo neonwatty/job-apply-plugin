@@ -27,6 +27,7 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
             ("trustedBrowser", 42), ("requirement", 43), ("staticCode", 44),
             ("staticValidity", 45), ("dynamicCode", 46), ("dynamicValidity", 47),
             ("literalAnchorUnproven", 48), ("secondProofChanged", 49),
+            ("processIdentityUnavailable", 50), ("runningIdentityUnavailable", 51),
         )
         for case_name, status in expected:
             self.assertIn(f"case {case_name} = {status}", helper)
@@ -37,6 +38,8 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         self.assertNotIn("URL", diagnostic_section)
         self.assertNotIn("Data", diagnostic_section)
         self.assertIn("case .processRunningMismatch:\n            return .processRunningMismatch", helper)
+        self.assertIn("case .processIdentityUnavailable:\n            return .processIdentityUnavailable", helper)
+        self.assertIn("case .runningIdentityUnavailable:\n            return .runningIdentityUnavailable", helper)
         self.assertIn("case .literalAnchorUnproven:\n            return .literalAnchorUnproven", helper)
         self.assertIn(") else { return .secondProofChanged }", helper)
 
@@ -50,7 +53,7 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         self.assertIn("SecStaticCodeCreateWithPath(path as CFURL", helper)
         self.assertIn("SecCSFlags(rawValue: (1 << 0) | (1 << 4))", helper)
         self.assertIn("kSecGuestAttributePid as String: binding.browserProcessIdentifier", helper)
-        self.assertEqual(helper.count("oracleTrustedExecutableProofDecision("), 10)
+        self.assertEqual(helper.count("oracleTrustedExecutableProofDecision("), 12)
         self.assertNotIn("guard path == executable", helper)
         for case in (
             'literalAnchorIdentities: ["/literal/reviewed": nil',
@@ -62,6 +65,8 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         self.assertEqual(helper.count("func oracleExecutableIdentityAdversarialFixturesPass()"), 1)
         self.assertNotIn("oracleExecutableIdentityAdversarialFixturesPass", test_support)
         self.assertIn(") == .processRunningMismatch", helper)
+        self.assertIn(") == .processIdentityUnavailable", helper)
+        self.assertIn(") == .runningIdentityUnavailable", helper)
         self.assertEqual(helper.count(") == .literalAnchorUnproven"), 2)
         self.assertIn("!oracleSecondExecutableProofMatches(", helper)
 

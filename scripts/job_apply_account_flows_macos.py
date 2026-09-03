@@ -95,6 +95,8 @@ class NativeMacOSAccessibilityProvider:
         47: "browser_identity_dynamic_validity",
         48: "browser_identity_literal_anchor_unproven",
         49: "browser_identity_second_proof_changed",
+        50: "browser_identity_process_identity_unavailable",
+        51: "browser_identity_running_identity_unavailable",
     }
 
     def __init__(

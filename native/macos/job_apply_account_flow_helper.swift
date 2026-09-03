@@ -29,6 +29,8 @@ enum OracleBrowserIdentitySubstage: Int, Error {
     case dynamicValidity = 47
     case literalAnchorUnproven = 48
     case secondProofChanged = 49
+    case processIdentityUnavailable = 50
+    case runningIdentityUnavailable = 51
 }
 
 enum OracleCausalSuccessorDecision: Equatable {
@@ -49,6 +51,8 @@ struct OracleTrustedExecutableProof: Equatable {
 }
 
 enum OracleTrustedExecutableProofDecision: Equatable {
+    case processIdentityUnavailable
+    case runningIdentityUnavailable
     case processRunningMismatch
     case literalAnchorUnproven
     case proven(OracleTrustedExecutableProof)
@@ -68,9 +72,9 @@ func oracleTrustedExecutableProofDecision(
     literalAnchorIdentities: [String: OracleExecutableFileIdentity?],
     trusted: [String: String]
 ) -> OracleTrustedExecutableProofDecision {
-    guard let processIdentity, let runningIdentity, processIdentity == runningIdentity else {
-        return .processRunningMismatch
-    }
+    guard let processIdentity else { return .processIdentityUnavailable }
+    guard let runningIdentity else { return .runningIdentityUnavailable }
+    guard processIdentity == runningIdentity else { return .processRunningMismatch }
     let matches = trusted.compactMap { literalPath, requirement -> OracleTrustedExecutableProof? in
         guard let anchorIdentity = literalAnchorIdentities[literalPath] ?? nil,
               anchorIdentity == processIdentity
@@ -140,6 +144,16 @@ func oracleExecutableIdentityAdversarialFixturesPass() -> Bool {
     return exact == OracleTrustedExecutableProof(
         literalPath: "/literal/reviewed", requirement: "reviewed requirement", identity: reviewed
     )
+        && oracleTrustedExecutableProofDecision(
+            processIdentity: nil, runningIdentity: reviewed,
+            literalAnchorIdentities: ["/literal/reviewed": reviewed, "/literal/other": other],
+            trusted: trusted
+        ) == .processIdentityUnavailable
+        && oracleTrustedExecutableProofDecision(
+            processIdentity: reviewed, runningIdentity: nil,
+            literalAnchorIdentities: ["/literal/reviewed": reviewed, "/literal/other": other],
+            trusted: trusted
+        ) == .runningIdentityUnavailable
         && oracleTrustedExecutableProofDecision(
             processIdentity: reviewed, runningIdentity: other,
             literalAnchorIdentities: ["/literal/reviewed": reviewed, "/literal/other": other],
@@ -605,6 +619,10 @@ private final class OracleEmailOnlyEffect {
         )
         let proof: OracleTrustedExecutableProof
         switch initialProof {
+        case .processIdentityUnavailable:
+            return .processIdentityUnavailable
+        case .runningIdentityUnavailable:
+            return .runningIdentityUnavailable
         case .processRunningMismatch:
             return .processRunningMismatch
         case .literalAnchorUnproven:
