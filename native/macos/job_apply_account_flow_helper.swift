@@ -20,13 +20,15 @@ enum OracleBrowserIdentitySubstage: Int, Error {
     case processExecutable = 38
     case runningApplication = 39
     case runningExecutable = 40
-    case executableMatch = 41
+    case processRunningMismatch = 41
     case trustedBrowser = 42
     case requirement = 43
     case staticCode = 44
     case staticValidity = 45
     case dynamicCode = 46
     case dynamicValidity = 47
+    case literalAnchorUnproven = 48
+    case secondProofChanged = 49
 }
 
 enum OracleCausalSuccessorDecision: Equatable {
@@ -46,6 +48,12 @@ struct OracleTrustedExecutableProof: Equatable {
     let identity: OracleExecutableFileIdentity
 }
 
+enum OracleTrustedExecutableProofDecision: Equatable {
+    case processRunningMismatch
+    case literalAnchorUnproven
+    case proven(OracleTrustedExecutableProof)
+}
+
 private func oracleRegularExecutableIdentity(atPath path: String) -> OracleExecutableFileIdentity? {
     var metadata = stat()
     guard path.withCString({ fstatat(AT_FDCWD, $0, &metadata, 0) }) == 0,
@@ -54,14 +62,14 @@ private func oracleRegularExecutableIdentity(atPath path: String) -> OracleExecu
     return OracleExecutableFileIdentity(device: metadata.st_dev, inode: metadata.st_ino)
 }
 
-func oracleUniqueTrustedExecutableProof(
+func oracleTrustedExecutableProofDecision(
     processIdentity: OracleExecutableFileIdentity?,
     runningIdentity: OracleExecutableFileIdentity?,
     literalAnchorIdentities: [String: OracleExecutableFileIdentity?],
     trusted: [String: String]
-) -> OracleTrustedExecutableProof? {
+) -> OracleTrustedExecutableProofDecision {
     guard let processIdentity, let runningIdentity, processIdentity == runningIdentity else {
-        return nil
+        return .processRunningMismatch
     }
     let matches = trusted.compactMap { literalPath, requirement -> OracleTrustedExecutableProof? in
         guard let anchorIdentity = literalAnchorIdentities[literalPath] ?? nil,
@@ -71,13 +79,29 @@ func oracleUniqueTrustedExecutableProof(
             literalPath: literalPath, requirement: requirement, identity: anchorIdentity
         )
     }
-    return matches.count == 1 ? matches[0] : nil
+    guard matches.count == 1 else { return .literalAnchorUnproven }
+    return .proven(matches[0])
 }
 
-private func oracleTrustedExecutableProof(
-    processPath: String, runningPath: String, trusted: [String: String]
+func oracleUniqueTrustedExecutableProof(
+    processIdentity: OracleExecutableFileIdentity?,
+    runningIdentity: OracleExecutableFileIdentity?,
+    literalAnchorIdentities: [String: OracleExecutableFileIdentity?],
+    trusted: [String: String]
 ) -> OracleTrustedExecutableProof? {
-    oracleUniqueTrustedExecutableProof(
+    guard case .proven(let proof) = oracleTrustedExecutableProofDecision(
+        processIdentity: processIdentity,
+        runningIdentity: runningIdentity,
+        literalAnchorIdentities: literalAnchorIdentities,
+        trusted: trusted
+    ) else { return nil }
+    return proof
+}
+
+private func oracleTrustedExecutableProofDecision(
+    processPath: String, runningPath: String, trusted: [String: String]
+) -> OracleTrustedExecutableProofDecision {
+    oracleTrustedExecutableProofDecision(
         processIdentity: oracleRegularExecutableIdentity(atPath: processPath),
         runningIdentity: oracleRegularExecutableIdentity(atPath: runningPath),
         literalAnchorIdentities: Dictionary(
@@ -87,6 +111,83 @@ private func oracleTrustedExecutableProof(
         ),
         trusted: trusted
     )
+}
+
+private func oracleSecondExecutableProofMatches(
+    _ first: OracleTrustedExecutableProof,
+    _ second: OracleTrustedExecutableProofDecision
+) -> Bool {
+    guard case .proven(let proof) = second else { return false }
+    return proof == first
+}
+
+/// Quietly exercises the executable-identity proof using synthetic identities.
+/// This lives with the reviewed production proof so every production entrypoint
+/// can compile independently of test-support sources.
+func oracleExecutableIdentityAdversarialFixturesPass() -> Bool {
+    let reviewed = OracleExecutableFileIdentity(device: 7, inode: 11)
+    let other = OracleExecutableFileIdentity(device: 7, inode: 12)
+    let changed = OracleExecutableFileIdentity(device: 8, inode: 11)
+    let trusted = [
+        "/literal/reviewed": "reviewed requirement",
+        "/literal/other": "other requirement",
+    ]
+    guard let exact = oracleUniqueTrustedExecutableProof(
+        processIdentity: reviewed, runningIdentity: reviewed,
+        literalAnchorIdentities: ["/literal/reviewed": reviewed, "/literal/other": other],
+        trusted: trusted
+    ) else { return false }
+    return exact == OracleTrustedExecutableProof(
+        literalPath: "/literal/reviewed", requirement: "reviewed requirement", identity: reviewed
+    )
+        && oracleTrustedExecutableProofDecision(
+            processIdentity: reviewed, runningIdentity: other,
+            literalAnchorIdentities: ["/literal/reviewed": reviewed, "/literal/other": other],
+            trusted: trusted
+        ) == .processRunningMismatch
+        && oracleTrustedExecutableProofDecision(
+            processIdentity: reviewed, runningIdentity: reviewed,
+            literalAnchorIdentities: ["/literal/reviewed": nil, "/literal/other": other],
+            trusted: trusted
+        ) == .literalAnchorUnproven
+        && oracleTrustedExecutableProofDecision(
+            processIdentity: reviewed, runningIdentity: reviewed,
+            literalAnchorIdentities: ["/literal/reviewed": reviewed, "/literal/other": reviewed],
+            trusted: trusted
+        ) == .literalAnchorUnproven
+        && !oracleSecondExecutableProofMatches(
+            exact,
+            oracleTrustedExecutableProofDecision(
+                processIdentity: changed, runningIdentity: changed,
+                literalAnchorIdentities: ["/literal/reviewed": changed, "/literal/other": other],
+                trusted: trusted
+            )
+        )
+        && oracleUniqueTrustedExecutableProof(
+            processIdentity: reviewed, runningIdentity: other,
+            literalAnchorIdentities: ["/literal/reviewed": reviewed, "/literal/other": other],
+            trusted: trusted
+        ) == nil
+        && oracleUniqueTrustedExecutableProof(
+            processIdentity: reviewed, runningIdentity: reviewed,
+            literalAnchorIdentities: ["/literal/reviewed": nil, "/literal/other": other],
+            trusted: trusted
+        ) == nil
+        && oracleUniqueTrustedExecutableProof(
+            processIdentity: reviewed, runningIdentity: reviewed,
+            literalAnchorIdentities: ["/literal/reviewed": other, "/literal/other": other],
+            trusted: trusted
+        ) == nil
+        && oracleUniqueTrustedExecutableProof(
+            processIdentity: reviewed, runningIdentity: reviewed,
+            literalAnchorIdentities: ["/literal/reviewed": reviewed, "/literal/other": reviewed],
+            trusted: trusted
+        ) == nil
+        && exact != oracleUniqueTrustedExecutableProof(
+            processIdentity: changed, runningIdentity: changed,
+            literalAnchorIdentities: ["/literal/reviewed": changed, "/literal/other": other],
+            trusted: trusted
+        )
 }
 
 /// Value-free decision for the post-action identity-removal attestation. The
@@ -499,9 +600,18 @@ private final class OracleEmailOnlyEffect {
             "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome": "identifier \"com.google.Chrome\" and anchor apple generic and certificate leaf[subject.OU] = \"EQHXZ8M8AV\"",
             "/Applications/Safari.app/Contents/MacOS/Safari": "identifier \"com.apple.Safari\" and anchor apple",
         ]
-        guard let proof = oracleTrustedExecutableProof(
+        let initialProof = oracleTrustedExecutableProofDecision(
             processPath: processPath, runningPath: executable.path, trusted: trusted
-        ) else { return .executableMatch }
+        )
+        let proof: OracleTrustedExecutableProof
+        switch initialProof {
+        case .processRunningMismatch:
+            return .processRunningMismatch
+        case .literalAnchorUnproven:
+            return .literalAnchorUnproven
+        case .proven(let establishedProof):
+            proof = establishedProof
+        }
         guard let text = trusted[proof.literalPath], text == proof.requirement
         else { return .trustedBrowser }
         let path = URL(fileURLWithPath: proof.literalPath)
@@ -529,11 +639,14 @@ private final class OracleEmailOnlyEffect {
         ) else { return .runningApplication }
         guard let confirmedExecutable = confirmedRunning.executableURL
         else { return .runningExecutable }
-        guard oracleTrustedExecutableProof(
-            processPath: String(cString: confirmedBuffer),
-            runningPath: confirmedExecutable.path,
-            trusted: trusted
-        ) == proof else { return .executableMatch }
+        guard oracleSecondExecutableProofMatches(
+            proof,
+            oracleTrustedExecutableProofDecision(
+                processPath: String(cString: confirmedBuffer),
+                runningPath: confirmedExecutable.path,
+                trusted: trusted
+            )
+        ) else { return .secondProofChanged }
         return nil
     }
 

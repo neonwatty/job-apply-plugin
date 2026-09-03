@@ -23,9 +23,10 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         entrypoint = (ROOT / "native/macos/job_apply_credential_helper_main.swift").read_text(encoding="utf-8")
         expected = (
             ("processExecutable", 38), ("runningApplication", 39),
-            ("runningExecutable", 40), ("executableMatch", 41),
+            ("runningExecutable", 40), ("processRunningMismatch", 41),
             ("trustedBrowser", 42), ("requirement", 43), ("staticCode", 44),
             ("staticValidity", 45), ("dynamicCode", 46), ("dynamicValidity", 47),
+            ("literalAnchorUnproven", 48), ("secondProofChanged", 49),
         )
         for case_name, status in expected:
             self.assertIn(f"case {case_name} = {status}", helper)
@@ -35,10 +36,13 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         self.assertNotIn("String", diagnostic_section)
         self.assertNotIn("URL", diagnostic_section)
         self.assertNotIn("Data", diagnostic_section)
+        self.assertIn("case .processRunningMismatch:\n            return .processRunningMismatch", helper)
+        self.assertIn("case .literalAnchorUnproven:\n            return .literalAnchorUnproven", helper)
+        self.assertIn(") else { return .secondProofChanged }", helper)
 
     def test_signed_browser_identity_uses_unique_regular_file_equivalence(self):
         helper = (ROOT / "native/macos/job_apply_account_flow_helper.swift").read_text(encoding="utf-8")
-        fixtures = (ROOT / "native/macos/job_apply_credential_helper_tests.swift").read_text(encoding="utf-8")
+        test_support = (ROOT / "native/macos/job_apply_credential_helper_tests.swift").read_text(encoding="utf-8")
         self.assertIn("metadata.st_mode & S_IFMT == S_IFREG", helper)
         self.assertIn("device: metadata.st_dev, inode: metadata.st_ino", helper)
         self.assertIn("matches.count == 1", helper)
@@ -46,7 +50,7 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         self.assertIn("SecStaticCodeCreateWithPath(path as CFURL", helper)
         self.assertIn("SecCSFlags(rawValue: (1 << 0) | (1 << 4))", helper)
         self.assertIn("kSecGuestAttributePid as String: binding.browserProcessIdentifier", helper)
-        self.assertEqual(helper.count("oracleTrustedExecutableProof("), 3)
+        self.assertEqual(helper.count("oracleTrustedExecutableProofDecision("), 10)
         self.assertNotIn("guard path == executable", helper)
         for case in (
             'literalAnchorIdentities: ["/literal/reviewed": nil',
@@ -54,7 +58,35 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
             "processIdentity: reviewed, runningIdentity: other",
             "processIdentity: changed, runningIdentity: changed",
         ):
-            self.assertIn(case, fixtures)
+            self.assertIn(case, helper)
+        self.assertEqual(helper.count("func oracleExecutableIdentityAdversarialFixturesPass()"), 1)
+        self.assertNotIn("oracleExecutableIdentityAdversarialFixturesPass", test_support)
+        self.assertIn(") == .processRunningMismatch", helper)
+        self.assertEqual(helper.count(") == .literalAnchorUnproven"), 2)
+        self.assertIn("!oracleSecondExecutableProofMatches(", helper)
+
+    def test_production_source_compositions_keep_workday_independent_of_test_support(self):
+        oracle_sources = (
+            "job_apply_credential_helper.swift", "job_apply_browser_bridge.swift",
+            "job_apply_account_flow_helper.swift", "job_apply_credential_helper_tests.swift",
+            "job_apply_credential_helper_main.swift",
+        )
+        workday_sources = (
+            "job_apply_credential_helper.swift", "job_apply_browser_bridge.swift",
+            "job_apply_account_flow_helper.swift", "job_apply_workday_account_flow_helper.swift",
+            "job_apply_workday_account_flow_main.swift",
+        )
+        self.assertIn("job_apply_credential_helper_tests.swift", oracle_sources)
+        self.assertNotIn("job_apply_credential_helper_tests.swift", workday_sources)
+
+        if not __import__("sys").platform.startswith("darwin"):
+            return
+        for sources in (workday_sources, oracle_sources):
+            completed = subprocess.run([
+                "xcrun", "swiftc", "-typecheck",
+                *(str(ROOT / "native/macos" / source) for source in sources),
+            ], capture_output=True, check=False)
+            self.assertEqual(completed.returncode, 0, completed.stderr.decode(errors="replace"))
 
     # These contract tests are intentionally quiet. Visible/native integration
     # lives behind the separately owner-approved qa-account gate.

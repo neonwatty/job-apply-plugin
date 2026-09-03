@@ -744,7 +744,11 @@ test("owner beta clean packaged browser and CLI journey survives restart and fai
     assert.equal(await readyHandoff.isVisible(), false);
     assert.equal(await jobDialog.getByLabel("Role", { exact: true }).inputValue(), "Draft retained across newer preflight");
     await page.unroute(preflightPattern);
+    const changedResumeStateResponse = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === "/api/state" && response.ok()
+    ));
     await page.evaluate(() => document.querySelector("#refresh").click());
+    await changedResumeStateResponse;
 
     await page.getByRole("button", { name: "Close job details" }).click();
     await jobDialog.waitFor({ state: "hidden" });
