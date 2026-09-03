@@ -758,6 +758,49 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
         self.assertEqual(final_profile["profile"]["firstName"], "Extracted")
         self.assertEqual(final_profile["factProvenance"]["/firstName"]["source"], "user")
 
+    def test_resume_proposal_cli_summary_list_omits_private_values(self):
+        self.json_store("init")
+        profile_input = self.write_input(
+            "summary-profile.json", {"firstName": "Private Baseline"}
+        )
+        profile = self.json_store(
+            "profile-replace", "--input", str(profile_input),
+            "--expected-revision", "1", "--source", "user",
+        )
+        source = self.home / "summary-resume.txt"
+        source.write_text("private resume bytes", encoding="utf-8")
+        resume_input = self.write_input(
+            "summary-resume.json", {"label": "Private Resume", "path": str(source)}
+        )
+        resume = self.json_store("resume-import", "--input", str(resume_input))
+        candidate_input = self.write_input(
+            "summary-candidate.json",
+            {"firstName": "Private Candidate", "email": "private@example.invalid"},
+        )
+        proposal = self.json_store(
+            "resume-proposal-create", "--resume-id", resume["id"],
+            "--expected-resume-revision", str(resume["revision"]),
+            "--expected-profile-revision", str(profile["revision"]),
+            "--input", str(candidate_input),
+        )
+
+        listed = self.json_store("resume-proposal-list", "--summary-only")
+
+        self.assertEqual(listed, [{
+            "id": proposal["id"],
+            "resumeId": resume["id"],
+            "status": "pending",
+            "revision": 1,
+            "autoFilledCount": 1,
+            "pendingCount": 1,
+        }])
+        serialized = json.dumps(listed, sort_keys=True)
+        for forbidden in (
+            "Private Baseline", "Private Candidate", "private@example.invalid",
+            "private resume bytes", "candidate", "baselines",
+        ):
+            self.assertNotIn(forbidden, serialized)
+
     def test_resume_extraction_request_cli_is_value_free(self):
         self.json_store("init")
         source = self.home / "private-request.txt"

@@ -212,7 +212,7 @@ python3 "<plugin-root>/scripts/job-apply-store.py" resume-proposal-create \
   --resume-id <resume-id> --expected-resume-revision <resume-revision> \
   --expected-profile-revision <profile-revision> --input <candidate.json>
 python3 "<plugin-root>/scripts/job-apply-store.py" resume-proposal-list \
-  [--resume-id <resume-id>] [--status pending]
+  [--resume-id <resume-id>] [--status pending] [--summary-only]
 python3 "<plugin-root>/scripts/job-apply-store.py" resume-proposal-get --id <proposal-id>
 python3 "<plugin-root>/scripts/job-apply-store.py" resume-proposal-review \
   --id <proposal-id> --expected-revision <proposal-revision> \
@@ -228,6 +228,10 @@ a revision or selected-baseline conflict against unseen state. Creating another
 pending proposal for the same resume requires `--supersedes <proposal-id>` so the
 old record remains auditable. Resume replacement, trash, deletion, missing bytes,
 or digest drift makes a proposal stale.
+
+The default proposal list remains value-bearing for explicit local inspection.
+Agents must use `--summary-only` for discovery and supersession; that projection
+contains only opaque identities, revisions, states, and path counts.
 
 ## Reusable answers
 

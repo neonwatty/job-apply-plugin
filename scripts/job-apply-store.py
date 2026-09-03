@@ -7896,6 +7896,17 @@ class Store:
         result["staleReasons"] = reasons
         return result
 
+    @staticmethod
+    def _proposal_summary(proposal: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "id": proposal["id"],
+            "resumeId": proposal["resumeId"],
+            "status": proposal["status"],
+            "revision": proposal["revision"],
+            "autoFilledCount": len(proposal["autoFilledPaths"]),
+            "pendingCount": len(proposal["pendingPaths"]),
+        }
+
     def _create_resume_proposal_locked(
         self,
         resume: dict[str, Any],
@@ -8104,7 +8115,8 @@ class Store:
         return self._proposal_result(proposal) if proposal is not None else None
 
     def list_resume_proposals(
-        self, resume_id: str | None = None, status: str | None = None
+        self, resume_id: str | None = None, status: str | None = None,
+        *, summary_only: bool = False,
     ) -> list[dict[str, Any]]:
         self.initialize()
         if resume_id is not None:
@@ -8113,13 +8125,15 @@ class Store:
             raise StoreError("resume proposal status is unsupported")
         if not self.resume_extractions_path.exists():
             return []
-        records = [
-            self._proposal_result(proposal)
+        proposals = [
+            proposal
             for proposal in self._load_extractions_document()["proposals"].values()
             if (resume_id is None or proposal["resumeId"] == resume_id)
             and (status is None or proposal["status"] == status)
         ]
-        return sorted(records, key=lambda item: (item["createdAt"], item["id"]))
+        proposals.sort(key=lambda item: (item["createdAt"], item["id"]))
+        projection = self._proposal_summary if summary_only else self._proposal_result
+        return [projection(proposal) for proposal in proposals]
 
     def review_resume_proposal(
         self,
@@ -11041,6 +11055,7 @@ def build_parser() -> argparse.ArgumentParser:
     proposal_list = commands.add_parser("resume-proposal-list")
     proposal_list.add_argument("--resume-id")
     proposal_list.add_argument("--status")
+    proposal_list.add_argument("--summary-only", action="store_true")
     proposal_review = commands.add_parser("resume-proposal-review")
     proposal_review.add_argument("--id", required=True)
     proposal_review.add_argument("--expected-revision", required=True, type=int)
@@ -11357,7 +11372,9 @@ def run(args: argparse.Namespace) -> Any:
     if command == "resume-proposal-get":
         return store.get_resume_proposal(args.id)
     if command == "resume-proposal-list":
-        return store.list_resume_proposals(args.resume_id, args.status)
+        return store.list_resume_proposals(
+            args.resume_id, args.status, summary_only=args.summary_only
+        )
     if command == "resume-proposal-review":
         return store.review_resume_proposal(
             args.id,
