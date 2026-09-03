@@ -17,6 +17,7 @@ from urllib.parse import parse_qsl, urlsplit
 REALM_DESCRIPTOR_VERSION = 1
 FLOW_PASSWORD = "password_candidate_account"
 FLOW_EMAIL_ONLY = "email_only_candidate_profile"
+FLOW_ACCOUNT_NOT_REQUIRED = "account_not_required"
 LIFECYCLE_STATES = {
     "discovered", "credential_provisioned", "signup_in_progress", "active",
     "verification_required", "reset_required", "failed_definitive", "ambiguous",
@@ -31,6 +32,10 @@ _ORACLE_HOST = re.compile(
 )
 _ORACLE_PATH = re.compile(
     r"^/hcmUI/CandidateExperience/(?P<locale>[a-z]{2}(?:-[A-Z]{2})?)/sites/(?P<site>[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?)/job/(?P<job>[1-9][0-9]*)(?:/apply/email)?/?$"
+)
+_GREENHOUSE_HOSTS = {"boards.greenhouse.io", "job-boards.greenhouse.io"}
+_GREENHOUSE_APPLICATION_PATH = re.compile(
+    r"^/[a-z0-9](?:[a-z0-9_-]{0,126}[a-z0-9])?/jobs/[1-9][0-9]*/?$"
 )
 _CREDENTIAL_QUERY_KEY = re.compile(
     r"(?:^|[_-])(?:access[_-]?token|auth|authorization|cookie|credential|passcode|password|recovery|secret|session|token)(?:$|[_-])",
@@ -144,6 +149,49 @@ def normalize_realm(portal_url: str) -> dict[str, Any]:
     return _unresolved("adapter_unresolved")
 
 
+def classify_account_flow(portal_url: str) -> dict[str, Any]:
+    """Classify one reviewed ATS account flow without performing effects.
+
+    Credential-bearing flows retain the exact realm proof returned by
+    ``normalize_realm``. Greenhouse is deliberately narrower: only the
+    reviewed, query-free ordinary application path is known to be accountless.
+    It never becomes a stored employer realm.
+    """
+
+    realm = normalize_realm(portal_url)
+    if realm["status"] == "resolved":
+        return {
+            **realm,
+            "status": "classified",
+            "accountRequired": True,
+        }
+    try:
+        parsed = urlsplit(portal_url.strip()) if isinstance(portal_url, str) else None
+        host = (parsed.hostname or "").lower() if parsed is not None else ""
+        port = parsed.port if parsed is not None else None
+    except (AttributeError, ValueError):
+        return realm
+    if (
+        parsed is not None
+        and parsed.scheme.lower() == "https"
+        and host in _GREENHOUSE_HOSTS
+        and port in (None, 443)
+        and parsed.username is None
+        and parsed.password is None
+        and not parsed.query
+        and not parsed.fragment
+        and _GREENHOUSE_APPLICATION_PATH.fullmatch(parsed.path) is not None
+    ):
+        return {
+            "status": "classified",
+            "adapterId": "greenhouse",
+            "flowKind": FLOW_ACCOUNT_NOT_REQUIRED,
+            "credentialRequired": False,
+            "accountRequired": False,
+        }
+    return realm
+
+
 def discover_capability(platform: str, adapter_registry: tuple[Any, ...] = ()) -> dict[str, Any]:
     """Return a side-effect-free capability description.
 
@@ -189,7 +237,14 @@ def discover_account_flow_capability(platform: str, adapter_registry: tuple[Any,
         capability = {"providerId": None, "state": "unsupported", "reasonCode": "account_flow_not_implemented_linux"}
     else:
         capability = {"providerId": None, "state": "unsupported", "reasonCode": "platform_unsupported"}
-    return {**capability, "discoveryMode": "side_effect_free"}
+    return {
+        "productionSeamReady": False,
+        "liveExecutionEnabled": False,
+        "workdayPasswordAccountReady": False,
+        "greenhouseAccountlessClassificationReady": False,
+        **capability,
+        "discoveryMode": "side_effect_free",
+    }
 
 
 def public_settings(record: dict[str, Any]) -> dict[str, Any]:

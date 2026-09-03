@@ -106,3 +106,19 @@ jobs:
         env:
           JOB_APPLY_OWNER_APPROVED_VISIBLE_BROWSER_TESTS: '1'
         run: python3 scripts/qa-account.py verify-oracle-email-only --automation-provider macos-accessibility --owner-approved-visible-browser-tests --json
+
+  macos-account-flow-helper:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install QA dependencies and browser
+        run: npm ci && npx playwright install chromium
+      - name: Verify reviewed Workday account boundary
+        run: |
+          xcrun swiftc -typecheck native/macos/job_apply_credential_helper.swift native/macos/job_apply_workday_account_flow_helper.swift native/macos/job_apply_workday_account_flow_main.swift
+          python3 -m unittest -v tests.test_macos_workday_account_flow_helper

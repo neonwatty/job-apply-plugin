@@ -45,6 +45,8 @@ class MacOSSecurityFrameworkProvider(PORTABLE.CredentialProvider):
             "reasonCode": "native_compound_boundary" if supported else "platform_unsupported",
             "credentialOperationsReady": False,
             "syntheticOperationsReady": supported,
+            "productionSeamReady": supported,
+            "liveExecutionEnabled": False,
             "discoveryMode": "side_effect_free",
         }
 

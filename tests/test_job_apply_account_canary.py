@@ -43,6 +43,32 @@ class AccountCanaryAuthorityTests(unittest.TestCase):
         with self.assertRaises(CANARY.CanaryAuthorityError):
             CANARY.validate_binding({**binding, "termsDocumentFingerprint": "changed"})
 
+    def test_workday_binding_includes_flow_and_exact_password_controls(self):
+        controls = {
+            "accountFormFingerprint": "sha256:" + "1" * 64,
+            "emailControlFingerprint": "sha256:" + "2" * 64,
+            "passwordControlFingerprint": "sha256:" + "3" * 64,
+            "createAccountControlFingerprint": "sha256:" + "4" * 64,
+        }
+        aggregate = "sha256:" + hashlib.sha256(
+            ":".join(controls.values()).encode()
+        ).hexdigest()
+        binding = {
+            **self.binding(), **controls,
+            "flowKind": "password_candidate_account",
+            "accountCreationControlsFingerprint": aggregate,
+        }
+        self.assertEqual(
+            CANARY.validate_binding(binding)["flowKind"],
+            "password_candidate_account",
+        )
+        preparation = CANARY.preparation_scope(CANARY._without_claim(binding))
+        self.assertEqual(preparation["flowKind"], "password_candidate_account")
+        with self.assertRaises(CANARY.CanaryAuthorityError):
+            CANARY.validate_binding({**binding, "passwordControlFingerprint": "changed"})
+        with self.assertRaises(CANARY.CanaryAuthorityError):
+            CANARY.validate_binding({**binding, "accountCreationControlsFingerprint": "sha256:" + "9" * 64})
+
     def test_unavailable_before_exact_t007_approval_and_never_final(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "private-ledger.json"

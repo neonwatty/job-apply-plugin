@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -66,6 +67,61 @@ class AccountFlowTests(unittest.TestCase):
         )
         self.assertEqual(result["lifecycleState"], "ambiguous")
         self.assertFalse(result["retryAllowed"])
+
+    def test_native_provider_allows_bounded_accessibility_observation_under_ci_load(self):
+        class SlowNativeChild:
+            pid = 4242
+            returncode = None
+
+            def __init__(self, arguments):
+                self.private_descriptor = os.dup(int(arguments[-1]))
+
+            def communicate(self, timeout):
+                os.read(self.private_descriptor, 255)
+                os.close(self.private_descriptor)
+                if timeout < 20:
+                    raise __import__("subprocess").TimeoutExpired("native-helper", timeout)
+                self.returncode = 0
+                return b"", b""
+
+            def poll(self):
+                return self.returncode
+
+            def kill(self):
+                self.returncode = -9
+
+            def wait(self, timeout):
+                return self.returncode
+
+        class ObservationResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return json.dumps({
+                    "lifecycleState": "active", "retryAllowed": False,
+                    "finalActionAuthorized": False, "emailRemoved": True,
+                    "termsAccepted": True, "nextActivations": 1,
+                    "credentialProviderInvocations": 0,
+                }).encode()
+
+        provider = object.__new__(MAC.NativeMacOSAccessibilityProvider)
+        provider.binary = "/reviewed/native-helper"
+        provider.browser_process_identifier = 123
+        provider.socket_path = "/tmp/native-attestation.sock"
+        request = self.packet()
+        request["portalUrl"] = "http://127.0.0.1:4321/synthetic-oracle?operation=" + "a" * 64
+        request["operationFingerprint"] = "sha256:" + "a" * 64
+        with mock.patch.object(provider, "_verified_binary", return_value=provider.binary), \
+             mock.patch.object(MAC.subprocess, "Popen", side_effect=lambda arguments, **_kwargs: SlowNativeChild(arguments)), \
+             mock.patch.object(MAC.urllib.request, "urlopen", return_value=ObservationResponse()):
+            result = provider.execute_email_only(request, lambda: "private@example.invalid")
+        self.assertEqual(result["outcome"], "active")
+        self.assertEqual(result["nextActivations"], 1)
+        self.assertFalse(result["finalActionAuthorized"])
 
     @unittest.skipUnless(sys.platform.startswith("darwin"), "macOS native helper required")
     def test_native_provider_cannot_be_constructed_from_an_arbitrary_signed_helper(self):

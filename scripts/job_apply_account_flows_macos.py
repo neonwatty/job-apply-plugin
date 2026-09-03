@@ -26,6 +26,10 @@ class MacOSAccessibilityAdapter:
             "providerId": self.provider_id,
             "state": "available",
             "emailOnlyCandidateProfileReady": True,
+            "workdayPasswordAccountReady": True,
+            "greenhouseAccountlessClassificationReady": True,
+            "productionSeamReady": True,
+            "liveExecutionEnabled": False,
             "credentialOperationsReady": False,
         }
 
@@ -261,7 +265,7 @@ class NativeMacOSAccessibilityProvider:
                 identity = ""
                 os.close(write_descriptor); write_descriptor = -1
             attestation = self._read_attestation(listener, child.pid, operation) if listener is not None else None
-            stdout, stderr = child.communicate(timeout=10)
+            stdout, stderr = child.communicate(timeout=30)
             if child.returncode or stdout or stderr:
                 status = child.returncode if child.returncode in {
                     21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
