@@ -341,6 +341,9 @@ export function extractionRequestView(request, proposalSummary) {
   if (request.status === "stale") {
     return { label: "The resume changed after this request", action: "fresh", tone: "warning" };
   }
+  if (request.status === "completed" && proposalSummary?.status === "pending" && proposalSummary.staleReasons?.length) {
+    return { label: "Extraction review is no longer current", action: "fresh", tone: "warning" };
+  }
   if (request.status === "completed" && proposalSummary?.status === "pending") {
     return { label: "Extracted changes need review", action: "review", tone: "review" };
   }
@@ -1596,15 +1599,23 @@ if (hasDom) {
     try {
       let path = "/api/resume-extraction-requests"; let body = { resumeId: resume.id, expectedResumeRevision: resume.revision };
       if (action === "cancel") { path += `/${encodeURIComponent(request.requestId)}/cancel`; body = { expectedRevision: request.revision }; }
-      if (action === "retry" || action === "fresh") { path += `/${encodeURIComponent(request.requestId)}/retry`; body = { expectedRevision: request.revision, expectedResumeRevision: resume.revision }; }
-      await api(path, { method: "POST", body: JSON.stringify(body) });
+      if (action === "retry" || (action === "fresh" && request?.status === "stale")) { path += `/${encodeURIComponent(request.requestId)}/retry`; body = { expectedRevision: request.revision, expectedResumeRevision: resume.revision }; }
+      const updatedRequest = await api(path, { method: "POST", body: JSON.stringify(body) });
       await refreshResumes({ quiet: true }); if (profileState.loaded) await refreshProfile({ preserve: true });
+      const updatedResume = resumeState.items.find((item) => item.id === resume.id);
+      if (updatedResume) {
+        updatedResume.extractionRequest = updatedRequest;
+        renderResumes();
+        if (resumeState.selected?.id === resume.id) renderResumeDialog(updatedResume, true);
+      }
       toast(action === "request" ? "Request saved. The next active Job Apply agent can extract facts from this resume." : action === "cancel" ? "Extraction request cancelled" : "Fresh extraction request saved");
+      return true;
     } catch (error) {
       if (error.status === 409 || error.code === "revision_conflict") {
         if ($("#resume-dialog").open) { $("#resume-conflict").classList.remove("hidden"); $("#resume-conflict").focus(); }
         else { resumeError("This resume or request changed elsewhere. Refresh the canonical library before choosing another action."); $("#resumes-refresh").focus(); }
       } else resumeError(error.message, $("#resume-dialog").open);
+      return false;
     }
   }
 
@@ -1687,6 +1698,14 @@ if (hasDom) {
     const target = document.querySelector(`[data-resume-extraction-action="${CSS.escape(resumeId)}"]`); target?.focus(); target?.scrollIntoView({ block: "center" });
   }
 
+  async function requestFreshForProposal() {
+    const resume = resumeState.items.find((item) => item.id === resumeState.proposal?.resumeId);
+    if (!resume) { $("#proposal-error").textContent = "Refresh Resumes before requesting fresh extraction."; $("#proposal-error").classList.remove("hidden"); return; }
+    if (!await runExtractionAction(resume, "fresh")) return;
+    $("#proposal-dialog").close();
+    const action = $("#resume-extraction-action"); if ($("#resume-dialog").open && resumeState.selected?.id === resume.id) action.focus();
+  }
+
   async function uploadEnvelope(file, metadata) { return { metadata, filename: file.name, content: await fileToBase64(file) }; }
 
   async function mutateResume(action, body = null) {
@@ -1732,7 +1751,7 @@ if (hasDom) {
         }
         holder.append(section);
       }
-      const stale = Boolean(proposal.staleReasons?.length); $("#proposal-submit").disabled = stale; $("#proposal-keep-all").disabled = stale; $("#proposal-stale-actions").classList.toggle("hidden", !stale); $("#proposal-error").textContent = stale ? "This proposal is stale because its resume changed. Request fresh extraction from the current resume." : ""; $("#proposal-error").classList.toggle("hidden", !stale); $("#proposal-dialog").showModal();
+      const stale = Boolean(proposal.staleReasons?.length); $("#proposal-submit").disabled = stale; $("#proposal-keep-all").disabled = stale; $("#proposal-stale-actions").classList.toggle("hidden", !stale); $("#proposal-error").textContent = stale ? "This extraction review is no longer current and cannot be applied to canonical state. Request fresh extraction to continue." : ""; $("#proposal-error").classList.toggle("hidden", !stale); $("#proposal-dialog").showModal();
     } catch (error) { resumeError(error.message, true); }
   }
 
@@ -2390,7 +2409,7 @@ if (hasDom) {
   $("#resume-handoff-copy").addEventListener("click", () => copyExtractionHandoff(resumeState.selected.extractionRequest, $("#resume-handoff-fallback")));
   $("#resume-content").addEventListener("click", async () => { const resume = resumeState.selected; try { const response = await fetch(`/api/resumes/${encodeURIComponent(resume.id)}/content`, { headers: { Authorization: `Bearer ${token}` } }); if (!response.ok) { let payload = null; try { payload = await response.json(); } catch {} throw new ApiError(response.status, payload); } if (resume.mediaType?.startsWith("text/plain")) { $("#resume-preview").textContent = await response.text(); $("#preview-dialog").showModal(); } else { const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.target = "_blank"; link.rel = "noopener"; if (resume.mediaType?.includes("wordprocessingml")) link.download = `resume-${resume.id}.docx`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 60_000); } } catch (error) { resumeError(error.message, true); } });
   $("#proposal-keep-all").addEventListener("click", () => { for (const select of $("#proposal-form").querySelectorAll("select[name]")) select.value = "keep_current"; $("#proposal-error").classList.add("hidden"); });
-  $("#proposal-request-fresh").addEventListener("click", () => focusResumeRequest(resumeState.proposal.resumeId));
+  $("#proposal-request-fresh").addEventListener("click", requestFreshForProposal);
   $("#proposal-form").addEventListener("submit", async (event) => {
     event.preventDefault(); const proposal = resumeState.proposal; const decisions = {}; const replacementConfirmations = {}; const replacementLabels = [];
     for (const select of event.currentTarget.querySelectorAll("select[name]")) if (select.value) decisions[select.name] = select.value;

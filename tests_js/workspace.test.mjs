@@ -902,6 +902,12 @@ test("extraction request view is honest and closed for every state", () => {
   assert.equal(extractionRequestView({ status: "stale" }, null).action, "fresh");
   assert.equal(extractionRequestView({ status: "cancelled" }, null).action, "request");
   assert.equal(extractionRequestView({ status: "completed" }, { status: "pending" }).action, "review");
+  assert.deepEqual(extractionRequestView(
+    { status: "completed" },
+    { status: "pending", staleReasons: ["profile_revision_changed"] },
+  ), {
+    label: "Extraction review is no longer current", action: "fresh", tone: "warning",
+  });
   assert.equal(extractionRequestView({ status: "completed" }, { status: "completed" }).action, "facts");
 });
 
@@ -2066,13 +2072,42 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     const retriedRequest = extractionRequests.find((item) => item.supersedesRequestId === failedRequest.requestId);
     assert.equal(retriedRequest.status, "requested");
     await uploadCard.getByRole("button", { name: "Cancel request" }).click();
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 1100));
+    let staleProfile = await cli("profile-inspect");
+    staleProfile = await cli("profile-patch", ["--expected-revision", String(staleProfile.revision), "--source", "user"], { email: staleProfile.profile.email });
+    const staleRequest = await cli("resume-extraction-request-create", ["--resume-id", uploaded.id, "--expected-resume-revision", String(uploaded.revision)]);
+    const staleCompletion = await cli("resume-extraction-request-complete", ["--id", staleRequest.requestId, "--expected-request-revision", String(staleRequest.revision), "--expected-profile-revision", String(staleProfile.revision)], { email: "new-stale@example.invalid" });
+    assert.equal(staleCompletion.request.status, "completed");
+    await page.locator("#resumes-refresh").click();
+    await uploadCard.getByRole("button", { name: "Manage" }).click();
+    const resumeDialog = page.locator("#resume-dialog");
+    await resumeDialog.getByLabel("Replacement file").setInputFiles({ name: "stale-replacement.txt", mimeType: "text/plain", buffer: Buffer.from("replacement makes proposal stale") });
+    await resumeDialog.getByRole("button", { name: "Replace file" }).click();
+    await resumeDialog.waitFor({ state: "hidden" });
+    await uploadCard.getByText("Extraction review is no longer current").waitFor();
+    await uploadCard.getByRole("button", { name: "Manage" }).click();
+    await resumeDialog.getByRole("button", { name: "Review", exact: true }).click();
+    const staleProposalDialog = page.locator("#proposal-dialog");
+    await staleProposalDialog.waitFor({ state: "visible" });
+    const staleCopy = await staleProposalDialog.locator("#proposal-error").innerText();
+    assert.match(staleCopy, /no longer current/);
+    assert.doesNotMatch(staleCopy, /resume changed/i);
+    await staleProposalDialog.getByRole("button", { name: "Request fresh extraction" }).click();
+    await staleProposalDialog.waitFor({ state: "hidden" });
+    await resumeDialog.getByText("Waiting for a Job Apply agent").waitFor();
+    const freshRequests = await cli("resume-extraction-request-list", ["--resume-id", uploaded.id, "--status", "requested"]);
+    assert.equal(freshRequests.length, 1);
+    assert.notEqual(freshRequests[0].requestId, staleRequest.requestId);
+    await resumeDialog.getByRole("button", { name: "Cancel request" }).click();
+    await resumeDialog.getByText("Facts not extracted").waitFor();
+    await resumeDialog.getByRole("button", { name: "Close resume details" }).click();
     const manageUpload = uploadCard.getByRole("button", { name: "Manage" });
     const manageLifecycleUpload = () => page.locator(".resume-card").filter({ hasText: "Preserved browser draft" }).getByRole("button", { name: "Manage" });
     await manageUpload.click();
-    const resumeDialog = page.locator("#resume-dialog");
     await resumeDialog.getByLabel("Label").fill("Preserved browser draft");
     await resumeDialog.getByLabel("Replacement file").setInputFiles({ name: "replacement.txt", mimeType: "text/plain", buffer: Buffer.from("replacement draft") });
-    await cli("resume-update", ["--id", uploaded.id, "--expected-revision", String(uploaded.revision)], { tags: ["cli"] });
+    const uploadBeforeConflict = await cli("resume-get", ["--id", uploaded.id]);
+    await cli("resume-update", ["--id", uploaded.id, "--expected-revision", String(uploadBeforeConflict.revision)], { tags: ["cli"] });
     await page.locator("#resumes-refresh").evaluate((button) => button.click());
     await page.locator("#resume-conflict").waitFor();
     assert.equal(await resumeDialog.getByLabel("Label").inputValue(), "Preserved browser draft");
