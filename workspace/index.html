@@ -153,6 +153,10 @@
         <div class="hero-actions"><button id="facts-refresh" class="button secondary" type="button">Refresh</button><button id="facts-save" class="button primary" type="button">Save changes</button></div>
       </section>
       <p id="facts-status" class="notice" role="status">Open Facts to load the canonical profile.</p>
+      <section id="profile-readiness" class="profile-readiness" aria-labelledby="profile-readiness-title" tabindex="-1">
+        <div class="readiness-heading"><div><p class="eyebrow">ADVISORY CHECK</p><h2 id="profile-readiness-title">Profile readiness</h2></div><p>Individual jobs may still require additional information.</p></div>
+        <div id="profile-readiness-sections" class="readiness-sections" aria-live="polite"></div>
+      </section>
       <section class="facts-organizer" aria-labelledby="facts-organizer-title">
         <div class="facts-organizer-heading"><div><p class="eyebrow">SAVED VIEWS</p><h2 id="facts-organizer-title">Focus the facts you need</h2><p>Built-in sections and custom groups change only this view. Canonical facts stay in place.</p></div><div class="button-row"><button id="fact-group-edit" class="button secondary hidden" type="button">Edit group</button><button id="fact-group-new" class="button primary" type="button">New group</button></div></div>
         <div id="fact-group-nav" class="fact-group-nav" role="toolbar" aria-label="Fact views">
@@ -479,6 +483,7 @@
     <form id="resume-form" class="dialog-shell">
       <div class="dialog-heading"><div><p class="eyebrow">CANONICAL RESUME</p><h2 id="resume-dialog-title">Resume details</h2></div><button class="icon-button" type="button" data-close="resume-dialog" aria-label="Close resume details">×</button></div>
       <p id="resume-assignment"></p><p id="resume-proposal-status"></p>
+      <section class="resume-extraction" aria-labelledby="resume-extraction-heading"><h3 id="resume-extraction-heading">Fact extraction</h3><p id="resume-extraction-status" class="extraction-status" role="status"></p><div class="button-row"><button id="resume-extraction-action" class="button primary" type="button"></button><button id="resume-handoff-copy" class="button secondary hidden" type="button">Copy agent handoff</button></div><label id="resume-handoff-fallback" class="clipboard-fallback hidden" role="alert">Clipboard unavailable. Select and copy this handoff manually. <input readonly aria-label="Extraction request handoff to copy"></label></section>
       <fieldset><legend>Metadata</legend><div class="form-grid"><label>Label <input name="label" required></label><label>Tags (comma separated) <input name="tags"></label></div><button class="button primary" type="submit">Save metadata</button></fieldset>
       <fieldset><legend>Managed file</legend><label>Replacement file <input name="file" type="file" accept=".pdf,.docx,.txt"></label><div class="button-row"><button id="resume-content" class="button secondary" type="button">Preview or download</button><button id="resume-replace" class="button secondary" type="button">Replace file</button><button id="resume-adopt" class="button secondary hidden" type="button">Adopt into managed storage</button></div></fieldset>
       <section aria-labelledby="proposal-heading"><h3 id="proposal-heading">Extraction reviews</h3><div id="resume-proposals"></div></section>
@@ -489,7 +494,11 @@
   </dialog>
 
   <dialog id="proposal-dialog" aria-labelledby="proposal-title">
-    <form id="proposal-form" class="dialog-shell"><div class="dialog-heading"><div><p class="eyebrow">EXTRACTION REVIEW</p><h2 id="proposal-title">Review proposed facts</h2></div><button class="icon-button" type="button" data-close="proposal-dialog" aria-label="Close extraction review">×</button></div><p>Choose only the paths you want to decide now. Unselected paths stay pending.</p><div id="proposal-rows"></div><p id="proposal-error" class="error hidden" role="alert"></p><div class="dialog-footer"><span></span><button id="proposal-submit" class="button primary" type="submit">Apply selected decisions</button></div></form>
+    <form id="proposal-form" class="dialog-shell"><div class="dialog-heading"><div><p class="eyebrow">EXTRACTION REVIEW</p><h2 id="proposal-title">Review proposed facts</h2></div><button class="icon-button" type="button" data-close="proposal-dialog" aria-label="Close extraction review">×</button></div><p>Choose only the paths you want to decide now. Unselected paths stay pending.</p><div class="button-row"><button id="proposal-keep-all" class="button secondary" type="button">Keep all current</button></div><div id="proposal-rows"></div><div id="proposal-stale-actions" class="hidden"><button id="proposal-request-fresh" class="button secondary" type="button">Request fresh extraction</button></div><p id="proposal-error" class="error hidden" role="alert"></p><div class="dialog-footer"><span></span><button id="proposal-submit" class="button primary" type="submit">Apply selected decisions</button></div></form>
+  </dialog>
+
+  <dialog id="replacement-confirm-dialog" aria-labelledby="replacement-confirm-title">
+    <form id="replacement-confirm-form" class="dialog-shell compact"><div class="dialog-heading"><div><p class="eyebrow">STRUCTURED REPLACEMENT</p><h2 id="replacement-confirm-title">Confirm whole-collection replacement</h2></div><button class="icon-button" type="button" data-close="replacement-confirm-dialog" aria-label="Close structured replacement confirmation">×</button></div><p id="replacement-confirm-copy">Using the extracted value will replace the current structured collection. Review this scope before continuing.</p><div class="dialog-footer"><button class="button secondary" type="button" data-close="replacement-confirm-dialog">Go back</button><button id="replacement-confirm-submit" class="button danger" type="submit">Confirm and apply decisions</button></div></form>
   </dialog>
 
   <dialog id="fact-group-dialog" aria-labelledby="fact-group-dialog-title">

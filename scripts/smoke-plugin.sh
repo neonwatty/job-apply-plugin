@@ -576,6 +576,7 @@ for relative in ("README.md", "site/index.html"):
         raise SystemExit(f"{relative} inventory differs: expected {sorted(expected)}, got {sorted(found)}")
 
 application_skill = (root / "skills/job-apply/SKILL.md").read_text()
+workspace_skill = (root / "skills/job-workspace/SKILL.md").read_text()
 answer_memory_skill = (root / "skills/answer-memory/SKILL.md").read_text()
 for skill in expected:
     content = (root / "skills" / skill / "SKILL.md").read_text()
@@ -598,6 +599,23 @@ required_contract = (
 )
 if required_contract not in application_skill:
     raise SystemExit("hard manual-submit contract is missing")
+for required_extraction_contract in (
+    "resume-extraction-request-list --status requested",
+    "resume-extraction-request-complete",
+    "delete the permission-restricted candidate file",
+    "Never scan for extraction requests during every job application",
+    "Stop at proposal review",
+):
+    if required_extraction_contract not in application_skill:
+        raise SystemExit(f"job-apply skill is missing extraction contract: {required_extraction_contract}")
+for required_workspace_contract in (
+    "create, cancel, and retry extraction requests",
+    "queues work for the next active Job Apply agent",
+    "does not start or launch an agent",
+    "cannot extract facts, complete or fail a request, or author a proposal",
+):
+    if required_workspace_contract not in workspace_skill:
+        raise SystemExit(f"workspace skill is missing extraction boundary: {required_workspace_contract}")
 
 print("Static smoke assertions passed")
 PY
@@ -802,6 +820,34 @@ if not launcher.is_file() or not all(asset.is_file() for asset in assets):
 store_spec = importlib.util.spec_from_file_location("packaged_merge_store", fixture / "scripts" / "job-apply-store.py")
 store_module = importlib.util.module_from_spec(store_spec)
 store_spec.loader.exec_module(store_module)
+parser = store_module.build_parser()
+subcommands = next(action.choices for action in parser._actions if action.dest == "command")
+required_extraction_commands = {
+    "resume-extraction-request-create",
+    "resume-extraction-request-list",
+    "resume-extraction-request-get",
+    "resume-extraction-request-cancel",
+    "resume-extraction-request-fail",
+    "resume-extraction-request-retry",
+    "resume-extraction-request-complete",
+    "profile-preparedness-get",
+}
+if not required_extraction_commands.issubset(subcommands):
+    raise SystemExit("packaged Store parser is missing extraction or preparedness commands")
+packaged_job_apply = (fixture / "skills/job-apply/SKILL.md").read_text(encoding="utf-8")
+packaged_workspace = (fixture / "skills/job-workspace/SKILL.md").read_text(encoding="utf-8")
+if "Stop at proposal review" not in packaged_job_apply or "does not start or launch an agent" not in packaged_workspace:
+    raise SystemExit("packaged skills do not preserve the extraction handoff boundary")
+packaged_app = (fixture / "workspace/app.js").read_text(encoding="utf-8")
+if packaged_app.count('"/api/resume-extraction-requests"') != 1:
+    raise SystemExit("packaged workspace request collection route changed unexpectedly")
+for allowed_action in ("cancel", "retry"):
+    expected_route = f'path += `/${{encodeURIComponent(request.requestId)}}/{allowed_action}`'
+    if expected_route not in packaged_app:
+        raise SystemExit(f"packaged workspace is missing allowed request endpoint /{allowed_action}")
+for forbidden_suffix in ("/complete", "/fail", "/candidate"):
+    if f"resume-extraction-requests{forbidden_suffix}" in packaged_app:
+        raise SystemExit(f"packaged workspace exposes forbidden request endpoint {forbidden_suffix}")
 recovery_store = store_module.Store(smoke_root / "merge-recovery-store", smoke_root / "no-legacy")
 winner = recovery_store.put_answer({"question": "Packaged merge winner?", "state": "sensitive", "value": "packaged-winner-secret", "sensitivity": "high"}, remember_sensitive=True)
 source = recovery_store.put_answer({"question": "Packaged merge duplicate?", "state": "confirmed", "value": "packaged-source-discarded"})

@@ -108,6 +108,7 @@ const {
   createApi,
   createLatestRequestCoordinator,
   employerAccountOverrideRequest,
+  extractionRequestView,
   conflictingPaths,
   filterJobs,
   formPatch,
@@ -117,6 +118,7 @@ const {
   ownerBetaNextStep,
   patchForPaths,
   pointerValue,
+  proposalGroupForPath,
   resumeAssignmentText,
   safeSessionStorage,
   sessionToken,
@@ -1108,6 +1110,48 @@ test("resume refresh results stay bound to their requested Active or Trash view"
   assert.equal(shouldUseResumeResponse(4, 4, false, true), false);
 });
 
+test("extraction request view is honest and closed for every state", () => {
+  assert.deepEqual(extractionRequestView(null, null), {
+    label: "Facts not extracted", action: "request", tone: "neutral",
+  });
+  const waiting = extractionRequestView({ status: "requested" }, null);
+  assert.equal(waiting.action, "cancel");
+  assert.match(waiting.label, /Waiting for a Job Apply agent/);
+  assert.doesNotMatch(waiting.label, /Extracting/i);
+  assert.equal(extractionRequestView({ status: "failed" }, null).action, "retry");
+  assert.equal(extractionRequestView({ status: "stale" }, null).action, "fresh");
+  assert.equal(extractionRequestView({ status: "cancelled" }, null).action, "request");
+  assert.equal(extractionRequestView({ status: "completed" }, { status: "pending" }).action, "review");
+  assert.deepEqual(extractionRequestView(
+    { status: "completed" },
+    { status: "pending", staleReasons: ["profile_revision_changed"] },
+  ), {
+    label: "Extraction review is no longer current", action: "fresh", tone: "warning",
+  });
+  assert.equal(extractionRequestView({ status: "completed" }, { status: "completed" }).action, "facts");
+});
+
+test("proposal groups keep deterministic order and unknown paths visible", () => {
+  assert.equal(proposalGroupForPath("/firstName"), "Identity");
+  assert.equal(proposalGroupForPath("/email"), "Contact");
+  assert.equal(proposalGroupForPath("/location/city"), "Location");
+  assert.equal(proposalGroupForPath("/workHistory"), "Experience");
+  assert.equal(proposalGroupForPath("/education"), "Education");
+  assert.equal(proposalGroupForPath("/skills"), "Skills");
+  assert.equal(proposalGroupForPath("/linkedInUrl"), "Links");
+  assert.equal(proposalGroupForPath("/futureFact/value"), "Additional");
+});
+
+test("Companion markup exposes advisory readiness and safe review controls", async () => {
+  const html = await readFile(join(REPO_ROOT, "workspace", "index.html"), "utf8");
+  assert.match(html, /id="profile-readiness"/);
+  assert.match(html, /Individual jobs may still require additional information\./);
+  assert.match(html, /id="proposal-keep-all"[^>]*>Keep all current</);
+  assert.match(html, /id="replacement-confirm-dialog"/);
+  assert.doesNotMatch(html, /accept all extracted/i);
+  assert.doesNotMatch(html, /application ready|readiness score|\d+%/i);
+});
+
 test("profile paths build selective patches and distinguish safe rebases from conflicts", () => {
   const base = { location: { city: "Phoenix", country: "US" }, skills: ["Python"], firstName: "Ada" };
   const latest = { location: { city: "Phoenix", country: "CA" }, skills: ["Python", "Rust"], firstName: "Grace" };
@@ -1245,6 +1289,55 @@ test("job-apply routes every ordinary URL through the canonical task protocol", 
   assert.match(readme, /Import is a new-record operation protected by ID\/content uniqueness/);
   assert.match(readme, /resume-resolve/);
   assert.match(readme, /scripts\/job-apply-task\.py/);
+});
+
+test("skill and documentation contracts keep extraction agent-owned and context-bounded", async () => {
+  const jobApply = await readFile(join(REPO_ROOT, "skills", "job-apply", "SKILL.md"), "utf8");
+  const workspaceSkill = await readFile(join(REPO_ROOT, "skills", "job-workspace", "SKILL.md"), "utf8");
+  const readme = await readFile(join(REPO_ROOT, "README.md"), "utf8");
+  const app = await readFile(join(REPO_ROOT, "workspace", "app.js"), "utf8");
+
+  assert.match(jobApply, /resume-extraction-request-list --status requested/);
+  assert.match(jobApply, /Never scan for extraction requests during every job application/);
+  assert.match(jobApply, /delete the permission-restricted candidate file/);
+  assert.match(jobApply, /Stop at proposal review/);
+  for (const text of [workspaceSkill, readme]) {
+    assert.match(text, /queues work for the next active Job Apply agent/);
+    assert.match(text, /does not start or launch an agent/);
+    assert.match(text, /cannot extract facts, complete or fail a request, or author a proposal/);
+  }
+
+  const requestRoutes = [...app.matchAll(/"(\/api\/resume-extraction-requests[^"`]*)"/g)]
+    .map((match) => match[1]);
+  assert.deepEqual([...new Set(requestRoutes)], ["/api/resume-extraction-requests"]);
+  assert.ok(app.includes('path += `/${encodeURIComponent(request.requestId)}/cancel`'));
+  assert.ok(app.includes('path += `/${encodeURIComponent(request.requestId)}/retry`'));
+  assert.doesNotMatch(app, /resume-extraction-requests[^\n]{0,100}\/(?:complete|fail|candidate)/);
+});
+
+test("resume extraction onboarding oracle is packaged in every protected OS validation job", async () => {
+  const packageJson = JSON.parse(await readFile(join(REPO_ROOT, "package.json"), "utf8"));
+  assert.equal(
+    packageJson.scripts["qa:resume-extraction-onboarding"],
+    "python3 qa/resume_extraction_onboarding_oracle.py --json",
+  );
+
+  const workflow = await readFile(join(REPO_ROOT, ".github", "workflows", "validate.yml"), "utf8");
+  const command = "run: npm run qa:resume-extraction-onboarding";
+  assert.equal(workflow.split(command).length - 1, 4);
+  const jobs = [
+    "validate", "windows-store-workspace", "macos-credential-helper",
+    "macos-account-flow-helper",
+  ];
+  const starts = jobs.map((job) => workflow.indexOf(`  ${job}:`));
+  for (const [index, job] of jobs.entries()) {
+    const start = starts[index];
+    assert.notEqual(start, -1, job);
+    const next = starts[index + 1] ?? -1;
+    const block = workflow.slice(start, next === -1 ? undefined : next);
+    assert.ok(block.includes(command), job);
+  }
+  assert.match(workflow, /pull_request:\n\s+branches: \[main, staging\]/);
 });
 
 test("styles include visible focus, reduced motion, contrast mode, and responsive behavior", async () => {
@@ -2082,7 +2175,8 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     server = spawn(PYTHON, [join(REPO_ROOT, "scripts", "job-apply-workspace.py"), "--root", storeRoot, "--port", "0", "--no-open", "--json"], { cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"] });
     const startup = await waitForStartup(server);
     browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage();
+    const browserContext = await browser.newContext({ permissions: ["clipboard-read", "clipboard-write"] });
+    const page = await browserContext.newPage();
     await page.addInitScript(() => {
       // This walkthrough drives every refresh explicitly; background polling can
       // otherwise race the save-time refresh and make focus assertions flaky.
@@ -2098,6 +2192,11 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
 
     await page.getByRole("button", { name: "Facts" }).click();
     await page.waitForFunction(() => document.querySelector('[data-path="/firstName"]')?.value === "Ada");
+    const readiness = page.locator("#profile-readiness");
+    await readiness.getByRole("heading", { name: "Profile readiness" }).waitFor();
+    assert.deepEqual(await readiness.locator("h3").allTextContents(), ["Essential setup", "Common coverage", "Review health"]);
+    assert.match(await readiness.innerText(), /Individual jobs may still require additional information\./);
+    assert.doesNotMatch(await readiness.innerText(), /score|percent|application ready|\d+%/i);
     assert.equal(await page.getByLabel("First name").inputValue(), "Ada");
     assert.equal(await page.getByLabel("Postal code").inputValue(), "85001");
     assert.equal(await page.getByLabel("Minimum base salary").inputValue(), "$150K");
@@ -2236,13 +2335,63 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     assert.notEqual(uploaded.originalFilename, "private-browser-name.txt");
 
     const uploadCard = page.locator(".resume-card").filter({ hasText: "Browser upload" });
+    await uploadCard.getByRole("button", { name: "Request fact extraction" }).click();
+    await uploadCard.getByText("Waiting for a Job Apply agent").waitFor();
+    assert.doesNotMatch(await uploadCard.innerText(), /Extracting/i);
+    let extractionRequests = await cli("resume-extraction-request-list", ["--resume-id", uploaded.id]);
+    assert.equal(extractionRequests.length, 1);
+    await uploadCard.getByRole("button", { name: "Copy agent handoff" }).click();
+    assert.equal(await page.evaluate(() => navigator.clipboard.readText()), `Use the Job Apply resume workflow to process extraction request ${extractionRequests[0].requestId}.`);
+    assert.equal((await page.evaluate(() => navigator.clipboard.readText())).includes("Browser upload"), false);
+    await uploadCard.getByRole("button", { name: "Cancel request" }).click();
+    await uploadCard.getByRole("button", { name: "Request fact extraction" }).waitFor();
+    assert.equal((await cli("resume-extraction-request-get", ["--id", extractionRequests[0].requestId])).status, "cancelled");
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 1100));
+    let failedRequest = await cli("resume-extraction-request-create", ["--resume-id", uploaded.id, "--expected-resume-revision", String(uploaded.revision)]);
+    failedRequest = await cli("resume-extraction-request-fail", ["--id", failedRequest.requestId, "--reason", "interrupted", "--expected-revision", String(failedRequest.revision)]);
+    await page.locator("#resumes-refresh").click();
+    await uploadCard.getByRole("button", { name: "Try again" }).click();
+    await uploadCard.getByText("Waiting for a Job Apply agent").waitFor();
+    extractionRequests = await cli("resume-extraction-request-list", ["--resume-id", uploaded.id]);
+    const retriedRequest = extractionRequests.find((item) => item.supersedesRequestId === failedRequest.requestId);
+    assert.equal(retriedRequest.status, "requested");
+    await uploadCard.getByRole("button", { name: "Cancel request" }).click();
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 1100));
+    let staleProfile = await cli("profile-inspect");
+    staleProfile = await cli("profile-patch", ["--expected-revision", String(staleProfile.revision), "--source", "user"], { email: staleProfile.profile.email });
+    const staleRequest = await cli("resume-extraction-request-create", ["--resume-id", uploaded.id, "--expected-resume-revision", String(uploaded.revision)]);
+    const staleCompletion = await cli("resume-extraction-request-complete", ["--id", staleRequest.requestId, "--expected-request-revision", String(staleRequest.revision), "--expected-profile-revision", String(staleProfile.revision)], { email: "new-stale@example.invalid" });
+    assert.equal(staleCompletion.request.status, "completed");
+    await page.locator("#resumes-refresh").click();
+    await uploadCard.getByRole("button", { name: "Manage" }).click();
+    const resumeDialog = page.locator("#resume-dialog");
+    await resumeDialog.getByLabel("Replacement file").setInputFiles({ name: "stale-replacement.txt", mimeType: "text/plain", buffer: Buffer.from("replacement makes proposal stale") });
+    await resumeDialog.getByRole("button", { name: "Replace file" }).click();
+    await resumeDialog.waitFor({ state: "hidden" });
+    await uploadCard.getByText("Extraction review is no longer current").waitFor();
+    await uploadCard.getByRole("button", { name: "Manage" }).click();
+    await resumeDialog.getByRole("button", { name: "Review", exact: true }).click();
+    const staleProposalDialog = page.locator("#proposal-dialog");
+    await staleProposalDialog.waitFor({ state: "visible" });
+    const staleCopy = await staleProposalDialog.locator("#proposal-error").innerText();
+    assert.match(staleCopy, /no longer current/);
+    assert.doesNotMatch(staleCopy, /resume changed/i);
+    await staleProposalDialog.getByRole("button", { name: "Request fresh extraction" }).click();
+    await staleProposalDialog.waitFor({ state: "hidden" });
+    await resumeDialog.getByText("Waiting for a Job Apply agent").waitFor();
+    const freshRequests = await cli("resume-extraction-request-list", ["--resume-id", uploaded.id, "--status", "requested"]);
+    assert.equal(freshRequests.length, 1);
+    assert.notEqual(freshRequests[0].requestId, staleRequest.requestId);
+    await resumeDialog.getByRole("button", { name: "Cancel request" }).click();
+    await resumeDialog.getByText("Facts not extracted").waitFor();
+    await resumeDialog.getByRole("button", { name: "Close resume details" }).click();
     const manageUpload = uploadCard.getByRole("button", { name: "Manage" });
     const manageLifecycleUpload = () => page.locator(".resume-card").filter({ hasText: "Preserved browser draft" }).getByRole("button", { name: "Manage" });
     await manageUpload.click();
-    const resumeDialog = page.locator("#resume-dialog");
     await resumeDialog.getByLabel("Label").fill("Preserved browser draft");
     await resumeDialog.getByLabel("Replacement file").setInputFiles({ name: "replacement.txt", mimeType: "text/plain", buffer: Buffer.from("replacement draft") });
-    await cli("resume-update", ["--id", uploaded.id, "--expected-revision", String(uploaded.revision)], { tags: ["cli"] });
+    const uploadBeforeConflict = await cli("resume-get", ["--id", uploaded.id]);
+    await cli("resume-update", ["--id", uploaded.id, "--expected-revision", String(uploadBeforeConflict.revision)], { tags: ["cli"] });
     await page.locator("#resumes-refresh").evaluate((button) => button.click());
     await page.locator("#resume-conflict").waitFor();
     assert.equal(await resumeDialog.getByLabel("Label").inputValue(), "Preserved browser draft");
@@ -2332,7 +2481,7 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     profile = await cli("profile-inspect");
     profile = await cli("profile-patch", ["--expected-revision", String(profile.revision), "--source", "user"], { browserAncestor: "Canonical ancestor value" });
     const proposalResume = await cli("resume-get", ["--id", "browser-resume"]);
-    const proposal = await cli("resume-proposal-create", ["--resume-id", proposalResume.id, "--expected-resume-revision", String(proposalResume.revision), "--expected-profile-revision", String(profile.revision)], { firstName: "Extracted browser fact", browserAutoFact: "Auto-filled browser fact", browserAncestor: { child: "Extracted child" } });
+    const proposal = await cli("resume-proposal-create", ["--resume-id", proposalResume.id, "--expected-resume-revision", String(proposalResume.revision), "--expected-profile-revision", String(profile.revision)], { firstName: "Extracted browser fact", workHistory: [{ company: "New Co", title: "Principal Engineer" }], browserAutoFact: "Auto-filled browser fact", browserAncestor: { child: "Extracted child" } });
     await page.locator("#resumes-refresh").click();
     await page.locator(".resume-card").filter({ hasText: "Browser resume" }).getByRole("button", { name: "Manage" }).click();
     assert.equal(await resumeDialog.getByLabel("Replacement file").evaluate((input) => input.files.length), 0);
@@ -2353,9 +2502,21 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     assert.equal((await cli("resume-get", ["--id", "browser-resume"])).revision, proposalResumeBeforeReadFailure.revision);
     await resumeDialog.getByRole("button", { name: "Review", exact: true }).click();
     await page.locator("#proposal-dialog[open]").waitFor();
+    assert.deepEqual(await page.locator("#proposal-rows > .proposal-group > h3").allTextContents(), ["Identity", "Experience", "Additional"]);
+    assert.deepEqual(await page.locator("#proposal-form select[name]").evaluateAll((items) => items.map((item) => item.value)), ["", "", ""]);
     const firstNameReview = page.locator(".proposal-row").filter({ has: page.locator("legend", { hasText: "/firstName" }) });
-    const ancestorReview = page.locator(".proposal-row").filter({ has: page.locator("legend", { hasText: "/browserAncestor/child" }) });
+    await page.getByRole("button", { name: "Keep all current" }).click();
+    assert.deepEqual(await page.locator("#proposal-form select[name]").evaluateAll((items) => items.map((item) => item.value)), ["keep_current", "keep_current", "keep_current"]);
     await firstNameReview.locator("select").selectOption("use_extracted");
+    await page.locator('.proposal-row select[name="/workHistory"]').selectOption("");
+    await page.locator('.proposal-row select[name="/browserAncestor/child"]').selectOption("");
+    await page.getByRole("button", { name: "Apply selected decisions" }).click();
+    await page.locator("#proposal-dialog").waitFor({ state: "hidden" });
+    assert.equal((await cli("resume-proposal-get", ["--id", proposal.id])).status, "pending");
+    assert.equal((await cli("profile-inspect")).profile.firstName, "Extracted browser fact");
+    await resumeDialog.getByRole("button", { name: "Review", exact: true }).click();
+    const ancestorReview = page.locator(".proposal-row").filter({ has: page.locator("legend", { hasText: "/browserAncestor/child" }) });
+    await page.locator('.proposal-row select[name="/workHistory"]').selectOption("use_extracted");
     await ancestorReview.locator("select").selectOption("use_extracted");
     await ancestorReview.getByText('Using the extracted value will replace existing /browserAncestor: "Canonical ancestor value"').waitFor();
     await page.getByRole("button", { name: "Apply selected decisions" }).click();
@@ -2363,11 +2524,17 @@ test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus
     assert.equal((await cli("profile-inspect")).profile.browserAncestor, "Canonical ancestor value");
     await ancestorReview.getByLabel("I confirm replacing /browserAncestor").check();
     await page.getByRole("button", { name: "Apply selected decisions" }).click();
+    const replacementDialog = page.locator("#replacement-confirm-dialog");
+    await replacementDialog.waitFor({ state: "visible" });
+    assert.match(await replacementDialog.innerText(), /\/workHistory replaces the whole collection/);
+    assert.equal((await cli("profile-inspect")).profile.browserAncestor, "Canonical ancestor value");
+    await replacementDialog.getByRole("button", { name: "Confirm and apply decisions" }).click();
     await page.locator("#proposal-dialog").waitFor({ state: "hidden" });
     profile = await cli("profile-inspect");
     assert.equal(profile.profile.firstName, "Extracted browser fact");
     assert.equal(profile.profile.browserAutoFact, "Auto-filled browser fact");
     assert.deepEqual(profile.profile.browserAncestor, { child: "Extracted child" });
+    assert.deepEqual(profile.profile.workHistory, [{ company: "New Co", title: "Principal Engineer" }]);
     assert.equal((await cli("resume-proposal-get", ["--id", proposal.id])).status, "completed");
     await page.getByRole("button", { name: "Close resume details" }).click();
     await page.route(/\/api\/resumes$/, async (route) => {

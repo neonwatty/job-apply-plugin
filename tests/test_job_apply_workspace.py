@@ -1503,6 +1503,144 @@ class WorkspaceServerTests(unittest.TestCase):
         status, _headers, restored = self.request("POST", "/api/resumes/browser-resume/restore", {"expectedRevision": trashed["revision"]})
         self.assertEqual(status, 200, restored)
 
+    def test_resume_extraction_request_api_is_redacted_and_bounded(self):
+        status, _headers, unauthorized = self.request(
+            "GET", "/api/resume-extraction-requests", token=False, origin=False
+        )
+        self.assertEqual((status, unauthorized["error"]["code"]), (401, "token_rejected"))
+        resume = self.server.store.create_resume_bytes(
+            {"id": "api-request", "label": "API Private Label"},
+            "api-private-name.txt", b"api private resume bytes",
+        )
+        payload = {"resumeId": resume["id"], "expectedResumeRevision": resume["revision"]}
+        status, _headers, no_origin = self.request(
+            "POST", "/api/resume-extraction-requests", payload, origin=False
+        )
+        self.assertEqual((status, no_origin["error"]["code"]), (403, "origin_rejected"))
+        status, _headers, request = self.request(
+            "POST", "/api/resume-extraction-requests", payload
+        )
+        self.assertEqual((status, request["status"]), (200, "requested"))
+        self.assertNotIn("resumeContentRevision", request)
+        status, _headers, listing = self.request(
+            "GET", "/api/resume-extraction-requests", origin=False
+        )
+        self.assertEqual((status, listing["requests"]), (200, [request]))
+        status, _headers, resumes = self.request("GET", "/api/resumes", origin=False)
+        self.assertEqual((status, resumes["resumes"][0]["extractionRequest"]), (200, request))
+
+        for bad in (
+            {**payload, "candidate": {"email": "candidate-private@example.invalid"}},
+            {**payload, "expectedProfileRevision": 1},
+            {"resumeId": resume["id"], "expectedResumeRevision": True},
+        ):
+            rejected_status, _headers, _body = self.request(
+                "POST", "/api/resume-extraction-requests", bad
+            )
+            self.assertEqual(rejected_status, 400)
+        for action in ("complete", "fail", "candidate"):
+            rejected_status, _headers, _body = self.request(
+                "POST", f"/api/resume-extraction-requests/{request['requestId']}/{action}",
+                {"expectedRevision": request["revision"], "candidate": {"secret": "private"}},
+            )
+            self.assertEqual(rejected_status, 404)
+        self.assertEqual(
+            self.server.store.get_resume_extraction_request(request["requestId"])["status"],
+            "requested",
+        )
+
+        status, _headers, cancelled = self.request(
+            "POST", f"/api/resume-extraction-requests/{request['requestId']}/cancel",
+            {"expectedRevision": request["revision"]},
+        )
+        self.assertEqual((status, cancelled["status"]), (200, "cancelled"))
+        failed_request = self.server.store.create_resume_extraction_request(
+            resume["id"], resume["revision"]
+        )
+        failed = self.server.store.fail_resume_extraction_request(
+            failed_request["requestId"], "interrupted", failed_request["revision"]
+        )
+        status, _headers, retried = self.request(
+            "POST", f"/api/resume-extraction-requests/{failed['requestId']}/retry",
+            {"expectedRevision": failed["revision"], "expectedResumeRevision": resume["revision"]},
+        )
+        self.assertEqual((status, retried["status"], retried["supersedesRequestId"]),
+                         (200, "requested", failed["requestId"]))
+        serialized = json.dumps({"listing": listing, "request": request, "retried": retried})
+        for forbidden in (
+            "api-private-name.txt", "api private resume bytes", "API Private Label",
+            resume["digest"], resume["contentRevision"], "candidate-private@example.invalid",
+        ):
+            self.assertNotIn(forbidden, serialized)
+
+    def test_resume_projection_prefers_same_second_retry_causality(self):
+        resume = self.server.store.create_resume_bytes(
+            {"id": "same-second-api", "label": "Private Same Second"},
+            "private-same-second.txt", b"private same second bytes",
+        )
+        with (
+            mock.patch.object(
+                WORKSPACE.STORE_MODULE, "utc_now", return_value="2026-09-03T12:00:00Z"
+            ),
+            mock.patch.object(
+                WORKSPACE.STORE_MODULE.uuid, "uuid4",
+                side_effect=["zzzz", "operation-1", "operation-2", "aaaa", "operation-3"],
+            ),
+        ):
+            original = self.server.store.create_resume_extraction_request(
+                resume["id"], resume["revision"]
+            )
+            failed = self.server.store.fail_resume_extraction_request(
+                original["requestId"], "interrupted", original["revision"]
+            )
+            status, _headers, retried = self.request(
+                "POST", f"/api/resume-extraction-requests/{failed['requestId']}/retry",
+                {"expectedRevision": failed["revision"],
+                 "expectedResumeRevision": resume["revision"]},
+            )
+
+        self.assertEqual(status, 200)
+        self.assertLess(retried["requestId"], failed["requestId"])
+        status, _headers, projection = self.request(
+            "GET", f"/api/resumes/{resume['id']}", origin=False
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(projection["extractionRequest"], retried)
+        serialized = json.dumps(projection)
+        for forbidden in (
+            "private-same-second.txt", "private same second bytes", resume["digest"],
+            resume["contentRevision"],
+        ):
+            self.assertNotIn(forbidden, serialized)
+
+    def test_profile_preparedness_api_matches_store(self):
+        source = Path(self.temporary.name) / "preparedness-api-private.txt"
+        source.write_text("preparedness api private bytes", encoding="utf-8")
+        resume = self.server.store.create_resume({
+            "id": "preparedness-api", "label": "Preparedness API Private", "path": str(source)
+        })
+        profile = self.server.store.patch_profile({
+            "firstName": "Private First", "lastName": "Private Last",
+            "email": "private-api@example.invalid", "phone": "Private Phone",
+        }, 1, "user")
+        self.server.store.create_resume_extraction_request(resume["id"], resume["revision"])
+        expected = self.server.store.profile_preparedness()
+        status, _headers, actual = self.request("GET", "/api/profile-preparedness", origin=False)
+        self.assertEqual((status, actual), (200, expected))
+        status, _headers, rejected = self.request(
+            "GET", "/api/profile-preparedness", token=False, origin=False
+        )
+        self.assertEqual((status, rejected["error"]["code"]), (401, "token_rejected"))
+        serialized = json.dumps(actual).lower()
+        for forbidden in (
+            "score", "percent", "employability", "job_ready", "private first",
+            "private last", "private-api@example.invalid", "private phone",
+            source.name.lower(), str(source).lower(), resume["digest"],
+            "preparedness api private bytes", "preparedness api private",
+        ):
+            self.assertNotIn(forbidden, serialized)
+        self.assertEqual(profile["profile"]["firstName"], "Private First")
+
     def test_resume_upload_bounds_strict_base64_auth_and_fail_clean(self):
         invalid = {"metadata": {"label": "Bad"}, "filename": "bad.txt", "content": "%%%"}
         status, _headers, _body = self.request("POST", "/api/resumes/import", invalid)

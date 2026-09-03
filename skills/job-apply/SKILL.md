@@ -1,6 +1,6 @@
 ---
 name: job-apply
-description: Fill out job applications automatically using your resume. Use when the user wants to apply for jobs on LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, or Workday.
+description: Fill out job applications using a managed resume, and fulfill explicit resume fact-extraction requests during resume, facts, or onboarding work. Use for LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, Workday, or an exact extraction request.
 allowed-tools: Read, Write, Bash, mcp__claude-in-chrome__*, mcp__plugin_playwright_playwright__*
 ---
 
@@ -17,6 +17,19 @@ If the supplied job URL is an approved local loopback QA URL containing a `#qa-r
 For that approved replay only, record the supported lifecycle through the coordinator: run `python3 "<plugin-root>/scripts/qa-replay.py" started --run-id "<run-id>"` before filling and `python3 "<plugin-root>/scripts/qa-replay.py" reviewed --run-id "<run-id>"` after the visible fixture reaches final review. Do not substitute direct history or session writes. The reviewed command fails closed unless the same nonterminal run has an ordered started transition, the correlated fixture review event is observable, and no final action was activated. Repeating either command is safe and does not duplicate events.
 
 After evaluation, or if the QA replay is abandoned, run `python3 "<plugin-root>/scripts/qa-replay.py" cleanup --run-id "<run-id>"`. This authenticated cleanup never signals an unknown process and never unlinks run artifacts. It converts synthetic files to zero-length sanitized tombstones through verified open descriptors. Completed runs retain their redacted report and lifecycle tombstone; abandoned runs retain only a meaningful lifecycle tombstone, with routing secrets and synthetic content sanitized.
+
+## Resume fact-extraction requests
+
+Use this bounded workflow only when the owner asks about resumes, facts, or onboarding, or when given an exact extraction request ID. Never scan for extraction requests during every job application.
+
+1. When no request ID was supplied, run `python3 "<plugin-root>/scripts/job-apply-store.py" [--root <resolved-root>] resume-extraction-request-list --status requested` and let the owner choose one exact request if more than one is open. When an ID was supplied, do not enumerate unrelated requests.
+2. Read only that request with `resume-extraction-request-get --id <request-id>`. Retain its exact request revision and opaque resume ID. Resolve that exact managed resume privately with `resume-resolve --id <resume-id>`; never disclose the returned path, filename, bytes, content revision, or extracted values in chat, logs, diagnostics, or receipts.
+3. Run `profile-inspect` and retain the exact profile revision. Run `resume-proposal-list --resume-id <resume-id>` and inspect only the value-free summaries. If there is one pending proposal, make supersession explicit by retaining its opaque ID; do not guess among proposals or read candidate values merely to choose one.
+4. Extract the managed resume privately into one owner-only, permission-restricted temporary JSON candidate file. Keep resume text, profile values, prompts, and candidate values out of command output and handoff text.
+5. Invoke `resume-extraction-request-complete` exactly once with `--id <request-id> --input <private-temp-candidate.json> --expected-request-revision <request-revision> --expected-profile-revision <profile-revision>`. If step 3 found a pending proposal, also pass `--expected-pending-proposal-id <proposal-id>`; otherwise omit it. This attempts to complete the exact request once and returns only a value-free closed summary.
+6. If extraction cannot produce a valid candidate, invoke `resume-extraction-request-fail` at most once with the exact request revision and one approved reason: `content_unreadable`, `unsupported_resume`, `extraction_failed`, `candidate_invalid`, or `interrupted`. Never persist a raw error. On any request, resume, profile, or proposal revision conflict, discard the candidate and report only the conflict state. Do not retry against unseen data.
+7. In a cleanup path that runs after success, failure, conflict, or interruption, delete the permission-restricted candidate file and any other temporary resume data. Do not retain candidate data in another file, transcript, report, or receipt.
+8. Stop at proposal review. Do not begin a job application, open an application browser, review candidate-bearing proposal detail on the owner's behalf, or accept any proposed fact. The owner reviews conflicts in Facts or Resumes.
 
 **If the returned profile object is empty**, say:
 
@@ -152,13 +165,10 @@ If `profile-get` returns an empty object, or if the user requests a reset:
 5. **Present extracted data to user** for review and correction
 6. **Inspect and save confirmed profile** by running `profile-inspect`, retaining its revision, then calling `profile-replace --input <private-temp-profile.json> --expected-revision <inspected-revision> --source user`. Remove the temporary input. If the revision conflicts, stop and review the newly inspected profile; never replace unseen changes.
 
-For re-extraction from a managed resume, do not replace the profile wholesale.
-Produce a structured candidate, inspect the current resume and profile revisions,
-and use `resume-proposal-create`. The store auto-fills only absent/null unprotected
-facts; present every pending conflict for explicit per-path review through
-`resume-proposal-review`. Never retry stale resume, profile, proposal, or baseline
-conflicts against unseen state, and remove private candidate/decision input files
-immediately after the helper consumes them.
+For re-extraction from a managed resume, do not replace the profile wholesale or
+create a proposal outside the bounded request workflow above. The store auto-fills
+only absent/null unprotected facts. Leave every pending conflict for the owner's
+explicit per-path review through `resume-proposal-review`.
 
 ### Phase 2: Application Filling
 

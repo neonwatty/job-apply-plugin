@@ -30,6 +30,9 @@ jobs:
       - name: Run Python tests
         run: python3 -m unittest discover -s tests -v
 
+      - name: Verify resume extraction onboarding
+        run: npm run qa:resume-extraction-onboarding
+
       - name: Verify portable account automation control plane on Linux
         run: python3 -m unittest -v tests.test_job_apply_accounts tests.test_job_apply_credentials tests.test_job_apply_account_executor tests.test_job_apply_account_canary tests.test_job_apply_account_canary_executor tests.test_job_apply_account_flows tests.test_qa_account tests.test_job_apply_trusted_fill tests.test_job_apply_store tests.test_job_apply_workspace
 
@@ -83,6 +86,9 @@ jobs:
       - name: Verify Windows workspace, canonical store, and account control plane
         run: python -m unittest -v tests.test_job_apply_accounts tests.test_job_apply_credentials tests.test_job_apply_account_executor tests.test_job_apply_account_canary tests.test_job_apply_account_canary_executor tests.test_job_apply_account_flows tests.test_qa_account tests.test_job_apply_workspace tests.test_job_apply_store
 
+      - name: Verify resume extraction onboarding
+        run: npm run qa:resume-extraction-onboarding
+
   macos-credential-helper:
     runs-on: macos-latest
     steps:
@@ -98,6 +104,8 @@ jobs:
         run: xcrun swiftc -typecheck native/macos/job_apply_credential_helper.swift native/macos/job_apply_browser_bridge.swift native/macos/job_apply_account_flow_helper.swift native/macos/job_apply_credential_helper_tests.swift native/macos/job_apply_credential_helper_main.swift
       - name: Verify native helper boundary
         run: python3 -m unittest -v tests.test_macos_credential_helper tests.test_macos_account_flow_helper
+      - name: Verify resume extraction onboarding
+        run: npm run qa:resume-extraction-onboarding
       - name: Verify observed browser, Store, and native account walkthrough
         env:
           JOB_APPLY_OWNER_APPROVED_VISIBLE_BROWSER_TESTS: '1'
@@ -123,3 +131,5 @@ jobs:
         run: |
           xcrun swiftc -typecheck native/macos/job_apply_credential_helper.swift native/macos/job_apply_workday_account_flow_helper.swift native/macos/job_apply_workday_account_flow_main.swift
           python3 -m unittest -v tests.test_macos_workday_account_flow_helper
+      - name: Verify resume extraction onboarding
+        run: npm run qa:resume-extraction-onboarding

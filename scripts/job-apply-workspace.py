@@ -68,8 +68,19 @@ def public_resumes(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [public_resume(record) for record in records]
 
 
+def public_extraction_request(record: dict[str, Any]) -> dict[str, Any]:
+    """Project the closed browser-safe extraction request schema."""
+    allowed = (
+        "requestId", "resumeId", "revision", "status", "createdAt",
+        "updatedAt", "closedAt", "proposalId", "failureReason",
+        "supersedesRequestId",
+    )
+    return {key: record.get(key) for key in allowed}
+
+
 def resume_projection(
-    record: dict[str, Any], jobs: list[dict[str, Any]], proposals: list[dict[str, Any]]
+    record: dict[str, Any], jobs: list[dict[str, Any]], proposals: list[dict[str, Any]],
+    requests: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     result = public_resume(record)
     result["assignedJobCount"] = sum(
@@ -87,6 +98,16 @@ def resume_projection(
     )
     result["pendingConflictCount"] = sum(
         len(item.get("pendingPaths", [])) for item in related if item.get("status") == "pending"
+    )
+    related_requests = [
+        item for item in (requests or []) if item.get("resumeId") == record["id"]
+    ]
+    ordered_requests = STORE_MODULE.order_extraction_requests(
+        related_requests, timestamp_field="updatedAt"
+    )
+    latest_request = ordered_requests[-1] if ordered_requests else None
+    result["extractionRequest"] = (
+        public_extraction_request(latest_request) if latest_request else None
     )
     return result
 
@@ -604,6 +625,17 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         if path == "/api/resumes/trash":
             self._store_call(lambda: {"resumes": self._resume_list(True)})
             return
+        if path == "/api/resume-extraction-requests":
+            self._store_call(lambda: {
+                "requests": [
+                    public_extraction_request(item)
+                    for item in self.server.store.list_resume_extraction_requests()
+                ]
+            })
+            return
+        if path == "/api/profile-preparedness":
+            self._store_call(self.server.store.profile_preparedness)
+            return
         if path == "/api/resume-proposals":
             self._store_call(lambda: {
                 "proposals": [
@@ -706,9 +738,10 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         jobs = self.server.store.list_jobs(include_trashed=True)
         proposals = self.server.store.list_resume_proposals()
         records = self.server.store.list_resumes(include_trashed=trashed)
+        requests = self.server.store.list_resume_extraction_requests()
         if trashed:
             records = [item for item in records if item.get("deletedAt") is not None]
-        return [resume_projection(item, jobs, proposals) for item in records]
+        return [resume_projection(item, jobs, proposals, requests) for item in records]
 
     def _resume_projection(self, resume_id: str) -> dict[str, Any]:
         record = self._require_resume(resume_id, True)
@@ -716,6 +749,7 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
             record,
             self.server.store.list_jobs(include_trashed=True),
             self.server.store.list_resume_proposals(resume_id=resume_id),
+            self.server.store.list_resume_extraction_requests(resume_id=resume_id),
         )
 
     def _proposal_detail(self, proposal_id: str) -> dict[str, Any]:
@@ -783,6 +817,20 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         if method == "POST" and path == "/api/resumes/import":
             self._store_call(lambda: public_resume(
                 self.server.store.create_resume_bytes(payload, filename, content)
+            ))
+            return
+        if method == "POST" and path == "/api/resume-extraction-requests":
+            if set(payload) != {"resumeId", "expectedResumeRevision"} or not isinstance(
+                payload.get("resumeId"), str
+            ):
+                self._error(HTTPStatus.BAD_REQUEST, "body must contain only resumeId and expectedResumeRevision")
+                return
+            expected = payload.get("expectedResumeRevision")
+            if not isinstance(expected, int) or isinstance(expected, bool) or expected < 1:
+                self._error(HTTPStatus.BAD_REQUEST, "expectedResumeRevision must be a positive integer")
+                return
+            self._store_call(lambda: public_extraction_request(
+                self.server.store.create_resume_extraction_request(payload["resumeId"], expected)
             ))
             return
         if method == "POST" and path == "/api/automation/realm-resolve":
@@ -975,6 +1023,38 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
             self._bulk_create(payload)
             return
         parts = path.split("/")
+        if (
+            method == "POST" and len(parts) == 5
+            and parts[1:3] == ["api", "resume-extraction-requests"]
+            and parts[4] in {"cancel", "retry"}
+        ):
+            action = parts[4]
+            required = (
+                {"expectedRevision"}
+                if action == "cancel"
+                else {"expectedRevision", "expectedResumeRevision"}
+            )
+            if set(payload) != required:
+                self._error(HTTPStatus.BAD_REQUEST, f"{action} body has unsupported fields")
+                return
+            revision = self._expected_revision(payload)
+            if revision is None:
+                return
+            if action == "cancel":
+                self._store_call(lambda: public_extraction_request(
+                    self.server.store.cancel_resume_extraction_request(parts[3], revision)
+                ))
+                return
+            resume_revision = payload.get("expectedResumeRevision")
+            if not isinstance(resume_revision, int) or isinstance(resume_revision, bool) or resume_revision < 1:
+                self._error(HTTPStatus.BAD_REQUEST, "expectedResumeRevision must be a positive integer")
+                return
+            self._store_call(lambda: public_extraction_request(
+                self.server.store.retry_resume_extraction_request(
+                    parts[3], revision, resume_revision
+                )
+            ))
+            return
         if (
             method == "POST" and len(parts) == 5
             and parts[1:3] == ["api", "jobs"]
