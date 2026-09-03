@@ -5392,6 +5392,37 @@ class StoreTests(unittest.TestCase):
                 resume["id"], resume["revision"]
             )
 
+    def test_same_second_retry_sorts_after_superseded_request(self):
+        source = self.home / "same-second-retry.txt"
+        source.write_text("synthetic same-second retry", encoding="utf-8")
+        resume = self.store.create_resume({
+            "id": "same-second-retry", "label": "Same second", "path": str(source)
+        })
+        with (
+            mock.patch.object(
+                STORE_MODULE, "utc_now", return_value="2026-09-03T12:00:00Z"
+            ),
+            mock.patch.object(
+                STORE_MODULE.uuid, "uuid4",
+                side_effect=["zzzz", "operation-1", "operation-2", "aaaa", "operation-3"],
+            ),
+        ):
+            original = self.store.create_resume_extraction_request(
+                resume["id"], resume["revision"]
+            )
+            failed = self.store.fail_resume_extraction_request(
+                original["requestId"], "interrupted", original["revision"]
+            )
+            retried = self.store.retry_resume_extraction_request(
+                failed["requestId"], failed["revision"], resume["revision"]
+            )
+
+        listed = self.store.list_resume_extraction_requests(resume_id=resume["id"])
+        self.assertLess(retried["requestId"], failed["requestId"])
+        self.assertEqual([item["requestId"] for item in listed], [
+            failed["requestId"], retried["requestId"],
+        ])
+
     def test_resume_extraction_request_document_rejects_invalid_records(self):
         source = self.home / "invalid-request.txt"
         source.write_text("synthetic invalid request", encoding="utf-8")

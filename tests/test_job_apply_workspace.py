@@ -1573,6 +1573,46 @@ class WorkspaceServerTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, serialized)
 
+    def test_resume_projection_prefers_same_second_retry_causality(self):
+        resume = self.server.store.create_resume_bytes(
+            {"id": "same-second-api", "label": "Private Same Second"},
+            "private-same-second.txt", b"private same second bytes",
+        )
+        with (
+            mock.patch.object(
+                WORKSPACE.STORE_MODULE, "utc_now", return_value="2026-09-03T12:00:00Z"
+            ),
+            mock.patch.object(
+                WORKSPACE.STORE_MODULE.uuid, "uuid4",
+                side_effect=["zzzz", "operation-1", "operation-2", "aaaa", "operation-3"],
+            ),
+        ):
+            original = self.server.store.create_resume_extraction_request(
+                resume["id"], resume["revision"]
+            )
+            failed = self.server.store.fail_resume_extraction_request(
+                original["requestId"], "interrupted", original["revision"]
+            )
+            status, _headers, retried = self.request(
+                "POST", f"/api/resume-extraction-requests/{failed['requestId']}/retry",
+                {"expectedRevision": failed["revision"],
+                 "expectedResumeRevision": resume["revision"]},
+            )
+
+        self.assertEqual(status, 200)
+        self.assertLess(retried["requestId"], failed["requestId"])
+        status, _headers, projection = self.request(
+            "GET", f"/api/resumes/{resume['id']}", origin=False
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(projection["extractionRequest"], retried)
+        serialized = json.dumps(projection)
+        for forbidden in (
+            "private-same-second.txt", "private same second bytes", resume["digest"],
+            resume["contentRevision"],
+        ):
+            self.assertNotIn(forbidden, serialized)
+
     def test_profile_preparedness_api_matches_store(self):
         source = Path(self.temporary.name) / "preparedness-api-private.txt"
         source.write_text("preparedness api private bytes", encoding="utf-8")

@@ -786,6 +786,30 @@ class AnswerMemoryIntegrationTests(unittest.TestCase):
             "--expected-revision", str(failed["revision"]),
             "--expected-resume-revision", str(resume["revision"]),
         )
+        requests_path = self.home / ".job-apply" / "resume-extraction-requests.json"
+        requests_document = json.loads(requests_path.read_text(encoding="utf-8"))
+        predecessor = requests_document["requests"].pop(failed["requestId"])
+        successor = requests_document["requests"].pop(retried["requestId"])
+        predecessor.update({
+            "requestId": "request-zzzz", "createdAt": "2026-09-03T12:00:00Z",
+            "updatedAt": "2026-09-03T12:00:00Z", "closedAt": "2026-09-03T12:00:00Z",
+        })
+        successor.update({
+            "requestId": "request-aaaa", "supersedesRequestId": "request-zzzz",
+            "createdAt": "2026-09-03T12:00:00Z", "updatedAt": "2026-09-03T12:00:00Z",
+        })
+        requests_document["requests"] = {
+            predecessor["requestId"]: predecessor, successor["requestId"]: successor,
+        }
+        requests_path.write_text(json.dumps(requests_document), encoding="utf-8")
+        same_second = self.json_store(
+            "resume-extraction-request-list", "--resume-id", resume["id"]
+        )
+        self.assertEqual(
+            [item["requestId"] for item in same_second],
+            [predecessor["requestId"], successor["requestId"]],
+        )
+        retried = successor
         candidate = self.write_input("candidate.json", {
             "email": "candidate-private@example.invalid"
         })

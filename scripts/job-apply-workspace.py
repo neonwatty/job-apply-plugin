@@ -102,11 +102,10 @@ def resume_projection(
     related_requests = [
         item for item in (requests or []) if item.get("resumeId") == record["id"]
     ]
-    latest_request = max(
-        related_requests,
-        key=lambda item: (item.get("updatedAt", ""), item.get("requestId", "")),
-        default=None,
+    ordered_requests = STORE_MODULE.order_extraction_requests(
+        related_requests, timestamp_field="updatedAt"
     )
+    latest_request = ordered_requests[-1] if ordered_requests else None
     result["extractionRequest"] = (
         public_extraction_request(latest_request) if latest_request else None
     )

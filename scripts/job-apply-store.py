@@ -2081,6 +2081,41 @@ def _validate_extraction_requests_document(document: dict[str, Any]) -> dict[str
     return document
 
 
+def _extraction_request_lineage_depth(
+    record: dict[str, Any], records_by_id: dict[str, dict[str, Any]],
+) -> int:
+    """Return a bounded causal rank for deterministic retry ordering."""
+    depth = 0
+    seen = {record["requestId"]}
+    current = record
+    while current.get("supersedesRequestId") is not None:
+        predecessor_id = current["supersedesRequestId"]
+        if predecessor_id in seen:
+            break
+        predecessor = records_by_id.get(predecessor_id)
+        if predecessor is None or predecessor.get("resumeId") != record["resumeId"]:
+            break
+        seen.add(predecessor_id)
+        depth += 1
+        current = predecessor
+    return depth
+
+
+def order_extraction_requests(
+    records: list[dict[str, Any]], timestamp_field: str = "createdAt",
+) -> list[dict[str, Any]]:
+    """Order requests by time, retry causality, then opaque identity."""
+    records_by_id = {item["requestId"]: item for item in records}
+    return sorted(
+        records,
+        key=lambda item: (
+            item[timestamp_field],
+            _extraction_request_lineage_depth(item, records_by_id),
+            item["requestId"],
+        ),
+    )
+
+
 def _read_input(path: str) -> dict[str, Any]:
     try:
         if path == "-":
@@ -7708,7 +7743,7 @@ class Store:
             if (resume_id is None or item["resumeId"] == resume_id)
             and (status is None or item["status"] == status)
         ]
-        return sorted(records, key=lambda item: (item["createdAt"], item["requestId"]))
+        return order_extraction_requests(records)
 
     def _close_resume_extraction_request_locked(
         self, requests_document: dict[str, Any], request_id: str,
