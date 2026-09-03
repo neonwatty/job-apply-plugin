@@ -91,7 +91,9 @@ const {
   activityAnnouncement,
   activitySignature,
   attentionAnnouncement,
+  attentionBlockerSummary,
   attentionMembershipSignature,
+  attentionMissingInformationText,
   answerApiPath,
   FACT_SAVE_REVISION_RETRIES,
   canMarkReadyFrom,
@@ -180,6 +182,35 @@ test("owner beta next actions stay closed and human-readable", () => {
     "Review the workspace",
     "Refresh the canonical Store and choose a workspace section.",
   ]);
+});
+
+test("known-data entry failures present as browser action rather than missing information", () => {
+  const item = {
+    reasonCode: "browser_action_required",
+    missingInformationCount: 0,
+    session: {
+      blockers: [
+        { type: "browser_handoff", code: "unsupported-control" },
+        { type: "information", code: "owner-input-required" },
+      ],
+      browserHandoff: { state: "required", reasonCode: "unsupported-control", revision: 1 },
+    },
+  };
+  assert.equal(attentionMissingInformationText(item), "");
+  assert.equal(attentionBlockerSummary(item), "Browser action required: unsupported control. Saved information is already known.");
+
+  const mixed = {
+    ...item,
+    session: {
+      ...item.session,
+      blockers: [
+        ...item.session.blockers,
+        { type: "browser_handoff", code: "captcha-required" },
+      ],
+    },
+  };
+  assert.equal(attentionMissingInformationText(mixed), "");
+  assert.equal(attentionBlockerSummary(mixed), "3 typed blockers: unsupported-control, owner-input-required, captcha-required");
 });
 
 test("owner beta clean packaged browser and CLI journey survives restart and fails closed for recovery", { timeout: 90_000 }, async () => {

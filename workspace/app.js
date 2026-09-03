@@ -255,6 +255,26 @@ export function attentionAnnouncement(previous, current) {
   return `Needs Attention queue updated. ${count} job${count === 1 ? "" : "s"} now require action.`;
 }
 
+export function attentionMissingInformationText(item) {
+  if (item?.reasonCode !== "needs_information") return "";
+  const count = Number.isInteger(item.missingInformationCount) ? item.missingInformationCount : 0;
+  return ` · ${count} missing information item${count === 1 ? "" : "s"}`;
+}
+
+export function attentionBlockerSummary(item) {
+  const blockers = item?.session?.blockers || [];
+  const knownDataBrowserFailure = item?.reasonCode === "browser_action_required"
+    && blockers.length === 2
+    && blockers.some((entry) => entry.type === "browser_handoff" && entry.code === "unsupported-control")
+    && blockers.some((entry) => entry.type === "information" && entry.code === "owner-input-required");
+  if (knownDataBrowserFailure) {
+    return "Browser action required: unsupported control. Saved information is already known.";
+  }
+  return blockers.length
+    ? `${blockers.length} typed blocker${blockers.length === 1 ? "" : "s"}: ${blockers.map((entry) => entry.code).join(", ")}`
+    : "No typed blockers recorded.";
+}
+
 export function ownerBetaNextStep(action) {
   return ({
     import_resume: ["Import a resume", "Add a private managed resume so agents have an approved document to use."],
@@ -1160,11 +1180,11 @@ if (hasDom) {
       const guidance = document.createElement("p"); guidance.textContent = item.guidance;
       const blockers = item.session?.blockers || [];
       const blockerSummary = document.createElement("p"); blockerSummary.className = "attention-question";
-      blockerSummary.textContent = blockers.length ? `${blockers.length} typed blocker${blockers.length === 1 ? "" : "s"}: ${blockers.map((entry) => entry.code).join(", ")}` : "No typed blockers recorded.";
+      blockerSummary.textContent = attentionBlockerSummary(item);
       const handoff = document.createElement("p"); handoff.className = "attention-company";
       handoff.textContent = item.session?.browserHandoff ? `Browser handoff: ${statusLabel(item.session.browserHandoff.state)} · ${item.session.browserHandoff.reasonCode}` : "Browser handoff not recorded";
       const metadata = document.createElement("p"); metadata.className = "attention-meta";
-      const missing = item.reasonCode === "needs_information" ? ` · ${item.missingInformationCount} missing information item${item.missingInformationCount === 1 ? "" : "s"}` : "";
+      const missing = attentionMissingInformationText(item);
       metadata.textContent = `Priority ${item.priority} · ${statusLabel(item.status)} · since ${formatActivityTime(item.attentionAt)}${missing}`;
       const action = document.createElement("span"); action.className = "attention-action"; action.textContent = attentionState.unavailable ? "Unavailable until refresh" : "Open Job details";
       button.append(heading, reason, guidance, blockerSummary, handoff);
