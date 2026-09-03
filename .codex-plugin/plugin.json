@@ -1,6 +1,6 @@
 {
   "name": "job-apply",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "description": "AI-powered job application assistant for Claude Code and Codex covering LinkedIn, Greenhouse, Ashby, Lever, Rippling, and Workday.",
   "author": {
     "name": "Jeremy Watt",

@@ -3347,6 +3347,53 @@ class StoreTests(unittest.TestCase):
             needs_claim["job"]["revision"],
         )["job"]
 
+        browser_ready = ready("browser-action-job", 4)
+        browser_claim = self.store.acquire_ready_job(
+            browser_ready["id"], "private-browser-owner", browser_ready["revision"]
+        )
+        browser_action = self.store.handoff_claimed_job(
+            browser_ready["id"], browser_claim["token"], "needs_info",
+            {
+                "status": "active",
+                "step": "form",
+                "attemptRevision": browser_claim["job"]["revision"],
+                "pendingFields": [],
+                "blockers": [
+                    {"type": "browser_handoff", "code": "unsupported-control"},
+                    {"type": "information", "code": "owner-input-required"},
+                ],
+                "browserHandoff": {
+                    "state": "required", "reasonCode": "unsupported-control",
+                    "revision": 1,
+                },
+            },
+            browser_claim["job"]["revision"],
+        )["job"]
+
+        mixed_ready = ready("mixed-browser-action-job", 4)
+        mixed_claim = self.store.acquire_ready_job(
+            mixed_ready["id"], "private-mixed-owner", mixed_ready["revision"]
+        )
+        mixed_action = self.store.handoff_claimed_job(
+            mixed_ready["id"], mixed_claim["token"], "needs_info",
+            {
+                "status": "active",
+                "step": "form",
+                "attemptRevision": mixed_claim["job"]["revision"],
+                "pendingFields": [],
+                "blockers": [
+                    {"type": "browser_handoff", "code": "unsupported-control"},
+                    {"type": "information", "code": "owner-input-required"},
+                    {"type": "browser_handoff", "code": "captcha-required"},
+                ],
+                "browserHandoff": {
+                    "state": "required", "reasonCode": "unsupported-control",
+                    "revision": 1,
+                },
+            },
+            mixed_claim["job"]["revision"],
+        )["job"]
+
         interrupted_ready = ready("interrupted-job", 3)
         self.store.acquire_ready_job(
             interrupted_ready["id"], "private-interrupted-owner", interrupted_ready["revision"]
@@ -3369,6 +3416,8 @@ class StoreTests(unittest.TestCase):
                 "expired_agent_attempt",
                 "claimless_interrupted_attempt",
                 "awaiting_human_review",
+                "browser_action_required",
+                "needs_information",
                 "needs_information",
             ],
         )
@@ -3379,6 +3428,24 @@ class StoreTests(unittest.TestCase):
         }
         self.assertTrue(all(set(item) == allowed for item in projection["items"]))
         self.assertEqual(projection["items"][-1]["missingInformationCount"], 2)
+        browser_row = next(
+            item for item in projection["items"]
+            if item["jobId"] == browser_action["id"]
+        )
+        self.assertEqual(browser_row["reasonLabel"], "Browser action required")
+        self.assertEqual(browser_row["missingInformationCount"], 0)
+        self.assertIn("already known", browser_row["guidance"])
+        self.assertNotIn("missing", browser_row["guidance"].lower())
+        mixed_row = next(
+            item for item in projection["items"]
+            if item["jobId"] == mixed_action["id"]
+        )
+        self.assertEqual(mixed_row["reasonCode"], "needs_information")
+        self.assertNotIn("already known", mixed_row["guidance"])
+        self.assertEqual(
+            {entry["code"] for entry in mixed_row["session"]["blockers"]},
+            {"unsupported-control", "owner-input-required", "captcha-required"},
+        )
         self.assertEqual(projection, self.store.list_needs_attention())
         serialized = json.dumps(projection)
         for forbidden in (
@@ -3401,6 +3468,12 @@ class StoreTests(unittest.TestCase):
         self.store.transition_job("interrupted-job", "saved", interrupted["revision"])
         self.store.transition_job("review-job", "applied", review["revision"], user_confirmed=True)
         self.store.transition_job("needs-job", "saved", needs["revision"])
+        self.store.transition_job(
+            "browser-action-job", "saved", browser_action["revision"]
+        )
+        self.store.transition_job(
+            "mixed-browser-action-job", "saved", mixed_action["revision"]
+        )
         self.assertEqual(self.store.list_needs_attention()["items"], [])
 
     def test_acquire_and_recover_tokens_are_cli_safe_when_random_payload_leads_hyphen(self):

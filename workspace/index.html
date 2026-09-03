@@ -10,19 +10,36 @@
 <body>
   <a class="skip-link" href="#workspace-content">Skip to workspace</a>
   <header class="topbar">
-    <div>
+    <div class="product-context">
       <p class="eyebrow">LOCAL COMPANION</p>
       <h1>Job Apply</h1>
+      <p id="workspace-trust-context" class="trust-context">Your canonical data stays local. You direct changes and submissions; agents assist from the same record.</p>
     </div>
-    <nav class="workspace-nav" aria-label="Workspace sections">
-      <button id="nav-overview" class="nav-link active" type="button" aria-current="page">Overview</button>
-      <button id="nav-jobs" class="nav-link" type="button">Jobs</button>
-      <button id="nav-attention" class="nav-link" type="button">Needs Attention <span id="attention-nav-count" aria-label="attention count">0</span></button>
-      <button id="nav-facts" class="nav-link" type="button">Facts</button>
-      <button id="nav-resumes" class="nav-link" type="button">Resumes</button>
-      <button id="nav-answers" class="nav-link" type="button">Answers</button>
-      <button id="nav-automation" class="nav-link" type="button">Automation</button>
-      <button id="nav-trash" class="nav-link" type="button">Trash <span id="trash-nav-count" aria-label="trashed records">0</span></button>
+    <p id="workspace-nav-overflow-hint" class="nav-overflow-hint">Scroll horizontally to explore all navigation groups <span aria-hidden="true">→</span></p>
+    <nav class="workspace-nav" aria-label="Workspace sections" aria-describedby="workspace-trust-context workspace-nav-overflow-hint">
+      <div class="nav-group" role="group" aria-labelledby="nav-group-pipeline">
+        <span id="nav-group-pipeline" class="nav-group-label">Pipeline</span>
+        <div class="nav-group-links">
+          <button id="nav-overview" class="nav-link active" type="button" aria-current="page">Overview</button>
+          <button id="nav-jobs" class="nav-link" type="button">Jobs</button>
+          <button id="nav-attention" class="nav-link" type="button">Needs Attention <span id="attention-nav-count" aria-label="attention count">0</span></button>
+        </div>
+      </div>
+      <div class="nav-group" role="group" aria-labelledby="nav-group-application-data">
+        <span id="nav-group-application-data" class="nav-group-label">Application data</span>
+        <div class="nav-group-links">
+          <button id="nav-facts" class="nav-link" type="button">Facts</button>
+          <button id="nav-resumes" class="nav-link" type="button">Resumes</button>
+          <button id="nav-answers" class="nav-link" type="button">Answers</button>
+        </div>
+      </div>
+      <div class="nav-group" role="group" aria-labelledby="nav-group-controls">
+        <span id="nav-group-controls" class="nav-group-label">Controls</span>
+        <div class="nav-group-links">
+          <button id="nav-automation" class="nav-link" type="button">Automation</button>
+          <button id="nav-trash" class="nav-link" type="button">Trash <span id="trash-nav-count" aria-label="trashed records">0</span></button>
+        </div>
+      </div>
     </nav>
     <div class="connection" aria-live="polite">
       <span id="connection-dot" class="dot"></span>

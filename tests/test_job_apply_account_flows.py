@@ -123,6 +123,37 @@ class AccountFlowTests(unittest.TestCase):
         self.assertEqual(result["nextActivations"], 1)
         self.assertFalse(result["finalActionAuthorized"])
 
+    def test_native_provider_propagates_only_closed_identity_diagnostics(self):
+        expected = {
+            38: "browser_identity_process_executable",
+            39: "browser_identity_running_application",
+            40: "browser_identity_running_executable",
+            41: "browser_identity_process_running_mismatch",
+            42: "browser_identity_trusted_browser",
+            43: "browser_identity_requirement",
+            44: "browser_identity_static_code",
+            45: "browser_identity_static_validity",
+            46: "browser_identity_dynamic_code",
+            47: "browser_identity_dynamic_validity",
+            48: "browser_identity_literal_anchor_unproven",
+            49: "browser_identity_second_proof_changed",
+            50: "browser_identity_process_identity_unavailable",
+            51: "browser_identity_running_identity_unavailable",
+            52: "browser_identity_process_literal_anchor_only",
+            53: "browser_identity_running_literal_anchor_only",
+            54: "browser_identity_no_literal_anchor_match",
+            55: "browser_identity_literal_anchor_match_ambiguous",
+        }
+        self.assertEqual(
+            {status: MAC.NativeMacOSAccessibilityProvider._closed_failure_codes[status]
+             for status in expected},
+            expected,
+        )
+        self.assertEqual(
+            MAC.NativeMacOSAccessibilityProvider._closed_failure_codes.get(255, "unclassified"),
+            "unclassified",
+        )
+
     @unittest.skipUnless(sys.platform.startswith("darwin"), "macOS native helper required")
     def test_native_provider_cannot_be_constructed_from_an_arbitrary_signed_helper(self):
         with self.assertRaisesRegex(ValueError, "reviewed source constructor"):

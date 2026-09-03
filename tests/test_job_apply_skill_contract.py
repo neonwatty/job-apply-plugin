@@ -92,6 +92,8 @@ class JobApplySkillContractTests(unittest.TestCase):
         self.assertIn("do not ask the user for it again", self.normalized)
         self.assertIn("`unsupported-control` with `owner-input-required`", self.normalized)
         self.assertIn("browser handoff, not a missing-answer request", self.normalized)
+        self.assertIn("Browser action required", self.skill)
+        self.assertIn("already known", self.normalized)
 
     def test_form_instances_and_consent_remain_separate(self) -> None:
         self.assertIn("independent forms", self.normalized)

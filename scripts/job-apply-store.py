@@ -5160,7 +5160,8 @@ class Store:
             "expired_agent_attempt": 0,
             "claimless_interrupted_attempt": 1,
             "awaiting_human_review": 2,
-            "needs_information": 3,
+            "browser_action_required": 3,
+            "needs_information": 4,
         }
         reason_details = {
             "expired_agent_attempt": (
@@ -5178,6 +5179,10 @@ class Store:
             "needs_information": (
                 "Needs information",
                 "Open Job details and resolve the missing facts, resume, or answers, then run preflight and mark the job ready.",
+            ),
+            "browser_action_required": (
+                "Browser action required",
+                "Open Job details and continue in the visible browser. The saved information is already known; do not create or re-enter an answer in Companion.",
             ),
         }
         rows: list[dict[str, Any]] = []
@@ -5223,6 +5228,23 @@ class Store:
                         )
                         if key in session
                     }
+                    if (
+                        reason_code == "needs_information"
+                        and missing_count == 0
+                        and session.get("browserHandoff") == {
+                            "state": "required",
+                            "reasonCode": "unsupported-control",
+                            "revision": session.get("browserHandoff", {}).get("revision"),
+                        }
+                        and {
+                            (blocker.get("type"), blocker.get("code"))
+                            for blocker in session.get("blockers", [])
+                        } == {
+                            ("browser_handoff", "unsupported-control"),
+                            ("information", "owner-input-required"),
+                        }
+                    ):
+                        reason_code = "browser_action_required"
             reason_label, guidance = reason_details[reason_code]
             rows.append({
                 "jobId": job["id"],
