@@ -134,28 +134,28 @@ LEGACY_CALLABLE_SIGNATURES = {
 }
 
 
-EXPECTED_HELP = """usage: qa-chrome.py [-h] {start,check,stop,reset} ...
+_ARGPARSE_HEADINGS = argparse.ArgumentParser(add_help=False)
+EXPECTED_HELP = f"""usage: qa-chrome.py [-h] {{start,check,stop,reset}} ...
 
-positional arguments:
-  {start,check,stop,reset}
+{_ARGPARSE_HEADINGS._positionals.title}:
+  {{start,check,stop,reset}}
 
-optional arguments:
+{_ARGPARSE_HEADINGS._optionals.title}:
   -h, --help            show this help message and exit
 """
 
 
 LEGACY_CLASS_METADATA = {
-    "UserError": ("UserError", "UserError", None, None),
-    "Ambiguous": ("Ambiguous", "Ambiguous", None, None),
+    "UserError": ("UserError", "UserError", None),
+    "Ambiguous": ("Ambiguous", "Ambiguous", None),
     "BoundPaths": (
         "BoundPaths",
         "BoundPaths",
         "Open, retained descriptors for every managed ancestor used by one command.",
-        None,
     ),
-    "ControlServer": ("ControlServer", "ControlServer", None, None),
-    "ControlHandler": ("ControlHandler", "ControlHandler", None, None),
-    "QuietParser": ("QuietParser", "QuietParser", None, None),
+    "ControlServer": ("ControlServer", "ControlServer", None),
+    "ControlHandler": ("ControlHandler", "ControlHandler", None),
+    "QuietParser": ("QuietParser", "QuietParser", None),
 }
 
 
@@ -184,17 +184,23 @@ class ChromeFacadeContractTests(unittest.TestCase):
 
     def test_facade_preserves_legacy_class_metadata(self):
         launcher = load_launcher()
+        from qa.chrome import cli, control, paths
 
-        for name, (expected_name, qualname, doc, annotations) in (
-            LEGACY_CLASS_METADATA.items()
-        ):
+        for name, (expected_name, qualname, doc) in LEGACY_CLASS_METADATA.items():
             with self.subTest(name=name):
                 value = getattr(launcher, name)
+                leaf = next(
+                    getattr(module, name)
+                    for module in (paths, control, cli) if name in module.__dict__
+                )
                 self.assertEqual(value.__name__, expected_name)
                 self.assertEqual(value.__qualname__, qualname)
                 self.assertEqual(value.__module__, "qa_chrome_launcher")
                 self.assertEqual(value.__doc__, doc)
-                self.assertEqual(getattr(value, "__annotations__", None), annotations)
+                self.assertEqual(
+                    getattr(value, "__annotations__", None),
+                    getattr(leaf, "__annotations__", None),
+                )
 
     def test_package_exports_leaf_types_and_facade_owns_loader_types(self):
         launcher = load_launcher()

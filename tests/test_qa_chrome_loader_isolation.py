@@ -408,17 +408,23 @@ class ChromeLoaderIsolationTests(unittest.TestCase):
         self.assertEqual(second_server.connection_slots, ("second", 5))
 
     def test_each_facade_retains_exact_loader_local_class_metadata(self):
-        for module, module_name in (
-            (self.first, "qa_chrome_first_root"),
-            (self.second, "qa_chrome_second_root"),
-        ):
+        facades = ((self.first, "qa_chrome_first_root"), (self.second, "qa_chrome_second_root"))
+        for module, module_name in facades:
             for name in CLASS_NAMES:
                 with self.subTest(module=module_name, name=name):
                     value = getattr(module, name)
+                    leaf = next(
+                        getattr(candidate, name)
+                        for candidate in (module._paths, module._control, module._cli)
+                        if name in candidate.__dict__
+                    )
                     self.assertEqual(value.__name__, name)
                     self.assertEqual(value.__qualname__, name)
                     self.assertEqual(value.__module__, module_name)
-                    self.assertIsNone(getattr(value, "__annotations__", None))
+                    self.assertEqual(
+                        getattr(value, "__annotations__", None),
+                        getattr(leaf, "__annotations__", None),
+                    )
             for name, signature in CLASS_SIGNATURES.items():
                 with self.subTest(module=module_name, signature=name):
                     self.assertEqual(

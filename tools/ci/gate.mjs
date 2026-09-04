@@ -13,11 +13,15 @@ export function evaluateGate(results, selectedJobs) {
 }
 
 export function main(environment = process.env) {
-  const results = JSON.parse(environment.CI_RESULTS_JSON ?? "{}");
-  const selected = JSON.parse(environment.CI_SELECTED_JOBS ?? "[]");
+  if (!environment.CI_RESULTS_JSON || !environment.CI_SELECTED_JOBS) {
+    throw new Error("CI_RESULTS_JSON and CI_SELECTED_JOBS are required");
+  }
+  const results = JSON.parse(environment.CI_RESULTS_JSON);
+  const selected = JSON.parse(environment.CI_SELECTED_JOBS);
   if (!Array.isArray(selected) || selected.some((item) => typeof item !== "string")) {
     throw new Error("CI_SELECTED_JOBS must be a JSON string array");
   }
+  if (selected.length === 0) throw new Error("CI_SELECTED_JOBS must not be empty");
   const decision = evaluateGate(results, selected);
   if (!decision.ok) {
     for (const failure of decision.failures) {
