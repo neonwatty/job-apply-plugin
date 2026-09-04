@@ -26,16 +26,13 @@ from qa.chrome.paths import (
 )
 
 
-_BOUND_CLASS_RUNTIME = None
-
-
 def _resolve_runtime(runtime):
     return sys.modules[__name__] if runtime is None else runtime
 
 
-def _bind_class_runtime(runtime):
-    global _BOUND_CLASS_RUNTIME
-    _BOUND_CLASS_RUNTIME = runtime
+def _class_runtime(class_type):
+    provider = getattr(class_type, "_runtime_provider", None)
+    return _resolve_runtime(None if provider is None else provider())
 
 
 def _public_ready(profile, port, *, _runtime=None):
@@ -80,7 +77,7 @@ def _control_request(paths, action, *, _runtime=None):
         or len(state["cdpBrowserPathHash"]) != 64
         or control["generation"] != state["generation"]
     ):
-        raise Ambiguous("profile state is ambiguous")
+        raise runtime.Ambiguous("profile state is ambiguous")
     body = runtime.json.dumps(
         {"action": action, "token": control["token"]}, separators=(",", ":")
     )
@@ -101,7 +98,7 @@ def _control_request(paths, action, *, _runtime=None):
         response = connection.getresponse()
         raw = response.read(runtime.MAX_BODY + 1)
         if response.status != 200 or len(raw) > runtime.MAX_BODY:
-            raise Ambiguous("profile state is ambiguous")
+            raise runtime.Ambiguous("profile state is ambiguous")
         value = runtime.json.loads(raw.decode("utf-8"))
     except (
         OSError,
@@ -109,7 +106,7 @@ def _control_request(paths, action, *, _runtime=None):
         UnicodeDecodeError,
         json.JSONDecodeError,
     ):
-        raise Ambiguous("profile state is ambiguous")
+        raise runtime.Ambiguous("profile state is ambiguous")
     finally:
         connection.close()
     if (
@@ -123,7 +120,7 @@ def _control_request(paths, action, *, _runtime=None):
         return state
     if action == "stop" and value == {"status": "stopping"}:
         return state
-    raise Ambiguous("profile state is ambiguous")
+    raise runtime.Ambiguous("profile state is ambiguous")
 
 
 class ControlServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
@@ -143,7 +140,7 @@ class ControlServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         ownership_fd,
         published,
     ):
-        runtime = _resolve_runtime(_BOUND_CLASS_RUNTIME)
+        runtime = _class_runtime(type(self))
         self.runtime = runtime
         self.token = token
         self.child = child

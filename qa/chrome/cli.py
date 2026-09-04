@@ -12,9 +12,6 @@ from qa.chrome.commands import (
 from qa.chrome.paths import UserError, fail, validate_profile
 
 
-_BOUND_CLASS_RUNTIME = None
-
-
 class FacadeRuntime:
     """Resolve leaf dependency lookups against a facade module namespace."""
 
@@ -82,17 +79,15 @@ def _resolve_runtime(runtime):
     return sys.modules[__name__] if runtime is None else runtime
 
 
-def _bind_class_runtime(runtime):
-    global _BOUND_CLASS_RUNTIME
-    _BOUND_CLASS_RUNTIME = runtime
+def _class_runtime(class_type):
+    provider = getattr(class_type, "_runtime_provider", None)
+    return _resolve_runtime(None if provider is None else provider())
 
 
 class QuietParser(argparse.ArgumentParser):
     def error(self, _message):
         runtime = getattr(self, "_qa_chrome_runtime", None)
-        runtime = _resolve_runtime(
-            _BOUND_CLASS_RUNTIME if runtime is None else runtime
-        )
+        runtime = _class_runtime(type(self)) if runtime is None else runtime
         runtime.fail("invalid arguments")
 
 
@@ -128,7 +123,7 @@ def main(argv=None, *, _runtime=None):
         else:
             runtime.command_reset(profile)
         return 0
-    except UserError as error:
+    except runtime.UserError as error:
         runtime.sys.stderr.write(str(error) + "\n")
         return 2
     except KeyboardInterrupt:

@@ -48,16 +48,34 @@ MAX_CONTROL_CONNECTIONS = _paths.MAX_CONTROL_CONNECTIONS
 ORIGIN = _paths.ORIGIN
 ROOT_NAME = _paths.ROOT_NAME
 
-UserError = _paths.UserError
-Ambiguous = _paths.Ambiguous
-BoundPaths = _paths.BoundPaths
-ControlServer = _control.ControlServer
-ControlHandler = _control.ControlHandler
-QuietParser = _cli.QuietParser
+class UserError(Exception):
+    pass
+
+
+class Ambiguous(UserError):
+    pass
 
 
 _FACADE_RUNTIME = _cli.FacadeRuntime(globals())
 _runtime = _FACADE_RUNTIME.resolve
+
+
+class BoundPaths(_paths.BoundPaths):
+    """Open, retained descriptors for every managed ancestor used by one command."""
+
+    _runtime_provider = staticmethod(_runtime)
+
+
+class ControlServer(_control.ControlServer):
+    _runtime_provider = staticmethod(_runtime)
+
+
+class ControlHandler(_control.ControlHandler):
+    pass
+
+
+class QuietParser(_cli.QuietParser):
+    _runtime_provider = staticmethod(_runtime)
 
 
 def fail(message):
@@ -247,22 +265,6 @@ def parse_args(argv):
 
 def main(argv=None):
     return _cli.main(argv, _runtime=_runtime())
-
-
-_paths._bind_class_runtime(_runtime())
-_control._bind_class_runtime(_runtime())
-_cli._bind_class_runtime(_runtime())
-# The package and facade share class identity, while legacy loaders observe facade metadata.
-for _facade_class in (
-    UserError,
-    Ambiguous,
-    BoundPaths,
-    ControlServer,
-    ControlHandler,
-    QuietParser,
-):
-    _facade_class.__module__ = __name__
-del _facade_class
 
 
 __all__ = list(_cli.LEGACY_STAR_EXPORTS)

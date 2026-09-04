@@ -196,7 +196,7 @@ class ChromeFacadeContractTests(unittest.TestCase):
                 self.assertEqual(value.__doc__, doc)
                 self.assertEqual(getattr(value, "__annotations__", None), annotations)
 
-    def test_package_exports_shared_security_type_identities(self):
+    def test_package_exports_leaf_types_and_facade_owns_loader_types(self):
         launcher = load_launcher()
         import qa.chrome as package
         from qa.chrome import cli, control, paths
@@ -219,16 +219,20 @@ class ChromeFacadeContractTests(unittest.TestCase):
             },
         )
         self.assertIs(package.UserError, paths.UserError)
-        self.assertIs(package.UserError, launcher.UserError)
         self.assertIs(package.Ambiguous, paths.Ambiguous)
-        self.assertIs(package.Ambiguous, launcher.Ambiguous)
         self.assertIs(package.BoundPaths, paths.BoundPaths)
-        self.assertIs(package.BoundPaths, launcher.BoundPaths)
         self.assertIs(package.ControlServer, control.ControlServer)
-        self.assertIs(package.ControlServer, launcher.ControlServer)
         self.assertIs(package.ControlHandler, control.ControlHandler)
-        self.assertIs(package.ControlHandler, launcher.ControlHandler)
-        self.assertIs(cli.QuietParser, launcher.QuietParser)
+        for facade_type, leaf_type in (
+            (launcher.UserError, paths.UserError),
+            (launcher.Ambiguous, paths.Ambiguous),
+            (launcher.BoundPaths, paths.BoundPaths),
+            (launcher.ControlServer, control.ControlServer),
+            (launcher.ControlHandler, control.ControlHandler),
+            (launcher.QuietParser, cli.QuietParser),
+        ):
+            self.assertIsNot(facade_type, leaf_type)
+        self.assertTrue(issubclass(launcher.Ambiguous, launcher.UserError))
 
     def test_parser_error_keeps_the_facade_fail_patch_seam(self):
         launcher = load_launcher()

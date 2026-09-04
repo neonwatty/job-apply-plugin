@@ -19,7 +19,6 @@ MAX_BODY = 4096
 MAX_CONTROL_CONNECTIONS = 8
 ORIGIN = "qa-chrome://local"
 ROOT_NAME = ".job-apply-qa"
-_BOUND_CLASS_RUNTIME = None
 
 
 class UserError(Exception):
@@ -34,13 +33,9 @@ def _resolve_runtime(runtime):
     return sys.modules[__name__] if runtime is None else runtime
 
 
-def _bind_class_runtime(runtime):
-    global _BOUND_CLASS_RUNTIME
-    _BOUND_CLASS_RUNTIME = runtime
-
-
-def _class_runtime():
-    return _resolve_runtime(_BOUND_CLASS_RUNTIME)
+def _class_runtime(class_type):
+    provider = getattr(class_type, "_runtime_provider", None)
+    return _resolve_runtime(None if provider is None else provider())
 
 
 def fail(message, *, _runtime=None):
@@ -157,7 +152,7 @@ class BoundPaths:
     """Open, retained descriptors for every managed ancestor used by one command."""
 
     def __init__(self, profile, create_base=False, create_profile=False):
-        runtime = _class_runtime()
+        runtime = _class_runtime(type(self))
         self._runtime = runtime
         self.name = profile
         self.home_fd, self.home_st, self.home_path = runtime._open_home()
@@ -194,7 +189,7 @@ class BoundPaths:
 
     @classmethod
     def existing(cls, profile):
-        runtime = _class_runtime()
+        runtime = _class_runtime(cls)
         home_fd, _home_st, _home_path = runtime._open_home()
         try:
             absent = runtime._entry_absent(home_fd, runtime.ROOT_NAME)
@@ -309,7 +304,7 @@ def _safe_regular(dir_fd, name, device, max_bytes=MAX_BODY, *, _runtime=None):
             raise OSError(errno.EPERM, "changed")
         return data
     except OSError:
-        raise Ambiguous("profile state is ambiguous")
+        raise runtime.Ambiguous("profile state is ambiguous")
     finally:
         if fd is not None:
             runtime.os.close(fd)
@@ -318,7 +313,7 @@ def _safe_regular(dir_fd, name, device, max_bytes=MAX_BODY, *, _runtime=None):
 def _read_json(paths, name, keys, *, _runtime=None):
     runtime = _resolve_runtime(_runtime)
     if paths.runtime_fd is None:
-        raise Ambiguous("profile state is ambiguous")
+        raise runtime.Ambiguous("profile state is ambiguous")
     paths.revalidate()
     try:
         value = runtime.json.loads(
@@ -327,9 +322,9 @@ def _read_json(paths, name, keys, *, _runtime=None):
             ).decode("utf-8")
         )
     except (UnicodeDecodeError, json.JSONDecodeError):
-        raise Ambiguous("profile state is ambiguous")
+        raise runtime.Ambiguous("profile state is ambiguous")
     if not isinstance(value, dict) or set(value) != set(keys):
-        raise Ambiguous("profile state is ambiguous")
+        raise runtime.Ambiguous("profile state is ambiguous")
     return value
 
 
@@ -374,7 +369,7 @@ def _atomic_json(paths, name, value, *, _runtime=None):
         paths.revalidate()
         return runtime._identity(published)
     except OSError:
-        raise Ambiguous("profile state is ambiguous")
+        raise runtime.Ambiguous("profile state is ambiguous")
     finally:
         if fd is not None:
             runtime.os.close(fd)

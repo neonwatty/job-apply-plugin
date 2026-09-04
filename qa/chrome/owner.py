@@ -110,7 +110,7 @@ def _open_owner(paths, *, _runtime=None):
             runtime.os.close(owner_fd)
         if ownership_fd is not None:
             runtime.os.close(ownership_fd)
-        raise Ambiguous("profile state is ambiguous")
+        raise runtime.Ambiguous("profile state is ambiguous")
 
 
 def _observe_owner(paths, *, _runtime=None):
@@ -168,7 +168,7 @@ def _observe_owner(paths, *, _runtime=None):
             runtime.os.close(owner_fd)
         if ownership_fd is not None:
             runtime.os.close(ownership_fd)
-        raise Ambiguous("profile state is ambiguous")
+        raise runtime.Ambiguous("profile state is ambiguous")
 
 
 def _write_owner_runtime(owner_fd, runtime_st, *, _runtime=None):

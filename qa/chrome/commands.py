@@ -44,7 +44,7 @@ def command_start(profile, chrome_path, *, _runtime=None):
                 profile, create_base=True, create_profile=True
             )
             break
-        except UserError:
+        except runtime.UserError:
             if runtime.time.monotonic() >= setup_deadline:
                 raise
             runtime.time.sleep(0.02)
@@ -76,7 +76,7 @@ def command_start(profile, chrome_path, *, _runtime=None):
                     and initial.get("status") == "ready"
                 ):
                     generation = initial.get("generation")
-            except Ambiguous:
+            except runtime.Ambiguous:
                 pass
         paths.close()
         try:
@@ -86,15 +86,15 @@ def command_start(profile, chrome_path, *, _runtime=None):
                 try:
                     current = runtime.BoundPaths.existing(profile)
                     if current is None or current.runtime_fd is None:
-                        raise Ambiguous("profile state is ambiguous")
+                        raise runtime.Ambiguous("profile state is ambiguous")
                     if (
                         expected_runtime is not None
                         and runtime._identity(current.runtime_st)
                         != expected_runtime
                     ):
-                        raise Ambiguous("profile state is ambiguous")
+                        raise runtime.Ambiguous("profile state is ambiguous")
                     if runtime._owner_matches_runtime(current) is False:
-                        raise Ambiguous("profile state is ambiguous")
+                        raise runtime.Ambiguous("profile state is ambiguous")
                     if generation is not None:
                         observed = runtime._read_json(
                             current,
@@ -109,13 +109,13 @@ def command_start(profile, chrome_path, *, _runtime=None):
                             },
                         )
                         if observed.get("generation") != generation:
-                            raise Ambiguous("profile state is ambiguous")
+                            raise runtime.Ambiguous("profile state is ambiguous")
                     state = runtime._control_request(current, "check")
                     runtime.emit(
                         runtime._public_ready(profile, state["cdpPort"])
                     )
                     return
-                except Ambiguous:
+                except runtime.Ambiguous:
                     if (
                         current is not None
                         and expected_runtime is not None
@@ -130,20 +130,20 @@ def command_start(profile, chrome_path, *, _runtime=None):
                         and runtime._owner_matches_runtime(current) is False
                     ):
                         raise
-                except UserError:
+                except runtime.UserError:
                     pass
                 finally:
                     if current is not None:
                         current.close()
                 runtime.time.sleep(0.04)
-            raise Ambiguous("profile state is ambiguous")
+            raise runtime.Ambiguous("profile state is ambiguous")
         finally:
             pass
     if paths.runtime_fd is not None:
         runtime.os.close(owner[1])
         runtime.os.close(owner[0])
         paths.close()
-        raise Ambiguous("profile state is ambiguous")
+        raise runtime.Ambiguous("profile state is ambiguous")
     ownership_fd, owner_fd = owner
     try:
         paths.create_runtime()
@@ -254,9 +254,9 @@ def command_stop(profile, *, _runtime=None):
                 runtime.emit({"profile": profile, "status": "stopped"})
                 return
             if runtime._identity(current) != runtime._identity(paths.runtime_st):
-                raise Ambiguous("profile state is ambiguous")
+                raise runtime.Ambiguous("profile state is ambiguous")
             runtime.time.sleep(0.04)
-        raise Ambiguous("profile state is ambiguous")
+        raise runtime.Ambiguous("profile state is ambiguous")
     finally:
         paths.close()
 
@@ -280,7 +280,7 @@ def command_reset(profile, *, _runtime=None):
     runtime = _resolve_runtime(_runtime)
     try:
         paths = runtime.BoundPaths.existing(profile)
-    except Ambiguous:
+    except runtime.Ambiguous:
         runtime.fail("profile state is ambiguous; resolve it before reset guidance")
     if paths is None or paths.profile_fd is None:
         if paths is not None:
@@ -303,7 +303,7 @@ def command_reset(profile, *, _runtime=None):
                 "profile state is ambiguous; resolve it before reset guidance"
             )
         runtime._emit_manual_reset(profile)
-    except Ambiguous:
+    except runtime.Ambiguous:
         runtime.fail("profile state is ambiguous; resolve it before reset guidance")
     except OSError:
         runtime.fail("managed storage is unsafe")

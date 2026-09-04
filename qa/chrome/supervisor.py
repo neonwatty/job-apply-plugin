@@ -325,10 +325,10 @@ def _remove_stale_devtools(paths, *, _runtime=None):
         or current.st_dev != paths.profile_st.st_dev
         or current.st_nlink != 1
     ):
-        raise Ambiguous("profile state is ambiguous")
+        raise runtime.Ambiguous("profile state is ambiguous")
     paths.revalidate()
     if runtime._identity(
         runtime._entry_stat(paths.profile_fd, "DevToolsActivePort")
     ) != runtime._identity(current):
-        raise Ambiguous("profile state is ambiguous")
+        raise runtime.Ambiguous("profile state is ambiguous")
     runtime.os.unlink("DevToolsActivePort", dir_fd=paths.profile_fd)
