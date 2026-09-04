@@ -9,6 +9,27 @@ ROOT = Path(__file__).resolve().parents[2]
 TYPECHECK_PREFIX = ("xcrun", "swiftc", "-typecheck")
 
 
+def _has_unquoted_terminal_backslash(line: str) -> bool:
+    if not line.endswith("\\"):
+        return False
+    trailing_count = len(line) - len(line.rstrip("\\"))
+    if trailing_count % 2 == 0:
+        return False
+    single_quoted = False
+    double_quoted = False
+    escaped = False
+    for character in line[:-trailing_count]:
+        if escaped:
+            escaped = False
+        elif character == "\\" and not single_quoted:
+            escaped = True
+        elif character == "'" and not double_quoted:
+            single_quoted = not single_quoted
+        elif character == '"' and not single_quoted:
+            double_quoted = not double_quoted
+    return not single_quoted and not double_quoted
+
+
 def workflow_typecheck_sources(
     workflow: str | None = None,
 ) -> dict[tuple[str, str], tuple[str, ...]]:
@@ -58,6 +79,7 @@ def workflow_typecheck_sources(
             previous = line
         pending = ""
         for line in rendered.splitlines() + [""]:
+            continuation = _has_unquoted_terminal_backslash(line)
             part = line.strip()
             if not part:
                 if pending:
@@ -65,7 +87,7 @@ def workflow_typecheck_sources(
                     pending = ""
                 continue
             pending += part
-            if pending.endswith("\\"):
+            if continuation:
                 pending = pending[:-1].rstrip() + " "
             else:
                 record(pending)

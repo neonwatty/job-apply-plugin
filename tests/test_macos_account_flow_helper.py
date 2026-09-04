@@ -200,6 +200,18 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
             original, f"        run: {command}", f"        run: |\n{scalar}"
         )
         self.assertEqual(workflow_typecheck_sources(literal), WORKFLOW_TYPECHECK_SOURCES)
+        for trailing in (" ", "  ", "\t", " \t"):
+            with self.subTest(trailing=repr(trailing)):
+                invalid_scalar = scalar.replace("\\\n", f"\\{trailing}\n", 1)
+                invalid = self.replace_workflow_once(
+                    original, f"        run: {command}", f"        run: |\n{invalid_scalar}"
+                )
+                self.assert_workflow_source_contract_rejects(invalid)
+        doubled_scalar = scalar.replace("\\\n", "\\\\\n", 1)
+        doubled = self.replace_workflow_once(
+            original, f"        run: {command}", f"        run: |\n{doubled_scalar}"
+        )
+        self.assert_workflow_source_contract_rejects(doubled)
         quoted_command = command.replace(tokens[3], f"'{tokens[3]}'", 1)
         quoted = self.replace_workflow_once(original, command, quoted_command)
         self.assertEqual(workflow_typecheck_sources(quoted), WORKFLOW_TYPECHECK_SOURCES)
