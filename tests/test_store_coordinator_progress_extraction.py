@@ -7,6 +7,7 @@ import threading
 import unittest
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
@@ -50,7 +51,13 @@ class CoordinatorProgressExtractionTests(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         parent = Path(self.temporary.name)
         source = parent / "source"
-        writer = self.facade.Store(source, parent / "legacy.json")
+        # Store has two clock seams: facade timestamps and coordinator time.
+        # Freeze both so paired stores cannot diverge at a second boundary.
+        clock = lambda: datetime.fromisoformat(NOW.replace("Z", "+00:00"))
+        timestamp_patch = mock.patch.object(self.facade, "utc_now", return_value=NOW)
+        timestamp_patch.start()
+        self.addCleanup(timestamp_patch.stop)
+        writer = self.facade.Store(source, parent / "legacy.json", clock=clock)
         with mock.patch.object(self.facade, "utc_now", return_value=NOW):
             writer.initialize()
             writer.replace_profile(
@@ -81,10 +88,10 @@ class CoordinatorProgressExtractionTests(unittest.TestCase):
         self.token = acquired["token"]
         self.attempt_revision = acquired["job"]["revision"]
         self.original = self.facade.Store(
-            clone_store_root(source, parent / "original"), parent / "legacy.json"
+            clone_store_root(source, parent / "original"), parent / "legacy.json", clock=clock
         )
         self.extracted = self.composed(
-            clone_store_root(source, parent / "extracted"), parent / "legacy.json"
+            clone_store_root(source, parent / "extracted"), parent / "legacy.json", clock=clock
         )
 
     def _call_both(self, operation):
