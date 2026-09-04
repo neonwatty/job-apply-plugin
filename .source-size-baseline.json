@@ -3,7 +3,6 @@
   "maximumLines": 500,
   "files": {
     "scripts/job-apply-store.py": { "ceiling": 5837, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "store-facade" },
-    "scripts/job-apply-workspace.py": { "ceiling": 1456, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "workspace-bootstrap" },
     "scripts/smoke-plugin.sh": { "ceiling": 1139, "owner": "modernization", "reason": "pre-existing oversized launcher", "removalPhase": "future-decomposition" },
     "workspace/app.js": { "ceiling": 2562, "owner": "modernization", "reason": "pre-existing oversized runtime", "removalPhase": "workspace-bootstrap" }
   }
