@@ -36,16 +36,26 @@ _PACKAGE_NAME = "_job_apply_store_parts_" + hashlib.sha256(
 _COMPANION_PACKAGE_NAME = "_job_apply_store_companions_" + hashlib.sha256(
     str(Path(__file__).resolve().parent).encode("utf-8")
 ).hexdigest()
+_ROOT_PRIVATE_PACKAGE_NAMES = (
+    _PACKAGE_NAME,
+    _COMPANION_PACKAGE_NAME,
+    "_job_apply_answer_matching_parts_" + hashlib.sha256(
+        str(Path(__file__).with_name("job_apply_answer_matching").resolve()).encode("utf-8")
+    ).hexdigest(),
+)
+
+
+def _remove_root_private_packages() -> None:
+    for package_name in _ROOT_PRIVATE_PACKAGE_NAMES:
+        for module_name in tuple(sys.modules):
+            if module_name == package_name or module_name.startswith(package_name + "."):
+                del sys.modules[module_name]
 
 
 def _load_implementation_package() -> Any:
     """Load a fresh, root-local implementation package for this facade."""
 
-    for module_name in tuple(sys.modules):
-        if module_name == _PACKAGE_NAME or module_name.startswith(_PACKAGE_NAME + "."):
-            del sys.modules[module_name]
-        if module_name.startswith(_COMPANION_PACKAGE_NAME + "."):
-            del sys.modules[module_name]
+    _remove_root_private_packages()
     spec = importlib.util.spec_from_file_location(
         _PACKAGE_NAME,
         _IMPLEMENTATION_ROOT / "__init__.py",
@@ -58,11 +68,7 @@ def _load_implementation_package() -> Any:
     try:
         spec.loader.exec_module(package)
     except BaseException:
-        for module_name in tuple(sys.modules):
-            if module_name == _PACKAGE_NAME or module_name.startswith(
-                _PACKAGE_NAME + "."
-            ):
-                del sys.modules[module_name]
+        _remove_root_private_packages()
         raise
     return package
 
@@ -197,13 +203,7 @@ def _load_companion_module(name: str, unavailable: str) -> Any:
         module.__name__ = name
         return module
     except BaseException:
-        for module_name in tuple(sys.modules):
-            if (
-                module_name == _PACKAGE_NAME
-                or module_name.startswith(_PACKAGE_NAME + ".")
-                or module_name.startswith(_COMPANION_PACKAGE_NAME + ".")
-            ):
-                del sys.modules[module_name]
+        _remove_root_private_packages()
         raise
     finally:
         for module_name in tuple(sys.modules):

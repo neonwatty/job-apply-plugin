@@ -71,6 +71,14 @@ COMPANION_SUFFIXES = {
     ".job_apply_answer_match",
 }
 
+ANSWER_MATCHING_SUFFIXES = {
+    "",
+    ".features",
+    ".scoring",
+    ".reuse",
+    ".cleanup",
+}
+
 
 def ignore_copy(_directory, names):
     return [name for name in names if name in IGNORED_COPY_NAMES]
@@ -93,6 +101,25 @@ def direct_module(path: Path, name: str):
 def implementation_package_name(plugin_root: Path) -> str:
     implementation = (plugin_root / "scripts" / "job_apply_store").resolve()
     return "_job_apply_store_parts_" + hashlib.sha256(str(implementation).encode()).hexdigest()
+
+
+def companion_package_name(plugin_root: Path) -> str:
+    scripts = (plugin_root / "scripts").resolve()
+    return "_job_apply_store_companions_" + hashlib.sha256(str(scripts).encode()).hexdigest()
+
+
+def answer_matching_package_name(plugin_root: Path) -> str:
+    implementation = (plugin_root / "scripts" / "job_apply_answer_matching").resolve()
+    return "_job_apply_answer_matching_parts_" + hashlib.sha256(
+        str(implementation).encode()
+    ).hexdigest()
+
+
+def private_module_snapshot(package_name: str):
+    return {
+        name: value for name, value in sys.modules.items()
+        if name == package_name or name.startswith(package_name + ".")
+    }
 
 
 @contextlib.contextmanager
@@ -170,6 +197,25 @@ class StoreLoaderIsolationTests(unittest.TestCase):
         base_source = Path(inspect.getsourcefile(module.Store.__mro__[1])).resolve()
         self.assertTrue(base_source.is_relative_to(scripts))
 
+    def assert_module_snapshot(self, package_name, snapshot):
+        self.assertEqual(set(snapshot), private_package_keys(package_name))
+        for name, value in snapshot.items():
+            self.assertIs(sys.modules.get(name), value)
+
+    def patch_answer_matching_scoring_failure(self, root: Path):
+        scoring = root / "scripts" / "job_apply_answer_matching" / "scoring.py"
+        source = scoring.read_text(encoding="utf-8")
+        marker = "from __future__ import annotations\n"
+        self.assertIn(marker, source)
+        scoring.write_text(
+            source.replace(
+                marker,
+                marker + "raise RuntimeError('partial answer matching import')\n",
+                1,
+            ),
+            encoding="utf-8",
+        )
+
     def test_complete_roots_are_isolated_in_both_orders_and_canonical_states(self):
         for mode in ("poisoned", "present", "cleared"):
             for reverse in (False, True):
@@ -194,6 +240,9 @@ class StoreLoaderIsolationTests(unittest.TestCase):
         other = self.load_store(self.root_b, "reload_other")
         other_keys = private_package_keys(other._PACKAGE_NAME)
         other_companion_keys = private_package_keys(other._COMPANION_PACKAGE_NAME)
+        other_answer_matching = private_module_snapshot(
+            other.ANSWER_MATCH_MODULE._PACKAGE_NAME
+        )
         first.ANSWER_STATES.add("stale-patch")
         first.atomic_write_json = lambda *_args, **_kwargs: None
 
@@ -212,10 +261,21 @@ class StoreLoaderIsolationTests(unittest.TestCase):
                 for suffix in COMPANION_SUFFIXES
             },
         )
+        self.assertEqual(
+            private_package_keys(second.ANSWER_MATCH_MODULE._PACKAGE_NAME),
+            {
+                second.ANSWER_MATCH_MODULE._PACKAGE_NAME + suffix
+                for suffix in ANSWER_MATCHING_SUFFIXES
+            },
+        )
         self.assertEqual(private_package_keys(other._PACKAGE_NAME), other_keys)
         self.assertEqual(
             private_package_keys(other._COMPANION_PACKAGE_NAME),
             other_companion_keys,
+        )
+        self.assert_module_snapshot(
+            other.ANSWER_MATCH_MODULE._PACKAGE_NAME,
+            other_answer_matching,
         )
 
     def test_partial_import_failure_cleans_only_failed_root_children(self):
@@ -255,6 +315,66 @@ class StoreLoaderIsolationTests(unittest.TestCase):
             private_package_keys(healthy._COMPANION_PACKAGE_NAME),
             healthy_companion_keys,
         )
+
+    def test_partial_answer_matching_failure_cleans_fresh_root_namespaces(self):
+        with canonical_state("poisoned") as canonical:
+            healthy = self.load_store(self.root_b, "healthy_answer_matching_store")
+            healthy_snapshots = {
+                healthy._PACKAGE_NAME: private_module_snapshot(healthy._PACKAGE_NAME),
+                healthy._COMPANION_PACKAGE_NAME: private_module_snapshot(
+                    healthy._COMPANION_PACKAGE_NAME
+                ),
+                healthy.ANSWER_MATCH_MODULE._PACKAGE_NAME: private_module_snapshot(
+                    healthy.ANSWER_MATCH_MODULE._PACKAGE_NAME
+                ),
+            }
+            self.patch_answer_matching_scoring_failure(self.root_a)
+
+            with self.assertRaisesRegex(RuntimeError, "partial answer matching import"):
+                self.load_store(self.root_a, "failed_fresh_answer_matching_store")
+
+            for package_name in (
+                implementation_package_name(self.root_a),
+                companion_package_name(self.root_a),
+                answer_matching_package_name(self.root_a),
+            ):
+                self.assertEqual(private_package_keys(package_name), set())
+            for package_name, snapshot in healthy_snapshots.items():
+                self.assert_module_snapshot(package_name, snapshot)
+            for name, value in canonical.items():
+                self.assertIs(sys.modules.get(name), value)
+
+    def test_failed_reexecution_cleans_prior_answer_matching_modules(self):
+        with canonical_state("poisoned") as canonical:
+            healthy = self.load_store(self.root_b, "healthy_reexecution_store")
+            first = self.load_store(self.root_a, "first_answer_matching_store")
+            healthy_snapshots = {
+                healthy._PACKAGE_NAME: private_module_snapshot(healthy._PACKAGE_NAME),
+                healthy._COMPANION_PACKAGE_NAME: private_module_snapshot(
+                    healthy._COMPANION_PACKAGE_NAME
+                ),
+                healthy.ANSWER_MATCH_MODULE._PACKAGE_NAME: private_module_snapshot(
+                    healthy.ANSWER_MATCH_MODULE._PACKAGE_NAME
+                ),
+            }
+            stale_feature = first.ANSWER_MATCH_MODULE._features
+            stale_feature.review_patch = object()
+            self.patch_answer_matching_scoring_failure(self.root_a)
+
+            with self.assertRaisesRegex(RuntimeError, "partial answer matching import"):
+                self.load_store(self.root_a, "failed_reexecuted_answer_matching_store")
+
+            for package_name in (
+                first._PACKAGE_NAME,
+                first._COMPANION_PACKAGE_NAME,
+                first.ANSWER_MATCH_MODULE._PACKAGE_NAME,
+            ):
+                self.assertEqual(private_package_keys(package_name), set())
+            self.assertNotIn(stale_feature, sys.modules.values())
+            for package_name, snapshot in healthy_snapshots.items():
+                self.assert_module_snapshot(package_name, snapshot)
+            for name, value in canonical.items():
+                self.assertIs(sys.modules.get(name), value)
 
     def test_task_attempt_and_workspace_loaders_select_the_adjacent_store(self):
         with canonical_state("poisoned"):
