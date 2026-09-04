@@ -144,6 +144,21 @@ optional arguments:
 """
 
 
+LEGACY_CLASS_METADATA = {
+    "UserError": ("UserError", "UserError", None, None),
+    "Ambiguous": ("Ambiguous", "Ambiguous", None, None),
+    "BoundPaths": (
+        "BoundPaths",
+        "BoundPaths",
+        "Open, retained descriptors for every managed ancestor used by one command.",
+        None,
+    ),
+    "ControlServer": ("ControlServer", "ControlServer", None, None),
+    "ControlHandler": ("ControlHandler", "ControlHandler", None, None),
+    "QuietParser": ("QuietParser", "QuietParser", None, None),
+}
+
+
 class ChromeFacadeContractTests(unittest.TestCase):
     def test_facade_freezes_legacy_star_import_inventory(self):
         launcher = load_launcher()
@@ -167,10 +182,24 @@ class ChromeFacadeContractTests(unittest.TestCase):
             "Observe complete per-profile ownership without creating or changing it.",
         )
 
+    def test_facade_preserves_legacy_class_metadata(self):
+        launcher = load_launcher()
+
+        for name, (expected_name, qualname, doc, annotations) in (
+            LEGACY_CLASS_METADATA.items()
+        ):
+            with self.subTest(name=name):
+                value = getattr(launcher, name)
+                self.assertEqual(value.__name__, expected_name)
+                self.assertEqual(value.__qualname__, qualname)
+                self.assertEqual(value.__module__, "qa_chrome_launcher")
+                self.assertEqual(value.__doc__, doc)
+                self.assertEqual(getattr(value, "__annotations__", None), annotations)
+
     def test_package_exports_shared_security_type_identities(self):
         launcher = load_launcher()
         import qa.chrome as package
-        from qa.chrome import control, paths
+        from qa.chrome import cli, control, paths
 
         self.assertEqual(
             set(package.__all__),
@@ -199,6 +228,58 @@ class ChromeFacadeContractTests(unittest.TestCase):
         self.assertIs(package.ControlServer, launcher.ControlServer)
         self.assertIs(package.ControlHandler, control.ControlHandler)
         self.assertIs(package.ControlHandler, launcher.ControlHandler)
+        self.assertIs(cli.QuietParser, launcher.QuietParser)
+
+    def test_parser_error_keeps_the_facade_fail_patch_seam(self):
+        launcher = load_launcher()
+        patched_failure = launcher.UserError("parser facade seam reached")
+
+        with mock.patch.object(
+            launcher, "fail", side_effect=patched_failure
+        ) as patched_fail:
+            with self.assertRaisesRegex(
+                launcher.UserError, "parser facade seam reached"
+            ):
+                launcher.parse_args(["not-a-command"])
+
+        patched_fail.assert_called_once_with("invalid arguments")
+
+    def test_control_server_construction_keeps_facade_patch_seams(self):
+        launcher = load_launcher()
+        identity = (101, 202)
+        owner_stat = object()
+        slots = object()
+        facade_os = SimpleNamespace(fstat=mock.Mock(return_value=owner_stat))
+        facade_threading = SimpleNamespace(
+            BoundedSemaphore=mock.Mock(return_value=slots)
+        )
+
+        with (
+            mock.patch.object(
+                launcher.http.server.HTTPServer, "__init__", return_value=None
+            ),
+            mock.patch.object(launcher, "os", facade_os),
+            mock.patch.object(launcher, "_identity", return_value=identity) as identify,
+            mock.patch.object(launcher, "MAX_CONTROL_CONNECTIONS", 3),
+            mock.patch.object(launcher, "threading", facade_threading),
+        ):
+            server = launcher.ControlServer(
+                ("127.0.0.1", 0),
+                launcher.ControlHandler,
+                "token",
+                object(),
+                9222,
+                "/Applications/Chrome",
+                object(),
+                17,
+                {},
+            )
+
+        facade_os.fstat.assert_called_once_with(17)
+        identify.assert_called_once_with(owner_stat)
+        facade_threading.BoundedSemaphore.assert_called_once_with(3)
+        self.assertEqual(server.ownership_identity, identity)
+        self.assertIs(server.connection_slots, slots)
 
     def test_importing_each_leaf_never_imports_the_hyphenated_facade(self):
         modules = (
@@ -357,6 +438,21 @@ class ChromeChildTerminationContractTests(unittest.TestCase):
 
 
 class ChromePackageRuntimeTests(ChromeLauncherCase):
+    def test_bound_paths_construction_keeps_the_facade_open_patch_seam(self):
+        launcher = load_launcher()
+        patched_failure = launcher.UserError("descriptor facade seam reached")
+
+        with mock.patch.dict(os.environ, self.env, clear=True):
+            with mock.patch.object(
+                launcher, "_open_home", side_effect=patched_failure
+            ) as open_home:
+                with self.assertRaisesRegex(
+                    launcher.UserError, "descriptor facade seam reached"
+                ):
+                    launcher.BoundPaths("patched-profile")
+
+        open_home.assert_called_once_with()
+
     def test_package_commands_share_complete_authenticated_runtime(self):
         import qa.chrome as package
 

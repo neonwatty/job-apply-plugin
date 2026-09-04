@@ -19,6 +19,7 @@ MAX_BODY = 4096
 MAX_CONTROL_CONNECTIONS = 8
 ORIGIN = "qa-chrome://local"
 ROOT_NAME = ".job-apply-qa"
+_BOUND_CLASS_RUNTIME = None
 
 
 class UserError(Exception):
@@ -31,6 +32,15 @@ class Ambiguous(UserError):
 
 def _resolve_runtime(runtime):
     return sys.modules[__name__] if runtime is None else runtime
+
+
+def _bind_class_runtime(runtime):
+    global _BOUND_CLASS_RUNTIME
+    _BOUND_CLASS_RUNTIME = runtime
+
+
+def _class_runtime():
+    return _resolve_runtime(_BOUND_CLASS_RUNTIME)
 
 
 def fail(message, *, _runtime=None):
@@ -147,28 +157,35 @@ class BoundPaths:
     """Open, retained descriptors for every managed ancestor used by one command."""
 
     def __init__(self, profile, create_base=False, create_profile=False):
+        runtime = _class_runtime()
+        self._runtime = runtime
         self.name = profile
-        self.home_fd, self.home_st, self.home_path = _open_home()
+        self.home_fd, self.home_st, self.home_path = runtime._open_home()
         self.root_fd = self.profiles_fd = self.runtime_root_fd = None
         self.profile_fd = self.runtime_fd = None
         try:
-            self.root_fd, self.root_st = _open_child_dir(
-                self.home_fd, ROOT_NAME, self.home_st.st_dev, create=create_base
+            self.root_fd, self.root_st = runtime._open_child_dir(
+                self.home_fd,
+                runtime.ROOT_NAME,
+                self.home_st.st_dev,
+                create=create_base,
             )
-            self.profiles_fd, self.profiles_st = _open_child_dir(
+            self.profiles_fd, self.profiles_st = runtime._open_child_dir(
                 self.root_fd, "chrome-profiles", self.root_st.st_dev,
                 create=create_base,
             )
-            self.runtime_root_fd, self.runtime_root_st = _open_child_dir(
+            self.runtime_root_fd, self.runtime_root_st = runtime._open_child_dir(
                 self.root_fd, "runtime", self.root_st.st_dev, create=create_base
             )
-            if create_profile or not _entry_absent(self.profiles_fd, profile):
-                self.profile_fd, self.profile_st = _open_child_dir(
+            if create_profile or not runtime._entry_absent(
+                self.profiles_fd, profile
+            ):
+                self.profile_fd, self.profile_st = runtime._open_child_dir(
                     self.profiles_fd, profile, self.root_st.st_dev,
                     create=create_profile,
                 )
-            if not _entry_absent(self.runtime_root_fd, profile):
-                self.runtime_fd, self.runtime_st = _open_child_dir(
+            if not runtime._entry_absent(self.runtime_root_fd, profile):
+                self.runtime_fd, self.runtime_st = runtime._open_child_dir(
                     self.runtime_root_fd, profile, self.root_st.st_dev
                 )
         except BaseException:
@@ -177,24 +194,29 @@ class BoundPaths:
 
     @classmethod
     def existing(cls, profile):
-        home_fd, _home_st, _home_path = _open_home()
+        runtime = _class_runtime()
+        home_fd, _home_st, _home_path = runtime._open_home()
         try:
-            absent = _entry_absent(home_fd, ROOT_NAME)
+            absent = runtime._entry_absent(home_fd, runtime.ROOT_NAME)
         finally:
-            os.close(home_fd)
+            runtime.os.close(home_fd)
         if absent:
             return None
         return cls(profile)
 
     @property
     def profile_path(self):
-        return os.path.join(
-            self.home_path, ROOT_NAME, "chrome-profiles", self.name
+        return self._runtime.os.path.join(
+            self.home_path,
+            self._runtime.ROOT_NAME,
+            "chrome-profiles",
+            self.name,
         )
 
     def revalidate(self):
+        runtime = self._runtime
         pairs = [
-            (self.home_fd, ROOT_NAME, self.root_fd),
+            (self.home_fd, runtime.ROOT_NAME, self.root_fd),
             (self.root_fd, "chrome-profiles", self.profiles_fd),
             (self.root_fd, "runtime", self.runtime_root_fd),
         ]
@@ -204,23 +226,28 @@ class BoundPaths:
             pairs.append((self.runtime_root_fd, self.name, self.runtime_fd))
         try:
             for parent_fd, name, child_fd in pairs:
-                if _identity(_entry_stat(parent_fd, name)) != _identity(
-                    os.fstat(child_fd)
+                if runtime._identity(
+                    runtime._entry_stat(parent_fd, name)
+                ) != runtime._identity(
+                    runtime.os.fstat(child_fd)
                 ):
                     raise OSError(errno.EPERM, "changed")
         except OSError:
-            raise Ambiguous("profile state is ambiguous")
+            raise runtime.Ambiguous("profile state is ambiguous")
 
     def create_runtime(self):
-        if self.runtime_fd is not None or not _entry_absent(
+        runtime = self._runtime
+        if self.runtime_fd is not None or not runtime._entry_absent(
             self.runtime_root_fd, self.name
         ):
-            raise Ambiguous("profile state is ambiguous")
+            raise runtime.Ambiguous("profile state is ambiguous")
         try:
-            os.mkdir(self.name, DIR_MODE, dir_fd=self.runtime_root_fd)
+            runtime.os.mkdir(
+                self.name, runtime.DIR_MODE, dir_fd=self.runtime_root_fd
+            )
         except OSError:
-            raise Ambiguous("profile state is ambiguous")
-        self.runtime_fd, self.runtime_st = _open_child_dir(
+            raise runtime.Ambiguous("profile state is ambiguous")
+        self.runtime_fd, self.runtime_st = runtime._open_child_dir(
             self.runtime_root_fd, self.name, self.root_st.st_dev
         )
 
@@ -237,7 +264,7 @@ class BoundPaths:
             fd = getattr(self, attr, None)
             if fd is not None:
                 try:
-                    os.close(fd)
+                    self._runtime.os.close(fd)
                 except OSError:
                     pass
                 setattr(self, attr, None)

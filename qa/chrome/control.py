@@ -26,8 +26,16 @@ from qa.chrome.paths import (
 )
 
 
+_BOUND_CLASS_RUNTIME = None
+
+
 def _resolve_runtime(runtime):
     return sys.modules[__name__] if runtime is None else runtime
+
+
+def _bind_class_runtime(runtime):
+    global _BOUND_CLASS_RUNTIME
+    _BOUND_CLASS_RUNTIME = runtime
 
 
 def _public_ready(profile, port, *, _runtime=None):
@@ -135,24 +143,27 @@ class ControlServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         ownership_fd,
         published,
     ):
+        runtime = _resolve_runtime(_BOUND_CLASS_RUNTIME)
+        self.runtime = runtime
         self.token = token
         self.child = child
         self.cdp_port = cdp_port
         self.browser_path = browser_path
         self.paths = paths
         self.ownership_fd = ownership_fd
-        self.ownership_identity = _identity(os.fstat(ownership_fd))
+        self.ownership_identity = runtime._identity(
+            runtime.os.fstat(ownership_fd)
+        )
         self.published = published
-        self.connection_slots = threading.BoundedSemaphore(
-            MAX_CONTROL_CONNECTIONS
+        self.connection_slots = runtime.threading.BoundedSemaphore(
+            runtime.MAX_CONTROL_CONNECTIONS
         )
         self.stopping = False
-        self.runtime = sys.modules[__name__]
         super().__init__(address, handler)
 
     def get_request(self):
         request, address = super().get_request()
-        request.settimeout(REQUEST_TIMEOUT)
+        request.settimeout(self.runtime.REQUEST_TIMEOUT)
         return request, address
 
     def process_request(self, request, client_address):
@@ -200,7 +211,7 @@ class ControlServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
                     self.paths.runtime_st.st_dev,
                 )
             return runtime._owner_matches_runtime(self.paths) is True
-        except (OSError, UserError):
+        except (OSError, runtime.UserError):
             return False
 
 
@@ -220,7 +231,7 @@ class ControlHandler(http.server.BaseHTTPRequestHandler):
         except (
             BrokenPipeError,
             ConnectionResetError,
-            socket.timeout,
+            runtime.socket.timeout,
             OSError,
         ):
             pass
@@ -245,11 +256,11 @@ class ControlHandler(http.server.BaseHTTPRequestHandler):
             return
         try:
             raw = self.rfile.read(length)
-        except (socket.timeout, OSError):
+        except (runtime.socket.timeout, OSError):
             return
         try:
             request = runtime.json.loads(raw.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError):
+        except (UnicodeDecodeError, runtime.json.JSONDecodeError):
             self._send(400, {"status": "error"})
             return
         if (

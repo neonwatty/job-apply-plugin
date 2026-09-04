@@ -249,6 +249,22 @@ def main(argv=None):
     return _cli.main(argv, _runtime=_runtime())
 
 
+_paths._bind_class_runtime(_runtime())
+_control._bind_class_runtime(_runtime())
+_cli._bind_class_runtime(_runtime())
+# The package and facade share class identity, while legacy loaders observe facade metadata.
+for _facade_class in (
+    UserError,
+    Ambiguous,
+    BoundPaths,
+    ControlServer,
+    ControlHandler,
+    QuietParser,
+):
+    _facade_class.__module__ = __name__
+del _facade_class
+
+
 __all__ = list(_cli.LEGACY_STAR_EXPORTS)
 
 
