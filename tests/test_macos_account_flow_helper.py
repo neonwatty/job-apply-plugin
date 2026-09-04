@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import ast
-import re
 import subprocess
 import unittest
 from pathlib import Path
+
+from tests.support.macos_workflow_contract import (
+    workflow_typecheck_command,
+    workflow_typecheck_sources,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -78,111 +82,6 @@ def function_swift_literals(path: Path, function_name: str) -> tuple[str, ...]:
         key=lambda node: (node.lineno, node.col_offset),
     )
     return tuple(Path(node.value).name for node in strings)
-
-
-def workflow_typecheck_sources(
-    workflow: str | None = None,
-) -> dict[tuple[str, str], tuple[str, ...]]:
-    if workflow is None:
-        workflow = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
-    sources: dict[tuple[str, str], tuple[str, ...]] = {}
-    current_job: str | None = None
-    current_step: str | None = None
-    in_jobs = False
-    marker = "xcrun swiftc -typecheck "
-
-    def record(command: str) -> None:
-        command = command.strip()
-        if not command.startswith(marker):
-            return
-        if current_job is None or current_step is None:
-            raise AssertionError("typecheck command is not bound to a workflow job and step")
-        key = (current_job, current_step)
-        if key in sources:
-            raise AssertionError("workflow job and step contains duplicate typecheck commands")
-        sources[key] = tuple(
-            Path(token).name
-            for token in command[len(marker):].split()
-            if token.endswith(".swift")
-        )
-
-    def record_block(block: list[str], indicator: str) -> None:
-        indents = [len(line) - len(line.lstrip()) for line in block if line.strip()]
-        if not indents:
-            return
-        indent = min(indents)
-        scalar = [line[indent:] if line.strip() else "" for line in block]
-        rendered = ""
-        previous: str | None = None
-        for line in scalar:
-            if previous is not None:
-                fold = (
-                    indicator.startswith(">") and previous and line
-                    and not previous[0].isspace() and not line[0].isspace()
-                )
-                rendered += " " if fold else "\n"
-            rendered += line
-            previous = line
-        pending = ""
-        for line in rendered.splitlines() + [""]:
-            part = line.strip()
-            if not part:
-                if pending:
-                    record(pending)
-                    pending = ""
-                continue
-            pending += part
-            if pending.endswith("\\"):
-                pending = pending[:-1].rstrip() + " "
-            else:
-                record(pending)
-                pending = ""
-
-    lines = workflow.splitlines()
-    index = 0
-    while index < len(lines):
-        line = lines[index]
-        if line == "jobs:":
-            in_jobs = True
-            index += 1
-            continue
-        if not in_jobs:
-            index += 1
-            continue
-        job = re.fullmatch(r"  ([a-z0-9][a-z0-9-]*):", line)
-        if job:
-            current_job, current_step = job.group(1), None
-            index += 1
-            continue
-        step = re.fullmatch(r"      -(?: name: (.+)|.*)", line)
-        if step:
-            current_step = step.group(1)
-            index += 1
-            continue
-        run = re.fullmatch(r"        run:(?:[ \t]+(.*))?", line)
-        if not run:
-            index += 1
-            continue
-        value = (run.group(1) or "").strip()
-        if not re.fullmatch(r"[|>][-+]?", value):
-            record(value)
-            index += 1
-            continue
-        index += 1
-        block: list[str] = []
-        while index < len(lines):
-            block_line = lines[index]
-            if block_line.strip() and len(block_line) - len(block_line.lstrip()) <= 8:
-                break
-            block.append(block_line)
-            index += 1
-        record_block(block, value)
-    return sources
-
-
-def workflow_typecheck_command(sources: tuple[str, ...]) -> str:
-    paths = " ".join(f"native/macos/{source}" for source in sources)
-    return f"xcrun swiftc -typecheck {paths}"
 
 
 class MacOSAccountFlowHelperTests(unittest.TestCase):
@@ -287,6 +186,23 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
                     f"\n            {' '.join(tokens[4:])}",
                 )
                 self.assert_workflow_source_contract_rejects(workflow)
+
+    def test_workflow_source_contract_distinguishes_folded_backslash(self):
+        original = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
+        command = workflow_typecheck_command(ORACLE_SWIFT_SOURCES)
+        tokens = command.split()
+        scalar = "          " + " ".join(tokens[:4]) + " \\\n          " + " ".join(tokens[4:])
+        folded = self.replace_workflow_once(
+            original, f"        run: {command}", f"        run: >\n{scalar}"
+        )
+        self.assert_workflow_source_contract_rejects(folded)
+        literal = self.replace_workflow_once(
+            original, f"        run: {command}", f"        run: |\n{scalar}"
+        )
+        self.assertEqual(workflow_typecheck_sources(literal), WORKFLOW_TYPECHECK_SOURCES)
+        quoted_command = command.replace(tokens[3], f"'{tokens[3]}'", 1)
+        quoted = self.replace_workflow_once(original, command, quoted_command)
+        self.assertEqual(workflow_typecheck_sources(quoted), WORKFLOW_TYPECHECK_SOURCES)
 
     def test_workflow_source_contract_rejects_oracle_workday_command_swap(self):
         workflow = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
