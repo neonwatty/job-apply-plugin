@@ -200,9 +200,25 @@ class StoreExtractionRequestsDomainTests(unittest.TestCase):
             mock.patch.object(self.facade, "utc_now", return_value=NOW) as clock,
             mock.patch.object(self.facade.uuid, "uuid4", return_value="fixed") as identity,
         ):
-            request = self.mixin._new_extraction_request(resume)
-        self.assertEqual(request["requestId"], "request-fixed")
-        self.assertEqual(request["createdAt"], NOW)
+            request = self.mixin._new_extraction_request(
+                resume, "request-superseded"
+            )
+        self.assertEqual(
+            request,
+            {
+                "requestId": "request-fixed",
+                "resumeId": "resume-a",
+                "resumeContentRevision": "content-a",
+                "revision": 1,
+                "status": "requested",
+                "createdAt": NOW,
+                "updatedAt": NOW,
+                "closedAt": None,
+                "proposalId": None,
+                "failureReason": None,
+                "supersedesRequestId": "request-superseded",
+            },
+        )
         clock.assert_called_once()
         identity.assert_called_once()
 
