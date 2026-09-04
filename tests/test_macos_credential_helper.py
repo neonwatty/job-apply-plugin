@@ -6,6 +6,19 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+ORACLE_SWIFT_SOURCES = (
+    "job_apply_credential_helper.swift",
+    "job_apply_browser_bridge.swift",
+    "OracleExecutableIdentity.swift",
+    "NativeEmailOnlyBinding.swift",
+    "AccessibilityTree.swift",
+    "ReviewedAccountForm.swift",
+    "OracleBrowserIdentity.swift",
+    "MacOSAccessibilityAccountFlowHelper.swift",
+    "OracleAccountFlowFixtures.swift",
+    "job_apply_credential_helper_tests.swift",
+    "job_apply_credential_helper_main.swift",
+)
 
 
 class MacOSCredentialHelperTests(unittest.TestCase):
@@ -39,11 +52,7 @@ class MacOSCredentialHelperTests(unittest.TestCase):
             binary = Path(directory) / "credential-integration"
             compile_result = subprocess.run([
                 "xcrun", "swiftc", "-O", "-o", str(binary),
-                str(ROOT / "native/macos/job_apply_credential_helper.swift"),
-                str(ROOT / "native/macos/job_apply_browser_bridge.swift"),
-                str(ROOT / "native/macos/job_apply_account_flow_helper.swift"),
-                str(ROOT / "native/macos/job_apply_credential_helper_tests.swift"),
-                str(ROOT / "native/macos/job_apply_credential_helper_main.swift"),
+                *(str(ROOT / "native/macos" / source) for source in ORACLE_SWIFT_SOURCES),
             ], capture_output=True, check=False)
             self.assertEqual(compile_result.returncode, 0, compile_result.stderr.decode(errors="replace"))
             namespace = "test_durable_separate_invocations"

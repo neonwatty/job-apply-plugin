@@ -1,9 +1,81 @@
+from __future__ import annotations
+
+import ast
+import re
 import subprocess
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+ACCOUNT_FLOW_SWIFT_SOURCES = (
+    "OracleExecutableIdentity.swift",
+    "NativeEmailOnlyBinding.swift",
+    "AccessibilityTree.swift",
+    "ReviewedAccountForm.swift",
+    "OracleBrowserIdentity.swift",
+    "MacOSAccessibilityAccountFlowHelper.swift",
+    "OracleAccountFlowFixtures.swift",
+)
+ORACLE_SWIFT_SOURCES = (
+    "job_apply_credential_helper.swift",
+    "job_apply_browser_bridge.swift",
+    *ACCOUNT_FLOW_SWIFT_SOURCES,
+    "job_apply_credential_helper_tests.swift",
+    "job_apply_credential_helper_main.swift",
+)
+WORKDAY_SWIFT_SOURCES = (
+    "job_apply_credential_helper.swift",
+    "job_apply_browser_bridge.swift",
+    *ACCOUNT_FLOW_SWIFT_SOURCES,
+    "job_apply_workday_account_flow_helper.swift",
+    "job_apply_workday_account_flow_main.swift",
+)
+
+
+def account_flow_source() -> str:
+    return "\n".join(
+        (ROOT / "native/macos" / name).read_text(encoding="utf-8")
+        for name in ACCOUNT_FLOW_SWIFT_SOURCES
+    )
+
+
+def native_paths(names: tuple[str, ...]) -> list[str]:
+    return [str(ROOT / "native/macos" / name) for name in names]
+
+
+def assigned_swift_tuple(path: Path, name: str, class_name: str | None = None) -> tuple[str, ...]:
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    body = tree.body
+    if class_name is not None:
+        body = next(node.body for node in tree.body if isinstance(node, ast.ClassDef) and node.name == class_name)
+    for node in body:
+        if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == name for target in node.targets):
+            return tuple(ast.literal_eval(node.value))
+    raise AssertionError(f"{path}: missing {name}")
+
+
+def function_swift_literals(path: Path, function_name: str) -> tuple[str, ...]:
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    function = next(
+        node for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == function_name
+    )
+    strings = sorted(
+        (node for node in ast.walk(function) if isinstance(node, ast.Constant)
+         and isinstance(node.value, str) and node.value.endswith(".swift")),
+        key=lambda node: (node.lineno, node.col_offset),
+    )
+    return tuple(Path(node.value).name for node in strings)
+
+
+def workflow_typecheck_sources() -> list[tuple[str, ...]]:
+    workflow = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
+    return [
+        tuple(Path(token).name for token in command.split() if token.endswith(".swift"))
+        for command in re.findall(r"xcrun swiftc -typecheck ([^\n]+)", workflow)
+    ]
 
 
 class MacOSAccountFlowHelperTests(unittest.TestCase):
@@ -19,7 +91,7 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
             self.assertIn(f"Darwin.exit({status})", source)
 
     def test_signed_browser_identity_substages_are_closed_and_value_free(self):
-        helper = (ROOT / "native/macos/job_apply_account_flow_helper.swift").read_text(encoding="utf-8")
+        helper = account_flow_source()
         entrypoint = (ROOT / "native/macos/job_apply_credential_helper_main.swift").read_text(encoding="utf-8")
         expected = (
             ("processExecutable", 38), ("runningApplication", 39),
@@ -50,7 +122,7 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         self.assertIn(") else { return .secondProofChanged }", helper)
 
     def test_signed_browser_identity_uses_unique_regular_file_equivalence(self):
-        helper = (ROOT / "native/macos/job_apply_account_flow_helper.swift").read_text(encoding="utf-8")
+        helper = account_flow_source()
         test_support = (ROOT / "native/macos/job_apply_credential_helper_tests.swift").read_text(encoding="utf-8")
         self.assertIn("metadata.st_mode & S_IFMT == S_IFREG", helper)
         self.assertIn("device: metadata.st_dev, inode: metadata.st_ino", helper)
@@ -81,32 +153,43 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         self.assertIn("!oracleSecondExecutableProofMatches(", helper)
 
     def test_production_source_compositions_keep_workday_independent_of_test_support(self):
-        oracle_sources = (
-            "job_apply_credential_helper.swift", "job_apply_browser_bridge.swift",
-            "job_apply_account_flow_helper.swift", "job_apply_credential_helper_tests.swift",
-            "job_apply_credential_helper_main.swift",
+        oracle_sources = assigned_swift_tuple(
+            ROOT / "scripts/job_apply_account_flows_macos.py",
+            "_reviewed_sources", "NativeMacOSAccessibilityProvider",
         )
-        workday_sources = (
-            "job_apply_credential_helper.swift", "job_apply_browser_bridge.swift",
-            "job_apply_account_flow_helper.swift", "job_apply_workday_account_flow_helper.swift",
-            "job_apply_workday_account_flow_main.swift",
+        workday_sources = assigned_swift_tuple(
+            ROOT / "scripts/job_apply_password_account_flows_macos.py",
+            "_reviewed_sources", "NativeMacOSWorkdayAccountProvider",
         )
-        self.assertIn("job_apply_credential_helper_tests.swift", oracle_sources)
-        self.assertNotIn("job_apply_credential_helper_tests.swift", workday_sources)
+        visible_qa_sources = function_swift_literals(ROOT / "qa/account_environment.py", "_compile_native")
+        credential_test_sources = assigned_swift_tuple(
+            ROOT / "tests/test_macos_credential_helper.py", "ORACLE_SWIFT_SOURCES"
+        )
+        workflow_sources = workflow_typecheck_sources()
+        self.assertEqual(oracle_sources, ORACLE_SWIFT_SOURCES)
+        self.assertEqual(workday_sources, WORKDAY_SWIFT_SOURCES)
+        self.assertEqual(visible_qa_sources, ORACLE_SWIFT_SOURCES)
+        self.assertEqual(credential_test_sources, ORACLE_SWIFT_SOURCES)
+        self.assertIn(ORACLE_SWIFT_SOURCES, workflow_sources)
+        self.assertIn(WORKDAY_SWIFT_SOURCES, workflow_sources)
+        self.assertIn("job_apply_credential_helper_tests.swift", ORACLE_SWIFT_SOURCES)
+        self.assertNotIn("job_apply_credential_helper_tests.swift", WORKDAY_SWIFT_SOURCES)
+        obsolete_source = "job_apply_" + "account_flow_helper.swift"
+        self.assertNotIn(obsolete_source, oracle_sources + workday_sources)
 
         if not __import__("sys").platform.startswith("darwin"):
             return
-        for sources in (workday_sources, oracle_sources):
+        for sources in (WORKDAY_SWIFT_SOURCES, ORACLE_SWIFT_SOURCES):
             completed = subprocess.run([
                 "xcrun", "swiftc", "-typecheck",
-                *(str(ROOT / "native/macos" / source) for source in sources),
+                *native_paths(sources),
             ], capture_output=True, check=False)
             self.assertEqual(completed.returncode, 0, completed.stderr.decode(errors="replace"))
 
     # These contract tests are intentionally quiet. Visible/native integration
     # lives behind the separately owner-approved qa-account gate.
     def test_native_email_only_contract_is_value_free_and_closed(self):
-        source = (ROOT / "native/macos/job_apply_account_flow_helper.swift").read_text(encoding="utf-8")
+        source = account_flow_source()
         bridge = (ROOT / "native/macos/job_apply_browser_bridge.swift").read_text(encoding="utf-8")
         self.assertIn("MacOSAccessibilityAccountFlowHelper", source)
         self.assertIn("passwordControlFingerprint == nil", source)
@@ -172,11 +255,7 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
     def test_native_contract_typechecks_with_existing_boundary(self):
         completed = subprocess.run([
             "xcrun", "swiftc", "-typecheck",
-            str(ROOT / "native/macos/job_apply_credential_helper.swift"),
-            str(ROOT / "native/macos/job_apply_browser_bridge.swift"),
-            str(ROOT / "native/macos/job_apply_account_flow_helper.swift"),
-            str(ROOT / "native/macos/job_apply_credential_helper_tests.swift"),
-            str(ROOT / "native/macos/job_apply_credential_helper_main.swift"),
+            *native_paths(ORACLE_SWIFT_SOURCES),
         ], capture_output=True, check=False)
         self.assertEqual(completed.returncode, 0, completed.stderr.decode(errors="replace"))
 
@@ -186,11 +265,7 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
             binary = Path(directory) / "oracle-fixtures"
             completed = subprocess.run([
                 "xcrun", "swiftc", "-O", "-o", str(binary),
-                str(ROOT / "native/macos/job_apply_credential_helper.swift"),
-                str(ROOT / "native/macos/job_apply_browser_bridge.swift"),
-                str(ROOT / "native/macos/job_apply_account_flow_helper.swift"),
-                str(ROOT / "native/macos/job_apply_credential_helper_tests.swift"),
-                str(ROOT / "native/macos/job_apply_credential_helper_main.swift"),
+                *native_paths(ORACLE_SWIFT_SOURCES),
             ], capture_output=True, check=False)
             self.assertEqual(completed.returncode, 0, completed.stderr.decode(errors="replace"))
             executed = subprocess.run(

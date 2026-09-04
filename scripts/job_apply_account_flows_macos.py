@@ -72,7 +72,13 @@ class NativeMacOSAccessibilityProvider:
     _reviewed_sources = (
         "job_apply_credential_helper.swift",
         "job_apply_browser_bridge.swift",
-        "job_apply_account_flow_helper.swift",
+        "OracleExecutableIdentity.swift",
+        "NativeEmailOnlyBinding.swift",
+        "AccessibilityTree.swift",
+        "ReviewedAccountForm.swift",
+        "OracleBrowserIdentity.swift",
+        "MacOSAccessibilityAccountFlowHelper.swift",
+        "OracleAccountFlowFixtures.swift",
         "job_apply_credential_helper_tests.swift",
         "job_apply_credential_helper_main.swift",
     )
