@@ -79,6 +79,13 @@ class StoreWaveBIntegrationTests(unittest.TestCase):
             self.facade._coordinator_attention_domain.CoordinatorAttentionMixin,
             self.facade._coordinator_progress_domain.CoordinatorProgressMixin,
             self.facade._coordinator_approvals_domain.CoordinatorApprovalsMixin,
+            self.facade._resumes_storage_domain.ResumeStorageMixin,
+            self.facade._resumes_read_domain.ResumeReadMixin,
+            self.facade._resumes_mutations_domain.ResumeMutationMixin,
+            self.facade._resumes_lifecycle_domain.ResumeLifecycleMixin,
+            self.facade._extractions_journal_domain.ExtractionJournalMixin,
+            self.facade._extractions_requests_domain.ExtractionRequestMixin,
+            self.facade._extractions_proposals_domain.ExtractionProposalMixin,
             self.facade._base.StoreBase,
         )
         self.assertEqual(self.facade.Store.__mro__[:len(expected)], expected)

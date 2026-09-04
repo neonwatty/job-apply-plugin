@@ -74,6 +74,13 @@ class StoreWaveCCoordinatorIntegrationTests(unittest.TestCase):
             self.facade._job_upsert_domain.JobUpsertMixin,
             self.facade._job_legacy_domain.JobLegacyMixin,
             *self.mixins,
+            self.facade._resumes_storage_domain.ResumeStorageMixin,
+            self.facade._resumes_read_domain.ResumeReadMixin,
+            self.facade._resumes_mutations_domain.ResumeMutationMixin,
+            self.facade._resumes_lifecycle_domain.ResumeLifecycleMixin,
+            self.facade._extractions_journal_domain.ExtractionJournalMixin,
+            self.facade._extractions_requests_domain.ExtractionRequestMixin,
+            self.facade._extractions_proposals_domain.ExtractionProposalMixin,
             self.facade._base.StoreBase,
         )
         self.assertEqual(self.facade.Store.__mro__[: len(expected_prefix)], expected_prefix)
