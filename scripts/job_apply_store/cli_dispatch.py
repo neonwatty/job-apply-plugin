@@ -326,4 +326,3 @@ def run(args: argparse.Namespace, runtime: dict[str, Any]) -> Any:
     if command == "trusted-fill-revoke":
         return store.revoke_trusted_fill(args.id, args.expected_approval_revision)
     raise runtime['StoreError']("unsupported command")
-

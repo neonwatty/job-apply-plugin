@@ -322,4 +322,3 @@ def build_parser(runtime: dict[str, Any]) -> argparse.ArgumentParser:
     trusted_revoke.add_argument("--id", required=True)
     trusted_revoke.add_argument("--expected-approval-revision", required=True, type=int)
     return parser
-
