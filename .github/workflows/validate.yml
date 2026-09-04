@@ -16,7 +16,7 @@ jobs:
           fetch-depth: 0
 
       - name: Enforce source-size policy
-        run: npm run check:size
+        run: npm run check:size -- --base "${{ github.event.pull_request.base.sha || github.event.before }}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

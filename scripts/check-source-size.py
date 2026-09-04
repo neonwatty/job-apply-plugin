@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path, PurePosixPath
@@ -17,9 +18,9 @@ EXCLUDED_PARTS = {
 }
 
 
-def run_git(root, *args):
+def run_git(root, *args, text=True):
     return subprocess.run(
-        ["git", *args], cwd=root, text=True, capture_output=True, check=False,
+        ["git", *args], cwd=root, text=text, capture_output=True, check=False,
     )
 
 
@@ -34,10 +35,12 @@ def git_file(root, revision, path):
 
 
 def tracked_paths(root):
-    result = run_git(root, "ls-files", "--cached", "--others", "--exclude-standard")
+    result = run_git(
+        root, "ls-files", "-z", "--cached", "--others", "--exclude-standard", text=False,
+    )
     if result.returncode:
         return []
-    return sorted({line for line in result.stdout.splitlines() if line})
+    return sorted({os.fsdecode(path) for path in result.stdout.split(b"\0") if path})
 
 
 def is_excluded(path):
@@ -101,7 +104,12 @@ def valid_path(path):
 
 def current_baseline(root):
     path = root / BASELINE_PATH
-    return load_baseline(path.read_text(encoding="utf-8") if path.exists() else None)
+    if not path.exists():
+        return load_baseline(None)
+    try:
+        return load_baseline(path.read_text(encoding="utf-8"))
+    except UnicodeDecodeError:
+        return None, ["baseline: invalid UTF-8"]
 
 
 def source_lines(root):

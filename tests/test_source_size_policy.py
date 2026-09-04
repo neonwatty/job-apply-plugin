@@ -7,6 +7,7 @@ from pathlib import Path
 
 
 CHECKER = Path(__file__).resolve().parents[1] / "scripts" / "check-source-size.py"
+WORKFLOW = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "validate.yml"
 
 
 class SourceSizePolicyTests(unittest.TestCase):
@@ -53,9 +54,9 @@ class SourceSizePolicyTests(unittest.TestCase):
         self.git("add", "-A")
         self.git("commit", "-m", "baseline")
 
-    def run_check(self):
+    def run_check(self, base="HEAD"):
         return subprocess.run(
-            [sys.executable, str(CHECKER), "--base", "HEAD"],
+            [sys.executable, str(CHECKER), "--base", base],
             cwd=self.root, text=True, capture_output=True,
         )
 
@@ -101,6 +102,33 @@ class SourceSizePolicyTests(unittest.TestCase):
 
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("legacy.py: ceiling increased from 501 to 502", result.stderr)
+
+    def test_actual_target_base_rejects_growth_that_stale_base_allows(self):
+        self.write_source("legacy.py", "pass\n" * 700)
+        self.write_baseline({"legacy.py": self.entry(700)})
+        self.commit_base()
+        self.git("branch", "stale-base")
+        self.write_source("legacy.py", "pass\n" * 600)
+        self.write_baseline({"legacy.py": self.entry(600)})
+        self.commit_base()
+        self.git("branch", "actual-target")
+        self.write_source("legacy.py", "pass\n" * 650)
+        self.write_baseline({"legacy.py": self.entry(650)})
+
+        stale_result = self.run_check("stale-base")
+        target_result = self.run_check("actual-target")
+
+        self.assertEqual(stale_result.returncode, 0, stale_result.stderr)
+        self.assertNotEqual(target_result.returncode, 0)
+        self.assertIn("legacy.py: ceiling increased from 600 to 650", target_result.stderr)
+
+    def test_ci_uses_event_specific_target_or_predecessor_as_base(self):
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+
+        self.assertIn(
+            'npm run check:size -- --base "${{ github.event.pull_request.base.sha || github.event.before }}"',
+            workflow,
+        )
 
     def test_shrinking_legacy_file_requires_ceiling_reduction(self):
         self.write_source("legacy.py", "pass\n" * 502)
@@ -154,6 +182,24 @@ class SourceSizePolicyTests(unittest.TestCase):
 
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("legacy.rb: unsupported source extension", result.stderr)
+
+    def test_tracked_source_filename_containing_newline_is_checked(self):
+        filename = "unusual\nsource.py"
+        self.write_source(filename, "pass\n" * 501)
+        self.git("add", "--", filename)
+
+        result = self.run_check()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("501 > 500", result.stderr)
+
+    def test_invalid_utf8_baseline_has_redacted_diagnostic(self):
+        (self.root / ".source-size-baseline.json").write_bytes(b"\xff")
+
+        result = self.run_check()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stderr, "source-size: baseline: invalid UTF-8\n")
 
 
 if __name__ == "__main__":
