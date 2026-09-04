@@ -6,10 +6,11 @@ import ast
 import hashlib
 import importlib
 import inspect
+import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from tests.support.store_facade_contract import load_module
 
@@ -97,6 +98,23 @@ class StoreCompatibilityExtractionTests(unittest.TestCase):
         self.assertIs(original.runtime(), self.runtime)
         self.assertIs(binding.runtime(), vars(another))
         self.assertIsNot(original, binding)
+
+    def test_failed_adapter_import_cleans_all_root_private_modules(self):
+        original_import = importlib.import_module
+
+        def fail_adapter(name, package=None):
+            if name.endswith(".compat_sessions"):
+                raise RuntimeError("synthetic adapter failure")
+            return original_import(name, package)
+
+        with patch.object(importlib, "import_module", side_effect=fail_adapter):
+            with self.assertRaisesRegex(RuntimeError, "synthetic adapter failure"):
+                load_module(name="store_compat_failed")
+        prefixes = self.facade._ROOT_PRIVATE_PACKAGE_NAMES
+        remaining = [name for name in sys.modules if any(
+            name == prefix or name.startswith(prefix + ".") for prefix in prefixes
+        )]
+        self.assertEqual(remaining, [])
 
 
 if __name__ == "__main__":

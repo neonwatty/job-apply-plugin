@@ -43,6 +43,23 @@ CANONICAL_NAMES = {
 }
 
 IMPLEMENTATION_SUFFIXES = {
+    ".accounts_runtime",
+    ".cli_parser",
+    ".cli_dispatch",
+    ".compat_runtime",
+    ".compat_storage",
+    ".compat_sessions",
+    ".compat_validation",
+    ".domains.startup",
+    ".domains.accounts",
+    ".domains.accounts.settings",
+    ".domains.accounts.registry",
+    ".domains.accounts.operations",
+    ".domains.accounts.synthetic",
+    ".domains.accounts.email_scope",
+    ".domains.accounts.email_execution",
+    ".domains.accounts.password_execution",
+    ".domains.accounts.trusted_fill",
     "",
     ".constants",
     ".errors",

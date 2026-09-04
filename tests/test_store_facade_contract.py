@@ -31,6 +31,13 @@ from tests.support.store_facade_contract import (
 
 PACKAGE_ROOT = ROOT / "scripts" / "job_apply_store"
 PACKAGE_FILES = (
+    "accounts_runtime.py", "cli_parser.py", "cli_dispatch.py",
+    "compat_runtime.py", "compat_storage.py", "compat_sessions.py",
+    "compat_validation.py", "domains/startup.py",
+    "domains/accounts/settings.py", "domains/accounts/registry.py",
+    "domains/accounts/operations.py", "domains/accounts/synthetic.py",
+    "domains/accounts/email_scope.py", "domains/accounts/email_execution.py",
+    "domains/accounts/password_execution.py", "domains/accounts/trusted_fill.py",
     "__init__.py", "constants.py", "errors.py", "io.py", "normalization.py",
     "base.py", "validation/__init__.py", "validation/profile_answers.py",
     "validation/sessions.py", "validation/jobs_resumes.py",

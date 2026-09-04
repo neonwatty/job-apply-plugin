@@ -2,6 +2,6 @@
   "version": 1,
   "maximumLines": 500,
   "files": {
-    "scripts/job-apply-store.py": { "ceiling": 1210, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "store-facade" }
+    "scripts/job-apply-store.py": { "ceiling": 531, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "store-facade" }
   }
 }
