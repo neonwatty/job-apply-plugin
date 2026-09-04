@@ -11,7 +11,10 @@ from pathlib import Path, PurePosixPath
 
 BASELINE_PATH = ".source-size-baseline.json"
 MAXIMUM_LINES = 500
-SOURCE_EXTENSIONS = {".py", ".js", ".mjs", ".cjs", ".ts", ".tsx", ".swift", ".sh"}
+SOURCE_EXTENSIONS = {
+    ".py", ".js", ".jsx", ".mjs", ".cjs",
+    ".ts", ".tsx", ".mts", ".cts", ".swift", ".sh",
+}
 EXCLUDED_PARTS = {
     ".git", ".next", ".worktrees", "build", "coverage", "dist", "node_modules",
     "vendor",

@@ -67,6 +67,20 @@ class SourceSizePolicyTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_jsx_and_typescript_module_extensions_enforce_boundary(self):
+        for extension in (".jsx", ".mts", ".cts"):
+            with self.subTest(extension=extension, lines=500):
+                path = f"boundary{extension}"
+                self.write_source(path, "source line\n" * 500)
+                result = self.run_check()
+                self.assertEqual(result.returncode, 0, result.stderr)
+            with self.subTest(extension=extension, lines=501):
+                self.write_source(path, "source line\n" * 501)
+                result = self.run_check()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(f"{path}: 501 > 500", result.stderr)
+            (self.root / path).unlink()
+
     def test_new_file_above_limit_fails(self):
         self.write_source("new.py", "pass\n" * 501)
 
