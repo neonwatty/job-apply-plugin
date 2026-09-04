@@ -29,236 +29,228 @@ from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
 
-SCHEMA_VERSION = 1
-STORE_ENV = "JOB_APPLY_STORE_DIR"
-ANSWER_STATES = {"confirmed", "inferred", "missing", "sensitive"}
-ANSWER_REVIEW_STATUSES = {"accepted", "pending", "declined"}
-SENSITIVITY_LEVELS = {"none", "personal", "high"}
-HISTORY_EVENTS = {
-    "started",
-    "progressed",
-    "reviewed",
-    "completed",
-    "abandoned",
-    "failed",
-    "job-started",
-    "job-restarted",
-    "legacy-review-rebuild",
-    "claim-recovered",
-    "job-blocked",
+_IMPLEMENTATION_ROOT = Path(__file__).with_name("job_apply_store").resolve()
+_PACKAGE_NAME = "_job_apply_store_parts_" + hashlib.sha256(
+    str(_IMPLEMENTATION_ROOT).encode("utf-8")
+).hexdigest()
+_COMPANION_PACKAGE_NAME = "_job_apply_store_companions_" + hashlib.sha256(
+    str(Path(__file__).resolve().parent).encode("utf-8")
+).hexdigest()
+
+
+def _load_implementation_package() -> Any:
+    """Load a fresh, root-local implementation package for this facade."""
+
+    for module_name in tuple(sys.modules):
+        if module_name == _PACKAGE_NAME or module_name.startswith(_PACKAGE_NAME + "."):
+            del sys.modules[module_name]
+        if module_name.startswith(_COMPANION_PACKAGE_NAME + "."):
+            del sys.modules[module_name]
+    spec = importlib.util.spec_from_file_location(
+        _PACKAGE_NAME,
+        _IMPLEMENTATION_ROOT / "__init__.py",
+        submodule_search_locations=[str(_IMPLEMENTATION_ROOT)],
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Store implementation is unavailable")
+    package = importlib.util.module_from_spec(spec)
+    sys.modules[_PACKAGE_NAME] = package
+    try:
+        spec.loader.exec_module(package)
+    except BaseException:
+        for module_name in tuple(sys.modules):
+            if module_name == _PACKAGE_NAME or module_name.startswith(
+                _PACKAGE_NAME + "."
+            ):
+                del sys.modules[module_name]
+        raise
+    return package
+
+
+_implementation = _load_implementation_package()
+_constants = _implementation.constants
+_errors = _implementation.errors
+_io = _implementation.io
+_normalization = _implementation.normalization
+_base = _implementation.base
+_profile_validation = _implementation.profile_answers
+_session_validation = _implementation.sessions
+_job_resume_validation = _implementation.jobs_resumes
+_extraction_validation = _implementation.extraction
+_account_validation = _implementation.accounts
+
+SCHEMA_VERSION = _constants.SCHEMA_VERSION
+STORE_ENV = _constants.STORE_ENV
+ANSWER_STATES = _constants.ANSWER_STATES
+ANSWER_REVIEW_STATUSES = _constants.ANSWER_REVIEW_STATUSES
+SENSITIVITY_LEVELS = _constants.SENSITIVITY_LEVELS
+HISTORY_EVENTS = _constants.HISTORY_EVENTS
+HISTORY_EVENT_IDENTIFIER = _constants.HISTORY_EVENT_IDENTIFIER
+SESSION_STATUSES = _constants.SESSION_STATUSES
+ATTENTION_BLOCKER_TYPES = _constants.ATTENTION_BLOCKER_TYPES
+READINESS_EVIDENCE_KINDS = _constants.READINESS_EVIDENCE_KINDS
+BROWSER_HANDOFF_STATES = _constants.BROWSER_HANDOFF_STATES
+READINESS_BLOCKER_CODES = _constants.READINESS_BLOCKER_CODES
+AGENT_BLOCKER_CODES = _constants.AGENT_BLOCKER_CODES
+AGENT_BLOCKER_TYPE_BY_CODE = _constants.AGENT_BLOCKER_TYPE_BY_CODE
+ATTENTION_BLOCKER_CODES = _constants.ATTENTION_BLOCKER_CODES
+BROWSER_HANDOFF_REASON_CODES = _constants.BROWSER_HANDOFF_REASON_CODES
+APPROVAL_POLICY_MODES = _constants.APPROVAL_POLICY_MODES
+APPROVAL_USE_AUTHORITIES = _constants.APPROVAL_USE_AUTHORITIES
+READINESS_ASSERTION_NAMES = _constants.READINESS_ASSERTION_NAMES
+JOB_STATUSES = _constants.JOB_STATUSES
+JOB_CLOSED_OUTCOMES = _constants.JOB_CLOSED_OUTCOMES
+JOB_ORIGINS = _constants.JOB_ORIGINS
+JOB_PROVENANCE_ORIGINS = _constants.JOB_PROVENANCE_ORIGINS
+JOB_INGEST_FIELDS = _constants.JOB_INGEST_FIELDS
+JOB_TRANSITIONS = _constants.JOB_TRANSITIONS
+FACT_SOURCES = _constants.FACT_SOURCES
+FACT_GROUP_ID = _constants.FACT_GROUP_ID
+FACT_GROUP_MAX_PATHS = _constants.FACT_GROUP_MAX_PATHS
+PROFILE_NAMED_TOP_LEVEL = _constants.PROFILE_NAMED_TOP_LEVEL
+REPLAY_TRANSITIONS = _constants.REPLAY_TRANSITIONS
+REPLAY_ATS = _constants.REPLAY_ATS
+SESSION_ID = _constants.SESSION_ID
+PENDING_REFERENCE = _constants.PENDING_REFERENCE
+LEGACY_PENDING_FIELD_KEYS = _constants.LEGACY_PENDING_FIELD_KEYS
+_ATS_UNSET = _constants._ATS_UNSET
+CLAIM_LEASE_SECONDS = _constants.CLAIM_LEASE_SECONDS
+CLAIM_HEARTBEAT_SECONDS = _constants.CLAIM_HEARTBEAT_SECONDS
+OVERVIEW_DIGEST_CACHE_SECONDS = _constants.OVERVIEW_DIGEST_CACHE_SECONDS
+LEGACY_SEARCH_ROOT = _constants.LEGACY_SEARCH_ROOT
+LEGACY_SEARCH_MAX_FILES = _constants.LEGACY_SEARCH_MAX_FILES
+LEGACY_SEARCH_MAX_FILE_BYTES = _constants.LEGACY_SEARCH_MAX_FILE_BYTES
+LEGACY_SEARCH_MAX_TOTAL_BYTES = _constants.LEGACY_SEARCH_MAX_TOTAL_BYTES
+LEGACY_SEARCH_MAX_ENTRIES = _constants.LEGACY_SEARCH_MAX_ENTRIES
+RESUME_MAX_BYTES = _constants.RESUME_MAX_BYTES
+UPLOAD_RECOVERY_GRACE_SECONDS = _constants.UPLOAD_RECOVERY_GRACE_SECONDS
+RESUME_MEDIA_TYPES = _constants.RESUME_MEDIA_TYPES
+EXTRACTION_MAX_BYTES = _constants.EXTRACTION_MAX_BYTES
+EXTRACTION_MAX_DEPTH = _constants.EXTRACTION_MAX_DEPTH
+EXTRACTION_MAX_LEAVES = _constants.EXTRACTION_MAX_LEAVES
+EXTRACTION_MAX_STRING = _constants.EXTRACTION_MAX_STRING
+EXTRACTION_STATUSES = _constants.EXTRACTION_STATUSES
+EXTRACTION_DECISIONS = _constants.EXTRACTION_DECISIONS
+EXTRACTION_REQUEST_STATUSES = _constants.EXTRACTION_REQUEST_STATUSES
+EXTRACTION_REQUEST_FAILURE_REASONS = _constants.EXTRACTION_REQUEST_FAILURE_REASONS
+EMAIL_PATTERN = _constants.EMAIL_PATTERN
+_MISSING = _constants._MISSING
+
+StoreError = _errors.StoreError
+TrustedFillCurrentError = _errors.TrustedFillCurrentError
+StoreError.__module__ = __name__
+TrustedFillCurrentError.__module__ = __name__
+
+
+_COMPANION_REGISTRY_NAMES = {
+    "job_apply_accounts",
+    "job_apply_account_flows_macos",
+    "job_apply_account_flows",
+    "job_apply_trusted_fill",
+    "job_apply_credentials",
+    "job_apply_credentials_macos",
+    "job_apply_credentials_portable_runtime",
+    "job_apply_account_executor",
+    "job_apply_password_account_flows",
+    "job_apply_account_canary_executor",
+    "job_apply_form_readiness",
+    "job_apply_answer_match",
 }
-HISTORY_EVENT_IDENTIFIER = re.compile(r"^[a-z][a-z0-9-]{0,63}$", re.ASCII)
-SESSION_STATUSES = {"active", "review", "completed", "abandoned"}
-ATTENTION_BLOCKER_TYPES = {
-    "readiness", "information", "upload", "validation", "browser_handoff",
-    "owner_review", "final_action",
-}
-READINESS_EVIDENCE_KINDS = {
-    "agent_attested_current_attempt", "repository_replay",
-}
-BROWSER_HANDOFF_STATES = {"not_required", "required", "ready_for_owner", "complete"}
-READINESS_BLOCKER_CODES = {
-    "readiness-evidence-stale", "form-observation-inaccessible",
-    "required-control-evidence-missing", "required-upload-missing",
-    "required-upload-rejected", "required-control-rejected",
-    "required-control-unresolved", "required-control-inaccessible",
-    "required-control-incomplete", "validation-error-present",
-    "final-action-activated", "final-control-inaccessible",
-    "final-control-unavailable", "external-upload-capability-unavailable",
-}
-AGENT_BLOCKER_CODES = {
-    "login-required", "captcha-required", "mfa-required",
-    "email-verification-required",
-    "consent-required", "account-creation-required", "unsupported-control",
-    "owner-input-required", "browser-state-uncertain",
-}
-AGENT_BLOCKER_TYPE_BY_CODE = {
-    "login-required": "browser_handoff",
-    "captcha-required": "browser_handoff",
-    "mfa-required": "browser_handoff",
-    "email-verification-required": "browser_handoff",
-    "account-creation-required": "browser_handoff",
-    "unsupported-control": "browser_handoff",
-    "browser-state-uncertain": "browser_handoff",
-    "consent-required": "owner_review",
-    "owner-input-required": "information",
-}
-ATTENTION_BLOCKER_CODES = (
-    READINESS_BLOCKER_CODES
-    | AGENT_BLOCKER_CODES
-    | {"answer-required", "sensitive-answer-required", "owner-upload-required"}
-)
-BROWSER_HANDOFF_REASON_CODES = (
-    AGENT_BLOCKER_CODES
-    | {
-        "none", "owner-upload-required", "final-review-required",
-        "form-observation-inaccessible", "required-control-inaccessible",
+
+
+def _is_companion_registry_name(name: str) -> bool:
+    return name in _COMPANION_REGISTRY_NAMES or name == "qa" or name.startswith(
+        "qa."
+    )
+
+
+def _load_companion_module(name: str, unavailable: str) -> Any:
+    """Execute an adjacent companion without consulting fixed-name imports."""
+
+    path = Path(__file__).with_name(f"{name}.py")
+    private_name = f"{_COMPANION_PACKAGE_NAME}.{name}"
+    spec = importlib.util.spec_from_file_location(private_name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(unavailable)
+    module = importlib.util.module_from_spec(spec)
+    saved_modules = {
+        module_name: value
+        for module_name, value in sys.modules.items()
+        if _is_companion_registry_name(module_name)
     }
-)
-APPROVAL_POLICY_MODES = {"strict", "bounded_loose"}
-APPROVAL_USE_AUTHORITIES = {"none", "accepted_record", "per_use", "bounded_policy"}
-READINESS_ASSERTION_NAMES = {
-    "observation-current", "adapter-accessible", "required-controls-complete",
-    "required-uploads-accepted", "validation-clear", "final-control-available",
-    "final-action-untouched",
-}
-JOB_STATUSES = {
-    "saved",
-    "needs_info",
-    "ready",
-    "in_progress",
-    "awaiting_review",
-    "applied",
-    "closed",
-}
-JOB_CLOSED_OUTCOMES = {
-    "rejected",
-    "withdrawn",
-    "expired",
-    "duplicate",
-    "not_interested",
-}
-JOB_ORIGINS = {"human", "agent"}
-JOB_PROVENANCE_ORIGINS = JOB_ORIGINS | {"migration"}
-JOB_INGEST_FIELDS = {
-    "url",
-    "source",
-    "sourceId",
-    "role",
-    "company",
-    "location",
-    "workplaceType",
-    "employmentType",
-    "compensation",
-    "description",
-    "ats",
-    "priority",
-    "notes",
-    "lastCheckedAt",
-}
-JOB_TRANSITIONS = {
-    "saved": {"needs_info", "ready", "closed"},
-    "needs_info": {"saved", "ready", "in_progress", "closed"},
-    "ready": {"saved", "needs_info", "in_progress", "closed"},
-    "in_progress": {"needs_info", "awaiting_review", "closed"},
-    "awaiting_review": {"in_progress", "applied", "closed"},
-    "applied": {"closed"},
-    "closed": {"saved"},
-}
-FACT_SOURCES = {"user", "resume", "agent", "migration"}
-FACT_GROUP_ID = re.compile(r"^[a-f0-9]{32}$")
-FACT_GROUP_MAX_PATHS = 128
-PROFILE_NAMED_TOP_LEVEL = {
-    "firstName", "lastName", "email", "phone", "location", "linkedInUrl",
-    "portfolioUrl", "githubUrl", "workHistory", "education", "skills", "preferences",
-}
-REPLAY_TRANSITIONS = {"started", "reviewed"}
-REPLAY_ATS = {"ashby", "greenhouse", "lever", "linkedin-easy-apply"}
-SESSION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
-PENDING_REFERENCE = re.compile(r"^pending_[a-f0-9]{32}$")
-LEGACY_PENDING_FIELD_KEYS = frozenset({"question", "state", "answerKey", "sensitive"})
-_ATS_UNSET = object()
-CLAIM_LEASE_SECONDS = 300
-CLAIM_HEARTBEAT_SECONDS = 60
-OVERVIEW_DIGEST_CACHE_SECONDS = 30
-LEGACY_SEARCH_ROOT = ".claude-job-searches"
-LEGACY_SEARCH_MAX_FILES = 100
-LEGACY_SEARCH_MAX_FILE_BYTES = 2 * 1024 * 1024
-LEGACY_SEARCH_MAX_TOTAL_BYTES = 20 * 1024 * 1024
-LEGACY_SEARCH_MAX_ENTRIES = 5_000
-RESUME_MAX_BYTES = 10 * 1024 * 1024
-UPLOAD_RECOVERY_GRACE_SECONDS = 5 * 60
-RESUME_MEDIA_TYPES = {
-    ".pdf": "application/pdf",
-    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ".txt": "text/plain; charset=utf-8",
-}
-EXTRACTION_MAX_BYTES = 256 * 1024
-EXTRACTION_MAX_DEPTH = 12
-EXTRACTION_MAX_LEAVES = 512
-EXTRACTION_MAX_STRING = 32 * 1024
-EXTRACTION_STATUSES = {"pending", "completed", "superseded"}
-EXTRACTION_DECISIONS = {"use_extracted", "keep_current"}
-EXTRACTION_REQUEST_STATUSES = {
-    "requested", "completed", "failed", "stale", "cancelled",
-}
-EXTRACTION_REQUEST_FAILURE_REASONS = {
-    "content_unreadable", "unsupported_resume", "extraction_failed",
-    "candidate_invalid", "interrupted",
-}
+    saved_path = list(sys.path)
+    for module_name in tuple(sys.modules):
+        if _is_companion_registry_name(module_name):
+            del sys.modules[module_name]
+    scripts_root = str(Path(__file__).resolve().parent)
+    plugin_root = str(Path(__file__).resolve().parent.parent)
+    sys.path[:] = [
+        scripts_root,
+        plugin_root,
+        *(entry for entry in saved_path if entry not in {scripts_root, plugin_root}),
+    ]
+    # Dataclass-based frozen local contracts need their module namespace
+    # registered while annotations are resolved during import.
+    sys.modules[private_name] = module
+    try:
+        spec.loader.exec_module(module)
+        module.__name__ = name
+        return module
+    except BaseException:
+        for module_name in tuple(sys.modules):
+            if (
+                module_name == _PACKAGE_NAME
+                or module_name.startswith(_PACKAGE_NAME + ".")
+                or module_name.startswith(_COMPANION_PACKAGE_NAME + ".")
+            ):
+                del sys.modules[module_name]
+        raise
+    finally:
+        for module_name in tuple(sys.modules):
+            if _is_companion_registry_name(module_name):
+                del sys.modules[module_name]
+        sys.modules.update(saved_modules)
+        sys.path[:] = saved_path
 
 
 def _load_accounts_module() -> Any:
-    path = Path(__file__).with_name("job_apply_accounts.py")
-    spec = importlib.util.spec_from_file_location("job_apply_accounts", path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError("account contracts are unavailable")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return _load_companion_module(
+        "job_apply_accounts", "account contracts are unavailable"
+    )
 
 
 ACCOUNTS_MODULE = _load_accounts_module()
 
 
 def _load_account_flows_macos_module() -> Any:
-    path = Path(__file__).with_name("job_apply_account_flows_macos.py")
-    spec = importlib.util.spec_from_file_location("job_apply_account_flows_macos", path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError("account flow contracts are unavailable")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return _load_companion_module(
+        "job_apply_account_flows_macos", "account flow contracts are unavailable"
+    )
 
 
 ACCOUNT_FLOWS_MACOS_MODULE = _load_account_flows_macos_module()
 
 
 def _load_account_flows_module() -> Any:
-    path = Path(__file__).with_name("job_apply_account_flows.py")
-    spec = importlib.util.spec_from_file_location("job_apply_account_flows", path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError("account flow contracts are unavailable")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return _load_companion_module(
+        "job_apply_account_flows", "account flow contracts are unavailable"
+    )
 
 
 ACCOUNT_FLOWS_MODULE = _load_account_flows_module()
 
 
 def _load_trusted_fill_module() -> Any:
-    path = Path(__file__).with_name("job_apply_trusted_fill.py")
-    spec = importlib.util.spec_from_file_location("job_apply_trusted_fill", path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError("trusted fill contracts are unavailable")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return _load_companion_module(
+        "job_apply_trusted_fill", "trusted fill contracts are unavailable"
+    )
 
 
 TRUSTED_FILL_MODULE = _load_trusted_fill_module()
 
 
 def _load_local_module(name: str) -> Any:
-    path = Path(__file__).with_name(f"{name}.py")
-    spec = importlib.util.spec_from_file_location(name, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError("account executor contracts are unavailable")
-    module = importlib.util.module_from_spec(spec)
-    # Dataclass-based frozen local contracts need their module namespace
-    # registered while annotations are resolved during import.
-    sys.modules.setdefault(name, module)
-    package_root = str(Path(__file__).resolve().parent.parent)
-    inserted = package_root not in sys.path
-    if inserted:
-        sys.path.insert(0, package_root)
-    try:
-        spec.loader.exec_module(module)
-    finally:
-        if inserted:
-            sys.path.remove(package_root)
-    return module
+    return _load_companion_module(name, "account executor contracts are unavailable")
 
 
 CREDENTIALS_MODULE = _load_local_module("job_apply_credentials")
@@ -268,115 +260,25 @@ PASSWORD_ACCOUNT_FLOWS_MODULE = _load_local_module("job_apply_password_account_f
 CANARY_EXECUTOR_MODULE = _load_local_module("job_apply_account_canary_executor")
 FORM_READINESS_MODULE = _load_local_module("job_apply_form_readiness")
 ANSWER_MATCH_MODULE = _load_local_module("job_apply_answer_match")
-EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
-
-
-class StoreError(Exception):
-    """An expected, safe-to-display storage failure."""
-
-
-class TrustedFillCurrentError(StoreError):
-    """A value-free canonical-state denial that requires claim handoff."""
-
-    def __init__(self, reason_code: str):
-        super().__init__("trusted fill canonical state is unavailable")
-        self.reason_code = reason_code
 
 
 def _optional_email(value: Any, label: str) -> str | None:
-    if value is None:
-        return None
-    if not isinstance(value, str):
-        raise StoreError(f"{label} must be an email address or null")
-    normalized = value.strip()
-    if len(normalized) > 254 or EMAIL_PATTERN.fullmatch(normalized) is None:
-        raise StoreError(f"{label} must be a valid email address")
-    return normalized
+    return _account_validation._optional_email(value, label)
 
 
 def _validate_automation_settings_record(value: Any) -> dict[str, Any]:
-    record = _require_object(value, "automation settings")
-    expected = {
-        "enabled", "automaticAccountCreation", "signupEmail", "passwordStrategy",
-        "revision", "createdAt", "updatedAt",
-    }
-    if set(record) != expected:
-        raise StoreError("automation settings contain unsupported fields")
-    if not isinstance(record["enabled"], bool) or not isinstance(record["automaticAccountCreation"], bool):
-        raise StoreError("automation settings switches must be booleans")
-    _optional_email(record["signupEmail"], "signup email")
-    if record["passwordStrategy"] not in ACCOUNTS_MODULE.PASSWORD_STRATEGIES:
-        raise StoreError("password strategy is unsupported")
-    revision = record["revision"]
-    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
-        raise StoreError("automation settings revision must be a positive integer")
-    for field in ("createdAt", "updatedAt"):
-        if not isinstance(record[field], str) or not record[field]:
-            raise StoreError("automation settings timestamp is invalid")
-    return record
+    return _account_validation._validate_automation_settings_record(
+        value, accounts_module=ACCOUNTS_MODULE
+    )
 
 
 def _validate_employer_account_record(key: str, value: Any) -> dict[str, Any]:
-    record = _require_object(value, "employer account")
-    legacy_expected = {
-        "realmRef", "adapterId", "descriptorVersion", "descriptor",
-        "signupEmailOverride", "providerId", "credentialRef", "credentialVersion",
-        "lifecycleState", "revision", "createdAt", "updatedAt",
-    }
-    expected = legacy_expected | {"flowKind", "credentialRequired"}
-    if set(record) not in (legacy_expected, expected) or record.get("realmRef") != key:
-        raise StoreError("employer account record is invalid")
-    if not re.fullmatch(r"[0-9a-f]{64}", key):
-        raise StoreError("employer account realm reference is invalid")
-    descriptor = record["descriptor"]
-    adapter_id = record["adapterId"]
-    flow_kind = record.get("flowKind", ACCOUNTS_MODULE.FLOW_PASSWORD)
-    credential_required = record.get("credentialRequired", True)
-    descriptor_prefix = f"{adapter_id}:v{ACCOUNTS_MODULE.REALM_DESCRIPTOR_VERSION}:"
-    if (
-        adapter_id not in {"workday", "oracle-recruiting"}
-        or flow_kind != ({"workday": ACCOUNTS_MODULE.FLOW_PASSWORD, "oracle-recruiting": ACCOUNTS_MODULE.FLOW_EMAIL_ONLY}[adapter_id])
-        or credential_required is not (adapter_id == "workday")
-        or record["descriptorVersion"] != ACCOUNTS_MODULE.REALM_DESCRIPTOR_VERSION
-        or not isinstance(descriptor, str)
-        or not descriptor.startswith(descriptor_prefix)
-        or hashlib.sha256(descriptor.encode("utf-8")).hexdigest() != key
-    ):
-        raise StoreError("employer account realm descriptor is invalid")
-    _optional_email(record["signupEmailOverride"], "signup email override")
-    provider_id = record["providerId"]
-    credential_ref = record["credentialRef"]
-    credential_version = record["credentialVersion"]
-    lifecycle = record["lifecycleState"]
-    if lifecycle not in ACCOUNTS_MODULE.LIFECYCLE_STATES:
-        raise StoreError("account lifecycle state is invalid")
-    if provider_id is None:
-        provider_free_states = (
-            {"discovered", "signup_in_progress", "active", "verification_required", "failed_definitive", "ambiguous"}
-            if flow_kind == ACCOUNTS_MODULE.FLOW_EMAIL_ONLY else {"discovered", "signup_in_progress", "ambiguous"}
-        )
-        if credential_ref is not None or credential_version is not None or lifecycle not in provider_free_states:
-            raise StoreError("credential metadata requires the protected provider")
-    elif flow_kind == ACCOUNTS_MODULE.FLOW_EMAIL_ONLY:
-        raise StoreError("email-only account cannot have protected credential metadata")
-    elif (
-        not isinstance(provider_id, str)
-        or re.fullmatch(r"[a-z][a-z0-9-]{2,63}", provider_id) is None
-        or not isinstance(credential_ref, str)
-        or CREDENTIALS_MODULE.OPAQUE_REF.fullmatch(credential_ref) is None
-        or not isinstance(credential_version, int)
-        or isinstance(credential_version, bool)
-        or credential_version < 1
-        or lifecycle == "discovered"
-    ):
-        raise StoreError("protected credential metadata is invalid")
-    revision = record["revision"]
-    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
-        raise StoreError("employer account revision must be a positive integer")
-    for field in ("createdAt", "updatedAt"):
-        if not isinstance(record[field], str) or not record[field]:
-            raise StoreError("employer account timestamp is invalid")
-    return record
+    return _account_validation._validate_employer_account_record(
+        key,
+        value,
+        accounts_module=ACCOUNTS_MODULE,
+        credentials_module=CREDENTIALS_MODULE,
+    )
 
 
 def utc_now() -> str:
@@ -386,244 +288,81 @@ def utc_now() -> str:
 
 
 def _require_object(value: Any, label: str) -> dict[str, Any]:
-    if not isinstance(value, dict):
-        raise StoreError(f"{label} must be a JSON object")
-    return value
+    return _io.require_object(value, label)
 
 
 def _fact_group_label(value: Any) -> str:
-    if not isinstance(value, str):
-        raise StoreError("fact group label must be a string")
-    label = value.strip()
-    if not label or len(label) > 80 or any(ord(char) < 32 for char in label):
-        raise StoreError("fact group label must contain 1 to 80 printable characters")
-    return label
+    return _profile_validation._fact_group_label(value)
 
 
 def _fact_group_paths(value: Any) -> list[str]:
-    if (
-        not isinstance(value, list)
-        or not value
-        or len(value) > FACT_GROUP_MAX_PATHS
-        or not all(isinstance(path, str) for path in value)
-        or len(set(value)) != len(value)
-    ):
-        raise StoreError(
-            f"fact group paths must contain 1 to {FACT_GROUP_MAX_PATHS} unique JSON pointers"
-        )
-    for path in value:
-        try:
-            _decode_json_pointer(path)
-        except StoreError:
-            raise StoreError("fact group path is invalid") from None
-    return list(value)
+    return _profile_validation._fact_group_paths(value)
 
 
 def _fact_group_order(value: Any) -> int:
-    if (
-        not isinstance(value, int)
-        or isinstance(value, bool)
-        or value < 0
-        or value > 1_000_000
-    ):
-        raise StoreError("fact group order must be an integer between 0 and 1000000")
-    return value
+    return _profile_validation._fact_group_order(value)
 
 
 def _validate_fact_group_record(group_id: str, value: Any) -> dict[str, Any]:
-    if not isinstance(group_id, str) or FACT_GROUP_ID.fullmatch(group_id) is None:
-        raise StoreError("fact group id is invalid")
-    record = _require_object(value, "fact group record")
-    expected = {"id", "label", "paths", "order", "revision", "createdAt", "updatedAt"}
-    if set(record) != expected or record.get("id") != group_id:
-        raise StoreError("fact group record is invalid")
-    _fact_group_label(record.get("label"))
-    _fact_group_paths(record.get("paths"))
-    _fact_group_order(record.get("order"))
-    revision = record.get("revision")
-    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
-        raise StoreError("fact group revision must be a positive integer")
-    for field in ("createdAt", "updatedAt"):
-        if not isinstance(record.get(field), str) or not record[field]:
-            raise StoreError("fact group timestamp is invalid")
-    return record
+    return _profile_validation._validate_fact_group_record(group_id, value)
 
 
 def _set_private_mode(path: Path, mode: int) -> None:
-    if os.name != "nt":
-        os.chmod(path, mode)
+    _io._set_private_mode(path, mode, _runtime=globals())
 
 
 def _ensure_private_dir(path: Path) -> None:
-    path.mkdir(parents=True, exist_ok=True, mode=0o700)
-    _set_private_mode(path, 0o700)
+    _io._ensure_private_dir(path, _runtime=globals())
 
 
 @contextmanager
 def exclusive_file_lock(path: Path):
     """Serialize read-modify-write operations across local clients."""
 
-    _ensure_private_dir(path.parent)
-    descriptor = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
-    _set_private_mode(path, 0o600)
-    try:
-        if os.name == "nt":
-            import msvcrt
-
-            if os.fstat(descriptor).st_size == 0:
-                os.write(descriptor, b"0")
-                os.fsync(descriptor)
-            os.lseek(descriptor, 0, os.SEEK_SET)
-            msvcrt.locking(descriptor, msvcrt.LK_LOCK, 1)
-        else:
-            import fcntl
-
-            fcntl.flock(descriptor, fcntl.LOCK_EX)
+    with _io.exclusive_file_lock(path, _runtime=globals()):
         yield
-    finally:
-        if os.name == "nt":
-            import msvcrt
-
-            os.lseek(descriptor, 0, os.SEEK_SET)
-            msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
-        else:
-            import fcntl
-
-            fcntl.flock(descriptor, fcntl.LOCK_UN)
-        os.close(descriptor)
 
 
 def _fsync_directory(path: Path) -> None:
-    if os.name == "nt":
-        return
-    try:
-        descriptor = os.open(path, os.O_RDONLY)
-    except OSError:
-        return
-    try:
-        os.fsync(descriptor)
-    except OSError:
-        pass
-    finally:
-        os.close(descriptor)
+    _io._fsync_directory(path, _runtime=globals())
 
 
 def atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
     """Replace a JSON document atomically without risking the previous file."""
 
-    _ensure_private_dir(path.parent)
-    temporary_path: Path | None = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            dir=path.parent,
-            prefix=f".{path.name}.",
-            suffix=".tmp",
-            delete=False,
-        ) as temporary:
-            temporary_path = Path(temporary.name)
-            json.dump(payload, temporary, indent=2, sort_keys=True, ensure_ascii=False)
-            temporary.write("\n")
-            temporary.flush()
-            os.fsync(temporary.fileno())
-        _set_private_mode(temporary_path, 0o600)
-        os.replace(temporary_path, path)
-        temporary_path = None
-        _set_private_mode(path, 0o600)
-        _fsync_directory(path.parent)
-    finally:
-        if temporary_path is not None:
-            try:
-                temporary_path.unlink()
-            except FileNotFoundError:
-                pass
+    _io.atomic_write_json(path, payload, _runtime=globals())
 
 
 def read_json_object(path: Path, label: str) -> dict[str, Any]:
-    try:
-        with path.open(encoding="utf-8") as source:
-            value = json.load(source)
-    except (OSError, UnicodeError, json.JSONDecodeError) as error:
-        raise StoreError(f"cannot read valid {label} JSON at {path}") from error
-    return _require_object(value, label)
+    return _io.read_json_object(path, label)
 
 
 def validate_version(document: dict[str, Any], label: str) -> None:
-    version = document.get("schemaVersion")
-    if isinstance(version, bool) or not isinstance(version, int):
-        raise StoreError(f"{label} has no valid schemaVersion")
-    if version > SCHEMA_VERSION:
-        raise StoreError(f"{label} uses unsupported future schemaVersion {version}")
-    if version != SCHEMA_VERSION:
-        raise StoreError(f"{label} uses unsupported schemaVersion {version}")
+    _io.validate_version(document, label)
 
 
 def normalize_question(question: str) -> str:
-    if not isinstance(question, str) or not question.strip():
-        raise StoreError("question must be a non-empty string")
-    normalized = unicodedata.normalize("NFKC", question).lower().strip()
-    normalized = re.sub(r"[^\w\s]", " ", normalized, flags=re.UNICODE)
-    return " ".join(normalized.split())
+    return _normalization.normalize_question(question)
 
 
 def answer_key(question: str, scope: dict[str, Any] | None = None) -> str:
-    normalized = normalize_question(question)
-    scope_json = json.dumps(scope or {}, sort_keys=True, separators=(",", ":"))
-    digest = hashlib.sha256(
-        f"v1\0{normalized}\0{scope_json}".encode("utf-8")
-    ).hexdigest()
-    return f"question.{digest}"
+    return _normalization.answer_key(question, scope)
 
 
 def normalize_job_url(url: str) -> str:
-    if not isinstance(url, str) or not url.strip():
-        raise StoreError("job URL must be a non-empty string")
-    try:
-        parsed = urlsplit(url.strip())
-        port = parsed.port
-    except ValueError as error:
-        raise StoreError("job URL is invalid") from error
-    if parsed.scheme.lower() not in {"http", "https"} or not parsed.hostname:
-        raise StoreError("job URL must use HTTP or HTTPS")
-    if parsed.username is not None or parsed.password is not None:
-        raise StoreError("job URL must not contain credentials")
-    hostname = parsed.hostname.lower()
-    if ":" in hostname and not hostname.startswith("["):
-        hostname = f"[{hostname}]"
-    default_port = (parsed.scheme.lower(), port) in {("http", 80), ("https", 443)}
-    netloc = hostname if port is None or default_port else f"{hostname}:{port}"
-    path = parsed.path or "/"
-    return urlunsplit((parsed.scheme.lower(), netloc, path, parsed.query, ""))
+    return _normalization.normalize_job_url(url)
 
 
 def normalize_resume_path(path: str) -> str:
-    if not isinstance(path, str) or not path.strip() or "\0" in path:
-        raise StoreError("resume path must be a non-empty absolute path")
-    expanded = Path(path.strip()).expanduser()
-    if not expanded.is_absolute():
-        raise StoreError("resume path must be absolute")
-    return os.path.normpath(str(expanded))
+    return _normalization.normalize_resume_path(path, _runtime=globals())
 
 
 def observe_resume_file(path: str) -> dict[str, Any]:
-    normalized = normalize_resume_path(path)
-    try:
-        metadata = Path(normalized).stat()
-    except FileNotFoundError:
-        return {"exists": False, "size": None, "modifiedAt": None}
-    if not stat.S_ISREG(metadata.st_mode):
-        raise StoreError("resume path must identify a regular file")
-    modified = datetime.fromtimestamp(metadata.st_mtime, timezone.utc).isoformat(
-        timespec="seconds"
-    ).replace("+00:00", "Z")
-    return {"exists": True, "size": metadata.st_size, "modifiedAt": modified}
+    return _normalization.observe_resume_file(path, _runtime=globals())
 
 
 def _resume_modified_at(metadata: os.stat_result) -> str:
-    return datetime.fromtimestamp(metadata.st_mtime, timezone.utc).isoformat(
-        timespec="seconds"
-    ).replace("+00:00", "Z")
+    return _normalization._resume_modified_at(metadata)
 
 
 def _validate_resume_bytes(path: Path, extension: str) -> tuple[str, int, str]:
@@ -678,19 +417,11 @@ def _validate_resume_bytes(path: Path, extension: str) -> tuple[str, int, str]:
 
 
 def _safe_session_id(application_id: str) -> str:
-    if (
-        not isinstance(application_id, str)
-        or not SESSION_ID.fullmatch(application_id)
-        or ".." in application_id
-    ):
-        raise StoreError("application id contains unsupported characters")
-    return application_id
+    return _normalization._safe_session_id(application_id)
 
 
 def _is_reparse_point(metadata: os.stat_result) -> bool:
-    attributes = getattr(metadata, "st_file_attributes", 0)
-    marker = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
-    return bool(attributes & marker)
+    return _normalization._is_reparse_point(metadata)
 
 
 def _managed_resume_digest_cache_identity(
@@ -700,43 +431,33 @@ def _managed_resume_digest_cache_identity(
 ) -> tuple[int, int, int, int, int] | None:
     """Return metadata that reliably changes after in-place content writes."""
 
-    if (os.name if platform_name is None else platform_name) == "nt":
-        # Python exposes Windows creation time as st_ctime, not change time.
-        return None
-    return (
-        metadata.st_dev,
-        metadata.st_ino,
-        metadata.st_size,
-        metadata.st_mtime_ns,
-        metadata.st_ctime_ns,
+    return _normalization._managed_resume_digest_cache_identity(
+        metadata,
+        platform_name=platform_name,
+        _runtime=globals(),
     )
 
 
 def _validate_optional_strings(
     document: dict[str, Any], fields: set[str], label: str
 ) -> None:
-    for field in fields:
-        if field in document and document[field] is not None and not isinstance(
-            document[field], str
-        ):
-            raise StoreError(f"{label}.{field} must be a string")
+    _normalization._validate_optional_strings(document, fields, label)
 
 
 def _json_pointer_segment(value: str) -> str:
-    return value.replace("~", "~0").replace("/", "~1")
+    return _normalization._json_pointer_segment(value)
 
 
 def _canonical_json(value: Any) -> str:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return _normalization._canonical_json(value)
 
 
 def _scope_fingerprint(value: dict[str, Any]) -> str:
-    return hashlib.sha256(_canonical_json(value).encode("utf-8")).hexdigest()
+    return _normalization._scope_fingerprint(value)
 
 
 def _question_fingerprint(value: str) -> str:
-    normalized = " ".join(value.split()).casefold()
-    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+    return _normalization._question_fingerprint(value)
 
 
 def _legacy_pending_reference(application_id: str, field: dict[str, Any]) -> str:
@@ -957,12 +678,7 @@ def _merge_object_patch(
 
 
 def _top_level_pointer_key(pointer: str) -> str:
-    if not isinstance(pointer, str) or not pointer.startswith("/") or "/" in pointer[1:]:
-        raise StoreError("atomic profile paths must identify one top-level fact")
-    encoded = pointer[1:]
-    if not encoded or re.search(r"~(?![01])", encoded):
-        raise StoreError("atomic profile path is invalid")
-    return encoded.replace("~1", "/").replace("~0", "~")
+    return _normalization._top_level_pointer_key(pointer)
 
 
 def _apply_profile_patch(
@@ -1046,164 +762,47 @@ def _protect_user_provenance(
 
 
 def _json_pointer_value(document: Any, pointer: str) -> Any:
-    current = document
-    for encoded in pointer.split("/")[1:]:
-        key = encoded.replace("~1", "/").replace("~0", "~")
-        if not isinstance(current, dict) or key not in current:
-            return None
-        current = current[key]
-    return current
-
-
-_MISSING = object()
+    return _normalization._json_pointer_value(document, pointer)
 
 
 def _decode_json_pointer(pointer: str) -> list[str]:
-    if not isinstance(pointer, str) or not pointer.startswith("/") or pointer == "/":
-        raise StoreError("proposal path is invalid")
-    segments = []
-    for encoded in pointer.split("/")[1:]:
-        if not encoded or re.search(r"~(?![01])", encoded):
-            raise StoreError("proposal path is invalid")
-        segments.append(encoded.replace("~1", "/").replace("~0", "~"))
-    return segments
+    return _normalization._decode_json_pointer(pointer)
 
 
 def _pointer_lookup(document: Any, pointer: str) -> tuple[bool, Any]:
-    current = document
-    for key in _decode_json_pointer(pointer):
-        if not isinstance(current, dict) or key not in current:
-            return False, None
-        current = current[key]
-    return True, current
+    return _normalization._pointer_lookup(document, pointer)
 
 
 def _pointer_baseline(document: dict[str, Any], pointer: str) -> dict[str, Any]:
-    segments = _decode_json_pointer(pointer)
-    current: Any = document
-    ancestors: list[dict[str, Any]] = []
-    encoded = ""
-    for key in segments[:-1]:
-        encoded += f"/{_json_pointer_segment(key)}"
-        exists = isinstance(current, dict) and key in current
-        value = current[key] if exists else None
-        baseline = {"path": encoded, "exists": exists}
-        if exists and isinstance(value, dict):
-            baseline["container"] = True
-            baseline["empty"] = not value
-        elif exists:
-            baseline["value"] = value
-        ancestors.append(baseline)
-        current = value if exists else _MISSING
-    exists, value = _pointer_lookup(document, pointer)
-    result: dict[str, Any] = {"exists": exists, "ancestors": ancestors}
-    if exists:
-        result["value"] = value
-    return result
+    return _normalization._pointer_baseline(document, pointer)
 
 
 def _json_values_equal(left: Any, right: Any) -> bool:
     """Compare JSON values without Python's boolean/number equivalence."""
 
-    if isinstance(left, bool) or isinstance(right, bool):
-        return isinstance(left, bool) and isinstance(right, bool) and left == right
-    if left is None or right is None:
-        return left is right
-    if isinstance(left, dict) or isinstance(right, dict):
-        return (
-            isinstance(left, dict)
-            and isinstance(right, dict)
-            and left.keys() == right.keys()
-            and all(_json_values_equal(left[key], right[key]) for key in left)
-        )
-    if isinstance(left, list) or isinstance(right, list):
-        return (
-            isinstance(left, list)
-            and isinstance(right, list)
-            and len(left) == len(right)
-            and all(
-                _json_values_equal(left_item, right_item)
-                for left_item, right_item in zip(left, right)
-            )
-        )
-    if isinstance(left, (int, float)) or isinstance(right, (int, float)):
-        return (
-            isinstance(left, (int, float))
-            and isinstance(right, (int, float))
-            and left == right
-        )
-    return isinstance(left, str) and isinstance(right, str) and left == right
+    return _normalization._json_values_equal(left, right)
 
 
 def _replacement_scope(baseline: dict[str, Any]) -> dict[str, Any] | None:
     """Return the existing non-object ancestor a child acceptance would replace."""
 
-    for ancestor in baseline["ancestors"]:
-        if ancestor["exists"] and ancestor.get("container") is not True:
-            return {"path": ancestor["path"], "value": ancestor.get("value")}
-    return None
+    return _normalization._replacement_scope(baseline)
 
 
 def _set_pointer_value(
     document: dict[str, Any], pointer: str, value: Any, *, replace_ancestors: bool
 ) -> None:
-    segments = _decode_json_pointer(pointer)
-    current = document
-    for key in segments[:-1]:
-        child = current.get(key, _MISSING)
-        if child is _MISSING or child is None:
-            child = {}
-            current[key] = child
-        elif not isinstance(child, dict):
-            if not replace_ancestors:
-                raise StoreError("proposal path conflicts with an existing fact")
-            child = {}
-            current[key] = child
-        current = child
-    current[segments[-1]] = value
+    _normalization._set_pointer_value(
+        document, pointer, value, replace_ancestors=replace_ancestors
+    )
 
 
 def _candidate_leaf_paths(value: Any, prefix: str = "", depth: int = 0) -> list[str]:
-    if depth > EXTRACTION_MAX_DEPTH:
-        raise StoreError("proposal candidate exceeds structural limits")
-    if isinstance(value, str) and len(value.encode("utf-8")) > EXTRACTION_MAX_STRING:
-        raise StoreError("proposal candidate exceeds structural limits")
-    if value is None:
-        raise StoreError("proposal candidate values must not be null")
-    if isinstance(value, dict) and value:
-        paths: list[str] = []
-        for key, child in value.items():
-            if not isinstance(key, str) or not key:
-                raise StoreError("proposal candidate keys must be non-empty strings")
-            paths.extend(
-                _candidate_leaf_paths(
-                    child, f"{prefix}/{_json_pointer_segment(key)}", depth + 1
-                )
-            )
-        return paths
-    return [prefix]
+    return _extraction_validation._candidate_leaf_paths(value, prefix, depth)
 
 
 def _validated_candidate(value: Any) -> tuple[dict[str, Any], list[str]]:
-    candidate = _require_object(value, "proposal candidate")
-    if not candidate:
-        raise StoreError("proposal candidate must not be empty")
-    try:
-        encoded = json.dumps(
-            candidate,
-            sort_keys=True,
-            separators=(",", ":"),
-            ensure_ascii=False,
-            allow_nan=False,
-        ).encode("utf-8")
-    except (TypeError, ValueError):
-        raise StoreError("proposal candidate must contain JSON values") from None
-    if len(encoded) > EXTRACTION_MAX_BYTES:
-        raise StoreError("proposal candidate exceeds structural limits")
-    paths = _candidate_leaf_paths(candidate)
-    if len(paths) > EXTRACTION_MAX_LEAVES:
-        raise StoreError("proposal candidate exceeds structural limits")
-    return candidate, sorted(paths)
+    return _extraction_validation._validated_candidate(value)
 
 
 def _user_protects_path(provenance: dict[str, Any], path: str) -> bool:
@@ -1260,860 +859,96 @@ def _stamp_fact_provenance(
 
 
 def _validate_answer_record(key: str, value: Any) -> dict[str, Any]:
-    record = _require_object(value, "answer record")
-    if record.get("key") != key:
-        raise StoreError("answer record key does not match its index")
-    if record.get("state") not in ANSWER_STATES:
-        raise StoreError("answer record state is unsupported")
-    review_status = record.get("reviewStatus", "accepted")
-    if (
-        not isinstance(review_status, str)
-        or review_status not in ANSWER_REVIEW_STATUSES
-    ):
-        raise StoreError("answer record review status is unsupported")
-    sensitivity = record.get("sensitivity", "none")
-    if sensitivity not in SENSITIVITY_LEVELS:
-        raise StoreError("answer record sensitivity is unsupported")
-    field_class = record.get("fieldClass", "general")
-    if (
-        not isinstance(field_class, str)
-        or re.fullmatch(r"[a-z][a-z0-9_]{0,63}", field_class) is None
-    ):
-        raise StoreError("answer record field class is invalid")
-    question = record.get("question")
-    if question is not None and not isinstance(question, str):
-        raise StoreError("answer record question must be a string")
-    aliases = record.get("aliases", [])
-    if not isinstance(aliases, list) or not all(
-        isinstance(alias, str) for alias in aliases
-    ):
-        raise StoreError("answer record aliases must be strings")
-    _require_object(record.get("scope", {}), "answer record scope")
-    value_present = record.get("value") is not None
-    if record["state"] == "confirmed" and not value_present:
-        raise StoreError("confirmed answer record has no value")
-    if record["state"] == "missing" and value_present:
-        raise StoreError("missing answer record contains a value")
-    if value_present and (
-        record["state"] == "sensitive" or sensitivity != "none"
-    ):
-        consent = record.get("rememberedWithConsentAt")
-        if not isinstance(consent, str) or not consent:
-            raise StoreError("sensitive answer record has no remember consent marker")
-    _validate_optional_strings(
-        record,
-        {
-            "source",
-            "confirmedAt",
-            "createdAt",
-            "updatedAt",
-            "rememberedWithConsentAt",
-            "deletedAt",
-            "observedAt",
-            "lastObservedAt",
-            "reviewedAt",
-        },
-        "answer record",
-    )
-    revision = record.get("revision", 1)
-    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
-        raise StoreError("answer revision must be a positive integer")
-    observation_count = record.get("observationCount", 0)
-    if (
-        not isinstance(observation_count, int)
-        or isinstance(observation_count, bool)
-        or observation_count < 0
-    ):
-        raise StoreError("answer observation count must be a non-negative integer")
-    return record
+    return _profile_validation._validate_answer_record(key, value)
 
 
 def _validate_answer_redirects(
     redirects: Any, answers: dict[str, Any]
 ) -> dict[str, Any]:
-    records = _require_object(redirects, "answer redirects")
-    for source_key, raw in records.items():
-        if not isinstance(source_key, str) or not source_key:
-            raise StoreError("answer redirect source is invalid")
-        redirect = _require_object(raw, "answer redirect")
-        if set(redirect) != {"targetKey", "mergedAt"}:
-            raise StoreError("answer redirect contains unsupported fields")
-        target_key = redirect.get("targetKey")
-        if (
-            not isinstance(target_key, str)
-            or not target_key
-            or target_key == source_key
-            or source_key in answers
-            or target_key not in answers
-            or answers[target_key].get("deletedAt") is not None
-            or target_key in records
-        ):
-            raise StoreError("answer redirect is not flattened to an active answer")
-        if not isinstance(redirect.get("mergedAt"), str) or not redirect["mergedAt"]:
-            raise StoreError("answer redirect timestamp is invalid")
-    return records
+    return _profile_validation._validate_answer_redirects(redirects, answers)
 
 
 def _validate_history_event_record(event: dict[str, Any]) -> None:
     """Validate the value-free history schema without assigning event semantics."""
 
-    allowed = {
-        "schemaVersion",
-        "eventId",
-        "applicationId",
-        "event",
-        "company",
-        "role",
-        "ats",
-        "status",
-        "answerKeys",
-        "at",
-    }
-    if set(event) - allowed:
-        raise StoreError("history event contains unsupported fields")
-    _safe_session_id(event.get("applicationId", ""))
-    event_name = event.get("event")
-    if (
-        not isinstance(event_name, str)
-        or not HISTORY_EVENT_IDENTIFIER.fullmatch(event_name)
-    ):
-        raise StoreError("history event type is invalid")
-    if not isinstance(event.get("eventId"), str) or not event["eventId"]:
-        raise StoreError("history event id is invalid")
-    if not isinstance(event.get("at"), str) or not event["at"]:
-        raise StoreError("history event timestamp is invalid")
-    answer_keys = event.get("answerKeys")
-    if not isinstance(answer_keys, list) or not all(
-        isinstance(item, str) for item in answer_keys
-    ):
-        raise StoreError("history answerKeys list is invalid")
-    _validate_optional_strings(
-        event,
-        {"company", "role", "ats", "status"},
-        "history event",
-    )
+    _session_validation._validate_history_event_record(event)
 
 
 def _validate_history_event_for_write(event: dict[str, Any]) -> None:
     """Apply this helper version's strict event-name write policy."""
 
-    _validate_history_event_record(event)
-    if not isinstance(event.get("eventId"), str) or not event["eventId"]:
-        raise StoreError("history event id is invalid")
-    if event["event"] not in HISTORY_EVENTS:
-        raise StoreError("history event type is unsupported")
+    _session_validation._validate_history_event_for_write(event)
 
 
 def _validate_session_document(session: dict[str, Any]) -> None:
-    allowed = {
-        "schemaVersion",
-        "applicationId",
-        "status",
-        "ats",
-        "company",
-        "role",
-        "url",
-        "step",
-        "answerKeys",
-        "pendingFields",
-        "attemptRevision",
-        "readiness",
-        "blockers",
-        "approvals",
-        "browserHandoff",
-        "createdAt",
-        "updatedAt",
-    }
-    if set(session) - allowed:
-        raise StoreError("session contains unsupported fields")
-    _safe_session_id(session.get("applicationId", ""))
-    if session.get("status") not in SESSION_STATUSES:
-        raise StoreError("session status is unsupported")
-    answer_keys = session.get("answerKeys", [])
-    if not isinstance(answer_keys, list) or not all(
-        isinstance(item, str) for item in answer_keys
-    ):
-        raise StoreError("session answerKeys must be strings")
-    pending_fields = session.get("pendingFields", [])
-    if not isinstance(pending_fields, list):
-        raise StoreError("session pendingFields must be a list")
-    pending_allowed = {
-        "question", "state", "answerKey", "sensitive", "reference",
-        "fieldClass", "scopeFingerprint", "matchConfidence", "matchReasonCodes",
-        "matchAnswerRevision", "questionFingerprint",
-    }
-    pending_references: set[str] = set()
-    for value in pending_fields:
-        field = _require_object(value, "pending field")
-        if set(field) - pending_allowed:
-            raise StoreError("pending field contains unsupported fields")
-        _validate_optional_strings(
-            field, {"question", "state", "answerKey"}, "pending field"
-        )
-        if "state" in field and field["state"] not in ANSWER_STATES:
-            raise StoreError("pending field state is unsupported")
-        if "sensitive" in field and not isinstance(field["sensitive"], bool):
-            raise StoreError("pending field sensitive must be a boolean")
-        if "reference" not in field or not isinstance(field["reference"], str) or PENDING_REFERENCE.fullmatch(field["reference"]) is None:
-            raise StoreError("pending field reference is invalid")
-        if field["reference"] in pending_references:
-            raise StoreError("pending field references must be unique")
-        pending_references.add(field["reference"])
-        if "fieldClass" in field and (
-            not isinstance(field["fieldClass"], str)
-            or re.fullmatch(r"[a-z][a-z0-9_]{0,63}", field["fieldClass"]) is None
-        ):
-            raise StoreError("pending field class is invalid")
-        if "scopeFingerprint" in field and (
-            not isinstance(field["scopeFingerprint"], str)
-            or re.fullmatch(r"[0-9a-f]{64}", field["scopeFingerprint"]) is None
-        ):
-            raise StoreError("pending field scope fingerprint is invalid")
-        if "questionFingerprint" in field and (
-            not isinstance(field["questionFingerprint"], str)
-            or re.fullmatch(r"[0-9a-f]{64}", field["questionFingerprint"]) is None
-        ):
-            raise StoreError("pending field question fingerprint is invalid")
-        if "matchConfidence" in field and field["matchConfidence"] not in ANSWER_MATCH_MODULE.CONFIDENCE_BANDS:
-            raise StoreError("pending field confidence is invalid")
-        if "matchAnswerRevision" in field and (
-            not isinstance(field["matchAnswerRevision"], int)
-            or isinstance(field["matchAnswerRevision"], bool)
-            or field["matchAnswerRevision"] < 1
-        ):
-            raise StoreError("pending field match answer revision is invalid")
-        if "matchReasonCodes" in field and (
-            not isinstance(field["matchReasonCodes"], list)
-            or not all(code in ANSWER_MATCH_MODULE.REASON_CODES for code in field["matchReasonCodes"])
-        ):
-            raise StoreError("pending field match reasons are invalid")
-    attempt_revision = session.get("attemptRevision")
-    if attempt_revision is not None and (
-        not isinstance(attempt_revision, int)
-        or isinstance(attempt_revision, bool)
-        or attempt_revision < 1
-    ):
-        raise StoreError("session attempt revision is invalid")
-    readiness = session.get("readiness")
-    if readiness is not None:
-        readiness = _require_object(readiness, "session readiness")
-        required = {
-            "status", "evidenceKind", "attemptRevision", "observationRevision",
-            "controlSetFingerprint", "requiredControlCount", "assertions",
-            "blockerCodes", "fallbackCode",
-        }
-        if set(readiness) != required:
-            raise StoreError("session readiness contains unsupported fields")
-        if readiness["status"] not in {"ready", "blocked"} or readiness["evidenceKind"] not in READINESS_EVIDENCE_KINDS:
-            raise StoreError("session readiness is invalid")
-        if readiness["attemptRevision"] != attempt_revision:
-            raise StoreError("session readiness is not bound to this attempt")
-        if not isinstance(readiness["observationRevision"], int) or isinstance(readiness["observationRevision"], bool) or readiness["observationRevision"] < 1:
-            raise StoreError("session readiness observation revision is invalid")
-        if (
-            not isinstance(readiness["controlSetFingerprint"], str)
-            or re.fullmatch(r"sha256:[0-9a-f]{64}", readiness["controlSetFingerprint"])
-            is None
-            or not isinstance(readiness["requiredControlCount"], int)
-            or isinstance(readiness["requiredControlCount"], bool)
-            or readiness["requiredControlCount"] < 1
-        ):
-            raise StoreError("session readiness form manifest is invalid")
-        assertions = _require_object(readiness["assertions"], "session readiness assertions")
-        if set(assertions) != READINESS_ASSERTION_NAMES or not all(
-            value in {"passed", "failed"} for value in assertions.values()
-        ):
-            raise StoreError("session readiness assertions are invalid")
-        if (
-            not isinstance(readiness["blockerCodes"], list)
-            or len(readiness["blockerCodes"]) != len(set(readiness["blockerCodes"]))
-            or not all(code in READINESS_BLOCKER_CODES for code in readiness["blockerCodes"])
-        ):
-            raise StoreError("session readiness blockers are invalid")
-        if readiness["fallbackCode"] not in {None, "owner-upload-required"}:
-            raise StoreError("session readiness fallback is invalid")
-        all_passed = all(value == "passed" for value in assertions.values())
-        if (
-            (readiness["status"] == "ready") != all_passed
-            or (readiness["status"] == "ready" and readiness["blockerCodes"])
-            or (readiness["status"] == "blocked" and not readiness["blockerCodes"])
-        ):
-            raise StoreError("session readiness state is inconsistent")
-        upload_fallback = readiness["fallbackCode"] == "owner-upload-required"
-        if upload_fallback != (
-            "external-upload-capability-unavailable" in readiness["blockerCodes"]
-        ) or upload_fallback and "required-upload-missing" not in readiness["blockerCodes"]:
-            raise StoreError("session readiness fallback is inconsistent")
-    blockers = session.get("blockers", [])
-    if not isinstance(blockers, list):
-        raise StoreError("session blockers must be a list")
-    for blocker in blockers:
-        blocker = _require_object(blocker, "session blocker")
-        if set(blocker) - {"type", "code", "reference", "fieldClass", "sensitivity"}:
-            raise StoreError("session blocker contains unsupported fields")
-        if (
-            blocker.get("type") not in ATTENTION_BLOCKER_TYPES
-            or blocker.get("code") not in ATTENTION_BLOCKER_CODES
-        ):
-            raise StoreError("session blocker is invalid")
-        if "reference" in blocker and PENDING_REFERENCE.fullmatch(blocker["reference"]) is None:
-            raise StoreError("session blocker reference is invalid")
-        if blocker.get("sensitivity", "none") not in SENSITIVITY_LEVELS:
-            raise StoreError("session blocker sensitivity is invalid")
-    approvals = session.get("approvals", [])
-    if not isinstance(approvals, list):
-        raise StoreError("session approvals must be a list")
-    for approval in approvals:
-        approval = _require_object(approval, "session approval")
-        required = {
-            "reference", "answerKey", "currentUse", "remember", "policyMode", "useAuthority",
-            "eligible", "confidenceBand", "reasonCodes", "answerRevision",
-        }
-        if set(approval) != required or PENDING_REFERENCE.fullmatch(approval.get("reference", "")) is None:
-            raise StoreError("session approval is invalid")
-        if not isinstance(approval["answerKey"], str) or not approval["answerKey"]:
-            raise StoreError("session approval answer key is invalid")
-        if not isinstance(approval["currentUse"], bool) or not isinstance(approval["remember"], bool) or not isinstance(approval["eligible"], bool):
-            raise StoreError("session approval decisions must be booleans")
-        if approval["policyMode"] not in APPROVAL_POLICY_MODES or approval["useAuthority"] not in APPROVAL_USE_AUTHORITIES:
-            raise StoreError("session approval policy is invalid")
-        if approval["confidenceBand"] not in ANSWER_MATCH_MODULE.CONFIDENCE_BANDS:
-            raise StoreError("session approval confidence is invalid")
-        if not isinstance(approval["reasonCodes"], list) or not all(code in ANSWER_MATCH_MODULE.REASON_CODES for code in approval["reasonCodes"]):
-            raise StoreError("session approval reasons are invalid")
-        if not isinstance(approval["answerRevision"], int) or isinstance(approval["answerRevision"], bool) or approval["answerRevision"] < 1:
-            raise StoreError("session approval answer revision is invalid")
-    browser_handoff = session.get("browserHandoff")
-    if browser_handoff is not None:
-        browser_handoff = _require_object(browser_handoff, "browser handoff")
-        if set(browser_handoff) != {"state", "reasonCode", "revision"}:
-            raise StoreError("browser handoff contains unsupported fields")
-        if (
-            browser_handoff["state"] not in BROWSER_HANDOFF_STATES
-            or browser_handoff["reasonCode"] not in BROWSER_HANDOFF_REASON_CODES
-        ):
-            raise StoreError("browser handoff is invalid")
-        valid_reasons_by_state = {
-            "not_required": {"none"},
-            "complete": {"none"},
-            "ready_for_owner": {"final-review-required"},
-            "required": BROWSER_HANDOFF_REASON_CODES
-            - {"none", "final-review-required"},
-        }
-        if browser_handoff["reasonCode"] not in valid_reasons_by_state[
-            browser_handoff["state"]
-        ]:
-            raise StoreError("browser handoff is invalid")
-        if not isinstance(browser_handoff["revision"], int) or isinstance(browser_handoff["revision"], bool) or browser_handoff["revision"] < 1:
-            raise StoreError("browser handoff revision is invalid")
-    _validate_optional_strings(
-        session,
-        {
-            "applicationId",
-            "status",
-            "ats",
-            "company",
-            "role",
-            "url",
-            "step",
-            "createdAt",
-            "updatedAt",
-        },
-        "session",
+    _session_validation._validate_session_document(
+        session, answer_match_module=ANSWER_MATCH_MODULE
     )
 
 
 def _validate_claim_record(value: Any) -> dict[str, Any]:
-    claim = _require_object(value, "coordinator claim")
-    required = {
-        "claimId", "jobId", "ownerLabel", "tokenHash", "acquiredAt",
-        "heartbeatAt", "expiresAt",
-    }
-    if set(claim) != required or not all(
-        isinstance(claim.get(field), str) and claim[field] for field in required
-    ):
-        raise StoreError("coordinator claim is invalid")
-    _safe_session_id(claim["jobId"])
-    for field in ("acquiredAt", "heartbeatAt", "expiresAt"):
-        _parse_coordinator_time(claim[field])
-    return claim
+    return _session_validation._validate_claim_record(value)
 
 
 def _parse_coordinator_time(value: str) -> datetime:
-    try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except (AttributeError, ValueError) as error:
-        raise StoreError("coordinator timestamp is invalid") from error
-    if parsed.tzinfo is None:
-        raise StoreError("coordinator timestamp is invalid")
-    return parsed.astimezone(timezone.utc)
+    return _session_validation._parse_coordinator_time(value)
 
 
 def _validate_job_record(key: str, value: Any) -> dict[str, Any]:
-    record = _require_object(value, "job record")
-    allowed = {
-        "id",
-        "url",
-        "normalizedUrl",
-        "source",
-        "sourceId",
-        "role",
-        "company",
-        "location",
-        "workplaceType",
-        "employmentType",
-        "compensation",
-        "description",
-        "ats",
-        "priority",
-        "status",
-        "closedOutcome",
-        "resumeId",
-        "notes",
-        "provenance",
-        "legacySources",
-        "lastCheckedAt",
-        "revision",
-        "createdAt",
-        "updatedAt",
-        "deletedAt",
-    }
-    if set(record) - allowed:
-        raise StoreError("job record contains unsupported fields")
-    if record.get("id") != key:
-        raise StoreError("job record id does not match its index")
-    _safe_session_id(key)
-    normalized = normalize_job_url(record.get("url", ""))
-    if record.get("normalizedUrl") != normalized:
-        raise StoreError("job record normalized URL does not match")
-    if record.get("status") not in JOB_STATUSES:
-        raise StoreError("job status is unsupported")
-    closed_outcome = record.get("closedOutcome")
-    if record["status"] == "closed":
-        if closed_outcome not in JOB_CLOSED_OUTCOMES:
-            raise StoreError("closed job requires a supported outcome")
-    elif closed_outcome is not None:
-        raise StoreError("open job cannot have a closed outcome")
-    priority = record.get("priority", 0)
-    if not isinstance(priority, int) or isinstance(priority, bool) or not 0 <= priority <= 5:
-        raise StoreError("job priority must be an integer from 0 to 5")
-    revision = record.get("revision")
-    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
-        raise StoreError("job revision must be a positive integer")
-    provenance = record.get("provenance", {})
-    _require_object(provenance, "job provenance")
-    legacy_sources = record.get("legacySources", [])
-    if not isinstance(legacy_sources, list):
-        raise StoreError("job legacySources must be an array")
-    for source in legacy_sources:
-        source = _require_object(source, "job legacy source")
-        if set(source) != {"sourceKind", "relativePath", "entryId", "sourceSha256"}:
-            raise StoreError("job legacy source contains unsupported fields")
-        if source.get("sourceKind") != "timestamped-search-report":
-            raise StoreError("job legacy source kind is unsupported")
-        relative_path = source.get("relativePath")
-        if (
-            not isinstance(relative_path, str)
-            or not relative_path
-            or Path(relative_path).name != relative_path
-            or not relative_path.startswith("search-")
-            or not relative_path.endswith(".md")
-        ):
-            raise StoreError("job legacy source path is invalid")
-        if not isinstance(source.get("entryId"), str) or not re.fullmatch(
-            r"legacy-entry-[0-9a-f]{24}", source["entryId"]
-        ):
-            raise StoreError("job legacy source entry id is invalid")
-        if not isinstance(source.get("sourceSha256"), str) or not re.fullmatch(
-            r"[0-9a-f]{64}", source["sourceSha256"]
-        ):
-            raise StoreError("job legacy source digest is invalid")
-    _validate_optional_strings(
-        record,
-        {
-            "url",
-            "normalizedUrl",
-            "source",
-            "sourceId",
-            "role",
-            "company",
-            "location",
-            "workplaceType",
-            "employmentType",
-            "compensation",
-            "description",
-            "ats",
-            "closedOutcome",
-            "resumeId",
-            "notes",
-            "lastCheckedAt",
-            "createdAt",
-            "updatedAt",
-            "deletedAt",
-        },
-        "job record",
+    return _job_resume_validation._validate_job_record(
+        key, value, path_type=Path
     )
-    if not isinstance(record.get("createdAt"), str) or not record["createdAt"]:
-        raise StoreError("job record has no creation timestamp")
-    if not isinstance(record.get("updatedAt"), str) or not record["updatedAt"]:
-        raise StoreError("job record has no update timestamp")
-    return record
 
 
 def _validate_resume_record(key: str, value: Any) -> dict[str, Any]:
-    record = _require_object(value, "resume record")
-    allowed = {
-        "id",
-        "label",
-        "path",
-        "storageKind",
-        "managedFile",
-        "originalFilename",
-        "mediaType",
-        "digest",
-        "contentRevision",
-        "tags",
-        "default",
-        "observedSize",
-        "observedModifiedAt",
-        "revision",
-        "createdAt",
-        "updatedAt",
-        "deletedAt",
-    }
-    if set(record) - allowed:
-        raise StoreError("resume record contains unsupported fields")
-    if record.get("id") != key:
-        raise StoreError("resume record id does not match its index")
-    _safe_session_id(key)
-    if not isinstance(record.get("label"), str) or not record["label"].strip():
-        raise StoreError("resume label must be a non-empty string")
-    storage_kind = record.get("storageKind")
-    if storage_kind is None:
-        if record.get("path") != normalize_resume_path(record.get("path", "")):
-            raise StoreError("resume path is not normalized")
-        if any(
-            field in record
-            for field in (
-                "managedFile", "originalFilename", "mediaType", "digest",
-                "contentRevision",
-            )
-        ):
-            raise StoreError("legacy resume record contains managed storage fields")
-    elif storage_kind == "managed":
-        if "path" in record:
-            raise StoreError("managed resume record must not contain a source path")
-        managed_file = record.get("managedFile")
-        expected_names = {f"{key}{extension}" for extension in RESUME_MEDIA_TYPES}
-        if not isinstance(managed_file, str) or managed_file not in expected_names:
-            raise StoreError("managed resume file identity is invalid")
-        original_filename = record.get("originalFilename")
-        if (
-            not isinstance(original_filename, str)
-            or not original_filename
-            or Path(original_filename).name != original_filename
-            or "\0" in original_filename
-        ):
-            raise StoreError("managed resume original filename is invalid")
-        extension = Path(managed_file).suffix.lower()
-        if record.get("mediaType") != RESUME_MEDIA_TYPES[extension]:
-            raise StoreError("managed resume media type is invalid")
-        digest = record.get("digest")
-        if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
-            raise StoreError("managed resume digest is invalid")
-        content_revision = record.get("contentRevision")
-        if content_revision is not None:
-            try:
-                TRUSTED_FILL_MODULE.validate_content_revision(content_revision)
-            except TRUSTED_FILL_MODULE.TrustedFillError as error:
-                raise StoreError(str(error)) from None
-        if record.get("observedSize") is None or not record.get("observedModifiedAt"):
-            raise StoreError("managed resume observation is incomplete")
-    else:
-        raise StoreError("resume storage kind is unsupported")
-    tags = record.get("tags", [])
-    if not isinstance(tags, list) or not all(
-        isinstance(item, str) and item.strip() for item in tags
-    ):
-        raise StoreError("resume tags must be non-empty strings")
-    if len(set(tags)) != len(tags):
-        raise StoreError("resume tags must be unique")
-    if not isinstance(record.get("default"), bool):
-        raise StoreError("resume default must be a boolean")
-    observed_size = record.get("observedSize")
-    if observed_size is not None and (
-        not isinstance(observed_size, int)
-        or isinstance(observed_size, bool)
-        or observed_size < 0
-    ):
-        raise StoreError("resume observed size is invalid")
-    revision = record.get("revision")
-    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
-        raise StoreError("resume revision must be a positive integer")
-    _validate_optional_strings(
-        record,
-        {
-            "observedModifiedAt",
-            "createdAt",
-            "updatedAt",
-            "deletedAt",
-        },
-        "resume record",
+    return _job_resume_validation._validate_resume_record(
+        key,
+        value,
+        path_type=Path, os_module=os,
+        trusted_fill_module=TRUSTED_FILL_MODULE,
     )
-    if not isinstance(record.get("createdAt"), str) or not record["createdAt"]:
-        raise StoreError("resume record has no creation timestamp")
-    if not isinstance(record.get("updatedAt"), str) or not record["updatedAt"]:
-        raise StoreError("resume record has no update timestamp")
-    return record
 
 
 def _validate_extraction_proposal(key: str, value: Any) -> dict[str, Any]:
-    record = _require_object(value, "resume proposal")
-    allowed = {
-        "id",
-        "resumeId",
-        "resumeRevision",
-        "resumeDigest",
-        "resumeContentRevision",
-        "profileRevision",
-        "resultProfileRevision",
-        "candidate",
-        "baselines",
-        "autoFilledPaths",
-        "pendingPaths",
-        "decisions",
-        "status",
-        "revision",
-        "createdAt",
-        "updatedAt",
-        "supersededBy",
-    }
-    if set(record) - allowed or record.get("id") != key:
-        raise StoreError("resume proposal record is invalid")
-    _safe_session_id(key)
-    _safe_session_id(record.get("resumeId", ""))
-    for field in ("resumeRevision", "profileRevision", "resultProfileRevision", "revision"):
-        number = record.get(field)
-        if not isinstance(number, int) or isinstance(number, bool) or number < 1:
-            raise StoreError("resume proposal revision is invalid")
-    digest = record.get("resumeDigest")
-    if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
-        raise StoreError("resume proposal binding is invalid")
-    content_revision = record.get("resumeContentRevision")
-    if content_revision is not None:
-        try:
-            TRUSTED_FILL_MODULE.validate_content_revision(content_revision)
-        except TRUSTED_FILL_MODULE.TrustedFillError as error:
-            raise StoreError(str(error)) from None
-    candidate, candidate_paths = _validated_candidate(record.get("candidate"))
-    baselines = _require_object(record.get("baselines"), "resume proposal baselines")
-    auto_paths = record.get("autoFilledPaths")
-    pending_paths = record.get("pendingPaths")
-    if not isinstance(auto_paths, list) or not isinstance(pending_paths, list):
-        raise StoreError("resume proposal paths are invalid")
-    if (
-        not all(isinstance(path, str) for path in auto_paths + pending_paths)
-        or len(set(auto_paths + pending_paths)) != len(auto_paths + pending_paths)
-        or not set(auto_paths + pending_paths) <= set(candidate_paths)
-        or set(baselines) != set(candidate_paths)
-    ):
-        raise StoreError("resume proposal paths are invalid")
-    for path, baseline in baselines.items():
-        segments = _decode_json_pointer(path)
-        item = _require_object(baseline, "resume proposal baseline")
-        allowed_baseline = {"exists", "ancestors", "value"}
-        if set(item) - allowed_baseline or not isinstance(
-            item.get("exists"), bool
-        ) or not isinstance(item.get("ancestors"), list):
-            raise StoreError("resume proposal baseline is invalid")
-        if item["exists"] != ("value" in item):
-            raise StoreError("resume proposal baseline is invalid")
-        if len(item["ancestors"]) != len(segments) - 1:
-            raise StoreError("resume proposal baseline is invalid")
-        expected_ancestor = ""
-        for index, ancestor in enumerate(item["ancestors"]):
-            expected_ancestor += f"/{_json_pointer_segment(segments[index])}"
-            ancestor_item = _require_object(
-                ancestor, "resume proposal ancestor baseline"
-            )
-            if (
-                set(ancestor_item) - {"path", "exists", "container", "empty", "value"}
-                or ancestor_item.get("path") != expected_ancestor
-                or not isinstance(ancestor_item.get("exists"), bool)
-            ):
-                raise StoreError("resume proposal baseline is invalid")
-            payload_fields = {
-                field for field in ("container", "value") if field in ancestor_item
-            }
-            if not ancestor_item["exists"] and payload_fields:
-                raise StoreError("resume proposal baseline is invalid")
-            if ancestor_item["exists"] and payload_fields not in (
-                {"container"},
-                {"value"},
-            ):
-                raise StoreError("resume proposal baseline is invalid")
-            if "container" in ancestor_item and ancestor_item["container"] is not True:
-                raise StoreError("resume proposal baseline is invalid")
-            if "container" in ancestor_item:
-                if not isinstance(ancestor_item.get("empty"), bool):
-                    raise StoreError("resume proposal baseline is invalid")
-            elif "empty" in ancestor_item:
-                raise StoreError("resume proposal baseline is invalid")
-    decisions = _require_object(record.get("decisions"), "resume proposal decisions")
-    for path, decision in decisions.items():
-        _decode_json_pointer(path)
-        item = _require_object(decision, "resume proposal decision")
-        if set(item) != {"decision", "decidedAt"} or item.get("decision") not in EXTRACTION_DECISIONS:
-            raise StoreError("resume proposal decision is invalid")
-        if not isinstance(item.get("decidedAt"), str) or not item["decidedAt"]:
-            raise StoreError("resume proposal decision is invalid")
-    if (
-        set(decisions) & set(pending_paths)
-        or set(decisions) | set(pending_paths) != set(candidate_paths) - set(auto_paths)
-    ):
-        raise StoreError("resume proposal decision paths are invalid")
-    status = record.get("status")
-    if status not in EXTRACTION_STATUSES:
-        raise StoreError("resume proposal status is invalid")
-    if status == "pending" and not pending_paths:
-        raise StoreError("pending resume proposal has no pending paths")
-    if status == "completed" and pending_paths:
-        raise StoreError("completed resume proposal has pending paths")
-    superseded_by = record.get("supersededBy")
-    if status == "superseded":
-        _safe_session_id(superseded_by or "")
-    elif superseded_by is not None:
-        raise StoreError("resume proposal supersession is invalid")
-    for field in ("createdAt", "updatedAt"):
-        if not isinstance(record.get(field), str) or not record[field]:
-            raise StoreError("resume proposal timestamp is invalid")
-    return record
+    return _extraction_validation._validate_extraction_proposal(
+        key, value, trusted_fill_module=TRUSTED_FILL_MODULE
+    )
 
 
 def _validate_extractions_document(document: dict[str, Any]) -> dict[str, Any]:
-    validate_version(document, "resume proposals")
-    if set(document) != {"schemaVersion", "proposals", "metadata"}:
-        raise StoreError("resume proposal store contains unsupported fields")
-    proposals = _require_object(document.get("proposals"), "resume proposals")
-    _require_object(document.get("metadata"), "resume proposal metadata")
-    for key, record in proposals.items():
-        if not isinstance(key, str):
-            raise StoreError("resume proposal index is invalid")
-        _validate_extraction_proposal(key, record)
-    pending_by_resume: set[str] = set()
-    for record in proposals.values():
-        if record["status"] == "pending":
-            if record["resumeId"] in pending_by_resume:
-                raise StoreError("resume proposal store has multiple pending proposals")
-            pending_by_resume.add(record["resumeId"])
-    return document
+    return _extraction_validation._validate_extractions_document(
+        document, trusted_fill_module=TRUSTED_FILL_MODULE
+    )
 
 
 def _validate_extraction_request(key: str, value: Any) -> dict[str, Any]:
-    record = _require_object(value, "resume extraction request")
-    required = {
-        "requestId", "resumeId", "resumeContentRevision", "revision",
-        "status", "createdAt", "updatedAt", "closedAt", "proposalId",
-        "failureReason", "supersedesRequestId",
-    }
-    if set(record) != required or record.get("requestId") != key:
-        raise StoreError("resume extraction request is invalid")
-    _safe_session_id(key)
-    _safe_session_id(record.get("resumeId", ""))
-    try:
-        TRUSTED_FILL_MODULE.validate_content_revision(
-            record.get("resumeContentRevision")
-        )
-    except TRUSTED_FILL_MODULE.TrustedFillError as error:
-        raise StoreError(str(error)) from None
-    revision = record.get("revision")
-    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
-        raise StoreError("resume extraction request revision is invalid")
-    status = record.get("status")
-    if status not in EXTRACTION_REQUEST_STATUSES:
-        raise StoreError("resume extraction request status is invalid")
-    for field in ("createdAt", "updatedAt"):
-        if not isinstance(record.get(field), str) or not record[field]:
-            raise StoreError("resume extraction request timestamp is invalid")
-    terminal = status != "requested"
-    closed_at = record.get("closedAt")
-    if terminal != (isinstance(closed_at, str) and bool(closed_at)):
-        raise StoreError("resume extraction request closure is invalid")
-    proposal_id = record.get("proposalId")
-    if status == "completed":
-        _safe_session_id(proposal_id or "")
-    elif proposal_id is not None:
-        raise StoreError("resume extraction request proposal is invalid")
-    failure = record.get("failureReason")
-    if status == "failed":
-        if failure not in EXTRACTION_REQUEST_FAILURE_REASONS:
-            raise StoreError("resume extraction failure reason is invalid")
-    elif failure is not None:
-        raise StoreError("resume extraction failure reason is invalid")
-    supersedes = record.get("supersedesRequestId")
-    if supersedes is not None:
-        _safe_session_id(supersedes)
-        if supersedes == key:
-            raise StoreError("resume extraction supersession is invalid")
-    return record
+    return _extraction_validation._validate_extraction_request(
+        key, value, trusted_fill_module=TRUSTED_FILL_MODULE
+    )
 
 
-def _validate_extraction_requests_document(document: dict[str, Any]) -> dict[str, Any]:
-    validate_version(document, "resume extraction requests")
-    if set(document) != {"schemaVersion", "requests", "metadata"}:
-        raise StoreError("resume extraction request store contains unsupported fields")
-    requests = _require_object(document.get("requests"), "resume extraction requests")
-    metadata = _require_object(document.get("metadata"), "request metadata")
-    if set(metadata) != {"createdAt", "updatedAt"}:
-        raise StoreError("resume extraction request metadata is invalid")
-    for field in ("createdAt", "updatedAt"):
-        if not isinstance(metadata.get(field), str) or not metadata[field]:
-            raise StoreError("resume extraction request metadata is invalid")
-    open_by_resume: set[str] = set()
-    for key, record in requests.items():
-        if not isinstance(key, str):
-            raise StoreError("resume extraction request index is invalid")
-        item = _validate_extraction_request(key, record)
-        if item["status"] == "requested":
-            if item["resumeId"] in open_by_resume:
-                raise StoreError("resume extraction request store has multiple open requests")
-            open_by_resume.add(item["resumeId"])
-    return document
+def _validate_extraction_requests_document(
+    document: dict[str, Any],
+) -> dict[str, Any]:
+    return _extraction_validation._validate_extraction_requests_document(
+        document, trusted_fill_module=TRUSTED_FILL_MODULE
+    )
 
 
 def _extraction_request_lineage_depth(
     record: dict[str, Any], records_by_id: dict[str, dict[str, Any]],
 ) -> int:
     """Return a bounded causal rank for deterministic retry ordering."""
-    depth = 0
-    seen = {record["requestId"]}
-    current = record
-    while current.get("supersedesRequestId") is not None:
-        predecessor_id = current["supersedesRequestId"]
-        if predecessor_id in seen:
-            break
-        predecessor = records_by_id.get(predecessor_id)
-        if predecessor is None or predecessor.get("resumeId") != record["resumeId"]:
-            break
-        seen.add(predecessor_id)
-        depth += 1
-        current = predecessor
-    return depth
+    return _extraction_validation._extraction_request_lineage_depth(
+        record, records_by_id
+    )
 
 
 def order_extraction_requests(
     records: list[dict[str, Any]], timestamp_field: str = "createdAt",
 ) -> list[dict[str, Any]]:
     """Order requests by time, retry causality, then opaque identity."""
-    records_by_id = {item["requestId"]: item for item in records}
-    return sorted(
-        records,
-        key=lambda item: (
-            item[timestamp_field],
-            _extraction_request_lineage_depth(item, records_by_id),
-            item["requestId"],
-        ),
-    )
+    return _extraction_validation.order_extraction_requests(records, timestamp_field)
 
 
 def _read_input(path: str) -> dict[str, Any]:
@@ -2128,68 +963,11 @@ def _read_input(path: str) -> dict[str, Any]:
     return _require_object(value, "input")
 
 
-class Store:
-    def __init__(self, root: Path, legacy_profile: Path | None = None, clock=None):
-        self.root = root.expanduser()
-        self.profile_path = self.root / "profile.json"
-        self.fact_groups_path = self.root / "fact-groups.json"
-        self.answers_path = self.root / "answers.json"
-        self.jobs_path = self.root / "jobs.json"
-        self.resumes_path = self.root / "resumes.json"
-        self.resume_files_path = self.root / "resume-files"
-        self.resume_extractions_path = self.root / "resume-extractions.json"
-        self.resume_extraction_requests_path = self.root / "resume-extraction-requests.json"
-        self.resume_extraction_journal_path = self.root / "resume-extraction-journal.json"
-        self.history_path = self.root / "applications.jsonl"
-        self.sessions_path = self.root / "sessions"
-        self.coordinator_path = self.root / "coordinator.json"
-        self.coordinator_journal_path = self.root / "coordinator-journal.json"
-        self.automation_settings_path = self.root / "automation-settings.json"
-        self.employer_accounts_path = self.root / "employer-accounts.json"
-        self.account_operation_journal_path = self.root / "account-operation-journal.json"
-        self.trusted_fill_path = self.root / "trusted-fill.json"
-        self.store_lock_path = self.root / ".store.lock"
-        self.auto_submit_policy_path = self.root / "auto-submit"
-        self.legacy_profile = (
-            legacy_profile.expanduser()
-            if legacy_profile is not None
-            else Path.home() / ".claude-job-profile.json"
-        )
-        self.clock = clock or (lambda: datetime.now(timezone.utc))
-        self._overview_resume_digest_cache: dict[str, dict[str, Any]] = {}
+class Store(_base.StoreBase):
+    _runtime_provider = staticmethod(lambda: globals())
 
-    def _now_datetime(self) -> datetime:
-        value = self.clock()
-        if not isinstance(value, datetime):
-            raise StoreError("coordinator clock returned an invalid value")
-        if value.tzinfo is None:
-            value = value.replace(tzinfo=timezone.utc)
-        return value.astimezone(timezone.utc)
 
-    def _now(self) -> str:
-        return self._now_datetime().isoformat(timespec="seconds").replace("+00:00", "Z")
 
-    def paths(self) -> dict[str, Any]:
-        return {
-            "schemaVersion": SCHEMA_VERSION,
-            "root": str(self.root),
-            "profile": str(self.profile_path),
-            "factGroups": str(self.fact_groups_path),
-            "answers": str(self.answers_path),
-            "jobs": str(self.jobs_path),
-            "resumes": str(self.resumes_path),
-            "resumeExtractionRequests": str(self.resume_extraction_requests_path),
-            "history": str(self.history_path),
-            "sessions": str(self.sessions_path),
-            "coordinator": str(self.coordinator_path),
-            "coordinatorJournal": str(self.coordinator_journal_path),
-            "automationSettings": str(self.automation_settings_path),
-            "employerAccounts": str(self.employer_accounts_path),
-            "accountOperationJournal": str(self.account_operation_journal_path),
-            "trustedFill": str(self.trusted_fill_path),
-            "autoSubmitPolicy": str(self.auto_submit_policy_path),
-            "legacyProfile": str(self.legacy_profile),
-        }
 
     def initialize(self) -> dict[str, Any]:
         """Validate existing documents, then create only missing store files."""
