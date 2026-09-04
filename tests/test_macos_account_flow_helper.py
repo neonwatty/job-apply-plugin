@@ -90,31 +90,86 @@ def workflow_typecheck_sources(
     current_step: str | None = None
     in_jobs = False
     marker = "xcrun swiftc -typecheck "
-    for line in workflow.splitlines():
-        if line == "jobs:":
-            in_jobs = True
-            continue
-        if not in_jobs:
-            continue
-        job = re.fullmatch(r"  ([a-z0-9][a-z0-9-]*):", line)
-        if job:
-            current_job, current_step = job.group(1), None
-            continue
-        step = re.fullmatch(r"      - name: (.+)", line)
-        if step:
-            current_step = step.group(1)
-            continue
-        if marker not in line:
-            continue
+
+    def record(command: str) -> None:
+        command = command.strip()
+        if not command.startswith(marker):
+            return
         if current_job is None or current_step is None:
             raise AssertionError("typecheck command is not bound to a workflow job and step")
         key = (current_job, current_step)
         if key in sources:
             raise AssertionError("workflow job and step contains duplicate typecheck commands")
-        command = line.split(marker, 1)[1]
         sources[key] = tuple(
-            Path(token).name for token in command.split() if token.endswith(".swift")
+            Path(token).name
+            for token in command[len(marker):].split()
+            if token.endswith(".swift")
         )
+
+    def record_block(block: list[str], indicator: str) -> None:
+        if indicator.startswith(">"):
+            paragraph: list[str] = []
+            for line in block + [""]:
+                if line.strip():
+                    paragraph.append(line.strip())
+                elif paragraph:
+                    record(" ".join(paragraph))
+                    paragraph = []
+            return
+        pending = ""
+        for line in block + [""]:
+            part = line.strip()
+            if not part:
+                if pending:
+                    record(pending)
+                    pending = ""
+                continue
+            pending += part
+            if pending.endswith("\\"):
+                pending = pending[:-1].rstrip() + " "
+            else:
+                record(pending)
+                pending = ""
+
+    lines = workflow.splitlines()
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        if line == "jobs:":
+            in_jobs = True
+            index += 1
+            continue
+        if not in_jobs:
+            index += 1
+            continue
+        job = re.fullmatch(r"  ([a-z0-9][a-z0-9-]*):", line)
+        if job:
+            current_job, current_step = job.group(1), None
+            index += 1
+            continue
+        step = re.fullmatch(r"      - name: (.+)", line)
+        if step:
+            current_step = step.group(1)
+            index += 1
+            continue
+        run = re.fullmatch(r"        run:(?:[ \t]+(.*))?", line)
+        if not run:
+            index += 1
+            continue
+        value = (run.group(1) or "").strip()
+        if not re.fullmatch(r"[|>][-+]?", value):
+            record(value)
+            index += 1
+            continue
+        index += 1
+        block: list[str] = []
+        while index < len(lines):
+            block_line = lines[index]
+            if block_line.strip() and len(block_line) - len(block_line.lstrip()) <= 8:
+                break
+            block.append(block_line)
+            index += 1
+        record_block(block, value)
     return sources
 
 
@@ -124,6 +179,84 @@ def workflow_typecheck_command(sources: tuple[str, ...]) -> str:
 
 
 class MacOSAccountFlowHelperTests(unittest.TestCase):
+    def assert_workflow_source_contract_rejects(self, workflow: str) -> None:
+        with self.assertRaises(AssertionError):
+            self.assertEqual(workflow_typecheck_sources(workflow), WORKFLOW_TYPECHECK_SOURCES)
+
+    def replace_workflow_once(self, workflow: str, before: str, after: str) -> str:
+        self.assertEqual(workflow.count(before), 1)
+        return workflow.replace(before, after)
+
+    def test_workflow_source_contract_rejects_commented_typecheck_decoys(self):
+        workflow = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
+        for sources in (ORACLE_SWIFT_SOURCES, WORKDAY_SWIFT_SOURCES):
+            command = workflow_typecheck_command(sources)
+            workflow = self.replace_workflow_once(
+                workflow, command, f"# description only: {command}"
+            )
+        self.assert_workflow_source_contract_rejects(workflow)
+
+    def test_workflow_source_contract_rejects_inert_yaml_values(self):
+        workflow = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
+        oracle_command = workflow_typecheck_command(ORACLE_SWIFT_SOURCES)
+        workday_command = workflow_typecheck_command(WORKDAY_SWIFT_SOURCES)
+        workflow = self.replace_workflow_once(
+            workflow,
+            f"        run: {oracle_command}",
+            f"        env:\n          INERT_TYPECHECK: {oracle_command}\n        run: true",
+        )
+        workflow = self.replace_workflow_once(
+            workflow,
+            f"        run: |\n          {workday_command}",
+            f"        env:\n          INERT_TYPECHECK: {workday_command}\n        run: true",
+        )
+        self.assert_workflow_source_contract_rejects(workflow)
+
+    def test_workflow_source_contract_rejects_echo_and_printf_typechecks(self):
+        original = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
+        oracle_command = workflow_typecheck_command(ORACLE_SWIFT_SOURCES)
+        workday_command = workflow_typecheck_command(WORKDAY_SWIFT_SOURCES)
+        inline_wrappers = self.replace_workflow_once(
+            original, oracle_command, f"echo {oracle_command}"
+        )
+        inline_wrappers = self.replace_workflow_once(
+            inline_wrappers, workday_command, f"printf '%s\\n' {workday_command}"
+        )
+        continued_wrappers = self.replace_workflow_once(
+            original,
+            f"        run: {oracle_command}",
+            f"        run: |\n          echo \\\n            {oracle_command}",
+        )
+        continued_wrappers = self.replace_workflow_once(
+            continued_wrappers,
+            f"        run: |\n          {workday_command}",
+            f"        run: >\n          printf '%s\\n'\n          {workday_command}",
+        )
+        for label, workflow in (
+            ("inline", inline_wrappers),
+            ("continued-and-folded", continued_wrappers),
+        ):
+            with self.subTest(label=label):
+                self.assert_workflow_source_contract_rejects(workflow)
+
+    def test_workflow_source_contract_accepts_executable_inline_and_block_forms(self):
+        original = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
+        oracle_command = workflow_typecheck_command(ORACLE_SWIFT_SOURCES)
+        workday_command = workflow_typecheck_command(WORKDAY_SWIFT_SOURCES)
+        oracle_inline = f"        run: {oracle_command}"
+        workday_block = f"        run: |\n          {workday_command}"
+        for indicator in ("|", "|-", ">", ">-"):
+            with self.subTest(indicator=indicator):
+                workflow = self.replace_workflow_once(
+                    original, oracle_inline, f"        run: {indicator}\n          {oracle_command}"
+                )
+                workflow = self.replace_workflow_once(
+                    workflow, workday_block, f"        run: {workday_command}"
+                )
+                self.assertEqual(
+                    workflow_typecheck_sources(workflow), WORKFLOW_TYPECHECK_SOURCES
+                )
+
     def test_workflow_source_contract_rejects_oracle_workday_command_swap(self):
         workflow = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
         oracle_command = workflow_typecheck_command(ORACLE_SWIFT_SOURCES)
@@ -133,8 +266,7 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         sentinel = "xcrun swiftc -typecheck __cross-lane-swap__"
         swapped = workflow.replace(oracle_command, sentinel)
         swapped = swapped.replace(workday_command, oracle_command).replace(sentinel, workday_command)
-        with self.assertRaises(AssertionError):
-            self.assertEqual(workflow_typecheck_sources(swapped), WORKFLOW_TYPECHECK_SOURCES)
+        self.assert_workflow_source_contract_rejects(swapped)
 
     def test_native_failure_statuses_distinguish_value_free_binding_stages(self):
         source = (ROOT / "native/macos/job_apply_credential_helper_main.swift").read_text(encoding="utf-8")
