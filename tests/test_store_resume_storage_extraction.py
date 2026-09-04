@@ -101,6 +101,50 @@ class ResumeStorageExtractionTests(unittest.TestCase):
                 self.assertEqual(path.stat().st_mode & 0o777, 0o600)
                 self.assertEqual(store.resume_files_path.stat().st_mode & 0o777, 0o700)
 
+        replacement = self.parent / "replacement.pdf"
+        replacement.write_bytes(b"%PDF-1.7\nreplacement content")
+        with (
+            mock.patch.object(self.facade, "utc_now", return_value=fixed_clock),
+            mock.patch.object(
+                self.facade.secrets, "token_urlsafe", return_value="B" * 43
+            ),
+        ):
+            updated = [store.update_resume(
+                "resume-main", {"path": str(replacement)}, created[index]["revision"]
+            ) for index, store in enumerate(stores)]
+        self.assertEqual(updated[0], updated[1])
+        self.assertNotEqual(updated[0]["managedFile"], created[0]["managedFile"])
+        self.assertNotEqual(updated[0]["digest"], created[0]["digest"])
+        assert_store_trees_equal(self, stores[0].root, stores[1].root)
+
+        failed = self.parent / "failed.txt"
+        failed.write_text("failed replacement", encoding="utf-8")
+        before_failure = [snapshot_tree(store.root) for store in stores]
+        for store in stores:
+            with mock.patch.object(
+                self.facade, "atomic_write_json", side_effect=OSError("synthetic")
+            ):
+                with self.assertRaises(OSError):
+                    store.update_resume(
+                        "resume-main", {"path": str(failed)}, updated[0]["revision"]
+                    )
+        self.assertEqual(
+            [snapshot_tree(store.root) for store in stores], before_failure
+        )
+
+        for store in stores:
+            canonical = store.resume_files_path / updated[0]["managedFile"]
+            quarantine = store.resume_files_path / (
+                f".{updated[0]['managedFile']}.fixed.quarantine"
+            )
+            os.replace(canonical, quarantine)
+        for store in stores:
+            store.initialize()
+            canonical = store.resume_files_path / updated[0]["managedFile"]
+            self.assertEqual(canonical.read_bytes(), replacement.read_bytes())
+            self.assertFalse(list(store.resume_files_path.glob(".*.quarantine")))
+        assert_store_trees_equal(self, stores[0].root, stores[1].root)
+
     def test_symlink_source_and_failed_metadata_write_leave_exact_tree_unchanged(self):
         stores = self.stores("failures")
         target = self.parent / "target.txt"

@@ -17,6 +17,7 @@ from tests.support.store_domain_contract import (
     source_inventory,
 )
 from tests.support.store_facade_contract import ROOT, load_module
+from tests.test_store_loader_isolation import copy_plugin, direct_module
 
 
 DOMAIN_ROOT = ROOT / "scripts" / "job_apply_store" / "domains"
@@ -118,6 +119,62 @@ class ResumeReadExtractionTests(unittest.TestCase):
         self.assertEqual(
             [snapshot_tree(store.root) for store in (self.original, self.extracted)], before
         )
+
+    def test_expected_digest_symlink_is_rejected_by_both_read_paths(self):
+        for store in (self.original, self.extracted):
+            managed = store.resume_files_path / self.record["managedFile"]
+            expected = self.parent / f"{store.root.name}-expected.txt"
+            expected.write_bytes(managed.read_bytes())
+            managed.unlink()
+            try:
+                managed.symlink_to(expected)
+            except OSError:
+                self.skipTest("symlinks unavailable")
+        for store in (self.original, self.extracted):
+            self.assertEqual(store._private_file_digest(
+                self.parent / f"{store.root.name}-expected.txt"
+            ), self.record["digest"])
+            with self.assertRaisesRegex(self.facade.StoreError, "unavailable"):
+                store.read_resume_content("resume-main")
+            with self.assertRaisesRegex(self.facade.StoreError, "unavailable"):
+                store.resolve_resume("resume-main")
+
+    def test_read_runtime_binding_is_root_local_late_bound_and_reload_safe(self):
+        root_a = copy_plugin(self.parent / "plugin-a")
+        root_b = copy_plugin(self.parent / "plugin-b")
+
+        def load(root, name):
+            facade = direct_module(root / "scripts" / "job-apply-store.py", name)
+            leaf = importlib.import_module(
+                f"{facade._PACKAGE_NAME}.domains.resumes.read"
+            )
+            leaf._bind_runtime(lambda: vars(facade))
+            return facade, leaf
+
+        first, first_leaf = load(root_a, "resume_read_root_a")
+        second, second_leaf = load(root_b, "resume_read_root_b")
+        calls = []
+        first._safe_session_id = lambda value: calls.append(("first", value)) or value
+        second._safe_session_id = lambda value: calls.append(("second", value)) or value
+
+        class Probe:
+            def initialize(self):
+                return None
+
+            def _load_resumes_document(self):
+                return {"resumes": {}}
+
+        first_leaf.ResumeReadMixin.get_resume(Probe(), "one")
+        second_leaf.ResumeReadMixin.get_resume(Probe(), "two")
+        self.assertEqual(calls, [("first", "one"), ("second", "two")])
+        self.assertIs(first_leaf._RUNTIME_PROVIDER(), vars(first))
+        self.assertIs(second_leaf._RUNTIME_PROVIDER(), vars(second))
+        self.assertIsNot(first_leaf, second_leaf)
+
+        reloaded, reloaded_leaf = load(root_a, "resume_read_root_a_reloaded")
+        self.assertIsNot(reloaded_leaf, first_leaf)
+        self.assertIs(reloaded_leaf._RUNTIME_PROVIDER(), vars(reloaded))
+        self.assertIs(second_leaf._RUNTIME_PROVIDER(), vars(second))
 
 
 if __name__ == "__main__":
