@@ -9,7 +9,7 @@
     "qa:unified-task-spine": "node qa/unified_task_spine_oracle.mjs --json",
     "qa:resume-extraction-onboarding": "python3 qa/resume_extraction_onboarding_oracle.py --json",
     "test:auto-submit": "python3 scripts/qa-replay.py verify-auto-submit --fixture qa/fixtures/linkedin-easy-apply-screening-2026-08-v1/fixture.json --json",
-    "test:qa-screening": "PYTHONPATH=tests python3 -m unittest -v test_qa_replay_cli.CommittedScenarioTests.test_linkedin_screening_scenario_is_closed_and_synthetic test_qa_replay_cli.CommittedScenarioTests.test_linkedin_screening_fresh_prepare_evaluate_cleanup_lifecycle test_qa_server_oracle.SemanticOracleTests.test_committed_linkedin_screening_fixture_passes_with_closed_identity && node --test --test-name-pattern='committed LinkedIn screening' tests_js/renderer.test.mjs",
+    "test:qa-screening": "PYTHONPATH=tests python3 -m unittest -v test_qa_replay_committed_scenarios.CommittedScenarioTests.test_linkedin_screening_scenario_is_closed_and_synthetic test_qa_replay_committed_scenarios.CommittedScenarioTests.test_linkedin_screening_fresh_prepare_evaluate_cleanup_lifecycle test_qa_oracle_events.SemanticOracleTests.test_committed_linkedin_screening_fixture_passes_with_closed_identity && node --test --test-name-pattern='committed LinkedIn screening' tests_js/renderer.test.mjs",
     "qa:record": "node qa/recorder.mjs"
   },
   "devDependencies": { "playwright": "1.62.1" }
