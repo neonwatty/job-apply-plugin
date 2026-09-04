@@ -241,6 +241,9 @@ class CoordinatorClaimsMixin:
                         "review restart requires complete prior review evidence"
                     )
             else:
+                # The modern 1.3.2 path remains strict. Any partial envelope,
+                # explicit null, malformed value, or contradictory evidence is
+                # rejected rather than being interpreted as legacy absence.
                 readiness = session.get("readiness")
                 if (
                     session.get("status") != "review"
