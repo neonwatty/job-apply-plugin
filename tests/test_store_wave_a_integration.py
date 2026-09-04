@@ -248,6 +248,12 @@ class StoreWaveAIntegrationTests(unittest.TestCase):
                 "jobs.overview",
                 "jobs.upsert",
                 "jobs.legacy",
+                "coordinator.__init__",
+                "coordinator.persistence",
+                "coordinator.claims",
+                "coordinator.attention",
+                "coordinator.progress",
+                "coordinator.approvals",
             },
         )
 

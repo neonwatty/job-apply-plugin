@@ -68,6 +68,12 @@ IMPLEMENTATION_SUFFIXES = {
     ".domains.jobs.overview",
     ".domains.jobs.upsert",
     ".domains.jobs.legacy",
+    ".domains.coordinator",
+    ".domains.coordinator.persistence",
+    ".domains.coordinator.claims",
+    ".domains.coordinator.attention",
+    ".domains.coordinator.progress",
+    ".domains.coordinator.approvals",
 }
 
 COMPANION_SUFFIXES = {

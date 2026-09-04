@@ -41,6 +41,9 @@ PACKAGE_FILES = (
     "domains/answers/cleanup.py", "domains/jobs/__init__.py",
     "domains/jobs/crud.py", "domains/jobs/overview.py",
     "domains/jobs/upsert.py", "domains/jobs/legacy.py",
+    "domains/coordinator/__init__.py", "domains/coordinator/persistence.py",
+    "domains/coordinator/claims.py", "domains/coordinator/attention.py",
+    "domains/coordinator/progress.py", "domains/coordinator/approvals.py",
 )
 
 
