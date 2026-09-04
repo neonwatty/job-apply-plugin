@@ -55,3 +55,18 @@ Runner summaries are measurements from that invocation only. The modernization
 targets are fast p95 at most 30 seconds, affected p95 at most 90 seconds, and
 full CI p95 at most five minutes. Do not describe a single run as a percentile
 or as completion of the CI observation window.
+
+## CI shadow mode
+
+Pull requests still run the retained `validate` job and every new deterministic
+Python and browser shard. The duplicate legacy lane is temporary equivalence
+evidence, not an optimization: remove it only after at least 20 PR runs show no
+unexplained divergence. The `classify` job records affected-suite selection but
+does not skip full shards, and `PR gate` rejects any failed, cancelled, skipped,
+or missing selected job.
+
+Required Windows and deterministic macOS contracts remain on pull requests.
+Visible live-browser/native observations are advisory in the scheduled or
+manual nightly workflow. Release installation evidence runs for staging/main,
+version tags, and manual dispatch. No CI timing percentile or observation-window
+completion is claimed yet; current timings are individual local measurements.

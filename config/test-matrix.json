@@ -22,6 +22,7 @@
     "tools/test-runner.mjs",
     "tools/test-runner/**",
     "tools/check-test-matrix.mjs",
+    "tools/ci/**",
     "package.json",
     "package-lock.json",
     ".github/workflows/**"
@@ -106,7 +107,7 @@
     {
       "id": "node-runner-fast",
       "kind": "node-test",
-      "include": ["tests_js/test-runner*.test.mjs"],
+      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs"],
       "tiers": ["fast", "full"]
     },
     {
