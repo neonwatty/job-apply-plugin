@@ -66,6 +66,7 @@ class SplitIsolationTests(unittest.TestCase):
         self.assertNotIn("first_root_only", second.OUTCOMES)
         self.assertIsNot(first.OUTCOMES, second.OUTCOMES)
         self.assertIsNot(first.PolicyError, second.PolicyError)
+        self.assertIn(first._PACKAGE_NAME, sys.modules)
 
     def test_distinct_matcher_roots_do_not_share_implementation_state(self):
         first_path = self.copied_script(
@@ -81,6 +82,34 @@ class SplitIsolationTests(unittest.TestCase):
         self.assertNotIn("first_root_only", second.CONFIDENCE_BANDS)
         self.assertIsNot(first.CONFIDENCE_BANDS, second.CONFIDENCE_BANDS)
         self.assertIsNot(first.AnswerMatchError, second.AnswerMatchError)
+        self.assertIn(first._PACKAGE_NAME, sys.modules)
+
+    def test_reexecution_refreshes_without_growing_private_modules(self):
+        for script, name in (
+            (POLICY_PATH, "bounded_reload_policy"),
+            (MATCH_PATH, "bounded_reload_match"),
+        ):
+            with self.subTest(script=script.name):
+                module, spec = load_path(script, name)
+                package_name = module._PACKAGE_NAME
+                first_entries = {
+                    key for key in sys.modules
+                    if key == package_name or key.startswith(package_name + ".")
+                }
+                spec.loader.exec_module(module)
+                second_entries = {
+                    key for key in sys.modules
+                    if key == package_name or key.startswith(package_name + ".")
+                }
+                spec.loader.exec_module(module)
+                third_entries = {
+                    key for key in sys.modules
+                    if key == package_name or key.startswith(package_name + ".")
+                }
+
+                self.assertEqual(module._PACKAGE_NAME, package_name)
+                self.assertEqual(second_entries, first_entries)
+                self.assertEqual(third_entries, first_entries)
 
     def test_reexecuting_facades_discards_stale_monkeypatches(self):
         for script, name, attribute in (

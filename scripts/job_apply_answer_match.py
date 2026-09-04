@@ -4,15 +4,21 @@
 from __future__ import annotations
 
 import importlib
-import secrets as _secrets
+import hashlib as _hashlib
 import sys
 import types
 from pathlib import Path
 
 
-_PACKAGE_NAME = f"_job_apply_answer_matching_parts_{_secrets.token_hex(8)}"
+_IMPLEMENTATION_ROOT = Path(__file__).with_name("job_apply_answer_matching").resolve()
+_PACKAGE_NAME = "_job_apply_answer_matching_parts_" + _hashlib.sha256(
+    str(_IMPLEMENTATION_ROOT).encode("utf-8")
+).hexdigest()
+for _module_name in tuple(sys.modules):
+    if _module_name == _PACKAGE_NAME or _module_name.startswith(_PACKAGE_NAME + "."):
+        del sys.modules[_module_name]
 _package = types.ModuleType(_PACKAGE_NAME)
-_package.__path__ = [str(Path(__file__).with_name("job_apply_answer_matching"))]
+_package.__path__ = [str(_IMPLEMENTATION_ROOT)]
 _package.__package__ = _PACKAGE_NAME
 sys.modules[_PACKAGE_NAME] = _package
 
