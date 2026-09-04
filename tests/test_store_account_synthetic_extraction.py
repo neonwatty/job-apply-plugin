@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib
 import inspect
 import json
 import unittest
@@ -21,10 +20,11 @@ METHODS = ("execute_synthetic_account", "execute_synthetic_email_only_account")
 class SyntheticAccountExtractionTests(StoreTestCase):
     @classmethod
     def setUpClass(cls):
-        package = STORE_MODULE._PACKAGE_NAME
         cls.leaves = [
-            importlib.import_module(f"{package}.domains.accounts.{name}")
-            for name in ("settings", "registry", "operations", "synthetic")
+            STORE_MODULE._accounts_settings_domain,
+            STORE_MODULE._accounts_registry_domain,
+            STORE_MODULE._accounts_operations_domain,
+            STORE_MODULE._accounts_synthetic_domain,
         ]
         for leaf in cls.leaves:
             leaf._bind_runtime(lambda: vars(STORE_MODULE))

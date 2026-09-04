@@ -41,9 +41,7 @@ class AccountSettingsExtractionTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.facade = STORE_MODULE
-        cls.leaf = importlib.import_module(
-            f"{cls.facade._PACKAGE_NAME}.domains.accounts.settings"
-        )
+        cls.leaf = cls.facade._accounts_settings_domain
         cls.leaf._bind_runtime(lambda: vars(cls.facade))
         cls.mixin = cls.leaf.AccountSettingsMixin
         cls.composed = composed_store_class(cls.facade.Store, cls.mixin)
@@ -141,13 +139,28 @@ class AccountSettingsExtractionTests(unittest.TestCase):
             fresh_runtime = importlib.import_module(
                 f"{reloaded._PACKAGE_NAME}.accounts_runtime"
             )
-            self.assertNotIn(
-                f"{fresh_runtime._PACKAGE_NAME}.job_apply_accounts", sys.modules
+            fresh_prefix = fresh_runtime._PACKAGE_NAME + "."
+            eagerly_required = {
+                "job_apply_account_executor",
+                "job_apply_account_flows",
+                "job_apply_account_flows_macos",
+                "job_apply_accounts",
+                "job_apply_credentials",
+                "job_apply_credentials_macos",
+            }
+            self.assertEqual(
+                {
+                    name.removeprefix(fresh_prefix)
+                    for name in sys.modules
+                    if name.startswith(fresh_prefix)
+                },
+                eagerly_required,
             )
             fresh_a = fresh_runtime.companion("job_apply_accounts")
             self.assertIsNot(fresh_a, old_a)
+            self.assertIsNot(fresh_a, sentinel)
             self.assertIs(
-                sys.modules[f"{fresh_runtime._PACKAGE_NAME}.job_apply_accounts"],
+                sys.modules[fresh_prefix + "job_apply_accounts"],
                 fresh_a,
             )
             with ThreadPoolExecutor(max_workers=8) as pool:
@@ -158,6 +171,14 @@ class AccountSettingsExtractionTests(unittest.TestCase):
                     range(16),
                 ))
             self.assertTrue(all(module is same_root[0] for module in same_root))
+            self.assertEqual(
+                {
+                    name.removeprefix(fresh_prefix)
+                    for name in sys.modules
+                    if name.startswith(fresh_prefix)
+                },
+                eagerly_required | {"job_apply_form_readiness"},
+            )
 
 
 if __name__ == "__main__":

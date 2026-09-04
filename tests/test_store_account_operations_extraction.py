@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib
 import inspect
 import json
 import unittest
@@ -26,10 +25,9 @@ METHODS = (
 class AccountOperationsExtractionTests(StoreTestCase):
     @classmethod
     def setUpClass(cls):
-        package = STORE_MODULE._PACKAGE_NAME
-        cls.settings = importlib.import_module(f"{package}.domains.accounts.settings")
-        cls.registry = importlib.import_module(f"{package}.domains.accounts.registry")
-        cls.operations = importlib.import_module(f"{package}.domains.accounts.operations")
+        cls.settings = STORE_MODULE._accounts_settings_domain
+        cls.registry = STORE_MODULE._accounts_registry_domain
+        cls.operations = STORE_MODULE._accounts_operations_domain
         for leaf in (cls.settings, cls.registry, cls.operations):
             leaf._bind_runtime(lambda: vars(STORE_MODULE))
         cls.mixin = cls.operations.AccountOperationMixin

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib
 import inspect
 import tempfile
 import unittest
@@ -30,8 +29,8 @@ class AccountRegistryExtractionTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.facade = STORE_MODULE
-        cls.settings = importlib.import_module(f"{cls.facade._PACKAGE_NAME}.domains.accounts.settings")
-        cls.registry = importlib.import_module(f"{cls.facade._PACKAGE_NAME}.domains.accounts.registry")
+        cls.settings = cls.facade._accounts_settings_domain
+        cls.registry = cls.facade._accounts_registry_domain
         for leaf in (cls.settings, cls.registry):
             leaf._bind_runtime(lambda: vars(cls.facade))
         cls.mixin = cls.registry.AccountRegistryMixin

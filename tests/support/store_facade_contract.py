@@ -276,6 +276,8 @@ def parser_receipt(parser: argparse.ArgumentParser) -> dict[str, Any]:
 
 
 def dispatch_commands(script: Path = SCRIPT) -> list[str]:
+    if script == SCRIPT:
+        script = SCRIPT.parent / "job_apply_store" / "cli_dispatch.py"
     tree = ast.parse(script.read_text(encoding="utf-8"))
     run = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "run")
     commands = []
