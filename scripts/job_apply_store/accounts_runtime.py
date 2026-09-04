@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import _imp
 import importlib.util
 import sys
 from functools import lru_cache
@@ -36,6 +37,20 @@ _REGISTRY_NAMES = {
 }
 
 
+def _clear_private_companions() -> None:
+    _imp.acquire_lock()
+    try:
+        prefix = _PACKAGE_NAME + "."
+        for module_name in tuple(sys.modules):
+            if module_name.startswith(prefix):
+                del sys.modules[module_name]
+    finally:
+        _imp.release_lock()
+
+
+_clear_private_companions()
+
+
 def _is_registry_name(name: str) -> bool:
     return name in _REGISTRY_NAMES or name == "qa" or name.startswith("qa.")
 
@@ -46,43 +61,48 @@ def companion(name: str) -> Any:
 
     if name not in _REGISTRY_NAMES:
         raise RuntimeError("account runtime dependency is unavailable")
-    path = _SCRIPTS_ROOT / f"{name}.py"
-    private_name = f"{_PACKAGE_NAME}.{name}"
-    spec = importlib.util.spec_from_file_location(private_name, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError("account runtime dependency is unavailable")
-    module = importlib.util.module_from_spec(spec)
-    saved_modules = {
-        module_name: value
-        for module_name, value in sys.modules.items()
-        if _is_registry_name(module_name)
-    }
-    saved_path = list(sys.path)
-    for module_name in tuple(sys.modules):
-        if _is_registry_name(module_name):
-            del sys.modules[module_name]
-    scripts_root = str(_SCRIPTS_ROOT)
-    plugin_root = str(_SCRIPTS_ROOT.parent)
-    sys.path[:] = [
-        scripts_root,
-        plugin_root,
-        *(entry for entry in saved_path if entry not in {scripts_root, plugin_root}),
-    ]
-    sys.modules[private_name] = module
-    succeeded = False
+    _imp.acquire_lock()
     try:
-        spec.loader.exec_module(module)
-        module.__name__ = name
-        succeeded = True
-        return module
-    finally:
+        path = _SCRIPTS_ROOT / f"{name}.py"
+        private_name = f"{_PACKAGE_NAME}.{name}"
+        spec = importlib.util.spec_from_file_location(private_name, path)
+        if spec is None or spec.loader is None:
+            raise RuntimeError("account runtime dependency is unavailable")
+        module = importlib.util.module_from_spec(spec)
+        saved_modules = {
+            module_name: value
+            for module_name, value in sys.modules.items()
+            if _is_registry_name(module_name)
+        }
+        saved_path = list(sys.path)
         for module_name in tuple(sys.modules):
             if _is_registry_name(module_name):
                 del sys.modules[module_name]
-        sys.modules.update(saved_modules)
-        if not succeeded:
-            sys.modules.pop(private_name, None)
-        sys.path[:] = saved_path
+        scripts_root = str(_SCRIPTS_ROOT)
+        plugin_root = str(_SCRIPTS_ROOT.parent)
+        sys.path[:] = [
+            scripts_root,
+            plugin_root,
+            *(entry for entry in saved_path if entry not in {scripts_root, plugin_root}),
+        ]
+        sys.modules.pop(private_name, None)
+        sys.modules[private_name] = module
+        succeeded = False
+        try:
+            spec.loader.exec_module(module)
+            module.__name__ = name
+            succeeded = True
+            return module
+        finally:
+            for module_name in tuple(sys.modules):
+                if _is_registry_name(module_name):
+                    del sys.modules[module_name]
+            sys.modules.update(saved_modules)
+            if not succeeded:
+                sys.modules.pop(private_name, None)
+            sys.path[:] = saved_path
+    finally:
+        _imp.release_lock()
 
 
 def validate_automation_settings(value: Any) -> dict[str, Any]:
