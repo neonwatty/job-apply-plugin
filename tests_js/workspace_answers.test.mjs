@@ -65,7 +65,7 @@ test("answer-memory documents guarded profile and preference mutations", async (
 });
 
 test("answer browser routes encode canonical keys at every path boundary", async () => {
-  const app = await readFile(join(REPO_ROOT, "workspace", "app.js"), "utf8");
+  const app = await readFile(join(REPO_ROOT, "workspace", "features", "answers.js"), "utf8");
   for (const expression of [
     "answerApiPath(answer.key, action)",
     "answerApiPath(selected.key)",

@@ -9,7 +9,10 @@ const REPO_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const readWorkspaceFiles = async () => Promise.all([
   readFile(join(REPO_ROOT, "workspace", "index.html"), "utf8"),
   readFile(join(REPO_ROOT, "workspace", "styles.css"), "utf8"),
-  readFile(join(REPO_ROOT, "workspace", "app.js"), "utf8"),
+  Promise.all([
+    readFile(join(REPO_ROOT, "workspace", "features", "bindings.js"), "utf8"),
+    readFile(join(REPO_ROOT, "workspace", "features", "navigation.js"), "utf8"),
+  ]).then((parts) => parts.join("\n")),
 ]);
 
 function groupMarkup(html, id) {

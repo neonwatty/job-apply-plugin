@@ -20,7 +20,9 @@ test("Companion markup exposes advisory readiness and safe review controls", asy
 
 test("workspace markup has semantic dialogs, labels, live regions, and no remote assets", async () => {
   const html = await readFile(join(REPO_ROOT, "workspace", "index.html"), "utf8");
-  const app = await readFile(join(REPO_ROOT, "workspace", "app.js"), "utf8");
+  const app = (await Promise.all(["activity.js", "answers.js", "bindings.js"].map(
+    (name) => readFile(join(REPO_ROOT, "workspace", "features", name), "utf8"),
+  ))).join("\n");
   assert.match(html, /<main(?:\s|>)/);
   assert.match(html, /<dialog id="job-dialog" aria-labelledby=/);
   assert.match(html, /id="facts-workspace"/);
@@ -94,7 +96,7 @@ test("skill and documentation contracts keep extraction agent-owned and context-
   const jobApply = await readFile(join(REPO_ROOT, "skills", "job-apply", "SKILL.md"), "utf8");
   const workspaceSkill = await readFile(join(REPO_ROOT, "skills", "job-workspace", "SKILL.md"), "utf8");
   const readme = await readFile(join(REPO_ROOT, "README.md"), "utf8");
-  const app = await readFile(join(REPO_ROOT, "workspace", "app.js"), "utf8");
+  const app = await readFile(join(REPO_ROOT, "workspace", "features", "resumes.js"), "utf8");
 
   assert.match(jobApply, /resume-extraction-request-list --status requested/);
   assert.match(jobApply, /Never scan for extraction requests during every job application/);
