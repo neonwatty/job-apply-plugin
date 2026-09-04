@@ -31,6 +31,7 @@ from tests.support.store_facade_contract import (
 
 PACKAGE_ROOT = ROOT / "scripts" / "job_apply_store"
 PACKAGE_FILES = (
+    "composition.py",
     "accounts_runtime.py", "cli_parser.py", "cli_dispatch.py",
     "compat_runtime.py", "compat_storage.py", "compat_sessions.py",
     "compat_validation.py", "domains/startup.py",

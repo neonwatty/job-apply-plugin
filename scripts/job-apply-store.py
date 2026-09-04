@@ -90,142 +90,13 @@ _extraction_validation = _implementation.extraction
 _account_validation = _implementation.accounts
 
 try:
-    _profile_domain = importlib.import_module(f"{_PACKAGE_NAME}.domains.profile")
-    _profile_facts_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.profile_facts"
+    _composition = importlib.import_module(f"{_PACKAGE_NAME}.composition")
+    _domain_modules, _domain_bases = _composition.load_domains(
+        _PACKAGE_NAME, lambda: globals()
     )
-    _answer_read_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.answers.read"
-    )
-    _answer_mutation_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.answers.mutations"
-    )
-    _answer_merge_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.answers.merge"
-    )
-    _answer_cleanup_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.answers.cleanup"
-    )
-    _job_crud_domain = importlib.import_module(f"{_PACKAGE_NAME}.domains.jobs.crud")
-    _job_overview_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.jobs.overview"
-    )
-    _job_upsert_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.jobs.upsert"
-    )
-    _job_legacy_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.jobs.legacy"
-    )
-    _coordinator_persistence_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.coordinator.persistence"
-    )
-    _coordinator_claims_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.coordinator.claims"
-    )
-    _coordinator_attention_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.coordinator.attention"
-    )
-    _coordinator_progress_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.coordinator.progress"
-    )
-    _coordinator_approvals_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.coordinator.approvals"
-    )
-    _resumes_storage_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.resumes.storage"
-    )
-    _resumes_read_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.resumes.read"
-    )
-    _resumes_mutations_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.resumes.mutations"
-    )
-    _resumes_lifecycle_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.resumes.lifecycle"
-    )
-    _extractions_journal_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.extractions.journal"
-    )
-    _extractions_requests_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.extractions.requests"
-    )
-    _extractions_proposals_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.extractions.proposals"
-    )
-    _sessions_history_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.sessions.history"
-    )
-    _sessions_readiness_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.sessions.readiness"
-    )
-    _sessions_document_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.sessions.document"
-    )
-    _sessions_lifecycle_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.sessions.lifecycle"
-    )
-    _accounts_email_execution_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.accounts.email_execution"
-    )
-    _accounts_email_scope_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.accounts.email_scope"
-    )
-    _accounts_operations_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.accounts.operations"
-    )
-    _accounts_password_execution_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.accounts.password_execution"
-    )
-    _accounts_registry_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.accounts.registry"
-    )
-    _accounts_settings_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.accounts.settings"
-    )
-    _accounts_synthetic_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.accounts.synthetic"
-    )
-    _accounts_trusted_fill_domain = importlib.import_module(
-        f"{_PACKAGE_NAME}.domains.accounts.trusted_fill"
-    )
-    _startup_domain = importlib.import_module(f"{_PACKAGE_NAME}.domains.startup")
-    _startup_domain._bind_runtime(lambda: globals())
+    globals().update(_domain_modules)
     _cli_parser = importlib.import_module(f"{_PACKAGE_NAME}.cli_parser")
     _cli_dispatch = importlib.import_module(f"{_PACKAGE_NAME}.cli_dispatch")
-    for _runtime_domain in (
-        _accounts_email_execution_domain,
-        _accounts_email_scope_domain,
-        _accounts_operations_domain,
-        _accounts_password_execution_domain,
-        _accounts_registry_domain,
-        _accounts_settings_domain,
-        _accounts_synthetic_domain,
-        _accounts_trusted_fill_domain,
-        _sessions_history_domain,
-        _sessions_readiness_domain,
-        _sessions_document_domain,
-        _sessions_lifecycle_domain,
-        _resumes_storage_domain,
-        _resumes_read_domain,
-        _resumes_mutations_domain,
-        _resumes_lifecycle_domain,
-        _extractions_journal_domain,
-        _extractions_requests_domain,
-        _extractions_proposals_domain,
-
-        _answer_read_domain,
-        _answer_mutation_domain,
-        _answer_merge_domain,
-        _answer_cleanup_domain,
-        _job_upsert_domain,
-        _job_legacy_domain,
-        _coordinator_persistence_domain,
-        _coordinator_claims_domain,
-        _coordinator_attention_domain,
-        _coordinator_progress_domain,
-        _coordinator_approvals_domain,
-    ):
-        _runtime_domain._bind_runtime(lambda: globals())
 except BaseException:
     _remove_root_private_packages()
     raise
@@ -448,44 +319,7 @@ def _read_input(path: str) -> dict[str, Any]:
     return _require_object(value, "input")
 
 
-class Store(
-    _profile_domain.ProfileStoreMixin,
-    _profile_facts_domain.ProfileFactsStoreMixin,
-    _answer_read_domain.AnswerReadMixin,
-    _answer_mutation_domain.AnswerMutationMixin,
-    _answer_merge_domain.AnswerMergeMixin,
-    _answer_cleanup_domain.AnswerCleanupMixin,
-    _job_crud_domain.JobCrudMixin,
-    _job_overview_domain.JobOverviewMixin,
-    _job_upsert_domain.JobUpsertMixin,
-    _job_legacy_domain.JobLegacyMixin,
-    _coordinator_persistence_domain.CoordinatorPersistenceMixin,
-    _coordinator_claims_domain.CoordinatorClaimsMixin,
-    _coordinator_attention_domain.CoordinatorAttentionMixin,
-    _coordinator_progress_domain.CoordinatorProgressMixin,
-    _coordinator_approvals_domain.CoordinatorApprovalsMixin,
-    _resumes_storage_domain.ResumeStorageMixin,
-    _resumes_read_domain.ResumeReadMixin,
-    _resumes_mutations_domain.ResumeMutationMixin,
-    _resumes_lifecycle_domain.ResumeLifecycleMixin,
-    _extractions_journal_domain.ExtractionJournalMixin,
-    _extractions_requests_domain.ExtractionRequestMixin,
-    _extractions_proposals_domain.ExtractionProposalMixin,
-    _sessions_history_domain.SessionHistoryMixin,
-    _sessions_readiness_domain.SessionReadinessMixin,
-    _sessions_document_domain.SessionDocumentMixin,
-    _sessions_lifecycle_domain.SessionLifecycleMixin,
-    _accounts_email_execution_domain.EmailExecutionMixin,
-    _accounts_email_scope_domain.EmailScopeMixin,
-    _accounts_operations_domain.AccountOperationMixin,
-    _accounts_password_execution_domain.PasswordExecutionMixin,
-    _accounts_registry_domain.AccountRegistryMixin,
-    _accounts_settings_domain.AccountSettingsMixin,
-    _accounts_synthetic_domain.SyntheticAccountMixin,
-    _accounts_trusted_fill_domain.TrustedFillMixin,
-    _startup_domain.StartupMixin,
-    _base.StoreBase,
-):
+class Store(*_domain_bases, _base.StoreBase):
     _runtime_provider = staticmethod(lambda: globals())
 
 

@@ -43,6 +43,7 @@ CANONICAL_NAMES = {
 }
 
 IMPLEMENTATION_SUFFIXES = {
+    ".composition",
     ".accounts_runtime",
     ".cli_parser",
     ".cli_dispatch",
