@@ -1,6 +1,6 @@
 # TypeScript Strangler Migration Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** Assign bounded work packages with explicit allowed files, dependencies, and verification. Use isolated worktrees for parallel writers and independent review of each immutable result. One integration owner updates shared configuration, launchers, and package inventories. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace Python and browser JavaScript with a modular TypeScript application while retaining only necessary Swift native helpers and preserving every existing safety/data contract.
 
@@ -10,6 +10,48 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-04-codebase-modernization-design.md`
 
+## Current starting point and parallel ownership
+
+The Python decomposition now provides concrete migration seams: Store domains
+under `scripts/job_apply_store/domains/` cover profile/facts, answers, jobs,
+coordinator, resumes, extraction, sessions, accounts, and startup. Shared
+validation, I/O, runtime bindings, compatibility adapters, CLI parser and
+dispatcher are separate modules. Workspace HTTP/auth/projections and route
+domains live under `scripts/job_apply_workspace/`; browser bootstrap, shared
+libraries, and features live under `workspace/`. The installed-package smoke
+harness is split under `scripts/smoke/`. Preserve these boundaries during ports.
+
+The public Store contract is **98 commands**, checked by the parser contract;
+90 is obsolete. TypeScript implementation and Python removal are not completed
+by this extraction. Facade assembly is complete (365 lines, no size exceptions);
+accept integrated deterministic and installed-package verification before
+starting the port.
+
+The runtime/platform launch gate is unresolved: local Node availability is not
+evidence that fresh supported Codex and Claude installations can launch the
+package on every supported OS/architecture. Task 1 must settle that evidence
+and the launch strategy before runtime cutover or Python removal.
+
+| Lane | Bounded ownership | Dependency and handoff |
+| --- | --- | --- |
+| Runtime and contract foundation | Task 1 probe/docs; Task 2 capture tools, schemas and vectors | Can investigate in parallel; publish stable vectors before domain ports. Integration owner alone edits manifests, package scripts, compiler/build configuration and shared contract types. |
+| Pure answer/readiness policies | Task 4 answer and readiness modules plus their tests | Starts after Tasks 2–3; owns pure functions only. Hands off policy interfaces to Store read/mutation lanes. |
+| Pure account policies | Task 4 realm/settings/flow/Trusted Fill policy modules plus their tests | Starts after Tasks 2–3; native adapters and durable account operations stay with later tasks. |
+| Browser UI | Task 5 UI modules and UI tests | Starts after frozen HTTP contracts and build setup; one owner controls browser bootstrap. Recorder work uses a separate subtree and can take a freed slot. |
+| Store reads and HTTP | Task 6 read-only document/projection/routes modules and tests | Starts after Tasks 2–3; consumes published policies. Does not own transaction primitives or mutation routes. |
+| Transactions and mutation domains | Task 7 primitives, followed by bounded Task 8 domain packages | Primitive contracts land first. Domain workers get disjoint subtrees and disposable cloned Stores; one owner controls journal integration and writer cutover. |
+
+With three worker slots, start the runtime probe, contract corpus, and build
+scaffold in disjoint files; shared contract types follow the frozen corpus.
+Then rotate capacity into pure policies,
+UI, and read-only Store work as their prerequisites land. Queue dependent work
+instead of assigning overlapping files. Review focused results independently,
+and run broader cross-domain/package checks once at integration points.
+
+Python remains the only live writer throughout these lanes. Differential tests
+must run Python and TypeScript against separate clones; even read-only rollout
+must exclude startup repair, migration, journal recovery and implicit writes.
+
 ## Global Constraints
 
 - Complete the 500-line facade decomposition and tiered test foundation first.
@@ -18,6 +60,10 @@
 - No schema bump or public command/path change during compatibility phases.
 - Installed plugin performs no dependency installation or network fetch.
 - Python is removed only after runtime, upgrade, rollback, and packaged-agent gates pass.
+- CI equivalence observation is pending: retain legacy execution until at least
+  20 PR runs have zero unexplained divergence; keep affected selection in shadow
+  for two weeks with zero omitted failures. Infrastructure or local passes do
+  not satisfy either external observation gate.
 
 ---
 
@@ -43,7 +89,7 @@
 - Create: `test/contract/vectors/**`
 - Create: `tools/capture-python-contracts.mjs`, `tools/verify-contract-redaction.mjs`
 
-**Interfaces:** Golden vectors cover all 90 Store commands, task/attempt/QA/policy families, authenticated workspace routes, schema-version-1 documents, and stable error codes.
+**Interfaces:** Golden vectors cover all 98 Store commands, task/attempt/QA/policy families, authenticated workspace routes, schema-version-1 documents, and stable error codes.
 
 - [ ] **Step 1: Capture clean/legacy/trashed/corrupt/future Store reads with injected clocks/nonces and prove rejected cases do not change bytes or mtimes.**
 - [ ] **Step 2: Capture mutation results on disposable clones, including permissions, journal stages, restart recovery, and append-only history.**
@@ -97,12 +143,15 @@
 ### Task 6: Implement TypeScript Store reads and workspace HTTP in shadow mode
 
 **Files:**
-- Create: `src/store/{paths,permissions,atomic-json,jsonl,validation,initialize}.ts`
+- Create: `src/store/{paths,permissions,read-json,read-jsonl,validation,startup-validation}.ts`
 - Create: `src/store/documents/{profile,fact-groups,answers,jobs,resumes,sessions,accounts}.ts`
 - Create: `src/workspace/{server,auth,static,errors,projections}.ts`
 - Create: `src/workspace/routes/{read,profile,facts,answers,jobs,resumes,accounts}.ts`
 
 **Interfaces:** `StoreReader` exposes validated snapshot/projection reads only. Shadow mode accepts only cloned/read-only roots and asserts zero byte/mtime changes.
+
+Task 7 owns write-capable locking, atomic JSON and JSONL primitives; this task
+must not implement initialization, recovery, or writes under read-only names.
 
 - [ ] **Step 1: Implement path/permission/version validation and document loaders against clean, legacy, corrupt, future, symlink, and reparse fixtures.**
 - [ ] **Step 2: Compare every read CLI and workspace projection with Python exact canonical JSON.**
@@ -146,7 +195,7 @@
 
 **Interfaces:** All public commands route to one TS Store process; no Python business logic or writer remains reachable.
 
-- [ ] **Step 1: Run full clean-store and upgrade suites on Linux/macOS/Windows, including all 90 commands and package installs.**
+- [ ] **Step 1: Run full clean-store and upgrade suites on Linux/macOS/Windows, including all 98 commands and package installs.**
 - [ ] **Step 2: Run concurrency, every journal kill point, corrupt/future preservation, legacy import, permissions, and rollback rehearsals.**
 - [ ] **Step 3: Switch all Store/task/workspace mutations in one release candidate; assert process inventory contains no Python writer.**
 - [ ] **Step 4: Roll back automatically on any differential, privacy, platform, or recovery failure; otherwise hold one full release observation window.**

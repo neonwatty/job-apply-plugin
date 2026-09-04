@@ -24,9 +24,9 @@ npm run test:release
   bounded concurrent shards.
 - `test:platform` runs the applicable OS-specific contract suite. Suites for
   other operating systems are reported as skipped.
-- `test:release` runs the existing package smoke and network link checks. Later
-  CI work will add explicit installed-package, upgrade, browser, and privacy
-  evidence suites.
+- `test:release` runs package smoke and network link checks. The smoke harness
+  covers isolated Claude/Codex installs, Codex upgrades, packaged browser/API
+  walkthroughs, privacy assertions, and recursive critical-file byte parity.
 
 Pass `--receipt path/to/receipt.json` to record selection, status, and elapsed
 milliseconds. Receipts intentionally omit commands, output, and environment
@@ -45,9 +45,31 @@ Production ownership is initially conservative and heuristic; affected mode is
 local selection evidence, not yet an affected-safe CI gate.
 
 Affected selection is initially local evidence, not proof that CI shadowing is
-complete. Activation still requires the planned observation window with zero
-omitted failures. Performance limits remain targets until enough warm local and
-CI receipts exist to calculate percentiles.
+complete. Activation still requires two weeks of selection shadowing with zero
+omitted failures; an omitted failure requires correcting ownership and restarting
+the observation window. Performance limits remain targets until enough warm
+local and CI receipts exist to calculate percentiles.
+
+## Parallel implementation and verification
+
+Use the extracted module boundaries for bounded assignments: Store domain
+subtrees in `scripts/job_apply_store/domains/`, workspace server/domain modules
+in `scripts/job_apply_workspace/`, browser libraries/features in `workspace/`,
+and smoke helpers in `scripts/smoke/`. The Store CLI contract covers 98 commands.
+Compatibility adapters preserve live replacement seams and root-local loading;
+changes there require facade, startup, and loader checks as well as domain tests.
+
+Each parallel worker owns explicit files and focused tests in an isolated
+worktree. One integration owner controls shared facade/bootstrap composition,
+test-matrix ownership, package scripts, workflows, and installed inventories.
+Workers report immutable revisions and test receipts; an independent reviewer
+checks each result. Run broader deterministic and package verification at
+integration points, repeating it only after relevant changes or failures.
+
+TypeScript migration uses the same ownership rules, but its runtime/platform
+launch gate remains unresolved. Differential writers must use separate cloned
+Stores. Python and TypeScript must never write the same live Store; read-only
+tests must also detect initialization, repair, and recovery side effects.
 
 ## Timing interpretation
 
@@ -64,6 +86,10 @@ evidence, not an optimization: remove it only after at least 20 PR runs show no
 unexplained divergence. The `classify` job records affected-suite selection but
 does not skip full shards, and `PR gate` rejects any failed, cancelled, skipped,
 or missing selected job.
+
+The 20-PR equivalence gate and two-week affected-selection observation are both
+pending external evidence. Local test receipts and merged workflow code cannot
+mark either gate complete.
 
 Required Windows and deterministic macOS contracts remain on pull requests.
 Visible live-browser/native observations are advisory in the scheduled or
