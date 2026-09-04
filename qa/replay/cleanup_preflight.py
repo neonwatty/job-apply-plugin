@@ -351,7 +351,7 @@ def _sanitize_run_artifacts(
         "lifecycle-transition.lock",
         "tombstone.json",
     }
-    tree = runtime._build_cleanup_tree(run_descriptor)
+    tree = _build_cleanup_tree(run_descriptor, _runtime=runtime)
     if any(
         path[0] != "store"
         and path[0] not in allowed_files
@@ -374,7 +374,7 @@ def _sanitize_run_artifacts(
         and ("run.json",) not in retained_paths
         else set()
     )
-    runtime._assert_cleanup_tree_bound(run_descriptor, tree)
+    _assert_cleanup_tree_bound(run_descriptor, tree, _runtime=runtime)
     runtime._sanitize_cleanup_tree(
         run_descriptor,
         (),
@@ -383,7 +383,7 @@ def _sanitize_run_artifacts(
         retained_paths,
         deferred_paths,
     )
-    runtime._assert_cleanup_tree_bound(run_descriptor, tree)
+    _assert_cleanup_tree_bound(run_descriptor, tree, _runtime=runtime)
     runtime._verify_cleanup_tree(
         run_descriptor,
         (),
@@ -395,7 +395,7 @@ def _sanitize_run_artifacts(
         runtime._sanitize_deferred_regular(
             run_descriptor, path[0], tree.manifest[path]
         )
-    runtime._assert_cleanup_tree_bound(run_descriptor, tree)
+    _assert_cleanup_tree_bound(run_descriptor, tree, _runtime=runtime)
     runtime._verify_cleanup_tree(
         run_descriptor, (), tree.manifest, tree.children, retained_paths
     )
@@ -459,7 +459,7 @@ def _validate_self_contained_tombstone(
     elif tombstone.get("reportSha256") is not None:
         raise CoordinatorError("invalid cleanup state")
 
-    tree = runtime._build_cleanup_tree(run_descriptor)
+    tree = _build_cleanup_tree(run_descriptor, _runtime=runtime)
     allowed_top = {
         "fixture.json",
         "profile.json",

@@ -45,7 +45,7 @@ def _resolve_runtime(runtime: Any | None) -> Any:
 
 def _new_run_storage(*, _runtime: Any | None = None) -> _RunStorage:
     runtime = _resolve_runtime(_runtime)
-    return runtime._create_run_storage(runtime.RUNS_ROOT)
+    return _create_run_storage(runtime.RUNS_ROOT, _runtime=runtime)
 
 
 def _new_run_directory(
@@ -91,7 +91,7 @@ def _open_loaded_run(
     runtime = _resolve_runtime(_runtime)
     if runtime.RUN_ID.fullmatch(run_id) is None:
         raise CoordinatorError("invalid run identifier")
-    storage = runtime._open_run_storage(runtime.RUNS_ROOT, run_id)
+    storage = _open_run_storage(runtime.RUNS_ROOT, run_id, _runtime=runtime)
     try:
         state = runtime._load_state_at(
             storage.canonical_run_root, storage.run_descriptor
@@ -118,7 +118,7 @@ def _open_cleanup_run(
     runtime = _resolve_runtime(_runtime)
     if runtime.RUN_ID.fullmatch(run_id) is None:
         raise CoordinatorError("invalid run identifier")
-    return runtime._open_run_storage(runtime.RUNS_ROOT, run_id)
+    return _open_run_storage(runtime.RUNS_ROOT, run_id, _runtime=runtime)
 
 
 def _open_run_for_cleanup(

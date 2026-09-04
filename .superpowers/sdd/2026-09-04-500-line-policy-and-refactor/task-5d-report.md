@@ -207,3 +207,202 @@ unrelated workspace launcher test while still passing; replay tests emitted no
 warnings. The facade is exactly at the 500-line policy limit and
 `cleanup_preflight.py` has two lines of headroom, which is a maintenance
 constraint but not a functional blocker.
+
+## Review round 1: legacy seam and metadata restoration
+
+### Status and scope
+
+Complete against review base
+`c888021ad5dc4f5d59990783360fcb89c1836076`. This round changes only the
+already-owned replay facade, replay leaves, facade regression tests, and this
+report. It makes no promotion, recorder, Chrome, Store, fixture, scenario,
+PDF, browser, packaged-runtime, or baseline change.
+
+This section supersedes the earlier statement that core orchestration does not
+use the tuple compatibility adapters. The legacy tuple seams are now the
+required facade interception boundary. Each adapter transfers its already-open
+descriptors, and orchestration immediately adopts those exact descriptors into
+`_RunStorage`; it never reopens a descriptor from a returned path.
+
+### RED
+
+The review regressions were added before production changes:
+
+```text
+python3 -m unittest tests.test_qa_replay_facade
+......FFFFF
+Ran 13 tests in 0.456s
+FAILED (failures=24)
+```
+
+The failures proved all requested defects:
+
+- `_prepare` did not call the patched `_new_run_directory`.
+- route resolution, lifecycle recording, and evaluation did not call the
+  patched `_load_run`.
+- cleanup did not call the patched `_open_run_for_cleanup`.
+- all 16 named helpers exposed the bound `_runtime` parameter instead of their
+  legacy signatures and metadata.
+- all four invariant comment blocks, comprising nine explanatory lines, were
+  absent from their extracted leaves.
+
+Because the intentionally patched prepare seam was bypassed during RED, that
+one test reached the real detached server start. The exact child started by
+that test was identified and terminated; a process audit confirmed no residual
+`qa.server` child. Once the seam was restored, the test failed before server
+startup by construction.
+
+### GREEN implementation
+
+- `prepare._prepare` calls the facade runtime's `_new_run_directory`.
+- `lifecycle._resolve_route`, `lifecycle._record_transition`, and
+  `evaluate._evaluate` call the facade runtime's `_load_run`.
+- `cleanup._cleanup` calls the facade runtime's `_open_run_for_cleanup`.
+- `_RunStorage.adopt_legacy` takes ownership of the transferred root/run
+  descriptors without a path lookup or reopen. Cleanup retains the exact
+  canonical path supplied by `_open_run_for_cleanup`; prepare/load consumers
+  operate only on the transferred descriptors and returned run root.
+- The 16 reviewed helpers are ordinary facade functions with the exact legacy
+  parameter lists, annotations, `__name__`, and `__module__`. They still pass
+  the live facade runtime into their directional leaf implementations, so
+  nested monkeypatch points remain live.
+- CLI compatibility now owns the frozen legacy star-export inventory and its
+  runtime namespace adapter in `qa/replay/cli.py`. Internal storage and cleanup
+  tree helpers stay owned by their leaves. This is the responsibility movement
+  that creates facade headroom; no statements or comments were packed or
+  deleted for line count.
+- The endpoint-current-policy, HTTP-boundary, detached-`Popen`, and
+  retry-capability/shutdown invariant comments were restored verbatim in
+  `auto_submit.py`, `server_control.py`, and `cleanup.py`.
+
+Focused GREEN:
+
+```text
+python3 -m unittest tests.test_qa_replay_facade
+.............
+Ran 13 tests in 0.075s
+OK
+```
+
+An independent executable comparison against the original monolith confirmed
+all requested metadata dimensions rather than relying only on the frozen test
+table:
+
+```text
+python3 -c '<load base and current; compare signature/name/module/annotations>'
+16 legacy helper metadata contracts match base
+```
+
+### Descriptor and cleanup identity ownership audit
+
+- `_new_run_directory`, `_load_run`, and `_open_run_for_cleanup` each detach
+  exactly the already-validated descriptors from their temporary storage owner.
+  Their corresponding orchestrator adopts those same integer descriptors and
+  closes them in its existing `finally` path.
+- No new `os.open` occurs between a legacy seam and adoption. Prepare performs
+  its existing run-directory binding check before writing. Loaded-run state is
+  validated while the same descriptor is still owned by the adapter. Cleanup
+  carries forward the adapter-supplied canonical run root and both descriptors.
+- Store traversal, report/tombstone publication, marker recovery, and deletion
+  remain descriptor-relative. The signed tombstone construction and
+  verification code is unchanged.
+- `_CleanupTree` creation, root identity, manifest, child identities,
+  sanitize, deferred `run.json`, and post-sanitize verification remain inside
+  `cleanup_preflight.py`. Moving its two new internal helper calls out of the
+  facade did not reconstruct a tree or weaken any legacy facade patch point;
+  all historical recursive sanitizer/verifier seams still use the live facade
+  runtime.
+- Existing adversarial replay tests for run-parent replacement, cleanup-open
+  swapping, pathname-deletion refusal, mid-sanitize entry changes, retained
+  shutdown capability, every sanitization interruption, signed tombstone
+  recovery, and server identity mismatch all pass.
+
+### Final line counts and baseline
+
+```text
+scripts/qa-replay.py                    497
+qa/replay/__init__.py                    24
+qa/replay/auto_submit.py                488
+qa/replay/cleanup.py                    391
+qa/replay/cleanup_preflight.py          498
+qa/replay/cli.py                        157
+qa/replay/evaluate.py                   183
+qa/replay/lifecycle.py                  188
+qa/replay/prepare.py                    388
+qa/replay/report.py                     252
+qa/replay/run_state.py                  136
+qa/replay/secure_io.py                  490
+qa/replay/server_control.py             298
+tests/test_qa_replay_facade.py          468
+```
+
+Every owned source/test file remains below 500 physical lines. The facade has
+three lines of headroom and the maximum leaf remains
+`cleanup_preflight.py` at 498. This review round does not modify
+`.source-size-baseline.json`; the original Task 5D delta remains exactly the
+single replay-facade baseline deletion.
+
+### Verification
+
+```text
+python3 -m unittest tests.test_qa_replay_facade
+PASS: 13 tests
+
+python3 -m unittest discover -s tests -p 'test_qa_replay_*.py'
+PASS: 61 tests
+
+python3 -m unittest \
+  tests.test_qa_oracle_events \
+  tests.test_qa_oracle_semantics \
+  tests.test_qa_oracle_sessions \
+  tests.test_qa_readiness_oracle
+PASS: 45 tests
+
+python3 -m unittest discover -s tests -p 'test_job_apply_policy_*.py'
+PASS: 19 tests
+
+python3 -m unittest discover -s tests -v
+PASS: 795 tests, 2 opt-in browser skips
+
+bash scripts/smoke-plugin.sh
+PASS: manifest/static/package checks, 3 packaged Playwright/CLI tests,
+      isolated Claude marketplace install, isolated Codex install
+
+npm run check:size
+PASS
+
+python3 -m compileall -q \
+  scripts/qa-replay.py qa/replay tests/test_qa_replay_facade.py
+PASS
+
+git diff --check
+PASS
+```
+
+The full suite again emitted only the two pre-existing `ResourceWarning`
+messages from the unrelated workspace launcher test. Replay tests emitted no
+warnings. A post-replay process audit found no detached replay server.
+
+### Self-review
+
+- Compared each of the 16 helper signatures, names, modules, and annotation
+  dictionaries directly with the base monolith and confirmed exact equality.
+- Traced every reviewed facade seam from wrapper to leaf and mentally mutated
+  each call back to its prior storage helper; the focused regressions fail in
+  that state.
+- Audited ownership from open through detach, immediate adoption, operational
+  use, and `finally` close. No bound descriptor or cleanup identity tree is
+  recreated from a path.
+- Rechecked the restored comments against all nine original explanatory comment
+  lines and added a source contract that names their correct extracted leaves.
+- Ran oracle/readiness, policy, and the full Python suite once, then re-ran the
+  focused and all-replay adversarial suites after the final no-path ownership
+  simplification. Package smoke, source size, compilation, and whitespace
+  validation were also run against that final implementation.
+- Confirmed the final diff contains only replay-owned source/tests and this
+  report, with no baseline delta in this review round.
+
+Remaining maintenance concern: the facade has three lines of headroom,
+`cleanup_preflight.py` two, and `secure_io.py` ten. These are not functional or
+release blockers, but future responsibilities should be added to directional
+leaves rather than these near-limit files.

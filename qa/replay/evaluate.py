@@ -11,9 +11,10 @@ from typing import Any
 from qa.contracts import ContractError, validate_fixture
 from qa.oracle import OracleError, evaluate_run
 from qa.replay.report import _validate_report
-from qa.replay.run_state import _open_loaded_run
+from qa.replay.run_state import _load_run
 from qa.replay.secure_io import (
     CoordinatorError,
+    _RunStorage,
     _atomic_json_at,
     _entry_exists_at,
     _read_json_at,
@@ -33,7 +34,13 @@ def _evaluate(
     run_id: str, *, _runtime: Any | None = None
 ) -> tuple[int, dict[str, Any]]:
     runtime = _resolve_runtime(_runtime)
-    storage, state = runtime._open_loaded_run(run_id)
+    run_root, state, root_descriptor, run_descriptor = runtime._load_run(run_id)
+    storage = _RunStorage.adopt_legacy(
+        run_id,
+        run_root,
+        root_descriptor,
+        run_descriptor,
+    )
     lock_descriptor = None
     authenticated = False
     lifecycle_active = False

@@ -148,6 +148,8 @@ def _start_server(
             or not isinstance(startup["port"], int)
         ):
             raise ValueError
+        # The server intentionally outlives this command. Mark this local handle as
+        # detached so Popen's destructor does not report the expected live child.
         process.returncode = 0
         return startup
     except (runtime.queue.Empty, runtime.json.JSONDecodeError, TypeError, ValueError):

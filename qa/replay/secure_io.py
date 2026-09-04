@@ -27,12 +27,31 @@ class CoordinatorError(ValueError):
 class _RunStorage:
     """Own the two directory descriptors anchoring one replay run."""
 
-    runs_root: Path
     run_id: str
     run_root: Path
     canonical_run_root: Path
     root_descriptor: int
     run_descriptor: int
+
+    @classmethod
+    def adopt_legacy(
+        cls,
+        run_id: str,
+        run_root: Path,
+        root_descriptor: int,
+        run_descriptor: int,
+        *,
+        canonical_run_root: Path | None = None,
+    ) -> _RunStorage:
+        """Own transferred descriptors without reopening either bound path."""
+
+        return cls(
+            run_id=run_id,
+            run_root=run_root,
+            canonical_run_root=canonical_run_root or run_root,
+            root_descriptor=root_descriptor,
+            run_descriptor=run_descriptor,
+        )
 
     def close_run(self) -> None:
         if self.run_descriptor >= 0:
@@ -145,7 +164,6 @@ def _create_run_storage(
                 )
                 runtime.os.fchmod(run_descriptor, 0o700)
                 return _RunStorage(
-                    runs_root=runs_root,
                     run_id=run_id,
                     run_root=run_root,
                     canonical_run_root=runs_root.resolve() / run_id,
@@ -189,7 +207,6 @@ def _open_run_storage(
         runtime._verify_directory_binding(runs_root, root_descriptor, diagnostic)
         runtime._verify_directory_binding(run_root, run_descriptor, diagnostic)
         return _RunStorage(
-            runs_root=runs_root,
             run_id=run_id,
             run_root=run_root,
             canonical_run_root=runs_root.resolve() / run_id,

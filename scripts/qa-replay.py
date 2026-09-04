@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timedelta, timezone
 import fcntl
-from functools import partial as _partial
 import hashlib
 import hmac
 from importlib import import_module as _import_module
@@ -82,63 +81,148 @@ FAILURE_CATEGORIES = _report.FAILURE_CATEGORIES
 CoordinatorError = _secure_io.CoordinatorError
 
 
-class _FacadeRuntime:
-    def __getattr__(self, name: str) -> Any:
-        return globals()[name]
+_FACADE_RUNTIME = _cli.FacadeRuntime(globals())
+_runtime = _FACADE_RUNTIME.resolve
 
 
-_FACADE_RUNTIME = _FacadeRuntime()
+def _opaque(kind: str, label: str) -> str:
+    return _server_control._opaque(kind, label, _runtime=_runtime())
 
 
-def _runtime() -> Any:
-    return _FACADE_RUNTIME
+def _revision(label: str) -> str:
+    return _server_control._revision(label, _runtime=_runtime())
 
 
-_opaque = _partial(_server_control._opaque, _runtime=_FACADE_RUNTIME)
-_revision = _partial(_server_control._revision, _runtime=_FACADE_RUNTIME)
-_post_claimed_action = _partial(_server_control._post_claimed_action, _runtime=_FACADE_RUNTIME)
+def _post_claimed_action(
+    base_url: str,
+    token: str,
+    lease: dict[str, Any],
+    authorization: dict[str, Any],
+    step_id: str,
+    safety_checks: dict[str, bool] | None = None,
+) -> tuple[int, dict[str, Any]]:
+    return _server_control._post_claimed_action(
+        base_url,
+        token,
+        lease,
+        authorization,
+        step_id,
+        safety_checks,
+        _runtime=_runtime(),
+    )
 
 
 def _verify_auto_submit(fixture_path: Path) -> dict[str, Any]:
     return _auto_submit._verify_auto_submit(fixture_path, _runtime=_runtime())
 
 
-_open_private_directory = _partial(
-    _secure_io._open_private_directory, _runtime=_FACADE_RUNTIME
-)
-_verify_directory_binding = _partial(
-    _secure_io._verify_directory_binding, _runtime=_FACADE_RUNTIME
-)
-_create_run_storage = _partial(
-    _secure_io._create_run_storage, _runtime=_FACADE_RUNTIME
-)
-_open_run_storage = _partial(
-    _secure_io._open_run_storage, _runtime=_FACADE_RUNTIME
-)
-_read_regular_at = _partial(
-    _secure_io._read_regular_at, _runtime=_FACADE_RUNTIME
-)
-_read_json_at = _partial(_secure_io._read_json_at, _runtime=_FACADE_RUNTIME)
-_entry_exists_at = _partial(
-    _secure_io._entry_exists_at, _runtime=_FACADE_RUNTIME
-)
-_validate_report = _partial(_report._validate_report, _runtime=_FACADE_RUNTIME)
-_report_digest = _partial(_report._report_digest, _runtime=_FACADE_RUNTIME)
-_signed_tombstone = _partial(_report._signed_tombstone, _runtime=_FACADE_RUNTIME)
+def _open_private_directory(path: Path, diagnostic: str) -> int:
+    return _secure_io._open_private_directory(
+        path, diagnostic, _runtime=_runtime()
+    )
+
+
+def _verify_directory_binding(
+    path: Path, descriptor: int, diagnostic: str
+) -> None:
+    _secure_io._verify_directory_binding(
+        path, descriptor, diagnostic, _runtime=_runtime()
+    )
+
+
+def _read_regular_at(
+    directory_descriptor: int, name: str, limit: int, diagnostic: str
+) -> bytes:
+    return _secure_io._read_regular_at(
+        directory_descriptor, name, limit, diagnostic, _runtime=_runtime()
+    )
+
+
+def _read_json_at(directory_descriptor: int, name: str, diagnostic: str) -> Any:
+    return _secure_io._read_json_at(
+        directory_descriptor, name, diagnostic, _runtime=_runtime()
+    )
+
+
+def _entry_exists_at(directory_descriptor: int, name: str) -> bool:
+    return _secure_io._entry_exists_at(
+        directory_descriptor, name, _runtime=_runtime()
+    )
+
+
+def _validate_report(
+    report: Any, state: dict[str, Any], fixture: dict[str, Any]
+) -> dict[str, Any]:
+    return _report._validate_report(
+        report, state, fixture, _runtime=_runtime()
+    )
+
+
+def _report_digest(report: dict[str, Any]) -> str:
+    return _report._report_digest(report, _runtime=_runtime())
+
+
+def _signed_tombstone(
+    run_id: str,
+    state: dict[str, Any],
+    cleanup_state: str,
+    retain_report: bool,
+    report: dict[str, Any] | None,
+) -> dict[str, Any]:
+    return _report._signed_tombstone(
+        run_id,
+        state,
+        cleanup_state,
+        retain_report,
+        report,
+        _runtime=_runtime(),
+    )
+
+
 _public_cleanup_result = _report._public_cleanup_result
-_signed_tombstone_matches = _partial(
-    _report._signed_tombstone_matches, _runtime=_FACADE_RUNTIME
-)
-_recover_signed_tombstone = _partial(
-    _report._recover_signed_tombstone, _runtime=_FACADE_RUNTIME
-)
-_atomic_json_at = _partial(_secure_io._atomic_json_at, _runtime=_FACADE_RUNTIME)
-_publish_marker_at = _partial(
-    _secure_io._publish_marker_at, _runtime=_FACADE_RUNTIME
-)
-_ensure_marker_at = _partial(
-    _secure_io._ensure_marker_at, _runtime=_FACADE_RUNTIME
-)
+
+
+def _signed_tombstone_matches(
+    observed: Any, expected: dict[str, Any]
+) -> bool:
+    return _report._signed_tombstone_matches(
+        observed, expected, _runtime=_runtime()
+    )
+
+
+def _recover_signed_tombstone(
+    run_descriptor: int,
+    run_id: str,
+    state: dict[str, Any],
+    observed: Any,
+) -> tuple[dict[str, Any], dict[str, Any]] | None:
+    return _report._recover_signed_tombstone(
+        run_descriptor, run_id, state, observed, _runtime=_runtime()
+    )
+
+
+def _atomic_json_at(
+    directory_descriptor: int, name: str, value: dict[str, Any]
+) -> None:
+    _secure_io._atomic_json_at(
+        directory_descriptor, name, value, _runtime=_runtime()
+    )
+
+
+def _publish_marker_at(
+    directory_descriptor: int, name: str, value: dict[str, Any]
+) -> None:
+    _secure_io._publish_marker_at(
+        directory_descriptor, name, value, _runtime=_runtime()
+    )
+
+
+def _ensure_marker_at(
+    directory_descriptor: int, name: str, value: dict[str, Any]
+) -> None:
+    _secure_io._ensure_marker_at(
+        directory_descriptor, name, value, _runtime=_runtime()
+    )
 
 
 def _copy_regular_at(
@@ -235,10 +319,6 @@ def _start_server(
     )
 
 
-def _new_run_storage() -> Any:
-    return _run_state._new_run_storage(_runtime=_runtime())
-
-
 def _new_run_directory() -> tuple[str, Path, int, int]:
     return _run_state._new_run_directory(_runtime=_runtime())
 
@@ -253,10 +333,6 @@ def _load_state_at(run_root: Path, run_descriptor: int) -> dict[str, Any]:
     return _run_state._load_state_at(
         run_root, run_descriptor, _runtime=_runtime()
     )
-
-
-def _open_loaded_run(run_id: str) -> tuple[Any, dict[str, Any]]:
-    return _run_state._open_loaded_run(run_id, _runtime=_runtime())
 
 
 def _load_run(run_id: str) -> tuple[Path, dict[str, Any], int, int]:
@@ -319,10 +395,6 @@ def _evaluate(run_id: str) -> tuple[int, dict[str, Any]]:
     return _evaluate_module._evaluate(run_id, _runtime=_runtime())
 
 
-def _open_cleanup_run(run_id: str) -> Any:
-    return _run_state._open_cleanup_run(run_id, _runtime=_runtime())
-
-
 def _open_run_for_cleanup(run_id: str) -> tuple[Path, Path, int, int]:
     return _run_state._open_run_for_cleanup(run_id, _runtime=_runtime())
 
@@ -343,18 +415,6 @@ def _preflight_cleanup_tree(
         budget,
         depth,
         _runtime=_runtime(),
-    )
-
-
-def _build_cleanup_tree(directory_descriptor: int) -> Any:
-    return _cleanup_preflight._build_cleanup_tree(
-        directory_descriptor, _runtime=_runtime()
-    )
-
-
-def _assert_cleanup_tree_bound(directory_descriptor: int, tree: Any) -> None:
-    _cleanup_preflight._assert_cleanup_tree_bound(
-        directory_descriptor, tree, _runtime=_runtime()
     )
 
 
@@ -430,70 +490,7 @@ def main(argv: list[str] | None = None) -> int:
     return _cli.main(argv, _runtime=_runtime())
 
 
-__all__ = [
-    "ASSERTION_NAMES",
-    "Any",
-    "BrokerError",
-    "ContractError",
-    "CoordinatorError",
-    "EXPECTED_KEYS",
-    "FAILURE_CATEGORIES",
-    "FIXTURES_ROOT",
-    "IDENTIFIER",
-    "MARKER_TEMP",
-    "MAX_CLEANUP_BYTES",
-    "MAX_CLEANUP_DEPTH",
-    "MAX_CLEANUP_ENTRIES",
-    "MAX_JSON_BYTES",
-    "MAX_RESUME_BYTES",
-    "OracleError",
-    "PLATFORM_LABELS",
-    "PROMPT",
-    "Path",
-    "PolicyError",
-    "PolicyStore",
-    "REPORT_KEYS",
-    "REPO_ROOT",
-    "REQUEST_TIMEOUT_SECONDS",
-    "ROUTE",
-    "RUNS_ROOT",
-    "RUN_ID",
-    "RUN_STATE_KEYS",
-    "ReplayHTTPServer",
-    "SCENARIOS_ROOT",
-    "SCENARIO_IDS",
-    "STARTUP_TIMEOUT_SECONDS",
-    "STORE_SCRIPT",
-    "TOKEN",
-    "TOMBSTONE_KEYS",
-    "ThreadPoolExecutor",
-    "annotations",
-    "argparse",
-    "build_parser",
-    "confirmation_authority_revision",
-    "datetime",
-    "evaluate_run",
-    "exclusive_rename",
-    "fcntl",
-    "hashlib",
-    "hmac",
-    "json",
-    "main",
-    "os",
-    "queue",
-    "re",
-    "secrets",
-    "stat",
-    "subprocess",
-    "sys",
-    "tempfile",
-    "threading",
-    "timedelta",
-    "timezone",
-    "urllib",
-    "urlsplit",
-    "validate_fixture",
-]
+__all__ = list(_cli.LEGACY_STAR_EXPORTS)
 
 
 if __name__ == "__main__":

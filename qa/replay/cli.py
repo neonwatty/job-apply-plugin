@@ -19,6 +19,85 @@ from qa.replay.secure_io import CoordinatorError
 DESCRIPTION = "Prepare and evaluate supervised local Job Apply replay runs."
 
 
+class FacadeRuntime:
+    """Resolve leaf dependency lookups against a facade module namespace."""
+
+    def __init__(self, namespace: dict[str, Any]) -> None:
+        self._namespace = namespace
+
+    def __getattr__(self, name: str) -> Any:
+        return self._namespace[name]
+
+    def resolve(self) -> FacadeRuntime:
+        return self
+
+
+LEGACY_STAR_EXPORTS = (
+    "ASSERTION_NAMES",
+    "Any",
+    "BrokerError",
+    "ContractError",
+    "CoordinatorError",
+    "EXPECTED_KEYS",
+    "FAILURE_CATEGORIES",
+    "FIXTURES_ROOT",
+    "IDENTIFIER",
+    "MARKER_TEMP",
+    "MAX_CLEANUP_BYTES",
+    "MAX_CLEANUP_DEPTH",
+    "MAX_CLEANUP_ENTRIES",
+    "MAX_JSON_BYTES",
+    "MAX_RESUME_BYTES",
+    "OracleError",
+    "PLATFORM_LABELS",
+    "PROMPT",
+    "Path",
+    "PolicyError",
+    "PolicyStore",
+    "REPORT_KEYS",
+    "REPO_ROOT",
+    "REQUEST_TIMEOUT_SECONDS",
+    "ROUTE",
+    "RUNS_ROOT",
+    "RUN_ID",
+    "RUN_STATE_KEYS",
+    "ReplayHTTPServer",
+    "SCENARIOS_ROOT",
+    "SCENARIO_IDS",
+    "STARTUP_TIMEOUT_SECONDS",
+    "STORE_SCRIPT",
+    "TOKEN",
+    "TOMBSTONE_KEYS",
+    "ThreadPoolExecutor",
+    "annotations",
+    "argparse",
+    "build_parser",
+    "confirmation_authority_revision",
+    "datetime",
+    "evaluate_run",
+    "exclusive_rename",
+    "fcntl",
+    "hashlib",
+    "hmac",
+    "json",
+    "main",
+    "os",
+    "queue",
+    "re",
+    "secrets",
+    "stat",
+    "subprocess",
+    "sys",
+    "tempfile",
+    "threading",
+    "timedelta",
+    "timezone",
+    "urllib",
+    "urlsplit",
+    "validate_fixture",
+)
+
+
 def _resolve_runtime(runtime: Any | None) -> Any:
     return sys.modules[__name__] if runtime is None else runtime
 

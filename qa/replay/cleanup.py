@@ -26,12 +26,10 @@ from qa.replay.report import (
     _signed_tombstone_matches,
     _validate_report,
 )
-from qa.replay.run_state import (
-    _load_state_at,
-    _open_cleanup_run,
-)
+from qa.replay.run_state import _load_state_at, _open_run_for_cleanup
 from qa.replay.secure_io import (
     CoordinatorError,
+    _RunStorage,
     _ensure_marker_at,
     _entry_exists_at,
     _read_json_at,
@@ -197,7 +195,16 @@ def _cleanup(
     run_id: str, *, _runtime: Any | None = None
 ) -> dict[str, Any]:
     runtime = _resolve_runtime(_runtime)
-    storage = runtime._open_cleanup_run(run_id)
+    run_root, canonical_run_root, root_descriptor, run_descriptor = (
+        runtime._open_run_for_cleanup(run_id)
+    )
+    storage = _RunStorage.adopt_legacy(
+        run_id,
+        run_root,
+        root_descriptor,
+        run_descriptor,
+        canonical_run_root=canonical_run_root,
+    )
     lock_descriptor = None
     try:
         lock_descriptor = runtime.os.open(
@@ -332,6 +339,9 @@ def _cleanup(
             cleanup_state = "completed"
             retain_report = True
         elif not abandoned_valid:
+            # A prepared run has no durable evidence that its detached server was
+            # already stopped. Preserve the shutdown capability on any transient
+            # failure so cleanup can be retried instead of orphaning the server.
             if runtime._interrupted_marker_exists(
                 storage.run_descriptor, "abandoned"
             ):

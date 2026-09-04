@@ -136,6 +136,8 @@ def _verify_auto_submit(
                 "terminalState": receipt["status"],
             }
 
+            # The endpoint itself, not a detached claim proof, must consult the
+            # current store.  Missing/review-only policy therefore cannot act.
             missing_endpoint_store = runtime.PolicyStore(root / "endpoint-missing")
             server.auto_submit_policy = missing_endpoint_store
             review_start = server.final_action_activations
@@ -188,6 +190,8 @@ def _verify_auto_submit(
             except PolicyError:
                 killed_denied = True
 
+            # Exercise stale/forged/prompt/redirect/kill at the HTTP activation
+            # boundary with a fresh persisted lease for every independent case.
             endpoint_denials = []
             for name, mutate, stop in (
                 ("forged", lambda item: {**item, "leaseId": runtime._opaque("lease", "forged")}, None),

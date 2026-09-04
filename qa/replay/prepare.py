@@ -18,15 +18,15 @@ from qa.replay.report import SCENARIO_IDS
 from qa.replay.run_state import (
     FIXTURES_ROOT,
     REPO_ROOT,
-    RUNS_ROOT,
     SCENARIOS_ROOT,
     STORE_SCRIPT,
-    _new_run_storage,
+    _new_run_directory,
 )
 from qa.replay.secure_io import (
     CoordinatorError,
     MAX_JSON_BYTES,
     MAX_RESUME_BYTES,
+    _RunStorage,
     _atomic_json_at,
     _verify_directory_binding,
 )
@@ -246,7 +246,15 @@ def _prepare(
     ):
         raise CoordinatorError("invalid scenario package")
 
-    storage = runtime._new_run_storage()
+    run_id, run_root, root_descriptor, run_descriptor = (
+        runtime._new_run_directory()
+    )
+    storage = _RunStorage.adopt_legacy(
+        run_id,
+        run_root,
+        root_descriptor,
+        run_descriptor,
+    )
     startup: dict[str, Any] | None = None
     shutdown_token = runtime.secrets.token_hex(32)
     route_token = runtime.secrets.token_hex(32)
