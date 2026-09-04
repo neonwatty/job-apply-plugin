@@ -135,6 +135,7 @@ LEGACY_CALLABLE_SIGNATURES = {
 
 
 _ARGPARSE_HEADINGS = argparse.ArgumentParser(add_help=False)
+EMPTY_CLASS_ANNOTATIONS = getattr(type("MetadataProbe", (), {}), "__annotations__", None)
 EXPECTED_HELP = f"""usage: qa-chrome.py [-h] {{start,check,stop,reset}} ...
 
 {_ARGPARSE_HEADINGS._positionals.title}:
@@ -197,10 +198,8 @@ class ChromeFacadeContractTests(unittest.TestCase):
                 self.assertEqual(value.__qualname__, qualname)
                 self.assertEqual(value.__module__, "qa_chrome_launcher")
                 self.assertEqual(value.__doc__, doc)
-                self.assertEqual(
-                    getattr(value, "__annotations__", None),
-                    getattr(leaf, "__annotations__", None),
-                )
+                self.assertEqual(getattr(value, "__annotations__", None), EMPTY_CLASS_ANNOTATIONS)
+                self.assertEqual(getattr(leaf, "__annotations__", None), EMPTY_CLASS_ANNOTATIONS)
 
     def test_package_exports_leaf_types_and_facade_owns_loader_types(self):
         launcher = load_launcher()

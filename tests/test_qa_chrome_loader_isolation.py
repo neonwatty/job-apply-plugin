@@ -21,6 +21,7 @@ CLASS_NAMES = (
     "ControlHandler",
     "QuietParser",
 )
+EMPTY_CLASS_ANNOTATIONS = getattr(type("MetadataProbe", (), {}), "__annotations__", None)
 CLASS_SIGNATURES = {
     "BoundPaths": "(profile, create_base=False, create_profile=False)",
     "ControlServer": (
@@ -421,10 +422,8 @@ class ChromeLoaderIsolationTests(unittest.TestCase):
                     self.assertEqual(value.__name__, name)
                     self.assertEqual(value.__qualname__, name)
                     self.assertEqual(value.__module__, module_name)
-                    self.assertEqual(
-                        getattr(value, "__annotations__", None),
-                        getattr(leaf, "__annotations__", None),
-                    )
+                    self.assertEqual(getattr(value, "__annotations__", None), EMPTY_CLASS_ANNOTATIONS)
+                    self.assertEqual(getattr(leaf, "__annotations__", None), EMPTY_CLASS_ANNOTATIONS)
             for name, signature in CLASS_SIGNATURES.items():
                 with self.subTest(module=module_name, signature=name):
                     self.assertEqual(
