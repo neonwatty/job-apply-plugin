@@ -18,7 +18,6 @@
     "scripts/qa-chrome.py": { "ceiling": 1226, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "recorder-replay" },
     "scripts/qa-replay.py": { "ceiling": 2510, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "recorder-replay" },
     "scripts/smoke-plugin.sh": { "ceiling": 1139, "owner": "modernization", "reason": "pre-existing oversized launcher", "removalPhase": "future-decomposition" },
-    "tests_js/workspace.test.mjs": { "ceiling": 3095, "owner": "modernization", "reason": "pre-existing oversized test", "removalPhase": "test-monoliths" },
     "workspace/app.js": { "ceiling": 2562, "owner": "modernization", "reason": "pre-existing oversized runtime", "removalPhase": "workspace-bootstrap" }
   }
 }
