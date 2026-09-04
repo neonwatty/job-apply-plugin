@@ -64,7 +64,9 @@ class WorkspaceServer(ThreadingHTTPServer):
         except (OSError, store_module.StoreError) as error:
             self.boot_status = degraded_boot_status(error)
         else:
-            # Validation failures can degrade safely; failed repair must abort.
+            # Only read-only validation failures become degraded workspaces.
+            # Initialization may migrate or repair state, so any failure there
+            # aborts startup instead of making a no-mutation recovery claim.
             self.store.initialize()
         runtime_secrets = runtime().get("secrets", secrets)
         self.token = token or runtime_secrets.token_urlsafe(32)

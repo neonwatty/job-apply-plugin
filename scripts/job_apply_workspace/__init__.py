@@ -9,6 +9,8 @@ from typing import Any, Callable
 LOOPBACK = "127.0.0.1"
 MAX_BODY_BYTES = 64 * 1024
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+# Base64 is 4/3 of the decoded body. The small allowance covers the JSON
+# envelope, metadata, and escaping without making ordinary routes unbounded.
 MAX_UPLOAD_BODY_BYTES = ((MAX_UPLOAD_BYTES + 2) // 3) * 4 + MAX_BODY_BYTES
 MAX_BULK_URLS = 50
 ROOT = Path(__file__).resolve().parents[2]

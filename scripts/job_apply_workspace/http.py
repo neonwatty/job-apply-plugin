@@ -57,7 +57,8 @@ class HttpMixin:
         code: str = "request_error",
         details: dict[str, Any] | None = None,
     ) -> None:
-        # Never let unread attacker-controlled bytes become another HTTP request.
+        # Error paths may reject before reading a request body. Never let unread,
+        # attacker-controlled bytes become another HTTP/1.1 request.
         self.close_connection = True
         payload = {"code": code, "message": message}
         if details:
