@@ -5,26 +5,54 @@ import { spawn } from "node:child_process";
 import {
   lstat,
   readFile,
-  readdir,
   realpath,
 } from "node:fs/promises";
 import http from "node:http";
-import net from "node:net";
 import path from "node:path";
 import readline from "node:readline";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
-export const CHECKPOINT_KINDS = Object.freeze([
-  "application-opened",
-  "step-advanced",
-  "validation-observed",
-  "review-reached",
-  "final-action-boundary",
-]);
+import { RecorderError } from "./recorder/errors.mjs";
+import { decodeCapturedPng } from "./recorder/png.mjs";
+import {
+  CAPTURE_LIMITS,
+  CHECKPOINT_KINDS,
+  sanitizeObservedControl,
+  validateCaptureResources,
+  validateCheckpointKind,
+  validateRecorderOptions,
+  validateSafetyRevision,
+} from "./recorder/resources.mjs";
+import {
+  hasCaptchaSecurityFrameOwner,
+  isSensitivePage,
+} from "./recorder/safety/common.mjs";
+import { isAshbyPassiveRecaptchaInspection } from "./recorder/safety/ashby.mjs";
+import {
+  isGreenhousePassiveRecaptchaMain,
+  isPassiveGreenhouseRecaptchaFrame,
+} from "./recorder/safety/greenhouse.mjs";
+import { isLeverPassiveHcaptchaInspection } from "./recorder/safety/lever.mjs";
+import {
+  isDormantLinkedInCaptcha,
+  isLinkedInJobsUrl,
+} from "./recorder/safety/linkedin.mjs";
+import { isExactWorkdayOptionalSignInInspection } from "./recorder/safety/workday.mjs";
 
-const CHECKPOINT_KIND_SET = new Set(CHECKPOINT_KINDS);
-const SENSITIVE_PATTERN = /(?:\blog[ -]?in\b|\bsign[ -]?in\b|password|passcode|captcha|not a robot|multi[ -]?factor|\bmfa\b|two[ -]?factor|\b2fa\b|2[ -]?step verification|verification code|security code|sms code|recovery code|authenticator app|push notification|verify (?:your )?identity|\b\d{1,2}[ -]?digit code(?: we sent)?|approve (?:this |the )?(?:device|sign[ -]?in)|create (?:an? )?account|account[ -]?creation|register|\botp\b|authentication|security[ -]?key|one[ -]?time[ -]?code)/i;
+export {
+  CAPTURE_LIMITS,
+  CHECKPOINT_KINDS,
+  RecorderError,
+  decodeCapturedPng,
+  isSensitivePage,
+  sanitizeObservedControl,
+  validateCaptureResources,
+  validateCheckpointKind,
+  validateRecorderOptions,
+  validateSafetyRevision,
+};
+
 const MAX_CONTROL_BODY = 4096;
 const MAX_EVENTS = 10_000;
 const MAX_PENDING_EVENT_OPERATIONS = 8;
@@ -40,129 +68,6 @@ const BROKER_TERMINATE_GRACE_MS = 1500;
 const CHECKPOINT_OPERATION_DEADLINE_MS = 15_000;
 const CLIENT_DEADLINE_MS =
   CHECKPOINT_OPERATION_DEADLINE_MS * MAX_PENDING_CHECKPOINTS + 2_000;
-export const CAPTURE_LIMITS = Object.freeze({
-  maxControls: 1_000,
-  maxHtmlBytes: 1_048_576,
-  maxScreenshotWidth: 4_096,
-  maxScreenshotHeight: 16_384,
-  maxScreenshotBytes: 8_388_608,
-  maxCheckpoints: 100,
-  maxSessionBytes: 67_108_864,
-});
-
-export class RecorderError extends Error {}
-
-export function validateCaptureResources(resources, limits = CAPTURE_LIMITS) {
-  const checks = [
-    ["controlCount", "maxControls"],
-    ["htmlBytes", "maxHtmlBytes"],
-    ["screenshotWidth", "maxScreenshotWidth"],
-    ["screenshotHeight", "maxScreenshotHeight"],
-    ["screenshotBytes", "maxScreenshotBytes"],
-    ["checkpointCount", "maxCheckpoints"],
-    ["sessionBytes", "maxSessionBytes"],
-  ];
-  for (const [resource, limit] of checks) {
-    const value = resources[resource] ?? 0;
-    if (!Number.isSafeInteger(value) || value < 0 || value > limits[limit]) {
-      throw new RecorderError("capture resource limit exceeded");
-    }
-  }
-}
-
-function pngCrc32(buffer, start, end) {
-  let crc = 0xffffffff;
-  for (let index = start; index < end; index += 1) {
-    crc ^= buffer[index];
-    for (let bit = 0; bit < 8; bit += 1) {
-      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
-    }
-  }
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-function base64Value(code) {
-  if (code >= 65 && code <= 90) return code - 65;
-  if (code >= 97 && code <= 122) return code - 97 + 26;
-  if (code >= 48 && code <= 57) return code - 48 + 52;
-  if (code === 43) return 62;
-  if (code === 47) return 63;
-  return -1;
-}
-
-function isCanonicalBase64(data) {
-  if (data.length === 0 || data.length % 4 !== 0) return false;
-  let padding = 0;
-  if (data.charCodeAt(data.length - 1) === 61) padding += 1;
-  if (data.charCodeAt(data.length - 2) === 61) padding += 1;
-  const contentLength = data.length - padding;
-  if (contentLength === 0 || contentLength % 4 !== (4 - padding) % 4) return false;
-  for (let index = 0; index < contentLength; index += 1) {
-    if (base64Value(data.charCodeAt(index)) < 0) return false;
-  }
-  for (let index = contentLength; index < data.length; index += 1) {
-    if (data.charCodeAt(index) !== 61) return false;
-  }
-  const finalValue = base64Value(data.charCodeAt(contentLength - 1));
-  if ((padding === 1 && (finalValue & 0x03) !== 0) ||
-      (padding === 2 && (finalValue & 0x0f) !== 0)) return false;
-  return true;
-}
-
-export function decodeCapturedPng(data, expectedWidth, expectedHeight, maxBytes) {
-  const byteLimit = maxBytes ?? CAPTURE_LIMITS.maxScreenshotBytes;
-  const fail = () => { throw new RecorderError("invalid screenshot capture"); };
-  if (typeof data !== "string" || data.length === 0 ||
-      !Number.isSafeInteger(expectedWidth) || expectedWidth <= 0 ||
-      !Number.isSafeInteger(expectedHeight) || expectedHeight <= 0 ||
-      !Number.isSafeInteger(byteLimit) || byteLimit <= 0 ||
-      data.length > Math.ceil(byteLimit / 3) * 4 ||
-      !isCanonicalBase64(data)) {
-    fail();
-  }
-  const png = Buffer.from(data, "base64");
-  if (png.length > byteLimit || png.toString("base64") !== data || png.length < 45 ||
-      !png.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
-    fail();
-  }
-  let offset = 8;
-  let sawHeader = false;
-  let sawEnd = false;
-  while (offset < png.length) {
-    if (png.length - offset < 12) fail();
-    const length = png.readUInt32BE(offset);
-    const dataStart = offset + 8;
-    const dataEnd = dataStart + length;
-    const chunkEnd = dataEnd + 4;
-    if (length > byteLimit || dataEnd < dataStart || chunkEnd > png.length) fail();
-    const type = png.toString("ascii", offset + 4, offset + 8);
-    if (!/^[A-Za-z]{4}$/.test(type) ||
-        pngCrc32(png, offset + 4, dataEnd) !== png.readUInt32BE(dataEnd)) {
-      fail();
-    }
-    if (!sawHeader) {
-      if (type !== "IHDR" || length !== 13 ||
-          png.readUInt32BE(dataStart) !== expectedWidth ||
-          png.readUInt32BE(dataStart + 4) !== expectedHeight) fail();
-      sawHeader = true;
-    } else if (type === "IHDR") {
-      fail();
-    }
-    if (type === "IEND") {
-      if (length !== 0 || chunkEnd !== png.length) fail();
-      sawEnd = true;
-    }
-    offset = chunkEnd;
-  }
-  if (!sawHeader || !sawEnd || offset !== png.length) fail();
-  return png;
-}
-
-export function validateSafetyRevision(expected, current) {
-  if (!Number.isSafeInteger(expected) || expected !== current) {
-    throw new RecorderError("unstable page document");
-  }
-}
 
 function throwIfAborted(signal) {
   if (signal?.aborted) throw new RecorderError("operation canceled");
@@ -195,424 +100,6 @@ function withDeadline(promise, timeoutMs, signal, onTimeout) {
   });
 }
 
-export function sanitizeObservedControl(observed) {
-  const sourceLabel = typeof observed?.label === "string"
-    ? observed.label.slice(0, 256)
-    : "";
-  const role = typeof observed?.role === "string"
-    ? observed.role.slice(0, 64)
-    : "unknown";
-  return {
-    role,
-    sourceLabel,
-    required: observed?.required === true,
-  };
-}
-
-export function validateCheckpointKind(kind) {
-  if (typeof kind !== "string" || !CHECKPOINT_KIND_SET.has(kind)) {
-    throw new RecorderError("invalid checkpoint kind");
-  }
-  return kind;
-}
-
-export function isSensitivePage(snapshot) {
-  const url = typeof snapshot?.url === "string" ? snapshot.url : "";
-  const title = typeof snapshot?.title === "string" ? snapshot.title : "";
-  const text = typeof snapshot?.text === "string" ? snapshot.text.slice(0, 8192) : "";
-  const controls = [
-    ...(Array.isArray(snapshot?.controls) ? snapshot.controls : []),
-    ...(Array.isArray(snapshot?.securityControls) ? snapshot.securityControls : []),
-  ];
-  if (SENSITIVE_PATTERN.test(`${url}\n${title}\n${text}`)) return true;
-  return controls.some((control) => {
-    const type = typeof control?.type === "string" ? control.type : "";
-    const label = typeof control?.label === "string" ? control.label : "";
-    const autocomplete = typeof control?.autocomplete === "string"
-      ? control.autocomplete.toLowerCase()
-      : "";
-    return type.toLowerCase() === "password" ||
-      ["current-password", "one-time-code"].includes(autocomplete) ||
-      SENSITIVE_PATTERN.test(label);
-  });
-}
-
-function isLinkedInJobsUrl(value) {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && url.username === "" && url.password === "" &&
-      url.port === "" && ["linkedin.com", "www.linkedin.com"].includes(url.hostname) &&
-      (url.pathname === "/jobs" || url.pathname.startsWith("/jobs/"));
-  } catch {
-    return false;
-  }
-}
-
-const PASSIVE_RECAPTCHA_DISCLOSURE = /this\s+site\s+is\s+protected\s+by\s+recaptcha\s+and\s+the\s+google\s+privacy\s+policy\s+and\s+terms\s+of\s+service\s+apply\.?/gi;
-
-function isGreenhouseApplicationUrl(value) {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && url.username === "" && url.password === "" &&
-      url.port === "" && [
-        "boards.greenhouse.io",
-        "boards.eu.greenhouse.io",
-        "job-boards.greenhouse.io",
-      ].includes(url.hostname) && /\/jobs\/\d+\/?$/.test(url.pathname);
-  } catch {
-    return false;
-  }
-}
-
-function isPassiveRecaptchaResponseControl(control) {
-  return control?.type === "textarea" && control?.role === "textbox" &&
-    control?.label === "g-recaptcha-response" &&
-    (control?.autocomplete === "" || control?.autocomplete == null);
-}
-
-function isGreenhousePassiveRecaptchaMain(snapshot) {
-  const value = snapshot?.value;
-  if (!value || !isGreenhouseApplicationUrl(value.url)) return false;
-  const text = typeof value.text === "string" ? value.text : "";
-  const controls = Array.isArray(value.controls) ? value.controls : [];
-  const securityControls = Array.isArray(value.securityControls)
-    ? value.securityControls
-    : [];
-  PASSIVE_RECAPTCHA_DISCLOSURE.lastIndex = 0;
-  const hasDisclosure = PASSIVE_RECAPTCHA_DISCLOSURE.test(text);
-  const hasHiddenResponse = securityControls.some(isPassiveRecaptchaResponseControl) &&
-    !controls.some(isPassiveRecaptchaResponseControl);
-  if (!hasDisclosure && !hasHiddenResponse) return false;
-  PASSIVE_RECAPTCHA_DISCLOSURE.lastIndex = 0;
-  return !isSensitivePage({
-    ...value,
-    text: text.replace(PASSIVE_RECAPTCHA_DISCLOSURE, ""),
-    securityControls: securityControls.filter((control) =>
-      !isPassiveRecaptchaResponseControl(control)),
-  });
-}
-
-function isPassiveGreenhouseRecaptchaFrame(snapshot, main) {
-  const value = snapshot?.value;
-  if (!value || !snapshot.frame?.parentId || snapshot.frame.parentId !== main?.frame?.id) {
-    return false;
-  }
-  let url;
-  try {
-    url = new URL(typeof value.url === "string" ? value.url : "");
-  } catch {
-    return false;
-  }
-  const controls = [
-    ...(Array.isArray(value.controls) ? value.controls : []),
-    ...(Array.isArray(value.securityControls) ? value.securityControls : []),
-  ];
-  const title = typeof value.title === "string" ? value.title.trim() : "";
-  const text = typeof value.text === "string" ? value.text.trim() : "";
-  return url.protocol === "https:" && url.username === "" && url.password === "" &&
-    url.port === "" && ["www.google.com", "www.recaptcha.net"].includes(url.hostname) &&
-    url.pathname === "/recaptcha/api2/anchor" && title === "reCAPTCHA" &&
-    /^(?:Privacy\s*[-|]\s*Terms)?$/.test(text) && controls.length === 0;
-}
-
-function isAshbyApplicationUrl(value) {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && url.username === "" && url.password === "" &&
-      url.port === "" && url.hostname === "jobs.ashbyhq.com" &&
-      url.search === "" && url.hash === "" &&
-      /^\/[A-Za-z0-9_-]+\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/application\/?$/i
-        .test(url.pathname);
-  } catch {
-    return false;
-  }
-}
-
-function isLeverApplicationUrl(value) {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && url.username === "" && url.password === "" &&
-      url.port === "" && url.hostname === "jobs.lever.co" &&
-      url.search === "" && url.hash === "" &&
-      /^\/[A-Za-z0-9_-]+\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/apply\/?$/i
-        .test(url.pathname);
-  } catch {
-    return false;
-  }
-}
-
-function isWorkdayOptionalSignInUrl(value) {
-  try {
-    const url = new URL(value);
-    const host =
-      /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.(wd1|wd5)\.myworkdayjobs\.com$/
-        .exec(url.hostname);
-    if (url.protocol !== "https:" || url.username !== "" || url.password !== "" ||
-        url.port !== "" || !host || url.search !== "" || url.hash !== "") {
-      return false;
-    }
-    const boundedToken = "[A-Za-z0-9](?:[A-Za-z0-9_-]{0,62}[A-Za-z0-9])?";
-    const boundedSlug = "[A-Za-z0-9](?:[A-Za-z0-9_-]{0,126}[A-Za-z0-9])?";
-    const wd5Path = new RegExp(
-      `^/en-US/${boundedToken}/job/${boundedSlug}_JR-\\d{1,18}/?$`,
-    );
-    const wd1Path = new RegExp(
-      `^/en-US/${boundedToken}/job/${boundedToken}/${boundedSlug}_JR\\d{1,18}-\\d{1,18}/?$`,
-    );
-    return host[1] === "wd5" ? wd5Path.test(url.pathname) : wd1Path.test(url.pathname);
-  } catch {
-    return false;
-  }
-}
-
-const WORKDAY_CHOICE_MARKERS = Object.freeze([
-  "Start Your Application",
-  "Autofill with Resume",
-  "Apply Manually",
-  "Use My Last Application",
-]);
-const WORKDAY_MAX_VISIBLE_CONTROLS = 32;
-const WORKDAY_MAX_SECURITY_CONTROLS = 48;
-const WORKDAY_CONTROL_SHAPES = new Set([
-  "button:button",
-  "svg:presentation",
-  "span:alert",
-  "a:button",
-  "div:button",
-  "div:search",
-  "nav:menu",
-  "text:textbox",
-  "email:textbox",
-  "section:dialog",
-]);
-
-function isExactWorkdaySignIn(control) {
-  return control?.type === "button" && control?.role === "button" &&
-    control?.autocomplete === "" && control?.label === "Sign In" &&
-    control?.required === false;
-}
-
-function hasBoundedWorkdayControls(controls, maximum) {
-  return Array.isArray(controls) && controls.length >= 2 && controls.length <= maximum &&
-    controls.filter(isExactWorkdaySignIn).length === 1 && controls.every((control) =>
-      control?.autocomplete === "" && control?.required === false &&
-      WORKDAY_CONTROL_SHAPES.has(`${control?.type ?? ""}:${control?.role ?? ""}`));
-}
-
-function isExactWorkdayOptionalSignInInspection(snapshots, main, boundUrl) {
-  if (snapshots.length !== 1 || !main?.frame?.id || main.frame.parentId ||
-      main.frameVisible !== true) {
-    return false;
-  }
-  const value = main.value;
-  if (!value || !isWorkdayOptionalSignInUrl(value.url) ||
-      (boundUrl !== undefined && value.url !== boundUrl) ||
-      value.controlOverflow !== false || value.securityFrameOverflow !== false ||
-      !Array.isArray(value.securityFrames) || value.securityFrames.length !== 0 ||
-      !Number.isSafeInteger(value.formCount) || value.formCount < 0 ||
-      (boundUrl === undefined && value.formCount !== 0) ||
-      !hasBoundedWorkdayControls(value.controls, WORKDAY_MAX_VISIBLE_CONTROLS) ||
-      !hasBoundedWorkdayControls(
-        value.securityControls,
-        WORKDAY_MAX_SECURITY_CONTROLS,
-      ) || value.securityControls.length < value.controls.length) {
-    return false;
-  }
-  const text = typeof value.text === "string" ? value.text : "";
-  const signIns = text.match(/\bSign\s+In\b/g) ?? [];
-  const choiceMarkerCount = WORKDAY_CHOICE_MARKERS.filter((marker) =>
-    text.includes(marker)).length;
-  if (signIns.length !== 1 || !/\bApply\b/.test(text) ||
-      /\bApply\s+Now\b/.test(text) ||
-      ![0, WORKDAY_CHOICE_MARKERS.length].includes(choiceMarkerCount)) {
-    return false;
-  }
-  return !isSensitivePage({
-    ...value,
-    text: text.replace(/\bSign\s+In\b/, ""),
-    controls: value.controls.filter((control) => !isExactWorkdaySignIn(control)),
-    securityControls: value.securityControls.filter((control) =>
-      !isExactWorkdaySignIn(control)),
-  });
-}
-
-function isExactPassiveResponseControl(control, label, type = "textarea") {
-  return control?.type === type && control?.role === "textbox" &&
-    control?.autocomplete === "" && control?.label === label &&
-    control?.required === false;
-}
-
-function hasExactLeverChildResponses(controls) {
-  return Array.isArray(controls) && controls.length === 2 &&
-    controls.filter((control) =>
-      isExactPassiveResponseControl(control, "g-recaptcha-response")).length === 1 &&
-    controls.filter((control) =>
-      isExactPassiveResponseControl(control, "h-captcha-response")).length === 1;
-}
-
-function isExactLeverEnclaveOwner(owner) {
-  if (!owner || owner.title !==
-      "Widget containing checkbox for hCaptcha security challenge" ||
-      owner.visibility !== "hidden" || owner.position !== "fixed" ||
-      !Number.isFinite(owner.width) || owner.width <= 0 ||
-      !Number.isFinite(owner.height) || owner.height <= 0) {
-    return false;
-  }
-  let url;
-  try {
-    url = new URL(typeof owner.src === "string" ? owner.src : "");
-  } catch {
-    return false;
-  }
-  const path = url.pathname.match(
-    /^\/captcha\/v1\/([0-9a-f]{40})\/static\/hcaptcha-enclave\.html$/,
-  );
-  if (!path || url.protocol !== "https:" || url.username !== "" ||
-      url.password !== "" || url.port !== "" ||
-      url.hostname !== "newassets.hcaptcha.com" || url.search !== "") {
-    return false;
-  }
-  const params = new URLSearchParams(url.hash.slice(1));
-  const keys = [...params.keys()];
-  return keys.length === 5 && new Set(keys).size === 5 &&
-    params.get("frame") === "enclave" &&
-    /^[A-Za-z0-9]+$/.test(params.get("_channel") ?? "") &&
-    params.get("_origin") === "https://jobs.lever.co" &&
-    params.get("host") === "jobs.lever.co" && params.get("se") === path[1] &&
-    ["frame", "_channel", "_origin", "host", "se"].every((key) => params.has(key));
-}
-
-function hasExactLeverSecurityFrameOwners(value) {
-  if (!Array.isArray(value?.securityFrames) || value.securityFrames.length !== 3 ||
-      value.securityFrameOverflow !== false) {
-    return false;
-  }
-  const auxiliary = value.securityFrames.filter((owner) =>
-    owner?.src === "" && owner.title === "" && owner.visibility === "hidden" &&
-    owner.position === "absolute" && owner.width === 1 && owner.height === 1);
-  const enclaves = value.securityFrames.filter(isExactLeverEnclaveOwner);
-  return auxiliary.length === 1 && enclaves.length === 2;
-}
-
-function hasCaptchaSecurityFrameOwner(value) {
-  return Array.isArray(value?.securityFrames) && value.securityFrames.some((owner) =>
-    /captcha/i.test(`${owner?.src ?? ""}\n${owner?.title ?? ""}`));
-}
-
-function isLeverPassiveHcaptchaInspection(snapshots, main) {
-  if (![2, 4].includes(snapshots.length) || !main?.frame?.id || main.frame?.parentId ||
-      main.frameVisible !== true) {
-    return false;
-  }
-  const value = main.value;
-  if (!value || !isLeverApplicationUrl(value.url) || value.controlOverflow !== false ||
-      !Array.isArray(value.controls) || !Array.isArray(value.securityControls) ||
-      !hasExactLeverSecurityFrameOwners(value)) {
-    return false;
-  }
-  const hiddenResponses = value.securityControls.filter((control) =>
-    isExactPassiveResponseControl(control, "h-captcha-response", "hidden"));
-  if (hiddenResponses.length !== 1 || value.controls.some((control) =>
-    isExactPassiveResponseControl(control, "h-captcha-response", "hidden"))) {
-    return false;
-  }
-  if (isSensitivePage({
-    ...value,
-    securityControls: value.securityControls.filter((control) =>
-      !isExactPassiveResponseControl(control, "h-captcha-response", "hidden")),
-  })) return false;
-
-  const children = snapshots.filter((snapshot) => snapshot !== main);
-  const childIds = new Set();
-  for (const child of children) {
-    if (!child?.frame?.id || child.frame.id === main.frame.id ||
-        child.frame.parentId !== main.frame.id || child.frameVisible !== false ||
-        childIds.has(child.frame.id)) {
-      return false;
-    }
-    childIds.add(child.frame.id);
-  }
-  if (childIds.size !== snapshots.length - 1) return false;
-
-  const auxiliary = children.filter(({ value: childValue }) =>
-    childValue?.url === "about:blank" && childValue.title === "" &&
-    typeof childValue.text === "string" && childValue.text.trim() === "" &&
-    Array.isArray(childValue.controls) && childValue.controls.length === 0 &&
-    Array.isArray(childValue.securityControls) &&
-    childValue.securityControls.length === 0 && childValue.controlOverflow === false);
-  const hcaptchaFrames = children.filter(({ value: childValue }) =>
-    childValue?.url === "" && childValue.title === "hCaptcha" &&
-    typeof childValue.text === "string" && childValue.text.trim() === "" &&
-    Array.isArray(childValue.controls) && childValue.controls.length === 0 &&
-    hasExactLeverChildResponses(childValue.securityControls) &&
-    childValue.controlOverflow === false);
-  return auxiliary.length === 1 &&
-    (snapshots.length === 2 ? hcaptchaFrames.length === 0 : hcaptchaFrames.length === 2);
-}
-
-function isAshbyPassiveRecaptchaInspection(snapshots, main) {
-  if (snapshots.length !== 2 || !main?.frame?.id || main.frameVisible !== true) return false;
-  const value = main.value;
-  if (!value || !isAshbyApplicationUrl(value.url) || value.controlOverflow !== false ||
-      !Array.isArray(value.controls) || !Array.isArray(value.securityControls)) {
-    return false;
-  }
-  const controls = value.controls;
-  const securityControls = value.securityControls;
-  const hiddenResponses = securityControls.filter(isPassiveRecaptchaResponseControl);
-  if (hiddenResponses.length !== 1 || controls.some(isPassiveRecaptchaResponseControl)) {
-    return false;
-  }
-  const hasInteractiveChallenge = [...controls, ...securityControls].some((control) =>
-    /(?:captcha|challenge|not a robot)/i.test(
-      typeof control?.label === "string" ? control.label : "",
-    ) && !isPassiveRecaptchaResponseControl(control));
-  if (hasInteractiveChallenge) return false;
-  if (isSensitivePage({
-    ...value,
-    securityControls: securityControls.filter((control) =>
-      !isPassiveRecaptchaResponseControl(control)),
-  })) return false;
-
-  const child = snapshots.find((snapshot) => snapshot !== main);
-  const childValue = child?.value;
-  return child?.frame?.parentId === main.frame.id && child.frame.id &&
-    child.frame.id !== main.frame.id && typeof child.frameVisible === "boolean" &&
-    childValue?.url === "about:blank" && typeof childValue.title === "string" &&
-    childValue.title.trim() === "" && typeof childValue.text === "string" &&
-    childValue.text.trim() === "" && Array.isArray(childValue.controls) &&
-    childValue.controls.length === 0 && Array.isArray(childValue.securityControls) &&
-    childValue.securityControls.length === 0 && childValue.controlOverflow === false;
-}
-
-function isDormantLinkedInCaptcha(snapshot) {
-  const value = snapshot?.value;
-  if (!value || !snapshot.frame?.parentId || snapshot.frameVisible !== false) return false;
-  const url = typeof value.url === "string" ? value.url : "";
-  const title = typeof value.title === "string" ? value.title : "";
-  const text = typeof value.text === "string" ? value.text : "";
-  const controls = [
-    ...(Array.isArray(value.controls) ? value.controls : []),
-    ...(Array.isArray(value.securityControls) ? value.securityControls : []),
-  ];
-  const surface = `${url}\n${title}\n${text}\n${controls.map((control) =>
-    `${control?.type ?? ""}\n${control?.autocomplete ?? ""}\n${control?.label ?? ""}`
-  ).join("\n")}`;
-  const captchaOnly = surface.replace(/captcha/gi, "");
-  const hasCredentialControl = controls.some((control) => {
-    const type = typeof control?.type === "string" ? control.type.toLowerCase() : "";
-    const autocomplete = typeof control?.autocomplete === "string"
-      ? control.autocomplete.toLowerCase()
-      : "";
-    const label = typeof control?.label === "string" ? control.label : "";
-    return type === "password" ||
-      ["current-password", "one-time-code"].includes(autocomplete) ||
-      SENSITIVE_PATTERN.test(`${type}\n${autocomplete}\n${label}`.replace(/captcha/gi, ""));
-  });
-  return /captcha/i.test(surface) &&
-    !SENSITIVE_PATTERN.test(captchaOnly) && !hasCredentialControl;
-}
-
 export function inspectionHasSensitivePage(snapshots, boundWorkdayUrl) {
   if (!Array.isArray(snapshots) || snapshots.length === 0) return true;
   const main = snapshots.find(({ frame }) => frame && !frame.parentId);
@@ -642,48 +129,6 @@ export function inspectionHasSensitivePage(snapshots, boundWorkdayUrl) {
   });
 }
 
-function isLoopbackHostname(hostname) {
-  const normalized = hostname.toLowerCase();
-  if (normalized === "localhost" || normalized === "::1" || normalized === "[::1]") {
-    return true;
-  }
-  return net.isIP(normalized) === 4 && normalized.startsWith("127.");
-}
-
-async function inspectOutput(output) {
-  const absolute = path.resolve(output);
-  const parent = path.dirname(absolute);
-  if (path.basename(parent) !== ".qa-private" || path.dirname(absolute) === absolute) {
-    throw new RecorderError("unsafe session directory");
-  }
-  let parentReal;
-  try {
-    const parentStat = await lstat(parent);
-    if (parentStat.isSymbolicLink() || !parentStat.isDirectory()) {
-      throw new RecorderError("unsafe session directory");
-    }
-    parentReal = await realpath(parent);
-  } catch {
-    throw new RecorderError("unsafe session directory");
-  }
-  if (path.basename(parentReal) !== ".qa-private") {
-    throw new RecorderError("unsafe session directory");
-  }
-  try {
-    const stat = await lstat(absolute);
-    if (stat.isSymbolicLink() || !stat.isDirectory()) {
-      throw new RecorderError("unsafe session directory");
-    }
-    if ((await readdir(absolute)).length !== 0) {
-      throw new RecorderError("unsafe session directory");
-    }
-  } catch (error) {
-    if (error instanceof RecorderError) throw error;
-    if (error?.code !== "ENOENT") throw new RecorderError("unsafe session directory");
-  }
-  return absolute;
-}
-
 async function inspectExistingSession(session) {
   if (typeof session !== "string" || !session) {
     throw new RecorderError("missing checkpoint arguments");
@@ -706,28 +151,6 @@ async function inspectExistingSession(session) {
     throw new RecorderError("unsafe session directory");
   }
   return absolute;
-}
-
-export async function validateRecorderOptions(options) {
-  if (!options || typeof options.cdpUrl !== "string" ||
-      typeof options.output !== "string" || !options.cdpUrl || !options.output) {
-    throw new RecorderError("missing recorder arguments");
-  }
-  let endpoint;
-  try {
-    endpoint = new URL(options.cdpUrl);
-  } catch {
-    throw new RecorderError("invalid CDP endpoint");
-  }
-  if (endpoint.protocol !== "http:" || !endpoint.port ||
-      endpoint.username || endpoint.password || endpoint.pathname !== "/" ||
-      endpoint.search || endpoint.hash || !isLoopbackHostname(endpoint.hostname)) {
-    throw new RecorderError("invalid CDP endpoint");
-  }
-  return {
-    cdpUrl: endpoint.href.replace(/\/$/, ""),
-    output: await inspectOutput(options.output),
-  };
 }
 
 function parseFlags(args, names) {
