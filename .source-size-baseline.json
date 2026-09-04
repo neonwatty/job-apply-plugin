@@ -7,8 +7,6 @@
     "qa/recorder.mjs": { "ceiling": 2087, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "recorder-replay" },
     "scripts/job-apply-store.py": { "ceiling": 11465, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "store-facade" },
     "scripts/job-apply-workspace.py": { "ceiling": 1456, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "workspace-bootstrap" },
-    "scripts/job_apply_answer_match.py": { "ceiling": 705, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "policy-answer-matching" },
-    "scripts/job_apply_policy.py": { "ceiling": 1138, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "policy-answer-matching" },
     "scripts/qa-chrome.py": { "ceiling": 1226, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "recorder-replay" },
     "scripts/qa-replay.py": { "ceiling": 2510, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "recorder-replay" },
     "scripts/smoke-plugin.sh": { "ceiling": 1139, "owner": "modernization", "reason": "pre-existing oversized launcher", "removalPhase": "future-decomposition" },

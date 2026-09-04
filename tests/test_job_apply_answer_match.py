@@ -418,5 +418,21 @@ class CleanupProposalTests(unittest.TestCase):
         )
 
 
+class AnswerMatchSplitContractTests(unittest.TestCase):
+    def test_facade_reexports_functions_from_directional_modules(self):
+        self.assertTrue(MATCH.rank_candidates.__module__.endswith(".scoring"))
+        self.assertTrue(MATCH.evaluate_reuse.__module__.endswith(".reuse"))
+        self.assertTrue(MATCH.propose_cleanup.__module__.endswith(".cleanup"))
+        for name in (
+            "AnswerMatchError",
+            "CONFIDENCE_BANDS",
+            "REASON_CODES",
+            "rank_candidates",
+            "evaluate_reuse",
+            "propose_cleanup",
+        ):
+            self.assertIn(name, MATCH.__all__)
+
+
 if __name__ == "__main__":
     unittest.main()
