@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "inventory": {
+    "include": [
+      "tests/**/*.py",
+      "tests_js/**/*.mjs",
+      "tools/**/*.mjs",
+      "scripts/**/*.py",
+      "scripts/**/*.sh",
+      "qa/**/*.py",
+      "qa/**/*.js",
+      "qa/**/*.mjs",
+      "workspace/*.js",
+      "native/macos/*.swift"
+    ]
+  },
+  "fullInventory": {
+    "include": ["tests/test_*.py", "tests_js/*.test.mjs"]
+  },
+  "globalPaths": [
+    "config/test-matrix.json",
+    "tools/test-runner.mjs",
+    "tools/test-runner/**",
+    "tools/check-test-matrix.mjs",
+    "package.json",
+    "package-lock.json",
+    ".github/workflows/**"
+  ],
+  "suites": [
+    {
+      "id": "matrix-policy",
+      "kind": "command",
+      "command": ["node", "tools/check-test-matrix.mjs"],
+      "tiers": ["fast", "full"]
+    },
+    {
+      "id": "source-size",
+      "kind": "command",
+      "command": ["npm", "run", "check:size"],
+      "tiers": ["fast", "full"]
+    },
+    {
+      "id": "docs-links",
+      "kind": "command",
+      "command": ["bash", "scripts/check-links.sh"],
+      "tiers": ["release"]
+    },
+    {
+      "id": "python-fast",
+      "kind": "python-unittest",
+      "include": [
+        "tests/test_source_size_policy.py",
+        "tests/test_final_action_docs.py",
+        "tests/test_job_apply_skill_contract.py",
+        "tests/test_job_apply_policy_split.py",
+        "tests/test_job_apply_split_compatibility.py"
+      ],
+      "tiers": ["fast", "full"]
+    },
+    {
+      "id": "python-qa",
+      "kind": "python-unittest",
+      "include": ["tests/test_qa_*.py", "tests/test_recorder_fs.py"],
+      "tiers": ["full"]
+    },
+    {
+      "id": "python-workspace-contracts",
+      "kind": "python-unittest",
+      "include": ["tests/test_store_*.py", "tests/test_job_apply_workspace_*.py"],
+      "tiers": ["full"]
+    },
+    {
+      "id": "python-accounts",
+      "kind": "python-unittest",
+      "include": [
+        "tests/test_job_apply_account*.py",
+        "tests/test_job_apply_credentials.py",
+        "tests/test_job_apply_password_account_flows.py",
+        "tests/test_job_apply_trusted_fill.py",
+        "tests/test_macos_*.py"
+      ],
+      "tiers": ["full"]
+    },
+    {
+      "id": "python-core",
+      "kind": "python-unittest",
+      "include": ["tests/test_*.py"],
+      "exclude": [
+        "tests/test_source_size_policy.py",
+        "tests/test_final_action_docs.py",
+        "tests/test_job_apply_skill_contract.py",
+        "tests/test_job_apply_policy_split.py",
+        "tests/test_job_apply_split_compatibility.py",
+        "tests/test_qa_*.py",
+        "tests/test_recorder_fs.py",
+        "tests/test_store_*.py",
+        "tests/test_job_apply_workspace_*.py",
+        "tests/test_job_apply_account*.py",
+        "tests/test_job_apply_credentials.py",
+        "tests/test_job_apply_password_account_flows.py",
+        "tests/test_job_apply_trusted_fill.py",
+        "tests/test_macos_*.py"
+      ],
+      "tiers": ["full"]
+    },
+    {
+      "id": "node-runner-fast",
+      "kind": "node-test",
+      "include": ["tests_js/test-runner*.test.mjs"],
+      "tiers": ["fast", "full"]
+    },
+    {
+      "id": "node-recorder",
+      "kind": "node-test",
+      "include": ["tests_js/recorder*.test.mjs"],
+      "tiers": ["full"]
+    },
+    {
+      "id": "node-renderer",
+      "kind": "node-test",
+      "include": ["tests_js/renderer*.test.mjs", "tests_js/account_renderer.test.mjs"],
+      "tiers": ["full"]
+    },
+    {
+      "id": "node-workspace-other",
+      "kind": "node-test",
+      "include": ["tests_js/workspace*.test.mjs", "tests_js/unified_task_spine_oracle.test.mjs"],
+      "tiers": ["full"]
+    },
+    {
+      "id": "windows-contracts",
+      "kind": "command",
+      "command": ["python", "-m", "unittest", "-v", "tests.test_job_apply_workspace_security", "tests.test_store_integrity", "tests.test_job_apply_accounts"],
+      "platforms": ["win32"],
+      "tiers": ["platform"]
+    },
+    {
+      "id": "macos-native-contracts",
+      "kind": "command",
+      "command": ["python3", "-m", "unittest", "-v", "tests.test_macos_credential_helper", "tests.test_macos_account_flow_helper", "tests.test_macos_workday_account_flow_helper"],
+      "platforms": ["darwin"],
+      "tiers": ["platform"]
+    },
+    {
+      "id": "release-package",
+      "kind": "command",
+      "command": ["bash", "scripts/smoke-plugin.sh"],
+      "tiers": ["release"]
+    }
+  ],
+  "ownership": [
+    {"paths": ["tests/__init__.py", "tests/support/**"], "suites": ["python-core"]},
+    {"paths": ["tests_js/recorder_*support.mjs", "tests_js/recorder_*phase.mjs"], "suites": ["node-recorder"]},
+    {"paths": ["tests_js/renderer_*support.mjs"], "suites": ["node-renderer"]},
+    {"paths": ["tests_js/workspace_*support.mjs", "tests_js/workspace_*phase*.mjs"], "suites": ["node-workspace-other"]},
+    {"paths": ["scripts/check-source-size.py"], "suites": ["source-size", "python-fast"]},
+    {"paths": ["scripts/check-links.sh"], "suites": ["docs-links"]},
+    {"paths": ["scripts/smoke-plugin.sh"], "suites": ["release-package"]},
+    {"paths": ["scripts/job-apply-workspace.py"], "suites": ["python-workspace-contracts"]},
+    {"paths": ["scripts/job-apply-store.py", "scripts/job_apply_store/**"], "suites": ["python-workspace-contracts"]},
+    {"paths": ["scripts/*account*.py", "scripts/*credential*.py", "scripts/job_apply_trusted_fill.py"], "suites": ["python-accounts"]},
+    {"paths": ["scripts/**/*.py"], "suites": ["python-core"]},
+    {"paths": ["qa/recorder.mjs", "qa/recorder/**"], "suites": ["node-recorder"]},
+    {"paths": ["qa/renderer/**", "qa/account_renderer/**"], "suites": ["node-renderer"]},
+    {"paths": ["qa/**/*.py"], "suites": ["python-qa"]},
+    {"paths": ["qa/*.mjs"], "suites": ["node-workspace-other"]},
+    {"paths": ["workspace/**"], "suites": ["python-workspace-contracts", "node-workspace-other"]},
+    {"paths": ["native/macos/**"], "suites": ["macos-native-contracts"]},
+    {"paths": ["docs/**", "README.md", "skills/**"], "suites": ["docs-links"]}
+  ]
+}

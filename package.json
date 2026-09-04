@@ -4,6 +4,12 @@
   "type": "module",
   "scripts": {
     "check:size": "python3 scripts/check-source-size.py",
+    "check:test-matrix": "node tools/check-test-matrix.mjs",
+    "test:fast": "node tools/test-runner.mjs fast",
+    "test:affected": "node tools/test-runner.mjs affected",
+    "test:full": "node tools/test-runner.mjs full",
+    "test:platform": "node tools/test-runner.mjs platform",
+    "test:release": "node tools/test-runner.mjs release",
     "test:qa-browser": "node --test --test-concurrency=1 tests_js/*.test.mjs",
     "test:macos-workday-boundary": "python3 -m unittest -v tests.test_macos_workday_account_flow_helper",
     "qa:unified-task-spine": "node qa/unified_task_spine_oracle.mjs --json",
