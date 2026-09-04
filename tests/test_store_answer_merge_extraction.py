@@ -159,19 +159,52 @@ class AnswerMergeExtractionTests(unittest.TestCase):
     def test_session_rewrite_uses_the_unbound_canonical_validator_adapter(self):
         _, store = self.stores("unbound-session-rewrite")
         winner, source = self.seed(store)
+        unrelated = store.put_answer({
+            "question": "Are you authorized to work?",
+            "state": "confirmed",
+            "value": "Yes",
+        })
+        store.save_session("merge-session", {
+            "status": "active",
+            "answerKeys": [source["key"], winner["key"], unrelated["key"]],
+            "pendingFields": [
+                {"question": "Compensation?", "answerKey": source["key"]},
+                {
+                    "question": "Are you authorized to work?",
+                    "answerKey": unrelated["key"],
+                },
+            ],
+        })
         session = store.load_session("merge-session")
         before = json.loads(json.dumps(session))
+        unrelated_field = before["pendingFields"][1]
+        self.assertEqual(unrelated_field["matchConfidence"], "exact")
+        self.assertTrue(unrelated_field["matchReasonCodes"])
         self.leaf._bind_runtime(lambda: vars(self.leaf))
         try:
             rewritten = self.mixin._rewrite_session_answer_key(
                 session, source["key"], winner["key"], "2026-09-04T18:30:00Z"
             )
+            invalid = json.loads(json.dumps(session))
+            invalid["pendingFields"][1]["matchConfidence"] = "invalid"
+            with self.assertRaisesRegex(
+                self.facade.StoreError, "pending field confidence is invalid"
+            ):
+                self.mixin._rewrite_session_answer_key(
+                    invalid,
+                    source["key"],
+                    winner["key"],
+                    "2026-09-04T18:30:00Z",
+                )
         finally:
             self.leaf._bind_runtime(lambda: vars(self.facade))
         self.assertEqual(session, before)
-        self.assertEqual(rewritten["answerKeys"], [winner["key"]])
+        self.assertEqual(
+            rewritten["answerKeys"], [winner["key"], unrelated["key"]]
+        )
         self.assertEqual(rewritten["pendingFields"][0]["answerKey"], winner["key"])
         self.assertNotIn("matchConfidence", rewritten["pendingFields"][0])
+        self.assertEqual(rewritten["pendingFields"][1], unrelated_field)
 
     def test_collision_and_stale_fail_before_any_durable_write(self):
         _, store = self.stores("reject")

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import hmac
+import types
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -13,6 +14,50 @@ from ...errors import StoreError
 from ...validation import profile_answers, sessions
 
 
+_CANONICAL_ANSWER_MATCH = types.SimpleNamespace(
+    CONFIDENCE_BANDS=frozenset({"exact", "high", "uncertain", "none"}),
+    REASON_CODES=frozenset({
+        "match_exact_question",
+        "match_exact_alias",
+        "match_semantic_high",
+        "match_semantic_uncertain",
+        "no_semantic_match",
+        "scope_match",
+        "scope_mismatch",
+        "field_class_match",
+        "field_class_mismatch",
+        "sensitivity_match",
+        "sensitivity_mismatch",
+        "polarity_mismatch",
+        "ambiguous_tie",
+        "candidate_active",
+        "candidate_deleted",
+        "candidate_accepted",
+        "candidate_not_accepted",
+        "candidate_confirmed",
+        "candidate_not_confirmed",
+        "value_seen",
+        "value_unseen",
+        "value_missing",
+        "mode_strict",
+        "mode_bounded_loose",
+        "authority_per_use",
+        "authority_accepted_record",
+        "authority_bounded_policy",
+        "authority_missing",
+        "field_class_allowlisted",
+        "field_class_not_allowlisted",
+        "confidence_eligible",
+        "confidence_ineligible",
+        "reuse_eligible",
+        "owner_confirmation_required",
+        "cleanup_merge_proposed",
+        "cleanup_winner_accepted",
+        "cleanup_duplicate_pending",
+    }),
+)
+
+
 def _canonical_utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace(
         "+00:00", "Z"
@@ -20,7 +65,9 @@ def _canonical_utc_now() -> str:
 
 
 def _canonical_validate_session_document(document: dict[str, Any]) -> None:
-    sessions._validate_session_document(document, answer_match_module=None)
+    sessions._validate_session_document(
+        document, answer_match_module=_CANONICAL_ANSWER_MATCH
+    )
 
 
 _CANONICAL_RUNTIME = {
