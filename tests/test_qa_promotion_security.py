@@ -138,7 +138,7 @@ class PromotionTests(PromotionCase):
 
     def test_missing_exclusive_rename_capability_fails_closed(self) -> None:
         approve_candidate(self.candidate, "qa-owner", now=NOW)
-        with mock.patch("qa.promote._EXCLUSIVE_RENAME", None):
+        with mock.patch("qa.promote.exclusive_rename_available", return_value=False):
             with self.assertRaisesRegex(PromotionError, "unsupported platform"):
                 promote_candidate(self.candidate, self.destination, now=NOW)
         self.assertFalse((self.destination / FIXTURE_ID).exists())

@@ -24,7 +24,7 @@ from qa.privacy import (
     PrivacyError,
     scan_tree,
 )
-from qa.recorder_fs import BrokerError, _EXCLUSIVE_RENAME, exclusive_rename
+from qa.recorder_fs import BrokerError, exclusive_rename, exclusive_rename_available
 
 
 SCANNER_VERSION = "1.0.0"
@@ -154,7 +154,7 @@ def _same_identity(left: os.stat_result, right: os.stat_result) -> bool:
 
 def _require_posix_capabilities(*, exclusive_install: bool = False) -> None:
     if not _POSIX_DESCRIPTOR_SUPPORT or (
-        exclusive_install and _EXCLUSIVE_RENAME is None
+        exclusive_install and not exclusive_rename_available()
     ) or not (sys.platform == "darwin" or sys.platform.startswith("linux")):
         raise PromotionError("unsupported platform")
 

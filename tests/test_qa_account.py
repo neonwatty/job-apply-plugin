@@ -125,7 +125,7 @@ class SyntheticAccountQATests(unittest.TestCase):
         self.assertNotIn("@", json.dumps(result))
 
     def test_visible_browser_setup_is_bounded_without_retrying_native_effects(self):
-        source = (ROOT / "scripts/qa-account.py").read_text(encoding="utf-8")
+        source = (ROOT / "qa/account_environment.py").read_text(encoding="utf-8")
         server = (ROOT / "qa/account_server.py").read_text(encoding="utf-8")
         self.assertEqual(source.count("timeout=12"), 2)
         self.assertEqual(source.count("for _ in range(3):"), 2)
@@ -136,7 +136,7 @@ class SyntheticAccountQATests(unittest.TestCase):
         self.assertEqual(source.count("provider.provision_or_reuse_and_fill"), 0)
 
     def test_visible_browser_setup_disables_background_updates(self):
-        source = (ROOT / "scripts/qa-account.py").read_text(encoding="utf-8")
+        source = (ROOT / "qa/account_environment.py").read_text(encoding="utf-8")
         self.assertEqual(source.count('"--disable-background-networking"'), 1)
         self.assertEqual(source.count('"--disable-component-update"'), 1)
 
