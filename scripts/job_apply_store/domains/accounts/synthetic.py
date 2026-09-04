@@ -46,11 +46,9 @@ class SyntheticAccountMixin:
         observer: Any | None = None, public: bool = False,
         test_authority: object | None = None,
     ) -> dict[str, Any]:
-        executor = _late("ACCOUNT_EXECUTOR_MODULE")
-        accounts_module = _late("ACCOUNTS_MODULE")
         try:
-            packet = executor.validate_request(incoming)
-        except executor.AccountExecutorError as error:
+            packet = _late("ACCOUNT_EXECUTOR_MODULE").validate_request(incoming)
+        except _late("ACCOUNT_EXECUTOR_MODULE").AccountExecutorError as error:
             raise StoreError(str(error)) from None
         self.initialize()
         self._ensure_account_control_documents()
@@ -84,7 +82,7 @@ class SyntheticAccountMixin:
                 or job["revision"] != packet["expectedJobRevision"]
             ):
                 raise StoreError("account execution requires the exact live claimed job")
-            realm = accounts_module.normalize_realm(job["url"])
+            realm = _late("ACCOUNTS_MODULE").normalize_realm(job["url"])
             if (
                 realm["status"] != "resolved" or realm["realmRef"] != packet["realmRef"]
                 or realm["descriptor"] != packet["realmDescriptor"]
@@ -104,7 +102,7 @@ class SyntheticAccountMixin:
                 raise StoreError("account automation is disabled")
             if account["signupEmailOverride"] is None and settings["signupEmail"] is None:
                 raise StoreError("effective signup email is required")
-            if account["lifecycleState"] in executor.TERMINAL_NO_RETRY:
+            if account["lifecycleState"] in _late("ACCOUNT_EXECUTOR_MODULE").TERMINAL_NO_RETRY:
                 raise StoreError("account lifecycle permanently requires human attention")
             strategy = settings["passwordStrategy"]
             if strategy in {"custom", "ask_each_time"}:
@@ -126,9 +124,9 @@ class SyntheticAccountMixin:
                 {"schemaVersion": _late("SCHEMA_VERSION"), "operation": operation},
             )
             try:
-                result = executor.execute_non_final(
+                result = _late("ACCOUNT_EXECUTOR_MODULE").execute_non_final(
                     packet, protected_provider, strategy, account["credentialRef"],
-                    observer or executor.observe_synthetic_portal,
+                    observer or _late("ACCOUNT_EXECUTOR_MODULE").observe_synthetic_portal,
                 )
             except Exception:
                 ambiguous = self._write_account_stage_locked(
@@ -139,7 +137,7 @@ class SyntheticAccountMixin:
                 return {
                     "authorized": False, "reasonCode": "ambiguous",
                     "retryAllowed": False, "attentionHandoff": True,
-                    "account": accounts_module.public_account(ambiguous),
+                    "account": _late("ACCOUNTS_MODULE").public_account(ambiguous),
                     "job": {"id": handed_off["id"], "status": handed_off["status"], "revision": handed_off["revision"]},
                 }
             account = self._write_account_stage_locked(
@@ -160,7 +158,7 @@ class SyntheticAccountMixin:
                 "attentionHandoff": attention, "reused": result["reused"],
                 "secureControlCleared": result["secureControlCleared"],
                 "finalActionAuthorized": False,
-                "account": accounts_module.public_account(account),
+                "account": _late("ACCOUNTS_MODULE").public_account(account),
             }
             if attention:
                 handed_off = self._account_attention_handoff_locked(job, result["lifecycleState"])
@@ -177,14 +175,12 @@ class SyntheticAccountMixin:
     ) -> dict[str, Any]:
         """Execute one loopback Oracle email-only flow without credentials."""
 
-        flows = _late("ACCOUNT_FLOWS_MODULE")
-        accounts_module = _late("ACCOUNTS_MODULE")
         try:
-            packet = flows.validate_email_only_request(incoming, allow_loopback=True)
-        except flows.AccountFlowError as error:
+            packet = _late("ACCOUNT_FLOWS_MODULE").validate_email_only_request(incoming, allow_loopback=True)
+        except _late("ACCOUNT_FLOWS_MODULE").AccountFlowError as error:
             raise StoreError(str(error)) from None
         if (
-            test_authority is not flows.synthetic_test_authority()
+            test_authority is not _late("ACCOUNT_FLOWS_MODULE").synthetic_test_authority()
             or getattr(provider, "provider_id", None) != "macos-accessibility"
         ):
             raise StoreError("synthetic account-flow provider is test-only")
@@ -204,11 +200,11 @@ class SyntheticAccountMixin:
                 or job["status"] != "in_progress" or job["revision"] != packet["jobRevision"]
             ):
                 raise StoreError("email-only execution requires the exact live claimed job")
-            realm = accounts_module.normalize_realm(job["url"])
+            realm = _late("ACCOUNTS_MODULE").normalize_realm(job["url"])
             if (
                 realm.get("status") != "resolved"
                 or realm.get("adapterId") != "oracle-recruiting"
-                or realm.get("flowKind") != accounts_module.FLOW_EMAIL_ONLY
+                or realm.get("flowKind") != _late("ACCOUNTS_MODULE").FLOW_EMAIL_ONLY
                 or realm.get("realmRef") != packet["realmRef"]
                 or realm.get("descriptor") != packet["realmDescriptor"]
             ):
@@ -222,7 +218,7 @@ class SyntheticAccountMixin:
                 raise StoreError("email-only execution revision conflict")
             if not settings["enabled"] or not settings["automaticAccountCreation"]:
                 raise StoreError("account automation is disabled")
-            if account.get("flowKind") != accounts_module.FLOW_EMAIL_ONLY or account.get("credentialRequired") is not False:
+            if account.get("flowKind") != _late("ACCOUNTS_MODULE").FLOW_EMAIL_ONLY or account.get("credentialRequired") is not False:
                 raise StoreError("email-only account metadata is invalid")
             if account["providerId"] is not None or account["credentialRef"] is not None or account["credentialVersion"] is not None:
                 raise StoreError("email-only execution forbids credential metadata")
@@ -242,7 +238,7 @@ class SyntheticAccountMixin:
             _late("atomic_write_json")(self.account_operation_journal_path, {"schemaVersion": _late("SCHEMA_VERSION"), "operation": operation})
             account = self._write_account_stage_locked(account, "signup_in_progress", operation, "signup_in_progress")
             try:
-                result = flows.execute_email_only(
+                result = _late("ACCOUNT_FLOWS_MODULE").execute_email_only(
                     {**packet, "accountRevision": packet["accountRevision"]}, provider,
                     lambda: effective_email, allow_loopback=True,
                 )
@@ -254,7 +250,7 @@ class SyntheticAccountMixin:
                     "authorized": False, "reasonCode": "ambiguous", "retryAllowed": False,
                     "attentionHandoff": True, "finalActionAuthorized": False,
                     "credentialProviderInvocations": 0,
-                    "account": accounts_module.public_account(ambiguous),
+                    "account": _late("ACCOUNTS_MODULE").public_account(ambiguous),
                     "job": {"id": handed_off["id"], "status": handed_off["status"], "revision": handed_off["revision"]},
                 }
             account = self._write_account_stage_locked(
@@ -267,7 +263,7 @@ class SyntheticAccountMixin:
                 "finalActionAuthorized": False, "emailRemoved": result["emailRemoved"],
                 "termsAccepted": result["termsAccepted"], "nextActivations": result["nextActivations"],
                 "credentialProviderInvocations": 0,
-                "account": accounts_module.public_account(account),
+                "account": _late("ACCOUNTS_MODULE").public_account(account),
             }
             if attention:
                 handed_off = self._account_attention_handoff_locked(job, result["lifecycleState"])
