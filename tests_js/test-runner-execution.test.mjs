@@ -81,6 +81,39 @@ test("process execution terminates hangs and bounds noisy output", async () => {
   assert.equal((stdout.match(/x/g) ?? []).length, 32);
 });
 
+test("timeout terminates an owned grandchild process tree", { skip: process.platform === "win32" }, async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "test-runner-tree-"));
+  const pidFile = path.join(root, "grandchild.pid");
+  const grandchild = "process.on('SIGTERM',()=>{});setInterval(()=>{},1000)";
+  const parent = [
+    "const {spawn}=require('child_process'),fs=require('fs');",
+    `const child=spawn(process.execPath,['-e',${JSON.stringify(grandchild)}],{stdio:['ignore','inherit','inherit']});`,
+    `fs.writeFileSync(${JSON.stringify(pidFile)},String(child.pid));`,
+    "process.on('SIGTERM',()=>{});setInterval(()=>{},1000);",
+  ].join("");
+  try {
+    const result = await runStreaming(process.execPath, ["-e", parent], {
+      label: "tree", timeoutMs: 200, maxOutputBytes: 32,
+      stdout: () => {}, stderr: () => {},
+    });
+    assert.equal(result.exitCode, 124);
+    const pid = Number(fs.readFileSync(pidFile, "utf8"));
+    let alive = true;
+    for (let attempt = 0; attempt < 10 && alive; attempt += 1) {
+      try {
+        process.kill(pid, 0);
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      } catch (error) {
+        if (error.code !== "ESRCH") throw error;
+        alive = false;
+      }
+    }
+    assert.equal(alive, false, "grandchild survived its owned process-group timeout");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("receipts contain selection and timing metadata but no commands, output, or environment", async () => {
   const receipt = buildReceipt({
     baseSha: "a".repeat(40), headSha: "b".repeat(40),

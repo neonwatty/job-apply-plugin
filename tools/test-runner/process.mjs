@@ -1,5 +1,22 @@
 import { spawn } from "node:child_process";
 
+function terminateTree(child, signal) {
+  if (!child.pid) return;
+  if (process.platform === "win32") {
+    const args = ["/pid", String(child.pid), "/T"];
+    if (signal === "SIGKILL") args.push("/F");
+    const killer = spawn("taskkill", args, { stdio: "ignore", windowsHide: true });
+    killer.on("error", () => {});
+    return;
+  }
+  try {
+    process.kill(-child.pid, signal);
+  } catch (error) {
+    if (error.code !== "ESRCH") return false;
+  }
+  return true;
+}
+
 export function runCapture(executable, args, options = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(executable, args, {
@@ -47,12 +64,14 @@ export function runStreaming(executable, args, options = {}) {
     let settled = false;
     let timedOut = false;
     let forceKill;
+    let forceResolution;
     let timeout;
     const finish = (status, code, signal = null) => {
       if (settled) return;
       settled = true;
       clearTimeout(timeout);
       clearTimeout(forceKill);
+      clearTimeout(forceResolution);
       resolve({
         status,
         exitCode: code,
@@ -63,6 +82,7 @@ export function runStreaming(executable, args, options = {}) {
     const child = spawn(executable, args, {
       cwd: options.cwd,
       env: options.env,
+      detached: process.platform !== "win32",
       stdio: ["ignore", "pipe", "pipe"],
     });
     const prefix = `[${options.label}] `;
@@ -75,8 +95,13 @@ export function runStreaming(executable, args, options = {}) {
         (options.stderr ?? process.stderr.write.bind(process.stderr))(
           `${prefix}timed out after ${options.timeoutMs}ms\n`,
         );
-        forceKill = setTimeout(() => child.kill("SIGKILL"), 1000);
-        child.kill("SIGTERM");
+        forceKill = setTimeout(() => terminateTree(child, "SIGKILL"), 1000);
+        forceResolution = setTimeout(() => {
+          child.stdout.destroy();
+          child.stderr.destroy();
+          finish("failed", 124, "timeout");
+        }, 2000);
+        terminateTree(child, "SIGTERM");
       }, options.timeoutMs);
     }
     child.on("error", (error) => {
