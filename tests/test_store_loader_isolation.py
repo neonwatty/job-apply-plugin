@@ -60,6 +60,14 @@ IMPLEMENTATION_SUFFIXES = {
     ".domains.profile_facts",
     ".domains.answers",
     ".domains.answers.read",
+    ".domains.answers.mutations",
+    ".domains.answers.merge",
+    ".domains.answers.cleanup",
+    ".domains.jobs",
+    ".domains.jobs.crud",
+    ".domains.jobs.overview",
+    ".domains.jobs.upsert",
+    ".domains.jobs.legacy",
 }
 
 COMPANION_SUFFIXES = {
@@ -195,6 +203,13 @@ class StoreLoaderIsolationTests(unittest.TestCase):
             module._profile_domain,
             module._profile_facts_domain,
             module._answer_read_domain,
+            module._answer_mutation_domain,
+            module._answer_merge_domain,
+            module._answer_cleanup_domain,
+            module._job_crud_domain,
+            module._job_overview_domain,
+            module._job_upsert_domain,
+            module._job_legacy_domain,
         ):
             self.assertTrue(Path(leaf.__file__).resolve().is_relative_to(scripts))
         for companion_name in (

@@ -13,7 +13,12 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
-from .constants import SESSION_ID, _MISSING
+from .constants import (
+    JOB_ORIGINS,
+    JOB_PROVENANCE_ORIGINS,
+    SESSION_ID,
+    _MISSING,
+)
 from .errors import StoreError
 
 
@@ -54,6 +59,97 @@ def normalize_job_url(url: str) -> str:
     default_port = (parsed.scheme.lower(), port) in {("http", 80), ("https", 443)}
     netloc = hostname if port is None or default_port else f"{hostname}:{port}"
     return urlunsplit((parsed.scheme.lower(), netloc, parsed.path or "/", parsed.query, ""))
+
+
+def _job_origin(origin: str) -> str:
+    if origin not in JOB_ORIGINS:
+        raise StoreError("job origin must be human or agent")
+    return origin
+
+
+def _nonempty_job_value(value: Any) -> bool:
+    return value is not None and (not isinstance(value, str) or bool(value.strip()))
+
+
+def _normalized_job_source(value: Any) -> str | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return value.strip().lower()
+
+
+def _job_observation_source(record: dict[str, Any]) -> str:
+    return _normalized_job_source(record.get("source")) or "manual"
+
+
+def _job_field_provenance(
+    provenance: dict[str, Any], field: str,
+) -> dict[str, Any] | None:
+    value = provenance.get(f"/{_json_pointer_segment(field)}")
+    if not isinstance(value, dict) or value.get("origin") not in JOB_PROVENANCE_ORIGINS:
+        return None
+    return value
+
+
+def _agent_may_update_job_field(
+    record: dict[str, Any], provenance: dict[str, Any], field: str,
+) -> bool:
+    authored = _job_field_provenance(provenance, field)
+    if authored is not None:
+        return authored["origin"] == "agent"
+    return not _nonempty_job_value(record.get(field))
+
+
+def _migration_may_update_job_field(
+    record: dict[str, Any], provenance: dict[str, Any], field: str,
+) -> bool:
+    if not _nonempty_job_value(record.get(field)):
+        return True
+    authored = _job_field_provenance(provenance, field)
+    return authored is not None and authored["origin"] == "migration"
+
+
+def _reject_supplied_migration_provenance(provenance: dict[str, Any]) -> None:
+    if any(
+        isinstance(value, dict) and value.get("origin") == "migration"
+        for value in provenance.values()
+    ):
+        raise StoreError("migration provenance is reserved for guided legacy imports")
+
+
+def _validate_migration_provenance_replacement(
+    current: dict[str, Any], replacement: dict[str, Any],
+) -> None:
+    protected_paths = {
+        path
+        for path in set(current) | set(replacement)
+        if (
+            isinstance(current.get(path), dict)
+            and current[path].get("origin") == "migration"
+        )
+        or (
+            isinstance(replacement.get(path), dict)
+            and replacement[path].get("origin") == "migration"
+        )
+    }
+    if any(current.get(path) != replacement.get(path) for path in protected_paths):
+        raise StoreError("migration provenance is reserved for guided legacy imports")
+
+
+def _stamp_job_provenance(
+    provenance: dict[str, Any],
+    fields: list[str] | set[str],
+    origin: str,
+    observation_source: str,
+    updated_at: str,
+) -> dict[str, Any]:
+    stamped = dict(provenance)
+    for field in fields:
+        stamped[f"/{_json_pointer_segment(field)}"] = {
+            "origin": origin,
+            "observationSource": observation_source,
+            "updatedAt": updated_at,
+        }
+    return stamped
 
 
 def normalize_resume_path(

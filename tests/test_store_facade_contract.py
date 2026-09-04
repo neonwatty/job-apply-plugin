@@ -37,6 +37,10 @@ PACKAGE_FILES = (
     "validation/extraction.py", "validation/accounts.py", "domains/__init__.py",
     "domains/profile.py", "domains/profile_facts.py",
     "domains/answers/__init__.py", "domains/answers/read.py",
+    "domains/answers/mutations.py", "domains/answers/merge.py",
+    "domains/answers/cleanup.py", "domains/jobs/__init__.py",
+    "domains/jobs/crud.py", "domains/jobs/overview.py",
+    "domains/jobs/upsert.py", "domains/jobs/legacy.py",
 )
 
 

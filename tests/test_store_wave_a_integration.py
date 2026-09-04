@@ -111,8 +111,8 @@ class StoreWaveAIntegrationTests(unittest.TestCase):
         self.assertIs(self.facade._profile_facts_domain, self.facts_module)
         self.assertIs(self.facade._answer_read_domain, self.answer_module)
         self.assertEqual(
-            self.facade.Store.__mro__[:5],
-            (self.facade.Store, *self.mixins, self.facade._base.StoreBase),
+            self.facade.Store.__mro__[:4],
+            (self.facade.Store, *self.mixins),
         )
         owned = [
             PROFILE_METHODS,
@@ -240,6 +240,14 @@ class StoreWaveAIntegrationTests(unittest.TestCase):
                 "profile_facts",
                 "answers.__init__",
                 "answers.read",
+                "answers.mutations",
+                "answers.merge",
+                "answers.cleanup",
+                "jobs.__init__",
+                "jobs.crud",
+                "jobs.overview",
+                "jobs.upsert",
+                "jobs.legacy",
             },
         )
 
