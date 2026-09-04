@@ -107,17 +107,24 @@ def workflow_typecheck_sources(
         )
 
     def record_block(block: list[str], indicator: str) -> None:
-        if indicator.startswith(">"):
-            paragraph: list[str] = []
-            for line in block + [""]:
-                if line.strip():
-                    paragraph.append(line.strip())
-                elif paragraph:
-                    record(" ".join(paragraph))
-                    paragraph = []
+        indents = [len(line) - len(line.lstrip()) for line in block if line.strip()]
+        if not indents:
             return
+        indent = min(indents)
+        scalar = [line[indent:] if line.strip() else "" for line in block]
+        rendered = ""
+        previous: str | None = None
+        for line in scalar:
+            if previous is not None:
+                fold = (
+                    indicator.startswith(">") and previous and line
+                    and not previous[0].isspace() and not line[0].isspace()
+                )
+                rendered += " " if fold else "\n"
+            rendered += line
+            previous = line
         pending = ""
-        for line in block + [""]:
+        for line in rendered.splitlines() + [""]:
             part = line.strip()
             if not part:
                 if pending:
@@ -147,7 +154,7 @@ def workflow_typecheck_sources(
             current_job, current_step = job.group(1), None
             index += 1
             continue
-        step = re.fullmatch(r"      - name: (.+)", line)
+        step = re.fullmatch(r"      -(?: name: (.+)|.*)", line)
         if step:
             current_step = step.group(1)
             index += 1
@@ -256,6 +263,30 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
                 self.assertEqual(
                     workflow_typecheck_sources(workflow), WORKFLOW_TYPECHECK_SOURCES
                 )
+
+    def test_workflow_source_contract_rejects_unnamed_step_reassignment(self):
+        workflow = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
+        command = workflow_typecheck_command(ORACLE_SWIFT_SOURCES)
+        workflow = self.replace_workflow_once(
+            workflow,
+            f"        run: {command}",
+            f"        run: true\n      - shell: bash\n        run: {command}",
+        )
+        self.assert_workflow_source_contract_rejects(workflow)
+
+    def test_workflow_source_contract_preserves_block_scalar_indentation(self):
+        original = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
+        command = workflow_typecheck_command(ORACLE_SWIFT_SOURCES)
+        tokens = command.split()
+        for indicator in (">", "|"):
+            with self.subTest(indicator=indicator):
+                workflow = self.replace_workflow_once(
+                    original,
+                    f"        run: {command}",
+                    f"        run: {indicator}\n          {' '.join(tokens[:4])}"
+                    f"\n            {' '.join(tokens[4:])}",
+                )
+                self.assert_workflow_source_contract_rejects(workflow)
 
     def test_workflow_source_contract_rejects_oracle_workday_command_swap(self):
         workflow = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
