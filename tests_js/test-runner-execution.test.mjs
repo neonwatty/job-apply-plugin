@@ -9,6 +9,20 @@ import { runStreaming } from "../tools/test-runner/process.mjs";
 import { buildReceipt, writeReceipt } from "../tools/test-runner/receipt.mjs";
 import { parseArguments } from "../tools/test-runner.mjs";
 
+async function assertProcessGone(pid) {
+  let alive = true;
+  for (let attempt = 0; attempt < 10 && alive; attempt += 1) {
+    try {
+      process.kill(pid, 0);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    } catch (error) {
+      if (error.code !== "ESRCH") throw error;
+      alive = false;
+    }
+  }
+  assert.equal(alive, false, "grandchild survived its owned process-group timeout");
+}
+
 test("platform Python selection and generated test commands are explicit", () => {
   assert.equal(pythonExecutable("win32"), "python");
   assert.equal(pythonExecutable("linux"), "python3");
@@ -98,17 +112,29 @@ test("timeout terminates an owned grandchild process tree", { skip: process.plat
     });
     assert.equal(result.exitCode, 124);
     const pid = Number(fs.readFileSync(pidFile, "utf8"));
-    let alive = true;
-    for (let attempt = 0; attempt < 10 && alive; attempt += 1) {
-      try {
-        process.kill(pid, 0);
-        await new Promise((resolve) => setTimeout(resolve, 20));
-      } catch (error) {
-        if (error.code !== "ESRCH") throw error;
-        alive = false;
-      }
-    }
-    assert.equal(alive, false, "grandchild survived its owned process-group timeout");
+    await assertProcessGone(pid);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("timeout retains group cleanup after the direct parent exits", { skip: process.platform === "win32" }, async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "test-runner-orphan-"));
+  const pidFile = path.join(root, "grandchild.pid");
+  const grandchild = "process.on('SIGTERM',()=>{});setInterval(()=>{},1000)";
+  const parent = [
+    "const {spawn}=require('child_process'),fs=require('fs');",
+    `const child=spawn(process.execPath,['-e',${JSON.stringify(grandchild)}],{stdio:'ignore'});`,
+    `fs.writeFileSync(${JSON.stringify(pidFile)},String(child.pid));`,
+    "setInterval(()=>{},1000);",
+  ].join("");
+  try {
+    const result = await runStreaming(process.execPath, ["-e", parent], {
+      label: "orphan", timeoutMs: 200, maxOutputBytes: 32,
+      stdout: () => {}, stderr: () => {},
+    });
+    assert.equal(result.exitCode, 124);
+    await assertProcessGone(Number(fs.readFileSync(pidFile, "utf8")));
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

@@ -10,7 +10,7 @@
       "qa/**/*.py",
       "qa/**/*.js",
       "qa/**/*.mjs",
-      "workspace/*.js",
+      "workspace/**/*.js",
       "native/macos/*.swift"
     ]
   },
@@ -168,12 +168,25 @@
     {"paths": ["scripts/check-links.sh"], "suites": ["docs-links"]},
     {"paths": ["scripts/smoke-plugin.sh"], "suites": ["release-package"]},
     {"paths": ["scripts/job-apply-workspace.py"], "suites": ["python-workspace-contracts"]},
+    {"paths": ["scripts/job_apply_workspace/**"], "suites": ["python-workspace-contracts", "node-workspace-other"]},
     {"paths": ["scripts/job-apply-store.py", "scripts/job_apply_store/**"], "suites": ["python-workspace-contracts"]},
     {"paths": ["scripts/*account*.py", "scripts/*credential*.py", "scripts/job_apply_trusted_fill.py"], "suites": ["python-accounts"]},
-    {"paths": ["scripts/**/*.py"], "suites": ["python-core"]},
+    {
+      "paths": ["scripts/**/*.py"],
+      "suites": [
+        "python-qa",
+        "python-workspace-contracts",
+        "python-accounts",
+        "python-core",
+        "node-recorder",
+        "node-renderer",
+        "node-workspace-other"
+      ]
+    },
     {"paths": ["qa/recorder.mjs", "qa/recorder/**"], "suites": ["node-recorder"]},
     {"paths": ["qa/renderer/**", "qa/account_renderer/**"], "suites": ["node-renderer"]},
     {"paths": ["qa/**/*.py"], "suites": ["python-qa"]},
+    {"paths": ["qa/**"], "suites": ["python-qa", "node-recorder", "node-renderer", "node-workspace-other"]},
     {"paths": ["qa/*.mjs"], "suites": ["node-workspace-other"]},
     {"paths": ["workspace/**"], "suites": ["python-workspace-contracts", "node-workspace-other"]},
     {"paths": ["native/macos/**"], "suites": ["macos-native-contracts"]},

@@ -53,6 +53,23 @@ test("real shared Python helpers select every consuming shard", async () => {
   }
 });
 
+test("real production paths conservatively include cross-language consumers", async () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const [realMatrix, realPaths] = await Promise.all([loadMatrix(root), trackedPaths(root)]);
+  const cases = new Map([
+    ["scripts/qa-replay.py", ["python-qa", "python-workspace-contracts", "python-accounts", "python-core", "node-recorder", "node-renderer", "node-workspace-other"]],
+    ["scripts/job_apply_store/domains/jobs/crud.py", ["python-workspace-contracts", "python-accounts", "python-core", "node-workspace-other"]],
+    ["scripts/job_apply_workspace/server.py", ["python-workspace-contracts", "node-workspace-other"]],
+    ["qa/renderer/server.py", ["python-qa", "node-recorder", "node-renderer", "node-workspace-other"]],
+    ["workspace/server/routes.js", ["python-workspace-contracts", "node-workspace-other"]],
+  ]);
+  for (const [changed, expected] of cases) {
+    const selected = selectAffected(realMatrix, realPaths, [changed]);
+    assert.equal(selected.fallbackReason, null);
+    for (const id of expected) assert.equal(selected.suiteIds.includes(id), true, `${changed} omitted ${id}`);
+  }
+});
+
 test("matrix validation rejects omissions and duplicate full inventory", () => {
   assert.deepEqual(validateMatrix(matrix, tracked), []);
   const duplicate = structuredClone(matrix);

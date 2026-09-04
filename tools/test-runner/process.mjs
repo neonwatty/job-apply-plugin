@@ -3,8 +3,7 @@ import { spawn } from "node:child_process";
 function terminateTree(child, signal) {
   if (!child.pid) return;
   if (process.platform === "win32") {
-    const args = ["/pid", String(child.pid), "/T"];
-    if (signal === "SIGKILL") args.push("/F");
+    const args = ["/pid", String(child.pid), "/T", "/F"];
     const killer = spawn("taskkill", args, { stdio: "ignore", windowsHide: true });
     killer.on("error", () => {});
     return;
@@ -15,6 +14,16 @@ function terminateTree(child, signal) {
     if (error.code !== "ESRCH") return false;
   }
   return true;
+}
+
+function processTreeAlive(child) {
+  if (!child.pid || process.platform === "win32") return false;
+  try {
+    process.kill(-child.pid, 0);
+    return true;
+  } catch (error) {
+    return error.code !== "ESRCH";
+  }
 }
 
 export function runCapture(executable, args, options = {}) {
@@ -95,7 +104,15 @@ export function runStreaming(executable, args, options = {}) {
         (options.stderr ?? process.stderr.write.bind(process.stderr))(
           `${prefix}timed out after ${options.timeoutMs}ms\n`,
         );
-        forceKill = setTimeout(() => terminateTree(child, "SIGKILL"), 1000);
+        forceKill = setTimeout(() => {
+          terminateTree(child, "SIGKILL");
+          clearTimeout(forceResolution);
+          forceResolution = setTimeout(() => {
+            child.stdout.destroy();
+            child.stderr.destroy();
+            finish("failed", 124, "timeout");
+          }, 100);
+        }, 1000);
         forceResolution = setTimeout(() => {
           child.stdout.destroy();
           child.stderr.destroy();
@@ -110,10 +127,13 @@ export function runStreaming(executable, args, options = {}) {
       );
       finish("failed", 1);
     });
-    child.on("close", (code, signal) => finish(
-      !timedOut && code === 0 ? "passed" : "failed",
-      timedOut ? 124 : code ?? 1,
-      timedOut ? "timeout" : signal,
-    ));
+    child.on("close", (code, signal) => {
+      if (timedOut && processTreeAlive(child)) return;
+      finish(
+        !timedOut && code === 0 ? "passed" : "failed",
+        timedOut ? 124 : code ?? 1,
+        timedOut ? "timeout" : signal,
+      );
+    });
   });
 }

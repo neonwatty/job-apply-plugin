@@ -41,6 +41,8 @@ evidence supports raising their internal concurrency.
 suite references, nonexistent repository command paths, unowned executable or
 test paths, and any duplicate or omitted deterministic test file. Changing the
 matrix, runner, package scripts, lockfile, or workflows selects the full tier.
+Production ownership is initially conservative and heuristic; affected mode is
+local selection evidence, not yet an affected-safe CI gate.
 
 Affected selection is initially local evidence, not proof that CI shadowing is
 complete. Activation still requires the planned observation window with zero
