@@ -10,6 +10,12 @@ from typing import Any
 
 from .model import OUTCOMES, STORE_ENV, PolicyError, _object
 
+POLICY_DESCRIPTION = """Inert local policy authority for bounded Job Apply Auto-submit campaigns.
+
+This helper only creates and evaluates local policy records. It deliberately has
+no browser integration and cannot activate a final control.
+"""
+
 def _read_input(path: str) -> dict[str, Any]:
     try:
         if path == "-":
@@ -20,7 +26,7 @@ def _read_input(path: str) -> dict[str, Any]:
         raise PolicyError("input is not a readable JSON object") from error
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=POLICY_DESCRIPTION)
     parser.add_argument("--root", help=f"store root (default: ${STORE_ENV} or ~/.job-apply)")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("status")

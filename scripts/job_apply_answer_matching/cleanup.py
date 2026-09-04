@@ -14,6 +14,7 @@ from .scoring import rank_candidates
 def propose_cleanup(
     *,
     candidates: Iterable[Mapping[str, Any]],
+    _ranker=rank_candidates,
 ) -> list[dict[str, Any]]:
     """Return non-mutating, value-free merge proposals for clear duplicates.
 
@@ -58,7 +59,7 @@ def propose_cleanup(
                 continue
             if duplicate.get("reviewStatus", "accepted") != "pending":
                 continue
-            match = rank_candidates(
+            match = _ranker(
                 question=winner_question,
                 scope=winner_scope,
                 field_class=winner_class,
