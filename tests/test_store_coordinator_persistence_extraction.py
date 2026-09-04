@@ -86,6 +86,32 @@ class CoordinatorPersistenceExtractionTests(unittest.TestCase):
         })
         return store.transition_job(job["id"], "ready", job["revision"])
 
+    def _fresh_extracted(self, label: str):
+        store = self.composed(
+            self.parent / label, self.parent / f"{label}-legacy.json"
+        )
+        store.initialize()
+        store._ensure_coordinator_files()
+        return store
+
+    def _write_coordinator_operation(self, store, operation):
+        self.facade.atomic_write_json(
+            store.coordinator_journal_path,
+            {"schemaVersion": 1, "operation": operation},
+        )
+
+    @staticmethod
+    def _claim(job_id: str, claim_id: str):
+        return {
+            "claimId": claim_id,
+            "jobId": job_id,
+            "ownerLabel": "golden-agent",
+            "tokenHash": "a" * 64,
+            "acquiredAt": "2026-09-04T20:00:00Z",
+            "heartbeatAt": "2026-09-04T20:00:00Z",
+            "expiresAt": "2026-09-04T20:05:00Z",
+        }
+
     def test_exact_plain_mixin_contract_and_direction(self):
         assert_method_contract(self, self.facade.Store, self.mixin, METHODS)
         self.assertEqual(self.mixin.__bases__, (object,))
@@ -249,6 +275,143 @@ class CoordinatorPersistenceExtractionTests(unittest.TestCase):
             "PRIVATE PATH VALUE",
             json.dumps(self.extracted._load_coordinator_journal()),
         )
+
+    def test_golden_answer_merge_and_resolution_roll_forward_branches(self):
+        merge = self._fresh_extracted("golden-merge")
+        winner = merge.put_answer({
+            "question": "Canonical salary?", "state": "confirmed", "value": "100"
+        })
+        source = merge.put_answer({
+            "question": "Expected salary?", "state": "confirmed", "value": "200"
+        })
+        merge_operation = {
+            "kind": "answer_merge",
+            "operationId": "golden-merge-operation",
+            "at": "2026-09-04T20:00:00Z",
+            "winnerKey": winner["key"],
+            "sourceKey": source["key"],
+            "expectedWinnerRevision": winner["revision"],
+            "expectedSourceRevision": source["revision"],
+            "sessions": [],
+            "resultClaim": None,
+        }
+        self._write_coordinator_operation(merge, merge_operation)
+        merge._roll_forward_locked()
+        document = merge._load_answers_document()
+        self.assertNotIn(source["key"], document["answers"])
+        self.assertEqual(
+            document["redirects"][source["key"]]["targetKey"], winner["key"]
+        )
+        self.assertEqual(
+            document["answers"][winner["key"]]["revision"],
+            winner["revision"] + 1,
+        )
+        self.assertIsNone(merge._load_coordinator_journal()["operation"])
+
+        resolution = self._fresh_extracted("golden-resolution")
+        job = resolution.create_job({
+            "id": "resolution-job", "url": "https://example.com/resolution"
+        })
+        job = resolution.transition_job(job["id"], "needs_info", job["revision"])
+        session = resolution._build_session(job["id"], {
+            "status": "active", "step": "questions", "pendingFields": []
+        }, now="2026-09-04T20:00:00Z")
+        self.facade.atomic_write_json(resolution._session_path(job["id"]), session)
+        resolution_operation = {
+            "kind": "answer_resolution",
+            "operationId": "golden-resolution-operation",
+            "jobId": job["id"],
+            "at": "2026-09-04T20:00:00Z",
+            "answerKey": "golden-answer",
+            "expectedJobRevision": job["revision"],
+            "expectedSessionRevision": resolution._session_revision(session),
+            "expectedAnswerRevision": 1,
+            "sourceStatus": "needs_info",
+            "targetStatus": "ready",
+            "session": session,
+            "resultClaim": None,
+        }
+        self._write_coordinator_operation(resolution, resolution_operation)
+        self.leaf._bind_runtime(lambda: vars(self.leaf))
+        try:
+            self.assertEqual(
+                resolution._load_coordinator_journal()["operation"]["kind"],
+                "answer_resolution",
+            )
+            resolution._roll_forward_locked()
+        finally:
+            self.leaf._bind_runtime(lambda: vars(self.facade))
+        resolved = resolution.get_job(job["id"])
+        self.assertEqual(
+            (resolved["status"], resolved["revision"]),
+            ("ready", job["revision"] + 1),
+        )
+        self.assertEqual(resolution.load_session(job["id"]), session)
+        self.assertIsNone(resolution._load_coordinator_journal()["operation"])
+
+    def test_golden_handoff_and_recovery_roll_forward_branches(self):
+        handoff = self._fresh_extracted("golden-handoff")
+        job = handoff.create_job({
+            "id": "handoff-job", "url": "https://example.com/handoff"
+        })
+        jobs = handoff._load_jobs_document()
+        active = dict(jobs["jobs"][job["id"]])
+        active.update({
+            "status": "in_progress", "revision": 2,
+            "updatedAt": "2026-09-04T20:00:00Z",
+        })
+        jobs["jobs"][job["id"]] = active
+        jobs["metadata"]["updatedAt"] = active["updatedAt"]
+        self.facade.atomic_write_json(handoff.jobs_path, jobs)
+        session = handoff._build_session(job["id"], {
+            "status": "active", "step": "questions", "pendingFields": []
+        }, now="2026-09-04T20:00:00Z")
+        self.facade.atomic_write_json(handoff._session_path(job["id"]), session)
+        event = handoff._history_event_for_operation(
+            "golden-handoff-operation", active, "job-blocked", "needs_info",
+            "2026-09-04T20:01:00Z",
+        )
+        operation = {
+            "kind": "handoff",
+            "operationId": "golden-handoff-operation",
+            "jobId": job["id"],
+            "at": "2026-09-04T20:01:00Z",
+            "historyEvent": event,
+            "resultClaim": None,
+            "sourceStatus": "in_progress",
+            "targetStatus": "needs_info",
+            "expectedRevision": 2,
+            "session": session,
+        }
+        self._write_coordinator_operation(handoff, operation)
+        handoff._roll_forward_locked()
+        changed = handoff.get_job(job["id"])
+        self.assertEqual((changed["status"], changed["revision"]), ("needs_info", 3))
+        self.assertEqual(handoff.read_history(), [event])
+        self.assertIsNone(handoff._load_coordinator_document()["claim"])
+
+        recovery = self._fresh_extracted("golden-recovery")
+        recovered_job = recovery.create_job({
+            "id": "recovery-job", "url": "https://example.com/recovery"
+        })
+        recovery_event = recovery._history_event_for_operation(
+            "golden-recovery-operation", recovered_job, "claim-recovered",
+            "in_progress", "2026-09-04T20:02:00Z",
+        )
+        claim = self._claim(recovered_job["id"], "golden-recovery-claim")
+        self._write_coordinator_operation(recovery, {
+            "kind": "recover",
+            "operationId": "golden-recovery-operation",
+            "jobId": recovered_job["id"],
+            "at": "2026-09-04T20:02:00Z",
+            "historyEvent": recovery_event,
+            "resultClaim": claim,
+        })
+        recovery._roll_forward_locked()
+        self.assertEqual(recovery.get_job(recovered_job["id"]), recovered_job)
+        self.assertEqual(recovery.read_history(), [recovery_event])
+        self.assertEqual(recovery._load_coordinator_document()["claim"], claim)
+        self.assertIsNone(recovery._load_coordinator_journal()["operation"])
 
     def test_late_runtime_and_two_root_reload_isolation(self):
         with mock.patch.object(
