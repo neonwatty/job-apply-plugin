@@ -189,6 +189,29 @@ class ResumeMutationExtractionTests(unittest.TestCase):
                 f"{reloaded._PACKAGE_NAME}.domains.resumes.mutations"
             )
             self.assertIsNot(fresh, pairs[0][0])
+            fresh_lifecycle = importlib.import_module(
+                f"{reloaded._PACKAGE_NAME}.domains.resumes.lifecycle"
+            )
+            self.assertIsNot(fresh_lifecycle, pairs[0][1])
+            fresh._bind_runtime(
+                lambda: {**vars(reloaded), "utc_now": lambda: "2026-09-05T01:00:00Z"}
+            )
+            fresh_lifecycle._bind_runtime(
+                lambda: {**vars(reloaded), "utc_now": lambda: "2026-09-05T02:00:00Z"}
+            )
+            fresh_store = composed_store_class(
+                reloaded.Store,
+                fresh.ResumeMutationMixin,
+                fresh_lifecycle.ResumeLifecycleMixin,
+            )(copied[0] / "reloaded-store")
+            fresh_created = fresh_store.create_resume(
+                {"id": "reload", "label": "Reload", "path": str(copied[0] / "resume-0.txt")}
+            )
+            fresh_trashed = fresh_store.trash_resume(
+                fresh_created["id"], fresh_created["revision"]
+            )
+            self.assertEqual(fresh_created["createdAt"], "2026-09-05T01:00:00Z")
+            self.assertEqual(fresh_trashed["deletedAt"], "2026-09-05T02:00:00Z")
             self.assertIs(sys.modules[pairs[1][1].__name__], b_module)
             self.assertIs(pairs[1][1]._RUNTIME_PROVIDER, b_provider)
             b_store, b_trashed = stores[1]
