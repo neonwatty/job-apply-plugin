@@ -6,6 +6,7 @@ import tempfile
 import unittest
 import uuid
 from contextlib import ExitStack
+from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
@@ -60,13 +61,19 @@ class ResumeLifecycleExtractionTests(unittest.TestCase):
         uuid_patch.start()
         self.addCleanup(secrets_patch.stop)
         self.addCleanup(uuid_patch.stop)
+        # Paired operations compare durable timestamps from both Store clocks.
+        now = "2026-09-04T20:00:00Z"
+        clock = lambda: datetime.fromisoformat(now.replace("Z", "+00:00"))
+        timestamp_patch = mock.patch.object(self.facade, "utc_now", return_value=now)
+        timestamp_patch.start()
+        self.addCleanup(timestamp_patch.stop)
         source = parent / "source"
-        self.facade.Store(source, parent / "legacy.json").initialize()
+        self.facade.Store(source, parent / "legacy.json", clock=clock).initialize()
         self.original = self.facade.Store(
-            clone_store_root(source, parent / "original"), parent / "legacy.json"
+            clone_store_root(source, parent / "original"), parent / "legacy.json", clock=clock
         )
         self.extracted = self.composed(
-            clone_store_root(source, parent / "extracted"), parent / "legacy.json"
+            clone_store_root(source, parent / "extracted"), parent / "legacy.json", clock=clock
         )
 
     def call_both(self, operation):
