@@ -104,7 +104,16 @@ test("recording stays anchored when the published session path is swapped", asyn
 });
 
 test("recorder source has no prohibited browser data capture APIs", async () => {
-  const source = await readFile(path.join(root, "qa", "recorder.mjs"), "utf8");
+  const sources = await Promise.all([
+    "qa/recorder.mjs",
+    "qa/recorder/broker-client.mjs",
+    "qa/recorder/isolated-source.mjs",
+    "qa/recorder/capture.mjs",
+    "qa/recorder/checkpoint.mjs",
+    "qa/recorder/record.mjs",
+    "qa/recorder/cli.mjs",
+  ].map((relative) => readFile(path.join(root, relative), "utf8")));
+  const source = sources.join("\n");
   for (const prohibited of [
     "context.cookies(", "storageState(", "response.body(",
     "localStorage", "sessionStorage", "authorization headers",

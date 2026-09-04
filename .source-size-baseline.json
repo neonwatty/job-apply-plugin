@@ -4,7 +4,6 @@
   "files": {
     "native/macos/job_apply_account_flow_helper.swift": { "ceiling": 1076, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "swift-account-flow" },
     "qa/promote.py": { "ceiling": 1375, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "promotion-replay" },
-    "qa/recorder.mjs": { "ceiling": 1510, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "recorder-replay" },
     "scripts/job-apply-store.py": { "ceiling": 11465, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "store-facade" },
     "scripts/job-apply-workspace.py": { "ceiling": 1456, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "workspace-bootstrap" },
     "scripts/qa-chrome.py": { "ceiling": 1226, "owner": "modernization", "reason": "pre-existing oversized source", "removalPhase": "recorder-replay" },
