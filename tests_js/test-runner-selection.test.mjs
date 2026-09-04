@@ -4,9 +4,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { collectChanges, parseNameStatus, trackedPaths } from "../tools/test-runner/git.mjs";
-import { selectAffected, validateMatrix } from "../tools/test-runner/matrix.mjs";
+import { loadMatrix, selectAffected, validateMatrix } from "../tools/test-runner/matrix.mjs";
 
 const matrix = {
   schemaVersion: 1,
@@ -37,6 +38,19 @@ test("global and unknown changes fail closed to the full tier", () => {
   assert.match(selectAffected(matrix, tracked, ["config/matrix.json"]).fallbackReason, /^global path:/);
   assert.match(selectAffected(matrix, tracked, ["private/new.kind"]).fallbackReason, /^unknown path:/);
   assert.deepEqual(selectAffected(matrix, tracked, ["private/new.kind"]).suiteIds, ["fast", "slow"]);
+});
+
+test("real shared Python helpers select every consuming shard", async () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const [realMatrix, realPaths] = await Promise.all([loadMatrix(root), trackedPaths(root)]);
+  for (const helper of ["store_case.py", "workspace_case.py", "compiler_case.py", "macos_workflow_contract.py"]) {
+    const selected = selectAffected(realMatrix, realPaths, [`tests/support/${helper}`]);
+    assert.equal(selected.fallbackReason, null);
+    for (const id of [
+      "python-fast", "python-qa", "python-workspace-contracts", "python-accounts",
+      "python-core", "windows-contracts", "macos-native-contracts",
+    ]) assert.equal(selected.suiteIds.includes(id), true, `${helper} omitted ${id}`);
+  }
 });
 
 test("matrix validation rejects omissions and duplicate full inventory", () => {

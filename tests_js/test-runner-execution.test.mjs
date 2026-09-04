@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 
 import { executeSuites, pythonExecutable, suiteCommand } from "../tools/test-runner/execute.mjs";
+import { runStreaming } from "../tools/test-runner/process.mjs";
 import { buildReceipt, writeReceipt } from "../tools/test-runner/receipt.mjs";
 import { parseArguments } from "../tools/test-runner.mjs";
 
@@ -14,6 +15,9 @@ test("platform Python selection and generated test commands are explicit", () =>
   assert.deepEqual(suiteCommand({
     kind: "python-unittest", include: ["tests/test_a.py"], exclude: [],
   }, ["tests/test_a.py"], "win32"), ["python", "-m", "unittest", "-v", "tests.test_a"]);
+  assert.deepEqual(suiteCommand({
+    kind: "node-test", include: ["tests/a.test.mjs"], exclude: [],
+  }, ["tests/a.test.mjs"]), [process.execPath, "--test", "--test-concurrency=1", "tests/a.test.mjs"]);
 });
 
 test("suite execution streams prefixed failures and aggregates in matrix order", async () => {
@@ -57,6 +61,26 @@ test("suite execution honors its concurrency bound and runs each suite once", as
   assert.deepEqual(results.map(({ id }) => id), ["a", "b", "c", "d"]);
 });
 
+test("process execution terminates hangs and bounds noisy output", async () => {
+  let stderr = "";
+  const timed = await runStreaming(process.execPath, ["-e", "setInterval(() => {}, 1000)"], {
+    label: "hung", timeoutMs: 30, maxOutputBytes: 32,
+    stdout: () => {}, stderr: (value) => { stderr += value; },
+  });
+  assert.equal(timed.status, "failed");
+  assert.equal(timed.exitCode, 124);
+  assert.match(stderr, /timed out after 30ms/);
+
+  let stdout = "";
+  const noisy = await runStreaming(process.execPath, ["-e", "process.stdout.write('x'.repeat(1000))"], {
+    label: "noisy", timeoutMs: 1000, maxOutputBytes: 32,
+    stdout: (value) => { stdout += value; }, stderr: () => {},
+  });
+  assert.equal(noisy.status, "passed");
+  assert.match(stdout, /output truncated after 32 bytes/);
+  assert.equal((stdout.match(/x/g) ?? []).length, 32);
+});
+
 test("receipts contain selection and timing metadata but no commands, output, or environment", async () => {
   const receipt = buildReceipt({
     baseSha: "a".repeat(40), headSha: "b".repeat(40),
@@ -72,11 +96,21 @@ test("receipts contain selection and timing metadata but no commands, output, or
   }
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "test-runner-receipt-"));
   try {
+    fs.mkdirSync(path.join(root, "nested"));
+    fs.writeFileSync(path.join(root, "nested/receipt.json"), "old", { mode: 0o644 });
     await writeReceipt(root, "nested/receipt.json", receipt);
     const stored = fs.readFileSync(path.join(root, "nested/receipt.json"), "utf8");
     assert.deepEqual(JSON.parse(stored), receipt);
     if (process.platform !== "win32") {
       assert.equal(fs.statSync(path.join(root, "nested/receipt.json")).mode & 0o777, 0o600);
+      const target = path.join(root, "target.json");
+      const link = path.join(root, "link.json");
+      fs.writeFileSync(target, "untouched", { mode: 0o644 });
+      fs.symlinkSync(target, link);
+      await writeReceipt(root, "link.json", receipt);
+      assert.equal(fs.readFileSync(target, "utf8"), "untouched");
+      assert.equal(fs.lstatSync(link).isFile(), true);
+      assert.equal(fs.statSync(link).mode & 0o777, 0o600);
     }
   } finally {
     fs.rmSync(root, { recursive: true, force: true });

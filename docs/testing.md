@@ -31,6 +31,9 @@ npm run test:release
 Pass `--receipt path/to/receipt.json` to record selection, status, and elapsed
 milliseconds. Receipts intentionally omit commands, output, and environment
 variables. Pass `--concurrency N` to lower the default bounded concurrency.
+Each suite has a 15-minute process timeout and separate 2 MiB stdout/stderr
+limits. Node test files remain serial within each parallel shard until repeated
+evidence supports raising their internal concurrency.
 
 ## Ownership and fallback
 

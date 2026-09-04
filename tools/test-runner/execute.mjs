@@ -9,7 +9,7 @@ export function pythonExecutable(platform = process.platform) {
 export function suiteCommand(suite, tracked, platform = process.platform) {
   if (suite.kind === "command") return suite.command;
   const files = suiteFiles(suite, tracked);
-  if (suite.kind === "node-test") return [process.execPath, "--test", ...files];
+  if (suite.kind === "node-test") return [process.execPath, "--test", "--test-concurrency=1", ...files];
   const modules = files.map((file) => file.replaceAll("/", ".").replace(/\.py$/, ""));
   return [pythonExecutable(platform), "-m", "unittest", "-v", ...modules];
 }
@@ -36,6 +36,8 @@ export async function executeSuites(root, suites, tracked, options = {}) {
           label: suite.id,
           stdout: options.stdout,
           stderr: options.stderr,
+          timeoutMs: suite.timeoutMs ?? 15 * 60 * 1000,
+          maxOutputBytes: suite.maxOutputBytes ?? 2 * 1024 * 1024,
         }),
       };
     }

@@ -149,7 +149,18 @@
     }
   ],
   "ownership": [
-    {"paths": ["tests/__init__.py", "tests/support/**"], "suites": ["python-core"]},
+    {
+      "paths": ["tests/__init__.py", "tests/support/**"],
+      "suites": [
+        "python-fast",
+        "python-qa",
+        "python-workspace-contracts",
+        "python-accounts",
+        "python-core",
+        "windows-contracts",
+        "macos-native-contracts"
+      ]
+    },
     {"paths": ["tests_js/recorder_*support.mjs", "tests_js/recorder_*phase.mjs"], "suites": ["node-recorder"]},
     {"paths": ["tests_js/renderer_*support.mjs"], "suites": ["node-renderer"]},
     {"paths": ["tests_js/workspace_*support.mjs", "tests_js/workspace_*phase*.mjs"], "suites": ["node-workspace-other"]},

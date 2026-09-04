@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -17,5 +18,18 @@ export function buildReceipt(selection, results) {
 export async function writeReceipt(root, destination, receipt) {
   const absolute = path.resolve(root, destination);
   await fs.mkdir(path.dirname(absolute), { recursive: true });
-  await fs.writeFile(absolute, `${JSON.stringify(receipt, null, 2)}\n`, { mode: 0o600 });
+  const temporary = `${absolute}.tmp-${process.pid}-${randomUUID()}`;
+  let handle;
+  try {
+    handle = await fs.open(temporary, "wx", 0o600);
+    await handle.writeFile(`${JSON.stringify(receipt, null, 2)}\n`);
+    await handle.chmod(0o600);
+    await handle.sync();
+    await handle.close();
+    handle = null;
+    await fs.rename(temporary, absolute);
+  } finally {
+    await handle?.close();
+    await fs.rm(temporary, { force: true });
+  }
 }
