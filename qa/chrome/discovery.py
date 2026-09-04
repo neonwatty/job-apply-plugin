@@ -11,7 +11,7 @@ import stat
 import sys
 import urllib.parse
 
-from qa.chrome.paths import MAX_BODY, REQUEST_TIMEOUT, fail
+from .paths import MAX_BODY, REQUEST_TIMEOUT, fail
 
 
 def _resolve_runtime(runtime):

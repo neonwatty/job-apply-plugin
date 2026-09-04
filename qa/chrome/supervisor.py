@@ -12,10 +12,10 @@ import subprocess
 import sys
 import time
 
-from qa.chrome.control import ControlHandler, ControlServer
-from qa.chrome.discovery import _browser_path_hash, _cdp_browser_path, _probe_cdp
-from qa.chrome.owner import _owner_matches_runtime, _ownership_name
-from qa.chrome.paths import (
+from .control import ControlHandler, ControlServer
+from .discovery import _browser_path_hash, _cdp_browser_path, _probe_cdp
+from .owner import _owner_matches_runtime, _ownership_name
+from .paths import (
     FILE_MODE,
     MAX_BODY,
     ORIGIN,

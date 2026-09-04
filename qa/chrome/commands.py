@@ -6,15 +6,15 @@ import socket
 import sys
 import time
 
-from qa.chrome.control import _control_request, _public_ready
-from qa.chrome.discovery import discover_chrome
-from qa.chrome.owner import (
+from .control import _control_request, _public_ready
+from .discovery import discover_chrome
+from .owner import (
     _observe_owner,
     _open_owner,
     _owner_matches_runtime,
     _write_owner_runtime,
 )
-from qa.chrome.paths import (
+from .paths import (
     MAX_BODY,
     SHUTDOWN_TIMEOUT,
     STARTUP_TIMEOUT,
@@ -27,7 +27,7 @@ from qa.chrome.paths import (
     emit,
     fail,
 )
-from qa.chrome.supervisor import _remove_stale_devtools, _supervisor
+from .supervisor import _remove_stale_devtools, _supervisor
 
 
 def _resolve_runtime(runtime):

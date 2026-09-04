@@ -10,9 +10,9 @@ import socketserver
 import sys
 import threading
 
-from qa.chrome.discovery import _probe_cdp
-from qa.chrome.owner import _owner_matches_runtime, _ownership_name
-from qa.chrome.paths import (
+from .discovery import _probe_cdp
+from .owner import _owner_matches_runtime, _ownership_name
+from .paths import (
     MAX_BODY,
     MAX_CONTROL_CONNECTIONS,
     ORIGIN,

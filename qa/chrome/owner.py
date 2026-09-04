@@ -7,7 +7,7 @@ import os
 import stat
 import sys
 
-from qa.chrome.paths import (
+from .paths import (
     Ambiguous,
     FILE_MODE,
     _entry_stat,

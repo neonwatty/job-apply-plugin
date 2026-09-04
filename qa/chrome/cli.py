@@ -3,13 +3,13 @@
 import argparse
 import sys
 
-from qa.chrome.commands import (
+from .commands import (
     command_check,
     command_reset,
     command_start,
     command_stop,
 )
-from qa.chrome.paths import UserError, fail, validate_profile
+from .paths import UserError, fail, validate_profile
 
 
 class FacadeRuntime:

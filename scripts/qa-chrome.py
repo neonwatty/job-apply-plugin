@@ -8,6 +8,8 @@ import hashlib
 import hmac
 import http.client
 from importlib import import_module as _import_module
+from importlib.util import module_from_spec as _module_from_spec
+from importlib.util import spec_from_file_location as _spec_from_file_location
 import json
 import os
 import re
@@ -28,13 +30,41 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-_cli = _import_module("qa.chrome.cli")
-_commands = _import_module("qa.chrome.commands")
-_control = _import_module("qa.chrome.control")
-_discovery = _import_module("qa.chrome.discovery")
-_owner = _import_module("qa.chrome.owner")
-_paths = _import_module("qa.chrome.paths")
-_supervisor_module = _import_module("qa.chrome.supervisor")
+_IMPLEMENTATION_ROOT = (_REPO_ROOT / "qa" / "chrome").resolve()
+_PACKAGE_NAME = "_job_apply_qa_chrome_parts_" + hashlib.sha256(
+    str(_IMPLEMENTATION_ROOT).encode("utf-8")
+).hexdigest()
+for _module_name in tuple(sys.modules):
+    if _module_name == _PACKAGE_NAME or _module_name.startswith(
+        _PACKAGE_NAME + "."
+    ):
+        del sys.modules[_module_name]
+_package_spec = _spec_from_file_location(
+    _PACKAGE_NAME,
+    _IMPLEMENTATION_ROOT / "__init__.py",
+    submodule_search_locations=[str(_IMPLEMENTATION_ROOT)],
+)
+if _package_spec is None or _package_spec.loader is None:
+    raise ImportError("QA Chrome implementation package is unavailable")
+_package = _module_from_spec(_package_spec)
+sys.modules[_PACKAGE_NAME] = _package
+try:
+    _package_spec.loader.exec_module(_package)
+except BaseException:
+    for _module_name in tuple(sys.modules):
+        if _module_name == _PACKAGE_NAME or _module_name.startswith(
+            _PACKAGE_NAME + "."
+        ):
+            del sys.modules[_module_name]
+    raise
+
+_cli = _import_module(f"{_PACKAGE_NAME}.cli")
+_commands = _import_module(f"{_PACKAGE_NAME}.commands")
+_control = _import_module(f"{_PACKAGE_NAME}.control")
+_discovery = _import_module(f"{_PACKAGE_NAME}.discovery")
+_owner = _import_module(f"{_PACKAGE_NAME}.owner")
+_paths = _import_module(f"{_PACKAGE_NAME}.paths")
+_supervisor_module = _import_module(f"{_PACKAGE_NAME}.supervisor")
 
 
 PROFILE_RE = _paths.PROFILE_RE
