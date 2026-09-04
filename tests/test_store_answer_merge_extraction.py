@@ -156,6 +156,23 @@ class AnswerMergeExtractionTests(unittest.TestCase):
             )
         self.assertEqual(result["mergedFrom"], source["key"])
 
+    def test_session_rewrite_uses_the_unbound_canonical_validator_adapter(self):
+        _, store = self.stores("unbound-session-rewrite")
+        winner, source = self.seed(store)
+        session = store.load_session("merge-session")
+        before = json.loads(json.dumps(session))
+        self.leaf._bind_runtime(lambda: vars(self.leaf))
+        try:
+            rewritten = self.mixin._rewrite_session_answer_key(
+                session, source["key"], winner["key"], "2026-09-04T18:30:00Z"
+            )
+        finally:
+            self.leaf._bind_runtime(lambda: vars(self.facade))
+        self.assertEqual(session, before)
+        self.assertEqual(rewritten["answerKeys"], [winner["key"]])
+        self.assertEqual(rewritten["pendingFields"][0]["answerKey"], winner["key"])
+        self.assertNotIn("matchConfidence", rewritten["pendingFields"][0])
+
     def test_collision_and_stale_fail_before_any_durable_write(self):
         _, store = self.stores("reject")
         winner, source = self.seed(store)

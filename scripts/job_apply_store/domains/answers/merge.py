@@ -19,11 +19,15 @@ def _canonical_utc_now() -> str:
     )
 
 
+def _canonical_validate_session_document(document: dict[str, Any]) -> None:
+    sessions._validate_session_document(document, answer_match_module=None)
+
+
 _CANONICAL_RUNTIME = {
     "_json_values_equal": normalization._json_values_equal,
     "_validate_answer_record": profile_answers._validate_answer_record,
     "_validate_answer_redirects": profile_answers._validate_answer_redirects,
-    "_validate_session_document": sessions._validate_session_document,
+    "_validate_session_document": _canonical_validate_session_document,
     "copy": copy,
     "exclusive_file_lock": io.exclusive_file_lock,
     "hmac": hmac,
