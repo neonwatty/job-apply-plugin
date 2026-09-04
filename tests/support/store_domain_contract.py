@@ -11,6 +11,7 @@ from typing import Any
 
 
 DOMAIN_PACKAGE = "job_apply_store.domains"
+INVALID_RELATIVE_IMPORT = "<invalid-relative-import>"
 
 __all__ = [
     "assert_domain_import_direction",
@@ -33,8 +34,38 @@ def composed_store_class(base_store: type, *domain_mixins: type) -> type:
         raise TypeError("domain mixins must be classes")
     if len(set(domain_mixins)) != len(domain_mixins) or base_store in domain_mixins:
         raise ValueError("composition classes must be unique")
+    method_owners: dict[str, list[str]] = {}
+    for mixin in domain_mixins:
+        for method in _direct_method_names(mixin):
+            method_owners.setdefault(method, []).append(mixin.__name__)
+    conflicts = sorted(
+        method for method, owners in method_owners.items() if len(owners) > 1
+    )
+    if conflicts:
+        raise ValueError(
+            "domain mixins own overlapping methods: " + ", ".join(conflicts)
+        )
     name = "_".join([*(item.__name__ for item in domain_mixins), base_store.__name__])
     return type(f"{name}Composition", (*domain_mixins, base_store), {})
+
+
+def _direct_method_names(owner: type) -> list[str]:
+    return sorted(
+        name
+        for name, value in vars(owner).items()
+        if inspect.isfunction(value) or isinstance(value, (classmethod, staticmethod))
+    )
+
+
+def _descriptor_kind(owner: type, name: str) -> str:
+    value = inspect.getattr_static(owner, name)
+    if isinstance(value, classmethod):
+        return "classmethod"
+    if isinstance(value, staticmethod):
+        return "staticmethod"
+    if inspect.isfunction(value):
+        return "instance"
+    return type(value).__name__
 
 
 def _method_function(owner: type, name: str) -> Any:
@@ -42,6 +73,16 @@ def _method_function(owner: type, name: str) -> Any:
     if isinstance(value, (classmethod, staticmethod)):
         return value.__func__
     return value
+
+
+def _execution_kind(function: Any) -> str:
+    if inspect.isasyncgenfunction(function):
+        return "async-generator"
+    if inspect.iscoroutinefunction(function):
+        return "coroutine"
+    if inspect.isgeneratorfunction(function):
+        return "generator"
+    return "synchronous"
 
 
 def assert_method_contract(
@@ -56,6 +97,16 @@ def assert_method_contract(
         testcase.assertIn(name, vars(mixin_cls), f"{message}; mixin does not own method")
         base_method = _method_function(base_cls, name)
         mixin_method = _method_function(mixin_cls, name)
+        testcase.assertEqual(
+            _descriptor_kind(mixin_cls, name),
+            _descriptor_kind(base_cls, name),
+            f"{message}; descriptor kind",
+        )
+        testcase.assertEqual(
+            _execution_kind(mixin_method),
+            _execution_kind(base_method),
+            f"{message}; execution kind",
+        )
         testcase.assertEqual(mixin_method.__name__, base_method.__name__, message)
         testcase.assertEqual(
             mixin_method.__qualname__.rsplit(".", 1)[-1],
@@ -95,22 +146,31 @@ def source_inventory(domain_root: Path) -> dict[str, dict[str, tuple[str, ...]]]
     return inventory
 
 
-def snapshot_tree(root: Path) -> dict[str, tuple[bytes, int]]:
-    """Capture relative regular-file bytes and permission modes without links."""
-    if root.is_symlink():
+def snapshot_tree(root: Path) -> dict[str, tuple[str, int, bytes | None]]:
+    """Capture exact Store topology, permission modes, and regular-file bytes."""
+    try:
+        root_status = root.lstat()
+    except OSError as error:
+        raise AssertionError(f"Store root is unavailable: {root}") from error
+    if stat.S_ISLNK(root_status.st_mode):
         raise AssertionError(f"Store root must not be a symlink: {root}")
-    if not root.is_dir():
+    if not stat.S_ISDIR(root_status.st_mode):
         raise AssertionError(f"Store root is not a directory: {root}")
-    snapshot: dict[str, tuple[bytes, int]] = {}
+    snapshot: dict[str, tuple[str, int, bytes | None]] = {
+        ".": ("directory", stat.S_IMODE(root_status.st_mode), None)
+    }
     for path in sorted(root.rglob("*")):
         relative = path.relative_to(root).as_posix()
-        if path.is_symlink():
+        status = path.lstat()
+        if stat.S_ISLNK(status.st_mode):
             raise AssertionError(f"Store tree contains a symlink: {relative}")
-        if path.is_dir():
-            continue
-        if not path.is_file():
+        mode = stat.S_IMODE(status.st_mode)
+        if stat.S_ISDIR(status.st_mode):
+            snapshot[relative] = ("directory", mode, None)
+        elif stat.S_ISREG(status.st_mode):
+            snapshot[relative] = ("file", mode, path.read_bytes())
+        else:
             raise AssertionError(f"Store tree contains a non-regular file: {relative}")
-        snapshot[relative] = (path.read_bytes(), stat.S_IMODE(path.stat().st_mode))
     return snapshot
 
 
@@ -148,8 +208,8 @@ def _import_targets(node: ast.Import | ast.ImportFrom, module: str, is_package: 
         return [node.module or ""]
     package = module.split(".") if is_package else module.split(".")[:-1]
     remove = node.level - 1
-    if remove > len(package):
-        return ["<invalid-relative-import>"]
+    if remove >= len(package):
+        return [INVALID_RELATIVE_IMPORT]
     base = package[: len(package) - remove]
     target = ".".join([*base, *((node.module or "").split("."))]).rstrip(".")
     if node.module:
@@ -199,6 +259,11 @@ def assert_domain_import_direction(testcase: Any, domain_root: Path) -> None:
             if not isinstance(node, (ast.Import, ast.ImportFrom)):
                 continue
             for target in _import_targets(node, module, is_package):
+                if target == INVALID_RELATIVE_IMPORT:
+                    problems.append(
+                        f"{module}:{node.lineno}: invalid relative import"
+                    )
+                    continue
                 is_domain = target == DOMAIN_PACKAGE or target.startswith(DOMAIN_PACKAGE + ".")
                 is_facade = (
                     "job-apply-store" in target
