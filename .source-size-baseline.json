@@ -20,7 +20,6 @@
     "scripts/smoke-plugin.sh": { "ceiling": 1139, "owner": "modernization", "reason": "pre-existing oversized launcher", "removalPhase": "future-decomposition" },
     "tests/test_answer_memory_integration.py": { "ceiling": 970, "owner": "modernization", "reason": "pre-existing oversized test", "removalPhase": "test-monoliths" },
     "tests/test_job_apply_policy.py": { "ceiling": 559, "owner": "modernization", "reason": "pre-existing oversized test", "removalPhase": "test-monoliths" },
-    "tests/test_job_apply_store.py": { "ceiling": 9276, "owner": "modernization", "reason": "pre-existing oversized test", "removalPhase": "test-monoliths" },
     "tests/test_job_apply_workspace.py": { "ceiling": 2032, "owner": "modernization", "reason": "pre-existing oversized test", "removalPhase": "test-monoliths" },
     "tests/test_qa_chrome.py": { "ceiling": 895, "owner": "modernization", "reason": "pre-existing oversized test", "removalPhase": "test-monoliths" },
     "tests/test_qa_compiler.py": { "ceiling": 770, "owner": "modernization", "reason": "pre-existing oversized test", "removalPhase": "test-monoliths" },
