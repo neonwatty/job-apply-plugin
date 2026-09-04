@@ -32,6 +32,16 @@ WORKDAY_SWIFT_SOURCES = (
     "job_apply_workday_account_flow_helper.swift",
     "job_apply_workday_account_flow_main.swift",
 )
+WORKFLOW_TYPECHECK_SOURCES = {
+    (
+        "macos-credential-helper",
+        "Typecheck isolated Security.framework helper",
+    ): ORACLE_SWIFT_SOURCES,
+    (
+        "macos-account-flow-helper",
+        "Verify reviewed Workday account boundary",
+    ): WORKDAY_SWIFT_SOURCES,
+}
 
 
 def account_flow_source() -> str:
@@ -70,15 +80,62 @@ def function_swift_literals(path: Path, function_name: str) -> tuple[str, ...]:
     return tuple(Path(node.value).name for node in strings)
 
 
-def workflow_typecheck_sources() -> list[tuple[str, ...]]:
-    workflow = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
-    return [
-        tuple(Path(token).name for token in command.split() if token.endswith(".swift"))
-        for command in re.findall(r"xcrun swiftc -typecheck ([^\n]+)", workflow)
-    ]
+def workflow_typecheck_sources(
+    workflow: str | None = None,
+) -> dict[tuple[str, str], tuple[str, ...]]:
+    if workflow is None:
+        workflow = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
+    sources: dict[tuple[str, str], tuple[str, ...]] = {}
+    current_job: str | None = None
+    current_step: str | None = None
+    in_jobs = False
+    marker = "xcrun swiftc -typecheck "
+    for line in workflow.splitlines():
+        if line == "jobs:":
+            in_jobs = True
+            continue
+        if not in_jobs:
+            continue
+        job = re.fullmatch(r"  ([a-z0-9][a-z0-9-]*):", line)
+        if job:
+            current_job, current_step = job.group(1), None
+            continue
+        step = re.fullmatch(r"      - name: (.+)", line)
+        if step:
+            current_step = step.group(1)
+            continue
+        if marker not in line:
+            continue
+        if current_job is None or current_step is None:
+            raise AssertionError("typecheck command is not bound to a workflow job and step")
+        key = (current_job, current_step)
+        if key in sources:
+            raise AssertionError("workflow job and step contains duplicate typecheck commands")
+        command = line.split(marker, 1)[1]
+        sources[key] = tuple(
+            Path(token).name for token in command.split() if token.endswith(".swift")
+        )
+    return sources
+
+
+def workflow_typecheck_command(sources: tuple[str, ...]) -> str:
+    paths = " ".join(f"native/macos/{source}" for source in sources)
+    return f"xcrun swiftc -typecheck {paths}"
 
 
 class MacOSAccountFlowHelperTests(unittest.TestCase):
+    def test_workflow_source_contract_rejects_oracle_workday_command_swap(self):
+        workflow = (ROOT / ".github/workflows/validate.yml").read_text(encoding="utf-8")
+        oracle_command = workflow_typecheck_command(ORACLE_SWIFT_SOURCES)
+        workday_command = workflow_typecheck_command(WORKDAY_SWIFT_SOURCES)
+        self.assertEqual(workflow.count(oracle_command), 1)
+        self.assertEqual(workflow.count(workday_command), 1)
+        sentinel = "xcrun swiftc -typecheck __cross-lane-swap__"
+        swapped = workflow.replace(oracle_command, sentinel)
+        swapped = swapped.replace(workday_command, oracle_command).replace(sentinel, workday_command)
+        with self.assertRaises(AssertionError):
+            self.assertEqual(workflow_typecheck_sources(swapped), WORKFLOW_TYPECHECK_SOURCES)
+
     def test_native_failure_statuses_distinguish_value_free_binding_stages(self):
         source = (ROOT / "native/macos/job_apply_credential_helper_main.swift").read_text(encoding="utf-8")
         for case_name, status in (
@@ -170,8 +227,7 @@ class MacOSAccountFlowHelperTests(unittest.TestCase):
         self.assertEqual(workday_sources, WORKDAY_SWIFT_SOURCES)
         self.assertEqual(visible_qa_sources, ORACLE_SWIFT_SOURCES)
         self.assertEqual(credential_test_sources, ORACLE_SWIFT_SOURCES)
-        self.assertIn(ORACLE_SWIFT_SOURCES, workflow_sources)
-        self.assertIn(WORKDAY_SWIFT_SOURCES, workflow_sources)
+        self.assertEqual(workflow_sources, WORKFLOW_TYPECHECK_SOURCES)
         self.assertIn("job_apply_credential_helper_tests.swift", ORACLE_SWIFT_SOURCES)
         self.assertNotIn("job_apply_credential_helper_tests.swift", WORKDAY_SWIFT_SOURCES)
         obsolete_source = "job_apply_" + "account_flow_helper.swift"
