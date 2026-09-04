@@ -8,6 +8,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from typing import get_type_hints
 from unittest import mock
 
 from tests.support.store_domain_contract import (
@@ -129,7 +130,21 @@ class CoordinatorAttentionExtractionTests(unittest.TestCase):
             for node in ast.walk(tree)
             if isinstance(node, ast.ImportFrom) and node.module
         }
-        self.assertEqual(imported, {"__future__", "typing"})
+        self.assertEqual(imported, {"__future__", "datetime", "typing"})
+        leaf_method = self.mixin._needs_attention_locked
+        facade_method = self.facade.Store._needs_attention_locked
+        leaf_hints = type("LeafHints", (), {
+            "__module__": self.leaf.__name__,
+            "__annotations__": {"now": leaf_method.__annotations__["now"]},
+        })
+        facade_hints = type("FacadeHints", (), {
+            "__module__": self.facade.__name__,
+            "__annotations__": {"now": facade_method.__annotations__["now"]},
+        })
+        self.assertEqual(
+            get_type_hints(leaf_hints, vars(self.leaf)),
+            get_type_hints(facade_hints, vars(self.facade)),
+        )
 
     def test_attention_activity_and_pending_detail_are_exact_and_nonmutating(self):
         attention = self.assert_read_parity("list_needs_attention")
