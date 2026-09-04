@@ -65,6 +65,9 @@ def companion(name: str) -> Any:
     try:
         path = _SCRIPTS_ROOT / f"{name}.py"
         private_name = f"{_PACKAGE_NAME}.{name}"
+        existing = sys.modules.get(private_name)
+        if existing is not None:
+            return existing
         spec = importlib.util.spec_from_file_location(private_name, path)
         if spec is None or spec.loader is None:
             raise RuntimeError("account runtime dependency is unavailable")
