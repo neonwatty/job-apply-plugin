@@ -12,6 +12,7 @@ from pathlib import Path
 from unittest import mock
 
 from tests.support.store_domain_contract import (
+    assert_composed_store_lifecycle,
     assert_domain_import_direction,
     assert_method_contract,
     assert_store_trees_equal,
@@ -85,9 +86,13 @@ class StoreProfileFactsDomainTests(unittest.TestCase):
             OWNED_METHODS,
         )
         assert_method_contract(self, self.facade.Store, self.mixin, OWNED_METHODS)
-        for name in OWNED_METHODS:
-            with self.subTest(identity=name):
-                self.assertIs(getattr(self.composed, name), getattr(self.mixin, name))
+        assert_composed_store_lifecycle(
+            self,
+            self.facade.Store,
+            self.mixin,
+            self.composed,
+            OWNED_METHODS,
+        )
         assert_domain_import_direction(self, DOMAIN_ROOT)
         source = (DOMAIN_ROOT / "profile_facts.py").read_text(encoding="utf-8")
         self.assertNotIn("job-apply-store", source)

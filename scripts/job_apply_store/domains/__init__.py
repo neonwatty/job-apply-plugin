@@ -1,1 +1,1 @@
-"""Independent Store domains wired only by the compatibility facade."""
+"""Root-local Store leaves imported explicitly by the compatibility facade."""

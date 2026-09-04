@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest import mock
 
 from tests.support.store_domain_contract import (
+    assert_composed_store_lifecycle,
     assert_method_contract,
     assert_store_trees_equal,
     clone_store_root,
@@ -95,7 +96,11 @@ class ProfileStoreDomainTests(unittest.TestCase):
             extracted = inspect.getattr_static(self.mixin, name)
             self.assertIsInstance(extracted, staticmethod)
             function = extracted.__func__
-            original = getattr(self.facade, name)
+            original = (
+                getattr(self.facade, name)
+                if hasattr(self.facade, name)
+                else getattr(self.facade.Store, name)
+            )
             self.assertEqual(str(inspect.signature(function)), str(inspect.signature(original)))
             self.assertEqual(function.__doc__, original.__doc__)
             self.assertEqual(function.__annotations__, original.__annotations__)
@@ -103,16 +108,13 @@ class ProfileStoreDomainTests(unittest.TestCase):
             self.assertNotIn(name, vars(self.mixin))
 
     def test_composed_mro_resolves_every_owned_method_to_leaf(self):
-        self.assertEqual(
-            self.composed.__mro__[:3],
-            (self.composed, self.mixin, self.facade.Store),
+        assert_composed_store_lifecycle(
+            self,
+            self.facade.Store,
+            self.mixin,
+            self.composed,
+            OWNED_METHODS,
         )
-        for name in OWNED_METHODS:
-            with self.subTest(name=name):
-                self.assertIs(
-                    inspect.getattr_static(self.composed, name),
-                    inspect.getattr_static(self.mixin, name),
-                )
 
     def test_profile_source_is_small_and_has_no_facade_or_sibling_imports(self):
         self.assertLessEqual(len(DOMAIN_PATH.read_bytes().splitlines()), 500)
@@ -258,10 +260,11 @@ class ProfileStoreDomainTests(unittest.TestCase):
         self.assertEqual(write_spy.call_count, 1)
 
     def test_same_revision_race_has_one_winner_and_one_conflict(self):
-        for store_type in (self.facade.Store, self.composed):
+        for index, store_type in enumerate((self.facade.Store, self.composed)):
             with self.subTest(store=store_type.__name__):
-                root = self.home / store_type.__name__
-                store = store_type(root, self.home / f"{store_type.__name__}.json")
+                identity = f"{store_type.__name__}-{index}"
+                root = self.home / identity
+                store = store_type(root, self.home / f"{identity}.json")
                 store.initialize()
 
                 def patch(value):

@@ -55,6 +55,11 @@ IMPLEMENTATION_SUFFIXES = {
     ".validation.jobs_resumes",
     ".validation.extraction",
     ".validation.accounts",
+    ".domains",
+    ".domains.profile",
+    ".domains.profile_facts",
+    ".domains.answers",
+    ".domains.answers.read",
 }
 
 COMPANION_SUFFIXES = {
@@ -186,6 +191,12 @@ class StoreLoaderIsolationTests(unittest.TestCase):
         self.assertEqual(Path(module.__file__).resolve().parent, scripts)
         for leaf in (module._constants, module._errors, module._io, module._normalization, module._base):
             self.assertTrue(Path(leaf.__file__).resolve().is_relative_to(scripts))
+        for leaf in (
+            module._profile_domain,
+            module._profile_facts_domain,
+            module._answer_read_domain,
+        ):
+            self.assertTrue(Path(leaf.__file__).resolve().is_relative_to(scripts))
         for companion_name in (
             "ACCOUNTS_MODULE", "CREDENTIALS_MODULE", "FORM_READINESS_MODULE",
             "ANSWER_MATCH_MODULE",
@@ -277,6 +288,48 @@ class StoreLoaderIsolationTests(unittest.TestCase):
             other.ANSWER_MATCH_MODULE._PACKAGE_NAME,
             other_answer_matching,
         )
+
+    def test_answer_runtime_binding_is_root_local_late_bound_and_reloaded(self):
+        first = self.load_store(self.root_a, "runtime_first")
+        second = self.load_store(self.root_b, "runtime_second")
+        first_leaf = first._answer_read_domain
+        second_leaf = second._answer_read_domain
+        self.assertIs(first_leaf._RUNTIME_PROVIDER(), vars(first))
+        self.assertIs(second_leaf._RUNTIME_PROVIDER(), vars(second))
+        self.assertIsNot(first_leaf, second_leaf)
+
+        first_store = first.Store(self.root_a / "runtime-store")
+        second_store = second.Store(self.root_b / "runtime-store")
+        first.normalize_question = lambda _value: "first-root"
+        second.normalize_question = lambda _value: "second-root"
+        self.assertEqual(first_store._answer_candidates({"question": "late"}), {"first-root"})
+        self.assertEqual(second_store._answer_candidates({"question": "late"}), {"second-root"})
+
+        reloaded = self.load_store(self.root_a, "runtime_reloaded")
+        self.assertIsNot(reloaded._answer_read_domain, first_leaf)
+        self.assertIs(reloaded._answer_read_domain._RUNTIME_PROVIDER(), vars(reloaded))
+        self.assertIs(second_leaf._RUNTIME_PROVIDER(), vars(second))
+
+    def test_partial_domain_import_failure_cleans_only_failed_root_children(self):
+        healthy = self.load_store(self.root_b, "healthy_domain_store")
+        healthy_keys = private_package_keys(healthy._PACKAGE_NAME)
+        failure_leaf = (
+            self.root_a / "scripts" / "job_apply_store" / "domains" / "profile_facts.py"
+        )
+        source = failure_leaf.read_text(encoding="utf-8")
+        marker = "from __future__ import annotations\n"
+        self.assertIn(marker, source)
+        failure_leaf.write_text(
+            source.replace(
+                marker, marker + "raise RuntimeError('partial domain import')\n", 1
+            ),
+            encoding="utf-8",
+        )
+        failed_name = implementation_package_name(self.root_a)
+        with self.assertRaisesRegex(RuntimeError, "partial domain import"):
+            self.load_store(self.root_a, "failed_domain_store")
+        self.assertEqual(private_package_keys(failed_name), set())
+        self.assertEqual(private_package_keys(healthy._PACKAGE_NAME), healthy_keys)
 
     def test_partial_import_failure_cleans_only_failed_root_children(self):
         healthy = self.load_store(self.root_b, "healthy_store")

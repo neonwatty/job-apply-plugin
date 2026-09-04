@@ -34,7 +34,9 @@ PACKAGE_FILES = (
     "__init__.py", "constants.py", "errors.py", "io.py", "normalization.py",
     "base.py", "validation/__init__.py", "validation/profile_answers.py",
     "validation/sessions.py", "validation/jobs_resumes.py",
-    "validation/extraction.py", "validation/accounts.py",
+    "validation/extraction.py", "validation/accounts.py", "domains/__init__.py",
+    "domains/profile.py", "domains/profile_facts.py",
+    "domains/answers/__init__.py", "domains/answers/read.py",
 )
 
 
@@ -99,6 +101,7 @@ class StoreFacadeContractTests(unittest.TestCase):
             package = importlib.import_module("job_apply_store")
             self.assertEqual(package.normalize_question("  Work—AUTH? "), "work auth")
             self.assertIs(package.StoreError, package.errors.StoreError)
+            self.assertEqual(package.domains.__name__, "job_apply_store.domains")
             self.assertNotIn("Store", vars(package))
         finally:
             for name in tuple(sys.modules):

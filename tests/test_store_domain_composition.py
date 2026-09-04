@@ -79,6 +79,30 @@ class StoreDomainCompositionTests(unittest.TestCase):
         ):
             composed_store_class(self.facade.Store, FirstDomain, SecondDomain)
 
+    def test_composed_store_reuses_an_exact_mixin_already_in_the_base(self):
+        class IntegratedDomain:
+            def domain_value(self):
+                return "integrated"
+
+        class IntegratedStore(IntegratedDomain):
+            pass
+
+        self.assertIs(
+            composed_store_class(IntegratedStore, IntegratedDomain),
+            IntegratedStore,
+        )
+
+        class DistinctOverlap:
+            def domain_value(self):
+                return "distinct"
+
+        with self.assertRaisesRegex(
+            ValueError, r"^domain mixins own overlapping methods: domain_value$"
+        ):
+            composed_store_class(
+                IntegratedStore, IntegratedDomain, DistinctOverlap
+            )
+
     def test_method_contract_accepts_new_owner_but_rejects_metadata_drift(self):
         class ExistingStore:
             def inspect(self, value: "str", enabled: "bool" = True) -> "dict[str, object]":

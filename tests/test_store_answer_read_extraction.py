@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest import mock
 
 from tests.support.store_domain_contract import (
+    assert_composed_store_lifecycle,
     assert_domain_import_direction,
     assert_method_contract,
     assert_store_trees_equal,
@@ -157,12 +158,13 @@ class AnswerReadExtractionTests(unittest.TestCase):
         self.assertEqual(self.mixin.__bases__, (object,))
         self.assertNotIn("__init__", vars(self.mixin))
         self.assertFalse(DEFERRED_METHODS & vars(self.mixin).keys())
-        for name in READ_METHODS:
-            with self.subTest(name=name):
-                self.assertIs(
-                    inspect.getattr_static(self.composed, name),
-                    inspect.getattr_static(self.mixin, name),
-                )
+        assert_composed_store_lifecycle(
+            self,
+            self.facade.Store,
+            self.mixin,
+            self.composed,
+            READ_METHODS,
+        )
         inventory = source_inventory(DOMAINS_ROOT)
         self.assertEqual(inventory["answers.__init__"], {})
         self.assertEqual(

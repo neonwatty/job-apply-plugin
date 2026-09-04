@@ -11,6 +11,7 @@ import argparse
 import copy
 import hashlib
 import hmac
+import importlib
 import importlib.util
 import json
 import os
@@ -84,6 +85,19 @@ _session_validation = _implementation.sessions
 _job_resume_validation = _implementation.jobs_resumes
 _extraction_validation = _implementation.extraction
 _account_validation = _implementation.accounts
+
+try:
+    _profile_domain = importlib.import_module(f"{_PACKAGE_NAME}.domains.profile")
+    _profile_facts_domain = importlib.import_module(
+        f"{_PACKAGE_NAME}.domains.profile_facts"
+    )
+    _answer_read_domain = importlib.import_module(
+        f"{_PACKAGE_NAME}.domains.answers.read"
+    )
+    _answer_read_domain._bind_runtime(lambda: globals())
+except BaseException:
+    _remove_root_private_packages()
+    raise
 
 SCHEMA_VERSION = _constants.SCHEMA_VERSION
 STORE_ENV = _constants.STORE_ENV
@@ -647,86 +661,8 @@ def _stamp_job_provenance(
     return stamped
 
 
-def _merge_object_patch(
-    target: dict[str, Any], patch: dict[str, Any], prefix: str = ""
-) -> tuple[dict[str, Any], list[str]]:
-    """Apply an object merge patch and return changed JSON-pointer paths."""
-
-    updated = dict(target)
-    changed: list[str] = []
-    for key, value in patch.items():
-        if not isinstance(key, str) or not key:
-            raise StoreError("profile patch keys must be non-empty strings")
-        path = f"{prefix}/{_json_pointer_segment(key)}"
-        if value is None:
-            if key in updated:
-                del updated[key]
-                changed.append(path)
-            continue
-        current = updated.get(key)
-        if isinstance(value, dict):
-            base = current if isinstance(current, dict) else {}
-            nested, nested_changed = _merge_object_patch(base, value, path)
-            if nested_changed or not isinstance(current, dict):
-                updated[key] = nested
-                changed.extend(nested_changed or [path])
-            continue
-        if current != value:
-            updated[key] = value
-            changed.append(path)
-    return updated, changed
-
-
 def _top_level_pointer_key(pointer: str) -> str:
     return _normalization._top_level_pointer_key(pointer)
-
-
-def _apply_profile_patch(
-    target: dict[str, Any],
-    patch: dict[str, Any],
-    atomic_paths: list[str],
-    deleted_paths: list[str],
-) -> tuple[dict[str, Any], list[str]]:
-    """Apply merge-patch fields plus explicit atomic replacements/deletions."""
-
-    atomic_keys = {_top_level_pointer_key(path): path for path in atomic_paths}
-    deleted = set(deleted_paths)
-    if len(atomic_keys) != len(atomic_paths) or len(deleted) != len(deleted_paths):
-        raise StoreError("atomic profile paths must be unique")
-    if not deleted <= set(atomic_paths):
-        raise StoreError("deleted profile paths must also be atomic")
-    if any(key not in patch for key in atomic_keys):
-        raise StoreError("atomic profile paths must be present in the patch")
-
-    merge_patch = {key: value for key, value in patch.items() if key not in atomic_keys}
-    updated, changed = _merge_object_patch(target, merge_patch)
-    for key, path in atomic_keys.items():
-        if path in deleted:
-            if key in updated:
-                del updated[key]
-                changed.append(path)
-        elif key not in updated or updated[key] != patch[key]:
-            updated[key] = patch[key]
-            changed.append(path)
-    return updated, changed
-
-
-def _changed_json_pointer_paths(
-    current: Any, replacement: Any, prefix: str = ""
-) -> list[str]:
-    """Return narrow changed paths, treating non-objects as atomic values."""
-    if isinstance(current, dict) and isinstance(replacement, dict):
-        changed: list[str] = []
-        for key in sorted(set(current) | set(replacement)):
-            path = f"{prefix}/{_json_pointer_segment(key)}"
-            if key not in current or key not in replacement:
-                changed.append(path)
-            else:
-                changed.extend(
-                    _changed_json_pointer_paths(current[key], replacement[key], path)
-                )
-        return changed
-    return [prefix or "/"] if current != replacement else []
 
 
 def _meaningfully_present(value: Any) -> bool:
@@ -740,25 +676,6 @@ def _meaningfully_present(value: Any) -> bool:
     if isinstance(value, dict):
         return any(_meaningfully_present(item) for item in value.values())
     return True
-
-
-def _protect_user_provenance(
-    provenance: dict[str, Any], changed: list[str], source: str
-) -> None:
-    """Reject lower-authority writes overlapping a human-authored fact path."""
-    if source == "user":
-        return
-    protected = [
-        path for path, record in provenance.items() if record.get("source") == "user"
-    ]
-    if any(
-        changed_path == protected_path
-        or changed_path.startswith(f"{protected_path}/")
-        or protected_path.startswith(f"{changed_path}/")
-        for changed_path in changed
-        for protected_path in protected
-    ):
-        raise StoreError("profile change conflicts with user-provenanced facts")
 
 
 def _json_pointer_value(document: Any, pointer: str) -> Any:
@@ -803,59 +720,6 @@ def _candidate_leaf_paths(value: Any, prefix: str = "", depth: int = 0) -> list[
 
 def _validated_candidate(value: Any) -> tuple[dict[str, Any], list[str]]:
     return _extraction_validation._validated_candidate(value)
-
-
-def _user_protects_path(provenance: dict[str, Any], path: str) -> bool:
-    return any(
-        record.get("source") == "user"
-        and (
-            path == protected
-            or path.startswith(f"{protected}/")
-            or protected.startswith(f"{path}/")
-        )
-        for protected, record in provenance.items()
-    )
-
-
-def _fact_leaf_paths(value: Any, prefix: str) -> list[str]:
-    if isinstance(value, dict) and value:
-        return [
-            leaf
-            for key, child in value.items()
-            for leaf in _fact_leaf_paths(
-                child, f"{prefix}/{_json_pointer_segment(key)}"
-            )
-        ]
-    return [prefix]
-
-
-def _stamp_fact_provenance(
-    provenance: dict[str, Any],
-    changed: list[str],
-    source: str,
-    updated_at: str,
-    current_profile: dict[str, Any],
-) -> dict[str, Any]:
-    stamped = dict(provenance)
-    # Refining a parent marker to a changed child must not discard the
-    # authority of unchanged siblings. Materialize the parent's existing
-    # leaf provenance before replacing the changed branch marker.
-    for protected_path, record in list(provenance.items()):
-        if any(path.startswith(f"{protected_path}/") for path in changed):
-            for leaf in _fact_leaf_paths(
-                _json_pointer_value(current_profile, protected_path), protected_path
-            ):
-                stamped.setdefault(leaf, record)
-    for path in changed:
-        prefix = f"{path}/"
-        for stale in [
-            key
-            for key in stamped
-            if key.startswith(prefix) or path.startswith(f"{key}/")
-        ]:
-            stamped.pop(stale, None)
-        stamped[path] = {"source": source, "updatedAt": updated_at}
-    return stamped
 
 
 def _validate_answer_record(key: str, value: Any) -> dict[str, Any]:
@@ -963,7 +827,12 @@ def _read_input(path: str) -> dict[str, Any]:
     return _require_object(value, "input")
 
 
-class Store(_base.StoreBase):
+class Store(
+    _profile_domain.ProfileStoreMixin,
+    _profile_facts_domain.ProfileFactsStoreMixin,
+    _answer_read_domain.AnswerReadMixin,
+    _base.StoreBase,
+):
     _runtime_provider = staticmethod(lambda: globals())
 
 
@@ -1221,12 +1090,6 @@ class Store(_base.StoreBase):
             if directory is not None:
                 os.close(directory)
 
-    @staticmethod
-    def _has_application_facts(profile: dict[str, Any]) -> bool:
-        """Distinguish applicant facts from search-only preferences."""
-
-        return any(key != "preferences" for key in profile)
-
     def _ensure_coordinator_files_locked(self) -> None:
         if not self.coordinator_path.exists():
             atomic_write_json(
@@ -1364,57 +1227,6 @@ class Store(_base.StoreBase):
                 claim = _validate_claim_record(result_claim)
                 if claim["jobId"] != job_id:
                     raise StoreError("coordinator claim identity does not match")
-        return document
-
-    def _load_profile_document(self) -> dict[str, Any]:
-        document = read_json_object(self.profile_path, "profile")
-        validate_version(document, "profile")
-        _require_object(document.get("profile"), "profile.profile")
-        metadata = _require_object(document.get("metadata"), "profile.metadata")
-        revision = metadata.get("revision", 1)
-        if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
-            raise StoreError("profile revision must be a positive integer")
-        provenance = _require_object(
-            metadata.get("factProvenance", {}), "profile fact provenance"
-        )
-        for path, value in provenance.items():
-            if not isinstance(path, str) or not path.startswith("/"):
-                raise StoreError("profile fact provenance path is invalid")
-            record = _require_object(value, "profile fact provenance record")
-            if set(record) != {"source", "updatedAt"}:
-                raise StoreError("profile fact provenance record is invalid")
-            if record.get("source") not in FACT_SOURCES:
-                raise StoreError("profile fact provenance source is unsupported")
-            if not isinstance(record.get("updatedAt"), str) or not record["updatedAt"]:
-                raise StoreError("profile fact provenance timestamp is invalid")
-        return document
-
-    def _load_fact_groups_document(self) -> dict[str, Any]:
-        document = read_json_object(self.fact_groups_path, "fact groups")
-        validate_version(document, "fact groups")
-        if set(document) != {"schemaVersion", "groups", "metadata"}:
-            raise StoreError("fact groups contains unsupported fields")
-        groups = _require_object(document.get("groups"), "fact groups.groups")
-        metadata = _require_object(document.get("metadata"), "fact groups.metadata")
-        if set(metadata) != {"createdAt", "updatedAt"}:
-            raise StoreError("fact groups metadata is invalid")
-        for field in ("createdAt", "updatedAt"):
-            if not isinstance(metadata.get(field), str) or not metadata[field]:
-                raise StoreError("fact groups metadata timestamp is invalid")
-        for key, record in groups.items():
-            _validate_fact_group_record(key, record)
-        return document
-
-    def _load_answers_document(self) -> dict[str, Any]:
-        document = read_json_object(self.answers_path, "answers")
-        validate_version(document, "answers")
-        answers = _require_object(document.get("answers"), "answers.answers")
-        _require_object(document.get("metadata"), "answers.metadata")
-        for key, record in answers.items():
-            if not isinstance(key, str) or not key:
-                raise StoreError("answer index keys must be non-empty strings")
-            _validate_answer_record(key, record)
-        _validate_answer_redirects(document.get("redirects", {}), answers)
         return document
 
     def _load_jobs_document(self) -> dict[str, Any]:
@@ -1575,31 +1387,6 @@ class Store(_base.StoreBase):
                 for key, record in _require_object(resumes["resumes"], "resumes").items():
                     _validate_resume_record(key, record)
         return document
-
-    @staticmethod
-    def _validate_profile_document_value(document: dict[str, Any]) -> None:
-        validate_version(document, "profile")
-        profile = _require_object(document.get("profile"), "profile.profile")
-        metadata = _require_object(document.get("metadata"), "profile.metadata")
-        if set(document) != {"schemaVersion", "profile", "metadata"}:
-            raise StoreError("profile contains unsupported fields")
-        revision = metadata.get("revision", 1)
-        if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
-            raise StoreError("profile revision must be a positive integer")
-        provenance = _require_object(
-            metadata.get("factProvenance", {}), "profile fact provenance"
-        )
-        for path, value in provenance.items():
-            if not isinstance(path, str) or not path.startswith("/"):
-                raise StoreError("profile fact provenance path is invalid")
-            record = _require_object(value, "profile fact provenance record")
-            if set(record) != {"source", "updatedAt"}:
-                raise StoreError("profile fact provenance record is invalid")
-            if record.get("source") not in FACT_SOURCES:
-                raise StoreError("profile fact provenance source is unsupported")
-            if not isinstance(record.get("updatedAt"), str) or not record["updatedAt"]:
-                raise StoreError("profile fact provenance timestamp is invalid")
-        _ = profile
 
     def _ensure_extraction_files_locked(self) -> None:
         if not self.resume_extractions_path.exists():
@@ -2037,14 +1824,6 @@ class Store(_base.StoreBase):
                     pass
             _fsync_directory(self.resume_files_path)
 
-    def get_profile(self) -> dict[str, Any]:
-        self.initialize()
-        return self._load_profile_document()["profile"]
-
-    def inspect_profile(self) -> dict[str, Any]:
-        self.initialize()
-        return self._profile_inspection(self._load_profile_document())
-
     def profile_preparedness(self) -> dict[str, Any]:
         """Project value-free setup, coverage, and review state from Store data."""
         self.initialize()
@@ -2146,7 +1925,7 @@ class Store(_base.StoreBase):
                     "count": len(proposal["pendingPaths"]),
                 })
                 protected_count = sum(
-                    _user_protects_path(provenance, path)
+                    self._user_protects_path(provenance, path)
                     for path in proposal["pendingPaths"]
                 )
                 if protected_count:
@@ -2166,418 +1945,6 @@ class Store(_base.StoreBase):
                 "commonCoverage": common_coverage,
                 "reviewHealth": review_health,
             }
-
-    @staticmethod
-    def _profile_inspection(document: dict[str, Any]) -> dict[str, Any]:
-        metadata = document["metadata"]
-        return {
-            "profile": document["profile"],
-            "revision": metadata.get("revision", 1),
-            "factProvenance": metadata.get("factProvenance", {}),
-            "updatedAt": metadata.get("updatedAt"),
-        }
-
-    def replace_profile(
-        self, profile: dict[str, Any], expected_revision: int, source: str
-    ) -> dict[str, Any]:
-        incoming = _require_object(profile, "profile")
-        if (
-            not isinstance(expected_revision, int)
-            or isinstance(expected_revision, bool)
-            or expected_revision < 0
-        ):
-            raise StoreError("profile expected revision must be a non-negative integer")
-        if source not in FACT_SOURCES:
-            raise StoreError("profile fact source is unsupported")
-        if self.profile_path.exists():
-            self.initialize()
-        result: dict[str, Any] | None = None
-        conflict_after_migration = False
-        with exclusive_file_lock(self.store_lock_path):
-            if not self.profile_path.exists():
-                self._validate_existing_documents()
-                now = utc_now()
-                if self.legacy_profile.exists():
-                    migrated = read_json_object(self.legacy_profile, "legacy profile")
-                    atomic_write_json(self.profile_path, {
-                        "schemaVersion": SCHEMA_VERSION,
-                        "profile": migrated,
-                        "metadata": {
-                            "createdAt": now, "updatedAt": now, "revision": 1,
-                            "factProvenance": {},
-                            "migratedFrom": "~/.claude-job-profile.json", "migratedAt": now,
-                        },
-                    })
-                    conflict_after_migration = True
-                elif expected_revision == 0:
-                    changed = _changed_json_pointer_paths({}, incoming)
-                    document = {
-                        "schemaVersion": SCHEMA_VERSION,
-                        "profile": incoming,
-                        "metadata": {
-                            "createdAt": now, "updatedAt": now, "revision": 1,
-                            "factProvenance": _stamp_fact_provenance({}, changed, source, now, {}),
-                        },
-                    }
-                    atomic_write_json(self.profile_path, document)
-                    result = self._profile_inspection(document)
-                else:
-                    raise StoreError("profile revision conflict")
-
-            if result is None and not conflict_after_migration:
-                document = self._load_profile_document()
-                metadata = document["metadata"]
-                revision = metadata.get("revision", 1)
-                if expected_revision == 0 or revision != expected_revision:
-                    raise StoreError("profile revision conflict")
-                changed = _changed_json_pointer_paths(document["profile"], incoming)
-                if not changed:
-                    result = self._profile_inspection(document)
-                else:
-                    provenance = dict(metadata.get("factProvenance", {}))
-                    _protect_user_provenance(provenance, changed, source)
-                    now = utc_now()
-                    stamped_provenance = _stamp_fact_provenance(
-                        provenance, changed, source, now, document["profile"]
-                    )
-                    document["profile"] = incoming
-                    metadata["updatedAt"] = now
-                    metadata["revision"] = revision + 1
-                    metadata["factProvenance"] = stamped_provenance
-                    atomic_write_json(self.profile_path, document)
-                    result = self._profile_inspection(document)
-        self.initialize()
-        if conflict_after_migration:
-            raise StoreError("profile revision conflict")
-        assert result is not None
-        return result
-
-    def patch_profile(
-        self,
-        patch: dict[str, Any],
-        expected_revision: int,
-        source: str,
-        atomic_paths: list[str] | None = None,
-        deleted_paths: list[str] | None = None,
-    ) -> dict[str, Any]:
-        self.initialize()
-        incoming = _require_object(patch, "profile patch")
-        if not incoming:
-            raise StoreError("profile patch must not be empty")
-        if source not in FACT_SOURCES:
-            raise StoreError("profile fact source is unsupported")
-        atomic = atomic_paths or []
-        deleted = deleted_paths or []
-        if not isinstance(atomic, list) or not all(isinstance(path, str) for path in atomic):
-            raise StoreError("atomic profile paths must be strings")
-        if not isinstance(deleted, list) or not all(isinstance(path, str) for path in deleted):
-            raise StoreError("deleted profile paths must be strings")
-        with exclusive_file_lock(self.store_lock_path):
-            document = self._load_profile_document()
-            metadata = document["metadata"]
-            revision = metadata.get("revision", 1)
-            if revision != expected_revision:
-                raise StoreError("profile revision conflict")
-            updated, changed = _apply_profile_patch(
-                document["profile"], incoming, atomic, deleted
-            )
-            if not changed:
-                return self._profile_inspection(document)
-            now = utc_now()
-            provenance = dict(metadata.get("factProvenance", {}))
-            _protect_user_provenance(provenance, changed, source)
-            provenance = _stamp_fact_provenance(
-                provenance, changed, source, now, document["profile"]
-            )
-            document["profile"] = updated
-            metadata["factProvenance"] = provenance
-            metadata["revision"] = revision + 1
-            metadata["updatedAt"] = now
-            atomic_write_json(self.profile_path, document)
-        return {
-            "profile": updated,
-            "revision": revision + 1,
-            "factProvenance": provenance,
-            "updatedAt": now,
-        }
-
-    def get_preferences(self) -> dict[str, Any]:
-        preferences = self.get_profile().get("preferences", {})
-        return _require_object(preferences, "profile.preferences")
-
-    def set_preferences(
-        self,
-        preferences: dict[str, Any],
-        expected_revision: int,
-        source: str,
-        replace: bool = False,
-    ) -> dict[str, Any]:
-        incoming = _require_object(preferences, "preferences")
-        if not replace:
-            return self.patch_profile(
-                {"preferences": incoming}, expected_revision, source
-            )
-
-        if source not in FACT_SOURCES:
-            raise StoreError("profile fact source is unsupported")
-        self.initialize()
-        with exclusive_file_lock(self.store_lock_path):
-            document = self._load_profile_document()
-            metadata = document["metadata"]
-            revision = metadata.get("revision", 1)
-            if revision != expected_revision:
-                raise StoreError("profile revision conflict")
-            updated = dict(document["profile"])
-            updated["preferences"] = incoming
-            changed = _changed_json_pointer_paths(document["profile"], updated)
-            if not changed:
-                return self._profile_inspection(document)
-            now = utc_now()
-            provenance = dict(metadata.get("factProvenance", {}))
-            _protect_user_provenance(provenance, changed, source)
-            provenance = _stamp_fact_provenance(
-                provenance, changed, source, now, document["profile"]
-            )
-            document["profile"] = updated
-            metadata["factProvenance"] = provenance
-            metadata["revision"] = revision + 1
-            metadata["updatedAt"] = now
-            atomic_write_json(self.profile_path, document)
-        return self._profile_inspection(document)
-
-    @staticmethod
-    def _fact_group_sort_key(record: dict[str, Any]) -> tuple[Any, ...]:
-        return (record["order"], record["label"].casefold(), record["id"])
-
-    @staticmethod
-    def _reject_fact_group_label_collision(
-        groups: dict[str, Any], label: str, *, exclude_id: str | None = None
-    ) -> None:
-        identity = label.casefold()
-        if any(
-            key != exclude_id and record["label"].casefold() == identity
-            for key, record in groups.items()
-        ):
-            raise StoreError("active fact group label already exists")
-
-    def list_fact_groups(self) -> list[dict[str, Any]]:
-        self.initialize()
-        document = self._load_fact_groups_document()
-        return sorted(
-            (dict(record) for record in document["groups"].values()),
-            key=self._fact_group_sort_key,
-        )
-
-    def get_fact_group(self, group_id: str) -> dict[str, Any] | None:
-        self.initialize()
-        if FACT_GROUP_ID.fullmatch(group_id or "") is None:
-            raise StoreError("fact group id is invalid")
-        record = self._load_fact_groups_document()["groups"].get(group_id)
-        return dict(record) if record is not None else None
-
-    def create_fact_group(self, incoming: dict[str, Any]) -> dict[str, Any]:
-        payload = _require_object(incoming, "fact group")
-        if set(payload) - {"label", "paths", "order"} or not {"label", "paths"} <= set(payload):
-            raise StoreError("fact group requires label and paths")
-        label = _fact_group_label(payload.get("label"))
-        paths = _fact_group_paths(payload.get("paths"))
-        requested_order = payload.get("order")
-        if requested_order is not None:
-            requested_order = _fact_group_order(requested_order)
-        self.initialize()
-        with exclusive_file_lock(self.store_lock_path):
-            document = self._load_fact_groups_document()
-            groups = document["groups"]
-            self._reject_fact_group_label_collision(groups, label)
-            order = requested_order
-            if order is None:
-                order = max((record["order"] for record in groups.values()), default=-100) + 100
-            group_id = uuid.uuid4().hex
-            now = self._now()
-            record = {
-                "id": group_id,
-                "label": label,
-                "paths": paths,
-                "order": order,
-                "revision": 1,
-                "createdAt": now,
-                "updatedAt": now,
-            }
-            groups[group_id] = record
-            document["metadata"]["updatedAt"] = now
-            atomic_write_json(self.fact_groups_path, document)
-        return dict(record)
-
-    def update_fact_group(
-        self, group_id: str, patch: dict[str, Any], expected_revision: int
-    ) -> dict[str, Any]:
-        if FACT_GROUP_ID.fullmatch(group_id or "") is None:
-            raise StoreError("fact group id is invalid")
-        incoming = _require_object(patch, "fact group patch")
-        if not incoming or set(incoming) - {"label", "paths", "order"}:
-            raise StoreError("fact group patch must contain label, paths, or order")
-        if not isinstance(expected_revision, int) or isinstance(expected_revision, bool) or expected_revision < 1:
-            raise StoreError("fact group expected revision must be a positive integer")
-        self.initialize()
-        with exclusive_file_lock(self.store_lock_path):
-            document = self._load_fact_groups_document()
-            groups = document["groups"]
-            current = groups.get(group_id)
-            if current is None:
-                raise StoreError("fact group does not exist")
-            if current["revision"] != expected_revision:
-                raise StoreError("fact group revision conflict")
-            updated = dict(current)
-            if "label" in incoming:
-                updated["label"] = _fact_group_label(incoming["label"])
-                self._reject_fact_group_label_collision(
-                    groups, updated["label"], exclude_id=group_id
-                )
-            if "paths" in incoming:
-                updated["paths"] = _fact_group_paths(incoming["paths"])
-            if "order" in incoming:
-                updated["order"] = _fact_group_order(incoming["order"])
-            if all(updated[field] == current[field] for field in ("label", "paths", "order")):
-                return dict(current)
-            now = self._now()
-            updated["revision"] = current["revision"] + 1
-            updated["updatedAt"] = now
-            groups[group_id] = updated
-            document["metadata"]["updatedAt"] = now
-            atomic_write_json(self.fact_groups_path, document)
-        return dict(updated)
-
-    def delete_fact_group(self, group_id: str, expected_revision: int) -> dict[str, Any]:
-        if FACT_GROUP_ID.fullmatch(group_id or "") is None:
-            raise StoreError("fact group id is invalid")
-        if not isinstance(expected_revision, int) or isinstance(expected_revision, bool) or expected_revision < 1:
-            raise StoreError("fact group expected revision must be a positive integer")
-        self.initialize()
-        with exclusive_file_lock(self.store_lock_path):
-            document = self._load_fact_groups_document()
-            current = document["groups"].get(group_id)
-            if current is None:
-                raise StoreError("fact group does not exist")
-            if current["revision"] != expected_revision:
-                raise StoreError("fact group revision conflict")
-            del document["groups"][group_id]
-            document["metadata"]["updatedAt"] = self._now()
-            atomic_write_json(self.fact_groups_path, document)
-        return {"deleted": True, "id": group_id}
-
-    @staticmethod
-    def _answer_view(record: dict[str, Any]) -> dict[str, Any]:
-        view = dict(record)
-        view.setdefault("revision", 1)
-        view.setdefault("createdAt", record.get("updatedAt"))
-        view.setdefault("deletedAt", None)
-        view.setdefault("reviewStatus", "accepted")
-        view.setdefault("observationCount", 0)
-        return view
-
-    @staticmethod
-    def _answer_is_sensitive(record: dict[str, Any]) -> bool:
-        return record.get("state") == "sensitive" or record.get("sensitivity", "none") != "none"
-
-    @staticmethod
-    def _answer_redirects(document: dict[str, Any]) -> dict[str, Any]:
-        return _validate_answer_redirects(
-            document.get("redirects", {}), document["answers"]
-        )
-
-    @classmethod
-    def _resolve_answer_key_in_document(
-        cls, document: dict[str, Any], key: str
-    ) -> str:
-        redirect = cls._answer_redirects(document).get(key)
-        return redirect["targetKey"] if redirect is not None else key
-
-    def _answer_reference_counts(
-        self,
-        document: dict[str, Any] | None = None,
-        sessions: list[dict[str, Any]] | None = None,
-        history: list[dict[str, Any]] | None = None,
-    ) -> dict[str, dict[str, int]]:
-        document = document or self._load_answers_document()
-        counts: dict[str, dict[str, int]] = {}
-        for session in sessions if sessions is not None else self._list_sessions_uninitialized():
-            keys = set(session.get("answerKeys", []))
-            keys.update(
-                field.get("answerKey")
-                for field in session.get("pendingFields", [])
-                if isinstance(field.get("answerKey"), str)
-            )
-            for key in keys:
-                resolved = self._resolve_answer_key_in_document(document, key)
-                counts.setdefault(resolved, {"sessions": 0, "history": 0})["sessions"] += 1
-        for event in history if history is not None else self.read_history():
-            for key in set(event.get("answerKeys", [])):
-                resolved = self._resolve_answer_key_in_document(document, key)
-                counts.setdefault(resolved, {"sessions": 0, "history": 0})["history"] += 1
-        return counts
-
-    def _answer_projection(
-        self, record: dict[str, Any], counts: dict[str, dict[str, int]] | None = None
-    ) -> dict[str, Any]:
-        view = self._answer_view(record)
-        projected = {key: value for key, value in view.items() if key != "value"}
-        projected["hasValue"] = view.get("value") is not None
-        projected["valueRedacted"] = self._answer_is_sensitive(view) and projected["hasValue"]
-        references = (counts or {}).get(view["key"], {"sessions": 0, "history": 0})
-        projected["referenceCounts"] = {
-            "sessions": references["sessions"],
-            "history": references["history"],
-            "total": references["sessions"] + references["history"],
-        }
-        return projected
-
-    def answer_detail_projection(
-        self,
-        record: dict[str, Any],
-        document: dict[str, Any],
-        reveal_value: bool = False,
-    ) -> dict[str, Any]:
-        projected = self._answer_projection(
-            record, self._answer_reference_counts(document=document)
-        )
-        if reveal_value or not self._answer_is_sensitive(record):
-            projected["value"] = record.get("value")
-        return projected
-
-    def _answer_mutation_projection(
-        self, record: dict[str, Any], counts: dict[str, dict[str, int]]
-    ) -> dict[str, Any]:
-        projected = self._answer_projection(record, counts)
-        if not self._answer_is_sensitive(record):
-            projected["value"] = record.get("value")
-        return projected
-
-    def _get_answer_record(
-        self,
-        key: str,
-        include_trashed: bool = False,
-        document: dict[str, Any] | None = None,
-    ) -> dict[str, Any] | None:
-        document = document or self._load_answers_document()
-        resolved = self._resolve_answer_key_in_document(document, key)
-        answer = document["answers"].get(resolved)
-        if answer is None or (
-            answer.get("deletedAt") is not None and not include_trashed
-        ):
-            return None
-        return self._answer_view(_require_object(answer, "answer record"))
-
-    @staticmethod
-    def _answer_candidates(record: dict[str, Any]) -> set[str]:
-        values: list[str] = []
-        if isinstance(record.get("question"), str) and record["question"].strip():
-            values.append(record["question"])
-        values.extend(
-            alias
-            for alias in record.get("aliases", [])
-            if isinstance(alias, str) and alias.strip()
-        )
-        return {normalize_question(value) for value in values}
 
     def _reject_answer_collisions(
         self,
@@ -2600,222 +1967,6 @@ class Store(_base.StoreBase):
             redirect = (redirects or {}).get(retired_key)
             if redirect is not None and redirect.get("targetKey") not in permitted_redirect_targets:
                 raise StoreError("answer question or alias is a retired redirect identity")
-
-    def get_answer(
-        self, key: str, include_trashed: bool = False
-    ) -> dict[str, Any] | None:
-        self.initialize()
-        document = self._load_answers_document()
-        resolved = self._resolve_answer_key_in_document(document, key)
-        answer = self._get_answer_record(key, include_trashed, document=document)
-        if answer is None:
-            return None
-        projection = self.answer_detail_projection(answer, document=document)
-        if resolved != key:
-            projection["redirectedFrom"] = key
-        return projection
-
-    def _list_answer_records(
-        self,
-        state: str | None = None,
-        include_trashed: bool = False,
-        review_status: str | None = "accepted",
-        document: dict[str, Any] | None = None,
-    ) -> list[dict[str, Any]]:
-        self.initialize()
-        if state is not None and (
-            not isinstance(state, str) or state not in ANSWER_STATES
-        ):
-            raise StoreError("answer state is unsupported")
-        if review_status is not None and (
-            not isinstance(review_status, str)
-            or review_status not in ANSWER_REVIEW_STATUSES
-        ):
-            raise StoreError("answer review status is unsupported")
-        document = document or self._load_answers_document()
-        records = []
-        for record in document["answers"].values():
-            if record.get("deletedAt") is not None and not include_trashed:
-                continue
-            if state is not None and record.get("state") != state:
-                continue
-            if review_status is not None and record.get("reviewStatus", "accepted") != review_status:
-                continue
-            records.append(self._answer_view(record))
-        return sorted(
-            records,
-            key=lambda item: (
-                item.get("question") or "",
-                item["key"],
-            ),
-        )
-
-    def list_answers(
-        self,
-        state: str | None = None,
-        include_trashed: bool = False,
-        review_status: str | None = "accepted",
-    ) -> list[dict[str, Any]]:
-        self.initialize()
-        document = self._load_answers_document()
-        records = self._list_answer_records(
-            state, include_trashed, review_status, document=document
-        )
-        counts = self._answer_reference_counts(document=document)
-        return [self._answer_projection(record, counts) for record in records]
-
-    def query_answers(
-        self,
-        query: str = "",
-        state: str | None = None,
-        review_status: str | None = "accepted",
-        include_trashed: bool = False,
-        trashed_only: bool = False,
-        offset: int = 0,
-        limit: int = 50,
-    ) -> dict[str, Any]:
-        self.initialize()
-        if not isinstance(query, str):
-            raise StoreError("answer query must be a string")
-        if not isinstance(include_trashed, bool) or not isinstance(trashed_only, bool):
-            raise StoreError("answer trash filters must be booleans")
-        if not isinstance(offset, int) or isinstance(offset, bool) or offset < 0:
-            raise StoreError("answer offset must be a non-negative integer")
-        if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= 200:
-            raise StoreError("answer limit must be between 1 and 200")
-        needle = normalize_question(query) if query.strip() else ""
-        if trashed_only and not include_trashed:
-            raise StoreError("trashed-only query requires include trashed")
-        document = self._load_answers_document()
-        records = self._list_answer_records(
-            state, include_trashed, review_status, document=document
-        )
-        if trashed_only:
-            records = [item for item in records if item.get("deletedAt") is not None]
-        if needle:
-            records = [
-                item for item in records
-                if any(needle in candidate for candidate in self._answer_candidates(item))
-            ]
-        counts = self._answer_reference_counts(document=document)
-        page = records[offset : offset + limit]
-        return {
-            "items": [self._answer_projection(item, counts) for item in page],
-            "total": len(records),
-            "offset": offset,
-            "limit": limit,
-            "hasMore": offset + len(page) < len(records),
-        }
-
-    def reveal_answer(self, key: str) -> dict[str, Any]:
-        self.initialize()
-        document = self._load_answers_document()
-        resolved = self._resolve_answer_key_in_document(document, key)
-        answer = self._get_answer_record(key, document=document)
-        if answer is None:
-            raise StoreError("answer does not exist")
-        revealed = self.answer_detail_projection(
-            answer, document=document, reveal_value=True
-        )
-        if resolved != key:
-            revealed["redirectedFrom"] = key
-        return revealed
-
-    def find_answer(
-        self, question: str, scope: dict[str, Any] | None = None
-    ) -> dict[str, Any] | None:
-        self.initialize()
-        normalized = normalize_question(question)
-        document = self._load_answers_document()
-        for record in document["answers"].values():
-            item = _require_object(record, "answer record")
-            if (
-                item.get("deletedAt") is not None
-                or item.get("reviewStatus", "accepted") != "accepted"
-            ):
-                continue
-            candidates = self._answer_candidates(item)
-            if normalized in candidates and _json_values_equal(item.get("scope", {}), scope or {}):
-                return self.answer_detail_projection(item, document=document)
-        computed_key = answer_key(question, scope)
-        resolved_key = self._resolve_answer_key_in_document(document, computed_key)
-        direct = document["answers"].get(resolved_key)
-        if (
-            direct is None
-            or not _json_values_equal(direct.get("scope", {}), scope or {})
-            or direct.get("deletedAt") is not None
-            or direct.get("reviewStatus", "accepted") != "accepted"
-        ):
-            return None
-        projected = self.answer_detail_projection(direct, document=document)
-        if resolved_key != computed_key:
-            projected["redirectedFrom"] = computed_key
-        return projected
-
-    @staticmethod
-    def _semantic_candidate(record: dict[str, Any]) -> dict[str, Any]:
-        field_class = record.get("fieldClass", "general")
-        return {
-            "answerKey": record["key"],
-            "question": record.get("question"),
-            "aliases": [
-                alias for alias in record.get("aliases", [])
-                if isinstance(alias, str) and alias.strip()
-            ],
-            "scope": record.get("scope", {}),
-            "fieldClass": field_class,
-            "sensitivity": record.get("sensitivity", "none"),
-            "recordStatus": "deleted" if record.get("deletedAt") is not None else "active",
-            "reviewStatus": record.get("reviewStatus", "accepted"),
-            "state": record.get("state"),
-            "valueState": "seen" if record.get("value") is not None else "missing",
-        }
-
-    def semantic_answer_lookup(self, incoming: dict[str, Any]) -> dict[str, Any]:
-        """Recompute deterministic semantic reuse against current canonical answers."""
-
-        self.initialize()
-        packet = _require_object(incoming, "semantic lookup")
-        allowed = {
-            "question", "scope", "fieldClass", "sensitivity", "mode",
-            "useAuthority", "allowedSensitiveFieldClasses", "limit",
-        }
-        if set(packet) - allowed or not {
-            "question", "scope", "fieldClass", "sensitivity", "mode", "useAuthority"
-        } <= set(packet):
-            raise StoreError("semantic lookup contains unsupported fields")
-        document = self._load_answers_document()
-        field_class = packet["fieldClass"]
-        candidates = [
-            self._semantic_candidate(record)
-            for record in document["answers"].values()
-            if isinstance(record.get("key"), str)
-            and bool(record["key"].strip())
-            and isinstance(record.get("question"), str)
-            and record["question"].strip()
-        ]
-        try:
-            matches = ANSWER_MATCH_MODULE.rank_candidates(
-                question=packet["question"], scope=packet["scope"],
-                field_class=field_class, sensitivity=packet["sensitivity"],
-                candidates=candidates, limit=packet.get("limit", 5),
-            )
-            indexed = {item["answerKey"]: item for item in candidates}
-            decisions = [
-                ANSWER_MATCH_MODULE.evaluate_reuse(
-                    match=match, candidate=indexed[match["answerKey"]],
-                    scope=packet["scope"], field_class=field_class,
-                    sensitivity=packet["sensitivity"], mode=packet["mode"],
-                    use_authority=packet["useAuthority"],
-                    allowed_sensitive_field_classes=packet.get(
-                        "allowedSensitiveFieldClasses", []
-                    ),
-                )
-                for match in matches
-            ]
-        except Exception:
-            raise StoreError("semantic lookup is invalid") from None
-        return {"candidates": decisions, "mutated": False}
 
     def _preview_answer_cleanup_document(
         self, document: dict[str, Any]
@@ -6725,7 +5876,7 @@ class Store(_base.StoreBase):
                 for ancestor in baseline["ancestors"]
             )
             empty = not baseline["exists"] or baseline.get("value") is None
-            if empty and ancestors_allow_fill and not _user_protects_path(provenance, path):
+            if empty and ancestors_allow_fill and not self._user_protects_path(provenance, path):
                 _exists, extracted = _pointer_lookup(candidate, path)
                 _set_pointer_value(profile, path, extracted, replace_ancestors=False)
                 auto_filled.append(path)
@@ -6736,7 +5887,7 @@ class Store(_base.StoreBase):
             metadata = dict(profile_document["metadata"])
             metadata["revision"] = profile_revision + 1
             metadata["updatedAt"] = now
-            metadata["factProvenance"] = _stamp_fact_provenance(
+            metadata["factProvenance"] = self._stamp_fact_provenance(
                 provenance, auto_filled, "resume", now, profile_document["profile"]
             )
             profile_document = {
@@ -6983,7 +6134,7 @@ class Store(_base.StoreBase):
                 metadata = dict(profile_document["metadata"])
                 metadata["revision"] = profile_revision + 1
                 metadata["updatedAt"] = now
-                metadata["factProvenance"] = _stamp_fact_provenance(
+                metadata["factProvenance"] = self._stamp_fact_provenance(
                     dict(metadata.get("factProvenance", {})),
                     accepted,
                     "user",

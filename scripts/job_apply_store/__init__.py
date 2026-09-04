@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from . import base, constants, errors, io, normalization, validation
+from . import base, constants, domains, errors, io, normalization, validation
 from .errors import StoreError, TrustedFillCurrentError
 from .io import atomic_write_json, exclusive_file_lock, read_json_object, validate_version
 from .normalization import (
@@ -27,6 +27,7 @@ __all__ = [
     "TrustedFillCurrentError",
     "answer_key",
     "atomic_write_json",
+    "domains",
     "errors",
     "exclusive_file_lock",
     "normalize_job_url",

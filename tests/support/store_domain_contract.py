@@ -14,6 +14,7 @@ DOMAIN_PACKAGE = "job_apply_store.domains"
 INVALID_RELATIVE_IMPORT = "<invalid-relative-import>"
 
 __all__ = [
+    "assert_composed_store_lifecycle",
     "assert_domain_import_direction",
     "assert_method_contract",
     "assert_store_trees_equal",
@@ -45,8 +46,52 @@ def composed_store_class(base_store: type, *domain_mixins: type) -> type:
         raise ValueError(
             "domain mixins own overlapping methods: " + ", ".join(conflicts)
         )
-    name = "_".join([*(item.__name__ for item in domain_mixins), base_store.__name__])
-    return type(f"{name}Composition", (*domain_mixins, base_store), {})
+    remaining = tuple(
+        mixin
+        for mixin in domain_mixins
+        if not any(mixin is owner for owner in base_store.__mro__)
+    )
+    if not remaining:
+        return base_store
+    name = "_".join([*(item.__name__ for item in remaining), base_store.__name__])
+    return type(f"{name}Composition", (*remaining, base_store), {})
+
+
+def assert_composed_store_lifecycle(
+    testcase: Any,
+    base_store: type,
+    mixin: type,
+    composed: type,
+    names: list[str] | tuple[str, ...] | set[str],
+) -> None:
+    """Assert the same leaf contract before and after production composition."""
+    if any(mixin is owner for owner in base_store.__mro__):
+        testcase.assertIs(composed, base_store)
+        testcase.assertEqual(
+            sum(mixin is owner for owner in base_store.__mro__),
+            1,
+        )
+        mixin_index = next(
+            index
+            for index, owner in enumerate(base_store.__mro__)
+            if owner is mixin
+        )
+        for owner in base_store.__mro__[mixin_index + 1 :]:
+            testcase.assertFalse(
+                set(names) & vars(owner).keys(),
+                f"duplicate extracted methods remain on {owner.__name__}",
+            )
+    else:
+        testcase.assertEqual(
+            composed.__mro__[:3],
+            (composed, mixin, base_store),
+        )
+    for name in names:
+        with testcase.subTest(name=name):
+            testcase.assertIs(
+                inspect.getattr_static(composed, name),
+                inspect.getattr_static(mixin, name),
+            )
 
 
 def _direct_method_names(owner: type) -> list[str]:
