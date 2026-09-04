@@ -85,6 +85,15 @@ class StoreWaveCCoordinatorIntegrationTests(unittest.TestCase):
             self.facade._sessions_readiness_domain.SessionReadinessMixin,
             self.facade._sessions_document_domain.SessionDocumentMixin,
             self.facade._sessions_lifecycle_domain.SessionLifecycleMixin,
+            self.facade._accounts_email_execution_domain.EmailExecutionMixin,
+            self.facade._accounts_email_scope_domain.EmailScopeMixin,
+            self.facade._accounts_operations_domain.AccountOperationMixin,
+            self.facade._accounts_password_execution_domain.PasswordExecutionMixin,
+            self.facade._accounts_registry_domain.AccountRegistryMixin,
+            self.facade._accounts_settings_domain.AccountSettingsMixin,
+            self.facade._accounts_synthetic_domain.SyntheticAccountMixin,
+            self.facade._accounts_trusted_fill_domain.TrustedFillMixin,
+            self.facade._startup_domain.StartupMixin,
             self.facade._base.StoreBase,
         )
         self.assertEqual(self.facade.Store.__mro__[: len(expected_prefix)], expected_prefix)

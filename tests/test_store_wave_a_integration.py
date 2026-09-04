@@ -264,6 +264,15 @@ class StoreWaveAIntegrationTests(unittest.TestCase):
                 "coordinator.attention",
                 "coordinator.progress",
                 "coordinator.approvals",
+                "accounts.email_execution",
+                "accounts.email_scope",
+                "accounts.operations",
+                "accounts.password_execution",
+                "accounts.registry",
+                "accounts.settings",
+                "accounts.synthetic",
+                "accounts.trusted_fill",
+                "startup",
             },
         )
 
