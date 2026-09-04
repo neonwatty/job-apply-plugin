@@ -5,6 +5,7 @@ import inspect
 import tempfile
 import unittest
 import uuid
+from contextlib import ExitStack
 from pathlib import Path
 from unittest import mock
 
@@ -116,6 +117,17 @@ class ResumeLifecycleExtractionTests(unittest.TestCase):
         )
         assert_domain_import_direction(self, DOMAIN_ROOT)
 
+    def test_unbound_lifecycle_runtime_uses_shared_canonical_validator(self):
+        resume = self.create("canonical-lifecycle")
+        self.leaf._bind_runtime(lambda: {})
+        try:
+            trashed = self.extracted.trash_resume(
+                resume["id"], resume["revision"]
+            )
+        finally:
+            self.leaf._bind_runtime(lambda: vars(self.facade))
+        self.assertIsNotNone(trashed["deletedAt"])
+
     def test_trash_restore_noop_and_delete_are_byte_equivalent(self):
         with mock.patch.object(
             self.facade, "utc_now", return_value="2026-09-04T20:00:00Z"
@@ -200,9 +212,32 @@ class ResumeLifecycleExtractionTests(unittest.TestCase):
         with mock.patch.object(
             self.facade, "utc_now", return_value="2026-09-04T21:00:00Z"
         ):
-            self.call_both(
-                lambda store: store.trash_resume("requested", resume["revision"])
+            spies = []
+            with ExitStack() as stack:
+                for store in (self.original, self.extracted):
+                    spies.append(
+                        stack.enter_context(
+                            mock.patch.object(
+                                store,
+                                "_commit_extraction_operation_locked",
+                                wraps=store._commit_extraction_operation_locked,
+                            )
+                        )
+                    )
+                trashed = self.call_both(
+                    lambda store: store.trash_resume(
+                        "requested", resume["revision"]
+                    )
+                )
+        for spy in spies:
+            self.assertEqual(spy.call_count, 1)
+            arguments = spy.call_args.args
+            self.assertEqual(arguments[:3], ("resume-request-close", None, None))
+            self.assertEqual(
+                next(iter(arguments[3]["requests"].values()))["status"],
+                "cancelled",
             )
+            self.assertEqual(arguments[4]["resumes"][resume["id"]], trashed)
         for store in (self.original, self.extracted):
             request = store.get_resume_extraction_request(requests[0]["requestId"])
             self.assertEqual(request["status"], "cancelled")

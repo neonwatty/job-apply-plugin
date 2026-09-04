@@ -3,19 +3,43 @@
 from __future__ import annotations
 
 import os
+import re
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 from ...errors import StoreError
 from ...io import _fsync_directory, atomic_write_json, exclusive_file_lock
 from ...normalization import _safe_session_id
+from ...validation.jobs_resumes import _validate_resume_record
+
+
+def _canonical_validate_content_revision(value: Any) -> str:
+    if not isinstance(value, str) or re.fullmatch(
+        r"content_[A-Za-z0-9_-]{32,128}", value
+    ) is None:
+        raise StoreError("resume content revision is unverifiable")
+    return value
+
+
+_CANONICAL_TRUSTED_FILL = SimpleNamespace(
+    TrustedFillError=StoreError,
+    validate_content_revision=_canonical_validate_content_revision,
+)
+
+
+def _canonical_validate_resume_record(key: str, value: Any) -> dict[str, Any]:
+    return _validate_resume_record(
+        key, value, trusted_fill_module=_CANONICAL_TRUSTED_FILL
+    )
 
 
 _CANONICAL_RUNTIME = {
     "_fsync_directory": _fsync_directory,
     "_safe_session_id": _safe_session_id,
+    "_validate_resume_record": _canonical_validate_resume_record,
     "atomic_write_json": atomic_write_json,
     "exclusive_file_lock": exclusive_file_lock,
     "os": os,

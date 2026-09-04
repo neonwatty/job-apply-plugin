@@ -4,11 +4,12 @@ import importlib
 import inspect
 import json
 import shutil
+import sys
 import tempfile
 import unittest
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import nullcontext
+from contextlib import ExitStack, nullcontext
 from pathlib import Path
 from unittest import mock
 
@@ -128,24 +129,90 @@ class ResumeMutationExtractionTests(unittest.TestCase):
                 load_module(root / "scripts" / "job-apply-store.py", f"resume_{index}")
                 for index, root in enumerate(copied)
             ]
-            leaves = []
-            for module, root in zip(loaded, copied):
-                for suffix in ("mutations", "lifecycle"):
-                    leaf = importlib.import_module(
-                        f"{module._PACKAGE_NAME}.domains.resumes.{suffix}"
-                    )
+            pairs = []
+            stores = []
+            for index, (module, root) in enumerate(zip(loaded, copied)):
+                mutation = importlib.import_module(
+                    f"{module._PACKAGE_NAME}.domains.resumes.mutations"
+                )
+                lifecycle = importlib.import_module(
+                    f"{module._PACKAGE_NAME}.domains.resumes.lifecycle"
+                )
+                for leaf in (mutation, lifecycle):
                     self.assertTrue(
                         Path(leaf.__file__).resolve().is_relative_to(root.resolve())
                     )
-                    leaves.append(leaf)
-            self.assertIsNot(leaves[0], leaves[2])
+                create_at = f"2026-09-04T23:00:0{index}Z"
+                lifecycle_at = f"2026-09-04T23:01:0{index}Z"
+                mutation_runtime = {
+                    **vars(module),
+                    "utc_now": lambda value=create_at: value,
+                }
+                lifecycle_runtime = {
+                    **vars(module),
+                    "utc_now": lambda value=lifecycle_at: value,
+                }
+                mutation._bind_runtime(lambda value=mutation_runtime: value)
+                lifecycle._bind_runtime(lambda value=lifecycle_runtime: value)
+                composed = composed_store_class(
+                    module.Store,
+                    mutation.ResumeMutationMixin,
+                    lifecycle.ResumeLifecycleMixin,
+                )
+                source = root / f"resume-{index}.txt"
+                source.write_text(f"root {index} resume", encoding="utf-8")
+                with mock.patch.object(
+                    module.secrets, "token_urlsafe", return_value="a" * 43
+                ):
+                    store = composed(root / "store")
+                    created = store.create_resume(
+                        {
+                            "id": f"root-{index}",
+                            "label": f"Root {index}",
+                            "path": str(source),
+                        }
+                    )
+                    trashed = store.trash_resume(
+                        created["id"], created["revision"]
+                    )
+                self.assertEqual(created["createdAt"], create_at)
+                self.assertEqual(trashed["deletedAt"], lifecycle_at)
+                pairs.append((mutation, lifecycle))
+                stores.append((store, trashed))
+            self.assertIsNot(pairs[0][0], pairs[1][0])
+            b_provider = pairs[1][1]._RUNTIME_PROVIDER
+            b_module = sys.modules[pairs[1][1].__name__]
             reloaded = load_module(
                 copied[0] / "scripts" / "job-apply-store.py", "resume_reload"
             )
             fresh = importlib.import_module(
                 f"{reloaded._PACKAGE_NAME}.domains.resumes.mutations"
             )
-            self.assertIsNot(fresh, leaves[0])
+            self.assertIsNot(fresh, pairs[0][0])
+            self.assertIs(sys.modules[pairs[1][1].__name__], b_module)
+            self.assertIs(pairs[1][1]._RUNTIME_PROVIDER, b_provider)
+            b_store, b_trashed = stores[1]
+            restored = b_store.restore_resume(
+                b_trashed["id"], b_trashed["revision"]
+            )
+            self.assertEqual(restored["updatedAt"], "2026-09-04T23:01:01Z")
+
+    def test_unbound_mutation_runtime_uses_shared_canonical_validator(self):
+        source = self.source("canonical.txt", "canonical resume")
+        with mock.patch.object(
+            self.facade.secrets, "token_urlsafe", return_value="a" * 43
+        ):
+            created = self.extracted.create_resume(
+                {"id": "canonical", "label": "Canonical", "path": str(source)}
+            )
+            self.leaf._bind_runtime(lambda: {})
+            try:
+                updated = self.extracted.update_resume(
+                    created["id"], {"label": "Unbound"}, created["revision"]
+                )
+            finally:
+                self.leaf._bind_runtime(lambda: vars(self.facade))
+        self.assertEqual(updated["label"], "Unbound")
 
     def test_create_update_bytes_and_default_are_byte_equivalent(self):
         with (
@@ -297,12 +364,34 @@ class ResumeMutationExtractionTests(unittest.TestCase):
             ]
             self.assertEqual(requests[0], requests[1])
             replacement = self.source("requested-new.txt", "new request source")
-            updated = self.call_both(
-                lambda store: store.update_resume(
-                    resume["id"], {"path": str(replacement)}, resume["revision"]
+            spies = []
+            with ExitStack() as stack:
+                for store in (self.original, self.extracted):
+                    spies.append(
+                        stack.enter_context(
+                            mock.patch.object(
+                                store,
+                                "_commit_extraction_operation_locked",
+                                wraps=store._commit_extraction_operation_locked,
+                            )
+                        )
+                    )
+                updated = self.call_both(
+                    lambda store: store.update_resume(
+                        resume["id"],
+                        {"path": str(replacement)},
+                        resume["revision"],
+                    )
                 )
-            )
         self.assertEqual(updated["revision"], resume["revision"] + 1)
+        for spy in spies:
+            self.assertEqual(spy.call_count, 1)
+            arguments = spy.call_args.args
+            self.assertEqual(arguments[:3], ("resume-request-close", None, None))
+            self.assertEqual(
+                next(iter(arguments[3]["requests"].values()))["status"], "stale"
+            )
+            self.assertEqual(arguments[4]["resumes"][resume["id"]], updated)
         for store in (self.original, self.extracted):
             request = store.get_resume_extraction_request(requests[0]["requestId"])
             self.assertEqual(request["status"], "stale")
