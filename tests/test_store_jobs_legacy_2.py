@@ -206,6 +206,7 @@ class StoreTests(StoreTestCase):
             self.assertIn("reserved for guided legacy imports", completed.stderr)
             self.assertEqual(completed.stdout, "")
 
+    @unittest.skipIf(os.name == "nt", "symlink behavior is platform-specific")
     def test_legacy_discovery_rejects_symlinks_and_limits(self):
         legacy_root = self.home / ".claude-job-searches"
         legacy_root.mkdir()

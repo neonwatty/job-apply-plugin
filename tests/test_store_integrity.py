@@ -14,6 +14,7 @@ class StoreTests(StoreTestCase):
         self.assertEqual(self.store.profile_path.read_text(encoding="utf-8"), before)
         self.assertEqual(list(self.root.glob(".profile.json.*.tmp")), [])
 
+    @unittest.skipIf(os.name == "nt", "POSIX permissions only")
     def test_private_permissions(self):
         self.store.initialize()
         self.store.claim_status()
