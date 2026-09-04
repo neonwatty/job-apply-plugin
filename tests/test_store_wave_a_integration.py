@@ -256,6 +256,8 @@ class StoreWaveAIntegrationTests(unittest.TestCase):
                 "extractions.journal",
                 "extractions.requests",
                 "extractions.proposals",
+                "sessions.__init__", "sessions.history", "sessions.readiness",
+                "sessions.document", "sessions.lifecycle",
                 "coordinator.__init__",
                 "coordinator.persistence",
                 "coordinator.claims",
