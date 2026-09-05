@@ -147,7 +147,7 @@
     {
       "id": "node-workspace-other",
       "kind": "node-test",
-      "include": ["tests_js/workspace*.test.mjs", "tests_js/unified_task_spine_oracle.test.mjs", "tests_js/python-contracts.test.mjs"],
+      "include": ["tests_js/workspace*.test.mjs", "tests_js/unified_task_spine_oracle.test.mjs", "tests_js/python-contracts.test.mjs", "tests_js/python-startup-contracts.test.mjs"],
       "tiers": ["full"]
     },
     {

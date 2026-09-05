@@ -7,7 +7,7 @@ export const STORE_SCRIPT = join(REPO_ROOT, "scripts", "job-apply-store.py");
 export const FIXED_CLOCK = "2026-09-05T00:00:00Z";
 
 const DRIVER = String.raw`
-import argparse, importlib.util, json, pathlib, sys
+import argparse, contextlib, importlib.util, io, json, pathlib, sys
 from datetime import datetime
 
 mode, script, root, fixed_clock, encoded_args = sys.argv[1:]
@@ -28,8 +28,25 @@ module.resolve_store = lambda args: module.Store(
     pathlib.Path(root) / "absent-legacy-profile.json",
     clock=lambda: instant,
 )
+nonce_calls = 0
+def forbidden_nonce(*args, **kwargs):
+    global nonce_calls
+    nonce_calls += 1
+    raise RuntimeError("contract nonce use is forbidden")
+module.secrets.token_urlsafe = forbidden_nonce
 sys.argv = [script, "--root", root, *json.loads(encoded_args)]
-raise SystemExit(module.main())
+stdout, stderr = io.StringIO(), io.StringIO()
+with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+    try:
+        exit_code = module.main()
+    except SystemExit as error:
+        exit_code = error.code
+print(json.dumps({
+    "exitCode": 0 if exit_code is None else exit_code,
+    "stdout": stdout.getvalue(),
+    "stderr": stderr.getvalue(),
+    "nonceCalls": nonce_calls,
+}))
 `;
 
 function invoke(mode, root = "unused", args = []) {
@@ -42,8 +59,17 @@ function invoke(mode, root = "unused", args = []) {
     maxBuffer: 1024 * 1024,
     timeout: 10_000,
   });
-  if (result.error) throw new Error("python_contract_runner_failed");
-  return { exitCode: result.status, stdout: result.stdout, stderr: result.stderr };
+  if (result.error || result.status !== 0) throw new Error("python_contract_runner_failed");
+  if (mode === "inventory") return { exitCode: result.status, stdout: result.stdout, stderr: result.stderr };
+  try {
+    const payload = JSON.parse(result.stdout);
+    if (result.stderr !== "" || !Number.isInteger(payload.exitCode)
+      || typeof payload.stdout !== "string" || typeof payload.stderr !== "string"
+      || !Number.isInteger(payload.nonceCalls) || payload.nonceCalls < 0) throw new Error();
+    return payload;
+  } catch {
+    throw new Error("python_contract_result_invalid");
+  }
 }
 
 export function commandInventory() {
