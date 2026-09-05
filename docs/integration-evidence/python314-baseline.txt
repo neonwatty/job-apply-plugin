@@ -1,0 +1,43 @@
+FFF
+======================================================================
+FAIL: test_facade_preserves_every_callable_signature_and_metadata (tests.test_qa_chrome_facade.ChromeFacadeContractTests.test_facade_preserves_every_callable_signature_and_metadata) (name='QuietParser')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/ts-integration-base.XYd1Kq/tests/test_qa_chrome_facade.py", line 176, in test_facade_preserves_every_callable_signature_and_metadata
+    self.assertEqual(str(inspect.signature(value)), signature)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: "(pro[238 chars]ue, exit_on_error=True, *, suggest_on_error=False, color=True)" != "(pro[238 chars]ue, exit_on_error=True)"
+Diff is 875 characters long. Set self.maxDiff to None to see it.
+
+======================================================================
+FAIL: test_each_facade_retains_exact_loader_local_class_metadata (tests.test_qa_chrome_loader_isolation.ChromeLoaderIsolationTests.test_each_facade_retains_exact_loader_local_class_metadata) (module='qa_chrome_first_root', signature='QuietParser')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/ts-integration-base.XYd1Kq/tests/test_qa_chrome_loader_isolation.py", line 429, in test_each_facade_retains_exact_loader_local_class_metadata
+    self.assertEqual(
+    ~~~~~~~~~~~~~~~~^
+        str(inspect.signature(getattr(module, name))), signature
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+AssertionError: "(pro[238 chars]ue, exit_on_error=True, *, suggest_on_error=False, color=True)" != "(pro[238 chars]ue, exit_on_error=True)"
+Diff is 875 characters long. Set self.maxDiff to None to see it.
+
+======================================================================
+FAIL: test_each_facade_retains_exact_loader_local_class_metadata (tests.test_qa_chrome_loader_isolation.ChromeLoaderIsolationTests.test_each_facade_retains_exact_loader_local_class_metadata) (module='qa_chrome_second_root', signature='QuietParser')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/ts-integration-base.XYd1Kq/tests/test_qa_chrome_loader_isolation.py", line 429, in test_each_facade_retains_exact_loader_local_class_metadata
+    self.assertEqual(
+    ~~~~~~~~~~~~~~~~^
+        str(inspect.signature(getattr(module, name))), signature
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+AssertionError: "(pro[238 chars]ue, exit_on_error=True, *, suggest_on_error=False, color=True)" != "(pro[238 chars]ue, exit_on_error=True)"
+Diff is 875 characters long. Set self.maxDiff to None to see it.
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.029s
+
+FAILED (failures=3)
