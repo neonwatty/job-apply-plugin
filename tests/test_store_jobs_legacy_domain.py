@@ -3,7 +3,9 @@ from __future__ import annotations
 import importlib
 import inspect
 import os
+import stat
 import tempfile
+import types
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -234,22 +236,30 @@ class StoreJobsLegacyDomainTests(unittest.TestCase):
         self.assertTrue(any(call.args and isinstance(call.args[0], Path) for call in open_spy.call_args_list))
 
     def test_read_race_and_constant_time_token_rejection_are_observed(self):
-        report = self.write_report()
         store = self.composed(self.home / "race", self.home / "legacy.json")
         original = self.facade.os.fstat
-        calls = 0
+        # POSIX opens the directory first; Windows uses a pathname instead.
+        # Inject at the first report descriptor, independent of call counts.
+        for platform_name in dict.fromkeys((os.name, "nt")):
+            with self.subTest(platform_name=platform_name):
+                report = self.write_report()
+                injected = False
 
-        def drifting_fstat(descriptor):
-            nonlocal calls
-            calls += 1
-            value = original(descriptor)
-            if calls == 2:
-                report.write_text(REPORT + "\nrace\n", encoding="utf-8")
-            return value
+                def drifting_fstat(descriptor):
+                    nonlocal injected
+                    value = original(descriptor)
+                    if not injected and stat.S_ISREG(value.st_mode):
+                        injected = True
+                        report.write_text(REPORT + "\nrace\n", encoding="utf-8")
+                    return value
 
-        with self.home_patch(), mock.patch.object(self.facade.os, "fstat", side_effect=drifting_fstat):
-            with self.assertRaisesRegex(self.facade.StoreError, "changed during discovery"):
-                store.preview_legacy_jobs([])
+                platform_os = types.SimpleNamespace(**vars(self.facade.os))
+                platform_os.name = platform_name
+                platform_os.fstat = drifting_fstat
+                with self.home_patch(), mock.patch.object(self.facade, "os", platform_os):
+                    with self.assertRaisesRegex(self.facade.StoreError, "changed during discovery"):
+                        store.preview_legacy_jobs([])
+                self.assertTrue(injected)
 
         self.write_report()
         with self.home_patch():

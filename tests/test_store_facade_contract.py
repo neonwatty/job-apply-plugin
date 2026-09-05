@@ -201,7 +201,7 @@ class StoreFacadeContractTests(unittest.TestCase):
             self.module.atomic_write_json(path, {"z": 1, "emoji": "λ"})
             self.assertEqual(
                 path.read_bytes(),
-                b'{\n  "emoji": "\xce\xbb",\n  "z": 1\n}\n',
+                b'{\n  "emoji": "\xce\xbb",\n  "z": 1\n}\n'.replace(b"\n", os.linesep.encode("ascii")),
             )
             if os.name != "nt":
                 self.assertEqual(stat.S_IMODE(path.parent.stat().st_mode), 0o700)

@@ -129,7 +129,11 @@ class CoordinatorClaimsExtractionTests(unittest.TestCase):
 
     def test_acquire_is_result_and_byte_equivalent_and_redacts_bearer(self):
         original, extracted, ready = self.ready_pair()
+        instant = datetime.now(timezone.utc)
+        for store in (original, extracted):
+            store.clock = lambda: instant
         with (
+            mock.patch.object(self.facade, "utc_now", return_value=instant.isoformat(timespec="seconds").replace("+00:00", "Z")),
             mock.patch.object(
                 self.facade.secrets, "token_urlsafe", return_value="fixed-secret"
             ),
@@ -292,7 +296,11 @@ class CoordinatorClaimsExtractionTests(unittest.TestCase):
                     reviewed["id"], "worker", reviewed["revision"]
                 )
             self.assertEqual(snapshot_tree(store.root), before)
+        instant = datetime.now(timezone.utc)
+        for store in stores:
+            store.clock = lambda: instant
         with (
+            mock.patch.object(self.facade, "utc_now", return_value=instant.isoformat(timespec="seconds").replace("+00:00", "Z")),
             mock.patch.object(self.facade.secrets, "token_urlsafe", return_value="restart"),
             mock.patch.object(self.facade.uuid, "uuid4", return_value="restart-id"),
         ):

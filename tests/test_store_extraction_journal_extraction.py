@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib
 import inspect
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -85,7 +86,12 @@ class StoreExtractionJournalDomainTests(unittest.TestCase):
                 store.resume_extraction_requests_path,
                 store.resume_extraction_journal_path,
             ):
-                self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+                self.assertEqual(
+                    path.stat().st_mode & 0o777,
+                    store.profile_path.stat().st_mode & 0o777,
+                )
+                if os.name != "nt":
+                    self.assertEqual(path.stat().st_mode & 0o777, 0o600)
 
     def test_invalid_journal_is_rejected_without_mutating_any_bytes(self):
         store = self.composed(self.home / "invalid", self.home / "legacy.json")

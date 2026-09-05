@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import inspect
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -243,7 +244,12 @@ class StoreExtractionRequestsDomainTests(unittest.TestCase):
             store.list_resume_extraction_requests("resume-a", "requested"), [request]
         )
         self.assertEqual(store.list_resume_extraction_requests(status="failed"), [])
-        self.assertEqual(store.resume_extraction_requests_path.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(
+            store.resume_extraction_requests_path.stat().st_mode & 0o777,
+            store.profile_path.stat().st_mode & 0o777,
+        )
+        if os.name != "nt":
+            self.assertEqual(store.resume_extraction_requests_path.stat().st_mode & 0o777, 0o600)
 
 
 if __name__ == "__main__":
