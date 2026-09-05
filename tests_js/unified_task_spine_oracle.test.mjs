@@ -5,7 +5,32 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import { publicFailureReport } from "../qa/unified_task_spine_oracle.mjs";
+
 const REPO_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
+
+test("oracle failures expose only allowlisted diagnostic stages", () => {
+  const sensitive = new Error("token at /tmp/private-path");
+  sensitive.stage = "answer_save";
+  assert.deepEqual(publicFailureReport(sensitive), {
+    schemaVersion: 1,
+    oracle: "unified_task_spine",
+    result: "fail",
+    closed: true,
+    error: "oracle_failed",
+    stage: "answer_save",
+  });
+  sensitive.stage = "token at /tmp/private-path";
+  const serialized = JSON.stringify(publicFailureReport(sensitive));
+  assert.match(serialized, /"stage":"unknown"/);
+  assert.doesNotMatch(serialized, /token|private-path|\/tmp\//i);
+});
+
+test("package smoke preserves privacy-safe oracle diagnostics", async () => {
+  const source = await readFile(join(REPO_ROOT, "scripts", "smoke-plugin.sh"), "utf8");
+  assert.match(source, /echo "Running unified task spine oracle"\s+node "\$REPO_ROOT\/qa\/unified_task_spine_oracle\.mjs" --json/);
+  assert.doesNotMatch(source, /unified_task_spine_oracle\.mjs" --json\s*>\/dev\/null/);
+});
 
 test("unified task spine oracle is executable, deterministic, closed, and privacy-safe", { timeout: 90_000 }, async () => {
   const source = await readFile(join(REPO_ROOT, "qa", "unified_task_spine_oracle.mjs"), "utf8");
