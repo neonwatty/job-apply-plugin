@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import Ajv2020 from "ajv/dist/2020.js";
 
 import { captureStartupReadCorpus } from "../tools/contracts/capture-startup-read-corpus.mjs";
 import { withOwnedStoreFixture } from "../tools/contracts/owned-store-fixture.mjs";
@@ -18,6 +19,7 @@ const GOLDEN = join(
 );
 const CAPTURE = join(REPO_ROOT, "tools", "capture-python-contracts.mjs");
 const VERIFY = join(REPO_ROOT, "tools", "verify-contract-redaction.mjs");
+const SCHEMA = join(REPO_ROOT, "contracts", "cli", "python-startup-read-corpus.schema.json");
 
 async function goldenCorpus() {
   return JSON.parse(await readFile(GOLDEN, "utf8"));
@@ -105,6 +107,33 @@ test("startup runtime validator fails closed on effect and immutability weakenin
   const malformedDigest = structuredClone(golden);
   malformedDigest.cases[0].effects.documents[0].after.digest = "not-a-digest";
   assert.throws(() => validateStartupCorpus(malformedDigest), /effect_after_invalid/);
+});
+
+test("strict JSON Schema and runtime both reject every known parity weakness", async () => {
+  const golden = await goldenCorpus();
+  const schema = JSON.parse(await readFile(SCHEMA, "utf8"));
+  const validateSchema = new Ajv2020({ strict: true }).compile(schema);
+  assert.equal(validateSchema(golden), true, JSON.stringify(validateSchema.errors));
+  const mutations = [
+    (value) => { value.cases[0].stderr = "unexpected"; },
+    (value) => { value.cases.at(-1).stdout = {}; },
+    (value) => { value.cases[0].effects.documents = []; },
+    (value) => { value.cases[0].effects.documents[0].path = "coordinator.json"; },
+    (value) => {
+      value.cases[0].effects.documents[0].before = null;
+      value.cases[0].effects.documents[0].after = null;
+    },
+    (value) => {
+      const index = value.inventory.commands.indexOf("automation-settings-get");
+      value.inventory.commands[index] = "unreviewed-command";
+    },
+  ];
+  for (const mutate of mutations) {
+    const candidate = structuredClone(golden);
+    mutate(candidate);
+    assert.equal(validateSchema(candidate), false);
+    assert.throws(() => validateStartupCorpus(candidate));
+  }
 });
 
 test("owned fixtures expose no caller root and reject unknown document authority", async () => {

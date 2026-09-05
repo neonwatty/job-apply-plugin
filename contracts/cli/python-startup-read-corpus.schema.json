@@ -27,7 +27,12 @@
         "total": { "const": 98 },
         "commands": {
           "type": "array", "minItems": 98, "maxItems": 98, "uniqueItems": true,
-          "items": { "type": "string", "minLength": 1 }
+          "items": { "type": "string", "minLength": 1 },
+          "allOf": [
+            { "contains": { "const": "automation-settings-get" } },
+            { "contains": { "const": "employer-account-list" } },
+            { "contains": { "const": "claim-status" } }
+          ]
         },
         "captured": {
           "const": ["automation-settings-get", "employer-account-list", "claim-status"]
@@ -84,6 +89,11 @@
         "before": { "$ref": "#/$defs/fileState" },
         "after": { "$ref": "#/$defs/fileState" },
         "mtimeChanged": { "const": true }
+      },
+      "not": {
+        "type": "object",
+        "required": ["before", "after"],
+        "properties": { "before": { "type": "null" }, "after": { "type": "null" } }
       }
     },
     "effects": {
@@ -145,14 +155,22 @@
         "rejectionImmutability": { "$ref": "#/$defs/rejectionImmutability" }
       },
       "allOf": [{
-        "if": { "properties": { "exitCode": { "const": 0 } } },
+        "if": { "type": "object", "properties": { "exitCode": { "const": 0 } } },
         "then": {
+          "type": "object",
           "required": ["idempotence"],
-          "not": { "required": ["rejectionImmutability"] }
+          "properties": {
+            "stderr": { "const": "" }, "rejectionImmutability": false,
+            "idempotence": { "$ref": "#/$defs/idempotence" }
+          }
         },
         "else": {
+          "type": "object",
           "required": ["rejectionImmutability"],
-          "not": { "required": ["idempotence"] }
+          "properties": {
+            "stdout": { "type": "null" }, "idempotence": false,
+            "rejectionImmutability": { "$ref": "#/$defs/rejectionImmutability" }
+          }
         }
       }]
     },
@@ -161,7 +179,7 @@
         { "$ref": "#/$defs/case" },
         { "$ref": "#/$defs/settingsCommand" },
         { "$ref": "#/$defs/accountWrites" },
-        { "properties": { "scenario": { "const": "settings-missing-controls" } } }
+        { "type": "object", "properties": { "scenario": { "const": "settings-missing-controls" } } }
       ]
     },
     "accountsMissing": {
@@ -169,7 +187,7 @@
         { "$ref": "#/$defs/case" },
         { "$ref": "#/$defs/accountsCommand" },
         { "$ref": "#/$defs/accountWrites" },
-        { "properties": { "scenario": { "const": "accounts-missing-controls" } } }
+        { "type": "object", "properties": { "scenario": { "const": "accounts-missing-controls" } } }
       ]
     },
     "settingsPending": {
@@ -177,7 +195,7 @@
         { "$ref": "#/$defs/case" },
         { "$ref": "#/$defs/settingsCommand" },
         { "$ref": "#/$defs/noWrites" },
-        { "properties": { "scenario": { "const": "settings-pending-account-journal" } } }
+        { "type": "object", "properties": { "scenario": { "const": "settings-pending-account-journal" } } }
       ]
     },
     "accountsPending": {
@@ -185,7 +203,7 @@
         { "$ref": "#/$defs/case" },
         { "$ref": "#/$defs/accountsCommand" },
         { "$ref": "#/$defs/noWrites" },
-        { "properties": { "scenario": { "const": "accounts-pending-account-journal" } } }
+        { "type": "object", "properties": { "scenario": { "const": "accounts-pending-account-journal" } } }
       ]
     },
     "claimMissing": {
@@ -193,7 +211,7 @@
         { "$ref": "#/$defs/case" },
         { "$ref": "#/$defs/claimCommand" },
         { "$ref": "#/$defs/coordinatorWrites" },
-        { "properties": {
+        { "type": "object", "properties": {
           "scenario": { "const": "claim-missing-controls" }, "exitCode": { "const": 0 }
         } }
       ]
@@ -203,7 +221,7 @@
         { "$ref": "#/$defs/case" },
         { "$ref": "#/$defs/claimCommand" },
         { "$ref": "#/$defs/recoveryWrites" },
-        { "properties": {
+        { "type": "object", "properties": {
           "scenario": { "const": "claim-pending-recovery" }, "exitCode": { "const": 0 }
         } }
       ]
@@ -212,7 +230,7 @@
       "allOf": [
         { "$ref": "#/$defs/case" },
         { "$ref": "#/$defs/noWrites" },
-        { "properties": {
+        { "type": "object", "properties": {
           "scenario": { "const": "corrupt-settings-no-write" },
           "command": { "const": "automation-settings-get" },
           "args": { "const": ["automation-settings-get"] }, "exitCode": { "const": 2 }
@@ -224,60 +242,126 @@
         { "$ref": "#/$defs/case" },
         { "$ref": "#/$defs/claimCommand" },
         { "$ref": "#/$defs/noWrites" },
-        { "properties": {
+        { "type": "object", "properties": {
           "scenario": { "const": "future-coordinator-no-write" }, "exitCode": { "const": 2 }
         } }
       ]
     },
     "settingsCommand": {
+      "type": "object",
       "properties": {
         "command": { "const": "automation-settings-get" },
         "args": { "const": ["automation-settings-get"] }, "exitCode": { "const": 0 }
       }
     },
     "accountsCommand": {
+      "type": "object",
       "properties": {
         "command": { "const": "employer-account-list" },
         "args": { "const": ["employer-account-list"] }, "exitCode": { "const": 0 }
       }
     },
     "claimCommand": {
+      "type": "object",
       "properties": {
         "command": { "const": "claim-status" },
         "args": { "const": ["claim-status"] }
       }
     },
     "noWrites": {
-      "properties": { "effects": { "properties": {
+      "type": "object",
+      "properties": { "effects": { "type": "object", "properties": {
         "expectedWrites": { "const": [] }, "observedWrites": { "const": [] },
         "documents": { "const": [] }
       } } }
     },
     "accountWrites": {
-      "properties": { "effects": { "properties": {
+      "type": "object",
+      "properties": { "effects": { "type": "object", "properties": {
         "expectedWrites": { "const": [
           "account-operation-journal.json", "automation-settings.json", "employer-accounts.json"
         ] },
         "observedWrites": { "const": [
           "account-operation-journal.json", "automation-settings.json", "employer-accounts.json"
-        ] }
+        ] },
+        "documents": {
+          "type": "array", "minItems": 3, "maxItems": 3, "items": false,
+          "prefixItems": [
+            { "$ref": "#/$defs/accountJournalEffect" },
+            { "$ref": "#/$defs/automationSettingsEffect" },
+            { "$ref": "#/$defs/employerAccountsEffect" }
+          ]
+        }
       } } }
     },
     "coordinatorWrites": {
-      "properties": { "effects": { "properties": {
+      "type": "object",
+      "properties": { "effects": { "type": "object", "properties": {
         "expectedWrites": { "const": ["coordinator-journal.json", "coordinator.json"] },
-        "observedWrites": { "const": ["coordinator-journal.json", "coordinator.json"] }
+        "observedWrites": { "const": ["coordinator-journal.json", "coordinator.json"] },
+        "documents": {
+          "type": "array", "minItems": 2, "maxItems": 2, "items": false,
+          "prefixItems": [
+            { "$ref": "#/$defs/coordinatorJournalEffect" },
+            { "$ref": "#/$defs/coordinatorEffect" }
+          ]
+        }
       } } }
     },
     "recoveryWrites": {
-      "properties": { "effects": { "properties": {
+      "type": "object",
+      "properties": { "effects": { "type": "object", "properties": {
         "expectedWrites": { "const": [
           "applications.jsonl", "coordinator-journal.json", "coordinator.json"
         ] },
         "observedWrites": { "const": [
           "applications.jsonl", "coordinator-journal.json", "coordinator.json"
-        ] }
+        ] },
+        "documents": {
+          "type": "array", "minItems": 3, "maxItems": 3, "items": false,
+          "prefixItems": [
+            { "$ref": "#/$defs/historyEffect" },
+            { "$ref": "#/$defs/coordinatorJournalEffect" },
+            { "$ref": "#/$defs/coordinatorEffect" }
+          ]
+        }
       } } }
+    },
+    "accountJournalEffect": {
+      "allOf": [
+        { "$ref": "#/$defs/documentEffect" },
+        { "type": "object", "properties": { "path": { "const": "account-operation-journal.json" } } }
+      ]
+    },
+    "automationSettingsEffect": {
+      "allOf": [
+        { "$ref": "#/$defs/documentEffect" },
+        { "type": "object", "properties": { "path": { "const": "automation-settings.json" } } }
+      ]
+    },
+    "employerAccountsEffect": {
+      "allOf": [
+        { "$ref": "#/$defs/documentEffect" },
+        { "type": "object", "properties": { "path": { "const": "employer-accounts.json" } } }
+      ]
+    },
+    "historyEffect": {
+      "allOf": [
+        { "$ref": "#/$defs/documentEffect" },
+        { "type": "object", "properties": { "path": { "const": "applications.jsonl" } } }
+      ]
+    },
+    "coordinatorJournalEffect": {
+      "allOf": [
+        { "$ref": "#/$defs/documentEffect" },
+        { "type": "object", "properties": { "path": { "const": "coordinator-journal.json" } } }
+      ]
+    },
+    "coordinatorEffect": {
+      "allOf": [
+        { "$ref": "#/$defs/documentEffect" },
+        { "type": "object", "properties": { "path": { "const": "coordinator.json" } } }
+      ]
     }
   }
 }
