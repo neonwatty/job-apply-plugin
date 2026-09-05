@@ -1,4 +1,5 @@
 import { test } from "node:test";
+import { MAX_EVENTS } from "../qa/recorder/event-budget.mjs";
 import { BrokerClient, EventEmitter, abortCheckpointClient, access, assert, captureFullPagePng, chmod, chromium, commitCheckpoint, createHash, decodeCapturedPng, exerciseRejectedCaptureStates, http, inspectionHasSensitivePage, isSensitivePage, mkdir, mkdtemp, mockCaptureIsolated, once, path, postControl, readFile, readdir, rename, rm, root, runLauncher, runNode, sanitizeObservedControl, sendSlowPartialBody, spawn, startIndependentChromium, startPartialBody, startSyntheticSite, stat, stopChild, symlink, tmpdir, validateCaptureResources, validateCheckpointKind, validateRecorderOptions, validateSafetyRevision, waitForDevToolsActivePort, waitForExit, waitForFile, waitForInitialPageTarget, withTimeout, writeFile } from "./recorder_test_support.mjs";
 
 test("recorder captures sanitized interactions and secure sequential checkpoints", async (t) => {
@@ -412,7 +413,7 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   ]) {
     assert.equal(events.some((event) => event.sourceLabel === forbidden), false, forbidden);
   }
-  assert.ok(events.length <= 64, `event flood admitted ${events.length}`);
+  assert.ok(events.length <= MAX_EVENTS, `session event limit exceeded: ${events.length}`);
 
   const controls = JSON.parse(controlsText);
   assert.ok(controls.some((control) => control.sourceLabel === "Private Person email"));
