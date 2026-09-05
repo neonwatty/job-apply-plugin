@@ -75,7 +75,7 @@ The startup-read corpus does not make these three commands pure reads; it freeze
 their current write-aware behavior so a future implementation cannot silently
 omit or broaden it.
 
-Still pending are mutation results, other journal kinds and crash boundaries,
+Still pending are other mutation results, other journal kinds and crash boundaries,
 restart recovery, legacy and trashed stores, all other corrupt/future documents,
 authenticated HTTP routes, and the task, attempt, QA, and policy command
 families. Full secret-bearing output projections and cross-platform permission
