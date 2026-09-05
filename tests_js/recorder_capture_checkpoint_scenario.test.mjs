@@ -234,6 +234,9 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
     "Scrollable region control",
   ];
   await page.evaluate(() => {
+    // Keep this success fixture stable when Linux capture removes native scrollbars.
+    // Production must still reject any page whose layout changes during capture.
+    document.documentElement.style.scrollbarGutter = "stable";
     const fixture = document.createElement("div");
     fixture.id = "invisible-controls";
     fixture.innerHTML = `
