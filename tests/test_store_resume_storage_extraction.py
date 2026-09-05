@@ -19,6 +19,7 @@ from tests.support.store_domain_contract import (
     source_inventory,
 )
 from tests.support.store_facade_contract import ROOT, load_module
+from tests.support.resume_file_clock import fixed_staged_resume_mtime
 from tests.test_store_loader_isolation import copy_plugin, direct_module
 
 
@@ -84,6 +85,7 @@ class ResumeStorageExtractionTests(unittest.TestCase):
         source.write_text("private resume content", encoding="utf-8")
         fixed_clock = "2026-09-04T12:00:00Z"
         with (
+            fixed_staged_resume_mtime(self.facade, stores),
             mock.patch.object(self.facade, "utc_now", return_value=fixed_clock),
             mock.patch.object(
                 self.facade.secrets, "token_urlsafe", return_value="A" * 43
@@ -94,8 +96,9 @@ class ResumeStorageExtractionTests(unittest.TestCase):
             }) for store in stores]
         self.assertEqual(created[0], created[1])
         assert_store_trees_equal(self, stores[0].root, stores[1].root)
-        for store in stores:
-            path = store.resume_files_path / created[0]["managedFile"]
+        for store, record in zip(stores, created):
+            path = store.resume_files_path / record["managedFile"]
+            self.assertEqual(record["observedModifiedAt"], self.facade._resume_modified_at(path.stat()))
             self.assertEqual(path.read_bytes(), b"private resume content")
             if os.name != "nt":
                 self.assertEqual(path.stat().st_mode & 0o777, 0o600)
@@ -104,6 +107,7 @@ class ResumeStorageExtractionTests(unittest.TestCase):
         replacement = self.parent / "replacement.pdf"
         replacement.write_bytes(b"%PDF-1.7\nreplacement content")
         with (
+            fixed_staged_resume_mtime(self.facade, stores),
             mock.patch.object(self.facade, "utc_now", return_value=fixed_clock),
             mock.patch.object(
                 self.facade.secrets, "token_urlsafe", return_value="B" * 43
@@ -113,6 +117,9 @@ class ResumeStorageExtractionTests(unittest.TestCase):
                 "resume-main", {"path": str(replacement)}, created[index]["revision"]
             ) for index, store in enumerate(stores)]
         self.assertEqual(updated[0], updated[1])
+        for store, record in zip(stores, updated):
+            path = store.resume_files_path / record["managedFile"]
+            self.assertEqual(record["observedModifiedAt"], self.facade._resume_modified_at(path.stat()))
         self.assertNotEqual(updated[0]["managedFile"], created[0]["managedFile"])
         self.assertNotEqual(updated[0]["digest"], created[0]["digest"])
         assert_store_trees_equal(self, stores[0].root, stores[1].root)
@@ -143,6 +150,40 @@ class ResumeStorageExtractionTests(unittest.TestCase):
             canonical = store.resume_files_path / updated[0]["managedFile"]
             self.assertEqual(canonical.read_bytes(), replacement.read_bytes())
             self.assertFalse(list(store.resume_files_path.glob(".*.quarantine")))
+        assert_store_trees_equal(self, stores[0].root, stores[1].root)
+
+    def test_real_staged_mtime_is_fixed_before_observation(self):
+        stores = self.stores("mtime-regression")
+        source = self.parent / "mtime.txt"
+        source.write_bytes(b"synthetic staged timing")
+        private_directories = [store.resume_files_path for store in stores]
+        original_mode = self.facade._set_private_mode
+        divergent_times = []
+
+        def stamp_different_creation_time(path, mode):
+            original_mode(path, mode)
+            if path.parent in private_directories and path.suffix == ".tmp":
+                index = private_directories.index(path.parent)
+                instant = 1_725_451_100_000_000_000 + index * 60_000_000_000
+                os.utime(path, ns=(instant, instant))
+                divergent_times.append(path.stat().st_mtime_ns)
+
+        with (
+            mock.patch.object(self.facade, "_set_private_mode", side_effect=stamp_different_creation_time),
+            fixed_staged_resume_mtime(self.facade, stores),
+            mock.patch.object(self.facade, "utc_now", return_value="2026-09-04T12:00:00Z"),
+            mock.patch.object(self.facade.secrets, "token_urlsafe", return_value="A" * 43),
+        ):
+            records = [store.create_resume({
+                "id": "mtime-resume", "label": "Synthetic", "path": str(source),
+            }) for store in stores]
+        self.assertEqual(len(divergent_times), 2)
+        self.assertNotEqual(divergent_times[0], divergent_times[1])
+        self.assertEqual(records[0], records[1])
+        for store, record in zip(stores, records):
+            installed = store.resume_files_path / record["managedFile"]
+            self.assertEqual(record["observedModifiedAt"], self.facade._resume_modified_at(installed.stat()))
+            self.assertEqual(installed.read_bytes(), source.read_bytes())
         assert_store_trees_equal(self, stores[0].root, stores[1].root)
 
     def test_symlink_source_and_failed_metadata_write_leave_exact_tree_unchanged(self):
