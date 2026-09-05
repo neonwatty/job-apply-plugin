@@ -1,0 +1,356 @@
+{
+  "schemaVersion": 1,
+  "corpus": "python-store-read-v1",
+  "source": "python-store-cli",
+  "fixture": {
+    "kind": "synthetic-empty-store",
+    "clock": "2026-09-05T00:00:00Z",
+    "noncePolicy": "not-used-by-captured-reads"
+  },
+  "inventory": {
+    "total": 98,
+    "commands": [
+      "init",
+      "paths",
+      "profile-get",
+      "profile-inspect",
+      "profile-replace",
+      "profile-patch",
+      "fact-group-list",
+      "fact-group-get",
+      "fact-group-create",
+      "fact-group-update",
+      "fact-group-delete",
+      "preferences-get",
+      "preferences-set",
+      "answer-key",
+      "answer-put",
+      "answer-get",
+      "answer-find",
+      "answer-list",
+      "answer-reveal",
+      "answer-observe",
+      "answer-review",
+      "answer-update",
+      "answer-trash",
+      "answer-restore",
+      "answer-delete",
+      "answer-merge",
+      "answer-semantic-lookup",
+      "answer-cleanup-preview",
+      "answer-cleanup-approve",
+      "job-create",
+      "job-upsert-preview",
+      "job-upsert-commit",
+      "legacy-jobs-preview",
+      "legacy-jobs-commit",
+      "job-get",
+      "job-list",
+      "job-preflight",
+      "job-update",
+      "job-transition",
+      "job-acquire",
+      "job-review-restart",
+      "claim-status",
+      "claim-heartbeat",
+      "claim-recover",
+      "claim-progress",
+      "claim-handoff",
+      "attention-approval-preview",
+      "attention-approval-approve",
+      "job-trash",
+      "job-restore",
+      "job-delete",
+      "resume-create",
+      "resume-import",
+      "resume-get",
+      "resume-resolve",
+      "resume-list",
+      "resume-update",
+      "resume-adopt",
+      "resume-set-default",
+      "resume-check",
+      "resume-trash",
+      "resume-restore",
+      "resume-delete",
+      "resume-extraction-request-create",
+      "resume-extraction-request-get",
+      "resume-extraction-request-list",
+      "resume-extraction-request-cancel",
+      "resume-extraction-request-fail",
+      "resume-extraction-request-retry",
+      "resume-extraction-request-complete",
+      "profile-preparedness-get",
+      "resume-proposal-create",
+      "resume-proposal-get",
+      "resume-proposal-list",
+      "resume-proposal-review",
+      "history-append",
+      "history-list",
+      "replay-transition",
+      "session-save",
+      "session-load",
+      "session-list",
+      "session-delete",
+      "automation-settings-get",
+      "automation-settings-update",
+      "automation-settings-copy-profile-email",
+      "automation-capability",
+      "account-realm-resolve",
+      "employer-account-list",
+      "employer-account-get",
+      "employer-account-create",
+      "employer-account-update",
+      "employer-account-execute-synthetic",
+      "employer-account-operation-status",
+      "employer-account-operation-recover",
+      "trusted-fill-approve",
+      "trusted-fill-status",
+      "trusted-fill-evaluate",
+      "trusted-fill-revoke"
+    ],
+    "captured": [
+      "profile-inspect",
+      "profile-preparedness-get",
+      "fact-group-list",
+      "job-list",
+      "resume-list",
+      "resume-extraction-request-list",
+      "resume-proposal-list",
+      "history-list",
+      "session-list"
+    ],
+    "pending": 89
+  },
+  "cases": [
+    {
+      "scenario": "initialized-empty",
+      "command": "profile-inspect",
+      "args": [
+        "profile-inspect"
+      ],
+      "exitCode": 0,
+      "stdout": {
+        "factProvenance": {},
+        "profile": {},
+        "revision": 1,
+        "updatedAt": "2026-09-05T00:00:00Z"
+      },
+      "stderr": "",
+      "storeUnchanged": true
+    },
+    {
+      "scenario": "initialized-empty",
+      "command": "profile-preparedness-get",
+      "args": [
+        "profile-preparedness-get"
+      ],
+      "exitCode": 0,
+      "stdout": {
+        "commonCoverage": [
+          {
+            "id": "phone",
+            "paths": [
+              "/phone"
+            ],
+            "reasonCode": "phone_missing",
+            "state": "not_present"
+          },
+          {
+            "id": "location",
+            "paths": [
+              "/location"
+            ],
+            "reasonCode": "location_missing",
+            "state": "not_present"
+          },
+          {
+            "id": "work_history",
+            "paths": [
+              "/workHistory"
+            ],
+            "reasonCode": "work_history_missing",
+            "state": "not_present"
+          },
+          {
+            "id": "education",
+            "paths": [
+              "/education"
+            ],
+            "reasonCode": "education_missing",
+            "state": "not_present"
+          },
+          {
+            "id": "skills",
+            "paths": [
+              "/skills"
+            ],
+            "reasonCode": "skills_missing",
+            "state": "not_present"
+          },
+          {
+            "id": "professional_links",
+            "paths": [
+              "/linkedInUrl",
+              "/portfolioUrl",
+              "/githubUrl"
+            ],
+            "reasonCode": "professional_links_missing",
+            "state": "not_present"
+          }
+        ],
+        "essentialSetup": [
+          {
+            "id": "first_name",
+            "paths": [
+              "/firstName"
+            ],
+            "reasonCode": "first_name_missing",
+            "state": "blocked"
+          },
+          {
+            "id": "last_name",
+            "paths": [
+              "/lastName"
+            ],
+            "reasonCode": "last_name_missing",
+            "state": "blocked"
+          },
+          {
+            "id": "email",
+            "paths": [
+              "/email"
+            ],
+            "reasonCode": "email_missing",
+            "state": "blocked"
+          },
+          {
+            "id": "default_resume",
+            "reasonCode": "default_resume_missing",
+            "state": "blocked"
+          }
+        ],
+        "reviewHealth": []
+      },
+      "stderr": "",
+      "storeUnchanged": true
+    },
+    {
+      "scenario": "initialized-empty",
+      "command": "fact-group-list",
+      "args": [
+        "fact-group-list"
+      ],
+      "exitCode": 0,
+      "stdout": [],
+      "stderr": "",
+      "storeUnchanged": true
+    },
+    {
+      "scenario": "initialized-empty",
+      "command": "job-list",
+      "args": [
+        "job-list"
+      ],
+      "exitCode": 0,
+      "stdout": [],
+      "stderr": "",
+      "storeUnchanged": true
+    },
+    {
+      "scenario": "initialized-empty",
+      "command": "resume-list",
+      "args": [
+        "resume-list"
+      ],
+      "exitCode": 0,
+      "stdout": [],
+      "stderr": "",
+      "storeUnchanged": true
+    },
+    {
+      "scenario": "initialized-empty",
+      "command": "resume-extraction-request-list",
+      "args": [
+        "resume-extraction-request-list"
+      ],
+      "exitCode": 0,
+      "stdout": [],
+      "stderr": "",
+      "storeUnchanged": true
+    },
+    {
+      "scenario": "initialized-empty",
+      "command": "resume-proposal-list",
+      "args": [
+        "resume-proposal-list"
+      ],
+      "exitCode": 0,
+      "stdout": [],
+      "stderr": "",
+      "storeUnchanged": true
+    },
+    {
+      "scenario": "initialized-empty",
+      "command": "history-list",
+      "args": [
+        "history-list"
+      ],
+      "exitCode": 0,
+      "stdout": [],
+      "stderr": "",
+      "storeUnchanged": true
+    },
+    {
+      "scenario": "initialized-empty",
+      "command": "session-list",
+      "args": [
+        "session-list"
+      ],
+      "exitCode": 0,
+      "stdout": [],
+      "stderr": "",
+      "storeUnchanged": true
+    },
+    {
+      "scenario": "corrupt-profile",
+      "command": "profile-inspect",
+      "args": [
+        "profile-inspect"
+      ],
+      "exitCode": 2,
+      "stdout": null,
+      "stderr": "job-apply-store: cannot read valid profile JSON at <store-root>/profile.json\n",
+      "storeUnchanged": true,
+      "rejectionImmutability": {
+        "bytesUnchanged": true,
+        "mtimeNsUnchanged": true
+      }
+    },
+    {
+      "scenario": "future-profile",
+      "command": "profile-inspect",
+      "args": [
+        "profile-inspect"
+      ],
+      "exitCode": 2,
+      "stdout": null,
+      "stderr": "job-apply-store: profile uses unsupported future schemaVersion 999\n",
+      "storeUnchanged": true,
+      "rejectionImmutability": {
+        "bytesUnchanged": true,
+        "mtimeNsUnchanged": true
+      }
+    }
+  ],
+  "redaction": {
+    "secretCanaryAbsent": true,
+    "absolutePathsAbsent": true,
+    "checkedSurfaces": [
+      "stdout",
+      "stderr",
+      "fixture-descriptors",
+      "artifact"
+    ]
+  }
+}
