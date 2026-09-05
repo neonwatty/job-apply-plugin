@@ -17,6 +17,7 @@ FIXED_CRITICAL_FILES = (
     "skills/job-apply/SKILL.md",
 )
 CRITICAL_TREES = (
+    "runtime",
     "scripts/job_apply_store",
     "scripts/job_apply_workspace",
     "workspace",

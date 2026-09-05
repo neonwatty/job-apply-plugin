@@ -123,11 +123,11 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
     event.role === "textbox" &&
     event.sourceLabel === "Private Person email" &&
     event.required === true;
-  const emailEventRecorded = async () => {
+  const emailEventRecorded = async (predicate = expectedEmailEvent, afterIndex = 0) => {
     try {
       const text = await readFile(path.join(session, "events.jsonl"), "utf8");
       return text.trim().split("\n").filter(Boolean).map(JSON.parse)
-        .some(expectedEmailEvent);
+        .some((event, index) => index >= afterIndex && predicate(event));
     } catch {
       return false;
     }
@@ -234,6 +234,9 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
     "Scrollable region control",
   ];
   await page.evaluate(() => {
+    // Keep this success fixture stable when Linux capture removes native scrollbars.
+    // Production must still reject any page whose layout changes during capture.
+    document.documentElement.style.scrollbarGutter = "stable";
     const fixture = document.createElement("div");
     fixture.id = "invisible-controls";
     fixture.innerHTML = `
@@ -301,6 +304,23 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
     ], 5000);
     assert.equal(retry.code, 0, retry.stderr);
   }
+  // Keep the original filled checkpoint state, then record a distinct input on
+  // the stable document after frame mutations/checkpoint inspections.
+  // Mutating the DOM immediately after fill can correctly invalidate the
+  // recorder's asynchronous privacy inspection and discard that interaction.
+  const stableNavigationEmail = "stable-navigation@example.invalid";
+  // The original input may already match: only newly appended evidence can
+  // acknowledge this stable input before the test connection disconnects.
+  const previousEvents = (await readFile(path.join(session, "events.jsonl"), "utf8"))
+    .trim().split("\n").filter(Boolean).length;
+  await page.locator("#email").fill(stableNavigationEmail);
+  const postNavigationEvent = (event) => expectedEmailEvent(event) && event.pageSequence >= 2;
+  const eventDeadline = Date.now() + 5000;
+  while (!(await emailEventRecorded(postNavigationEvent, previousEvents)) && Date.now() < eventDeadline) {
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  assert.equal(await emailEventRecorded(postNavigationEvent, previousEvents), true,
+    "post-navigation input must be durably recorded before disconnecting");
   await attached.close();
 
   for (const kind of [
@@ -311,7 +331,7 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
     const result = await runNode([
       "qa/recorder.mjs", "checkpoint", "--session", session, "--kind", kind,
     ], 5000);
-    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.code, 0, `checkpoint ${kind} must succeed`);
   }
   const duplicate = await runNode([
     "qa/recorder.mjs", "checkpoint", "--session", session,
@@ -353,6 +373,7 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   for (const forbidden of [
     privateEmail,
     afterNavigationEmail,
+    stableNavigationEmail,
     "Secret password",
     "private-resume.pdf",
     cdpUrl,

@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "build:runtime": "node tools/build-runtime.mjs",
+    "build:check": "node tools/build-runtime.mjs --check",
     "check:size": "python3 scripts/check-source-size.py",
     "check:test-matrix": "node tools/check-test-matrix.mjs",
     "test:fast": "node tools/test-runner.mjs fast",
@@ -18,5 +21,5 @@
     "test:qa-screening": "PYTHONPATH=tests python3 -m unittest -v test_qa_replay_committed_scenarios.CommittedScenarioTests.test_linkedin_screening_scenario_is_closed_and_synthetic test_qa_replay_committed_scenarios.CommittedScenarioTests.test_linkedin_screening_fresh_prepare_evaluate_cleanup_lifecycle test_qa_oracle_events.SemanticOracleTests.test_committed_linkedin_screening_fixture_passes_with_closed_identity && node --test --test-name-pattern='committed LinkedIn screening' tests_js/renderer.test.mjs",
     "qa:record": "node qa/recorder.mjs"
   },
-  "devDependencies": { "playwright": "1.62.1" }
+  "devDependencies": { "playwright": "1.62.1", "typescript": "5.9.3" }
 }

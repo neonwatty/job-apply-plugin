@@ -5,6 +5,8 @@
       "tests/**/*.py",
       "tests_js/**/*.mjs",
       "tools/**/*.mjs",
+      "src/**/*.ts",
+      "runtime/**/*.js",
       "scripts/**/*.py",
       "scripts/**/*.sh",
       "qa/**/*.py",
@@ -25,9 +27,28 @@
     "tools/ci/**",
     "package.json",
     "package-lock.json",
+    "tsconfig.json",
+    "src/**",
+    "runtime/**",
+    "tools/build-runtime.mjs",
+    "tools/runtime-build/**",
+    "contracts/**",
+    "test/contract/**",
     ".github/workflows/**"
   ],
   "suites": [
+    {
+      "id": "typescript-check",
+      "kind": "command",
+      "command": ["npm", "run", "typecheck"],
+      "tiers": ["fast", "full"]
+    },
+    {
+      "id": "node-foundation-fast",
+      "kind": "node-test",
+      "include": ["tests_js/build-runtime.test.mjs", "tests_js/runtime-support.test.mjs"],
+      "tiers": ["fast", "full"]
+    },
     {
       "id": "matrix-policy",
       "kind": "command",
@@ -125,7 +146,7 @@
     {
       "id": "node-workspace-other",
       "kind": "node-test",
-      "include": ["tests_js/workspace*.test.mjs", "tests_js/unified_task_spine_oracle.test.mjs"],
+      "include": ["tests_js/workspace*.test.mjs", "tests_js/unified_task_spine_oracle.test.mjs", "tests_js/python-contracts.test.mjs"],
       "tiers": ["full"]
     },
     {
@@ -150,6 +171,8 @@
     }
   ],
   "ownership": [
+    {"paths": ["tools/probe-installed-runtime.mjs"], "suites": ["node-foundation-fast"]},
+    {"paths": ["tools/capture-python-contracts.mjs", "tools/verify-contract-redaction.mjs", "tools/contracts/**"], "suites": ["node-workspace-other"]},
     {
       "paths": ["tests/__init__.py", "tests/support/**"],
       "suites": [
