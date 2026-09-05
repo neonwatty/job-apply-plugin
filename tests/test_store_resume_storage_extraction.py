@@ -152,6 +152,28 @@ class ResumeStorageExtractionTests(unittest.TestCase):
             self.assertFalse(list(store.resume_files_path.glob(".*.quarantine")))
         assert_store_trees_equal(self, stores[0].root, stores[1].root)
 
+    def test_staged_clock_rejects_foreign_non_temp_and_symlink_paths(self):
+        stores = self.stores("mtime-boundary")
+        directory = stores[0].resume_files_path
+        foreign = self.parent / "foreign.tmp"
+        non_temp = directory / "canonical.txt"
+        for path in (foreign, non_temp):
+            path.write_bytes(b"unchanged synthetic content")
+        with fixed_staged_resume_mtime(self.facade, stores):
+            for path in (foreign, non_temp):
+                before = (path.read_bytes(), path.stat().st_mtime_ns)
+                with self.assertRaisesRegex(AssertionError, "unexpected path"):
+                    self.facade._validate_resume_bytes(path, ".txt")
+                self.assertEqual((path.read_bytes(), path.stat().st_mtime_ns), before)
+            # Simulate the symlink result without requiring Windows privileges
+            # to create links; rejection must precede utime and validation.
+            candidate = directory / "linked.tmp"
+            with mock.patch.object(Path, "is_symlink", return_value=True), \
+                 mock.patch.object(os, "utime") as touch:
+                with self.assertRaisesRegex(AssertionError, "unexpected path"):
+                    self.facade._validate_resume_bytes(candidate, ".txt")
+                touch.assert_not_called()
+
     def test_real_staged_mtime_is_fixed_before_observation(self):
         stores = self.stores("mtime-regression")
         source = self.parent / "mtime.txt"
