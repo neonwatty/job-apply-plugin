@@ -4,10 +4,48 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { chromium } from "playwright";
 
 import { publicFailureReport } from "../qa/unified_task_spine_oracle.mjs";
+import { waitForSavedAnswerFocus } from "../qa/unified_task_spine_focus.mjs";
 
 const REPO_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
+
+test("answer focus waits for refreshed controls, not the closing dialog's old opener", async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    await page.setContent('<div id="job-dialog"><div id="activity-pending">'
+      + '<button data-pending-reference="synthetic">Open in Answers</button></div></div>');
+    await page.locator("button").focus();
+    // Exercise the actual browser predicate without depending on wall-clock sleeps.
+    const predicates = [];
+    const probe = { waitForFunction: async (predicate) => {
+      predicates.push(predicate);
+      return page.evaluate(predicate);
+    } };
+    await waitForSavedAnswerFocus(probe);
+    const ready = () => page.evaluate(predicates[0]);
+    assert.equal(await ready(), false, "old focused opener must not count as restored focus");
+    await page.evaluate(() => {
+      document.querySelector("#activity-pending").innerHTML =
+        '<button data-pending-reference="synthetic">Open in Answers</button>'
+        + '<button data-pending-reference="synthetic">Recheck this revision</button>';
+    });
+    assert.equal(await ready(), false, "render completion alone must not count as focus");
+    await page.getByRole("button", { name: "Recheck this revision" }).focus();
+    assert.equal(await ready(), false, "wrong control must not satisfy the wait");
+    await page.getByRole("button", { name: "Open in Answers" }).focus();
+    assert.equal(await ready(), true);
+    const recheck = page.getByRole("button", { name: "Recheck this revision" });
+    await recheck.evaluate((button) => { button.dataset.pendingReference = "other"; });
+    assert.equal(await ready(), false, "unrelated recheck must not satisfy the wait");
+    await recheck.evaluate((button) => { button.dataset.pendingReference = "synthetic"; });
+    await waitForSavedAnswerFocus(page);
+  } finally {
+    await browser.close();
+  }
+});
 
 test("oracle failures expose only allowlisted diagnostic stages", () => {
   const sensitive = new Error("token at /tmp/private-path");
@@ -24,6 +62,12 @@ test("oracle failures expose only allowlisted diagnostic stages", () => {
   const serialized = JSON.stringify(publicFailureReport(sensitive));
   assert.match(serialized, /"stage":"unknown"/);
   assert.doesNotMatch(serialized, /token|private-path|\/tmp\//i);
+  for (const stage of ["answer_save_response", "answer_save_dialog", "answer_save_activity",
+    "answer_save_draft", "answer_save_focus", "answer_save_focus_identity"]) {
+    sensitive.stage = stage;
+    assert.equal(publicFailureReport(sensitive).stage, stage);
+    assert.doesNotMatch(JSON.stringify(publicFailureReport(sensitive)), /token|private-path/);
+  }
 });
 
 test("package smoke preserves privacy-safe oracle diagnostics", async () => {
