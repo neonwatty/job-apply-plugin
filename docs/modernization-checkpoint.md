@@ -1,7 +1,8 @@
 # Modernization checkpoint — 2026-09-04
 
 Implementation checkpoint: `cefef84` on `codex/codebase-modernization`.
-Changes are local; no remote push or branch-protection change was performed.
+At that checkpoint, changes were local; no remote push or branch-protection
+change had been performed. Publication progress is recorded below.
 
 ## Completed
 
@@ -52,7 +53,7 @@ The original failing full receipt is intentionally retained.
 
 ## Remaining gates
 
-1. Publish/review the local changes and collect actual cross-platform CI evidence.
+1. Review the published changes and collect actual cross-platform CI evidence.
 2. Keep the temporary legacy CI lane until at least 20 PR runs show no
    unexplained divergence. Keep affected selection in shadow for two weeks
    with zero omitted failures before narrowing required execution.
@@ -62,3 +63,24 @@ The original failing full receipt is intentionally retained.
    in fresh supported installations, freeze differential vectors, then execute
    the staged migration plan. Python and TypeScript must never write the same
    live Store. The TypeScript port has not started.
+
+## Publication and CI follow-up — 2026-09-05
+
+[PR #47](https://github.com/neonwatty/job-apply-plugin/pull/47) targets `staging`.
+It is not merged; branch protection and release settings remain unchanged.
+The first cross-platform runs exposed test-fixture assumptions that local
+macOS verification did not establish:
+
+- Frozen AST checks now normalize empty interpreter-version metadata while
+  retaining the original hashes and meaningful language/control-flow changes.
+- Native line endings, storage-mode parity, and regular-file race injection
+  replace POSIX-only fixture assumptions without changing persisted data.
+- Paired Store comparisons normalize only cloned root paths before escaping
+  and share clocks rather than assuming operations finish in the same second.
+- Browser walkthroughs must await the relevant canonical request and UI state,
+  not merely a click or a success message left over from an earlier operation.
+
+Focused local verification and passing individual CI jobs are not a substitute
+for a green aggregate run. The PR's current-head checks are the acceptance
+source of truth. Failed and superseded runs are retained as diagnostic evidence;
+they do not satisfy the legacy-lane or affected-selection observation gates.
