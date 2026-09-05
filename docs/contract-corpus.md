@@ -62,8 +62,15 @@ Diagnostics are generic and never repeat rejected content or filenames.
 
 ## Explicitly pending
 
-Across the two vectors, 86 Store commands remain inventory-only rather than
+The separately reviewed [profile/fact mutation reference](profile-fact-contracts.md)
+adds 19 cases across four mutation commands, with exact persisted bytes,
+revision conflicts, provenance rejection, no-op preservation and write sets.
+Its cross-platform evidence remains pending; it does not port a Store writer.
+
+Across the read/startup vectors, 86 Store commands remain inventory-only rather than
 behaviorally frozen.
+The profile/fact slice reduces the inventory-only remainder to 82 commands;
+coverage within the 16 exercised commands is still partial.
 The startup-read corpus does not make these three commands pure reads; it freezes
 their current write-aware behavior so a future implementation cannot silently
 omit or broaden it.
