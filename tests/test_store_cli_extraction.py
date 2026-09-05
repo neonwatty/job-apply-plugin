@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import argparse
 import ast
-import hashlib
 import inspect
 import unittest
 from unittest.mock import patch
 
 from tests.support.store_facade_contract import load_module, parser_receipt
+from tests.support.ast_contract import canonical_ast_digest
 from tests.test_store_facade_cli_contract import EXPECTED_RECEIPT, RecordingStore
 
 
@@ -51,8 +51,7 @@ class StoreCliExtractionTests(unittest.TestCase):
             with self.subTest(function=function.__name__):
                 tree = RuntimeNames().visit(ast.parse(inspect.getsource(function)))
                 body = ast.Module(body=tree.body[0].body, type_ignores=[])
-                digest = hashlib.sha256(ast.dump(body, include_attributes=False).encode())
-                self.assertEqual(digest.hexdigest(), expected)
+                self.assertEqual(canonical_ast_digest(body), expected)
 
     def test_all_98_parser_contracts_remain_exact(self):
         parser = self.cli_parser.build_parser(vars(self.facade))

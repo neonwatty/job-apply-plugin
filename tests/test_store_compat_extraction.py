@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ast
-import hashlib
 import importlib
 import inspect
 import sys
@@ -13,6 +12,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from tests.support.store_facade_contract import load_module
+from tests.support.ast_contract import canonical_ast_digest
 
 
 class NormalizeRuntime(ast.NodeTransformer):
@@ -49,7 +49,7 @@ class StoreCompatibilityExtractionTests(unittest.TestCase):
         self.assertEqual(len(functions), 60)
         tree = NormalizeRuntime().visit(ast.Module(body=functions, type_ignores=[]))
         # Captured independently from facade 614edc3 before adapter extraction.
-        self.assertEqual(hashlib.sha256(ast.dump(tree).encode()).hexdigest(),
+        self.assertEqual(canonical_ast_digest(tree),
                          "82029defce445d4d3ed5fa25909eaf47608255634bd0cbe7a94c495ef2b73921")
 
     def test_names_signatures_and_annotations_are_preserved(self):

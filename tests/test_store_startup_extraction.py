@@ -1,7 +1,6 @@
 """Frozen startup extraction and non-mutating validation contracts."""
 
 import ast
-import hashlib
 import importlib
 import inspect
 import json
@@ -15,6 +14,7 @@ from tests.support.store_domain_contract import (
     assert_composed_store_lifecycle, assert_method_contract,
     assert_store_trees_equal, clone_store_root, composed_store_class, snapshot_tree,
 )
+from tests.support.ast_contract import canonical_ast_digest
 from tests.support.store_facade_contract import load_module
 from tests.test_store_loader_isolation import copy_plugin
 
@@ -49,7 +49,7 @@ class StartupExtractionTests(unittest.TestCase):
         for name, digest in METHOD_HASHES.items():
             node = ast.parse(textwrap.dedent(inspect.getsource(getattr(self.mixin, name)))).body[0]
             normalized = Normalize().visit(node)
-            self.assertEqual(hashlib.sha256(ast.dump(normalized, include_attributes=False).encode()).hexdigest(), digest)
+            self.assertEqual(canonical_ast_digest(normalized), digest)
 
     def test_initialize_matches_cloned_bytes_modes_and_legacy_migration(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -1,7 +1,6 @@
 """Frozen extraction contract plus independent session behavior assertions."""
 
 import ast
-import hashlib
 import importlib
 import inspect
 import json
@@ -16,6 +15,7 @@ from unittest import mock
 from tests.support.store_domain_contract import (
     assert_method_contract, assert_composed_store_lifecycle, composed_store_class,
 )
+from tests.support.ast_contract import canonical_ast_digest
 from tests.support.store_facade_contract import load_module
 from tests.support import store_fixtures
 from tests.test_store_loader_isolation import copy_plugin
@@ -60,7 +60,7 @@ class SessionExtractionTests(unittest.TestCase):
         for name, digest in METHOD_HASHES.items():
             node = ast.parse(textwrap.dedent(inspect.getsource(getattr(self.mixin, name)))).body[0]
             normalized = Normalize().visit(node)
-            self.assertEqual(hashlib.sha256(ast.dump(normalized, include_attributes=False).encode()).hexdigest(), digest)
+            self.assertEqual(canonical_ast_digest(normalized), digest)
 
     def test_canonical_document_strips_ephemeral_values_and_reuses_reference(self):
         self.leaf._bind_runtime(lambda: {})
