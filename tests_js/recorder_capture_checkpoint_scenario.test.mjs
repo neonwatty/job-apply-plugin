@@ -217,6 +217,7 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
   await page.goto(`${site}/application`);
   const afterNavigationEmail = "after-navigation@example.invalid";
+  await page.locator("#email").fill(afterNavigationEmail);
 
   const invisibleLabels = [
     "Hidden attribute control",
@@ -300,10 +301,12 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
     ], 5000);
     assert.equal(retry.code, 0, retry.stderr);
   }
-  // Record on the stable document after frame mutations/checkpoint inspections.
+  // Keep the original filled checkpoint state, then record a distinct input on
+  // the stable document after frame mutations/checkpoint inspections.
   // Mutating the DOM immediately after fill can correctly invalidate the
   // recorder's asynchronous privacy inspection and discard that interaction.
-  await page.locator("#email").fill(afterNavigationEmail);
+  const stableNavigationEmail = "stable-navigation@example.invalid";
+  await page.locator("#email").fill(stableNavigationEmail);
   const postNavigationEvent = (event) => expectedEmailEvent(event) && event.pageSequence >= 2;
   const eventDeadline = Date.now() + 5000;
   while (!(await emailEventRecorded(postNavigationEvent)) && Date.now() < eventDeadline) {
@@ -363,6 +366,7 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   for (const forbidden of [
     privateEmail,
     afterNavigationEmail,
+    stableNavigationEmail,
     "Secret password",
     "private-resume.pdf",
     cdpUrl,
