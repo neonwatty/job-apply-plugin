@@ -21,6 +21,7 @@ from tests.support.store_domain_contract import (
     source_inventory,
 )
 from tests.support.store_facade_contract import ROOT, load_module
+from tests.support.resume_file_clock import fixed_staged_resume_mtime
 
 
 DOMAIN_ROOT = ROOT / "scripts" / "job_apply_store" / "domains"
@@ -77,8 +78,14 @@ class ResumeLifecycleExtractionTests(unittest.TestCase):
         )
 
     def call_both(self, operation):
-        values = [operation(store) for store in (self.original, self.extracted)]
+        stores = (self.original, self.extracted)
+        with fixed_staged_resume_mtime(self.facade, stores):
+            values = [operation(store) for store in stores]
         self.assertEqual(values[0], values[1])
+        for store, value in zip(stores, values):
+            if isinstance(value, dict) and "managedFile" in value:
+                installed = store.resume_files_path / value["managedFile"]
+                self.assertEqual(value["observedModifiedAt"], self.facade._resume_modified_at(installed.stat()))
         assert_store_trees_equal(self, self.original.root, self.extracted.root)
         return values[0]
 
