@@ -123,11 +123,11 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
     event.role === "textbox" &&
     event.sourceLabel === "Private Person email" &&
     event.required === true;
-  const emailEventRecorded = async () => {
+  const emailEventRecorded = async (predicate = expectedEmailEvent) => {
     try {
       const text = await readFile(path.join(session, "events.jsonl"), "utf8");
       return text.trim().split("\n").filter(Boolean).map(JSON.parse)
-        .some(expectedEmailEvent);
+        .some(predicate);
     } catch {
       return false;
     }
@@ -217,7 +217,6 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
   assert.deepEqual(await readdir(path.join(session, "checkpoints")), []);
   await page.goto(`${site}/application`);
   const afterNavigationEmail = "after-navigation@example.invalid";
-  await page.locator("#email").fill(afterNavigationEmail);
 
   const invisibleLabels = [
     "Hidden attribute control",
@@ -301,6 +300,17 @@ test("recorder captures sanitized interactions and secure sequential checkpoints
     ], 5000);
     assert.equal(retry.code, 0, retry.stderr);
   }
+  // Record on the stable document after frame mutations/checkpoint inspections.
+  // Mutating the DOM immediately after fill can correctly invalidate the
+  // recorder's asynchronous privacy inspection and discard that interaction.
+  await page.locator("#email").fill(afterNavigationEmail);
+  const postNavigationEvent = (event) => expectedEmailEvent(event) && event.pageSequence >= 2;
+  const eventDeadline = Date.now() + 5000;
+  while (!(await emailEventRecorded(postNavigationEvent)) && Date.now() < eventDeadline) {
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  assert.equal(await emailEventRecorded(postNavigationEvent), true,
+    "post-navigation input must be durably recorded before disconnecting");
   await attached.close();
 
   for (const kind of [
