@@ -71,12 +71,42 @@ export async function runBrowserCrudResumesPhase(context) {
     await resumeDialog.getByLabel("Label").fill("Preserved browser draft");
     await resumeDialog.getByLabel("Replacement file").setInputFiles({ name: "replacement.txt", mimeType: "text/plain", buffer: Buffer.from("replacement draft") });
     const uploadBeforeConflict = await cli("resume-get", ["--id", uploaded.id]);
-    await cli("resume-update", ["--id", uploaded.id, "--expected-revision", String(uploadBeforeConflict.revision)], { tags: ["cli"] });
+    const canonicalBeforeRefresh = await cli("resume-update", ["--id", uploaded.id, "--expected-revision", String(uploadBeforeConflict.revision)], { tags: ["cli"] });
     await page.locator("#resumes-refresh").evaluate((button) => button.click());
     await page.locator("#resume-conflict").waitFor();
     assert.equal(await resumeDialog.getByLabel("Label").inputValue(), "Preserved browser draft");
     assert.equal(await resumeDialog.getByLabel("Replacement file").evaluate((input) => input.files.length), 1);
-    await page.getByRole("button", { name: "Refresh canonical revision" }).click();
+    const resumeEndpoint = new URL(`/api/resumes/${encodeURIComponent(uploaded.id)}`, page.url()).href;
+    let releaseCanonicalRefresh;
+    const heldRefresh = new Promise((resolve) => { releaseCanonicalRefresh = resolve; });
+    const holdCanonicalRefresh = async (route) => {
+      if (route.request().method() === "GET") {
+        await heldRefresh;
+      }
+      await route.continue();
+    };
+    await page.route(resumeEndpoint, holdCanonicalRefresh);
+    try {
+      await Promise.all([
+        page.waitForRequest((request) => request.url() === resumeEndpoint && request.method() === "GET", { timeout: 10_000 }),
+        page.getByRole("button", { name: "Refresh canonical revision" }).click(),
+      ]);
+      // Clicking refresh does not mean its GET has completed. A save before
+      // completion must fail closed, retain the draft, and remain reviewable.
+      const [earlySave] = await Promise.all([
+        page.waitForResponse((response) => response.url() === resumeEndpoint && response.request().method() === "PATCH"),
+        resumeDialog.getByRole("button", { name: "Save metadata" }).click(),
+      ]);
+      assert.equal(earlySave.status(), 409);
+      await page.waitForFunction(() => document.activeElement?.id === "resume-conflict");
+      assert.equal(await resumeDialog.getByLabel("Label").inputValue(), "Preserved browser draft");
+      assert.deepEqual(await cli("resume-get", ["--id", uploaded.id]), canonicalBeforeRefresh);
+      releaseCanonicalRefresh();
+      await page.locator("#resume-conflict").waitFor({ state: "hidden" });
+    } finally {
+      releaseCanonicalRefresh();
+      await page.unroute(resumeEndpoint, holdCanonicalRefresh);
+    }
     assert.equal(await resumeDialog.getByLabel("Label").inputValue(), "Preserved browser draft");
     await resumeDialog.getByRole("button", { name: "Save metadata" }).click();
     await resumeDialog.waitFor({ state: "hidden" });
