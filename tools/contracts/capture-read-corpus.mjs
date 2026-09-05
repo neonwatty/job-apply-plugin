@@ -22,11 +22,14 @@ async function fileSnapshot(root, relative = "") {
   for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
     if (relative === "" && entry.name === ".store.lock") continue;
     const child = join(relative, entry.name);
-    if (entry.isDirectory()) snapshot.push(...await fileSnapshot(root, child));
+    if (entry.isDirectory()) {
+      snapshot.push({ path: `${child}/`, kind: "directory" });
+      snapshot.push(...await fileSnapshot(root, child));
+    }
     else if (entry.isFile()) {
       const path = join(root, child);
       const [bytes, metadata] = await Promise.all([readFile(path), stat(path, { bigint: true })]);
-      snapshot.push({ path: child, digest: createHash("sha256").update(bytes).digest("hex"), mtimeNs: String(metadata.mtimeNs) });
+      snapshot.push({ path: child, kind: "file", digest: createHash("sha256").update(bytes).digest("hex"), mtimeNs: String(metadata.mtimeNs) });
     } else throw new Error("fixture_contains_unsupported_entry");
   }
   return snapshot;
@@ -37,7 +40,8 @@ function resultCase(scenario, command, result, storeUnchanged, rejectionImmutabi
   if (result.stdout !== "") {
     try { stdout = JSON.parse(result.stdout); } catch { throw new Error("python_stdout_invalid"); }
   }
-  const item = { scenario, command, args: [command], exitCode: result.exitCode, stdout, stderr: result.stderr, storeUnchanged };
+  const stderr = result.stderr.replaceAll("\r\n", "\n");
+  const item = { scenario, command, args: [command], exitCode: result.exitCode, stdout, stderr, storeUnchanged };
   if (rejectionImmutability) item.rejectionImmutability = rejectionImmutability;
   return item;
 }

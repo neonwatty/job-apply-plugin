@@ -26,6 +26,8 @@ Capture uses only a tool-owned temporary directory. It injects the fixed clock
 inside rejected ephemeral inputs, then the artifact is checked to ensure the
 canary never reaches stdout, stderr, fixture descriptors, or committed JSON.
 Owned temporary root paths in Python errors are normalized to `<store-root>`.
+Captured process stream newlines are normalized to LF so Windows does not create
+a false differential; persisted Store bytes are never newline-normalized.
 
 ## Review and refresh rules
 

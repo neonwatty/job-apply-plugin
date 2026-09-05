@@ -34,12 +34,13 @@ raise SystemExit(module.main())
 
 function invoke(mode, root = "unused", args = []) {
   const result = spawnSync(process.env.PYTHON || "python3", [
-    "-c", DRIVER, mode, STORE_SCRIPT, root, FIXED_CLOCK, JSON.stringify(args),
+    "-I", "-c", DRIVER, mode, STORE_SCRIPT, root, FIXED_CLOCK, JSON.stringify(args),
   ], {
     cwd: REPO_ROOT,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     maxBuffer: 1024 * 1024,
+    timeout: 10_000,
   });
   if (result.error) throw new Error("python_contract_runner_failed");
   return { exitCode: result.status, stdout: result.stdout, stderr: result.stderr };

@@ -92,11 +92,23 @@ test("runtime validator rejects unknown fields and non-finite values", async () 
   const unknown = structuredClone(golden);
   unknown.unreviewed = true;
   assert.throws(() => validateCorpus(unknown), /corpus_unknown_field/);
+  const missing = structuredClone(golden);
+  delete missing.cases[0].scenario;
+  assert.throws(() => validateCorpus(missing), /case_required_field/);
+  const duplicate = structuredClone(golden);
+  duplicate.inventory.captured[1] = duplicate.inventory.captured[0];
+  assert.throws(() => validateCorpus(duplicate), /captured_commands_invalid/);
+  const mutableRejection = structuredClone(golden);
+  mutableRejection.cases.at(-1).storeUnchanged = false;
+  assert.throws(() => validateCorpus(mutableRejection), /rejection_case_invalid/);
   const nonFinite = structuredClone(golden);
   nonFinite.cases[0].stdout = Number.NaN;
   assert.throws(() => validateCorpus(nonFinite), /stdout_non_finite/);
   assert.equal(absolutePathPresent({ value: "/var/private/data.json" }), true);
+  assert.equal(absolutePathPresent({ value: "/data/alice/profile.json" }), true);
   assert.equal(absolutePathPresent({ value: "C:\\Users\\private\\data.json" }), true);
+  assert.equal(absolutePathPresent({ value: "D:\\secrets\\profile.json" }), true);
+  assert.equal(absolutePathPresent({ value: "C:/profiles/alice.json" }), true);
   assert.equal(absolutePathPresent({ value: "\\\\server\\private\\data.json" }), true);
 });
 
