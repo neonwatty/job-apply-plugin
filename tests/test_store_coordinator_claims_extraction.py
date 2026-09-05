@@ -22,6 +22,7 @@ from tests.support.store_domain_contract import (
     snapshot_tree,
 )
 from tests.support.store_facade_contract import ROOT, load_module
+from tests.support.store_result_contract import normalize_store_result
 
 
 DOMAIN_PATH = ROOT / "scripts/job_apply_store/domains/coordinator/claims.py"
@@ -148,7 +149,7 @@ class CoordinatorClaimsExtractionTests(unittest.TestCase):
         normalized = []
         for outcome, store in zip(outcomes, (original, extracted)):
             normalized.append(
-                repr(outcome).replace(str(store.root), "<STORE_ROOT>")
+                normalize_store_result(outcome, store.root)
             )
         self.assertEqual(normalized[0], normalized[1])
         assert_store_trees_equal(self, original.root, extracted.root)
@@ -311,7 +312,7 @@ class CoordinatorClaimsExtractionTests(unittest.TestCase):
                 for store in stores
             ]
         normalized = [
-            repr(outcome).replace(str(store.root), "<STORE_ROOT>")
+            normalize_store_result(outcome, store.root)
             for outcome, store in zip(outcomes, stores)
         ]
         self.assertEqual(normalized[0], normalized[1])

@@ -8,6 +8,7 @@ import tempfile
 import unittest
 import uuid
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -22,6 +23,7 @@ from tests.support.store_domain_contract import (
     source_inventory,
 )
 from tests.support.store_facade_contract import ROOT, load_module
+from tests.support.store_result_contract import normalize_store_result
 
 
 DOMAIN_ROOT = ROOT / "scripts" / "job_apply_store" / "domains"
@@ -129,20 +131,24 @@ class CoordinatorPersistenceExtractionTests(unittest.TestCase):
 
     def test_acquire_is_byte_and_mode_equivalent_without_nested_locking(self):
         source = self.parent / "acquire-source"
-        writer = self.facade.Store(source, self.parent / "legacy.json")
-        writer.initialize()
-        with mock.patch.object(
-            self.facade.secrets, "token_urlsafe", return_value="A" * 43
+        instant = datetime(2026, 9, 4, 20, tzinfo=timezone.utc)
+        writer = self.facade.Store(source, self.parent / "legacy.json", clock=lambda: instant)
+        with (
+            mock.patch.object(self.facade, "utc_now", return_value="2026-09-04T20:00:00Z"),
+            mock.patch.object(self.facade.secrets, "token_urlsafe", return_value="A" * 43),
         ):
+            writer.initialize()
             ready = self._make_ready_job(writer, "same")
         stores = (
             self.facade.Store(
                 clone_store_root(source, self.parent / "acquire-original"),
                 self.parent / "legacy.json",
+                clock=lambda: instant,
             ),
             self.composed(
                 clone_store_root(source, self.parent / "acquire-extracted"),
                 self.parent / "legacy.json",
+                clock=lambda: instant,
             ),
         )
         original_lock = self.facade.exclusive_file_lock
@@ -187,8 +193,12 @@ class CoordinatorPersistenceExtractionTests(unittest.TestCase):
                     )
                 )
         for result in results:
-            result["resume"].pop("path", None)
-        self.assertEqual(results[0], results[1])
+            self.assertEqual(result["job"]["updatedAt"], "2026-09-04T20:00:00Z")
+            self.assertEqual(result["claim"]["acquiredAt"], "2026-09-04T20:00:00Z")
+        self.assertEqual(
+            normalize_store_result(results[0], stores[0].root),
+            normalize_store_result(results[1], stores[1].root),
+        )
         self.assertEqual(depth, {id(store): 0 for store in stores})
         assert_store_trees_equal(self, stores[0].root, stores[1].root)
         self.assertIsNone(stores[1]._load_coordinator_journal()["operation"])
