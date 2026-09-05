@@ -51,6 +51,42 @@ installation or supported-platform acceptance was performed.
 
 ## Evidence required before choosing a launch mode
 
+### Node-independent evidence harness
+
+With an already available Python interpreter, run:
+
+```text
+python3 qa/runtime_launch_evidence.py --environment inherited-path
+python3 qa/runtime_launch_evidence.py --environment node-free-simulation
+```
+
+On Windows use the available Python command; do not install prerequisites as
+part of the diagnostic. This harness invokes only a resolved `node --version`,
+with a temporary working directory, no shell or stdin, a two-second process
+timeout, and 256-byte limits on each output stream. Only PATH and Windows/temp
+process prerequisites are passed to the child; Node preload variables and HOME
+are excluded. It writes no Store data and deletes its temporary directory.
+The Node-free simulation never resolves or launches Node, including on Windows
+where executable lookup can otherwise consult the working directory.
+
+Receipts contain only `schemaVersion`, `platform`, `arch`, `environment`,
+`hostClaim`, `provenance`, `freshHostVerified`, `nodeAvailable`, `nodeVersion`,
+`nodeStatus`, and `launchMode`. Status is candidate, unsupported, unavailable,
+timeout, or invalid-output. A candidate meets the provisional version floor
+only. Every result has `provenance: "unverified-self-report"`,
+`freshHostVerified: false`, and `launchMode: "unresolved"`. Supplying
+`--host-claim codex` or `--host-claim claude` cannot change those restrictions.
+Exit zero means a receipt was emitted, not that a deployment gate passed.
+
+The disposable `qa/fixtures/runtime-evidence/SKILL.md` provides host-invocation
+instructions, not automatic installation or trusted attestation. Local shell
+observations and Node-free simulations remain development evidence. Actual
+clean-machine setup and host invocation must be independently recorded by the
+operator; the harness cannot infer them from arguments or environment variables.
+Python absence is a bootstrap prerequisite, not evidence of Node absence.
+
+### Pending platform acceptance
+
 For each proposed supported OS/architecture, test both Codex and Claude using
 fresh host-native installations on Linux, macOS, and Windows. Record the exact
 host/package versions in a separate non-private evidence ledger. Start the
