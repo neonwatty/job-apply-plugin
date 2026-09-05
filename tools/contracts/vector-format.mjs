@@ -1,5 +1,9 @@
 const TOP_KEYS = ["schemaVersion", "corpus", "source", "fixture", "inventory", "cases", "redaction"];
 const CASE_KEYS = ["scenario", "command", "args", "exitCode", "stdout", "stderr", "storeUnchanged", "rejectionImmutability"];
+const PREPAREDNESS_POINTERS = new Set([
+  "/phone", "/location", "/workHistory", "/education", "/skills",
+  "/linkedInUrl", "/portfolioUrl", "/githubUrl", "/firstName", "/lastName", "/email",
+]);
 
 function object(value, label) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`${label}_object_required`);
@@ -38,8 +42,8 @@ export function validateCorpus(corpus) {
   closed(corpus.inventory, ["total", "commands", "captured", "pending"], "inventory");
   required(corpus.inventory, ["total", "commands", "captured", "pending"], "inventory");
   if (corpus.inventory.total !== 98 || corpus.inventory.pending !== 98 - corpus.inventory.captured.length) throw new Error("inventory_count_invalid");
-  if (!Array.isArray(corpus.inventory.commands) || corpus.inventory.commands.length !== 98 || new Set(corpus.inventory.commands).size !== 98) throw new Error("inventory_commands_invalid");
-  if (!Array.isArray(corpus.inventory.captured) || new Set(corpus.inventory.captured).size !== corpus.inventory.captured.length || corpus.inventory.captured.some((name) => !corpus.inventory.commands.includes(name))) throw new Error("captured_commands_invalid");
+  if (!Array.isArray(corpus.inventory.commands) || corpus.inventory.commands.length !== 98 || new Set(corpus.inventory.commands).size !== 98 || corpus.inventory.commands.some((name) => typeof name !== "string" || name.length === 0)) throw new Error("inventory_commands_invalid");
+  if (!Array.isArray(corpus.inventory.captured) || new Set(corpus.inventory.captured).size !== corpus.inventory.captured.length || corpus.inventory.captured.some((name) => typeof name !== "string" || name.length === 0 || !corpus.inventory.commands.includes(name))) throw new Error("captured_commands_invalid");
   if (!Array.isArray(corpus.cases) || corpus.cases.length !== corpus.inventory.captured.length + 2) throw new Error("cases_invalid");
   for (const item of corpus.cases) {
     closed(item, CASE_KEYS, "case");
@@ -51,7 +55,7 @@ export function validateCorpus(corpus) {
     if (item.exitCode === 2) {
       closed(item.rejectionImmutability, ["bytesUnchanged", "mtimeNsUnchanged"], "immutability");
       required(item.rejectionImmutability, ["bytesUnchanged", "mtimeNsUnchanged"], "immutability");
-      if (!item.storeUnchanged || !item.rejectionImmutability.bytesUnchanged || !item.rejectionImmutability.mtimeNsUnchanged || item.stdout !== null) throw new Error("rejection_case_invalid");
+      if (item.storeUnchanged !== true || item.rejectionImmutability.bytesUnchanged !== true || item.rejectionImmutability.mtimeNsUnchanged !== true || item.stdout !== null) throw new Error("rejection_case_invalid");
     }
   }
   const successful = corpus.cases.filter((item) => item.exitCode === 0);
@@ -91,7 +95,7 @@ export function secretCanaryPresent(value) {
 
 export function absolutePathPresent(value) {
   return inspectionEntries(value).some(({ key, text }) => {
-    if (key === "paths" && /^\/(?:[^/]+\/?)+$/.test(text)) return false;
+    if (key === "paths" && PREPAREDNESS_POINTERS.has(text)) return false;
     return /(?:^|[\s"'(])\/(?!\/)/.test(text)
       || /(?:^|[\s"'(])[a-z]:[\\/]/i.test(text)
       || /(?:^|[\s"'(])\\\\[^\\]+\\/.test(text);

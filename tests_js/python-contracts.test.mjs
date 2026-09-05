@@ -98,9 +98,16 @@ test("runtime validator rejects unknown fields and non-finite values", async () 
   const duplicate = structuredClone(golden);
   duplicate.inventory.captured[1] = duplicate.inventory.captured[0];
   assert.throws(() => validateCorpus(duplicate), /captured_commands_invalid/);
+  const malformedInventory = structuredClone(golden);
+  malformedInventory.inventory.commands[malformedInventory.inventory.commands.length - 1] = null;
+  assert.throws(() => validateCorpus(malformedInventory), /inventory_commands_invalid/);
   const mutableRejection = structuredClone(golden);
   mutableRejection.cases.at(-1).storeUnchanged = false;
   assert.throws(() => validateCorpus(mutableRejection), /rejection_case_invalid/);
+  const truthyRejection = structuredClone(golden);
+  truthyRejection.cases.at(-1).rejectionImmutability.bytesUnchanged = "yes";
+  truthyRejection.cases.at(-1).rejectionImmutability.mtimeNsUnchanged = "yes";
+  assert.throws(() => validateCorpus(truthyRejection), /rejection_case_invalid/);
   const nonFinite = structuredClone(golden);
   nonFinite.cases[0].stdout = Number.NaN;
   assert.throws(() => validateCorpus(nonFinite), /stdout_non_finite/);
@@ -110,6 +117,9 @@ test("runtime validator rejects unknown fields and non-finite values", async () 
   assert.equal(absolutePathPresent({ value: "D:\\secrets\\profile.json" }), true);
   assert.equal(absolutePathPresent({ value: "C:/profiles/alice.json" }), true);
   assert.equal(absolutePathPresent({ value: "\\\\server\\private\\data.json" }), true);
+  assert.equal(absolutePathPresent({ paths: ["/phone", "/firstName"] }), false);
+  assert.equal(absolutePathPresent({ paths: ["/data/alice/profile.json"] }), true);
+  assert.equal(absolutePathPresent(JSON.stringify({ paths: ["/data/alice/profile.json"] })), true);
 });
 
 test("redaction verification is fail-closed and never repeats the canary or path", async () => {
@@ -125,6 +135,19 @@ test("redaction verification is fail-closed and never repeats the canary or path
     assert.equal(rejected.stdout, "");
     assert.equal(rejected.stderr, '{"ok":false,"error":"contract_redaction_failed"}\n');
     assert.doesNotMatch(rejected.stderr, /canary|poisoned|contract-redaction-test|\/tmp\//i);
+    for (const [name, stdout] of [
+      ["direct.json", { paths: ["/data/alice/profile.json"] }],
+      ["nested.json", { payload: JSON.stringify({ paths: ["/data/alice/profile.json"] }) }],
+    ]) {
+      const corpus = structuredClone(await goldenCorpus());
+      corpus.cases[0].stdout = stdout;
+      const path = join(temporary, name);
+      await writeFile(path, JSON.stringify(corpus));
+      const pathRejected = spawnSync(process.execPath, [VERIFY, path], { encoding: "utf8" });
+      assert.equal(pathRejected.status, 1);
+      assert.equal(pathRejected.stderr, '{"ok":false,"error":"contract_redaction_failed"}\n');
+      assert.doesNotMatch(pathRejected.stderr, /data|alice|profile|direct|nested|\/tmp\//i);
+    }
   } finally {
     await rm(temporary, { recursive: true, force: true });
   }
