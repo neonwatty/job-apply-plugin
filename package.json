@@ -22,7 +22,7 @@
     "qa:record": "node qa/recorder.mjs"
   },
   "devDependencies": {
-    "ajv": "8.17.1",
+    "ajv": "8.20.0",
     "playwright": "1.62.1",
     "typescript": "5.9.3"
   }
