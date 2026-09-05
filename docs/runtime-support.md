@@ -6,6 +6,11 @@ ES2022. This is a provisional compatibility floor, not a supported-platform
 announcement. Do not rely on native TypeScript execution or newer Node APIs
 without updating the floor and its tests through the integration owner.
 
+The reviewed [acceptance matrix](runtime-evidence/acceptance-matrix.md) records
+zero accepted fresh-host cells. The [conditional distribution recommendation](runtime-evidence/launch-recommendation.md)
+keeps both launch strategies unresolved; it authorizes no launcher or runtime
+version change. Local development observations do not close this gate.
+
 No installed launcher or manifest changes in this phase. Python remains the
 authoritative runtime and the only live Store writer. Retain necessary Swift
 native helpers. TypeScript and Python differential writers use separate clones.
