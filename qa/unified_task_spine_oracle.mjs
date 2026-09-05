@@ -57,7 +57,29 @@ const PASS_REPORT = Object.freeze({
   ],
 });
 
-class OracleFailure extends Error {}
+const PUBLIC_STAGES = new Set([
+  "setup", "ux_intake", "agent_intake", "selection", "first_acquisition",
+  "attention_open", "answer_open", "answer_save", "answer_recheck",
+  "second_acquisition", "final_verification", "cleanup",
+]);
+
+class OracleFailure extends Error {
+  constructor(code, stage = "cleanup") {
+    super(code);
+    this.stage = stage;
+  }
+}
+
+export function publicFailureReport(error) {
+  return {
+    schemaVersion: 1,
+    oracle: "unified_task_spine",
+    result: "fail",
+    closed: true,
+    error: "oracle_failed",
+    stage: PUBLIC_STAGES.has(error?.stage) ? error.stage : "unknown",
+  };
+}
 
 function check(condition, code) {
   if (!condition) throw new OracleFailure(code);
@@ -229,6 +251,7 @@ export async function runOracle() {
   let serverStopped = false;
   let browserStopped = false;
   let storeRemoved = false;
+  let stage = "setup";
   const attempts = [];
 
   const command = async (script, name, args = [], payload) => {
@@ -276,6 +299,7 @@ export async function runOracle() {
     await page.goto(startup.url);
     await page.getByText("Canonical store connected").waitFor();
 
+    stage = "ux_intake";
     const uxUrl = "https://ux-first.example.invalid/jobs/canonical";
     await page.getByRole("button", { name: "Jobs", exact: true }).click();
     await page.getByRole("button", { name: "New job" }).click();
@@ -292,6 +316,7 @@ export async function runOracle() {
     check(jobs.length === 1 && jobs[0].role === "UX First Role", "ux_intake_failed");
     const selectedId = jobs[0].id;
 
+    stage = "agent_intake";
     const agentUrl = "https://agent-first.example.invalid/jobs/comparison";
     const agent = await task("intake", [], {
       url: agentUrl, role: "Agent First Role", company: "Synthetic Company",
@@ -308,11 +333,13 @@ export async function runOracle() {
     )), "snapshot_missing_comparison_inputs");
     const candidate = beforeSelection.snapshot.jobs.find((job) => job.id === selectedId);
     check(candidate?.status === "saved", "selection_candidate_missing");
+    stage = "selection";
     const selection = await task("select", [
       "--id", selectedId, "--expected-revision", String(candidate.revision), "--owner-confirmed",
     ]);
     check(selection.ok && selection.job.status === "ready" && selection.job.revision > candidate.revision, "selection_failed");
 
+    stage = "first_acquisition";
     const firstSession = privateAttempt(
       attemptScript, storeRoot, selectedId, "synthetic-agent", selection.job.revision, temporary,
     );
@@ -340,6 +367,7 @@ export async function runOracle() {
     const blockedSnapshot = await task("snapshot");
     check(blockedSnapshot.snapshot.attention.items.some((item) => item.jobId === selectedId), "cli_attention_missing");
 
+    stage = "attention_open";
     await page.reload();
     await page.getByText("Canonical store connected").waitFor();
     await page.locator("#nav-attention").click();
@@ -347,6 +375,7 @@ export async function runOracle() {
     await jobDialog.getByText(/Canonical status needs info/i).waitFor();
     await jobDialog.getByRole("heading", { name: "Application activity" }).waitFor();
     await jobDialog.getByLabel("Notes").fill("unsaved synthetic draft");
+    stage = "answer_open";
     const openAnswer = jobDialog.getByRole("button", { name: "Open in Answers" });
     await openAnswer.click();
     const answerDialog = page.locator("#answer-dialog");
@@ -355,18 +384,37 @@ export async function runOracle() {
     check(await jobDialog.getByLabel("Notes").inputValue() === "unsaved synthetic draft", "draft_lost_on_navigation");
     await answerDialog.getByLabel("State").selectOption("confirmed");
     await answerDialog.getByLabel("Value", { exact: true }).fill("synthetic accepted value");
+    stage = "answer_save";
+    const answerPath = `/api/answers/by-key/${Buffer.from("durable.target").toString("base64url")}`;
+    const answerSaved = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === answerPath
+      && response.request().method() === "PATCH"
+    ));
+    const activityReloaded = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === `/api/jobs/${encodeURIComponent(selectedId)}/activity`
+      && response.request().method() === "GET"
+    ));
     await answerDialog.getByRole("button", { name: "Save answer" }).click();
+    check((await answerSaved).ok(), "answer_save_response_failed");
     await answerDialog.waitFor({ state: "hidden" });
+    check((await activityReloaded).ok(), "activity_reload_failed");
     check(await jobDialog.getByLabel("Notes").inputValue() === "unsaved synthetic draft", "draft_lost_on_answer_save");
-    await openAnswer.waitFor();
+    await page.waitForFunction(() => document.activeElement?.textContent?.trim() === "Open in Answers");
     check(await openAnswer.evaluate((button) => document.activeElement === button), "focus_not_restored");
+    stage = "answer_recheck";
+    const answerResolved = page.waitForResponse((response) => (
+      new URL(response.url()).pathname === `/api/jobs/${encodeURIComponent(selectedId)}/resolve-pending-answer`
+      && response.request().method() === "POST"
+    ));
     await jobDialog.getByRole("button", { name: "Recheck this revision" }).click();
+    check((await answerResolved).ok(), "answer_recheck_response_failed");
     await jobDialog.getByText(/Canonical status ready/i).waitFor();
     check(await jobDialog.getByLabel("Notes").inputValue() === "unsaved synthetic draft", "draft_lost_on_resolution");
     await jobDialog.getByRole("button", { name: "Close job details" }).click();
 
     const ready = await store("job-get", ["--id", selectedId]);
     check(ready.status === "ready" && ready.revision > first.job.revision, "resolution_not_ready");
+    stage = "second_acquisition";
     const secondSession = privateAttempt(
       attemptScript, storeRoot, selectedId, "synthetic-agent-resume", ready.revision, temporary,
     );
@@ -382,6 +430,7 @@ export async function runOracle() {
     });
     await secondSession.completed();
 
+    stage = "final_verification";
     const finalActivity = await task("activity", ["--id", selectedId]);
     const finalSnapshot = await task("snapshot");
     check(finalActivity.activity.job.status === "awaiting_review", "cli_not_awaiting_review");
@@ -401,6 +450,8 @@ export async function runOracle() {
     check(pageErrors.length === 0, "browser_error");
     check(publicReportIsSafe(PASS_REPORT), "report_privacy_failure");
     assert.notEqual(process.env.JOB_APPLY_STORE_ROOT, storeRoot);
+  } catch (error) {
+    throw new OracleFailure("oracle_failed", stage);
   } finally {
     const brokerPidPath = join(storeRoot, ".job-apply-attempt.pid");
     try {
@@ -427,8 +478,8 @@ async function main() {
   }
   try {
     process.stdout.write(`${JSON.stringify(await runOracle())}\n`);
-  } catch {
-    process.stdout.write(`${JSON.stringify({ schemaVersion: 1, oracle: "unified_task_spine", result: "fail", closed: true, error: "oracle_failed" })}\n`);
+  } catch (error) {
+    process.stdout.write(`${JSON.stringify(publicFailureReport(error))}\n`);
     process.exitCode = 1;
   }
 }
