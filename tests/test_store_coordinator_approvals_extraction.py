@@ -9,6 +9,7 @@ import types
 import typing
 import unittest
 from pathlib import Path
+from datetime import datetime, timezone
 from unittest import mock
 
 from tests.support.store_domain_contract import (
@@ -43,8 +44,14 @@ class CoordinatorApprovalsExtractionTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.parent = Path(self.temporary.name)
+        clock = lambda: datetime(2026, 9, 4, 20, tzinfo=timezone.utc)
+        timestamp_patch = mock.patch.object(
+            self.facade, "utc_now", return_value="2026-09-04T20:00:00Z"
+        )
+        timestamp_patch.start()
+        self.addCleanup(timestamp_patch.stop)
         source = self.parent / "source"
-        writer = self.facade.Store(source, self.parent / "legacy.json")
+        writer = self.facade.Store(source, self.parent / "legacy.json", clock=clock)
         writer.initialize()
         writer.replace_profile(
             {"firstName": "Ada"},
@@ -129,10 +136,12 @@ class CoordinatorApprovalsExtractionTests(unittest.TestCase):
         self.original = self.facade.Store(
             clone_store_root(source, self.parent / "original"),
             self.parent / "legacy.json",
+            clock=clock,
         )
         self.extracted = self.composed(
             clone_store_root(source, self.parent / "extracted"),
             self.parent / "legacy.json",
+            clock=clock,
         )
 
     def preview(self, store, decisions=None):
@@ -192,6 +201,9 @@ class CoordinatorApprovalsExtractionTests(unittest.TestCase):
         ]
         self.assertEqual(results[0], results[1])
         assert_store_trees_equal(self, self.original.root, self.extracted.root)
+        self.assertEqual(
+            self.extracted.load_session(self.job_id)["updatedAt"], "2026-09-04T20:00:00Z"
+        )
         serialized = self.extracted._session_path(self.job_id).read_text()
         self.assertNotIn("PRIVATE APPROVAL VALUE", serialized)
 

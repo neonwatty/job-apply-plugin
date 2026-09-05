@@ -10,6 +10,7 @@ import threading
 import unittest
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -55,24 +56,32 @@ class ExtractionProposalTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.parent = Path(self.temporary.name)
+        self.clock = lambda: datetime(2026, 9, 4, 20, tzinfo=timezone.utc)
+        timestamp_patch = mock.patch.object(
+            self.facade, "utc_now", return_value="2026-09-04T20:00:00Z"
+        )
+        timestamp_patch.start()
+        self.addCleanup(timestamp_patch.stop)
 
     def stores(self, label="pair"):
         source = self.parent / f"{label}-source"
-        self.facade.Store(source, self.parent / "legacy.json").initialize()
+        self.facade.Store(source, self.parent / "legacy.json", clock=self.clock).initialize()
         return (
             self.facade.Store(
                 clone_store_root(source, self.parent / f"{label}-original"),
                 self.parent / "legacy.json",
+                clock=self.clock,
             ),
             self.composed(
                 clone_store_root(source, self.parent / f"{label}-extracted"),
                 self.parent / "legacy.json",
+                clock=self.clock,
             ),
         )
 
     def seeded_stores(self, label="seeded", request=False):
         source = self.parent / f"{label}-source"
-        seed_store = self.facade.Store(source, self.parent / "legacy.json")
+        seed_store = self.facade.Store(source, self.parent / "legacy.json", clock=self.clock)
         seed_store.initialize()
         resume, profile = self.seed(seed_store)
         extraction_request = None
@@ -84,10 +93,12 @@ class ExtractionProposalTests(unittest.TestCase):
             self.facade.Store(
                 clone_store_root(source, self.parent / f"{label}-original"),
                 self.parent / "legacy.json",
+                clock=self.clock,
             ),
             self.composed(
                 clone_store_root(source, self.parent / f"{label}-extracted"),
                 self.parent / "legacy.json",
+                clock=self.clock,
             ),
         )
         return stores, resume, profile, extraction_request
@@ -232,6 +243,7 @@ class ExtractionProposalTests(unittest.TestCase):
                 resume["revision"], profile["revision"],
             ) for store in stores]
         self.assertEqual(proposals[0], proposals[1])
+        self.assertEqual(proposals[0]["createdAt"], "2026-09-04T20:00:00Z")
         self.assert_same_failure(
             stores,
             lambda store: store.review_resume_proposal(
@@ -310,7 +322,7 @@ class ExtractionProposalTests(unittest.TestCase):
                         resume["id"], {"email": "private@example.invalid"},
                         resume["revision"], profile["revision"],
                     )
-            repaired = type(store)(store.root, self.parent / "legacy.json")
+            repaired = type(store)(store.root, self.parent / "legacy.json", clock=self.clock)
             repaired.initialize()
             results.append(repaired.list_resume_proposals())
         self.assertEqual(results[0], results[1])
