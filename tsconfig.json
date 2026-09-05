@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rootDir": "src",
+    "outDir": "runtime",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "noEmitOnError": true,
+    "forceConsistentCasingInFileNames": true,
+    "newLine": "lf",
+    "sourceMap": false,
+    "declaration": false,
+    "removeComments": false,
+    "types": [],
+    "lib": ["ES2022"]
+  },
+  "include": ["src/**/*.ts"]
+}

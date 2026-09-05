@@ -23,6 +23,8 @@ mkdir -p \
 
 echo "Validating plugin manifest"
 claude plugin validate "$REPO_ROOT"
+echo "Verifying reproducible checked-in TypeScript runtime"
+node "$REPO_ROOT/tools/build-runtime.mjs" --check
 echo "Checking Store CLI entry point"
 python3 "$REPO_ROOT/scripts/job-apply-store.py" --help >/dev/null
 echo "Checking task CLI entry point"

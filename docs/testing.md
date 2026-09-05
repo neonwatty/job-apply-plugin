@@ -3,6 +3,13 @@
 Use the smallest tier that answers the question, while keeping the specialized
 commands in `package.json` for focused diagnosis.
 
+Run `npm ci` in a fresh development checkout. TypeScript is a pinned development
+dependency, not an installed-plugin dependency. `npm run typecheck` checks the
+shadow scaffold; `npm run build:runtime` updates its one-to-one checked-in ESM
+output, and `npm run build:check` rejects missing, changed, stale, mapped or
+oversized output. Build errors leave the previous runtime intact; stale files
+require explicit review/removal. Existing application launchers still use Python.
+
 ## Supported tiers
 
 ```text
@@ -16,7 +23,8 @@ npm run test:release
 
 - `test:fast` is the default pre-commit check. It covers source policy, matrix
   integrity, documentation safety, runner behavior, and inexpensive Python
-  contracts. Network link checks remain in the release tier.
+  contracts, plus strict TypeScript checking, reproducible build contracts and
+  runtime-probe tests. Network link checks remain in the release tier.
 - `test:affected` adds every suite that owns committed, staged, unstaged, or
   untracked paths. Renames select both names. A global or unknown path safely
   selects the complete deterministic tier.
