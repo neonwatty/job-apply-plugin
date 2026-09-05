@@ -82,7 +82,11 @@ jobs:
           python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
           python3 -m json.tool .codex-plugin/plugin.json > /dev/null
           python3 -m json.tool .agents/plugins/marketplace.json > /dev/null
+      # Temporary user-approved exception; dedicated package/browser lanes retain it.
+      # Restore after the PR49 browser-created-job visibility failure is resolved.
       - run: bash scripts/smoke-plugin.sh
+        env:
+          JOB_APPLY_SKIP_LEGACY_PACKAGED_CRUD: '1'
       - run: bash scripts/check-links.sh
 
   policy:

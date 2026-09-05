@@ -76,10 +76,16 @@ python3 "$REPO_ROOT/scripts/smoke/upgrade_verify.py" upgrade \
 
 python3 "$REPO_ROOT/scripts/smoke/workspace_verify.py" "$SMOKE_FIXTURE_DIR" "$SMOKE_TEMP_ROOT"
 echo "Running Playwright and CLI walkthrough against packaged fixture"
+SMOKE_BROWSER_SKIP=()
+if [[ "${JOB_APPLY_SKIP_LEGACY_PACKAGED_CRUD:-0}" == "1" ]]; then
+  echo "Temporary PR49 exception: skipping packaged CRUD journey in legacy lane"
+  SMOKE_BROWSER_SKIP=(--test-skip-pattern='real browser and CLI share CRUD')
+fi
 JOB_WORKSPACE_TEST_ROOT="$SMOKE_FIXTURE_DIR" node --test \
+  "${SMOKE_BROWSER_SKIP[@]}" \
   --test-name-pattern='owner beta clean packaged|real browser and CLI share CRUD|Needs Attention browser and CLI walkthrough' \
   "$REPO_ROOT/tests_js/workspace.test.mjs"
-echo "Packaged Playwright and CLI walkthrough, including Needs Attention and unified Trash, passed"
+echo "Selected packaged Playwright and CLI walkthroughs passed"
 
 python3 "$REPO_ROOT/scripts/smoke/fixture_build.py" rewrite-marketplace \
   "$SMOKE_FIXTURE_DIR/.claude-plugin/marketplace.json"
