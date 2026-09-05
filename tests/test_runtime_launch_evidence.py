@@ -6,12 +6,20 @@ import json
 import subprocess
 import sys
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from qa import runtime_launch_evidence as evidence
 
 
 class RuntimeLaunchEvidenceTest(unittest.TestCase):
+    def test_diagnostic_guide_is_outside_durable_replay_fixtures(self):
+        root = Path(__file__).resolve().parents[1]
+        guide = "docs/runtime-evidence/SKILL.md"
+        self.assertTrue((root / guide).is_file())
+        self.assertIn(guide, (root / "docs/runtime-support.md").read_text(encoding="utf-8"))
+        self.assertEqual(list((root / "qa/fixtures").rglob("SKILL.md")), [])
+
     def observe(self, stdout=b"v22.0.0\n", stderr=b"", code=0, **options):
         return evidence.observe_runtime(
             runner=lambda _: subprocess.CompletedProcess("node", code, stdout, stderr),

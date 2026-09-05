@@ -78,8 +78,9 @@ only. Every result has `provenance: "unverified-self-report"`,
 `--host-claim codex` or `--host-claim claude` cannot change those restrictions.
 Exit zero means a receipt was emitted, not that a deployment gate passed.
 
-The disposable `qa/fixtures/runtime-evidence/SKILL.md` provides host-invocation
-instructions, not automatic installation or trusted attestation. Local shell
+The disposable `docs/runtime-evidence/SKILL.md` provides host-invocation
+instructions, not automatic installation or trusted attestation. It lives outside
+`qa/fixtures`, which is reserved for validated replay JSON artifacts. Local shell
 observations and Node-free simulations remain development evidence. Actual
 clean-machine setup and host invocation must be independently recorded by the
 operator; the harness cannot infer them from arguments or environment variables.

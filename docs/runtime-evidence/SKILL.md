@@ -3,7 +3,7 @@ name: runtime-evidence
 description: Disposable non-certifying runtime diagnostic for supervised host evidence runs.
 ---
 
-# Runtime evidence fixture
+# Runtime evidence diagnostic
 
 This fixture is not a production skill or runtime launcher. Use only in an
 explicitly authorized disposable evidence environment. Do not install this
