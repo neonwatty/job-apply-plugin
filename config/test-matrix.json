@@ -82,7 +82,7 @@
     {
       "id": "python-qa",
       "kind": "python-unittest",
-      "include": ["tests/test_qa_*.py", "tests/test_recorder_fs.py"],
+      "include": ["tests/test_qa_*.py", "tests/test_recorder_fs.py", "tests/test_runtime_launch_evidence.py"],
       "tiers": ["full"]
     },
     {
@@ -115,6 +115,7 @@
         "tests/test_job_apply_split_compatibility.py",
         "tests/test_qa_*.py",
         "tests/test_recorder_fs.py",
+        "tests/test_runtime_launch_evidence.py",
         "tests/test_store_*.py",
         "tests/test_job_apply_workspace_*.py",
         "tests/test_job_apply_account*.py",
