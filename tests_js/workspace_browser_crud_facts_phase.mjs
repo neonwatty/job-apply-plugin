@@ -3,6 +3,23 @@ import {
   spawn, writeFile,
 } from "./workspace_test_support.mjs";
 
+async function completeFactsSave(page, click) {
+  const patchResponse = page.waitForResponse((response) => (
+    new URL(response.url()).pathname === "/api/profile"
+      && response.request().method() === "PATCH"
+  ));
+  await click();
+  const response = await patchResponse;
+  assert.equal(response.status(), 200);
+  const inspection = await response.json();
+  await page.waitForFunction((revision) => (
+    document.querySelector("#facts-revision")?.textContent === `Revision ${revision}`
+      && document.querySelector("#facts-status")?.textContent === "Profile is synchronized with the canonical store."
+      && document.querySelector("#facts-save")?.disabled === false
+  ), inspection.revision);
+  return inspection;
+}
+
 export async function runBrowserCrudFactsPhase(context) {
   const { cli, storeRoot, temporary, waitForStartup } = context;
   let { browser, server } = context;
@@ -65,8 +82,7 @@ export async function runBrowserCrudFactsPhase(context) {
     await page.getByLabel("Skills (one per line)").fill("Python\nRust");
     await page.locator('.additional-fact').filter({ hasText: "customNote" }).getByLabel("JSON value").fill('"browser synthetic"');
     await page.locator('.additional-fact').filter({ hasText: "futureConfig" }).getByLabel("JSON value").fill('{"enabled":false}');
-    await page.getByRole("button", { name: "Save changes" }).click();
-    await page.getByText("Profile is synchronized with the canonical store.").waitFor();
+    await completeFactsSave(page, () => page.getByRole("button", { name: "Save changes" }).click());
     let profile = await cli("profile-inspect");
     assert.equal(profile.profile.lastName, "Browser");
     assert.equal(profile.profile.location.city, "Tempe");
@@ -82,8 +98,7 @@ export async function runBrowserCrudFactsPhase(context) {
 
     let futureConfig = page.locator('.additional-fact').filter({ hasText: "futureConfig" });
     await futureConfig.getByLabel("JSON value").fill("null");
-    await page.getByRole("button", { name: "Save changes" }).click();
-    await page.getByText("Profile is synchronized with the canonical store.").waitFor();
+    await completeFactsSave(page, () => page.getByRole("button", { name: "Save changes" }).click());
     profile = await cli("profile-inspect");
     assert.equal(Object.hasOwn(profile.profile, "futureConfig"), true);
     assert.equal(profile.profile.futureConfig, null);
@@ -91,8 +106,35 @@ export async function runBrowserCrudFactsPhase(context) {
     futureConfig = page.locator('.additional-fact').filter({ hasText: "futureConfig" });
     page.once("dialog", (prompt) => prompt.accept());
     await futureConfig.getByRole("button", { name: "Delete" }).click();
-    await page.getByRole("button", { name: "Save changes" }).click();
-    await page.getByText("Profile is synchronized with the canonical store.").waitFor();
+    assert.equal(await futureConfig.getByLabel("JSON value").isDisabled(), true);
+    assert.equal(await futureConfig.evaluate((node) => node.classList.contains("pending-delete")), true);
+    const profileEndpoint = new URL("/api/profile", page.url()).href;
+    let releaseDeletePatch;
+    const heldDeletePatch = new Promise((resolve) => { releaseDeletePatch = resolve; });
+    const holdDeletePatch = async (route) => {
+      if (route.request().method() === "PATCH") await heldDeletePatch;
+      await route.continue();
+    };
+    await page.route(profileEndpoint, holdDeletePatch);
+    let deletion;
+    try {
+      const patchStarted = page.waitForRequest((request) => (
+        request.url() === profileEndpoint && request.method() === "PATCH"
+      ));
+      let saveCompleted = false;
+      const deletionSave = completeFactsSave(page, () => page.getByRole("button", { name: "Save changes" }).click())
+        .then((inspection) => { saveCompleted = true; return inspection; });
+      await patchStarted;
+      assert.equal(saveCompleted, false);
+      assert.equal((await cli("profile-inspect")).profile.futureConfig, null);
+      releaseDeletePatch();
+      deletion = await deletionSave;
+    } finally {
+      releaseDeletePatch();
+      await page.unroute(profileEndpoint, holdDeletePatch);
+    }
+    assert.equal(Object.hasOwn(deletion.profile, "futureConfig"), false);
+    await futureConfig.waitFor({ state: "detached" });
     profile = await cli("profile-inspect");
     assert.equal("futureConfig" in profile.profile, false);
 
@@ -105,8 +147,7 @@ export async function runBrowserCrudFactsPhase(context) {
     assert.equal(await customNote.getByLabel("JSON value").inputValue(), '"draft after delete"');
     await page.getByRole("button", { name: "Save changes" }).click();
     await page.locator("#facts-conflict").waitFor();
-    await page.getByRole("button", { name: "Use my values for conflicts" }).click();
-    await page.getByText("Profile is synchronized with the canonical store.").waitFor();
+    await completeFactsSave(page, () => page.getByRole("button", { name: "Use my values for conflicts" }).click());
     profile = await cli("profile-inspect");
     assert.equal(profile.profile.customNote, "draft after delete");
 
@@ -122,8 +163,7 @@ export async function runBrowserCrudFactsPhase(context) {
 
     await page.getByLabel("First name").fill("Disjoint draft");
     profile = await cli("profile-patch", ["--expected-revision", String(profile.revision), "--source", "agent"], { location: { country: "CA" } });
-    await page.getByRole("button", { name: "Save changes" }).click();
-    await page.getByText("Profile is synchronized with the canonical store.").waitFor();
+    await completeFactsSave(page, () => page.getByRole("button", { name: "Save changes" }).click());
     profile = await cli("profile-inspect");
     assert.equal(profile.profile.firstName, "Disjoint draft");
     assert.equal(profile.profile.location.country, "CA");
@@ -149,8 +189,7 @@ export async function runBrowserCrudFactsPhase(context) {
     profile = await cli("profile-patch", ["--expected-revision", String(profile.revision), "--source", "user"], { skills: ["Canonical skill"] });
     await page.getByRole("button", { name: "Save changes" }).click();
     await page.locator("#facts-conflict").waitFor();
-    await page.getByRole("button", { name: "Use my values for conflicts" }).click();
-    await page.getByText("Profile is synchronized with the canonical store.").waitFor();
+    await completeFactsSave(page, () => page.getByRole("button", { name: "Use my values for conflicts" }).click());
     profile = await cli("profile-inspect");
     assert.deepEqual(profile.profile.skills, ["Draft skill"]);
 
@@ -171,8 +210,7 @@ export async function runBrowserCrudFactsPhase(context) {
     assert.equal(await page.getByLabel("First name").inputValue(), "Retry-preserved draft");
     assert.equal(await page.getByRole("button", { name: "Save changes" }).isEnabled(), true);
     await page.unroute("**/api/profile");
-    await page.getByRole("button", { name: "Save changes" }).click();
-    await page.getByText("Profile is synchronized with the canonical store.").waitFor();
+    await completeFactsSave(page, () => page.getByRole("button", { name: "Save changes" }).click());
     await page.getByRole("button", { name: "Resumes" }).click();
     await page.getByRole("heading", { name: "Browser resume" }).waitFor();
   Object.assign(context, { browser, server, cliJob, page, pageErrors, jobDialog, profile });
