@@ -303,4 +303,3 @@ class StartupMixin:
         finally:
             if directory is not None:
                 _late('os').close(directory)
-
