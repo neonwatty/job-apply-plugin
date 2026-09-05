@@ -41,3 +41,36 @@ individual retries are diagnostic evidence, not CI observation-window credit.
 and recorder tests, source-size and matrix checks, then integrated full/release
 tiers at the handoff. No actual Python removal, application port, release,
 merge, or branch-protection change is part of this foundation increment.
+
+## Local acceptance checkpoint
+
+Implementation through `5b5118a` on `codex/typescript-foundation`:
+
+- Runtime probe: five synthetic tests; local macOS/arm64 observation only.
+- Strict build scaffold: six tests, development-only pinned compiler, inert
+  emitted sentinel, installed-byte inventory extended to `runtime/`.
+- Corpus seed: exact 98-command inventory, nine non-mutating read behaviors,
+  two corrupt/future-profile rejection behaviors. Six focused tests passed
+  after both independent review rounds; no golden refresh occurs in tests.
+- Recorder baseline repair: original checkpoint state and all privacy checks
+  retained, with an additional stable-document input and durable event wait.
+  Focused stress runs and the integrated recorder suite passed locally.
+- Fast tier: six suites passed. Full deterministic tier: all 13 suites passed
+  on the integrated seed; later corpus-only review changes were verified by
+  the six focused corpus tests, not represented as a second full-tier run.
+- Source-size and matrix checks passed: 17 registered suites, no size exceptions.
+- Final release tier: both suites passed, including packaged browser journeys,
+  isolated Claude/Codex installations, upgrade and critical-byte verification.
+- Independent scaffold and final corpus reviews found no remaining blocking
+  findings within their bounded scopes.
+
+Local evidence is in `/tmp/job-apply-ts-foundation-*.json` and corresponding
+logs. These receipts do not establish fresh-host launch support, CI performance
+percentiles, platform parity of the new corpus, or the external CI observation
+gates. No push or merge was performed for this increment.
+
+Next work packages: fresh-host runtime evidence; write-aware startup contracts
+for automation/accounts/claims; then profile/fact mutation-conflict and recovery
+vectors. Public TypeScript contract types and domain ports follow sufficient
+frozen contracts for their scope. The other 89 Store commands and HTTP,
+task/attempt, QA/policy, mutation and recovery coverage remain explicitly pending.

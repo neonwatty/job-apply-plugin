@@ -77,7 +77,7 @@ must exclude startup repair, migration, journal recovery and implicit writes.
 
 **Interfaces:** Probe returns value-free `{platform,arch,nodeAvailable,nodeVersion,launchMode}`.
 
-- [ ] **Step 1: Test the probe against missing, unsupported, and supported Node without exposing executable paths.**
+- [x] **Step 1: Test the probe against missing, unsupported, and supported Node without exposing executable paths.**
 - [ ] **Step 2: Run it in fresh supported Codex and Claude plugin installations on Linux, macOS, and Windows.**
 - [ ] **Step 3: Decide and document one final launch mode: guaranteed Node runtime or signed standalone executable per OS/architecture.**
 - [ ] **Step 4: Block all Python-removal tasks until this gate passes; commit the evidence contract.**
@@ -106,10 +106,10 @@ must exclude startup repair, migration, journal recovery and implicit writes.
 
 **Interfaces:** Strict ES modules compile one-to-one into `runtime/`; exported JSON types validate through runtime parsers rather than unchecked casts.
 
-- [ ] **Step 1: Add strict compiler settings, source maps excluded from the plugin, deterministic output, and no bundle.**
-- [ ] **Step 2: Test reproducible runtime bytes and one-source-to-one-module inventory.**
+- [x] **Step 1: Add strict compiler settings, source maps excluded from the plugin, deterministic output, and no bundle.**
+- [x] **Step 2: Test reproducible runtime bytes and one-source-to-one-module inventory.**
 - [ ] **Step 3: Define closed error/result and schema-version types from frozen vectors.**
-- [ ] **Step 4: Add typecheck/build to fast/full/package tiers and commit.**
+- [x] **Step 4: Add typecheck/build to fast/full/package tiers and commit.**
 
 ### Task 4: Port pure domain seams in parallel
 
