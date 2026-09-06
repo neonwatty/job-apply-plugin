@@ -1,0 +1,77 @@
+TAP version 13
+# Subtest: trash-reference: delete phrases retain falsy defaults and String coercion
+ok 1 - trash-reference: delete phrases retain falsy defaults and String coercion
+  ---
+  duration_ms: 0.445083
+  type: 'test'
+  ...
+# Subtest: trash-reference: filtering preserves order, item identity and strict type matching
+ok 2 - trash-reference: filtering preserves order, item identity and strict type matching
+  ---
+  duration_ms: 0.642
+  type: 'test'
+  ...
+# Subtest: trash-reference: missing collections and malformed elements keep existing behavior
+ok 3 - trash-reference: missing collections and malformed elements keep existing behavior
+  ---
+  duration_ms: 0.117208
+  type: 'test'
+  ...
+# Subtest: trash-reference: blockers sum integers only without clamping negatives
+ok 4 - trash-reference: blockers sum integers only without clamping negatives
+  ---
+  duration_ms: 0.131791
+  type: 'test'
+  ...
+# Subtest: trash-reference: lifecycle messages preserve defaults, coercion and count suffix
+ok 5 - trash-reference: lifecycle messages preserve defaults, coercion and count suffix
+  ---
+  duration_ms: 0.095625
+  type: 'test'
+  ...
+# Subtest: trash-reference: revision conflict takes precedence without consulting other fields
+ok 6 - trash-reference: revision conflict takes precedence without consulting other fields
+  ---
+  duration_ms: 0.044917
+  type: 'test'
+  ...
+# Subtest: trash-reference: presentation functions leave frozen caller records unchanged
+ok 7 - trash-reference: presentation functions leave frozen caller records unchanged
+  ---
+  duration_ms: 0.066417
+  type: 'test'
+  ...
+# Subtest: trash TS matches unchanged JS across deterministic generated scalar/count inputs
+ok 8 - trash TS matches unchanged JS across deterministic generated scalar/count inputs
+  ---
+  duration_ms: 2.978417
+  type: 'test'
+  ...
+# seed=334460; 400 inputs x 3 helpers = 1200 differential observations
+# Subtest: trash TS preserves property access and coercion order including propagated errors
+ok 9 - trash TS preserves property access and coercion order including propagated errors
+  ---
+  duration_ms: 0.30325
+  type: 'test'
+  ...
+# Subtest: trash TS preserves filtering identities, order, sparse semantics and callback access
+ok 10 - trash TS preserves filtering identities, order, sparse semantics and callback access
+  ---
+  duration_ms: 0.287625
+  type: 'test'
+  ...
+# Subtest: trash TS retains own-enumerable count semantics and leaves frozen inputs unchanged
+ok 11 - trash TS retains own-enumerable count semantics and leaves frozen inputs unchanged
+  ---
+  duration_ms: 0.101833
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 37.164

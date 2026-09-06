@@ -150,3 +150,9 @@ bind the reviewed UI child to its immutable implementation revision, and continu
 FS family reference capture. Node I still needs complete source/writer/launcher
 classification; SEM still needs profile selection and remaining caller/depth/native
 coverage. Missing host cells remain open while portable work continues.
+
+Immutable trash implementation/evidence checkpoint: `7fa2687f3cac5d2ac4a28053124dcf13524fae4d`.
+[Reviewed local receipt](migration/evidence/trash-helper-7fa2687.json) binds source,
+oracle, compiler and dependency bytes plus the 11-test log. All nine commit suites
+passed for that implementation. This receipt remains distinct from the pending
+executable child/node acceptance gates.
