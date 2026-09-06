@@ -664,3 +664,57 @@ coordinated typed consumer and write-boundary integration. The copy lane require
 native binary-stream and accelerator evidence before native activation. All
 previously recorded host, Python-free, broad validation and release requirements
 remain mandatory.
+
+## Renewed planning and setup review
+
+The user requested a complete remaining agent-task DAG and local testing setup
+review before granting renewed implementation, staging PR and merge authority.
+The proposed [remaining execution agreement](migration/remaining-migration-plan.md)
+contains 115 packages expanded to 326 reference/implementation/review assignments.
+It covers the canonical 35 implementation parent families and explicitly excludes
+release. Exact file/test/host manifests and any necessary child split precede
+Ready; the graph is a proposal, not an acceptance receipt or new implementation
+authorization. The existing migration acceptance contract is retained.
+
+Independent review corrected installed-launch/assembly, parser/HTTP and real
+workspace/browser dependencies, split broad QA/test families, made executable
+receipts gate acceptance and bound native acceptance to host identities. Final
+review found no remaining blocking planning issue. The graph checker rejects
+cycles, unknown dependencies, detached tasks, altered authority and removal of
+canonical parent families; four validator tests passed without skips.
+
+The installed native Git hooks remain active for this worktree. Husky is not a
+dependency; replacing the wrapper is unnecessary for the requested tier behavior.
+Thirty hook regression tests passed without skips. Documentation now correctly
+states seven fast suites plus build/link checks, nine commit checks total. Planned
+improvements cover transitive affected-test ownership, a host-wide heavy-run lease
+and native/child-skip acceptance evidence. Current conservative escalation remains.
+The live staging ruleset was read: PR/deletion/non-fast-forward rules exist, but
+there is no required-status-check rule. No workflow or server setting was changed.
+
+No new migration implementation, push, PR, merge or live activation was performed
+in this planning turn. Full migration acceptance and prior coverage gaps remain
+open. The next implementation dispatch waits for the user's renewed agreement.
+
+## Remaining execution authorized
+
+The user's explicit “Begin.” authorizes execution of the refined 115-package DAG:
+implementation, rigorous local testing, local commits, isolated integration,
+PRs targeting staging and staging merges after the agreed gates. Production
+release and live-data activation remain separately approved. The plan and checker
+now recognize approved execution without upgrading any package's acceptance.
+
+P00 reconciliation confirms the current implementation baseline `94e7d9c` and
+37 emitted modules/315 inventoried sources. Independent audit confirmed all
+production/native/reference files unchanged, the retained nine-check commit
+receipt bound to the same tree, and no deep-test receipt in this worktree.
+Fresh inventory remains consistent but acceptance open, with 4,380 unmapped cells.
+Existing 153-test evidence is reused only for unchanged inert text/copy scope.
+All previously documented Python 3.14, raw-filename, native host, packaging,
+Python-free, cutover and rollback gaps remain open.
+
+A fresh staging fetch found two upstream commits (skills cleanup PR51) beyond
+`f18fcda`, and 39 local commits on this branch. There are no open PRs. The plan
+checkpoint is saved before integrating the new staging head; changed skills and
+contracts will be reconciled before downstream dispatch. No push or merge-to-
+staging is justified by the existing commit-only evidence.

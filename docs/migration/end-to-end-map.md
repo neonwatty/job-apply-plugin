@@ -8,6 +8,11 @@ Completed work is reused, never counted as production activation.
 The [acceptance contract](acceptance-contract.md) defines every node and subset's
 required evidence, status transitions and migration-wide done condition.
 
+The user approved the refined [agent-task DAG](remaining-migration-plan.md) with
+“Begin.”, including rigorous local testing, PRs targeting staging and gated staging
+merges. The existing acceptance contracts remain mandatory; live release and
+activation are not included.
+
 ## Outcome and scope
 
 Replace all shipped Python application code and handwritten browser/QA JavaScript

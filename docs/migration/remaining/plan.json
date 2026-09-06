@@ -1,0 +1,1807 @@
+{
+  "schemaVersion": 1,
+  "baseline": "94e7d9c",
+  "status": "approved-for-execution",
+  "releaseExcluded": true,
+  "packages": [
+    {
+      "id": "P00",
+      "title": "Foundation receipt reconciliation",
+      "parents": [
+        "I",
+        "DONE"
+      ],
+      "dependencies": [],
+      "planning_scope": "Existing src/runtime and migration receipts",
+      "acceptance": "Bind 94e7d9c evidence to unchanged files; list every remaining native, Unicode and caller limitation; never upgrade inert evidence to whole-node acceptance.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "P01",
+      "title": "Executable task and acceptance receipts",
+      "parents": [
+        "I",
+        "REF"
+      ],
+      "dependencies": [
+        "P00"
+      ],
+      "planning_scope": "tools/migration; config/migration evidence schemas",
+      "acceptance": "Validate exact file manifests, surface/scenario IDs, environment identities, reviewer SHA, dependency staleness and internal skips; malformed or incomplete receipts must fail closed.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "P02",
+      "title": "Support matrix and test-host decisions",
+      "parents": [
+        "HOST"
+      ],
+      "dependencies": [
+        "P00"
+      ],
+      "planning_scope": "README support promises; host/runtime evidence",
+      "acceptance": "Enumerate supported product x OS x CPU x version cells and authorized clean hosts; preserve current promises unless explicitly changed; missing access remains open, never simulated as native success.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "P03",
+      "title": "Reviewed affected-test mappings",
+      "parents": [
+        "CI"
+      ],
+      "dependencies": [
+        "P01"
+      ],
+      "planning_scope": "tools/local-checks/policy.mjs; tests_js/local_checks_policy.test.mjs",
+      "acceptance": "Map each accepted seam to its full transitive regression set; shared contracts, unknown paths, deletions, locks and policy changes escalate; mutation tests prove no consumer suite silently drops out.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "P04",
+      "title": "One heavy-run lease per host",
+      "parents": [
+        "CI"
+      ],
+      "dependencies": [
+        "P01"
+      ],
+      "planning_scope": "tools/local-checks process coordination; new host-lease leaf",
+      "acceptance": "Two concurrent coordinators cannot overlap heavy suites; cancellation and dead-owner recovery release only the owned lease; PID reuse and separate worktrees are covered.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "P05",
+      "title": "Native evidence identity and required-cell runner",
+      "parents": [
+        "I",
+        "HOST"
+      ],
+      "dependencies": [
+        "P01",
+        "P02"
+      ],
+      "planning_scope": "tools/migration evidence adapters; test-runner receipt integration",
+      "acceptance": "Bind relevant interpreter binaries/all aliases, browser, compiler, native addon, OS build and artifact hashes; a passing suite with a required child skip must fail acceptance.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "S01",
+      "title": "Codepoint-keyed JSON object leaf",
+      "parents": [
+        "SEM"
+      ],
+      "dependencies": [
+        "P00"
+      ],
+      "planning_scope": "new src/contracts/raw-json/python-object.ts",
+      "acceptance": "Equal independently allocated keys overwrite without moving insertion order; literal surrogate pair/scalar keys coexist; legacy string Map inputs keep their behavior; no activation yet.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "S02",
+      "title": "Python-compatible JSON byte decoder",
+      "parents": [
+        "SEM"
+      ],
+      "dependencies": [
+        "P00"
+      ],
+      "planning_scope": "new src/contracts/raw-json byte-decoding leaves",
+      "acceptance": "Frozen UTF8/16/32 detection, BOM, surrogatepass, malformed bytes and mixed surrogate cases match each supported reference profile; preserve explicit codepoints before parsing.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "S03",
+      "title": "Typed parser and ASCII serializer integration",
+      "parents": [
+        "SEM"
+      ],
+      "dependencies": [
+        "S01",
+        "S02"
+      ],
+      "planning_scope": "src/contracts/raw-json value/parser/serializer; typed consumer adapters",
+      "acceptance": "Combine only JSON escape pairs, preserve raw/escaped neighbors, duplicate keys, numeric atoms, codepoint error positions and legacy callers; all impacted typed consumers compile together.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "S04",
+      "title": "Codepoint-preserving persisted chunks",
+      "parents": [
+        "SEM",
+        "TX"
+      ],
+      "dependencies": [
+        "S03"
+      ],
+      "planning_scope": "src/contracts/persisted-json.ts; jsonl-json.ts; private-filesystem.ts",
+      "acceptance": "Atomic writes encode at each original chunk boundary; JSONL encodes once before open; error object/position, prior bytes and cleanup match frozen atomic/JSONL profiles.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "S05",
+      "title": "Text-aware paths and content caches",
+      "parents": [
+        "SEM",
+        "FS"
+      ],
+      "dependencies": [
+        "S03"
+      ],
+      "planning_scope": "POSIX path/byte leaves; managed-resume and digest consumers",
+      "acceptance": "Retain path validation/encoding order and raw-byte identity; invalid last components do not fail before valid parent checks; equal text instances share cache keys, pairs/scalars differ.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "S06",
+      "title": "Unicode normalization and answer matching",
+      "parents": [
+        "SEM",
+        "MATCH"
+      ],
+      "dependencies": [
+        "S03"
+      ],
+      "planning_scope": "scripts/job_apply_answer_matching reference; new src/matching leaves",
+      "acceptance": "Curated and seeded normalization/ranking/ties/limits/scope/sensitivity corpus matches actual reference versions; no approximate Unicode subset or test-only normalization.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "S07",
+      "title": "Caller depth and diagnostic closure",
+      "parents": [
+        "SEM"
+      ],
+      "dependencies": [
+        "S03",
+        "S04",
+        "S05"
+      ],
+      "planning_scope": "CLI/HTTP ingress diagnostics and recursion contract tests",
+      "acceptance": "Exercise real ingress and helper callers for invalid options, depth, numeric limits and error ordering; select documented profile behavior where Python versions differ without silently changing contracts.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "F01",
+      "title": "Native filesystem path and permission closure",
+      "parents": [
+        "FS"
+      ],
+      "dependencies": [
+        "S05",
+        "P02",
+        "P05"
+      ],
+      "planning_scope": "src/store raw-read/path/digest leaves; native platform adapters",
+      "acceptance": "Native symlink/reparse/traversal/race/nonregular/permission cells pass on required hosts; rejected reads preserve bytes, mtimes and modes; EILSEQ and missing-host cells remain failures until resolved.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "F02",
+      "title": "Typed document reads and schema validation",
+      "parents": [
+        "READ"
+      ],
+      "dependencies": [
+        "F01",
+        "S07"
+      ],
+      "planning_scope": "src/store/read-json-object.ts; validation leaf modules",
+      "acceptance": "All document kinds preserve corrupt/future/legacy handling, int/float identity and field order; prove pure reads have no startup or recovery writes.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "F03",
+      "title": "Lock and atomic-write native closure",
+      "parents": [
+        "TX"
+      ],
+      "dependencies": [
+        "F01",
+        "S04"
+      ],
+      "planning_scope": "exclusive-file-lock; atomic-write-json; private-filesystem and native bindings",
+      "acceptance": "Eight contending writers, killed owner, every named open/write/flush/fsync/rename/close fault and platform cell preserve reference outcomes; repeat recovery without lost acknowledged updates.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "F04",
+      "title": "Streaming history reader and validation",
+      "parents": [
+        "READ",
+        "JOB"
+      ],
+      "dependencies": [
+        "F02"
+      ],
+      "planning_scope": "new src/store history-read leaves",
+      "acceptance": "Frozen history reference preserves strict UTF8 read-ahead, physical line labels, validation asymmetry and complete input-tree preservation across supported profiles.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "F05",
+      "title": "Real history idempotency and append integration",
+      "parents": [
+        "TX",
+        "JOB"
+      ],
+      "dependencies": [
+        "F04",
+        "F03",
+        "S04"
+      ],
+      "planning_scope": "src/store/jsonl-history.ts; new history-identity leaves",
+      "acceptance": "Use real canonical identity instead of synthetic callbacks; append/repair/duplicate/stale/corrupt cases preserve exact bytes and ordering under lock and process death.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "F06",
+      "title": "Shared journal protocol interfaces",
+      "parents": [
+        "TX",
+        "JOUR"
+      ],
+      "dependencies": [
+        "F03",
+        "F02"
+      ],
+      "planning_scope": "new src/store journal protocol leaves",
+      "acceptance": "Freeze each inventoried journal discriminator, state transition, ownership and fault point; domains consume leaf protocols without editing shared dispatch; malformed journals cannot broaden writes.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "A01",
+      "title": "Pure account/readiness and policy decisions",
+      "parents": [
+        "POL"
+      ],
+      "dependencies": [
+        "S07"
+      ],
+      "planning_scope": "new src/policy leaves from form-readiness/accounts/policy model",
+      "acceptance": "Decision matrices preserve defaults, authorization lifetime and malformed inputs; clocks/randomness explicit; pure functions perform no hidden IO or credential lookup.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "A02",
+      "title": "HTTP trust and body transport",
+      "parents": [
+        "AUTH"
+      ],
+      "dependencies": [
+        "S02",
+        "P01",
+        "S03"
+      ],
+      "planning_scope": "new src/workspace HTTP/auth leaves",
+      "acceptance": "Real loopback wire tests cover Host/Origin/Bearer, headers, content lengths, body bounds and frozen39 byte cases; denied requests cause zero writes and no secret leakage.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "A03",
+      "title": "Read projections and queries",
+      "parents": [
+        "PROJ"
+      ],
+      "dependencies": [
+        "F02"
+      ],
+      "planning_scope": "new src/workspace projections/queries leaves",
+      "acceptance": "All projection schemas, ordering and missing/legacy defaults match; lazy startup effects are excluded and assigned to journal startup.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "A04",
+      "title": "HTTP read and asset routes",
+      "parents": [
+        "PROJ",
+        "AUTH"
+      ],
+      "dependencies": [
+        "A02",
+        "A03"
+      ],
+      "planning_scope": "new src/workspace read/asset route leaves",
+      "acceptance": "Every inventoried read/asset/HEAD route has exact status/header/body tests and authorization negatives; CLI and HTTP projections agree on shared fixtures.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "D01",
+      "title": "Profile mutations",
+      "parents": [
+        "PF"
+      ],
+      "dependencies": [
+        "F02",
+        "F03",
+        "F06",
+        "S07"
+      ],
+      "planning_scope": "new src/store/domains/profile leaves",
+      "acceptance": "Exact revision/provenance, protected fields, null/missing, no-op/conflict and response/tree parity; publish fixed journal protocol before recovery integration.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "D02",
+      "title": "Fact mutations and provenance",
+      "parents": [
+        "PF"
+      ],
+      "dependencies": [
+        "D01"
+      ],
+      "planning_scope": "new src/store/domains/facts leaves",
+      "acceptance": "Create/update/delete/merge preserve fact identities and provenance; stale or protected mutations preserve state; profile cross-references survive reload.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "D03",
+      "title": "Job CRUD and legacy reads",
+      "parents": [
+        "JOB"
+      ],
+      "dependencies": [
+        "F02",
+        "F03",
+        "F06"
+      ],
+      "planning_scope": "new src/store/domains/jobs CRUD/legacy leaves",
+      "acceptance": "Create/read/update and legacy documents preserve defaults, identity and revisions; invalid/conflicting operations leave exact state unchanged.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "D04",
+      "title": "Job upsert and overview",
+      "parents": [
+        "JOB"
+      ],
+      "dependencies": [
+        "D03",
+        "F05"
+      ],
+      "planning_scope": "new src/store/domains/jobs upsert/overview leaves",
+      "acceptance": "Repeat upsert is idempotent; URL/identity collisions and history links match reference; overview stays consistent with durable job state.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "D05",
+      "title": "Job trash, restore and delete",
+      "parents": [
+        "JOB"
+      ],
+      "dependencies": [
+        "D04"
+      ],
+      "planning_scope": "new job lifecycle leaves",
+      "acceptance": "Referenced jobs enforce delete/restore restrictions; typed confirmation and stale revisions behave identically; repeated lifecycle and interrupted operations preserve links.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "D06",
+      "title": "Resume import and assignment mutations",
+      "parents": [
+        "RES"
+      ],
+      "dependencies": [
+        "F02",
+        "F03",
+        "F06"
+      ],
+      "planning_scope": "new src/store/domains/resumes storage/mutation leaves",
+      "acceptance": "Import/replace/assign validate exact bytes, digest, permissions and references; interruption at each storage transition preserves baseline recovery state.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "D07",
+      "title": "Resume read, trash and restore",
+      "parents": [
+        "RES"
+      ],
+      "dependencies": [
+        "D06"
+      ],
+      "planning_scope": "new resume read/lifecycle leaves",
+      "acceptance": "Missing/nonregular files, assignments, blocked deletion and repeat restore match state/projection contracts without hidden reads becoming writes.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "D08",
+      "title": "Extraction request lifecycle",
+      "parents": [
+        "RES"
+      ],
+      "dependencies": [
+        "D06",
+        "D02"
+      ],
+      "planning_scope": "new extraction request leaves",
+      "acceptance": "Human-requested extraction authority, persisted request identity, cancellation and stale revision behavior match; no unsolicited extraction or live document access in tests.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "D09",
+      "title": "Extraction proposals and grouped review",
+      "parents": [
+        "RES"
+      ],
+      "dependencies": [
+        "D08"
+      ],
+      "planning_scope": "new extraction proposal leaves",
+      "acceptance": "Accept/reject/partial grouped review preserves provenance, protected facts, idempotency and journal state at every interruption boundary.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "D10",
+      "title": "Answer reads and reuse selection",
+      "parents": [
+        "ANS"
+      ],
+      "dependencies": [
+        "F02",
+        "S06",
+        "D02"
+      ],
+      "planning_scope": "new answer read/reuse leaves",
+      "acceptance": "Scope, sensitivity, provenance and ranked reuse match; corrupt/stale mappings and no-match behavior are exact and read-only.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "D11",
+      "title": "Answer CRUD and mappings",
+      "parents": [
+        "ANS"
+      ],
+      "dependencies": [
+        "D10",
+        "F03",
+        "F06"
+      ],
+      "planning_scope": "new answer mutation leaves",
+      "acceptance": "Create/update/delete and field mappings preserve keys, revisions, provenance and durable bytes; stale/conflict/privacy cases reject without writes.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "D12",
+      "title": "Answer merge and cleanup",
+      "parents": [
+        "ANS"
+      ],
+      "dependencies": [
+        "D11"
+      ],
+      "planning_scope": "new answer merge/cleanup leaves",
+      "acceptance": "Merge/cleanup preserve ordering and cross-references; repeat invocation and interruption are idempotent; protected and sensitive data do not leak.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "D13",
+      "title": "Account registry",
+      "parents": [
+        "ACC"
+      ],
+      "dependencies": [
+        "F02",
+        "F03",
+        "F06",
+        "A01"
+      ],
+      "planning_scope": "new account registry leaves",
+      "acceptance": "Account identities, revisions, synthetic separation and credential references match; public output/logs never expose secrets.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "D14",
+      "title": "Account settings and scopes",
+      "parents": [
+        "ACC"
+      ],
+      "dependencies": [
+        "D13"
+      ],
+      "planning_scope": "new account settings/email-scope leaves",
+      "acceptance": "Default/settings changes and provider scopes preserve authority boundaries, revisions and no-op semantics; denial leaves state unchanged.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "D15",
+      "title": "Trusted Fill state transitions",
+      "parents": [
+        "ACC"
+      ],
+      "dependencies": [
+        "D14"
+      ],
+      "planning_scope": "new account trusted-fill leaves",
+      "acceptance": "One-shot authorization, scope binding, stale/replayed tokens and transitions preserve human control; repeat consumption cannot widen authority.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "D16",
+      "title": "Account operation persistence",
+      "parents": [
+        "ACC"
+      ],
+      "dependencies": [
+        "D15"
+      ],
+      "planning_scope": "new account operations/password/email execution state leaves",
+      "acceptance": "Supported transitions, owner loss, cancellation and partial operation journals preserve exact state; native execution remains an explicit adapter.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "J01",
+      "title": "Extraction recovery",
+      "parents": [
+        "JOUR"
+      ],
+      "dependencies": [
+        "D09",
+        "F06"
+      ],
+      "planning_scope": "new extraction recovery leaves",
+      "acceptance": "Every valid/invalid extraction journal phase converges exactly once on repeated startup; stale or malformed records cannot mutate unrelated facts/files.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "J02",
+      "title": "Account recovery",
+      "parents": [
+        "JOUR"
+      ],
+      "dependencies": [
+        "D16",
+        "F06"
+      ],
+      "planning_scope": "new account recovery leaves",
+      "acceptance": "Crash/restart across account operation phases preserves revision/credential references and refusal semantics; repeated recovery is stable and secret-free.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "J03",
+      "title": "Coordinator journal persistence and recovery",
+      "parents": [
+        "JOUR"
+      ],
+      "dependencies": [
+        "D05",
+        "D07",
+        "D12",
+        "J01",
+        "J02",
+        "F05"
+      ],
+      "planning_scope": "new coordinator persistence/recovery leaves",
+      "acceptance": "Cross-domain journal fault matrix closes history/reference updates exactly once; concurrent recovery and corrupt/stale journals preserve authority and state.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "J04",
+      "title": "Startup orchestration",
+      "parents": [
+        "JOUR"
+      ],
+      "dependencies": [
+        "J03"
+      ],
+      "planning_scope": "single startup dispatcher and Store composition owner",
+      "acceptance": "Inventory all write-aware startup reads; recovery order and legacy initialization match; Python/TS remain isolated and exactly one dispatcher owns writes.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "C01",
+      "title": "Session documents and lifecycle",
+      "parents": [
+        "SESS"
+      ],
+      "dependencies": [
+        "J04",
+        "A01",
+        "S06"
+      ],
+      "planning_scope": "new session document/lifecycle leaves",
+      "acceptance": "Legacy/current/future session schemas, lifecycle revisions, readiness and close/reopen behavior preserve response and state parity.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "C02",
+      "title": "Claims, leases and heartbeat",
+      "parents": [
+        "SESS"
+      ],
+      "dependencies": [
+        "C01"
+      ],
+      "planning_scope": "new coordinator claim leaves",
+      "acceptance": "Controlled-clock expiry, eight competitors, stale owners, process death and heartbeat races produce one owner and no duplicate acknowledgments.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "C03",
+      "title": "Progress and attention projections",
+      "parents": [
+        "SESS"
+      ],
+      "dependencies": [
+        "C02"
+      ],
+      "planning_scope": "new coordinator progress/attention leaves",
+      "acceptance": "Progress/history and blockers agree with durable state; nominal reads with writes are explicit; stale browser responses cannot overwrite newer state.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "C04",
+      "title": "Approval and readiness coordination",
+      "parents": [
+        "SESS"
+      ],
+      "dependencies": [
+        "C03"
+      ],
+      "planning_scope": "new coordinator approval/readiness leaves",
+      "acceptance": "Approval lifetime, invalidation, restart and known-data versus browser-action distinctions match; no automatic final submission.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "N01",
+      "title": "Credential adapter and identity",
+      "parents": [
+        "NATIVE"
+      ],
+      "dependencies": [
+        "P02",
+        "D13",
+        "P05"
+      ],
+      "planning_scope": "new src/native credential adapter; retained Swift boundary",
+      "acceptance": "Actual supported host cells prove executable identity, permission denial, cancellation, redaction and credential reference handling; mocks cannot close native evidence.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "N02",
+      "title": "Account native execution adapters",
+      "parents": [
+        "NATIVE"
+      ],
+      "dependencies": [
+        "N01",
+        "D16"
+      ],
+      "planning_scope": "new native account/password/email adapters",
+      "acceptance": "Synthetic native flows cover cancellation, attestation, stale authority and process loss; opt-in real account flows require separate explicit authority if required by agreed matrix.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "N03",
+      "title": "Trusted Fill native boundary",
+      "parents": [
+        "NATIVE"
+      ],
+      "dependencies": [
+        "N02",
+        "D15"
+      ],
+      "planning_scope": "new native Trusted Fill adapter",
+      "acceptance": "Exact one-shot scope, stale receipt and replay rejection; native failure cannot extend authority or expose secrets; preserve retained Swift contracts.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "Q01",
+      "title": "Recorder filesystem and private checkpoints",
+      "parents": [
+        "QA"
+      ],
+      "dependencies": [
+        "F03"
+      ],
+      "planning_scope": "new src/qa recorder IO/checkpoint/resource leaves",
+      "acceptance": "Owned paths, partial writes, quotas and cleanup preserve capture identity and private modes; no orphan files or descriptors after interruption.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "Q02",
+      "title": "Recorder capture and safety modules",
+      "parents": [
+        "QA"
+      ],
+      "dependencies": [
+        "Q01",
+        "A01",
+        "Q16"
+      ],
+      "planning_scope": "new src/qa recorder capture/record/isolated-source/CLI leaves",
+      "acceptance": "All ATS safety modules preserve capture/export contracts, input bounds, backpressure and sanitization using synthetic fixtures.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "Q03",
+      "title": "Recorder broker and guardian",
+      "parents": [
+        "QA"
+      ],
+      "dependencies": [
+        "Q02"
+      ],
+      "planning_scope": "new src/qa broker/guardian leaves",
+      "acceptance": "Disconnect, cancellation, owner death, request authentication and checkpoint recovery preserve one owned capture and bounded cleanup.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "Q04",
+      "title": "QA and account renderers",
+      "parents": [
+        "QA"
+      ],
+      "dependencies": [
+        "P01"
+      ],
+      "planning_scope": "new src/qa renderer modules emitted over old JS",
+      "acceptance": "Original-JS differential and real-browser synthetic render tests preserve events, identity and final-action observation; no Python server dependency in final form.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "Q05",
+      "title": "QA HTTP and account test servers",
+      "parents": [
+        "QA"
+      ],
+      "dependencies": [
+        "A02",
+        "Q04"
+      ],
+      "planning_scope": "new src/qa server/auth/events/account-server leaves",
+      "acceptance": "Real owned test servers preserve authentication, event streaming, bounded requests, disconnect cleanup and final-action observation; all server startup paths become Python-free.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "Q06",
+      "title": "Chrome discovery and authenticated control",
+      "parents": [
+        "CHROME"
+      ],
+      "dependencies": [
+        "F01"
+      ],
+      "planning_scope": "new src/qa/chrome discovery/control leaves",
+      "acceptance": "Forged/stale controls, replaced PID/socket and unowned browser generations cannot be adopted or killed; only owned synthetic profiles used.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "Q07",
+      "title": "Chrome supervision and lifecycle",
+      "parents": [
+        "CHROME"
+      ],
+      "dependencies": [
+        "Q06"
+      ],
+      "planning_scope": "new src/qa/chrome owner/supervisor/CLI leaves",
+      "acceptance": "Launch/partial connection/death/timeout/shutdown matrix cleans only owned processes; receipt binds actual browser binary and generation.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "Q08",
+      "title": "Human-only final-action policy",
+      "parents": [
+        "FINAL"
+      ],
+      "dependencies": [
+        "A01",
+        "F03"
+      ],
+      "planning_scope": "new policy authorization/storage/outcome leaves; synthetic submission observer",
+      "acceptance": "Races/retries/expired authority produce zero unauthorized submissions and one winner; only the established human final path remains possible.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "Q09",
+      "title": "Replay prepare and lifecycle",
+      "parents": [
+        "REPLAY"
+      ],
+      "dependencies": [
+        "Q03",
+        "Q05",
+        "Q07",
+        "Q08",
+        "Q14",
+        "Q15"
+      ],
+      "planning_scope": "new src/qa/replay prepare/lifecycle/secure-io leaves",
+      "acceptance": "Approved fixture identity, substitution resistance, capture ownership and interruption/recovery match; no live account behavior substituted for synthetic proofs.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "Q10",
+      "title": "Replay evaluate, report and cleanup",
+      "parents": [
+        "REPLAY"
+      ],
+      "dependencies": [
+        "Q09"
+      ],
+      "planning_scope": "new replay evaluate/report/cleanup leaves",
+      "acceptance": "Exact oracle results, signed cleanup authority, no leaks/orphans and repeated cleanup after crashes; report privacy and event order preserved.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "Q11",
+      "title": "Privacy scanner and signed tombstones",
+      "parents": [
+        "REPLAY"
+      ],
+      "dependencies": [
+        "F03",
+        "Q02"
+      ],
+      "planning_scope": "new src/qa privacy and deletion leaves",
+      "acceptance": "Known leak canaries and substitution/tombstone tests reject secrets, unexpected artifacts and invalid signatures without erasing unrelated state.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "Q12",
+      "title": "Promotion approval and candidate binding",
+      "parents": [
+        "REPLAY"
+      ],
+      "dependencies": [
+        "Q10",
+        "Q11"
+      ],
+      "planning_scope": "new promotion approval/binding/candidate leaves",
+      "acceptance": "Approved immutable candidate and destination identity survive substitution/race tests; no unapproved fixture becomes public.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "Q13",
+      "title": "Promotion transaction and rollback",
+      "parents": [
+        "REPLAY"
+      ],
+      "dependencies": [
+        "Q12",
+        "F03"
+      ],
+      "planning_scope": "new promotion transaction/rollback/CLI leaves",
+      "acceptance": "Every write/rename/deletion interruption rolls back or recovers to the exact expected tree; repeat recovery and leak scans pass.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "C05",
+      "title": "Task CLI and broker integration",
+      "parents": [
+        "ATT"
+      ],
+      "dependencies": [
+        "C04",
+        "N03",
+        "Q08"
+      ],
+      "planning_scope": "new src/cli task and task-broker leaves",
+      "acceptance": "Exact argv/stdout/stderr/exit contracts and synthetic task-to-session lifecycle preserve heartbeat, bearer and authority under process loss.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "C06",
+      "title": "Attempt CLI lifecycle",
+      "parents": [
+        "ATT"
+      ],
+      "dependencies": [
+        "C05",
+        "Q03"
+      ],
+      "planning_scope": "new src/cli attempt leaves",
+      "acceptance": "Task-to-attempt-to-capture/recovery flow with real owned adapters preserves lease lifetime and final-action refusal; no duplicate attempt ownership.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "U01",
+      "title": "Remaining pure UI helpers",
+      "parents": [
+        "UI0"
+      ],
+      "dependencies": [
+        "P00"
+      ],
+      "planning_scope": "new src/workspace-ui/lib leaf modules",
+      "acceptance": "Every remaining original helper/export has independent original-JS differential tests for coercion, defaults, text, ordering and input mutation; existing trash/resume evidence reused only if unchanged.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "U02",
+      "title": "UI API, state and DOM infrastructure",
+      "parents": [
+        "UI0"
+      ],
+      "dependencies": [
+        "U01"
+      ],
+      "planning_scope": "new src/workspace-ui API/state/DOM leaves",
+      "acceptance": "Auth URLs, errors, request cancellation, event binding and stale-response rules match; no bootstrap dependency from leaf modules.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "U03",
+      "title": "Overview and jobs UI",
+      "parents": [
+        "UIF"
+      ],
+      "dependencies": [
+        "U02"
+      ],
+      "planning_scope": "new overview/jobs feature modules",
+      "acceptance": "Original feature exports and synthetic DOM workflows preserve editing/filtering/selection and stale results; real route acceptance deferred to integrated gate.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "U04",
+      "title": "Answers and facts UI",
+      "parents": [
+        "UIF"
+      ],
+      "dependencies": [
+        "U02"
+      ],
+      "planning_scope": "new answers/facts feature modules",
+      "acceptance": "Editing/reuse/provenance/conflict and grouped review state match original UI; stale response cannot resurrect deleted data.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "U05",
+      "title": "Resumes and unified trash UI",
+      "parents": [
+        "UIF"
+      ],
+      "dependencies": [
+        "U02"
+      ],
+      "planning_scope": "new resumes/trash feature modules",
+      "acceptance": "Import/assignment/trash/restore/delete confirmation and blocked state remain correct; no implementation internals exposed to users.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "U06",
+      "title": "Activity, automation and navigation UI",
+      "parents": [
+        "UIF"
+      ],
+      "dependencies": [
+        "U02"
+      ],
+      "planning_scope": "new activity/automation/navigation feature modules",
+      "acceptance": "Activity order, navigation/auth state and automation controls preserve public events and authority; error/loading/no-data states covered.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "U07",
+      "title": "UI bindings and bootstrap composition",
+      "parents": [
+        "UIF"
+      ],
+      "dependencies": [
+        "U03",
+        "U04",
+        "U05",
+        "U06"
+      ],
+      "planning_scope": "single src/workspace-ui bootstrap/bindings owner",
+      "acceptance": "Every original browser export/event reachable exactly once; no duplicate handlers, stale module paths or handwritten shipped JS escapes.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "W01",
+      "title": "Profile/fact write routes",
+      "parents": [
+        "PROJ",
+        "PF"
+      ],
+      "dependencies": [
+        "A02",
+        "D02"
+      ],
+      "planning_scope": "new workspace profile/fact route adapter",
+      "acceptance": "Real HTTP and CLI mutations agree on exact responses, revisions and rejection state; auth failures have zero effects.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "W02",
+      "title": "Job lifecycle write routes",
+      "parents": [
+        "PROJ",
+        "JOB"
+      ],
+      "dependencies": [
+        "A02",
+        "D05"
+      ],
+      "planning_scope": "new workspace job route adapter",
+      "acceptance": "Create/upsert/trash/restore/delete route matrix agrees with durable domain and history; stale/invalid/denied calls preserve state.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "W03",
+      "title": "Resume and extraction write routes",
+      "parents": [
+        "PROJ",
+        "RES"
+      ],
+      "dependencies": [
+        "A02",
+        "D07",
+        "D09",
+        "J01"
+      ],
+      "planning_scope": "new workspace resume/extraction route adapter",
+      "acceptance": "Bytes, digest, proposals, grouped review and cancellation parity over real HTTP; partial failure and auth refusal have exact effects.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "W04",
+      "title": "Answer write routes",
+      "parents": [
+        "PROJ",
+        "ANS"
+      ],
+      "dependencies": [
+        "A02",
+        "D12"
+      ],
+      "planning_scope": "new workspace answer route adapter",
+      "acceptance": "CRUD/reuse/merge/cleanup response and state parity, including scopes, sensitivity, conflicts and missing/null distinctions.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "W05",
+      "title": "Account/settings/Trusted Fill write routes",
+      "parents": [
+        "PROJ",
+        "ACC"
+      ],
+      "dependencies": [
+        "A02",
+        "D16",
+        "J02",
+        "N03"
+      ],
+      "planning_scope": "new workspace account route adapter",
+      "acceptance": "Full transition and denial wire matrix; secrets absent from HTTP/logs and native failures never widen authority.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "B01",
+      "title": "Native binary stream adapter",
+      "parents": [
+        "DIST"
+      ],
+      "dependencies": [
+        "P02",
+        "F01",
+        "P05"
+      ],
+      "planning_scope": "new src/package binary read/write buffering leaves",
+      "acceptance": "Actual raw read/write/flush/close failures and partial buffered bytes match frozen profiles on each required native host; model-only evidence is insufficient.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "B02",
+      "title": "Native data-copy acceleration",
+      "parents": [
+        "DIST"
+      ],
+      "dependencies": [
+        "B01"
+      ],
+      "planning_scope": "new native copy bindings and data-copy adapter",
+      "acceptance": "Actual supported accelerator/fallback/error chains preserve partial state and permissions; no Node copyFile substitution that changes modes prematurely; Linux/Windows explicitly proven or excluded by approved matrix.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "B03",
+      "title": "Metadata-copy adapter",
+      "parents": [
+        "DIST"
+      ],
+      "dependencies": [
+        "B01"
+      ],
+      "planning_scope": "new metadata copy leaves; timestamp provider integration",
+      "acceptance": "Post-data stat/atime/mtime/xattr/chmod/flags ordering and suppressed/propagated errors match actual reference; full nanoseconds and platform differences witnessed natively.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "B04",
+      "title": "Critical artifact copy and verification",
+      "parents": [
+        "DIST"
+      ],
+      "dependencies": [
+        "B02",
+        "B03"
+      ],
+      "planning_scope": "installed-artifacts/artifact-paths and package-copy orchestrator",
+      "acceptance": "Whole-package preflight including missing destinations, symlinks/FIFOs, exact copied bytes and partial failure state; inventory and verification cover all candidate artifacts.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "B05",
+      "title": "Packaged runtime selection and build",
+      "parents": [
+        "DIST"
+      ],
+      "dependencies": [
+        "P02"
+      ],
+      "planning_scope": "runtime packaging/build/signing configuration",
+      "acceptance": "Meet agreed clean-host promise without install/download at launch; reproducible Node/native binary identity, licenses and target-specific artifacts; developer-installed Node/clang is not customer acceptance.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "B06",
+      "title": "Python-free installed launchers",
+      "parents": [
+        "DIST"
+      ],
+      "dependencies": [
+        "B04",
+        "B05",
+        "G01",
+        "G02",
+        "G03"
+      ],
+      "planning_scope": "installed Store/workspace/task/attempt/QA launch wrappers",
+      "acceptance": "Cold/offline launch, missing/corrupt runtime diagnostics, paths with spaces and host discovery work without Python or source checkout; no hidden fallback or launch-time build.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "B07",
+      "title": "Clean-host installation evidence",
+      "parents": [
+        "DIST",
+        "HOST"
+      ],
+      "dependencies": [
+        "B06",
+        "P05"
+      ],
+      "planning_scope": "native host test packages and install receipts",
+      "acceptance": "Fresh install/upgrade/uninstall/offline checks on every agreed product/OS/CPU/version cell; exact candidate hashes and owned cleanup; unavailable cells remain open.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "T01",
+      "title": "Portable Python regression-test conversion",
+      "parents": [
+        "REMOVE"
+      ],
+      "dependencies": [
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T10",
+        "T11",
+        "T12"
+      ],
+      "planning_scope": "regression parity inventory audit only",
+      "acceptance": "Preserve every existing regression assertion and minimized counterexample with independent fixtures; required tests run without Python; historical reference tools may remain archived only.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "T02",
+      "title": "Browser and oracle regression conversion",
+      "parents": [
+        "REMOVE"
+      ],
+      "dependencies": [
+        "Q05",
+        "U07",
+        "Q14",
+        "Q15",
+        "G02"
+      ],
+      "planning_scope": "tests_js and Python browser/oracle support",
+      "acceptance": "Every required synthetic browser/oracle scenario survives removal; real browser against owned TS servers, child skips recorded and required cells enforced.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "T03",
+      "title": "Native regression-test conversion",
+      "parents": [
+        "REMOVE"
+      ],
+      "dependencies": [
+        "N03",
+        "B07"
+      ],
+      "planning_scope": "native fixture harness and Python native tests",
+      "acceptance": "Actual native assertions survive in Python-free runners for each required host; no replacement with mocks, missing opt-ins or waived cells.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "T04",
+      "title": "Python-free development and release tools",
+      "parents": [
+        "REMOVE"
+      ],
+      "dependencies": [
+        "P03",
+        "P04",
+        "P05",
+        "T13",
+        "T14",
+        "T15"
+      ],
+      "planning_scope": "hook environment probes and remaining build/release entry scripts, after dedicated checker/smoke/fixture ports",
+      "acceptance": "All required build/test/hook/release commands work with Python absent; preserve baseline failure regressions, size ceilings, inventory and error behavior.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "T05",
+      "title": "Restore staging CI and server-side gates",
+      "parents": [
+        "CI"
+      ],
+      "dependencies": [
+        "P03",
+        "P04",
+        "P05"
+      ],
+      "planning_scope": ".github/workflows and separately authorized staging rules",
+      "acceptance": "Review exact current required contexts, Node/runtime versions and duplicated jobs; representative staging PR runs required checks and intentional failure blocks merge; hooks alone never authorize merging.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "G01",
+      "title": "Store facade and CLI dispatch assembly",
+      "parents": [
+        "ASSEMBLE"
+      ],
+      "dependencies": [
+        "C04",
+        "D12",
+        "D05",
+        "D07",
+        "D09",
+        "D16",
+        "J04"
+      ],
+      "planning_scope": "single Store facade/CLI parser-dispatch owner",
+      "acceptance": "All inventoried Store CLI commands/aliases and startup writers reach TS implementation; exact stdout/stderr/exit/schema contracts; no Python business-logic fallback.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "G02",
+      "title": "Workspace server assembly",
+      "parents": [
+        "ASSEMBLE"
+      ],
+      "dependencies": [
+        "G01",
+        "A04",
+        "W01",
+        "W02",
+        "W03",
+        "W04",
+        "W05",
+        "U07"
+      ],
+      "planning_scope": "single workspace bootstrap/server owner",
+      "acceptance": "All routes, assets and auth bind correctly in one process; CLI/UI cross-visibility and startup recovery use one TS Store implementation.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "G03",
+      "title": "Task, attempt and QA CLI assembly",
+      "parents": [
+        "ASSEMBLE"
+      ],
+      "dependencies": [
+        "C06",
+        "Q13",
+        "Q07",
+        "Q05",
+        "Q14",
+        "Q15"
+      ],
+      "planning_scope": "single ancillary CLI dispatch/entry owner",
+      "acceptance": "Every task/attempt/chrome/replay/QA/policy entry point reaches the correct owned adapter; argv/streams/status and interruption cleanup match.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "G04",
+      "title": "Installed candidate assembly",
+      "parents": [
+        "ASSEMBLE"
+      ],
+      "dependencies": [
+        "G01",
+        "G02",
+        "G03",
+        "B07"
+      ],
+      "planning_scope": "candidate manifest and emitted-artifact assembly owner",
+      "acceptance": "One immutable package contains all entry points, assets and native/runtime bytes; installed behavior independent of checkout, developer env and caches.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "G05",
+      "title": "Integrated storage and recovery acceptance",
+      "parents": [
+        "TX",
+        "JOUR"
+      ],
+      "dependencies": [
+        "G01",
+        "F05",
+        "J04"
+      ],
+      "planning_scope": "integration fault/concurrency tests only",
+      "acceptance": "Cross-domain references, all journal types, eight writers, kill/restart and repeated recovery pass on one revision; no lost/duplicate acknowledged updates or unexplained tree differences.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "G06",
+      "title": "Integrated UI and HTTP acceptance",
+      "parents": [
+        "UIF",
+        "PROJ"
+      ],
+      "dependencies": [
+        "G02"
+      ],
+      "planning_scope": "real-browser/HTTP integration tests only",
+      "acceptance": "Every mapped feature runs against real routes; browser writes visible through CLI and reverse; auth negatives, stale responses and all Active/Trash workflows pass.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "G07",
+      "title": "Integrated task and authority acceptance",
+      "parents": [
+        "ATT",
+        "FINAL",
+        "REPLAY"
+      ],
+      "dependencies": [
+        "G03"
+      ],
+      "planning_scope": "synthetic task/attempt/native/capture/replay end-to-end tests",
+      "acceptance": "Real owned adapters preserve leases, approval, process-loss recovery and privacy; zero unauthorized final submissions and no credential/capture leaks.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "G08",
+      "title": "Surface/writer/required-cell closure audit",
+      "parents": [
+        "CLOSE",
+        "REF"
+      ],
+      "dependencies": [
+        "G04",
+        "G05",
+        "G06",
+        "G07",
+        "P01",
+        "P05"
+      ],
+      "planning_scope": "coverage receipts and independent reachability audit",
+      "acceptance": "Zero unowned CLI/HTTP/browser/document/journal/installed surfaces, zero unexplained writers, zero missing required cells; inventory growth creates new required tasks, never a residual waiver.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "G09",
+      "title": "Immutable pre-removal candidate test",
+      "parents": [
+        "REHEARSE"
+      ],
+      "dependencies": [
+        "G08",
+        "T05"
+      ],
+      "planning_scope": "full/platform/release test coordinator",
+      "acceptance": "Exact candidate passes full suites, supported native hosts, fresh/upgrade/offline and resource budgets; retain failures and internal skips, none accepted as passing mandatory cells.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "G10",
+      "title": "Writer switch and post-write rollback rehearsal",
+      "parents": [
+        "REHEARSE"
+      ],
+      "dependencies": [
+        "G09"
+      ],
+      "planning_scope": "owned-clone switch/rollback harness",
+      "acceptance": "Interrupt every switch boundary under contention; Python and TS never write same Store concurrently; rollback after representative TS writes restores a usable Python state and exact expected data.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "G11",
+      "title": "Remove Python and obsolete shipped JS",
+      "parents": [
+        "REMOVE"
+      ],
+      "dependencies": [
+        "G10",
+        "T01",
+        "T02",
+        "T03",
+        "T04"
+      ],
+      "planning_scope": "reviewed deletion manifest; manifests/docs/launch paths",
+      "acceptance": "Delete only after regressions/tooling survive; static and installed reachability audits find no required Python path or non-emitted shipped JS; keep isolated reference provenance outside required execution.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "G12",
+      "title": "Fresh final-artifact acceptance without Python",
+      "parents": [
+        "FINALQA"
+      ],
+      "dependencies": [
+        "G11"
+      ],
+      "planning_scope": "final host test receipts bound to rebuilt artifact",
+      "acceptance": "Rebuild after deletion, then fresh install/upgrade/offline/uninstall on every required host with Python unavailable to the TS candidate; all required tests/cells pass without bypasses. In a separate owned clone, rollback restores the preserved Python runtime/environment and validates post-TS-write data recovery.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "G13",
+      "title": "Independent final conversion review and handoff",
+      "parents": [
+        "READY"
+      ],
+      "dependencies": [
+        "G12"
+      ],
+      "planning_scope": "final evidence index, hashes, support matrix and rollback bundle",
+      "acceptance": "Independent compatibility/security/completeness review has no unresolved blocker; S0-S7 gates all satisfied on exact artifact; release notes and rehearsed rollback delivered; live release still separately authorized.",
+      "status": "proposed",
+      "kind": "gate"
+    },
+    {
+      "id": "Q14",
+      "title": "Oracle state and account observations",
+      "parents": [
+        "QA"
+      ],
+      "dependencies": [
+        "Q05",
+        "F02"
+      ],
+      "planning_scope": "new src/qa oracle/history/session/account-observation leaves",
+      "acceptance": "Preserve synthetic observation identity, expected outcomes, event ordering and redaction; all required oracle scenarios and failure regressions survive in Python-free execution.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "Q15",
+      "title": "Fixture compiler and contract models",
+      "parents": [
+        "QA"
+      ],
+      "dependencies": [
+        "P01"
+      ],
+      "planning_scope": "new src/qa compiler/contracts/fixture model leaves",
+      "acceptance": "Compile every committed synthetic fixture with exact schema, stable identifiers and reviewed output; malformed or substituted provenance is rejected without auto-refreshing expected results.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "Q16",
+      "title": "Recorder ATS safety adapters",
+      "parents": [
+        "QA"
+      ],
+      "dependencies": [
+        "Q01",
+        "A01"
+      ],
+      "planning_scope": "new src/qa/recorder/safety leaves",
+      "acceptance": "Each inventoried ATS safety adapter preserves selectors, scope, denial and final-action refusal on fixed synthetic fixtures; any host-dependent cell remains explicitly required.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "T06",
+      "title": "Codec and filesystem regression conversion",
+      "parents": [
+        "REMOVE"
+      ],
+      "dependencies": [
+        "P01"
+      ],
+      "planning_scope": "portable numeric/JSON/path/read/write Python regressions",
+      "acceptance": "All edge cases, binary/error-ordering fixtures and concurrency regressions retained with independent expected values.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "T07",
+      "title": "Profile, fact and answer regression conversion",
+      "parents": [
+        "REMOVE"
+      ],
+      "dependencies": [
+        "P01"
+      ],
+      "planning_scope": "profile/fact/answer/matching Python test families",
+      "acceptance": "Provenance, ranking, privacy, no-op and conflict assertions retain coverage without executing Python.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "T08",
+      "title": "Job, resume and extraction regression conversion",
+      "parents": [
+        "REMOVE"
+      ],
+      "dependencies": [
+        "P01"
+      ],
+      "planning_scope": "job/history/trash/resume/extraction Python test families",
+      "acceptance": "Lifecycle, byte/digest, journal and grouped-review counterexamples retained in required Python-free suites.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "T09",
+      "title": "Account and session regression conversion",
+      "parents": [
+        "REMOVE"
+      ],
+      "dependencies": [
+        "P01"
+      ],
+      "planning_scope": "account/settings/Trusted Fill/session/coordinator Python test families",
+      "acceptance": "Lease/authority/revision/recovery and redaction assertions survive; native evidence remains owned by T03.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "T10",
+      "title": "CLI and workspace regression conversion",
+      "parents": [
+        "REMOVE"
+      ],
+      "dependencies": [
+        "P01"
+      ],
+      "planning_scope": "Store/HTTP/CLI validation Python test families",
+      "acceptance": "All argv/status/stream/auth/route/startup assertions retained and mapped to inventoried surfaces.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "T11",
+      "title": "Policy, replay and privacy regression conversion",
+      "parents": [
+        "REMOVE"
+      ],
+      "dependencies": [
+        "P01"
+      ],
+      "planning_scope": "policy/replay/promotion/privacy Python test families",
+      "acceptance": "Human-only final action, signed identity, interrupted promotion and leak canary assertions survive.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "T12",
+      "title": "Package and runtime regression conversion",
+      "parents": [
+        "REMOVE"
+      ],
+      "dependencies": [
+        "P01"
+      ],
+      "planning_scope": "package/install/upgrade/runtime Python regression families",
+      "acceptance": "Cold/offline/install/upgrade/rollback tests preserve existing assertions and execute without Python.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "T13",
+      "title": "Source-size and policy checker conversion",
+      "parents": [
+        "REMOVE"
+      ],
+      "dependencies": [
+        "P01"
+      ],
+      "planning_scope": "scripts/check-source-size.py and policy/docs checker replacements",
+      "acceptance": "Preserve physical-line counting, shrinking-only baseline, negative policy fixtures and exit behavior; hooks can run these checks without Python.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "T14",
+      "title": "Smoke, install and upgrade verifier conversion",
+      "parents": [
+        "REMOVE"
+      ],
+      "dependencies": [
+        "B04",
+        "P01"
+      ],
+      "planning_scope": "scripts/smoke fixture/install/upgrade/workspace/lifecycle verifier replacements",
+      "acceptance": "Real owned installed fixtures preserve every required smoke/upgrade/rollback check and cleanup outcome without Python.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "T15",
+      "title": "QA fixture and scenario helper conversion",
+      "parents": [
+        "REMOVE"
+      ],
+      "dependencies": [
+        "Q14",
+        "Q15"
+      ],
+      "planning_scope": "remaining QA fixture/scenario/walkthrough helpers",
+      "acceptance": "Every required helper referenced by tests/release tooling is mapped and ported; synthetic fixture identities and privacy boundaries remain unchanged.",
+      "status": "proposed",
+      "kind": "implementation"
+    }
+  ],
+  "requiredParents": [
+    "DONE",
+    "I",
+    "REF",
+    "SEM",
+    "FS",
+    "READ",
+    "TX",
+    "MATCH",
+    "POL",
+    "AUTH",
+    "PROJ",
+    "UI0",
+    "UIF",
+    "PF",
+    "JOB",
+    "RES",
+    "ANS",
+    "ACC",
+    "JOUR",
+    "SESS",
+    "NATIVE",
+    "QA",
+    "FINAL",
+    "CHROME",
+    "REPLAY",
+    "ATT",
+    "HOST",
+    "DIST",
+    "ASSEMBLE",
+    "CLOSE",
+    "CI",
+    "REHEARSE",
+    "REMOVE",
+    "FINALQA",
+    "READY"
+  ]
+}

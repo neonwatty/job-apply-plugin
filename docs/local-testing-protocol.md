@@ -13,7 +13,7 @@ This change does not modify workflows or branch protection.
 
 | Trigger | Checks | Escalation |
 | --- | --- | --- |
-| Commit | Whitespace, all six fast matrix suites, TypeScript, source size, emitted-runtime parity, local Markdown file links | Failures block the commit; no browser/package suite starts |
+| Commit | Whitespace, seven fast matrix suites (including TypeScript and source size), emitted-runtime parity, local Markdown file links — nine checks | Failures block the commit; no browser/package suite starts |
 | Push, known narrow change | Commit-level checks plus explicitly mapped focused contracts | Unknown paths, deleted focused modules, broad tooling/dependency changes and tags require deep evidence |
 | Deep validation | Fast checks plus all affected heavier suites; global/unknown changes and tags include full, release and native-platform suites | Explicit command, run once per outgoing commit/base/environment; successful local evidence can be reused for 24 hours |
 | Migration wave / production cutover | Integrated behavior, browser, packaging, applicable native hosts, supported Python reference version and rollback gates from the migration plan | Local hooks cannot substitute for missing platform/reference evidence; restore staging CI before cutover |
@@ -110,3 +110,12 @@ and TypeScript writers must never mutate the same live Store. The
 [migration plan](autonomous-typescript-migration-plan.md) and
 [execution ledger](migration-execution-state.md) retain the full acceptance gates,
 including human-only final submission and restoration of staging CI.
+
+## Remaining-migration planning audit
+
+On 2026-09-06, the installed worktree hooks and 30 focused hook regression tests
+were checked: zero failures/skips. See the proposed [remaining task DAG](migration/remaining-migration-plan.md).
+The current deep runner serializes one invocation, not every worktree on a host;
+the coordinator must serialize heavy runs until the planned host lease lands.
+Existing receipts identify runtime versions, not every native executable byte;
+required native cells and child-test skips need the stricter acceptance receipts.
