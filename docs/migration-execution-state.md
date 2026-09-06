@@ -325,3 +325,20 @@ port. An independent byte-path reference is being prepared to replace the curren
 explicit unsupported adapter branch, not turn it into a permanent restriction.
 The preceding full-tier Python 3.14 signature failures and two opt-in browser
 skips remain recorded and unresolved. No live routing or writer changed.
+
+The path/observation checkpoint was committed as `9e90619`; all nine staged commit
+suites passed. A separately reviewed byte-path reference now captures 16 cases.
+On this macOS filesystem, all three installed profiles verify 11 observations,
+including raw-byte symlink targets, surrogate encoding errors and lexical final
+leaves. Five raw-filename fixtures cannot be created because mkdir returns EILSEQ.
+The driver records exact stage/error/capability evidence; other setup errors fail
+instead of being relabeled as unsupported filenames. Independent review required
+exact source/profile bindings, fixed inputs/operations and complete snapshot
+witnesses before freezing these partial observations.
+
+The coordinator's final byte-reference run has one passing input-rejection test
+and four explicitly skipped partial profile tests (default duplicates 3.14).
+Those skips are not native acceptance. The next adapter work must preserve
+surrogateescape bytes rather than permanently reject valid Python paths. Native
+Linux evidence is still required for the five unavailable filename cases; Windows
+remains a separate required path implementation and native verification lane.
