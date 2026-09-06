@@ -20,7 +20,7 @@
     "sourceMap": false,
     "declaration": false,
     "removeComments": false,
-    "types": [],
+    "types": ["node"],
     "lib": ["ES2022"]
   },
   "include": ["src/**/*.ts"]

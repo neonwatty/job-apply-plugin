@@ -11,7 +11,7 @@ reference/ownership package. HOST acceptance remains open; no native cell inferr
 ## Active graph checkpoint: I4 and SEM ingress evidence
 
 I4 establishes an executable consistency gate, not node I acceptance. It binds
-257 source/manifest files, 144 CLI subcommands, 17 root parser surfaces and 127
+261 source/manifest files, 144 CLI subcommands, 17 root parser surfaces and 127
 HTTP surfaces, 111 browser exports, 28 persisted artifact patterns and 19 journal variants across the 36-node graph. Effects/classifications and scenario
 evidence remain explicitly open. The gate is registered in fast/full validation;
 `check:migration -- --acceptance` intentionally fails until real acceptance is
@@ -175,3 +175,33 @@ No filesystem TypeScript writer/reader or native parent acceptance was introduce
 Next: accepted reference/interface receipt validation and the actual raw-byte reader
 with explicit Node platform typing/build support; preserve strict UTF-8, BOM,
 symlink and narrow exception behavior observed by this reference.
+
+## FS inert raw-reader implementation
+
+Reference source/tests were frozen in `dc260d6`. Implementation owner
+migration_sequence edited only `src/store/read-file.ts` and
+`src/store/read-json-object.ts`; the coordinator emitted their runtime counterparts.
+Independent test owner numeric_codec edited only
+`tests_js/store_raw_read_ts.test.mjs`. validation_strategy independently reviewed
+reader behavior and owned the build fixture update. No live Store was accessed.
+
+Pinned development-only Node declarations (`@types/node` 22.20.1, locked
+`undici-types` 6.21.0) support builtin filesystem/decoder imports with strict types.
+No runtime dependency or installation-at-launch requirement was added. Build tests
+retain one implementation per emitted module and reject declaration shims in src.
+All seven build tests pass; eleven modules emit reproducibly.
+
+The reader follows the raw Python helper's links, strict UTF-8/BOM/newline behavior
+and narrow error boundary, then reuses typed JSON and object validation. It does not
+initialize a Store or enforce caller-level path security. Internal TS error classes
+remain StoreValidationError and NumericAtomError; public caller error/diagnostic
+mapping and recursion/native platform gates remain open. Local comparison proves
+application messages and typed values for this reference, not traceback parity.
+
+Coordinator verification passed 110 tests with zero skips: raw reference plus TS
+clones across Python 3.12.13/3.13.13/3.14.4 and the existing Trash helper contracts.
+The default interpreter duplicates 3.14 evidence. Each side uses separate disposable
+files; byte hashes, modes, mtimes, directories and links remained unchanged.
+Type declarations changed compiler inputs, so the prior Trash receipt is historical;
+its source/emitted bytes are unchanged and its 11 tests were rerun under this setup.
+Parent FS/SEM/READ and machine package acceptance remain open.

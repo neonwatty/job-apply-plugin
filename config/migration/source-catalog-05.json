@@ -185,6 +185,26 @@
       "path": "runtime/workspace-ui/lib/trash-view.js",
       "sha256": "87e621b4f4ad389bbf428ced3a487d6f72d85c15c65096518257154c1ac7c836",
       "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/read-file.ts",
+      "sha256": "d95b7ce2ec4ba3289ff9757ac825e0a90a46d0eeb82cc1cb1c0186314656fcf2",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/read-json-object.ts",
+      "sha256": "5aa9d4d2d99e45ebc37eda205179b18572cc3df76ade653a0b3a75fb822d247f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/read-file.js",
+      "sha256": "a8dc8b3704a284df441c2a3972051f05884d4a432cc6d1ee02da4d6705483405",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/read-json-object.js",
+      "sha256": "2a2166d49f056597f31f0f8f143c34d0e280d11f8f4e463e2e98a6ec9b1aeacf",
+      "classification": "unreviewed"
     }
   ]
 }
