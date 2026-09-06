@@ -20,6 +20,8 @@
     "include": ["tests/test_*.py", "tests_js/*.test.mjs"]
   },
   "globalPaths": [
+    ".githooks/**",
+    "tools/local-checks/**",
     "config/test-matrix.json",
     "tools/test-runner.mjs",
     "tools/test-runner/**",
@@ -129,7 +131,7 @@
     {
       "id": "node-runner-fast",
       "kind": "node-test",
-      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs"],
+      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs", "tests_js/local_checks*.test.mjs"],
       "tiers": ["fast", "full"]
     },
     {
