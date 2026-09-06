@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "surfaces": [
     {
-      "id": "browser:workspace/app.js:ApiError",
-      "kind": "browser",
-      "export": "ApiError",
-      "node": "UIF",
+      "id": "document:profile.json",
+      "kind": "document",
+      "path": "profile.json",
+      "artifact": "json",
+      "node": "PF",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/api.js"
+        "scripts/job_apply_store/base.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -25,13 +25,13 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:FACT_SAVE_REVISION_RETRIES",
-      "kind": "browser",
-      "export": "FACT_SAVE_REVISION_RETRIES",
-      "node": "UIF",
+      "id": "document:fact-groups.json",
+      "kind": "document",
+      "path": "fact-groups.json",
+      "artifact": "json",
+      "node": "PF",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/api.js"
+        "scripts/job_apply_store/base.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -48,13 +48,13 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:shouldRetryFactSave",
-      "kind": "browser",
-      "export": "shouldRetryFactSave",
-      "node": "UIF",
+      "id": "document:answers.json",
+      "kind": "document",
+      "path": "answers.json",
+      "artifact": "json",
+      "node": "ANS",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/api.js"
+        "scripts/job_apply_store/base.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -71,13 +71,13 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:tokenFromHash",
-      "kind": "browser",
-      "export": "tokenFromHash",
-      "node": "UIF",
+      "id": "document:jobs.json",
+      "kind": "document",
+      "path": "jobs.json",
+      "artifact": "json",
+      "node": "JOB",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/api.js"
+        "scripts/job_apply_store/base.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -94,13 +94,13 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:sessionToken",
-      "kind": "browser",
-      "export": "sessionToken",
-      "node": "UIF",
+      "id": "document:resumes.json",
+      "kind": "document",
+      "path": "resumes.json",
+      "artifact": "json",
+      "node": "RES",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/api.js"
+        "scripts/job_apply_store/base.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -117,13 +117,13 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:safeSessionStorage",
-      "kind": "browser",
-      "export": "safeSessionStorage",
-      "node": "UIF",
+      "id": "document:resume-extractions.json",
+      "kind": "document",
+      "path": "resume-extractions.json",
+      "artifact": "json",
+      "node": "RES",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/api.js"
+        "scripts/job_apply_store/base.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -140,13 +140,13 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:createApi",
-      "kind": "browser",
-      "export": "createApi",
-      "node": "UIF",
+      "id": "document:resume-extraction-requests.json",
+      "kind": "document",
+      "path": "resume-extraction-requests.json",
+      "artifact": "json",
+      "node": "RES",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/api.js"
+        "scripts/job_apply_store/base.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -163,13 +163,13 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:createLatestRequestCoordinator",
-      "kind": "browser",
-      "export": "createLatestRequestCoordinator",
-      "node": "UIF",
+      "id": "document:resume-extraction-journal.json",
+      "kind": "document",
+      "path": "resume-extraction-journal.json",
+      "artifact": "json",
+      "node": "JOUR",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/api.js"
+        "scripts/job_apply_store/base.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -186,13 +186,13 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:employerAccountOverrideRequest",
-      "kind": "browser",
-      "export": "employerAccountOverrideRequest",
-      "node": "UIF",
+      "id": "document:applications.jsonl",
+      "kind": "document",
+      "path": "applications.jsonl",
+      "artifact": "jsonl",
+      "node": "JOB",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/api.js"
+        "scripts/job_apply_store/base.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -209,13 +209,13 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:trustedFillApprovalPacket",
-      "kind": "browser",
-      "export": "trustedFillApprovalPacket",
-      "node": "UIF",
+      "id": "document:sessions/<safe-application-id>.json",
+      "kind": "document",
+      "path": "sessions/<safe-application-id>.json",
+      "artifact": "json",
+      "node": "SESS",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/api.js"
+        "scripts/job_apply_store/domains/sessions/document.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -232,13 +232,13 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:trustedFillRevokeRequest",
-      "kind": "browser",
-      "export": "trustedFillRevokeRequest",
-      "node": "UIF",
+      "id": "document:coordinator.json",
+      "kind": "document",
+      "path": "coordinator.json",
+      "artifact": "json",
+      "node": "SESS",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/api.js"
+        "scripts/job_apply_store/base.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -255,13 +255,13 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:filterJobs",
-      "kind": "browser",
-      "export": "filterJobs",
-      "node": "UIF",
+      "id": "document:coordinator-journal.json",
+      "kind": "document",
+      "path": "coordinator-journal.json",
+      "artifact": "json",
+      "node": "JOUR",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "scripts/job_apply_store/base.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -278,13 +278,13 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:answerNeedsFreshConsent",
-      "kind": "browser",
-      "export": "answerNeedsFreshConsent",
-      "node": "UIF",
+      "id": "document:automation-settings.json",
+      "kind": "document",
+      "path": "automation-settings.json",
+      "artifact": "json",
+      "node": "ACC",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "scripts/job_apply_store/base.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -301,13 +301,13 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:answerSummary",
-      "kind": "browser",
-      "export": "answerSummary",
-      "node": "UIF",
+      "id": "document:employer-accounts.json",
+      "kind": "document",
+      "path": "employer-accounts.json",
+      "artifact": "json",
+      "node": "ACC",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "scripts/job_apply_store/base.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -324,13 +324,13 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:canRevealAnswer",
-      "kind": "browser",
-      "export": "canRevealAnswer",
-      "node": "UIF",
+      "id": "document:account-operation-journal.json",
+      "kind": "document",
+      "path": "account-operation-journal.json",
+      "artifact": "json",
+      "node": "JOUR",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "scripts/job_apply_store/base.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -347,13 +347,13 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:canRefreshAnswerDraft",
-      "kind": "browser",
-      "export": "canRefreshAnswerDraft",
-      "node": "UIF",
+      "id": "document:trusted-fill.json",
+      "kind": "document",
+      "path": "trusted-fill.json",
+      "artifact": "json",
+      "node": "ACC",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "scripts/job_apply_store/base.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -370,13 +370,13 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:canApplyAnswerReveal",
-      "kind": "browser",
-      "export": "canApplyAnswerReveal",
-      "node": "UIF",
+      "id": "document:.store.lock",
+      "kind": "document",
+      "path": ".store.lock",
+      "artifact": "lock",
+      "node": "TX",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "scripts/job_apply_store/base.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -393,59 +393,13 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:canApplyAnswerDialogResponse",
-      "kind": "browser",
-      "export": "canApplyAnswerDialogResponse",
-      "node": "UIF",
+      "id": "document:resume-files/<record.managedFile>",
+      "kind": "document",
+      "path": "resume-files/<record.managedFile>",
+      "artifact": "binary",
+      "node": "RES",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/helpers.js"
-      ],
-      "effects": "unclassified",
-      "scenarios": {
-        "valid": "unverified",
-        "invalid": "unverified",
-        "missing": "unverified",
-        "noop": "unverified",
-        "privacy": "unverified",
-        "conflict": "unverified",
-        "concurrency": "unverified",
-        "interruption": "unverified",
-        "recovery": "unverified",
-        "platform": "unverified"
-      }
-    },
-    {
-      "id": "browser:workspace/app.js:canApplyAnswerDialogMutation",
-      "kind": "browser",
-      "export": "canApplyAnswerDialogMutation",
-      "node": "UIF",
-      "sources": [
-        "workspace/app.js",
-        "workspace/lib/helpers.js"
-      ],
-      "effects": "unclassified",
-      "scenarios": {
-        "valid": "unverified",
-        "invalid": "unverified",
-        "missing": "unverified",
-        "noop": "unverified",
-        "privacy": "unverified",
-        "conflict": "unverified",
-        "concurrency": "unverified",
-        "interruption": "unverified",
-        "recovery": "unverified",
-        "platform": "unverified"
-      }
-    },
-    {
-      "id": "browser:workspace/app.js:answerApiPath",
-      "kind": "browser",
-      "export": "answerApiPath",
-      "node": "UIF",
-      "sources": [
-        "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "scripts/job_apply_store/domains/resumes/storage.py"
       ],
       "effects": "unclassified",
       "scenarios": {

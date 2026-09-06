@@ -63,6 +63,38 @@ test('cycles and unknown dependencies fail', () => {
     assert.ok(validateInventory(data, actual).length);
   }
 });
+test('persisted artifacts and journal variants require valid paths, types and document bindings', () => {
+  const make = () => {
+    const { data, actual } = fixture();
+    const common = { node: 'I', sources: ['scripts/router.py'], effects: 'unclassified',
+      scenarios: Object.fromEntries(SCENARIOS.map((name) => [name, 'unverified'])) };
+    data.surfaces = [
+      { ...common, id: 'document', kind: 'document', path: 'journal.json', artifact: 'json' },
+      { ...common, id: 'empty', kind: 'journal', path: 'journal.json', discriminator: 'operation', value: null },
+      { ...common, id: 'stage', kind: 'journal', path: 'journal.json', discriminator: 'operation.stage', value: 'prepared' },
+    ];
+    return { data, actual };
+  };
+  const valid = make();
+  assert.deepEqual(validateInventory(valid.data, valid.actual), []);
+  for (const change of [
+    (items) => { items[0].path = '../escape'; },
+    (items) => { items[0].path = 'C:/outside.json'; },
+    (items) => { items[0].path = 'bad\0.json'; },
+    (items) => { items[0].path = '   '; },
+    (items) => { items[0].discriminator = 'operation.kind'; },
+    (items) => { items[0].artifact = 'unknown'; },
+    (items) => { items[1].discriminator = 'operation.kind'; },
+    (items) => { items[2].discriminator = 'operation.unknown'; },
+    (items) => { items[2].value = ''; },
+    (items) => { items[2].path = 'missing.json'; },
+    (items) => items.push({ ...items[2], id: 'duplicate' }),
+    (items) => { items[0].artifact = 'binary'; },
+  ]) {
+    const { data, actual } = make(); change(data.surfaces);
+    assert.ok(validateInventory(data, actual).length);
+  }
+});
 test('invented passing, skipped or inapplicable evidence cannot close a cell', () => {
   for (const status of ['passed', 'skipped', 'inapplicable', 'mocked']) {
     const { data, actual } = fixture(); data.surfaces[0].scenarios.platform = status;

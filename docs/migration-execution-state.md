@@ -8,11 +8,11 @@ The active goal is recorded in this task. Node I (executable coverage inventory)
 and SEM evidence discovery have started; FS implementation waits for its bounded
 reference/ownership package. HOST acceptance remains open; no native cell inferred.
 
-## Active graph checkpoint: I2 and SEM ingress evidence
+## Active graph checkpoint: I3 and SEM ingress evidence
 
-I2 establishes an executable consistency gate, not node I acceptance. It binds
+I3 establishes an executable consistency gate, not node I acceptance. It binds
 255 source/manifest files, 144 CLI subcommands, 17 root parser surfaces and 127
-HTTP surfaces plus 111 browser exports across the 36-node graph. Effects/classifications and scenario
+HTTP surfaces, 111 browser exports, 28 persisted artifact patterns and 19 journal variants across the 36-node graph. Effects/classifications and scenario
 evidence remain explicitly open. The gate is registered in fast/full validation;
 `check:migration -- --acceptance` intentionally fails until real acceptance is
 implemented and satisfied. See [inventory protocol](migration/inventory-protocol.md).
@@ -20,7 +20,7 @@ implemented and satisfied. See [inventory protocol](migration/inventory-protocol
 Independent review found and resolved a missing-digest lock check and an omitted
 Codex marketplace manifest. Regression tests include real temporary Git checkout
 source/ledger drift, not only in-memory fixtures. Parent I still requires complete
-document/journal/writer classification, reference bindings and
+complete writer classification, reference bindings and
 reviewed scenario receipts; no filesystem implementation package is accepted yet.
 
 Browser records were independently compared against static source discovery. Review
@@ -109,3 +109,10 @@ Its deep run passed 18 suites; Windows was deferred and two opt-in browser cases
 were skipped. The migration branch reconciled that merge at `6100b1d`. These
 results do not validate subsequent source edits. Release Validation still runs
 on staging pushes despite the Validate Plugin freeze.
+
+I3 independent review confirmed all 399 prior identities preserved, with exactly
+47 new artifact/journal records. All 446 records now have ten explicit open
+scenario categories. Reviewed regressions cover Windows absolute paths, control
+characters, unknown fields and journal/document bindings. Focused inventory plus
+trash-reference validation passed 21 tests without skips. The trash reference
+family is independently reviewed; parent I/UI0 acceptance remains open.

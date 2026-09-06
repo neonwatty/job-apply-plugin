@@ -2,13 +2,14 @@
   "schemaVersion": 1,
   "surfaces": [
     {
-      "id": "browser:workspace/app.js:extractionRequestView",
-      "kind": "browser",
-      "export": "extractionRequestView",
-      "node": "UIF",
+      "id": "journal:coordinator-journal.json:operation:null",
+      "kind": "journal",
+      "path": "coordinator-journal.json",
+      "discriminator": "operation",
+      "value": null,
+      "node": "JOUR",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "scripts/job_apply_store/domains/coordinator/persistence.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -25,13 +26,14 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:proposalGroupForPath",
-      "kind": "browser",
-      "export": "proposalGroupForPath",
-      "node": "UIF",
+      "id": "journal:coordinator-journal.json:operation.kind:answer_merge",
+      "kind": "journal",
+      "path": "coordinator-journal.json",
+      "discriminator": "operation.kind",
+      "value": "answer_merge",
+      "node": "JOUR",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "scripts/job_apply_store/domains/coordinator/persistence.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -48,13 +50,14 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:typedDeletePhrase",
-      "kind": "browser",
-      "export": "typedDeletePhrase",
-      "node": "UIF",
+      "id": "journal:coordinator-journal.json:operation.kind:answer_resolution",
+      "kind": "journal",
+      "path": "coordinator-journal.json",
+      "discriminator": "operation.kind",
+      "value": "answer_resolution",
+      "node": "JOUR",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "scripts/job_apply_store/domains/coordinator/persistence.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -71,13 +74,14 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:filterTrashItems",
-      "kind": "browser",
-      "export": "filterTrashItems",
-      "node": "UIF",
+      "id": "journal:coordinator-journal.json:operation.kind:acquire",
+      "kind": "journal",
+      "path": "coordinator-journal.json",
+      "discriminator": "operation.kind",
+      "value": "acquire",
+      "node": "JOUR",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "scripts/job_apply_store/domains/coordinator/persistence.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -94,13 +98,14 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:trashBlockerText",
-      "kind": "browser",
-      "export": "trashBlockerText",
-      "node": "UIF",
+      "id": "journal:coordinator-journal.json:operation.kind:review_restart",
+      "kind": "journal",
+      "path": "coordinator-journal.json",
+      "discriminator": "operation.kind",
+      "value": "review_restart",
+      "node": "JOUR",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "scripts/job_apply_store/domains/coordinator/persistence.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -117,13 +122,14 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:lifecycleErrorText",
-      "kind": "browser",
-      "export": "lifecycleErrorText",
-      "node": "UIF",
+      "id": "journal:coordinator-journal.json:operation.kind:recover",
+      "kind": "journal",
+      "path": "coordinator-journal.json",
+      "discriminator": "operation.kind",
+      "value": "recover",
+      "node": "JOUR",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "scripts/job_apply_store/domains/coordinator/persistence.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -140,59 +146,14 @@
       }
     },
     {
-      "id": "browser:workspace/app.js:shouldUseResumeResponse",
-      "kind": "browser",
-      "export": "shouldUseResumeResponse",
-      "node": "UIF",
+      "id": "journal:coordinator-journal.json:operation.kind:handoff",
+      "kind": "journal",
+      "path": "coordinator-journal.json",
+      "discriminator": "operation.kind",
+      "value": "handoff",
+      "node": "JOUR",
       "sources": [
-        "workspace/app.js",
-        "workspace/lib/helpers.js"
-      ],
-      "effects": "unclassified",
-      "scenarios": {
-        "valid": "unverified",
-        "invalid": "unverified",
-        "missing": "unverified",
-        "noop": "unverified",
-        "privacy": "unverified",
-        "conflict": "unverified",
-        "concurrency": "unverified",
-        "interruption": "unverified",
-        "recovery": "unverified",
-        "platform": "unverified"
-      }
-    },
-    {
-      "id": "browser:workspace/app.js:bootstrapWorkspace",
-      "kind": "browser",
-      "export": "bootstrapWorkspace",
-      "node": "UIF",
-      "sources": [
-        "workspace/app.js",
-        "workspace/bootstrap.js"
-      ],
-      "effects": "unclassified",
-      "scenarios": {
-        "valid": "unverified",
-        "invalid": "unverified",
-        "missing": "unverified",
-        "noop": "unverified",
-        "privacy": "unverified",
-        "conflict": "unverified",
-        "concurrency": "unverified",
-        "interruption": "unverified",
-        "recovery": "unverified",
-        "platform": "unverified"
-      }
-    },
-    {
-      "id": "browser:workspace/app.js:createWorkspaceContext",
-      "kind": "browser",
-      "export": "createWorkspaceContext",
-      "node": "UIF",
-      "sources": [
-        "workspace/app.js",
-        "workspace/bootstrap.js"
+        "scripts/job_apply_store/domains/coordinator/persistence.py"
       ],
       "effects": "unclassified",
       "scenarios": {

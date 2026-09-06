@@ -3,107 +3,131 @@
   "files": [
     {
       "path": "browser-app-01-surfaces.json",
-      "sha256": "159c39d6b0edf5d92aa73c9b5932d6cc09024112f9344caa73429500faf193ac"
+      "sha256": "4ea6235f44faad25f758cb308548caf80358335700285ed4b47500a0b8803efa"
     },
     {
       "path": "browser-app-02-surfaces.json",
-      "sha256": "2de0e9613d3ec9d5716baecb2b0ede43f2a7df50ec59d0d1c1f99b3f424d0ae4"
+      "sha256": "eb8b4518ec4481e022770df75aa3e6a8be7de60386a9a9137b3a6c9ad48c3600"
     },
     {
       "path": "browser-app-03-surfaces.json",
-      "sha256": "5c7da3a44b4e4c09c20ff59fa7f6a36a80039ed624166294c931b0412ad9d75d"
+      "sha256": "59ba858a42bc2a950d67dcf24f57a19f5cf2ecaa38a34bf0b0e844dfb0768b03"
     },
     {
       "path": "browser-feature-surfaces.json",
-      "sha256": "78bd906d06ae692ff715ae1ca60160f2a950e5ec74f72695766c3d2164d7bf01"
+      "sha256": "2c36a1d5a089bf832f48d463962fe57c4a8f150f4eb2b2edf224d117034c5655"
     },
     {
       "path": "browser-lib-01-surfaces.json",
-      "sha256": "a0d1e3a37b766aa6706381a66581039303722242bd1d3bb4a6b89d08ccab6b94"
+      "sha256": "e68116f734464048d66fe0a5fda2aeb9ca1f5a74835c60421842b4e1c7437ad5"
     },
     {
       "path": "browser-lib-02-surfaces.json",
-      "sha256": "4e4fd8b4978086243c53e3557840acaddad42787f4bc9a28168ffec3a8eb87ba"
+      "sha256": "fc705dd85b9dd47b92788743e68fee25f2566039c232f7db25a6d2f9da76d152"
     },
     {
       "path": "browser-lib-03-surfaces.json",
-      "sha256": "49f2b87c089220b8c884034adb625b2116a322cf48b07658ad828b2485a7073b"
+      "sha256": "e012ca65fdf04343c960da5ce0a36e6a56d5b55f01074226c77bd35fcbe5408f"
     },
     {
       "path": "cli-01-surfaces.json",
-      "sha256": "ef11efbbed50a037c83c7b9045018dc2c567cb4aa96b3d2739b20e7a777676b3"
+      "sha256": "b05ac334f9949992f3497f79885033b970692cb798e831d4866d62050ce56841"
     },
     {
       "path": "cli-02-surfaces.json",
-      "sha256": "c975ddcc91c0a6d9b47859ea982971caf9a9335eebc3716ee598a625f33d7540"
+      "sha256": "74f0ef72bd23491cecd0a49920c4ca2447d30a778c663b327774a858220fdfa9"
     },
     {
       "path": "cli-03-surfaces.json",
-      "sha256": "368989543b885b6d977a6fc6275ead9a60d5aa931040259eede8948b65fa51a1"
+      "sha256": "337267bce90096f0de84720b031457c6047d3765c566dd253d23f75b430bea04"
     },
     {
       "path": "cli-04-surfaces.json",
-      "sha256": "4202788bfad15237032cb919f3fa02324e3dec597e335313542e41004254c414"
+      "sha256": "da2d33f1e804cc3b24602f89a0733418a2aa3e10b20ebbc4e4414ef370b65e5a"
     },
     {
       "path": "cli-05-surfaces.json",
-      "sha256": "8a264c707c66c2f89bc32663a6d8e9b7fb54907fb85173fdbdc37a4f2478c47e"
+      "sha256": "105776364155dcfe9e0538bbe490f62f4c4f606b2c09eae0c2d406e8e521ab8f"
     },
     {
       "path": "cli-06-surfaces.json",
-      "sha256": "7ab0cb69e2e033bc40d6f5b4bb6d2ea866c7ae74b7a6c75668e02cd0329c95be"
+      "sha256": "e1c74054a6ae2861075762942db049eb1ded07abd44b05cc933ab2460e17f1cb"
     },
     {
       "path": "cli-07-surfaces.json",
-      "sha256": "f3ce3ca32c9df13a00944a90a4c290f23aa141f5fe614f86d92cfdc26130f2cd"
+      "sha256": "946f56fdba7fc42fc3a91be38270a371cf9f5f3db5ca701be4336b4b8c0a1f21"
     },
     {
       "path": "cli-08-surfaces.json",
-      "sha256": "ab95ad142e491a78e5942ced508810a1415d1e9875db63f59f97fe90db8f0652"
+      "sha256": "adcbc8737ec21bf25b4e0ea251fb2c7b34e577486f778e79aee43810fa946c07"
     },
     {
       "path": "cli-root-01-surfaces.json",
-      "sha256": "e80e6ef851dea300e87e89a9c077378e08e5d4eb3b4ef007f10f6d3c686c5280"
+      "sha256": "12f7e2a79b07b0f67b299487ac7d0a06d967a0d373e3da336a91b06fc040695a"
+    },
+    {
+      "path": "document-01-surfaces.json",
+      "sha256": "587549e629a01ff979f134e5b36f5fe64b22704a72568b9b2b7031583979cf97"
+    },
+    {
+      "path": "document-02-surfaces.json",
+      "sha256": "387d7d0e5cd60e6ce9b68fae4de02853de3f9cad1bcf9661d90183e9f3a63995"
     },
     {
       "path": "http-asset-head-surfaces.json",
-      "sha256": "4b8a33ce0027d4f0664c347e8c81afabcc034eeb06ce5e496b3cf40c7f4b5746"
+      "sha256": "395f862cc4fb65dfbbf92f619ee01c087fc6bf979e0d06a9e8cfada3d137a956"
     },
     {
       "path": "http-asset-surfaces.json",
-      "sha256": "766d64ab22eaaf8f4193af585799261e0c18986c9145e5e67ca97f2cd023a703"
+      "sha256": "90e7e2c9c6539291573e4f19343f45452c49979b612dcc7b5f119dfd72700df3"
     },
     {
       "path": "http-read-detail-surfaces.json",
-      "sha256": "dd5b99bdac339a9253b450f1a763b9d9915d932e7bb3e348050ba333af5400f9"
+      "sha256": "1b7e613a1902cb6fee19410da34717a6535eed037dd0d3609d109323a186f0e2"
     },
     {
       "path": "http-read-surfaces.json",
-      "sha256": "634a032be4e4ec568cedf84351afec5644b155132df1200336a0d9161bd8a6b7"
+      "sha256": "07f6845823b01092551286d3a1f9d9ce84ec1d7f6f8a96bf8653c4a10dcd4259"
     },
     {
       "path": "http-write-accounts-surfaces.json",
-      "sha256": "eef5335aa654eab949f934d3df8f296f7c53e902e56659772c2b9b92164ab5ad"
+      "sha256": "53dae543a3461bffa76f890877c11db1f204c3788f27832c49c74027c316a8e6"
+    },
+    {
+      "path": "http-write-answers-02-surfaces.json",
+      "sha256": "8e56997f79f82aff5cf3de5833a72e113e8948d0d03cb60387df135ee012a6a6"
     },
     {
       "path": "http-write-answers-surfaces.json",
-      "sha256": "68ca73f6fb57e29a3a5a78894c35415f88a807370de5e04431b44bbf6ba18a35"
+      "sha256": "dbb5121732e86d7c9c02c17be118971e5cc10c16e320d35ef253fd5dbe8baa38"
     },
     {
       "path": "http-write-jobs-surfaces.json",
-      "sha256": "8d6fb7de7da098da9b1a7bc76fe5ec494385a8b8942e40785648025120011d06"
+      "sha256": "7cec0caf5d6d0c9e73eeb38b5f81a507365cebc35f24288703499419971ee794"
     },
     {
       "path": "http-write-profile-surfaces.json",
-      "sha256": "4e6280772aa6040ee9876f37dcd08c75a83074a368229dd903defdc6d3e7f2e1"
+      "sha256": "4b428e291ae5a962e8e44db12e2255108d3c8b4a6afe62e89545a0c259885614"
     },
     {
       "path": "http-write-resumes-surfaces.json",
-      "sha256": "798a20784788c183c4f16376dc9f60faa815d4f097a8ed626c19ca941a64dc7b"
+      "sha256": "8596c69576481a107c29da5cb4c82b81019045b21424f26f49a796fce63f5640"
     },
     {
       "path": "http-write-surfaces.json",
-      "sha256": "4a96bd3d76d95283c0ae3f7829ba73c61fb32f66a37e129d3e6047237a36e0aa"
+      "sha256": "1e555175b598cb85465d368d6a7c92c8a43b5b823db43ea02e8ffd29e10effd0"
+    },
+    {
+      "path": "journal-01-surfaces.json",
+      "sha256": "0dc5b0c108fc229764d0381cc38390bf291ce373a1f7215202941bba70f6a055"
+    },
+    {
+      "path": "journal-02-surfaces.json",
+      "sha256": "1051479ffce514db1e766054102e7fc7a95188074052ea3ac4bed616178a8bb7"
+    },
+    {
+      "path": "journal-03-surfaces.json",
+      "sha256": "20e3c3ab40814076290bb43fd37c91dec03884686abe372fbe0908b224b171da"
     },
     {
       "path": "nodes.json",

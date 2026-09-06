@@ -2,12 +2,14 @@
   "schemaVersion": 1,
   "surfaces": [
     {
-      "id": "browser:workspace/bootstrap.js:createWorkspaceContext",
-      "kind": "browser",
-      "export": "createWorkspaceContext",
-      "node": "UIF",
+      "id": "http:POST:/api/answers/by-key/{encodedKey}/restore",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/by-key/{encodedKey}/restore",
+      "node": "ANS",
       "sources": [
-        "workspace/bootstrap.js"
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -24,12 +26,14 @@
       }
     },
     {
-      "id": "browser:workspace/bootstrap.js:bootstrapWorkspace",
-      "kind": "browser",
-      "export": "bootstrapWorkspace",
-      "node": "UIF",
+      "id": "http:POST:/api/answers/by-key/{encodedKey}/delete",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/by-key/{encodedKey}/delete",
+      "node": "ANS",
       "sources": [
-        "workspace/bootstrap.js"
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -46,12 +50,14 @@
       }
     },
     {
-      "id": "browser:workspace/features/activity.js:installActivity",
-      "kind": "browser",
-      "export": "installActivity",
-      "node": "UIF",
+      "id": "http:POST:/api/answers/{legacyKey}/reveal",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/{legacyKey}/reveal",
+      "node": "ANS",
       "sources": [
-        "workspace/features/activity.js"
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -68,12 +74,14 @@
       }
     },
     {
-      "id": "browser:workspace/features/answers.js:installAnswers",
-      "kind": "browser",
-      "export": "installAnswers",
-      "node": "UIF",
+      "id": "http:POST:/api/answers/{legacyKey}/merge",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/{legacyKey}/merge",
+      "node": "ANS",
       "sources": [
-        "workspace/features/answers.js"
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -90,12 +98,14 @@
       }
     },
     {
-      "id": "browser:workspace/features/automation.js:installAutomation",
-      "kind": "browser",
-      "export": "installAutomation",
-      "node": "UIF",
+      "id": "http:POST:/api/answers/{legacyKey}/accept",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/{legacyKey}/accept",
+      "node": "ANS",
       "sources": [
-        "workspace/features/automation.js"
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -112,12 +122,14 @@
       }
     },
     {
-      "id": "browser:workspace/features/bindings.js:installBindings",
-      "kind": "browser",
-      "export": "installBindings",
-      "node": "UIF",
+      "id": "http:POST:/api/answers/{legacyKey}/decline",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/{legacyKey}/decline",
+      "node": "ANS",
       "sources": [
-        "workspace/features/bindings.js"
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -134,12 +146,14 @@
       }
     },
     {
-      "id": "browser:workspace/features/facts.js:installFacts",
-      "kind": "browser",
-      "export": "installFacts",
-      "node": "UIF",
+      "id": "http:POST:/api/answers/{legacyKey}/trash",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/{legacyKey}/trash",
+      "node": "ANS",
       "sources": [
-        "workspace/features/facts.js"
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -156,12 +170,14 @@
       }
     },
     {
-      "id": "browser:workspace/features/jobs.js:installJobs",
-      "kind": "browser",
-      "export": "installJobs",
-      "node": "UIF",
+      "id": "http:POST:/api/answers/{legacyKey}/restore",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/{legacyKey}/restore",
+      "node": "ANS",
       "sources": [
-        "workspace/features/jobs.js"
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -178,12 +194,14 @@
       }
     },
     {
-      "id": "browser:workspace/features/navigation.js:installNavigation",
-      "kind": "browser",
-      "export": "installNavigation",
-      "node": "UIF",
+      "id": "http:POST:/api/answers/{legacyKey}/delete",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/{legacyKey}/delete",
+      "node": "ANS",
       "sources": [
-        "workspace/features/navigation.js"
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -200,12 +218,14 @@
       }
     },
     {
-      "id": "browser:workspace/features/overview.js:installOverview",
-      "kind": "browser",
-      "export": "installOverview",
-      "node": "UIF",
+      "id": "http:PATCH:/api/answers/by-key/{encodedKey}",
+      "kind": "http",
+      "method": "PATCH",
+      "path": "/api/answers/by-key/{encodedKey}",
+      "node": "ANS",
       "sources": [
-        "workspace/features/overview.js"
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -222,34 +242,14 @@
       }
     },
     {
-      "id": "browser:workspace/features/resumes.js:installResumes",
-      "kind": "browser",
-      "export": "installResumes",
-      "node": "UIF",
+      "id": "http:PATCH:/api/answers/{legacyKey}",
+      "kind": "http",
+      "method": "PATCH",
+      "path": "/api/answers/{legacyKey}",
+      "node": "ANS",
       "sources": [
-        "workspace/features/resumes.js"
-      ],
-      "effects": "unclassified",
-      "scenarios": {
-        "valid": "unverified",
-        "invalid": "unverified",
-        "missing": "unverified",
-        "noop": "unverified",
-        "privacy": "unverified",
-        "conflict": "unverified",
-        "concurrency": "unverified",
-        "interruption": "unverified",
-        "recovery": "unverified",
-        "platform": "unverified"
-      }
-    },
-    {
-      "id": "browser:workspace/features/trash.js:installTrash",
-      "kind": "browser",
-      "export": "installTrash",
-      "node": "UIF",
-      "sources": [
-        "workspace/features/trash.js"
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
       ],
       "effects": "unclassified",
       "scenarios": {

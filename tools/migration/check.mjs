@@ -5,14 +5,20 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { discoverBrowserExports, checkBrowserBindings } from './browser-exports.mjs';
 
-export const SCENARIOS = ['valid', 'invalid', 'privacy', 'conflict', 'concurrency', 'recovery', 'platform'];
+export const SCENARIOS = ['valid', 'invalid', 'missing', 'noop', 'privacy', 'conflict',
+  'concurrency', 'interruption', 'recovery', 'platform'];
 const CODE = /\.(?:py|js|mjs|ts|swift|sh|html|css)$/;
 const ROOTS = new Set(['scripts', 'workspace', 'qa', 'native', 'src', 'runtime']);
 const MANIFESTS = new Set(['package.json', '.codex-plugin/plugin.json',
   '.claude-plugin/plugin.json', '.claude-plugin/marketplace.json', '.agents/plugins/marketplace.json']);
 export const inSourceScope = (path) => (ROOTS.has(path.split('/')[0]) && CODE.test(path)) || MANIFESTS.has(path);
-const safePath = (path) => typeof path === 'string' && path.length > 0
+const safePath = (path) => typeof path === 'string' && path.trim().length > 0
+  && !/^[a-z]:/i.test(path) && !/[\u0000-\u001f\u007f]/.test(path)
   && !path.startsWith('/') && !path.includes('\\') && !path.split('/').some((part) => ['..', '.', ''].includes(part));
+const SURFACE_FIELDS = {
+  http: ['method', 'path'], cli: ['command'], browser: ['export'],
+  document: ['path', 'artifact'], journal: ['path', 'discriminator', 'value'],
+};
 
 export function validateReviewLock(lock, hashes) {
   if (lock?.schemaVersion !== 1 || !Array.isArray(lock.files)) return ['Invalid inventory review lock'];
@@ -67,6 +73,8 @@ export function validateInventory({ nodes, sources, surfaces }, actual, { accept
   const surfaceIds = new Set();
   const identities = new Set();
   for (const surface of surfaces) {
+    const allowed = new Set(['id', 'kind', 'node', 'sources', 'effects', 'scenarios', ...(SURFACE_FIELDS[surface.kind] ?? [])]);
+    if (Object.keys(surface).some((key) => !allowed.has(key))) errors.push(`Unknown surface field ${surface.id}`);
     if (typeof surface.id !== 'string' || !surface.id || surfaceIds.has(surface.id)) errors.push(`Invalid/duplicate surface ${surface.id}`);
     surfaceIds.add(surface.id);
     if (!nodeMap.has(surface.node)) errors.push(`Unknown owner for ${surface.id}`);
@@ -85,6 +93,22 @@ export function validateInventory({ nodes, sources, surfaces }, actual, { accept
     } else if (surface.kind === 'browser') {
       if (typeof surface.export !== 'string' || !surface.export) errors.push(`Invalid browser export ${surface.id}`);
       identity = `browser:${surface.sources?.[0]}:${surface.export}`;
+    } else if (surface.kind === 'document') {
+      if (!safePath(surface.path) || !['json', 'jsonl', 'lock', 'binary', 'temporary'].includes(surface.artifact)) {
+        errors.push(`Invalid persisted artifact ${surface.id}`);
+      }
+      identity = `document:${surface.path}`;
+    } else if (surface.kind === 'journal') {
+      const emptyOperation = surface.discriminator === 'operation' && surface.value === null;
+      const taggedOperation = ['operation.kind', 'operation.stage'].includes(surface.discriminator)
+        && typeof surface.value === 'string' && surface.value.length > 0;
+      if (!safePath(surface.path) || !(emptyOperation || taggedOperation)) {
+        errors.push(`Invalid journal discriminator ${surface.id}`);
+      }
+      if (!surfaces.some((item) => item.kind === 'document' && item.path === surface.path && item.artifact === 'json')) {
+        errors.push(`Missing journal document ${surface.id}`);
+      }
+      identity = `journal:${surface.path}:${surface.discriminator}:${JSON.stringify(surface.value)}`;
     } else errors.push(`Unknown surface kind ${surface.id}`);
     if (identity && identities.has(identity)) errors.push(`Duplicate public identity ${identity}`);
     identities.add(identity);

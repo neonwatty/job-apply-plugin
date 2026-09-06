@@ -3,7 +3,7 @@
 The seven browser surface shards enumerate 111 module/export identities across
 all 16 JavaScript modules under `workspace/`. This is an exported API inventory,
 not evidence that behavior is verified or that the browser migration is complete.
-Every effect remains unclassified and all seven scenario cells are unverified.
+Every effect remains unclassified and all ten scenario cells are unverified.
 
 ## Static extraction
 

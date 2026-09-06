@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "surfaces": [
     {
-      "id": "http:POST:/api/fact-groups",
-      "kind": "http",
-      "method": "POST",
-      "path": "/api/fact-groups",
-      "node": "PF",
+      "id": "journal:account-operation-journal.json:operation:null",
+      "kind": "journal",
+      "path": "account-operation-journal.json",
+      "discriminator": "operation",
+      "value": null,
+      "node": "JOUR",
       "sources": [
-        "scripts/job_apply_workspace/handler.py",
-        "scripts/job_apply_workspace/domains/profile.py"
+        "scripts/job_apply_store/domains/accounts/settings.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -26,14 +26,14 @@
       }
     },
     {
-      "id": "http:POST:/api/fact-groups/{id}/delete",
-      "kind": "http",
-      "method": "POST",
-      "path": "/api/fact-groups/{id}/delete",
-      "node": "PF",
+      "id": "journal:account-operation-journal.json:operation.stage:prepared",
+      "kind": "journal",
+      "path": "account-operation-journal.json",
+      "discriminator": "operation.stage",
+      "value": "prepared",
+      "node": "JOUR",
       "sources": [
-        "scripts/job_apply_workspace/handler.py",
-        "scripts/job_apply_workspace/domains/profile.py"
+        "scripts/job_apply_store/domains/accounts/settings.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -50,14 +50,14 @@
       }
     },
     {
-      "id": "http:PATCH:/api/profile",
-      "kind": "http",
-      "method": "PATCH",
-      "path": "/api/profile",
-      "node": "PF",
+      "id": "journal:account-operation-journal.json:operation.stage:credential_provisioned",
+      "kind": "journal",
+      "path": "account-operation-journal.json",
+      "discriminator": "operation.stage",
+      "value": "credential_provisioned",
+      "node": "JOUR",
       "sources": [
-        "scripts/job_apply_workspace/handler.py",
-        "scripts/job_apply_workspace/domains/profile.py"
+        "scripts/job_apply_store/domains/accounts/settings.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -74,14 +74,14 @@
       }
     },
     {
-      "id": "http:PATCH:/api/fact-groups/{id}",
-      "kind": "http",
-      "method": "PATCH",
-      "path": "/api/fact-groups/{id}",
-      "node": "PF",
+      "id": "journal:account-operation-journal.json:operation.stage:signup_in_progress",
+      "kind": "journal",
+      "path": "account-operation-journal.json",
+      "discriminator": "operation.stage",
+      "value": "signup_in_progress",
+      "node": "JOUR",
       "sources": [
-        "scripts/job_apply_workspace/handler.py",
-        "scripts/job_apply_workspace/domains/profile.py"
+        "scripts/job_apply_store/domains/accounts/settings.py"
       ],
       "effects": "unclassified",
       "scenarios": {

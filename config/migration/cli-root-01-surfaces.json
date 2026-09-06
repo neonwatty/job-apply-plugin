@@ -13,9 +13,12 @@
       "scenarios": {
         "valid": "unverified",
         "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
         "privacy": "unverified",
         "conflict": "unverified",
         "concurrency": "unverified",
+        "interruption": "unverified",
         "recovery": "unverified",
         "platform": "unverified"
       }
@@ -32,9 +35,12 @@
       "scenarios": {
         "valid": "unverified",
         "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
         "privacy": "unverified",
         "conflict": "unverified",
         "concurrency": "unverified",
+        "interruption": "unverified",
         "recovery": "unverified",
         "platform": "unverified"
       }
@@ -51,9 +57,12 @@
       "scenarios": {
         "valid": "unverified",
         "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
         "privacy": "unverified",
         "conflict": "unverified",
         "concurrency": "unverified",
+        "interruption": "unverified",
         "recovery": "unverified",
         "platform": "unverified"
       }
@@ -70,9 +79,12 @@
       "scenarios": {
         "valid": "unverified",
         "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
         "privacy": "unverified",
         "conflict": "unverified",
         "concurrency": "unverified",
+        "interruption": "unverified",
         "recovery": "unverified",
         "platform": "unverified"
       }
@@ -89,9 +101,12 @@
       "scenarios": {
         "valid": "unverified",
         "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
         "privacy": "unverified",
         "conflict": "unverified",
         "concurrency": "unverified",
+        "interruption": "unverified",
         "recovery": "unverified",
         "platform": "unverified"
       }
@@ -108,9 +123,12 @@
       "scenarios": {
         "valid": "unverified",
         "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
         "privacy": "unverified",
         "conflict": "unverified",
         "concurrency": "unverified",
+        "interruption": "unverified",
         "recovery": "unverified",
         "platform": "unverified"
       }
@@ -127,9 +145,12 @@
       "scenarios": {
         "valid": "unverified",
         "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
         "privacy": "unverified",
         "conflict": "unverified",
         "concurrency": "unverified",
+        "interruption": "unverified",
         "recovery": "unverified",
         "platform": "unverified"
       }
@@ -146,9 +167,12 @@
       "scenarios": {
         "valid": "unverified",
         "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
         "privacy": "unverified",
         "conflict": "unverified",
         "concurrency": "unverified",
+        "interruption": "unverified",
         "recovery": "unverified",
         "platform": "unverified"
       }
@@ -165,9 +189,12 @@
       "scenarios": {
         "valid": "unverified",
         "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
         "privacy": "unverified",
         "conflict": "unverified",
         "concurrency": "unverified",
+        "interruption": "unverified",
         "recovery": "unverified",
         "platform": "unverified"
       }
@@ -184,9 +211,12 @@
       "scenarios": {
         "valid": "unverified",
         "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
         "privacy": "unverified",
         "conflict": "unverified",
         "concurrency": "unverified",
+        "interruption": "unverified",
         "recovery": "unverified",
         "platform": "unverified"
       }
@@ -203,9 +233,12 @@
       "scenarios": {
         "valid": "unverified",
         "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
         "privacy": "unverified",
         "conflict": "unverified",
         "concurrency": "unverified",
+        "interruption": "unverified",
         "recovery": "unverified",
         "platform": "unverified"
       }
@@ -222,9 +255,12 @@
       "scenarios": {
         "valid": "unverified",
         "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
         "privacy": "unverified",
         "conflict": "unverified",
         "concurrency": "unverified",
+        "interruption": "unverified",
         "recovery": "unverified",
         "platform": "unverified"
       }
@@ -241,9 +277,12 @@
       "scenarios": {
         "valid": "unverified",
         "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
         "privacy": "unverified",
         "conflict": "unverified",
         "concurrency": "unverified",
+        "interruption": "unverified",
         "recovery": "unverified",
         "platform": "unverified"
       }
@@ -260,9 +299,12 @@
       "scenarios": {
         "valid": "unverified",
         "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
         "privacy": "unverified",
         "conflict": "unverified",
         "concurrency": "unverified",
+        "interruption": "unverified",
         "recovery": "unverified",
         "platform": "unverified"
       }
@@ -279,9 +321,12 @@
       "scenarios": {
         "valid": "unverified",
         "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
         "privacy": "unverified",
         "conflict": "unverified",
         "concurrency": "unverified",
+        "interruption": "unverified",
         "recovery": "unverified",
         "platform": "unverified"
       }
@@ -298,9 +343,12 @@
       "scenarios": {
         "valid": "unverified",
         "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
         "privacy": "unverified",
         "conflict": "unverified",
         "concurrency": "unverified",
+        "interruption": "unverified",
         "recovery": "unverified",
         "platform": "unverified"
       }
@@ -317,9 +365,12 @@
       "scenarios": {
         "valid": "unverified",
         "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
         "privacy": "unverified",
         "conflict": "unverified",
         "concurrency": "unverified",
+        "interruption": "unverified",
         "recovery": "unverified",
         "platform": "unverified"
       }

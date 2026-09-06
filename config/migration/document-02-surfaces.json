@@ -2,12 +2,13 @@
   "schemaVersion": 1,
   "surfaces": [
     {
-      "id": "browser:workspace/bootstrap.js:createWorkspaceContext",
-      "kind": "browser",
-      "export": "createWorkspaceContext",
-      "node": "UIF",
+      "id": "document:<legacy-profile>",
+      "kind": "document",
+      "path": "<legacy-profile>",
+      "artifact": "json",
+      "node": "PF",
       "sources": [
-        "workspace/bootstrap.js"
+        "scripts/job_apply_store/base.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -24,12 +25,14 @@
       }
     },
     {
-      "id": "browser:workspace/bootstrap.js:bootstrapWorkspace",
-      "kind": "browser",
-      "export": "bootstrapWorkspace",
-      "node": "UIF",
+      "id": "document:resume-files/.<previous.name>.<nonce>.quarantine",
+      "kind": "document",
+      "path": "resume-files/.<previous.name>.<nonce>.quarantine",
+      "artifact": "temporary",
+      "node": "RES",
       "sources": [
-        "workspace/bootstrap.js"
+        "scripts/job_apply_store/domains/resumes/storage.py",
+        "scripts/job_apply_store/domains/resumes/lifecycle.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -46,12 +49,14 @@
       }
     },
     {
-      "id": "browser:workspace/features/activity.js:installActivity",
-      "kind": "browser",
-      "export": "installActivity",
-      "node": "UIF",
+      "id": "document:<target-parent>/.<target-name>.*.tmp",
+      "kind": "document",
+      "path": "<target-parent>/.<target-name>.*.tmp",
+      "artifact": "temporary",
+      "node": "TX",
       "sources": [
-        "workspace/features/activity.js"
+        "scripts/job_apply_store/io.py",
+        "scripts/job_apply_policy/storage.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -68,12 +73,13 @@
       }
     },
     {
-      "id": "browser:workspace/features/answers.js:installAnswers",
-      "kind": "browser",
-      "export": "installAnswers",
-      "node": "UIF",
+      "id": "document:auto-submit/campaign.json",
+      "kind": "document",
+      "path": "auto-submit/campaign.json",
+      "artifact": "json",
+      "node": "FINAL",
       "sources": [
-        "workspace/features/answers.js"
+        "scripts/job_apply_policy/storage.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -90,12 +96,13 @@
       }
     },
     {
-      "id": "browser:workspace/features/automation.js:installAutomation",
-      "kind": "browser",
-      "export": "installAutomation",
-      "node": "UIF",
+      "id": "document:auto-submit/campaigns/<campaign-id-suffix>.json",
+      "kind": "document",
+      "path": "auto-submit/campaigns/<campaign-id-suffix>.json",
+      "artifact": "json",
+      "node": "FINAL",
       "sources": [
-        "workspace/features/automation.js"
+        "scripts/job_apply_policy/campaigns.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -112,12 +119,13 @@
       }
     },
     {
-      "id": "browser:workspace/features/bindings.js:installBindings",
-      "kind": "browser",
-      "export": "installBindings",
-      "node": "UIF",
+      "id": "document:auto-submit/applications/<campaign-id-suffix>/<application-ref-suffix>.json",
+      "kind": "document",
+      "path": "auto-submit/applications/<campaign-id-suffix>/<application-ref-suffix>.json",
+      "artifact": "json",
+      "node": "FINAL",
       "sources": [
-        "workspace/features/bindings.js"
+        "scripts/job_apply_policy/storage.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -134,12 +142,13 @@
       }
     },
     {
-      "id": "browser:workspace/features/facts.js:installFacts",
-      "kind": "browser",
-      "export": "installFacts",
-      "node": "UIF",
+      "id": "document:auto-submit/receipts.jsonl",
+      "kind": "document",
+      "path": "auto-submit/receipts.jsonl",
+      "artifact": "jsonl",
+      "node": "FINAL",
       "sources": [
-        "workspace/features/facts.js"
+        "scripts/job_apply_policy/storage.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -156,12 +165,13 @@
       }
     },
     {
-      "id": "browser:workspace/features/jobs.js:installJobs",
-      "kind": "browser",
-      "export": "installJobs",
-      "node": "UIF",
+      "id": "document:auto-submit/.lock",
+      "kind": "document",
+      "path": "auto-submit/.lock",
+      "artifact": "lock",
+      "node": "TX",
       "sources": [
-        "workspace/features/jobs.js"
+        "scripts/job_apply_policy/storage.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -178,12 +188,13 @@
       }
     },
     {
-      "id": "browser:workspace/features/navigation.js:installNavigation",
-      "kind": "browser",
-      "export": "installNavigation",
-      "node": "UIF",
+      "id": "document:resume-files/.<resume-id>.*.tmp",
+      "kind": "document",
+      "path": "resume-files/.<resume-id>.*.tmp",
+      "artifact": "temporary",
+      "node": "RES",
       "sources": [
-        "workspace/features/navigation.js"
+        "scripts/job_apply_store/domains/resumes/storage.py"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -200,56 +211,13 @@
       }
     },
     {
-      "id": "browser:workspace/features/overview.js:installOverview",
-      "kind": "browser",
-      "export": "installOverview",
-      "node": "UIF",
+      "id": "document:resume-files/.browser-upload.*<extension>",
+      "kind": "document",
+      "path": "resume-files/.browser-upload.*<extension>",
+      "artifact": "temporary",
+      "node": "RES",
       "sources": [
-        "workspace/features/overview.js"
-      ],
-      "effects": "unclassified",
-      "scenarios": {
-        "valid": "unverified",
-        "invalid": "unverified",
-        "missing": "unverified",
-        "noop": "unverified",
-        "privacy": "unverified",
-        "conflict": "unverified",
-        "concurrency": "unverified",
-        "interruption": "unverified",
-        "recovery": "unverified",
-        "platform": "unverified"
-      }
-    },
-    {
-      "id": "browser:workspace/features/resumes.js:installResumes",
-      "kind": "browser",
-      "export": "installResumes",
-      "node": "UIF",
-      "sources": [
-        "workspace/features/resumes.js"
-      ],
-      "effects": "unclassified",
-      "scenarios": {
-        "valid": "unverified",
-        "invalid": "unverified",
-        "missing": "unverified",
-        "noop": "unverified",
-        "privacy": "unverified",
-        "conflict": "unverified",
-        "concurrency": "unverified",
-        "interruption": "unverified",
-        "recovery": "unverified",
-        "platform": "unverified"
-      }
-    },
-    {
-      "id": "browser:workspace/features/trash.js:installTrash",
-      "kind": "browser",
-      "export": "installTrash",
-      "node": "UIF",
-      "sources": [
-        "workspace/features/trash.js"
+        "scripts/job_apply_store/domains/resumes/storage.py"
       ],
       "effects": "unclassified",
       "scenarios": {
