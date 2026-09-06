@@ -175,6 +175,16 @@
       "path": ".agents/plugins/marketplace.json",
       "sha256": "c065e976d8e794d3f856aba6a2662f91421f21ad847bd6fcdee45729e328ccae",
       "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-ui/lib/trash-view.ts",
+      "sha256": "902e583fd4a30b84969270ab0221edbe81cdd931178acc6f074f49614506c4eb",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/trash-view.js",
+      "sha256": "87e621b4f4ad389bbf428ced3a487d6f72d85c15c65096518257154c1ac7c836",
+      "classification": "unreviewed"
     }
   ]
 }

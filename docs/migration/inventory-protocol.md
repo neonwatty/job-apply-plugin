@@ -9,7 +9,7 @@ cannot grant migration acceptance.
 
 - 36 graph nodes and hard dependency edges, including stricter explicit table edges.
   Family REF prerequisites still need per-surface evidence binding before Ready.
-- 255 source/manifest file hashes across scripts, workspace, QA, native, source and
+- 257 source/manifest file hashes across scripts, workspace, QA, native, source and
   emitted runtime. Every entry remains `unreviewed` for classification.
 - 144 Python CLI subcommands, discovered by AST without importing application code
   or running main. Literal parser names and Chrome's constant loop were expanded.

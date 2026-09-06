@@ -11,7 +11,7 @@ reference/ownership package. HOST acceptance remains open; no native cell inferr
 ## Active graph checkpoint: I3 and SEM ingress evidence
 
 I3 establishes an executable consistency gate, not node I acceptance. It binds
-255 source/manifest files, 144 CLI subcommands, 17 root parser surfaces and 127
+257 source/manifest files, 144 CLI subcommands, 17 root parser surfaces and 127
 HTTP surfaces, 111 browser exports, 28 persisted artifact patterns and 19 journal variants across the 36-node graph. Effects/classifications and scenario
 evidence remain explicitly open. The gate is registered in fast/full validation;
 `check:migration -- --acceptance` intentionally fails until real acceptance is
@@ -116,3 +116,37 @@ scenario categories. Reviewed regressions cover Windows absolute paths, control
 characters, unknown fields and journal/document bindings. Focused inventory plus
 trash-reference validation passed 21 tests without skips. The trash reference
 family is independently reviewed; parent I/UI0 acceptance remains open.
+
+## Next integrated child: UI0 trash helpers and SEM stdin
+
+Reference family is frozen at `8e0cb97`, independently reviewed by numeric_codec.
+Implementation owner migration_sequence allowed only
+`src/workspace-ui/lib/trash-view.ts`; root owns its emitted counterpart
+`runtime/workspace-ui/lib/trash-view.js`. Independent test owner numeric_codec
+allowed only `tests_js/workspace_trash_view_ts.test.mjs`. validation_strategy
+also independently reviewed the implementation. No ownership overlap or bootstrap
+change occurred. Dependencies are the accepted compiler/inert foundation and
+these four inventoried exports with their accepted family reference; whole I/UI0
+remain open under incremental family scheduling.
+
+The new helper tests and unchanged reference pass 11 tests without skips, including
+1,200 seeded differential observations (seed 334460). Typecheck, build parity and
+size checks pass. Custom filter return types, coercion/getter order, propagated
+errors, sparse arrays and object identity are preserved. Ordinary data inputs have
+no helper-owned IO; caller-defined methods/getters can execute caller code.
+This is locally verified inert implementation; final immutable acceptance receipt
+binding remains to be completed. No UI0 parent or real browser gate is closed.
+
+SEM actual pipe stdin now has 28 fixed outcomes for each of CPython 3.12.13,
+3.13.13 and 3.14.4; five tests pass with zero skips using the existing temporary
+3.12 alias. Exact bytes, interpreter family, Unicode version, stdin error mode,
+UTF-8 mode and recursion setting are checked. See
+[memory-independent stdin evidence](migration/json-stdin-evidence.md).
+Stdin surrogateescape and HTTP surrogatepass are distinct observed contracts.
+No TypeScript transport adapter is accepted by this evidence.
+
+Next work: complete executable family requirement/receipt and ownership validation,
+bind the reviewed UI child to its immutable implementation revision, and continue
+FS family reference capture. Node I still needs complete source/writer/launcher
+classification; SEM still needs profile selection and remaining caller/depth/native
+coverage. Missing host cells remain open while portable work continues.
