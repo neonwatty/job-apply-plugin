@@ -1,8 +1,8 @@
 # Migration execution state
 
 Updated 2026-09-06. Governing [execution plan](autonomous-typescript-migration-plan.md).
-Current approved execution covers raw-test integration and inert numeric atoms.
-Later waves are planned, not started or automatically published by this ledger.
+Current approved execution includes the first parallel wave-one foundation batch.
+Later production routing and publication are not implied by this ledger.
 
 ## Accepted packages
 
@@ -18,19 +18,19 @@ Later waves are planned, not started or automatically published by this ledger.
 
 Detailed [numeric integration receipt](numeric-atom-integration-review.md).
 Implementation and independent test workers finished; review finding resolved.
-No worker owns an active source-edit package at this checkpoint. No heavy test
-process or capacity reservation is retained by this task.
+The first wave-one batch extends this checkpoint with inert primitives; see the
+[wave-one receipt](wave-one-foundation-receipt.md) for ownership and limitations.
 
 ## Ready and blocked work
 
 | ID | State | Prerequisites and ownership |
 | --- | --- | --- |
 | 0C missing contracts | Ready for bounded assignment | Coordinator first selects one uncovered command/route family |
-| 0R reference semantics | Blocked on Python 3.12 evidence | Use authorized available environment; no version change inferred |
+| 0R reference semantics | 3.12.13 captured; caller/depth/Unicode semantics still open | Existing installation discovered; no default-version change |
 | Runtime distribution/access | Evidence preparation ready; native acceptance blocked | Reserve explicit slot rotation; identify authorized clean host cells |
-| 1A typed JSON | Ready for interface/design assignment | Consumes 0A; one parser owner plus independent test worker |
-| 1B path/permission primitives | Ready for bounded assignment | May parallelize with 1A; JSON decoding waits for accepted 1A interface |
-| 1C pure UI helpers | Ready for bounded assignment | Explicit helper subtree ownership; no bootstrap overlap |
+| 1A typed JSON | Inert parser/serializer implemented and independently tested | Production byte ingress and caller diagnostic/depth gates remain |
+| 1B Store primitives | Pure object/version validation implemented; filesystem work next | Path/permission/raw-read adapters remain; typed JSON interface available |
+| 1C pure UI helpers | Four inert resume-view helpers implemented and tested | Original JS remains authoritative; no bootstrap changes |
 | Restore staging CI | Required before production cutover | Restore automatic staging triggers and valid required contexts; complete integrated validation |
 | Full matching | Held | 0R plus full raw input/Unicode equivalence; held worker not imported |
 | Production cutover/removal | Not ready | Full command/writer/platform/runtime/rollback gates |
@@ -72,6 +72,8 @@ checked snapshot isolation, escalation, receipt reuse and installer safety.
 Broad pushes require fresh deep evidence for their actual outgoing commit/base;
 workers run focused checks and the coordinator validates the integrated wave.
 No workflow/ruleset changes or production activation were made by this work.
-Full/browser/package/native-platform validation was not run for this hook package;
-the existing migration acceptance gaps remain open. Release Validation still runs
+The isolated hooks PR50 merged as `f18fcda0fdd68c69bc9f0f787f9864060deb33bb`.
+Its deep run passed 18 suites; Windows was deferred and two opt-in browser cases
+were skipped. The migration branch reconciled that merge at `6100b1d`. These
+results do not validate subsequent source edits. Release Validation still runs
 on staging pushes despite the Validate Plugin freeze.

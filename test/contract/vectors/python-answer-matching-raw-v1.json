@@ -280,6 +280,29 @@
           "stdout": "{\"result\":{\"tokens\":[],\"normalized\":\"\",\"features\":[],\"negation\":false}}\n"
         }
       ]
+    },
+    {
+      "provenance": {
+        "implementation": "CPython",
+        "python": "3.12.13",
+        "unicode": "15.0.0",
+        "intMaxStrDigits": 4300,
+        "recursionLimit": 1000
+      },
+      "overrides": [
+        {
+          "id": "error-wording",
+          "stdout": "{\"error\":{\"name\":\"TypeError\",\"message\":\"unhashable type: 'list'\"}}\n"
+        },
+        {
+          "id": "unicode-0x1ccd6",
+          "stdout": "{\"result\":{\"tokens\":[],\"normalized\":\"\",\"features\":[],\"negation\":false}}\n"
+        },
+        {
+          "id": "invalid-trailing-comma",
+          "stdout": "{\"error\":{\"name\":\"JSONDecodeError\",\"message\":\"Expecting property name enclosed in double quotes: line 1 column 25 (char 24)\"}}\n"
+        }
+      ]
     }
   ]
 }

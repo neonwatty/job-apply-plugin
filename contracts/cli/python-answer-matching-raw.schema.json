@@ -298,7 +298,8 @@
                     "input limit exceeded",
                     "output limit exceeded",
                     "Exceeds the limit (4300 digits) for integer string conversion: value has 4301 digits; use sys.set_int_max_str_digits() to increase the limit",
-                    "unhashable type: 'list'"
+                    "unhashable type: 'list'",
+                    "Expecting property name enclosed in double quotes: line 1 column 25 (char 24)"
                   ]
                 }
               }

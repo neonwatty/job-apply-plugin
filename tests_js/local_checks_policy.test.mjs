@@ -43,6 +43,19 @@ test('new production modules, global edits, unknown paths and deleted codec esca
   }
 });
 
+test('accepted inert boundaries select focused tests and include dependent validation', () => {
+  for (const [path, id, dependent] of [
+    ['src/contracts/raw-json/parser.ts', 'local-typed-json', 'tests_js/store_validation_ts.test.mjs'],
+    ['src/store/validation.ts', 'local-store-validation', 'tests_js/store_validation_ts.test.mjs'],
+    ['src/workspace-ui/lib/resume-view.ts', 'local-resume-view', 'tests_js/workspace_helpers.test.mjs'],
+    ['src/contracts/raw-json/numeric-atom.ts', 'local-numeric', 'tests_js/typed_json*.test.mjs'],
+  ]) {
+    const plan = selectLocalPlan(matrix, [path], [path]);
+    assert.equal(plan.heavy.length, 0);
+    assert.ok(plan.light.find((suite) => suite.id === id).include.includes(dependent));
+  }
+});
+
 test('tag pushes require complete local release and platform selection even with no changes', () => {
   const plan = selectLocalPlan(matrix, [], [], { tag: true });
   const selected = ids([...plan.light, ...plan.heavy]);
