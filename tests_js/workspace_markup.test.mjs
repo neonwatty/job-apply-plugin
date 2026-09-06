@@ -125,9 +125,9 @@ test("resume extraction onboarding oracle is packaged in every protected OS vali
 
   const workflow = await readFile(join(REPO_ROOT, ".github", "workflows", "validate.yml"), "utf8");
   const command = "run: npm run qa:resume-extraction-onboarding";
-  assert.equal(workflow.split(command).length - 1, 4);
+  assert.equal(workflow.split(command).length - 1, 3);
   const jobs = [
-    "validate", "windows-store-workspace", "macos-credential-helper",
+    "windows-store-workspace", "macos-credential-helper",
     "macos-account-flow-helper",
   ];
   const starts = jobs.map((job) => workflow.indexOf(`  ${job}:`));
@@ -138,7 +138,8 @@ test("resume extraction onboarding oracle is packaged in every protected OS vali
     const block = workflow.slice(start, next === -1 ? undefined : next);
     assert.ok(block.includes(command), job);
   }
-  assert.match(workflow, /pull_request:\n\s+branches: \[main, staging\]/);
+  assert.match(workflow, /pull_request:\n\s+branches: \[main\]/);
+  assert.match(workflow, /workflow_dispatch:/);
 });
 
 test("styles include visible focus, reduced motion, contrast mode, and responsive behavior", async () => {
