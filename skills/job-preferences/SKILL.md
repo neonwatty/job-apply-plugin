@@ -1,114 +1,24 @@
 ---
 name: job-preferences
-description: Set or update job-search preferences such as titles, salary, remote work, and filters for the other Job Apply skills.
+description: Set or update the user's saved job-search criteria.
 allowed-tools: Read, Write, Bash
 ---
 
 # Job Preferences
 
-A Codex and Claude Code skill for managing persistent job search preferences. Set your target titles, salary floor, remote preference, and exclusion filters once; the bundled `job-search` skill reuses them automatically.
+Read [answer-memory](../answer-memory/SKILL.md) for root resolution, initialization, private inputs, and revision handling. Use `python3 "<plugin-root>/scripts/job-apply-store.py" profile-inspect` to obtain `profile.preferences` and its revision.
 
----
+Apply changes already specified in the current request without asking whether the user wants to make them. Ask only about missing or ambiguous values needed for that change. If the user asks to view preferences, show the saved preferences without starting a questionnaire. If no preferences exist, accept a partial set; do not require salary or every other field before saving useful criteria.
 
-## Workflow
+Supported fields are `targetTitles` (string array), `minBaseSalary` (string), `remotePreference` (string), `excludePatterns` (string array), and `defaultTimeRange` (string). Use user-supplied criteria, not example job titles, salary floors, or seniority defaults. Transient search overrides do not change saved preferences unless the user requests it.
 
-### Step 1: Inspect Profile
+Write only changed keys to a permission-restricted temporary JSON object, then run:
 
-Follow the bundled `answer-memory` skill (`$job-apply:answer-memory` in Codex; `/job-apply:answer-memory` in Claude Code). Resolve `<plugin-root>` as that skill directs, run `python3 "<plugin-root>/scripts/job-apply-store.py" init`, then run `profile-inspect`. Retain its `revision` and read the saved values from `profile.preferences`. Never read or write persistent Job Apply files directly.
-
-### Step 2: Check for Existing Preferences
-
-Use the `profile.preferences` JSON object returned by `profile-inspect`.
-
-**If preferences exist**, display them:
-
-> **Your current job search preferences:**
->
-> - **Target titles**: Staff AI Engineer, Principal ML Engineer
-> - **Min base salary**: $250K
-> - **Remote preference**: Remote only
-> - **Exclude patterns**: junior, associate, intern, entry level
-> - **Default time range**: last week
->
-> Would you like to update any of these?
-
-Then wait for the user. If they say no, stop. If they want to update, ask only about the fields they want to change using the host's structured question surface when available, or concise direct questions otherwise.
-
-**If no preferences exist**, run the full Q&A below.
-
-### Step 3: Collect Preferences (full Q&A)
-
-Use the host's structured question surface when available; otherwise ask concise direct questions. Ask no more than 4 questions at a time.
-
-**Question batch 1:**
-
-1. **Target titles** (multi-select + custom)
-   - Header: "Titles"
-   - Question: "Which job titles are you targeting?"
-   - Options: Staff AI Engineer, Principal ML Engineer, Director of AI, Head of ML
-   - Multi-select: true
-   - The user can add custom titles via "Other"
-
-2. **Min base salary**
-   - Header: "Salary"
-   - Question: "What is your minimum base salary?"
-   - Options: $200K, $250K, $300K
-   - Multi-select: false
-
-3. **Remote preference**
-   - Header: "Remote"
-   - Question: "What is your remote work preference?"
-   - Options: Remote only, Remote preferred, Open to hybrid, Open to all
-   - Multi-select: false
-
-4. **Exclude patterns** (multi-select)
-   - Header: "Exclude"
-   - Question: "Which patterns should be excluded from results?"
-   - Options: junior, associate, intern, entry level
-   - Multi-select: true
-
-**Question batch 2:**
-
-5. **Default time range**
-   - Header: "Time range"
-   - Question: "What default time range should job searches use?"
-   - Options: Last week, 2 weeks, Month
-   - Multi-select: false
-
-### Step 4: Save Preferences
-
-Write only the changed preference keys to a private temporary JSON object, then call `preferences-set --input <preferences.json> --expected-revision <inspected-revision> --source user` through the bundled helper and remove the temporary file. The helper returns the machine-readable profile inspection and merges supplied keys while preserving the rest of the preferences and profile. If the revision conflicts, inspect again, show the current preferences, and ask before retrying. Never patch `profile.json` directly.
-
-**Schema:**
-
-```json
-{
-  "targetTitles": ["Staff AI Engineer", "Principal ML Engineer"],
-  "minBaseSalary": "$250K",
-  "remotePreference": "remote only",
-  "excludePatterns": ["junior", "associate", "intern", "entry level"],
-  "defaultTimeRange": "last week"
-}
+```bash
+python3 "<plugin-root>/scripts/job-apply-store.py" preferences-set \
+  --input <private-preferences.json> --expected-revision <inspected-revision> --source user
 ```
 
-### Step 5: Confirm
+Remove the input on success or failure. This merges keys while preserving unrelated preferences and profile facts; do not pass `--replace` for a selective change. On a revision conflict, inspect the changed state, preserve the intended edit, and resolve the conflict with the owner before reapplying it.
 
-Display the saved preferences and confirm:
-
-> **Preferences saved to your local Job Apply store at `~/.job-apply/profile.json`.**
->
-> These will be used automatically by the bundled `job-search` skill. Invoke `job-preferences` again any time to update them.
-
----
-
-## Updating Preferences
-
-When the user invokes `job-preferences` and preferences already exist, show current values and let them update selectively. Only overwrite the fields they change — keep the rest intact.
-
----
-
-## Safety Rules
-
-1. **Use only the helper** — initialize, read, and merge preferences through the bundled `answer-memory` skill; never directly edit files under `~/.job-apply/`
-2. **Preserve existing profile** — inspect first, then use `preferences-set` with the exact revision, `--source user`, and no `--replace` for selective updates
-3. **No defaults without user input** — always ask the user, never assume values
+Confirm the saved criteria from the returned inspection. They are the same canonical preferences shown in Companion's Facts surface and used by job-search. Saving preferences grants no application or external transmission authority.

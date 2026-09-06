@@ -167,7 +167,7 @@
     },
     {
       "path": "source-catalog-02.json",
-      "sha256": "50db53c727987793943351381af212b5d0b53522429c96748d43d397053c3374"
+      "sha256": "0128ff29d9fd85774aa26615157c2b761603d90b9a2498a9fec7a44db8054880"
     },
     {
       "path": "source-catalog-03.json",
@@ -179,11 +179,11 @@
     },
     {
       "path": "source-catalog-05.json",
-      "sha256": "8cb6b103a6739c5d3fdafb71603217eb98960da8e9887a9f2b99e351a34e7f4b"
+      "sha256": "93c623f2f8264e16a2d6c8b066ada7c8c282e0a07e744dd60d86dd9d886c76fd"
     },
     {
       "path": "source-catalog-06.json",
-      "sha256": "7e9ff7bcffad53370b8f3f40138ca0f18bc28fb81f6950cf4cda2e8dd3d740c7"
+      "sha256": "b42198b044534f37d96d5d5231db0e38db354a04f0ba958c4c8a31906ffe5196"
     }
   ]
 }

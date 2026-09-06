@@ -11,9 +11,10 @@ FIXED = [
     'scripts/job-apply-workspace.py', 'skills/answer-memory/SKILL.md',
     'skills/job-apply/SKILL.md',
 ]
-TREES = ['runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace']
+TREES = ['skills', 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace']
 FILES = FIXED + ['runtime/nested/codec.js', 'scripts/job_apply_store/io.py',
-                 'scripts/job_apply_workspace/handler.py', 'workspace/app.js']
+                 'scripts/job_apply_workspace/handler.py', 'workspace/app.js',
+                 'skills/job-apply/references/runtime-contract.md', 'skills/job-search/SKILL.md']
 STAMP = 1700000000000000000
 
 
@@ -64,8 +65,13 @@ def alter(root, change):
         (root / 'runtime/empty').mkdir()
     elif change == 'empty-trees':
         for tree in TREES:
-            remove(root / tree)
-            (root / tree).mkdir()
+            if tree == 'skills':
+                for relative in FILES:
+                    if relative.startswith('skills/') and relative not in FIXED:
+                        remove(root / relative)
+            else:
+                remove(root / tree)
+                (root / tree).mkdir()
     elif change in ('missing-fixed', 'fixed-directory', 'fixed-link', 'dangling-link', 'tamper', 'mode'):
         path = root / 'scripts/job-apply-store.py'
         if change == 'tamper':

@@ -68,7 +68,7 @@
     },
     {
       "path": "src/package/installed-artifacts.ts",
-      "sha256": "5ed23de5078b0234f5c275a9b20c5a3fbc6df7a6b9e2292c3d8d387ff929782f",
+      "sha256": "afbb9cdeb417553bd2ca6f184e848fe1a694cfd1c68f10098a309221d5915ada",
       "classification": "unreviewed"
     },
     {
@@ -98,7 +98,7 @@
     },
     {
       "path": "runtime/package/installed-artifacts.js",
-      "sha256": "2a3db4be070356508671af5b861c37a2fbb9c36a3e06896565d754ffdf122eb4",
+      "sha256": "91e6e25154a66036a646598ea6c22608a7b1c3aeec6acb516007b24075442381",
       "classification": "unreviewed"
     },
     {
@@ -199,6 +199,11 @@
     {
       "path": "runtime/package/data-copy-io.js",
       "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/skill_documents.py",
+      "sha256": "06831df10f967087c5980b437e7425db0998e6ab6f39ecefd84a12156d6550c2",
       "classification": "unreviewed"
     }
   ]

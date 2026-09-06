@@ -10,9 +10,10 @@ const source = new URL('../scripts/smoke/artifacts.py', import.meta.url);
 const fixed = ['.codex-plugin/plugin.json', 'scripts/job-apply-store.py',
   'scripts/job-apply-task.py', 'scripts/job-apply-attempt.py', 'scripts/job-apply-workspace.py',
   'skills/answer-memory/SKILL.md', 'skills/job-apply/SKILL.md'];
-const trees = ['runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace'];
+const trees = ['skills', 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace'];
 const files = [...fixed, 'runtime/nested/codec.js', 'scripts/job_apply_store/io.py',
-  'scripts/job_apply_workspace/handler.py', 'workspace/app.js'].sort();
+  'scripts/job_apply_workspace/handler.py', 'workspace/app.js',
+  'skills/job-apply/references/runtime-contract.md', 'skills/job-search/SKILL.md'].sort();
 const cases = [
   ['inventory-normal', 'inventory', null],
   ['inventory-extra-runtime', 'inventory', 'extra-runtime'],
@@ -160,7 +161,7 @@ for (const executable of ['python3', 'python3.12', 'python3.13', 'python3.14']) 
           assert.deepEqual(after.get('target/runtime/extra.js'), before.get('target/runtime/extra.js'));
         }
         if (row.id === 'copy-empty-trees') {
-          for (const tree of trees) assert.equal(after.has(`target/${tree}`), false);
+          for (const tree of trees) assert.equal(after.has(`target/${tree}`), tree === 'skills');
         }
       }
       if (row.id.startsWith('copy-') && errors[row.id]) {

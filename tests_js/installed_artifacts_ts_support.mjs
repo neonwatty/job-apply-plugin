@@ -6,9 +6,10 @@ import { join } from 'node:path';
 export const fixed = ['.codex-plugin/plugin.json', 'scripts/job-apply-store.py',
   'scripts/job-apply-task.py', 'scripts/job-apply-attempt.py', 'scripts/job-apply-workspace.py',
   'skills/answer-memory/SKILL.md', 'skills/job-apply/SKILL.md'];
-export const trees = ['runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace'];
+export const trees = ['skills', 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace'];
 const files = [...fixed, 'runtime/nested/codec.js', 'scripts/job_apply_store/io.py',
-  'scripts/job_apply_workspace/handler.py', 'workspace/app.js'];
+  'scripts/job_apply_workspace/handler.py', 'workspace/app.js',
+  'skills/job-apply/references/runtime-contract.md', 'skills/job-search/SKILL.md'];
 
 export async function fixture(root) {
   await mkdir(root);
@@ -30,7 +31,11 @@ export async function alter(root, change) {
   else if (change === 'extra-outside') await writeFile(join(root, 'outside.txt'), 'outside');
   else if (change === 'empty-dir') await mkdir(join(root, 'runtime/empty'));
   else if (change === 'empty-trees') {
-    for (const tree of trees) { await remove(tree); await mkdir(join(root, tree)); }
+    for (const tree of trees) {
+      if (tree === 'skills') {
+        for (const relative of files.filter(path => path.startsWith('skills/') && !fixed.includes(path))) await remove(relative);
+      } else { await remove(tree); await mkdir(join(root, tree)); }
+    }
   } else if (change === 'tamper') await writeFile(path, 'tampered');
   else if (change === 'mode') await chmod(path, 0o600);
   else if (['missing-fixed', 'fixed-directory', 'fixed-link', 'dangling-link'].includes(change)) {

@@ -40,7 +40,7 @@ function checkMetadata(rows, missing = false) {
 function expectedPaths(missing) {
   const result = new Set();
   for (const prefix of ['source', 'target']) {
-    for (const path of [...files, 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace']) {
+    for (const path of [...files, 'skills', 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace']) {
       if (missing && prefix === 'target' && path === 'runtime/data.bin') continue;
       const parts = `${prefix}/${path}`.split('/');
       for (let length = 1; length <= parts.length; length++) result.add(parts.slice(0, length).join('/'));

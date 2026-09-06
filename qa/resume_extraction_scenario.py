@@ -15,6 +15,8 @@ import sys
 from typing import Any
 from unittest import mock
 
+from scripts.skill_documents import skill_text
+
 from qa.resume_extraction_companion import (
     EXPECTED_FIXTURE_SHA256,
     RECEIPT_KEYS,
@@ -320,7 +322,7 @@ class Oracle:
             self.serializations.append(handoff)
 
         skills = "\n".join(
-            (ROOT / path).read_text(encoding="utf-8")
+            skill_text(ROOT / path)
             for path in ("skills/job-apply/SKILL.md", "skills/job-workspace/SKILL.md")
         )
         agent_stopped_at_review = all(phrase in skills for phrase in (

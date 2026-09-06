@@ -718,3 +718,24 @@ A fresh staging fetch found two upstream commits (skills cleanup PR51) beyond
 checkpoint is saved before integrating the new staging head; changed skills and
 contracts will be reconciled before downstream dispatch. No push or merge-to-
 staging is justified by the existing commit-only evidence.
+
+P00 staging reconciliation includes the upstream recursive `skills` critical-tree
+contract. The existing inert artifact inventory now matches it; nested reference
+and newly covered skill discovery, tamper/missing/extra/symlink rejection and
+unchanged-tree regressions were added against actual Python. The combined six-file
+artifact run passed 232 tests with zero failures/skips across installed profiles.
+See [reconciliation scope](migration/staging-artifact-reconciliation.md).
+
+The previously recorded Python 3.14 QuietParser failures were reproduced as three
+assertions across two tests. The facade inherits argparse's constructor unchanged;
+tests now compare against that independent installed standard-library signature,
+including 3.14's new keyword parameters. No application behavior changed. All 22
+facade/loader tests pass separately on Python 3.12, 3.13 and 3.14. Independent
+review accepted both bounded repairs. Failure logs were retained separately from
+passing results; the earlier mistaken test-class invocation is not parity evidence.
+
+The five upstream modified source hashes and new `scripts/skill_documents.py`,
+plus the repaired TS/emitted artifact pair, were reconciled. Inventory is again
+consistent: 316 source rows, 37 runtime modules, 446 surfaces and 4,380 unmapped
+cells. P00 final review waits for the immutable integration commit and its commit
+gates. Deep/push, whole-node, native-host and final conversion gates remain open.

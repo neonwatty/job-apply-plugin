@@ -13,6 +13,7 @@ export const FIXED_CRITICAL_FILES = [
     "skills/job-apply/SKILL.md",
 ];
 export const CRITICAL_TREES = [
+    "skills",
     "runtime", "scripts/job_apply_store", "scripts/job_apply_workspace", "workspace",
 ];
 function pythonStringOrder(left, right) {

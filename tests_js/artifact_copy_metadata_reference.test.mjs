@@ -85,7 +85,7 @@ for (const executable of ['python3', 'python3.12', 'python3.13', 'python3.14']) 
       assert.deepEqual(row.sourceAfter, row.sourceBefore);
       const pathSet = new Set();
       for (const prefix of ['source', 'target']) {
-        for (const relative of [...files, 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace']) {
+        for (const relative of [...files, 'skills', 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace']) {
           const parts = `${prefix}/${relative}`.split('/');
           for (let length = 1; length <= parts.length; length += 1) pathSet.add(parts.slice(0, length).join('/'));
         }

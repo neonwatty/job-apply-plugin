@@ -188,7 +188,7 @@
     },
     {
       "path": "qa/resume_extraction_scenario.py",
-      "sha256": "9dc61677c82a530e1dc220285575877f634ea77b55cda90b973aee81055355ef",
+      "sha256": "e896670b13b5407936db4abc73ea850aa809cda798dd8b5a25da5ccf359fab8b",
       "classification": "unreviewed"
     },
     {
@@ -273,7 +273,7 @@
     },
     {
       "path": "scripts/check-final-action-docs.py",
-      "sha256": "15cd9ca92c169a93b513e69d2513929b8d6a22f74e8aea0e1e5aebe168cfefed",
+      "sha256": "07bfff41886980e875540c80aa0a26ec190da2eea11b6ec77c7d24157d08e475",
       "classification": "unreviewed"
     }
   ]

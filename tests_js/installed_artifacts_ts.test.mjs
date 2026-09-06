@@ -145,3 +145,67 @@ print(json.dumps(rows))`;
     assert.deepEqual(await snapshot(root), before);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
+
+for (const profile of ['3.12', '3.13', '3.14']) {
+  test(`recursive skills inventory and verification preserve upstream contract ${profile}`, async t => {
+    if (process.platform === 'win32') { t.skip('POSIX adapter; native Windows remains required'); return; }
+    const root = await mkdtemp(join(tmpdir(), 'ts-artifact-skills-'));
+    const referencePath = 'skills/job-apply/references/runtime-contract.md';
+    const skillPath = 'skills/job-search/SKILL.md';
+    const extra = 'skills/job-apply/references/extra.md';
+    try {
+      const source = await fixture(join(root, 'source'));
+      const target = await fixture(join(root, 'target'));
+      const script = `import importlib.util,json,sys
+from pathlib import Path
+spec=importlib.util.spec_from_file_location('skills_artifact_oracle',sys.argv[1])
+module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+source,target=map(Path,sys.argv[2:4]);rows=[]
+for operation in ['inventory','verify']:
+ try:
+  result=list(module.critical_paths(target)) if operation=='inventory' else module.assert_critical_bytes(target,source,label='synthetic')
+  rows.append({'kind':'value','value':result})
+ except SystemExit as error:rows.append({'kind':'error','name':'SystemExit','message':str(error)})
+print(json.dumps(rows))`;
+      for (const scenario of ['normal', 'tampered-reference', 'missing-reference', 'extra-reference', 'linked-reference', 'tampered-new-skill']) {
+        // Restore an exact independent fixture before each mutation.
+        await rm(target, { recursive: true }); await fixture(target);
+        if (scenario === 'tampered-reference') await writeFile(join(target, referencePath), 'changed nested reference');
+        if (scenario === 'missing-reference') await rm(join(target, referencePath));
+        if (scenario === 'extra-reference') await writeFile(join(target, extra), 'unexpected reference');
+        if (scenario === 'linked-reference') {
+          await rm(join(target, referencePath)); await symlink('../SKILL.md', join(target, referencePath));
+        }
+        if (scenario === 'tampered-new-skill') await writeFile(join(target, skillPath), 'changed newly covered skill');
+        const before = await snapshot(root);
+        const run = spawnSync(`python${profile}`, ['-I', '-B', '-c', script,
+          join(repository, 'scripts/smoke/artifacts.py'), source, target], { encoding: 'utf8', timeout: 5000 });
+        if (run.error?.code === 'ENOENT') { t.skip('Required interpreter unavailable'); return; }
+        assert.ifError(run.error); assert.equal(run.status, 0, run.stderr);
+        const python = JSON.parse(run.stdout);
+        const actual = [];
+        for (const operation of ['inventory', 'verify']) {
+          try {
+            const value = operation === 'inventory' ? await criticalPaths(target, profile)
+              : await assertCriticalBytes(target, source, { label: 'synthetic', profile });
+            actual.push({ kind: 'value', value: value ?? null });
+          } catch (error) { actual.push({ kind: 'error', name: error.name, message: error.message }); }
+        }
+        assert.deepEqual(actual, python, scenario);
+        const expectedMessage = scenario === 'normal' ? null : scenario === 'tampered-reference'
+          ? `synthetic bytes differ for ${referencePath}` : scenario === 'tampered-new-skill'
+            ? `synthetic bytes differ for ${skillPath}` : scenario === 'linked-reference'
+              ? `critical package tree contains a symlink: ${referencePath}` : 'synthetic critical package inventory differs';
+        assert.deepEqual(actual[1], expectedMessage === null ? { kind: 'value', value: null }
+          : { kind: 'error', name: 'SystemExit', message: expectedMessage });
+        if (scenario !== 'linked-reference') {
+          assert.equal(actual[0].kind, 'value');
+          assert.equal(actual[0].value.includes(referencePath), scenario !== 'missing-reference');
+          assert.ok(actual[0].value.includes(skillPath));
+          assert.equal(actual[0].value.includes(extra), scenario === 'extra-reference');
+        } else assert.deepEqual(actual[0], actual[1]);
+        assert.deepEqual(await snapshot(root), before, scenario);
+      }
+    } finally { await rm(root, { recursive: true, force: true }); }
+  });
+}

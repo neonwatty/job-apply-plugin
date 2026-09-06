@@ -8,7 +8,7 @@
     },
     {
       "path": "scripts/smoke/artifacts.py",
-      "sha256": "ca874d254cf95a4116f0c6e21f5eeea7f5c2b0ed38cb730deb22542d6fe9d72a",
+      "sha256": "ff7c63a8a33cde557c8f6d3f90489daa20536c710b75f2d08d9ab9c91a479306",
       "classification": "unreviewed"
     },
     {
@@ -23,7 +23,7 @@
     },
     {
       "path": "scripts/smoke/repository_contracts.py",
-      "sha256": "4c7f8d463814bcee20ca3da7650ebef033ddfc6140b32dbca5f71f5aaa28bf39",
+      "sha256": "1f9a8c6e182b3f1cee76b7abc9a837f4343f06bf609a177bded88da7774571af",
       "classification": "unreviewed"
     },
     {
@@ -38,7 +38,7 @@
     },
     {
       "path": "scripts/smoke/workspace_verify.py",
-      "sha256": "b3dac66d455f02dbbb4a769073fd305e0a778d9d7135603e64dd191423d3daa9",
+      "sha256": "3354db6271975d442c6e378ac6892f8f1105b9a7f6b2eb3322c5d1a2779d746a",
       "classification": "unreviewed"
     },
     {

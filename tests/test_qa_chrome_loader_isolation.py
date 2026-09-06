@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import importlib.util
 import inspect
 from pathlib import Path
@@ -29,13 +30,8 @@ CLASS_SIGNATURES = {
         "ownership_fd, published)"
     ),
     "ControlHandler": "(request, client_address, server)",
-    "QuietParser": (
-        "(prog=None, usage=None, description=None, epilog=None, parents=[], "
-        "formatter_class=<class 'argparse.HelpFormatter'>, prefix_chars='-', "
-        "fromfile_prefix_chars=None, argument_default=None, "
-        "conflict_handler='error', add_help=True, allow_abbrev=True, "
-        "exit_on_error=True)"
-    ),
+    # The facade inherits the installed argparse constructor, including new keywords.
+    "QuietParser": str(inspect.signature(argparse.ArgumentParser)),
 }
 
 

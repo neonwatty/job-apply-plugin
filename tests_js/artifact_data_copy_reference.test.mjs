@@ -86,7 +86,7 @@ function checkPreflight(row) {
   const expectedPaths = new Set(['.']);
   for (const base of ['source', 'target']) {
     expectedPaths.add(base);
-    for (const path of [...fixed, 'runtime/z.bin', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace']) {
+    for (const path of [...fixed, 'skills', 'runtime/z.bin', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace']) {
       const parts = `${base}/${path}`.split('/');
       for (let i = 1; i <= parts.length; i += 1) expectedPaths.add(parts.slice(0, i).join('/'));
     }
