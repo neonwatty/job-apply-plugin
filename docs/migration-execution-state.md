@@ -521,3 +521,47 @@ headers and contains 300 rows. C/header size limits are tested; no ceiling grows
 The matrix has 19 suites including native POSIX full/platform tests. Full TX,
 Windows/Linux native acceptance, final binary packaging, installed native-byte
 verification and all previously recorded release/candidate gates remain open.
+
+## JSONL transactions and exact timestamp primitive
+
+The native-lock/reference checkpoint is committed as `d1b90ed`. The next package
+ports JSONL append/rollback and pending-tail repair into three bounded TS leaves,
+with explicit synthetic domain callbacks and no facade/bootstrap activation.
+The coordinator's complete run passes 223 tests, zero failures/skips across all
+three installed Python profiles. It covers the 43 frozen cases, ten unwrapped
+native filesystem cases and 212 deterministic typed serialization values per
+interpreter invocation. Eight processes each witness native lock contention,
+then append complete unique records despite synthetic retries. Two process-death
+tests witness partial/completed append bytes before killing the holder, require
+a contending recovery process and prove repeatable tail repair and exact final
+bytes. Independent source/test review found no bounded compatibility defect.
+An initial run lacked the expired Python 3.12 temporary alias; the complete run
+restored access to the existing interpreter. See
+[JSONL evidence and remaining gates](migration/jsonl-port.md).
+
+The parallel delivery lane adds a separate asynchronous Node-API 8 timestamp
+primitive and explicit development builder. It copies validated path bytes before
+queuing, checks signed seconds losslessly and preserves nanosecond remainders.
+Independent native tests report 17 passes, zero failures and one EILSEQ filename
+skip. Testing exposed and fixed Node's broad napi_is_buffer acceptance by using
+a captured Buffer.isBuffer predicate with per-function cleanup. Far-future
+behavior is compared with actual Python os.utime/os.stat on the same file; the
+host's observed clamp is recorded rather than treated as exact precision or
+skipped. Actual permission rejection, valid Unicode, symlink ownership and
+negative/fractional timestamps pass. Source and fix received independent review.
+See [timestamp evidence](migration/posix-timestamps-evidence.md).
+
+Emission now contains 34 JavaScript modules; inventory contains 309 source rows
+and the matrix 20 suites. The 4,380 unmapped requirement cells and all complete
+node/subset/release gates remain open. Next work is real history identity/journal
+integration and artifact-copy source-stat/atime/flags/xattr behavior. Runtime
+distribution, required host access, final package acceptance and prior full-tier
+failures remain outstanding. These local primitives do not accept S1, TX or DIST,
+and Python remains the sole live Store writer.
+
+The first commit attempt passed eight checks but the existing foundation suite
+hit its unchanged 120-second deadline. Its isolated diagnostic then passed all
+12 tests with zero skips in 78.8 seconds. The failed receipt remains retained;
+the commit gate must pass on retry and is not bypassed. Read-only assessments
+also identified the disjoint [next reference packages](migration/next-history-copy-packages.md)
+for real history identity and artifact-copy metadata ordering.
