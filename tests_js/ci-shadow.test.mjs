@@ -56,19 +56,14 @@ test("gate CLI configuration fails closed when missing or empty", () => {
 
 test("validation workflow preserves contexts, replaces stale modules, and keeps shadow full execution", () => {
   const workflow = fs.readFileSync(path.join(ROOT, ".github/workflows/validate.yml"), "utf8");
-  for (const id of ["validate:", "windows-store-workspace:", "macos-credential-helper:", "macos-account-flow-helper:"]) {
+  for (const id of ["python-shards:", "browser-shards:", "package-contract:", "windows-store-workspace:", "macos-credential-helper:", "macos-account-flow-helper:"]) {
     assert.match(workflow, new RegExp(`^  ${id}`, "m"));
   }
   assert.doesNotMatch(workflow, /tests\.test_job_apply_(?:store|workspace)(?:\s|$)/m);
   assert.doesNotMatch(workflow, /tests\.test_qa_chrome(?:\s|$)/m);
-  for (const module of [
-    "test_job_apply_accounts", "test_job_apply_credentials", "test_job_apply_account_executor",
-    "test_job_apply_account_canary", "test_job_apply_account_canary_executor",
-    "test_job_apply_account_flows", "test_qa_account",
-  ]) assert.match(workflow, new RegExp(`tests\\.${module}`));
-  assert.match(workflow, /test_store_\*\.py/);
-  assert.match(workflow, /test_job_apply_workspace_\*\.py/);
-  assert.match(workflow, /test_qa_chrome_\*\.py/);
+  assert.doesNotMatch(workflow, /^  validate:/m);
+  assert.doesNotMatch(workflow, /"validate"|JOB_APPLY_SKIP_LEGACY_PACKAGED_CRUD/);
+  assert.match(workflow, /run-suite\.mjs release-package/);
   for (const module of workflow.matchAll(/tests\.(test_[A-Za-z0-9_]+)/g)) {
     assert.equal(fs.existsSync(path.join(ROOT, "tests", `${module[1]}.py`)), true, `missing ${module[0]}`);
   }

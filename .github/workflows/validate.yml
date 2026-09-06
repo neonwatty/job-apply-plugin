@@ -42,53 +42,6 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  # Temporary equivalence lane: retain until at least 20 PR observations show
-  # no unexplained divergence from the new deterministic shards below.
-  validate:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - run: npm run check:size -- --base "${{ github.event.pull_request.base.sha || github.event.before }}"
-      - run: npm ci
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
-      - run: npx playwright install --with-deps chromium
-      - run: python3 -m unittest discover -s tests -p 'test_qa_chrome_*.py' -v
-      - run: python3 -m unittest discover -s tests -v
-      - run: npm run qa:resume-extraction-onboarding
-      - name: Preserve original account, Store, and workspace coverage
-        run: |
-          python3 -m unittest -v tests.test_job_apply_accounts tests.test_job_apply_credentials tests.test_job_apply_account_executor tests.test_job_apply_account_canary tests.test_job_apply_account_canary_executor tests.test_job_apply_account_flows tests.test_qa_account tests.test_job_apply_trusted_fill
-          python3 -m unittest discover -s tests -p 'test_store_*.py' -v
-          python3 -m unittest discover -s tests -p 'test_job_apply_workspace_*.py' -v
-      - run: npm run test:qa-screening
-      - run: npm run test:auto-submit
-      - run: npm run test:qa-browser
-      - run: npm install -g @anthropic-ai/claude-code @openai/codex
-      - run: claude plugin validate .
-      - name: Validate JSON syntax
-        run: |
-          python3 -m json.tool .claude-plugin/plugin.json > /dev/null
-          python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
-          python3 -m json.tool .codex-plugin/plugin.json > /dev/null
-          python3 -m json.tool .agents/plugins/marketplace.json > /dev/null
-      # Temporary user-approved exception; dedicated package/browser lanes retain it.
-      # Restore after the PR49 browser-created-job visibility failure is resolved.
-      - run: bash scripts/smoke-plugin.sh
-        env:
-          JOB_APPLY_SKIP_LEGACY_PACKAGED_CRUD: '1'
-      - run: bash scripts/check-links.sh
-
   policy:
     needs: classify
     runs-on: ubuntu-latest
@@ -252,13 +205,13 @@ jobs:
   pr-gate:
     name: PR gate
     if: always()
-    needs: [classify, validate, policy, python-shards, browser-shards, package-contract, windows-store-workspace, macos-credential-helper, macos-account-flow-helper]
+    needs: [classify, policy, python-shards, browser-shards, package-contract, windows-store-workspace, macos-credential-helper, macos-account-flow-helper]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Require every selected shadow and retained job
+      - name: Require every parallel validation job
         env:
           CI_RESULTS_JSON: ${{ toJSON(needs) }}
-          CI_SELECTED_JOBS: '["classify","validate","policy","python-shards","browser-shards","package-contract","windows-store-workspace","macos-credential-helper","macos-account-flow-helper"]'
+          CI_SELECTED_JOBS: '["classify","policy","python-shards","browser-shards","package-contract","windows-store-workspace","macos-credential-helper","macos-account-flow-helper"]'
         run: node tools/ci/gate.mjs
