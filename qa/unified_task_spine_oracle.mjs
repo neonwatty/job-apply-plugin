@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { waitForSavedAnswerFocus } from "./unified_task_spine_focus.mjs";
 
 const REPO_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const PYTHON = process.env.PYTHON || "python3";
@@ -60,6 +61,8 @@ const PASS_REPORT = Object.freeze({
 const PUBLIC_STAGES = new Set([
   "setup", "ux_intake", "agent_intake", "selection", "first_acquisition",
   "attention_open", "answer_open", "answer_save", "answer_recheck",
+  "answer_save_response", "answer_save_dialog", "answer_save_activity",
+  "answer_save_draft", "answer_save_focus", "answer_save_focus_identity",
   "second_acquisition", "final_verification", "cleanup",
 ]);
 
@@ -395,11 +398,17 @@ export async function runOracle() {
       && response.request().method() === "GET"
     ));
     await answerDialog.getByRole("button", { name: "Save answer" }).click();
+    stage = "answer_save_response";
     check((await answerSaved).ok(), "answer_save_response_failed");
+    stage = "answer_save_dialog";
     await answerDialog.waitFor({ state: "hidden" });
+    stage = "answer_save_activity";
     check((await activityReloaded).ok(), "activity_reload_failed");
+    stage = "answer_save_draft";
     check(await jobDialog.getByLabel("Notes").inputValue() === "unsaved synthetic draft", "draft_lost_on_answer_save");
-    await page.waitForFunction(() => document.activeElement?.textContent?.trim() === "Open in Answers");
+    stage = "answer_save_focus";
+    await waitForSavedAnswerFocus(page);
+    stage = "answer_save_focus_identity";
     check(await openAnswer.evaluate((button) => document.activeElement === button), "focus_not_restored");
     stage = "answer_recheck";
     const answerResolved = page.waitForResponse((response) => (

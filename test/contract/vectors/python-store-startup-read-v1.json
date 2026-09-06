@@ -1,0 +1,492 @@
+{
+  "schemaVersion": 1,
+  "corpus": "python-store-startup-read-v1",
+  "source": "python-store-cli",
+  "fixture": {
+    "kind": "synthetic-initialized-store-clones",
+    "clock": "2026-09-05T00:00:00Z",
+    "noncePolicy": "fail-on-use-and-record-zero"
+  },
+  "inventory": {
+    "total": 98,
+    "commands": [
+      "init",
+      "paths",
+      "profile-get",
+      "profile-inspect",
+      "profile-replace",
+      "profile-patch",
+      "fact-group-list",
+      "fact-group-get",
+      "fact-group-create",
+      "fact-group-update",
+      "fact-group-delete",
+      "preferences-get",
+      "preferences-set",
+      "answer-key",
+      "answer-put",
+      "answer-get",
+      "answer-find",
+      "answer-list",
+      "answer-reveal",
+      "answer-observe",
+      "answer-review",
+      "answer-update",
+      "answer-trash",
+      "answer-restore",
+      "answer-delete",
+      "answer-merge",
+      "answer-semantic-lookup",
+      "answer-cleanup-preview",
+      "answer-cleanup-approve",
+      "job-create",
+      "job-upsert-preview",
+      "job-upsert-commit",
+      "legacy-jobs-preview",
+      "legacy-jobs-commit",
+      "job-get",
+      "job-list",
+      "job-preflight",
+      "job-update",
+      "job-transition",
+      "job-acquire",
+      "job-review-restart",
+      "claim-status",
+      "claim-heartbeat",
+      "claim-recover",
+      "claim-progress",
+      "claim-handoff",
+      "attention-approval-preview",
+      "attention-approval-approve",
+      "job-trash",
+      "job-restore",
+      "job-delete",
+      "resume-create",
+      "resume-import",
+      "resume-get",
+      "resume-resolve",
+      "resume-list",
+      "resume-update",
+      "resume-adopt",
+      "resume-set-default",
+      "resume-check",
+      "resume-trash",
+      "resume-restore",
+      "resume-delete",
+      "resume-extraction-request-create",
+      "resume-extraction-request-get",
+      "resume-extraction-request-list",
+      "resume-extraction-request-cancel",
+      "resume-extraction-request-fail",
+      "resume-extraction-request-retry",
+      "resume-extraction-request-complete",
+      "profile-preparedness-get",
+      "resume-proposal-create",
+      "resume-proposal-get",
+      "resume-proposal-list",
+      "resume-proposal-review",
+      "history-append",
+      "history-list",
+      "replay-transition",
+      "session-save",
+      "session-load",
+      "session-list",
+      "session-delete",
+      "automation-settings-get",
+      "automation-settings-update",
+      "automation-settings-copy-profile-email",
+      "automation-capability",
+      "account-realm-resolve",
+      "employer-account-list",
+      "employer-account-get",
+      "employer-account-create",
+      "employer-account-update",
+      "employer-account-execute-synthetic",
+      "employer-account-operation-status",
+      "employer-account-operation-recover",
+      "trusted-fill-approve",
+      "trusted-fill-status",
+      "trusted-fill-evaluate",
+      "trusted-fill-revoke"
+    ],
+    "captured": [
+      "automation-settings-get",
+      "employer-account-list",
+      "claim-status"
+    ],
+    "pending": 95
+  },
+  "cases": [
+    {
+      "scenario": "settings-missing-controls",
+      "command": "automation-settings-get",
+      "args": [
+        "automation-settings-get"
+      ],
+      "exitCode": 0,
+      "stdout": {
+        "automaticAccountCreation": false,
+        "createdAt": "2026-09-05T00:00:00Z",
+        "enabled": false,
+        "passwordStrategy": "unique_per_realm",
+        "revision": 1,
+        "signupEmailConfigured": false,
+        "updatedAt": "2026-09-05T00:00:00Z"
+      },
+      "stderr": "",
+      "nonceCalls": 0,
+      "effects": {
+        "expectedWrites": [
+          "account-operation-journal.json",
+          "automation-settings.json",
+          "employer-accounts.json"
+        ],
+        "observedWrites": [
+          "account-operation-journal.json",
+          "automation-settings.json",
+          "employer-accounts.json"
+        ],
+        "documents": [
+          {
+            "path": "account-operation-journal.json",
+            "before": null,
+            "after": {
+              "digest": "e91430de20ae2bd6dc40ef7d3ebbf0866e1f7b1d781af628636a9bf170c95333",
+              "size": 46,
+              "modeContract": "private-file-0600-posix"
+            },
+            "mtimeChanged": true
+          },
+          {
+            "path": "automation-settings.json",
+            "before": null,
+            "after": {
+              "digest": "0b2d115414ea72828c39efe1a995c23d23971b1b5a5935173d9b2554292c5ea6",
+              "size": 276,
+              "modeContract": "private-file-0600-posix"
+            },
+            "mtimeChanged": true
+          },
+          {
+            "path": "employer-accounts.json",
+            "before": null,
+            "after": {
+              "digest": "a14f78571e14d7fbcb77259bc321d68698c5ce686d12b87f8b4cb72657f71c31",
+              "size": 145,
+              "modeContract": "private-file-0600-posix"
+            },
+            "mtimeChanged": true
+          }
+        ],
+        "untouchedEntriesUnchanged": true
+      },
+      "idempotence": {
+        "resultUnchanged": true,
+        "treeUnchanged": true,
+        "nonceCalls": 0
+      }
+    },
+    {
+      "scenario": "accounts-missing-controls",
+      "command": "employer-account-list",
+      "args": [
+        "employer-account-list"
+      ],
+      "exitCode": 0,
+      "stdout": [],
+      "stderr": "",
+      "nonceCalls": 0,
+      "effects": {
+        "expectedWrites": [
+          "account-operation-journal.json",
+          "automation-settings.json",
+          "employer-accounts.json"
+        ],
+        "observedWrites": [
+          "account-operation-journal.json",
+          "automation-settings.json",
+          "employer-accounts.json"
+        ],
+        "documents": [
+          {
+            "path": "account-operation-journal.json",
+            "before": null,
+            "after": {
+              "digest": "e91430de20ae2bd6dc40ef7d3ebbf0866e1f7b1d781af628636a9bf170c95333",
+              "size": 46,
+              "modeContract": "private-file-0600-posix"
+            },
+            "mtimeChanged": true
+          },
+          {
+            "path": "automation-settings.json",
+            "before": null,
+            "after": {
+              "digest": "0b2d115414ea72828c39efe1a995c23d23971b1b5a5935173d9b2554292c5ea6",
+              "size": 276,
+              "modeContract": "private-file-0600-posix"
+            },
+            "mtimeChanged": true
+          },
+          {
+            "path": "employer-accounts.json",
+            "before": null,
+            "after": {
+              "digest": "a14f78571e14d7fbcb77259bc321d68698c5ce686d12b87f8b4cb72657f71c31",
+              "size": 145,
+              "modeContract": "private-file-0600-posix"
+            },
+            "mtimeChanged": true
+          }
+        ],
+        "untouchedEntriesUnchanged": true
+      },
+      "idempotence": {
+        "resultUnchanged": true,
+        "treeUnchanged": true,
+        "nonceCalls": 0
+      }
+    },
+    {
+      "scenario": "settings-pending-account-journal",
+      "command": "automation-settings-get",
+      "args": [
+        "automation-settings-get"
+      ],
+      "exitCode": 0,
+      "stdout": {
+        "automaticAccountCreation": false,
+        "createdAt": "2026-09-05T00:00:00Z",
+        "enabled": false,
+        "passwordStrategy": "unique_per_realm",
+        "revision": 1,
+        "signupEmailConfigured": false,
+        "updatedAt": "2026-09-05T00:00:00Z"
+      },
+      "stderr": "",
+      "nonceCalls": 0,
+      "effects": {
+        "expectedWrites": [],
+        "observedWrites": [],
+        "documents": [],
+        "untouchedEntriesUnchanged": true
+      },
+      "idempotence": {
+        "resultUnchanged": true,
+        "treeUnchanged": true,
+        "nonceCalls": 0
+      }
+    },
+    {
+      "scenario": "accounts-pending-account-journal",
+      "command": "employer-account-list",
+      "args": [
+        "employer-account-list"
+      ],
+      "exitCode": 0,
+      "stdout": [],
+      "stderr": "",
+      "nonceCalls": 0,
+      "effects": {
+        "expectedWrites": [],
+        "observedWrites": [],
+        "documents": [],
+        "untouchedEntriesUnchanged": true
+      },
+      "idempotence": {
+        "resultUnchanged": true,
+        "treeUnchanged": true,
+        "nonceCalls": 0
+      }
+    },
+    {
+      "scenario": "claim-missing-controls",
+      "command": "claim-status",
+      "args": [
+        "claim-status"
+      ],
+      "exitCode": 0,
+      "stdout": {
+        "claim": null,
+        "heartbeatSeconds": 60,
+        "leaseSeconds": 300
+      },
+      "stderr": "",
+      "nonceCalls": 0,
+      "effects": {
+        "expectedWrites": [
+          "coordinator-journal.json",
+          "coordinator.json"
+        ],
+        "observedWrites": [
+          "coordinator-journal.json",
+          "coordinator.json"
+        ],
+        "documents": [
+          {
+            "path": "coordinator-journal.json",
+            "before": null,
+            "after": {
+              "digest": "e91430de20ae2bd6dc40ef7d3ebbf0866e1f7b1d781af628636a9bf170c95333",
+              "size": 46,
+              "modeContract": "private-file-0600-posix"
+            },
+            "mtimeChanged": true
+          },
+          {
+            "path": "coordinator.json",
+            "before": null,
+            "after": {
+              "digest": "351fc6b65c7e89a70f652d1a90e7f9ecd5198209fec52bb45acfdead0f0fea57",
+              "size": 42,
+              "modeContract": "private-file-0600-posix"
+            },
+            "mtimeChanged": true
+          }
+        ],
+        "untouchedEntriesUnchanged": true
+      },
+      "idempotence": {
+        "resultUnchanged": true,
+        "treeUnchanged": true,
+        "nonceCalls": 0
+      }
+    },
+    {
+      "scenario": "claim-pending-recovery",
+      "command": "claim-status",
+      "args": [
+        "claim-status"
+      ],
+      "exitCode": 0,
+      "stdout": {
+        "claim": {
+          "acquiredAt": "2026-09-05T00:00:00Z",
+          "claimId": "contract-recovery-claim",
+          "expired": false,
+          "expiresAt": "2026-09-05T00:05:00Z",
+          "heartbeatAt": "2026-09-05T00:00:00Z",
+          "jobId": "contract-job",
+          "ownerLabel": "contract-agent"
+        },
+        "heartbeatSeconds": 60,
+        "leaseSeconds": 300
+      },
+      "stderr": "",
+      "nonceCalls": 0,
+      "effects": {
+        "expectedWrites": [
+          "applications.jsonl",
+          "coordinator-journal.json",
+          "coordinator.json"
+        ],
+        "observedWrites": [
+          "applications.jsonl",
+          "coordinator-journal.json",
+          "coordinator.json"
+        ],
+        "documents": [
+          {
+            "path": "applications.jsonl",
+            "before": {
+              "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "size": 0,
+              "modeContract": "private-file-0600-posix"
+            },
+            "after": {
+              "digest": "7732b6032b508212cf82f4c5eb19e7f59e8757dbb5c14260a060370edd412b18",
+              "size": 252,
+              "modeContract": "private-file-0600-posix"
+            },
+            "mtimeChanged": true
+          },
+          {
+            "path": "coordinator-journal.json",
+            "before": {
+              "digest": "bf2b2777e6bc7ef84fee03f8596d9ec89da6ee07f9c4eddc574a92fe249ab8cf",
+              "size": 858,
+              "modeContract": "private-file-0600-posix"
+            },
+            "after": {
+              "digest": "e91430de20ae2bd6dc40ef7d3ebbf0866e1f7b1d781af628636a9bf170c95333",
+              "size": 46,
+              "modeContract": "private-file-0600-posix"
+            },
+            "mtimeChanged": true
+          },
+          {
+            "path": "coordinator.json",
+            "before": {
+              "digest": "351fc6b65c7e89a70f652d1a90e7f9ecd5198209fec52bb45acfdead0f0fea57",
+              "size": 42,
+              "modeContract": "private-file-0600-posix"
+            },
+            "after": {
+              "digest": "9c6ac45371abeaf0e2899b7b1d858680b005769fb967d2ae891ca240784c3a07",
+              "size": 360,
+              "modeContract": "private-file-0600-posix"
+            },
+            "mtimeChanged": true
+          }
+        ],
+        "untouchedEntriesUnchanged": true
+      },
+      "idempotence": {
+        "resultUnchanged": true,
+        "treeUnchanged": true,
+        "nonceCalls": 0
+      }
+    },
+    {
+      "scenario": "corrupt-settings-no-write",
+      "command": "automation-settings-get",
+      "args": [
+        "automation-settings-get"
+      ],
+      "exitCode": 2,
+      "stdout": null,
+      "stderr": "job-apply-store: cannot read valid automation settings JSON at <store-root>/automation-settings.json\n",
+      "nonceCalls": 0,
+      "effects": {
+        "expectedWrites": [],
+        "observedWrites": [],
+        "documents": [],
+        "untouchedEntriesUnchanged": true
+      },
+      "rejectionImmutability": {
+        "treeUnchanged": true
+      }
+    },
+    {
+      "scenario": "future-coordinator-no-write",
+      "command": "claim-status",
+      "args": [
+        "claim-status"
+      ],
+      "exitCode": 2,
+      "stdout": null,
+      "stderr": "job-apply-store: coordinator journal uses unsupported future schemaVersion 999\n",
+      "nonceCalls": 0,
+      "effects": {
+        "expectedWrites": [],
+        "observedWrites": [],
+        "documents": [],
+        "untouchedEntriesUnchanged": true
+      },
+      "rejectionImmutability": {
+        "treeUnchanged": true
+      }
+    }
+  ],
+  "redaction": {
+    "secretCanaryAbsent": true,
+    "absolutePathsAbsent": true,
+    "checkedSurfaces": [
+      "stdout",
+      "stderr",
+      "fixture-descriptors",
+      "effects",
+      "artifact"
+    ]
+  }
+}

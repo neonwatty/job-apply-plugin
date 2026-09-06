@@ -21,5 +21,9 @@
     "test:qa-screening": "PYTHONPATH=tests python3 -m unittest -v test_qa_replay_committed_scenarios.CommittedScenarioTests.test_linkedin_screening_scenario_is_closed_and_synthetic test_qa_replay_committed_scenarios.CommittedScenarioTests.test_linkedin_screening_fresh_prepare_evaluate_cleanup_lifecycle test_qa_oracle_events.SemanticOracleTests.test_committed_linkedin_screening_fixture_passes_with_closed_identity && node --test --test-name-pattern='committed LinkedIn screening' tests_js/renderer.test.mjs",
     "qa:record": "node qa/recorder.mjs"
   },
-  "devDependencies": { "playwright": "1.62.1", "typescript": "5.9.3" }
+  "devDependencies": {
+    "ajv": "8.20.0",
+    "playwright": "1.62.1",
+    "typescript": "5.9.3"
+  }
 }

@@ -16,6 +16,7 @@ import {
 } from "./capture.mjs";
 import { createCheckpointWriter } from "./checkpoint.mjs";
 import { RecorderError } from "./errors.mjs";
+import { createEventBudget } from "./event-budget.mjs";
 import {
   sanitizeObservedControl,
   validateRecorderOptions,
@@ -23,8 +24,6 @@ import {
 import { isExactWorkdayOptionalSignInInspection } from "./safety/workday.mjs";
 
 const MAX_CONTROL_BODY = 4096;
-const MAX_EVENTS = 10_000;
-const MAX_PENDING_EVENT_OPERATIONS = 8;
 const MAX_PENDING_CHECKPOINTS = 2;
 const MAX_EVENT_LINE_BYTES = 1024;
 const BODY_DEADLINE_MS = 500;
@@ -94,8 +93,7 @@ export async function runRecord(rawOptions) {
   let checkpointQueue = Promise.resolve();
   let writeQueue = Promise.resolve();
   let eventSafetyQueue = Promise.resolve();
-  let pendingEventInspections = 0;
-  let pendingEventWrites = 0;
+  const eventBudget = createEventBudget();
   const eventSafetyController = new AbortController();
   const activeControllers = new Set();
   const activeHandlers = new Set();
@@ -107,11 +105,10 @@ export async function runRecord(rawOptions) {
     const pages = ordinaryPages(browser);
     if (pages.length !== 1) throw new RecorderError("ordinary page selection required");
     const page = pages[0];
-    let eventCount = 0;
     let pageSequence = 1;
     const checkpointKinds = [];
     const observe = (observed) => {
-      if (!captureEnabled || eventCount >= MAX_EVENTS || !observed ||
+      if (!captureEnabled || eventBudget.atEventLimit() || !observed ||
           !["click", "change", "input"].includes(observed.interactionType)) return;
       const control = sanitizeObservedControl(observed);
       if (!control.sourceLabel || control.role === "unknown") return;
@@ -123,13 +120,12 @@ export async function runRecord(rawOptions) {
       };
       const line = `${JSON.stringify(event)}\n`;
       if (Buffer.byteLength(line) > MAX_EVENT_LINE_BYTES) return;
-      eventCount += 1;
-      pendingEventWrites += 1;
+      eventBudget.beginWrite();
       const write = writeQueue.then(() => broker.write(
         "append",
         "events.jsonl",
         line,
-      )).finally(() => { pendingEventWrites -= 1; });
+      )).finally(() => { eventBudget.endWrite(); });
       writeQueue = write.catch(() => { broker._failClosed(); });
     };
     let isolated;
@@ -144,9 +140,7 @@ export async function runRecord(rawOptions) {
       }
       if (observed?.messageType !== "interaction") return;
       if (!captureEnabled || shuttingDown) return;
-      if (pendingEventInspections + pendingEventWrites >= MAX_PENDING_EVENT_OPERATIONS ||
-          eventCount + pendingEventInspections >= MAX_EVENTS) return;
-      pendingEventInspections += 1;
+      if (!eventBudget.reserveInspection()) return;
       const observedRevision = safetyRevision;
       eventSafetyQueue = eventSafetyQueue.then(async () => {
         try {
@@ -166,7 +160,7 @@ export async function runRecord(rawOptions) {
               hasSensitivePage(inspection.snapshots)) return;
           observe(observed);
         } finally {
-          pendingEventInspections -= 1;
+          eventBudget.releaseInspection();
         }
       }).catch(() => {});
     };

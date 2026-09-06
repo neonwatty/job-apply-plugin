@@ -29,10 +29,29 @@ Owned temporary root paths in Python errors are normalized to `<store-root>`.
 Captured process stream newlines are normalized to LF so Windows does not create
 a false differential; persisted Store bytes are never newline-normalized.
 
+The separate `python-store-startup-read-v1` vector covers the three commands
+that cross lazy write boundaries after `init`: `automation-settings-get`,
+`employer-account-list`, and `claim-status`. Eight disposable-clone cases freeze
+their control-document bootstrap, second-run idempotence, and pre-write rejection
+of corrupt or future controls. The account cases prove that both reads preserve
+a valid pending account-operation journal byte-for-byte. The coordinator case
+freezes the opposite behavior: `claim-status` rolls a valid pending `recover`
+operation forward exactly once, appends its history event, installs the public
+claim, and clears the journal.
+
+Startup-read effects record exact expected and observed file write sets, stable
+content digests and byte sizes, whether mtimes changed, and the private-file
+mode contract. Every unlisted file is compared by kind, bytes, mtime, and mode;
+directory identity and presence are also compared. POSIX captures require mode `0600`; the committed
+format names that portable contract instead of storing platform-specific mode
+bits. The Python clock is fixed and nonce generation is replaced with a
+fail-on-use counter that must remain zero.
+
 ## Review and refresh rules
 
 `tools/capture-python-contracts.mjs --output <temporary-path>` creates a new
-candidate with exclusive-create semantics. It rejects caller-provided Store
+read candidate; adding `--corpus startup-read` creates a startup-read candidate.
+Both use exclusive-create semantics. The tool rejects caller-provided Store
 roots, existing destinations, and every destination inside the repository.
 Consequently it cannot refresh committed vectors. A maintainer must inspect a
 candidate and deliberately add or update a golden through normal review.
@@ -43,14 +62,15 @@ Diagnostics are generic and never repeat rejected content or filenames.
 
 ## Explicitly pending
 
-The other 89 Store commands are inventory-only, not behaviorally frozen here.
-In particular, `automation-settings-get`, `employer-account-list`, and
-`claim-status` currently cross lazy startup/write boundaries even after `init`;
-they require write-aware disposable-clone contracts before read-only shadowing.
+Across the two vectors, 86 Store commands remain inventory-only rather than
+behaviorally frozen.
+The startup-read corpus does not make these three commands pure reads; it freezes
+their current write-aware behavior so a future implementation cannot silently
+omit or broaden it.
 
-Still pending are mutation results, permissions and journal stages, crash and
+Still pending are mutation results, other journal kinds and crash boundaries,
 restart recovery, legacy and trashed stores, all other corrupt/future documents,
 authenticated HTTP routes, and the task, attempt, QA, and policy command
-families. Full secret-bearing output projections and platform parity also remain
-pending. No Python removal or TypeScript writer cutover is justified by this
-foundation slice.
+families. Full secret-bearing output projections and cross-platform permission
+parity also remain pending. No Python removal or TypeScript writer cutover is
+justified by these foundation slices.
