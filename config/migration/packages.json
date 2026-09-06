@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "packages": [
+    {
+      "id": "UI0-trash",
+      "parentNode": "UI0",
+      "owner": "integration",
+      "allowed_files": [
+        "src/workspace-ui/lib/trash-view.ts",
+        "runtime/workspace-ui/lib/trash-view.js",
+        "tests_js/workspace_trash_view_ts.test.mjs"
+      ],
+      "surfaceIds": [
+        "browser:workspace/lib/helpers.js:typedDeletePhrase",
+        "browser:workspace/lib/helpers.js:filterTrashItems",
+        "browser:workspace/lib/helpers.js:trashBlockerText",
+        "browser:workspace/lib/helpers.js:lifecycleErrorText",
+        "browser:workspace/app.js:typedDeletePhrase",
+        "browser:workspace/app.js:filterTrashItems",
+        "browser:workspace/app.js:trashBlockerText",
+        "browser:workspace/app.js:lifecycleErrorText"
+      ],
+      "requirementIds": [
+        "UI0-trash-valid",
+        "UI0-trash-invalid",
+        "UI0-trash-missing",
+        "UI0-trash-noop",
+        "UI0-trash-privacy",
+        "UI0-trash-conflict",
+        "UI0-trash-concurrency",
+        "UI0-trash-interruption",
+        "UI0-trash-recovery",
+        "UI0-trash-platform"
+      ],
+      "dependencies": [],
+      "interfaceIds": [],
+      "referenceIds": [],
+      "emittedFiles": [
+        "runtime/workspace-ui/lib/trash-view.js"
+      ],
+      "activation": "inert",
+      "status": "planned"
+    }
+  ]
+}

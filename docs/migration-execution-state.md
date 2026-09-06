@@ -8,9 +8,9 @@ The active goal is recorded in this task. Node I (executable coverage inventory)
 and SEM evidence discovery have started; FS implementation waits for its bounded
 reference/ownership package. HOST acceptance remains open; no native cell inferred.
 
-## Active graph checkpoint: I3 and SEM ingress evidence
+## Active graph checkpoint: I4 and SEM ingress evidence
 
-I3 establishes an executable consistency gate, not node I acceptance. It binds
+I4 establishes an executable consistency gate, not node I acceptance. It binds
 257 source/manifest files, 144 CLI subcommands, 17 root parser surfaces and 127
 HTTP surfaces, 111 browser exports, 28 persisted artifact patterns and 19 journal variants across the 36-node graph. Effects/classifications and scenario
 evidence remain explicitly open. The gate is registered in fast/full validation;
@@ -156,3 +156,22 @@ Immutable trash implementation/evidence checkpoint: `7fa2687f3cac5d2ac4a28053124
 oracle, compiler and dependency bytes plus the 11-test log. All nine commit suites
 passed for that implementation. This receipt remains distinct from the pending
 executable child/node acceptance gates.
+
+## I4 and FS raw-reader reference checkpoint
+
+The machine gate now checks requirement bindings and package structure in addition
+to the surface ledger. Ten Trash-family requirements bind literal registered tests
+and hashed oracle files; one planned machine package records exact ownership.
+No acceptance is inferred: 4,380 requirement cells remain unmapped, and all parent
+acceptance gates remain open. Existing inert implementation receipts remain valid
+local evidence rather than machine readiness claims. Independent review found and
+resolved no-op command/fabricated test bindings, malformed requirement crashes and
+historical ownership release. Thirty focused migration-checker tests pass.
+
+FS now has a 22-case [raw-reader reference](migration/raw-file-reference.md).
+All five tests pass without skips across the three installed Python profiles;
+all tested macOS symlink cases were observed and every snapshot remained unchanged.
+No filesystem TypeScript writer/reader or native parent acceptance was introduced.
+Next: accepted reference/interface receipt validation and the actual raw-byte reader
+with explicit Node platform typing/build support; preserve strict UTF-8, BOM,
+symlink and narrow exception behavior observed by this reference.

@@ -1,4 +1,4 @@
-# Executable inventory checkpoint I3
+# Executable inventory checkpoint I4
 
 This is a partial implementation of node I, not its acceptance. Parent I remains
 open until writer classification and reviewed
@@ -94,3 +94,29 @@ implicit categories opens cells explicitly; no existing evidence was promoted.
 Inventory acceptance will require complete classified requirements and bindings,
 while family REF acceptance separately requires passing reference receipts. This
 avoids making whole-inventory acceptance depend on its own descendant behavior.
+
+## I4 requirement and ownership declarations
+
+Ten initial Trash-family requirement records bind registered test files, exact
+literal test identities, canonical runner arguments, command bounds and current
+oracle bytes. A parse-only adapter discovers nonempty direct node:test declarations;
+dynamic test construction and other runners need an explicit adapter. This proves
+registration, not assertion quality, test execution or passing behavior.
+
+The checker reports 4,380 remaining unmapped requirement cells. The mapped 80
+cells are declarations across eight module/export identities, not 80 passed tests.
+The selected whole-file commands execute the shared reference suite; category and
+per-helper adequacy still need receipt review before behavioral acceptance.
+
+One machine package is formally planned while its existing inert implementation
+and independent local results remain in the execution ledger. No accepted reference
+or interface registry is inferred from prose, implemented status or a declared
+reviewer name. Receipt validation must populate those registries before the machine
+package can advance. The package checker already rejects unknown prerequisites,
+cycles, unsafe files, missing scope and overlapping active ownership. An explicitly
+released, accepted historical package retains its original allowed_files while a
+new dependent repair may own those files.
+
+Requirements require reviewed source-bound inapplicability; pending behavior can
+coexist with a valid declaration. Inventory acceptance and behavioral acceptance
+remain separate gates. Migration-wide --acceptance remains deliberately failing.

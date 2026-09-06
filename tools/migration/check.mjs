@@ -4,6 +4,10 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { discoverBrowserExports, checkBrowserBindings } from './browser-exports.mjs';
+import { validateRequirements, missingRequirementCoverage } from './requirements.mjs';
+import { validatePackages } from './packages.mjs';
+import { discoverTestIds } from './test-bindings.mjs';
+import { loadMatrix, suiteFiles } from '../test-runner/matrix.mjs';
 
 export const SCENARIOS = ['valid', 'invalid', 'missing', 'noop', 'privacy', 'conflict',
   'concurrency', 'interruption', 'recovery', 'platform'];
@@ -128,10 +132,18 @@ export async function checkInventory(root, options = {}) {
   if (nodesFile.schemaVersion !== 1) throw new Error('Unknown node schema');
   const sources = [];
   const surfaces = [];
+  const requirements = [];
+  const packages = [];
   const hashes = new Map();
   for (const name of (await readdir(directory)).sort()) {
     if (name.endsWith('.json') && name !== 'review-lock.json') {
       hashes.set(name, createHash('sha256').update(await readFile(resolve(directory, name))).digest('hex'));
+    }
+    if (name.startsWith('requirements-') || name === 'packages.json') {
+      const data = JSON.parse(await readFile(resolve(directory, name), 'utf8'));
+      const key = name === 'packages.json' ? 'packages' : 'requirements';
+      if (data.schemaVersion !== 1 || !Array.isArray(data[key])) throw new Error(`Invalid ${key} schema`);
+      (key === 'packages' ? packages : requirements).push(...data[key]);
     }
     const kind = name.startsWith('source-catalog-') ? 'sources' : name.endsWith('-surfaces.json') ? 'surfaces' : null;
     if (!kind) continue;
@@ -141,9 +153,10 @@ export async function checkInventory(root, options = {}) {
   }
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
   // Include untracked source to catch new parser/route modules before staging.
-  const paths = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], {
+  const allPaths = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], {
     cwd: root, env, encoding: 'utf8', timeout: 5000, maxBuffer: 8 * 1024 * 1024,
-  }).split('\0').filter(inSourceScope);
+  }).split('\0').filter(Boolean);
+  const paths = allPaths.filter(inSourceScope);
   const actual = new Map();
   const browserFiles = new Map();
   for (const path of new Set(paths)) {
@@ -156,11 +169,39 @@ export async function checkInventory(root, options = {}) {
   }
   const errors = validateInventory({ nodes: nodesFile.nodes, sources, surfaces }, actual, options);
   errors.push(...checkBrowserBindings(discoverBrowserExports(browserFiles), surfaces));
+  if (requirements.length || packages.length) {
+    const matrix = await loadMatrix(root);
+    const testIds = new Map();
+    const files = new Map(actual);
+    const registered = new Set(allPaths);
+    for (const requirement of requirements) {
+      for (const binding of Array.isArray(requirement?.testBindings) ? requirement.testBindings : []) {
+        if (!safePath(binding?.file) || !registered.has(binding.file) || testIds.has(binding.file)) continue;
+        const source = await readFile(resolve(root, binding.file), 'utf8');
+        testIds.set(binding.file, discoverTestIds(binding.file, source));
+      }
+      for (const file of Array.isArray(requirement?.oracleFiles) ? requirement.oracleFiles : []) {
+        if (!safePath(file?.path) || !registered.has(file.path) || files.has(file.path)) continue;
+        files.set(file.path, createHash('sha256').update(await readFile(resolve(root, file.path))).digest('hex'));
+      }
+    }
+    const nodes = new Set(nodesFile.nodes.map((item) => item.id));
+    const surfaceIds = new Set(surfaces.map((item) => item.id));
+    errors.push(...validateRequirements(requirements, { nodes, surfaces: surfaceIds, files, testIds,
+      platforms: new Set(['node-local']),
+      suites: new Map(matrix.suites.filter((suite) => suite.kind === 'node-test')
+        .map((suite) => [suite.id, new Set(suiteFiles(suite, allPaths))])) }));
+    // No acceptance registry is inferred from these declarations or status strings.
+    errors.push(...validatePackages(packages, { nodes, surfaces: surfaceIds,
+      requirements: new Set(requirements.map((item) => item?.id)), sourcePaths: registered,
+      acceptedInterfaces: new Set(), acceptedReferences: new Set(), acceptedPackages: new Set() }));
+  }
   const lock = JSON.parse(await readFile(resolve(directory, 'review-lock.json'), 'utf8'));
   errors.push(...validateReviewLock(lock, hashes));
   return { schemaVersion: 1, status: errors.length ? 'failed' : 'inventory-consistent',
     acceptance: 'open', nodes: nodesFile.nodes.length, sources: sources.length,
-    surfaces: surfaces.length, errors };
+    surfaces: surfaces.length, requirements: requirements.length, packages: packages.length,
+    unmappedRequirementCells: missingRequirementCoverage(surfaces.map((item) => item.id), requirements).length, errors };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

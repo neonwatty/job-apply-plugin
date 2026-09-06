@@ -134,6 +134,26 @@
       "sha256": "18ba263ad0d37f2eb82d0261b6ca436bae62205036e77f2c7cdf740b9fd8fd98"
     },
     {
+      "path": "packages.json",
+      "sha256": "59f0b7094e80521b02ef77f93434ccd50d9d118804c9000670bf04ff8ab88b03"
+    },
+    {
+      "path": "requirements-trash-01.json",
+      "sha256": "bbc212556338c323e049109befdfc3bf2c4049f313cb0189935b727e475c5012"
+    },
+    {
+      "path": "requirements-trash-02.json",
+      "sha256": "45c2e2fb93c3bb2aeba77269d6291ead3cec7b237b99f4a396b7ca025790ca32"
+    },
+    {
+      "path": "requirements-trash-03.json",
+      "sha256": "36315872d8ff351c542380a271ac630fe331b3b95cf48642d5b67d9354da671b"
+    },
+    {
+      "path": "requirements-trash-04.json",
+      "sha256": "373dd587fa2ac1bba9a8a8fdf90a5dbc70c0f2eca28c1a28ccd2f52412a83773"
+    },
+    {
       "path": "source-catalog-01.json",
       "sha256": "0c538fa1dc7b55303fba9bf8baf169d8b26d5d0b30043180c06477d89e9c84ac"
     },
