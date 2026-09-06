@@ -170,6 +170,36 @@
       "path": "runtime/package/posix-timestamps.js",
       "sha256": "b970553b7577cb9e1a415076547a82dac3fe56694b1bf9bbb551b090b8e09eb9",
       "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/python-text.ts",
+      "sha256": "934fd2271c7e1d61056889fd7125d6dc16559271504687bcdec8c980a796ae78",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/package/data-copy.ts",
+      "sha256": "afd0bfab443606fcb6866cd978ee80304c420a07b5f3e8d78168123f97de29a8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/package/data-copy-io.ts",
+      "sha256": "9f4f9ce9faf5a16d1a6f78848204f90ea1c69f787ed27287d4466270f3225bd9",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/python-text.js",
+      "sha256": "cdd6e3d8d634e2a2957e27759616d7b7a57e66347fa97c6d11855046bf551b4a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/package/data-copy.js",
+      "sha256": "632e4ba6f0e2b8c1954ff17bc002f9944a3c2e603341d9005ec2ba41929c46ed",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/package/data-copy-io.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "classification": "unreviewed"
     }
   ]
 }

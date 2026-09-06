@@ -626,3 +626,41 @@ sequencing and broad host acceptance remain open. The next implementation lanes
 are the inert codepoint text leaf and a separately scoped copy primitive; neither
 accepts a complete migration node. All previously recorded end-to-end, release,
 host and Python-free gates remain required.
+
+## Inert text and data-copy implementations
+
+Reference freeze `13191ee` passed all nine commit checks. Two disjoint workers
+then implemented the [codepoint text leaf](migration/python-text-port.md) and
+the [explicit-I/O copy protocol](migration/data-copy-port.md). The final combined
+reference/implementation run passed 153 tests with no failures or skips across
+the installed Python profiles. Python remains the only live Store writer.
+
+Text preserves literal surrogate/scalar distinctions, immutable content,
+content-based identity, lexicographic order and exact strict UTF-8 errors. Its
+eight focused tests include 200,000 codepoints and independently fixed encoding
+boundaries. Independent review accepted the inert scope. No existing parser,
+dictionary, path or persisted writer consumes the new representation yet.
+
+Copy comparisons cover the 30 frozen direct-copy cases through explicit I/O,
+plus eleven actual-Python branch witnesses and four OS-classification cases per
+profile. Review exposed and fixed cyclic implicit exception contexts and lost
+directory-error subclass handling. Root also corrected model symlink permissions,
+a Python 3.14 probe recursion bug, and missing effect/provenance assertions. The
+first failing test receipt remains distinct from the successful rerun. The
+independent reviewer identified the source defects; its later turn hit an account
+usage limit, so root independently reviewed the worker's final fixes and passing
+regressions. No unperformed final subagent review is claimed.
+
+The copy leaf explicitly requires an adapter. Deterministic stream-model results
+do not accept native buffering, native accelerators, metadata composition or a
+whole installed candidate. Runtime emission contains 37 modules; inventory has
+315 source rows and the matrix remains 20 suites. The 4,380 unmapped requirement
+cells and complete node/subset/release gates remain open.
+
+Next dependency-ready work is documented in
+[text integration packages](migration/text-integration-packages.md): inert
+content-keyed objects and byte decoding can be prepared in parallel, followed by
+coordinated typed consumer and write-boundary integration. The copy lane requires
+native binary-stream and accelerator evidence before native activation. All
+previously recorded host, Python-free, broad validation and release requirements
+remain mandatory.
