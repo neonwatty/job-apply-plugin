@@ -1,8 +1,12 @@
 # Migration execution state
 
-Updated 2026-09-06. Governing [execution plan](autonomous-typescript-migration-plan.md).
-Current approved execution includes the first parallel wave-one foundation batch.
-Later production routing and publication are not implied by this ledger.
+Updated 2026-09-06. Governing [approved map](migration/end-to-end-map.md) and
+[acceptance contract](migration/acceptance-contract.md).
+User approved end-to-end execution through S7 READY. Milestone PRs may publish
+after required gates; merges and live release require separate authorization.
+The active goal is recorded in this task. Node I (executable coverage inventory)
+and SEM evidence discovery have started; FS implementation waits for its bounded
+reference/ownership package. HOST acceptance remains open; no native cell inferred.
 
 ## Accepted packages
 
