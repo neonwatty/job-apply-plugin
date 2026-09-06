@@ -1,5 +1,5 @@
 import { lstat, readlink, stat } from "node:fs/promises";
-import { TextDecoder } from "node:util";
+import { filesystemDecode, filesystemEncode } from "./posix-path-bytes.js";
 
 export type PythonPathProfile = "3.12" | "3.13" | "3.14";
 
@@ -41,16 +41,14 @@ export function posixParent(path: string): string {
   return normalized.slice(0, separator);
 }
 
-function nativePath(path: string): string {
-  if (path.includes("\0")) {
+function nativePath(path: string): Buffer {
+  const encoded = filesystemEncode(path);
+  if (encoded.includes(0)) {
     const error = new Error("embedded null byte");
     error.name = "ValueError";
     throw error;
   }
-  if (Buffer.from(path, "utf8").toString("utf8") !== path) {
-    throw new Error("Non-scalar POSIX paths require an unimplemented byte-path adapter");
-  }
-  return path;
+  return encoded;
 }
 
 const nativeIO: PosixPathIO = {
@@ -58,11 +56,7 @@ const nativeIO: PosixPathIO = {
   stat: (path) => stat(nativePath(path)),
   async readlink(path) {
     const bytes = await readlink(nativePath(path), { encoding: "buffer" });
-    try {
-      return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
-    } catch {
-      throw new Error("Non-UTF-8 link targets require an unimplemented byte-path adapter");
-    }
+    return filesystemDecode(bytes);
   },
   cwd: () => process.cwd(),
 };

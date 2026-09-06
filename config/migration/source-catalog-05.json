@@ -253,7 +253,7 @@
     },
     {
       "path": "src/contracts/posix-path.ts",
-      "sha256": "9517358ed09f375fee847912dbd248fcebdb5e300338cb50785f32eebc0983e7",
+      "sha256": "41c277795eef979813310920155934e0ee9653342bdf1a1f447212223076eebd",
       "classification": "unreviewed"
     },
     {
@@ -263,7 +263,17 @@
     },
     {
       "path": "runtime/contracts/posix-path.js",
-      "sha256": "731c512f38bf2d94d98734854d5dd44ce92b5189e3403c30923e9e1406a6ff1d",
+      "sha256": "0dfc066624aed50b277864450920a7258a651355e827fd176e670317b87f9c04",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/posix-path-bytes.ts",
+      "sha256": "ef3495003e22e409385f7943afc768f88e172ed9732256fe14a19ffac2adba87",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/posix-path-bytes.js",
+      "sha256": "0efde48362bfeeeb08d28bc52aaf47f94119f46b396abe8d14ec585a17d14ba5",
       "classification": "unreviewed"
     }
   ]

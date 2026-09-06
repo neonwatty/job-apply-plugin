@@ -1,5 +1,5 @@
 import { lstat, readlink, stat } from "node:fs/promises";
-import { TextDecoder } from "node:util";
+import { filesystemDecode, filesystemEncode } from "./posix-path-bytes.js";
 export class PathLoopError extends Error {
     constructor() {
         super("Symlink loop during path resolution");
@@ -32,27 +32,20 @@ export function posixParent(path) {
     return normalized.slice(0, separator);
 }
 function nativePath(path) {
-    if (path.includes("\0")) {
+    const encoded = filesystemEncode(path);
+    if (encoded.includes(0)) {
         const error = new Error("embedded null byte");
         error.name = "ValueError";
         throw error;
     }
-    if (Buffer.from(path, "utf8").toString("utf8") !== path) {
-        throw new Error("Non-scalar POSIX paths require an unimplemented byte-path adapter");
-    }
-    return path;
+    return encoded;
 }
 const nativeIO = {
     lstat: (path) => lstat(nativePath(path)),
     stat: (path) => stat(nativePath(path)),
     async readlink(path) {
         const bytes = await readlink(nativePath(path), { encoding: "buffer" });
-        try {
-            return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
-        }
-        catch {
-            throw new Error("Non-UTF-8 link targets require an unimplemented byte-path adapter");
-        }
+        return filesystemDecode(bytes);
     },
     cwd: () => process.cwd(),
 };

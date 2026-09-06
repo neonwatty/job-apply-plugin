@@ -342,3 +342,34 @@ Those skips are not native acceptance. The next adapter work must preserve
 surrogateescape bytes rather than permanently reject valid Python paths. Native
 Linux evidence is still required for the five unavailable filename cases; Windows
 remains a separate required path implementation and native verification lane.
+
+## Filesystem byte adapter and timestamp reference
+
+At base `6e36bb8`, migration_sequence implemented UTF-8 surrogateescape encoding
+and decoding in a new leaf and routed native POSIX stat/lstat/readlink through
+Buffer paths. The explicit unsupported-byte branches are removed. The source
+review by validation_strategy exercised all 65,536 two-byte sequences against
+Python and found an encoding-before-NUL precedence defect; the owner fixed it
+and numeric_codec added actual-Python regression cases before final testing.
+
+Committed tests compare 4,368 byte strings and 2,066 Unicode strings per Python
+invocation, plus separate owned native path trees and error-precedence cases.
+The final coordinator run, including existing managed-path comparisons and the
+new timestamp reference, reports 232 passes, zero failures and 20 explicit skips.
+Those skips are five unavailable native filename fixtures repeated across four
+interpreter invocations; the default repeats Python 3.14. All three supported
+Python profiles were present. This is partial native evidence, not FS acceptance.
+
+The timestamp reference contains 24 fixed binary64 fixtures (23 distinct bit
+patterns) and four actual filesystem nanosecond-to-stat-float conversions.
+It preserves microsecond rounding before second formatting, negative timestamps,
+year limits and exception categories. validation_strategy reviewed exact bits,
+source/profile bindings and owned-file checks. The five reference tests pass
+without skips on the three installed macOS Python profiles.
+
+Build emission is reproducible at 18 modules; inventory has 275 source/manifest
+rows. Strict typing, size and registration checks pass. Native Windows paths,
+Linux byte-named files/current directories, raw argv/string transport distinctions,
+complete timestamp/observation implementation and race-safe storage remain open.
+Node's cwd string API alone does not establish byte-named cwd compatibility.
+No live routing, writer or runtime delivery configuration changed.
