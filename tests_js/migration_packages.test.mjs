@@ -11,6 +11,7 @@ function fixture() {
     context: { nodes: new Set(['UI0']), surfaces: new Set(['surface']),
       requirements: new Set(['requirement']), sourcePaths: new Set(['src/leaf.ts', 'runtime/leaf.js']),
       acceptedInterfaces: new Set(['interface']), acceptedReferences: new Set(['reference']),
+      requiredRequirements: new Set(['requirement']), referenceRequirements: new Map([['reference', new Set(['requirement'])]]),
       acceptedPackages: new Set() },
   };
 }
@@ -20,6 +21,11 @@ test('ready package has explicit scope and accepted inputs without claiming acce
   assert.deepEqual(validatePackages(packages, context), []);
   packages[0].status = 'accepted';
   assert.match(validatePackages(packages, context).join('\n'), /Unsupported status/);
+});
+test('a passing reference for another requirement cannot unlock this package', () => {
+  const { packages, context } = fixture();
+  context.referenceRequirements.set('reference', new Set(['unrelated']));
+  assert.match(validatePackages(packages, context).join('\n'), /does not cover required scenario/);
 });
 test('accepted historical ownership can be explicitly released for a dependent repair', () => {
   const { packages, context } = fixture();

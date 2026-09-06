@@ -139,7 +139,7 @@
     {
       "id": "node-runner-fast",
       "kind": "node-test",
-      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs", "tests_js/local_checks*.test.mjs", "tests_js/migration_inventory.test.mjs", "tests_js/migration_browser_inventory.test.mjs", "tests_js/migration_packages.test.mjs", "tests_js/migration_requirements.test.mjs", "tests_js/migration_test_bindings.test.mjs", "tests_js/migration_prerequisite_receipts.test.mjs"],
+      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs", "tests_js/local_checks*.test.mjs", "tests_js/migration_inventory.test.mjs", "tests_js/migration_browser_inventory.test.mjs", "tests_js/migration_packages.test.mjs", "tests_js/migration_requirements.test.mjs", "tests_js/migration_test_bindings.test.mjs", "tests_js/migration_prerequisite_receipts.test.mjs", "tests_js/migration_load_prerequisites.test.mjs"],
       "tiers": ["fast", "full"]
     },
     {
@@ -157,7 +157,7 @@
     {
       "id": "node-workspace-other",
       "kind": "node-test",
-      "include": ["tests_js/workspace*.test.mjs", "tests_js/unified_task_spine_oracle.test.mjs", "tests_js/python-contracts.test.mjs", "tests_js/python-startup-contracts.test.mjs", "tests_js/python-profile-fact-contracts.test.mjs", "tests_js/python-answer-matching-raw.test.mjs", "tests_js/raw_json_numeric*.test.mjs", "tests_js/typed_json*.test.mjs", "tests_js/store_validation_ts.test.mjs", "tests_js/python_json_ingress.test.mjs", "tests_js/python_json_stdin.test.mjs", "tests_js/store_raw_read_reference.test.mjs", "tests_js/store_raw_read_ts.test.mjs", "tests_js/private_file_digest_reference.test.mjs"],
+      "include": ["tests_js/workspace*.test.mjs", "tests_js/unified_task_spine_oracle.test.mjs", "tests_js/python-contracts.test.mjs", "tests_js/python-startup-contracts.test.mjs", "tests_js/python-profile-fact-contracts.test.mjs", "tests_js/python-answer-matching-raw.test.mjs", "tests_js/raw_json_numeric*.test.mjs", "tests_js/typed_json*.test.mjs", "tests_js/store_validation_ts.test.mjs", "tests_js/python_json_ingress.test.mjs", "tests_js/python_json_stdin.test.mjs", "tests_js/store_raw_read_reference.test.mjs", "tests_js/store_raw_read_ts.test.mjs", "tests_js/private_file_digest_reference.test.mjs", "tests_js/private_file_digest_ts.test.mjs"],
       "tiers": ["full"]
     },
     {

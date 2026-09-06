@@ -205,6 +205,16 @@
       "path": "runtime/store/read-json-object.js",
       "sha256": "2a2166d49f056597f31f0f8f143c34d0e280d11f8f4e463e2e98a6ec9b1aeacf",
       "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/private-file-digest.ts",
+      "sha256": "b107cdb79cfb880d0358e828519ea92e5f2605bd01101fdc41232cfeebaad11b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/private-file-digest.js",
+      "sha256": "124d430e57ae0c8a6ba2ac2cdc9ca9bec20a00a88f8f5cd43873236802b7c836",
+      "classification": "unreviewed"
     }
   ]
 }

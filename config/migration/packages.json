@@ -33,13 +33,17 @@
         "UI0-trash-platform"
       ],
       "dependencies": [],
-      "interfaceIds": [],
-      "referenceIds": [],
+      "interfaceIds": [
+        "node-compiler-v1"
+      ],
+      "referenceIds": [
+        "trash-reference-v1"
+      ],
       "emittedFiles": [
         "runtime/workspace-ui/lib/trash-view.js"
       ],
       "activation": "inert",
-      "status": "planned"
+      "status": "implemented"
     }
   ]
 }

@@ -8,6 +8,7 @@ import { validateRequirements, missingRequirementCoverage } from './requirements
 import { validatePackages } from './packages.mjs';
 import { discoverTestIds } from './test-bindings.mjs';
 import { loadMatrix, suiteFiles } from '../test-runner/matrix.mjs';
+import { loadPrerequisites } from './load-prerequisites.mjs';
 
 export const SCENARIOS = ['valid', 'invalid', 'missing', 'noop', 'privacy', 'conflict',
   'concurrency', 'interruption', 'recovery', 'platform'];
@@ -191,10 +192,18 @@ export async function checkInventory(root, options = {}) {
       platforms: new Set(['node-local']),
       suites: new Map(matrix.suites.filter((suite) => suite.kind === 'node-test')
         .map((suite) => [suite.id, new Set(suiteFiles(suite, allPaths))])) }));
-    // No acceptance registry is inferred from these declarations or status strings.
+    const prerequisites = await loadPrerequisites(root, { requirements,
+      registeredTests: new Set(matrix.suites.filter((suite) => suite.kind === 'node-test')
+        .flatMap((suite) => suiteFiles(suite, allPaths))) });
+    errors.push(...prerequisites.errors);
+    // Only independently scoped, immutable prerequisite evidence can unlock work.
     errors.push(...validatePackages(packages, { nodes, surfaces: surfaceIds,
       requirements: new Set(requirements.map((item) => item?.id)), sourcePaths: registered,
-      acceptedInterfaces: new Set(), acceptedReferences: new Set(), acceptedPackages: new Set() }));
+      acceptedInterfaces: prerequisites.acceptedInterfaces, acceptedReferences: prerequisites.acceptedReferences,
+      knownInterfaces: prerequisites.knownInterfaces, knownReferences: prerequisites.knownReferences,
+      requiredRequirements: new Set(requirements.filter((item) => item?.applicability?.status === 'required').map((item) => item.id)),
+      referenceRequirements: prerequisites.referenceRequirements,
+      acceptedPackages: new Set() }));
   }
   const lock = JSON.parse(await readFile(resolve(directory, 'review-lock.json'), 'utf8'));
   errors.push(...validateReviewLock(lock, hashes));

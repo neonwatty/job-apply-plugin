@@ -20,9 +20,10 @@ export function validatePackages(packages, context) {
   const errors = [];
   if (!Array.isArray(packages)) return ['Packages must be an array'];
   for (const field of ['nodes', 'surfaces', 'requirements', 'sourcePaths',
-    'acceptedInterfaces', 'acceptedReferences', 'acceptedPackages']) {
+    'acceptedInterfaces', 'acceptedReferences', 'acceptedPackages', 'requiredRequirements']) {
     if (!(context?.[field] instanceof Set)) errors.push(`Missing context registry ${field}`);
   }
+  if (!(context?.referenceRequirements instanceof Map)) errors.push('Missing reference requirement bindings');
   for (const field of ['knownInterfaces', 'knownReferences', 'releasedPackages']) {
     if (context?.[field] !== undefined && !(context[field] instanceof Set)) {
       errors.push(`Invalid context registry ${field}`);
@@ -80,6 +81,12 @@ export function validatePackages(packages, context) {
       if (!item.referenceIds.length) errors.push(`Missing accepted reference ${label}`);
       for (const id of item.referenceIds) {
         if (!context.acceptedReferences.has(id)) errors.push(`Unaccepted reference ${label}:${id}`);
+      }
+      for (const id of item.requirementIds) {
+        if (context.requiredRequirements.has(id) && !item.referenceIds.some((reference) =>
+          context.acceptedReferences.has(reference) && context.referenceRequirements.get(reference)?.has(id))) {
+          errors.push(`Reference does not cover required scenario ${label}:${id}`);
+        }
       }
       for (const id of item.interfaceIds) {
         if (!context.acceptedInterfaces.has(id)) errors.push(`Unaccepted interface ${label}:${id}`);

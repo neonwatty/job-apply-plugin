@@ -9,7 +9,7 @@ cannot grant migration acceptance.
 
 - 36 graph nodes and hard dependency edges, including stricter explicit table edges.
   Family REF prerequisites still need per-surface evidence binding before Ready.
-- 261 source/manifest file hashes across scripts, workspace, QA, native, source and
+- 263 source/manifest file hashes across scripts, workspace, QA, native, source and
   emitted runtime. Every entry remains `unreviewed` for classification.
 - 144 Python CLI subcommands, discovered by AST without importing application code
   or running main. Literal parser names and Chrome's constant loop were expanded.
@@ -108,14 +108,21 @@ cells are declarations across eight module/export identities, not 80 passed test
 The selected whole-file commands execute the shared reference suite; category and
 per-helper adequacy still need receipt review before behavioral acceptance.
 
-One machine package is formally planned while its existing inert implementation
-and independent local results remain in the execution ledger. No accepted reference
-or interface registry is inferred from prose, implemented status or a declared
-reviewer name. Receipt validation must populate those registries before the machine
-package can advance. The package checker already rejects unknown prerequisites,
-cycles, unsafe files, missing scope and overlapping active ownership. An explicitly
-released, accepted historical package retains its original allowed_files while a
-new dependent repair may own those files.
+The Trash machine package is now formally implemented with a verified reference
+and compiler prerequisite. The ledger retains its independent local implementation
+results. Prerequisite receipts bind exact reviewed file/requirement scope, canonical
+commands, current and committed hashes, a verified ancestor relation, known runtime
+profile, independent review and complete captured TAP counts. They do not grant
+whole-package, node or release acceptance. The supported TAP adapter currently
+requires direct top-level tests; unsupported report forms fail closed.
+
+The loader executes only fixed Git inspection commands, never receipt commands.
+It rejects static symlink components before reading evidence. It is a local
+repository evidence loader, not a guarantee against concurrent hostile filesystem
+replacement or a replacement for live Store path-security adapters.
+A dependent package must have accepted references covering every required scenario;
+an unrelated passing reference cannot unlock it. An explicitly released, accepted
+historical package retains its original allowed_files while a repair takes ownership.
 
 Requirements require reviewed source-bound inapplicability; pending behavior can
 coexist with a valid declaration. Inventory acceptance and behavioral acceptance

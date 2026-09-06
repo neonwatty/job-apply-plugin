@@ -135,11 +135,15 @@
     },
     {
       "path": "packages.json",
-      "sha256": "59f0b7094e80521b02ef77f93434ccd50d9d118804c9000670bf04ff8ab88b03"
+      "sha256": "43cdd23c177d1b353f66befc08a82591e51f6b3f52b32355fe2ca75b90edcb73"
     },
     {
       "path": "prerequisite-contracts.json",
       "sha256": "a50e617e490fb76b54f81a69720e0588e14c5ca67414ac7f40f0b28248881385"
+    },
+    {
+      "path": "prerequisite-receipts.json",
+      "sha256": "9273e0009003842e9a5d11023c2de34a1fe6576143332928d2031befbe0ab1e9"
     },
     {
       "path": "requirements-trash-01.json",
@@ -175,7 +179,7 @@
     },
     {
       "path": "source-catalog-05.json",
-      "sha256": "11b1b064632b35a6563891c10955f32ec17a7daf8b7e8c964ea64293d768b315"
+      "sha256": "230bfed238ebf7a3ab3a217e5af205c8927a1e5b0c97294a4ae37f144fe28374"
     }
   ]
 }

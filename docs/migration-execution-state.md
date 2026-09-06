@@ -11,7 +11,7 @@ reference/ownership package. HOST acceptance remains open; no native cell inferr
 ## Active graph checkpoint: I4 and SEM ingress evidence
 
 I4 establishes an executable consistency gate, not node I acceptance. It binds
-261 source/manifest files, 144 CLI subcommands, 17 root parser surfaces and 127
+263 source/manifest files, 144 CLI subcommands, 17 root parser surfaces and 127
 HTTP surfaces, 111 browser exports, 28 persisted artifact patterns and 19 journal variants across the 36-node graph. Effects/classifications and scenario
 evidence remain explicitly open. The gate is registered in fast/full validation;
 `check:migration -- --acceptance` intentionally fails until real acceptance is
@@ -212,3 +212,27 @@ growth, symlink substitution, read failures and escaping close failures.
 A separately reviewed prerequisite verifier binds exact contract scope, immutable
 files/logs, ancestry, environment and complete TAP counts; seven tests pass.
 The initial reference/compiler logs are captured for immutable binding next.
+
+## Descriptor digest implementation and verified prerequisites
+
+The private digest reference was frozen in `e57c7e7`. migration_sequence owned only
+`src/store/private-file-digest.ts`; the coordinator emitted its runtime counterpart.
+numeric_codec owned the independent `tests_js/private_file_digest_ts.test.mjs`.
+validation_strategy separately reviewed the source. The default adapter uses real
+opened file handles; injected test adapters wrap real descriptors on owned clones.
+No live Store or application routing changed.
+
+Coordinator tests passed 74 cases with zero skips across all three Python profiles,
+including all 16 reference cases, real descriptor closure, short reads, full hashing
+after post-stat growth and symlink substitution refusal. Initial-size-only behavior
+is preserved. Native Windows, actual permission denial, interruption and complete
+pre/post identity observation remain open; digest success is not stable observation.
+
+The checker now loads two immutable prerequisite receipts at `e57c7e7`, with exact
+scope and captured logs: Trash reference and Node compiler interface. The existing
+Trash machine package can be represented as implemented; it is not marked accepted.
+Reference requirements must cover the package's required scenarios, preventing
+unrelated evidence reuse. Actual temporary Git tests reject source drift,
+uncommitted evidence and static symlink escapes. Independent review resolved
+malformed-record conversion and unsafe evidence-path issues. Receipt commands are
+never executed by the loader. Parent I/REF/FS/UI0/SEM and release gates remain open.

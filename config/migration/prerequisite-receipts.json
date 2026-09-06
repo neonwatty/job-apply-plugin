@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "receipts": [
+    {
+      "id": "trash-reference-v1",
+      "kind": "reference",
+      "base": "64e74cfe8833eb2238a851875fccd33b431a3f5b",
+      "head": "e57c7e79283965c6a8d0858e37c601465291fad3",
+      "files": [
+        {
+          "path": "workspace/lib/helpers.js",
+          "sha256": "6fdaab7896a1944dde732c9cb239507968d30a5bd50ee35e7249c06d89bcb33e"
+        },
+        {
+          "path": "tests_js/workspace_trash_reference.test.mjs",
+          "sha256": "bb5907980f1109ce9b5504ded901b493ff7707607f5e0d13f809bf3983642d24"
+        },
+        {
+          "path": "config/migration/requirements-trash-01.json",
+          "sha256": "bbc212556338c323e049109befdfc3bf2c4049f313cb0189935b727e475c5012"
+        },
+        {
+          "path": "config/migration/requirements-trash-02.json",
+          "sha256": "45c2e2fb93c3bb2aeba77269d6291ead3cec7b237b99f4a396b7ca025790ca32"
+        },
+        {
+          "path": "config/migration/requirements-trash-03.json",
+          "sha256": "36315872d8ff351c542380a271ac630fe331b3b95cf48642d5b67d9354da671b"
+        },
+        {
+          "path": "config/migration/requirements-trash-04.json",
+          "sha256": "373dd587fa2ac1bba9a8a8fdf90a5dbc70c0f2eca28c1a28ccd2f52412a83773"
+        }
+      ],
+      "requirements": [
+        "UI0-trash-platform",
+        "UI0-trash-noop",
+        "UI0-trash-privacy",
+        "UI0-trash-conflict",
+        "UI0-trash-valid",
+        "UI0-trash-invalid",
+        "UI0-trash-missing"
+      ],
+      "environment": {
+        "id": "darwin-node22.22.3-unicode17",
+        "platform": "darwin",
+        "node": "v22.22.3",
+        "unicode": "17.0"
+      },
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_trash_reference.test.mjs"
+      ],
+      "result": {
+        "exitCode": 0,
+        "tests": 7,
+        "failures": 0,
+        "skips": 0,
+        "cancelled": 0
+      },
+      "log": {
+        "path": "docs/migration/evidence/trash-reference-node22.tap",
+        "sha256": "7e7ccb1601f2032d450ded456ce5669544d484d15c0b9de1e7d68177c3cd7e90"
+      },
+      "review": {
+        "author": "migration_sequence",
+        "reviewer": "numeric_codec",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "id": "node-compiler-v1",
+      "kind": "interface",
+      "base": "64e74cfe8833eb2238a851875fccd33b431a3f5b",
+      "head": "e57c7e79283965c6a8d0858e37c601465291fad3",
+      "files": [
+        {
+          "path": "package.json",
+          "sha256": "c652d020e5b1762c2bc703c563124c23f87c978f87af9c299f0a661253c40200"
+        },
+        {
+          "path": "package-lock.json",
+          "sha256": "7ee9e2f989ec77ba9ab97847266792da033d9ebd98fd3643a26d73430d076c17"
+        },
+        {
+          "path": "tsconfig.json",
+          "sha256": "a5bbfb581960ff5215cf6f5ed0ae26464b32d3c7040d26c9b73d12bcc4986c8f"
+        },
+        {
+          "path": "tools/build-runtime.mjs",
+          "sha256": "fa9dc44fdad05da0157eec34ac6ed552d51570cfe92ed133f855ae2e9d13a0dd"
+        },
+        {
+          "path": "tools/runtime-build/inventory.mjs",
+          "sha256": "06a07f1948f0d366d5192b2e5886bcc62da443d946070724b4a36bc054a9ecfe"
+        },
+        {
+          "path": "tests_js/build-runtime.test.mjs",
+          "sha256": "234ee59bbc90da91b11ae318c8ab1766a4644a5687219f5a84a1d891aeeb6a8e"
+        }
+      ],
+      "requirements": [
+        "compiler.node-builtins"
+      ],
+      "environment": {
+        "id": "darwin-node22.22.3-unicode17",
+        "platform": "darwin",
+        "node": "v22.22.3",
+        "unicode": "17.0"
+      },
+      "command": [
+        "node",
+        "--test",
+        "tests_js/build-runtime.test.mjs"
+      ],
+      "result": {
+        "exitCode": 0,
+        "tests": 7,
+        "failures": 0,
+        "skips": 0,
+        "cancelled": 0
+      },
+      "log": {
+        "path": "docs/migration/evidence/node-builtins-node22.tap",
+        "sha256": "b0b2419b0390f632dad6eddfff86893aa3f2c2f02788d5e23e6923c9103e89e5"
+      },
+      "review": {
+        "author": "integration",
+        "reviewer": "validation_strategy",
+        "decision": "approved"
+      },
+      "status": "passed"
+    }
+  ]
+}
