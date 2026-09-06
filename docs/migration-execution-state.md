@@ -565,3 +565,39 @@ hit its unchanged 120-second deadline. Its isolated diagnostic then passed all
 the commit gate must pass on retry and is not bypassed. Read-only assessments
 also identified the disjoint [next reference packages](migration/next-history-copy-packages.md)
 for real history identity and artifact-copy metadata ordering.
+
+## Real history and metadata-order references
+
+The JSONL/timestamp checkpoint committed as `b1f4bb1` after all nine commit
+checks passed on retry. The next parallel wave captures real history reading,
+validation and identity, plus actual artifact-copy metadata ordering. No
+production source, runtime module, facade or live Store changes in this wave.
+
+The history reference contains 117 cases plus seven direct canonical cases,
+tested under Python 3.12/3.13/3.14 and effective hash seeds 0/1/2. It captures
+native text read-ahead error precedence, read/write validation asymmetry, exact
+physical line labels, numeric and surrogate identity, complete input/tree
+preservation and canonical comparison order. Independent review required and
+verified closed fixture/callback/error/provenance assertions, and corrected a
+reordered-key fixture that previously normalized away the intended difference.
+See [history reference](migration/history-read-idempotency-reference.md).
+
+The separate 12-case copy-order reference captures access/modification timestamps
+before verification reads, post-data source-stat timing, nonzero native flags,
+suppressed/propagated errors and existing/new-target attribute behavior. Root
+review strengthened rejected flag updates with a nonzero requested flag and a
+zero target flag witness. Actual Python data copying retains existing mode until
+the metadata phase. A separate Node probe demonstrates copyFile changes mode
+earlier, so it cannot be substituted without violating partial-failure state.
+See [copy ordering](migration/artifact-copy-order-reference.md) and the
+[data-only copy prerequisite](migration/artifact-data-copy-probe.md).
+
+The final coordinator run passed ten reference tests, zero failures/skips, on
+all three installed profiles; default Python duplicates 3.14.4. Both references
+received independent review before freezing. Native Linux/Windows and the
+documented failure/resource/caller gaps remain open. Next implementation can
+split history validation/canonical behavior from the streaming reader, with
+independent tests and root identity integration. The delivery lane still needs
+data-only copying evidence before its copy orchestrator. Inventory remains 309
+source rows, 34 emitted modules and 4,380 unmapped requirement cells; no complete
+node/subset or release gate is inferred from these reference receipts.
