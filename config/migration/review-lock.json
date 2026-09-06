@@ -180,6 +180,10 @@
     {
       "path": "source-catalog-05.json",
       "sha256": "8cb6b103a6739c5d3fdafb71603217eb98960da8e9887a9f2b99e351a34e7f4b"
+    },
+    {
+      "path": "source-catalog-06.json",
+      "sha256": "384bcfe3a0a9cd70b898ab366fb392b0097e164641a453b7c5fbabc43c84d35b"
     }
   ]
 }

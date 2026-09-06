@@ -373,3 +373,42 @@ Linux byte-named files/current directories, raw argv/string transport distinctio
 complete timestamp/observation implementation and race-safe storage remain open.
 Node's cwd string API alone does not establish byte-named cwd compatibility.
 No live routing, writer or runtime delivery configuration changed.
+
+## Timestamp and native observation implementation
+
+At base `86b01fe`, migration_sequence implemented timestamp formatting, complete
+observation/cache control flow and the native POSIX adapter. The coordinator
+implemented explicit fused/separate stat timestamp conversion. numeric_codec
+wrote independent actual-Python comparisons; validation_strategy reviewed all
+four source modules and confirmed the final cache fixes. Ownership and limits
+are detailed in [the package record](migration/managed-observation-port.md).
+
+Review found sparse identity arrays falsely matching, numeric identity values
+not matching Python equality, and null cache entries failing. Each was corrected
+and covered by independent regressions. Native integration runs on separate
+owned Python/TypeScript trees, preserving bytes, modes, links and mtimes. The
+established typed StoreValidationError represents Python StoreError with exact
+message comparison; no other exception category is normalized.
+
+Final coordinator verification passed 360 focused tests, zero failures and zero
+skips across the three installed Python profiles (the default repeats 3.14).
+Timestamp evidence includes 24 fixed inputs, four frozen native conversions,
+3,048 generated float values, 50 native samples and 112 exact arithmetic cases
+per invocation. Native observation contributes 27 tests across three profiles.
+Build emits 22 modules; typing, size and test registration pass. Inventory has
+283 sources; 4,380 unmapped requirement cells remain, so acceptance stays open.
+
+The next coherent durable-write package is atomic JSON persistence: exact
+persisted serialization, private parent permissions, exclusive temporary file,
+flush/fsync/close, chmod/replace/directory fsync and cleanup error precedence.
+It requires its own frozen reference before implementation. Native flock remains
+a parallel provider/contract investigation; process-local or directory locks are
+not an authorized semantic substitute. JSONL rollback and journal recovery follow.
+
+A parallel delivery package can port the installed-artifact verifier without
+choosing a distribution prematurely. Existing users are promised no Node runtime
+requirement; incidental developer Node availability cannot change that promise.
+No fresh-host acceptance cells are established. Native Windows/Linux, runtime
+distribution, CI restoration, Python-free full candidate and final-artifact
+upgrade/offline/rollback gates remain open, along with previously recorded QA
+profile failures and visible-browser opt-in skips. No live writer changed.

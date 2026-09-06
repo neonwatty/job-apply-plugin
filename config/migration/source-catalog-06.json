@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "src/contracts/stat-time.ts",
+      "sha256": "3db588d43e79a198b01808fc015cca238b99d1d101fdf0905a73d35b32202a8c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/resume-modified-at.ts",
+      "sha256": "d2e7fd2f58e924e83c41b6643ab3b32597a68b533e50a2dce447c73348fe7754",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/managed-resume-observation.ts",
+      "sha256": "6564701cfc6047936be6813e6648ae2d3d369f586e2e67a25a47bcbfb582964d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/managed-resume-native.ts",
+      "sha256": "ea07c0d1b215d545a1e4ac53455df17540b9aa964145f1674322176ae275b581",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/stat-time.js",
+      "sha256": "06cadfb66c2916095fbe6310346108310bc9a3f0956ac0ea57ffff1049dcfe10",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/resume-modified-at.js",
+      "sha256": "f9c149ba51e9b60faef0233dcb11c4dbff7cc16991f9cb11a99eb00d37c95647",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/managed-resume-observation.js",
+      "sha256": "b571006e87360adf3a122e6ef2f6588d2f131b757968031e8d651550b2a3d136",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/managed-resume-native.js",
+      "sha256": "bafaf2dabdd469b4850beeea617abac5331553da5751dbaec030f224a2cac162",
+      "classification": "unreviewed"
+    }
+  ]
+}
