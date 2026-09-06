@@ -75,6 +75,7 @@
       "include": [
         "tests/test_source_size_policy.py",
         "tests/test_final_action_docs.py",
+        "tests/test_skill_documents.py",
         "tests/test_job_apply_skill_contract.py",
         "tests/test_job_apply_policy_split.py",
         "tests/test_job_apply_split_compatibility.py"
@@ -112,6 +113,7 @@
       "exclude": [
         "tests/test_source_size_policy.py",
         "tests/test_final_action_docs.py",
+        "tests/test_skill_documents.py",
         "tests/test_job_apply_skill_contract.py",
         "tests/test_job_apply_policy_split.py",
         "tests/test_job_apply_split_compatibility.py",
@@ -217,6 +219,7 @@
     {"paths": ["qa/*.mjs"], "suites": ["node-workspace-other"]},
     {"paths": ["workspace/**"], "suites": ["python-workspace-contracts", "node-workspace-other"]},
     {"paths": ["native/macos/**"], "suites": ["macos-native-contracts"]},
-    {"paths": ["docs/**", "README.md", "skills/**"], "suites": ["docs-links"]}
+    {"paths": ["skills/**", "scripts/skill_documents.py"], "suites": ["python-fast", "python-core", "python-qa", "python-workspace-contracts", "node-workspace-other", "release-package", "docs-links"]},
+    {"paths": ["docs/**", "README.md", "AGENTS.md"], "suites": ["docs-links"]}
   ]
 }

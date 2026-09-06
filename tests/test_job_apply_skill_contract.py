@@ -1,3 +1,4 @@
+from scripts.skill_documents import skill_text
 import re
 import unittest
 from pathlib import Path
@@ -12,8 +13,8 @@ README_PATH = ROOT / "README.md"
 class JobApplySkillContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.skill = SKILL_PATH.read_text(encoding="utf-8")
-        cls.workspace_skill = WORKSPACE_SKILL_PATH.read_text(encoding="utf-8")
+        cls.skill = skill_text(SKILL_PATH)
+        cls.workspace_skill = skill_text(WORKSPACE_SKILL_PATH)
         cls.readme = README_PATH.read_text(encoding="utf-8")
         cls.normalized = " ".join(cls.skill.split())
 

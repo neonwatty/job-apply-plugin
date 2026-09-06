@@ -1,3 +1,4 @@
+import { skillText } from "./workspace_skill_support.mjs";
 import {
   assert,
   readFile,
@@ -72,7 +73,7 @@ test("workspace markup has semantic dialogs, labels, live regions, and no remote
 
 
 test("job-apply routes every ordinary URL through the canonical task protocol", async () => {
-  const skill = await readFile(join(REPO_ROOT, "skills", "job-apply", "SKILL.md"), "utf8");
+  const skill = skillText(REPO_ROOT, "job-apply");
   const readme = await readFile(join(REPO_ROOT, "README.md"), "utf8");
   assert.match(skill, /resume-import --input/);
   assert.match(skill, /resume-resolve --id <resume-id>/);
@@ -93,8 +94,8 @@ test("job-apply routes every ordinary URL through the canonical task protocol", 
 });
 
 test("skill and documentation contracts keep extraction agent-owned and context-bounded", async () => {
-  const jobApply = await readFile(join(REPO_ROOT, "skills", "job-apply", "SKILL.md"), "utf8");
-  const workspaceSkill = await readFile(join(REPO_ROOT, "skills", "job-workspace", "SKILL.md"), "utf8");
+  const jobApply = skillText(REPO_ROOT, "job-apply");
+  const workspaceSkill = skillText(REPO_ROOT, "job-workspace");
   const readme = await readFile(join(REPO_ROOT, "README.md"), "utf8");
   const app = await readFile(join(REPO_ROOT, "workspace", "features", "resumes.js"), "utf8");
 
