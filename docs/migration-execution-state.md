@@ -8,11 +8,11 @@ The active goal is recorded in this task. Node I (executable coverage inventory)
 and SEM evidence discovery have started; FS implementation waits for its bounded
 reference/ownership package. HOST acceptance remains open; no native cell inferred.
 
-## Active graph checkpoint: I1 and SEM ingress evidence
+## Active graph checkpoint: I2 and SEM ingress evidence
 
-I1 establishes an executable consistency gate, not node I acceptance. It binds
+I2 establishes an executable consistency gate, not node I acceptance. It binds
 255 source/manifest files, 144 CLI subcommands, 17 root parser surfaces and 127
-HTTP surfaces across the 36-node graph. Effects/classifications and scenario
+HTTP surfaces plus 111 browser exports across the 36-node graph. Effects/classifications and scenario
 evidence remain explicitly open. The gate is registered in fast/full validation;
 `check:migration -- --acceptance` intentionally fails until real acceptance is
 implemented and satisfied. See [inventory protocol](migration/inventory-protocol.md).
@@ -20,8 +20,14 @@ implemented and satisfied. See [inventory protocol](migration/inventory-protocol
 Independent review found and resolved a missing-digest lock check and an omitted
 Codex marketplace manifest. Regression tests include real temporary Git checkout
 source/ledger drift, not only in-memory fixtures. Parent I still requires complete
-document/journal/browser-export/writer classification, reference bindings and
+document/journal/writer classification, reference bindings and
 reviewed scenario receipts; no filesystem implementation package is accepted yet.
+
+Browser records were independently compared against static source discovery. Review
+found two future export forms that could lose binding identity; both now fail closed
+and have regression coverage. The 13 focused inventory tests pass without skips.
+Local export lists and repeated star bindings require explicit review, including
+some valid JavaScript forms. This guard does not execute browser modules.
 
 SEM now has [ingress evidence](migration/json-ingress-evidence.md): 25 fixed inputs
 produce 77 outcomes, including 45 actual production wrapper calls through memory

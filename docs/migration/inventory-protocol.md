@@ -1,7 +1,7 @@
-# Executable inventory checkpoint I1
+# Executable inventory checkpoint I2
 
 This is a partial implementation of node I, not its acceptance. Parent I remains
-open until document/journal/browser-export/writer classification and reviewed
+open until document/journal/writer classification and reviewed
 behavioral evidence are represented and checked. The current gate intentionally
 cannot grant migration acceptance.
 
@@ -19,7 +19,10 @@ cannot grant migration acceptance.
 - 127 workspace HTTP surfaces from independent inspection: see the
   [HTTP inventory review](http-inventory-review.md) for aliases and route order.
 
-All 288 surface records have unclassified effects and unverified scenario cells.
+- 111 browser module/export identities, independently enumerated and compared with
+  a parse-only checker; see [browser review](browser-inventory-review.md).
+
+All 399 surface records have unclassified effects and unverified scenario cells.
 Mapped node IDs are proposed responsibility, not implementation/test acceptance.
 In particular GET or a command name containing `get` never proves absence of writes.
 Static-asset routes and rejected-method classes are distinguished in their review.
@@ -69,7 +72,7 @@ must still be reconciled before I and CLOSE can pass. Changes to manifests are g
 
 - Review AST-derived CLI records against safe actual parser construction and root
   option/launcher aliases; record any dynamic extraction adapters durably.
-- Add document types, journal kinds, browser exports, native adapters and all installed
+- Add document types, journal kinds, native adapters and all installed
   entrypoints, then classify every source and write effect with source evidence.
 - Define accepted scenario receipt schema with required command/test/platform binding,
   reviewed inapplicability and stale-dependency detection. Until then all acceptance

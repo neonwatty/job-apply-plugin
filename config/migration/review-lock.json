@@ -2,6 +2,34 @@
   "schemaVersion": 1,
   "files": [
     {
+      "path": "browser-app-01-surfaces.json",
+      "sha256": "159c39d6b0edf5d92aa73c9b5932d6cc09024112f9344caa73429500faf193ac"
+    },
+    {
+      "path": "browser-app-02-surfaces.json",
+      "sha256": "2de0e9613d3ec9d5716baecb2b0ede43f2a7df50ec59d0d1c1f99b3f424d0ae4"
+    },
+    {
+      "path": "browser-app-03-surfaces.json",
+      "sha256": "5c7da3a44b4e4c09c20ff59fa7f6a36a80039ed624166294c931b0412ad9d75d"
+    },
+    {
+      "path": "browser-feature-surfaces.json",
+      "sha256": "78bd906d06ae692ff715ae1ca60160f2a950e5ec74f72695766c3d2164d7bf01"
+    },
+    {
+      "path": "browser-lib-01-surfaces.json",
+      "sha256": "a0d1e3a37b766aa6706381a66581039303722242bd1d3bb4a6b89d08ccab6b94"
+    },
+    {
+      "path": "browser-lib-02-surfaces.json",
+      "sha256": "4e4fd8b4978086243c53e3557840acaddad42787f4bc9a28168ffec3a8eb87ba"
+    },
+    {
+      "path": "browser-lib-03-surfaces.json",
+      "sha256": "49f2b87c089220b8c884034adb625b2116a322cf48b07658ad828b2485a7073b"
+    },
+    {
       "path": "cli-01-surfaces.json",
       "sha256": "ef11efbbed50a037c83c7b9045018dc2c567cb4aa96b3d2739b20e7a777676b3"
     },

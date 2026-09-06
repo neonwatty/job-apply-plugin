@@ -3,6 +3,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { discoverBrowserExports, checkBrowserBindings } from './browser-exports.mjs';
 
 export const SCENARIOS = ['valid', 'invalid', 'privacy', 'conflict', 'concurrency', 'recovery', 'platform'];
 const CODE = /\.(?:py|js|mjs|ts|swift|sh|html|css)$/;
@@ -81,6 +82,9 @@ export function validateInventory({ nodes, sources, surfaces }, actual, { accept
     } else if (surface.kind === 'cli') {
       if (typeof surface.command !== 'string' || !surface.command) errors.push(`Invalid CLI surface ${surface.id}`);
       identity = `${surface.sources?.[0]}:${surface.command}`;
+    } else if (surface.kind === 'browser') {
+      if (typeof surface.export !== 'string' || !surface.export) errors.push(`Invalid browser export ${surface.id}`);
+      identity = `browser:${surface.sources?.[0]}:${surface.export}`;
     } else errors.push(`Unknown surface kind ${surface.id}`);
     if (identity && identities.has(identity)) errors.push(`Duplicate public identity ${identity}`);
     identities.add(identity);
@@ -117,11 +121,17 @@ export async function checkInventory(root, options = {}) {
     cwd: root, env, encoding: 'utf8', timeout: 5000, maxBuffer: 8 * 1024 * 1024,
   }).split('\0').filter(inSourceScope);
   const actual = new Map();
+  const browserFiles = new Map();
   for (const path of new Set(paths)) {
-    try { actual.set(path, createHash('sha256').update(await readFile(resolve(root, path))).digest('hex')); }
+    try {
+      const bytes = await readFile(resolve(root, path));
+      actual.set(path, createHash('sha256').update(bytes).digest('hex'));
+      if (path.startsWith('workspace/') && path.endsWith('.js')) browserFiles.set(path, bytes.toString('utf8'));
+    }
     catch (error) { if (error.code !== 'ENOENT') throw error; }
   }
   const errors = validateInventory({ nodes: nodesFile.nodes, sources, surfaces }, actual, options);
+  errors.push(...checkBrowserBindings(discoverBrowserExports(browserFiles), surfaces));
   const lock = JSON.parse(await readFile(resolve(directory, 'review-lock.json'), 'utf8'));
   errors.push(...validateReviewLock(lock, hashes));
   return { schemaVersion: 1, status: errors.length ? 'failed' : 'inventory-consistent',

@@ -1,0 +1,405 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "browser:workspace/app.js:ApiError",
+      "kind": "browser",
+      "export": "ApiError",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/api.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:FACT_SAVE_REVISION_RETRIES",
+      "kind": "browser",
+      "export": "FACT_SAVE_REVISION_RETRIES",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/api.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:shouldRetryFactSave",
+      "kind": "browser",
+      "export": "shouldRetryFactSave",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/api.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:tokenFromHash",
+      "kind": "browser",
+      "export": "tokenFromHash",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/api.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:sessionToken",
+      "kind": "browser",
+      "export": "sessionToken",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/api.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:safeSessionStorage",
+      "kind": "browser",
+      "export": "safeSessionStorage",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/api.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:createApi",
+      "kind": "browser",
+      "export": "createApi",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/api.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:createLatestRequestCoordinator",
+      "kind": "browser",
+      "export": "createLatestRequestCoordinator",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/api.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:employerAccountOverrideRequest",
+      "kind": "browser",
+      "export": "employerAccountOverrideRequest",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/api.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:trustedFillApprovalPacket",
+      "kind": "browser",
+      "export": "trustedFillApprovalPacket",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/api.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:trustedFillRevokeRequest",
+      "kind": "browser",
+      "export": "trustedFillRevokeRequest",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/api.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:filterJobs",
+      "kind": "browser",
+      "export": "filterJobs",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:answerNeedsFreshConsent",
+      "kind": "browser",
+      "export": "answerNeedsFreshConsent",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:answerSummary",
+      "kind": "browser",
+      "export": "answerSummary",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:canRevealAnswer",
+      "kind": "browser",
+      "export": "canRevealAnswer",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:canRefreshAnswerDraft",
+      "kind": "browser",
+      "export": "canRefreshAnswerDraft",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:canApplyAnswerReveal",
+      "kind": "browser",
+      "export": "canApplyAnswerReveal",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:canApplyAnswerDialogResponse",
+      "kind": "browser",
+      "export": "canApplyAnswerDialogResponse",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:canApplyAnswerDialogMutation",
+      "kind": "browser",
+      "export": "canApplyAnswerDialogMutation",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/app.js:answerApiPath",
+      "kind": "browser",
+      "export": "answerApiPath",
+      "node": "UIF",
+      "sources": [
+        "workspace/app.js",
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

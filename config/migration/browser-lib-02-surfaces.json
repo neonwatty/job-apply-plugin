@@ -1,0 +1,385 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "browser:workspace/lib/helpers.js:answerApiPath",
+      "kind": "browser",
+      "export": "answerApiPath",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:sameAnswerScope",
+      "kind": "browser",
+      "export": "sameAnswerScope",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:formPatch",
+      "kind": "browser",
+      "export": "formPatch",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:transitionsFor",
+      "kind": "browser",
+      "export": "transitionsFor",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:canMarkReadyFrom",
+      "kind": "browser",
+      "export": "canMarkReadyFrom",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:shouldUseActivityResponse",
+      "kind": "browser",
+      "export": "shouldUseActivityResponse",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:newestCanonicalJob",
+      "kind": "browser",
+      "export": "newestCanonicalJob",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:activitySignature",
+      "kind": "browser",
+      "export": "activitySignature",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:activityAnnouncement",
+      "kind": "browser",
+      "export": "activityAnnouncement",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:attentionMembershipSignature",
+      "kind": "browser",
+      "export": "attentionMembershipSignature",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:attentionAnnouncement",
+      "kind": "browser",
+      "export": "attentionAnnouncement",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:attentionMissingInformationText",
+      "kind": "browser",
+      "export": "attentionMissingInformationText",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:attentionBlockerSummary",
+      "kind": "browser",
+      "export": "attentionBlockerSummary",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:ownerBetaNextStep",
+      "kind": "browser",
+      "export": "ownerBetaNextStep",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:pointerValue",
+      "kind": "browser",
+      "export": "pointerValue",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:patchForPaths",
+      "kind": "browser",
+      "export": "patchForPaths",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:conflictingPaths",
+      "kind": "browser",
+      "export": "conflictingPaths",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:summarizeProvenance",
+      "kind": "browser",
+      "export": "summarizeProvenance",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:tagsFromInput",
+      "kind": "browser",
+      "export": "tagsFromInput",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/lib/helpers.js:fileToBase64",
+      "kind": "browser",
+      "export": "fileToBase64",
+      "node": "UI0",
+      "sources": [
+        "workspace/lib/helpers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

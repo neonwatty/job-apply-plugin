@@ -139,7 +139,7 @@
     {
       "id": "node-runner-fast",
       "kind": "node-test",
-      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs", "tests_js/local_checks*.test.mjs", "tests_js/migration_inventory.test.mjs"],
+      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs", "tests_js/local_checks*.test.mjs", "tests_js/migration_inventory.test.mjs", "tests_js/migration_browser_inventory.test.mjs"],
       "tiers": ["fast", "full"]
     },
     {

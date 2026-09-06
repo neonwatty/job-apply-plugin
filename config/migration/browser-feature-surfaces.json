@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "browser:workspace/bootstrap.js:createWorkspaceContext",
+      "kind": "browser",
+      "export": "createWorkspaceContext",
+      "node": "UIF",
+      "sources": [
+        "workspace/bootstrap.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/bootstrap.js:bootstrapWorkspace",
+      "kind": "browser",
+      "export": "bootstrapWorkspace",
+      "node": "UIF",
+      "sources": [
+        "workspace/bootstrap.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/features/activity.js:installActivity",
+      "kind": "browser",
+      "export": "installActivity",
+      "node": "UIF",
+      "sources": [
+        "workspace/features/activity.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/features/answers.js:installAnswers",
+      "kind": "browser",
+      "export": "installAnswers",
+      "node": "UIF",
+      "sources": [
+        "workspace/features/answers.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/features/automation.js:installAutomation",
+      "kind": "browser",
+      "export": "installAutomation",
+      "node": "UIF",
+      "sources": [
+        "workspace/features/automation.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/features/bindings.js:installBindings",
+      "kind": "browser",
+      "export": "installBindings",
+      "node": "UIF",
+      "sources": [
+        "workspace/features/bindings.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/features/facts.js:installFacts",
+      "kind": "browser",
+      "export": "installFacts",
+      "node": "UIF",
+      "sources": [
+        "workspace/features/facts.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/features/jobs.js:installJobs",
+      "kind": "browser",
+      "export": "installJobs",
+      "node": "UIF",
+      "sources": [
+        "workspace/features/jobs.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/features/navigation.js:installNavigation",
+      "kind": "browser",
+      "export": "installNavigation",
+      "node": "UIF",
+      "sources": [
+        "workspace/features/navigation.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/features/overview.js:installOverview",
+      "kind": "browser",
+      "export": "installOverview",
+      "node": "UIF",
+      "sources": [
+        "workspace/features/overview.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/features/resumes.js:installResumes",
+      "kind": "browser",
+      "export": "installResumes",
+      "node": "UIF",
+      "sources": [
+        "workspace/features/resumes.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:workspace/features/trash.js:installTrash",
+      "kind": "browser",
+      "export": "installTrash",
+      "node": "UIF",
+      "sources": [
+        "workspace/features/trash.js"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}
