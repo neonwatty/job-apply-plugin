@@ -1,10 +1,11 @@
 name: Validate Plugin
 
 on:
+  workflow_dispatch:
   push:
-    branches: [main, staging]
+    branches: [main]
   pull_request:
-    branches: [main, staging]
+    branches: [main]
 
 permissions:
   contents: read
@@ -32,7 +33,7 @@ jobs:
       - id: selection
         name: Record affected selection in shadow mode
         env:
-          BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }}
         run: node tools/ci/classify.mjs --base "$BASE_REF" --receipt ci-receipts/selection.json --github-output "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         if: always()
@@ -56,7 +57,7 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
       - run: npm ci
-      - run: npm run check:size -- --base "${{ github.event.pull_request.base.sha || github.event.before }}"
+      - run: npm run check:size -- --base "${{ github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }}"
       - name: "Shadow only: full deterministic shards still execute"
         run: npm run test:fast -- --receipt ci-receipts/fast.json
       - uses: actions/upload-artifact@v4

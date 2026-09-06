@@ -140,7 +140,7 @@ class SourceSizePolicyTests(unittest.TestCase):
         workflow = WORKFLOW.read_text(encoding="utf-8")
 
         self.assertIn(
-            'npm run check:size -- --base "${{ github.event.pull_request.base.sha || github.event.before }}"',
+            'npm run check:size -- --base "${{ github.event.pull_request.base.sha || github.event.before || \'HEAD~1\' }}"',
             workflow,
         )
 
