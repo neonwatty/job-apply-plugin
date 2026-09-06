@@ -245,6 +245,26 @@
       "path": "runtime/workspace-ui/lib/profile-view.js",
       "sha256": "8be62aa24ba0c8a13811ec35a13b801318aa11dedbd1c511278f0982c1814afe",
       "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/managed-resume-path.ts",
+      "sha256": "6d37e77111be1c779cef6c69a9c74d7133901ddc4a324e8363b8875f57968db8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/posix-path.ts",
+      "sha256": "9517358ed09f375fee847912dbd248fcebdb5e300338cb50785f32eebc0983e7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/managed-resume-path.js",
+      "sha256": "8edb0f90edad5937732d7a103c55d2a1f6cfdb2e1e506446c035bd110a084ee9",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/posix-path.js",
+      "sha256": "731c512f38bf2d94d98734854d5dd44ce92b5189e3403c30923e9e1406a6ff1d",
+      "classification": "unreviewed"
     }
   ]
 }

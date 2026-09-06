@@ -296,3 +296,32 @@ recorded rather than being replaced with this narrower pass.
 
 Commit whitespace checking removed a trailing blank source line; emitted runtime
 bytes are unchanged and the recorded source hash was updated.
+
+## Managed path port and observation reference
+
+At base `54069e0`, migration_sequence implemented the inert POSIX path primitive
+and managed-resume parent check. numeric_codec independently compared separate
+owned filesystem trees against the 38-case Python reference. validation_strategy
+reviewed the implementation and found corrections for relative roots, Python 3.12
+loop cancellation/final stat, profile-specific readlink errors and NUL error
+categories. All were fixed before the final coordinator test run.
+
+The path function consumes typed JSON Maps and an explicit Python 3.12/3.13/3.14
+profile. It preserves lexical returns separately from parent resolution. The
+coordinator emitted 17 modules and registered 273 source/manifest rows. The focused
+reference/path/observation run passed 176 tests with zero skips using all three
+installed Python profiles; the default interpreter duplicates 3.14 evidence.
+
+The coordinator also captured an 18-case observation/cache reference without Store
+initialization. Independent review by numeric_codec required exact initial cache
+ages/fields/identity assertions and a real leaf-symlink rejection case. Both are
+now included; five reference tests pass with no skips. Fresh/zero-age cache reuse,
+expiry at 30 seconds, future entries, identity mismatch, malformed entries and
+post-read changes retain distinct outcomes and observable call counts.
+
+Parent FS/SEM remain open. Native Windows, raw-byte/surrogateescape path support,
+actual permission denial and race-safe observation are not accepted by this path
+port. An independent byte-path reference is being prepared to replace the current
+explicit unsupported adapter branch, not turn it into a permanent restriction.
+The preceding full-tier Python 3.14 signature failures and two opt-in browser
+skips remain recorded and unresolved. No live routing or writer changed.
