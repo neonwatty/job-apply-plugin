@@ -1,0 +1,261 @@
+{
+  "workerSha": "28369466f45de7e0fa40a7beeeeab7f265521fb4",
+  "python": "3.14.4",
+  "pythonUnicode": "16.0.0",
+  "node": {
+    "node": "22.22.3",
+    "unicode": "17.0",
+    "icu": "78.2"
+  },
+  "purpose": "Read-only raw JSON diagnostic; no new golden contract or acceptance claim",
+  "cases": [
+    {
+      "id": "integer-control",
+      "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+      "python": {
+        "result": [
+          {
+            "answerKey": "synthetic-a",
+            "confidenceBand": "exact",
+            "reasonCodes": [
+              "match_exact_question",
+              "scope_match",
+              "field_class_match",
+              "sensitivity_match"
+            ]
+          }
+        ]
+      },
+      "typescript": {
+        "result": [
+          {
+            "answerKey": "synthetic-a",
+            "confidenceBand": "exact",
+            "reasonCodes": [
+              "match_exact_question",
+              "scope_match",
+              "field_class_match",
+              "sensitivity_match"
+            ]
+          }
+        ]
+      },
+      "equal": true
+    },
+    {
+      "id": "integral-float",
+      "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1.0},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+      "python": {
+        "result": [
+          {
+            "answerKey": "synthetic-a",
+            "confidenceBand": "none",
+            "reasonCodes": [
+              "match_exact_question",
+              "scope_mismatch",
+              "field_class_match",
+              "sensitivity_match"
+            ]
+          }
+        ]
+      },
+      "typescript": {
+        "result": [
+          {
+            "answerKey": "synthetic-a",
+            "confidenceBand": "exact",
+            "reasonCodes": [
+              "match_exact_question",
+              "scope_match",
+              "field_class_match",
+              "sensitivity_match"
+            ]
+          }
+        ]
+      },
+      "equal": false
+    },
+    {
+      "id": "exponent",
+      "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1e0},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+      "python": {
+        "result": [
+          {
+            "answerKey": "synthetic-a",
+            "confidenceBand": "none",
+            "reasonCodes": [
+              "match_exact_question",
+              "scope_mismatch",
+              "field_class_match",
+              "sensitivity_match"
+            ]
+          }
+        ]
+      },
+      "typescript": {
+        "result": [
+          {
+            "answerKey": "synthetic-a",
+            "confidenceBand": "exact",
+            "reasonCodes": [
+              "match_exact_question",
+              "scope_match",
+              "field_class_match",
+              "sensitivity_match"
+            ]
+          }
+        ]
+      },
+      "equal": false
+    },
+    {
+      "id": "negative-zero",
+      "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":0},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":-0.0},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+      "python": {
+        "result": [
+          {
+            "answerKey": "synthetic-a",
+            "confidenceBand": "none",
+            "reasonCodes": [
+              "match_exact_question",
+              "scope_mismatch",
+              "field_class_match",
+              "sensitivity_match"
+            ]
+          }
+        ]
+      },
+      "typescript": {
+        "result": [
+          {
+            "answerKey": "synthetic-a",
+            "confidenceBand": "exact",
+            "reasonCodes": [
+              "match_exact_question",
+              "scope_match",
+              "field_class_match",
+              "sensitivity_match"
+            ]
+          }
+        ]
+      },
+      "equal": false
+    },
+    {
+      "id": "negative-integer-zero",
+      "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":0},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":-0},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+      "python": {
+        "result": [
+          {
+            "answerKey": "synthetic-a",
+            "confidenceBand": "exact",
+            "reasonCodes": [
+              "match_exact_question",
+              "scope_match",
+              "field_class_match",
+              "sensitivity_match"
+            ]
+          }
+        ]
+      },
+      "typescript": {
+        "result": [
+          {
+            "answerKey": "synthetic-a",
+            "confidenceBand": "exact",
+            "reasonCodes": [
+              "match_exact_question",
+              "scope_match",
+              "field_class_match",
+              "sensitivity_match"
+            ]
+          }
+        ]
+      },
+      "equal": true
+    },
+    {
+      "id": "nested",
+      "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":[1]},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":[1.0]},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+      "python": {
+        "result": [
+          {
+            "answerKey": "synthetic-a",
+            "confidenceBand": "none",
+            "reasonCodes": [
+              "match_exact_question",
+              "scope_mismatch",
+              "field_class_match",
+              "sensitivity_match"
+            ]
+          }
+        ]
+      },
+      "typescript": {
+        "result": [
+          {
+            "answerKey": "synthetic-a",
+            "confidenceBand": "exact",
+            "reasonCodes": [
+              "match_exact_question",
+              "scope_match",
+              "field_class_match",
+              "sensitivity_match"
+            ]
+          }
+        ]
+      },
+      "equal": false
+    },
+    {
+      "id": "unsafe-neighbors",
+      "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":9007199254740992},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":9007199254740993},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+      "python": {
+        "result": [
+          {
+            "answerKey": "synthetic-a",
+            "confidenceBand": "none",
+            "reasonCodes": [
+              "match_exact_question",
+              "scope_mismatch",
+              "field_class_match",
+              "sensitivity_match"
+            ]
+          }
+        ]
+      },
+      "typescript": {
+        "error": {
+          "name": "UnsupportedSemanticError",
+          "message": "scope numeric semantics are unsupported"
+        }
+      },
+      "equal": false
+    },
+    {
+      "id": "fraction-control",
+      "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1.5},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1.5},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+      "python": {
+        "result": [
+          {
+            "answerKey": "synthetic-a",
+            "confidenceBand": "exact",
+            "reasonCodes": [
+              "match_exact_question",
+              "scope_match",
+              "field_class_match",
+              "sensitivity_match"
+            ]
+          }
+        ]
+      },
+      "typescript": {
+        "error": {
+          "name": "UnsupportedSemanticError",
+          "message": "scope numeric semantics are unsupported"
+        }
+      },
+      "equal": false
+    }
+  ]
+}

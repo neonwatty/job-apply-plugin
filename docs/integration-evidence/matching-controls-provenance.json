@@ -1,0 +1,235 @@
+{
+  "workerSha": "28369466f45de7e0fa40a7beeeeab7f265521fb4",
+  "python": "3.14.4",
+  "pythonUnicode": "16.0.0",
+  "node": {
+    "node": "22.22.3",
+    "unicode": "17.0",
+    "icu": "78.2"
+  },
+  "purpose": "Read-only raw JSON diagnostic; no new golden contract or acceptance claim",
+  "cases": [
+    {
+      "id": "limit-1",
+      "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}],\"limit\":1}",
+      "python": {
+        "result": [
+          {
+            "answerKey": "synthetic-a",
+            "confidenceBand": "exact",
+            "reasonCodes": [
+              "match_exact_question",
+              "scope_match",
+              "field_class_match",
+              "sensitivity_match"
+            ]
+          }
+        ]
+      },
+      "typescript": {
+        "result": [
+          {
+            "answerKey": "synthetic-a",
+            "confidenceBand": "exact",
+            "reasonCodes": [
+              "match_exact_question",
+              "scope_match",
+              "field_class_match",
+              "sensitivity_match"
+            ]
+          }
+        ]
+      },
+      "equal": true
+    },
+    {
+      "id": "limit-1.0",
+      "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}],\"limit\":1.0}",
+      "python": {
+        "error": {
+          "name": "AnswerMatchError",
+          "message": "candidate limit is invalid"
+        }
+      },
+      "typescript": {
+        "result": [
+          {
+            "answerKey": "synthetic-a",
+            "confidenceBand": "exact",
+            "reasonCodes": [
+              "match_exact_question",
+              "scope_match",
+              "field_class_match",
+              "sensitivity_match"
+            ]
+          }
+        ]
+      },
+      "equal": false
+    },
+    {
+      "id": "limit-1e0",
+      "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}],\"limit\":1e0}",
+      "python": {
+        "error": {
+          "name": "AnswerMatchError",
+          "message": "candidate limit is invalid"
+        }
+      },
+      "typescript": {
+        "result": [
+          {
+            "answerKey": "synthetic-a",
+            "confidenceBand": "exact",
+            "reasonCodes": [
+              "match_exact_question",
+              "scope_match",
+              "field_class_match",
+              "sensitivity_match"
+            ]
+          }
+        ]
+      },
+      "equal": false
+    },
+    {
+      "id": "limit-true",
+      "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}],\"limit\":true}",
+      "python": {
+        "error": {
+          "name": "AnswerMatchError",
+          "message": "candidate limit is invalid"
+        }
+      },
+      "typescript": {
+        "error": {
+          "name": "AnswerMatchError",
+          "message": "candidate limit is invalid"
+        }
+      },
+      "equal": true
+    },
+    {
+      "id": "limit-\"1\"",
+      "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}],\"limit\":\"1\"}",
+      "python": {
+        "error": {
+          "name": "AnswerMatchError",
+          "message": "candidate limit is invalid"
+        }
+      },
+      "typescript": {
+        "error": {
+          "name": "AnswerMatchError",
+          "message": "candidate limit is invalid"
+        }
+      },
+      "equal": true
+    },
+    {
+      "id": "limit-null",
+      "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\",\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}],\"limit\":null}",
+      "python": {
+        "error": {
+          "name": "AnswerMatchError",
+          "message": "candidate limit is invalid"
+        }
+      },
+      "typescript": {
+        "error": {
+          "name": "AnswerMatchError",
+          "message": "candidate limit is invalid"
+        }
+      },
+      "equal": true
+    },
+    {
+      "id": "error-wording",
+      "rawRequest": "{\"operation\":\"rank\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":[],\"candidates\":[{\"answerKey\":\"synthetic-a\",\"question\":\"Synthetic question\",\"scope\":{\"x\":1},\"fieldClass\":\"text\",\"sensitivity\":\"none\"}]}",
+      "python": {
+        "error": {
+          "name": "TypeError",
+          "message": "cannot use 'list' as a set element (unhashable type: 'list')"
+        }
+      },
+      "typescript": {
+        "error": {
+          "name": "TypeError",
+          "message": "cannot use 'list' as a set element (unhashable type: 'list')"
+        }
+      },
+      "equal": true
+    },
+    {
+      "id": "unicode-0xdf",
+      "rawRequest": "{\"operation\": \"features\", \"text\": \"\\u00df\"}",
+      "python": {
+        "result": {
+          "tokens": [
+            "ss"
+          ],
+          "normalized": "ss",
+          "features": [],
+          "negation": false
+        }
+      },
+      "typescript": {
+        "result": {
+          "tokens": [
+            "ss"
+          ],
+          "normalized": "ss",
+          "features": [],
+          "negation": false
+        }
+      },
+      "equal": true
+    },
+    {
+      "id": "unicode-0x1ccd6",
+      "rawRequest": "{\"operation\": \"features\", \"text\": \"\\ud833\\udcd6\"}",
+      "python": {
+        "result": {
+          "tokens": [
+            "a"
+          ],
+          "normalized": "a",
+          "features": [],
+          "negation": false
+        }
+      },
+      "typescript": {
+        "result": {
+          "tokens": [
+            "a"
+          ],
+          "normalized": "a",
+          "features": [],
+          "negation": false
+        }
+      },
+      "equal": true
+    },
+    {
+      "id": "unicode-0x1e6c0",
+      "rawRequest": "{\"operation\": \"features\", \"text\": \"\\ud839\\udec0\"}",
+      "python": {
+        "result": {
+          "tokens": [],
+          "normalized": "",
+          "features": [],
+          "negation": false
+        }
+      },
+      "typescript": {
+        "result": {
+          "tokens": [],
+          "normalized": "",
+          "features": [],
+          "negation": false
+        }
+      },
+      "equal": true
+    }
+  ]
+}
