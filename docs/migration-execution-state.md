@@ -236,3 +236,18 @@ unrelated evidence reuse. Actual temporary Git tests reject source drift,
 uncommitted evidence and static symlink escapes. Independent review resolved
 malformed-record conversion and unsafe evidence-path issues. Receipt commands are
 never executed by the loader. Parent I/REF/FS/UI0/SEM and release gates remain open.
+
+## Remaining UI helper and managed-path references
+
+Independent review of the 27 remaining synchronous UI exports found one ordinary
+aliasing behavior missing from the first reference draft: overlapping patch paths
+mutate a caller-supplied parent object. Fixed expectations now preserve this and
+the frozen-parent failure. The coordinator reviewed source and expectations;
+17 reference tests pass with zero skips. Groups are answer (9), activity (12), and
+profile/form (6). Browser FileReader IO remains a separate boundary.
+
+The coordinator independently inspected the managed-path capture and reran all
+five tests with zero skips on macOS CPython 3.12.13, 3.13.13 and 3.14.4. Each
+profile observes 22 cases on owned synthetic trees, including the version-specific
+parent-loop error and accepted final-component links. Snapshots remain unchanged.
+These are bounded reference contracts, not full filesystem or UI acceptance.
