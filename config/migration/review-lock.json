@@ -171,7 +171,7 @@
     },
     {
       "path": "source-catalog-03.json",
-      "sha256": "5af7ebe74a6725969546d6930fb8601e6bc9b127cf01c0792dcd7f1d3e51ef08"
+      "sha256": "11ede343ad410dd85d2cd825bc9d62b3b62c43497e9273da01e31626b7f7e54f"
     },
     {
       "path": "source-catalog-04.json",
@@ -183,7 +183,7 @@
     },
     {
       "path": "source-catalog-06.json",
-      "sha256": "768cb0610318f5d1038bb8ec8ac36cae679db1a22845269af5ca542acaea07ef"
+      "sha256": "16ce459c7ae3023559823a0e7f6e55737a537f5fea311ef98283647b1d8c2200"
     }
   ]
 }

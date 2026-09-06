@@ -479,3 +479,45 @@ the delivery lane still needs artifact-copy metadata and native runtime/host
 acceptance. Real device faults, recursion/caller limits, Windows/Linux-specific
 cells and previously recorded full-tier failures remain open. No live writer,
 launcher, facade or bootstrap changed.
+
+## Native lock provider and next transaction references
+
+The atomic/artifact checkpoint was committed as `d17a910`; all nine commit checks
+passed. The next package implements a small nonblocking Node-API 8 POSIX flock
+provider and TypeScript lifetime wrapper, with explicit development compilation
+into owned temporary directories. No runtime build/download fallback or shipped
+binary is introduced. Details and remaining gates are in
+[the native checkpoint](migration/native-lock-port.md).
+
+The coordinator's native suite passes 64 tests with zero failures/skips using
+all three installed Python profiles. Eight distinct TS writer processes each
+observe actual contention, then produce the exact protected counter total.
+Additional native checks cover alias contention, killed-holder release, event
+loop progress and retained kernel ownership during held cancellation.
+numeric_codec independently reviewed the implementation and added all 14 frozen
+fault cases with real descriptor/byte/mode witnesses. Test review strengthened
+held-abort and alias proofs rather than inferring them from pre-acquisition
+messages. One earlier invocation lacked the temporary Python 3.12 alias and
+reported a skip; the corrected full run supplies it.
+
+In parallel, numeric_codec captured 43 JSONL append/tail cases from actual
+production methods with synthetic domain gates; validation_strategy reviewed
+them and required exact gate-event identity. validation_strategy captured nine
+artifact-copy metadata cases per profile; coordinator review required exact
+copy/utime/chmod arguments. Both reference packages are ready to freeze before
+their TypeScript ports. Combined reference verification passes 11 tests with
+zero failures/skips; source-size policy tests pass 15 and inventory tests pass 9.
+
+Copy evidence confirms exact nanosecond mtimes cannot be reproduced by Node's
+double-valued utimes. On these Mac Python builds, os has no xattr API: the real
+copy keeps the target-only synthetic attribute and does not copy the source's
+attribute. This is a recorded build distinction, not permission to discard Linux
+attribute behavior. Access times, broader metadata and real partial-copy faults
+remain open. JSONL domain idempotency/recovery semantics remain outside its
+primitive reference and must be integrated separately.
+
+Emission is at 30 JavaScript modules; source inventory now includes native C and
+headers and contains 300 rows. C/header size limits are tested; no ceiling grows.
+The matrix has 19 suites including native POSIX full/platform tests. Full TX,
+Windows/Linux native acceptance, final binary packaging, installed native-byte
+verification and all previously recorded release/candidate gates remain open.

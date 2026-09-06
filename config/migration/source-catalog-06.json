@@ -100,6 +100,31 @@
       "path": "runtime/package/installed-artifacts.js",
       "sha256": "2a3db4be070356508671af5b861c37a2fbb9c36a3e06896565d754ffdf122eb4",
       "classification": "unreviewed"
+    },
+    {
+      "path": "native/posix/flock.c",
+      "sha256": "511590e191f8764402e9bf2b03ee8307716bf79f2801d411667d3423ca444907",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/posix-flock.ts",
+      "sha256": "e48f0ab6cbec1e967b07db1d537890109354ee307eadec1f7d847eb1437818ea",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/exclusive-file-lock.ts",
+      "sha256": "eecf76c89a400179821b8fc23c2403a3030d4916b9fa7f4dad1a3bcfe0bc854a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/posix-flock.js",
+      "sha256": "db26be00c90e3767294cc06ca5bf0858da5b77202b539d7d2c22cf6ba62e9d85",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/exclusive-file-lock.js",
+      "sha256": "c0f882e731f575c2e3a3ce0e3f635a2ea16a6a271e590401d565abf271bc49f5",
+      "classification": "unreviewed"
     }
   ]
 }

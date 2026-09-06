@@ -12,7 +12,7 @@ import { loadPrerequisites } from './load-prerequisites.mjs';
 
 export const SCENARIOS = ['valid', 'invalid', 'missing', 'noop', 'privacy', 'conflict',
   'concurrency', 'interruption', 'recovery', 'platform'];
-const CODE = /\.(?:py|js|mjs|ts|swift|sh|html|css)$/;
+const CODE = /\.(?:py|js|mjs|ts|swift|sh|html|css|c|h)$/;
 const ROOTS = new Set(['scripts', 'workspace', 'qa', 'native', 'src', 'runtime']);
 const MANIFESTS = new Set(['package.json', '.codex-plugin/plugin.json',
   '.claude-plugin/plugin.json', '.claude-plugin/marketplace.json', '.agents/plugins/marketplace.json']);

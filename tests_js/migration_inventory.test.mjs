@@ -104,7 +104,7 @@ test('invented passing, skipped or inapplicable evidence cannot close a cell', (
   assert.match(validateInventory(data, actual).join('\n'), /acceptance claim/);
 });
 test('source discovery includes new runtime and boundary files, excludes test fixture data', () => {
-  for (const path of ['scripts/new_cli.py', 'workspace/new.js', 'native/macos/helper.swift',
+  for (const path of ['scripts/new_cli.py', 'workspace/new.js', 'native/macos/helper.swift', 'native/posix/flock.c', 'native/posix/flock.h',
     'runtime/new.js', 'src/new.ts', 'package.json', '.agents/plugins/marketplace.json']) assert.equal(inSourceScope(path), true);
   for (const path of ['tests/test_x.py', 'docs/note.md', 'qa/fixtures/data.json', 'node_modules/x.js']) {
     assert.equal(inSourceScope(path), false);

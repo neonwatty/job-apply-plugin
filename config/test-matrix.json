@@ -13,7 +13,9 @@
       "qa/**/*.js",
       "qa/**/*.mjs",
       "workspace/**/*.js",
-      "native/macos/*.swift"
+      "native/macos/*.swift",
+      "native/posix/*.c",
+      "native/posix/*.h"
     ]
   },
   "fullInventory": {
@@ -157,8 +159,15 @@
     {
       "id": "node-workspace-other",
       "kind": "node-test",
-      "include": ["tests_js/workspace*.test.mjs", "tests_js/unified_task_spine_oracle.test.mjs", "tests_js/python-contracts.test.mjs", "tests_js/python-startup-contracts.test.mjs", "tests_js/python-profile-fact-contracts.test.mjs", "tests_js/python-answer-matching-raw.test.mjs", "tests_js/raw_json_numeric*.test.mjs", "tests_js/typed_json*.test.mjs", "tests_js/store_validation_ts.test.mjs", "tests_js/python_json_ingress.test.mjs", "tests_js/python_json_stdin.test.mjs", "tests_js/store_raw_read_reference.test.mjs", "tests_js/store_raw_read_ts.test.mjs", "tests_js/private_file_digest_reference.test.mjs", "tests_js/private_file_digest_ts.test.mjs", "tests_js/managed_resume_path_reference.test.mjs", "tests_js/managed_resume_path_ts.test.mjs", "tests_js/managed_observation_reference.test.mjs", "tests_js/posix_path_bytes_reference.test.mjs", "tests_js/posix_path_bytes_ts.test.mjs", "tests_js/resume_modified_at_reference.test.mjs", "tests_js/resume_modified_at_ts.test.mjs", "tests_js/managed_observation_ts.test.mjs", "tests_js/managed_observation_native_ts.test.mjs", "tests_js/exclusive_file_lock_reference.test.mjs", "tests_js/atomic_write_json_reference.test.mjs", "tests_js/installed_artifacts_reference.test.mjs", "tests_js/atomic_write_json_ts.test.mjs", "tests_js/persisted_json_ts.test.mjs", "tests_js/installed_artifacts_ts.test.mjs", "tests_js/filesystem_error_ts.test.mjs"],
+      "include": ["tests_js/workspace*.test.mjs", "tests_js/unified_task_spine_oracle.test.mjs", "tests_js/python-contracts.test.mjs", "tests_js/python-startup-contracts.test.mjs", "tests_js/python-profile-fact-contracts.test.mjs", "tests_js/python-answer-matching-raw.test.mjs", "tests_js/raw_json_numeric*.test.mjs", "tests_js/typed_json*.test.mjs", "tests_js/store_validation_ts.test.mjs", "tests_js/python_json_ingress.test.mjs", "tests_js/python_json_stdin.test.mjs", "tests_js/store_raw_read_reference.test.mjs", "tests_js/store_raw_read_ts.test.mjs", "tests_js/private_file_digest_reference.test.mjs", "tests_js/private_file_digest_ts.test.mjs", "tests_js/managed_resume_path_reference.test.mjs", "tests_js/managed_resume_path_ts.test.mjs", "tests_js/managed_observation_reference.test.mjs", "tests_js/posix_path_bytes_reference.test.mjs", "tests_js/posix_path_bytes_ts.test.mjs", "tests_js/resume_modified_at_reference.test.mjs", "tests_js/resume_modified_at_ts.test.mjs", "tests_js/managed_observation_ts.test.mjs", "tests_js/managed_observation_native_ts.test.mjs", "tests_js/exclusive_file_lock_reference.test.mjs", "tests_js/atomic_write_json_reference.test.mjs", "tests_js/installed_artifacts_reference.test.mjs", "tests_js/atomic_write_json_ts.test.mjs", "tests_js/persisted_json_ts.test.mjs", "tests_js/installed_artifacts_ts.test.mjs", "tests_js/filesystem_error_ts.test.mjs", "tests_js/jsonl_append_reference.test.mjs", "tests_js/artifact_copy_metadata_reference.test.mjs"],
       "tiers": ["full"]
+    },
+    {
+      "id": "native-posix-lock",
+      "kind": "node-test",
+      "include": ["tests_js/posix_flock.test.mjs", "tests_js/exclusive_file_lock_ts.test.mjs", "tests_js/exclusive_file_lock_fault_ts.test.mjs"],
+      "platforms": ["darwin", "linux"],
+      "tiers": ["full", "platform"]
     },
     {
       "id": "windows-contracts",
@@ -182,6 +191,7 @@
     }
   ],
   "ownership": [
+    {"paths": ["native/posix/**", "tools/build-native-lock.mjs", "tests_js/exclusive_file_lock_support.mjs"], "suites": ["native-posix-lock"]},
     {"paths": ["tests_js/managed_resume_path_ts_support.mjs", "tests_js/posix_path_bytes_ts_support.mjs", "tests_js/managed_observation_ts_support.mjs", "tests_js/atomic_write_json_ts_support.mjs", "tests_js/installed_artifacts_ts_support.mjs"], "suites": ["node-workspace-other"]},
     {"paths": ["tools/probe-installed-runtime.mjs"], "suites": ["node-foundation-fast"]},
     {"paths": ["tools/capture-python-contracts.mjs", "tools/verify-contract-redaction.mjs", "tools/contracts/**"], "suites": ["node-workspace-other"]},
