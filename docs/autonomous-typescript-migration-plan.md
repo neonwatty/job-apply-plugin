@@ -269,6 +269,13 @@ passed or explicitly inapplicable with rationale; inventory presence is not cove
 
 The new test matrix remains the routing source. Retiring duplicate legacy CI
 does not remove browser-created-job → CLI visibility or other behavior checks.
+The [approved staging exception](staging-ci-migration-exception.md) temporarily
+disables automatic staging Validate Plugin triggers and required-status checks.
+Local focused/fast/size and relevant type/build checks are mandatory during this
+period. Add an explicit pre-cutover task to restore automatic staging validation
+and current valid required contexts, and complete integrated validation before
+production cutover. The exception is not green-CI or browser/CLI-repair evidence.
+
 Keep affected-selection optimization in shadow until its separately required
 observation gate is satisfied; otherwise use explicit relevant/full selections.
 
