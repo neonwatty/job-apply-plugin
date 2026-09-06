@@ -62,3 +62,16 @@ Before assigning more work, inspect the actual branch, dirty state, worker
 ownership and receipts. Do not repeat packages marked accepted. Future package
 rows must name exact allowed files and their emitted counterparts before dispatch.
 Update this ledger only with observed outcomes, including skips and blocked cells.
+
+## Local validation during the CI exception
+
+The [local testing protocol](local-testing-protocol.md) adds worktree-specific
+commit/push hooks and explicit deep validation. Staged snapshot verification passed
+all eight local suites, including 29 new hook regression tests. Independent review
+checked snapshot isolation, escalation, receipt reuse and installer safety.
+Broad pushes require fresh deep evidence for their actual outgoing commit/base;
+workers run focused checks and the coordinator validates the integrated wave.
+No workflow/ruleset changes or production activation were made by this work.
+Full/browser/package/native-platform validation was not run for this hook package;
+the existing migration acceptance gaps remain open. Release Validation still runs
+on staging pushes despite the Validate Plugin freeze.

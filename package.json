@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "hooks:install": "node tools/local-checks/install.mjs",
+    "verify:commit": "node tools/local-checks/hook.mjs commit",
+    "verify:push": "node tools/local-checks/hook.mjs push",
+    "verify:deep": "node tools/local-checks/hook.mjs deep",
     "typecheck": "tsc --noEmit --project tsconfig.json",
     "build:runtime": "node tools/build-runtime.mjs",
     "build:check": "node tools/build-runtime.mjs --check",
