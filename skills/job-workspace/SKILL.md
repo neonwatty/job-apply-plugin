@@ -1,6 +1,6 @@
 ---
 name: job-workspace
-description: Start the optional local Overview, Jobs, Needs Attention, Facts, Resumes, Answers, Application Activity, and unified Trash workspace shared with Job Apply agents and the canonical store.
+description: Open the local Job Apply Companion to manage jobs, applicant facts, resumes, and answers.
 allowed-tools: Bash
 ---
 
@@ -21,23 +21,12 @@ Start the packaged, local-only companion when the user asks to review their next
 
 The launcher chooses a free port, binds only to `127.0.0.1`, opens the browser, and imports the same canonical Store implementation bundled in `scripts/job-apply-store.py`. The browser never reads or writes store files directly. It needs no account, cloud service, telemetry, separate database, Node runtime, or frontend installation.
 
-## Boundaries
+## Boundaries and completion
 
-- Never copy the printed fragment token into chat, logs, or another URL. If the browser did not open, tell the user to open the complete URL printed locally by the launcher.
-- Never bind the workspace to another host or proxy it onto a network.
-- Overview is a value-free Store-derived projection of setup, counts, and one closed next action. It owns no completion flag or durable browser state. Use its contextual links to continue in the canonical workspace.
-- A Ready job is handed to an existing host with one static copy-only invocation: Codex uses `$job-apply:job-apply`; Claude Code uses `/job-apply:job-apply`. Never detect the host, execute these commands, interpolate credentials, or imply that the workspace or agent performs final submission.
-- Application Activity is the selected job's durable, value-free progress view. Needs Attention is the canonical cross-job queue for missing information, human review, and interrupted or expired attempts. Only the human may confirm a third-party submission.
-- Restart with the complete newly printed URL. Canonical state survives because the browser owns no workflow data. Revision conflicts preserve drafts for explicit review, interrupted attempts route to Needs Attention, and Trash restores one record at a time.
-- Unavailable, corrupt, or future-version failures recognized during read-only startup validation serve only static assets and sanitized recovery status. Canonical reads and mutations remain blocked, and no values, filesystem paths, or raw exceptions are exposed to the browser. Never automatically repair, downgrade, or overwrite the Store. If initialization fails after validation, abort startup instead of presenting degraded recovery; stop the workspace and preserve the Store before using a known-good backup or matching version.
-- The Jobs surface can create, edit, organize, preflight, mark ready, and move Jobs records to recoverable trash. The Facts surface selectively edits the canonical profile and preferences with provenance and explicit conflict choices. Its built-in sections and durable custom groups are saved views over canonical fact paths: the browser and helper can create, rename, reorder, edit membership, list, and remove groups, but group removal never moves or deletes applicant facts.
-- The Resumes surface imports bounded PDF, DOCX, or UTF-8 TXT bytes into the private canonical managed library; edits labels/tags; replaces or explicitly adopts a file; manages defaults and guarded Trash; previews authenticated PDF/TXT; downloads DOCX; can create, cancel, and retry extraction requests; and reviews existing agent-created extraction proposals. Browser source paths and filenames are not retained.
-- **Request fact extraction** queues work for the next active Job Apply agent; it does not start or launch an agent. The workspace cannot extract facts, complete or fail a request, or author a proposal. Its only request mutations are create, cancel, and retry, and its handoff contains an opaque request ID rather than resume or candidate data.
-- The Answers surface uses only canonical `answers.json` records. It provides a redacted searchable library and observed-question inbox, explicit sensitive reveal, fresh retention consent, optimistic conflicts, review decisions, reference counts, guarded Trash/deletion, and explicit accepted-winner merge at exact scope/revisions. Merge options and results are redacted. The browser may temporarily display a non-sensitive detail value or an explicitly revealed sensitive value in the open dialog, but it clears that field when the dialog closes and never persists answer values or browser-owned answer state.
-- The top-level Trash surface combines redacted jobs, resumes, and answers from the canonical store with exact per-type counts and type filters. Restore and permanent delete always send the record's exact revision. Permanent deletion is individual, uses an accessible identity-bound dialog, and requires the exact phrase `DELETE JOB`, `DELETE RESUME`, or `DELETE ANSWER`. Deleting a managed resume also permanently deletes its managed file; every other lifecycle effect remains limited to the selected canonical record. Nothing cascades or erases durable history, sessions, or audit evidence. Revision conflicts and protected-reference/default/duplicate blockers have distinct redacted explanations and are never retried.
-- Aggregate answer responses omit every value. A detail response may include a non-sensitive value; a sensitive value requires the explicit reveal action. Declined observations remain durable and hidden from default library/inbox views.
-- Resume lists omit bytes, paths, file identities, digests, and proposal values. Content delivery is authenticated, no-store, fixed-MIME, and limited to canonical active managed IDs. The browser cannot browse arbitrary paths.
-- Resume and proposal conflicts are never retried. Preserve metadata drafts and file selections, refresh the canonical revision, and require explicit reapplication or reconfirmation. Accepted extraction decisions refresh Facts and remain user-provenanced.
-- V1 does not parse, author, edit, generate, or tailor resume content; author extraction proposals; sync to cloud storage; or maintain browser-owned durable application data.
-- The UI does not run application agents or access arbitrary files. It must not submit applications or activate any third-party final action. A ready record is only a handoff for the existing Job Apply workflow.
-- All mutations go through the canonical Store contract with optimistic revisions. If a conflict appears, preserve the draft and let the user review or reapply it explicitly.
+The workspace uses the canonical Store contract in `scripts/job-apply-store.py`; it owns no separate applicant database. Never expose its localhost service on another host or copy the printed fragment token into chat or logs. If opening fails, direct the owner to the complete URL printed locally by the launcher.
+
+Confirm the launcher is serving before reporting the workspace ready. Keep the process attached while the user works; Ctrl-C stops it cleanly. Do not restart a healthy workspace merely to explain a feature.
+
+The UI queues work for the next active Job Apply agent and does not start or launch an agent. It cannot extract facts, complete or fail a request, or author a proposal. It never performs final application submission.
+
+For Jobs, Facts, Resumes, Answers, extraction requests, Activity, Needs Attention, Trash, or recovery details, read [workspace behavior](references/workspace.md) only when that surface is relevant. Preserve drafts on revision conflicts and never automatically repair or downgrade the Store.

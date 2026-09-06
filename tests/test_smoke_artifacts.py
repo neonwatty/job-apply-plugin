@@ -10,6 +10,24 @@ from artifacts import assert_critical_bytes, copy_critical, critical_paths
 
 
 class SmokeArtifactContainmentTests(unittest.TestCase):
+    def test_installed_receipt_requires_skill_reference_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = source_fixture(root / "source")
+            reference = source / "skills/job-apply/references/application.md"
+            reference.parent.mkdir(parents=True, exist_ok=True)
+            reference.write_text("Manual review procedure\n")
+            installed = root / "installed"
+            shutil.copytree(source, installed)
+            relative = reference.relative_to(source)
+            self.assertIn(str(relative), critical_paths(source))
+            (installed / relative).write_text("Stale procedure\n")
+            with self.assertRaisesRegex(SystemExit, "bytes differ"):
+                assert_critical_bytes(installed, source, label="installed")
+            (installed / relative).unlink()
+            with self.assertRaisesRegex(SystemExit, "inventory differs"):
+                assert_critical_bytes(installed, source, label="installed")
+
     def test_inventory_and_receipts_reject_symlinked_ancestors(self):
         for relative in ("scripts", "skills/answer-memory", ".codex-plugin", "workspace"):
             with self.subTest(relative=relative), tempfile.TemporaryDirectory() as directory:

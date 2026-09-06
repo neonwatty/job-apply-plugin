@@ -14,6 +14,7 @@ def run(root: Path, smoke_root: Path) -> None:
     import sys
 
     sys.path.insert(0, str(root))
+    from scripts.skill_documents import skill_text
     from qa.contracts import ContractError, validate_fixture
     from qa.privacy import PrivacyError, scan_tree
     from qa.promote import (
@@ -248,9 +249,9 @@ def run(root: Path, smoke_root: Path) -> None:
         if found != expected:
             raise SystemExit(f"{relative} inventory differs: expected {sorted(expected)}, got {sorted(found)}")
 
-    application_skill = (root / "skills/job-apply/SKILL.md").read_text()
-    workspace_skill = (root / "skills/job-workspace/SKILL.md").read_text()
-    answer_memory_skill = (root / "skills/answer-memory/SKILL.md").read_text()
+    application_skill = skill_text(root / "skills/job-apply/SKILL.md")
+    workspace_skill = skill_text(root / "skills/job-workspace/SKILL.md")
+    answer_memory_skill = skill_text(root / "skills/answer-memory/SKILL.md")
     for skill in expected:
         content = (root / "skills" / skill / "SKILL.md").read_text()
         if "job-apply-store.py" not in content:

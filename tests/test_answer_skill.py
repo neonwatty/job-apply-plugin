@@ -1,10 +1,11 @@
+from scripts.skill_documents import skill_text
 from tests.support.answer_cli_case import *
 
 
 class AnswerMemoryIntegrationTests(AnswerCliCase):
     def test_skills_share_one_helper_contract_and_manual_submit_boundary(self):
         skills = {
-            path.parent.name: path.read_text(encoding="utf-8")
+            path.parent.name: skill_text(path)
             for path in (ROOT / "skills").glob("*/SKILL.md")
         }
         self.assertEqual(
