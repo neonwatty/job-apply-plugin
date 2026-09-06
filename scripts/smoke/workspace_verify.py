@@ -40,8 +40,11 @@ def run(fixture: Path, smoke_root: Path) -> None:
     }
     if not required_extraction_commands.issubset(subcommands):
         raise SystemExit("packaged Store parser is missing extraction or preparedness commands")
-    packaged_job_apply = (fixture / "skills/job-apply/SKILL.md").read_text(encoding="utf-8")
-    packaged_workspace = (fixture / "skills/job-workspace/SKILL.md").read_text(encoding="utf-8")
+    sys.path.insert(0, str(fixture))
+    from scripts.skill_documents import skill_text
+
+    packaged_job_apply = skill_text(fixture / "skills/job-apply/SKILL.md")
+    packaged_workspace = skill_text(fixture / "skills/job-workspace/SKILL.md")
     if "Stop at proposal review" not in packaged_job_apply or "does not start or launch an agent" not in packaged_workspace:
         raise SystemExit("packaged skills do not preserve the extraction handoff boundary")
     packaged_app = "\n".join(

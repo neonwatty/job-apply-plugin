@@ -1,3 +1,4 @@
+import { skillText } from "./workspace_skill_support.mjs";
 import {
   assert,
   mkdtemp,
@@ -56,7 +57,7 @@ test("answer summaries preserve aggregate redaction and fresh-consent boundaries
 
 
 test("answer-memory documents guarded profile and preference mutations", async () => {
-  const skill = await readFile(join(REPO_ROOT, "skills", "answer-memory", "SKILL.md"), "utf8");
+  const skill = skillText(REPO_ROOT, "answer-memory");
   assert.match(skill, /profile-replace[\s\\]+--input <profile\.json> --expected-revision <revision>[\s\\]+--source <user\|resume\|agent\|migration>/);
   assert.match(skill, /preferences-set[\s\\]+--input <preferences\.json> --expected-revision <revision>[\s\\]+--source <user\|resume\|agent\|migration> \[--replace\]/);
   assert.match(skill, /sole existing-record mutation that intentionally takes no expected revision/);

@@ -1,12 +1,14 @@
+from scripts.skill_documents import skill_text
 from tests.support.pdf_fixture import *
 from tests.support.replay_case import *
 
 
 class ReplayCoordinatorTests(ReplayCase):
     def test_skills_document_mandatory_qa_root_routing(self) -> None:
-        answer_memory = (ROOT / "skills/answer-memory/SKILL.md").read_text()
-        job_apply = (ROOT / "skills/job-apply/SKILL.md").read_text()
-        for document in (answer_memory, job_apply):
+        answer_memory = skill_text(ROOT / "skills/answer-memory/SKILL.md")
+        job_apply = skill_text(ROOT / "skills/job-apply/SKILL.md")
+        self.assertIn("../answer-memory/references/qa-replay.md", job_apply)
+        for document in (answer_memory,):
             self.assertIn("qa-replay.py", document)
             self.assertIn("--route-token", document)
             self.assertIn("--root", document)

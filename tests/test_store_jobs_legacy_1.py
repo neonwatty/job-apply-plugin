@@ -3,6 +3,27 @@ from tests.support.store_case import *
 
 class StoreTests(StoreTestCase):
 
+    def test_unscored_newest_first_report_preserves_selected_job_identity(self):
+        source = self._write_legacy_search_report()
+        source.write_text("""# Job Search Results — 2026-09-06
+## Results (newest first)
+### 1. Python Engineer — Example
+- **Source**: Hacker News
+- **Posted**: 2026-09-06
+- **Salary**: Unknown
+- **URL**: https://example.com/jobs/python
+""")
+        with mock.patch.object(STORE_MODULE.Path, "home", return_value=self.home):
+            discovery = self.store.preview_legacy_jobs([])
+            self.assertEqual([item["state"] for item in discovery["items"]], ["valid"])
+            selected = [discovery["items"][0]["itemId"]]
+            preview = self.store.preview_legacy_jobs(selected)
+            committed = self.store.commit_legacy_jobs(selected, preview["token"])
+        job = self.store.get_job(committed["decisions"][0]["id"])
+        self.assertEqual((job["role"], job["company"], job["status"]),
+                         ("Python Engineer", "Example", "saved"))
+        self.assertNotIn("score", job)
+
     def test_legacy_job_discovery_preview_is_deterministic_and_non_mutating(self):
         source = self._write_legacy_search_report()
         source_before = source.read_bytes()
