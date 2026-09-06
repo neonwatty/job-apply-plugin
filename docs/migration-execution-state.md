@@ -601,3 +601,28 @@ independent tests and root identity integration. The delivery lane still needs
 data-only copying evidence before its copy orchestrator. Inventory remains 309
 source rows, 34 emitted modules and 4,380 unmapped requirement cells; no complete
 node/subset or release gate is inferred from these reference receipts.
+
+## Codepoint text, HTTP ingress and data-copy reference freeze
+
+The next three disjoint references passed the combined coordinator run: 15 tests,
+zero failures and zero skips across installed Python 3.12/3.13/3.14 profiles.
+Default Python repeats 3.14.4. Independent reviews accepted their stated scope
+after executable/native JSON provenance and native byte-order assertions were
+strengthened. No live Store or production consumer changed.
+
+The [text reference](migration/python-text-reference.md) freezes twelve explicit
+codepoint sequences, all 144 comparisons, three joins and complete UTF-8 errors.
+The [HTTP reference](migration/http-json-bytes-reference.md) freezes 39 raw-byte
+cases through the actual extracted request method, canonical helper and persisted
+encoding expression. Literal surrogate pairs and Unicode scalars can remain
+distinct in values and object keys; an inert text foundation must precede coherent
+parser, dictionary, serialization-chunk and path/cache integration. These method
+receipts do not claim complete HTTP route acceptance.
+
+The [data-copy reference](migration/artifact-data-copy-reference.md) freezes 34
+native, controlled buffering, accelerator and preflight cases, including partial
+bytes, target mode, cleanup ordering and descriptor state. Linux accelerator
+sequencing and broad host acceptance remain open. The next implementation lanes
+are the inert codepoint text leaf and a separately scoped copy primitive; neither
+accepts a complete migration node. All previously recorded end-to-end, release,
+host and Python-free gates remain required.
