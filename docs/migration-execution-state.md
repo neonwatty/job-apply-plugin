@@ -447,3 +447,35 @@ interpreter invocation across all three installed profiles (default repeats
 3.14). Source-size, registration and whitespace checks pass. Freeze this
 reference wave before assigning the atomic serializer/writer and installed
 inventory/verification ports; preserve separate owners and independent tests.
+
+## Atomic persistence and installed verification ports
+
+The reference wave was frozen as `a4ddb1f` after all nine commit checks passed.
+From that base, three workers implemented/tested atomic JSON persistence and
+installed inventory/verification in parallel; the coordinator reviewed artifact
+source, implemented the shared filesystem exception-category bridge and ran
+independent native package tests. Full scope, ownership and limitations are in
+[the checkpoint record](migration/persistence-and-artifacts-port.md).
+
+Review/testing corrected native exception categories, sync/close context,
+temporary-name length, setup cleanup, collision exhaustion and buffer visibility
+at Python 3.14's exact 128 KiB boundary. The artifact port also now matches actual
+readable/non-executable-directory behavior and root error categories. No outcome
+was made green by weakening exception-category assertions.
+
+The final coordinator run passed 282 tests with zero failures/skips across all
+three installed Python profiles. Atomic evidence includes 34 reference cases,
+seven unwrapped native writes, long-name/context regressions, 13 buffering
+sequences and 213 deterministic serialization values per invocation. Artifact
+evidence includes 24 reference cases per profile plus real permission/root-error
+regressions and an emitted verifier loaded from a disposable package with empty
+PATH. That child uses an existing absolute Node executable and is not fresh-host
+or runtime-distribution acceptance. Copying artifacts remains unimplemented.
+
+Emission is at 28 modules; inventory contains 295 source/manifest rows. Required
+coverage remains open with 4,380 unmapped cells. The next durable-write work is
+real cross-process locking, followed by JSONL rollback and journal recovery;
+the delivery lane still needs artifact-copy metadata and native runtime/host
+acceptance. Real device faults, recursion/caller limits, Windows/Linux-specific
+cells and previously recorded full-tier failures remain open. No live writer,
+launcher, facade or bootstrap changed.
