@@ -412,3 +412,38 @@ No fresh-host acceptance cells are established. Native Windows/Linux, runtime
 distribution, CI restoration, Python-free full candidate and final-artifact
 upgrade/offline/rollback gates remain open, along with previously recorded QA
 profile failures and visible-browser opt-in skips. No live writer changed.
+
+The timestamp/observation package was committed as `1da7f3f`; all nine staged
+commit suites passed. The next reference wave uses that immutable base and three
+disjoint packages: migration_sequence captures atomic JSON persistence,
+validation_strategy captures installed artifact operations, and the coordinator
+captures bounded POSIX file-lock ordering. numeric_codec independently reviews
+the write/lock captures; the coordinator reviews the artifact capture.
+
+The atomic reference has 34 cases per profile, including exact persisted bytes,
+serialization failures, actual path/symlink effects, every named write boundary
+and cleanup/error precedence. Independent review required exact filesystem
+argument/descriptor checks and complete post-operation path sets. The artifact
+reference has 33 cases per profile, including complete inventory, byte mismatch,
+symlink/FIFO rejection, permissive mode/root-alias behavior and copy preflight.
+Coordinator review required closed copy path sets and unchanged non-copied files.
+
+The lock reference has 14 cases per profile using actual POSIX flock on owned
+files. It preserves observed open/mode/acquire/callback/release/close ordering and
+reports descriptors left open by the Python helper before safe oracle cleanup.
+It does not cover missing-parent creation, process death or eight-process
+contention and does not select a TS/native provider. Independent review required
+exact operation arguments, closed artifact paths and input/schema checks.
+
+These references are the prerequisites for the next inert ports, not acceptance
+of durable TS transactions or Python-free installation. All native Windows and
+fresh-host delivery gates remain open. No runtime module or live writer changed
+in the reference wave.
+
+Final independent rereview accepted the bounded atomic and lock reference
+captures; coordinator rereview accepted the artifact capture. The combined
+reference run passed 15 tests, zero failures and zero skips: 81 cases per
+interpreter invocation across all three installed profiles (default repeats
+3.14). Source-size, registration and whitespace checks pass. Freeze this
+reference wave before assigning the atomic serializer/writer and installed
+inventory/verification ports; preserve separate owners and independent tests.
