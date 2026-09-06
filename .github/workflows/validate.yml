@@ -56,6 +56,7 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
       - run: npm ci
+      - run: npm run check:size -- --base "${{ github.event.pull_request.base.sha || github.event.before }}"
       - name: "Shadow only: full deterministic shards still execute"
         run: npm run test:fast -- --receipt ci-receipts/fast.json
       - uses: actions/upload-artifact@v4
