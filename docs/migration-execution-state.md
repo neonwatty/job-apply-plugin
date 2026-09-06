@@ -251,3 +251,48 @@ five tests with zero skips on macOS CPython 3.12.13, 3.13.13 and 3.14.4. Each
 profile observes 22 cases on owned synthetic trees, including the version-specific
 parent-loop error and accepted final-component links. Snapshots remain unchanged.
 These are bounded reference contracts, not full filesystem or UI acceptance.
+
+## Remaining synchronous UI helper implementation
+
+The reference was frozen at `7f6e1f4` after all nine commit suites passed.
+migration_sequence ported all 27 exports into three independent TypeScript leaves;
+numeric_codec authored nine independent differential test groups in separate files.
+The coordinator reviewed the source expressions and test fixtures, emitted all 15
+runtime modules, and registered six new source/emission paths (269 catalog rows).
+Strict typing and build reproducibility pass without compiler configuration changes.
+
+The coordinator additionally tested actual Chromium 151.0.7922.34 module loading: all
+35 synchronous helper exports load without Node globals, and 12 sampled results
+match both fixed expectations and original JavaScript. numeric_codec independently
+reviewed this test; an explicit 30-second bound addresses the review finding. Its
+FileReader observation is original-only and does not claim an IO port.
+
+The focused run passed 32 tests with zero skips: 17 UI references, nine differential
+groups, one real-browser check and five managed-path profile tests. The expanded
+managed-path reference contains 38 cases per profile (36 native, two injected),
+independently reviewed by migration_sequence. Both loop forms retain the Python
+3.12 versus 3.13/3.14 distinction. Native permission denial, unsupported platform
+resolution, races and complete observation remain open.
+
+The bounded worker contract is in `docs/migration/remaining-helper-package.md`.
+No bootstrap or live writer changed. Formal per-surface requirement/acceptance
+receipts and parent UI0/FS acceptance remain open; code and passing examples alone
+do not close those gates. The broader local full-tier regression completed with 13 of 14 suites passing.
+The workspace Node suite passed all 350 tests without skips, including the bounded
+browser test after its timeout change. Python QA failed three subtest assertions
+in two unchanged tests because its frozen QuietParser signature omits Python 3.14
+parameters `suggest_on_error` and `color`. The same two tests pass under installed
+Python 3.12 and 3.13; isolated Python 3.14 reproduces all three failures. No Python product
+or test files changed in this wave. Two opt-in visible account-browser tests were
+skipped. This full-tier run is not a passing release gate; interpreter-profile
+expectations and the visible-browser cells remain outstanding.
+
+A follow-up coverage audit added three focused test groups for stale answer
+selection/key/sequence/generation rejection, absent job selections, unchanged
+attention membership and missing patch/draft inputs. The final focused run passes
+35 tests with zero skips. This test-only addition followed the broader run; no
+emitted runtime bytes changed after that broader run. The full-tier failure remains
+recorded rather than being replaced with this narrower pass.
+
+Commit whitespace checking removed a trailing blank source line; emitted runtime
+bytes are unchanged and the recorded source hash was updated.

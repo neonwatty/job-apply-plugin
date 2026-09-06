@@ -215,6 +215,36 @@
       "path": "runtime/store/private-file-digest.js",
       "sha256": "124d430e57ae0c8a6ba2ac2cdc9ca9bec20a00a88f8f5cd43873236802b7c836",
       "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-ui/lib/answer-view.ts",
+      "sha256": "11ea6b2a9e9a2442e61f81e44f59a4090e66303edab436e1eef04024e19a5b01",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/answer-view.js",
+      "sha256": "2588f374d9b3a00c1fbbc54d359daf9bea00367c624bc70d3092ca39d90c2573",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-ui/lib/activity-view.ts",
+      "sha256": "779d7ee2c9e06c82595d021a1aed408e89bf138e7e0811049b886f23a9c58105",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/activity-view.js",
+      "sha256": "417ff0ff0ddb43fb34082353f2e40635265f2071f497be928caa745273ff7ec7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-ui/lib/profile-view.ts",
+      "sha256": "9cd3886a190c9c44bb2a848879ecdda5ef0cf3260405f34f226c348f9600b5a0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/profile-view.js",
+      "sha256": "8be62aa24ba0c8a13811ec35a13b801318aa11dedbd1c511278f0982c1814afe",
+      "classification": "unreviewed"
     }
   ]
 }

@@ -11,24 +11,36 @@ const primary = process.platform === 'win32' ? 'python' : 'python3';
 const ids = ['missing-storage', 'external', 'missing-name', 'normal', 'dot', 'empty',
   'dot-only', 'parent', 'nested', 'nested-dotdot', 'missing-tail', 'missing-parent',
   'missing-dotdot', 'absolute-inside', 'absolute-outside', 'null-name', 'integer-name',
-  'inside-link', 'outside-link', 'loop-parent', 'loop-leaf', 'leaf-link'];
-const linkIds = new Set(['inside-link', 'outside-link', 'loop-parent', 'loop-leaf', 'leaf-link']);
+  'inside-link', 'outside-link', 'loop-parent', 'loop-leaf', 'leaf-link',
+  'repeated-separators', 'trailing-separator', 'embedded-dot', 'multiple-missing',
+  'non-directory-parent', 'non-directory-dotdot', 'chain-inside', 'chain-outside',
+  'multi-loop', 'missing-link', 'link-nested-dotdot', 'absolute-link',
+  'root-link', 'root-link-absolute', 'parent-resolve-oserror', 'root-resolve-oserror'];
+const linkIds = new Set(['inside-link', 'outside-link', 'loop-parent', 'loop-leaf', 'leaf-link',
+  'chain-inside', 'chain-outside', 'multi-loop', 'missing-link', 'link-nested-dotdot',
+  'absolute-link', 'root-link', 'root-link-absolute']);
 const paths = {
   normal: 'file.bin', dot: 'file.bin', 'nested-dotdot': 'nested/../file.bin',
   'missing-tail': 'missing.bin', 'missing-dotdot': 'absent/../file.bin',
   'absolute-inside': 'file.bin', 'inside-link': 'inside/file.bin',
   'loop-leaf': 'loop', 'leaf-link': 'leaf-link',
+  'repeated-separators': 'nested/../file.bin', 'trailing-separator': 'file.bin',
+  'embedded-dot': 'nested/../file.bin', 'multiple-missing': 'absent/tail/../../file.bin',
+  'non-directory-dotdot': 'file.bin/../file.bin', 'chain-inside': 'chain/file.bin',
+  'link-nested-dotdot': 'nested-link/../file.bin', 'absolute-link': 'absolute-link/file.bin',
+  'root-link': 'file.bin', 'root-link-absolute': 'file.bin',
 };
 const keys = (object, expected) => assert.deepEqual(Object.keys(object).sort(), expected.sort());
 
 function expected(id, version, platform) {
   if (Object.hasOwn(paths, id)) {
     const separator = platform === 'win32' ? '\\' : '/';
-    return { kind: 'path', path: '<root>' + separator + ['managed', ...paths[id].split('/')].join(separator) };
+    const rootName = id === 'root-link' ? 'managed-alias' : 'managed';
+    return { kind: 'path', path: '<root>' + separator + [rootName, ...paths[id].split('/')].join(separator) };
   }
   if (id === 'missing-name') return { kind: 'error', name: 'KeyError' };
   if (['null-name', 'integer-name'].includes(id)) return { kind: 'error', name: 'TypeError' };
-  if (id === 'loop-parent' && version.startsWith('3.12.')) return { kind: 'error', name: 'RuntimeError' };
+  if (['loop-parent', 'multi-loop'].includes(id) && version.startsWith('3.12.')) return { kind: 'error', name: 'RuntimeError' };
   return { kind: 'error', name: 'StoreError', message: ['missing-storage', 'external'].includes(id)
     ? 'resume is not managed' : 'managed resume file identity is invalid' };
 }
@@ -36,7 +48,7 @@ function expected(id, version, platform) {
 for (const executable of [primary, 'python3.12', 'python3.13', 'python3.14']) {
   test(`managed resume path contract: ${executable}`, (t) => {
     const result = spawnSync(executable, ['-I', reference], {
-      input: '', encoding: 'utf8', timeout: 10000, maxBuffer: 256 * 1024,
+      input: '', encoding: 'utf8', timeout: 10000, maxBuffer: 1024 * 1024,
     });
     if (result.error?.code === 'ENOENT' && executable !== primary) {
       t.skip('Interpreter alias unavailable; no profile acceptance');
@@ -65,8 +77,13 @@ for (const executable of [primary, 'python3.12', 'python3.13', 'python3.14']) {
         unavailable += 1;
         continue;
       }
-      keys(item, ['id', 'status', 'outcome', 'before', 'after', 'unchanged']);
+      keys(item, ['id', 'status', 'outcome', 'native', 'resolveCalls', 'before', 'after', 'unchanged']);
       assert.equal(item.status, 'observed');
+      const injected = item.id.endsWith('-oserror');
+      assert.equal(item.native, !injected);
+      assert.deepEqual(item.resolveCalls, injected
+        ? Array.from({ length: item.id === 'parent-resolve-oserror' ? 1 : 2 }, (_, index) => ({ call: index + 1, strict: false }))
+        : []);
       assert.deepEqual(item.outcome, expected(item.id, profile.python, profile.platform), item.id);
       assert.equal(item.unchanged, true);
       assert.deepEqual(item.after, item.before, item.id);
@@ -79,7 +96,7 @@ for (const executable of [primary, 'python3.12', 'python3.13', 'python3.14']) {
         else assert.equal(entry.sha256, null);
       }
     }
-    t.diagnostic(`${profile.python}/${profile.platform}: ${22 - unavailable} observed, ${unavailable} native unavailable; loops preserve interpreter difference`);
+    t.diagnostic(`${profile.python}/${profile.platform}: ${ids.length - unavailable - 2} native observed, 2 injected, ${unavailable} native unavailable; loops preserve interpreter difference`);
     if (unavailable) t.skip(`${unavailable} native symlink cells unavailable; package not fully verified`);
   });
 }

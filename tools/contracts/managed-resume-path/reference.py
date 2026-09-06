@@ -9,10 +9,16 @@ import stat
 import sys
 import tempfile
 from types import SimpleNamespace
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "scripts"))
 from job_apply_store.domains.resumes.storage import ResumeStorageMixin
+
+LINK_CASES = {"inside-link", "outside-link", "loop-parent", "loop-leaf", "leaf-link",
+              "chain-inside", "chain-outside", "multi-loop", "missing-link",
+              "link-nested-dotdot", "absolute-link", "root-link", "root-link-absolute"}
+FAULT_CASES = {"parent-resolve-oserror": 1, "root-resolve-oserror": 2}
 
 
 def snapshot(root):
@@ -27,7 +33,7 @@ def snapshot(root):
             "mode": stat.S_IMODE(metadata.st_mode),
             "mtimeNs": str(metadata.st_mtime_ns),
             "sha256": hashlib.sha256(path.read_bytes()).hexdigest() if kind == "file" else None,
-            "target": os.readlink(path) if kind == "symlink" else None,
+            "target": os.readlink(path).replace(str(root), "<root>", 1) if kind == "symlink" else None,
         })
         if kind == "directory":
             for child in sorted(path.iterdir()):
@@ -51,6 +57,14 @@ def capture():
             (managed / "outside-link").symlink_to("../outside", target_is_directory=True)
             (managed / "loop").symlink_to("loop", target_is_directory=True)
             (managed / "leaf-link").symlink_to("../outside/missing.bin")
+            (managed / "chain").symlink_to("inside", target_is_directory=True)
+            (managed / "chain-outside").symlink_to("outside-link", target_is_directory=True)
+            (managed / "loop-a").symlink_to("loop-b", target_is_directory=True)
+            (managed / "loop-b").symlink_to("loop-a", target_is_directory=True)
+            (managed / "missing-link").symlink_to("absent", target_is_directory=True)
+            (managed / "nested-link").symlink_to("nested", target_is_directory=True)
+            (managed / "absolute-link").symlink_to(managed, target_is_directory=True)
+            (root / "managed-alias").symlink_to("managed", target_is_directory=True)
         except (OSError, NotImplementedError) as error:
             link_status = type(error).__name__
         records = [
@@ -70,17 +84,47 @@ def capture():
             ("inside-link", "inside/file.bin"), ("outside-link", "outside-link/file.bin"),
             ("loop-parent", "loop/file.bin"), ("loop-leaf", "loop"),
             ("leaf-link", "leaf-link"),
+            ("repeated-separators", "nested//../file.bin"),
+            ("trailing-separator", "file.bin/"),
+            ("embedded-dot", "nested/./../file.bin"),
+            ("multiple-missing", "absent/tail/../../file.bin"),
+            ("non-directory-parent", "file.bin/tail"),
+            ("non-directory-dotdot", "file.bin/../file.bin"),
+            ("chain-inside", "chain/file.bin"),
+            ("chain-outside", "chain-outside/file.bin"),
+            ("multi-loop", "loop-a/file.bin"),
+            ("missing-link", "missing-link/file.bin"),
+            ("link-nested-dotdot", "nested-link/../file.bin"),
+            ("absolute-link", "absolute-link/file.bin"),
+            ("root-link", "file.bin"),
+            ("root-link-absolute", str(managed / "file.bin")),
+            ("parent-resolve-oserror", "file.bin"),
+            ("root-resolve-oserror", "file.bin"),
         ]
         records.extend((name, {"storageKind": "managed", "managedFile": value}) for name, value in paths)
         results = []
-        instance = SimpleNamespace(resume_files_path=managed)
         for identifier, record in records:
-            if identifier in {"inside-link", "outside-link", "loop-parent", "loop-leaf", "leaf-link"} and link_status != "available":
+            if identifier in LINK_CASES and link_status != "available":
                 results.append({"id": identifier, "status": "unavailable", "reason": link_status})
                 continue
             before = snapshot(root)
+            calls = []
+            base = root / "managed-alias" if identifier.startswith("root-link") else managed
+            instance = SimpleNamespace(resume_files_path=base)
+            original_resolve = Path.resolve
+
+            def resolve_with_fault(path, strict=False):
+                calls.append({"call": len(calls) + 1, "strict": strict})
+                if len(calls) == FAULT_CASES[identifier]:
+                    raise OSError("synthetic resolution failure")
+                return original_resolve(path, strict=strict)
+
             try:
-                candidate = ResumeStorageMixin._managed_resume_path(instance, record)
+                if identifier in FAULT_CASES:
+                    with patch.object(Path, "resolve", resolve_with_fault):
+                        candidate = ResumeStorageMixin._managed_resume_path(instance, record)
+                else:
+                    candidate = ResumeStorageMixin._managed_resume_path(instance, record)
                 # Root substitution preserves candidate lexical components and
                 # removes only the harness-owned temporary prefix.
                 outcome = {"kind": "path", "path": str(candidate).replace(str(root), "<root>", 1)}
@@ -90,6 +134,7 @@ def capture():
                     outcome["message"] = str(error)
             after = snapshot(root)
             results.append({"id": identifier, "status": "observed", "outcome": outcome,
+                            "native": identifier not in FAULT_CASES, "resolveCalls": calls,
                             "before": before, "after": after, "unchanged": before == after})
         source = ROOT / "scripts/job_apply_store/domains/resumes/storage.py"
         return {"schemaVersion": 1, "provenance": {
