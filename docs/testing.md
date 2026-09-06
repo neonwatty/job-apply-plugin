@@ -10,6 +10,10 @@ output, and `npm run build:check` rejects missing, changed, stale, mapped or
 oversized output. Build errors leave the previous runtime intact; stale files
 require explicit review/removal. Existing application launchers still use Python.
 
+Install the staged commit and outgoing push hooks with `npm run hooks:install`.
+See the [local hook protocol](local-testing-protocol.md) for escalation and
+24-hour deep-validation receipt reuse.
+
 ## Supported tiers
 
 ```text

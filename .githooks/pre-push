@@ -1,0 +1,2 @@
+#!/bin/sh
+exec node tools/local-checks/hook.mjs pre-push "$@"
