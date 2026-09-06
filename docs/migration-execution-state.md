@@ -205,3 +205,10 @@ files; byte hashes, modes, mtimes, directories and links remained unchanged.
 Type declarations changed compiler inputs, so the prior Trash receipt is historical;
 its source/emitted bytes are unchanged and its 11 tests were rerun under this setup.
 Parent FS/SEM/READ and machine package acceptance remain open.
+
+Private resume digest reference now freezes 16 cases across all three installed
+Python profiles with zero skips. It distinguishes initial size from post-stat
+growth, symlink substitution, read failures and escaping close failures.
+A separately reviewed prerequisite verifier binds exact contract scope, immutable
+files/logs, ancestry, environment and complete TAP counts; seven tests pass.
+The initial reference/compiler logs are captured for immutable binding next.

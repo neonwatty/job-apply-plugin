@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: runtime build is reproducible, one-to-one and detects checked-in drift
+ok 1 - runtime build is reproducible, one-to-one and detects checked-in drift
+  ---
+  duration_ms: 1853.701333
+  type: 'test'
+  ...
+# Subtest: type failures and stale files preserve existing runtime bytes
+ok 2 - type failures and stale files preserve existing runtime bytes
+  ---
+  duration_ms: 1839.89125
+  type: 'test'
+  ...
+# Subtest: compiler configuration retains the strict shadow-module boundary
+ok 3 - compiler configuration retains the strict shadow-module boundary
+  ---
+  duration_ms: 0.523208
+  type: 'test'
+  ...
+# Subtest: Node builtin types compile with retained imports and reproducible modular emission
+ok 4 - Node builtin types compile with retained imports and reproducible modular emission
+  ---
+  duration_ms: 1830.656125
+  type: 'test'
+  ...
+# Subtest: source and emitted physical-line bounds and exact module inventories fail closed
+ok 5 - source and emitted physical-line bounds and exact module inventories fail closed
+  ---
+  duration_ms: 0.874917
+  type: 'test'
+  ...
+# Subtest: inventory rejects symlink roots and entries without writing through them
+ok 6 - inventory rejects symlink roots and entries without writing through them
+  ---
+  duration_ms: 2.560458
+  type: 'test'
+  ...
+# Subtest: repository runtime is current and remains an inert shadow sentinel
+ok 7 - repository runtime is current and remains an inert shadow sentinel
+  ---
+  duration_ms: 510.63925
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6069.821625
