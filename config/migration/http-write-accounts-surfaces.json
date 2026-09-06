@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "http:POST:/api/automation/realm-resolve",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/automation/realm-resolve",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/accounts.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/trusted-fill/approve",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/trusted-fill/approve",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/accounts.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/account-operation/execute-synthetic",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/account-operation/execute-synthetic",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/accounts.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/account-operation/recover",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/account-operation/recover",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/accounts.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/trusted-fill/evaluate",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/trusted-fill/evaluate",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/accounts.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/trusted-fill/{id}/revoke",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/trusted-fill/{id}/revoke",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/accounts.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/automation/settings/copy-profile-email",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/automation/settings/copy-profile-email",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/accounts.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/employer-accounts",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/employer-accounts",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/accounts.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:PATCH:/api/automation/settings",
+      "kind": "http",
+      "method": "PATCH",
+      "path": "/api/automation/settings",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/accounts.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:PATCH:/api/employer-accounts/{id}",
+      "kind": "http",
+      "method": "PATCH",
+      "path": "/api/employer-accounts/{id}",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/accounts.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

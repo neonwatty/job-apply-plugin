@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "cli-01-surfaces.json",
+      "sha256": "ef11efbbed50a037c83c7b9045018dc2c567cb4aa96b3d2739b20e7a777676b3"
+    },
+    {
+      "path": "cli-02-surfaces.json",
+      "sha256": "c975ddcc91c0a6d9b47859ea982971caf9a9335eebc3716ee598a625f33d7540"
+    },
+    {
+      "path": "cli-03-surfaces.json",
+      "sha256": "368989543b885b6d977a6fc6275ead9a60d5aa931040259eede8948b65fa51a1"
+    },
+    {
+      "path": "cli-04-surfaces.json",
+      "sha256": "4202788bfad15237032cb919f3fa02324e3dec597e335313542e41004254c414"
+    },
+    {
+      "path": "cli-05-surfaces.json",
+      "sha256": "8a264c707c66c2f89bc32663a6d8e9b7fb54907fb85173fdbdc37a4f2478c47e"
+    },
+    {
+      "path": "cli-06-surfaces.json",
+      "sha256": "7ab0cb69e2e033bc40d6f5b4bb6d2ea866c7ae74b7a6c75668e02cd0329c95be"
+    },
+    {
+      "path": "cli-07-surfaces.json",
+      "sha256": "f3ce3ca32c9df13a00944a90a4c290f23aa141f5fe614f86d92cfdc26130f2cd"
+    },
+    {
+      "path": "cli-08-surfaces.json",
+      "sha256": "ab95ad142e491a78e5942ced508810a1415d1e9875db63f59f97fe90db8f0652"
+    },
+    {
+      "path": "cli-root-01-surfaces.json",
+      "sha256": "e80e6ef851dea300e87e89a9c077378e08e5d4eb3b4ef007f10f6d3c686c5280"
+    },
+    {
+      "path": "http-asset-head-surfaces.json",
+      "sha256": "4b8a33ce0027d4f0664c347e8c81afabcc034eeb06ce5e496b3cf40c7f4b5746"
+    },
+    {
+      "path": "http-asset-surfaces.json",
+      "sha256": "766d64ab22eaaf8f4193af585799261e0c18986c9145e5e67ca97f2cd023a703"
+    },
+    {
+      "path": "http-read-detail-surfaces.json",
+      "sha256": "dd5b99bdac339a9253b450f1a763b9d9915d932e7bb3e348050ba333af5400f9"
+    },
+    {
+      "path": "http-read-surfaces.json",
+      "sha256": "634a032be4e4ec568cedf84351afec5644b155132df1200336a0d9161bd8a6b7"
+    },
+    {
+      "path": "http-write-accounts-surfaces.json",
+      "sha256": "eef5335aa654eab949f934d3df8f296f7c53e902e56659772c2b9b92164ab5ad"
+    },
+    {
+      "path": "http-write-answers-surfaces.json",
+      "sha256": "68ca73f6fb57e29a3a5a78894c35415f88a807370de5e04431b44bbf6ba18a35"
+    },
+    {
+      "path": "http-write-jobs-surfaces.json",
+      "sha256": "8d6fb7de7da098da9b1a7bc76fe5ec494385a8b8942e40785648025120011d06"
+    },
+    {
+      "path": "http-write-profile-surfaces.json",
+      "sha256": "4e6280772aa6040ee9876f37dcd08c75a83074a368229dd903defdc6d3e7f2e1"
+    },
+    {
+      "path": "http-write-resumes-surfaces.json",
+      "sha256": "798a20784788c183c4f16376dc9f60faa815d4f097a8ed626c19ca941a64dc7b"
+    },
+    {
+      "path": "http-write-surfaces.json",
+      "sha256": "4a96bd3d76d95283c0ae3f7829ba73c61fb32f66a37e129d3e6047237a36e0aa"
+    },
+    {
+      "path": "nodes.json",
+      "sha256": "18ba263ad0d37f2eb82d0261b6ca436bae62205036e77f2c7cdf740b9fd8fd98"
+    },
+    {
+      "path": "source-catalog-01.json",
+      "sha256": "0c538fa1dc7b55303fba9bf8baf169d8b26d5d0b30043180c06477d89e9c84ac"
+    },
+    {
+      "path": "source-catalog-02.json",
+      "sha256": "50db53c727987793943351381af212b5d0b53522429c96748d43d397053c3374"
+    },
+    {
+      "path": "source-catalog-03.json",
+      "sha256": "5af7ebe74a6725969546d6930fb8601e6bc9b127cf01c0792dcd7f1d3e51ef08"
+    },
+    {
+      "path": "source-catalog-04.json",
+      "sha256": "c4d89d61564a1c6d60760a9884b366a9457415811b2f169b9bfec039f8ccbd07"
+    },
+    {
+      "path": "source-catalog-05.json",
+      "sha256": "8911d29eda3cfd8da6fcb6a268eb611754e261115317ab984013d42af83cd19b"
+    }
+  ]
+}

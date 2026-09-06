@@ -1,0 +1,404 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "http:HEAD:/",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/index.html",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/index.html",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/app.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/app.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/bootstrap.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/bootstrap.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/lib/api.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/lib/api.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/lib/dom.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/lib/dom.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/lib/helpers.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/lib/helpers.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/lib/state.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/lib/state.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/features/activity.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/features/activity.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/features/answers.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/features/answers.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/features/automation.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/features/automation.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/features/bindings.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/features/bindings.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/features/facts.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/features/facts.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/features/jobs.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/features/jobs.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/features/navigation.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/features/navigation.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/features/overview.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/features/overview.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/features/resumes.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/features/resumes.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/features/trash.js",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/features/trash.js",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/styles.css",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/styles.css",
+      "node": "UIF",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py",
+        "scripts/job_apply_workspace/__init__.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

@@ -1,0 +1,280 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": ".claude-plugin/marketplace.json",
+      "sha256": "3079e75a4a6dd5189aa0769c25f7929e5502d2892400384e2e35edab72409255",
+      "classification": "unreviewed"
+    },
+    {
+      "path": ".claude-plugin/plugin.json",
+      "sha256": "5c184fecb18be95198a7df242a133f8ef05bde34616dfd768067ac3befaf499e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": ".codex-plugin/plugin.json",
+      "sha256": "4712ec6c6c001427a2898e40f54f563c6979016b03d8a011b1fdc36d7a5264f9",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "native/macos/AccessibilityTree.swift",
+      "sha256": "878b64cf4b7bbbb030faa88bcda2f4d2a70cad6e3b4b4cd85dde273bc3a04c02",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "native/macos/MacOSAccessibilityAccountFlowHelper.swift",
+      "sha256": "9bbac7b21969286987ee41613c5b45a0872e360ca35cccd3af40efe7b91af5a0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "native/macos/NativeEmailOnlyBinding.swift",
+      "sha256": "e7193e60585b9f91e03446f277f6f46a0cdcb1fa48cdef9a76fad1ab5198ceac",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "native/macos/OracleAccountFlowFixtures.swift",
+      "sha256": "0721914b943bf334cda2a393a88e1d247327041a0e0b0efc4d6278f17ef7c616",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "native/macos/OracleBrowserIdentity.swift",
+      "sha256": "17a16cf64563772d26082da00acaa537d4f6d0876674ce61787b9d2e9715f4a8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "native/macos/OracleExecutableIdentity.swift",
+      "sha256": "386d736020b7e5b85dec2d3b678658fe9d6f5f5b41c5be0a62f0fb67f46eb7db",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "native/macos/ReviewedAccountForm.swift",
+      "sha256": "a62c85452adfe9288506ed90b73551856ee442fb0d833af31f78601521c60102",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "native/macos/job_apply_browser_bridge.swift",
+      "sha256": "5b37e65fe80e5ee864df3b767d27449cfba02a34c12a5f5a78c3147ce0d75c2c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "native/macos/job_apply_credential_helper.swift",
+      "sha256": "bd3bf8974b121788670728f0f6fb63a0847024536b06f86dd2e12c5636cd6bd4",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "native/macos/job_apply_credential_helper_main.swift",
+      "sha256": "e52d79f3a54498cb7fc918c9f218b3887501807f2d0d1b42090290f165739865",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "native/macos/job_apply_credential_helper_tests.swift",
+      "sha256": "5b7bb86b2c1fdee74c911ec4dc53f373206b4b2c40a0d89a96d8e0ab9195a35d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "native/macos/job_apply_workday_account_flow_helper.swift",
+      "sha256": "4d14745effce37501c4dcbd8b073f1b2519d0e319b654db394f90df300c2fc74",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "native/macos/job_apply_workday_account_flow_main.swift",
+      "sha256": "fa6d79af8d42e2b9ffa6830047feb99d0d8234bfcf9c09f1a08efce1dfde8504",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "package.json",
+      "sha256": "bc69c08e865e3b35d3f7362e4777191c8a34849f5be44b6e3d7b27b02cf93279",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/account_environment.py",
+      "sha256": "2a7d3d6a619b5c81db9e1a58d8d5787be19b3980b37ae95cc674164217509ca8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/account_oracle.py",
+      "sha256": "50ad723b413ea89fcbe797a0daabad43c1618b087fbc8595d557bf413243e26d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/account_renderer/app.js",
+      "sha256": "dba2cb87fc080d536748bf1dae649435c8035144a1104102921bc41b32a85b81",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/account_renderer/index.html",
+      "sha256": "9bab679a31760fb78b21db6db12740ed7cfe03f3dafa13572e90053e3f71358d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/account_renderer/styles.css",
+      "sha256": "4d063f5558a8133745f916d53f11b4f5ad1d461241dd1b167f6e1ff20827fe45",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/account_server.py",
+      "sha256": "a083f5c12a3812386e175293be51acdae1817d6b86306f08dacac7ce17abf887",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/account_walkthrough.py",
+      "sha256": "d8421744479e6025e38bd2a0a786502e19fa80a2e06aabe89266ec470c6957db",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/chrome/__init__.py",
+      "sha256": "3785ba58787d4a51dfabd3775666ebf57db3f5d7f76c410e73c52772851037aa",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/chrome/cli.py",
+      "sha256": "315786242d34e99cb60fbd621d379a5c90a70b5f6cc3f4101f3248fbf7b7a53b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/chrome/commands.py",
+      "sha256": "0ab19bae2e6f309db473ce1aed6466089de16440a521e9fc952e64f5ba318270",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/chrome/control.py",
+      "sha256": "8e02972849da66897e5fd4f62cb5dee25a63cb74f92d3f6fe45946770306effa",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/chrome/discovery.py",
+      "sha256": "4fa97bed64c4bc439f14a5380ed552fd2b64f2d05b185ba59764a25a9ef0c8ff",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/chrome/owner.py",
+      "sha256": "b41dd1b2e38e16f164b116f1ef08871eae5b453fa9c201fb407340427ff9c771",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/chrome/paths.py",
+      "sha256": "bed6a0451b206160deb91fb16088c19e8aa56f957b7a18fe42d2d30ca796e092",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/chrome/supervisor.py",
+      "sha256": "5a3b60a5d7f3bc98f61bcf7a90b4ebb64c78a6409169d06f9c9640e2a9c3e182",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/compiler.py",
+      "sha256": "60b70c5bb1f654694e210e480fac067ef01b5d6ebe43c42b5df3e960d9db2965",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/contracts.py",
+      "sha256": "318b651e0d3584f09822112a86988561ee7a2bf3d3215c3325386f96364751a8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/contracts_fixture.py",
+      "sha256": "d1ba4c27aa9338190b1d3cc513229a01d9e02a7fb0d968402834fbf55b52f393",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/contracts_flow.py",
+      "sha256": "f2db9812fd717ff373bd174270502ba52c14f26d088c33126c94e74998bb28de",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/contracts_model.py",
+      "sha256": "123d5bf2bace593266221b7d17d0f92a139a2bf5e28f103a48476eb5854a9c4f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/contracts_observation.py",
+      "sha256": "05e3218ea7a40ec432f891fe4868f667f737aa6e56bd4448bfeafad60ebb52ee",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/oracle.py",
+      "sha256": "e15b96aca01ae7d6a581c9f8eaadf798c9a868c9e8ff957864d402c17fc90238",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/oracle_history.py",
+      "sha256": "aee308527677ae1d80a1b4cea2e858233bf7d5b43186f2558b5ab8af5194f3f6",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/oracle_io.py",
+      "sha256": "db9c14914bf450b003483d7255730d654611e804fa096e3f0899273d583a0e27",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/oracle_session.py",
+      "sha256": "94c3c2f96e6c7aae5b5455862c1fa6d03013a2a65a95889e5d40a1d63698c764",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/privacy.py",
+      "sha256": "60a583285e98edfe2f99725dba51cd3b0c8ce8dc4ace85facdcb3a7e68ca2871",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/promote.py",
+      "sha256": "b795e1c1639367abebe7c029dd6c2e39ce2655c3d0d96ade50fe3c18991f0a98",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/promotion/__init__.py",
+      "sha256": "fd76a6485e5794b48abec81d7601553a97d8d5d0daccab714341dc7079e66f0d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/promotion/approval.py",
+      "sha256": "c7365d7ff95fbfc889ed25a4980a35eab5b8e362c96ebc8b4634b55e9214a3f7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/promotion/bindings.py",
+      "sha256": "3dfb49f653cbce44716806a129634e56bddc2d76b6b2893b9d678cda36c57879",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/promotion/candidate.py",
+      "sha256": "cdca8fcfc93c075f4c89c8d8a569d47cced298434faa63e7680b3ecf87e5018c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/promotion/cli.py",
+      "sha256": "e16d3867d4ee7c96a49deba7e0c6c28e740c078a1d5e0578be0927701e3defe1",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/promotion/deletion.py",
+      "sha256": "0f92693eb8f5edecc6401ff2a4174df746f1264a18c2440dc0de613c36e60aa0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/promotion/destination.py",
+      "sha256": "8c2fb261c49010ac5258a2ae8f6a83ce10ae8fa1d6f90be856c3554d8247e848",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/promotion/rollback.py",
+      "sha256": "006b9376e4cbf0a108e9069a43781165dfc1992d0ddfbb69c7153a17353e68fd",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/promotion/transaction.py",
+      "sha256": "a680d45d9c8c3013992ccab2f9a4b690464909dc166f4f88177526355c6a799e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder.mjs",
+      "sha256": "c339ef0e6aa9f0ea9c05018712810bd8b6c9e2adca4c0cb92309056a2a7bd774",
+      "classification": "unreviewed"
+    }
+  ]
+}

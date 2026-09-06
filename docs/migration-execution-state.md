@@ -8,6 +8,28 @@ The active goal is recorded in this task. Node I (executable coverage inventory)
 and SEM evidence discovery have started; FS implementation waits for its bounded
 reference/ownership package. HOST acceptance remains open; no native cell inferred.
 
+## Active graph checkpoint: I1 and SEM ingress evidence
+
+I1 establishes an executable consistency gate, not node I acceptance. It binds
+255 source/manifest files, 144 CLI subcommands, 17 root parser surfaces and 127
+HTTP surfaces across the 36-node graph. Effects/classifications and scenario
+evidence remain explicitly open. The gate is registered in fast/full validation;
+`check:migration -- --acceptance` intentionally fails until real acceptance is
+implemented and satisfied. See [inventory protocol](migration/inventory-protocol.md).
+
+Independent review found and resolved a missing-digest lock check and an omitted
+Codex marketplace manifest. Regression tests include real temporary Git checkout
+source/ledger drift, not only in-memory fixtures. Parent I still requires complete
+document/journal/browser-export/writer classification, reference bindings and
+reviewed scenario receipts; no filesystem implementation package is accepted yet.
+
+SEM now has [ingress evidence](migration/json-ingress-evidence.md): 25 fixed inputs
+produce 77 outcomes, including 45 actual production wrapper calls through memory
+transports. All five tests pass with the existing 3.12 alias exposed, covering
+3.12.13, 3.13.13 and 3.14.4. HTTP byte decoding and file/text decoding deliberately
+differ. Caller recursion, actual stdin configuration and Unicode profile selection
+remain open. No production decoder or compatibility contract changed.
+
 ## Accepted packages
 
 | ID | Status | Immutable implementation | Evidence / next dependency |

@@ -1,0 +1,280 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "scripts/check-links.sh",
+      "sha256": "dc5060115c819df3bdba932de8f39dbdebabc7f31ae06bd194153cb9c9b38b81",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/check-source-size.py",
+      "sha256": "c9b96c7fd76b6a93a1e1eacbd58fb4899dce791265024acab372eb3c6d030be7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job-apply-attempt.py",
+      "sha256": "113002dbe0327900498fc89dd4dd7bdc86f0bcc7cdb09c683c046961fef2636d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job-apply-store.py",
+      "sha256": "a02a0d65c67e067575838a0aa7bfabac0b2beaf10364e0bcfc23b3dbd1094ce2",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job-apply-task.py",
+      "sha256": "0aef070d368994f4ab2e96d4ddd23172f46597e870ee97fc9dfff9e6af6b10d1",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job-apply-workspace.py",
+      "sha256": "6cc150b052e0b8c75f0a52328f9c79297b8ca6777839676e10e722f49840ed78",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_account_canary.py",
+      "sha256": "0a09aeb768f8f3d84abd4b5cdb027829abeb07a6fb42884aeccecd2d5a21c2f2",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_account_canary_executor.py",
+      "sha256": "aa9280b5d5daa743e2e83deb30220ea528037894f890f5da8dedb34022e64cdc",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_account_executor.py",
+      "sha256": "0af4283f4564cda39abd545345fc5d47d9d8f96429e1486632792395a7adb464",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_account_flows.py",
+      "sha256": "107a341a5d1af1df06671e43fc836eb8d60ed8f3a06e4eb74ae0e5d65b203e3e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_account_flows_macos.py",
+      "sha256": "8b39f323f8da188c41a7b33b6b12425a04e519889c1c3e8f1e97aee54e2a4e40",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_accounts.py",
+      "sha256": "eda7970c4214cf7eaa14ff8cbf9d5237237fbd89f3006ad3b7231a20e9e911c0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_answer_match.py",
+      "sha256": "e6bd45f966e27298a2439e9bbbf44e170e14e0c0d0da6f5dbda3b30708ddea1a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_answer_matching/cleanup.py",
+      "sha256": "11ceefd722afdc32fca84a46fb9046c03903779d885520dc4a6f3b65ad459686",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_answer_matching/features.py",
+      "sha256": "97aba6a067fd68d71594c19bcbb2531ba8f525f50c698e6e86833e97c9a5ed27",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_answer_matching/reuse.py",
+      "sha256": "2e2211998fcdb2acd9a52eecd052314fbfd939620710e41dc6875debc9c58fd1",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_answer_matching/scoring.py",
+      "sha256": "9178433bfb5178ae47b87aaf6dc2c2512e8f99c80b95e596d0f7d0cf74a90664",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_credentials.py",
+      "sha256": "5f752ea2fe9390d44624e87ffae7951457a90353a5b40aedd4ba2eac3b3b24a8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_credentials_macos.py",
+      "sha256": "d05cd639122b452e7474760e92b652a3d0c6858482e1a43665b9b3db9975b27e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_form_readiness.py",
+      "sha256": "afa61124e48d6b190b506c532ded421d1151ad3b4db28ec458284f60fce4caaa",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_oracle_canary.py",
+      "sha256": "014624bd1fce3a21b90624b88c1f867bc0c10c41116815ef623a572ee81307ea",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_password_account_flows.py",
+      "sha256": "db5672ed980c7e0148ea19970ef305eeca89d94d0fb5786a0bdce35979e77d79",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_password_account_flows_macos.py",
+      "sha256": "8e54657608447c415d09e59aab655ad59c676093c125e5c98d60e4797d02ea6e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_policy.py",
+      "sha256": "b20b45c19ae91ea7a5d1b1410720d31c235e8734bfbf5379fb7bdb4c781cef93",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_policy/authorization.py",
+      "sha256": "ed26ef58b04d11d5ed6f3667572b145ab29fc3d485b1ac5c258dc21859679161",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_policy/campaigns.py",
+      "sha256": "9dab73b018493e7121924750047bd68cfd60661f218937c7fbb939395c00d5a6",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_policy/cli.py",
+      "sha256": "99934ad483d332548051bd668f6dc816010cbfcfc410a5d85698f9ea4815a6d7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_policy/model.py",
+      "sha256": "f2f9925dcff65d71606ff7b5cbfaed7887a4dfaa9786f721abe6aed3cff89bdd",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_policy/outcomes.py",
+      "sha256": "a7c1a5728eda653fbd8b4911433723ae3ecd3fd1d6194007164b04e3e4f9f73c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_policy/storage.py",
+      "sha256": "21d6296079bd11f90855efd35053e721554c16cfb88f0edf754a6b6a6b75ab64",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/__init__.py",
+      "sha256": "d1f3908a9875fdeda94a2d1823b0e42edb29c7814a638b8edcdc15e127052a04",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/accounts_runtime.py",
+      "sha256": "fd4febc9bea47a58c2037d181d7872ca97becbb2edb1764d80fba568beaf560b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/base.py",
+      "sha256": "e1deee9f49d012eac54f3ef4990c7641d43874afa699c8d12d79919599f27c88",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/cli_dispatch.py",
+      "sha256": "586f7a5b81258165dc4a9048eae84b360c2d9dd7c16d8bf97414e51780785d0e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/cli_parser.py",
+      "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/compat_runtime.py",
+      "sha256": "2e5b21a8d3d034027233237f0c1cff6fa2d32c9a0497bcf88ed32350d5f510dc",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/compat_sessions.py",
+      "sha256": "7685b455527f2153a49749439866d987c9524d1435255fa500cfe91dea957daf",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/compat_storage.py",
+      "sha256": "814d498304e1bf01b19b27f14a95347e0d201a831c13c3296a7a2c4468ad70e2",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/compat_validation.py",
+      "sha256": "5de615bb1ab45232d815c50f45906337b59481107dc502188add919cd631867b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/composition.py",
+      "sha256": "15d8c027883f299bce4741fd1d2752c181967ce69f6cc08390d24d8cd2db3520",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/constants.py",
+      "sha256": "4438a36055842e18af0ae806fed1f61bf8280908995f7295662a4213226e8b5c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/__init__.py",
+      "sha256": "b112b206edd338aa0dd2a17d1414be2c843d6d44337249d59079a82129cd0c26",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/accounts/email_execution.py",
+      "sha256": "a29e6b1f29ffc410dcb3edf645d6c2a58d915257440484af7a7d1efb1ed063e9",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/accounts/email_scope.py",
+      "sha256": "12986706756cf7811d26e3c5d21ff0abb78ee0369cdb3c143479f3b9faf5bcbf",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/accounts/operations.py",
+      "sha256": "6afbf9d0bc280bb3a76400cf143e548b7c3d8b1bf79c02d2b8547cc08c0a63ed",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/accounts/password_execution.py",
+      "sha256": "f6bb8227d0d8efdc033a56c72cb7a8716ae39bae4fd81c91223f080f76d2a49d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/accounts/registry.py",
+      "sha256": "38a3d1ff3701a535cd303c5a2718581b44fd46264e985aa106dab33674667a8a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/accounts/settings.py",
+      "sha256": "bc6c715ab6c4833e8ae9c1d9581a6ef79de9da1e1525c11140809f9bb98a39d5",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/accounts/synthetic.py",
+      "sha256": "32c2b1648baec047fbe0e853cad93b6d8e348961767dd77fabdd2f8abd1872ee",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/accounts/trusted_fill.py",
+      "sha256": "2bd2fabcfae3edbb8e9af11219db1fdfd26ae8462126a8a655352171fddaf557",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/answers/__init__.py",
+      "sha256": "23fc06fa3fccea773388cf106a5fb9e9780cc6af5959dcd855deb32606e7216a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/answers/cleanup.py",
+      "sha256": "87b57380f92cc83f9aeef58b609378bdacc12468926deb3661dbff5abf2386bf",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/answers/merge.py",
+      "sha256": "d5add3cb08a9736599c1c631390415fe39e11c9a3ee18c6ae3e85f977b971e74",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/answers/mutations.py",
+      "sha256": "8c3bda12fb8a40b646cec6196dbbe2e85cc2a530b88c6c22a85b5d625605ac79",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/answers/read.py",
+      "sha256": "ee698041ccb8bb1f4ad49b2e3e6924b1fcf72d89510a7b839b72c307a3ffafa4",
+      "classification": "unreviewed"
+    }
+  ]
+}

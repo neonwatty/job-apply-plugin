@@ -1,0 +1,280 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "scripts/job_apply_store/domains/coordinator/__init__.py",
+      "sha256": "8515203ac4bc80d5d722deffa1879e08518b2a200a7bdbab5425c8dee43ee1be",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/coordinator/approvals.py",
+      "sha256": "a61600db7fcdf9fb20bec7d075217d63cf4683447c2cbe9ddefa2047d1048d15",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/coordinator/attention.py",
+      "sha256": "6a3b6d7ed9ab4e78b96776e44554f53ded99caf05ceddf36c8a4a32e0f874b5a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/coordinator/claims.py",
+      "sha256": "529cad697094868fa5c3f592442add3c24dbc587ab16ac49f2519799d8949db0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/coordinator/persistence.py",
+      "sha256": "1296863bad9412b852879a3b9c653a98ca61375811df2690600e6f69bc7c3177",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/coordinator/progress.py",
+      "sha256": "1ad2e6d394f20783fb60f35f2da09b82efac03ae23fac8fccad03e726042942a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/extractions/__init__.py",
+      "sha256": "a813b593dc82342f41a3be85423bbad9c9d3883532967c0302c32aa560e9cb54",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/extractions/journal.py",
+      "sha256": "2508822b48c4ec885c5c091cd57b771b1a054bdc348a55312e72cfe52f4ec572",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/extractions/proposals.py",
+      "sha256": "14c45385d5dacb67bfc18232082c904dc93157df8caa74adc90c370eaf8ff219",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/extractions/requests.py",
+      "sha256": "78cf268245d8a05faab5c00ad3773a71abdb97f0d07ef1acade39b5a0973f0c9",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/jobs/__init__.py",
+      "sha256": "1135ceb487589d2a99ba5869f87ec4f1462c19fcc8d979cbc2c366e7cacb93a7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/jobs/crud.py",
+      "sha256": "fabd58d69d4a990f3c30ce231cad6bf641066430ee03339a98c8e6ab3df8d963",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/jobs/legacy.py",
+      "sha256": "b1cb67d032cc313b489b256f9c3aa894cda7dee5b31559365b4aeb4096c511f2",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/jobs/overview.py",
+      "sha256": "ffd6bc42908eac42a78792408d0d7b3d8c3c8d08943e75476b27c4024fb7b162",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/jobs/upsert.py",
+      "sha256": "6ff6ecf6932e8f1c5e1b9cb8476b04f8477c457dada4936bc148d564c9e39e3b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/profile.py",
+      "sha256": "df7a7540e88137643fd5d067922fa0c6c1a95ca7700d13cfa331c44541f6ddae",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/profile_facts.py",
+      "sha256": "48a584b55fa5cc6ff09a1bd39ef7be5381b65ee19f78aca69a041e52ebb2fed7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/resumes/__init__.py",
+      "sha256": "9ff7cd33ef9e3c17454ac38ab147f3eaec75e44816a6ea8fa0a5d3fa381dfba0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/resumes/lifecycle.py",
+      "sha256": "67a5612b4ee81f0e33d0f4e0f607e7631273bb9453d2a4f46fe24ef4a39c0090",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/resumes/mutations.py",
+      "sha256": "3a3aed4b346596981a4b8b5bcc65c6035a8ce3ad1b3b8aa714693781375e299e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/resumes/read.py",
+      "sha256": "ab0f062240dd68460e891bb83c61a545115c9ea49cd57cf1e93095ca1f78b081",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/resumes/storage.py",
+      "sha256": "97ec178e0b3ddc1d3be97b1c6c34983ecf9c50caa9c6f4fd4125dbb71c6db6fe",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/sessions/__init__.py",
+      "sha256": "cde5ff21e1be82accbd8b1700b539c685a5c4cefca6bc9470b3c280fb1504af2",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/sessions/document.py",
+      "sha256": "adb29026bfa96c0edd90168338df49b1e4ac4d2ffc35caece478643cd4b5be3d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/sessions/history.py",
+      "sha256": "3d0b6cac869f0ec745f80bc3c9a65eda0460818c9f0b0c0e50b3b9ba57bf049f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/sessions/lifecycle.py",
+      "sha256": "b0e4076932dcae2549ddba79eef003f887ba6de0905c98bbcd43c17769d86d01",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/sessions/readiness.py",
+      "sha256": "3f0ad38ad259178ab4264fa3a7edfc3fdbad5cd9e943680ed3f8feac6fc48c31",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/startup.py",
+      "sha256": "eb29e4052c879c3c809928be7f7dadcc6e86290a43c866212791bc96ff7db22d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/errors.py",
+      "sha256": "be48cff00389f30d0f51f95ec154baec6162a57350b2ab3cfcb531da7456e01c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/io.py",
+      "sha256": "6e4b36c224fdf34924f14fecbd6d8afaf398afcff455509b85a817008c407d53",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/normalization.py",
+      "sha256": "8c299675838779908a1d3876db22fc2d9b32a2e08a890246357193b1d20b2beb",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/sessions_runtime.py",
+      "sha256": "8410950c85b13cca8d757975c4d5c7f489144882032abadae6c5f212b4b8f76f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/__init__.py",
+      "sha256": "b8e8d8f492cf48c33321d01db8899357f333cf94b93e5f20835cce62104524e3",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/accounts.py",
+      "sha256": "aa62b41eabe54f13c3b3fbb9791dedafc98dbac9d4e68262452e69bfb2457ddc",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/extraction.py",
+      "sha256": "6437704da0aefe5b3351c129a5b3e36e49da4db9a8d56c60ba19d28825b5d7d8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/jobs_resumes.py",
+      "sha256": "1ad4bffefc7cc6a605d2fa04b0d2e1ccb5804091064083787f4126c157274c83",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/profile_answers.py",
+      "sha256": "599715a998b68fb0ac1ab67c0930564fda9fb69206084c12dafccfb83c9e65d9",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/sessions.py",
+      "sha256": "9d1c6158facc0724e5500defbc8027931e2112927677d9f3b79d5a8fde5339ce",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_trusted_fill.py",
+      "sha256": "e00b79d4807f011775fe19ea210f5d885150eb138ecc909ba98a3e419d9e518f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_workspace/__init__.py",
+      "sha256": "cc5a9faef05e7d0db633383f2bb6feb3b45ac51cb860c962db7afeb8c59137c2",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_workspace/auth.py",
+      "sha256": "1ee9dbcf4ddda6754f269eca4bdb70f1be99102b51f9987d9b7e5f4834f77744",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_workspace/cli.py",
+      "sha256": "583a6682083b9ae5f72f76be708363a18d862d0fbc89edadbd7dc38377e6c963",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_workspace/domains/__init__.py",
+      "sha256": "c3fd0c0fce6ff96a71f6d8d2a2d44b392168dde0f0ba2fa35b4c3c520461432e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_workspace/domains/accounts.py",
+      "sha256": "f78c87a6b07d0a10c92bf2529550759c043ebd00d70ddcdd5ef5c53d285eb5bf",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_workspace/domains/answers.py",
+      "sha256": "cfb0e8dec12aabc8adfa343532b2cb16e99a53978ddf3e16d203961f2b177d53",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_workspace/domains/jobs.py",
+      "sha256": "5cbd64e10e82780488ea24a79093e883eed8d962355c08eb8878a67c384c9f6c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_workspace/domains/profile.py",
+      "sha256": "5ce39d0f7fe4c7451277ba406ef621f36348c3387a9bece4168e8246f5c8d17a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_workspace/domains/resumes.py",
+      "sha256": "4264ee435fc5736414094b0c5e1b1ca86d985413d553cf1361674884533fe2bf",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_workspace/handler.py",
+      "sha256": "136d00ab1d9afcf0c398423652e74ccd75898aa3da837eb4c97b709cc5c569b5",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_workspace/http.py",
+      "sha256": "122cb3f0d2eb0833e30d88a75cfb071842990c5984b47c18b950f4aa2f015a33",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_workspace/projections.py",
+      "sha256": "8f2972d20a29c4b527ee83a3e396f19b07cf544b2a662791082bcfbd580e753e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/job_apply_workspace/queries.py",
+      "sha256": "ebef03248a68a9795d640ec2a7cfab07216884335a1ad9687d8905bd75e99856",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/qa-account.py",
+      "sha256": "988b748855dd16bdbdb41ae2241aad5264866f8ef5600ad04c27901fda82ca0a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/qa-chrome.py",
+      "sha256": "1ba55507596b6ebac569b57fd8ca004353f87c6004166939e339b42558cd42ea",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/qa-replay.py",
+      "sha256": "ed11e4faf6528c85abfe87cedc800b4f2278d7e4887b31ad42acb2dfb9335026",
+      "classification": "unreviewed"
+    }
+  ]
+}

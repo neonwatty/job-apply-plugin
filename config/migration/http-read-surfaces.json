@@ -1,0 +1,345 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "http:GET:/api/boot",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/boot",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/overview",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/overview",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/profile",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/profile",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/account-operation",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/account-operation",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/attention",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/attention",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/profile-preparedness",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/profile-preparedness",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/answers/cleanup-preview",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/answers/cleanup-preview",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/automation",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/automation",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/fact-groups",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/fact-groups",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/state",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/state",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/jobs",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/jobs",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/trash",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/trash",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/resumes",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/resumes",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/resumes/trash",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/resumes/trash",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/resume-extraction-requests",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/resume-extraction-requests",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/resume-proposals",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/resume-proposals",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/answers",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/answers",
+      "node": "PROJ",
+      "sources": [
+        "scripts/job_apply_workspace/queries.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

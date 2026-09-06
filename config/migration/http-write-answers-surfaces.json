@@ -1,0 +1,446 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "http:POST:/api/answers/query",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/query",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/answers/semantic",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/semantic",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/answers/cleanup-approve",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/cleanup-approve",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/answers",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/answers/observe",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/observe",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/answers/by-key/{encodedKey}/reveal",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/by-key/{encodedKey}/reveal",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/answers/by-key/{encodedKey}/merge",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/by-key/{encodedKey}/merge",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/answers/by-key/{encodedKey}/accept",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/by-key/{encodedKey}/accept",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/answers/by-key/{encodedKey}/decline",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/by-key/{encodedKey}/decline",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/answers/by-key/{encodedKey}/trash",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/by-key/{encodedKey}/trash",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/answers/by-key/{encodedKey}/restore",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/by-key/{encodedKey}/restore",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/answers/by-key/{encodedKey}/delete",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/by-key/{encodedKey}/delete",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/answers/{legacyKey}/reveal",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/{legacyKey}/reveal",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/answers/{legacyKey}/merge",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/{legacyKey}/merge",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/answers/{legacyKey}/accept",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/{legacyKey}/accept",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/answers/{legacyKey}/decline",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/{legacyKey}/decline",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/answers/{legacyKey}/trash",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/{legacyKey}/trash",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/answers/{legacyKey}/restore",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/{legacyKey}/restore",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/answers/{legacyKey}/delete",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/answers/{legacyKey}/delete",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:PATCH:/api/answers/by-key/{encodedKey}",
+      "kind": "http",
+      "method": "PATCH",
+      "path": "/api/answers/by-key/{encodedKey}",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:PATCH:/api/answers/{legacyKey}",
+      "kind": "http",
+      "method": "PATCH",
+      "path": "/api/answers/{legacyKey}",
+      "node": "ANS",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/answers.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

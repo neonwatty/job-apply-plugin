@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "http:POST:/api/fact-groups",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/fact-groups",
+      "node": "PF",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/profile.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/fact-groups/{id}/delete",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/fact-groups/{id}/delete",
+      "node": "PF",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/profile.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:PATCH:/api/profile",
+      "kind": "http",
+      "method": "PATCH",
+      "path": "/api/profile",
+      "node": "PF",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/profile.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:PATCH:/api/fact-groups/{id}",
+      "kind": "http",
+      "method": "PATCH",
+      "path": "/api/fact-groups/{id}",
+      "node": "PF",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/profile.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}
