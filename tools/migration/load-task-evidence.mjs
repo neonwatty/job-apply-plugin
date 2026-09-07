@@ -1,36 +1,13 @@
+import { loadTaskLineage } from './load-task-lineage.mjs';
+import { createTaskMetadata, CATALOG, REVIEW_LOCK, HANDOFFS, RECEIPTS, LINEAGE, COORDINATOR } from './task-metadata.mjs';
 import { createEvidenceIO, closed, digest, equal, hash, physicalLines, safePath, sha, strings, text } from './evidence-io.mjs';
 import { validateTaskManifests, sourceSizePath } from './task-manifests.mjs';
 import { validateTaskReceipts } from './task-receipts.mjs';
 import { validateTaskHandoffs } from './task-handoffs.mjs';
 import { discoverTestIds } from './test-bindings.mjs';
 
-const CATALOG = 'config/migration/task-contracts.json';
-const REVIEW_LOCK = 'config/migration/review-lock.json';
-const HANDOFFS = 'config/migration/task-handoffs.json';
-const COORDINATOR = new Set([CATALOG, REVIEW_LOCK, HANDOFFS, 'config/migration/task-receipts.json']);
-const RECEIPTS = 'config/migration/task-receipts.json';
 const binding = value => closed(value, ['path', 'sha256', 'revision']) && safePath(value.path) && hash(value.sha256) && sha(value.revision);
 const auditFields = ['schemaVersion', 'id', 'assignmentIds', 'allowed_files', 'emittedFiles', 'dependencies', 'requirementIds', 'cells', 'artifacts'];
-function assignmentsFrom(value) {
-  if (!Array.isArray(value) || !value.length) throw new Error('Empty approved task DAG');
-  const assignments = new Map();
-  for (const item of value) {
-    if (!closed(item, ['id', 'package', 'role', 'dependencies']) || !text(item.id) || !text(item.package)
-      || !['reference', 'implementation-or-gate', 'independent-review'].includes(item.role)
-      || !strings(item.dependencies, true) || assignments.has(item.id)) throw new Error('Invalid approved DAG assignment');
-    assignments.set(item.id, item);
-  }
-  const visiting = new Set(), visited = new Set();
-  function visit(id) {
-    if (!assignments.has(id) || visiting.has(id)) throw new Error('Unknown/cyclic approved dependency');
-    if (visited.has(id)) return;
-    visiting.add(id);
-    for (const dependency of assignments.get(id).dependencies) visit(dependency);
-    visiting.delete(id); visited.add(id);
-  }
-  for (const id of assignments.keys()) visit(id);
-  return assignments;
-}
 function ceilings(bytes) {
   if (bytes === null) return new Map();
   const value = JSON.parse(bytes);
@@ -73,7 +50,8 @@ export async function loadTaskEvidence(root, context) {
     const catalog = JSON.parse(bytes);
     if (!closed(catalog, ['schemaVersion', 'dag', 'assignments', 'environments', 'audits']) || catalog.schemaVersion !== 1
       || !Array.isArray(catalog.assignments) || !Array.isArray(catalog.environments) || !Array.isArray(catalog.audits)) throw new Error('Invalid task catalog');
-    const assignments = assignmentsFrom(await frozen(catalog.dag));
+    const lineage = await loadTaskLineage(io, { head, catalog, frozen, current });
+    const assignments = lineage.allAssignments;
     const environments = new Map(), audits = new Map(), authorizations = new Map(), manifestHashes = new Map();
     for (const item of catalog.environments) {
       if (!closed(item, ['id', 'platform', 'node', 'unicode']) || !Object.values(item).every(text) || environments.has(item.id)) throw new Error('Invalid task environment');
@@ -117,7 +95,7 @@ export async function loadTaskEvidence(root, context) {
       }
     }
     const validated = validateTaskManifests(manifests, { ...context, assignments, authorizations, environments, audits,
-      dag: { path: catalog.dag.path, sha256: catalog.dag.sha256 }, baseFiles, baseLines, baseCeilings, testIds: planningTestIds, phase: 'planning',
+      dag: { path: catalog.dag.path, sha256: catalog.dag.sha256 }, ownDagByTask: lineage.ownDagByTask, historicalPackagesByTask: lineage.historicalPackagesByTask, baseFiles, baseLines, baseCeilings, testIds: planningTestIds, phase: 'planning',
       requirementContext: { ...context.requirementContext, testIds: planningTestIds } });
     errors.push(...validated.errors);
     if (errors.length) return empty();
@@ -133,102 +111,10 @@ export async function loadTaskEvidence(root, context) {
     for (const item of handoffShard.handoffs) handoffContracts.push({ binding: item, value: await frozen(item) });
     const planningBindings = new Map([catalog.dag, ...catalog.audits, ...catalog.assignments.map(item => item.manifest), ...handoffShard.handoffs]
       .map(item => [item.path, item.sha256]));
-    const catalogCache = new Map(), lockCache = new Set(), boundaryCache = new Set();
-    let catalogBytes = 0;
-    function catalogAt(revision) {
-      if (catalogCache.has(revision)) return catalogCache.get(revision);
-      const value = io.fileAt(revision, CATALOG);
-      if (value === null) throw new Error('Execution base lacks task authorization catalog');
-      const prior = JSON.parse(value);
-      if (!closed(prior, ['schemaVersion', 'dag', 'assignments', 'environments', 'audits']) || prior.schemaVersion !== 1
-        || !equal(prior.dag, catalog.dag)) throw new Error('Planning catalog identity differs');
-      for (const key of ['assignments', 'environments', 'audits']) {
-        if (!Array.isArray(prior[key]) || new Set(prior[key].map(item => item?.id ?? item?.path)).size !== prior[key].length
-          || prior[key].some(item => !catalog[key].some(approved => equal(approved, item)))) throw new Error('Planning catalog authorization differs');
-      }
-      if (catalogCache.size >= 4096 || catalogBytes + value.length > 8 * 1024 * 1024) { catalogCache.clear(); catalogBytes = 0; }
-      catalogCache.set(revision, prior); catalogBytes += value.length;
-      return prior;
-    }
-    function collectionAt(path, revision, key, latest) {
-      const bytes = io.fileAt(revision, path);
-      if (bytes === null) return [];
-      const value = JSON.parse(bytes);
-      if (!closed(value, ['schemaVersion', key]) || value.schemaVersion !== 1 || !Array.isArray(value[key])
-        || new Set(value[key].map(item => item?.id ?? item?.path)).size !== value[key].length
-        || value[key].some(item => !latest.some(current => equal(item, current)))) throw new Error('Coordinator evidence identity changed');
-      return value[key];
-    }
-    const histories = new Set();
-    function metadataHistory(path) {
-      if (histories.has(path)) return;
-      const key = path === RECEIPTS ? 'receipts' : 'handoffs';
-      const snapshots = [];
-      for (const revision of io.changes(path)) {
-        const next = path === CATALOG ? (() => { const value = catalogAt(revision); return [...value.assignments, ...value.environments, ...value.audits]; })()
-          : collectionAt(path, revision, key, path === RECEIPTS ? collection.receipts : handoffShard.handoffs);
-        for (const previous of snapshots) if (io.ancestor(previous.revision, revision)
-          && previous.items.some(item => !next.some(value => equal(item, value)))) throw new Error('Coordinator history removed or replaced evidence');
-        snapshots.push({ revision, items: next });
-      }
-      histories.add(path);
-    }
-    function reviewLockAt(revision) {
-      if (lockCache.has(revision)) return;
-      const value = io.fileAt(revision, REVIEW_LOCK);
-      if (value === null) throw new Error('Missing planning review lock');
-      const lock = JSON.parse(value);
-      const paths = io.pathsAt(revision).filter(path => /^config\/migration\/[^/]+\.json$/.test(path) && path !== REVIEW_LOCK);
-      if (!closed(lock, ['schemaVersion', 'files']) || lock.schemaVersion !== 1 || !Array.isArray(lock.files)
-        || !equal(lock.files.map(item => `config/migration/${item?.path}`).sort(), paths.sort())
-        || lock.files.some(item => !closed(item, ['path', 'sha256']) || !hash(item.sha256)
-          || digest(io.fileAt(revision, `config/migration/${item.path}`) ?? '') !== item.sha256)) throw new Error('Invalid exact planning review lock');
-      if (lockCache.size >= 4096) lockCache.clear();
-      lockCache.add(revision);
-    }
-    function planningPath(path, revision) {
-      if (path === CATALOG) { catalogAt(revision); metadataHistory(path); return true; }
-      if (path === RECEIPTS || path === HANDOFFS) {
-        collectionAt(path, revision, path === RECEIPTS ? 'receipts' : 'handoffs', path === RECEIPTS ? collection.receipts : handoffShard.handoffs);
-        metadataHistory(path); return true;
-      }
-      if (path === REVIEW_LOCK) { reviewLockAt(revision); return true; }
-      if (!planningBindings.has(path)) return false;
-      return digest(io.fileAt(revision, path) ?? '') === planningBindings.get(path);
-    }
-    function authorizedShardChange(path, base, revision) {
-      const before = io.fileAt(base, path), after = io.fileAt(revision, path);
-      const beforeHash = before === null ? null : digest(before), afterHash = after === null ? null : digest(after);
-      function follow(expected, seen) {
-        if (expected === afterHash) return true;
-        return manifests.some(owner => {
-          if (seen.has(owner.id) || !owner.package.allowed_files.includes(path) || !io.ancestor(owner.base, revision)
-            || baseFiles.get(owner.base)?.get(path) !== expected) return false;
-          const receipt = collection.receipts.find(item => item?.id === owner.id);
-          if (receipt) {
-            if (!sha(receipt.subject?.sha) || !io.ancestor(receipt.subject.sha, revision)) return false;
-            const bytes = io.fileAt(receipt.subject.sha, path), next = bytes === null ? null : digest(bytes);
-            return follow(next, new Set([...seen, owner.id]));
-          }
-          const authorization = authorizations.get(owner.id);
-          return io.ancestor(authorization.manifest.revision, revision) && activated(owner, catalogAt(revision));
-        });
-      }
-      return follow(beforeHash, new Set());
-    }
-    function metadataTransition(manifest, base, revision, parallel = false) {
-      const allowed = new Set(manifest.package.allowed_files);
-      for (const change of io.diff(base, revision)) {
-        if (!change.path.startsWith('config/migration/') || change.path.includes('/', 'config/migration/'.length)) continue;
-        if (COORDINATOR.has(change.path)) {
-          if (!['A', 'M'].includes(change.status) || !planningPath(change.path, revision)) throw new Error('Invalid coordinator transition');
-        } else if (!allowed.has(change.path) && !(parallel && authorizedShardChange(change.path, base, revision))) {
-          throw new Error(`Unrelated shard changed during coordinator transition: ${change.path}`);
-        }
-      }
-      for (const path of [CATALOG, RECEIPTS, HANDOFFS]) metadataHistory(path);
-      reviewLockAt(revision);
-    }
+    for (const [path, hash] of lineage.planningBindings) planningBindings.set(path, hash);
+    const boundaryCache = new Set();
+    const { catalogAt, collectionAt, metadataHistory, reviewLockAt, planningPath, metadataTransition } = createTaskMetadata({
+      io, catalog, collection, handoffShard, planningBindings, manifests, baseFiles, authorizations, activated, lineage });
     function activated(manifest, planningCatalog) {
       return planningCatalog.assignments.some(item => equal(item, authorizations.get(manifest.id)))
         && manifest.cells.every(cell => planningCatalog.environments.some(item => equal(item, environments.get(cell.environmentId))))
@@ -241,13 +127,14 @@ export async function loadTaskEvidence(root, context) {
       if (!io.revision(revision) || !io.ancestor(authorization.manifest.revision, revision)
         || !io.ancestor(manifest.base, revision) || !io.ancestor(revision, head)) throw new Error('Invalid execution base ancestry');
       const planningCatalog = catalogAt(revision);
+      if (lineage.replacementActivations.has(manifest.id) && !io.ancestor(lineage.replacementActivations.get(manifest.id), revision)) throw new Error('Execution base predates lineage activation');
       if (!activated(manifest, planningCatalog)) throw new Error('Execution base predates assignment activation');
       reviewLockAt(revision);
       for (const change of io.diff(manifest.base, revision)) {
         if (!['A', 'M'].includes(change.status) || !planningPath(change.path, revision)) throw new Error('Source or undeclared edit concealed before execution base');
       }
       for (const input of manifest.inputs) if (digest(io.fileAt(revision, input.path) ?? '') !== input.sha256) {
-        if (!COORDINATOR.has(input.path)) throw new Error('Execution base changed immutable input');
+        if (!COORDINATOR.has(input.path) && !(input.path === 'config/migration/packages.json' && lineage.registryChange(manifest.base, revision))) throw new Error('Execution base changed immutable input');
         metadataTransition(manifest, manifest.base, revision);
       }
       if (digest(io.fileAt(revision, authorization.manifest.path) ?? '') !== authorization.manifest.sha256) throw new Error('Execution base changed frozen manifest');
@@ -264,11 +151,12 @@ export async function loadTaskEvidence(root, context) {
     for (const path of [CATALOG, RECEIPTS, HANDOFFS]) metadataHistory(path);
     reviewLockAt(head);
     const pendingSuccessors = new Map();
-    const pendingManifests = manifests.filter(manifest => !collection.receipts.some(receipt => receipt?.id === manifest.id));
+    const pendingManifests = manifests.filter(manifest => !lineage.retiredTasks.has(manifest.id) && !collection.receipts.some(receipt => receipt?.id === manifest.id));
     const pendingPaths = new Set(pendingManifests.flatMap(manifest => [...manifest.package.allowed_files, ...manifest.artifacts, ...manifest.cells.map(cell => cell.logPath)]));
     const evidencePaths = new Set(collection.receipts.flatMap(receipt => [
       ...(Array.isArray(receipt?.artifacts) ? receipt.artifacts.map(item => item?.path) : []),
       ...(Array.isArray(receipt?.cells) ? receipt.cells.map(item => item?.log?.path) : [])]));
+    for (const path of lineage.preservedFiles.keys()) evidencePaths.add(path);
     function completedPeerPath(path) {
       return collection.receipts.some(receipt => {
         const owner = validated.manifests.get(receipt?.id), subject = receipt?.subject?.sha;
@@ -278,11 +166,11 @@ export async function loadTaskEvidence(root, context) {
       });
     }
     for (const manifest of pendingManifests) {
-      const revisions = [...new Set([...io.changes(CATALOG), ...io.changes(HANDOFFS)])]
+      const revisions = [...new Set([...io.changes(CATALOG), ...io.changes(HANDOFFS), ...io.changes(LINEAGE)])]
         .sort((a, b) => io.ancestor(a, b) ? -1 : io.ancestor(b, a) ? 1 : 0);
       const activations = revisions.filter(revision => {
         if (io.fileAt(revision, CATALOG) === null) return false;
-        try { return activated(manifest, catalogAt(revision))
+        try { return (!lineage.replacementActivations.has(manifest.id) || io.ancestor(lineage.replacementActivations.get(manifest.id), revision)) && activated(manifest, catalogAt(revision))
           && handoffContracts.filter(item => item.value.successorPackageId === manifest.package.id)
             .every(item => io.ancestor(item.binding.revision, revision)
               && collectionAt(HANDOFFS, revision, 'handoffs', handoffShard.handoffs).some(value => equal(value, item.binding))); } catch { return false; }
@@ -303,7 +191,10 @@ export async function loadTaskEvidence(root, context) {
       const manifest = validated.manifests.get(receipt?.id), authorization = authorizations.get(receipt?.id);
       if (!manifest || !sha(receipt?.subject?.sha) || !sha(receipt.evidenceCommit)
         || !io.revision(receipt.subject.sha) || !io.revision(receipt.evidenceCommit)) continue;
+      if (lineage.retiredTasks.has(receipt.id)) throw new Error('Retired task cannot publish a receipt');
       const subject = receipt.subject.sha;
+      if (lineage.replacementActivations.has(receipt.id) && subject === receipt.executionBase) throw new Error('Replacement needs fresh post-activation subject');
+      if (lineage.replacementActivations.has(receipt.id) && receipt.cells?.some(cell => lineage.preservedLogHashes.has(cell?.log?.sha256))) throw new Error('Replacement reuses preserved output log');
       const planningValid = executionBoundary(manifest, receipt.executionBase);
       for (const cell of manifest.cells) {
         const source = io.fileAt(subject, cell.command[2]);
@@ -346,7 +237,7 @@ export async function loadTaskEvidence(root, context) {
     }
     const pendingWork = [...pendingSuccessors].some(([id, pending]) => [...pending.changedPaths].some(path =>
       validated.manifests.get(id).package.allowed_files.includes(path) && !planningBindings.has(path) && !COORDINATOR.has(path)));
-    const verified = validateTaskReceipts(collection.receipts, { manifests: validated.manifests, manifestHashes, assignments, environments, facts, pendingSuccessors, pendingWork, clean: true });
+    const verified = validateTaskReceipts(collection.receipts, { manifests: validated.manifests, manifestHashes, assignments, ownDagByTask: lineage.ownDagByTask, environments, facts, pendingSuccessors, pendingWork, clean: true });
     if (verified.errors.length) { errors.push(...verified.errors); return empty(); }
     function priorReceiptClosure(id, revision, seen = new Set()) {
       if (seen.has(id)) return true;
@@ -381,7 +272,7 @@ export async function loadTaskEvidence(root, context) {
       return handoffContracts.some(item => item.value.predecessorPackageId === from
         && item.value.paths.some(value => value.path === path) && transferred(item.value.successorPackageId, to, path, new Set(seen)));
     }
-    for (const successor of manifests.filter(item => item.role !== 'independent-review')) {
+    for (const successor of manifests.filter(item => item.role !== 'independent-review' && !lineage.retiredTasks.has(item.id))) {
       const changed = pendingSuccessors.get(successor.id)?.changedPaths
         ?? new Set(facts.get(successor.id)?.diff.flatMap(item => [item.path, item.oldPath].filter(Boolean)) ?? []);
       for (const predecessor of manifests.filter(item => item.kind === 'package' && item.role === 'independent-review'
@@ -395,6 +286,6 @@ export async function loadTaskEvidence(root, context) {
       }
     }
     if (errors.length) return empty();
-    return { ...verified, ...handoffs, planningTestIds };
+    return { ...verified, ...handoffs, planningTestIds, retiredTasks: lineage.retiredTasks, activeAssignments: lineage.activeAssignments };
   } catch (error) { errors.push(`Task evidence: ${error.message}`); return empty(); }
 }
