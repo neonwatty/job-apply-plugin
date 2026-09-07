@@ -2,67 +2,67 @@ TAP version 13
 # Subtest: affected selection unions owners and selects a changed test itself
 ok 1 - affected selection unions owners and selects a changed test itself
   ---
-  duration_ms: 0.901291
+  duration_ms: 0.922958
   type: 'test'
   ...
 # Subtest: global and unknown changes fail closed to the full tier
 ok 2 - global and unknown changes fail closed to the full tier
   ---
-  duration_ms: 0.104208
+  duration_ms: 0.101833
   type: 'test'
   ...
 # Subtest: real shared Python helpers select every consuming shard
 ok 3 - real shared Python helpers select every consuming shard
   ---
-  duration_ms: 62.440958
+  duration_ms: 65.161208
   type: 'test'
   ...
 # Subtest: real production paths conservatively include cross-language consumers
 ok 4 - real production paths conservatively include cross-language consumers
   ---
-  duration_ms: 66.301459
+  duration_ms: 70.193208
   type: 'test'
   ...
 # Subtest: matrix validation rejects omissions and duplicate full inventory
 ok 5 - matrix validation rejects omissions and duplicate full inventory
   ---
-  duration_ms: 0.639083
+  duration_ms: 0.840083
   type: 'test'
   ...
 # Subtest: name-status parsing preserves both rename paths and deletions
 ok 6 - name-status parsing preserves both rename paths and deletions
   ---
-  duration_ms: 0.117167
+  duration_ms: 0.129375
   type: 'test'
   ...
 # Subtest: git selection combines committed, staged, unstaged, deleted, renamed, and untracked paths
 ok 7 - git selection combines committed, staged, unstaged, deleted, renamed, and untracked paths
   ---
-  duration_ms: 77.321833
+  duration_ms: 98.917209
   type: 'test'
   ...
 # Subtest: P03 graph follows runtime type support and literal child-process dependencies
 ok 8 - P03 graph follows runtime type support and literal child-process dependencies
   ---
-  duration_ms: 225.117667
+  duration_ms: 240.68725
   type: 'test'
   ...
 # Subtest: P03 graph rejects unresolved relevant imports and missing owned targets
 ok 9 - P03 graph rejects unresolved relevant imports and missing owned targets
   ---
-  duration_ms: 1070.316667
+  duration_ms: 1252.888458
   type: 'test'
   ...
 # Subtest: P03 graph re-evaluates newly added consumers from the immutable subject
 ok 10 - P03 graph re-evaluates newly added consumers from the immutable subject
   ---
-  duration_ms: 1509.86425
+  duration_ms: 3091.922167
   type: 'test'
   ...
 # Subtest: P03 graph binds source and emitted module identities without duplicate consumers
 ok 11 - P03 graph binds source and emitted module identities without duplicate consumers
   ---
-  duration_ms: 67.983959
+  duration_ms: 72.957583
   type: 'test'
   ...
 1..11
@@ -73,4 +73,4 @@ ok 11 - P03 graph binds source and emitted module identities without duplicate c
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 3119.951666
+# duration_ms 4933.273167
