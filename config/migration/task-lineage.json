@@ -136,6 +136,162 @@
           "sha256": "5d6d74d14fbd0e4d6468a82501eb4d0f3aa3b27f152c42e8ae359a1f88f24e20"
         }
       ]
+    },
+    {
+      "id": "P03.implementation-contract-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze independently reviewed P03 affected consumer mapping implementation scope before activation; no implementation acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/implementation.md",
+          "sha256": "51ffaa6df468d045915724e9135ded3f440d6a982e1e2798f7c6243b91a11ad1"
+        },
+        {
+          "path": "docs/migration/evidence/p03/implementation-audit.json",
+          "sha256": "df318ccba9e54f979afada169432bbf3ac652b9905140a198b8e25ff8511f22d"
+        },
+        {
+          "path": "docs/migration/evidence/p03/reference-consumers.json",
+          "sha256": "3d1994a02a23447fcfc8456225f59d87adb2908a9442bc3b0f8783a591bd85b6"
+        }
+      ]
+    },
+    {
+      "id": "P03.implementation-manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze independently reviewed P03 affected consumer mapping implementation scope before activation; no implementation acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/P03.I.json",
+          "sha256": "caed0a91e588dea40ad00f93f162b1c4100c1177322345f39f47d7e13403db15"
+        },
+        {
+          "path": "docs/migration/evidence/p03/P03.V.json",
+          "sha256": "81cb53101934d2c52ba57706b4869471e5e2fee105ba50c225d64e100bfaa55c"
+        }
+      ]
+    },
+    {
+      "id": "P03.implementation-v2-contract-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze independently reviewed P03 affected consumer mapping implementation scope before activation; no implementation acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/implementation-v2.md",
+          "sha256": "55e340ff418e21df5e71f6dc365e448b696b95bf03576d1ba07356220e793c91"
+        },
+        {
+          "path": "docs/migration/evidence/p03/implementation-audit-v2.json",
+          "sha256": "ae8b01900f48d799f0f89de95afbd2af0c9b42cbf0b778e09cc339f8ac164f56"
+        }
+      ]
+    },
+    {
+      "id": "P03.implementation-v2-manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze independently reviewed P03 affected consumer mapping implementation scope before activation; no implementation acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/P03.I-v2.json",
+          "sha256": "bd37962d056465cdc6a1dcc2203886c1a0088c757181ba8fff0667f2ebb96725"
+        },
+        {
+          "path": "docs/migration/evidence/p03/P03.V-v2.json",
+          "sha256": "b9f527cbb183ccfdc771c9699ef1c480d1f895b5aaee0ee386db6c2695773213"
+        }
+      ]
+    },
+    {
+      "id": "P03.evidence.document-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve exact raw TAP bytes with one path-specific end-of-line whitespace attribute; ordinary whitespace enforcement remains enabled.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/evidence/contract.json",
+          "sha256": "a55da07a9bd8b9edb671e9c1c024d4149452f9eeb70f4a6c875518213f19789a"
+        },
+        {
+          "path": "docs/migration/evidence/p03/evidence/reference-audit.json",
+          "sha256": "ef091c280a73bb4b47253d60b5bc8af1d5784415ea6db1ed69a4b6d1e6251eb2"
+        },
+        {
+          "path": "docs/migration/evidence/p03/evidence/approved-dag.json",
+          "sha256": "58bb7be968816ab51fbd433a12e57717e852a497ce314a9871491c133301c25f"
+        }
+      ]
+    },
+    {
+      "id": "P03.evidence.manifest-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve exact raw TAP bytes with one path-specific end-of-line whitespace attribute; ordinary whitespace enforcement remains enabled.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/evidence/P03.evidence.R.json",
+          "sha256": "18f17ebee6b1df5a2771fd9874e15a5de23c362fef3120dd7f66bfd86c308c64"
+        }
+      ]
+    },
+    {
+      "id": "P03.evidence.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve exact raw TAP bytes with one path-specific end-of-line whitespace attribute; ordinary whitespace enforcement remains enabled.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/evidence/transition.json",
+          "sha256": "8a1edd29e3d7534be78f6811481b8630da0b4222c2a01c1d17c09cf34d11c654"
+        }
+      ]
+    },
+    {
+      "id": "P03.evidence.v2.document-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve exact raw TAP bytes with one path-specific end-of-line whitespace attribute; ordinary whitespace enforcement remains enabled.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/evidence/v2/contract.json",
+          "sha256": "a55da07a9bd8b9edb671e9c1c024d4149452f9eeb70f4a6c875518213f19789a"
+        },
+        {
+          "path": "docs/migration/evidence/p03/evidence/v2/reference-audit.json",
+          "sha256": "6544ff3af92118dd26fe7cdabbf6b895cf92136984d4637122162fed45900211"
+        },
+        {
+          "path": "docs/migration/evidence/p03/evidence/v2/approved-dag.json",
+          "sha256": "58bb7be968816ab51fbd433a12e57717e852a497ce314a9871491c133301c25f"
+        }
+      ]
+    },
+    {
+      "id": "P03.evidence.v2.manifest-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve exact raw TAP bytes with one path-specific end-of-line whitespace attribute; ordinary whitespace enforcement remains enabled.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/evidence/v2/P03.evidence.R.json",
+          "sha256": "c5ef60c5f2a3bdac12c88f0db6200745e1c2b236094f94a38df0c4cb70867823"
+        }
+      ]
+    },
+    {
+      "id": "P03.evidence.v2.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve exact raw TAP bytes with one path-specific end-of-line whitespace attribute; ordinary whitespace enforcement remains enabled.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/evidence/v2/transition.json",
+          "sha256": "f4673a582a71b4c1a6be4436194e64f0ab6ceb3fe2ba1b4adfa159eb71167128"
+        }
+      ]
     }
   ],
   "transitions": [
@@ -143,6 +299,11 @@
       "path": "docs/migration/evidence/s02/retry1/transition-v2.json",
       "sha256": "97375ac2a8d4073e869ccb0de98ac430f0dd6c1aeedec1de7476f7c11ac1dc75",
       "revision": "82e2dbf03c800e9f83cb0ca240770329d1c44bbf"
+    },
+    {
+      "path": "docs/migration/evidence/p03/evidence/v2/transition.json",
+      "sha256": "f4673a582a71b4c1a6be4436194e64f0ab6ceb3fe2ba1b4adfa159eb71167128",
+      "revision": "42a1e40b71a4986cb64c693dc57824968c2cbc68"
     }
   ]
 }

@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: receipt policy fingerprint changes when active runner implementation changes
+ok 1 - receipt policy fingerprint changes when active runner implementation changes
+  ---
+  duration_ms: 7.915167
+  type: 'test'
+  ...
+# Subtest: documentation stays light while exact inert codec changes add focused tests
+ok 2 - documentation stays light while exact inert codec changes add focused tests
+  ---
+  duration_ms: 0.783083
+  type: 'test'
+  ...
+# Subtest: new production modules, global edits, unknown paths and deleted codec escalate
+ok 3 - new production modules, global edits, unknown paths and deleted codec escalate
+  ---
+  duration_ms: 2.729208
+  type: 'test'
+  ...
+# Subtest: accepted inert boundaries select focused tests and include dependent validation
+ok 4 - accepted inert boundaries select focused tests and include dependent validation
+  ---
+  duration_ms: 0.250041
+  type: 'test'
+  ...
+# Subtest: tag pushes require complete local release and platform selection even with no changes
+ok 5 - tag pushes require complete local release and platform selection even with no changes
+  ---
+  duration_ms: 0.107125
+  type: 'test'
+  ...
+# Subtest: known renderer changes select their suite without unrelated package tests
+ok 6 - known renderer changes select their suite without unrelated package tests
+  ---
+  duration_ms: 0.652833
+  type: 'test'
+  ...
+# Subtest: local success rejects missing, failed and wrongly skipped mandatory cells
+ok 7 - local success rejects missing, failed and wrongly skipped mandatory cells
+  ---
+  duration_ms: 0.163625
+  type: 'test'
+  ...
+# Subtest: only fresh complete deep receipts for the exact identity can satisfy escalation
+ok 8 - only fresh complete deep receipts for the exact identity can satisfy escalation
+  ---
+  duration_ms: 0.224083
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 67.624875

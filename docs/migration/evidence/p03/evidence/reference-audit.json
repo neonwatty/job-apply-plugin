@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "p03-evidence-reference-audit",
+  "assignmentIds": [
+    "P03.evidence.R"
+  ],
+  "allowed_files": [
+    ".gitattributes",
+    "tests_js/local_checks_install.test.mjs"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "p03.evidence.raw-whitespace"
+  ],
+  "cells": [
+    {
+      "id": "P03.evidence.raw-whitespace",
+      "requirementIds": [
+        "p03.evidence.raw-whitespace"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/local_checks_install.test.mjs"
+      ],
+      "testNames": [
+        "installation enables executable hooks in worktree scope and is repeatable",
+        "installation refuses to disable an existing default hook of any kind",
+        "installation preserves a configured hook directory",
+        "P03 evidence exact raw path preserves bytes and permits trailing spaces",
+        "P03 evidence ordinary source and other log still reject trailing spaces",
+        "P03 evidence other whitespace errors at raw path still reject"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p03/evidence/logs/P03-evidence-R.tap"
+    }
+  ],
+  "artifacts": []
+}

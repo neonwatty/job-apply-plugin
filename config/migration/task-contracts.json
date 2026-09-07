@@ -205,6 +205,36 @@
         "sha256": "5d6d74d14fbd0e4d6468a82501eb4d0f3aa3b27f152c42e8ae359a1f88f24e20",
         "revision": "60cc20b50b2d6e378b792bbbfeb1313c679454ed"
       }
+    },
+    {
+      "id": "P03.I",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/p03/P03.I-v2.json",
+        "sha256": "bd37962d056465cdc6a1dcc2203886c1a0088c757181ba8fff0667f2ebb96725",
+        "revision": "d7c1c1c113b83f56113a349d18a2cb5bc8d70b15"
+      }
+    },
+    {
+      "id": "P03.V",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/p03/P03.V-v2.json",
+        "sha256": "b9f527cbb183ccfdc771c9699ef1c480d1f895b5aaee0ee386db6c2695773213",
+        "revision": "d7c1c1c113b83f56113a349d18a2cb5bc8d70b15"
+      }
+    },
+    {
+      "id": "P03.evidence.R",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/p03/evidence/v2/P03.evidence.R.json",
+        "sha256": "c5ef60c5f2a3bdac12c88f0db6200745e1c2b236094f94a38df0c4cb70867823",
+        "revision": "644e5e870d4487578641cceb20d65affaf260d61"
+      }
     }
   ],
   "environments": [
@@ -280,6 +310,16 @@
       "path": "docs/migration/evidence/s08/reference-audit.json",
       "sha256": "40e46ce4da3cf6d2e28d2770c28307d13fdd2567e7b0588ba128a561b5fbd467",
       "revision": "60cc20b50b2d6e378b792bbbfeb1313c679454ed"
+    },
+    {
+      "path": "docs/migration/evidence/p03/implementation-audit-v2.json",
+      "sha256": "ae8b01900f48d799f0f89de95afbd2af0c9b42cbf0b778e09cc339f8ac164f56",
+      "revision": "d7c1c1c113b83f56113a349d18a2cb5bc8d70b15"
+    },
+    {
+      "path": "docs/migration/evidence/p03/evidence/v2/reference-audit.json",
+      "sha256": "6544ff3af92118dd26fe7cdabbf6b895cf92136984d4637122162fed45900211",
+      "revision": "644e5e870d4487578641cceb20d65affaf260d61"
     }
   ]
 }

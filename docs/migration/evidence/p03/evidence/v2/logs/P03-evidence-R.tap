@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: installation enables executable hooks in worktree scope and is repeatable
+ok 1 - installation enables executable hooks in worktree scope and is repeatable
+  ---
+  duration_ms: 222.994542
+  type: 'test'
+  ...
+# Subtest: installation refuses to disable an existing default hook of any kind
+ok 2 - installation refuses to disable an existing default hook of any kind
+  ---
+  duration_ms: 84.393
+  type: 'test'
+  ...
+# Subtest: installation preserves a configured hook directory
+ok 3 - installation preserves a configured hook directory
+  ---
+  duration_ms: 82.577542
+  type: 'test'
+  ...
+# Subtest: P03 evidence exact raw path preserves bytes and permits trailing spaces
+ok 4 - P03 evidence exact raw path preserves bytes and permits trailing spaces
+  ---
+  duration_ms: 55.719084
+  type: 'test'
+  ...
+# Subtest: P03 evidence ordinary source and other log still reject trailing spaces
+ok 5 - P03 evidence ordinary source and other log still reject trailing spaces
+  ---
+  duration_ms: 86.284833
+  type: 'test'
+  ...
+# Subtest: P03 evidence other whitespace errors at raw path still reject
+ok 6 - P03 evidence other whitespace errors at raw path still reject
+  ---
+  duration_ms: 85.0135
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 656.092916

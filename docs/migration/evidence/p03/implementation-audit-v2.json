@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "id": "p03-implementation-audit-v2",
+  "assignmentIds": [
+    "P03.I",
+    "P03.V"
+  ],
+  "allowed_files": [
+    "tools/local-checks/policy.mjs",
+    "tools/local-checks/run.mjs",
+    "tools/local-checks/consumer-graph.mjs",
+    "tools/local-checks/graph-syntax.mjs",
+    "tools/local-checks/focused-contracts.mjs",
+    "tools/local-checks/focused-closure.mjs",
+    "config/test-matrix.json",
+    "tests_js/local_checks_policy.test.mjs",
+    "tests_js/local_checks_run.test.mjs",
+    "tests_js/test-runner-selection.test.mjs",
+    "tests_js/local_checks_graph_support.mjs",
+    "docs/migration/evidence/p03/implementation.md",
+    "docs/migration/evidence/p03/implementation-audit.json",
+    "docs/migration/evidence/p03/P03.I.json",
+    "docs/migration/evidence/p03/P03.V.json",
+    "docs/migration/evidence/p03/reference-consumers.json",
+    "docs/migration/evidence/p03/implementation-v2.md",
+    "docs/migration/evidence/p03/implementation-audit-v2.json",
+    "docs/migration/evidence/p03/P03.I-v2.json",
+    "docs/migration/evidence/p03/P03.V-v2.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "p03.implementation.audit.local_checks_git",
+    "p03.implementation.audit.local_checks_policy",
+    "p03.implementation.audit.local_checks_run",
+    "p03.implementation.audit.test-runner-selection",
+    "p03.implementation.audit.local_checks_graph",
+    "p03.implementation.audit.local_checks_coverage",
+    "p03.implementation.audit.local_checks_graph_lifecycle"
+  ],
+  "cells": [
+    {
+      "id": "p03.implementation.v2.local_checks_git",
+      "requirementIds": [
+        "p03.implementation.audit.local_checks_git"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/local_checks_git.test.mjs"
+      ],
+      "testNames": [
+        "Git helper preserves stdout and resolves only existing commits",
+        "index snapshot isolates staged content and preserves dirty root/index",
+        "unborn staged index and staged deletion/rename produce exact snapshots",
+        "snapshot callback failure removes only owned worktree and preserves original state",
+        "hook alternate index is captured without leaking Git environment into snapshots",
+        "push targets use pushed commits, support multiple refs and ignore deletions",
+        "new branches use merge base with explicitly configured comparison ref",
+        "push validation rejects malformed records and unavailable remote objects",
+        "annotated tag targets peel to the commit actually pushed",
+        "dependency-linked staged snapshots remain clean without hiding unrelated files",
+        "staged merge snapshots preserve two-parent and octopus ancestry without changing owner state",
+        "merge snapshot metadata rejects malformed or noncommit parents and deduplicates valid parents"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p03/logs/P03-IV-v2-local_checks_git.tap"
+    },
+    {
+      "id": "p03.implementation.v2.local_checks_policy",
+      "requirementIds": [
+        "p03.implementation.audit.local_checks_policy",
+        "p03.implementation.audit.local_checks_coverage"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/local_checks_policy.test.mjs"
+      ],
+      "testNames": [
+        "receipt policy fingerprint changes when active runner implementation changes",
+        "documentation stays light while exact inert codec changes add focused tests",
+        "new production modules, global edits, unknown paths and deleted codec escalate",
+        "accepted inert boundaries select focused tests and include dependent validation",
+        "tag pushes require complete local release and platform selection even with no changes",
+        "known renderer changes select their suite without unrelated package tests",
+        "local success rejects missing, failed and wrongly skipped mandatory cells",
+        "only fresh complete deep receipts for the exact identity can satisfy escalation",
+        "P03 runtime focused rules include the independent transitive consumer witnesses",
+        "P03 reference-only edits retain bounded direct consumer selection",
+        "P03 mutation deleting each required consumer fails independent coverage validation",
+        "P03 mutation through support and child-process modules cannot conceal a failing consumer",
+        "P03 shared type changes escalate while source and runtime changes select equivalent coverage",
+        "P03 unknown deleted renamed global lock and policy changes retain complete escalation"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p03/logs/P03-IV-v2-local_checks_policy.tap"
+    },
+    {
+      "id": "p03.implementation.v2.local_checks_run",
+      "requirementIds": [
+        "p03.implementation.audit.local_checks_run",
+        "p03.implementation.audit.local_checks_graph_lifecycle"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/local_checks_run.test.mjs"
+      ],
+      "testNames": [
+        "push broad selection refuses before running commands and cleans its snapshot",
+        "deep receipt is reusable only for the same target and base",
+        "failed deep result is preserved but never reused by push",
+        "P03 actual snapshot discovery detects new consumers before cache reuse",
+        "P03 actual selected consumer failures skips and missing results cannot satisfy cached acceptance",
+        "P03 actual dirty owner and merge snapshots bind the exact tested dependency graph"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p03/logs/P03-IV-v2-local_checks_run.tap"
+    },
+    {
+      "id": "p03.implementation.v2.test-runner-selection",
+      "requirementIds": [
+        "p03.implementation.audit.test-runner-selection",
+        "p03.implementation.audit.local_checks_graph"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/test-runner-selection.test.mjs"
+      ],
+      "testNames": [
+        "affected selection unions owners and selects a changed test itself",
+        "global and unknown changes fail closed to the full tier",
+        "real shared Python helpers select every consuming shard",
+        "real production paths conservatively include cross-language consumers",
+        "matrix validation rejects omissions and duplicate full inventory",
+        "name-status parsing preserves both rename paths and deletions",
+        "git selection combines committed, staged, unstaged, deleted, renamed, and untracked paths",
+        "P03 graph follows runtime type support and literal child-process dependencies",
+        "P03 graph rejects unresolved relevant imports and missing owned targets",
+        "P03 graph re-evaluates newly added consumers from the immutable subject",
+        "P03 graph binds source and emitted module identities without duplicate consumers"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p03/logs/P03-IV-v2-test-runner-selection.tap"
+    }
+  ],
+  "artifacts": []
+}
