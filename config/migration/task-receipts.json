@@ -5820,6 +5820,214 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "S05.R",
+      "manifestSha256": "438d735f67c01d4b044152c5439500321557c8ceb93309447abea55dce3d485e",
+      "subject": {
+        "sha": "1f5a4e7a15d1d793147f26160d2c88bbab2cb7c4",
+        "tree": "b2fd36ea5fe747813e31b1a98d265af333779124"
+      },
+      "executionBase": "d21027ce71d69912d13c6c9e3e07040772205956",
+      "evidenceCommit": "05a24a82f04be271b29f372143795c6f47d21bc9",
+      "diff": [
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "docs/migration/evidence/s05/reference-baselines.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "docs/migration/evidence/s05/reference.md"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/point_paths_digest_reference.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/point_paths_parent_reference.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/point_paths_reference.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/contracts/point-paths/fixtures.py"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/contracts/point-paths/reference.py"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/contracts/point-paths/support.py"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/contracts/point-paths/reference.py",
+          "sha256": "b4a7c94be6098cbfb53dc8c5f548b574d4e9b7e9aa9e3fedfc8288f1269c1454"
+        },
+        {
+          "path": "tools/contracts/point-paths/fixtures.py",
+          "sha256": "5bf7a455f7995088c1bef89f3c9f07121ad059d0c78f4c37ef80b7f99e99292e"
+        },
+        {
+          "path": "tools/contracts/point-paths/support.py",
+          "sha256": "7fea6f59851b5664b24197d201bc5728e31ac8eca1a28f50e64ecc29807f9cca"
+        },
+        {
+          "path": "tests_js/point_paths_reference.test.mjs",
+          "sha256": "ced650ecb6f1a5f73ff92ab98ef6fdd36981e8c982f4b9ce892f175772d565ee"
+        },
+        {
+          "path": "tests_js/point_paths_parent_reference.test.mjs",
+          "sha256": "371cf80a0260ce0d4c059b965a453d0ae03e360cc0c41b731abd17b03487809e"
+        },
+        {
+          "path": "tests_js/point_paths_digest_reference.test.mjs",
+          "sha256": "f1b8c954ec3fc47029a7148e82efeeef990c468529922ff0494baee3b28d5152"
+        },
+        {
+          "path": "docs/migration/evidence/s05/reference-vectors.json",
+          "sha256": "4c6af618ffbea1ad274b7d98dc12669c2d38fcb2b3ce72080e5afe5cf14a7967"
+        },
+        {
+          "path": "docs/migration/evidence/s05/reference-baselines.json",
+          "sha256": "e693a5105ffe3e1efb56b4fe6d7e942704e8c81fc73c4dcc9ecc1a8c7ef82ced"
+        },
+        {
+          "path": "docs/migration/evidence/s05/reference.md",
+          "sha256": "1cdbe1b3b0d13fd7c90d228a1ad69f7aa40ddd500cf7e72af61d20bf38466a84"
+        },
+        {
+          "path": "docs/migration/evidence/s05/reference-plan.md",
+          "sha256": "633792f3a4ec5d084a468ce643d91724f478099319cf27110225598add2fe104"
+        },
+        {
+          "path": "docs/migration/evidence/s05/reference-audit.json",
+          "sha256": "05d82a1c1c749d01342c8694b02537ed859fcfc9051d90ac500f5be797c8df0a"
+        },
+        {
+          "path": "docs/migration/evidence/s05/S05.R.json",
+          "sha256": "438d735f67c01d4b044152c5439500321557c8ceb93309447abea55dce3d485e"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        }
+      ],
+      "cells": [
+        {
+          "id": "s05.reference.points",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/point_paths_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 433.56025,
+            "outputBytes": 716014,
+            "tests": 5,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s05/logs/S05-R-points.tap",
+            "sha256": "26925bb3de4efc44129c7f6801c84156454bebd214e123693ace5a1df98e782d"
+          }
+        },
+        {
+          "id": "s05.reference.parents",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/point_paths_parent_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 704.209167,
+            "outputBytes": 822368,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s05/logs/S05-R-parents.tap",
+            "sha256": "f158cf4950626883ee7277399b5dc383117b0db9513b2f015e35555973ebbfa9"
+          }
+        },
+        {
+          "id": "s05.reference.digest",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/point_paths_digest_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 789.326208,
+            "outputBytes": 161120,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s05/logs/S05-R-digest.tap",
+            "sha256": "9d682093b29764fae815cd85b090c3990c7436906c9c5bebae19fc69340cbe8a"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "1f5a4e7a15d1d793147f26160d2c88bbab2cb7c4",
+        "subjectTree": "b2fd36ea5fe747813e31b1a98d265af333779124",
+        "manifestSha256": "438d735f67c01d4b044152c5439500321557c8ceb93309447abea55dce3d485e",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
