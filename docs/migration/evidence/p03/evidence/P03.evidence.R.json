@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "id": "P03.evidence.R",
+  "role": "reference",
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/p03/evidence/approved-dag.json",
+    "sha256": "58bb7be968816ab51fbd433a12e57717e852a497ce314a9871491c133301c25f"
+  },
+  "package": {
+    "id": "P03.evidence",
+    "parentNode": "CI",
+    "owner": "root",
+    "allowed_files": [
+      ".gitattributes",
+      "tests_js/local_checks_install.test.mjs"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "3bfd8151b694b245f00f10a4c8bf96f595933b3d0a1af48e2365ee33c5aa2000",
+  "auditContract": {
+    "path": "docs/migration/evidence/p03/evidence/reference-audit.json",
+    "sha256": "ef091c280a73bb4b47253d60b5bc8af1d5784415ea6db1ed69a4b6d1e6251eb2"
+  },
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "base": "5941b6800dd0a4a0414a6d591e546bba83c2b1fd",
+  "inputs": [
+    {
+      "path": "tests_js/local_checks_install.test.mjs",
+      "sha256": "bda490112be64870767203a33e5734803cbabdbc0cc1150d7ce346462845203c"
+    },
+    {
+      "path": "docs/migration/evidence/p03/evidence/contract.json",
+      "sha256": "a55da07a9bd8b9edb671e9c1c024d4149452f9eeb70f4a6c875518213f19789a"
+    },
+    {
+      "path": "docs/migration/evidence/p03/evidence/reference-audit.json",
+      "sha256": "ef091c280a73bb4b47253d60b5bc8af1d5784415ea6db1ed69a4b6d1e6251eb2"
+    },
+    {
+      "path": "docs/migration/evidence/p03/evidence/approved-dag.json",
+      "sha256": "58bb7be968816ab51fbd433a12e57717e852a497ce314a9871491c133301c25f"
+    },
+    {
+      "path": "tools/local-checks/install.mjs",
+      "sha256": "47bac92307376fd46f9948f1df4226cd51424f232dee1bc31945a971be8ecb8e"
+    },
+    {
+      "path": "tools/local-checks/git.mjs",
+      "sha256": "d48fc04f3e7fe434f9fd6a0efe00306b0d5947678d4023aba8d2c13913cc2c32"
+    },
+    {
+      "path": "tools/local-checks/hook.mjs",
+      "sha256": "ea45841e55dc639d5341ff4f93642cfd95f9ecc4523be15f752168bae39491e1"
+    },
+    {
+      "path": ".githooks/pre-commit",
+      "sha256": "54c1b6338bea7662f2a4105ef7bcb88496ce086a2d54442f51406d822a4aeab9"
+    },
+    {
+      "path": ".githooks/pre-push",
+      "sha256": "81492a6a7f342bd482e07d60d8debc60eb4e10f1a50ed36971972ad35dbd5a4b"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "ca96d5296019cd001c61c3ace3bb6be6a54976c2db880cca87f92facc14e5ee0"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "P03.evidence.raw-whitespace",
+      "requirementIds": [
+        "p03.evidence.raw-whitespace"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/local_checks_install.test.mjs"
+      ],
+      "testNames": [
+        "installation enables executable hooks in worktree scope and is repeatable",
+        "installation refuses to disable an existing default hook of any kind",
+        "installation preserves a configured hook directory",
+        "P03 evidence exact raw path preserves bytes and permits trailing spaces",
+        "P03 evidence ordinary source and other log still reject trailing spaces",
+        "P03 evidence other whitespace errors at raw path still reject"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p03/evidence/logs/P03-evidence-R.tap"
+    }
+  ],
+  "artifacts": []
+}

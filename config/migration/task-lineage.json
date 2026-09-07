@@ -224,6 +224,18 @@
           "sha256": "58bb7be968816ab51fbd433a12e57717e852a497ce314a9871491c133301c25f"
         }
       ]
+    },
+    {
+      "id": "P03.evidence.manifest-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve exact raw TAP bytes with one path-specific end-of-line whitespace attribute; ordinary whitespace enforcement remains enabled.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/evidence/P03.evidence.R.json",
+          "sha256": "18f17ebee6b1df5a2771fd9874e15a5de23c362fef3120dd7f66bfd86c308c64"
+        }
+      ]
     }
   ],
   "transitions": [
