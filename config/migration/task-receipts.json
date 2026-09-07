@@ -5472,6 +5472,354 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P09.I",
+      "manifestSha256": "19778cc365da6a569597ae2c36664e7602440a8dd89fd63f98f7cab253a4d399",
+      "subject": {
+        "sha": "5ded8a5e2cac66fbbb5e9f3ec25ed05a1c864b84",
+        "tree": "bbc6f712afe41b28f02747e84d9373d6a38328aa"
+      },
+      "executionBase": "142517e36d835260244b11df42d51317d134667f",
+      "evidenceCommit": "f1e4c78505e77fa4922e39102583d54f9df5dae6",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_task_lineage_git_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_task_lineage_lifecycle.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_task_receipts.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_task_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/load-task-evidence.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/load-task-lineage.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/task-receipts.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/migration/load-task-lineage.mjs",
+          "sha256": "af7906e84bc37f4e8baa71ffe7b3a51d176b542aeb1daa7bca98479243c17628"
+        },
+        {
+          "path": "tools/migration/load-task-evidence.mjs",
+          "sha256": "bdebb937679d70d0987004561f5d9cf40bc5a6a6b3b2a068ec4b4f8fef98ede3"
+        },
+        {
+          "path": "tools/migration/task-receipts.mjs",
+          "sha256": "2ac168e57ab71e78aa18decb4ff79ef1a3481b941779dc0618b31f1ec5f80b5f"
+        },
+        {
+          "path": "tests_js/migration_task_receipts.test.mjs",
+          "sha256": "ba2bb192853a99af4909dbfe1963d1aebd96b3a9f9241cd7090bfbfd7ac9f16d"
+        },
+        {
+          "path": "tests_js/migration_task_lineage_lifecycle.test.mjs",
+          "sha256": "550b46a665d01d21dacad0904000452ffe9985d0d071b8d5f420ed50eba7a8f0"
+        },
+        {
+          "path": "tests_js/migration_task_lineage_git_support.mjs",
+          "sha256": "d14bb06fd26f705d8ef1309efd92deecb8292fd719dd9f72079f80a3d1d3bf79"
+        },
+        {
+          "path": "tests_js/migration_task_support.mjs",
+          "sha256": "ddbf80c4d7559f7fd34ab4c9e72fd5b865555deffc8816ae58f20b7d5fef65a2"
+        },
+        {
+          "path": "docs/migration/evidence/p09/implementation.md",
+          "sha256": "8f195746d5a2c265591f56730d5ace7145ad134bfc352cb8255e0454eef50708"
+        },
+        {
+          "path": "docs/migration/evidence/p09/implementation-audit.json",
+          "sha256": "5a96cbfd75636531cc6d6bd969290b207f2a73de6ea0c441dc484b37fbb94d13"
+        },
+        {
+          "path": "docs/migration/evidence/p09/P09.I.json",
+          "sha256": "19778cc365da6a569597ae2c36664e7602440a8dd89fd63f98f7cab253a4d399"
+        },
+        {
+          "path": "docs/migration/evidence/p09/P09.V.json",
+          "sha256": "c19239be919254d92318e5545c815d3ed07781f9b990e212248d95ca64d35973"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P07.V",
+          "sha256": "1a7b8fac5037ca46f2cba35c67139969dee20c9e182774e7ec4260bf467acc65"
+        },
+        {
+          "id": "P08.V",
+          "sha256": "693d4722a8ca9ed6f324f79b3ad7c7be3528ecc98a567f9b98d65e46c0676a4e"
+        }
+      ],
+      "cells": [
+        {
+          "id": "P09.receipts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_receipts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 101.32170799999999,
+            "outputBytes": 3370,
+            "tests": 13,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p09/logs/P09-receipts.tap",
+            "sha256": "44c6f1f5914986790aa23ba43328b1fc955e66b623d959f27a1cc6266ef9c33c"
+          }
+        },
+        {
+          "id": "P09.lifecycle",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_lineage_lifecycle.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 149305.519666,
+            "outputBytes": 1506,
+            "tests": 6,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p09/logs/P09-lifecycle.tap",
+            "sha256": "caa89af3468a61966e1ec222602c2665435c53476689216606a42ca25ac1befe"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "5ded8a5e2cac66fbbb5e9f3ec25ed05a1c864b84",
+        "subjectTree": "bbc6f712afe41b28f02747e84d9373d6a38328aa",
+        "manifestSha256": "19778cc365da6a569597ae2c36664e7602440a8dd89fd63f98f7cab253a4d399",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P09.V",
+      "manifestSha256": "c19239be919254d92318e5545c815d3ed07781f9b990e212248d95ca64d35973",
+      "subject": {
+        "sha": "5ded8a5e2cac66fbbb5e9f3ec25ed05a1c864b84",
+        "tree": "bbc6f712afe41b28f02747e84d9373d6a38328aa"
+      },
+      "executionBase": "142517e36d835260244b11df42d51317d134667f",
+      "evidenceCommit": "f1e4c78505e77fa4922e39102583d54f9df5dae6",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_task_lineage_git_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_task_lineage_lifecycle.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_task_receipts.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_task_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/load-task-evidence.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/load-task-lineage.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/task-receipts.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/migration/load-task-lineage.mjs",
+          "sha256": "af7906e84bc37f4e8baa71ffe7b3a51d176b542aeb1daa7bca98479243c17628"
+        },
+        {
+          "path": "tools/migration/load-task-evidence.mjs",
+          "sha256": "bdebb937679d70d0987004561f5d9cf40bc5a6a6b3b2a068ec4b4f8fef98ede3"
+        },
+        {
+          "path": "tools/migration/task-receipts.mjs",
+          "sha256": "2ac168e57ab71e78aa18decb4ff79ef1a3481b941779dc0618b31f1ec5f80b5f"
+        },
+        {
+          "path": "tests_js/migration_task_receipts.test.mjs",
+          "sha256": "ba2bb192853a99af4909dbfe1963d1aebd96b3a9f9241cd7090bfbfd7ac9f16d"
+        },
+        {
+          "path": "tests_js/migration_task_lineage_lifecycle.test.mjs",
+          "sha256": "550b46a665d01d21dacad0904000452ffe9985d0d071b8d5f420ed50eba7a8f0"
+        },
+        {
+          "path": "tests_js/migration_task_lineage_git_support.mjs",
+          "sha256": "d14bb06fd26f705d8ef1309efd92deecb8292fd719dd9f72079f80a3d1d3bf79"
+        },
+        {
+          "path": "tests_js/migration_task_support.mjs",
+          "sha256": "ddbf80c4d7559f7fd34ab4c9e72fd5b865555deffc8816ae58f20b7d5fef65a2"
+        },
+        {
+          "path": "docs/migration/evidence/p09/implementation.md",
+          "sha256": "8f195746d5a2c265591f56730d5ace7145ad134bfc352cb8255e0454eef50708"
+        },
+        {
+          "path": "docs/migration/evidence/p09/implementation-audit.json",
+          "sha256": "5a96cbfd75636531cc6d6bd969290b207f2a73de6ea0c441dc484b37fbb94d13"
+        },
+        {
+          "path": "docs/migration/evidence/p09/P09.I.json",
+          "sha256": "19778cc365da6a569597ae2c36664e7602440a8dd89fd63f98f7cab253a4d399"
+        },
+        {
+          "path": "docs/migration/evidence/p09/P09.V.json",
+          "sha256": "c19239be919254d92318e5545c815d3ed07781f9b990e212248d95ca64d35973"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P09.I",
+          "sha256": "7956d1aeb75a56cf951a20c73ef05a726b5756ef35ca10193bfc730f579d4ded"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        }
+      ],
+      "cells": [
+        {
+          "id": "P09.receipts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_receipts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 101.32170799999999,
+            "outputBytes": 3370,
+            "tests": 13,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p09/logs/P09-receipts.tap",
+            "sha256": "44c6f1f5914986790aa23ba43328b1fc955e66b623d959f27a1cc6266ef9c33c"
+          }
+        },
+        {
+          "id": "P09.lifecycle",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_lineage_lifecycle.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 149305.519666,
+            "outputBytes": 1506,
+            "tests": 6,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p09/logs/P09-lifecycle.tap",
+            "sha256": "caa89af3468a61966e1ec222602c2665435c53476689216606a42ca25ac1befe"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "5ded8a5e2cac66fbbb5e9f3ec25ed05a1c864b84",
+        "subjectTree": "bbc6f712afe41b28f02747e84d9373d6a38328aa",
+        "manifestSha256": "c19239be919254d92318e5545c815d3ed07781f9b990e212248d95ca64d35973",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
