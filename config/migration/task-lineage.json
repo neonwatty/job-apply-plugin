@@ -64,6 +64,30 @@
           "sha256": "4a06be9eec9faf2e3a3915bb120e4b05e5605297aef8685c01f094ff47bb4a2e"
         }
       ]
+    },
+    {
+      "id": "S02.retry1.document-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original decoder evidence and require an explicit fresh exact-name replacement.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s02/retry1/approved-dag.json",
+          "sha256": "d563b690197cf17d0c0319352bfcacb7431f0f43b16e7efe1c91d0731927b81a"
+        },
+        {
+          "path": "docs/migration/evidence/s02/retry1/implementation-audit.json",
+          "sha256": "7c051ab948dcf04c19f0882839c990dcec6400205eed389a0eb954ec397970d1"
+        },
+        {
+          "path": "docs/migration/evidence/s02/retry1/S02.retry1.I.json",
+          "sha256": "47fca8a5a4d03fad3acad35f03ca8114a521d1d6075032663fc56c752c13f131"
+        },
+        {
+          "path": "docs/migration/evidence/s02/retry1/S02.retry1.V.json",
+          "sha256": "c508be9d4e8fafa0b83b43edc78e1932a30b6ad134c29806bc6ae1375ce06ddc"
+        }
+      ]
     }
   ],
   "transitions": []
