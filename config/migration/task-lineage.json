@@ -608,6 +608,18 @@
           "sha256": "c2a2a56eb83485ff4d5b7d0057af315aa57318aa794900c1bf0fbf3196fd5aec"
         }
       ]
+    },
+    {
+      "id": "P03.retry2.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve active P03.retry1 partial formatter attempt; add accepted S08.V dependency and require fresh complete revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry2/transition.json",
+          "sha256": "1bbd28b8f54ac8aaafb23f921370f01e5c77a9f012ca2682e746e961def79752"
+        }
+      ]
     }
   ],
   "transitions": [
