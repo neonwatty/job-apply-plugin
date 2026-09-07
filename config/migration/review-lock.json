@@ -186,6 +186,10 @@
       "sha256": "b42198b044534f37d96d5d5231db0e38db354a04f0ba958c4c8a31906ffe5196"
     },
     {
+      "path": "source-catalog-s02.json",
+      "sha256": "4827fee5a9666c9510f1e2bed18b0709b9ca98dc50d9a4ac3155f5164c1a9e81"
+    },
+    {
       "path": "task-contracts.json",
       "sha256": "ae65c172b5b8175b7edb9760dc69bcb2662641f1bb4aa9d15c74860a943d54f5"
     },
