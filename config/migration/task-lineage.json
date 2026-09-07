@@ -156,6 +156,22 @@
           "sha256": "3d1994a02a23447fcfc8456225f59d87adb2908a9442bc3b0f8783a591bd85b6"
         }
       ]
+    },
+    {
+      "id": "P03.implementation-manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze independently reviewed P03 affected consumer mapping implementation scope before activation; no implementation acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/P03.I.json",
+          "sha256": "caed0a91e588dea40ad00f93f162b1c4100c1177322345f39f47d7e13403db15"
+        },
+        {
+          "path": "docs/migration/evidence/p03/P03.V.json",
+          "sha256": "81cb53101934d2c52ba57706b4869471e5e2fee105ba50c225d64e100bfaa55c"
+        }
+      ]
     }
   ],
   "transitions": [
