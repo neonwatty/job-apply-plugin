@@ -788,6 +788,30 @@
           "sha256": "b1d50b414d3e2c127a9cf5856cde71ef920b2ec28ff624b700e32182d3b58568"
         }
       ]
+    },
+    {
+      "id": "P12.documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze isolated historical graph environment proofs while preserving live inherited-context refusal.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p12/approved-dag.json",
+          "sha256": "eca63c82bdb2b582f5abd5a4c8cccaaaa1961a50a16f59956db0379848d6150c"
+        },
+        {
+          "path": "docs/migration/evidence/p12/implementation-audit.json",
+          "sha256": "60bca467215264eeb7df8b3d11bf87666b89e76551f013415112d7aa6345c679"
+        },
+        {
+          "path": "docs/migration/evidence/p12/implementation.md",
+          "sha256": "542c9ab8f79b4041619f54a9441394814340573463f493ca380b6e3a728d4bf6"
+        },
+        {
+          "path": "docs/migration/evidence/p12/implementation-spec.json",
+          "sha256": "bb7bb11ee0ecaf348031fe750620041ab3372899abc71c101e8b618dd053a89c"
+        }
+      ]
     }
   ],
   "transitions": [
