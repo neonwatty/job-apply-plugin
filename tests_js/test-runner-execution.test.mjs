@@ -91,7 +91,9 @@ test("process execution terminates hangs and bounds noisy output", async () => {
     label: "noisy", timeoutMs: 1000, maxOutputBytes: 32,
     stdout: (value) => { stdout += value; }, stderr: () => {},
   });
-  assert.equal(noisy.status, "passed");
+  assert.equal(noisy.status, "failed");
+  assert.equal(noisy.exitCode, 130);
+  assert.equal(noisy.signal, "output-limit");
   assert.match(stdout, /output truncated after 32 bytes/);
   assert.equal((stdout.match(/x/g) ?? []).length, 32);
 });
@@ -244,4 +246,137 @@ test("stream prefixes empty lines without trailing spaces and preserves nonempty
     formatter.flush();
     assert.equal(output, "[direct]\n[direct] ab\n[direct]\n[direct]  \t\r" + (finalNewline ? "\n" : ""));
   }
+});
+
+async function streamed(program, limit, timeoutMs = 2000) {
+  let stdout = '', stderr = '';
+  const result = await runStreaming(process.execPath, ['-e', program], {
+    label: 'boundary', maxOutputBytes: limit, timeoutMs,
+    stdout: value => { stdout += value; }, stderr: value => { stderr += value; },
+  });
+  return { result, stdout, stderr };
+}
+function overflowResult(result) {
+  assert.equal(result.status, 'failed');
+  assert.equal(result.exitCode, 130);
+  assert.equal(result.signal, 'output-limit');
+}
+
+test('P11 streamed output enforces independent stdout and stderr byte boundaries', async () => {
+  for (const stream of ['stdout', 'stderr']) {
+    for (const [limit, length] of [[0, 0], [0, 1], [8, 7], [8, 8], [8, 9]]) {
+      const observed = await streamed(`process.${stream}.write('x'.repeat(${length}))`, limit);
+      if (length > limit) overflowResult(observed.result);
+      else assert.equal(observed.result.status, 'passed');
+      const prefix = Math.min(limit, length);
+      assert.equal(observed[stream], (prefix ? `[boundary] ${'x'.repeat(prefix)}\n` : '')
+        + (length > limit ? `[boundary] [output truncated after ${limit} bytes]\n` : ''));
+      assert.equal(observed[stream === 'stdout' ? 'stderr' : 'stdout'], '');
+    }
+  }
+  const both = await streamed("process.stdout.write('12345678');process.stderr.write('abcdefgh')", 8);
+  assert.equal(both.result.status, 'passed');
+  assert.equal(both.stdout, '[boundary] 12345678\n');
+  assert.equal(both.stderr, '[boundary] abcdefgh\n');
+  for (const stream of ['stdout', 'stderr']) {
+    const split = await streamed(`process.${stream}.write('1234');setTimeout(()=>process.${stream}.write('56789'),30)`, 8);
+    overflowResult(split.result);
+    assert.equal(split[stream], '[boundary] 12345678\n[boundary] [output truncated after 8 bytes]\n');
+  }
+  const unicode = "process.stdout.write(Buffer.from([10,240,144]));setTimeout(()=>process.stdout.write(Buffer.from([128,128,10,120])),20)";
+  const exact = await streamed(unicode, 7);
+  assert.equal(exact.result.status, 'passed');
+  assert.equal(exact.stdout, '[boundary]\n[boundary] \u{10000}\n[boundary] x\n');
+  const clipped = await streamed(unicode, 3);
+  overflowResult(clipped.result);
+  assert.equal(clipped.stdout, '[boundary]\n[boundary] \ufffd\n[boundary] [output truncated after 3 bytes]\n');
+  for (const offending of ['stdout', 'stderr']) {
+    const other = offending === 'stdout' ? 'stderr' : 'stdout';
+    for (const chunks of [
+      [[0xf0, 0x90], [0x80, 0x80], '\u{10000}'],
+      [[112, 97], [114, 116], 'part'],
+    ]) {
+      const program = "process.on('SIGTERM',()=>{});"
+        + `process.${other}.write(Buffer.from(${JSON.stringify(chunks[0])}));`
+        + `setTimeout(()=>process.${offending}.write('x'.repeat(9)),40);`
+        + `setTimeout(()=>process.${other}.write(Buffer.from(${JSON.stringify(chunks[1])})),100);`
+        + "setTimeout(()=>process.exit(0),150);";
+      const crossed = await streamed(program, 8);
+      overflowResult(crossed.result);
+      assert.equal(crossed[other], `[boundary] ${chunks[2]}\n`, 'overflow must not finalize the other stream decoder or line');
+      assert.equal(crossed[offending], '[boundary] xxxxxxxx\n[boundary] [output truncated after 8 bytes]\n');
+    }
+  }
+});
+
+test('P11 output overflow cannot pass after zero exit or competing termination', async () => {
+  for (const streams of [['stdout'], ['stderr'], ['stdout', 'stderr']]) {
+    const code = "process.on('SIGTERM',()=>{});" + streams.map(stream => `process.${stream}.write('x'.repeat(40));`).join('') + 'process.exitCode=0;';
+    const value = await streamed(code, 8);
+    overflowResult(value.result);
+    for (const stream of streams) assert.equal((value[stream].match(/output truncated/g) ?? []).length, 1);
+  }
+  const repeated = await streamed("process.on('SIGTERM',()=>{});process.stdout.write('x'.repeat(40));setInterval(()=>{process.stdout.write('more');process.stderr.write('y'.repeat(40))},10)", 8, 200);
+  overflowResult(repeated.result);
+  assert.equal((repeated.stdout.match(/output truncated/g) ?? []).length, 1);
+  assert.equal((repeated.stderr.match(/output truncated/g) ?? []).length, 1);
+  assert.ok(!repeated.stderr.includes('timed out'));
+  const timeoutFirst = await streamed("process.on('SIGTERM',()=>{process.stdout.write('x'.repeat(40))});setInterval(()=>{},1000)", 8, 200);
+  assert.equal(timeoutFirst.result.status, 'failed');
+  assert.equal(timeoutFirst.result.exitCode, 124);
+  assert.equal(timeoutFirst.result.signal, 'timeout');
+  assert.match(timeoutFirst.stdout, /output truncated after 8 bytes/);
+});
+
+test('P11 output overflow retains cleanup for an owned surviving descendant', async t => {
+  if (process.platform === 'win32') { t.skip(); return; }
+  for (const parentExits of [false, true]) {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'overflow-tree-'));
+    const pidFile = path.join(root, 'child.pid');
+    const stopFile = path.join(root, 'stop');
+    const worker = "const fs=require('node:fs');process.on('SIGTERM',()=>{});process.send('ready');"
+      + `setInterval(()=>{if(fs.existsSync(${JSON.stringify(stopFile)}))process.exit(0)},10);`
+      + "setTimeout(()=>process.exit(2),8000)";
+    const parent = [
+      "const {spawn}=require('node:child_process'),fs=require('node:fs');",
+      `const child=spawn(process.execPath,['-e',${JSON.stringify(worker)}],{stdio:['ignore','ignore','ignore','ipc']});`,
+      "process.on('SIGTERM',()=>{});",
+      `child.once('message',()=>{fs.writeFileSync(${JSON.stringify(pidFile)},String(child.pid));`,
+      "child.disconnect();process.stdout.write('x'.repeat(100),()=>{",
+      parentExits ? 'process.exit(0);' : 'setInterval(()=>{},1000);',
+      '});});',
+    ].join('');
+    try {
+      const value = await streamed(parent, 8);
+      overflowResult(value.result);
+      await assertProcessGone(Number(fs.readFileSync(pidFile, 'utf8')));
+    } finally {
+      fs.writeFileSync(stopFile, 'stop');
+      if (fs.existsSync(pidFile)) await assertProcessGone(Number(fs.readFileSync(pidFile, 'utf8')));
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
+
+test('P11 incomplete output fails suite receipts without leaking captured data', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'overflow-receipt-'));
+  const program = "process.stdout.write('PRIVATE_OUTPUT'.repeat(20));process.exitCode=0";
+  const suites = [
+    { id: 'clipped', kind: 'command', command: [process.execPath, '-e', program], maxOutputBytes: 8, env: { PRIVATE_TOKEN: 'PRIVATE_VALUE' } },
+    { id: 'complete', kind: 'command', command: [process.execPath, '-e', "process.stdout.write('12345678')"], maxOutputBytes: 8 },
+  ];
+  try {
+    const results = await executeSuites(root, suites, [], { concurrency: 1, stdout: () => {}, stderr: () => {} });
+    assert.deepEqual(results.map(row => [row.id, row.status]), [['clipped', 'failed'], ['complete', 'passed']]);
+    overflowResult(results[0]);
+    assert.equal(results[1].exitCode, 0);
+    const receipt = buildReceipt({ suiteIds: ['clipped', 'complete'] }, results);
+    assert.equal(receipt.status, 'failed');
+    assert.deepEqual(receipt.timings.map(row => [row.id, row.status]), [['clipped', 'failed'], ['complete', 'passed']]);
+    await writeReceipt(root, 'receipt.json', receipt);
+    const bytes = fs.readFileSync(path.join(root, 'receipt.json'), 'utf8');
+    assert.deepEqual(JSON.parse(bytes), receipt);
+    for (const secret of [program, 'PRIVATE_OUTPUT', 'PRIVATE_TOKEN', 'PRIVATE_VALUE']) assert.ok(!bytes.includes(secret));
+    assert.equal(buildReceipt({ suiteIds: ['complete'] }, [results[1]]).status, 'passed');
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
