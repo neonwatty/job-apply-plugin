@@ -352,6 +352,22 @@
           "sha256": "41c723a4a2b60af0f9e5d5fb4756e67d97e0c5bf67b4ab01e5b9c0b5e9f8a50c"
         }
       ]
+    },
+    {
+      "id": "P08.manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze bounded platform literal recognition with independent actual receipt evidence.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p08/P08.I.json",
+          "sha256": "97ab3a29933de37be3ec771a57ab0bf0d321575183490fedcc69a7864fbac392"
+        },
+        {
+          "path": "docs/migration/evidence/p08/P08.V.json",
+          "sha256": "db9a474e41e7818ed52d1b70bf83645ab68cad4223dd66e96c7533705aee4066"
+        }
+      ]
     }
   ],
   "transitions": [
