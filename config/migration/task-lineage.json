@@ -660,6 +660,30 @@
           "sha256": "4c6af618ffbea1ad274b7d98dc12669c2d38fcb2b3ce72080e5afe5cf14a7967"
         }
       ]
+    },
+    {
+      "id": "S04.reference-manifest-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze disjoint original-Python reference work at the reviewed point persistence/path registration checkpoint; no runtime acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s04/S04.R.json",
+          "sha256": "e95e2c18104f5e966929cec58ea18dd95f4b7997b0bfc3ecc0192b880ce3cc8c"
+        }
+      ]
+    },
+    {
+      "id": "S05.reference-manifest-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze disjoint original-Python reference work at the reviewed point persistence/path registration checkpoint; no runtime acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s05/S05.R.json",
+          "sha256": "438d735f67c01d4b044152c5439500321557c8ceb93309447abea55dce3d485e"
+        }
+      ]
     }
   ],
   "transitions": [
