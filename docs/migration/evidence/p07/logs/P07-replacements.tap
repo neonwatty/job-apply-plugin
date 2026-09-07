@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: P07 unexecuted refinement preserves the original contract without inventing an attempt
+ok 1 - P07 unexecuted refinement preserves the original contract without inventing an attempt
+  ---
+  duration_ms: 5768.709083
+  type: 'test'
+  ...
+# Subtest: P07 rejected attempt remains immutable while an explicit replacement is prepared
+ok 2 - P07 rejected attempt remains immutable while an explicit replacement is prepared
+  ---
+  duration_ms: 7892.54325
+  type: 'test'
+  ...
+# Subtest: P07 replacement acceptance requires fresh exact-subject revalidation
+ok 3 - P07 replacement acceptance requires fresh exact-subject revalidation
+  ---
+  duration_ms: 15813.066875
+  type: 'test'
+  ...
+# Subtest: P07 altered historical attempt logs and rejection records fail closed
+ok 4 - P07 altered historical attempt logs and rejection records fail closed
+  ---
+  duration_ms: 17694.685875
+  type: 'test'
+  ...
+# Subtest: P07 ambiguous or competing replacements grant no acceptance
+ok 5 - P07 ambiguous or competing replacements grant no acceptance
+  ---
+  duration_ms: 11769.331125
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 59108.054042

@@ -1,0 +1,34 @@
+TAP version 13
+# Subtest: P07 replacement cannot weaken accepted dependencies or required coverage
+ok 1 - P07 replacement cannot weaken accepted dependencies or required coverage
+  ---
+  duration_ms: 22673.4235
+  type: 'test'
+  ...
+# Subtest: P07 replacement cycles and fake Git ancestry fail closed
+ok 2 - P07 replacement cycles and fake Git ancestry fail closed
+  ---
+  duration_ms: 9676.410375
+  type: 'test'
+  ...
+# Subtest: P07 later replacement success cannot retroactively pass the rejected attempt
+ok 3 - P07 later replacement success cannot retroactively pass the rejected attempt
+  ---
+  duration_ms: 10444.9105
+  type: 'test'
+  ...
+# Subtest: P07 lineage activation and receipt snapshots preserve accepted history
+ok 4 - P07 lineage activation and receipt snapshots preserve accepted history
+  ---
+  duration_ms: 45811.687875
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 88776.743833

@@ -1,0 +1,70 @@
+TAP version 13
+# Subtest: ready package has explicit scope and accepted inputs without claiming acceptance
+ok 1 - ready package has explicit scope and accepted inputs without claiming acceptance
+  ---
+  duration_ms: 1.195792
+  type: 'test'
+  ...
+# Subtest: a passing reference for another requirement cannot unlock this package
+ok 2 - a passing reference for another requirement cannot unlock this package
+  ---
+  duration_ms: 0.145375
+  type: 'test'
+  ...
+# Subtest: accepted historical ownership can be explicitly released for a dependent repair
+ok 3 - accepted historical ownership can be explicitly released for a dependent repair
+  ---
+  duration_ms: 0.362209
+  type: 'test'
+  ...
+# Subtest: closed fields, ownership, coverage and inert activation fail closed
+ok 4 - closed fields, ownership, coverage and inert activation fail closed
+  ---
+  duration_ms: 0.216667
+  type: 'test'
+  ...
+# Subtest: unsafe or duplicate ownership paths cannot alias active ownership
+ok 5 - unsafe or duplicate ownership paths cannot alias active ownership
+  ---
+  duration_ms: 0.164458
+  type: 'test'
+  ...
+# Subtest: unknown or unaccepted reference/interface evidence cannot unlock ready work
+ok 6 - unknown or unaccepted reference/interface evidence cannot unlock ready work
+  ---
+  duration_ms: 0.323917
+  type: 'test'
+  ...
+# Subtest: implemented dependency alone is not accepted and cannot unlock a child
+ok 7 - implemented dependency alone is not accepted and cannot unlock a child
+  ---
+  duration_ms: 0.282
+  type: 'test'
+  ...
+# Subtest: cycles, unknown dependencies and duplicate IDs are rejected
+ok 8 - cycles, unknown dependencies and duplicate IDs are rejected
+  ---
+  duration_ms: 0.063916
+  type: 'test'
+  ...
+# Subtest: active package ownership overlaps fail even when the named owner is identical
+ok 9 - active package ownership overlaps fail even when the named owner is identical
+  ---
+  duration_ms: 0.193667
+  type: 'test'
+  ...
+# Subtest: implemented scope must exist and missing context cannot fabricate readiness
+ok 10 - implemented scope must exist and missing context cannot fabricate readiness
+  ---
+  duration_ms: 0.20675
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 32.355709
