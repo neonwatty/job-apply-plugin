@@ -1,0 +1,3159 @@
+[
+  {
+    "id": "P00.I",
+    "package": "P00",
+    "role": "implementation-or-gate",
+    "dependencies": []
+  },
+  {
+    "id": "P00.V",
+    "package": "P00",
+    "role": "independent-review",
+    "dependencies": [
+      "P00.I"
+    ]
+  },
+  {
+    "id": "P01.I",
+    "package": "P01",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "P01.V",
+    "package": "P01",
+    "role": "independent-review",
+    "dependencies": [
+      "P01.I"
+    ]
+  },
+  {
+    "id": "P02.I",
+    "package": "P02",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "P02.V",
+    "package": "P02",
+    "role": "independent-review",
+    "dependencies": [
+      "P02.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "P03.R",
+    "package": "P03",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "P03.I",
+    "package": "P03",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P01.V",
+      "P03.R"
+    ]
+  },
+  {
+    "id": "P03.V",
+    "package": "P03",
+    "role": "independent-review",
+    "dependencies": [
+      "P03.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "P04.R",
+    "package": "P04",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "P04.I",
+    "package": "P04",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P01.V",
+      "P04.R"
+    ]
+  },
+  {
+    "id": "P04.V",
+    "package": "P04",
+    "role": "independent-review",
+    "dependencies": [
+      "P04.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "P05.I",
+    "package": "P05",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P01.V",
+      "P02.V"
+    ]
+  },
+  {
+    "id": "P05.V",
+    "package": "P05",
+    "role": "independent-review",
+    "dependencies": [
+      "P05.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "P06.R",
+    "package": "P06",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "P06.I",
+    "package": "P06",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P01.V",
+      "P06.R"
+    ]
+  },
+  {
+    "id": "P06.V",
+    "package": "P06",
+    "role": "independent-review",
+    "dependencies": [
+      "P06.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "P07.R",
+    "package": "P07",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "P07.I",
+    "package": "P07",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P06.V",
+      "P07.R"
+    ]
+  },
+  {
+    "id": "P07.V",
+    "package": "P07",
+    "role": "independent-review",
+    "dependencies": [
+      "P07.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "S01.R",
+    "package": "S01",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "S01.I",
+    "package": "S01",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P00.V",
+      "S01.R"
+    ]
+  },
+  {
+    "id": "S01.V",
+    "package": "S01",
+    "role": "independent-review",
+    "dependencies": [
+      "S01.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "S02.R",
+    "package": "S02",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "S02.I",
+    "package": "S02",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P00.V",
+      "S02.R"
+    ]
+  },
+  {
+    "id": "S02.V",
+    "package": "S02",
+    "role": "independent-review",
+    "dependencies": [
+      "S02.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "S08.R",
+    "package": "S08",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "S08.I",
+    "package": "S08",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "S01.V",
+      "S02.retry1.V",
+      "S08.R"
+    ]
+  },
+  {
+    "id": "S08.V",
+    "package": "S08",
+    "role": "independent-review",
+    "dependencies": [
+      "S08.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "S03.R",
+    "package": "S03",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "S03.I",
+    "package": "S03",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "S08.V",
+      "S04.V",
+      "S05.V",
+      "S03.R"
+    ]
+  },
+  {
+    "id": "S03.V",
+    "package": "S03",
+    "role": "independent-review",
+    "dependencies": [
+      "S03.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "S04.R",
+    "package": "S04",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "S04.I",
+    "package": "S04",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "S08.V",
+      "S04.R"
+    ]
+  },
+  {
+    "id": "S04.V",
+    "package": "S04",
+    "role": "independent-review",
+    "dependencies": [
+      "S04.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "S05.R",
+    "package": "S05",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "S05.I",
+    "package": "S05",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "S08.V",
+      "S05.R"
+    ]
+  },
+  {
+    "id": "S05.V",
+    "package": "S05",
+    "role": "independent-review",
+    "dependencies": [
+      "S05.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "S06.R",
+    "package": "S06",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "S06.I",
+    "package": "S06",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "S03.V",
+      "S06.R"
+    ]
+  },
+  {
+    "id": "S06.V",
+    "package": "S06",
+    "role": "independent-review",
+    "dependencies": [
+      "S06.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "S07.R",
+    "package": "S07",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "S07.I",
+    "package": "S07",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "S03.V",
+      "S04.V",
+      "S05.V",
+      "S07.R"
+    ]
+  },
+  {
+    "id": "S07.V",
+    "package": "S07",
+    "role": "independent-review",
+    "dependencies": [
+      "S07.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "F01.R",
+    "package": "F01",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "F01.I",
+    "package": "F01",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "S05.V",
+      "P02.V",
+      "P05.V",
+      "F01.R"
+    ]
+  },
+  {
+    "id": "F01.V",
+    "package": "F01",
+    "role": "independent-review",
+    "dependencies": [
+      "F01.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "F02.R",
+    "package": "F02",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "F02.I",
+    "package": "F02",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "F01.V",
+      "S07.V",
+      "F02.R"
+    ]
+  },
+  {
+    "id": "F02.V",
+    "package": "F02",
+    "role": "independent-review",
+    "dependencies": [
+      "F02.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "F03.R",
+    "package": "F03",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "F03.I",
+    "package": "F03",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "F01.V",
+      "S04.V",
+      "F03.R"
+    ]
+  },
+  {
+    "id": "F03.V",
+    "package": "F03",
+    "role": "independent-review",
+    "dependencies": [
+      "F03.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "F04.R",
+    "package": "F04",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "F04.I",
+    "package": "F04",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "F02.V",
+      "F04.R"
+    ]
+  },
+  {
+    "id": "F04.V",
+    "package": "F04",
+    "role": "independent-review",
+    "dependencies": [
+      "F04.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "F05.R",
+    "package": "F05",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "F05.I",
+    "package": "F05",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "F04.V",
+      "F03.V",
+      "S04.V",
+      "F05.R"
+    ]
+  },
+  {
+    "id": "F05.V",
+    "package": "F05",
+    "role": "independent-review",
+    "dependencies": [
+      "F05.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "F06.R",
+    "package": "F06",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "F06.I",
+    "package": "F06",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "F03.V",
+      "F02.V",
+      "F06.R"
+    ]
+  },
+  {
+    "id": "F06.V",
+    "package": "F06",
+    "role": "independent-review",
+    "dependencies": [
+      "F06.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "A01.R",
+    "package": "A01",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "A01.I",
+    "package": "A01",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "S07.V",
+      "A01.R"
+    ]
+  },
+  {
+    "id": "A01.V",
+    "package": "A01",
+    "role": "independent-review",
+    "dependencies": [
+      "A01.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "A02.R",
+    "package": "A02",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "A02.I",
+    "package": "A02",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "S02.retry1.V",
+      "P01.V",
+      "S03.V",
+      "A02.R"
+    ]
+  },
+  {
+    "id": "A02.V",
+    "package": "A02",
+    "role": "independent-review",
+    "dependencies": [
+      "A02.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "A03.R",
+    "package": "A03",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "A03.I",
+    "package": "A03",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "F02.V",
+      "A03.R"
+    ]
+  },
+  {
+    "id": "A03.V",
+    "package": "A03",
+    "role": "independent-review",
+    "dependencies": [
+      "A03.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "A04.R",
+    "package": "A04",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "A04.I",
+    "package": "A04",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "A02.V",
+      "A03.V",
+      "A04.R"
+    ]
+  },
+  {
+    "id": "A04.V",
+    "package": "A04",
+    "role": "independent-review",
+    "dependencies": [
+      "A04.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "D01.R",
+    "package": "D01",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "D01.I",
+    "package": "D01",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "F02.V",
+      "F03.V",
+      "F06.V",
+      "S07.V",
+      "D01.R"
+    ]
+  },
+  {
+    "id": "D01.V",
+    "package": "D01",
+    "role": "independent-review",
+    "dependencies": [
+      "D01.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "D02.R",
+    "package": "D02",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "D02.I",
+    "package": "D02",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "D01.V",
+      "D02.R"
+    ]
+  },
+  {
+    "id": "D02.V",
+    "package": "D02",
+    "role": "independent-review",
+    "dependencies": [
+      "D02.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "D03.R",
+    "package": "D03",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "D03.I",
+    "package": "D03",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "F02.V",
+      "F03.V",
+      "F06.V",
+      "D03.R"
+    ]
+  },
+  {
+    "id": "D03.V",
+    "package": "D03",
+    "role": "independent-review",
+    "dependencies": [
+      "D03.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "D04.R",
+    "package": "D04",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "D04.I",
+    "package": "D04",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "D03.V",
+      "F05.V",
+      "D04.R"
+    ]
+  },
+  {
+    "id": "D04.V",
+    "package": "D04",
+    "role": "independent-review",
+    "dependencies": [
+      "D04.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "D05.R",
+    "package": "D05",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "D05.I",
+    "package": "D05",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "D04.V",
+      "D05.R"
+    ]
+  },
+  {
+    "id": "D05.V",
+    "package": "D05",
+    "role": "independent-review",
+    "dependencies": [
+      "D05.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "D06.R",
+    "package": "D06",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "D06.I",
+    "package": "D06",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "F02.V",
+      "F03.V",
+      "F06.V",
+      "D06.R"
+    ]
+  },
+  {
+    "id": "D06.V",
+    "package": "D06",
+    "role": "independent-review",
+    "dependencies": [
+      "D06.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "D07.R",
+    "package": "D07",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "D07.I",
+    "package": "D07",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "D06.V",
+      "D07.R"
+    ]
+  },
+  {
+    "id": "D07.V",
+    "package": "D07",
+    "role": "independent-review",
+    "dependencies": [
+      "D07.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "D08.R",
+    "package": "D08",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "D08.I",
+    "package": "D08",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "D06.V",
+      "D02.V",
+      "D08.R"
+    ]
+  },
+  {
+    "id": "D08.V",
+    "package": "D08",
+    "role": "independent-review",
+    "dependencies": [
+      "D08.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "D09.R",
+    "package": "D09",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "D09.I",
+    "package": "D09",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "D08.V",
+      "D09.R"
+    ]
+  },
+  {
+    "id": "D09.V",
+    "package": "D09",
+    "role": "independent-review",
+    "dependencies": [
+      "D09.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "D10.R",
+    "package": "D10",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "D10.I",
+    "package": "D10",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "F02.V",
+      "S06.V",
+      "D02.V",
+      "D10.R"
+    ]
+  },
+  {
+    "id": "D10.V",
+    "package": "D10",
+    "role": "independent-review",
+    "dependencies": [
+      "D10.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "D11.R",
+    "package": "D11",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "D11.I",
+    "package": "D11",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "D10.V",
+      "F03.V",
+      "F06.V",
+      "D11.R"
+    ]
+  },
+  {
+    "id": "D11.V",
+    "package": "D11",
+    "role": "independent-review",
+    "dependencies": [
+      "D11.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "D12.R",
+    "package": "D12",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "D12.I",
+    "package": "D12",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "D11.V",
+      "D12.R"
+    ]
+  },
+  {
+    "id": "D12.V",
+    "package": "D12",
+    "role": "independent-review",
+    "dependencies": [
+      "D12.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "D13.R",
+    "package": "D13",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "D13.I",
+    "package": "D13",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "F02.V",
+      "F03.V",
+      "F06.V",
+      "A01.V",
+      "D13.R"
+    ]
+  },
+  {
+    "id": "D13.V",
+    "package": "D13",
+    "role": "independent-review",
+    "dependencies": [
+      "D13.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "D14.R",
+    "package": "D14",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "D14.I",
+    "package": "D14",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "D13.V",
+      "D14.R"
+    ]
+  },
+  {
+    "id": "D14.V",
+    "package": "D14",
+    "role": "independent-review",
+    "dependencies": [
+      "D14.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "D15.R",
+    "package": "D15",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "D15.I",
+    "package": "D15",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "D14.V",
+      "D15.R"
+    ]
+  },
+  {
+    "id": "D15.V",
+    "package": "D15",
+    "role": "independent-review",
+    "dependencies": [
+      "D15.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "D16.R",
+    "package": "D16",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "D16.I",
+    "package": "D16",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "D15.V",
+      "D16.R"
+    ]
+  },
+  {
+    "id": "D16.V",
+    "package": "D16",
+    "role": "independent-review",
+    "dependencies": [
+      "D16.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "J01.R",
+    "package": "J01",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "J01.I",
+    "package": "J01",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "D09.V",
+      "F06.V",
+      "J01.R"
+    ]
+  },
+  {
+    "id": "J01.V",
+    "package": "J01",
+    "role": "independent-review",
+    "dependencies": [
+      "J01.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "J02.R",
+    "package": "J02",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "J02.I",
+    "package": "J02",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "D16.V",
+      "F06.V",
+      "J02.R"
+    ]
+  },
+  {
+    "id": "J02.V",
+    "package": "J02",
+    "role": "independent-review",
+    "dependencies": [
+      "J02.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "J03.R",
+    "package": "J03",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "J03.I",
+    "package": "J03",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "D05.V",
+      "D07.V",
+      "D12.V",
+      "J01.V",
+      "J02.V",
+      "F05.V",
+      "J03.R"
+    ]
+  },
+  {
+    "id": "J03.V",
+    "package": "J03",
+    "role": "independent-review",
+    "dependencies": [
+      "J03.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "J04.R",
+    "package": "J04",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "J04.I",
+    "package": "J04",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "J03.V",
+      "J04.R"
+    ]
+  },
+  {
+    "id": "J04.V",
+    "package": "J04",
+    "role": "independent-review",
+    "dependencies": [
+      "J04.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "C01.R",
+    "package": "C01",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "C01.I",
+    "package": "C01",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "J04.V",
+      "A01.V",
+      "S06.V",
+      "C01.R"
+    ]
+  },
+  {
+    "id": "C01.V",
+    "package": "C01",
+    "role": "independent-review",
+    "dependencies": [
+      "C01.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "C02.R",
+    "package": "C02",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "C02.I",
+    "package": "C02",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "C01.V",
+      "C02.R"
+    ]
+  },
+  {
+    "id": "C02.V",
+    "package": "C02",
+    "role": "independent-review",
+    "dependencies": [
+      "C02.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "C03.R",
+    "package": "C03",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "C03.I",
+    "package": "C03",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "C02.V",
+      "C03.R"
+    ]
+  },
+  {
+    "id": "C03.V",
+    "package": "C03",
+    "role": "independent-review",
+    "dependencies": [
+      "C03.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "C04.R",
+    "package": "C04",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "C04.I",
+    "package": "C04",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "C03.V",
+      "C04.R"
+    ]
+  },
+  {
+    "id": "C04.V",
+    "package": "C04",
+    "role": "independent-review",
+    "dependencies": [
+      "C04.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "N01.R",
+    "package": "N01",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "N01.I",
+    "package": "N01",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P02.V",
+      "D13.V",
+      "P05.V",
+      "N01.R"
+    ]
+  },
+  {
+    "id": "N01.V",
+    "package": "N01",
+    "role": "independent-review",
+    "dependencies": [
+      "N01.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "N02.R",
+    "package": "N02",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "N02.I",
+    "package": "N02",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "N01.V",
+      "D16.V",
+      "N02.R"
+    ]
+  },
+  {
+    "id": "N02.V",
+    "package": "N02",
+    "role": "independent-review",
+    "dependencies": [
+      "N02.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "N03.R",
+    "package": "N03",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "N03.I",
+    "package": "N03",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "N02.V",
+      "D15.V",
+      "N03.R"
+    ]
+  },
+  {
+    "id": "N03.V",
+    "package": "N03",
+    "role": "independent-review",
+    "dependencies": [
+      "N03.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "Q01.R",
+    "package": "Q01",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "Q01.I",
+    "package": "Q01",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "F03.V",
+      "Q01.R"
+    ]
+  },
+  {
+    "id": "Q01.V",
+    "package": "Q01",
+    "role": "independent-review",
+    "dependencies": [
+      "Q01.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "Q02.R",
+    "package": "Q02",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "Q02.I",
+    "package": "Q02",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "Q01.V",
+      "A01.V",
+      "Q16.V",
+      "Q02.R"
+    ]
+  },
+  {
+    "id": "Q02.V",
+    "package": "Q02",
+    "role": "independent-review",
+    "dependencies": [
+      "Q02.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "Q03.R",
+    "package": "Q03",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "Q03.I",
+    "package": "Q03",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "Q02.V",
+      "Q03.R"
+    ]
+  },
+  {
+    "id": "Q03.V",
+    "package": "Q03",
+    "role": "independent-review",
+    "dependencies": [
+      "Q03.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "Q04.R",
+    "package": "Q04",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "Q04.I",
+    "package": "Q04",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P01.V",
+      "Q04.R"
+    ]
+  },
+  {
+    "id": "Q04.V",
+    "package": "Q04",
+    "role": "independent-review",
+    "dependencies": [
+      "Q04.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "Q05.R",
+    "package": "Q05",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "Q05.I",
+    "package": "Q05",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "A02.V",
+      "Q04.V",
+      "Q05.R"
+    ]
+  },
+  {
+    "id": "Q05.V",
+    "package": "Q05",
+    "role": "independent-review",
+    "dependencies": [
+      "Q05.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "Q06.R",
+    "package": "Q06",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "Q06.I",
+    "package": "Q06",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "F01.V",
+      "Q06.R"
+    ]
+  },
+  {
+    "id": "Q06.V",
+    "package": "Q06",
+    "role": "independent-review",
+    "dependencies": [
+      "Q06.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "Q07.R",
+    "package": "Q07",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "Q07.I",
+    "package": "Q07",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "Q06.V",
+      "Q07.R"
+    ]
+  },
+  {
+    "id": "Q07.V",
+    "package": "Q07",
+    "role": "independent-review",
+    "dependencies": [
+      "Q07.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "Q08.R",
+    "package": "Q08",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "Q08.I",
+    "package": "Q08",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "A01.V",
+      "F03.V",
+      "Q08.R"
+    ]
+  },
+  {
+    "id": "Q08.V",
+    "package": "Q08",
+    "role": "independent-review",
+    "dependencies": [
+      "Q08.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "Q09.R",
+    "package": "Q09",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "Q09.I",
+    "package": "Q09",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "Q03.V",
+      "Q05.V",
+      "Q07.V",
+      "Q08.V",
+      "Q14.V",
+      "Q15.V",
+      "Q09.R"
+    ]
+  },
+  {
+    "id": "Q09.V",
+    "package": "Q09",
+    "role": "independent-review",
+    "dependencies": [
+      "Q09.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "Q10.R",
+    "package": "Q10",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "Q10.I",
+    "package": "Q10",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "Q09.V",
+      "Q10.R"
+    ]
+  },
+  {
+    "id": "Q10.V",
+    "package": "Q10",
+    "role": "independent-review",
+    "dependencies": [
+      "Q10.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "Q11.R",
+    "package": "Q11",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "Q11.I",
+    "package": "Q11",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "F03.V",
+      "Q02.V",
+      "Q11.R"
+    ]
+  },
+  {
+    "id": "Q11.V",
+    "package": "Q11",
+    "role": "independent-review",
+    "dependencies": [
+      "Q11.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "Q12.R",
+    "package": "Q12",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "Q12.I",
+    "package": "Q12",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "Q10.V",
+      "Q11.V",
+      "Q12.R"
+    ]
+  },
+  {
+    "id": "Q12.V",
+    "package": "Q12",
+    "role": "independent-review",
+    "dependencies": [
+      "Q12.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "Q13.R",
+    "package": "Q13",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "Q13.I",
+    "package": "Q13",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "Q12.V",
+      "F03.V",
+      "Q13.R"
+    ]
+  },
+  {
+    "id": "Q13.V",
+    "package": "Q13",
+    "role": "independent-review",
+    "dependencies": [
+      "Q13.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "C05.R",
+    "package": "C05",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "C05.I",
+    "package": "C05",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "C04.V",
+      "N03.V",
+      "Q08.V",
+      "C05.R"
+    ]
+  },
+  {
+    "id": "C05.V",
+    "package": "C05",
+    "role": "independent-review",
+    "dependencies": [
+      "C05.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "C06.R",
+    "package": "C06",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "C06.I",
+    "package": "C06",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "C05.V",
+      "Q03.V",
+      "C06.R"
+    ]
+  },
+  {
+    "id": "C06.V",
+    "package": "C06",
+    "role": "independent-review",
+    "dependencies": [
+      "C06.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "U01.R",
+    "package": "U01",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "U01.I",
+    "package": "U01",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P00.V",
+      "U01.R"
+    ]
+  },
+  {
+    "id": "U01.V",
+    "package": "U01",
+    "role": "independent-review",
+    "dependencies": [
+      "U01.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "U02.R",
+    "package": "U02",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "U02.I",
+    "package": "U02",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "U01.V",
+      "U02.R"
+    ]
+  },
+  {
+    "id": "U02.V",
+    "package": "U02",
+    "role": "independent-review",
+    "dependencies": [
+      "U02.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "U03.R",
+    "package": "U03",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "U03.I",
+    "package": "U03",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "U02.V",
+      "U03.R"
+    ]
+  },
+  {
+    "id": "U03.V",
+    "package": "U03",
+    "role": "independent-review",
+    "dependencies": [
+      "U03.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "U04.R",
+    "package": "U04",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "U04.I",
+    "package": "U04",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "U02.V",
+      "U04.R"
+    ]
+  },
+  {
+    "id": "U04.V",
+    "package": "U04",
+    "role": "independent-review",
+    "dependencies": [
+      "U04.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "U05.R",
+    "package": "U05",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "U05.I",
+    "package": "U05",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "U02.V",
+      "U05.R"
+    ]
+  },
+  {
+    "id": "U05.V",
+    "package": "U05",
+    "role": "independent-review",
+    "dependencies": [
+      "U05.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "U06.R",
+    "package": "U06",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "U06.I",
+    "package": "U06",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "U02.V",
+      "U06.R"
+    ]
+  },
+  {
+    "id": "U06.V",
+    "package": "U06",
+    "role": "independent-review",
+    "dependencies": [
+      "U06.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "U07.R",
+    "package": "U07",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "U07.I",
+    "package": "U07",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "U03.V",
+      "U04.V",
+      "U05.V",
+      "U06.V",
+      "U07.R"
+    ]
+  },
+  {
+    "id": "U07.V",
+    "package": "U07",
+    "role": "independent-review",
+    "dependencies": [
+      "U07.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "W01.R",
+    "package": "W01",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "W01.I",
+    "package": "W01",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "A02.V",
+      "D02.V",
+      "W01.R"
+    ]
+  },
+  {
+    "id": "W01.V",
+    "package": "W01",
+    "role": "independent-review",
+    "dependencies": [
+      "W01.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "W02.R",
+    "package": "W02",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "W02.I",
+    "package": "W02",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "A02.V",
+      "D05.V",
+      "W02.R"
+    ]
+  },
+  {
+    "id": "W02.V",
+    "package": "W02",
+    "role": "independent-review",
+    "dependencies": [
+      "W02.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "W03.R",
+    "package": "W03",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "W03.I",
+    "package": "W03",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "A02.V",
+      "D07.V",
+      "D09.V",
+      "J01.V",
+      "W03.R"
+    ]
+  },
+  {
+    "id": "W03.V",
+    "package": "W03",
+    "role": "independent-review",
+    "dependencies": [
+      "W03.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "W04.R",
+    "package": "W04",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "W04.I",
+    "package": "W04",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "A02.V",
+      "D12.V",
+      "W04.R"
+    ]
+  },
+  {
+    "id": "W04.V",
+    "package": "W04",
+    "role": "independent-review",
+    "dependencies": [
+      "W04.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "W05.R",
+    "package": "W05",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "W05.I",
+    "package": "W05",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "A02.V",
+      "D16.V",
+      "J02.V",
+      "N03.V",
+      "W05.R"
+    ]
+  },
+  {
+    "id": "W05.V",
+    "package": "W05",
+    "role": "independent-review",
+    "dependencies": [
+      "W05.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "B01.R",
+    "package": "B01",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "B01.I",
+    "package": "B01",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P02.V",
+      "F01.V",
+      "P05.V",
+      "B01.R"
+    ]
+  },
+  {
+    "id": "B01.V",
+    "package": "B01",
+    "role": "independent-review",
+    "dependencies": [
+      "B01.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "B02.R",
+    "package": "B02",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "B02.I",
+    "package": "B02",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "B01.V",
+      "B02.R"
+    ]
+  },
+  {
+    "id": "B02.V",
+    "package": "B02",
+    "role": "independent-review",
+    "dependencies": [
+      "B02.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "B03.R",
+    "package": "B03",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "B03.I",
+    "package": "B03",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "B01.V",
+      "B03.R"
+    ]
+  },
+  {
+    "id": "B03.V",
+    "package": "B03",
+    "role": "independent-review",
+    "dependencies": [
+      "B03.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "B04.R",
+    "package": "B04",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "B04.I",
+    "package": "B04",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "B02.V",
+      "B03.V",
+      "B04.R"
+    ]
+  },
+  {
+    "id": "B04.V",
+    "package": "B04",
+    "role": "independent-review",
+    "dependencies": [
+      "B04.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "B05.R",
+    "package": "B05",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "B05.I",
+    "package": "B05",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P02.V",
+      "B05.R"
+    ]
+  },
+  {
+    "id": "B05.V",
+    "package": "B05",
+    "role": "independent-review",
+    "dependencies": [
+      "B05.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "B06.R",
+    "package": "B06",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "B06.I",
+    "package": "B06",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "B04.V",
+      "B05.V",
+      "G01.V",
+      "G02.V",
+      "G03.V",
+      "B06.R"
+    ]
+  },
+  {
+    "id": "B06.V",
+    "package": "B06",
+    "role": "independent-review",
+    "dependencies": [
+      "B06.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "B07.I",
+    "package": "B07",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "B06.V",
+      "P05.V"
+    ]
+  },
+  {
+    "id": "B07.V",
+    "package": "B07",
+    "role": "independent-review",
+    "dependencies": [
+      "B07.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "T01.I",
+    "package": "T01",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "T06.V",
+      "T07.V",
+      "T08.V",
+      "T09.V",
+      "T10.V",
+      "T11.V",
+      "T12.V"
+    ]
+  },
+  {
+    "id": "T01.V",
+    "package": "T01",
+    "role": "independent-review",
+    "dependencies": [
+      "T01.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "T02.R",
+    "package": "T02",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "T02.I",
+    "package": "T02",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "Q05.V",
+      "U07.V",
+      "Q14.V",
+      "Q15.V",
+      "G02.V",
+      "T02.R"
+    ]
+  },
+  {
+    "id": "T02.V",
+    "package": "T02",
+    "role": "independent-review",
+    "dependencies": [
+      "T02.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "T03.R",
+    "package": "T03",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "T03.I",
+    "package": "T03",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "N03.V",
+      "B07.V",
+      "T03.R"
+    ]
+  },
+  {
+    "id": "T03.V",
+    "package": "T03",
+    "role": "independent-review",
+    "dependencies": [
+      "T03.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "T04.R",
+    "package": "T04",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "T04.I",
+    "package": "T04",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P03.retry2.V",
+      "P04.V",
+      "P05.V",
+      "T13.V",
+      "T14.V",
+      "T15.V",
+      "T04.R"
+    ]
+  },
+  {
+    "id": "T04.V",
+    "package": "T04",
+    "role": "independent-review",
+    "dependencies": [
+      "T04.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "T05.R",
+    "package": "T05",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "T05.I",
+    "package": "T05",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P03.retry2.V",
+      "P04.V",
+      "P05.V",
+      "T05.R",
+      "P03.evidence.R",
+      "P08.V",
+      "P09.V",
+      "P10.V"
+    ]
+  },
+  {
+    "id": "T05.V",
+    "package": "T05",
+    "role": "independent-review",
+    "dependencies": [
+      "T05.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "G01.I",
+    "package": "G01",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "C04.V",
+      "D12.V",
+      "D05.V",
+      "D07.V",
+      "D09.V",
+      "D16.V",
+      "J04.V"
+    ]
+  },
+  {
+    "id": "G01.V",
+    "package": "G01",
+    "role": "independent-review",
+    "dependencies": [
+      "G01.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "G02.I",
+    "package": "G02",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "G01.V",
+      "A04.V",
+      "W01.V",
+      "W02.V",
+      "W03.V",
+      "W04.V",
+      "W05.V",
+      "U07.V"
+    ]
+  },
+  {
+    "id": "G02.V",
+    "package": "G02",
+    "role": "independent-review",
+    "dependencies": [
+      "G02.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "G03.I",
+    "package": "G03",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "C06.V",
+      "Q13.V",
+      "Q07.V",
+      "Q05.V",
+      "Q14.V",
+      "Q15.V"
+    ]
+  },
+  {
+    "id": "G03.V",
+    "package": "G03",
+    "role": "independent-review",
+    "dependencies": [
+      "G03.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "G04.I",
+    "package": "G04",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "G01.V",
+      "G02.V",
+      "G03.V",
+      "B07.V"
+    ]
+  },
+  {
+    "id": "G04.V",
+    "package": "G04",
+    "role": "independent-review",
+    "dependencies": [
+      "G04.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "G05.I",
+    "package": "G05",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "G01.V",
+      "F05.V",
+      "J04.V"
+    ]
+  },
+  {
+    "id": "G05.V",
+    "package": "G05",
+    "role": "independent-review",
+    "dependencies": [
+      "G05.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "G06.I",
+    "package": "G06",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "G02.V"
+    ]
+  },
+  {
+    "id": "G06.V",
+    "package": "G06",
+    "role": "independent-review",
+    "dependencies": [
+      "G06.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "G07.I",
+    "package": "G07",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "G03.V"
+    ]
+  },
+  {
+    "id": "G07.V",
+    "package": "G07",
+    "role": "independent-review",
+    "dependencies": [
+      "G07.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "G08.I",
+    "package": "G08",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "G04.V",
+      "G05.V",
+      "G06.V",
+      "G07.V",
+      "P01.V",
+      "P05.V",
+      "P06.V",
+      "P07.V"
+    ]
+  },
+  {
+    "id": "G08.V",
+    "package": "G08",
+    "role": "independent-review",
+    "dependencies": [
+      "G08.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "G09.I",
+    "package": "G09",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "G08.V",
+      "T05.V"
+    ]
+  },
+  {
+    "id": "G09.V",
+    "package": "G09",
+    "role": "independent-review",
+    "dependencies": [
+      "G09.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "G10.I",
+    "package": "G10",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "G09.V"
+    ]
+  },
+  {
+    "id": "G10.V",
+    "package": "G10",
+    "role": "independent-review",
+    "dependencies": [
+      "G10.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "G11.I",
+    "package": "G11",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "G10.V",
+      "T01.V",
+      "T02.V",
+      "T03.V",
+      "T04.V"
+    ]
+  },
+  {
+    "id": "G11.V",
+    "package": "G11",
+    "role": "independent-review",
+    "dependencies": [
+      "G11.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "G12.I",
+    "package": "G12",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "G11.V"
+    ]
+  },
+  {
+    "id": "G12.V",
+    "package": "G12",
+    "role": "independent-review",
+    "dependencies": [
+      "G12.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "G13.I",
+    "package": "G13",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "G12.V"
+    ]
+  },
+  {
+    "id": "G13.V",
+    "package": "G13",
+    "role": "independent-review",
+    "dependencies": [
+      "G13.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "Q14.R",
+    "package": "Q14",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "Q14.I",
+    "package": "Q14",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "Q05.V",
+      "F02.V",
+      "Q14.R"
+    ]
+  },
+  {
+    "id": "Q14.V",
+    "package": "Q14",
+    "role": "independent-review",
+    "dependencies": [
+      "Q14.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "Q15.R",
+    "package": "Q15",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "Q15.I",
+    "package": "Q15",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P01.V",
+      "Q15.R"
+    ]
+  },
+  {
+    "id": "Q15.V",
+    "package": "Q15",
+    "role": "independent-review",
+    "dependencies": [
+      "Q15.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "Q16.R",
+    "package": "Q16",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "Q16.I",
+    "package": "Q16",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "Q01.V",
+      "A01.V",
+      "Q16.R"
+    ]
+  },
+  {
+    "id": "Q16.V",
+    "package": "Q16",
+    "role": "independent-review",
+    "dependencies": [
+      "Q16.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "T06.R",
+    "package": "T06",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "T06.I",
+    "package": "T06",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P01.V",
+      "T06.R"
+    ]
+  },
+  {
+    "id": "T06.V",
+    "package": "T06",
+    "role": "independent-review",
+    "dependencies": [
+      "T06.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "T07.R",
+    "package": "T07",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "T07.I",
+    "package": "T07",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P01.V",
+      "T07.R"
+    ]
+  },
+  {
+    "id": "T07.V",
+    "package": "T07",
+    "role": "independent-review",
+    "dependencies": [
+      "T07.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "T08.R",
+    "package": "T08",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "T08.I",
+    "package": "T08",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P01.V",
+      "T08.R"
+    ]
+  },
+  {
+    "id": "T08.V",
+    "package": "T08",
+    "role": "independent-review",
+    "dependencies": [
+      "T08.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "T09.R",
+    "package": "T09",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "T09.I",
+    "package": "T09",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P01.V",
+      "T09.R"
+    ]
+  },
+  {
+    "id": "T09.V",
+    "package": "T09",
+    "role": "independent-review",
+    "dependencies": [
+      "T09.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "T10.R",
+    "package": "T10",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "T10.I",
+    "package": "T10",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P01.V",
+      "T10.R"
+    ]
+  },
+  {
+    "id": "T10.V",
+    "package": "T10",
+    "role": "independent-review",
+    "dependencies": [
+      "T10.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "T11.R",
+    "package": "T11",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "T11.I",
+    "package": "T11",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P01.V",
+      "T11.R"
+    ]
+  },
+  {
+    "id": "T11.V",
+    "package": "T11",
+    "role": "independent-review",
+    "dependencies": [
+      "T11.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "T12.R",
+    "package": "T12",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "T12.I",
+    "package": "T12",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P01.V",
+      "T12.R"
+    ]
+  },
+  {
+    "id": "T12.V",
+    "package": "T12",
+    "role": "independent-review",
+    "dependencies": [
+      "T12.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "T13.R",
+    "package": "T13",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "T13.I",
+    "package": "T13",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P01.V",
+      "T13.R"
+    ]
+  },
+  {
+    "id": "T13.V",
+    "package": "T13",
+    "role": "independent-review",
+    "dependencies": [
+      "T13.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "T14.R",
+    "package": "T14",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "T14.I",
+    "package": "T14",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "B04.V",
+      "P01.V",
+      "T14.R"
+    ]
+  },
+  {
+    "id": "T14.V",
+    "package": "T14",
+    "role": "independent-review",
+    "dependencies": [
+      "T14.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "T15.R",
+    "package": "T15",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "T15.I",
+    "package": "T15",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "Q14.V",
+      "Q15.V",
+      "T15.R"
+    ]
+  },
+  {
+    "id": "T15.V",
+    "package": "T15",
+    "role": "independent-review",
+    "dependencies": [
+      "T15.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "S02.retry1.I",
+    "package": "S02",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P00.V",
+      "S02.R"
+    ]
+  },
+  {
+    "id": "S02.retry1.V",
+    "package": "S02",
+    "role": "independent-review",
+    "dependencies": [
+      "S02.retry1.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "P03.evidence.R",
+    "package": "P03.evidence",
+    "role": "reference",
+    "dependencies": [
+      "P03.R"
+    ]
+  },
+  {
+    "id": "P08.I",
+    "package": "P08",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P07.V"
+    ]
+  },
+  {
+    "id": "P08.V",
+    "package": "P08",
+    "role": "independent-review",
+    "dependencies": [
+      "P08.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "P09.I",
+    "package": "P09",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P07.V",
+      "P08.V"
+    ]
+  },
+  {
+    "id": "P09.V",
+    "package": "P09",
+    "role": "independent-review",
+    "dependencies": [
+      "P09.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "P03.retry1.I",
+    "package": "P03",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P01.V",
+      "P03.R",
+      "P03.evidence.R",
+      "P08.V",
+      "P09.V"
+    ]
+  },
+  {
+    "id": "P03.retry1.V",
+    "package": "P03",
+    "role": "independent-review",
+    "dependencies": [
+      "P03.retry1.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "P03.retry2.I",
+    "package": "P03",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P01.V",
+      "P03.R",
+      "P03.evidence.R",
+      "P08.V",
+      "P09.V",
+      "S08.V"
+    ]
+  },
+  {
+    "id": "P03.retry2.V",
+    "package": "P03",
+    "role": "independent-review",
+    "dependencies": [
+      "P03.retry2.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "P10.I",
+    "package": "P10",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P03.retry2.V",
+      "S04.R",
+      "S05.R"
+    ]
+  },
+  {
+    "id": "P10.V",
+    "package": "P10",
+    "role": "independent-review",
+    "dependencies": [
+      "P10.I",
+      "P01.V"
+    ]
+  }
+]

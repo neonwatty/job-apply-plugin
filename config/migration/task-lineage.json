@@ -684,6 +684,30 @@
           "sha256": "438d735f67c01d4b044152c5439500321557c8ceb93309447abea55dce3d485e"
         }
       ]
+    },
+    {
+      "id": "P10.documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze isolated reference shards with unchanged output limits and complete consumer ownership.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p10/approved-dag.json",
+          "sha256": "bd56e202a38561e9dcb0ac3602ef6c6adf6708f4241e18da98e87b63358e18dd"
+        },
+        {
+          "path": "docs/migration/evidence/p10/implementation-audit.json",
+          "sha256": "0b7507564430b5708cbb3958896536ae13ab5f619c6bd7a1e7c76adb922a0652"
+        },
+        {
+          "path": "docs/migration/evidence/p10/implementation.md",
+          "sha256": "6b36562b3db9a7595206f7fbd02ad0203a08976cf5b8e51a561354b11eba5357"
+        },
+        {
+          "path": "docs/migration/evidence/p10/implementation-spec.json",
+          "sha256": "fa9775bb5a391ca0e966aed3ab846c228d06db9a5067d3bc93ead436c10a0e29"
+        }
+      ]
     }
   ],
   "transitions": [

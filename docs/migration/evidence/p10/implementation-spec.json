@@ -1,0 +1,230 @@
+{
+  "status": "external proposal only; no metadata/source/test changes or tests run",
+  "taskIds": [
+    "P10.I",
+    "P10.V"
+  ],
+  "package": {
+    "id": "P10",
+    "parentNode": "CI",
+    "kind": "audit",
+    "activation": "inert",
+    "status": "planned"
+  },
+  "assignments": [
+    {
+      "id": "P10.I",
+      "package": "P10",
+      "role": "implementation-or-gate",
+      "dependencies": [
+        "P03.retry2.V",
+        "S04.R",
+        "S05.R"
+      ]
+    },
+    {
+      "id": "P10.V",
+      "package": "P10",
+      "role": "independent-review",
+      "dependencies": [
+        "P10.I",
+        "P01.V"
+      ]
+    }
+  ],
+  "actors": "resolve actual owner/author and independent reviewer at freeze",
+  "allowed_files": [
+    "config/test-matrix.json",
+    "tests_js/test-runner-selection.test.mjs",
+    "tests_js/reference_suite_support.mjs",
+    "docs/migration/evidence/p10/implementation.md",
+    "docs/migration/evidence/p10/implementation-audit.json",
+    "docs/migration/evidence/p10/approved-dag.json",
+    "docs/migration/evidence/p10/P10.I.json",
+    "docs/migration/evidence/p10/P10.V.json",
+    "docs/migration/evidence/p10/transition.json"
+  ],
+  "productionModuleChanges": 0,
+  "matrixChanges": {
+    "removeExactIncludesFromNodeWorkspaceOther": [
+      "tests_js/point_persistence_reference.test.mjs",
+      "tests_js/point_persistence_baselines.test.mjs",
+      "tests_js/point_paths_reference.test.mjs",
+      "tests_js/point_paths_parent_reference.test.mjs",
+      "tests_js/point_paths_digest_reference.test.mjs"
+    ],
+    "appendSuites": [
+      {
+        "id": "node-reference-s04",
+        "kind": "node-test",
+        "include": [
+          "tests_js/point_persistence_reference.test.mjs",
+          "tests_js/point_persistence_baselines.test.mjs"
+        ],
+        "tiers": [
+          "full"
+        ],
+        "maxOutputBytes": 2097152
+      },
+      {
+        "id": "node-reference-s05",
+        "kind": "node-test",
+        "include": [
+          "tests_js/point_paths_reference.test.mjs",
+          "tests_js/point_paths_parent_reference.test.mjs",
+          "tests_js/point_paths_digest_reference.test.mjs"
+        ],
+        "tiers": [
+          "full"
+        ],
+        "maxOutputBytes": 2097152
+      }
+    ],
+    "ownership": [
+      {
+        "operation": "append suite IDs to existing ownership row; preserve every existing suite",
+        "matchExistingPath": "tools/contracts/**",
+        "appendSuites": [
+          "node-reference-s04",
+          "node-reference-s05"
+        ]
+      },
+      {
+        "operation": "append suite IDs to existing ownership row; preserve every existing suite",
+        "matchExistingPath": "scripts/**/*.py",
+        "appendSuites": [
+          "node-reference-s04",
+          "node-reference-s05"
+        ]
+      },
+      {
+        "operation": "add ownership row",
+        "paths": [
+          "docs/migration/evidence/s04/**",
+          "tests_js/atomic_write_json_reference.test.mjs",
+          "tests_js/jsonl_append_reference.test.mjs"
+        ],
+        "suites": [
+          "node-reference-s04"
+        ]
+      },
+      {
+        "operation": "add ownership row",
+        "paths": [
+          "docs/migration/evidence/s05/**",
+          "tests_js/atomic_write_json_reference.test.mjs",
+          "tests_js/jsonl_append_reference.test.mjs",
+          "tests_js/managed_resume_path_reference.test.mjs",
+          "tests_js/posix_path_bytes_reference.test.mjs",
+          "tests_js/private_file_digest_reference.test.mjs",
+          "tests_js/managed_observation_reference.test.mjs"
+        ],
+        "suites": [
+          "node-reference-s05"
+        ]
+      },
+      {
+        "operation": "add ownership row",
+        "paths": [
+          "tests_js/reference_suite_support.mjs"
+        ],
+        "suites": [
+          "node-runner-fast"
+        ]
+      }
+    ],
+    "preserve": "every other suite/include/tier/platform/env/timeout/global path and existing ownership mapping"
+  },
+  "requirements": [
+    "p10.reference-process-isolation",
+    "p10.reference-input-fanout"
+  ],
+  "cells": [
+    {
+      "id": "p10.matrix-isolation",
+      "requirementIds": [
+        "p10.reference-process-isolation",
+        "p10.reference-input-fanout"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/test-runner-selection.test.mjs"
+      ],
+      "testNames": [
+        "affected selection unions owners and selects a changed test itself",
+        "global and unknown changes fail closed to the full tier",
+        "real shared Python helpers select every consuming shard",
+        "real production paths conservatively include cross-language consumers",
+        "matrix validation rejects omissions and duplicate full inventory",
+        "name-status parsing preserves both rename paths and deletions",
+        "git selection combines committed, staged, unstaged, deleted, renamed, and untracked paths",
+        "P03 graph follows runtime type support and literal child-process dependencies",
+        "P03 graph rejects unresolved relevant imports and missing owned targets",
+        "P03 graph re-evaluates newly added consumers from the immutable subject",
+        "P03 graph binds source and emitted module identities without duplicate consumers",
+        "P10 reference suites isolate S04 and S05 without changing process output limits",
+        "P10 reference suite ownership preserves shared inputs and rejects missing or duplicate coverage"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p10/logs/P10-matrix-isolation.tap"
+    }
+  ],
+  "measurements": {
+    "source": "accepted immutable reference raw logs; not a new suite execution",
+    "s04Bytes": 569260,
+    "s05Bytes": 1699502,
+    "combinedBytes": 2268762,
+    "defaultPerStreamCapBytes": 2097152,
+    "excessBeforeOtherWorkspaceTests": 171610
+  },
+  "testAssertions": {
+    "isolation": [
+      "Actual current matrix has exact two new suite IDs/kind/full-only tier/ordered filename sets and2MiB caps; no environment/platform override added.",
+      "All five files absent from node-workspace-other and exactly once across full-tier suiteFiles.",
+      "suiteCommand for each new suite is one Node --test --test-concurrency=1 command containing only that group in sorted expansion order: S04 baselines/reference; S05 digest/parent/reference. Assert literal matrix include order separately.",
+      "All previous eleven selection literal names and assertion bodies retained."
+    ],
+    "fanout": [
+      "selectAffected with each five moved test paths selects its own new suite.",
+      "Representative point-persistence/point-paths and legacy atomic/jsonl/managed/digest driver changes retain old workspace ownership and select both new reference suites through existing broad contracts ownership.",
+      "Shared scripts/job_apply_store/__init__.py,io.py,constants.py,resumes/storage.py and another scripts/**/*.py path preserve old suite fanout and select both new suites.",
+      "S04/S05 vector/manifest/baseline JSON changes select the matching new suite; old atomic/jsonl test source changes select both new groups; the four additional sourcePins test files select S05.",
+      "Independent cloned-matrix mutations: remove one required owner→selected expected suite missing; omit a moved file→full inventory count0; add moved file back to workspace→count2; coalesce groups or raise/lower cap→exact group/cap assertion fails.",
+      "Unknown paths and existing global paths continue full fallback including both new suites."
+    ]
+  },
+  "readOnlyInputClosurePolicy": "Freeze actual recursive local imports of selection/helper/four analyzer modules and test-runner matrix/git/patterns, package/lock/compilerconfig, actual matrix and reviewed P03 consumer contract; retain fixed b540 fixture history prerequisite. Bind accepted S04/S05 reference manifests and sourcePins/vector documents used to derive fanout. Do not bind every current product source permanently or renew any consumer process/Python/helper pin. New helper is future owned source, not a fabricated pre-base input; its actual bytes are captured in the implementation subject and are included in import-closure review.",
+  "acceptanceProtocol": [
+    "Prepare only after accepted P03.retry2.V/S04.R/S05.R ancestry exists; use actual effective DAG, no fabricated base/hash/count.",
+    "Independent audit/manifests/lineage review then activation; implementation only matrix, existing selection test and owned reference_suite_support.mjs helper; normal hooks; root owns exact13-name capture and independent receipts.",
+    "Real integrated affected/deep follow-up serially runs newly isolated suites and must retain untruncated output; this is integration verification, not a replacement of frozen reference captures."
+  ],
+  "deferredIssue": {
+    "id": "generic-runStreaming-truncation",
+    "source": "tools/test-runner/process.mjs prefixStream/runStreaming",
+    "behavior": "Output beyond cap is clipped with a diagnostic, while suite result can remain passed based on child exit. Local-checks process instead fails output-limit.",
+    "scope": "Separate runner task with truthful result/output-limit tests; P10 does not modify either runner or claim this generic issue fixed."
+  },
+  "testSupport": {
+    "path": "tests_js/reference_suite_support.mjs",
+    "responsibility": "Fixed independently authored suite/file/input expectations and readable assertion/mutation helpers; no test registration, subprocess, dynamic source generation, or production policy.",
+    "exports": [
+      "assertReferenceSuiteIsolation(matrix,tracked)",
+      "assertReferenceSuiteFanout(matrix,tracked)"
+    ],
+    "literalRegistration": "The existing selection file retains all eleven tests and declares the two new literal names; each invokes its corresponding helper with the actual matrix/tracked inputs.",
+    "lineBudget": "Both selection and helper <=500 physical lines. Extract only new P10 assertions; preserve old selection bodies.",
+    "ownershipRegistration": "Exact support path owned by node-runner-fast in P10 matrix change. No new command or test glob required."
+  },
+  "dagRefinements": [
+    {
+      "id": "T05.I",
+      "operation": "append dependency P10.V; preserve every current dependency",
+      "eligibility": "Confirm never frozen/unreceipted through actual transition activation boundary; otherwise stop for revised reviewed DAG plan."
+    }
+  ]
+}
