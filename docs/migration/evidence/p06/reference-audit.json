@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "id": "p06-reference-audit",
+  "assignmentIds": [
+    "P06.R"
+  ],
+  "allowed_files": [
+    "tools/migration/evidence-io.mjs",
+    "tools/migration/task-manifests.mjs",
+    "tools/migration/task-receipts.mjs",
+    "tools/migration/load-task-evidence.mjs",
+    "tools/migration/packages.mjs",
+    "tests_js/migration_task_manifests.test.mjs",
+    "tests_js/migration_task_receipts.test.mjs",
+    "tests_js/migration_task_loader.test.mjs",
+    "tests_js/migration_task_support.mjs",
+    "docs/migration/evidence/p06/reference-audit.json",
+    "docs/migration/evidence/p06/P06.R.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "p06.audit.ownership-reference"
+  ],
+  "cells": [
+    {
+      "id": "p06.reference.migration_task_manifests",
+      "requirementIds": [
+        "p06.audit.ownership-reference"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_manifests.test.mjs"
+      ],
+      "testNames": [
+        "task manifests bind an independently scoped audit without product acceptance",
+        "task manifests reject malformed fields and changes to approved scope or execution identities",
+        "task manifest invalid batches unlock no otherwise valid entry",
+        "task manifests bound eight modules and require an owned extraction and baseline for oversized sources",
+        "product task manifests require every registered scenario binding and platform",
+        "source size scope mirrors repository extensions and exclusions independently of production ownership",
+        "accepted product predecessors do not silently release ownership to a ready successor"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p06/logs/P06-R-migration_task_manifests.tap"
+    },
+    {
+      "id": "p06.reference.migration_task_receipts",
+      "requirementIds": [
+        "p06.audit.ownership-reference"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_receipts.test.mjs"
+      ],
+      "testNames": [
+        "task receipts accept only exact immutable subject evidence and keep parent acceptance open",
+        "task receipts reject wrong names with identical passing counts and unsupported TAP",
+        "task receipts reject self review, wrong SHA, stale inputs, budgets, missing artifacts and ownership escapes",
+        "task receipt dependencies are fixed by the approved DAG and invalidate the entire batch",
+        "task receipts preserve historical evidence through an approved review and dependent edit chain",
+        "task receipts enforce rename and deletion ownership and nonincreasing actual source size",
+        "task TAP rejects duplicate headers and results before their announcements",
+        "receipt size enforcement includes references and extended source types but excludes planning data",
+        "task receipts bind observed TAP duration to timeout and runner wall time with one millisecond tolerance",
+        "task receipts reject duplicate reserved metrics that conceal the terminal duration"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p06/logs/P06-R-migration_task_receipts.tap"
+    },
+    {
+      "id": "p06.reference.migration_task_loader",
+      "requirementIds": [
+        "p06.audit.ownership-reference"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_loader.test.mjs"
+      ],
+      "testNames": [
+        "task loader binds actual tested Git subject separately from later evidence commits",
+        "task loader rejects dirty and untracked evidence without executing receipt commands",
+        "task loader rejects tracked symlinks, altered frozen manifests and out of scope subject edits",
+        "task loader preserves absent catalog behavior",
+        "task Git reads ignore replacement objects for declared immutable revisions",
+        "task loader reads actual object-form source-size baselines and verifies a shrinking extraction",
+        "task lifecycle validates staged planning, future tests, subject, evidence and receipt commits",
+        "task lifecycle opens acceptance during a frozen successor and rejects undeclared drift",
+        "execution base cannot conceal source edits or use a fabricated review lock",
+        "accepted subject must contain its declared literal test identities even when planning deferred discovery"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p06/logs/P06-R-migration_task_loader.tap"
+    }
+  ],
+  "artifacts": []
+}
