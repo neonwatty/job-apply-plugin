@@ -380,6 +380,18 @@
           "sha256": "a6ef5737d825536f97c76a40a56582e86a959eb1cf739a154630352c70eea457"
         }
       ]
+    },
+    {
+      "id": "P03.retry1.capture-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original P03 attempt; freeze corrected complete consumer closure for fresh revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry1/original-capture.json",
+          "sha256": "58d9b6706c6eefa00d337a8c9759f86d06ec06bf2adc84a09b48959ac5bcd07c"
+        }
+      ]
     }
   ],
   "transitions": [
