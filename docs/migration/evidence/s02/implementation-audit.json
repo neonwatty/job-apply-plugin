@@ -21,7 +21,9 @@
     "docs/migration/python-json-bytes-port.md",
     "docs/migration/evidence/s02/implementation-audit.json",
     "docs/migration/evidence/s02/S02.I.json",
-    "docs/migration/evidence/s02/S02.V.json"
+    "docs/migration/evidence/s02/S02.V.json",
+    "config/migration/source-catalog-s02.json",
+    "config/migration/review-lock.json"
   ],
   "emittedFiles": [
     "runtime/contracts/python-json-bytes.js",
