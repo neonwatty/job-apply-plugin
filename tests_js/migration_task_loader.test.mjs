@@ -157,11 +157,13 @@ test('accepted subject must contain its declared literal test identities even wh
   const repo = await repository({ futureTest: true });
   try {
     const { TEST, source } = await import('./migration_task_support.mjs');
+    repo.git('reset', '--hard', repo.evidence);
     await repo.write(TEST, source.replace('audit exact input', 'different literal identity'));
     const subject = repo.commit(); repo.receipt.subject = { sha: subject, tree: repo.git('rev-parse', 'HEAD^{tree}') };
     repo.receipt.evidenceCommit = subject;
     Object.assign(repo.receipt.review, { subjectSha: subject, subjectTree: repo.receipt.subject.tree });
-    await repo.write('config/migration/task-receipts.json', { schemaVersion: 1, receipts: [repo.receipt] }); repo.commit();
+    await repo.write('config/migration/task-receipts.json', { schemaVersion: 1, receipts: [repo.receipt] });
+    await repo.writeLock(); repo.commit();
     const result = await loadTaskEvidence(repo.root, repo.context);
     assert.match(result.errors.join('\n'), /Accepted subject lacks declared literal test identities/); assert.equal(result.acceptedTasks.size, 0);
   } finally { await repo.cleanup(); }
