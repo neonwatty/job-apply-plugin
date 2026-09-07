@@ -289,6 +289,7 @@
     {"paths": ["docs/**", "README.md", "AGENTS.md"], "suites": ["docs-links"]},
     {"paths": ["docs/migration/evidence/s04/**", "tests_js/atomic_write_json_reference.test.mjs", "tests_js/jsonl_append_reference.test.mjs"], "suites": ["node-reference-s04"]},
     {"paths": ["docs/migration/evidence/s05/**", "tests_js/atomic_write_json_reference.test.mjs", "tests_js/jsonl_append_reference.test.mjs", "tests_js/managed_resume_path_reference.test.mjs", "tests_js/posix_path_bytes_reference.test.mjs", "tests_js/private_file_digest_reference.test.mjs", "tests_js/managed_observation_reference.test.mjs"], "suites": ["node-reference-s05"]},
-    {"paths": ["tests_js/reference_suite_support.mjs"], "suites": ["node-runner-fast"]}
+    {"paths": ["tests_js/reference_suite_support.mjs"], "suites": ["node-runner-fast"]},
+    {"paths": ["tests_js/graph_environment_support.mjs"], "suites": ["node-runner-fast"]}
   ]
 }
