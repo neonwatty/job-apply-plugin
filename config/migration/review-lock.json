@@ -190,6 +190,10 @@
       "sha256": "a79b163db7f0f847c3f23b926c888d163d247630234ff5c6272bffdcb978b37e"
     },
     {
+      "path": "task-lineage.json",
+      "sha256": "fbdbb5a63abbb7d24ab47b2b558681275925072664b8804dcc5fa8ab7f447725"
+    },
+    {
       "path": "task-receipts.json",
       "sha256": "524df82b8fb8a1654e1907191edcb7cec0504fab630386b481aed46e8fb47fd1"
     }
