@@ -332,6 +332,26 @@
           "sha256": "218899ea4073aac71316b21293a3eaac0a4efd4432560cea93b628d3a4026a62"
         }
       ]
+    },
+    {
+      "id": "P08.documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze bounded platform literal recognition with independent actual receipt evidence.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p08/approved-dag.json",
+          "sha256": "763c50631ece1a641d2f256802479df0bd5af71d8c0e6ced64712ddea001a563"
+        },
+        {
+          "path": "docs/migration/evidence/p08/implementation-audit.json",
+          "sha256": "7bba951f75ff98a0d183da6d26d765529620c4ccfc258c16a159888a4904b7c6"
+        },
+        {
+          "path": "docs/migration/evidence/p08/implementation.md",
+          "sha256": "41c723a4a2b60af0f9e5d5fb4756e67d97e0c5bf67b4ab01e5b9c0b5e9f8a50c"
+        }
+      ]
     }
   ],
   "transitions": [

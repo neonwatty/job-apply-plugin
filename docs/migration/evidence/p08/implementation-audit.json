@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "id": "p08-platform-literal-audit",
+  "assignmentIds": [
+    "P08.I",
+    "P08.V"
+  ],
+  "allowed_files": [
+    "tools/migration/test-bindings.mjs",
+    "tools/migration/load-task-evidence.mjs",
+    "tools/migration/check.mjs",
+    "tests_js/migration_test_bindings.test.mjs",
+    "tests_js/migration_task_loader.test.mjs",
+    "tests_js/migration_task_support.mjs",
+    "docs/migration/evidence/p08/implementation.md",
+    "docs/migration/evidence/p08/implementation-audit.json",
+    "docs/migration/evidence/p08/P08.I.json",
+    "docs/migration/evidence/p08/P08.V.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "p08.closed-platform-recognition",
+    "p08.actual-platform-evidence"
+  ],
+  "cells": [
+    {
+      "id": "P08.bindings",
+      "requirementIds": [
+        "p08.closed-platform-recognition"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_test_bindings.test.mjs"
+      ],
+      "testNames": [
+        "literal test bindings require node:test imports and nonempty direct declarations",
+        "malformed syntax and duplicate declared test IDs cannot bind requirements",
+        "platform literal bindings select only the explicitly supplied finite branch in source order",
+        "platform literal bindings preserve no-context behavior and reject unsupported syntax",
+        "platform literal bindings reject shadowed process and node test identities",
+        "platform literal bindings reject process mutation and escaped process aliases",
+        "platform literal bindings match the three frozen S08 platform declarations",
+        "current inventory discovery uses explicit current platform without changing no-context consumers"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p08/logs/P08-bindings.tap"
+    },
+    {
+      "id": "P08.lifecycle",
+      "requirementIds": [
+        "p08.actual-platform-evidence"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_loader.test.mjs"
+      ],
+      "testNames": [
+        "task loader binds actual tested Git subject separately from later evidence commits",
+        "task loader rejects dirty and untracked evidence without executing receipt commands",
+        "task loader rejects tracked symlinks, altered frozen manifests and out of scope subject edits",
+        "task loader preserves absent catalog behavior",
+        "task Git reads ignore replacement objects for declared immutable revisions",
+        "task loader reads actual object-form source-size baselines and verifies a shrinking extraction",
+        "task lifecycle validates staged planning, future tests, subject, evidence and receipt commits",
+        "task lifecycle opens acceptance during a frozen successor and rejects undeclared drift",
+        "execution base cannot conceal source edits or use a fabricated review lock",
+        "accepted subject must contain its declared literal test identities even when planning deferred discovery",
+        "platform task evidence binds actual conditional capture to the frozen cell environment",
+        "platform task evidence rejects wrong-platform same-count outputs and immutable source drift"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p08/logs/P08-lifecycle.tap"
+    }
+  ],
+  "artifacts": []
+}
