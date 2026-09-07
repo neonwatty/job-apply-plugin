@@ -64,6 +64,18 @@
           "sha256": "40e46ce4da3cf6d2e28d2770c28307d13fdd2567e7b0588ba128a561b5fbd467"
         }
       ]
+    },
+    {
+      "id": "S08.reference-manifest-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze the existing composed JSON reference with exact interpreter-profile witnesses; no runtime acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s08/S08.R.json",
+          "sha256": "5d6d74d14fbd0e4d6468a82501eb4d0f3aa3b27f152c42e8ae359a1f88f24e20"
+        }
+      ]
     }
   ],
   "transitions": []
