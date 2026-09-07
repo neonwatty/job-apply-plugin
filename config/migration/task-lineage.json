@@ -825,6 +825,11 @@
       "path": "docs/migration/evidence/p10/transition.json",
       "sha256": "d09d11baef79b1ee4d1d3647094a58c3d228490a6627fbf65da379712c3b0345",
       "revision": "2ea5ee3c05ebd32c7a4a06520ca03033500a88d9"
+    },
+    {
+      "path": "docs/migration/evidence/p11/transition.json",
+      "sha256": "b1d50b414d3e2c127a9cf5856cde71ef920b2ec28ff624b700e32182d3b58568",
+      "revision": "55b4331dfe3dc0547c0f066b595f5a12e7a97d69"
     }
   ]
 }
