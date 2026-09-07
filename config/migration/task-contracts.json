@@ -295,6 +295,26 @@
         "sha256": "c19239be919254d92318e5545c815d3ed07781f9b990e212248d95ca64d35973",
         "revision": "1cfc4f82b9057cd7e1caa5e84e31f12546b36603"
       }
+    },
+    {
+      "id": "P03.retry1.I",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/p03/retry1/v3/P03.retry1.I.json",
+        "sha256": "5f6d57971bfaebe16add433a54772060efa5a2eb760188ce2d82b4c0d772a7c9",
+        "revision": "496f6706486bdcbeed2a1fdc1c30159389bb5f56"
+      }
+    },
+    {
+      "id": "P03.retry1.V",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/p03/retry1/v3/P03.retry1.V.json",
+        "sha256": "0baab53caf813cbb564d3774cd6329642937b4429d53cf9fcbaf2099ad2092f5",
+        "revision": "496f6706486bdcbeed2a1fdc1c30159389bb5f56"
+      }
     }
   ],
   "environments": [
@@ -395,6 +415,11 @@
       "path": "docs/migration/evidence/p09/implementation-audit.json",
       "sha256": "5a96cbfd75636531cc6d6bd969290b207f2a73de6ea0c441dc484b37fbb94d13",
       "revision": "1cfc4f82b9057cd7e1caa5e84e31f12546b36603"
+    },
+    {
+      "path": "docs/migration/evidence/p03/retry1/v3/implementation-audit.json",
+      "sha256": "ceba87fbbaf1a28240386c16cafedce49c475aa89040ba8712303bed41025537",
+      "revision": "496f6706486bdcbeed2a1fdc1c30159389bb5f56"
     }
   ]
 }
