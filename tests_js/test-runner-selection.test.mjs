@@ -120,3 +120,200 @@ test("git selection combines committed, staged, unstaged, deleted, renamed, and 
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('P03 graph follows runtime type support and literal child-process dependencies', async t => {
+  const { createGraphFixture, GRAPH_SOURCE, GRAPH_RUNTIME, GRAPH_TEST, GRAPH_CHILD } = await import('./local_checks_graph_support.mjs');
+  const { discoverConsumerGraph, reverseClosure } = await import('../tools/local-checks/consumer-graph.mjs');
+  const { evaluateFocusedClosure } = await import('../tools/local-checks/focused-closure.mjs');
+  const f = await createGraphFixture(t);
+  let graph = await discoverConsumerGraph(f.root, f.tracked());
+  assert.deepEqual(graph.reasons, []);
+  assert.deepEqual(evaluateFocusedClosure(graph, [GRAPH_RUNTIME]).lightTests, [GRAPH_CHILD, GRAPH_TEST]);
+  assert.ok(graph.edges.some(edge => edge.from === GRAPH_CHILD && edge.to === GRAPH_TEST && edge.kind === 'literal-child-process'));
+  await f.write('src/type-consumer.ts', `import type { value } from './contracts/raw-json/float-scope.js';\nexport type Marker = typeof value;\n`);
+  graph = await discoverConsumerGraph(f.root, f.tracked());
+  assert.ok(reverseClosure(graph.edges, [GRAPH_SOURCE], { types: true }).includes('src/type-consumer.ts'));
+  assert.ok(!reverseClosure(graph.edges, [GRAPH_SOURCE]).includes('src/type-consumer.ts'));
+  await f.write('tests_js/aliased.test.mjs', `import { spawnSync as launch } from 'node:child_process';\nconst entry = 'tests_js/direct.test.mjs';\nlaunch(process.execPath, ['--test', entry]);\n`);
+  graph = await discoverConsumerGraph(f.root, f.tracked());
+  assert.ok(graph.edges.some(edge => edge.from === 'tests_js/aliased.test.mjs' && edge.to === GRAPH_TEST));
+  assert.equal(evaluateFocusedClosure(graph, [GRAPH_RUNTIME]).bounded, false, 'unreviewed actual consumer must escalate');
+});
+
+test('P03 graph rejects unresolved relevant imports and missing owned targets', async t => {
+  const { createGraphFixture, GRAPH_RUNTIME, GRAPH_SUPPORT } = await import('./local_checks_graph_support.mjs');
+  const { discoverConsumerGraph } = await import('../tools/local-checks/consumer-graph.mjs');
+  const { evaluateFocusedClosure } = await import('../tools/local-checks/focused-closure.mjs');
+  const f = await createGraphFixture(t);
+  const fixtureRoot = fileURLToPath(new URL('../', import.meta.url));
+  for (const file of ['migration_task_lineage_git_support.mjs', 'migration_task_lineage_lifecycle.test.mjs',
+    'migration_task_replacements.test.mjs']) {
+    await f.write(`tests_js/${file}`, await fs.promises.readFile(path.join(fixtureRoot, 'tests_js', file), 'utf8'));
+  }
+  const fixtureSite = 'Unresolved execFileSync caller: tests_js/migration_task_lineage_git_support.mjs:2297';
+  assert.ok(!(await discoverConsumerGraph(f.root, f.tracked())).reasons.includes(fixtureSite));
+  await f.write('outside/new-fixture-consumer.mjs', "import {lineageRepository} from '../tests_js/migration_task_lineage_git_support.mjs'; export const escaped = lineageRepository;\n");
+  assert.ok((await discoverConsumerGraph(f.root, f.tracked())).reasons.includes(fixtureSite));
+  for (const source of [
+    `export { value } from '../runtime/missing.js';`,
+    `export const value = await import(process.env.MODULE);`,
+    `import { spawnSync } from 'node:child_process'; const script = process.env.SCRIPT; spawnSync(process.execPath, [script]);`,
+    `export { value } from 'unregistered-package';`,
+    `import {spawnSync} from 'node:child_process'; process.execPath=process.env.EXECUTABLE; spawnSync(process.execPath, ['tests_js/direct.test.mjs']);`,
+    `const URL = class {}; export const data=new URL('../docs/input.json', import.meta.url);`,
+    `import {spawnSync} from 'node:child_process'; spawnSync(process.execPath, [process.env.ENTRY, '-e', 'process.exit(0)']);`,
+    `import { spawnSync } from 'node:child_process'; let script = 'tests_js/direct.test.mjs'; script = process.env.SCRIPT; spawnSync(process.execPath, [script]);`,
+    `import { spawnSync } from 'node:child_process'; spawnSync(process.execPath, [process.env.ENTRY, 'tests_js/direct.test.mjs']);`,
+    `import { spawnSync } from 'node:child_process'; function f(spawnSync) { spawnSync(process.execPath, ['tests_js/direct.test.mjs']); }`,
+  ]) {
+    await f.write(GRAPH_SUPPORT, source);
+    assert.equal(evaluateFocusedClosure(await discoverConsumerGraph(f.root, f.tracked()), [GRAPH_RUNTIME]).bounded, false);
+  }
+  const ownerRoot = fileURLToPath(new URL('../', import.meta.url));
+  const driver = 'tools/contracts/codepoint-json/reference.py';
+  const driverCaller = 'tests_js/codepoint_json_reference.test.mjs';
+  await f.write(driver, await fs.promises.readFile(path.join(ownerRoot, driver), 'utf8'));
+  await f.write(driverCaller, await fs.promises.readFile(path.join(ownerRoot, driverCaller), 'utf8'));
+  const beforeDriver = await discoverConsumerGraph(f.root, f.tracked());
+  assert.ok(!beforeDriver.reasons.includes(`Unreviewed executable driver: ${driver}`));
+  await f.write(driver, `${f.files.get(driver)}\nimport subprocess\nsubprocess.run(['node', 'new-consumer.mjs'])\n`);
+  const afterDriver = await discoverConsumerGraph(f.root, f.tracked());
+  assert.ok(afterDriver.reasons.includes(`Unreviewed executable driver: ${driver}`));
+  const helper = 'tests_js/data_copy_support.mjs';
+  const helperCaller = 'tests_js/data_copy_ts.test.mjs';
+  for (const file of [helper, helperCaller]) {
+    await f.write(file, await fs.promises.readFile(path.join(ownerRoot, file), 'utf8'));
+  }
+  const beforeHelper = await discoverConsumerGraph(f.root, f.tracked());
+  assert.ok(!beforeHelper.reasons.includes(`Unreviewed process source helper: ${helper}`));
+  await f.write(helper, `${f.files.get(helper)}\nexport const hiddenChild = 'node new-consumer.mjs';\n`);
+  const afterHelper = await discoverConsumerGraph(f.root, f.tracked());
+  assert.ok(afterHelper.reasons.includes(`Unreviewed process source helper: ${helper}`));
+  const { PYTHON_SOURCE_PATH } = await import('../tools/local-checks/focused-contracts.mjs');
+  for (const file of (await trackedPaths(ownerRoot)).filter(PYTHON_SOURCE_PATH)) {
+    await f.write(file, await fs.promises.readFile(path.join(ownerRoot, file), 'utf8'));
+  }
+  const beforeInitialization = await discoverConsumerGraph(f.root, f.tracked());
+  assert.ok(!beforeInitialization.reasons.includes('Unreviewed Python source inventory'));
+  const initializer = 'scripts/job_apply_store/__init__.py';
+  await f.write(initializer, `${f.files.get(initializer)}\nimport subprocess\nsubprocess.run(['node', 'hidden.mjs'])\n`);
+  const afterInitialization = await discoverConsumerGraph(f.root, f.tracked());
+  assert.ok(afterInitialization.reasons.includes('Unreviewed Python source inventory'));
+  const { SKILL_SOURCE_PATH } = await import('../tools/local-checks/focused-contracts.mjs');
+  for (const file of [...(await trackedPaths(ownerRoot)).filter(SKILL_SOURCE_PATH),
+    'tests_js/workspace_skill_support.mjs', 'tests_js/workspace_answers.test.mjs', 'tests_js/workspace_markup.test.mjs']) {
+    await f.write(file, await fs.promises.readFile(path.join(ownerRoot, file), 'utf8'));
+  }
+  assert.ok(!(await discoverConsumerGraph(f.root, f.tracked())).reasons.includes('Unreviewed skill document inventory'));
+  await f.write('skills/job-apply/references/new-consumer.md', '[new source](../../../scripts/new-source.py)\n');
+  assert.ok((await discoverConsumerGraph(f.root, f.tracked())).reasons.includes('Unreviewed skill document inventory'));
+  for (const file of ['qa/unified_task_spine_oracle.mjs', 'tests_js/unified_task_spine_oracle.test.mjs', 'workspace/index.html']) {
+    await f.write(file, await fs.promises.readFile(path.join(ownerRoot, file), 'utf8'));
+  }
+  const htmlReason = 'Unreviewed process source helper: workspace/index.html';
+  assert.ok(!(await discoverConsumerGraph(f.root, f.tracked())).reasons.includes(htmlReason));
+  await f.write('workspace/index.html', `${f.files.get('workspace/index.html')}\n<script src="hidden-consumer.js"></script>\n`);
+  assert.ok((await discoverConsumerGraph(f.root, f.tracked())).reasons.includes(htmlReason));
+  await f.write(GRAPH_SUPPORT, `export { value } from '../${GRAPH_RUNTIME}';`);
+  await fs.promises.rm(path.join(f.root, GRAPH_RUNTIME));
+  assert.equal(evaluateFocusedClosure(await discoverConsumerGraph(f.root, f.tracked()), []).bounded, false);
+  await f.write(GRAPH_RUNTIME, 'export const value = 1;');
+  await fs.promises.rm(path.join(f.root, 'README.md'));
+  await fs.promises.symlink(path.join(f.root, GRAPH_RUNTIME), path.join(f.root, 'README.md'));
+  const result = evaluateFocusedClosure(await discoverConsumerGraph(f.root, f.tracked()), ['README.md']);
+  assert.equal(result.docsOnly, false); assert.equal(result.bounded, false);
+});
+
+test('P03 graph re-evaluates newly added consumers from the immutable subject', async t => {
+  const { createGraphFixture, GRAPH_RUNTIME } = await import('./local_checks_graph_support.mjs');
+  const { discoverConsumerGraph } = await import('../tools/local-checks/consumer-graph.mjs');
+  const { evaluateFocusedClosure } = await import('../tools/local-checks/focused-closure.mjs');
+  const { resolveDispatchCommand } = await import('../tools/local-checks/consumer-graph.mjs');
+  const { inspectRunnerBindings, RUNNER_MODULES } = await import('../tools/local-checks/graph-syntax.mjs');
+  const caller = 'tools/new-caller.mjs';
+  const direct = inspectRunnerBindings(caller, "import {runCapture as capture} from './test-runner/process.mjs'; capture('node', args);", RUNNER_MODULES);
+  assert.equal(direct.bindings[0].importedName, 'runCapture');
+  assert.equal(direct.bindings[0].uses[0].kind, 'call');
+  const escaped = inspectRunnerBindings(caller, "import {runCapture as capture} from './test-runner/process.mjs'; export const alias=capture;", RUNNER_MODULES);
+  assert.equal(escaped.bindings[0].uses[0].kind, 'escape');
+  assert.ok(inspectRunnerBindings(caller, "export {runCapture} from './test-runner/process.mjs';", RUNNER_MODULES).issues.length);
+  assert.ok(inspectRunnerBindings(caller, "import * as runner from './test-runner/process.mjs';", RUNNER_MODULES).issues.length);
+  const { projectDispatchers } = await import('../tools/local-checks/consumer-graph.mjs');
+  const { digest } = await import('../tools/local-checks/focused-contracts.mjs');
+  const ROOT = fileURLToPath(new URL('../', import.meta.url));
+  const actualPaths = new Set(await trackedPaths(ROOT));
+  const actualSources = new Map(await Promise.all([...actualPaths].filter(file => /\.(?:js|jsx|mjs|cjs|ts|tsx|mts|cts)$/.test(file))
+    .map(async file => [file, await fs.promises.readFile(path.join(ROOT, file), 'utf8')])));
+  const actualHashes = new Map([...actualSources].map(([file, source]) => [file, digest(source)]));
+  const observed = await projectDispatchers(ROOT, actualPaths, actualSources, actualHashes, []);
+  assert.deepEqual(observed.reasons, [], 'reviewed actual dispatcher graph must be proven');
+  const actualGraph = await discoverConsumerGraph(ROOT, actualPaths);
+  assert.deepEqual(actualGraph.reasons, [], 'actual repository process and data routes must be closed');
+  for (const rule of actualGraph.contract.rules) {
+    for (const changed of [...rule.runtimePaths ?? [], ...rule.sharedContractPaths ?? [], ...rule.referencePaths ?? [], ...rule.testInputPaths ?? []]) {
+      const selected = evaluateFocusedClosure(actualGraph, [changed]);
+      assert.equal(selected.bounded, true, `${rule.id}: ${selected.reasons.join('; ')}`);
+      assert.equal(selected.nativeTests.length, 6, 'six separately fresh native obligations remain selected');
+    }
+  }
+  const inspectedSource = 'tests_js/raw_json_numeric.test.mjs', inspector = 'tests_js/migration_test_bindings.test.mjs';
+  assert.ok(evaluateFocusedClosure(actualGraph, [inspectedSource]).lightTests.includes(inspector));
+  const changedDriver = evaluateFocusedClosure(actualGraph, ['tools/contracts/raw-json-numeric/reference.py']);
+  assert.ok(changedDriver.lightTests.includes(inspectedSource));
+  assert.ok(!changedDriver.lightTests.includes(inspector), 'runtime invalidation does not alter inspected source bytes');
+  const newNative = 'tests_js/new-native-consumer.test.mjs';
+  const expandedNative = { ...actualGraph, tracked: new Set([...actualGraph.tracked, newNative]),
+    nativeTests: [...actualGraph.nativeTests, newNative],
+    edges: [...actualGraph.edges, { from: newNative, to: actualGraph.contract.rules[0].runtimePaths[0], kind: 'import' }] };
+  assert.equal(evaluateFocusedClosure(expandedNative, []).bounded, false, 'an unexecuted new native root is not covered by the canonical six');
+  for (const text of [
+    "import {runCapture as launch} from './test-runner/process.mjs'; launch('node', ['hidden.mjs']);",
+    "export {runCapture} from './test-runner/process.mjs';",
+    "import * as unknown from './test-runner/process.mjs';",
+  ]) {
+    const changedSources = new Map(actualSources).set(caller, text);
+    const changedHashes = new Map(actualHashes).set(caller, digest(text));
+    const changed = await projectDispatchers(ROOT, new Set([...actualPaths, caller]), changedSources, changedHashes, []);
+    assert.ok(changed.reasons.some(reason => reason.includes(caller)), 'new actual caller must invalidate even with no changed-path hint');
+  }
+  const scripts = { build: 'node tools/build-runtime.mjs --check' };
+  assert.deepEqual(resolveDispatchCommand(['npm', 'run', 'build'], scripts).targets, ['tools/build-runtime.mjs']);
+  for (const hook of ['prebuild', 'postbuild']) {
+    assert.match(resolveDispatchCommand(['npm', 'run', 'build'], { ...scripts, [hook]: 'node new-consumer.mjs' }).error, /lifecycle/);
+  }
+  assert.ok(resolveDispatchCommand(['npm', 'run', 'build'], { build: 'node first.mjs && node hidden.mjs' }).error);
+  const f = await createGraphFixture(t), original = await discoverConsumerGraph(f.root, f.tracked());
+  assert.equal(evaluateFocusedClosure(original, []).bounded, true);
+  assert.equal(evaluateFocusedClosure(original, []).docsOnly, false);
+  assert.equal(evaluateFocusedClosure(original, ['README.md']).docsOnly, true);
+  await f.write('outside-common-roots/consumer.test.mjs', `import { value } from '../${GRAPH_RUNTIME}';\nthrow Error('consumer mutation');\n`);
+  const added = await discoverConsumerGraph(f.root, f.tracked());
+  assert.notEqual(added.fingerprint, original.fingerprint);
+  assert.equal(evaluateFocusedClosure(added, []).bounded, false, 'empty changes cannot hide a newly discovered consumer');
+  assert.ok(evaluateFocusedClosure(added, []).reasons.some(reason => reason.includes('outside-common-roots/consumer.test.mjs')));
+  await f.write('package-lock.json', '{"lockfileVersion":3,"changed":true}\n');
+  assert.notEqual((await discoverConsumerGraph(f.root, f.tracked())).fingerprint, added.fingerprint);
+});
+
+test('P03 graph binds source and emitted module identities without duplicate consumers', async t => {
+  const { createGraphFixture, GRAPH_SOURCE, GRAPH_RUNTIME, GRAPH_TEST, GRAPH_CHILD } = await import('./local_checks_graph_support.mjs');
+  const { discoverConsumerGraph } = await import('../tools/local-checks/consumer-graph.mjs');
+  const { evaluateFocusedClosure } = await import('../tools/local-checks/focused-closure.mjs');
+  const f = await createGraphFixture(t), graph = await discoverConsumerGraph(f.root, f.tracked());
+  assert.deepEqual(evaluateFocusedClosure(graph, [GRAPH_SOURCE]).lightTests, evaluateFocusedClosure(graph, [GRAPH_RUNTIME]).lightTests);
+  assert.deepEqual(evaluateFocusedClosure(graph, [GRAPH_SOURCE, GRAPH_RUNTIME]).lightTests, [GRAPH_CHILD, GRAPH_TEST]);
+  await f.write(GRAPH_SOURCE, 'export const value = 2;\n');
+  const changed = await discoverConsumerGraph(f.root, f.tracked());
+  assert.notEqual(changed.fingerprint, graph.fingerprint);
+  assert.notEqual(changed.hashes.get(GRAPH_SOURCE), changed.hashes.get(GRAPH_RUNTIME));
+  await f.write('docs/input.json', '{"value":1}\n');
+  await f.write('tests_js/data.test.mjs', "export const input = new URL('../docs/input.json', import.meta.url);\n");
+  const beforeData = await discoverConsumerGraph(f.root, f.tracked());
+  await f.write('docs/input.json', '{"value":2}\n');
+  const afterData = await discoverConsumerGraph(f.root, f.tracked());
+  assert.notEqual(afterData.fingerprint, beforeData.fingerprint, 'non-code input bytes belong to graph identity');
+  assert.equal(evaluateFocusedClosure(afterData, ['docs/input.json']).docsOnly, false);
+  assert.ok(evaluateFocusedClosure(afterData, ['docs/input.json']).reasons.some(reason => reason.includes('test input')));
+  await f.write('tools/local-checks/graph-syntax.mjs', '// different analyzer\n');
+  assert.equal(evaluateFocusedClosure(await discoverConsumerGraph(f.root, f.tracked()), []).bounded, false);
+});
