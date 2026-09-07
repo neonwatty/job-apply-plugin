@@ -8,8 +8,7 @@ import { requireObject, validateVersion, StoreValidationError } from '../runtime
 const reference = fileURLToPath(new URL('../tools/contracts/store-validation/reference.py', import.meta.url));
 const primary = process.platform === 'win32' ? 'python' : 'python3';
 const profiles = new Set();
-for (const executable of [primary, 'python3.12', 'python3.13', 'python3.14']) {
-  test(`document validation matches authoritative Python: ${executable}`, (t) => {
+function verifyValidation(executable, t) {
     const result = spawnSync(executable, ['-I', reference], {
       input: '', encoding: 'utf8', timeout: 5000, maxBuffer: 128 * 1024,
     });
@@ -38,8 +37,16 @@ for (const executable of [primary, 'python3.12', 'python3.13', 'python3.14']) {
       }
       assert.deepEqual(actual, item.outcome, item.raw);
     }
-  });
 }
+
+if (process.platform === 'win32') {
+  test('document validation matches authoritative Python: python', t => verifyValidation(primary, t));
+} else {
+  test('document validation matches authoritative Python: python3', t => verifyValidation(primary, t));
+}
+test('document validation matches authoritative Python: python3.12', t => verifyValidation('python3.12', t));
+test('document validation matches authoritative Python: python3.13', t => verifyValidation('python3.13', t));
+test('document validation matches authoritative Python: python3.14', t => verifyValidation('python3.14', t));
 
 test('document validation preserves all entries and typed atom identities', () => {
   const document = parsePythonJson('{"schemaVersion":1,"other":1.0}', { intMaxStrDigits: 4300 });

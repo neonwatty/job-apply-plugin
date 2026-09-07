@@ -17,8 +17,7 @@ function corpus() {
   return [...atoms, '{}', '[]', '{"z":{},"a":[[],{},[1]]}', ...Array.from({ length: 192 }, () => value(4))];
 }
 
-for (const executable of ['python3', 'python3.12', 'python3.13', 'python3.14']) {
-  test(`JSONL bytes match actual Python default spacing and strict UTF8: ${executable}`, t => {
+function verifyJsonl(executable, t) {
     const inputs = corpus();
     const script = [
       'import json,sys,platform', 'rows=[]',
@@ -42,5 +41,9 @@ for (const executable of ['python3', 'python3.12', 'python3.13', 'python3.14']) 
       else assert.equal(encode().toString('hex'), expected.hex, raw);
     });
     t.diagnostic(`${receipt.python}: ${inputs.length} deterministic typed values; seed819171`);
-  });
 }
+
+test('JSONL bytes match actual Python default spacing and strict UTF8: python3', t => verifyJsonl('python3', t));
+test('JSONL bytes match actual Python default spacing and strict UTF8: python3.12', t => verifyJsonl('python3.12', t));
+test('JSONL bytes match actual Python default spacing and strict UTF8: python3.13', t => verifyJsonl('python3.13', t));
+test('JSONL bytes match actual Python default spacing and strict UTF8: python3.14', t => verifyJsonl('python3.14', t));

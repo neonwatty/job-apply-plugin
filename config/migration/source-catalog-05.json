@@ -53,12 +53,12 @@
     },
     {
       "path": "src/contracts/raw-json/parser.ts",
-      "sha256": "77b732fb437844603bb1812cebeaa8b72096b7d657c7dcb60eabc338b2267680",
+      "sha256": "991dca50454acd430f486f3837cf91962aa211023632136ab54bd2bc8db53444",
       "classification": "unreviewed"
     },
     {
       "path": "src/contracts/raw-json/serializer.ts",
-      "sha256": "4267d75747972da113f1ca820a9143f0d0c56b9d3565000b8e294eafadf90b35",
+      "sha256": "f0aeb3584ed830ea6612806e32a129013dfd1500d5b680e52c0eb85a46f37493",
       "classification": "unreviewed"
     },
     {

@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "src/contracts/raw-json/point-value.ts",
+      "sha256": "53cccff53a8278a41ca0866f5e274cf60f3f06495315d142d388cbcc9544612f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/raw-json/point-parser-core.ts",
+      "sha256": "491f8d10ac92154858726b68fbeab477c44e6b842a31f799182ff7773154cda3",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/raw-json/point-text-codec.ts",
+      "sha256": "052ffd794291e408be419924152a3f3255fcd40f9aedaa110ac79540292561fe",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/raw-json/point-parser.ts",
+      "sha256": "9f87fc28aeebceccd4ef59847058cc35397df98fd6c6c8d8e3c4f9acb41949ec",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/raw-json/json-serialization-core.ts",
+      "sha256": "d549a9e86b9d7bfb93ad55d8e3f5e3ae47a0db1cd7e3e02483bd191663465f47",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/raw-json/point-serializer.ts",
+      "sha256": "aa3e880eff91b92904cb452dacda03da41992985a1fd67206263df679233ed06",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-value.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-parser-core.js",
+      "sha256": "c077ecc92bdf1f55c3cca8c1ffba728dfde53a3adc69e38e10464b840c910184",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-text-codec.js",
+      "sha256": "6c5916054ac439ad7a63802fcd2a0445d0366e2ada9df15a0b571c5310bdf12b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-parser.js",
+      "sha256": "3214742f49d63491115a2dc12bf25549b2863d3de7b610fde0c5138c4d5d7730",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/raw-json/json-serialization-core.js",
+      "sha256": "8bf9600a57b0ed3f9fce8eaaf12ab383d503ebe71085f00ca46da64dbc5a8a81",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-serializer.js",
+      "sha256": "4c32aeb1ec85ea5b24e2a53f9dfd4748b84d65379a2752020f4c93a0a1755f73",
+      "classification": "unreviewed"
+    }
+  ]
+}

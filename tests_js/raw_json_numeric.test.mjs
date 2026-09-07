@@ -90,8 +90,7 @@ test("integer digit configuration rejects invalid limits", () => {
   }
 });
 
-for (const executable of interpreters) {
-  test(`independent numeric oracle from ${executable}`, (t) => {
+function verifyNumeric(executable, t) {
     const result = runReference(executable);
     if (result.error?.code === "ENOENT" && executable !== defaultInterpreter) {
       t.skip(`${executable} executable unavailable; version parity not established by this alias`);
@@ -134,9 +133,9 @@ for (const executable of interpreters) {
         assert.equal(bits(actual.value), expected.bits, expected.token);
       }
     }
-  });
+}
 
-  test(`${executable} reference rejects caller arguments and stdin`, (t) => {
+function verifyNumericRejection(executable, t) {
     for (const [args, input] of [[ ["--input", "arbitrary"], "" ], [ [], "1" ]]) {
       const result = runReference(executable, args, input);
       if (result.error?.code === "ENOENT" && executable !== defaultInterpreter) {
@@ -148,5 +147,21 @@ for (const executable of interpreters) {
       assert.equal(result.stdout, "");
       assert.equal(result.stderr, "reference_input_rejected\n");
     }
-  });
 }
+
+if (process.platform === 'win32') {
+  test('independent numeric oracle from python', t => verifyNumeric(defaultInterpreter, t));
+} else {
+  test('independent numeric oracle from python3', t => verifyNumeric(defaultInterpreter, t));
+}
+if (process.platform === 'win32') {
+  test('python reference rejects caller arguments and stdin', t => verifyNumericRejection(defaultInterpreter, t));
+} else {
+  test('python3 reference rejects caller arguments and stdin', t => verifyNumericRejection(defaultInterpreter, t));
+}
+test('independent numeric oracle from python3.12', t => verifyNumeric('python3.12', t));
+test('python3.12 reference rejects caller arguments and stdin', t => verifyNumericRejection('python3.12', t));
+test('independent numeric oracle from python3.13', t => verifyNumeric('python3.13', t));
+test('python3.13 reference rejects caller arguments and stdin', t => verifyNumericRejection('python3.13', t));
+test('independent numeric oracle from python3.14', t => verifyNumeric('python3.14', t));
+test('python3.14 reference rejects caller arguments and stdin', t => verifyNumericRejection('python3.14', t));

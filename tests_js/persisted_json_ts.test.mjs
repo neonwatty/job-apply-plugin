@@ -18,8 +18,7 @@ function corpus() {
   return [...scalars, '{}', '[]', '{"2":1,"1":2}', ...Array.from({ length: 192 }, () => value(4))];
 }
 
-for (const executable of ['python3', 'python3.12', 'python3.13', 'python3.14']) {
-  test(`persisted JSON chunks and strict UTF8 match Python: ${executable}`, (t) => {
+function verifyPersisted(executable, t) {
     const inputs = corpus();
     const script = [
       'import json,platform,sys', 'rows=[]',
@@ -47,5 +46,9 @@ for (const executable of ['python3', 'python3.12', 'python3.13', 'python3.14']) 
       else assert.equal(encodePersistedUtf8(chunks.join('')).toString('hex'), expected.hex);
     }
     t.diagnostic(`${receipt.python}: ${inputs.length} deterministic typed values; seed 711983`);
-  });
 }
+
+test('persisted JSON chunks and strict UTF8 match Python: python3', t => verifyPersisted('python3', t));
+test('persisted JSON chunks and strict UTF8 match Python: python3.12', t => verifyPersisted('python3.12', t));
+test('persisted JSON chunks and strict UTF8 match Python: python3.13', t => verifyPersisted('python3.13', t));
+test('persisted JSON chunks and strict UTF8 match Python: python3.14', t => verifyPersisted('python3.14', t));
