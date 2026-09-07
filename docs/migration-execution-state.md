@@ -813,3 +813,22 @@ independent review: both author and reviewer workers subsequently hit the accoun
 usage limit. No real acceptance catalog is activated and P01.V remains open.
 The coordinator can retain passing local checks and a reviewable checkpoint but
 cannot replace the required independent review with its own approval.
+
+## Bootstrap accepted after usage reset
+
+Independent review resumed and accepted the final P01 boundary correction at
+`2f3c499`. Actual audit activation exposed a separate hook integration defect:
+the dependency symlink in isolated snapshots was untracked because the existing
+ignore rule covered directories only. The minimal `/node_modules` rule and real
+snapshot regression were independently reviewed; ten focused tests passed, and
+`a75908e` passed all nine commit checks. Unrelated untracked files and tracked
+source drift still fail cleanliness validation.
+
+New v2 audit/manifests preserve the original unactivated records. Subject
+`ac3a12d` passed all seven declared witness files: 48 tests, zero failures/skips.
+Independent review approved the exact subject, immutable inputs, actors, logs,
+hashes, test identities and timing. Receipt commit `85f0a45` passed all nine
+commit checks; the actual checker accepts P00.I/V and P01.I/V with zero errors.
+No product package, native host or parent migration family is accepted by these
+audits. S01/S02 contracts are the next parallel preparation, followed by scoped
+implementation after their own reference gates.

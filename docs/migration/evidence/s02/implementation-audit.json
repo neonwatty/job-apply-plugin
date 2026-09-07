@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "id": "s02-implementation-audit",
+  "assignmentIds": [
+    "S02.I",
+    "S02.V"
+  ],
+  "allowed_files": [
+    "src/contracts/python-json-bytes.ts",
+    "src/contracts/python-byte-errors.ts",
+    "src/contracts/python-utf8-decode.ts",
+    "src/contracts/python-utf16-decode.ts",
+    "src/contracts/python-utf32-decode.ts",
+    "runtime/contracts/python-json-bytes.js",
+    "runtime/contracts/python-byte-errors.js",
+    "runtime/contracts/python-utf8-decode.js",
+    "runtime/contracts/python-utf16-decode.js",
+    "runtime/contracts/python-utf32-decode.js",
+    "tests_js/python_json_bytes_ts.test.mjs",
+    "tests_js/python_json_bytes_ts_support.mjs",
+    "docs/migration/python-json-bytes-port.md",
+    "docs/migration/evidence/s02/implementation-audit.json",
+    "docs/migration/evidence/s02/S02.I.json",
+    "docs/migration/evidence/s02/S02.V.json"
+  ],
+  "emittedFiles": [
+    "runtime/contracts/python-json-bytes.js",
+    "runtime/contracts/python-byte-errors.js",
+    "runtime/contracts/python-utf8-decode.js",
+    "runtime/contracts/python-utf16-decode.js",
+    "runtime/contracts/python-utf32-decode.js"
+  ],
+  "dependencies": [],
+  "requirementIds": [
+    "S02.I.decoder.required",
+    "S02.I.reference.required",
+    "S02.I.python-text.required"
+  ],
+  "cells": [
+    {
+      "id": "S02.I.decoder",
+      "requirementIds": [
+        "S02.I.decoder.required"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/python_json_bytes_ts.test.mjs"
+      ],
+      "testNames": [
+        "S02.I decoder matches all 82 frozen byte outcomes",
+        "S02.I detection preserves BOM precedence and zero-byte inference",
+        "S02.I UTF-8 surrogatepass preserves Python codepoint identity",
+        "S02.I UTF-16 combines only encoded adjacent surrogate pairs",
+        "S02.I UTF-32 preserves surrogate units and unsigned range failures",
+        "S02.I decoding errors preserve object bytes offsets reasons and messages",
+        "S02.I Buffer views and owned error bytes resist caller mutation",
+        "S02.I invalid JavaScript inputs fail before byte decoding"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s02/logs/S02.I.decoder.tap"
+    },
+    {
+      "id": "S02.I.reference",
+      "requirementIds": [
+        "S02.I.reference.required"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/python_json_bytes_reference.test.mjs"
+      ],
+      "testNames": [
+        "S02.R byte decoding reference: default CPython",
+        "S02.R byte decoding reference: CPython 3.12",
+        "S02.R byte decoding reference: CPython 3.13",
+        "S02.R byte decoding reference: CPython 3.14",
+        "S02.R byte decoding reference rejects external input"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s02/logs/S02.I.reference.tap"
+    },
+    {
+      "id": "S02.I.python-text",
+      "requirementIds": [
+        "S02.I.python-text.required"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/python_text_ts.test.mjs"
+      ],
+      "testNames": [
+        "PythonText retains distinct pair/scalar identities across construction and concatenation",
+        "PythonText defensively freezes content and preserves immutable error originals",
+        "PythonText rejects malformed runtime inputs and implicit conversion",
+        "PythonText UTF8 boundary bytes and long concatenation avoid argument-stack limits"
+      ],
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s02/logs/S02.I.python-text.tap"
+    }
+  ],
+  "artifacts": []
+}

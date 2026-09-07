@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "id": "s01-implementation-audit",
+  "assignmentIds": [
+    "S01.I",
+    "S01.V"
+  ],
+  "allowed_files": [
+    "src/contracts/python-object.ts",
+    "src/contracts/python-object-legacy.ts",
+    "runtime/contracts/python-object.js",
+    "runtime/contracts/python-object-legacy.js",
+    "tests_js/python_object_ts.test.mjs",
+    "tests_js/python_object_ts_support.mjs",
+    "docs/migration/evidence/s01/implementation-audit.json",
+    "docs/migration/evidence/s01/S01.I.json",
+    "docs/migration/evidence/s01/S01.V.json"
+  ],
+  "emittedFiles": [
+    "runtime/contracts/python-object.js",
+    "runtime/contracts/python-object-legacy.js"
+  ],
+  "dependencies": [],
+  "requirementIds": [
+    "s01.audit.python-object-implementation"
+  ],
+  "cells": [
+    {
+      "id": "s01.implementation.python-object",
+      "requirementIds": [
+        "s01.audit.python-object-implementation"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/python_object_ts.test.mjs"
+      ],
+      "testNames": [
+        "S01 content-equal keys retain first identity and insertion order",
+        "S01 literal pair scalar lone empty and NUL keys remain distinct",
+        "S01 deletion returns presence and reinsertion preserves dictionary order",
+        "S01 missing lookup differs from present null and undefined",
+        "S01 opaque values retain numeric shared and cyclic identity",
+        "S01 entry snapshots protect structure while retaining value references",
+        "S01 runtime key validation cannot forge content identity",
+        "S01 legacy Map ingress preserves representable keys and value identity",
+        "S01 legacy Map egress rejects lossy pairs without source mutation",
+        "S01 large keys avoid argument-spread limits and retain exact lookup"
+      ],
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s01/logs/S01-IV-python-object-implementation.tap"
+    }
+  ],
+  "artifacts": []
+}
