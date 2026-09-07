@@ -368,6 +368,18 @@
           "sha256": "db9a474e41e7818ed52d1b70bf83645ab68cad4223dd66e96c7533705aee4066"
         }
       ]
+    },
+    {
+      "id": "P08.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze bounded platform literal recognition with independent actual receipt evidence.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p08/transition.json",
+          "sha256": "a6ef5737d825536f97c76a40a56582e86a959eb1cf739a154630352c70eea457"
+        }
+      ]
     }
   ],
   "transitions": [
