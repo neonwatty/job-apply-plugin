@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "dag": {
+    "path": "docs/migration/evidence/bootstrap/approved-dag.json",
+    "sha256": "e8e549ec42440bff841da005d68b91b0e421a864db886203a542b6cfe9a70ec9",
+    "revision": "f82176eb4f4a59a8637c069b34c00346c1753345"
+  },
+  "assignments": [
+    {
+      "id": "P00.I",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/bootstrap/P00.I-v2.json",
+        "sha256": "9f6af014ddab848d3eee3fd226e714aacda14fb608007a3ce85315106445fb2e",
+        "revision": "f82176eb4f4a59a8637c069b34c00346c1753345"
+      }
+    },
+    {
+      "id": "P00.V",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/bootstrap/P00.V-v2.json",
+        "sha256": "ef604355da3a8c610963c413c95766ef229898048c18ef39796fa28f1b052216",
+        "revision": "f82176eb4f4a59a8637c069b34c00346c1753345"
+      }
+    },
+    {
+      "id": "P01.I",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/bootstrap/P01.I-v2.json",
+        "sha256": "56b66de49dcb6461eed2d4cf1d555959691f14ccf12c1998eed227efecd094e0",
+        "revision": "f82176eb4f4a59a8637c069b34c00346c1753345"
+      }
+    },
+    {
+      "id": "P01.V",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/bootstrap/P01.V-v2.json",
+        "sha256": "d01eacb725764acf5cba33019ee3328b89b92da438481facf57d3aa5d06cfad3",
+        "revision": "f82176eb4f4a59a8637c069b34c00346c1753345"
+      }
+    }
+  ],
+  "environments": [
+    {
+      "id": "node-local",
+      "platform": "darwin",
+      "node": "v22.22.3",
+      "unicode": "17.0"
+    }
+  ],
+  "audits": [
+    {
+      "path": "docs/migration/evidence/bootstrap/p00-audit-v2.json",
+      "sha256": "cf4dbfddaea3916b570b901cc46fa39d24aa0786e95cb86ce82029f782622742",
+      "revision": "f82176eb4f4a59a8637c069b34c00346c1753345"
+    },
+    {
+      "path": "docs/migration/evidence/bootstrap/p01-audit-v2.json",
+      "sha256": "dda4656332a9e5268359f9672e3aaf9f085430e26ce8ba002c3d45f2563b495c",
+      "revision": "f82176eb4f4a59a8637c069b34c00346c1753345"
+    }
+  ]
+}
