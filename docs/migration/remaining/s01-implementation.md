@@ -19,8 +19,8 @@ or a general Python repr implementation.
 
 Own at most two new production modules:
 
-1. `src/contracts/python-object.ts` — generic content-keyed mutable container and
-   narrow missing-key error data; depends only on PythonText.
+1. `src/contracts/python-object.ts` — generic content-keyed mutable container with
+   boolean deletion and fallback lookup; depends only on PythonText.
 2. `src/contracts/python-object-legacy.ts` — explicit, shallow legacy Map adapter;
    depends on PythonObject and PythonText. Neither primitive imports the adapter.
 
@@ -110,9 +110,9 @@ not blanket-reject all surrogate points: isolated high or low points are exactly
 representable. Never use strict UTF-8 encoding as the representability test.
 Reject before returning a partial destination. All keys are prevalidated; fresh
 Map creation cannot alter the source. This preserves pair/scalar coexistence by
-refusing lossy egress rather than overwriting a collision. Returning a tagged
-failure instead of throwing TypeError is a possible API adjustment, but choose
-one explicitly in the registered manifest rather than silently falling back.
+refusing lossy egress rather than overwriting a collision. Invalid inputs and lossy egress throw TypeError. No tagged failure or implicit
+fallback is part of this API. Adapters invoke trusted PythonText prototype
+methods and its codePoints getter so subclass overrides cannot forge identity.
 
 ## Proposed test manifest
 
@@ -125,7 +125,7 @@ Literal test names to bind before implementation:
 
 - `S01 content-equal keys retain first identity and insertion order`
 - `S01 literal pair scalar lone empty and NUL keys remain distinct`
-- `S01 deletion reinsertion and absent deletion preserve dictionary behavior`
+- `S01 deletion returns presence and reinsertion preserves dictionary order`
 - `S01 missing lookup differs from present null and undefined`
 - `S01 opaque values retain numeric shared and cyclic identity`
 - `S01 entry snapshots protect structure while retaining value references`
@@ -149,6 +149,7 @@ S01 must not add a test-only serializer to claim those cells implemented.
 
 Proposed checks after implementation: focused new Node suite against root-emitted
 runtime, existing PythonText suite, typecheck, build consistency and source-size.
-No test was executed for this design-only task. Remaining decisions before freeze:
-final adapter failure shape and the explicit
-snapshot API agreement. No consumer activation or S01 acceptance is claimed.
+The implementation freezes TypeError adapter failures and frozen snapshot entries
+as described above. This design itself supplies no execution evidence; acceptance
+requires the registered exact-subject tests and independent review. No consumer
+activation or S01 acceptance is claimed.

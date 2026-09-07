@@ -59,6 +59,9 @@ string or round-trip through PythonText.fromJavaScript.
 a private owned Buffer with an `object` getter returning a copy; no caller can mutate
 the retained error. Test serialization derives `objectHex` from those bytes. Byte
 identity here means exact contents and offsets, not JS object reference equality.
+Keep the Error instance extensible for contextual annotations and cause
+composition, matching the existing encoding error. Declare scalar error fields
+readonly in TypeScript; the retained private byte snapshot never escapes.
 This type is distinct from PythonText's existing UnicodeEncodeError and from a
 future JSON syntax error. Do not wrap it into a generic parser or HTTP exception.
 
@@ -211,8 +214,9 @@ Its production module count is five after declared emissions are excluded.
 
 Root must register the future exact test path
 `tests_js/python_json_bytes_ts.test.mjs`, its support ownership and all ten
-source/emission paths before freezing activation. Root handles source-catalog and
-review-lock reconciliation outside the decoder worker. Existing reference and
+source/emission paths before freezing activation. Root handles the explicitly owned source-catalog-s02.json shard in the isolated
+implementation branch and coordinator review-lock reconciliation. The decoder
+worker owns neither edit; both remain in the integrated package evidence. Existing reference and
 PythonText tests used by the implementation cell are read-only manifest inputs,
 as are PythonText source/emission, frozen oracle files, relevant build/runner
 modules and configuration. They are not silently added to decoder ownership.
