@@ -5820,6 +5820,167 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "S04.R",
+      "manifestSha256": "e95e2c18104f5e966929cec58ea18dd95f4b7997b0bfc3ecc0192b880ce3cc8c",
+      "subject": {
+        "sha": "3b1a26a810908dc01ed1cd066f665988508d3676",
+        "tree": "1ba9333383d95d4ee76e1c637e1a568033697bfd"
+      },
+      "executionBase": "d21027ce71d69912d13c6c9e3e07040772205956",
+      "evidenceCommit": "049432dda5a1f90efb4ceaf0ff8f14e2fd6c314e",
+      "diff": [
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "docs/migration/evidence/s04/reference.md"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/point_persistence_baselines.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/point_persistence_reference.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/contracts/point-persistence/fixtures.py"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/contracts/point-persistence/reference.py"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/contracts/point-persistence/support.py"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/contracts/point-persistence/reference.py",
+          "sha256": "b8400c89e7801880631e0530b891bb165c48ed35f5541365bd83d0650cb5497a"
+        },
+        {
+          "path": "tools/contracts/point-persistence/fixtures.py",
+          "sha256": "14f5edcefbc90af2d66391f6dbaefd19045c4bf0aff33cf0282262b62031ac64"
+        },
+        {
+          "path": "tools/contracts/point-persistence/support.py",
+          "sha256": "e7b0b1c301cd971889244e01a7487d3be68a6b790b4028be6406aadefd6e639c"
+        },
+        {
+          "path": "tests_js/point_persistence_reference.test.mjs",
+          "sha256": "17d5509db54762c1cb9a5dcc51eb64375ca5f660dc02e7ae97cc6dfbecbce742"
+        },
+        {
+          "path": "tests_js/point_persistence_baselines.test.mjs",
+          "sha256": "490dbede153c9b1784cbb7da2fb8ab600ba2965f17b092971f00e3c50af04f32"
+        },
+        {
+          "path": "docs/migration/evidence/s04/reference-vectors.json",
+          "sha256": "5f780fccad0679310cd70f08a7b39493cb86879d4c65a3ffc262637b44bbe04a"
+        },
+        {
+          "path": "docs/migration/evidence/s04/reference.md",
+          "sha256": "d27b8723ec05f9dace098f4dfbfab5aca18e8aea358a7f6265de693ed4877e55"
+        },
+        {
+          "path": "docs/migration/evidence/s04/reference-plan.md",
+          "sha256": "9cfa6235000def45781ae076f1b84b1bf2fa3e98a76bb4dc46c82fb6a838e571"
+        },
+        {
+          "path": "docs/migration/evidence/s04/reference-audit.json",
+          "sha256": "2c5c8c7abce1d443c19e91494b4bbae7394f5be817ba984746f35737a95ad3d3"
+        },
+        {
+          "path": "docs/migration/evidence/s04/S04.R.json",
+          "sha256": "e95e2c18104f5e966929cec58ea18dd95f4b7997b0bfc3ecc0192b880ce3cc8c"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        }
+      ],
+      "cells": [
+        {
+          "id": "s04.reference.points",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/point_persistence_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 426.435833,
+            "outputBytes": 565794,
+            "tests": 5,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s04/logs/S04-R-points.tap",
+            "sha256": "fe9ab714f90b173beb366ea518f15edb9fc3c740faacf6367cb2a59516c094d9"
+          }
+        },
+        {
+          "id": "s04.reference.baselines",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/point_persistence_baselines.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 821.480875,
+            "outputBytes": 3466,
+            "tests": 2,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s04/logs/S04-R-baselines.tap",
+            "sha256": "e41186a202f343b555e693fdfb6fe96438aac3c9339412258585e8daccdabb48"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "3b1a26a810908dc01ed1cd066f665988508d3676",
+        "subjectTree": "1ba9333383d95d4ee76e1c637e1a568033697bfd",
+        "manifestSha256": "e95e2c18104f5e966929cec58ea18dd95f4b7997b0bfc3ecc0192b880ce3cc8c",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
