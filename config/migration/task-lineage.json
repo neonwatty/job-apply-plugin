@@ -52,6 +52,18 @@
           "sha256": "3cddb7b1b87a62485f1207432cf37402daf89043c3f90d4afa863e252bb333ae"
         }
       ]
+    },
+    {
+      "id": "S08.reference-audit-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze the existing composed JSON reference with exact interpreter-profile witnesses; no runtime acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s08/reference-audit.json",
+          "sha256": "40e46ce4da3cf6d2e28d2770c28307d13fdd2567e7b0588ba128a561b5fbd467"
+        }
+      ]
     }
   ],
   "transitions": []
