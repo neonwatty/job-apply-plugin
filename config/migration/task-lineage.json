@@ -556,6 +556,18 @@
           "sha256": "250026515ee78b8395e6bed8a2475bc9681f5fdad7f7892bf8fe75bc6152877d"
         }
       ]
+    },
+    {
+      "id": "P03.retry2.capture-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve active P03.retry1 partial formatter attempt; add accepted S08.V dependency and require fresh complete revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry2/original-capture.json",
+          "sha256": "ae19557320454e79f317b991f6040c8759da78a77a7ffd6db6730631d71fb128"
+        }
+      ]
     }
   ],
   "transitions": [

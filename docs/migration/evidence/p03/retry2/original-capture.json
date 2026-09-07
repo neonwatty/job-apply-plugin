@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "id": "P03.retry1-unaccepted-partial-capture",
+  "subject": {
+    "sha": "b54f9c4e47300be209640aa68ae1b250e584808e",
+    "tree": "58c38c0ead6231440bd06329b3c205f070f9cc7e"
+  },
+  "executionBase": "9a64621d37720bf0f43a3f7832a04d0468cc1ea8",
+  "attributions": [
+    {
+      "taskId": "P03.retry1.I",
+      "manifestSha256": "5f6d57971bfaebe16add433a54772060efa5a2eb760188ce2d82b4c0d772a7c9",
+      "cellIds": [
+        "p03.implementation.v2.local_checks_git",
+        "p03.implementation.v2.local_checks_policy",
+        "p03.implementation.v2.local_checks_run",
+        "p03.implementation.v2.test-runner-selection",
+        "p03.retry1.reporter-prefix"
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "id": "p03.implementation.v2.local_checks_git",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/local_checks_git.test.mjs"
+      ],
+      "environmentId": "node-local",
+      "environment": {
+        "id": "node-local",
+        "platform": "darwin",
+        "node": "v22.22.3",
+        "unicode": "17.0"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "durationMs": 4700.244167,
+        "outputBytes": 2792
+      },
+      "log": {
+        "path": "docs/migration/evidence/p03/retry1/v3/logs/p03.implementation.v2.local_checks_git.tap",
+        "sha256": "d6fb37ae7fa43d056bd1b3c263eab1b53c4848ec1c5232821a92931b8300933e"
+      },
+      "artifacts": [],
+      "diagnostic": null
+    },
+    {
+      "id": "p03.implementation.v2.local_checks_policy",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/local_checks_policy.test.mjs"
+      ],
+      "environmentId": "node-local",
+      "environment": {
+        "id": "node-local",
+        "platform": "darwin",
+        "node": "v22.22.3",
+        "unicode": "17.0"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "durationMs": 136.87729200000012,
+        "outputBytes": 1922
+      },
+      "log": {
+        "path": "docs/migration/evidence/p03/retry1/v3/logs/p03.implementation.v2.local_checks_policy.tap",
+        "sha256": "e437ad8a86767cde2aca90b46391b104d5ff04bcc95589cfc8742cf9323777a0"
+      },
+      "artifacts": [],
+      "diagnostic": {
+        "code": "unaccepted-partial-attempt",
+        "message": "Frozen cell declares 14 identities; strict observed TAP has 8; no acceptance."
+      }
+    },
+    {
+      "id": "p03.implementation.v2.local_checks_run",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/local_checks_run.test.mjs"
+      ],
+      "environmentId": "node-local",
+      "environment": {
+        "id": "node-local",
+        "platform": "darwin",
+        "node": "v22.22.3",
+        "unicode": "17.0"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "durationMs": 2674.1508750000003,
+        "outputBytes": 1181
+      },
+      "log": {
+        "path": "docs/migration/evidence/p03/retry1/v3/logs/p03.implementation.v2.local_checks_run.tap",
+        "sha256": "e34c5f9e3a5c684389e76a826596c35be475ca4c62607652acfa7e1a1178b5cc"
+      },
+      "artifacts": [],
+      "diagnostic": {
+        "code": "unaccepted-partial-attempt",
+        "message": "Frozen cell declares 6 identities; strict observed TAP has 3; no acceptance."
+      }
+    },
+    {
+      "id": "p03.implementation.v2.test-runner-selection",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/test-runner-selection.test.mjs"
+      ],
+      "environmentId": "node-local",
+      "environment": {
+        "id": "node-local",
+        "platform": "darwin",
+        "node": "v22.22.3",
+        "unicode": "17.0"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "durationMs": 715.4405000000006,
+        "outputBytes": 1537
+      },
+      "log": {
+        "path": "docs/migration/evidence/p03/retry1/v3/logs/p03.implementation.v2.test-runner-selection.tap",
+        "sha256": "282296887d4ceace323f9e43100988be117dde9496337483a789a61582ed7ea2"
+      },
+      "artifacts": [],
+      "diagnostic": {
+        "code": "unaccepted-partial-attempt",
+        "message": "Frozen cell declares 11 identities; strict observed TAP has 7; no acceptance."
+      }
+    },
+    {
+      "id": "p03.retry1.reporter-prefix",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/test-runner-execution.test.mjs"
+      ],
+      "environmentId": "node-local",
+      "environment": {
+        "id": "node-local",
+        "platform": "darwin",
+        "node": "v22.22.3",
+        "unicode": "17.0"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "durationMs": 5358.106167,
+        "outputBytes": 1976
+      },
+      "log": {
+        "path": "docs/migration/evidence/p03/retry1/v3/logs/p03.retry1.reporter-prefix.tap",
+        "sha256": "ff58cd345b33daa16cb2058be24919374fd5c277f3b9963014e0a055f52ac8af"
+      },
+      "artifacts": [],
+      "diagnostic": null
+    }
+  ]
+}
