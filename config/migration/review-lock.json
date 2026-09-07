@@ -167,7 +167,7 @@
     },
     {
       "path": "source-catalog-02.json",
-      "sha256": "0128ff29d9fd85774aa26615157c2b761603d90b9a2498a9fec7a44db8054880"
+      "sha256": "83fb9e293064e6af97ff36802cea035f1290bd25466bb2ec71679377052b11ab"
     },
     {
       "path": "source-catalog-03.json",
@@ -179,7 +179,7 @@
     },
     {
       "path": "source-catalog-05.json",
-      "sha256": "93c623f2f8264e16a2d6c8b066ada7c8c282e0a07e744dd60d86dd9d886c76fd"
+      "sha256": "9d047acdf9200cf4ca06a6cc177123759503bc79a6276dcff1fc49ecf7dcb906"
     },
     {
       "path": "source-catalog-06.json",
@@ -194,12 +194,16 @@
       "sha256": "4827fee5a9666c9510f1e2bed18b0709b9ca98dc50d9a4ac3155f5164c1a9e81"
     },
     {
+      "path": "source-catalog-s08.json",
+      "sha256": "09d07a817948f812d918fc9d046efe5a7163cf1039770cb27427d3b70f8b11b0"
+    },
+    {
       "path": "task-contracts.json",
-      "sha256": "387ce4875748512e3ee0e98f26eaf7915abd4d8bfdb20dbc87cb0064174dedaf"
+      "sha256": "9a024166a9795f62fd728a1c977389d9de3d24a82044ed333ad5c9eda525d30d"
     },
     {
       "path": "task-lineage.json",
-      "sha256": "7b4df3a86977cc639f093b5e4b23751790a2b607b11807e727fc17512da42c3c"
+      "sha256": "51b27c527403b90fabfe57955b560a75c4feae27583b9313e2672ee9d3704eb9"
     },
     {
       "path": "task-receipts.json",

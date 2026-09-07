@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: S08 shared parser preserves legacy mixed surrogate values and Map keys
+ok 1 - S08 shared parser preserves legacy mixed surrogate values and Map keys
+  ---
+  duration_ms: 1.811334
+  type: 'test'
+  ...
+# Subtest: S08 legacy errors retain class identity offsets and configuration precedence
+ok 2 - S08 legacy errors retain class identity offsets and configuration precedence
+  ---
+  duration_ms: 4.18325
+  type: 'test'
+  ...
+# Subtest: S08 shared numeric parsing preserves digit limits signed zero and nonfinite values
+ok 3 - S08 shared numeric parsing preserves digit limits signed zero and nonfinite values
+  ---
+  duration_ms: 1.160291
+  type: 'test'
+  ...
+# Subtest: S08 shared engines handle 2000 levels without recursive traversal
+ok 4 - S08 shared engines handle 2000 levels without recursive traversal
+  ---
+  duration_ms: 15.693208
+  type: 'test'
+  ...
+# Subtest: S08 shared serializers distinguish active cycles from shared acyclic containers
+ok 5 - S08 shared serializers distinguish active cycles from shared acyclic containers
+  ---
+  duration_ms: 0.252792
+  type: 'test'
+  ...
+# Subtest: S08 long text and key inputs preserve immutable point identity without spread limits
+ok 6 - S08 long text and key inputs preserve immutable point identity without spread limits
+  ---
+  duration_ms: 52.186875
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 118.138291

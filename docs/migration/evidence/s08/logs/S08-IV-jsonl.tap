@@ -1,0 +1,38 @@
+TAP version 13
+# Subtest: JSONL bytes match actual Python default spacing and strict UTF8: python3
+ok 1 - JSONL bytes match actual Python default spacing and strict UTF8: python3
+  ---
+  duration_ms: 27.225
+  type: 'test'
+  ...
+# 3.14.4: 212 deterministic typed values; seed819171
+# Subtest: JSONL bytes match actual Python default spacing and strict UTF8: python3.12
+ok 2 - JSONL bytes match actual Python default spacing and strict UTF8: python3.12
+  ---
+  duration_ms: 19.676666
+  type: 'test'
+  ...
+# 3.12.13: 212 deterministic typed values; seed819171
+# Subtest: JSONL bytes match actual Python default spacing and strict UTF8: python3.13
+ok 3 - JSONL bytes match actual Python default spacing and strict UTF8: python3.13
+  ---
+  duration_ms: 24.022583
+  type: 'test'
+  ...
+# 3.13.13: 212 deterministic typed values; seed819171
+# Subtest: JSONL bytes match actual Python default spacing and strict UTF8: python3.14
+ok 4 - JSONL bytes match actual Python default spacing and strict UTF8: python3.14
+  ---
+  duration_ms: 23.200584
+  type: 'test'
+  ...
+# 3.14.4: 212 deterministic typed values; seed819171
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 131.288375

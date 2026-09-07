@@ -292,6 +292,46 @@
           "sha256": "f4673a582a71b4c1a6be4436194e64f0ab6ceb3fe2ba1b4adfa159eb71167128"
         }
       ]
+    },
+    {
+      "id": "S08.implementation-contract-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Pin independently reviewed shared point JSON scope and immutable reference vectors before manifest base; no implementation acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s08/implementation.md",
+          "sha256": "063a7fa19b2bf7dd5c54dd97bebcd7f9822904bc51a97ede60d51ae893c6541a"
+        },
+        {
+          "path": "docs/migration/evidence/s08/implementation-audit.json",
+          "sha256": "faa112d6ec38f6e3de1837c26c742166ed0560bf8bf8216bb51364ad15c45623"
+        },
+        {
+          "path": "docs/migration/evidence/s08/composed-reference-vectors.json",
+          "sha256": "1ccb7cdb553cd70a1f6107904b595c4a9c9ea720e9d8c5cbc48955233f280e7b"
+        },
+        {
+          "path": "docs/migration/evidence/s08/additional-reference-vectors.json",
+          "sha256": "500ce6a2f35ac9f9e0bfe9ec8a676d0aa1165687a768f53e3bffeacf5048225d"
+        }
+      ]
+    },
+    {
+      "id": "S08.implementation-manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze exact S08 shared point JSON implementation and independent review manifests before activation; no implementation acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s08/S08.I.json",
+          "sha256": "a28f0851bce4edb2e3ed0a30b66a0662c67a7eb230327244033f70eee8f1cd34"
+        },
+        {
+          "path": "docs/migration/evidence/s08/S08.V.json",
+          "sha256": "218899ea4073aac71316b21293a3eaac0a4efd4432560cea93b628d3a4026a62"
+        }
+      ]
     }
   ],
   "transitions": [

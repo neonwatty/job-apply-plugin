@@ -243,12 +243,12 @@
     },
     {
       "path": "runtime/contracts/raw-json/parser.js",
-      "sha256": "f4770bd069857782485c15647b98c7bf7664b5f10d9c4b2fb08d101459ab8306",
+      "sha256": "e56e7a875cea5926b740f8109669476659644595d28b634024d1b427d4ce2825",
       "classification": "unreviewed"
     },
     {
       "path": "runtime/contracts/raw-json/serializer.js",
-      "sha256": "d09232a545ef3df0965f5f352b76cc78453e7bae82b7aa3e398c601cd822154e",
+      "sha256": "854be43fe99dfcad95e2cd1e8763e740a31b0f319712f8c56e9d6e2eecbce390",
       "classification": "unreviewed"
     },
     {

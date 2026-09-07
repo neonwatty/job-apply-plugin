@@ -1,87 +1,24 @@
+import { PythonText } from "../python-text.js";
 import { floatScope } from "./float-scope.js";
-function quote(value) {
-    const output = ['"'];
-    const escapes = {
-        8: "\\b", 9: "\\t", 10: "\\n", 12: "\\f", 13: "\\r", 34: '\\"', 92: "\\\\",
-    };
-    for (let index = 0; index < value.length; index += 1) {
-        const unit = value.charCodeAt(index);
-        if (Object.hasOwn(escapes, unit))
-            output.push(escapes[unit]);
-        else if (unit < 32 || unit >= 127)
-            output.push(`\\u${unit.toString(16).padStart(4, "0")}`);
-        else
-            output.push(value[index]);
-    }
-    output.push('"');
-    return output.join("");
-}
-function compareKeys(left, right) {
-    let a = 0;
-    let b = 0;
-    while (a < left.length && b < right.length) {
-        const first = left.codePointAt(a);
-        const second = right.codePointAt(b);
-        if (first !== second)
-            return first < second ? -1 : 1;
-        a += first > 65535 ? 2 : 1;
-        b += second > 65535 ? 2 : 1;
-    }
-    return a < left.length ? 1 : b < right.length ? -1 : 0;
-}
+import { serializeJsonGraph } from "./json-serialization-core.js";
+import { quotePointString } from "./point-text-codec.js";
+const quote = (value) => quotePointString(PythonText.fromJavaScript(value).codePoints);
+const compareKeys = (left, right) => PythonText.fromJavaScript(left).compare(PythonText.fromJavaScript(right));
 /** Compact, sorted, ensure_ascii spelling without recursive JS calls. */
 export function serializePythonScope(value) {
-    const actions = [{ kind: "value", value }];
-    const active = new Set();
-    const output = [];
-    while (actions.length > 0) {
-        const action = actions.pop();
-        if (action.kind === "text") {
-            output.push(action.text);
-            continue;
-        }
-        if (action.kind === "leave") {
-            active.delete(action.container);
-            continue;
-        }
-        const current = action.value;
+    return serializeJsonGraph(value, current => {
         if (current === null)
-            output.push("null");
-        else if (typeof current === "boolean")
-            output.push(current ? "true" : "false");
-        else if (typeof current === "string")
-            output.push(quote(current));
-        else if (Array.isArray(current) || current instanceof Map) {
-            if (active.has(current))
-                throw new TypeError("Circular JSON value");
-            active.add(current);
-            actions.push({ kind: "leave", container: current });
-            if (Array.isArray(current)) {
-                output.push("[");
-                actions.push({ kind: "text", text: "]" });
-                for (let index = current.length - 1; index >= 0; index -= 1) {
-                    actions.push({ kind: "value", value: current[index] });
-                    if (index > 0)
-                        actions.push({ kind: "text", text: "," });
-                }
-            }
-            else {
-                output.push("{");
-                actions.push({ kind: "text", text: "}" });
-                const keys = [...current.keys()].sort(compareKeys);
-                for (let index = keys.length - 1; index >= 0; index -= 1) {
-                    const key = keys[index];
-                    actions.push({ kind: "value", value: current.get(key) });
-                    actions.push({ kind: "text", text: `${quote(key)}:` });
-                    if (index > 0)
-                        actions.push({ kind: "text", text: "," });
-                }
-            }
+            return { kind: "scalar", text: "null" };
+        if (typeof current === "boolean")
+            return { kind: "scalar", text: current ? "true" : "false" };
+        if (typeof current === "string")
+            return { kind: "scalar", text: quote(current) };
+        if (Array.isArray(current))
+            return { kind: "array", identity: current, items: current };
+        if (current instanceof Map) {
+            return { kind: "object", identity: current,
+                entries: [...current.keys()].sort(compareKeys).map(key => [quote(key), current.get(key)]) };
         }
-        else if (current.kind === "int")
-            output.push(current.value.toString());
-        else
-            output.push(floatScope(current.value));
-    }
-    return output.join("");
+        return { kind: "scalar", text: current.kind === "int" ? current.value.toString() : floatScope(current.value) };
+    }, () => new TypeError("Circular JSON value"));
 }

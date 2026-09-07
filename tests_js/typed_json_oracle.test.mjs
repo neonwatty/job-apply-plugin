@@ -16,8 +16,7 @@ function capture(executable, args = [], input = "") {
   });
 }
 
-for (const executable of [mandatory, "python3.12", "python3.13", "python3.14"]) {
-  test(`typed JSON independently matches ${executable} reference`, (t) => {
+function verifyTyped(executable, t) {
     const observed = capture(executable);
     if (observed.error?.code === "ENOENT" && executable !== mandatory) {
       t.skip(`${executable} executable unavailable; no profile parity inferred`);
@@ -57,9 +56,9 @@ for (const executable of [mandatory, "python3.12", "python3.13", "python3.14"]) 
         });
       }
     }
-  });
+}
 
-  test(`${executable} typed reference rejects caller arguments and stdin`, (t) => {
+function verifyTypedRejection(executable, t) {
     for (const [args, input] of [[ ["--input", "/synthetic/unavailable"], "" ], [ [], "{}" ]]) {
       const result = capture(executable, args, input);
       if (result.error?.code === "ENOENT" && executable !== mandatory) {
@@ -71,5 +70,21 @@ for (const executable of [mandatory, "python3.12", "python3.13", "python3.14"]) 
       assert.equal(result.stdout, "");
       assert.equal(result.stderr, "reference_input_rejected\n");
     }
-  });
 }
+
+if (process.platform === 'win32') {
+  test('typed JSON independently matches python reference', t => verifyTyped(mandatory, t));
+} else {
+  test('typed JSON independently matches python3 reference', t => verifyTyped(mandatory, t));
+}
+if (process.platform === 'win32') {
+  test('python typed reference rejects caller arguments and stdin', t => verifyTypedRejection(mandatory, t));
+} else {
+  test('python3 typed reference rejects caller arguments and stdin', t => verifyTypedRejection(mandatory, t));
+}
+test('typed JSON independently matches python3.12 reference', t => verifyTyped('python3.12', t));
+test('python3.12 typed reference rejects caller arguments and stdin', t => verifyTypedRejection('python3.12', t));
+test('typed JSON independently matches python3.13 reference', t => verifyTyped('python3.13', t));
+test('python3.13 typed reference rejects caller arguments and stdin', t => verifyTypedRejection('python3.13', t));
+test('typed JSON independently matches python3.14 reference', t => verifyTyped('python3.14', t));
+test('python3.14 typed reference rejects caller arguments and stdin', t => verifyTypedRejection('python3.14', t));
