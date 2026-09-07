@@ -125,6 +125,16 @@
         "sha256": "ff9a8c851c0138f41169297dc284d9a83ae00782752b456c29a18b5d9e2f6c3a",
         "revision": "6a72acc9d859d28cc5787ec51dce264fac8cac98"
       }
+    },
+    {
+      "id": "P03.R",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/p03/P03.R-v2.json",
+        "sha256": "3cddb7b1b87a62485f1207432cf37402daf89043c3f90d4afa863e252bb333ae",
+        "revision": "025165cc32d2c6fa9a6f937f37d526046280680e"
+      }
     }
   ],
   "environments": [
@@ -175,6 +185,11 @@
       "path": "docs/migration/evidence/p07/implementation-audit.json",
       "sha256": "23cd65ab5a038b3de3cd411899f3c8c23978f61a3e5269df923d4c0653751aad",
       "revision": "6a72acc9d859d28cc5787ec51dce264fac8cac98"
+    },
+    {
+      "path": "docs/migration/evidence/p03/reference-audit-v2.json",
+      "sha256": "0ab5d6ef287a086b37ac360d7896bcf56f8ad6c20c341759f12f2af5c80e111a",
+      "revision": "025165cc32d2c6fa9a6f937f37d526046280680e"
     }
   ]
 }
