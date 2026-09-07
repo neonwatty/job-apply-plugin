@@ -28,6 +28,18 @@
           "sha256": "b38e62dacebec506611b0eb97aeda6853d4557009b1e004ac21eab7932596876"
         }
       ]
+    },
+    {
+      "id": "P03.reference-audit-v2-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze current local testing reference behavior; full consumer-aware mapping acceptance remains open.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/reference-audit-v2.json",
+          "sha256": "0ab5d6ef287a086b37ac360d7896bcf56f8ad6c20c341759f12f2af5c80e111a"
+        }
+      ]
     }
   ],
   "transitions": []
