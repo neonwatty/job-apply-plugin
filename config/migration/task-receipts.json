@@ -3842,6 +3842,90 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P03.evidence.R",
+      "manifestSha256": "c5ef60c5f2a3bdac12c88f0db6200745e1c2b236094f94a38df0c4cb70867823",
+      "subject": {
+        "sha": "fe17314ddee84956b19c6d5cc4a7df577c636a3b",
+        "tree": "5cd33a688f70922eae8c967ebf2a10bb20deee77"
+      },
+      "executionBase": "2ef02bee44a25a3a8f25dfd58d4eac7dc7ac90f3",
+      "evidenceCommit": "4783ec1adad9a48e26031b70307377ca7597b117",
+      "diff": [
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": ".gitattributes"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/local_checks_install.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": ".gitattributes",
+          "sha256": "e41524c0342b39a2874e5bf92483b0b8af6da06675857b33417fd071bb7240cc"
+        },
+        {
+          "path": "tests_js/local_checks_install.test.mjs",
+          "sha256": "85bc37c452c1f2b4c77c03208a1bb37704a310100a5681f5d5e6d31dfe86bdf0"
+        },
+        {
+          "path": "docs/migration/evidence/p03/evidence/v2/P03.evidence.R.json",
+          "sha256": "c5ef60c5f2a3bdac12c88f0db6200745e1c2b236094f94a38df0c4cb70867823"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P03.R",
+          "sha256": "a186b0e1cc261c3956f4a2d46c1cc024c1f15240c97a2e78d5837ede4c3273cf"
+        }
+      ],
+      "cells": [
+        {
+          "id": "P03.evidence.raw-whitespace",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/local_checks_install.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 679.790625,
+            "outputBytes": 1335,
+            "tests": 6,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03/evidence/v2/logs/P03-evidence-R.tap",
+            "sha256": "e203d73a2a92107e50e172040420edf07fa2f993e98958472f6c37affc733f06"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "root",
+        "reviewer": "hooks_audit",
+        "subjectSha": "fe17314ddee84956b19c6d5cc4a7df577c636a3b",
+        "subjectTree": "5cd33a688f70922eae8c967ebf2a10bb20deee77",
+        "manifestSha256": "c5ef60c5f2a3bdac12c88f0db6200745e1c2b236094f94a38df0c4cb70867823",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
