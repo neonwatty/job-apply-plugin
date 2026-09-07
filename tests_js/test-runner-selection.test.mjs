@@ -425,3 +425,16 @@ test('P03 graph binds source and emitted module identities without duplicate con
   await f.write('tools/local-checks/graph-syntax.mjs', '// different analyzer\n');
   assert.equal(evaluateFocusedClosure(await discoverConsumerGraph(f.root, f.tracked()), []).bounded, false);
 });
+
+
+test('P10 reference suites isolate S04 and S05 without changing process output limits', async () => {
+  const { assertReferenceSuiteIsolation } = await import('./reference_suite_support.mjs');
+  const [actualMatrix, actualPaths] = await Promise.all([loadMatrix(GRAPH_ROOT), trackedPaths(GRAPH_ROOT)]);
+  assertReferenceSuiteIsolation(actualMatrix, actualPaths);
+});
+
+test('P10 reference suite ownership preserves shared inputs and rejects missing or duplicate coverage', async () => {
+  const { assertReferenceSuiteFanout } = await import('./reference_suite_support.mjs');
+  const [actualMatrix, actualPaths] = await Promise.all([loadMatrix(GRAPH_ROOT), trackedPaths(GRAPH_ROOT)]);
+  assertReferenceSuiteFanout(actualMatrix, actualPaths);
+});
