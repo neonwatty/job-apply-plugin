@@ -104,7 +104,8 @@ adapter cannot recover information already lost before entry. Validate key types
 without coercion; failure returns no partial result and leaves source unchanged.
 
 Egress must be lossless for each key. Build JS UTF-16 in bounded chunks and verify
-PythonText.fromJavaScript(candidate).equals(original); reject a key containing
+trusted contentKey values for PythonText.fromJavaScript(candidate) and the
+original key; reject a key containing
 adjacent literal high/low surrogate codepoints that collapse into a scalar. Do
 not blanket-reject all surrogate points: isolated high or low points are exactly
 representable. Never use strict UTF-8 encoding as the representability test.
@@ -112,7 +113,9 @@ Reject before returning a partial destination. All keys are prevalidated; fresh
 Map creation cannot alter the source. This preserves pair/scalar coexistence by
 refusing lossy egress rather than overwriting a collision. Invalid inputs and lossy egress throw TypeError. No tagged failure or implicit
 fallback is part of this API. Adapters invoke trusted PythonText prototype
-methods and its codePoints getter so subclass overrides cannot forge identity.
+contentKey method and its codePoints getter so subclass overrides cannot forge
+identity. Do not use equals or compare for adapter validation: those methods
+currently read overridable methods or getters.
 
 ## Proposed test manifest
 

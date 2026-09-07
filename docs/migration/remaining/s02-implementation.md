@@ -231,6 +231,6 @@ No profile hashes, actors, subject/evidence commits or result placeholders are
 included in these contracts. The current node-local environment record must bind
 the actual runner; explicit CPython identities are additionally checked by the
 frozen reference tests. Structural audit dependencies are empty, while manifest
-receipts must satisfy every archived assignment DAG dependency, including P01.V
-and S02.R before implementation. Success unlocks S02 task IDs only, never a product
+receipts must satisfy every archived assignment DAG dependency, including P00.V
+and S02.R before implementation, with P01.V also required for review. Success unlocks S02 task IDs only, never a product
 surface or migration family. No decoder work starts until both gates are accepted.
