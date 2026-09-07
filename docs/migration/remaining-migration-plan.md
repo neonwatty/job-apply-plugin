@@ -25,15 +25,15 @@ and post-write rollback remain explicit work. P00 reconciles exact current statu
 
 ## The executable DAG
 
-- [Complete task catalog](remaining/task-catalog.md): 116 approved work packages,
+- [Complete task catalog](remaining/task-catalog.md): 118 approved work packages,
   their prerequisites, ownership areas and task-specific acceptance criteria.
 - [Package dependency diagram](remaining/dag.md): the full dependency graph.
-- [Agent assignment diagram](remaining/agent-dag.md): the expanded 329-task graph.
+- [Agent assignment diagram](remaining/agent-dag.md): the expanded 335-task graph.
 - [Machine-readable plan](remaining/plan.json) and
   [expanded agent tasks](remaining/agent-tasks.json).
 - Validate with `node tools/migration/check-remaining-plan.mjs`.
 
-The graph contains 329 assignments. An existing
+The graph contains 335 assignments. An existing
 agent can execute many non-overlapping tasks. Reference work often reuses an
 unchanged accepted receipt; it does not mean recapturing every reference.
 No claim is made that all future file manifests are dispatch-ready today.

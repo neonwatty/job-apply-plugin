@@ -91,6 +91,34 @@
       "kind": "gate"
     },
     {
+      "id": "P06",
+      "title": "Reviewed product ownership handoff",
+      "parents": [
+        "I"
+      ],
+      "dependencies": [
+        "P01"
+      ],
+      "planning_scope": "task handoff contracts and existing releasedPackages structural integration; explicit prior and successor ownership",
+      "acceptance": "An accepted predecessor can release an exact overlap to one approved ready successor without weakening immutable historical evidence. Missing or forged handoffs, unaccepted predecessors, two active successors, scope expansion and changed input hashes fail closed. End-to-end checker tests cover the registered product package path, not only pure audit receipts.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
+      "id": "P07",
+      "title": "Approved DAG lineage for pending task refinements",
+      "parents": [
+        "I"
+      ],
+      "dependencies": [
+        "P06"
+      ],
+      "planning_scope": "immutable archived DAG bindings and task catalog lineage validation",
+      "acceptance": "A reviewed new DAG can refine unexecuted tasks while preserving every receipted assignment, role and dependency. Historical manifests/logs remain unchanged; removed or weakened accepted dependencies, cycles, lost final-gate ancestry and substituted archived hashes fail closed. Real incremental catalog tests preserve previous receipt validity and keep new work unaccepted until verified.",
+      "status": "proposed",
+      "kind": "implementation"
+    },
+    {
       "id": "S01",
       "title": "Codepoint-keyed JSON object leaf",
       "parents": [
@@ -1514,7 +1542,9 @@
         "G06",
         "G07",
         "P01",
-        "P05"
+        "P05",
+        "P06",
+        "P07"
       ],
       "planning_scope": "coverage receipts and independent reachability audit",
       "acceptance": "Zero unowned CLI/HTTP/browser/document/journal/installed surfaces, zero unexplained writers, zero missing required cells; inventory growth creates new required tasks, never a residual waiver.",

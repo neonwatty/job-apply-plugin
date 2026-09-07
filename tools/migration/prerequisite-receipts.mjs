@@ -1,3 +1,4 @@
+import { tapCounts } from './tap-evidence.mjs';
 import { createHash } from 'node:crypto';
 
 // This accepts narrowly scoped prerequisites, never release or live activation.
@@ -16,27 +17,6 @@ const strings = (value) => Array.isArray(value) && value.length > 0
   && value.every(text) && new Set(value).size === value.length;
 const count = (value) => Number.isSafeInteger(value) && value >= 0;
 const digest = (value) => createHash('sha256').update(value).digest('hex');
-
-// Supported profile: Node TAP13, direct top-level tests, one terminal summary.
-// Other reporter formats and nested suites require a reviewed adapter.
-function tapCounts(log) {
-  if (typeof log !== 'string' || !log.startsWith('TAP version 13\n')) return null;
-  const summaries = [...log.matchAll(/^# tests (\d+)$/gm)];
-  if (summaries.length !== 1) return null;
-  const summary = log.slice(summaries[0].index);
-  const match = /^# tests (\d+)\n# suites (\d+)\n# pass (\d+)\n# fail (\d+)\n# cancelled (\d+)\n# skipped (\d+)\n# todo (\d+)\n# duration_ms ([\d.]+)\n?$/.exec(summary);
-  if (!match || !Number.isFinite(Number(match[8]))) return null;
-  const [tests, suites, passed, failures, cancelled, skips, todo] = match.slice(1, 8).map(Number);
-  if (![tests, suites, passed, failures, cancelled, skips, todo].every(count)) return null;
-  if (suites !== 0 || todo !== 0 || /^not ok |^Bail out!/m.test(log)) return null;
-  const results = [...log.matchAll(/^ok (\d+) - .+$/gm)];
-  if (results.length !== tests || results.some((item, index) => Number(item[1]) !== index + 1)) return null;
-  if (results.some((item) => /\s#\s*(?:SKIP|TODO)\b/i.test(item[0]))) return null;
-  const plans = [...log.matchAll(/^1\.\.(\d+)$/gm)];
-  if (plans.length !== 1 || Number(plans[0][1]) !== tests) return null;
-  if (passed + failures + cancelled + skips !== tests) return null;
-  return { tests, passed, failures, cancelled, skips };
-}
 
 export function validatePrerequisiteReceipts(receipts, context) {
   const errors = [];

@@ -8,6 +8,7 @@ import { validateRequirements, missingRequirementCoverage } from './requirements
 import { validatePackages } from './packages.mjs';
 import { discoverTestIds } from './test-bindings.mjs';
 import { loadMatrix, suiteFiles } from '../test-runner/matrix.mjs';
+import { loadTaskEvidence } from './load-task-evidence.mjs';
 import { loadPrerequisites } from './load-prerequisites.mjs';
 
 export const SCENARIOS = ['valid', 'invalid', 'missing', 'noop', 'privacy', 'conflict',
@@ -168,6 +169,7 @@ export async function checkInventory(root, options = {}) {
     }
     catch (error) { if (error.code !== 'ENOENT') throw error; }
   }
+  let taskEvidence = { currentAcceptance: 'open', acceptedTasks: new Set(), acceptedPackages: new Set() };
   const errors = validateInventory({ nodes: nodesFile.nodes, sources, surfaces }, actual, options);
   errors.push(...checkBrowserBindings(discoverBrowserExports(browserFiles), surfaces));
   if (requirements.length || packages.length) {
@@ -188,27 +190,36 @@ export async function checkInventory(root, options = {}) {
     }
     const nodes = new Set(nodesFile.nodes.map((item) => item.id));
     const surfaceIds = new Set(surfaces.map((item) => item.id));
-    errors.push(...validateRequirements(requirements, { nodes, surfaces: surfaceIds, files, testIds,
+    const planningPaths = [...allPaths, ...matrix.suites.filter(suite => suite.kind === 'node-test')
+      .flatMap(suite => (suite.include ?? []).filter(path => safePath(path) && !/[*?\[\]{}]/.test(path)))];
+    const requirementContext = { nodes, surfaces: surfaceIds, files, testIds,
       platforms: new Set(['node-local']),
       suites: new Map(matrix.suites.filter((suite) => suite.kind === 'node-test')
-        .map((suite) => [suite.id, new Set(suiteFiles(suite, allPaths))])) }));
+        .map((suite) => [suite.id, new Set(suiteFiles(suite, planningPaths))])) };
     const prerequisites = await loadPrerequisites(root, { requirements,
       registeredTests: new Set(matrix.suites.filter((suite) => suite.kind === 'node-test')
         .flatMap((suite) => suiteFiles(suite, allPaths))) });
     errors.push(...prerequisites.errors);
     // Only independently scoped, immutable prerequisite evidence can unlock work.
-    errors.push(...validatePackages(packages, { nodes, surfaces: surfaceIds,
+    const packageContext = { nodes, surfaces: surfaceIds,
       requirements: new Set(requirements.map((item) => item?.id)), sourcePaths: registered,
       acceptedInterfaces: prerequisites.acceptedInterfaces, acceptedReferences: prerequisites.acceptedReferences,
       knownInterfaces: prerequisites.knownInterfaces, knownReferences: prerequisites.knownReferences,
       requiredRequirements: new Set(requirements.filter((item) => item?.applicability?.status === 'required').map((item) => item.id)),
       referenceRequirements: prerequisites.referenceRequirements,
-      acceptedPackages: new Set() }));
+      acceptedPackages: new Set() };
+    const tasks = await loadTaskEvidence(root, { packages, requirements, packageContext, requirementContext, testIds,
+      registeredTests: new Set(matrix.suites.filter(suite => suite.kind === 'node-test').flatMap(suite => suiteFiles(suite, planningPaths))) });
+    taskEvidence = tasks;
+    errors.push(...tasks.errors);
+    errors.push(...validateRequirements(requirements, { ...requirementContext, testIds: tasks.planningTestIds ?? testIds }));
+    errors.push(...validatePackages(packages, { ...packageContext, acceptedPackages: tasks.acceptedPackages }));
   }
   const lock = JSON.parse(await readFile(resolve(directory, 'review-lock.json'), 'utf8'));
   errors.push(...validateReviewLock(lock, hashes));
   return { schemaVersion: 1, status: errors.length ? 'failed' : 'inventory-consistent',
-    acceptance: 'open', nodes: nodesFile.nodes.length, sources: sources.length,
+    acceptance: 'open', taskEvidence: { currentAcceptance: taskEvidence.currentAcceptance,
+      acceptedTasks: [...taskEvidence.acceptedTasks].sort(), acceptedPackages: [...taskEvidence.acceptedPackages].sort() }, nodes: nodesFile.nodes.length, sources: sources.length,
     surfaces: surfaces.length, requirements: requirements.length, packages: packages.length,
     unmappedRequirementCells: missingRequirementCoverage(surfaces.map((item) => item.id), requirements).length, errors };
 }

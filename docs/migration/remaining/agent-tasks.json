@@ -117,6 +117,58 @@
     ]
   },
   {
+    "id": "P06.R",
+    "package": "P06",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "P06.I",
+    "package": "P06",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P01.V",
+      "P06.R"
+    ]
+  },
+  {
+    "id": "P06.V",
+    "package": "P06",
+    "role": "independent-review",
+    "dependencies": [
+      "P06.I",
+      "P01.V"
+    ]
+  },
+  {
+    "id": "P07.R",
+    "package": "P07",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "P07.I",
+    "package": "P07",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "P06.V",
+      "P07.R"
+    ]
+  },
+  {
+    "id": "P07.V",
+    "package": "P07",
+    "role": "independent-review",
+    "dependencies": [
+      "P07.I",
+      "P01.V"
+    ]
+  },
+  {
     "id": "S01.R",
     "package": "S01",
     "role": "reference",
@@ -2531,7 +2583,9 @@
       "G06.V",
       "G07.V",
       "P01.V",
-      "P05.V"
+      "P05.V",
+      "P06.V",
+      "P07.V"
     ]
   },
   {

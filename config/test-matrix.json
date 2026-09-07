@@ -143,8 +143,14 @@
     {
       "id": "node-runner-fast",
       "kind": "node-test",
-      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs", "tests_js/local_checks*.test.mjs", "tests_js/migration_inventory.test.mjs", "tests_js/migration_remaining_plan.test.mjs", "tests_js/migration_browser_inventory.test.mjs", "tests_js/migration_packages.test.mjs", "tests_js/migration_requirements.test.mjs", "tests_js/migration_test_bindings.test.mjs", "tests_js/migration_prerequisite_receipts.test.mjs", "tests_js/migration_load_prerequisites.test.mjs"],
+      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs", "tests_js/local_checks*.test.mjs", "tests_js/migration_inventory.test.mjs", "tests_js/migration_remaining_plan.test.mjs", "tests_js/migration_browser_inventory.test.mjs", "tests_js/migration_packages.test.mjs", "tests_js/migration_requirements.test.mjs", "tests_js/migration_test_bindings.test.mjs", "tests_js/migration_prerequisite_receipts.test.mjs", "tests_js/migration_load_prerequisites.test.mjs", "tests_js/migration_task_manifests.test.mjs", "tests_js/migration_task_receipts.test.mjs"],
       "tiers": ["fast", "full"]
+    },
+    {
+      "id": "node-migration-evidence",
+      "kind": "node-test",
+      "include": ["tests_js/migration_task_loader.test.mjs"],
+      "tiers": ["full"]
     },
     {
       "id": "node-recorder",
@@ -167,7 +173,7 @@
     {
       "id": "native-posix-lock",
       "kind": "node-test",
-      "include": ["tests_js/posix_flock.test.mjs", "tests_js/exclusive_file_lock_ts.test.mjs", "tests_js/exclusive_file_lock_fault_ts.test.mjs", "tests_js/jsonl_lock_integration.test.mjs"],
+      "include": ["tests_js/posix_flock.test.mjs", "tests_js/exclusive_file_lock_ts.test.mjs", "tests_js/exclusive_file_lock_fault_ts.test.mjs", "tests_js/jsonl_lock_integration.test.mjs", "tests_js/heavy_run_lease_reference.test.mjs"],
       "platforms": ["darwin", "linux"],
       "tiers": ["full", "platform"]
     },
@@ -200,8 +206,9 @@
     }
   ],
   "ownership": [
+    {"paths": ["tests_js/migration_task_support.mjs"], "suites": ["node-runner-fast", "node-migration-evidence"]},
     {"paths": ["native/posix/timestamps.c", "native/posix/*.h", "tools/build-native-timestamps.mjs", "tests_js/posix_timestamps_support.mjs"], "suites": ["native-posix-timestamps"]},
-    {"paths": ["native/posix/flock.c", "native/posix/*.h", "tools/build-native-lock.mjs", "tests_js/exclusive_file_lock_support.mjs"], "suites": ["native-posix-lock"]},
+    {"paths": ["tools/contracts/heavy-run-lease/reference.mjs", "native/posix/flock.c", "native/posix/*.h", "tools/build-native-lock.mjs", "tests_js/exclusive_file_lock_support.mjs"], "suites": ["native-posix-lock"]},
     {"paths": ["tests_js/managed_resume_path_ts_support.mjs", "tests_js/posix_path_bytes_ts_support.mjs", "tests_js/managed_observation_ts_support.mjs", "tests_js/atomic_write_json_ts_support.mjs", "tests_js/installed_artifacts_ts_support.mjs", "tests_js/jsonl_history_support.mjs", "tests_js/data_copy_support.mjs"], "suites": ["node-workspace-other"]},
     {"paths": ["tools/probe-installed-runtime.mjs"], "suites": ["node-foundation-fast"]},
     {"paths": ["tools/capture-python-contracts.mjs", "tools/verify-contract-redaction.mjs", "tools/contracts/**"], "suites": ["node-workspace-other"]},

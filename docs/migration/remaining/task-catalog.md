@@ -1,6 +1,6 @@
 # Remaining migration task catalog
 
-Approved for execution from `94e7d9c`: 116 work packages, 329 separately assignable agent tasks.
+Approved for execution from `94e7d9c`: 118 work packages, 335 separately assignable agent tasks.
 
 Generated from [plan.json](plan.json). Read [execution rules](../remaining-migration-plan.md) before dispatch.
 Every row requires the common acceptance gate as well as its specific criteria. Planning scopes are not write authorization; exact allowed_files must be frozen before implementation.
@@ -58,6 +58,22 @@ References can be prepared ahead of implementation dependencies, using existing 
 - Parent gates: I, HOST.
 - Planning ownership: tools/migration evidence adapters; test-runner receipt integration.
 - Acceptance: Bind relevant interpreter binaries/all aliases, browser, compiler, native addon, OS build and artifact hashes; a passing suite with a required child skip must fail acceptance.
+
+### P06 — Reviewed product ownership handoff
+
+- Agent tasks: P06.R → P06.I → P06.V.
+- Implementation prerequisites: P01.V.
+- Parent gates: I.
+- Planning ownership: task handoff contracts and existing releasedPackages structural integration; explicit prior and successor ownership.
+- Acceptance: An accepted predecessor can release an exact overlap to one approved ready successor without weakening immutable historical evidence. Missing or forged handoffs, unaccepted predecessors, two active successors, scope expansion and changed input hashes fail closed. End-to-end checker tests cover the registered product package path, not only pure audit receipts.
+
+### P07 — Approved DAG lineage for pending task refinements
+
+- Agent tasks: P07.R → P07.I → P07.V.
+- Implementation prerequisites: P06.V.
+- Parent gates: I.
+- Planning ownership: immutable archived DAG bindings and task catalog lineage validation.
+- Acceptance: A reviewed new DAG can refine unexecuted tasks while preserving every receipted assignment, role and dependency. Historical manifests/logs remain unchanged; removed or weakened accepted dependencies, cycles, lost final-gate ancestry and substituted archived hashes fail closed. Real incremental catalog tests preserve previous receipt validity and keep new work unaccepted until verified.
 
 ## S task group
 
@@ -920,7 +936,7 @@ References can be prepared ahead of implementation dependencies, using existing 
 ### G08 — Surface/writer/required-cell closure audit
 
 - Agent tasks: G08.I → G08.V.
-- Implementation prerequisites: G04.V, G05.V, G06.V, G07.V, P01.V, P05.V.
+- Implementation prerequisites: G04.V, G05.V, G06.V, G07.V, P01.V, P05.V, P06.V, P07.V.
 - Parent gates: CLOSE, REF.
 - Planning ownership: coverage receipts and independent reachability audit.
 - Acceptance: Zero unowned CLI/HTTP/browser/document/journal/installed surfaces, zero unexplained writers, zero missing required cells; inventory growth creates new required tasks, never a residual waiver.

@@ -1,34 +1,11 @@
-import { readFile, lstat, realpath } from 'node:fs/promises';
-import { resolve } from 'node:path';
-import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { createEvidenceIO, sha, safePath, digest, closed } from './evidence-io.mjs';
 import { validatePrerequisiteReceipts } from './prerequisite-receipts.mjs';
-
-const sha = (value) => typeof value === 'string' && /^[a-f0-9]{40}$/.test(value);
-const safePath = (value) => typeof value === 'string' && value.trim().length > 0
-  && !value.startsWith('/') && !/[\\:\x00-\x1f\x7f]/.test(value)
-  && !value.split('/').some((part) => ['', '.', '..', '.git'].includes(part));
-const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
-const closed = (value, fields) => value && typeof value === 'object' && !Array.isArray(value)
-  && Object.keys(value).length === fields.length && fields.every((key) => Object.hasOwn(value, key));
 
 // Git and filesystem reads only. Receipts never supply commands to execute.
 export async function loadPrerequisites(root, { requirements, registeredTests }) {
   const errors = [];
-  const canonicalRoot = await realpath(root);
-  async function readRepositoryFile(path) {
-    if (!safePath(path)) throw new Error('Unsafe prerequisite file path');
-    let current = canonicalRoot;
-    const parts = path.split('/');
-    for (let index = 0; index < parts.length; index += 1) {
-      current = resolve(current, parts[index]);
-      const metadata = await lstat(current);
-      if (metadata.isSymbolicLink() || (index < parts.length - 1 ? !metadata.isDirectory() : !metadata.isFile())) {
-        throw new Error('Prerequisite evidence must use real repository files');
-      }
-    }
-    return readFile(current);
-  }
+  const io = await createEvidenceIO(root);
+  const { readRepositoryFile } = io;
   const empty = () => ({ errors, acceptedReferences: new Set(), acceptedInterfaces: new Set(),
     knownReferences: new Set(), knownInterfaces: new Set(), referenceRequirements: new Map() });
   let catalog;
@@ -88,17 +65,14 @@ export async function loadPrerequisites(root, { requirements, registeredTests })
   const revisionFiles = new Map();
   const knownRevisions = new Set();
   const ancestryPairs = new Set();
-  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
-  const git = (args) => execFileSync('git', args, { cwd: root, env, timeout: 5000,
-    maxBuffer: 4 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] });
   for (const receipt of receiptFile.receipts) {
     for (const revision of [receipt?.base, receipt?.head]) {
       if (!sha(revision) || knownRevisions.has(revision)) continue;
-      try { git(['cat-file', '-e', `${revision}^{commit}`]); knownRevisions.add(revision); }
+      try { if (io.revision(revision)) knownRevisions.add(revision); }
       catch { /* Missing revisions are rejected by the pure verifier. */ }
     }
     if (knownRevisions.has(receipt?.base) && knownRevisions.has(receipt?.head)) {
-      try { git(['merge-base', '--is-ancestor', receipt.base, receipt.head]); ancestryPairs.add(`${receipt.base}:${receipt.head}`); }
+      try { if (io.ancestor(receipt.base, receipt.head)) ancestryPairs.add(`${receipt.base}:${receipt.head}`); }
       catch { /* Unrelated history cannot unlock a prerequisite. */ }
     }
     const bindings = [...(Array.isArray(receipt?.files) ? receipt.files : []), receipt?.log];
@@ -111,7 +85,7 @@ export async function loadPrerequisites(root, { requirements, registeredTests })
       } catch (error) { if (error.code !== 'ENOENT') throw error; }
       if (!knownRevisions.has(receipt.head)) continue;
       if (!revisionFiles.has(receipt.head)) revisionFiles.set(receipt.head, new Map());
-      try { revisionFiles.get(receipt.head).set(binding.path, digest(git(['show', `${receipt.head}:${binding.path}`]))); }
+      try { const bytes = io.fileAt(receipt.head, binding.path); if (bytes !== null) revisionFiles.get(receipt.head).set(binding.path, digest(bytes)); }
       catch { /* Uncommitted or missing evidence cannot satisfy the verifier. */ }
     }
   }

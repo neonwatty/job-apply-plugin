@@ -788,3 +788,28 @@ validation. Its final-snapshot tests are passing, but practical multi-commit
 planning/implementation/evidence lifecycle remains under review. Formal catalogs
 have not been activated. Product ownership handoff and DAG-version evolution
 must remain explicit limits unless independently implemented and verified.
+
+## Evidence tooling checkpoint pending final review
+
+Composed reference and S08 split are committed as `0eb2afc`, with all nine commit
+checks passing. The subsequent graph adds explicit P06 product ownership handoff
+and P07 immutable DAG lineage work rather than hiding these unimplemented features
+inside P01 acceptance. The graph now contains 118 packages and 335 assignments;
+all canonical families still contribute to final conversion.
+
+The P04 native reference passed five tests without skips on the existing macOS
+ARM64 development host. Independent review accepted four bounded witnesses:
+explicitly inherited descriptors retain flock after parent close/death, whereas
+dropped descriptors and explicit unlock allow a contender despite a surviving
+child. Production containment/recovery and other native hosts remain open.
+
+P01 now includes real staged planning, source, evidence and receipt lifecycle
+tests. Slow disposable-Git tests are registered in full-tier
+`node-migration-evidence`; pure manifest/receipt checks remain fast. Review found
+that later catalog additions shifted an older pending task's execution boundary.
+The author changed boundary discovery to each assignment's first activation and
+added the parallel catalog-extension regression. That last correction awaits
+independent review: both author and reviewer workers subsequently hit the account
+usage limit. No real acceptance catalog is activated and P01.V remains open.
+The coordinator can retain passing local checks and a reviewable checkpoint but
+cannot replace the required independent review with its own approval.

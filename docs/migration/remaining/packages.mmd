@@ -11,6 +11,10 @@ flowchart TD
   P05["P05: Native evidence identity and required-cell runner"]
   P01 --> P05
   P02 --> P05
+  P06["P06: Reviewed product ownership handoff"]
+  P01 --> P06
+  P07["P07: Approved DAG lineage for pending task refinements"]
+  P06 --> P07
   S01["S01: Codepoint-keyed JSON object leaf"]
   P00 --> S01
   S02["S02: Python-compatible JSON byte decoder"]
@@ -320,6 +324,8 @@ flowchart TD
   G07 --> G08
   P01 --> G08
   P05 --> G08
+  P06 --> G08
+  P07 --> G08
   G09["G09: Immutable pre-removal candidate test"]
   G08 --> G09
   T05 --> G09

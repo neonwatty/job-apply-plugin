@@ -38,6 +38,22 @@ flowchart TD
   P05_V["P05.V: independent-review"]
   P05_I --> P05_V
   P01_V --> P05_V
+  P06_R["P06.R: reference"]
+  P00_V --> P06_R
+  P06_I["P06.I: implementation-or-gate"]
+  P01_V --> P06_I
+  P06_R --> P06_I
+  P06_V["P06.V: independent-review"]
+  P06_I --> P06_V
+  P01_V --> P06_V
+  P07_R["P07.R: reference"]
+  P00_V --> P07_R
+  P07_I["P07.I: implementation-or-gate"]
+  P06_V --> P07_I
+  P07_R --> P07_I
+  P07_V["P07.V: independent-review"]
+  P07_I --> P07_V
+  P01_V --> P07_V
   S01_R["S01.R: reference"]
   P00_V --> S01_R
   S01_I["S01.I: implementation-or-gate"]
@@ -866,6 +882,8 @@ flowchart TD
   G07_V --> G08_I
   P01_V --> G08_I
   P05_V --> G08_I
+  P06_V --> G08_I
+  P07_V --> G08_I
   G08_V["G08.V: independent-review"]
   G08_I --> G08_V
   P01_V --> G08_V
