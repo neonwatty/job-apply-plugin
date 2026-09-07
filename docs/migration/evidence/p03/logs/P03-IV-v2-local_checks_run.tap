@@ -1,0 +1,36 @@
+TAP version 13
+# Subtest: push broad selection refuses before running commands and cleans its snapshot
+ok 1 - push broad selection refuses before running commands and cleans its snapshot
+  ---
+  duration_ms: 667.305209
+  type: 'test'
+  ...
+# [local-build] 
+# > build:check
+# > node -e "process.exit(0)"
+# Local deep checks passed; 3 suites. Receipts: /var/folders/wt/nn4g5swd3gd139y9r6yw6x_80000gn/T/local-checks-run-fixture-7bmMqR/repo/.git/local-checks
+# Reusing complete local validation for 9fe0b8eb03f1; deferred platform cells remain in receipt.
+# Subtest: deep receipt is reusable only for the same target and base
+ok 2 - deep receipt is reusable only for the same target and base
+  ---
+  duration_ms: 1314.172458
+  type: 'test'
+  ...
+# [local-build] 
+# > build:check
+# > node -e "process.exit(0)"
+# Subtest: failed deep result is preserved but never reused by push
+ok 3 - failed deep result is preserved but never reused by push
+  ---
+  duration_ms: 849.472458
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2891.261625
