@@ -248,6 +248,26 @@
           "sha256": "8a1edd29e3d7534be78f6811481b8630da0b4222c2a01c1d17c09cf34d11c654"
         }
       ]
+    },
+    {
+      "id": "P03.evidence.v2.document-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve exact raw TAP bytes with one path-specific end-of-line whitespace attribute; ordinary whitespace enforcement remains enabled.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/evidence/v2/contract.json",
+          "sha256": "a55da07a9bd8b9edb671e9c1c024d4149452f9eeb70f4a6c875518213f19789a"
+        },
+        {
+          "path": "docs/migration/evidence/p03/evidence/v2/reference-audit.json",
+          "sha256": "6544ff3af92118dd26fe7cdabbf6b895cf92136984d4637122162fed45900211"
+        },
+        {
+          "path": "docs/migration/evidence/p03/evidence/v2/approved-dag.json",
+          "sha256": "58bb7be968816ab51fbd433a12e57717e852a497ce314a9871491c133301c25f"
+        }
+      ]
     }
   ],
   "transitions": [
