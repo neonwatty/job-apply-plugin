@@ -199,15 +199,15 @@
     },
     {
       "path": "task-contracts.json",
-      "sha256": "9a024166a9795f62fd728a1c977389d9de3d24a82044ed333ad5c9eda525d30d"
+      "sha256": "9179b405a1754f4afd46a73b8bbcb906ad56cb8bac89c54eff8c19e02c22d95a"
     },
     {
       "path": "task-lineage.json",
-      "sha256": "51b27c527403b90fabfe57955b560a75c4feae27583b9313e2672ee9d3704eb9"
+      "sha256": "9a5a9890b20af4f1dfd8309852ae8f6a3066fbdc047c07d74696e1c1583ed916"
     },
     {
       "path": "task-receipts.json",
-      "sha256": "8d06b63f6edb01ae58155414cbd2f61f57abe0822cf1cca15a631dec76706724"
+      "sha256": "9299f78be44ec4a50746907bf787c9882a5aeed7a6a1507eab3ab515953e6402"
     }
   ]
 }

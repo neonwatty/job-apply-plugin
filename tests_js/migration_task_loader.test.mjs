@@ -168,3 +168,70 @@ test('accepted subject must contain its declared literal test identities even wh
     assert.match(result.errors.join('\n'), /Accepted subject lacks declared literal test identities/); assert.equal(result.acceptedTasks.size, 0);
   } finally { await repo.cleanup(); }
 });
+
+test('platform task evidence binds actual conditional capture to the frozen cell environment', async () => {
+  const repo = await repository({ platformConditional: true, futureTest: true, lifecycle: true });
+  try {
+    assert.equal(repo.catalog.environments[0].platform, process.platform);
+    assert.equal(repo.receipt.cells[0].environment.platform, process.platform);
+    assert.notEqual(repo.subject, repo.evidence);
+    assert.deepEqual(repo.manifest.cells[0].testNames, [process.platform === 'win32' ? 'windows audit' : 'portable audit']);
+    for (const observation of repo.observations) assert.deepEqual(observation.result.errors, [], observation.stage);
+    assert.deepEqual(repo.observations.map(row => row.stage), ['activation-snapshot', 'activation', 'subject-snapshot', 'subject', 'evidence-snapshot', 'evidence', 'receipt-snapshot', 'receipt']);
+    const result = await loadTaskEvidence(repo.root, repo.context);
+    assert.deepEqual(result.errors, []); assert.deepEqual([...result.acceptedTasks], ['T01.I']);
+  } finally { await repo.cleanup(); }
+});
+
+test('platform task evidence rejects wrong-platform same-count outputs and immutable source drift', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { execFileSync } = await import('node:child_process');
+  const { digest, createEvidenceIO } = await import('../tools/migration/evidence-io.mjs');
+  const { TEST } = await import('./migration_task_support.mjs');
+  const other = process.platform === 'win32' ? 'darwin' : 'win32';
+  const wrong = await repository({ platformConditional: true, cellPlatform: other });
+  try {
+    // Frozen catalog and receipt agree with one another, but not the executed branch.
+    assert.equal(wrong.receipt.cells[0].environment.platform, other);
+    const result = await loadTaskEvidence(wrong.root, wrong.context);
+    assert.match(result.errors.join('\n'), /Accepted subject lacks declared literal test identities/);
+    assert.equal(result.acceptedTasks.size, 0);
+  } finally { await wrong.cleanup(); }
+  for (const kind of ['alternate-output', 'receipt-environment', 'source', 'skipped-output']) {
+    const repo = await repository({ platformConditional: true });
+    try {
+      repo.git('reset', '--hard', repo.evidence);
+      let expected = /observed TAP identities differ or reporter unsupported/;
+      if (kind === 'receipt-environment') {
+        repo.receipt.cells[0].environment.platform = other;
+        expected = /cell command\/environment identity differs/;
+      } else if (kind === 'source') {
+        const original = await readFile(join(repo.root, TEST), 'utf8');
+        await repo.write(TEST, original.replace("=== 'win32'", "!== 'win32'"));
+        const subject = repo.commit(); repo.receipt.subject = { sha: subject, tree: repo.git('rev-parse', 'HEAD^{tree}') };
+        repo.receipt.evidenceCommit = subject;
+        Object.assign(repo.receipt.review, { subjectSha: subject, subjectTree: repo.receipt.subject.tree });
+        expected = /Accepted subject lacks declared literal test identities/;
+      } else {
+        const original = await readFile(join(repo.root, TEST), 'utf8');
+        const name = kind === 'alternate-output' ? (process.platform === 'win32' ? 'portable audit' : 'windows audit') : repo.manifest.cells[0].testNames[0];
+        await repo.write(TEST, `import test from 'node:test';\ntest${kind === 'skipped-output' ? '.skip' : ''}(${JSON.stringify(name)},()=>1);\n`);
+        const started = performance.now();
+        const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('NODE_TEST_') && !key.startsWith('GIT_')));
+        const log = execFileSync(process.execPath, ['--test', TEST], { cwd: repo.root, env, encoding: 'utf8', timeout: 10000 });
+        const duration = performance.now() - started;
+        await repo.write(TEST, original); await repo.write('evidence/audit.tap', log);
+        repo.receipt.evidenceCommit = repo.commit();
+        repo.receipt.cells[0].log.sha256 = digest(log);
+        Object.assign(repo.receipt.cells[0].result, { durationMs: duration, outputBytes: Buffer.byteLength(log) });
+        assert.equal((log.match(/^ok /gm) ?? []).length, 1);
+        assert.notEqual(digest(log), digest(await readFile(join(repo.root, TEST))));
+      }
+      repo.receipt.diff = (await createEvidenceIO(repo.root)).diff(repo.receipt.executionBase, repo.receipt.subject.sha);
+      await repo.write('config/migration/task-receipts.json', { schemaVersion: 1, receipts: [repo.receipt] });
+      await repo.writeLock(); repo.commit();
+      const result = await loadTaskEvidence(repo.root, repo.context);
+      assert.match(result.errors.join('\n'), expected, kind); assert.equal(result.acceptedTasks.size, 0);
+    } finally { await repo.cleanup(); }
+  }
+});
