@@ -204,6 +204,30 @@
           "sha256": "b9f527cbb183ccfdc771c9699ef1c480d1f895b5aaee0ee386db6c2695773213"
         }
       ]
+    },
+    {
+      "id": "S08.implementation-contract-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Pin independently reviewed shared point JSON scope and immutable reference vectors before manifest base; no implementation acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s08/implementation.md",
+          "sha256": "063a7fa19b2bf7dd5c54dd97bebcd7f9822904bc51a97ede60d51ae893c6541a"
+        },
+        {
+          "path": "docs/migration/evidence/s08/implementation-audit.json",
+          "sha256": "faa112d6ec38f6e3de1837c26c742166ed0560bf8bf8216bb51364ad15c45623"
+        },
+        {
+          "path": "docs/migration/evidence/s08/composed-reference-vectors.json",
+          "sha256": "1ccb7cdb553cd70a1f6107904b595c4a9c9ea720e9d8c5cbc48955233f280e7b"
+        },
+        {
+          "path": "docs/migration/evidence/s08/additional-reference-vectors.json",
+          "sha256": "500ce6a2f35ac9f9e0bfe9ec8a676d0aa1165687a768f53e3bffeacf5048225d"
+        }
+      ]
     }
   ],
   "transitions": [
