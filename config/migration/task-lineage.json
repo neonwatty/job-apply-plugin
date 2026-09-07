@@ -568,6 +568,30 @@
           "sha256": "ae19557320454e79f317b991f6040c8759da78a77a7ffd6db6730631d71fb128"
         }
       ]
+    },
+    {
+      "id": "P03.retry2.documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve active P03.retry1 partial formatter attempt; add accepted S08.V dependency and require fresh complete revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry2/approved-dag.json",
+          "sha256": "b48eb60db792265bba692ff042027ed143da9ef25cc7d301c4e94f6ce84e5570"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry2/implementation-audit.json",
+          "sha256": "a104365488bc7f834d1b2315b8ad2b0d97c65b4e396c2d0054d524cb6d444f9f"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry2/implementation.md",
+          "sha256": "82efe576ba93852ef8dbd4e24684a27696f7fc982c46d417db0ad2290c363e73"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry2/reference-consumers.json",
+          "sha256": "534703d4ffbf5d5d25490c7ace99e68ebfc3bf124efaf1a344f523cb9e7d4361"
+        }
+      ]
     }
   ],
   "transitions": [
