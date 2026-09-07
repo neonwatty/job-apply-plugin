@@ -1,0 +1,2740 @@
+{
+  "schemaVersion": 1,
+  "status": "DATA ONLY: independently authored expectations reconciled for freeze review; not accepted capture",
+  "sourceRevision": "2da2e1f52709c967915318a661b09339d2d3e49a",
+  "profiles": [
+    "3.12",
+    "3.13",
+    "3.14"
+  ],
+  "profilePolicy": "common expected results unless explicit unresolved native profile field",
+  "codecs": [
+    {
+      "id": "encode-empty",
+      "operation": "os.fsencode",
+      "inputPoints": [],
+      "outputHex": "",
+      "error": null
+    },
+    {
+      "id": "encode-nul",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        0
+      ],
+      "outputHex": "00",
+      "error": null
+    },
+    {
+      "id": "encode-scalar",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        65536
+      ],
+      "outputHex": "f0908080",
+      "error": null
+    },
+    {
+      "id": "encode-high",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        55296
+      ],
+      "outputHex": null,
+      "error": {
+        "name": "UnicodeEncodeError",
+        "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+        "errno": null,
+        "cause": null,
+        "context": null,
+        "suppressContext": false,
+        "encoding": "utf-8",
+        "objectPoints": [
+          55296
+        ],
+        "start": 0,
+        "end": 1,
+        "reason": "surrogates not allowed"
+      }
+    },
+    {
+      "id": "encode-low",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        56320
+      ],
+      "outputHex": null,
+      "error": {
+        "name": "UnicodeEncodeError",
+        "message": "'utf-8' codec can't encode character '\\udc00' in position 0: surrogates not allowed",
+        "errno": null,
+        "cause": null,
+        "context": null,
+        "suppressContext": false,
+        "encoding": "utf-8",
+        "objectPoints": [
+          56320
+        ],
+        "start": 0,
+        "end": 1,
+        "reason": "surrogates not allowed"
+      }
+    },
+    {
+      "id": "encode-low7f",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        56447
+      ],
+      "outputHex": null,
+      "error": {
+        "name": "UnicodeEncodeError",
+        "message": "'utf-8' codec can't encode character '\\udc7f' in position 0: surrogates not allowed",
+        "errno": null,
+        "cause": null,
+        "context": null,
+        "suppressContext": false,
+        "encoding": "utf-8",
+        "objectPoints": [
+          56447
+        ],
+        "start": 0,
+        "end": 1,
+        "reason": "surrogates not allowed"
+      }
+    },
+    {
+      "id": "encode-escape80",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        56448
+      ],
+      "outputHex": "80",
+      "error": null
+    },
+    {
+      "id": "encode-escapeff",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        56575
+      ],
+      "outputHex": "ff",
+      "error": null
+    },
+    {
+      "id": "encode-pair",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        55296,
+        56320
+      ],
+      "outputHex": null,
+      "error": {
+        "name": "UnicodeEncodeError",
+        "message": "'utf-8' codec can't encode characters in position 0-1: surrogates not allowed",
+        "errno": null,
+        "cause": null,
+        "context": null,
+        "suppressContext": false,
+        "encoding": "utf-8",
+        "objectPoints": [
+          55296,
+          56320
+        ],
+        "start": 0,
+        "end": 2,
+        "reason": "surrogates not allowed"
+      }
+    },
+    {
+      "id": "encode-high-escape",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        55296,
+        56448
+      ],
+      "outputHex": null,
+      "error": {
+        "name": "UnicodeEncodeError",
+        "message": "'utf-8' codec can't encode characters in position 0-1: surrogates not allowed",
+        "errno": null,
+        "cause": null,
+        "context": null,
+        "suppressContext": false,
+        "encoding": "utf-8",
+        "objectPoints": [
+          55296,
+          56448
+        ],
+        "start": 0,
+        "end": 2,
+        "reason": "surrogates not allowed"
+      }
+    },
+    {
+      "id": "encode-adjacent-escapes",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        56448,
+        56575
+      ],
+      "outputHex": "80ff",
+      "error": null
+    },
+    {
+      "id": "encode-nul-high",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        0,
+        55296
+      ],
+      "outputHex": null,
+      "error": {
+        "name": "UnicodeEncodeError",
+        "message": "'utf-8' codec can't encode character '\\ud800' in position 1: surrogates not allowed",
+        "errno": null,
+        "cause": null,
+        "context": null,
+        "suppressContext": false,
+        "encoding": "utf-8",
+        "objectPoints": [
+          0,
+          55296
+        ],
+        "start": 1,
+        "end": 2,
+        "reason": "surrogates not allowed"
+      }
+    },
+    {
+      "id": "decode-empty",
+      "operation": "os.fsdecode",
+      "inputHex": "",
+      "outputPoints": [],
+      "error": null
+    },
+    {
+      "id": "decode-ascii-nul",
+      "operation": "os.fsdecode",
+      "inputHex": "610062",
+      "outputPoints": [
+        97,
+        0,
+        98
+      ],
+      "error": null
+    },
+    {
+      "id": "decode-max-scalar",
+      "operation": "os.fsdecode",
+      "inputHex": "f48fbfbf",
+      "outputPoints": [
+        1114111
+      ],
+      "error": null
+    },
+    {
+      "id": "decode-scalar",
+      "operation": "os.fsdecode",
+      "inputHex": "f0908080",
+      "outputPoints": [
+        65536
+      ],
+      "error": null
+    },
+    {
+      "id": "decode-ff",
+      "operation": "os.fsdecode",
+      "inputHex": "ff",
+      "outputPoints": [
+        56575
+      ],
+      "error": null
+    },
+    {
+      "id": "decode-80",
+      "operation": "os.fsdecode",
+      "inputHex": "80",
+      "outputPoints": [
+        56448
+      ],
+      "error": null
+    },
+    {
+      "id": "decode-overlong2",
+      "operation": "os.fsdecode",
+      "inputHex": "c0af",
+      "outputPoints": [
+        56512,
+        56495
+      ],
+      "error": null
+    },
+    {
+      "id": "decode-overlong3",
+      "operation": "os.fsdecode",
+      "inputHex": "e08080",
+      "outputPoints": [
+        56544,
+        56448,
+        56448
+      ],
+      "error": null
+    },
+    {
+      "id": "decode-surrogate-pair-bytes",
+      "operation": "os.fsdecode",
+      "inputHex": "eda080edb080",
+      "outputPoints": [
+        56557,
+        56480,
+        56448,
+        56557,
+        56496,
+        56448
+      ],
+      "error": null
+    },
+    {
+      "id": "decode-truncated4",
+      "operation": "os.fsdecode",
+      "inputHex": "f09080",
+      "outputPoints": [
+        56560,
+        56464,
+        56448
+      ],
+      "error": null
+    },
+    {
+      "id": "decode-mixed",
+      "operation": "os.fsdecode",
+      "inputHex": "61ff62",
+      "outputPoints": [
+        97,
+        56575,
+        98
+      ],
+      "error": null
+    },
+    {
+      "id": "decode-out-of-range",
+      "operation": "os.fsdecode",
+      "inputHex": "f4908080",
+      "outputPoints": [
+        56564,
+        56464,
+        56448,
+        56448
+      ],
+      "error": null
+    }
+  ],
+  "parents": [
+    {
+      "id": "managed-scalar-leaf",
+      "record": {
+        "storageKind": "managed",
+        "managedFile": {
+          "type": "text",
+          "points": [
+            65536
+          ]
+        }
+      },
+      "recordAfter": "exact same object and fields",
+      "events": [
+        "record[managedFile]",
+        "root / managedFile",
+        "candidate.parent.resolve(strict=false)",
+        "root.resolve(strict=false)",
+        "resolved parent == resolved root"
+      ],
+      "error": null,
+      "result": {
+        "kind": "lexicalPath",
+        "rootPrefix": "actual root points unchanged",
+        "relativePoints": [
+          65536
+        ],
+        "nativeLeafOpened": false,
+        "fsencode": {
+          "suffixHex": "f0908080",
+          "error": null
+        }
+      },
+      "unresolved": [],
+      "profilePolicy": "Exact expectations apply to each required CPython3.12/3.13/3.14 Darwin profile; default resolves to one, and complete actual origin/version must be checked."
+    },
+    {
+      "id": "managed-pair-leaf",
+      "record": {
+        "storageKind": "managed",
+        "managedFile": {
+          "type": "text",
+          "points": [
+            55296,
+            56320
+          ]
+        }
+      },
+      "recordAfter": "exact same object and fields",
+      "events": [
+        "record[managedFile]",
+        "root / managedFile",
+        "candidate.parent.resolve(strict=false)",
+        "root.resolve(strict=false)",
+        "resolved parent == resolved root"
+      ],
+      "error": null,
+      "result": {
+        "kind": "lexicalPath",
+        "rootPrefix": "actual root points unchanged",
+        "relativePoints": [
+          55296,
+          56320
+        ],
+        "nativeLeafOpened": false,
+        "fsencode": {
+          "errorRelativeToSuffix": {
+            "name": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode characters in position 0-1: surrogates not allowed",
+            "errno": null,
+            "cause": null,
+            "context": null,
+            "suppressContext": false,
+            "encoding": "utf-8",
+            "objectPoints": [
+              55296,
+              56320
+            ],
+            "start": 0,
+            "end": 2,
+            "reason": "surrogates not allowed"
+          },
+          "objectRule": "whole root + separator + suffix, shift start/end by actual prefix length",
+          "actualErrorRule": "Use full lexical returned candidate points, not resolvedRootPoints, then shift fixed suffix Unicode error start/end by lexical prefix length and rebuild exact numeric message."
+        }
+      },
+      "unresolved": [],
+      "profilePolicy": "Exact expectations apply to each required CPython3.12/3.13/3.14 Darwin profile; default resolves to one, and complete actual origin/version must be checked."
+    },
+    {
+      "id": "managed-escape-leaf",
+      "record": {
+        "storageKind": "managed",
+        "managedFile": {
+          "type": "text",
+          "points": [
+            56575
+          ]
+        }
+      },
+      "recordAfter": "exact same object and fields",
+      "events": [
+        "record[managedFile]",
+        "root / managedFile",
+        "candidate.parent.resolve(strict=false)",
+        "root.resolve(strict=false)",
+        "resolved parent == resolved root"
+      ],
+      "error": null,
+      "result": {
+        "kind": "lexicalPath",
+        "rootPrefix": "actual root points unchanged",
+        "relativePoints": [
+          56575
+        ],
+        "nativeLeafOpened": false,
+        "fsencode": {
+          "suffixHex": "ff",
+          "error": null
+        }
+      },
+      "unresolved": [],
+      "profilePolicy": "Exact expectations apply to each required CPython3.12/3.13/3.14 Darwin profile; default resolves to one, and complete actual origin/version must be checked."
+    },
+    {
+      "id": "managed-nul-leaf",
+      "record": {
+        "storageKind": "managed",
+        "managedFile": {
+          "type": "text",
+          "points": [
+            0
+          ]
+        }
+      },
+      "recordAfter": "exact same object and fields",
+      "events": [
+        "record[managedFile]",
+        "root / managedFile",
+        "candidate.parent.resolve(strict=false)",
+        "root.resolve(strict=false)",
+        "resolved parent == resolved root"
+      ],
+      "error": null,
+      "result": {
+        "kind": "lexicalPath",
+        "rootPrefix": "actual root points unchanged",
+        "relativePoints": [
+          0
+        ],
+        "nativeLeafOpened": false,
+        "fsencode": {
+          "suffixHex": "00",
+          "error": null
+        }
+      },
+      "unresolved": [],
+      "profilePolicy": "Exact expectations apply to each required CPython3.12/3.13/3.14 Darwin profile; default resolves to one, and complete actual origin/version must be checked."
+    },
+    {
+      "id": "managed-pair-parent",
+      "record": {
+        "storageKind": "managed",
+        "managedFile": {
+          "type": "text",
+          "points": [
+            55296,
+            56320,
+            47,
+            102,
+            105,
+            108,
+            101,
+            46,
+            98,
+            105,
+            110
+          ]
+        }
+      },
+      "recordAfter": "exact same object and fields",
+      "events": [
+        "record[managedFile]",
+        "root / managedFile",
+        "candidate.parent.resolve(strict=false)"
+      ],
+      "error": {
+        "name": "UnicodeEncodeError",
+        "errno": null,
+        "cause": null,
+        "context": null,
+        "suppressContext": false,
+        "encoding": "utf-8",
+        "reason": "surrogates not allowed",
+        "objectPointsTemplate": {
+          "prefix": "independentlyResolvedOwnedRootPoints",
+          "separator": [
+            47
+          ],
+          "componentPoints": [
+            55296,
+            56320
+          ]
+        },
+        "startTemplate": {
+          "base": "resolvedOwnedRootPointCount",
+          "add": 1
+        },
+        "endTemplate": {
+          "base": "resolvedOwnedRootPointCount",
+          "add": 3
+        },
+        "messageTemplate": {
+          "prefix": "'utf-8' codec can't encode characters in position ",
+          "start": "exact computed start decimal",
+          "separator": "-",
+          "last": "exact computed end minus one decimal",
+          "suffix": ": surrogates not allowed"
+        },
+        "coordinateUnit": "codepoints"
+      },
+      "result": null,
+      "unresolved": [],
+      "profilePolicy": "Exact expectations apply to each required CPython3.12/3.13/3.14 Darwin profile; default resolves to one, and complete actual origin/version must be checked."
+    },
+    {
+      "id": "managed-nul-parent",
+      "record": {
+        "storageKind": "managed",
+        "managedFile": {
+          "type": "text",
+          "points": [
+            0,
+            47,
+            102,
+            105,
+            108,
+            101,
+            46,
+            98,
+            105,
+            110
+          ]
+        }
+      },
+      "recordAfter": "exact same object and fields",
+      "events": [
+        "record[managedFile]",
+        "root / managedFile",
+        "candidate.parent.resolve(strict=false)"
+      ],
+      "error": {
+        "name": "ValueError",
+        "message": "lstat: embedded null character in path",
+        "errno": null,
+        "cause": null,
+        "context": null,
+        "suppressContext": false
+      },
+      "result": null,
+      "unresolved": [],
+      "profilePolicy": "Exact expectations apply to each required CPython3.12/3.13/3.14 Darwin profile; default resolves to one, and complete actual origin/version must be checked."
+    },
+    {
+      "id": "managed-nul-pair-parent",
+      "record": {
+        "storageKind": "managed",
+        "managedFile": {
+          "type": "text",
+          "points": [
+            0,
+            55296,
+            56320,
+            47,
+            102,
+            105,
+            108,
+            101,
+            46,
+            98,
+            105,
+            110
+          ]
+        }
+      },
+      "recordAfter": "exact same object and fields",
+      "events": [
+        "record[managedFile]",
+        "root / managedFile",
+        "candidate.parent.resolve(strict=false)"
+      ],
+      "error": {
+        "name": "UnicodeEncodeError",
+        "errno": null,
+        "cause": null,
+        "context": null,
+        "suppressContext": false,
+        "encoding": "utf-8",
+        "reason": "surrogates not allowed",
+        "objectPointsTemplate": {
+          "prefix": "independentlyResolvedOwnedRootPoints",
+          "separator": [
+            47
+          ],
+          "componentPoints": [
+            0,
+            55296,
+            56320
+          ]
+        },
+        "startTemplate": {
+          "base": "resolvedOwnedRootPointCount",
+          "add": 2
+        },
+        "endTemplate": {
+          "base": "resolvedOwnedRootPointCount",
+          "add": 4
+        },
+        "messageTemplate": {
+          "prefix": "'utf-8' codec can't encode characters in position ",
+          "start": "exact computed start decimal",
+          "separator": "-",
+          "last": "exact computed end minus one decimal",
+          "suffix": ": surrogates not allowed"
+        },
+        "coordinateUnit": "codepoints"
+      },
+      "result": null,
+      "unresolved": [],
+      "profilePolicy": "Exact expectations apply to each required CPython3.12/3.13/3.14 Darwin profile; default resolves to one, and complete actual origin/version must be checked."
+    },
+    {
+      "id": "managed-outside-parent",
+      "record": {
+        "storageKind": "managed",
+        "managedFile": {
+          "type": "text",
+          "points": [
+            46,
+            46,
+            47,
+            111,
+            117,
+            116,
+            115,
+            105,
+            100,
+            101,
+            47,
+            102,
+            105,
+            108,
+            101,
+            46,
+            98,
+            105,
+            110
+          ]
+        }
+      },
+      "recordAfter": "exact same object and fields",
+      "events": [
+        "record[managedFile]",
+        "root / managedFile",
+        "candidate.parent.resolve(strict=false)",
+        "root.resolve(strict=false)",
+        "resolved parent == resolved root"
+      ],
+      "error": {
+        "name": "StoreError",
+        "message": "managed resume file identity is invalid",
+        "errno": null,
+        "cause": null,
+        "context": null,
+        "suppressContext": false
+      },
+      "result": null,
+      "unresolved": [],
+      "profilePolicy": "Exact expectations apply to each required CPython3.12/3.13/3.14 Darwin profile; default resolves to one, and complete actual origin/version must be checked."
+    },
+    {
+      "id": "managed-pair-inside-link",
+      "record": {
+        "storageKind": "managed",
+        "managedFile": {
+          "type": "text",
+          "points": [
+            105,
+            110,
+            115,
+            105,
+            100,
+            101,
+            47,
+            55296,
+            56320
+          ]
+        }
+      },
+      "recordAfter": "exact same object and fields",
+      "events": [
+        "record[managedFile]",
+        "root / managedFile",
+        "candidate.parent.resolve(strict=false)",
+        "root.resolve(strict=false)",
+        "resolved parent == resolved root"
+      ],
+      "error": null,
+      "result": {
+        "kind": "lexicalPath",
+        "rootPrefix": "actual root points unchanged",
+        "relativePoints": [
+          105,
+          110,
+          115,
+          105,
+          100,
+          101,
+          47,
+          55296,
+          56320
+        ],
+        "nativeLeafOpened": false,
+        "fsencode": {
+          "errorRelativeToSuffix": {
+            "name": "UnicodeEncodeError",
+            "message": "'utf-8' codec can't encode characters in position 7-8: surrogates not allowed",
+            "errno": null,
+            "cause": null,
+            "context": null,
+            "suppressContext": false,
+            "encoding": "utf-8",
+            "objectPoints": [
+              105,
+              110,
+              115,
+              105,
+              100,
+              101,
+              47,
+              55296,
+              56320
+            ],
+            "start": 7,
+            "end": 9,
+            "reason": "surrogates not allowed"
+          },
+          "objectRule": "whole root + separator + suffix, shift start/end by actual prefix length",
+          "actualErrorRule": "Use full lexical returned candidate points, not resolvedRootPoints, then shift fixed suffix Unicode error start/end by lexical prefix length and rebuild exact numeric message."
+        },
+        "validation": "inside symlink resolves to root, returned candidate still contains inside component"
+      },
+      "unresolved": [],
+      "profilePolicy": "Exact expectations apply to each required CPython3.12/3.13/3.14 Darwin profile; default resolves to one, and complete actual origin/version must be checked."
+    },
+    {
+      "id": "managed-pair-outside-link",
+      "record": {
+        "storageKind": "managed",
+        "managedFile": {
+          "type": "text",
+          "points": [
+            111,
+            117,
+            116,
+            115,
+            105,
+            100,
+            101,
+            45,
+            108,
+            105,
+            110,
+            107,
+            47,
+            55296,
+            56320
+          ]
+        }
+      },
+      "recordAfter": "exact same object and fields",
+      "events": [
+        "record[managedFile]",
+        "root / managedFile",
+        "candidate.parent.resolve(strict=false)",
+        "root.resolve(strict=false)",
+        "resolved parent == resolved root"
+      ],
+      "error": {
+        "name": "StoreError",
+        "message": "managed resume file identity is invalid",
+        "errno": null,
+        "cause": null,
+        "context": null,
+        "suppressContext": false
+      },
+      "result": null,
+      "unresolved": [],
+      "profilePolicy": "Exact expectations apply to each required CPython3.12/3.13/3.14 Darwin profile; default resolves to one, and complete actual origin/version must be checked."
+    },
+    {
+      "id": "managed-pair-parent-error",
+      "record": {
+        "storageKind": "managed",
+        "managedFile": {
+          "type": "text",
+          "points": [
+            102,
+            105,
+            108,
+            101,
+            46,
+            98,
+            105,
+            110
+          ]
+        }
+      },
+      "recordAfter": "exact same object and fields",
+      "events": [
+        "record[managedFile]",
+        "root / managedFile",
+        "candidate.parent.resolve(strict=false)"
+      ],
+      "error": {
+        "name": "StoreError",
+        "message": "managed resume file identity is invalid",
+        "errno": null,
+        "cause": null,
+        "context": {
+          "name": "OSError",
+          "message": "[Errno 5] synthetic resolve",
+          "errno": 5,
+          "cause": null,
+          "context": null,
+          "suppressContext": false
+        },
+        "suppressContext": true
+      },
+      "result": null,
+      "unresolved": [],
+      "fault": {
+        "resolveCall": 1,
+        "errno": 5,
+        "message": "synthetic resolve"
+      },
+      "recipeClarification": {
+        "authority": "S05-reference-plan-v2.md:119 explicitly fixes both resolve faults to managedFile=file.bin",
+        "managedFilePoints": [
+          102,
+          105,
+          108,
+          101,
+          46,
+          98,
+          105,
+          110
+        ],
+        "idIsHistoricalLabel": true,
+        "claim": "Injected first/second resolve OSError wrapping and order only; not a pair-leaf encoding precedence witness",
+        "changePolicy": "Using a literal pair here requires an explicit recipe amendment; this draft preserves the approved tuple"
+      },
+      "profilePolicy": "Exact expectations apply to each required CPython3.12/3.13/3.14 Darwin profile; default resolves to one, and complete actual origin/version must be checked."
+    },
+    {
+      "id": "managed-pair-root-error",
+      "record": {
+        "storageKind": "managed",
+        "managedFile": {
+          "type": "text",
+          "points": [
+            102,
+            105,
+            108,
+            101,
+            46,
+            98,
+            105,
+            110
+          ]
+        }
+      },
+      "recordAfter": "exact same object and fields",
+      "events": [
+        "record[managedFile]",
+        "root / managedFile",
+        "candidate.parent.resolve(strict=false)",
+        "root.resolve(strict=false)"
+      ],
+      "error": {
+        "name": "StoreError",
+        "message": "managed resume file identity is invalid",
+        "errno": null,
+        "cause": null,
+        "context": {
+          "name": "OSError",
+          "message": "[Errno 5] synthetic resolve",
+          "errno": 5,
+          "cause": null,
+          "context": null,
+          "suppressContext": false
+        },
+        "suppressContext": true
+      },
+      "result": null,
+      "unresolved": [],
+      "fault": {
+        "resolveCall": 2,
+        "errno": 5,
+        "message": "synthetic resolve"
+      },
+      "recipeClarification": {
+        "authority": "S05-reference-plan-v2.md:119 explicitly fixes both resolve faults to managedFile=file.bin",
+        "managedFilePoints": [
+          102,
+          105,
+          108,
+          101,
+          46,
+          98,
+          105,
+          110
+        ],
+        "idIsHistoricalLabel": true,
+        "claim": "Injected first/second resolve OSError wrapping and order only; not a pair-leaf encoding precedence witness",
+        "changePolicy": "Using a literal pair here requires an explicit recipe amendment; this draft preserves the approved tuple"
+      },
+      "profilePolicy": "Exact expectations apply to each required CPython3.12/3.13/3.14 Darwin profile; default resolves to one, and complete actual origin/version must be checked."
+    },
+    {
+      "id": "managed-missing-storage",
+      "record": {},
+      "recordAfter": "exact same object and fields",
+      "events": [],
+      "error": {
+        "name": "StoreError",
+        "message": "resume is not managed",
+        "errno": null,
+        "cause": null,
+        "context": null,
+        "suppressContext": false
+      },
+      "result": null,
+      "unresolved": [],
+      "profilePolicy": "Exact expectations apply to each required CPython3.12/3.13/3.14 Darwin profile; default resolves to one, and complete actual origin/version must be checked."
+    },
+    {
+      "id": "managed-missing-file",
+      "record": {
+        "storageKind": "managed"
+      },
+      "recordAfter": "exact same object and fields",
+      "events": [
+        "record[managedFile]"
+      ],
+      "error": {
+        "name": "KeyError",
+        "message": "'managedFile'",
+        "errno": null,
+        "cause": null,
+        "context": null,
+        "suppressContext": false
+      },
+      "result": null,
+      "unresolved": [],
+      "profilePolicy": "Exact expectations apply to each required CPython3.12/3.13/3.14 Darwin profile; default resolves to one, and complete actual origin/version must be checked."
+    },
+    {
+      "id": "managed-nonstring-file",
+      "record": {
+        "storageKind": "managed",
+        "managedFile": {
+          "type": "int",
+          "decimal": "1"
+        }
+      },
+      "recordAfter": "exact same object and fields",
+      "events": [
+        "record[managedFile]",
+        "root / managedFile"
+      ],
+      "error": {
+        "name": "TypeError",
+        "message": "unsupported operand type(s) for /: 'PosixPath' and 'int'",
+        "errno": null,
+        "cause": null,
+        "context": null,
+        "suppressContext": false
+      },
+      "result": null,
+      "unresolved": [],
+      "profilePolicy": "Exact expectations apply to each required CPython3.12/3.13/3.14 Darwin profile; default resolves to one, and complete actual origin/version must be checked."
+    },
+    {
+      "id": "managed-empty-file",
+      "record": {
+        "storageKind": "managed",
+        "managedFile": {
+          "type": "text",
+          "points": []
+        }
+      },
+      "recordAfter": "exact same object and fields",
+      "events": [
+        "record[managedFile]",
+        "root / managedFile",
+        "candidate.parent.resolve(strict=false)",
+        "root.resolve(strict=false)",
+        "resolved parent == resolved root"
+      ],
+      "error": {
+        "name": "StoreError",
+        "message": "managed resume file identity is invalid",
+        "errno": null,
+        "cause": null,
+        "context": null,
+        "suppressContext": false
+      },
+      "result": null,
+      "unresolved": [],
+      "profilePolicy": "Exact expectations apply to each required CPython3.12/3.13/3.14 Darwin profile; default resolves to one, and complete actual origin/version must be checked."
+    }
+  ],
+  "caches": [
+    {
+      "id": "cache-equal-pair",
+      "recordTemplate": {
+        "storageKind": "managed",
+        "managedFile": "file.bin",
+        "id": "per-call typed key"
+      },
+      "fileHex": "73796e746865746963206f62736572766174696f6e206279746573",
+      "t0": "2026-01-02T00:00:00+00:00",
+      "ttlSeconds": 30,
+      "calls": [
+        {
+          "key": {
+            "type": "text",
+            "points": [
+              105,
+              100,
+              55296,
+              56320
+            ]
+          },
+          "clockOffsetSeconds": 0,
+          "hit": false,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "private_digest:path.is_symlink",
+            "private_digest:os.open(O_RDONLY|O_NOFOLLOW)",
+            "private_digest:os.fstat",
+            "private_digest:S_ISREG and size bound",
+            "private_digest:os.read* through EOF",
+            "private_digest:sha256.hexdigest",
+            "private_digest:os.close",
+            "path.lstat:second",
+            "second identity == first identity",
+            "S_ISREG(second)",
+            "modified_at(second)",
+            "cache_identity(second)",
+            "cache[key] = entry"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  55296,
+                  56320
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "retainedKeyObjectFromCall": 0,
+          "cacheBefore": [],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": false,
+            "remainingPredicates": "short-circuited"
+          }
+        },
+        {
+          "key": {
+            "type": "text",
+            "points": [
+              105,
+              100,
+              55296,
+              56320
+            ]
+          },
+          "clockOffsetSeconds": 0,
+          "hit": true,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "identity equality",
+            "0 <= age < 30 seconds",
+            "modified_at(first)"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  55296,
+                  56320
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "retainedKeyObjectFromCall": 0,
+          "cacheBefore": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  55296,
+                  56320
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": true,
+            "identityEqual": true,
+            "ageSeconds": 0,
+            "lowerBound": true,
+            "upperBound": true
+          }
+        }
+      ],
+      "identityTuple": [
+        "st_dev",
+        "st_ino",
+        "st_size",
+        "st_mtime_ns",
+        "st_ctime_ns"
+      ],
+      "relationships": [
+        "Each hit and miss validates first stat and symlink/type/size before cache lookup.",
+        "Stable owned file: both metadata identities equal; digest reads actual bytes.",
+        "No file mutation; bytes/mode/inode/mtime/ctime preserved, atime unconstrained.",
+        "Equal pair/scalar key inputs must be independently built distinct objects; overwritten dictionary retains first key object."
+      ],
+      "unresolved": [],
+      "platformScope": "POSIX with non-null cache identity; Windows excluded",
+      "observationBoundary": "Source-derived deterministic hit/order expectations; actual owned-file cache reference still required. Metadata numeric values are relational observations, not unresolved expected categories.",
+      "resultRelations": {
+        "identity": "exact dev/ino/size/mtimeNs/ctimeNs from unchanged actual file",
+        "modifiedAt": "original Python datetime.fromtimestamp(st_mtime,timezone.utc).isoformat(timespec=seconds), replace +00:00 with Z; independently format the captured float timestamp, not TS output",
+        "fileSize": 27
+      }
+    },
+    {
+      "id": "cache-equal-scalar",
+      "recordTemplate": {
+        "storageKind": "managed",
+        "managedFile": "file.bin",
+        "id": "per-call typed key"
+      },
+      "fileHex": "73796e746865746963206f62736572766174696f6e206279746573",
+      "t0": "2026-01-02T00:00:00+00:00",
+      "ttlSeconds": 30,
+      "calls": [
+        {
+          "key": {
+            "type": "text",
+            "points": [
+              105,
+              100,
+              65536
+            ]
+          },
+          "clockOffsetSeconds": 0,
+          "hit": false,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "private_digest:path.is_symlink",
+            "private_digest:os.open(O_RDONLY|O_NOFOLLOW)",
+            "private_digest:os.fstat",
+            "private_digest:S_ISREG and size bound",
+            "private_digest:os.read* through EOF",
+            "private_digest:sha256.hexdigest",
+            "private_digest:os.close",
+            "path.lstat:second",
+            "second identity == first identity",
+            "S_ISREG(second)",
+            "modified_at(second)",
+            "cache_identity(second)",
+            "cache[key] = entry"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  65536
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "retainedKeyObjectFromCall": 0,
+          "cacheBefore": [],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": false,
+            "remainingPredicates": "short-circuited"
+          }
+        },
+        {
+          "key": {
+            "type": "text",
+            "points": [
+              105,
+              100,
+              65536
+            ]
+          },
+          "clockOffsetSeconds": 0,
+          "hit": true,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "identity equality",
+            "0 <= age < 30 seconds",
+            "modified_at(first)"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  65536
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "retainedKeyObjectFromCall": 0,
+          "cacheBefore": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  65536
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": true,
+            "identityEqual": true,
+            "ageSeconds": 0,
+            "lowerBound": true,
+            "upperBound": true
+          }
+        }
+      ],
+      "identityTuple": [
+        "st_dev",
+        "st_ino",
+        "st_size",
+        "st_mtime_ns",
+        "st_ctime_ns"
+      ],
+      "relationships": [
+        "Each hit and miss validates first stat and symlink/type/size before cache lookup.",
+        "Stable owned file: both metadata identities equal; digest reads actual bytes.",
+        "No file mutation; bytes/mode/inode/mtime/ctime preserved, atime unconstrained.",
+        "Equal pair/scalar key inputs must be independently built distinct objects; overwritten dictionary retains first key object."
+      ],
+      "unresolved": [],
+      "platformScope": "POSIX with non-null cache identity; Windows excluded",
+      "observationBoundary": "Source-derived deterministic hit/order expectations; actual owned-file cache reference still required. Metadata numeric values are relational observations, not unresolved expected categories.",
+      "resultRelations": {
+        "identity": "exact dev/ino/size/mtimeNs/ctimeNs from unchanged actual file",
+        "modifiedAt": "original Python datetime.fromtimestamp(st_mtime,timezone.utc).isoformat(timespec=seconds), replace +00:00 with Z; independently format the captured float timestamp, not TS output",
+        "fileSize": 27
+      }
+    },
+    {
+      "id": "cache-pair-versus-scalar",
+      "recordTemplate": {
+        "storageKind": "managed",
+        "managedFile": "file.bin",
+        "id": "per-call typed key"
+      },
+      "fileHex": "73796e746865746963206f62736572766174696f6e206279746573",
+      "t0": "2026-01-02T00:00:00+00:00",
+      "ttlSeconds": 30,
+      "calls": [
+        {
+          "key": {
+            "type": "text",
+            "points": [
+              105,
+              100,
+              55296,
+              56320
+            ]
+          },
+          "clockOffsetSeconds": 0,
+          "hit": false,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "private_digest:path.is_symlink",
+            "private_digest:os.open(O_RDONLY|O_NOFOLLOW)",
+            "private_digest:os.fstat",
+            "private_digest:S_ISREG and size bound",
+            "private_digest:os.read* through EOF",
+            "private_digest:sha256.hexdigest",
+            "private_digest:os.close",
+            "path.lstat:second",
+            "second identity == first identity",
+            "S_ISREG(second)",
+            "modified_at(second)",
+            "cache_identity(second)",
+            "cache[key] = entry"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  55296,
+                  56320
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "retainedKeyObjectFromCall": 0,
+          "cacheBefore": [],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": false,
+            "remainingPredicates": "short-circuited"
+          }
+        },
+        {
+          "key": {
+            "type": "text",
+            "points": [
+              105,
+              100,
+              65536
+            ]
+          },
+          "clockOffsetSeconds": 0,
+          "hit": false,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "private_digest:path.is_symlink",
+            "private_digest:os.open(O_RDONLY|O_NOFOLLOW)",
+            "private_digest:os.fstat",
+            "private_digest:S_ISREG and size bound",
+            "private_digest:os.read* through EOF",
+            "private_digest:sha256.hexdigest",
+            "private_digest:os.close",
+            "path.lstat:second",
+            "second identity == first identity",
+            "S_ISREG(second)",
+            "modified_at(second)",
+            "cache_identity(second)",
+            "cache[key] = entry"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  55296,
+                  56320
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            },
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  65536
+                ]
+              },
+              "originalKeyCall": 1,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "retainedKeyObjectFromCall": 1,
+          "cacheBefore": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  55296,
+                  56320
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": false,
+            "remainingPredicates": "short-circuited"
+          }
+        }
+      ],
+      "identityTuple": [
+        "st_dev",
+        "st_ino",
+        "st_size",
+        "st_mtime_ns",
+        "st_ctime_ns"
+      ],
+      "relationships": [
+        "Each hit and miss validates first stat and symlink/type/size before cache lookup.",
+        "Stable owned file: both metadata identities equal; digest reads actual bytes.",
+        "No file mutation; bytes/mode/inode/mtime/ctime preserved, atime unconstrained.",
+        "Equal pair/scalar key inputs must be independently built distinct objects; overwritten dictionary retains first key object."
+      ],
+      "unresolved": [],
+      "platformScope": "POSIX with non-null cache identity; Windows excluded",
+      "observationBoundary": "Source-derived deterministic hit/order expectations; actual owned-file cache reference still required. Metadata numeric values are relational observations, not unresolved expected categories.",
+      "resultRelations": {
+        "identity": "exact dev/ino/size/mtimeNs/ctimeNs from unchanged actual file",
+        "modifiedAt": "original Python datetime.fromtimestamp(st_mtime,timezone.utc).isoformat(timespec=seconds), replace +00:00 with Z; independently format the captured float timestamp, not TS output",
+        "fileSize": 27
+      }
+    },
+    {
+      "id": "cache-escape-versus-scalar",
+      "recordTemplate": {
+        "storageKind": "managed",
+        "managedFile": "file.bin",
+        "id": "per-call typed key"
+      },
+      "fileHex": "73796e746865746963206f62736572766174696f6e206279746573",
+      "t0": "2026-01-02T00:00:00+00:00",
+      "ttlSeconds": 30,
+      "calls": [
+        {
+          "key": {
+            "type": "text",
+            "points": [
+              105,
+              100,
+              56575
+            ]
+          },
+          "clockOffsetSeconds": 0,
+          "hit": false,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "private_digest:path.is_symlink",
+            "private_digest:os.open(O_RDONLY|O_NOFOLLOW)",
+            "private_digest:os.fstat",
+            "private_digest:S_ISREG and size bound",
+            "private_digest:os.read* through EOF",
+            "private_digest:sha256.hexdigest",
+            "private_digest:os.close",
+            "path.lstat:second",
+            "second identity == first identity",
+            "S_ISREG(second)",
+            "modified_at(second)",
+            "cache_identity(second)",
+            "cache[key] = entry"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  56575
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "retainedKeyObjectFromCall": 0,
+          "cacheBefore": [],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": false,
+            "remainingPredicates": "short-circuited"
+          }
+        },
+        {
+          "key": {
+            "type": "text",
+            "points": [
+              105,
+              100,
+              255
+            ]
+          },
+          "clockOffsetSeconds": 0,
+          "hit": false,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "private_digest:path.is_symlink",
+            "private_digest:os.open(O_RDONLY|O_NOFOLLOW)",
+            "private_digest:os.fstat",
+            "private_digest:S_ISREG and size bound",
+            "private_digest:os.read* through EOF",
+            "private_digest:sha256.hexdigest",
+            "private_digest:os.close",
+            "path.lstat:second",
+            "second identity == first identity",
+            "S_ISREG(second)",
+            "modified_at(second)",
+            "cache_identity(second)",
+            "cache[key] = entry"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  56575
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            },
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  255
+                ]
+              },
+              "originalKeyCall": 1,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "retainedKeyObjectFromCall": 1,
+          "cacheBefore": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  56575
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": false,
+            "remainingPredicates": "short-circuited"
+          }
+        }
+      ],
+      "identityTuple": [
+        "st_dev",
+        "st_ino",
+        "st_size",
+        "st_mtime_ns",
+        "st_ctime_ns"
+      ],
+      "relationships": [
+        "Each hit and miss validates first stat and symlink/type/size before cache lookup.",
+        "Stable owned file: both metadata identities equal; digest reads actual bytes.",
+        "No file mutation; bytes/mode/inode/mtime/ctime preserved, atime unconstrained.",
+        "Equal pair/scalar key inputs must be independently built distinct objects; overwritten dictionary retains first key object."
+      ],
+      "unresolved": [],
+      "platformScope": "POSIX with non-null cache identity; Windows excluded",
+      "observationBoundary": "Source-derived deterministic hit/order expectations; actual owned-file cache reference still required. Metadata numeric values are relational observations, not unresolved expected categories.",
+      "resultRelations": {
+        "identity": "exact dev/ino/size/mtimeNs/ctimeNs from unchanged actual file",
+        "modifiedAt": "original Python datetime.fromtimestamp(st_mtime,timezone.utc).isoformat(timespec=seconds), replace +00:00 with Z; independently format the captured float timestamp, not TS output",
+        "fileSize": 27
+      }
+    },
+    {
+      "id": "cache-nul-text",
+      "recordTemplate": {
+        "storageKind": "managed",
+        "managedFile": "file.bin",
+        "id": "per-call typed key"
+      },
+      "fileHex": "73796e746865746963206f62736572766174696f6e206279746573",
+      "t0": "2026-01-02T00:00:00+00:00",
+      "ttlSeconds": 30,
+      "calls": [
+        {
+          "key": {
+            "type": "text",
+            "points": [
+              0
+            ]
+          },
+          "clockOffsetSeconds": 0,
+          "hit": false,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "private_digest:path.is_symlink",
+            "private_digest:os.open(O_RDONLY|O_NOFOLLOW)",
+            "private_digest:os.fstat",
+            "private_digest:S_ISREG and size bound",
+            "private_digest:os.read* through EOF",
+            "private_digest:sha256.hexdigest",
+            "private_digest:os.close",
+            "path.lstat:second",
+            "second identity == first identity",
+            "S_ISREG(second)",
+            "modified_at(second)",
+            "cache_identity(second)",
+            "cache[key] = entry"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  0
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "retainedKeyObjectFromCall": 0,
+          "cacheBefore": [],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": false,
+            "remainingPredicates": "short-circuited"
+          }
+        },
+        {
+          "key": {
+            "type": "text",
+            "points": [
+              0
+            ]
+          },
+          "clockOffsetSeconds": 0,
+          "hit": true,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "identity equality",
+            "0 <= age < 30 seconds",
+            "modified_at(first)"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  0
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "retainedKeyObjectFromCall": 0,
+          "cacheBefore": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  0
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": true,
+            "identityEqual": true,
+            "ageSeconds": 0,
+            "lowerBound": true,
+            "upperBound": true
+          }
+        }
+      ],
+      "identityTuple": [
+        "st_dev",
+        "st_ino",
+        "st_size",
+        "st_mtime_ns",
+        "st_ctime_ns"
+      ],
+      "relationships": [
+        "Each hit and miss validates first stat and symlink/type/size before cache lookup.",
+        "Stable owned file: both metadata identities equal; digest reads actual bytes.",
+        "No file mutation; bytes/mode/inode/mtime/ctime preserved, atime unconstrained.",
+        "Equal pair/scalar key inputs must be independently built distinct objects; overwritten dictionary retains first key object."
+      ],
+      "unresolved": [],
+      "platformScope": "POSIX with non-null cache identity; Windows excluded",
+      "observationBoundary": "Source-derived deterministic hit/order expectations; actual owned-file cache reference still required. Metadata numeric values are relational observations, not unresolved expected categories.",
+      "resultRelations": {
+        "identity": "exact dev/ino/size/mtimeNs/ctimeNs from unchanged actual file",
+        "modifiedAt": "original Python datetime.fromtimestamp(st_mtime,timezone.utc).isoformat(timespec=seconds), replace +00:00 with Z; independently format the captured float timestamp, not TS output",
+        "fileSize": 27
+      }
+    },
+    {
+      "id": "cache-empty-text",
+      "recordTemplate": {
+        "storageKind": "managed",
+        "managedFile": "file.bin",
+        "id": "per-call typed key"
+      },
+      "fileHex": "73796e746865746963206f62736572766174696f6e206279746573",
+      "t0": "2026-01-02T00:00:00+00:00",
+      "ttlSeconds": 30,
+      "calls": [
+        {
+          "key": {
+            "type": "text",
+            "points": []
+          },
+          "clockOffsetSeconds": 0,
+          "hit": false,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "private_digest:path.is_symlink",
+            "private_digest:os.open(O_RDONLY|O_NOFOLLOW)",
+            "private_digest:os.fstat",
+            "private_digest:S_ISREG and size bound",
+            "private_digest:os.read* through EOF",
+            "private_digest:sha256.hexdigest",
+            "private_digest:os.close",
+            "path.lstat:second",
+            "second identity == first identity",
+            "S_ISREG(second)",
+            "modified_at(second)",
+            "cache_identity(second)",
+            "cache[key] = entry"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": []
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "retainedKeyObjectFromCall": 0,
+          "cacheBefore": [],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": false,
+            "remainingPredicates": "short-circuited"
+          }
+        },
+        {
+          "key": {
+            "type": "text",
+            "points": []
+          },
+          "clockOffsetSeconds": 0,
+          "hit": true,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "identity equality",
+            "0 <= age < 30 seconds",
+            "modified_at(first)"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": []
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "retainedKeyObjectFromCall": 0,
+          "cacheBefore": [
+            {
+              "key": {
+                "type": "text",
+                "points": []
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": true,
+            "identityEqual": true,
+            "ageSeconds": 0,
+            "lowerBound": true,
+            "upperBound": true
+          }
+        }
+      ],
+      "identityTuple": [
+        "st_dev",
+        "st_ino",
+        "st_size",
+        "st_mtime_ns",
+        "st_ctime_ns"
+      ],
+      "relationships": [
+        "Each hit and miss validates first stat and symlink/type/size before cache lookup.",
+        "Stable owned file: both metadata identities equal; digest reads actual bytes.",
+        "No file mutation; bytes/mode/inode/mtime/ctime preserved, atime unconstrained.",
+        "Equal pair/scalar key inputs must be independently built distinct objects; overwritten dictionary retains first key object."
+      ],
+      "unresolved": [],
+      "platformScope": "POSIX with non-null cache identity; Windows excluded",
+      "observationBoundary": "Source-derived deterministic hit/order expectations; actual owned-file cache reference still required. Metadata numeric values are relational observations, not unresolved expected categories.",
+      "resultRelations": {
+        "identity": "exact dev/ino/size/mtimeNs/ctimeNs from unchanged actual file",
+        "modifiedAt": "original Python datetime.fromtimestamp(st_mtime,timezone.utc).isoformat(timespec=seconds), replace +00:00 with Z; independently format the captured float timestamp, not TS output",
+        "fileSize": 27
+      }
+    },
+    {
+      "id": "cache-text-versus-numeric",
+      "recordTemplate": {
+        "storageKind": "managed",
+        "managedFile": "file.bin",
+        "id": "per-call typed key"
+      },
+      "fileHex": "73796e746865746963206f62736572766174696f6e206279746573",
+      "t0": "2026-01-02T00:00:00+00:00",
+      "ttlSeconds": 30,
+      "calls": [
+        {
+          "key": {
+            "type": "text",
+            "points": [
+              49
+            ]
+          },
+          "clockOffsetSeconds": 0,
+          "hit": false,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "private_digest:path.is_symlink",
+            "private_digest:os.open(O_RDONLY|O_NOFOLLOW)",
+            "private_digest:os.fstat",
+            "private_digest:S_ISREG and size bound",
+            "private_digest:os.read* through EOF",
+            "private_digest:sha256.hexdigest",
+            "private_digest:os.close",
+            "path.lstat:second",
+            "second identity == first identity",
+            "S_ISREG(second)",
+            "modified_at(second)",
+            "cache_identity(second)",
+            "cache[key] = entry"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  49
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "retainedKeyObjectFromCall": 0,
+          "cacheBefore": [],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": false,
+            "remainingPredicates": "short-circuited"
+          }
+        },
+        {
+          "key": {
+            "type": "int",
+            "decimal": "1"
+          },
+          "clockOffsetSeconds": 0,
+          "hit": false,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "private_digest:path.is_symlink",
+            "private_digest:os.open(O_RDONLY|O_NOFOLLOW)",
+            "private_digest:os.fstat",
+            "private_digest:S_ISREG and size bound",
+            "private_digest:os.read* through EOF",
+            "private_digest:sha256.hexdigest",
+            "private_digest:os.close",
+            "path.lstat:second",
+            "second identity == first identity",
+            "S_ISREG(second)",
+            "modified_at(second)",
+            "cache_identity(second)",
+            "cache[key] = entry"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  49
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            },
+            {
+              "key": {
+                "type": "int",
+                "decimal": "1"
+              },
+              "originalKeyCall": 1,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "retainedKeyObjectFromCall": 1,
+          "cacheBefore": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  49
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": false,
+            "remainingPredicates": "short-circuited"
+          }
+        },
+        {
+          "key": {
+            "type": "float",
+            "hex": "0x1.0000000000000p+0"
+          },
+          "clockOffsetSeconds": 0,
+          "hit": true,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "identity equality",
+            "0 <= age < 30 seconds",
+            "modified_at(first)"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  49
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            },
+            {
+              "key": {
+                "type": "int",
+                "decimal": "1"
+              },
+              "originalKeyCall": 1,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "retainedKeyObjectFromCall": 1,
+          "cacheBefore": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  49
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            },
+            {
+              "key": {
+                "type": "int",
+                "decimal": "1"
+              },
+              "originalKeyCall": 1,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": true,
+            "identityEqual": true,
+            "ageSeconds": 0,
+            "lowerBound": true,
+            "upperBound": true
+          }
+        },
+        {
+          "key": {
+            "type": "bool",
+            "value": true
+          },
+          "clockOffsetSeconds": 0,
+          "hit": true,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "identity equality",
+            "0 <= age < 30 seconds",
+            "modified_at(first)"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  49
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            },
+            {
+              "key": {
+                "type": "int",
+                "decimal": "1"
+              },
+              "originalKeyCall": 1,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "retainedKeyObjectFromCall": 1,
+          "cacheBefore": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  49
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            },
+            {
+              "key": {
+                "type": "int",
+                "decimal": "1"
+              },
+              "originalKeyCall": 1,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": true,
+            "identityEqual": true,
+            "ageSeconds": 0,
+            "lowerBound": true,
+            "upperBound": true
+          }
+        }
+      ],
+      "identityTuple": [
+        "st_dev",
+        "st_ino",
+        "st_size",
+        "st_mtime_ns",
+        "st_ctime_ns"
+      ],
+      "relationships": [
+        "Each hit and miss validates first stat and symlink/type/size before cache lookup.",
+        "Stable owned file: both metadata identities equal; digest reads actual bytes.",
+        "No file mutation; bytes/mode/inode/mtime/ctime preserved, atime unconstrained.",
+        "Equal pair/scalar key inputs must be independently built distinct objects; overwritten dictionary retains first key object."
+      ],
+      "unresolved": [],
+      "platformScope": "POSIX with non-null cache identity; Windows excluded",
+      "observationBoundary": "Source-derived deterministic hit/order expectations; actual owned-file cache reference still required. Metadata numeric values are relational observations, not unresolved expected categories.",
+      "resultRelations": {
+        "identity": "exact dev/ino/size/mtimeNs/ctimeNs from unchanged actual file",
+        "modifiedAt": "original Python datetime.fromtimestamp(st_mtime,timezone.utc).isoformat(timespec=seconds), replace +00:00 with Z; independently format the captured float timestamp, not TS output",
+        "fileSize": 27
+      }
+    },
+    {
+      "id": "cache-expired-pair",
+      "recordTemplate": {
+        "storageKind": "managed",
+        "managedFile": "file.bin",
+        "id": "per-call typed key"
+      },
+      "fileHex": "73796e746865746963206f62736572766174696f6e206279746573",
+      "t0": "2026-01-02T00:00:00+00:00",
+      "ttlSeconds": 30,
+      "calls": [
+        {
+          "key": {
+            "type": "text",
+            "points": [
+              105,
+              100,
+              55296,
+              56320
+            ]
+          },
+          "clockOffsetSeconds": 0,
+          "hit": false,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "private_digest:path.is_symlink",
+            "private_digest:os.open(O_RDONLY|O_NOFOLLOW)",
+            "private_digest:os.fstat",
+            "private_digest:S_ISREG and size bound",
+            "private_digest:os.read* through EOF",
+            "private_digest:sha256.hexdigest",
+            "private_digest:os.close",
+            "path.lstat:second",
+            "second identity == first identity",
+            "S_ISREG(second)",
+            "modified_at(second)",
+            "cache_identity(second)",
+            "cache[key] = entry"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  55296,
+                  56320
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "retainedKeyObjectFromCall": 0,
+          "cacheBefore": [],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": false,
+            "remainingPredicates": "short-circuited"
+          }
+        },
+        {
+          "key": {
+            "type": "text",
+            "points": [
+              105,
+              100,
+              55296,
+              56320
+            ]
+          },
+          "clockOffsetSeconds": 30,
+          "hit": false,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "private_digest:path.is_symlink",
+            "private_digest:os.open(O_RDONLY|O_NOFOLLOW)",
+            "private_digest:os.fstat",
+            "private_digest:S_ISREG and size bound",
+            "private_digest:os.read* through EOF",
+            "private_digest:sha256.hexdigest",
+            "private_digest:os.close",
+            "path.lstat:second",
+            "second identity == first identity",
+            "S_ISREG(second)",
+            "modified_at(second)",
+            "cache_identity(second)",
+            "cache[key] = entry"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  55296,
+                  56320
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 30
+            }
+          ],
+          "retainedKeyObjectFromCall": 0,
+          "cacheBefore": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  55296,
+                  56320
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 0
+            }
+          ],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": true,
+            "identityEqual": true,
+            "ageSeconds": 30,
+            "lowerBound": true,
+            "upperBound": false
+          }
+        },
+        {
+          "key": {
+            "type": "text",
+            "points": [
+              105,
+              100,
+              55296,
+              56320
+            ]
+          },
+          "clockOffsetSeconds": 30,
+          "hit": true,
+          "events": [
+            "managed_path:parent.resolve",
+            "managed_path:root.resolve",
+            "record[id]",
+            "path.lstat:first",
+            "path.is_symlink",
+            "S_ISREG(first)",
+            "size <= RESUME_MAX_BYTES",
+            "cache_identity(first)",
+            "clock.now",
+            "cache.get(key)",
+            "identity equality",
+            "0 <= age < 30 seconds",
+            "modified_at(first)"
+          ],
+          "result": {
+            "exists": true,
+            "size": 27,
+            "digest": "04d34371fbc3fd0896e3db34a071b92f232b1f49703c86719587bbcd95a266e4",
+            "modifiedAt": "UTC ISO seconds derived from actual stat.st_mtime float"
+          },
+          "cacheAfter": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  55296,
+                  56320
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 30
+            }
+          ],
+          "retainedKeyObjectFromCall": 0,
+          "cacheBefore": [
+            {
+              "key": {
+                "type": "text",
+                "points": [
+                  105,
+                  100,
+                  55296,
+                  56320
+                ]
+              },
+              "originalKeyCall": 0,
+              "checkedAtSeconds": 30
+            }
+          ],
+          "cacheCondition": {
+            "cacheIdentityNonNull": true,
+            "cachedNonNull": true,
+            "identityEqual": true,
+            "ageSeconds": 0,
+            "lowerBound": true,
+            "upperBound": true
+          }
+        }
+      ],
+      "identityTuple": [
+        "st_dev",
+        "st_ino",
+        "st_size",
+        "st_mtime_ns",
+        "st_ctime_ns"
+      ],
+      "relationships": [
+        "Each hit and miss validates first stat and symlink/type/size before cache lookup.",
+        "Stable owned file: both metadata identities equal; digest reads actual bytes.",
+        "No file mutation; bytes/mode/inode/mtime/ctime preserved, atime unconstrained.",
+        "Equal pair/scalar key inputs must be independently built distinct objects; overwritten dictionary retains first key object."
+      ],
+      "unresolved": [],
+      "platformScope": "POSIX with non-null cache identity; Windows excluded",
+      "observationBoundary": "Source-derived deterministic hit/order expectations; actual owned-file cache reference still required. Metadata numeric values are relational observations, not unresolved expected categories.",
+      "resultRelations": {
+        "identity": "exact dev/ino/size/mtimeNs/ctimeNs from unchanged actual file",
+        "modifiedAt": "original Python datetime.fromtimestamp(st_mtime,timezone.utc).isoformat(timespec=seconds), replace +00:00 with Z; independently format the captured float timestamp, not TS output",
+        "fileSize": 27
+      }
+    }
+  ],
+  "openNativeCells": [
+    "resolve-byte-directory",
+    "resolve-byte-file",
+    "resolve-byte-link",
+    "managed-byte-parent",
+    "managed-byte-link-parent"
+  ],
+  "platformScope": {
+    "codec": "Actual probed UTF8/surrogateescape filesystem policy",
+    "parents": "POSIX owned-path reference; native unresolved rows are not accepted",
+    "cache": "POSIX only: non-null native identity; no Windows cache-hit claim",
+    "windows": "_managed_resume_digest_cache_identity returns None; these hit vectors do not apply"
+  },
+  "provenanceReferences": [
+    {
+      "file": "S05-reference-expected-vectors-draft.json",
+      "sha256": "7ada52044572ff4517ac573f6629e61013cda9900892b06830ab55999d1eff4a",
+      "usage": "provenance only; never executable input"
+    },
+    {
+      "file": "S05-invalid-parent-probe.py",
+      "sha256": "bd2964d765507afc408ce4f9c681a475ea55c7241e3204b1b03c78c4e364dd8e",
+      "usage": "provenance only; never executable input"
+    },
+    {
+      "file": "S05-invalid-parent-observations.json",
+      "sha256": "8260abb89d1cdca9adedd41700a26c054c0401efa6b7ec4e15f1958ad21afa04",
+      "usage": "provenance only; never executable input"
+    },
+    {
+      "file": "S05-invalid-parent-provenance.json",
+      "sha256": "61c4676887805e8993d18ceadff756cd6305ba0abd123edd53283d58a9360d3f",
+      "usage": "provenance only; never executable input"
+    }
+  ],
+  "profileBindings": {
+    "default": {
+      "required": "actual independently probed CPython; select matching supported version expectations"
+    },
+    "3.12": {
+      "observedVersion": "3.12.13"
+    },
+    "3.13": {
+      "observedVersion": "3.13.13"
+    },
+    "3.14": {
+      "observedVersion": "3.14.4"
+    }
+  },
+  "pathCoordinateContract": {
+    "rootNormalization": "Only the owned fixture root may be represented symbolically; retain all actual resolved-prefix codepoints and all fixed suffix points.",
+    "resolvedRoot": "Resolve the valid owned root independently before the observed operation, using actual pathlib; do not resolve the invalid parent or consume its error to construct expectations.",
+    "unicodeObject": "resolvedRootPoints followed by separator codepoint47 followed by fixed componentPoints; complete actual error object must equal this sequence.",
+    "start": "length(resolvedRootPoints)+1+index of first invalid surrogate in fixed componentPoints",
+    "end": "start plus fixed surrogate-run length",
+    "message": "Exact ASCII utf-8 UnicodeEncodeError message with decimal start and end-1 inserted; no alternate wording accepted.",
+    "restriction": "No arbitrary error-path normalization, basename stripping, slash collapsing or surrogate normalization."
+  },
+  "metadataContract": {
+    "encoding": "All inode/device/size/time-nanosecond integers losslessly represented as decimal strings; modes exact integers.",
+    "snapshotFields": [
+      "kind",
+      "mode",
+      "ino",
+      "size",
+      "mtimeNs",
+      "ctimeNs",
+      "contentHex"
+    ],
+    "sentinel": "Exact kind/mode/inode/size/mtimeNs/ctimeNs/content unchanged; atime recorded separately and unconstrained.",
+    "nativeNumbers": "Actual observed values only, never fixture constants. Assertions use explicit equality relationships.",
+    "temporary": "Complete post-close stat retained before replace/unlink; where replace occurs, target inode equals post-close temp inode, exact installed bytes/mode. Rename/chmod ctime may change and is recorded, not forced equal.",
+    "parent": "Exact directory kind/mode0700; inode stable. Creation/removal may update mtime/ctime; retain actual values without invented inequality."
+  }
+}
