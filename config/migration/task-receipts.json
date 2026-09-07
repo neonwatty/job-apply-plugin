@@ -1,0 +1,774 @@
+{
+  "schemaVersion": 1,
+  "receipts": [
+    {
+      "schemaVersion": 1,
+      "id": "P00.I",
+      "manifestSha256": "9f6af014ddab848d3eee3fd226e714aacda14fb608007a3ce85315106445fb2e",
+      "subject": {
+        "sha": "ac3a12d7e7a26450dc48513efdc74162f419b7de",
+        "tree": "ec8e5ae8cd48dfdba95598620a8da1eeda9a9847"
+      },
+      "executionBase": "ac3a12d7e7a26450dc48513efdc74162f419b7de",
+      "evidenceCommit": "4275a9c2edd23da9d67110a888cfb8bf17162e00",
+      "diff": [],
+      "files": [
+        {
+          "path": "tools/migration/check.mjs",
+          "sha256": "a49929bafc69cb622d7b8e38cf0ed8b7d306a5a84fb36a7bfad4cef5f56db621"
+        },
+        {
+          "path": "tools/migration/check-remaining-plan.mjs",
+          "sha256": "4283d1a2406481027f5f2a164aeca2f35f472dab5366665c2bebe2597a9e10cb"
+        },
+        {
+          "path": "tests_js/migration_inventory.test.mjs",
+          "sha256": "7c99fb8edbfc290d50935f708c2342cdfc962a1e158b550cbbd800adc945ced4"
+        },
+        {
+          "path": "tests_js/migration_remaining_plan.test.mjs",
+          "sha256": "c9189e5807d65d64233e47877537b33d68bbce44b7576ec953e6c73f9d0fdad0"
+        },
+        {
+          "path": "docs/migration/remaining/plan.json",
+          "sha256": "8457be188db0605d4f640f74a478820d213c5ee07e57c88bec1a2162776fb704"
+        },
+        {
+          "path": "docs/migration/remaining/task-catalog.md",
+          "sha256": "1c4d15506c83fec978d6c57971c3c761ae4b9831326ede9bacf09c352c95bb16"
+        },
+        {
+          "path": "docs/migration/remaining/packages.mmd",
+          "sha256": "9c2bfec44681e84e1e8a6b20ac4b319756faad996dc8b0f922cb26bf87e3ed3b"
+        },
+        {
+          "path": "docs/migration/remaining/agent-tasks.mmd",
+          "sha256": "43fc0da1d8795702c621afbedaceebf40dc2d58e1f9b94cf98405d3a1e07be66"
+        },
+        {
+          "path": "docs/migration/remaining/agent-tasks.json",
+          "sha256": "e8e549ec42440bff841da005d68b91b0e421a864db886203a542b6cfe9a70ec9"
+        },
+        {
+          "path": "config/migration/nodes.json",
+          "sha256": "18ba263ad0d37f2eb82d0261b6ca436bae62205036e77f2c7cdf740b9fd8fd98"
+        },
+        {
+          "path": "docs/migration/evidence/bootstrap/p00-audit-v2.json",
+          "sha256": "cf4dbfddaea3916b570b901cc46fa39d24aa0786e95cb86ce82029f782622742"
+        },
+        {
+          "path": "docs/migration/evidence/bootstrap/P00.I-v2.json",
+          "sha256": "9f6af014ddab848d3eee3fd226e714aacda14fb608007a3ce85315106445fb2e"
+        },
+        {
+          "path": "docs/migration/evidence/bootstrap/P00.V-v2.json",
+          "sha256": "ef604355da3a8c610963c413c95766ef229898048c18ef39796fa28f1b052216"
+        }
+      ],
+      "dependencies": [],
+      "cells": [
+        {
+          "id": "p00.migration_inventory",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_inventory.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 281.55912500000005,
+            "outputBytes": 2025,
+            "tests": 9,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/bootstrap/logs-v2/P00-migration_inventory.tap",
+            "sha256": "0a28905f8fa28730203957d6a98a62c5e05cca9138fd52967d94d3fc5f1e9299"
+          }
+        },
+        {
+          "id": "p00.migration_remaining_plan",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_remaining_plan.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 66.120792,
+            "outputBytes": 1016,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/bootstrap/logs-v2/P00-migration_remaining_plan.tap",
+            "sha256": "cdd9800cff818004450e3e83441a634fc5bea171510da9db1c58af65036c21d3"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "root",
+        "reviewer": "hooks_audit",
+        "subjectSha": "ac3a12d7e7a26450dc48513efdc74162f419b7de",
+        "subjectTree": "ec8e5ae8cd48dfdba95598620a8da1eeda9a9847",
+        "manifestSha256": "9f6af014ddab848d3eee3fd226e714aacda14fb608007a3ce85315106445fb2e",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P00.V",
+      "manifestSha256": "ef604355da3a8c610963c413c95766ef229898048c18ef39796fa28f1b052216",
+      "subject": {
+        "sha": "ac3a12d7e7a26450dc48513efdc74162f419b7de",
+        "tree": "ec8e5ae8cd48dfdba95598620a8da1eeda9a9847"
+      },
+      "executionBase": "ac3a12d7e7a26450dc48513efdc74162f419b7de",
+      "evidenceCommit": "4275a9c2edd23da9d67110a888cfb8bf17162e00",
+      "diff": [],
+      "files": [
+        {
+          "path": "tools/migration/check.mjs",
+          "sha256": "a49929bafc69cb622d7b8e38cf0ed8b7d306a5a84fb36a7bfad4cef5f56db621"
+        },
+        {
+          "path": "tools/migration/check-remaining-plan.mjs",
+          "sha256": "4283d1a2406481027f5f2a164aeca2f35f472dab5366665c2bebe2597a9e10cb"
+        },
+        {
+          "path": "tests_js/migration_inventory.test.mjs",
+          "sha256": "7c99fb8edbfc290d50935f708c2342cdfc962a1e158b550cbbd800adc945ced4"
+        },
+        {
+          "path": "tests_js/migration_remaining_plan.test.mjs",
+          "sha256": "c9189e5807d65d64233e47877537b33d68bbce44b7576ec953e6c73f9d0fdad0"
+        },
+        {
+          "path": "docs/migration/remaining/plan.json",
+          "sha256": "8457be188db0605d4f640f74a478820d213c5ee07e57c88bec1a2162776fb704"
+        },
+        {
+          "path": "docs/migration/remaining/task-catalog.md",
+          "sha256": "1c4d15506c83fec978d6c57971c3c761ae4b9831326ede9bacf09c352c95bb16"
+        },
+        {
+          "path": "docs/migration/remaining/packages.mmd",
+          "sha256": "9c2bfec44681e84e1e8a6b20ac4b319756faad996dc8b0f922cb26bf87e3ed3b"
+        },
+        {
+          "path": "docs/migration/remaining/agent-tasks.mmd",
+          "sha256": "43fc0da1d8795702c621afbedaceebf40dc2d58e1f9b94cf98405d3a1e07be66"
+        },
+        {
+          "path": "docs/migration/remaining/agent-tasks.json",
+          "sha256": "e8e549ec42440bff841da005d68b91b0e421a864db886203a542b6cfe9a70ec9"
+        },
+        {
+          "path": "config/migration/nodes.json",
+          "sha256": "18ba263ad0d37f2eb82d0261b6ca436bae62205036e77f2c7cdf740b9fd8fd98"
+        },
+        {
+          "path": "docs/migration/evidence/bootstrap/p00-audit-v2.json",
+          "sha256": "cf4dbfddaea3916b570b901cc46fa39d24aa0786e95cb86ce82029f782622742"
+        },
+        {
+          "path": "docs/migration/evidence/bootstrap/P00.I-v2.json",
+          "sha256": "9f6af014ddab848d3eee3fd226e714aacda14fb608007a3ce85315106445fb2e"
+        },
+        {
+          "path": "docs/migration/evidence/bootstrap/P00.V-v2.json",
+          "sha256": "ef604355da3a8c610963c413c95766ef229898048c18ef39796fa28f1b052216"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.I",
+          "sha256": "22f21bd29e1f63ab40ca1a8df7c89528b8e40af63d07fefececb7a263b7edf4f"
+        }
+      ],
+      "cells": [
+        {
+          "id": "p00.migration_inventory",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_inventory.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 281.55912500000005,
+            "outputBytes": 2025,
+            "tests": 9,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/bootstrap/logs-v2/P00-migration_inventory.tap",
+            "sha256": "0a28905f8fa28730203957d6a98a62c5e05cca9138fd52967d94d3fc5f1e9299"
+          }
+        },
+        {
+          "id": "p00.migration_remaining_plan",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_remaining_plan.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 66.120792,
+            "outputBytes": 1016,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/bootstrap/logs-v2/P00-migration_remaining_plan.tap",
+            "sha256": "cdd9800cff818004450e3e83441a634fc5bea171510da9db1c58af65036c21d3"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "root",
+        "reviewer": "hooks_audit",
+        "subjectSha": "ac3a12d7e7a26450dc48513efdc74162f419b7de",
+        "subjectTree": "ec8e5ae8cd48dfdba95598620a8da1eeda9a9847",
+        "manifestSha256": "ef604355da3a8c610963c413c95766ef229898048c18ef39796fa28f1b052216",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P01.I",
+      "manifestSha256": "56b66de49dcb6461eed2d4cf1d555959691f14ccf12c1998eed227efecd094e0",
+      "subject": {
+        "sha": "ac3a12d7e7a26450dc48513efdc74162f419b7de",
+        "tree": "ec8e5ae8cd48dfdba95598620a8da1eeda9a9847"
+      },
+      "executionBase": "ac3a12d7e7a26450dc48513efdc74162f419b7de",
+      "evidenceCommit": "4275a9c2edd23da9d67110a888cfb8bf17162e00",
+      "diff": [],
+      "files": [
+        {
+          "path": "tools/migration/evidence-io.mjs",
+          "sha256": "0edbb50c6ead7963f6e3b5dca2138fa5d71c2dbd4ab254359f8a87212cc227f6"
+        },
+        {
+          "path": "tools/migration/tap-evidence.mjs",
+          "sha256": "0a3358323e73f6bb0828dc63071603a1263ea6008413c2bf1a620c22c42f3077"
+        },
+        {
+          "path": "tools/migration/load-prerequisites.mjs",
+          "sha256": "446f46091af5f95e89fef93400281e25a822497cea00c4d78dd7e0964f7c737c"
+        },
+        {
+          "path": "tools/migration/prerequisite-receipts.mjs",
+          "sha256": "45a971019860329405ee8adec70a9d1b7fd2cff78111a5b2931f2febb8ee68a8"
+        },
+        {
+          "path": "tools/migration/task-manifests.mjs",
+          "sha256": "4ed219833b67d72e75f12bb8ad27d7493080a7e0175bb9313bacc939f8ac6909"
+        },
+        {
+          "path": "tools/migration/task-receipts.mjs",
+          "sha256": "f68aab726ce27f6718282cb19b8b905f9e45940c2508cc3df8369a3ec5eccfba"
+        },
+        {
+          "path": "tools/migration/load-task-evidence.mjs",
+          "sha256": "f63db62c036d8e581f7ab990d8fb0c3b04d6dbe2bda4b9a0a0b967dd91fac5dd"
+        },
+        {
+          "path": "tools/migration/check.mjs",
+          "sha256": "a49929bafc69cb622d7b8e38cf0ed8b7d306a5a84fb36a7bfad4cef5f56db621"
+        },
+        {
+          "path": "tests_js/migration_task_manifests.test.mjs",
+          "sha256": "616a108615a2de3f48a2d9272f10907ab968183593fca0ead2555518a85da087"
+        },
+        {
+          "path": "tests_js/migration_task_receipts.test.mjs",
+          "sha256": "8a5c0c368dbb0a7ca0cc141f305c72bdb28fee1842666b0c19d66c6393f2fde3"
+        },
+        {
+          "path": "tests_js/migration_task_loader.test.mjs",
+          "sha256": "33a7065cfb8c83f48e7bede9630fd62b4d44bd962b6cb6d5cac1995cfd7aa5c2"
+        },
+        {
+          "path": "tests_js/migration_load_prerequisites.test.mjs",
+          "sha256": "31a5cd3502ebdbf866b04ab877f54148f270c9af9faee5b644bb9e2a3dc5a0e6"
+        },
+        {
+          "path": "tests_js/migration_prerequisite_receipts.test.mjs",
+          "sha256": "f1a16fca20709f54c0cadba3b120bf6c5fa11098fe4fbd93d83ca2503598935f"
+        },
+        {
+          "path": "tests_js/migration_task_support.mjs",
+          "sha256": "e8f71bbcdad536b23cfb774b472d7e61e33b22c703620d64bab85f0eb72344a0"
+        },
+        {
+          "path": "docs/migration/evidence/bootstrap/p01-audit-v2.json",
+          "sha256": "dda4656332a9e5268359f9672e3aaf9f085430e26ce8ba002c3d45f2563b495c"
+        },
+        {
+          "path": "docs/migration/evidence/bootstrap/P01.I-v2.json",
+          "sha256": "56b66de49dcb6461eed2d4cf1d555959691f14ccf12c1998eed227efecd094e0"
+        },
+        {
+          "path": "docs/migration/evidence/bootstrap/P01.V-v2.json",
+          "sha256": "d01eacb725764acf5cba33019ee3328b89b92da438481facf57d3aa5d06cfad3"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        }
+      ],
+      "cells": [
+        {
+          "id": "p01.migration_task_manifests",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_manifests.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 65.37408299999998,
+            "outputBytes": 1795,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/bootstrap/logs-v2/P01-migration_task_manifests.tap",
+            "sha256": "f10342cd1c0beb8477794c8d00a6bdd64f5a0326d48a23c24a3f14dd38a7a184"
+          }
+        },
+        {
+          "id": "p01.migration_task_receipts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_receipts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 70.87270800000005,
+            "outputBytes": 2636,
+            "tests": 10,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/bootstrap/logs-v2/P01-migration_task_receipts.tap",
+            "sha256": "1a653a9ee02eb82ef31b8b3cdf27055c67e945e9e68eac85e0e2fa7934a58297"
+          }
+        },
+        {
+          "id": "p01.migration_task_loader",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_loader.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 73602.416583,
+            "outputBytes": 2520,
+            "tests": 10,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/bootstrap/logs-v2/P01-migration_task_loader.tap",
+            "sha256": "9a9cb40155810a0ed48ee2b0379a2debde76477887abae2bd5b73013bdc3f655"
+          }
+        },
+        {
+          "id": "p01.migration_load_prerequisites",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_load_prerequisites.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 410.41633300000103,
+            "outputBytes": 350,
+            "tests": 1,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/bootstrap/logs-v2/P01-migration_load_prerequisites.tap",
+            "sha256": "f9c168131fd2de0a98f2c25c7bbb62159452b29f3b143d87eea33b404ed7d201"
+          }
+        },
+        {
+          "id": "p01.migration_prerequisite_receipts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_prerequisite_receipts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 61.746750000005704,
+            "outputBytes": 1523,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/bootstrap/logs-v2/P01-migration_prerequisite_receipts.tap",
+            "sha256": "22734000721b69546c791cb76ab0177b09a7effdccddbae1555f38efc10e60b5"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "ac3a12d7e7a26450dc48513efdc74162f419b7de",
+        "subjectTree": "ec8e5ae8cd48dfdba95598620a8da1eeda9a9847",
+        "manifestSha256": "56b66de49dcb6461eed2d4cf1d555959691f14ccf12c1998eed227efecd094e0",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P01.V",
+      "manifestSha256": "d01eacb725764acf5cba33019ee3328b89b92da438481facf57d3aa5d06cfad3",
+      "subject": {
+        "sha": "ac3a12d7e7a26450dc48513efdc74162f419b7de",
+        "tree": "ec8e5ae8cd48dfdba95598620a8da1eeda9a9847"
+      },
+      "executionBase": "ac3a12d7e7a26450dc48513efdc74162f419b7de",
+      "evidenceCommit": "4275a9c2edd23da9d67110a888cfb8bf17162e00",
+      "diff": [],
+      "files": [
+        {
+          "path": "tools/migration/evidence-io.mjs",
+          "sha256": "0edbb50c6ead7963f6e3b5dca2138fa5d71c2dbd4ab254359f8a87212cc227f6"
+        },
+        {
+          "path": "tools/migration/tap-evidence.mjs",
+          "sha256": "0a3358323e73f6bb0828dc63071603a1263ea6008413c2bf1a620c22c42f3077"
+        },
+        {
+          "path": "tools/migration/load-prerequisites.mjs",
+          "sha256": "446f46091af5f95e89fef93400281e25a822497cea00c4d78dd7e0964f7c737c"
+        },
+        {
+          "path": "tools/migration/prerequisite-receipts.mjs",
+          "sha256": "45a971019860329405ee8adec70a9d1b7fd2cff78111a5b2931f2febb8ee68a8"
+        },
+        {
+          "path": "tools/migration/task-manifests.mjs",
+          "sha256": "4ed219833b67d72e75f12bb8ad27d7493080a7e0175bb9313bacc939f8ac6909"
+        },
+        {
+          "path": "tools/migration/task-receipts.mjs",
+          "sha256": "f68aab726ce27f6718282cb19b8b905f9e45940c2508cc3df8369a3ec5eccfba"
+        },
+        {
+          "path": "tools/migration/load-task-evidence.mjs",
+          "sha256": "f63db62c036d8e581f7ab990d8fb0c3b04d6dbe2bda4b9a0a0b967dd91fac5dd"
+        },
+        {
+          "path": "tools/migration/check.mjs",
+          "sha256": "a49929bafc69cb622d7b8e38cf0ed8b7d306a5a84fb36a7bfad4cef5f56db621"
+        },
+        {
+          "path": "tests_js/migration_task_manifests.test.mjs",
+          "sha256": "616a108615a2de3f48a2d9272f10907ab968183593fca0ead2555518a85da087"
+        },
+        {
+          "path": "tests_js/migration_task_receipts.test.mjs",
+          "sha256": "8a5c0c368dbb0a7ca0cc141f305c72bdb28fee1842666b0c19d66c6393f2fde3"
+        },
+        {
+          "path": "tests_js/migration_task_loader.test.mjs",
+          "sha256": "33a7065cfb8c83f48e7bede9630fd62b4d44bd962b6cb6d5cac1995cfd7aa5c2"
+        },
+        {
+          "path": "tests_js/migration_load_prerequisites.test.mjs",
+          "sha256": "31a5cd3502ebdbf866b04ab877f54148f270c9af9faee5b644bb9e2a3dc5a0e6"
+        },
+        {
+          "path": "tests_js/migration_prerequisite_receipts.test.mjs",
+          "sha256": "f1a16fca20709f54c0cadba3b120bf6c5fa11098fe4fbd93d83ca2503598935f"
+        },
+        {
+          "path": "tests_js/migration_task_support.mjs",
+          "sha256": "e8f71bbcdad536b23cfb774b472d7e61e33b22c703620d64bab85f0eb72344a0"
+        },
+        {
+          "path": "docs/migration/evidence/bootstrap/p01-audit-v2.json",
+          "sha256": "dda4656332a9e5268359f9672e3aaf9f085430e26ce8ba002c3d45f2563b495c"
+        },
+        {
+          "path": "docs/migration/evidence/bootstrap/P01.I-v2.json",
+          "sha256": "56b66de49dcb6461eed2d4cf1d555959691f14ccf12c1998eed227efecd094e0"
+        },
+        {
+          "path": "docs/migration/evidence/bootstrap/P01.V-v2.json",
+          "sha256": "d01eacb725764acf5cba33019ee3328b89b92da438481facf57d3aa5d06cfad3"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P01.I",
+          "sha256": "be4f42128b26786a5c34d6af9a12061e8a5d11a0f0f9d40302a813c4a04306bc"
+        }
+      ],
+      "cells": [
+        {
+          "id": "p01.migration_task_manifests",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_manifests.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 65.37408299999998,
+            "outputBytes": 1795,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/bootstrap/logs-v2/P01-migration_task_manifests.tap",
+            "sha256": "f10342cd1c0beb8477794c8d00a6bdd64f5a0326d48a23c24a3f14dd38a7a184"
+          }
+        },
+        {
+          "id": "p01.migration_task_receipts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_receipts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 70.87270800000005,
+            "outputBytes": 2636,
+            "tests": 10,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/bootstrap/logs-v2/P01-migration_task_receipts.tap",
+            "sha256": "1a653a9ee02eb82ef31b8b3cdf27055c67e945e9e68eac85e0e2fa7934a58297"
+          }
+        },
+        {
+          "id": "p01.migration_task_loader",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_loader.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 73602.416583,
+            "outputBytes": 2520,
+            "tests": 10,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/bootstrap/logs-v2/P01-migration_task_loader.tap",
+            "sha256": "9a9cb40155810a0ed48ee2b0379a2debde76477887abae2bd5b73013bdc3f655"
+          }
+        },
+        {
+          "id": "p01.migration_load_prerequisites",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_load_prerequisites.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 410.41633300000103,
+            "outputBytes": 350,
+            "tests": 1,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/bootstrap/logs-v2/P01-migration_load_prerequisites.tap",
+            "sha256": "f9c168131fd2de0a98f2c25c7bbb62159452b29f3b143d87eea33b404ed7d201"
+          }
+        },
+        {
+          "id": "p01.migration_prerequisite_receipts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_prerequisite_receipts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 61.746750000005704,
+            "outputBytes": 1523,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/bootstrap/logs-v2/P01-migration_prerequisite_receipts.tap",
+            "sha256": "22734000721b69546c791cb76ab0177b09a7effdccddbae1555f38efc10e60b5"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "ac3a12d7e7a26450dc48513efdc74162f419b7de",
+        "subjectTree": "ec8e5ae8cd48dfdba95598620a8da1eeda9a9847",
+        "manifestSha256": "d01eacb725764acf5cba33019ee3328b89b92da438481facf57d3aa5d06cfad3",
+        "decision": "approved"
+      },
+      "status": "passed"
+    }
+  ]
+}
