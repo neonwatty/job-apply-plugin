@@ -1,0 +1,88 @@
+TAP version 13
+# Subtest: affected selection unions owners and selects a changed test itself
+ok 1 - affected selection unions owners and selects a changed test itself
+  ---
+  duration_ms: 1.225791
+  type: 'test'
+  ...
+# Subtest: global and unknown changes fail closed to the full tier
+ok 2 - global and unknown changes fail closed to the full tier
+  ---
+  duration_ms: 0.196125
+  type: 'test'
+  ...
+# Subtest: real shared Python helpers select every consuming shard
+ok 3 - real shared Python helpers select every consuming shard
+  ---
+  duration_ms: 75.016125
+  type: 'test'
+  ...
+# Subtest: real production paths conservatively include cross-language consumers
+ok 4 - real production paths conservatively include cross-language consumers
+  ---
+  duration_ms: 81.575083
+  type: 'test'
+  ...
+# Subtest: matrix validation rejects omissions and duplicate full inventory
+ok 5 - matrix validation rejects omissions and duplicate full inventory
+  ---
+  duration_ms: 0.999959
+  type: 'test'
+  ...
+# Subtest: name-status parsing preserves both rename paths and deletions
+ok 6 - name-status parsing preserves both rename paths and deletions
+  ---
+  duration_ms: 0.173584
+  type: 'test'
+  ...
+# Subtest: git selection combines committed, staged, unstaged, deleted, renamed, and untracked paths
+ok 7 - git selection combines committed, staged, unstaged, deleted, renamed, and untracked paths
+  ---
+  duration_ms: 118.730917
+  type: 'test'
+  ...
+# Subtest: P03 graph follows runtime type support and literal child-process dependencies
+ok 8 - P03 graph follows runtime type support and literal child-process dependencies
+  ---
+  duration_ms: 268.208167
+  type: 'test'
+  ...
+# Subtest: P03 graph rejects unresolved relevant imports and missing owned targets
+ok 9 - P03 graph rejects unresolved relevant imports and missing owned targets
+  ---
+  duration_ms: 1326.829625
+  type: 'test'
+  ...
+# Subtest: P03 graph re-evaluates newly added consumers from the immutable subject
+ok 10 - P03 graph re-evaluates newly added consumers from the immutable subject
+  ---
+  duration_ms: 3505.242833
+  type: 'test'
+  ...
+# Subtest: P03 graph binds source and emitted module identities without duplicate consumers
+ok 11 - P03 graph binds source and emitted module identities without duplicate consumers
+  ---
+  duration_ms: 93.800792
+  type: 'test'
+  ...
+# Subtest: P10 reference suites isolate S04 and S05 without changing process output limits
+ok 12 - P10 reference suites isolate S04 and S05 without changing process output limits
+  ---
+  duration_ms: 252.529792
+  type: 'test'
+  ...
+# Subtest: P10 reference suite ownership preserves shared inputs and rejects missing or duplicate coverage
+ok 13 - P10 reference suite ownership preserves shared inputs and rejects missing or duplicate coverage
+  ---
+  duration_ms: 889.766709
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6665.962709
