@@ -13,13 +13,17 @@
       "qa/**/*.js",
       "qa/**/*.mjs",
       "workspace/**/*.js",
-      "native/macos/*.swift"
+      "native/macos/*.swift",
+      "native/posix/*.c",
+      "native/posix/*.h"
     ]
   },
   "fullInventory": {
     "include": ["tests/test_*.py", "tests_js/*.test.mjs"]
   },
   "globalPaths": [
+    "tools/migration/**",
+    "config/migration/**",
     ".githooks/**",
     "tools/local-checks/**",
     "config/test-matrix.json",
@@ -39,6 +43,12 @@
     ".github/workflows/**"
   ],
   "suites": [
+    {
+      "id": "migration-inventory",
+      "kind": "command",
+      "command": ["node", "tools/migration/check.mjs"],
+      "tiers": ["fast", "full"]
+    },
     {
       "id": "typescript-check",
       "kind": "command",
@@ -133,8 +143,15 @@
     {
       "id": "node-runner-fast",
       "kind": "node-test",
-      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs", "tests_js/local_checks*.test.mjs"],
+      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs", "tests_js/local_checks*.test.mjs", "tests_js/migration_inventory.test.mjs", "tests_js/migration_remaining_plan.test.mjs", "tests_js/migration_browser_inventory.test.mjs", "tests_js/migration_packages.test.mjs", "tests_js/migration_requirements.test.mjs", "tests_js/migration_test_bindings.test.mjs", "tests_js/migration_prerequisite_receipts.test.mjs", "tests_js/migration_load_prerequisites.test.mjs", "tests_js/migration_task_manifests.test.mjs", "tests_js/migration_task_receipts.test.mjs", "tests_js/migration_task_lineage.test.mjs"],
+      "exclude": ["tests_js/local_checks_run.test.mjs"],
       "tiers": ["fast", "full"]
+    },
+    {
+      "id": "node-migration-evidence",
+      "kind": "node-test",
+      "include": ["tests_js/local_checks_run.test.mjs", "tests_js/migration_task_loader.test.mjs", "tests_js/migration_task_handoffs.test.mjs", "tests_js/migration_task_metadata.test.mjs", "tests_js/migration_task_replacements.test.mjs", "tests_js/migration_task_lineage_lifecycle.test.mjs"],
+      "tiers": ["full"]
     },
     {
       "id": "node-recorder",
@@ -151,8 +168,22 @@
     {
       "id": "node-workspace-other",
       "kind": "node-test",
-      "include": ["tests_js/workspace*.test.mjs", "tests_js/unified_task_spine_oracle.test.mjs", "tests_js/python-contracts.test.mjs", "tests_js/python-startup-contracts.test.mjs"],
+      "include": ["tests_js/typed_json_points.test.mjs", "tests_js/typed_json_points_profiles.test.mjs", "tests_js/typed_json_points_compat.test.mjs", "tests_js/workspace*.test.mjs", "tests_js/unified_task_spine_oracle.test.mjs", "tests_js/python-contracts.test.mjs", "tests_js/python-startup-contracts.test.mjs", "tests_js/python-profile-fact-contracts.test.mjs", "tests_js/python-answer-matching-raw.test.mjs", "tests_js/raw_json_numeric*.test.mjs", "tests_js/typed_json*.test.mjs", "tests_js/store_validation_ts.test.mjs", "tests_js/python_json_ingress.test.mjs", "tests_js/python_json_stdin.test.mjs", "tests_js/store_raw_read_reference.test.mjs", "tests_js/store_raw_read_ts.test.mjs", "tests_js/private_file_digest_reference.test.mjs", "tests_js/private_file_digest_ts.test.mjs", "tests_js/managed_resume_path_reference.test.mjs", "tests_js/managed_resume_path_ts.test.mjs", "tests_js/managed_observation_reference.test.mjs", "tests_js/posix_path_bytes_reference.test.mjs", "tests_js/posix_path_bytes_ts.test.mjs", "tests_js/resume_modified_at_reference.test.mjs", "tests_js/resume_modified_at_ts.test.mjs", "tests_js/managed_observation_ts.test.mjs", "tests_js/managed_observation_native_ts.test.mjs", "tests_js/exclusive_file_lock_reference.test.mjs", "tests_js/atomic_write_json_reference.test.mjs", "tests_js/installed_artifacts_reference.test.mjs", "tests_js/atomic_write_json_ts.test.mjs", "tests_js/persisted_json_ts.test.mjs", "tests_js/installed_artifacts_ts.test.mjs", "tests_js/filesystem_error_ts.test.mjs", "tests_js/jsonl_append_reference.test.mjs", "tests_js/artifact_copy_metadata_reference.test.mjs", "tests_js/jsonl_history_ts.test.mjs", "tests_js/jsonl_json_ts.test.mjs", "tests_js/history_read_idempotency_reference.test.mjs", "tests_js/artifact_copy_order_reference.test.mjs", "tests_js/python_text_reference.test.mjs", "tests_js/http_json_bytes_reference.test.mjs", "tests_js/artifact_data_copy_reference.test.mjs", "tests_js/python_text_ts.test.mjs", "tests_js/python_text_acceptance.test.mjs", "tests_js/data_copy_ts.test.mjs", "tests_js/python_object_reference.test.mjs", "tests_js/python_json_bytes_reference.test.mjs", "tests_js/codepoint_json_reference.test.mjs", "tests_js/python_object_ts.test.mjs", "tests_js/python_json_bytes_ts.test.mjs"],
       "tiers": ["full"]
+    },
+    {
+      "id": "native-posix-lock",
+      "kind": "node-test",
+      "include": ["tests_js/posix_flock.test.mjs", "tests_js/exclusive_file_lock_ts.test.mjs", "tests_js/exclusive_file_lock_fault_ts.test.mjs", "tests_js/jsonl_lock_integration.test.mjs", "tests_js/heavy_run_lease_reference.test.mjs"],
+      "platforms": ["darwin", "linux"],
+      "tiers": ["full", "platform"]
+    },
+    {
+      "id": "native-posix-timestamps",
+      "kind": "node-test",
+      "include": ["tests_js/posix_timestamps.test.mjs"],
+      "platforms": ["darwin", "linux"],
+      "tiers": ["full", "platform"]
     },
     {
       "id": "windows-contracts",
@@ -173,11 +204,44 @@
       "kind": "command",
       "command": ["bash", "scripts/smoke-plugin.sh"],
       "tiers": ["release"]
+    },
+    {
+      "id": "node-reference-s04",
+      "kind": "node-test",
+      "include": [
+        "tests_js/point_persistence_reference.test.mjs",
+        "tests_js/point_persistence_baselines.test.mjs"
+      ],
+      "tiers": [
+        "full"
+      ],
+      "maxOutputBytes": 2097152
+    },
+    {
+      "id": "node-reference-s05",
+      "kind": "node-test",
+      "include": [
+        "tests_js/point_paths_reference.test.mjs",
+        "tests_js/point_paths_parent_reference.test.mjs",
+        "tests_js/point_paths_digest_reference.test.mjs"
+      ],
+      "tiers": [
+        "full"
+      ],
+      "maxOutputBytes": 2097152
     }
   ],
   "ownership": [
+    {"paths": ["tests_js/local_checks_graph_support.mjs"], "suites": ["node-runner-fast", "node-migration-evidence"]},
+    {"paths": ["tests_js/migration_task_lineage_support.mjs"], "suites": ["node-runner-fast", "node-migration-evidence"]},
+    {"paths": ["tests_js/migration_task_lineage_git_support.mjs"], "suites": ["node-migration-evidence"]},
+    {"paths": ["tests_js/migration_task_support.mjs"], "suites": ["node-runner-fast", "node-migration-evidence"]},
+    {"paths": ["tests_js/migration_task_handoff_support.mjs"], "suites": ["node-migration-evidence"]},
+    {"paths": ["native/posix/timestamps.c", "native/posix/*.h", "tools/build-native-timestamps.mjs", "tests_js/posix_timestamps_support.mjs"], "suites": ["native-posix-timestamps"]},
+    {"paths": ["tools/contracts/heavy-run-lease/reference.mjs", "native/posix/flock.c", "native/posix/*.h", "tools/build-native-lock.mjs", "tests_js/exclusive_file_lock_support.mjs"], "suites": ["native-posix-lock"]},
+    {"paths": ["tests_js/managed_resume_path_ts_support.mjs", "tests_js/posix_path_bytes_ts_support.mjs", "tests_js/managed_observation_ts_support.mjs", "tests_js/atomic_write_json_ts_support.mjs", "tests_js/installed_artifacts_ts_support.mjs", "tests_js/jsonl_history_support.mjs", "tests_js/data_copy_support.mjs", "tests_js/python_object_ts_support.mjs", "tests_js/python_json_bytes_ts_support.mjs"], "suites": ["node-workspace-other"]},
     {"paths": ["tools/probe-installed-runtime.mjs"], "suites": ["node-foundation-fast"]},
-    {"paths": ["tools/capture-python-contracts.mjs", "tools/verify-contract-redaction.mjs", "tools/contracts/**"], "suites": ["node-workspace-other"]},
+    {"paths": ["tools/capture-python-contracts.mjs", "tools/verify-contract-redaction.mjs", "tools/contracts/**"], "suites": ["node-workspace-other", "node-reference-s04", "node-reference-s05"]},
     {
       "paths": ["tests/__init__.py", "tests/support/**"],
       "suites": [
@@ -209,7 +273,9 @@
         "python-core",
         "node-recorder",
         "node-renderer",
-        "node-workspace-other"
+        "node-workspace-other",
+        "node-reference-s04",
+        "node-reference-s05"
       ]
     },
     {"paths": ["qa/recorder.mjs", "qa/recorder/**"], "suites": ["node-recorder"]},
@@ -220,6 +286,10 @@
     {"paths": ["workspace/**"], "suites": ["python-workspace-contracts", "node-workspace-other"]},
     {"paths": ["native/macos/**"], "suites": ["macos-native-contracts"]},
     {"paths": ["skills/**", "scripts/skill_documents.py"], "suites": ["python-fast", "python-core", "python-qa", "python-workspace-contracts", "node-workspace-other", "release-package", "docs-links"]},
-    {"paths": ["docs/**", "README.md", "AGENTS.md"], "suites": ["docs-links"]}
+    {"paths": ["docs/**", "README.md", "AGENTS.md"], "suites": ["docs-links"]},
+    {"paths": ["docs/migration/evidence/s04/**", "tests_js/atomic_write_json_reference.test.mjs", "tests_js/jsonl_append_reference.test.mjs"], "suites": ["node-reference-s04"]},
+    {"paths": ["docs/migration/evidence/s05/**", "tests_js/atomic_write_json_reference.test.mjs", "tests_js/jsonl_append_reference.test.mjs", "tests_js/managed_resume_path_reference.test.mjs", "tests_js/posix_path_bytes_reference.test.mjs", "tests_js/private_file_digest_reference.test.mjs", "tests_js/managed_observation_reference.test.mjs"], "suites": ["node-reference-s05"]},
+    {"paths": ["tests_js/reference_suite_support.mjs"], "suites": ["node-runner-fast"]},
+    {"paths": ["tests_js/graph_environment_support.mjs"], "suites": ["node-runner-fast"]}
   ]
 }

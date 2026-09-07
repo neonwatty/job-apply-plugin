@@ -190,3 +190,87 @@ test("annotated tag targets peel to the commit actually pushed", async (t) => {
   assert.equal(targets[0].base, base);
   assert.ok(targets[0].tag);
 });
+
+test("dependency-linked staged snapshots remain clean without hiding unrelated files", async (t) => {
+  const root = await fixture(t);
+  const ignore = await fs.readFile(new URL("../.gitignore", import.meta.url), "utf8");
+  await fs.writeFile(path.join(root, ".gitignore"), ignore);
+  await fs.writeFile(path.join(root, "package-lock.json"), "{}\n");
+  await fs.mkdir(path.join(root, "node_modules"));
+  await fs.writeFile(path.join(root, "node_modules", "fixture.txt"), "dependency\n");
+  command(root, ["add", ".gitignore", "package-lock.json"]);
+  command(root, ["commit", "-m", "dependency fixture"]);
+  await fs.writeFile(path.join(root, "value.txt"), "staged validation\n");
+  command(root, ["add", "value.txt"]);
+  const snapshot = indexSnapshot(root);
+  const before = command(root, ["status", "--porcelain"]);
+  const { createEvidenceIO } = await import("../tools/migration/evidence-io.mjs");
+  await withSnapshot(root, snapshot.commit, async (directory) => {
+    const io = await createEvidenceIO(directory);
+    assert.equal((await fs.lstat(path.join(directory, "node_modules"))).isSymbolicLink(), true);
+    assert.equal(command(directory, ["status", "--porcelain", "--untracked-files=all"]), "");
+    assert.equal(io.clean(), true);
+    assert.match(command(directory, ["check-ignore", "-v", "node_modules"]), /\/node_modules\s+node_modules/);
+    await fs.writeFile(path.join(directory, "untracked-proof.txt"), "not evidence\n");
+    assert.equal(io.clean(), false);
+    assert.equal(command(directory, ["status", "--porcelain", "--untracked-files=all"]), "?? untracked-proof.txt\n");
+    await fs.rm(path.join(directory, "untracked-proof.txt"));
+    await fs.writeFile(path.join(directory, "value.txt"), "tracked drift\n");
+    assert.equal(io.clean(), false);
+  }, { dependencies: true });
+  assert.equal(command(root, ["status", "--porcelain"]), before);
+});
+
+test("staged merge snapshots preserve two-parent and octopus ancestry without changing owner state", async (t) => {
+  for (const branchCount of [1, 2]) {
+    const root = await fixture(t);
+    const base = command(root, ["rev-parse", "HEAD"]).trim();
+    const heads = [];
+    for (let index = 0; index < branchCount; index++) {
+      command(root, ["checkout", "-b", `side-${index}`, base]);
+      await fs.writeFile(path.join(root, `side-${index}.txt`), `side ${index}\n`);
+      command(root, ["add", "."]);
+      command(root, ["commit", "-m", `side ${index}`]);
+      heads.push(command(root, ["rev-parse", "HEAD"]).trim());
+    }
+    command(root, ["checkout", "main"]);
+    const head = await commitValue(root, "main branch");
+    command(root, ["merge", "--no-ff", "--no-commit", ...heads]);
+    const mergePath = path.resolve(root, command(root, ["rev-parse", "--git-path", "MERGE_HEAD"]).trim());
+    const mergeBytes = await fs.readFile(mergePath);
+    const indexPath = path.resolve(root, command(root, ["rev-parse", "--git-path", "index"]).trim());
+    const beforeStatus = command(root, ["status", "--porcelain=v1", "--untracked-files=all"]);
+    const beforeIndex = await fs.readFile(indexPath);
+    const snapshot = indexSnapshot(root);
+    assert.equal(snapshot.base, head);
+    assert.deepEqual(command(root, ["show", "-s", "--format=%P", snapshot.commit]).trim().split(" "), [head, ...heads]);
+    for (const parent of [head, ...heads]) command(root, ["merge-base", "--is-ancestor", parent, snapshot.commit]);
+    assert.equal(command(root, ["diff", "--cached", "--name-only", snapshot.commit]), "");
+    for (let index = 0; index < branchCount; index++) {
+      assert.equal(command(root, ["show", `${snapshot.commit}:side-${index}.txt`]), `side ${index}\n`);
+    }
+    assert.equal(command(root, ["rev-parse", "HEAD"]).trim(), head);
+    assert.equal(command(root, ["status", "--porcelain=v1", "--untracked-files=all"]), beforeStatus);
+    assert.deepEqual(await fs.readFile(indexPath), beforeIndex);
+    assert.deepEqual(await fs.readFile(mergePath), mergeBytes);
+  }
+});
+
+test("merge snapshot metadata rejects malformed or noncommit parents and deduplicates valid parents", async (t) => {
+  const root = await fixture(t);
+  const head = command(root, ["rev-parse", "HEAD"]).trim();
+  const tree = command(root, ["rev-parse", "HEAD^{tree}"]).trim();
+  const mergePath = path.resolve(root, command(root, ["rev-parse", "--git-path", "MERGE_HEAD"]).trim());
+  const index = await fs.readFile(path.join(root, ".git", "index"));
+  for (const invalid of ["", "\n", "HEAD\n", `${head}\n\n`, `${head} \n`, `${tree}\n`, `${ZERO}\n`]) {
+    await fs.writeFile(mergePath, invalid);
+    assert.throws(() => indexSnapshot(root), /MERGE_HEAD/);
+    assert.equal(await fs.readFile(mergePath, "utf8"), invalid);
+    assert.deepEqual(await fs.readFile(path.join(root, ".git", "index")), index);
+    assert.equal(command(root, ["rev-parse", "HEAD"]).trim(), head);
+  }
+  await fs.writeFile(mergePath, `${head}\n${head}\n`);
+  const snapshot = indexSnapshot(root);
+  assert.equal(command(root, ["show", "-s", "--format=%P", snapshot.commit]).trim(), head);
+  assert.equal(snapshot.base, head);
+});

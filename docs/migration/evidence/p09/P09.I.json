@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/p09/approved-dag.json",
+    "sha256": "1cbe912355694e8340c999479a4575d0c76b163005e4370b16462cd6ca768c46"
+  },
+  "package": {
+    "id": "P09",
+    "parentNode": "CI",
+    "owner": "jsonl_review",
+    "allowed_files": [
+      "tools/migration/load-task-lineage.mjs",
+      "tools/migration/load-task-evidence.mjs",
+      "tools/migration/task-receipts.mjs",
+      "tests_js/migration_task_receipts.test.mjs",
+      "tests_js/migration_task_lineage_lifecycle.test.mjs",
+      "tests_js/migration_task_lineage_git_support.mjs",
+      "tests_js/migration_task_support.mjs",
+      "docs/migration/evidence/p09/implementation.md",
+      "docs/migration/evidence/p09/implementation-audit.json",
+      "docs/migration/evidence/p09/P09.I.json",
+      "docs/migration/evidence/p09/P09.V.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "b9dbf8d49d1cfe9fc0c3d119097403b27ba773b2a8be01b394a69a8c3651e09a",
+  "auditContract": {
+    "path": "docs/migration/evidence/p09/implementation-audit.json",
+    "sha256": "5a96cbfd75636531cc6d6bd969290b207f2a73de6ea0c441dc484b37fbb94d13"
+  },
+  "author": "jsonl_review",
+  "reviewer": "hooks_audit",
+  "base": "e7045169542ade0fbc1bef101d603b3ff1c0649d",
+  "inputs": [
+    {
+      "path": ".source-size-baseline.json",
+      "sha256": "8b0071c47e04b1d32246d9498fc35d6fd05e1868455b73bbcc4eebc97551d8a3"
+    },
+    {
+      "path": "config/test-matrix.json",
+      "sha256": "1e64e3c323341312a22f52440fa3bcbd951532c5c3611398d3fb246e6d494440"
+    },
+    {
+      "path": "docs/migration/evidence/p09/approved-dag.json",
+      "sha256": "1cbe912355694e8340c999479a4575d0c76b163005e4370b16462cd6ca768c46"
+    },
+    {
+      "path": "docs/migration/evidence/p09/implementation-audit.json",
+      "sha256": "5a96cbfd75636531cc6d6bd969290b207f2a73de6ea0c441dc484b37fbb94d13"
+    },
+    {
+      "path": "docs/migration/evidence/p09/implementation.md",
+      "sha256": "8f195746d5a2c265591f56730d5ace7145ad134bfc352cb8255e0454eef50708"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "7ee9e2f989ec77ba9ab97847266792da033d9ebd98fd3643a26d73430d076c17"
+    },
+    {
+      "path": "package.json",
+      "sha256": "c652d020e5b1762c2bc703c563124c23f87c978f87af9c299f0a661253c40200"
+    },
+    {
+      "path": "tests_js/migration_task_handoff_support.mjs",
+      "sha256": "18e4246982906de4c60d078345d32042d7dfc29145347c281df8bb853facdb74"
+    },
+    {
+      "path": "tests_js/migration_task_lineage_git_support.mjs",
+      "sha256": "8abff6914a0473fed3fe506fd5fe85e1c495bf0cb0077219bf636434a6564dcc"
+    },
+    {
+      "path": "tests_js/migration_task_lineage_lifecycle.test.mjs",
+      "sha256": "853d2b7da16c36e1977d5d46936ce200ad4a4a8a937ff15925bfe5657c48fbc2"
+    },
+    {
+      "path": "tests_js/migration_task_lineage_support.mjs",
+      "sha256": "17629d25f97d45812476a3d44810d4a10e8ca01326c5b8e44ddca9958bfeaafa"
+    },
+    {
+      "path": "tests_js/migration_task_receipts.test.mjs",
+      "sha256": "f1ff5ea9a7985924da19cb72b491408fd264320a2c1b85a8e82cfc6fc808f7db"
+    },
+    {
+      "path": "tests_js/migration_task_support.mjs",
+      "sha256": "4815ad2e730c72fcfc41c3f35b5ae0c1d674ac3d041eef36dae6206f4aeb317e"
+    },
+    {
+      "path": "tools/local-checks/git.mjs",
+      "sha256": "d48fc04f3e7fe434f9fd6a0efe00306b0d5947678d4023aba8d2c13913cc2c32"
+    },
+    {
+      "path": "tools/migration/browser-exports.mjs",
+      "sha256": "3d3039688a9cf5671a8656082cd1c69f62605f562c4bbf77c3d5392790c00403"
+    },
+    {
+      "path": "tools/migration/check.mjs",
+      "sha256": "d637bea2bf84e535b1437de123a3ffb3cca0dd9f7edb1663b60565ea59cae024"
+    },
+    {
+      "path": "tools/migration/evidence-io.mjs",
+      "sha256": "b2105d8b36ef2d5e1c9859ac33d9a8243b96b2c9d1e94346b357782597eb56d7"
+    },
+    {
+      "path": "tools/migration/load-prerequisites.mjs",
+      "sha256": "446f46091af5f95e89fef93400281e25a822497cea00c4d78dd7e0964f7c737c"
+    },
+    {
+      "path": "tools/migration/load-task-evidence.mjs",
+      "sha256": "c56ed62d1a0fe07291226449c497e3329f018cab1f81bdfa1d6c1ef2adf4d567"
+    },
+    {
+      "path": "tools/migration/load-task-lineage.mjs",
+      "sha256": "ac1e47c83dba8ab7f42f5b46456c386a1ae117314cebc21ad5ca496bf16100c8"
+    },
+    {
+      "path": "tools/migration/packages.mjs",
+      "sha256": "6f9b64a114cbe0e316689a6a4ceb0d27034dc10a29c41e749b49853890c813f0"
+    },
+    {
+      "path": "tools/migration/prerequisite-receipts.mjs",
+      "sha256": "45a971019860329405ee8adec70a9d1b7fd2cff78111a5b2931f2febb8ee68a8"
+    },
+    {
+      "path": "tools/migration/requirements.mjs",
+      "sha256": "f1a64d8aa967a26383b468415eee037964493e15db32dcc051982a92d1b89f1c"
+    },
+    {
+      "path": "tools/migration/tap-evidence.mjs",
+      "sha256": "0a3358323e73f6bb0828dc63071603a1263ea6008413c2bf1a620c22c42f3077"
+    },
+    {
+      "path": "tools/migration/task-handoffs.mjs",
+      "sha256": "53f0b202d20c8e0ee7e4e0dbf5d0c2a4e5dbde3705be6d7d3bc4a1fc5c746220"
+    },
+    {
+      "path": "tools/migration/task-lineage.mjs",
+      "sha256": "dc54b81df4df29f9c95d2e2e511f03a24aa990d8c589a307306a31d3db69a9cd"
+    },
+    {
+      "path": "tools/migration/task-manifests.mjs",
+      "sha256": "df99a6f882c342d0f9f69720c310754930a5b5a3ae0bc6d1cee9452805c7914a"
+    },
+    {
+      "path": "tools/migration/task-metadata.mjs",
+      "sha256": "fe026cace29806913dbc8b61ea3012b6dce4b421cf28592152c35a68a2c633cd"
+    },
+    {
+      "path": "tools/migration/task-receipts.mjs",
+      "sha256": "386828ad9fd65f3d9c317a17a171dd320df386ee1e7b455d18b543e347b59e2f"
+    },
+    {
+      "path": "tools/migration/test-bindings.mjs",
+      "sha256": "8692ab07646f4ba377c47533362f4103f333a4bc06a273cd7c5f0ff74d0fd495"
+    },
+    {
+      "path": "tools/test-runner/matrix.mjs",
+      "sha256": "eb88ff392a5fbd0de5b27042d83471b91f2324a29e5912211fbd9e07b6279727"
+    },
+    {
+      "path": "tools/test-runner/patterns.mjs",
+      "sha256": "6eb05de69ce7e7531d9a8cc90f628180b05891bc2eaa7f9fa711570dbb730ac2"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "a5bbfb581960ff5215cf6f5ed0ae26464b32d3c7040d26c9b73d12bcc4986c8f"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "P09.receipts",
+      "requirementIds": [
+        "p09.closed-currentness-bridge"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_receipts.test.mjs"
+      ],
+      "testNames": [
+        "task receipts accept only exact immutable subject evidence and keep parent acceptance open",
+        "task receipts reject wrong names with identical passing counts and unsupported TAP",
+        "task receipts reject self review, wrong SHA, stale inputs, budgets, missing artifacts and ownership escapes",
+        "task receipt dependencies are fixed by the approved DAG and invalidate the entire batch",
+        "task receipts preserve historical evidence through an approved review and dependent edit chain",
+        "task receipts enforce rename and deletion ownership and nonincreasing actual source size",
+        "task TAP rejects duplicate headers and results before their announcements",
+        "receipt size enforcement includes references and extended source types but excludes planning data",
+        "task receipts bind observed TAP duration to timeout and runner wall time with one millisecond tolerance",
+        "task receipts reject duplicate reserved metrics that conceal the terminal duration",
+        "captured successor bridges preserve historical currentness without accepting retired tasks",
+        "captured successor bridges reject forged hashes ownership dependencies and ancestry",
+        "captured successor bridges compose transitively and reject cycles and missing adoption"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p09/logs/P09-receipts.tap"
+    },
+    {
+      "id": "P09.lifecycle",
+      "requirementIds": [
+        "p09.actual-retirement-lifecycle"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_lineage_lifecycle.test.mjs"
+      ],
+      "testNames": [
+        "P07 replacement cannot weaken accepted dependencies or required coverage",
+        "P07 replacement cycles and fake Git ancestry fail closed",
+        "P07 later replacement success cannot retroactively pass the rejected attempt",
+        "P07 lineage activation and receipt snapshots preserve accepted history",
+        "captured successor lifecycle preserves an accepted reference through retirement and fresh replacement review",
+        "captured successor lifecycle rejects unbound adoption and keeps invalid batches closed"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p09/logs/P09-lifecycle.tap"
+    }
+  ],
+  "artifacts": [],
+  "id": "P09.I",
+  "role": "implementation-or-gate"
+}

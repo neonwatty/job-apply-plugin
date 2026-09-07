@@ -1,0 +1,892 @@
+{
+  "schemaVersion": 1,
+  "preparations": [
+    {
+      "id": "P03.reference-audit-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze current local testing reference behavior; full consumer-aware mapping acceptance remains open.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/reference-audit.json",
+          "sha256": "4b01bab476477f8012700c9de2ad4445e8030a0b09fa0079b2cff979992dceb4"
+        },
+        {
+          "path": "docs/migration/evidence/p03/reference.md",
+          "sha256": "8863f9405d139f65658882d22cc3ceee69e98ebda4b3b038a083a0be61c9bd51"
+        }
+      ]
+    },
+    {
+      "id": "P03.reference-manifest-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze current local testing reference behavior; full consumer-aware mapping acceptance remains open.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/P03.R.json",
+          "sha256": "b38e62dacebec506611b0eb97aeda6853d4557009b1e004ac21eab7932596876"
+        }
+      ]
+    },
+    {
+      "id": "P03.reference-audit-v2-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze current local testing reference behavior; full consumer-aware mapping acceptance remains open.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/reference-audit-v2.json",
+          "sha256": "0ab5d6ef287a086b37ac360d7896bcf56f8ad6c20c341759f12f2af5c80e111a"
+        }
+      ]
+    },
+    {
+      "id": "P03.reference-manifest-v2-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze current local testing reference behavior; full consumer-aware mapping acceptance remains open.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/P03.R-v2.json",
+          "sha256": "3cddb7b1b87a62485f1207432cf37402daf89043c3f90d4afa863e252bb333ae"
+        }
+      ]
+    },
+    {
+      "id": "S02.retry1.capture-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original decoder evidence and require an explicit fresh exact-name replacement.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s02/retry1/original-capture.json",
+          "sha256": "4a06be9eec9faf2e3a3915bb120e4b05e5605297aef8685c01f094ff47bb4a2e"
+        }
+      ]
+    },
+    {
+      "id": "S02.retry1.document-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original decoder evidence and require an explicit fresh exact-name replacement.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s02/retry1/approved-dag.json",
+          "sha256": "d563b690197cf17d0c0319352bfcacb7431f0f43b16e7efe1c91d0731927b81a"
+        },
+        {
+          "path": "docs/migration/evidence/s02/retry1/implementation-audit.json",
+          "sha256": "7c051ab948dcf04c19f0882839c990dcec6400205eed389a0eb954ec397970d1"
+        },
+        {
+          "path": "docs/migration/evidence/s02/retry1/S02.retry1.I.json",
+          "sha256": "47fca8a5a4d03fad3acad35f03ca8114a521d1d6075032663fc56c752c13f131"
+        },
+        {
+          "path": "docs/migration/evidence/s02/retry1/S02.retry1.V.json",
+          "sha256": "c508be9d4e8fafa0b83b43edc78e1932a30b6ad134c29806bc6ae1375ce06ddc"
+        }
+      ]
+    },
+    {
+      "id": "S02.retry1.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original decoder evidence and require an explicit fresh exact-name replacement.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s02/retry1/transition.json",
+          "sha256": "9ea8d1fe7851b1337bd31699b5dcfb5566e70af0d3e18a9e1fcd8d2eefccba18"
+        }
+      ]
+    },
+    {
+      "id": "S02.retry1.transition-v2-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original decoder evidence and require an explicit fresh exact-name replacement.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s02/retry1/transition-v2.json",
+          "sha256": "97375ac2a8d4073e869ccb0de98ac430f0dd6c1aeedec1de7476f7c11ac1dc75"
+        }
+      ]
+    },
+    {
+      "id": "S08.reference-audit-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze the existing composed JSON reference with exact interpreter-profile witnesses; no runtime acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s08/reference-audit.json",
+          "sha256": "40e46ce4da3cf6d2e28d2770c28307d13fdd2567e7b0588ba128a561b5fbd467"
+        }
+      ]
+    },
+    {
+      "id": "S08.reference-manifest-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze the existing composed JSON reference with exact interpreter-profile witnesses; no runtime acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s08/S08.R.json",
+          "sha256": "5d6d74d14fbd0e4d6468a82501eb4d0f3aa3b27f152c42e8ae359a1f88f24e20"
+        }
+      ]
+    },
+    {
+      "id": "P03.implementation-contract-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze independently reviewed P03 affected consumer mapping implementation scope before activation; no implementation acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/implementation.md",
+          "sha256": "51ffaa6df468d045915724e9135ded3f440d6a982e1e2798f7c6243b91a11ad1"
+        },
+        {
+          "path": "docs/migration/evidence/p03/implementation-audit.json",
+          "sha256": "df318ccba9e54f979afada169432bbf3ac652b9905140a198b8e25ff8511f22d"
+        },
+        {
+          "path": "docs/migration/evidence/p03/reference-consumers.json",
+          "sha256": "3d1994a02a23447fcfc8456225f59d87adb2908a9442bc3b0f8783a591bd85b6"
+        }
+      ]
+    },
+    {
+      "id": "P03.implementation-manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze independently reviewed P03 affected consumer mapping implementation scope before activation; no implementation acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/P03.I.json",
+          "sha256": "caed0a91e588dea40ad00f93f162b1c4100c1177322345f39f47d7e13403db15"
+        },
+        {
+          "path": "docs/migration/evidence/p03/P03.V.json",
+          "sha256": "81cb53101934d2c52ba57706b4869471e5e2fee105ba50c225d64e100bfaa55c"
+        }
+      ]
+    },
+    {
+      "id": "P03.implementation-v2-contract-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze independently reviewed P03 affected consumer mapping implementation scope before activation; no implementation acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/implementation-v2.md",
+          "sha256": "55e340ff418e21df5e71f6dc365e448b696b95bf03576d1ba07356220e793c91"
+        },
+        {
+          "path": "docs/migration/evidence/p03/implementation-audit-v2.json",
+          "sha256": "ae8b01900f48d799f0f89de95afbd2af0c9b42cbf0b778e09cc339f8ac164f56"
+        }
+      ]
+    },
+    {
+      "id": "P03.implementation-v2-manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze independently reviewed P03 affected consumer mapping implementation scope before activation; no implementation acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/P03.I-v2.json",
+          "sha256": "bd37962d056465cdc6a1dcc2203886c1a0088c757181ba8fff0667f2ebb96725"
+        },
+        {
+          "path": "docs/migration/evidence/p03/P03.V-v2.json",
+          "sha256": "b9f527cbb183ccfdc771c9699ef1c480d1f895b5aaee0ee386db6c2695773213"
+        }
+      ]
+    },
+    {
+      "id": "P03.evidence.document-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve exact raw TAP bytes with one path-specific end-of-line whitespace attribute; ordinary whitespace enforcement remains enabled.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/evidence/contract.json",
+          "sha256": "a55da07a9bd8b9edb671e9c1c024d4149452f9eeb70f4a6c875518213f19789a"
+        },
+        {
+          "path": "docs/migration/evidence/p03/evidence/reference-audit.json",
+          "sha256": "ef091c280a73bb4b47253d60b5bc8af1d5784415ea6db1ed69a4b6d1e6251eb2"
+        },
+        {
+          "path": "docs/migration/evidence/p03/evidence/approved-dag.json",
+          "sha256": "58bb7be968816ab51fbd433a12e57717e852a497ce314a9871491c133301c25f"
+        }
+      ]
+    },
+    {
+      "id": "P03.evidence.manifest-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve exact raw TAP bytes with one path-specific end-of-line whitespace attribute; ordinary whitespace enforcement remains enabled.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/evidence/P03.evidence.R.json",
+          "sha256": "18f17ebee6b1df5a2771fd9874e15a5de23c362fef3120dd7f66bfd86c308c64"
+        }
+      ]
+    },
+    {
+      "id": "P03.evidence.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve exact raw TAP bytes with one path-specific end-of-line whitespace attribute; ordinary whitespace enforcement remains enabled.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/evidence/transition.json",
+          "sha256": "8a1edd29e3d7534be78f6811481b8630da0b4222c2a01c1d17c09cf34d11c654"
+        }
+      ]
+    },
+    {
+      "id": "P03.evidence.v2.document-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve exact raw TAP bytes with one path-specific end-of-line whitespace attribute; ordinary whitespace enforcement remains enabled.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/evidence/v2/contract.json",
+          "sha256": "a55da07a9bd8b9edb671e9c1c024d4149452f9eeb70f4a6c875518213f19789a"
+        },
+        {
+          "path": "docs/migration/evidence/p03/evidence/v2/reference-audit.json",
+          "sha256": "6544ff3af92118dd26fe7cdabbf6b895cf92136984d4637122162fed45900211"
+        },
+        {
+          "path": "docs/migration/evidence/p03/evidence/v2/approved-dag.json",
+          "sha256": "58bb7be968816ab51fbd433a12e57717e852a497ce314a9871491c133301c25f"
+        }
+      ]
+    },
+    {
+      "id": "P03.evidence.v2.manifest-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve exact raw TAP bytes with one path-specific end-of-line whitespace attribute; ordinary whitespace enforcement remains enabled.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/evidence/v2/P03.evidence.R.json",
+          "sha256": "c5ef60c5f2a3bdac12c88f0db6200745e1c2b236094f94a38df0c4cb70867823"
+        }
+      ]
+    },
+    {
+      "id": "P03.evidence.v2.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve exact raw TAP bytes with one path-specific end-of-line whitespace attribute; ordinary whitespace enforcement remains enabled.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/evidence/v2/transition.json",
+          "sha256": "f4673a582a71b4c1a6be4436194e64f0ab6ceb3fe2ba1b4adfa159eb71167128"
+        }
+      ]
+    },
+    {
+      "id": "S08.implementation-contract-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Pin independently reviewed shared point JSON scope and immutable reference vectors before manifest base; no implementation acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s08/implementation.md",
+          "sha256": "063a7fa19b2bf7dd5c54dd97bebcd7f9822904bc51a97ede60d51ae893c6541a"
+        },
+        {
+          "path": "docs/migration/evidence/s08/implementation-audit.json",
+          "sha256": "faa112d6ec38f6e3de1837c26c742166ed0560bf8bf8216bb51364ad15c45623"
+        },
+        {
+          "path": "docs/migration/evidence/s08/composed-reference-vectors.json",
+          "sha256": "1ccb7cdb553cd70a1f6107904b595c4a9c9ea720e9d8c5cbc48955233f280e7b"
+        },
+        {
+          "path": "docs/migration/evidence/s08/additional-reference-vectors.json",
+          "sha256": "500ce6a2f35ac9f9e0bfe9ec8a676d0aa1165687a768f53e3bffeacf5048225d"
+        }
+      ]
+    },
+    {
+      "id": "S08.implementation-manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze exact S08 shared point JSON implementation and independent review manifests before activation; no implementation acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s08/S08.I.json",
+          "sha256": "a28f0851bce4edb2e3ed0a30b66a0662c67a7eb230327244033f70eee8f1cd34"
+        },
+        {
+          "path": "docs/migration/evidence/s08/S08.V.json",
+          "sha256": "218899ea4073aac71316b21293a3eaac0a4efd4432560cea93b628d3a4026a62"
+        }
+      ]
+    },
+    {
+      "id": "P08.documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze bounded platform literal recognition with independent actual receipt evidence.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p08/approved-dag.json",
+          "sha256": "763c50631ece1a641d2f256802479df0bd5af71d8c0e6ced64712ddea001a563"
+        },
+        {
+          "path": "docs/migration/evidence/p08/implementation-audit.json",
+          "sha256": "7bba951f75ff98a0d183da6d26d765529620c4ccfc258c16a159888a4904b7c6"
+        },
+        {
+          "path": "docs/migration/evidence/p08/implementation.md",
+          "sha256": "41c723a4a2b60af0f9e5d5fb4756e67d97e0c5bf67b4ab01e5b9c0b5e9f8a50c"
+        }
+      ]
+    },
+    {
+      "id": "P08.manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze bounded platform literal recognition with independent actual receipt evidence.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p08/P08.I.json",
+          "sha256": "97ab3a29933de37be3ec771a57ab0bf0d321575183490fedcc69a7864fbac392"
+        },
+        {
+          "path": "docs/migration/evidence/p08/P08.V.json",
+          "sha256": "db9a474e41e7818ed52d1b70bf83645ab68cad4223dd66e96c7533705aee4066"
+        }
+      ]
+    },
+    {
+      "id": "P08.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze bounded platform literal recognition with independent actual receipt evidence.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p08/transition.json",
+          "sha256": "a6ef5737d825536f97c76a40a56582e86a959eb1cf739a154630352c70eea457"
+        }
+      ]
+    },
+    {
+      "id": "P03.retry1.capture-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original P03 attempt; freeze corrected complete consumer closure for fresh revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry1/original-capture.json",
+          "sha256": "58d9b6706c6eefa00d337a8c9759f86d06ec06bf2adc84a09b48959ac5bcd07c"
+        }
+      ]
+    },
+    {
+      "id": "P03.retry1.documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original P03 attempt; freeze corrected complete consumer closure for fresh revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry1/approved-dag.json",
+          "sha256": "79da37becc19df1eeee2737347b1a74693ea81db18ed13a682dbcb23948f54ab"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/implementation-audit.json",
+          "sha256": "589391febf08ed00130c9b217fdac22894873bd5cdd1344fd874ec250ccc9d4a"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/implementation.md",
+          "sha256": "9cbdea9c7f02773fcbedb6394d5eae8a77a27076777fe23c6b452121f7f910ea"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/reference-consumers.json",
+          "sha256": "55a5cb507e76a059141c6a231213d947b330f78be1139d902c6598d678dce1c7"
+        }
+      ]
+    },
+    {
+      "id": "P03.retry1.manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original P03 attempt; freeze corrected complete consumer closure for fresh revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry1/P03.retry1.I.json",
+          "sha256": "9461961a6c79938ab9b407ac7dbcc943782723e963040bfa6e7a8d9574173473"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/P03.retry1.V.json",
+          "sha256": "f80d506ae9d6a6d0a265501a20303e7822637bdb779a42fc503564179580ba89"
+        }
+      ]
+    },
+    {
+      "id": "P03.retry1.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original P03 attempt; freeze corrected complete consumer closure for fresh revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry1/transition.json",
+          "sha256": "5a53e0e8e00d46ab8a495d884b30f01038b4600c88439da882eac4caf8e37611"
+        }
+      ]
+    },
+    {
+      "id": "P09.documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze validated captured-successor currentness with independent actual retirement lifecycle evidence.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p09/approved-dag.json",
+          "sha256": "1cbe912355694e8340c999479a4575d0c76b163005e4370b16462cd6ca768c46"
+        },
+        {
+          "path": "docs/migration/evidence/p09/implementation-audit.json",
+          "sha256": "5a96cbfd75636531cc6d6bd969290b207f2a73de6ea0c441dc484b37fbb94d13"
+        },
+        {
+          "path": "docs/migration/evidence/p09/implementation.md",
+          "sha256": "8f195746d5a2c265591f56730d5ace7145ad134bfc352cb8255e0454eef50708"
+        }
+      ]
+    },
+    {
+      "id": "P09.manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze validated captured-successor currentness with independent actual retirement lifecycle evidence.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p09/P09.I.json",
+          "sha256": "19778cc365da6a569597ae2c36664e7602440a8dd89fd63f98f7cab253a4d399"
+        },
+        {
+          "path": "docs/migration/evidence/p09/P09.V.json",
+          "sha256": "c19239be919254d92318e5545c815d3ed07781f9b990e212248d95ca64d35973"
+        }
+      ]
+    },
+    {
+      "id": "P09.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze validated captured-successor currentness with independent actual retirement lifecycle evidence.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p09/transition.json",
+          "sha256": "315900fdb6980ac61daf9c4d1e370d4223e3afde3e83c69db3b9bad744fc156b"
+        }
+      ]
+    },
+    {
+      "id": "P03.retry1.v3.capture-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original P03 attempt; freeze corrected complete consumer closure for fresh revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/original-capture.json",
+          "sha256": "58d9b6706c6eefa00d337a8c9759f86d06ec06bf2adc84a09b48959ac5bcd07c"
+        }
+      ]
+    },
+    {
+      "id": "P03.retry1.v3.documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original P03 attempt; freeze corrected complete consumer closure for fresh revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/approved-dag.json",
+          "sha256": "e3263aff31d3039ccef242a331c8d7cbb80d01274821fa378fab4516c8f7c74d"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/implementation-audit.json",
+          "sha256": "ceba87fbbaf1a28240386c16cafedce49c475aa89040ba8712303bed41025537"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/implementation.md",
+          "sha256": "1a54976f545b3d8dbfbe91b8fb63c93533c67f8a0d8984a9fbc9139f50143cc6"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/reference-consumers.json",
+          "sha256": "4a598aebe533d64e55f32633147fdcc5d2aae556043ee53329a689dbb911dcae"
+        }
+      ]
+    },
+    {
+      "id": "P03.retry1.v3.manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original P03 attempt; freeze corrected complete consumer closure for fresh revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/P03.retry1.I.json",
+          "sha256": "5f6d57971bfaebe16add433a54772060efa5a2eb760188ce2d82b4c0d772a7c9"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/P03.retry1.V.json",
+          "sha256": "0baab53caf813cbb564d3774cd6329642937b4429d53cf9fcbaf2099ad2092f5"
+        }
+      ]
+    },
+    {
+      "id": "P03.retry1.v3.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original P03 attempt; freeze corrected complete consumer closure for fresh revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/transition.json",
+          "sha256": "250026515ee78b8395e6bed8a2475bc9681f5fdad7f7892bf8fe75bc6152877d"
+        }
+      ]
+    },
+    {
+      "id": "P03.retry2.capture-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve active P03.retry1 partial formatter attempt; add accepted S08.V dependency and require fresh complete revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry2/original-capture.json",
+          "sha256": "ae19557320454e79f317b991f6040c8759da78a77a7ffd6db6730631d71fb128"
+        }
+      ]
+    },
+    {
+      "id": "P03.retry2.documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve active P03.retry1 partial formatter attempt; add accepted S08.V dependency and require fresh complete revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry2/approved-dag.json",
+          "sha256": "b48eb60db792265bba692ff042027ed143da9ef25cc7d301c4e94f6ce84e5570"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry2/implementation-audit.json",
+          "sha256": "a104365488bc7f834d1b2315b8ad2b0d97c65b4e396c2d0054d524cb6d444f9f"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry2/implementation.md",
+          "sha256": "82efe576ba93852ef8dbd4e24684a27696f7fc982c46d417db0ad2290c363e73"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry2/reference-consumers.json",
+          "sha256": "534703d4ffbf5d5d25490c7ace99e68ebfc3bf124efaf1a344f523cb9e7d4361"
+        }
+      ]
+    },
+    {
+      "id": "P03.retry2.manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve active P03.retry1 partial formatter attempt; add accepted S08.V dependency and require fresh complete revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry2/P03.retry2.I.json",
+          "sha256": "3a10d3f0de95a6b0e1ccceaa808a8f522426674d23c7e653080e870d3033c1b1"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry2/P03.retry2.V.json",
+          "sha256": "c2a2a56eb83485ff4d5b7d0057af315aa57318aa794900c1bf0fbf3196fd5aec"
+        }
+      ]
+    },
+    {
+      "id": "P03.retry2.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve active P03.retry1 partial formatter attempt; add accepted S08.V dependency and require fresh complete revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry2/transition.json",
+          "sha256": "1bbd28b8f54ac8aaafb23f921370f01e5c77a9f012ca2682e746e961def79752"
+        }
+      ]
+    },
+    {
+      "id": "S04.reference-documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze disjoint original-Python reference work at the reviewed point persistence/path registration checkpoint; no runtime acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s04/reference-audit.json",
+          "sha256": "2c5c8c7abce1d443c19e91494b4bbae7394f5be817ba984746f35737a95ad3d3"
+        },
+        {
+          "path": "docs/migration/evidence/s04/reference-plan.md",
+          "sha256": "9cfa6235000def45781ae076f1b84b1bf2fa3e98a76bb4dc46c82fb6a838e571"
+        },
+        {
+          "path": "docs/migration/evidence/s04/reference-vectors.json",
+          "sha256": "5f780fccad0679310cd70f08a7b39493cb86879d4c65a3ffc262637b44bbe04a"
+        }
+      ]
+    },
+    {
+      "id": "S05.reference-documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze disjoint original-Python reference work at the reviewed point persistence/path registration checkpoint; no runtime acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s05/reference-audit.json",
+          "sha256": "05d82a1c1c749d01342c8694b02537ed859fcfc9051d90ac500f5be797c8df0a"
+        },
+        {
+          "path": "docs/migration/evidence/s05/reference-plan.md",
+          "sha256": "633792f3a4ec5d084a468ce643d91724f478099319cf27110225598add2fe104"
+        },
+        {
+          "path": "docs/migration/evidence/s05/reference-vectors.json",
+          "sha256": "4c6af618ffbea1ad274b7d98dc12669c2d38fcb2b3ce72080e5afe5cf14a7967"
+        }
+      ]
+    },
+    {
+      "id": "S04.reference-manifest-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze disjoint original-Python reference work at the reviewed point persistence/path registration checkpoint; no runtime acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s04/S04.R.json",
+          "sha256": "e95e2c18104f5e966929cec58ea18dd95f4b7997b0bfc3ecc0192b880ce3cc8c"
+        }
+      ]
+    },
+    {
+      "id": "S05.reference-manifest-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze disjoint original-Python reference work at the reviewed point persistence/path registration checkpoint; no runtime acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s05/S05.R.json",
+          "sha256": "438d735f67c01d4b044152c5439500321557c8ceb93309447abea55dce3d485e"
+        }
+      ]
+    },
+    {
+      "id": "P10.documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze isolated reference shards with unchanged output limits and complete consumer ownership.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p10/approved-dag.json",
+          "sha256": "bd56e202a38561e9dcb0ac3602ef6c6adf6708f4241e18da98e87b63358e18dd"
+        },
+        {
+          "path": "docs/migration/evidence/p10/implementation-audit.json",
+          "sha256": "0b7507564430b5708cbb3958896536ae13ab5f619c6bd7a1e7c76adb922a0652"
+        },
+        {
+          "path": "docs/migration/evidence/p10/implementation.md",
+          "sha256": "6b36562b3db9a7595206f7fbd02ad0203a08976cf5b8e51a561354b11eba5357"
+        },
+        {
+          "path": "docs/migration/evidence/p10/implementation-spec.json",
+          "sha256": "fa9775bb5a391ca0e966aed3ab846c228d06db9a5067d3bc93ead436c10a0e29"
+        }
+      ]
+    },
+    {
+      "id": "P10.manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze isolated reference shards with unchanged output limits and complete consumer ownership.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p10/P10.I.json",
+          "sha256": "e0c6d48d6facc4f494609004d16bd8077ba352ece88f5800455de544ceb05b07"
+        },
+        {
+          "path": "docs/migration/evidence/p10/P10.V.json",
+          "sha256": "6de5b6fabf964b1814d25814b89495b5e2cb7d5ad29632e10617fd34fb77ac83"
+        }
+      ]
+    },
+    {
+      "id": "P10.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze isolated reference shards with unchanged output limits and complete consumer ownership.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p10/transition.json",
+          "sha256": "d09d11baef79b1ee4d1d3647094a58c3d228490a6627fbf65da379712c3b0345"
+        }
+      ]
+    },
+    {
+      "id": "P11.documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze truthful streamed-output failure and bounded owned cleanup without changing output limits.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p11/approved-dag.json",
+          "sha256": "eb11fe5c96b2d668ef32555e2674e7e3ef59dcb1957b930239242bf5cec10caf"
+        },
+        {
+          "path": "docs/migration/evidence/p11/implementation-audit.json",
+          "sha256": "af3cba085cbc3f6be0055b1edb458b0790982534e061136fe792a097a68c1a25"
+        },
+        {
+          "path": "docs/migration/evidence/p11/implementation.md",
+          "sha256": "bf9340dcbea2b8c5ac5232f29c49b8a9ed388d66a4b74e3857a486219899a698"
+        },
+        {
+          "path": "docs/migration/evidence/p11/implementation-spec.json",
+          "sha256": "48a8e5262375abe8298badd9624b0f144da0aa63219a7239c59c8764d51b05cc"
+        }
+      ]
+    },
+    {
+      "id": "P11.manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze truthful streamed-output failure and bounded owned cleanup without changing output limits.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p11/P11.I.json",
+          "sha256": "b2107963691db063a350ee06926738026bec00393d8c73f9273d9fe7453cb055"
+        },
+        {
+          "path": "docs/migration/evidence/p11/P11.V.json",
+          "sha256": "8e7da06303efc42fdada68b70f9b2ff06345538295f1560a98bfcf3d8c8976ea"
+        }
+      ]
+    },
+    {
+      "id": "P11.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze truthful streamed-output failure and bounded owned cleanup without changing output limits.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p11/transition.json",
+          "sha256": "b1d50b414d3e2c127a9cf5856cde71ef920b2ec28ff624b700e32182d3b58568"
+        }
+      ]
+    },
+    {
+      "id": "P12.documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze isolated historical graph environment proofs while preserving live inherited-context refusal.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p12/approved-dag.json",
+          "sha256": "eca63c82bdb2b582f5abd5a4c8cccaaaa1961a50a16f59956db0379848d6150c"
+        },
+        {
+          "path": "docs/migration/evidence/p12/implementation-audit.json",
+          "sha256": "60bca467215264eeb7df8b3d11bf87666b89e76551f013415112d7aa6345c679"
+        },
+        {
+          "path": "docs/migration/evidence/p12/implementation.md",
+          "sha256": "542c9ab8f79b4041619f54a9441394814340573463f493ca380b6e3a728d4bf6"
+        },
+        {
+          "path": "docs/migration/evidence/p12/implementation-spec.json",
+          "sha256": "bb7bb11ee0ecaf348031fe750620041ab3372899abc71c101e8b618dd053a89c"
+        }
+      ]
+    },
+    {
+      "id": "P12.manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze isolated historical graph environment proofs while preserving live inherited-context refusal.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p12/P12.I.json",
+          "sha256": "99f553545a943c0168af5b148c7e068ea519b4ea6ca13cd2e1c117c64a5cb6c0"
+        },
+        {
+          "path": "docs/migration/evidence/p12/P12.V.json",
+          "sha256": "b5212f55f04475a10a3aab7c08dd01ea7df936f18cd0aa65219a59add08b74a3"
+        }
+      ]
+    },
+    {
+      "id": "P12.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze isolated historical graph environment proofs while preserving live inherited-context refusal.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p12/transition.json",
+          "sha256": "a922c7237a14f9ffd1d0425af1bd616f130a8261b573f56ca7aeda2674b90b7a"
+        }
+      ]
+    }
+  ],
+  "transitions": [
+    {
+      "path": "docs/migration/evidence/s02/retry1/transition-v2.json",
+      "sha256": "97375ac2a8d4073e869ccb0de98ac430f0dd6c1aeedec1de7476f7c11ac1dc75",
+      "revision": "82e2dbf03c800e9f83cb0ca240770329d1c44bbf"
+    },
+    {
+      "path": "docs/migration/evidence/p03/evidence/v2/transition.json",
+      "sha256": "f4673a582a71b4c1a6be4436194e64f0ab6ceb3fe2ba1b4adfa159eb71167128",
+      "revision": "42a1e40b71a4986cb64c693dc57824968c2cbc68"
+    },
+    {
+      "path": "docs/migration/evidence/p08/transition.json",
+      "sha256": "a6ef5737d825536f97c76a40a56582e86a959eb1cf739a154630352c70eea457",
+      "revision": "47f58df62909c5b9116a1120e87c6328f4e16a8f"
+    },
+    {
+      "path": "docs/migration/evidence/p09/transition.json",
+      "sha256": "315900fdb6980ac61daf9c4d1e370d4223e3afde3e83c69db3b9bad744fc156b",
+      "revision": "99af3fdab8e4ad2d9cf362fd75889555c545650b"
+    },
+    {
+      "path": "docs/migration/evidence/p03/retry1/v3/transition.json",
+      "sha256": "250026515ee78b8395e6bed8a2475bc9681f5fdad7f7892bf8fe75bc6152877d",
+      "revision": "dc97ea3380e76d90bff658a254eed91195ab803b"
+    },
+    {
+      "path": "docs/migration/evidence/p03/retry2/transition.json",
+      "sha256": "1bbd28b8f54ac8aaafb23f921370f01e5c77a9f012ca2682e746e961def79752",
+      "revision": "8514e546c01c6b7ef8d8456fd6a873545efb3934"
+    },
+    {
+      "path": "docs/migration/evidence/p10/transition.json",
+      "sha256": "d09d11baef79b1ee4d1d3647094a58c3d228490a6627fbf65da379712c3b0345",
+      "revision": "2ea5ee3c05ebd32c7a4a06520ca03033500a88d9"
+    },
+    {
+      "path": "docs/migration/evidence/p11/transition.json",
+      "sha256": "b1d50b414d3e2c127a9cf5856cde71ef920b2ec28ff624b700e32182d3b58568",
+      "revision": "55b4331dfe3dc0547c0f066b595f5a12e7a97d69"
+    },
+    {
+      "path": "docs/migration/evidence/p12/transition.json",
+      "sha256": "a922c7237a14f9ffd1d0425af1bd616f130a8261b573f56ca7aeda2674b90b7a",
+      "revision": "338339f4e0ccbfa987366fe1a9f0ac79c94fa02b"
+    }
+  ]
+}

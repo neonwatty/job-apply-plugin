@@ -1,0 +1,82 @@
+TAP version 13
+# Subtest: Git helper preserves stdout and resolves only existing commits
+ok 1 - Git helper preserves stdout and resolves only existing commits
+  ---
+  duration_ms: 183.757792
+  type: 'test'
+  ...
+# Subtest: index snapshot isolates staged content and preserves dirty root/index
+ok 2 - index snapshot isolates staged content and preserves dirty root/index
+  ---
+  duration_ms: 333.221375
+  type: 'test'
+  ...
+# Subtest: unborn staged index and staged deletion/rename produce exact snapshots
+ok 3 - unborn staged index and staged deletion/rename produce exact snapshots
+  ---
+  duration_ms: 470.534458
+  type: 'test'
+  ...
+# Subtest: snapshot callback failure removes only owned worktree and preserves original state
+ok 4 - snapshot callback failure removes only owned worktree and preserves original state
+  ---
+  duration_ms: 244.385375
+  type: 'test'
+  ...
+# Subtest: hook alternate index is captured without leaking Git environment into snapshots
+ok 5 - hook alternate index is captured without leaking Git environment into snapshots
+  ---
+  duration_ms: 248.008834
+  type: 'test'
+  ...
+# Subtest: push targets use pushed commits, support multiple refs and ignore deletions
+ok 6 - push targets use pushed commits, support multiple refs and ignore deletions
+  ---
+  duration_ms: 270.881416
+  type: 'test'
+  ...
+# Subtest: new branches use merge base with explicitly configured comparison ref
+ok 7 - new branches use merge base with explicitly configured comparison ref
+  ---
+  duration_ms: 363.961541
+  type: 'test'
+  ...
+# Subtest: push validation rejects malformed records and unavailable remote objects
+ok 8 - push validation rejects malformed records and unavailable remote objects
+  ---
+  duration_ms: 150.136375
+  type: 'test'
+  ...
+# Subtest: annotated tag targets peel to the commit actually pushed
+ok 9 - annotated tag targets peel to the commit actually pushed
+  ---
+  duration_ms: 294.773167
+  type: 'test'
+  ...
+# Subtest: dependency-linked staged snapshots remain clean without hiding unrelated files
+ok 10 - dependency-linked staged snapshots remain clean without hiding unrelated files
+  ---
+  duration_ms: 408.146916
+  type: 'test'
+  ...
+# Subtest: staged merge snapshots preserve two-parent and octopus ancestry without changing owner state
+ok 11 - staged merge snapshots preserve two-parent and octopus ancestry without changing owner state
+  ---
+  duration_ms: 1473.903542
+  type: 'test'
+  ...
+# Subtest: merge snapshot metadata rejects malformed or noncommit parents and deduplicates valid parents
+ok 12 - merge snapshot metadata rejects malformed or noncommit parents and deduplicates valid parents
+  ---
+  duration_ms: 834.152958
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5321.737917

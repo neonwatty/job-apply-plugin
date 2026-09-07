@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -119,4 +119,127 @@ test("git selection combines committed, staged, unstaged, deleted, renamed, and 
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+});
+
+const GRAPH_ROOT = fileURLToPath(new URL('../', import.meta.url));
+import { HELPER_PATH, workerToken, dispatchRequest, workerResult, fixtureEnvironment, checkLiveGraph } from './graph_environment_support.mjs';
+
+const EXPECTED_GROUPS = {
+  'runtime-dependencies': 'P03 graph follows runtime type support and literal child-process dependencies',
+  'unresolved-inputs': 'P03 graph rejects unresolved relevant imports and missing owned targets',
+  'immutable-consumers': 'P03 graph re-evaluates newly added consumers from the immutable subject',
+  'source-emitted-identities': 'P03 graph binds source and emitted module identities without duplicate consumers',
+  'inherited-context': 'P12 inherited override refusal',
+};
+function captureWorker(token, root, env) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [HELPER_PATH, '--p12-worker', token], {
+      cwd: root, env, detached: process.platform !== 'win32', stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    const output = { stdout: [], stderr: [] };
+    let bytes = 0, failure, forceFinish, settled = false;
+    const timer = setTimeout(() => stop(new Error('Worker timed out after20000ms')), 20000);
+    function finish(code, signal) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer); clearTimeout(forceFinish);
+      if (failure) reject(failure);
+      else resolve({ status: code, signal, stdout: Buffer.concat(output.stdout).toString('utf8'),
+        stderr: Buffer.concat(output.stderr).toString('utf8') });
+    }
+    function stop(error) {
+      if (failure || settled) return;
+      failure = error;
+      try {
+        if (process.platform === 'win32') child.kill('SIGKILL');
+        else if (child.pid) process.kill(-child.pid, 'SIGKILL');
+      } catch (cause) { if (cause.code !== 'ESRCH') failure = cause; }
+      forceFinish = setTimeout(() => {
+        child.stdout.destroy(); child.stderr.destroy(); finish(null, 'SIGKILL');
+      }, 1000);
+    }
+    for (const stream of ['stdout', 'stderr']) child[stream].on('data', chunk => {
+      if (failure) return;
+      bytes += chunk.length;
+      if (bytes > 65536) stop(new Error('Worker output exceeds65536bytes'));
+      else output[stream].push(chunk);
+    });
+    child.on('error', error => { failure = error; finish(null, null); });
+    child.on('close', finish);
+  });
+}
+
+async function runGraphWorker(token) {
+  const before = { ...process.env };
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'p12-environment-'));
+  try {
+    const env = fixtureEnvironment(root, process.env);
+    fs.writeFileSync(env.npm_config_userconfig, '');
+    fs.writeFileSync(env.npm_config_globalconfig, '');
+    if (token === 'inherited-context') env.npm_config_prefix = '/p12-unproved-prefix';
+    const result = await captureWorker(token, root, env);
+    assert.equal(result.signal, null);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stderr, '');
+    assert.ok(Object.hasOwn(EXPECTED_GROUPS, token));
+    const expected = { schemaVersion: 1, token, status: 'passed', assertionGroup: EXPECTED_GROUPS[token], cleanupComplete: true,
+      ...(token === 'inherited-context' ? { bounded: false, reason: 'Unproved runner environment override' } : {}) };
+    assert.equal(result.stdout, JSON.stringify(expected) + '\n');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+    assert.deepEqual({ ...process.env }, before);
+  }
+}
+
+test('P03 graph follows runtime type support and literal child-process dependencies', async () => {
+  await runGraphWorker('runtime-dependencies');
+});
+
+test('P03 graph rejects unresolved relevant imports and missing owned targets', async () => {
+  await runGraphWorker('unresolved-inputs');
+});
+
+test('P03 graph re-evaluates newly added consumers from the immutable subject', async () => {
+  await runGraphWorker('immutable-consumers');
+  await checkLiveGraph();
+});
+
+test('P03 graph binds source and emitted module identities without duplicate consumers', async () => {
+  await runGraphWorker('source-emitted-identities');
+});
+
+test('P10 reference suites isolate S04 and S05 without changing process output limits', async () => {
+  const { assertReferenceSuiteIsolation } = await import('./reference_suite_support.mjs');
+  const [actualMatrix, actualPaths] = await Promise.all([loadMatrix(GRAPH_ROOT), trackedPaths(GRAPH_ROOT)]);
+  assertReferenceSuiteIsolation(actualMatrix, actualPaths);
+});
+
+test('P10 reference suite ownership preserves shared inputs and rejects missing or duplicate coverage', async () => {
+  const { assertReferenceSuiteFanout } = await import('./reference_suite_support.mjs');
+  const [actualMatrix, actualPaths] = await Promise.all([loadMatrix(GRAPH_ROOT), trackedPaths(GRAPH_ROOT)]);
+  assertReferenceSuiteFanout(actualMatrix, actualPaths);
+});
+
+test('P12 immutable graph proof isolates fixture environment while inherited overrides fail closed', async () => {
+  const before = { ...process.env };
+  const root = path.join(os.tmpdir(), 'p12-protocol-only');
+  const hostile = { PATH: process.env.PATH, NODE_OPTIONS: 'invalid', NODE_PATH: '/invalid', PYTHON: '/invalid',
+    PYTHONHOME: '/invalid', PYTHONPATH: '/invalid', npm_config_prefix: '/invalid', NPM_CONFIG_PREFIX: '/invalid',
+    npm_config_script_shell: '/invalid', NPM_CONFIG_SCRIPT_SHELL: '/invalid', npm_config_location: 'global',
+    NPM_CONFIG_LOCATION: 'global', npm_config_userconfig: '/invalid', npm_config_globalconfig: '/invalid' };
+  const env = fixtureEnvironment(root, hostile);
+  assert.deepEqual(Object.keys(env).sort(), ['HOME', 'LANG', 'LC_ALL', 'PATH', 'TEMP', 'TMP', 'TMPDIR',
+    'npm_config_globalconfig', 'npm_config_userconfig'].sort());
+  assert.equal(env.HOME, root);
+  assert.equal(env.npm_config_userconfig, path.join(root, 'user.npmrc'));
+  assert.equal(env.npm_config_globalconfig, path.join(root, 'global.npmrc'));
+  assert.equal(workerToken([process.execPath, import.meta.filename]), null, 'import must be inert');
+  for (const args of [[], ['--p12-worker'], ['--p12-worker', 'unknown'], ['--p12-worker', 'runtime-dependencies', 'extra']]) {
+    assert.throws(() => workerToken([process.execPath, HELPER_PATH, ...args]));
+    assert.deepEqual(dispatchRequest([process.execPath, HELPER_PATH, ...args]), { token: null, exitCode: 2 });
+  }
+  assert.throws(() => workerResult('unknown'));
+  assert.deepEqual({ ...process.env }, before, 'rejected protocol never mutates parent');
+  await runGraphWorker('inherited-context');
+  assert.deepEqual({ ...process.env }, before);
 });

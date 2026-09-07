@@ -1,0 +1,225 @@
+TAP version 13
+# Subtest: managed resume path contract: python3
+ok 1 - managed resume path contract: python3
+  ---
+  duration_ms: 110.294834
+  type: 'test'
+  ...
+# 3.14.4/darwin: 36 native observed, 2 injected, 0 native unavailable; loops preserve interpreter difference
+# Subtest: managed resume path contract: python3.12
+ok 2 - managed resume path contract: python3.12
+  ---
+  duration_ms: 97.978625
+  type: 'test'
+  ...
+# 3.12.13/darwin: 36 native observed, 2 injected, 0 native unavailable; loops preserve interpreter difference
+# Subtest: managed resume path contract: python3.13
+ok 3 - managed resume path contract: python3.13
+  ---
+  duration_ms: 151.079083
+  type: 'test'
+  ...
+# 3.13.13/darwin: 36 native observed, 2 injected, 0 native unavailable; loops preserve interpreter difference
+# Subtest: managed resume path contract: python3.14
+ok 4 - managed resume path contract: python3.14
+  ---
+  duration_ms: 103.509208
+  type: 'test'
+  ...
+# 3.14.4/darwin: 36 native observed, 2 injected, 0 native unavailable; loops preserve interpreter difference
+# Subtest: managed path reference rejects caller arguments and stdin
+ok 5 - managed path reference rejects caller arguments and stdin
+  ---
+  duration_ms: 137.642959
+  type: 'test'
+  ...
+# Subtest: activity reference: job filter preserves identity/order and status short circuit
+ok 6 - activity reference: job filter preserves identity/order and status short circuit
+  ---
+  duration_ms: 0.880625
+  type: 'test'
+  ...
+# Subtest: activity reference: transition and readiness maps preserve inherited lookup behavior
+ok 7 - activity reference: transition and readiness maps preserve inherited lookup behavior
+  ---
+  duration_ms: 1.196166
+  type: 'test'
+  ...
+# Subtest: activity reference: revision policies retain integer checks, ties and reference returns
+ok 8 - activity reference: revision policies retain integer checks, ties and reference returns
+  ---
+  duration_ms: 0.149708
+  type: 'test'
+  ...
+# Subtest: activity reference: signatures and announcements preserve field selection and ordered copy
+ok 9 - activity reference: signatures and announcements preserve field selection and ordered copy
+  ---
+  duration_ms: 0.287834
+  type: 'test'
+  ...
+# Subtest: activity reference: attention signatures preserve order and blocker special-case exactness
+ok 10 - activity reference: attention signatures preserve order and blocker special-case exactness
+  ---
+  duration_ms: 0.196084
+  type: 'test'
+  ...
+# Subtest: activity reference: owner next-step copy and prototype lookups remain observable
+ok 11 - activity reference: owner next-step copy and prototype lookups remain observable
+  ---
+  duration_ms: 0.317083
+  type: 'test'
+  ...
+# Subtest: activity gates retain absent job results and suppress unchanged queue membership
+ok 12 - activity gates retain absent job results and suppress unchanged queue membership
+  ---
+  duration_ms: 0.397125
+  type: 'test'
+  ...
+# Subtest: activity TS covers twelve exports with ordinary, missing and invalid inputs
+ok 13 - activity TS covers twelve exports with ordinary, missing and invalid inputs
+  ---
+  duration_ms: 2.548791
+  type: 'test'
+  ...
+# Subtest: activity TS preserves custom callbacks/returns, access order and thrown errors
+ok 14 - activity TS preserves custom callbacks/returns, access order and thrown errors
+  ---
+  duration_ms: 0.423042
+  type: 'test'
+  ...
+# Subtest: activity TS retains array/record identities and avoids mutating frozen inputs
+ok 15 - activity TS retains array/record identities and avoids mutating frozen inputs
+  ---
+  duration_ms: 0.09275
+  type: 'test'
+  ...
+# Subtest: answer reference: consent and summary retain truthiness and precedence
+ok 16 - answer reference: consent and summary retain truthiness and precedence
+  ---
+  duration_ms: 0.438583
+  type: 'test'
+  ...
+# Subtest: answer reference: identity and request gates preserve strict comparison and short circuits
+ok 17 - answer reference: identity and request gates preserve strict comparison and short circuits
+  ---
+  duration_ms: 0.088334
+  type: 'test'
+  ...
+# Subtest: answer reference: API keys use UTF8 URL-safe base64 and unescaped action suffix
+ok 18 - answer reference: API keys use UTF8 URL-safe base64 and unescaped action suffix
+  ---
+  duration_ms: 0.558625
+  type: 'test'
+  ...
+# Subtest: answer reference: scope comparison preserves JSON coercions and never promises Python equivalence
+ok 19 - answer reference: scope comparison preserves JSON coercions and never promises Python equivalence
+  ---
+  duration_ms: 2.1285
+  type: 'test'
+  ...
+# Subtest: answer request gates reject stale selections, keys, sequences and generations exactly
+ok 20 - answer request gates reject stale selections, keys, sequences and generations exactly
+  ---
+  duration_ms: 0.585833
+  type: 'test'
+  ...
+# Subtest: answer TS covers all nine reference exports across ordinary and coercive inputs
+ok 21 - answer TS covers all nine reference exports across ordinary and coercive inputs
+  ---
+  duration_ms: 1.904666
+  type: 'test'
+  ...
+# Subtest: answer TS preserves getter access order, short circuits and coercion errors
+ok 22 - answer TS preserves getter access order, short circuits and coercion errors
+  ---
+  duration_ms: 0.265375
+  type: 'test'
+  ...
+# Subtest: answer TS scope retains JS JSON semantics, getter order, toJSON and failures
+ok 23 - answer TS scope retains JS JSON semantics, getter order, toJSON and failures
+  ---
+  duration_ms: 2.531291
+  type: 'test'
+  ...
+# Subtest: helper browser contract: emitted modules load and preserve browser-native behavior
+ok 24 - helper browser contract: emitted modules load and preserve browser-native behavior
+  ---
+  duration_ms: 172.083875
+  type: 'test'
+  ...
+# Chromium 151.0.7922.34; 35 inert exports; no application or Store launched
+# Subtest: profile reference: form patch fixes fields and preserves priority coercion
+ok 25 - profile reference: form patch fixes fields and preserves priority coercion
+  ---
+  duration_ms: 1.130458
+  type: 'test'
+  ...
+# Subtest: profile reference: pointers decode escapes, own keys and primitive boxing
+ok 26 - profile reference: pointers decode escapes, own keys and primitive boxing
+  ---
+  duration_ms: 0.748208
+  type: 'test'
+  ...
+# Subtest: profile reference: patches safely retain prototype-named own fields and ordered collisions
+ok 27 - profile reference: patches safely retain prototype-named own fields and ordered collisions
+  ---
+  duration_ms: 0.222209
+  type: 'test'
+  ...
+# Subtest: profile reference: overlapping patch paths mutate aliased caller parents and reject frozen parents
+ok 28 - profile reference: overlapping patch paths mutate aliased caller parents and reject frozen parents
+  ---
+  duration_ms: 0.071708
+  type: 'test'
+  ...
+# Subtest: profile reference: conflicts preserve map baselines, structured conflicts and draft order
+ok 29 - profile reference: conflicts preserve map baselines, structured conflicts and draft order
+  ---
+  duration_ms: 0.220917
+  type: 'test'
+  ...
+# Subtest: profile reference: provenance selects longest ancestor or sorted descendant summary
+ok 30 - profile reference: provenance selects longest ancestor or sorted descendant summary
+  ---
+  duration_ms: 0.129667
+  type: 'test'
+  ...
+# Subtest: profile reference: tags retain duplicates, order and String coercion
+ok 31 - profile reference: tags retain duplicates, order and String coercion
+  ---
+  duration_ms: 0.105875
+  type: 'test'
+  ...
+# Subtest: profile helpers preserve errors for absent patch entries and drafts
+ok 32 - profile helpers preserve errors for absent patch entries and drafts
+  ---
+  duration_ms: 1.357833
+  type: 'test'
+  ...
+# Subtest: profile TS covers six exports with fixed ordinary and coercive cases
+ok 33 - profile TS covers six exports with fixed ordinary and coercive cases
+  ---
+  duration_ms: 1.465334
+  type: 'test'
+  ...
+# Subtest: profile TS preserves getter/coercion and custom iteration behavior
+ok 34 - profile TS preserves getter/coercion and custom iteration behavior
+  ---
+  duration_ms: 0.4375
+  type: 'test'
+  ...
+# Subtest: profile TS preserves patch alias mutation, failure boundaries and provenance identity
+ok 35 - profile TS preserves patch alias mutation, failure boundaries and provenance identity
+  ---
+  duration_ms: 0.483667
+  type: 'test'
+  ...
+1..35
+# tests 35
+# suites 0
+# pass 35
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 643.097125

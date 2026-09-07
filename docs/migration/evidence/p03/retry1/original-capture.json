@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "id": "P03.original-unaccepted-capture",
+  "subject": {
+    "sha": "24615b8298f7868791517d303322ea4ebe1c4a61",
+    "tree": "41c4a50d012c95964824a2995847d2f7ba2c1192"
+  },
+  "executionBase": "b0954e4c1e1238a6813a28af63124078c870bac7",
+  "attributions": [
+    {
+      "taskId": "P03.I",
+      "manifestSha256": "bd37962d056465cdc6a1dcc2203886c1a0088c757181ba8fff0667f2ebb96725",
+      "cellIds": [
+        "p03.implementation.v2.local_checks_git",
+        "p03.implementation.v2.local_checks_policy",
+        "p03.implementation.v2.local_checks_run",
+        "p03.implementation.v2.test-runner-selection"
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "id": "p03.implementation.v2.local_checks_git",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/local_checks_git.test.mjs"
+      ],
+      "environmentId": "node-local",
+      "environment": {
+        "id": "node-local",
+        "platform": "darwin",
+        "node": "v22.22.3",
+        "unicode": "17.0"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "durationMs": 5488.387291999999,
+        "outputBytes": 2792
+      },
+      "log": {
+        "path": "docs/migration/evidence/p03/logs/P03-IV-v2-local_checks_git.tap",
+        "sha256": "094d533bc2514bee67a3a88540531211c20616826259e382246ab67be101d967"
+      },
+      "artifacts": [],
+      "diagnostic": null
+    },
+    {
+      "id": "p03.implementation.v2.local_checks_policy",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/local_checks_policy.test.mjs"
+      ],
+      "environmentId": "node-local",
+      "environment": {
+        "id": "node-local",
+        "platform": "darwin",
+        "node": "v22.22.3",
+        "unicode": "17.0"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "durationMs": 98.5171250000003,
+        "outputBytes": 1922
+      },
+      "log": {
+        "path": "docs/migration/evidence/p03/logs/P03-IV-v2-local_checks_policy.tap",
+        "sha256": "dd9d195dd78157e0ef0c92e86ea8e540cae1309d52cbad72ee65b917c9319c1b"
+      },
+      "artifacts": [],
+      "diagnostic": {
+        "code": "manifest-test-identity-mismatch",
+        "message": "Frozen cell declares 14 identities but actual TAP contains 8; this run does not satisfy the frozen manifest."
+      }
+    },
+    {
+      "id": "p03.implementation.v2.local_checks_run",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/local_checks_run.test.mjs"
+      ],
+      "environmentId": "node-local",
+      "environment": {
+        "id": "node-local",
+        "platform": "darwin",
+        "node": "v22.22.3",
+        "unicode": "17.0"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "durationMs": 2922.4163340000005,
+        "outputBytes": 1095
+      },
+      "log": {
+        "path": "docs/migration/evidence/p03/logs/P03-IV-v2-local_checks_run.tap",
+        "sha256": "39836337d1156f607090dd6e495401715d3b727b9cc3d04e10838e1bbf874ce7"
+      },
+      "artifacts": [],
+      "diagnostic": {
+        "code": "manifest-test-identity-mismatch",
+        "message": "Frozen cell declares 6 identities but actual TAP contains 3; this run does not satisfy the frozen manifest."
+      }
+    },
+    {
+      "id": "p03.implementation.v2.test-runner-selection",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/test-runner-selection.test.mjs"
+      ],
+      "environmentId": "node-local",
+      "environment": {
+        "id": "node-local",
+        "platform": "darwin",
+        "node": "v22.22.3",
+        "unicode": "17.0"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "durationMs": 1016.1301249999997,
+        "outputBytes": 1537
+      },
+      "log": {
+        "path": "docs/migration/evidence/p03/logs/P03-IV-v2-test-runner-selection.tap",
+        "sha256": "e6fbd19fe631d508b7d3684c735c3ad0bdb361cb58c6724147a9c7e5a0905349"
+      },
+      "artifacts": [],
+      "diagnostic": {
+        "code": "manifest-test-identity-mismatch",
+        "message": "Frozen cell declares 11 identities but actual TAP contains 7; this run does not satisfy the frozen manifest."
+      }
+    }
+  ]
+}

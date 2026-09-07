@@ -1,0 +1,24 @@
+TAP version 13
+# Subtest: S04 reference preserves all unchanged atomic baseline witnesses
+ok 1 - S04 reference preserves all unchanged atomic baseline witnesses
+  ---
+  duration_ms: 489.773959
+  type: 'test'
+  ...
+# {"command":["node","--test","tests_js/atomic_write_json_reference.test.mjs"],"stdoutSha256":"01261b8474b4b27e6a6196b825a61b610b26263a50772d000bc0f455554d2ac5","stdout":"TAP version 13\\n\# Subtest: atomic JSON reference: python3\\nok 1 - atomic JSON reference: python3\\n  ---\\n  duration_ms: 92.07075\\n  type: 'test'\\n  ...\\n\# 3.14.4: 34 owned-file cases; injected boundaries are synthetic\\n\# Subtest: atomic JSON reference: python3.12\\nok 2 - atomic JSON reference: python3.12\\n  ---\\n  duration_ms: 71.839042\\n  type: 'test'\\n  ...\\n\# 3.12.13: 34 owned-file cases; injected boundaries are synthetic\\n\# Subtest: atomic JSON reference: python3.13\\nok 3 - atomic JSON reference: python3.13\\n  ---\\n  duration_ms: 83.017833\\n  type: 'test'\\n  ...\\n\# 3.13.13: 34 owned-file cases; injected boundaries are synthetic\\n\# Subtest: atomic JSON reference: python3.14\\nok 4 - atomic JSON reference: python3.14\\n  ---\\n  duration_ms: 85.636541\\n  type: 'test'\\n  ...\\n\# 3.14.4: 34 owned-file cases; injected boundaries are synthetic\\n\# Subtest: atomic JSON reference rejects caller paths, arguments and stdin\\nok 5 - atomic JSON reference rejects caller paths, arguments and stdin\\n  ---\\n  duration_ms: 103.239583\\n  type: 'test'\\n  ...\\n1..5\\n\# tests 5\\n\# suites 0\\n\# pass 5\\n\# fail 0\\n\# cancelled 0\\n\# skipped 0\\n\# todo 0\\n\# duration_ms 467.340791\\n","stderr":"","status":0}
+# Subtest: S04 reference preserves all unchanged JSONL baseline witnesses
+ok 2 - S04 reference preserves all unchanged JSONL baseline witnesses
+  ---
+  duration_ms: 279.413125
+  type: 'test'
+  ...
+# {"command":["node","--test","tests_js/jsonl_append_reference.test.mjs"],"stdoutSha256":"582b3b215f46f61889225319d824fdfd69bd03933055a0bf67e341625bf4cacf","stdout":"TAP version 13\\n\# Subtest: JSONL append and pending tail reference: python3\\nok 1 - JSONL append and pending tail reference: python3\\n  ---\\n  duration_ms: 46.939917\\n  type: 'test'\\n  ...\\n\# 3.14.4: 43 synthetic cases; domain gates stubbed explicitly\\n\# Subtest: JSONL append and pending tail reference: python3.12\\nok 2 - JSONL append and pending tail reference: python3.12\\n  ---\\n  duration_ms: 35.805167\\n  type: 'test'\\n  ...\\n\# 3.12.13: 43 synthetic cases; domain gates stubbed explicitly\\n\# Subtest: JSONL append and pending tail reference: python3.13\\nok 3 - JSONL append and pending tail reference: python3.13\\n  ---\\n  duration_ms: 43.14625\\n  type: 'test'\\n  ...\\n\# 3.13.13: 43 synthetic cases; domain gates stubbed explicitly\\n\# Subtest: JSONL append and pending tail reference: python3.14\\nok 4 - JSONL append and pending tail reference: python3.14\\n  ---\\n  duration_ms: 43.148916\\n  type: 'test'\\n  ...\\n\# 3.14.4: 43 synthetic cases; domain gates stubbed explicitly\\n\# Subtest: JSONL reference rejects caller arguments and input\\nok 5 - JSONL reference rejects caller arguments and input\\n  ---\\n  duration_ms: 57.317083\\n  type: 'test'\\n  ...\\n1..5\\n\# tests 5\\n\# suites 0\\n\# pass 5\\n\# fail 0\\n\# cancelled 0\\n\# skipped 0\\n\# todo 0\\n\# duration_ms 257.500375\\n","stderr":"","status":0}
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 800.708

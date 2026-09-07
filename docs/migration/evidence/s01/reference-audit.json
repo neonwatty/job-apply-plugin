@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "s01-reference-audit",
+  "assignmentIds": [
+    "S01.R"
+  ],
+  "allowed_files": [
+    "tools/contracts/python-object/reference.py",
+    "tests_js/python_object_reference.test.mjs",
+    "docs/migration/python-object-reference.md",
+    "docs/migration/evidence/s01/reference-audit.json",
+    "docs/migration/evidence/s01/S01.R.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "s01.audit.python-object-reference"
+  ],
+  "cells": [
+    {
+      "id": "s01.reference.python-object",
+      "requirementIds": [
+        "s01.audit.python-object-reference"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/python_object_reference.test.mjs"
+      ],
+      "testNames": [
+        "Python object reference default profile",
+        "Python object reference 3.12 profile",
+        "Python object reference 3.13 profile",
+        "Python object reference 3.14 profile",
+        "Python object reference rejects caller input"
+      ],
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s01/logs/S01-R-python-object-reference.tap"
+    }
+  ],
+  "artifacts": []
+}

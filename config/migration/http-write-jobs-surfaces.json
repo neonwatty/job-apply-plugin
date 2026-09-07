@@ -1,0 +1,245 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "http:POST:/api/jobs",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/jobs",
+      "node": "JOB",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/jobs.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/jobs/bulk",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/jobs/bulk",
+      "node": "JOB",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/jobs.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/jobs/{id}/resolve-pending-answer",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/jobs/{id}/resolve-pending-answer",
+      "node": "JOB",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/jobs.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/jobs/{id}/approval-preview",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/jobs/{id}/approval-preview",
+      "node": "JOB",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/jobs.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/jobs/{id}/approval-approve",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/jobs/{id}/approval-approve",
+      "node": "JOB",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/jobs.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/jobs/{id}/transition",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/jobs/{id}/transition",
+      "node": "JOB",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/jobs.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/jobs/{id}/trash",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/jobs/{id}/trash",
+      "node": "JOB",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/jobs.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/jobs/{id}/restore",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/jobs/{id}/restore",
+      "node": "JOB",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/jobs.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/jobs/{id}/delete",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/jobs/{id}/delete",
+      "node": "JOB",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/jobs.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:PATCH:/api/jobs/{id}",
+      "kind": "http",
+      "method": "PATCH",
+      "path": "/api/jobs/{id}",
+      "node": "JOB",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/jobs.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

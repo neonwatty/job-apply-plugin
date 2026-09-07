@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "http:OPTIONS:*",
+      "kind": "http",
+      "method": "OPTIONS",
+      "path": "*",
+      "node": "AUTH",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:PUT:*",
+      "kind": "http",
+      "method": "PUT",
+      "path": "*",
+      "node": "AUTH",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:DELETE:*",
+      "kind": "http",
+      "method": "DELETE",
+      "path": "*",
+      "node": "AUTH",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

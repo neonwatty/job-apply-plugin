@@ -92,8 +92,16 @@ or as completion of the CI observation window.
 
 ## CI shadow mode
 
-Pull requests still run the retained `validate` job and every new deterministic
-Python and browser shard. The duplicate legacy lane is temporary equivalence
+The validation workflow currently runs for main pushes, pull requests targeting
+main, and manual dispatch. Staging validation is frozen during the migration;
+staging changes depend on the local hook and integration evidence described in
+the [local protocol](local-testing-protocol.md). The release workflow still
+includes staging pushes. Restoring the required staging gates is a final
+migration prerequisite, tracked by T05 in the
+[remaining plan](migration/remaining-migration-plan.md).
+
+On main-targeted pull requests, the retained `validate` job and deterministic
+Python and browser shards still run. The duplicate legacy lane is temporary equivalence
 evidence, not an optimization: remove it only after at least 20 PR runs show no
 unexplained divergence. The `classify` job records affected-suite selection but
 does not skip full shards, and `PR gate` rejects any failed, cancelled, skipped,
@@ -103,7 +111,7 @@ The 20-PR equivalence gate and two-week affected-selection observation are both
 pending external evidence. Local test receipts and merged workflow code cannot
 mark either gate complete.
 
-Required Windows and deterministic macOS contracts remain on pull requests.
+Required Windows and deterministic macOS contracts remain on main-targeted pull requests.
 Visible live-browser/native observations are advisory in the scheduled or
 manual nightly workflow. Release installation evidence runs nightly and for
 staging/main, version tags, and manual dispatch. No CI timing percentile or

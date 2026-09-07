@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "requirements": [
+    {
+      "id": "UI0-trash-concurrency",
+      "surfaceIds": [
+        "browser:workspace/lib/helpers.js:typedDeletePhrase",
+        "browser:workspace/lib/helpers.js:filterTrashItems",
+        "browser:workspace/lib/helpers.js:trashBlockerText",
+        "browser:workspace/lib/helpers.js:lifecycleErrorText",
+        "browser:workspace/app.js:typedDeletePhrase",
+        "browser:workspace/app.js:filterTrashItems",
+        "browser:workspace/app.js:trashBlockerText",
+        "browser:workspace/app.js:lifecycleErrorText"
+      ],
+      "family": "UI0",
+      "category": "concurrency",
+      "applicability": {
+        "status": "inapplicable",
+        "rationale": "These presentation helpers perform no owned scheduling, durable writes or recovery on ordinary data inputs. Caller hooks may execute caller code; lifecycle deletion and native integration remain separate requirements.",
+        "reviewer": "numeric_codec and validation_strategy",
+        "sourcePaths": [
+          "workspace/lib/helpers.js"
+        ]
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "workspace/lib/helpers.js",
+          "sha256": "6fdaab7896a1944dde732c9cb239507968d30a5bd50ee35e7249c06d89bcb33e"
+        },
+        {
+          "path": "tests_js/workspace_trash_reference.test.mjs",
+          "sha256": "bb5907980f1109ce9b5504ded901b493ff7707607f5e0d13f809bf3983642d24"
+        }
+      ],
+      "testBindings": [],
+      "expectedArtifacts": []
+    },
+    {
+      "id": "UI0-trash-interruption",
+      "surfaceIds": [
+        "browser:workspace/lib/helpers.js:typedDeletePhrase",
+        "browser:workspace/lib/helpers.js:filterTrashItems",
+        "browser:workspace/lib/helpers.js:trashBlockerText",
+        "browser:workspace/lib/helpers.js:lifecycleErrorText",
+        "browser:workspace/app.js:typedDeletePhrase",
+        "browser:workspace/app.js:filterTrashItems",
+        "browser:workspace/app.js:trashBlockerText",
+        "browser:workspace/app.js:lifecycleErrorText"
+      ],
+      "family": "UI0",
+      "category": "interruption",
+      "applicability": {
+        "status": "inapplicable",
+        "rationale": "These presentation helpers perform no owned scheduling, durable writes or recovery on ordinary data inputs. Caller hooks may execute caller code; lifecycle deletion and native integration remain separate requirements.",
+        "reviewer": "numeric_codec and validation_strategy",
+        "sourcePaths": [
+          "workspace/lib/helpers.js"
+        ]
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "workspace/lib/helpers.js",
+          "sha256": "6fdaab7896a1944dde732c9cb239507968d30a5bd50ee35e7249c06d89bcb33e"
+        },
+        {
+          "path": "tests_js/workspace_trash_reference.test.mjs",
+          "sha256": "bb5907980f1109ce9b5504ded901b493ff7707607f5e0d13f809bf3983642d24"
+        }
+      ],
+      "testBindings": [],
+      "expectedArtifacts": []
+    },
+    {
+      "id": "UI0-trash-recovery",
+      "surfaceIds": [
+        "browser:workspace/lib/helpers.js:typedDeletePhrase",
+        "browser:workspace/lib/helpers.js:filterTrashItems",
+        "browser:workspace/lib/helpers.js:trashBlockerText",
+        "browser:workspace/lib/helpers.js:lifecycleErrorText",
+        "browser:workspace/app.js:typedDeletePhrase",
+        "browser:workspace/app.js:filterTrashItems",
+        "browser:workspace/app.js:trashBlockerText",
+        "browser:workspace/app.js:lifecycleErrorText"
+      ],
+      "family": "UI0",
+      "category": "recovery",
+      "applicability": {
+        "status": "inapplicable",
+        "rationale": "These presentation helpers perform no owned scheduling, durable writes or recovery on ordinary data inputs. Caller hooks may execute caller code; lifecycle deletion and native integration remain separate requirements.",
+        "reviewer": "numeric_codec and validation_strategy",
+        "sourcePaths": [
+          "workspace/lib/helpers.js"
+        ]
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "workspace/lib/helpers.js",
+          "sha256": "6fdaab7896a1944dde732c9cb239507968d30a5bd50ee35e7249c06d89bcb33e"
+        },
+        {
+          "path": "tests_js/workspace_trash_reference.test.mjs",
+          "sha256": "bb5907980f1109ce9b5504ded901b493ff7707607f5e0d13f809bf3983642d24"
+        }
+      ],
+      "testBindings": [],
+      "expectedArtifacts": []
+    }
+  ]
+}

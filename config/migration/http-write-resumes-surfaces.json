@@ -1,0 +1,293 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "http:POST:/api/resumes/import",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/resumes/import",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/resumes.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/resume-extraction-requests",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/resume-extraction-requests",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/resumes.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/resume-extraction-requests/{id}/cancel",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/resume-extraction-requests/{id}/cancel",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/resumes.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/resume-extraction-requests/{id}/retry",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/resume-extraction-requests/{id}/retry",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/resumes.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/resumes/{id}/replace",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/resumes/{id}/replace",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/resumes.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/resumes/{id}/adopt",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/resumes/{id}/adopt",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/resumes.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/resumes/{id}/default",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/resumes/{id}/default",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/resumes.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/resumes/{id}/trash",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/resumes/{id}/trash",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/resumes.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/resumes/{id}/restore",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/resumes/{id}/restore",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/resumes.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/resumes/{id}/delete",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/resumes/{id}/delete",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/resumes.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/resume-proposals/{id}/review",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/resume-proposals/{id}/review",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/resumes.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:PATCH:/api/resumes/{id}",
+      "kind": "http",
+      "method": "PATCH",
+      "path": "/api/resumes/{id}",
+      "node": "RES",
+      "sources": [
+        "scripts/job_apply_workspace/handler.py",
+        "scripts/job_apply_workspace/domains/resumes.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

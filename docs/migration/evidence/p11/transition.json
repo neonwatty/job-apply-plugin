@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "id": "P11.transition",
+  "previousDag": {
+    "path": "docs/migration/evidence/p10/approved-dag.json",
+    "sha256": "bd56e202a38561e9dcb0ac3602ef6c6adf6708f4241e18da98e87b63358e18dd",
+    "revision": "7c4773db7a65e6166ab7d55e219ef0134b7f536f"
+  },
+  "nextDag": {
+    "path": "docs/migration/evidence/p11/approved-dag.json",
+    "sha256": "eb11fe5c96b2d668ef32555e2674e7e3ef59dcb1957b930239242bf5cec10caf",
+    "revision": "a967474cec8530347393d08948b58d857a5a2608"
+  },
+  "retirements": [],
+  "additions": [
+    {
+      "id": "P11.I",
+      "manifest": {
+        "path": "docs/migration/evidence/p11/P11.I.json",
+        "sha256": "b2107963691db063a350ee06926738026bec00393d8c73f9273d9fe7453cb055",
+        "revision": "a967474cec8530347393d08948b58d857a5a2608"
+      }
+    },
+    {
+      "id": "P11.V",
+      "manifest": {
+        "path": "docs/migration/evidence/p11/P11.V.json",
+        "sha256": "8e7da06303efc42fdada68b70f9b2ff06345538295f1560a98bfcf3d8c8976ea",
+        "revision": "a967474cec8530347393d08948b58d857a5a2608"
+      }
+    }
+  ],
+  "refinements": [
+    {
+      "id": "T05.I",
+      "beforeDependencies": [
+        "P03.retry2.V",
+        "P04.V",
+        "P05.V",
+        "T05.R",
+        "P03.evidence.R",
+        "P08.V",
+        "P09.V",
+        "P10.V"
+      ],
+      "afterDependencies": [
+        "P03.retry2.V",
+        "P04.V",
+        "P05.V",
+        "T05.R",
+        "P03.evidence.R",
+        "P08.V",
+        "P09.V",
+        "P10.V",
+        "P11.V"
+      ]
+    }
+  ],
+  "packageVersions": [],
+  "witnessMappings": [],
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "decision": "approved",
+  "reason": "Require complete streamed output at the final CI gate; preserve output caps and existing accepted evidence."
+}

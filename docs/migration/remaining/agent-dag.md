@@ -1,0 +1,1028 @@
+# Complete agent-assignment DAG
+
+R = reference/manifest, I = implementation or gate, V = independent review. See [execution rules](../remaining-migration-plan.md).
+
+```mermaid
+flowchart TD
+  P00_I["P00.I: implementation-or-gate"]
+  P00_V["P00.V: independent-review"]
+  P00_I --> P00_V
+  P01_I["P01.I: implementation-or-gate"]
+  P00_V --> P01_I
+  P01_V["P01.V: independent-review"]
+  P01_I --> P01_V
+  P02_I["P02.I: implementation-or-gate"]
+  P00_V --> P02_I
+  P02_V["P02.V: independent-review"]
+  P02_I --> P02_V
+  P01_V --> P02_V
+  P03_R["P03.R: reference"]
+  P00_V --> P03_R
+  P03_I["P03.I: implementation-or-gate"]
+  P01_V --> P03_I
+  P03_R --> P03_I
+  P03_V["P03.V: independent-review"]
+  P03_I --> P03_V
+  P01_V --> P03_V
+  P04_R["P04.R: reference"]
+  P00_V --> P04_R
+  P04_I["P04.I: implementation-or-gate"]
+  P01_V --> P04_I
+  P04_R --> P04_I
+  P04_V["P04.V: independent-review"]
+  P04_I --> P04_V
+  P01_V --> P04_V
+  P05_I["P05.I: implementation-or-gate"]
+  P01_V --> P05_I
+  P02_V --> P05_I
+  P05_V["P05.V: independent-review"]
+  P05_I --> P05_V
+  P01_V --> P05_V
+  P06_R["P06.R: reference"]
+  P00_V --> P06_R
+  P06_I["P06.I: implementation-or-gate"]
+  P01_V --> P06_I
+  P06_R --> P06_I
+  P06_V["P06.V: independent-review"]
+  P06_I --> P06_V
+  P01_V --> P06_V
+  P07_R["P07.R: reference"]
+  P00_V --> P07_R
+  P07_I["P07.I: implementation-or-gate"]
+  P06_V --> P07_I
+  P07_R --> P07_I
+  P07_V["P07.V: independent-review"]
+  P07_I --> P07_V
+  P01_V --> P07_V
+  S01_R["S01.R: reference"]
+  P00_V --> S01_R
+  S01_I["S01.I: implementation-or-gate"]
+  P00_V --> S01_I
+  S01_R --> S01_I
+  S01_V["S01.V: independent-review"]
+  S01_I --> S01_V
+  P01_V --> S01_V
+  S02_R["S02.R: reference"]
+  P00_V --> S02_R
+  S02_I["S02.I: implementation-or-gate"]
+  P00_V --> S02_I
+  S02_R --> S02_I
+  S02_V["S02.V: independent-review"]
+  S02_I --> S02_V
+  P01_V --> S02_V
+  S08_R["S08.R: reference"]
+  P00_V --> S08_R
+  S08_I["S08.I: implementation-or-gate"]
+  S01_V --> S08_I
+  S02_V --> S08_I
+  S08_R --> S08_I
+  S08_V["S08.V: independent-review"]
+  S08_I --> S08_V
+  P01_V --> S08_V
+  S03_R["S03.R: reference"]
+  P00_V --> S03_R
+  S03_I["S03.I: implementation-or-gate"]
+  S08_V --> S03_I
+  S04_V --> S03_I
+  S05_V --> S03_I
+  S03_R --> S03_I
+  S03_V["S03.V: independent-review"]
+  S03_I --> S03_V
+  P01_V --> S03_V
+  S04_R["S04.R: reference"]
+  P00_V --> S04_R
+  S04_I["S04.I: implementation-or-gate"]
+  S08_V --> S04_I
+  S04_R --> S04_I
+  S04_V["S04.V: independent-review"]
+  S04_I --> S04_V
+  P01_V --> S04_V
+  S05_R["S05.R: reference"]
+  P00_V --> S05_R
+  S05_I["S05.I: implementation-or-gate"]
+  S08_V --> S05_I
+  S05_R --> S05_I
+  S05_V["S05.V: independent-review"]
+  S05_I --> S05_V
+  P01_V --> S05_V
+  S06_R["S06.R: reference"]
+  P00_V --> S06_R
+  S06_I["S06.I: implementation-or-gate"]
+  S03_V --> S06_I
+  S06_R --> S06_I
+  S06_V["S06.V: independent-review"]
+  S06_I --> S06_V
+  P01_V --> S06_V
+  S07_R["S07.R: reference"]
+  P00_V --> S07_R
+  S07_I["S07.I: implementation-or-gate"]
+  S03_V --> S07_I
+  S04_V --> S07_I
+  S05_V --> S07_I
+  S07_R --> S07_I
+  S07_V["S07.V: independent-review"]
+  S07_I --> S07_V
+  P01_V --> S07_V
+  F01_R["F01.R: reference"]
+  P00_V --> F01_R
+  F01_I["F01.I: implementation-or-gate"]
+  S05_V --> F01_I
+  P02_V --> F01_I
+  P05_V --> F01_I
+  F01_R --> F01_I
+  F01_V["F01.V: independent-review"]
+  F01_I --> F01_V
+  P01_V --> F01_V
+  F02_R["F02.R: reference"]
+  P00_V --> F02_R
+  F02_I["F02.I: implementation-or-gate"]
+  F01_V --> F02_I
+  S07_V --> F02_I
+  F02_R --> F02_I
+  F02_V["F02.V: independent-review"]
+  F02_I --> F02_V
+  P01_V --> F02_V
+  F03_R["F03.R: reference"]
+  P00_V --> F03_R
+  F03_I["F03.I: implementation-or-gate"]
+  F01_V --> F03_I
+  S04_V --> F03_I
+  F03_R --> F03_I
+  F03_V["F03.V: independent-review"]
+  F03_I --> F03_V
+  P01_V --> F03_V
+  F04_R["F04.R: reference"]
+  P00_V --> F04_R
+  F04_I["F04.I: implementation-or-gate"]
+  F02_V --> F04_I
+  F04_R --> F04_I
+  F04_V["F04.V: independent-review"]
+  F04_I --> F04_V
+  P01_V --> F04_V
+  F05_R["F05.R: reference"]
+  P00_V --> F05_R
+  F05_I["F05.I: implementation-or-gate"]
+  F04_V --> F05_I
+  F03_V --> F05_I
+  S04_V --> F05_I
+  F05_R --> F05_I
+  F05_V["F05.V: independent-review"]
+  F05_I --> F05_V
+  P01_V --> F05_V
+  F06_R["F06.R: reference"]
+  P00_V --> F06_R
+  F06_I["F06.I: implementation-or-gate"]
+  F03_V --> F06_I
+  F02_V --> F06_I
+  F06_R --> F06_I
+  F06_V["F06.V: independent-review"]
+  F06_I --> F06_V
+  P01_V --> F06_V
+  A01_R["A01.R: reference"]
+  P00_V --> A01_R
+  A01_I["A01.I: implementation-or-gate"]
+  S07_V --> A01_I
+  A01_R --> A01_I
+  A01_V["A01.V: independent-review"]
+  A01_I --> A01_V
+  P01_V --> A01_V
+  A02_R["A02.R: reference"]
+  P00_V --> A02_R
+  A02_I["A02.I: implementation-or-gate"]
+  S02_V --> A02_I
+  P01_V --> A02_I
+  S03_V --> A02_I
+  A02_R --> A02_I
+  A02_V["A02.V: independent-review"]
+  A02_I --> A02_V
+  P01_V --> A02_V
+  A03_R["A03.R: reference"]
+  P00_V --> A03_R
+  A03_I["A03.I: implementation-or-gate"]
+  F02_V --> A03_I
+  A03_R --> A03_I
+  A03_V["A03.V: independent-review"]
+  A03_I --> A03_V
+  P01_V --> A03_V
+  A04_R["A04.R: reference"]
+  P00_V --> A04_R
+  A04_I["A04.I: implementation-or-gate"]
+  A02_V --> A04_I
+  A03_V --> A04_I
+  A04_R --> A04_I
+  A04_V["A04.V: independent-review"]
+  A04_I --> A04_V
+  P01_V --> A04_V
+  D01_R["D01.R: reference"]
+  P00_V --> D01_R
+  D01_I["D01.I: implementation-or-gate"]
+  F02_V --> D01_I
+  F03_V --> D01_I
+  F06_V --> D01_I
+  S07_V --> D01_I
+  D01_R --> D01_I
+  D01_V["D01.V: independent-review"]
+  D01_I --> D01_V
+  P01_V --> D01_V
+  D02_R["D02.R: reference"]
+  P00_V --> D02_R
+  D02_I["D02.I: implementation-or-gate"]
+  D01_V --> D02_I
+  D02_R --> D02_I
+  D02_V["D02.V: independent-review"]
+  D02_I --> D02_V
+  P01_V --> D02_V
+  D03_R["D03.R: reference"]
+  P00_V --> D03_R
+  D03_I["D03.I: implementation-or-gate"]
+  F02_V --> D03_I
+  F03_V --> D03_I
+  F06_V --> D03_I
+  D03_R --> D03_I
+  D03_V["D03.V: independent-review"]
+  D03_I --> D03_V
+  P01_V --> D03_V
+  D04_R["D04.R: reference"]
+  P00_V --> D04_R
+  D04_I["D04.I: implementation-or-gate"]
+  D03_V --> D04_I
+  F05_V --> D04_I
+  D04_R --> D04_I
+  D04_V["D04.V: independent-review"]
+  D04_I --> D04_V
+  P01_V --> D04_V
+  D05_R["D05.R: reference"]
+  P00_V --> D05_R
+  D05_I["D05.I: implementation-or-gate"]
+  D04_V --> D05_I
+  D05_R --> D05_I
+  D05_V["D05.V: independent-review"]
+  D05_I --> D05_V
+  P01_V --> D05_V
+  D06_R["D06.R: reference"]
+  P00_V --> D06_R
+  D06_I["D06.I: implementation-or-gate"]
+  F02_V --> D06_I
+  F03_V --> D06_I
+  F06_V --> D06_I
+  D06_R --> D06_I
+  D06_V["D06.V: independent-review"]
+  D06_I --> D06_V
+  P01_V --> D06_V
+  D07_R["D07.R: reference"]
+  P00_V --> D07_R
+  D07_I["D07.I: implementation-or-gate"]
+  D06_V --> D07_I
+  D07_R --> D07_I
+  D07_V["D07.V: independent-review"]
+  D07_I --> D07_V
+  P01_V --> D07_V
+  D08_R["D08.R: reference"]
+  P00_V --> D08_R
+  D08_I["D08.I: implementation-or-gate"]
+  D06_V --> D08_I
+  D02_V --> D08_I
+  D08_R --> D08_I
+  D08_V["D08.V: independent-review"]
+  D08_I --> D08_V
+  P01_V --> D08_V
+  D09_R["D09.R: reference"]
+  P00_V --> D09_R
+  D09_I["D09.I: implementation-or-gate"]
+  D08_V --> D09_I
+  D09_R --> D09_I
+  D09_V["D09.V: independent-review"]
+  D09_I --> D09_V
+  P01_V --> D09_V
+  D10_R["D10.R: reference"]
+  P00_V --> D10_R
+  D10_I["D10.I: implementation-or-gate"]
+  F02_V --> D10_I
+  S06_V --> D10_I
+  D02_V --> D10_I
+  D10_R --> D10_I
+  D10_V["D10.V: independent-review"]
+  D10_I --> D10_V
+  P01_V --> D10_V
+  D11_R["D11.R: reference"]
+  P00_V --> D11_R
+  D11_I["D11.I: implementation-or-gate"]
+  D10_V --> D11_I
+  F03_V --> D11_I
+  F06_V --> D11_I
+  D11_R --> D11_I
+  D11_V["D11.V: independent-review"]
+  D11_I --> D11_V
+  P01_V --> D11_V
+  D12_R["D12.R: reference"]
+  P00_V --> D12_R
+  D12_I["D12.I: implementation-or-gate"]
+  D11_V --> D12_I
+  D12_R --> D12_I
+  D12_V["D12.V: independent-review"]
+  D12_I --> D12_V
+  P01_V --> D12_V
+  D13_R["D13.R: reference"]
+  P00_V --> D13_R
+  D13_I["D13.I: implementation-or-gate"]
+  F02_V --> D13_I
+  F03_V --> D13_I
+  F06_V --> D13_I
+  A01_V --> D13_I
+  D13_R --> D13_I
+  D13_V["D13.V: independent-review"]
+  D13_I --> D13_V
+  P01_V --> D13_V
+  D14_R["D14.R: reference"]
+  P00_V --> D14_R
+  D14_I["D14.I: implementation-or-gate"]
+  D13_V --> D14_I
+  D14_R --> D14_I
+  D14_V["D14.V: independent-review"]
+  D14_I --> D14_V
+  P01_V --> D14_V
+  D15_R["D15.R: reference"]
+  P00_V --> D15_R
+  D15_I["D15.I: implementation-or-gate"]
+  D14_V --> D15_I
+  D15_R --> D15_I
+  D15_V["D15.V: independent-review"]
+  D15_I --> D15_V
+  P01_V --> D15_V
+  D16_R["D16.R: reference"]
+  P00_V --> D16_R
+  D16_I["D16.I: implementation-or-gate"]
+  D15_V --> D16_I
+  D16_R --> D16_I
+  D16_V["D16.V: independent-review"]
+  D16_I --> D16_V
+  P01_V --> D16_V
+  J01_R["J01.R: reference"]
+  P00_V --> J01_R
+  J01_I["J01.I: implementation-or-gate"]
+  D09_V --> J01_I
+  F06_V --> J01_I
+  J01_R --> J01_I
+  J01_V["J01.V: independent-review"]
+  J01_I --> J01_V
+  P01_V --> J01_V
+  J02_R["J02.R: reference"]
+  P00_V --> J02_R
+  J02_I["J02.I: implementation-or-gate"]
+  D16_V --> J02_I
+  F06_V --> J02_I
+  J02_R --> J02_I
+  J02_V["J02.V: independent-review"]
+  J02_I --> J02_V
+  P01_V --> J02_V
+  J03_R["J03.R: reference"]
+  P00_V --> J03_R
+  J03_I["J03.I: implementation-or-gate"]
+  D05_V --> J03_I
+  D07_V --> J03_I
+  D12_V --> J03_I
+  J01_V --> J03_I
+  J02_V --> J03_I
+  F05_V --> J03_I
+  J03_R --> J03_I
+  J03_V["J03.V: independent-review"]
+  J03_I --> J03_V
+  P01_V --> J03_V
+  J04_R["J04.R: reference"]
+  P00_V --> J04_R
+  J04_I["J04.I: implementation-or-gate"]
+  J03_V --> J04_I
+  J04_R --> J04_I
+  J04_V["J04.V: independent-review"]
+  J04_I --> J04_V
+  P01_V --> J04_V
+  C01_R["C01.R: reference"]
+  P00_V --> C01_R
+  C01_I["C01.I: implementation-or-gate"]
+  J04_V --> C01_I
+  A01_V --> C01_I
+  S06_V --> C01_I
+  C01_R --> C01_I
+  C01_V["C01.V: independent-review"]
+  C01_I --> C01_V
+  P01_V --> C01_V
+  C02_R["C02.R: reference"]
+  P00_V --> C02_R
+  C02_I["C02.I: implementation-or-gate"]
+  C01_V --> C02_I
+  C02_R --> C02_I
+  C02_V["C02.V: independent-review"]
+  C02_I --> C02_V
+  P01_V --> C02_V
+  C03_R["C03.R: reference"]
+  P00_V --> C03_R
+  C03_I["C03.I: implementation-or-gate"]
+  C02_V --> C03_I
+  C03_R --> C03_I
+  C03_V["C03.V: independent-review"]
+  C03_I --> C03_V
+  P01_V --> C03_V
+  C04_R["C04.R: reference"]
+  P00_V --> C04_R
+  C04_I["C04.I: implementation-or-gate"]
+  C03_V --> C04_I
+  C04_R --> C04_I
+  C04_V["C04.V: independent-review"]
+  C04_I --> C04_V
+  P01_V --> C04_V
+  N01_R["N01.R: reference"]
+  P00_V --> N01_R
+  N01_I["N01.I: implementation-or-gate"]
+  P02_V --> N01_I
+  D13_V --> N01_I
+  P05_V --> N01_I
+  N01_R --> N01_I
+  N01_V["N01.V: independent-review"]
+  N01_I --> N01_V
+  P01_V --> N01_V
+  N02_R["N02.R: reference"]
+  P00_V --> N02_R
+  N02_I["N02.I: implementation-or-gate"]
+  N01_V --> N02_I
+  D16_V --> N02_I
+  N02_R --> N02_I
+  N02_V["N02.V: independent-review"]
+  N02_I --> N02_V
+  P01_V --> N02_V
+  N03_R["N03.R: reference"]
+  P00_V --> N03_R
+  N03_I["N03.I: implementation-or-gate"]
+  N02_V --> N03_I
+  D15_V --> N03_I
+  N03_R --> N03_I
+  N03_V["N03.V: independent-review"]
+  N03_I --> N03_V
+  P01_V --> N03_V
+  Q01_R["Q01.R: reference"]
+  P00_V --> Q01_R
+  Q01_I["Q01.I: implementation-or-gate"]
+  F03_V --> Q01_I
+  Q01_R --> Q01_I
+  Q01_V["Q01.V: independent-review"]
+  Q01_I --> Q01_V
+  P01_V --> Q01_V
+  Q02_R["Q02.R: reference"]
+  P00_V --> Q02_R
+  Q02_I["Q02.I: implementation-or-gate"]
+  Q01_V --> Q02_I
+  A01_V --> Q02_I
+  Q16_V --> Q02_I
+  Q02_R --> Q02_I
+  Q02_V["Q02.V: independent-review"]
+  Q02_I --> Q02_V
+  P01_V --> Q02_V
+  Q03_R["Q03.R: reference"]
+  P00_V --> Q03_R
+  Q03_I["Q03.I: implementation-or-gate"]
+  Q02_V --> Q03_I
+  Q03_R --> Q03_I
+  Q03_V["Q03.V: independent-review"]
+  Q03_I --> Q03_V
+  P01_V --> Q03_V
+  Q04_R["Q04.R: reference"]
+  P00_V --> Q04_R
+  Q04_I["Q04.I: implementation-or-gate"]
+  P01_V --> Q04_I
+  Q04_R --> Q04_I
+  Q04_V["Q04.V: independent-review"]
+  Q04_I --> Q04_V
+  P01_V --> Q04_V
+  Q05_R["Q05.R: reference"]
+  P00_V --> Q05_R
+  Q05_I["Q05.I: implementation-or-gate"]
+  A02_V --> Q05_I
+  Q04_V --> Q05_I
+  Q05_R --> Q05_I
+  Q05_V["Q05.V: independent-review"]
+  Q05_I --> Q05_V
+  P01_V --> Q05_V
+  Q06_R["Q06.R: reference"]
+  P00_V --> Q06_R
+  Q06_I["Q06.I: implementation-or-gate"]
+  F01_V --> Q06_I
+  Q06_R --> Q06_I
+  Q06_V["Q06.V: independent-review"]
+  Q06_I --> Q06_V
+  P01_V --> Q06_V
+  Q07_R["Q07.R: reference"]
+  P00_V --> Q07_R
+  Q07_I["Q07.I: implementation-or-gate"]
+  Q06_V --> Q07_I
+  Q07_R --> Q07_I
+  Q07_V["Q07.V: independent-review"]
+  Q07_I --> Q07_V
+  P01_V --> Q07_V
+  Q08_R["Q08.R: reference"]
+  P00_V --> Q08_R
+  Q08_I["Q08.I: implementation-or-gate"]
+  A01_V --> Q08_I
+  F03_V --> Q08_I
+  Q08_R --> Q08_I
+  Q08_V["Q08.V: independent-review"]
+  Q08_I --> Q08_V
+  P01_V --> Q08_V
+  Q09_R["Q09.R: reference"]
+  P00_V --> Q09_R
+  Q09_I["Q09.I: implementation-or-gate"]
+  Q03_V --> Q09_I
+  Q05_V --> Q09_I
+  Q07_V --> Q09_I
+  Q08_V --> Q09_I
+  Q14_V --> Q09_I
+  Q15_V --> Q09_I
+  Q09_R --> Q09_I
+  Q09_V["Q09.V: independent-review"]
+  Q09_I --> Q09_V
+  P01_V --> Q09_V
+  Q10_R["Q10.R: reference"]
+  P00_V --> Q10_R
+  Q10_I["Q10.I: implementation-or-gate"]
+  Q09_V --> Q10_I
+  Q10_R --> Q10_I
+  Q10_V["Q10.V: independent-review"]
+  Q10_I --> Q10_V
+  P01_V --> Q10_V
+  Q11_R["Q11.R: reference"]
+  P00_V --> Q11_R
+  Q11_I["Q11.I: implementation-or-gate"]
+  F03_V --> Q11_I
+  Q02_V --> Q11_I
+  Q11_R --> Q11_I
+  Q11_V["Q11.V: independent-review"]
+  Q11_I --> Q11_V
+  P01_V --> Q11_V
+  Q12_R["Q12.R: reference"]
+  P00_V --> Q12_R
+  Q12_I["Q12.I: implementation-or-gate"]
+  Q10_V --> Q12_I
+  Q11_V --> Q12_I
+  Q12_R --> Q12_I
+  Q12_V["Q12.V: independent-review"]
+  Q12_I --> Q12_V
+  P01_V --> Q12_V
+  Q13_R["Q13.R: reference"]
+  P00_V --> Q13_R
+  Q13_I["Q13.I: implementation-or-gate"]
+  Q12_V --> Q13_I
+  F03_V --> Q13_I
+  Q13_R --> Q13_I
+  Q13_V["Q13.V: independent-review"]
+  Q13_I --> Q13_V
+  P01_V --> Q13_V
+  C05_R["C05.R: reference"]
+  P00_V --> C05_R
+  C05_I["C05.I: implementation-or-gate"]
+  C04_V --> C05_I
+  N03_V --> C05_I
+  Q08_V --> C05_I
+  C05_R --> C05_I
+  C05_V["C05.V: independent-review"]
+  C05_I --> C05_V
+  P01_V --> C05_V
+  C06_R["C06.R: reference"]
+  P00_V --> C06_R
+  C06_I["C06.I: implementation-or-gate"]
+  C05_V --> C06_I
+  Q03_V --> C06_I
+  C06_R --> C06_I
+  C06_V["C06.V: independent-review"]
+  C06_I --> C06_V
+  P01_V --> C06_V
+  U01_R["U01.R: reference"]
+  P00_V --> U01_R
+  U01_I["U01.I: implementation-or-gate"]
+  P00_V --> U01_I
+  U01_R --> U01_I
+  U01_V["U01.V: independent-review"]
+  U01_I --> U01_V
+  P01_V --> U01_V
+  U02_R["U02.R: reference"]
+  P00_V --> U02_R
+  U02_I["U02.I: implementation-or-gate"]
+  U01_V --> U02_I
+  U02_R --> U02_I
+  U02_V["U02.V: independent-review"]
+  U02_I --> U02_V
+  P01_V --> U02_V
+  U03_R["U03.R: reference"]
+  P00_V --> U03_R
+  U03_I["U03.I: implementation-or-gate"]
+  U02_V --> U03_I
+  U03_R --> U03_I
+  U03_V["U03.V: independent-review"]
+  U03_I --> U03_V
+  P01_V --> U03_V
+  U04_R["U04.R: reference"]
+  P00_V --> U04_R
+  U04_I["U04.I: implementation-or-gate"]
+  U02_V --> U04_I
+  U04_R --> U04_I
+  U04_V["U04.V: independent-review"]
+  U04_I --> U04_V
+  P01_V --> U04_V
+  U05_R["U05.R: reference"]
+  P00_V --> U05_R
+  U05_I["U05.I: implementation-or-gate"]
+  U02_V --> U05_I
+  U05_R --> U05_I
+  U05_V["U05.V: independent-review"]
+  U05_I --> U05_V
+  P01_V --> U05_V
+  U06_R["U06.R: reference"]
+  P00_V --> U06_R
+  U06_I["U06.I: implementation-or-gate"]
+  U02_V --> U06_I
+  U06_R --> U06_I
+  U06_V["U06.V: independent-review"]
+  U06_I --> U06_V
+  P01_V --> U06_V
+  U07_R["U07.R: reference"]
+  P00_V --> U07_R
+  U07_I["U07.I: implementation-or-gate"]
+  U03_V --> U07_I
+  U04_V --> U07_I
+  U05_V --> U07_I
+  U06_V --> U07_I
+  U07_R --> U07_I
+  U07_V["U07.V: independent-review"]
+  U07_I --> U07_V
+  P01_V --> U07_V
+  W01_R["W01.R: reference"]
+  P00_V --> W01_R
+  W01_I["W01.I: implementation-or-gate"]
+  A02_V --> W01_I
+  D02_V --> W01_I
+  W01_R --> W01_I
+  W01_V["W01.V: independent-review"]
+  W01_I --> W01_V
+  P01_V --> W01_V
+  W02_R["W02.R: reference"]
+  P00_V --> W02_R
+  W02_I["W02.I: implementation-or-gate"]
+  A02_V --> W02_I
+  D05_V --> W02_I
+  W02_R --> W02_I
+  W02_V["W02.V: independent-review"]
+  W02_I --> W02_V
+  P01_V --> W02_V
+  W03_R["W03.R: reference"]
+  P00_V --> W03_R
+  W03_I["W03.I: implementation-or-gate"]
+  A02_V --> W03_I
+  D07_V --> W03_I
+  D09_V --> W03_I
+  J01_V --> W03_I
+  W03_R --> W03_I
+  W03_V["W03.V: independent-review"]
+  W03_I --> W03_V
+  P01_V --> W03_V
+  W04_R["W04.R: reference"]
+  P00_V --> W04_R
+  W04_I["W04.I: implementation-or-gate"]
+  A02_V --> W04_I
+  D12_V --> W04_I
+  W04_R --> W04_I
+  W04_V["W04.V: independent-review"]
+  W04_I --> W04_V
+  P01_V --> W04_V
+  W05_R["W05.R: reference"]
+  P00_V --> W05_R
+  W05_I["W05.I: implementation-or-gate"]
+  A02_V --> W05_I
+  D16_V --> W05_I
+  J02_V --> W05_I
+  N03_V --> W05_I
+  W05_R --> W05_I
+  W05_V["W05.V: independent-review"]
+  W05_I --> W05_V
+  P01_V --> W05_V
+  B01_R["B01.R: reference"]
+  P00_V --> B01_R
+  B01_I["B01.I: implementation-or-gate"]
+  P02_V --> B01_I
+  F01_V --> B01_I
+  P05_V --> B01_I
+  B01_R --> B01_I
+  B01_V["B01.V: independent-review"]
+  B01_I --> B01_V
+  P01_V --> B01_V
+  B02_R["B02.R: reference"]
+  P00_V --> B02_R
+  B02_I["B02.I: implementation-or-gate"]
+  B01_V --> B02_I
+  B02_R --> B02_I
+  B02_V["B02.V: independent-review"]
+  B02_I --> B02_V
+  P01_V --> B02_V
+  B03_R["B03.R: reference"]
+  P00_V --> B03_R
+  B03_I["B03.I: implementation-or-gate"]
+  B01_V --> B03_I
+  B03_R --> B03_I
+  B03_V["B03.V: independent-review"]
+  B03_I --> B03_V
+  P01_V --> B03_V
+  B04_R["B04.R: reference"]
+  P00_V --> B04_R
+  B04_I["B04.I: implementation-or-gate"]
+  B02_V --> B04_I
+  B03_V --> B04_I
+  B04_R --> B04_I
+  B04_V["B04.V: independent-review"]
+  B04_I --> B04_V
+  P01_V --> B04_V
+  B05_R["B05.R: reference"]
+  P00_V --> B05_R
+  B05_I["B05.I: implementation-or-gate"]
+  P02_V --> B05_I
+  B05_R --> B05_I
+  B05_V["B05.V: independent-review"]
+  B05_I --> B05_V
+  P01_V --> B05_V
+  B06_R["B06.R: reference"]
+  P00_V --> B06_R
+  B06_I["B06.I: implementation-or-gate"]
+  B04_V --> B06_I
+  B05_V --> B06_I
+  G01_V --> B06_I
+  G02_V --> B06_I
+  G03_V --> B06_I
+  B06_R --> B06_I
+  B06_V["B06.V: independent-review"]
+  B06_I --> B06_V
+  P01_V --> B06_V
+  B07_I["B07.I: implementation-or-gate"]
+  B06_V --> B07_I
+  P05_V --> B07_I
+  B07_V["B07.V: independent-review"]
+  B07_I --> B07_V
+  P01_V --> B07_V
+  T01_I["T01.I: implementation-or-gate"]
+  T06_V --> T01_I
+  T07_V --> T01_I
+  T08_V --> T01_I
+  T09_V --> T01_I
+  T10_V --> T01_I
+  T11_V --> T01_I
+  T12_V --> T01_I
+  T01_V["T01.V: independent-review"]
+  T01_I --> T01_V
+  P01_V --> T01_V
+  T02_R["T02.R: reference"]
+  P00_V --> T02_R
+  T02_I["T02.I: implementation-or-gate"]
+  Q05_V --> T02_I
+  U07_V --> T02_I
+  Q14_V --> T02_I
+  Q15_V --> T02_I
+  G02_V --> T02_I
+  T02_R --> T02_I
+  T02_V["T02.V: independent-review"]
+  T02_I --> T02_V
+  P01_V --> T02_V
+  T03_R["T03.R: reference"]
+  P00_V --> T03_R
+  T03_I["T03.I: implementation-or-gate"]
+  N03_V --> T03_I
+  B07_V --> T03_I
+  T03_R --> T03_I
+  T03_V["T03.V: independent-review"]
+  T03_I --> T03_V
+  P01_V --> T03_V
+  T04_R["T04.R: reference"]
+  P00_V --> T04_R
+  T04_I["T04.I: implementation-or-gate"]
+  P03_V --> T04_I
+  P04_V --> T04_I
+  P05_V --> T04_I
+  T13_V --> T04_I
+  T14_V --> T04_I
+  T15_V --> T04_I
+  T04_R --> T04_I
+  T04_V["T04.V: independent-review"]
+  T04_I --> T04_V
+  P01_V --> T04_V
+  T05_R["T05.R: reference"]
+  P00_V --> T05_R
+  T05_I["T05.I: implementation-or-gate"]
+  P03_V --> T05_I
+  P04_V --> T05_I
+  P05_V --> T05_I
+  T05_R --> T05_I
+  T05_V["T05.V: independent-review"]
+  T05_I --> T05_V
+  P01_V --> T05_V
+  G01_I["G01.I: implementation-or-gate"]
+  C04_V --> G01_I
+  D12_V --> G01_I
+  D05_V --> G01_I
+  D07_V --> G01_I
+  D09_V --> G01_I
+  D16_V --> G01_I
+  J04_V --> G01_I
+  G01_V["G01.V: independent-review"]
+  G01_I --> G01_V
+  P01_V --> G01_V
+  G02_I["G02.I: implementation-or-gate"]
+  G01_V --> G02_I
+  A04_V --> G02_I
+  W01_V --> G02_I
+  W02_V --> G02_I
+  W03_V --> G02_I
+  W04_V --> G02_I
+  W05_V --> G02_I
+  U07_V --> G02_I
+  G02_V["G02.V: independent-review"]
+  G02_I --> G02_V
+  P01_V --> G02_V
+  G03_I["G03.I: implementation-or-gate"]
+  C06_V --> G03_I
+  Q13_V --> G03_I
+  Q07_V --> G03_I
+  Q05_V --> G03_I
+  Q14_V --> G03_I
+  Q15_V --> G03_I
+  G03_V["G03.V: independent-review"]
+  G03_I --> G03_V
+  P01_V --> G03_V
+  G04_I["G04.I: implementation-or-gate"]
+  G01_V --> G04_I
+  G02_V --> G04_I
+  G03_V --> G04_I
+  B07_V --> G04_I
+  G04_V["G04.V: independent-review"]
+  G04_I --> G04_V
+  P01_V --> G04_V
+  G05_I["G05.I: implementation-or-gate"]
+  G01_V --> G05_I
+  F05_V --> G05_I
+  J04_V --> G05_I
+  G05_V["G05.V: independent-review"]
+  G05_I --> G05_V
+  P01_V --> G05_V
+  G06_I["G06.I: implementation-or-gate"]
+  G02_V --> G06_I
+  G06_V["G06.V: independent-review"]
+  G06_I --> G06_V
+  P01_V --> G06_V
+  G07_I["G07.I: implementation-or-gate"]
+  G03_V --> G07_I
+  G07_V["G07.V: independent-review"]
+  G07_I --> G07_V
+  P01_V --> G07_V
+  G08_I["G08.I: implementation-or-gate"]
+  G04_V --> G08_I
+  G05_V --> G08_I
+  G06_V --> G08_I
+  G07_V --> G08_I
+  P01_V --> G08_I
+  P05_V --> G08_I
+  P06_V --> G08_I
+  P07_V --> G08_I
+  G08_V["G08.V: independent-review"]
+  G08_I --> G08_V
+  P01_V --> G08_V
+  G09_I["G09.I: implementation-or-gate"]
+  G08_V --> G09_I
+  T05_V --> G09_I
+  G09_V["G09.V: independent-review"]
+  G09_I --> G09_V
+  P01_V --> G09_V
+  G10_I["G10.I: implementation-or-gate"]
+  G09_V --> G10_I
+  G10_V["G10.V: independent-review"]
+  G10_I --> G10_V
+  P01_V --> G10_V
+  G11_I["G11.I: implementation-or-gate"]
+  G10_V --> G11_I
+  T01_V --> G11_I
+  T02_V --> G11_I
+  T03_V --> G11_I
+  T04_V --> G11_I
+  G11_V["G11.V: independent-review"]
+  G11_I --> G11_V
+  P01_V --> G11_V
+  G12_I["G12.I: implementation-or-gate"]
+  G11_V --> G12_I
+  G12_V["G12.V: independent-review"]
+  G12_I --> G12_V
+  P01_V --> G12_V
+  G13_I["G13.I: implementation-or-gate"]
+  G12_V --> G13_I
+  G13_V["G13.V: independent-review"]
+  G13_I --> G13_V
+  P01_V --> G13_V
+  Q14_R["Q14.R: reference"]
+  P00_V --> Q14_R
+  Q14_I["Q14.I: implementation-or-gate"]
+  Q05_V --> Q14_I
+  F02_V --> Q14_I
+  Q14_R --> Q14_I
+  Q14_V["Q14.V: independent-review"]
+  Q14_I --> Q14_V
+  P01_V --> Q14_V
+  Q15_R["Q15.R: reference"]
+  P00_V --> Q15_R
+  Q15_I["Q15.I: implementation-or-gate"]
+  P01_V --> Q15_I
+  Q15_R --> Q15_I
+  Q15_V["Q15.V: independent-review"]
+  Q15_I --> Q15_V
+  P01_V --> Q15_V
+  Q16_R["Q16.R: reference"]
+  P00_V --> Q16_R
+  Q16_I["Q16.I: implementation-or-gate"]
+  Q01_V --> Q16_I
+  A01_V --> Q16_I
+  Q16_R --> Q16_I
+  Q16_V["Q16.V: independent-review"]
+  Q16_I --> Q16_V
+  P01_V --> Q16_V
+  T06_R["T06.R: reference"]
+  P00_V --> T06_R
+  T06_I["T06.I: implementation-or-gate"]
+  P01_V --> T06_I
+  T06_R --> T06_I
+  T06_V["T06.V: independent-review"]
+  T06_I --> T06_V
+  P01_V --> T06_V
+  T07_R["T07.R: reference"]
+  P00_V --> T07_R
+  T07_I["T07.I: implementation-or-gate"]
+  P01_V --> T07_I
+  T07_R --> T07_I
+  T07_V["T07.V: independent-review"]
+  T07_I --> T07_V
+  P01_V --> T07_V
+  T08_R["T08.R: reference"]
+  P00_V --> T08_R
+  T08_I["T08.I: implementation-or-gate"]
+  P01_V --> T08_I
+  T08_R --> T08_I
+  T08_V["T08.V: independent-review"]
+  T08_I --> T08_V
+  P01_V --> T08_V
+  T09_R["T09.R: reference"]
+  P00_V --> T09_R
+  T09_I["T09.I: implementation-or-gate"]
+  P01_V --> T09_I
+  T09_R --> T09_I
+  T09_V["T09.V: independent-review"]
+  T09_I --> T09_V
+  P01_V --> T09_V
+  T10_R["T10.R: reference"]
+  P00_V --> T10_R
+  T10_I["T10.I: implementation-or-gate"]
+  P01_V --> T10_I
+  T10_R --> T10_I
+  T10_V["T10.V: independent-review"]
+  T10_I --> T10_V
+  P01_V --> T10_V
+  T11_R["T11.R: reference"]
+  P00_V --> T11_R
+  T11_I["T11.I: implementation-or-gate"]
+  P01_V --> T11_I
+  T11_R --> T11_I
+  T11_V["T11.V: independent-review"]
+  T11_I --> T11_V
+  P01_V --> T11_V
+  T12_R["T12.R: reference"]
+  P00_V --> T12_R
+  T12_I["T12.I: implementation-or-gate"]
+  P01_V --> T12_I
+  T12_R --> T12_I
+  T12_V["T12.V: independent-review"]
+  T12_I --> T12_V
+  P01_V --> T12_V
+  T13_R["T13.R: reference"]
+  P00_V --> T13_R
+  T13_I["T13.I: implementation-or-gate"]
+  P01_V --> T13_I
+  T13_R --> T13_I
+  T13_V["T13.V: independent-review"]
+  T13_I --> T13_V
+  P01_V --> T13_V
+  T14_R["T14.R: reference"]
+  P00_V --> T14_R
+  T14_I["T14.I: implementation-or-gate"]
+  B04_V --> T14_I
+  P01_V --> T14_I
+  T14_R --> T14_I
+  T14_V["T14.V: independent-review"]
+  T14_I --> T14_V
+  P01_V --> T14_V
+  T15_R["T15.R: reference"]
+  P00_V --> T15_R
+  T15_I["T15.I: implementation-or-gate"]
+  Q14_V --> T15_I
+  Q15_V --> T15_I
+  T15_R --> T15_I
+  T15_V["T15.V: independent-review"]
+  T15_I --> T15_V
+  P01_V --> T15_V
+```

@@ -1,0 +1,312 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "provenance",
+    "cases"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 42,
+      "maxItems": 42,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    },
+    "alternateReferences": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "provenance",
+          "overrides"
+        ],
+        "properties": {
+          "provenance": {
+            "$ref": "#/$defs/provenance"
+          },
+          "overrides": {
+            "type": "array",
+            "maxItems": 42,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "stdout"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "stdout": {
+                  "type": "string",
+                  "maxLength": 4097
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "implementation",
+        "python",
+        "unicode",
+        "intMaxStrDigits",
+        "recursionLimit"
+      ],
+      "properties": {
+        "implementation": {
+          "const": "CPython"
+        },
+        "python": {
+          "type": "string",
+          "pattern": "^3\\.[0-9]+\\.[0-9]+$"
+        },
+        "unicode": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "intMaxStrDigits": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "recursionLimit": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "rawRequest",
+        "layer",
+        "stdout"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "enum": [
+            "integer-control",
+            "integral-float",
+            "exponent",
+            "negative-zero",
+            "negative-integer-zero",
+            "nested",
+            "unsafe-neighbors",
+            "fraction-control",
+            "limit-1",
+            "limit-1.0",
+            "limit-1e0",
+            "limit-true",
+            "limit-\"1\"",
+            "limit-null",
+            "error-wording",
+            "unicode-0xdf",
+            "unicode-0x1ccd6",
+            "unicode-0x1e6c0",
+            "nested-object-float",
+            "equal-exponent-floats",
+            "positive-exponent",
+            "small-exponent",
+            "negative-float-zero",
+            "large-equal-integers",
+            "nan-scope",
+            "infinity-scope",
+            "negative-infinity-scope",
+            "escaped-key",
+            "duplicate-scope-key",
+            "duplicate-limit-last-float",
+            "invalid-trailing-comma",
+            "invalid-number",
+            "invalid-empty",
+            "invalid-trailing-document",
+            "secret-projection",
+            "escaped-string",
+            "depth-within-harness",
+            "depth-limit",
+            "input-limit",
+            "output-limit",
+            "integer-digit-limit",
+            "float-underflow"
+          ]
+        },
+        "rawRequest": {
+          "type": "string",
+          "maxLength": 8194
+        },
+        "layer": {
+          "enum": [
+            "application",
+            "interpreter",
+            "harness"
+          ]
+        },
+        "stdout": {
+          "type": "string",
+          "maxLength": 4097
+        }
+      }
+    },
+    "outcome": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "result"
+          ],
+          "properties": {
+            "result": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "answerKey",
+                  "confidenceBand",
+                  "reasonCodes"
+                ],
+                "properties": {
+                  "answerKey": {
+                    "const": "synthetic-a"
+                  },
+                  "confidenceBand": {
+                    "enum": [
+                      "exact",
+                      "high",
+                      "uncertain",
+                      "none"
+                    ]
+                  },
+                  "reasonCodes": {
+                    "type": "array",
+                    "maxItems": 10,
+                    "items": {
+                      "enum": [
+                        "match_exact_question",
+                        "scope_match",
+                        "scope_mismatch",
+                        "field_class_match",
+                        "sensitivity_match"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "result"
+          ],
+          "properties": {
+            "result": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "tokens",
+                "normalized",
+                "features",
+                "negation"
+              ],
+              "properties": {
+                "tokens": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                },
+                "normalized": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "features": {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                },
+                "negation": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "error"
+          ],
+          "properties": {
+            "error": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "message"
+              ],
+              "properties": {
+                "name": {
+                  "enum": [
+                    "AnswerMatchError",
+                    "TypeError",
+                    "JSONDecodeError",
+                    "ValueError",
+                    "HarnessLimitError"
+                  ]
+                },
+                "message": {
+                  "enum": [
+                    "candidate limit is invalid",
+                    "cannot use 'list' as a set element (unhashable type: 'list')",
+                    "Illegal trailing comma before end of object: line 1 column 24 (char 23)",
+                    "Expecting ',' delimiter: line 1 column 11 (char 10)",
+                    "Expecting value: line 1 column 1 (char 0)",
+                    "Extra data: line 1 column 3 (char 2)",
+                    "depth limit exceeded",
+                    "input limit exceeded",
+                    "output limit exceeded",
+                    "Exceeds the limit (4300 digits) for integer string conversion: value has 4301 digits; use sys.set_int_max_str_digits() to increase the limit",
+                    "unhashable type: 'list'",
+                    "Expecting property name enclosed in double quotes: line 1 column 25 (char 24)"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

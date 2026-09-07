@@ -1,0 +1,280 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "scripts/smoke-plugin.sh",
+      "sha256": "1258a20ab23ce3a9358c34fa73f74377725c8a5bcab85defa4a8e9ed1a1d5416",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/smoke/artifacts.py",
+      "sha256": "ff7c63a8a33cde557c8f6d3f90489daa20536c710b75f2d08d9ab9c91a479306",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/smoke/fixture_build.py",
+      "sha256": "9ecbad22f55173f713eaae358e0f630fa70b37b7cf959013605353b128f8160b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/smoke/plugin_install_verify.py",
+      "sha256": "ef38f26e79a4318422c1ab15ddb13c4b370158fa309dfb7e16ee12f7958e692f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/smoke/repository_contracts.py",
+      "sha256": "1f9a8c6e182b3f1cee76b7abc9a837f4343f06bf609a177bded88da7774571af",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/smoke/store_lifecycle.py",
+      "sha256": "f3f05de027e963b5f4a8565af72b1963bc612306f93819086a7e465e4a2bb7fd",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/smoke/upgrade_verify.py",
+      "sha256": "f56a282b1bb4046f4f458729933e0a79b7a1074611d1da7397ecef79c3ae00dc",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/smoke/workspace_verify.py",
+      "sha256": "3354db6271975d442c6e378ac6892f8f1105b9a7f6b2eb3322c5d1a2779d746a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/raw-json/float-scope.ts",
+      "sha256": "b2b6905612bd7159c978d78aada33886078cd063ae19740fddbebe1fed4c111b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/raw-json/numeric-atom.ts",
+      "sha256": "2ee4cb4a2275c8e18e83d23090d313682356b52f3e597d246e659b33c0a18dd8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/raw-json/parser.ts",
+      "sha256": "991dca50454acd430f486f3837cf91962aa211023632136ab54bd2bc8db53444",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/raw-json/serializer.ts",
+      "sha256": "f0aeb3584ed830ea6612806e32a129013dfd1500d5b680e52c0eb85a46f37493",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/raw-json/value.ts",
+      "sha256": "4fb77f47254d9b980c5cb3f4c89e6c664dd1dfea8a0fee229ce29a9bc6104407",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/foundation.ts",
+      "sha256": "63e4bd0287b81beb96acfc11da1e7c158d91bc55d84b20ebcc6a89c58fa4b6c5",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/validation.ts",
+      "sha256": "c8f3922ea86636822248397bea0b50c26cc2f80e10bda9070aa0abac4ae58f14",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-ui/lib/resume-view.ts",
+      "sha256": "5aa051a8e22bc217977f61ba15176ea6e5cbc1672752a0cfc48ba89c1fc725ab",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "workspace/app.js",
+      "sha256": "4a50101e09cf0b5c70480074beae1ca193dffb16817d8ac8612c089c866b41c4",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "workspace/bootstrap.js",
+      "sha256": "cab93d10769a32bd01991b1965dd1d0daa3d7ad0e2c8a20f4c2f1fcd193d690e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "workspace/features/activity.js",
+      "sha256": "ea68a9c2dd6880438229b5bb965c35c5b8235b36dc77df39b69dcc3b5ff8844e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "workspace/features/answers.js",
+      "sha256": "0e52d101f15a2453f2dfb75030224e0629a023d0d3532fd59255e23d61c75ad1",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "workspace/features/automation.js",
+      "sha256": "e85037840fce9a20f7aa07c612c634dc6e8593bc970a6c40342f0787a55bffd3",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "workspace/features/bindings.js",
+      "sha256": "a71d9196946c76b510b7347b8349dc8282ebb4d1b4e5e44412a56ced7b561f05",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "workspace/features/facts.js",
+      "sha256": "3bcf4565f20237d03260ee0500bb4c6fed0a4917a35486551962ba99f301aabd",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "workspace/features/jobs.js",
+      "sha256": "dfc365a7eb2be0afbce3859e1fba012329cf84371c67b200fc28ac5b84199a2b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "workspace/features/navigation.js",
+      "sha256": "1bf514de76dd7edad2cc3f17e962b2b425f6f89558abdc0a875a8783c84574f0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "workspace/features/overview.js",
+      "sha256": "d65133c691d5a1cc66ef863d60672ef32a967140e40c821eaf13ff193995246d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "workspace/features/resumes.js",
+      "sha256": "d2003cae799cceb859c0f1120473c7df4c13182f3c3ab7692dd119f81b242607",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "workspace/features/trash.js",
+      "sha256": "36e114dfdc85f9ee98b8624043adf1de26591d51a6d776d035bdc703c005ffb3",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "workspace/index.html",
+      "sha256": "b5b535acbd2e3cd7fce6a39698bf7a27daa5a33c9cb09fed35139690e5ac5930",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "workspace/lib/api.js",
+      "sha256": "999b7881edfd229ef1e2660f58736b96ddba3dea2e6bc2fd6194e26da1c06556",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "workspace/lib/dom.js",
+      "sha256": "9c366cc6b5e5bbab2c6b74db36f45445ea533c20086e29eebd02e6cce5a0e78e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "workspace/lib/helpers.js",
+      "sha256": "6fdaab7896a1944dde732c9cb239507968d30a5bd50ee35e7249c06d89bcb33e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "workspace/lib/state.js",
+      "sha256": "f726687cb368d1238d0e9bd6c287dee9313631c51d43363441febbb966b16218",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "workspace/styles.css",
+      "sha256": "178a5c5e51fb05323bc46ecbe192ea2056202405bf68ce3269eab8c7cb62f0fa",
+      "classification": "unreviewed"
+    },
+    {
+      "path": ".agents/plugins/marketplace.json",
+      "sha256": "c065e976d8e794d3f856aba6a2662f91421f21ad847bd6fcdee45729e328ccae",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-ui/lib/trash-view.ts",
+      "sha256": "902e583fd4a30b84969270ab0221edbe81cdd931178acc6f074f49614506c4eb",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/trash-view.js",
+      "sha256": "87e621b4f4ad389bbf428ced3a487d6f72d85c15c65096518257154c1ac7c836",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/read-file.ts",
+      "sha256": "d95b7ce2ec4ba3289ff9757ac825e0a90a46d0eeb82cc1cb1c0186314656fcf2",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/read-json-object.ts",
+      "sha256": "5aa9d4d2d99e45ebc37eda205179b18572cc3df76ade653a0b3a75fb822d247f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/read-file.js",
+      "sha256": "a8dc8b3704a284df441c2a3972051f05884d4a432cc6d1ee02da4d6705483405",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/read-json-object.js",
+      "sha256": "2a2166d49f056597f31f0f8f143c34d0e280d11f8f4e463e2e98a6ec9b1aeacf",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/private-file-digest.ts",
+      "sha256": "b107cdb79cfb880d0358e828519ea92e5f2605bd01101fdc41232cfeebaad11b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/private-file-digest.js",
+      "sha256": "124d430e57ae0c8a6ba2ac2cdc9ca9bec20a00a88f8f5cd43873236802b7c836",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-ui/lib/answer-view.ts",
+      "sha256": "11ea6b2a9e9a2442e61f81e44f59a4090e66303edab436e1eef04024e19a5b01",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/answer-view.js",
+      "sha256": "2588f374d9b3a00c1fbbc54d359daf9bea00367c624bc70d3092ca39d90c2573",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-ui/lib/activity-view.ts",
+      "sha256": "779d7ee2c9e06c82595d021a1aed408e89bf138e7e0811049b886f23a9c58105",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/activity-view.js",
+      "sha256": "417ff0ff0ddb43fb34082353f2e40635265f2071f497be928caa745273ff7ec7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-ui/lib/profile-view.ts",
+      "sha256": "9cd3886a190c9c44bb2a848879ecdda5ef0cf3260405f34f226c348f9600b5a0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/profile-view.js",
+      "sha256": "8be62aa24ba0c8a13811ec35a13b801318aa11dedbd1c511278f0982c1814afe",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/managed-resume-path.ts",
+      "sha256": "6d37e77111be1c779cef6c69a9c74d7133901ddc4a324e8363b8875f57968db8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/posix-path.ts",
+      "sha256": "41c277795eef979813310920155934e0ee9653342bdf1a1f447212223076eebd",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/managed-resume-path.js",
+      "sha256": "8edb0f90edad5937732d7a103c55d2a1f6cfdb2e1e506446c035bd110a084ee9",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/posix-path.js",
+      "sha256": "0dfc066624aed50b277864450920a7258a651355e827fd176e670317b87f9c04",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/posix-path-bytes.ts",
+      "sha256": "ef3495003e22e409385f7943afc768f88e172ed9732256fe14a19ffac2adba87",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/posix-path-bytes.js",
+      "sha256": "0efde48362bfeeeb08d28bc52aaf47f94119f46b396abe8d14ec585a17d14ba5",
+      "classification": "unreviewed"
+    }
+  ]
+}

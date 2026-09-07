@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "journal:account-operation-journal.json:operation:null",
+      "kind": "journal",
+      "path": "account-operation-journal.json",
+      "discriminator": "operation",
+      "value": null,
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/accounts/settings.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:account-operation-journal.json:operation.stage:prepared",
+      "kind": "journal",
+      "path": "account-operation-journal.json",
+      "discriminator": "operation.stage",
+      "value": "prepared",
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/accounts/settings.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:account-operation-journal.json:operation.stage:credential_provisioned",
+      "kind": "journal",
+      "path": "account-operation-journal.json",
+      "discriminator": "operation.stage",
+      "value": "credential_provisioned",
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/accounts/settings.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:account-operation-journal.json:operation.stage:signup_in_progress",
+      "kind": "journal",
+      "path": "account-operation-journal.json",
+      "discriminator": "operation.stage",
+      "value": "signup_in_progress",
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/accounts/settings.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

@@ -1,0 +1,309 @@
+{
+  "schemaVersion": 1,
+  "nodes": [
+    {
+      "id": "ACC",
+      "dependencies": [
+        "I",
+        "POL",
+        "READ",
+        "TX"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "ANS",
+      "dependencies": [
+        "I",
+        "MATCH",
+        "PF",
+        "READ",
+        "TX"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "ASSEMBLE",
+      "dependencies": [
+        "ATT",
+        "DIST",
+        "I",
+        "JOUR",
+        "PROJ",
+        "REPLAY",
+        "UIF"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "ATT",
+      "dependencies": [
+        "ACC",
+        "FINAL",
+        "I",
+        "NATIVE",
+        "SESS"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "AUTH",
+      "dependencies": [
+        "I"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "CHROME",
+      "dependencies": [
+        "FS",
+        "I"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "CI",
+      "dependencies": [],
+      "status": "open"
+    },
+    {
+      "id": "CLOSE",
+      "dependencies": [
+        "ASSEMBLE",
+        "I",
+        "REF"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "DIST",
+      "dependencies": [
+        "HOST",
+        "I"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "DONE",
+      "dependencies": [],
+      "status": "open"
+    },
+    {
+      "id": "FINAL",
+      "dependencies": [
+        "I"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "FINALQA",
+      "dependencies": [
+        "I",
+        "REMOVE"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "FS",
+      "dependencies": [
+        "DONE",
+        "I"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "HOST",
+      "dependencies": [
+        "I"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "I",
+      "dependencies": [],
+      "status": "open"
+    },
+    {
+      "id": "JOB",
+      "dependencies": [
+        "I",
+        "READ",
+        "TX"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "JOUR",
+      "dependencies": [
+        "ACC",
+        "ANS",
+        "I",
+        "JOB",
+        "PF",
+        "RES"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "MATCH",
+      "dependencies": [
+        "I",
+        "SEM"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "NATIVE",
+      "dependencies": [
+        "I"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "PF",
+      "dependencies": [
+        "I",
+        "READ",
+        "SEM",
+        "TX"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "POL",
+      "dependencies": [
+        "I",
+        "SEM"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "PROJ",
+      "dependencies": [
+        "AUTH",
+        "I",
+        "READ"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "QA",
+      "dependencies": [
+        "I"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "READ",
+      "dependencies": [
+        "FS",
+        "I",
+        "SEM"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "READY",
+      "dependencies": [
+        "FINALQA",
+        "I"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "REF",
+      "dependencies": [
+        "I"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "REHEARSE",
+      "dependencies": [
+        "CI",
+        "CLOSE",
+        "DIST",
+        "I"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "RELEASE",
+      "dependencies": [
+        "READY"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "REMOVE",
+      "dependencies": [
+        "I",
+        "REHEARSE"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "REPLAY",
+      "dependencies": [
+        "CHROME",
+        "FINAL",
+        "I",
+        "QA",
+        "TX"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "RES",
+      "dependencies": [
+        "I",
+        "READ",
+        "TX"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "SEM",
+      "dependencies": [
+        "DONE",
+        "I"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "SESS",
+      "dependencies": [
+        "I",
+        "JOUR",
+        "MATCH",
+        "POL"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "TX",
+      "dependencies": [
+        "FS",
+        "I"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "UI0",
+      "dependencies": [
+        "DONE",
+        "I"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "UIF",
+      "dependencies": [
+        "I",
+        "PROJ",
+        "UI0"
+      ],
+      "status": "open"
+    }
+  ]
+}

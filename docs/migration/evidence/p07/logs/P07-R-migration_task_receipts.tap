@@ -1,0 +1,70 @@
+TAP version 13
+# Subtest: task receipts accept only exact immutable subject evidence and keep parent acceptance open
+ok 1 - task receipts accept only exact immutable subject evidence and keep parent acceptance open
+  ---
+  duration_ms: 2.854833
+  type: 'test'
+  ...
+# Subtest: task receipts reject wrong names with identical passing counts and unsupported TAP
+ok 2 - task receipts reject wrong names with identical passing counts and unsupported TAP
+  ---
+  duration_ms: 2.21125
+  type: 'test'
+  ...
+# Subtest: task receipts reject self review, wrong SHA, stale inputs, budgets, missing artifacts and ownership escapes
+ok 3 - task receipts reject self review, wrong SHA, stale inputs, budgets, missing artifacts and ownership escapes
+  ---
+  duration_ms: 2.732541
+  type: 'test'
+  ...
+# Subtest: task receipt dependencies are fixed by the approved DAG and invalidate the entire batch
+ok 4 - task receipt dependencies are fixed by the approved DAG and invalidate the entire batch
+  ---
+  duration_ms: 0.359292
+  type: 'test'
+  ...
+# Subtest: task receipts preserve historical evidence through an approved review and dependent edit chain
+ok 5 - task receipts preserve historical evidence through an approved review and dependent edit chain
+  ---
+  duration_ms: 1.268167
+  type: 'test'
+  ...
+# Subtest: task receipts enforce rename and deletion ownership and nonincreasing actual source size
+ok 6 - task receipts enforce rename and deletion ownership and nonincreasing actual source size
+  ---
+  duration_ms: 0.413583
+  type: 'test'
+  ...
+# Subtest: task TAP rejects duplicate headers and results before their announcements
+ok 7 - task TAP rejects duplicate headers and results before their announcements
+  ---
+  duration_ms: 0.05425
+  type: 'test'
+  ...
+# Subtest: receipt size enforcement includes references and extended source types but excludes planning data
+ok 8 - receipt size enforcement includes references and extended source types but excludes planning data
+  ---
+  duration_ms: 0.431458
+  type: 'test'
+  ...
+# Subtest: task receipts bind observed TAP duration to timeout and runner wall time with one millisecond tolerance
+ok 9 - task receipts bind observed TAP duration to timeout and runner wall time with one millisecond tolerance
+  ---
+  duration_ms: 0.589
+  type: 'test'
+  ...
+# Subtest: task receipts reject duplicate reserved metrics that conceal the terminal duration
+ok 10 - task receipts reject duplicate reserved metrics that conceal the terminal duration
+  ---
+  duration_ms: 0.6435
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 51.302666

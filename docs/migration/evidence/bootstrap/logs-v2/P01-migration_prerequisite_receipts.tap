@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: verified evidence unlocks only its prerequisite kind
+ok 1 - verified evidence unlocks only its prerequisite kind
+  ---
+  duration_ms: 1.39125
+  type: 'test'
+  ...
+# Subtest: status, review or outcome assertions cannot replace successful evidence
+ok 2 - status, review or outcome assertions cannot replace successful evidence
+  ---
+  duration_ms: 0.761334
+  type: 'test'
+  ...
+# Subtest: immutable revisions and current files must agree
+ok 3 - immutable revisions and current files must agree
+  ---
+  duration_ms: 0.621584
+  type: 'test'
+  ...
+# Subtest: every requirement needs canonical command and known environment
+ok 4 - every requirement needs canonical command and known environment
+  ---
+  duration_ms: 0.158
+  type: 'test'
+  ...
+# Subtest: captured TAP must match counts and be complete, current and supported
+ok 5 - captured TAP must match counts and be complete, current and supported
+  ---
+  duration_ms: 0.233042
+  type: 'test'
+  ...
+# Subtest: registered prerequisite scope cannot shrink to a convenient passing subset
+ok 6 - registered prerequisite scope cannot shrink to a convenient passing subset
+  ---
+  duration_ms: 0.113542
+  type: 'test'
+  ...
+# Subtest: malformed records and duplicate receipts return errors without partial unlocking
+ok 7 - malformed records and duplicate receipts return errors without partial unlocking
+  ---
+  duration_ms: 0.2755
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 37.911667

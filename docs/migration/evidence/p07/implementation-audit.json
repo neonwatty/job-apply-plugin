@@ -1,0 +1,274 @@
+{
+  "schemaVersion": 1,
+  "id": "p07-implementation-audit",
+  "assignmentIds": [
+    "P07.I",
+    "P07.V"
+  ],
+  "allowed_files": [
+    "tools/migration/task-lineage.mjs",
+    "tools/migration/load-task-lineage.mjs",
+    "tools/migration/load-task-evidence.mjs",
+    "tools/migration/task-manifests.mjs",
+    "tools/migration/task-receipts.mjs",
+    "tools/migration/task-handoffs.mjs",
+    "tools/migration/check.mjs",
+    "tools/migration/task-metadata.mjs",
+    "tests_js/migration_task_manifests.test.mjs",
+    "tests_js/migration_task_receipts.test.mjs",
+    "tests_js/migration_task_loader.test.mjs",
+    "tests_js/migration_packages.test.mjs",
+    "tests_js/migration_task_handoffs.test.mjs",
+    "tests_js/migration_task_metadata.test.mjs",
+    "tests_js/migration_task_support.mjs",
+    "tests_js/migration_task_handoff_support.mjs",
+    "tests_js/migration_task_lineage.test.mjs",
+    "tests_js/migration_task_replacements.test.mjs",
+    "tests_js/migration_task_lineage_lifecycle.test.mjs",
+    "tests_js/migration_task_lineage_support.mjs",
+    "tests_js/migration_task_lineage_git_support.mjs",
+    "docs/migration/evidence/p07/implementation.md",
+    "docs/migration/evidence/p07/test-design.md",
+    "docs/migration/evidence/p07/implementation-audit.json",
+    "docs/migration/evidence/p07/P07.I.json",
+    "docs/migration/evidence/p07/P07.V.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "p07.audit.migration_task_manifests",
+    "p07.audit.migration_task_receipts",
+    "p07.audit.migration_task_loader",
+    "p07.audit.migration_packages",
+    "p07.audit.migration_task_handoffs",
+    "p07.audit.migration_task_metadata",
+    "p07.audit.lineage",
+    "p07.audit.replacements",
+    "p07.audit.lineage-lifecycle"
+  ],
+  "cells": [
+    {
+      "id": "P07.migration_task_manifests",
+      "requirementIds": [
+        "p07.audit.migration_task_manifests"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_manifests.test.mjs"
+      ],
+      "testNames": [
+        "task manifests bind an independently scoped audit without product acceptance",
+        "task manifests reject malformed fields and changes to approved scope or execution identities",
+        "task manifest invalid batches unlock no otherwise valid entry",
+        "task manifests bound eight modules and require an owned extraction and baseline for oversized sources",
+        "product task manifests require every registered scenario binding and platform",
+        "source size scope mirrors repository extensions and exclusions independently of production ownership",
+        "accepted product predecessors do not silently release ownership to a ready successor"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p07/logs/P07-migration_task_manifests.tap"
+    },
+    {
+      "id": "P07.migration_task_receipts",
+      "requirementIds": [
+        "p07.audit.migration_task_receipts"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_receipts.test.mjs"
+      ],
+      "testNames": [
+        "task receipts accept only exact immutable subject evidence and keep parent acceptance open",
+        "task receipts reject wrong names with identical passing counts and unsupported TAP",
+        "task receipts reject self review, wrong SHA, stale inputs, budgets, missing artifacts and ownership escapes",
+        "task receipt dependencies are fixed by the approved DAG and invalidate the entire batch",
+        "task receipts preserve historical evidence through an approved review and dependent edit chain",
+        "task receipts enforce rename and deletion ownership and nonincreasing actual source size",
+        "task TAP rejects duplicate headers and results before their announcements",
+        "receipt size enforcement includes references and extended source types but excludes planning data",
+        "task receipts bind observed TAP duration to timeout and runner wall time with one millisecond tolerance",
+        "task receipts reject duplicate reserved metrics that conceal the terminal duration"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p07/logs/P07-migration_task_receipts.tap"
+    },
+    {
+      "id": "P07.migration_task_loader",
+      "requirementIds": [
+        "p07.audit.migration_task_loader"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_loader.test.mjs"
+      ],
+      "testNames": [
+        "task loader binds actual tested Git subject separately from later evidence commits",
+        "task loader rejects dirty and untracked evidence without executing receipt commands",
+        "task loader rejects tracked symlinks, altered frozen manifests and out of scope subject edits",
+        "task loader preserves absent catalog behavior",
+        "task Git reads ignore replacement objects for declared immutable revisions",
+        "task loader reads actual object-form source-size baselines and verifies a shrinking extraction",
+        "task lifecycle validates staged planning, future tests, subject, evidence and receipt commits",
+        "task lifecycle opens acceptance during a frozen successor and rejects undeclared drift",
+        "execution base cannot conceal source edits or use a fabricated review lock",
+        "accepted subject must contain its declared literal test identities even when planning deferred discovery"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p07/logs/P07-migration_task_loader.tap"
+    },
+    {
+      "id": "P07.migration_packages",
+      "requirementIds": [
+        "p07.audit.migration_packages"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_packages.test.mjs"
+      ],
+      "testNames": [
+        "ready package has explicit scope and accepted inputs without claiming acceptance",
+        "a passing reference for another requirement cannot unlock this package",
+        "accepted historical ownership can be explicitly released for a dependent repair",
+        "closed fields, ownership, coverage and inert activation fail closed",
+        "unsafe or duplicate ownership paths cannot alias active ownership",
+        "unknown or unaccepted reference/interface evidence cannot unlock ready work",
+        "implemented dependency alone is not accepted and cannot unlock a child",
+        "cycles, unknown dependencies and duplicate IDs are rejected",
+        "active package ownership overlaps fail even when the named owner is identical",
+        "implemented scope must exist and missing context cannot fabricate readiness"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p07/logs/P07-migration_packages.tap"
+    },
+    {
+      "id": "P07.migration_task_handoffs",
+      "requirementIds": [
+        "p07.audit.migration_task_handoffs"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_handoffs.test.mjs"
+      ],
+      "testNames": [
+        "P06 registered product overlap requires an independently frozen handoff",
+        "P06 exact handoff permits only the named successor and overlapping paths",
+        "P06 forged stale expanded and competing handoffs unlock no product ownership",
+        "P06 unreleased predecessor paths remain reserved",
+        "P06 actual checker keeps pending successor acceptance open and accepts independently verified completion"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p07/logs/P07-migration_task_handoffs.tap"
+    },
+    {
+      "id": "P07.migration_task_metadata",
+      "requirementIds": [
+        "p07.audit.migration_task_metadata"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_metadata.test.mjs"
+      ],
+      "testNames": [
+        "P06 coordinator catalog and review lock evolve through actual activation and receipt snapshots",
+        "P06 metadata evolution cannot conceal source edits or unrelated shard changes",
+        "P06 frozen metadata identities and historical evidence remain immutable",
+        "P06 actual dependency-linked hook snapshots support the complete registered product lifecycle"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p07/logs/P07-migration_task_metadata.tap"
+    },
+    {
+      "id": "P07.lineage",
+      "requirementIds": [
+        "p07.audit.lineage"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_lineage.test.mjs"
+      ],
+      "testNames": [
+        "P07 lineage preserves accepted DAG edges and their exact receipt bindings",
+        "P07 lineage binds immutable versions and rejects cycles or fake ancestry",
+        "P07 lineage maps implementation and review roles without laundering acceptance",
+        "P07 lineage rejects competing transitions and ambiguous active versions",
+        "P07 lineage preserves required coverage across approved refinements"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p07/logs/P07-lineage.tap"
+    },
+    {
+      "id": "P07.replacements",
+      "requirementIds": [
+        "p07.audit.replacements"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_replacements.test.mjs"
+      ],
+      "testNames": [
+        "P07 unexecuted refinement preserves the original contract without inventing an attempt",
+        "P07 rejected attempt remains immutable while an explicit replacement is prepared",
+        "P07 replacement acceptance requires fresh exact-subject revalidation",
+        "P07 altered historical attempt logs and rejection records fail closed",
+        "P07 ambiguous or competing replacements grant no acceptance"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p07/logs/P07-replacements.tap"
+    },
+    {
+      "id": "P07.lineage-lifecycle",
+      "requirementIds": [
+        "p07.audit.lineage-lifecycle"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_lineage_lifecycle.test.mjs"
+      ],
+      "testNames": [
+        "P07 replacement cannot weaken accepted dependencies or required coverage",
+        "P07 replacement cycles and fake Git ancestry fail closed",
+        "P07 later replacement success cannot retroactively pass the rejected attempt",
+        "P07 lineage activation and receipt snapshots preserve accepted history"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p07/logs/P07-lineage-lifecycle.tap"
+    }
+  ],
+  "artifacts": []
+}

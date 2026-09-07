@@ -1,0 +1,379 @@
+# Complete package DAG
+
+Each package expands into the independent assignments in the [task catalog](task-catalog.md).
+
+```mermaid
+flowchart TD
+  P00["P00: Foundation receipt reconciliation"]
+  P01["P01: Executable task and acceptance receipts"]
+  P00 --> P01
+  P02["P02: Support matrix and test-host decisions"]
+  P00 --> P02
+  P03["P03: Reviewed affected-test mappings"]
+  P01 --> P03
+  P04["P04: One heavy-run lease per host"]
+  P01 --> P04
+  P05["P05: Native evidence identity and required-cell runner"]
+  P01 --> P05
+  P02 --> P05
+  P06["P06: Reviewed product ownership handoff"]
+  P01 --> P06
+  P07["P07: Approved DAG lineage for pending task refinements"]
+  P06 --> P07
+  S01["S01: Codepoint-keyed JSON object leaf"]
+  P00 --> S01
+  S02["S02: Python-compatible JSON byte decoder"]
+  P00 --> S02
+  S08["S08: Shared point-aware parser core with legacy entry points"]
+  S01 --> S08
+  S02 --> S08
+  S03["S03: Public typed parser and ASCII serializer activation"]
+  S08 --> S03
+  S04 --> S03
+  S05 --> S03
+  S04["S04: Codepoint-preserving persisted chunks"]
+  S08 --> S04
+  S05["S05: Text-aware paths and content caches"]
+  S08 --> S05
+  S06["S06: Unicode normalization and answer matching"]
+  S03 --> S06
+  S07["S07: Caller depth and diagnostic closure"]
+  S03 --> S07
+  S04 --> S07
+  S05 --> S07
+  F01["F01: Native filesystem path and permission closure"]
+  S05 --> F01
+  P02 --> F01
+  P05 --> F01
+  F02["F02: Typed document reads and schema validation"]
+  F01 --> F02
+  S07 --> F02
+  F03["F03: Lock and atomic-write native closure"]
+  F01 --> F03
+  S04 --> F03
+  F04["F04: Streaming history reader and validation"]
+  F02 --> F04
+  F05["F05: Real history idempotency and append integration"]
+  F04 --> F05
+  F03 --> F05
+  S04 --> F05
+  F06["F06: Shared journal protocol interfaces"]
+  F03 --> F06
+  F02 --> F06
+  A01["A01: Pure account/readiness and policy decisions"]
+  S07 --> A01
+  A02["A02: HTTP trust and body transport"]
+  S02 --> A02
+  P01 --> A02
+  S03 --> A02
+  A03["A03: Read projections and queries"]
+  F02 --> A03
+  A04["A04: HTTP read and asset routes"]
+  A02 --> A04
+  A03 --> A04
+  D01["D01: Profile mutations"]
+  F02 --> D01
+  F03 --> D01
+  F06 --> D01
+  S07 --> D01
+  D02["D02: Fact mutations and provenance"]
+  D01 --> D02
+  D03["D03: Job CRUD and legacy reads"]
+  F02 --> D03
+  F03 --> D03
+  F06 --> D03
+  D04["D04: Job upsert and overview"]
+  D03 --> D04
+  F05 --> D04
+  D05["D05: Job trash, restore and delete"]
+  D04 --> D05
+  D06["D06: Resume import and assignment mutations"]
+  F02 --> D06
+  F03 --> D06
+  F06 --> D06
+  D07["D07: Resume read, trash and restore"]
+  D06 --> D07
+  D08["D08: Extraction request lifecycle"]
+  D06 --> D08
+  D02 --> D08
+  D09["D09: Extraction proposals and grouped review"]
+  D08 --> D09
+  D10["D10: Answer reads and reuse selection"]
+  F02 --> D10
+  S06 --> D10
+  D02 --> D10
+  D11["D11: Answer CRUD and mappings"]
+  D10 --> D11
+  F03 --> D11
+  F06 --> D11
+  D12["D12: Answer merge and cleanup"]
+  D11 --> D12
+  D13["D13: Account registry"]
+  F02 --> D13
+  F03 --> D13
+  F06 --> D13
+  A01 --> D13
+  D14["D14: Account settings and scopes"]
+  D13 --> D14
+  D15["D15: Trusted Fill state transitions"]
+  D14 --> D15
+  D16["D16: Account operation persistence"]
+  D15 --> D16
+  J01["J01: Extraction recovery"]
+  D09 --> J01
+  F06 --> J01
+  J02["J02: Account recovery"]
+  D16 --> J02
+  F06 --> J02
+  J03["J03: Coordinator journal persistence and recovery"]
+  D05 --> J03
+  D07 --> J03
+  D12 --> J03
+  J01 --> J03
+  J02 --> J03
+  F05 --> J03
+  J04["J04: Startup orchestration"]
+  J03 --> J04
+  C01["C01: Session documents and lifecycle"]
+  J04 --> C01
+  A01 --> C01
+  S06 --> C01
+  C02["C02: Claims, leases and heartbeat"]
+  C01 --> C02
+  C03["C03: Progress and attention projections"]
+  C02 --> C03
+  C04["C04: Approval and readiness coordination"]
+  C03 --> C04
+  N01["N01: Credential adapter and identity"]
+  P02 --> N01
+  D13 --> N01
+  P05 --> N01
+  N02["N02: Account native execution adapters"]
+  N01 --> N02
+  D16 --> N02
+  N03["N03: Trusted Fill native boundary"]
+  N02 --> N03
+  D15 --> N03
+  Q01["Q01: Recorder filesystem and private checkpoints"]
+  F03 --> Q01
+  Q02["Q02: Recorder capture and safety modules"]
+  Q01 --> Q02
+  A01 --> Q02
+  Q16 --> Q02
+  Q03["Q03: Recorder broker and guardian"]
+  Q02 --> Q03
+  Q04["Q04: QA and account renderers"]
+  P01 --> Q04
+  Q05["Q05: QA HTTP and account test servers"]
+  A02 --> Q05
+  Q04 --> Q05
+  Q06["Q06: Chrome discovery and authenticated control"]
+  F01 --> Q06
+  Q07["Q07: Chrome supervision and lifecycle"]
+  Q06 --> Q07
+  Q08["Q08: Human-only final-action policy"]
+  A01 --> Q08
+  F03 --> Q08
+  Q09["Q09: Replay prepare and lifecycle"]
+  Q03 --> Q09
+  Q05 --> Q09
+  Q07 --> Q09
+  Q08 --> Q09
+  Q14 --> Q09
+  Q15 --> Q09
+  Q10["Q10: Replay evaluate, report and cleanup"]
+  Q09 --> Q10
+  Q11["Q11: Privacy scanner and signed tombstones"]
+  F03 --> Q11
+  Q02 --> Q11
+  Q12["Q12: Promotion approval and candidate binding"]
+  Q10 --> Q12
+  Q11 --> Q12
+  Q13["Q13: Promotion transaction and rollback"]
+  Q12 --> Q13
+  F03 --> Q13
+  C05["C05: Task CLI and broker integration"]
+  C04 --> C05
+  N03 --> C05
+  Q08 --> C05
+  C06["C06: Attempt CLI lifecycle"]
+  C05 --> C06
+  Q03 --> C06
+  U01["U01: Remaining pure UI helpers"]
+  P00 --> U01
+  U02["U02: UI API, state and DOM infrastructure"]
+  U01 --> U02
+  U03["U03: Overview and jobs UI"]
+  U02 --> U03
+  U04["U04: Answers and facts UI"]
+  U02 --> U04
+  U05["U05: Resumes and unified trash UI"]
+  U02 --> U05
+  U06["U06: Activity, automation and navigation UI"]
+  U02 --> U06
+  U07["U07: UI bindings and bootstrap composition"]
+  U03 --> U07
+  U04 --> U07
+  U05 --> U07
+  U06 --> U07
+  W01["W01: Profile/fact write routes"]
+  A02 --> W01
+  D02 --> W01
+  W02["W02: Job lifecycle write routes"]
+  A02 --> W02
+  D05 --> W02
+  W03["W03: Resume and extraction write routes"]
+  A02 --> W03
+  D07 --> W03
+  D09 --> W03
+  J01 --> W03
+  W04["W04: Answer write routes"]
+  A02 --> W04
+  D12 --> W04
+  W05["W05: Account/settings/Trusted Fill write routes"]
+  A02 --> W05
+  D16 --> W05
+  J02 --> W05
+  N03 --> W05
+  B01["B01: Native binary stream adapter"]
+  P02 --> B01
+  F01 --> B01
+  P05 --> B01
+  B02["B02: Native data-copy acceleration"]
+  B01 --> B02
+  B03["B03: Metadata-copy adapter"]
+  B01 --> B03
+  B04["B04: Critical artifact copy and verification"]
+  B02 --> B04
+  B03 --> B04
+  B05["B05: Packaged runtime selection and build"]
+  P02 --> B05
+  B06["B06: Python-free installed launchers"]
+  B04 --> B06
+  B05 --> B06
+  G01 --> B06
+  G02 --> B06
+  G03 --> B06
+  B07["B07: Clean-host installation evidence"]
+  B06 --> B07
+  P05 --> B07
+  T01["T01: Portable Python regression-test conversion"]
+  T06 --> T01
+  T07 --> T01
+  T08 --> T01
+  T09 --> T01
+  T10 --> T01
+  T11 --> T01
+  T12 --> T01
+  T02["T02: Browser and oracle regression conversion"]
+  Q05 --> T02
+  U07 --> T02
+  Q14 --> T02
+  Q15 --> T02
+  G02 --> T02
+  T03["T03: Native regression-test conversion"]
+  N03 --> T03
+  B07 --> T03
+  T04["T04: Python-free development and release tools"]
+  P03 --> T04
+  P04 --> T04
+  P05 --> T04
+  T13 --> T04
+  T14 --> T04
+  T15 --> T04
+  T05["T05: Restore staging CI and server-side gates"]
+  P03 --> T05
+  P04 --> T05
+  P05 --> T05
+  G01["G01: Store facade and CLI dispatch assembly"]
+  C04 --> G01
+  D12 --> G01
+  D05 --> G01
+  D07 --> G01
+  D09 --> G01
+  D16 --> G01
+  J04 --> G01
+  G02["G02: Workspace server assembly"]
+  G01 --> G02
+  A04 --> G02
+  W01 --> G02
+  W02 --> G02
+  W03 --> G02
+  W04 --> G02
+  W05 --> G02
+  U07 --> G02
+  G03["G03: Task, attempt and QA CLI assembly"]
+  C06 --> G03
+  Q13 --> G03
+  Q07 --> G03
+  Q05 --> G03
+  Q14 --> G03
+  Q15 --> G03
+  G04["G04: Installed candidate assembly"]
+  G01 --> G04
+  G02 --> G04
+  G03 --> G04
+  B07 --> G04
+  G05["G05: Integrated storage and recovery acceptance"]
+  G01 --> G05
+  F05 --> G05
+  J04 --> G05
+  G06["G06: Integrated UI and HTTP acceptance"]
+  G02 --> G06
+  G07["G07: Integrated task and authority acceptance"]
+  G03 --> G07
+  G08["G08: Surface/writer/required-cell closure audit"]
+  G04 --> G08
+  G05 --> G08
+  G06 --> G08
+  G07 --> G08
+  P01 --> G08
+  P05 --> G08
+  P06 --> G08
+  P07 --> G08
+  G09["G09: Immutable pre-removal candidate test"]
+  G08 --> G09
+  T05 --> G09
+  G10["G10: Writer switch and post-write rollback rehearsal"]
+  G09 --> G10
+  G11["G11: Remove Python and obsolete shipped JS"]
+  G10 --> G11
+  T01 --> G11
+  T02 --> G11
+  T03 --> G11
+  T04 --> G11
+  G12["G12: Fresh final-artifact acceptance without Python"]
+  G11 --> G12
+  G13["G13: Independent final conversion review and handoff"]
+  G12 --> G13
+  Q14["Q14: Oracle state and account observations"]
+  Q05 --> Q14
+  F02 --> Q14
+  Q15["Q15: Fixture compiler and contract models"]
+  P01 --> Q15
+  Q16["Q16: Recorder ATS safety adapters"]
+  Q01 --> Q16
+  A01 --> Q16
+  T06["T06: Codec and filesystem regression conversion"]
+  P01 --> T06
+  T07["T07: Profile, fact and answer regression conversion"]
+  P01 --> T07
+  T08["T08: Job, resume and extraction regression conversion"]
+  P01 --> T08
+  T09["T09: Account and session regression conversion"]
+  P01 --> T09
+  T10["T10: CLI and workspace regression conversion"]
+  P01 --> T10
+  T11["T11: Policy, replay and privacy regression conversion"]
+  P01 --> T11
+  T12["T12: Package and runtime regression conversion"]
+  P01 --> T12
+  T13["T13: Source-size and policy checker conversion"]
+  P01 --> T13
+  T14["T14: Smoke, install and upgrade verifier conversion"]
+  B04 --> T14
+  P01 --> T14
+  T15["T15: QA fixture and scenario helper conversion"]
+  Q14 --> T15
+  Q15 --> T15
+```

@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { cleanEnvironment } from './git.mjs';
+import { createLinePrefixer } from '../test-runner/process.mjs';
 
 const active = new Set();
 let interrupted = false;
@@ -22,9 +23,14 @@ export function runLocalCommand(executable, args, options) {
     let force;
     let deadline;
     const counts = { stdout: 0, stderr: 0 };
+    const formatters = Object.fromEntries(['stdout', 'stderr'].map((stream) => [
+      stream, createLinePrefixer(`[${options.label}]`, options[stream], { finalNewline: false }),
+    ]));
+    const flushOutput = () => { formatters.stdout.flush(); formatters.stderr.flush(); };
     const finish = (code, signal = null) => {
       if (finished) return;
       finished = true;
+      flushOutput();
       clearTimeout(deadline);
       clearTimeout(force);
       active.delete(stop);
@@ -43,6 +49,7 @@ export function runLocalCommand(executable, args, options) {
     function stop(cause) {
       if (reason || finished) return;
       reason = cause;
+      flushOutput();
       options.stderr(`[${options.label}] ${cause}; terminating owned process group\n`);
       kill('SIGTERM');
       force = setTimeout(() => {
@@ -58,9 +65,11 @@ export function runLocalCommand(executable, args, options) {
         const cap = options.maxOutputBytes ?? 2 * 1024 * 1024;
         if (counts[stream] + chunk.length > cap) { stop('output-limit'); return; }
         counts[stream] += chunk.length;
-        options[stream](`[${options.label}] ${chunk.toString('utf8')}`);
+        formatters[stream].write(chunk);
       });
     }
+    child.stdout.on('end', () => formatters.stdout.flush());
+    child.stderr.on('end', () => formatters.stderr.flush());
     child.on('error', () => finish(1, 'spawn-error'));
     child.on('close', (code, signal) => { if (!reason) finish(code ?? 1, signal); });
     deadline = setTimeout(() => stop('timeout'), options.timeoutMs ?? 120_000);

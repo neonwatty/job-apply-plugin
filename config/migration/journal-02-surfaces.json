@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "journal:resume-extraction-journal.json:operation:null",
+      "kind": "journal",
+      "path": "resume-extraction-journal.json",
+      "discriminator": "operation",
+      "value": null,
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/extractions/journal.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:resume-extraction-journal.json:operation.kind:create",
+      "kind": "journal",
+      "path": "resume-extraction-journal.json",
+      "discriminator": "operation.kind",
+      "value": "create",
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/extractions/journal.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:resume-extraction-journal.json:operation.kind:review",
+      "kind": "journal",
+      "path": "resume-extraction-journal.json",
+      "discriminator": "operation.kind",
+      "value": "review",
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/extractions/journal.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:resume-extraction-journal.json:operation.kind:request-create",
+      "kind": "journal",
+      "path": "resume-extraction-journal.json",
+      "discriminator": "operation.kind",
+      "value": "request-create",
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/extractions/journal.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:resume-extraction-journal.json:operation.kind:request-close",
+      "kind": "journal",
+      "path": "resume-extraction-journal.json",
+      "discriminator": "operation.kind",
+      "value": "request-close",
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/extractions/journal.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:resume-extraction-journal.json:operation.kind:request-retry",
+      "kind": "journal",
+      "path": "resume-extraction-journal.json",
+      "discriminator": "operation.kind",
+      "value": "request-retry",
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/extractions/journal.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:resume-extraction-journal.json:operation.kind:request-complete",
+      "kind": "journal",
+      "path": "resume-extraction-journal.json",
+      "discriminator": "operation.kind",
+      "value": "request-complete",
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/extractions/journal.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:resume-extraction-journal.json:operation.kind:resume-request-close",
+      "kind": "journal",
+      "path": "resume-extraction-journal.json",
+      "discriminator": "operation.kind",
+      "value": "resume-request-close",
+      "node": "JOUR",
+      "sources": [
+        "scripts/job_apply_store/domains/extractions/journal.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "P09.transition",
+  "previousDag": {
+    "path": "docs/migration/evidence/p08/approved-dag.json",
+    "sha256": "763c50631ece1a641d2f256802479df0bd5af71d8c0e6ced64712ddea001a563",
+    "revision": "7ea2f48fecd36b4f9c77988507240f1c187f100a"
+  },
+  "nextDag": {
+    "path": "docs/migration/evidence/p09/approved-dag.json",
+    "sha256": "1cbe912355694e8340c999479a4575d0c76b163005e4370b16462cd6ca768c46",
+    "revision": "1cfc4f82b9057cd7e1caa5e84e31f12546b36603"
+  },
+  "retirements": [],
+  "additions": [
+    {
+      "id": "P09.I",
+      "manifest": {
+        "path": "docs/migration/evidence/p09/P09.I.json",
+        "sha256": "19778cc365da6a569597ae2c36664e7602440a8dd89fd63f98f7cab253a4d399",
+        "revision": "1cfc4f82b9057cd7e1caa5e84e31f12546b36603"
+      }
+    },
+    {
+      "id": "P09.V",
+      "manifest": {
+        "path": "docs/migration/evidence/p09/P09.V.json",
+        "sha256": "c19239be919254d92318e5545c815d3ed07781f9b990e212248d95ca64d35973",
+        "revision": "1cfc4f82b9057cd7e1caa5e84e31f12546b36603"
+      }
+    }
+  ],
+  "refinements": [
+    {
+      "id": "T05.I",
+      "beforeDependencies": [
+        "P03.V",
+        "P04.V",
+        "P05.V",
+        "T05.R",
+        "P03.evidence.R",
+        "P08.V"
+      ],
+      "afterDependencies": [
+        "P03.V",
+        "P04.V",
+        "P05.V",
+        "T05.R",
+        "P03.evidence.R",
+        "P08.V",
+        "P09.V"
+      ]
+    }
+  ],
+  "packageVersions": [],
+  "witnessMappings": [],
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "decision": "approved",
+  "reason": "Add captured-successor currentness bridges; retain every retired task as unaccepted and preserve all frozen evidence."
+}

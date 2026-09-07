@@ -14,6 +14,8 @@ async function fixture(t) {
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await fs.mkdir(path.join(root, "src"));
   await fs.copyFile(path.join(ROOT, "tsconfig.json"), path.join(root, "tsconfig.json"));
+  await fs.symlink(await fs.realpath(path.join(ROOT, "node_modules")),
+    path.join(root, "node_modules"), process.platform === "win32" ? "junction" : "dir");
   await fs.writeFile(path.join(root, "package.json"), '{"type":"module"}\n');
   await fs.writeFile(path.join(root, "src/main.ts"), 'export const result: string = "synthetic";\n');
   return root;
@@ -58,8 +60,35 @@ test("compiler configuration retains the strict shadow-module boundary", async (
   for (const key of ["sourceMap", "declaration", "removeComments"]) assert.equal(options[key], false, key);
   assert.equal(options.module, "NodeNext");
   assert.equal(options.target, "ES2022");
+  assert.deepEqual(options.types, ["node"]);
+  assert.deepEqual(options.lib, ["ES2022"]);
   assert.equal(options.rootDir, "src");
   assert.equal(options.outDir, "runtime");
+});
+
+test("Node builtin types compile with retained imports and reproducible modular emission", async (t) => {
+  const root = await fixture(t);
+  await fs.writeFile(path.join(root, "src/main.ts"), [
+    'import { readFile } from "node:fs/promises";',
+    'import { TextDecoder } from "node:util";',
+    'export async function readSyntheticText(file: string): Promise<string> {',
+    '  const bytes: Uint8Array = await readFile(file);',
+    '  return new TextDecoder("utf-8", { fatal: true }).decode(bytes);',
+    '}',
+    '',
+  ].join("\n"));
+  assert.deepEqual(await buildRuntime(root), { schemaVersion: 1, mode: "build", modules: 1 });
+  const first = await inventory(path.join(root, "runtime"));
+  assert.deepEqual([...first.keys()], ["main.js"]);
+  const emitted = first.get("main.js").toString("utf8");
+  assert.match(emitted, /import \{ readFile \} from "node:fs\/promises"/);
+  assert.match(emitted, /import \{ TextDecoder \} from "node:util"/);
+  await buildRuntime(root);
+  assert.deepEqual(await inventory(path.join(root, "runtime")), first);
+  await buildRuntime(root, { check: true });
+  await fs.writeFile(path.join(root, "src/node-shim.d.ts"), 'declare module "node:synthetic";\n');
+  await assert.rejects(buildRuntime(root), /implementation|exactly one/);
+  assert.deepEqual(await inventory(path.join(root, "runtime")), first);
 });
 
 test("source and emitted physical-line bounds and exact module inventories fail closed", () => {

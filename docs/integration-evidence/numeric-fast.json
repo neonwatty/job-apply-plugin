@@ -1,0 +1,58 @@
+{
+  "verifiedImplementationSha": "871251225cd3a37642ca534b01902148dfc03f0a",
+  "command": "npm run test:fast -- --receipt /tmp/numeric-integration-fast-final.json",
+  "environment": {
+    "platform": "macOS arm64",
+    "node": "22.22.3",
+    "python": "3.14.4"
+  },
+  "note": "Wrapper supplies implementation identity; original runner receipt preserved below.",
+  "receipt": {
+    "schemaVersion": 1,
+    "baseSha": null,
+    "headSha": null,
+    "changedPaths": [],
+    "selectedSuites": [
+      "typescript-check",
+      "node-foundation-fast",
+      "matrix-policy",
+      "source-size",
+      "python-fast",
+      "node-runner-fast"
+    ],
+    "fallbackReason": null,
+    "timings": [
+      {
+        "id": "typescript-check",
+        "durationMs": 272,
+        "status": "passed"
+      },
+      {
+        "id": "node-foundation-fast",
+        "durationMs": 1654,
+        "status": "passed"
+      },
+      {
+        "id": "matrix-policy",
+        "durationMs": 57,
+        "status": "passed"
+      },
+      {
+        "id": "source-size",
+        "durationMs": 179,
+        "status": "passed"
+      },
+      {
+        "id": "python-fast",
+        "durationMs": 2914,
+        "status": "passed"
+      },
+      {
+        "id": "node-runner-fast",
+        "durationMs": 3018,
+        "status": "passed"
+      }
+    ],
+    "status": "passed"
+  }
+}

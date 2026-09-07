@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "src/contracts/stat-time.ts",
+      "sha256": "3db588d43e79a198b01808fc015cca238b99d1d101fdf0905a73d35b32202a8c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/resume-modified-at.ts",
+      "sha256": "d2e7fd2f58e924e83c41b6643ab3b32597a68b533e50a2dce447c73348fe7754",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/managed-resume-observation.ts",
+      "sha256": "6564701cfc6047936be6813e6648ae2d3d369f586e2e67a25a47bcbfb582964d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/managed-resume-native.ts",
+      "sha256": "ea07c0d1b215d545a1e4ac53455df17540b9aa964145f1674322176ae275b581",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/stat-time.js",
+      "sha256": "06cadfb66c2916095fbe6310346108310bc9a3f0956ac0ea57ffff1049dcfe10",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/resume-modified-at.js",
+      "sha256": "f9c149ba51e9b60faef0233dcb11c4dbff7cc16991f9cb11a99eb00d37c95647",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/managed-resume-observation.js",
+      "sha256": "b571006e87360adf3a122e6ef2f6588d2f131b757968031e8d651550b2a3d136",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/managed-resume-native.js",
+      "sha256": "bafaf2dabdd469b4850beeea617abac5331553da5751dbaec030f224a2cac162",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/filesystem-error.ts",
+      "sha256": "c4a96e096a3d9d9ab53a72ba6316e6a36debf07840f15471043932af3409ca22",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/persisted-json.ts",
+      "sha256": "ee5f2a4bf5aef1c326b992c6566e1317629b3b31c8a054e6299b6e4a4e9f8a50",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/private-filesystem.ts",
+      "sha256": "148e3027b7e479aad29e8a652f9169b36c55acadc29b120287c61a1f81a090f7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/atomic-write-json.ts",
+      "sha256": "e8a46849a18a7af4b79998fda468d0c43542e27d31f29edd2e8dd7cacfea21d4",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/package/artifact-paths.ts",
+      "sha256": "87a7d45adb16e4f4feedad8689e1717ff1175a5a890afb36cd9ddede49146dc6",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/package/installed-artifacts.ts",
+      "sha256": "afbb9cdeb417553bd2ca6f184e848fe1a694cfd1c68f10098a309221d5915ada",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/filesystem-error.js",
+      "sha256": "8a7cf4849b7f2774a924e6a04e6943aacd34049e5056ae2770d11aa74afcad02",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/persisted-json.js",
+      "sha256": "743f54a24eb6afc853f9d49374e1a3f4cc9041f6f2c2fe22fba731cd1cb3ed04",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/private-filesystem.js",
+      "sha256": "ae06c9911a5af7bd5f589321a7888a62af4fe955c83620ae19e9086c780acbc4",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/atomic-write-json.js",
+      "sha256": "19288b5ce6d862075e1b6517f0e2d6cba70226e69e013f6802818965ea9fd28a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/package/artifact-paths.js",
+      "sha256": "1b8fdb2fcae67ab390f72b3a43ec472d4495df9f24b5cb22a8d62309fd87a6cd",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/package/installed-artifacts.js",
+      "sha256": "91e6e25154a66036a646598ea6c22608a7b1c3aeec6acb516007b24075442381",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "native/posix/flock.c",
+      "sha256": "511590e191f8764402e9bf2b03ee8307716bf79f2801d411667d3423ca444907",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/posix-flock.ts",
+      "sha256": "e48f0ab6cbec1e967b07db1d537890109354ee307eadec1f7d847eb1437818ea",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/exclusive-file-lock.ts",
+      "sha256": "eecf76c89a400179821b8fc23c2403a3030d4916b9fa7f4dad1a3bcfe0bc854a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/posix-flock.js",
+      "sha256": "db26be00c90e3767294cc06ca5bf0858da5b77202b539d7d2c22cf6ba62e9d85",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/exclusive-file-lock.js",
+      "sha256": "c0f882e731f575c2e3a3ce0e3f635a2ea16a6a271e590401d565abf271bc49f5",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/jsonl-json.ts",
+      "sha256": "5bc28e86d18f4a998d3f90b21ef02a7a618adc6627f20850a64592cdd628a76a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/jsonl-history.ts",
+      "sha256": "7e7f96db276397a35ddbabe7b0a4d61cd34c31ce7c73b585397dc22e9334e24f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/jsonl-history-io.ts",
+      "sha256": "a4008b3ffb553cf66fc446a2b5c0fa87bf2513c99e645b46543a91c0ba0f40d8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/jsonl-json.js",
+      "sha256": "ee022369d9715ad54fdc984945132e3430df273cbe0326bfb572932d8303fdc9",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/jsonl-history.js",
+      "sha256": "f7e02b1045eab673ab1ed752c7b485b85e06b968bbaecabd8e3cd204ec23bc49",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/jsonl-history-io.js",
+      "sha256": "e0cad305d415a73d83bd008354c40fde66efddc8c12c2782048a40e7571e6932",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "native/posix/timestamps.c",
+      "sha256": "6bf8cac44a8a8fb5171f2f26163bbd85f453c1883238802204c8148297e0727a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/package/posix-timestamps.ts",
+      "sha256": "4dbe7f51bfc0e38be6790d1431fd071b56bfe04003ded0113e6ca030d1ee92ab",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/package/posix-timestamps.js",
+      "sha256": "b970553b7577cb9e1a415076547a82dac3fe56694b1bf9bbb551b090b8e09eb9",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/python-text.ts",
+      "sha256": "934fd2271c7e1d61056889fd7125d6dc16559271504687bcdec8c980a796ae78",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/package/data-copy.ts",
+      "sha256": "afd0bfab443606fcb6866cd978ee80304c420a07b5f3e8d78168123f97de29a8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/package/data-copy-io.ts",
+      "sha256": "9f4f9ce9faf5a16d1a6f78848204f90ea1c69f787ed27287d4466270f3225bd9",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/python-text.js",
+      "sha256": "cdd6e3d8d634e2a2957e27759616d7b7a57e66347fa97c6d11855046bf551b4a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/package/data-copy.js",
+      "sha256": "632e4ba6f0e2b8c1954ff17bc002f9944a3c2e603341d9005ec2ba41929c46ed",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/package/data-copy-io.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/skill_documents.py",
+      "sha256": "06831df10f967087c5980b437e7425db0998e6ab6f39ecefd84a12156d6550c2",
+      "classification": "unreviewed"
+    }
+  ]
+}

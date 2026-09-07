@@ -1,0 +1,280 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "qa/recorder/broker-client.mjs",
+      "sha256": "bf273e6bb9ac43a33da640c2645008e410825a9540d01581ecaf64c8919f2c26",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/capture.mjs",
+      "sha256": "3301dce3952593e97c1e4a7407e5680e39d6bda2f0cf5b78cac3dde420b053e1",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/checkpoint.mjs",
+      "sha256": "0a15cfbe2ee4012d5f343cf5bfca39bd290b39e04cc0a316f901d074a93a9270",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/cli.mjs",
+      "sha256": "ced6f8e1c001c9b25ad3eadd872cfbd42a32870f1ded14ca461bd9e54ed5dbab",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/errors.mjs",
+      "sha256": "b1be7b7ad886ff788c621e05972c9214e414d513719d6a71922b39c1a0ed5986",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/event-budget.mjs",
+      "sha256": "d54346d2f9ada370f94dffb993f8ee85f407ff52642912a66aff1a1e4ce5ac1a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/isolated-source.mjs",
+      "sha256": "1cc904d4a791834f63501d4ba1b3a2fba5a76d14958f15ac382084b329fd48db",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/png.mjs",
+      "sha256": "24f02ac067903229193bb73279e8c35380cd08653e515d8ceaaade4518fdc0a0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/record.mjs",
+      "sha256": "97fffcc74c591e50e5cf189cce0438b2ca29f6f52c46861f04f61aed4b096c75",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/resources.mjs",
+      "sha256": "ce0bf06eb5c23c6569548601ac615a2dd8fd619ce942172489b5c0121e5188c7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/safety/ashby.mjs",
+      "sha256": "8dbd6ad6d3a507dbabde8906e6010787fe5bc4dd2c0db95f8da5429cfd063bce",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/safety/common.mjs",
+      "sha256": "1606057f0f06bc654fb4be517abea8c0e10874e5c0df82c377d876b3e595d285",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/safety/greenhouse.mjs",
+      "sha256": "caf1c3ddee373f50f710feaf888bcf6fd39fae3a424f3711620ff6b32b8b9904",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/safety/lever.mjs",
+      "sha256": "19cda1666198391f7f5ba5c65979efb73bf4bd7a65d19a3ecc5913894a74718d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/safety/linkedin.mjs",
+      "sha256": "9cec0248e0cd28b12fca93df42b9429d198b00fae7b35a00274719e119287d2f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder/safety/workday.mjs",
+      "sha256": "70f6a9e12487f7e6ef23af770b2a11cb9effe9181486bbffa254f06794adb3f6",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder_broker.py",
+      "sha256": "6c97630ee2d005cbfd0d7039e99efa4f66d7f814bf1b870702c0e32a2eb78164",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder_fs.py",
+      "sha256": "c6348f3e80f55512c962a32d742ff254dcfe267298a0a70a65f7bf22b93f01c2",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder_fs_ops.py",
+      "sha256": "74065d217cee59f5de8107ca96d47ff659569b0f3465eda672b2a6455bb441c5",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/recorder_guardian.py",
+      "sha256": "51ed424c802245105173ad3255feaf9e6e589341acd43f9f7a4b9dc449873358",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/renderer/app.js",
+      "sha256": "febda098a3c32581d7342ba0c06032cbcc88f937a4e69e3159eff0840fb07fca",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/renderer/index.html",
+      "sha256": "e8712f68b72db688e490f1f56ddc99bdde4e2f5f217b2431b5a3bec73079e34e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/renderer/styles.css",
+      "sha256": "c1aad0ca4b7036fa0c755b6dcc6d583e95eadcf79e15c5039d23f62241502eef",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/replay/__init__.py",
+      "sha256": "010c4b0f7260984eb9225fc982f18069820260a20d8593b587761ca2ffd32ac4",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/replay/auto_submit.py",
+      "sha256": "036bd4db2bd35a4d640ab61d777bead1cf8334e91f3ec14b0f297567037fd5c4",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/replay/cleanup.py",
+      "sha256": "67ac5bdcbbe93b8c0b40c2bcb0e88bb1b7bc75696942cb8d9f5ae29d57a0c133",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/replay/cleanup_preflight.py",
+      "sha256": "25101d722f369b711b9de6c215b54c1ac85d7554ff920ea3d942c5615ec67506",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/replay/cli.py",
+      "sha256": "03e4b0b11016db6ae25381a2ba25b0fabab6760ec62623ff9de18de879a89b4a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/replay/evaluate.py",
+      "sha256": "ef92b4ee0ed4a0b08efcb18ab33af92286310739e7def472eeac6f9298247a8c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/replay/lifecycle.py",
+      "sha256": "625ec4c38c7e64a1f5833dad3ec9dd709d75fe8bcd670b87aeb8f36b30393863",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/replay/prepare.py",
+      "sha256": "709eddeedc0496fa05750dd12e369ebe12a50aa364af0bd7d534a38852ea37b7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/replay/report.py",
+      "sha256": "1edf9989ac7ca039fbb72f0858c8f6a94e7697c19c121fd9d0c622097ee81250",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/replay/run_state.py",
+      "sha256": "2bc91970f057e4168248aecb6106be606ec22d3f5781d064f666cfb17e8e0898",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/replay/secure_io.py",
+      "sha256": "0132b17911f514f97a84bf57964f4d81e3c1986b1fbe49d1ad657d2736c6d2c7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/replay/server_control.py",
+      "sha256": "7d070d5b0a2bdefef4b1dfd2a2a26e3d3417e3ab665498b0190832f01853948b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/resume_extraction_companion.py",
+      "sha256": "d55fd8c055484cfd60148952b0fd0555c552700e13220ca0aafba48417615c39",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/resume_extraction_onboarding_oracle.py",
+      "sha256": "97d6710b8935f01ae8088120dc175527a085bb57597348ee5c5ae79aac6ff34a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/resume_extraction_scenario.py",
+      "sha256": "e896670b13b5407936db4abc73ea850aa809cda798dd8b5a25da5ccf359fab8b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/runtime_launch_evidence.py",
+      "sha256": "642a07b58011dc9fe05f5bc2caaaf3145f6fcd1460121a950052173cd23a5bfc",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/server.py",
+      "sha256": "744eb85fcaa6b6d6c50d7b5b8dc7fc5b0330fb01fff84a189dcae817ec360090",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/server_auth.py",
+      "sha256": "49e398f642df20b989f6aaf6a1c32b0093a7bce31833e6d2e9cd2ed0f7861816",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/server_events.py",
+      "sha256": "68f0129ec19e9f18dcb3e1b2692d8469da95acca72d43f0e0fcfc850b2fe454e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/server_final_action.py",
+      "sha256": "73fd68f271798b64973aad1e5dc12882434dd306642414bc546a08521addbd57",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/testdata/privacy/leaks/source-html.html",
+      "sha256": "a8ad0a4e23611e2401df3081adacf1f32eb8de91bd212bc409b63ab538d68c17",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/unified_task_spine_focus.mjs",
+      "sha256": "0e2a285ef13406fdb6748c48747707dffda5ba0594e21098627f103e520f8dad",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "qa/unified_task_spine_oracle.mjs",
+      "sha256": "fae3fff219659d00ae221ebd781e801e25d78ba418a4909e30030c9b53171a8d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/raw-json/float-scope.js",
+      "sha256": "db9834010226b2ad1c41adf7194e068e4fd9b4710a5585a656bd566d9543e675",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/raw-json/numeric-atom.js",
+      "sha256": "313f206f7767398f6a3ed61fb3c15f5f90d8eb7cd835a6402816bc19e1003188",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/raw-json/parser.js",
+      "sha256": "e56e7a875cea5926b740f8109669476659644595d28b634024d1b427d4ce2825",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/raw-json/serializer.js",
+      "sha256": "854be43fe99dfcad95e2cd1e8763e740a31b0f319712f8c56e9d6e2eecbce390",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/raw-json/value.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/foundation.js",
+      "sha256": "1007fa04a50acb4ddf27683b81e85808606dc089449d681bbf1ae0fc0aa7c7e0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/validation.js",
+      "sha256": "85e308945a77b5c09d61758113d91cfd0e6fb366fe92f98f36c19c8e05ee3a0a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/resume-view.js",
+      "sha256": "c6cedcfe438c68e02275da36f06e4eaca5b2212275fc3ce9b898343f7a9c586a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/check-final-action-docs.py",
+      "sha256": "07bfff41886980e875540c80aa0a26ec190da2eea11b6ec77c7d24157d08e475",
+      "classification": "unreviewed"
+    }
+  ]
+}

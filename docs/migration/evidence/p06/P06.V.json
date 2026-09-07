@@ -1,0 +1,264 @@
+{
+  "schemaVersion": 1,
+  "id": "P06.V",
+  "role": "independent-review",
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/bootstrap/approved-dag.json",
+    "sha256": "e8e549ec42440bff841da005d68b91b0e421a864db886203a542b6cfe9a70ec9"
+  },
+  "package": {
+    "id": "P06",
+    "parentNode": "I",
+    "owner": "jsonl_review",
+    "allowed_files": [
+      "tools/migration/evidence-io.mjs",
+      "tools/migration/task-manifests.mjs",
+      "tools/migration/task-receipts.mjs",
+      "tools/migration/load-task-evidence.mjs",
+      "tools/migration/packages.mjs",
+      "tools/migration/check.mjs",
+      "tools/migration/task-handoffs.mjs",
+      "tests_js/migration_task_manifests.test.mjs",
+      "tests_js/migration_task_receipts.test.mjs",
+      "tests_js/migration_task_loader.test.mjs",
+      "tests_js/migration_packages.test.mjs",
+      "tests_js/migration_task_handoffs.test.mjs",
+      "tests_js/migration_task_metadata.test.mjs",
+      "tests_js/migration_task_support.mjs",
+      "tests_js/migration_task_handoff_support.mjs",
+      "docs/migration/evidence/p06/implementation-audit.json",
+      "docs/migration/evidence/p06/implementation.md",
+      "docs/migration/evidence/p06/P06.I.json",
+      "docs/migration/evidence/p06/P06.V.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "9b4771926d13be7b84f65ca4b39600b6cba68b5760d0ef94abf8c0d855de8db0",
+  "auditContract": {
+    "path": "docs/migration/evidence/p06/implementation-audit.json",
+    "sha256": "6f5131df63be5b68fecc6655ce645c20b2f126921a54dce0ca00dd7c0a3b7b98"
+  },
+  "author": "jsonl_review",
+  "reviewer": "hooks_audit",
+  "base": "fd03b97226e3738ff188e7dfa3902ac3d0379312",
+  "inputs": [
+    {
+      "path": "tools/migration/evidence-io.mjs",
+      "sha256": "0edbb50c6ead7963f6e3b5dca2138fa5d71c2dbd4ab254359f8a87212cc227f6"
+    },
+    {
+      "path": "tools/migration/task-manifests.mjs",
+      "sha256": "4ed219833b67d72e75f12bb8ad27d7493080a7e0175bb9313bacc939f8ac6909"
+    },
+    {
+      "path": "tools/migration/task-receipts.mjs",
+      "sha256": "f68aab726ce27f6718282cb19b8b905f9e45940c2508cc3df8369a3ec5eccfba"
+    },
+    {
+      "path": "tools/migration/load-task-evidence.mjs",
+      "sha256": "f63db62c036d8e581f7ab990d8fb0c3b04d6dbe2bda4b9a0a0b967dd91fac5dd"
+    },
+    {
+      "path": "tools/migration/packages.mjs",
+      "sha256": "1a2b7ff84198387c72eb5ff510bbe9aff6da235291056b4ef7766d2201b3f0d4"
+    },
+    {
+      "path": "tools/migration/check.mjs",
+      "sha256": "a49929bafc69cb622d7b8e38cf0ed8b7d306a5a84fb36a7bfad4cef5f56db621"
+    },
+    {
+      "path": "tests_js/migration_task_manifests.test.mjs",
+      "sha256": "616a108615a2de3f48a2d9272f10907ab968183593fca0ead2555518a85da087"
+    },
+    {
+      "path": "tests_js/migration_task_receipts.test.mjs",
+      "sha256": "8a5c0c368dbb0a7ca0cc141f305c72bdb28fee1842666b0c19d66c6393f2fde3"
+    },
+    {
+      "path": "tests_js/migration_task_loader.test.mjs",
+      "sha256": "33a7065cfb8c83f48e7bede9630fd62b4d44bd962b6cb6d5cac1995cfd7aa5c2"
+    },
+    {
+      "path": "tests_js/migration_packages.test.mjs",
+      "sha256": "bf79240bb4c0e5c59e3c871d84cea5e63fa91783272b7fe5515c127f95cfddaa"
+    },
+    {
+      "path": "tests_js/migration_task_support.mjs",
+      "sha256": "e8f71bbcdad536b23cfb774b472d7e61e33b22c703620d64bab85f0eb72344a0"
+    },
+    {
+      "path": "docs/migration/evidence/p06/implementation-audit.json",
+      "sha256": "6f5131df63be5b68fecc6655ce645c20b2f126921a54dce0ca00dd7c0a3b7b98"
+    },
+    {
+      "path": "docs/migration/evidence/p06/implementation.md",
+      "sha256": "7a14dbe86b1214154d36609549925286af835ff11fdd273b74ff6b8b4a6f5f0d"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "P06.migration_task_manifests",
+      "requirementIds": [
+        "p06.audit.migration_task_manifests"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_manifests.test.mjs"
+      ],
+      "testNames": [
+        "task manifests bind an independently scoped audit without product acceptance",
+        "task manifests reject malformed fields and changes to approved scope or execution identities",
+        "task manifest invalid batches unlock no otherwise valid entry",
+        "task manifests bound eight modules and require an owned extraction and baseline for oversized sources",
+        "product task manifests require every registered scenario binding and platform",
+        "source size scope mirrors repository extensions and exclusions independently of production ownership",
+        "accepted product predecessors do not silently release ownership to a ready successor"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p06/logs/P06-migration_task_manifests.tap"
+    },
+    {
+      "id": "P06.migration_task_receipts",
+      "requirementIds": [
+        "p06.audit.migration_task_receipts"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_receipts.test.mjs"
+      ],
+      "testNames": [
+        "task receipts accept only exact immutable subject evidence and keep parent acceptance open",
+        "task receipts reject wrong names with identical passing counts and unsupported TAP",
+        "task receipts reject self review, wrong SHA, stale inputs, budgets, missing artifacts and ownership escapes",
+        "task receipt dependencies are fixed by the approved DAG and invalidate the entire batch",
+        "task receipts preserve historical evidence through an approved review and dependent edit chain",
+        "task receipts enforce rename and deletion ownership and nonincreasing actual source size",
+        "task TAP rejects duplicate headers and results before their announcements",
+        "receipt size enforcement includes references and extended source types but excludes planning data",
+        "task receipts bind observed TAP duration to timeout and runner wall time with one millisecond tolerance",
+        "task receipts reject duplicate reserved metrics that conceal the terminal duration"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p06/logs/P06-migration_task_receipts.tap"
+    },
+    {
+      "id": "P06.migration_task_loader",
+      "requirementIds": [
+        "p06.audit.migration_task_loader"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_loader.test.mjs"
+      ],
+      "testNames": [
+        "task loader binds actual tested Git subject separately from later evidence commits",
+        "task loader rejects dirty and untracked evidence without executing receipt commands",
+        "task loader rejects tracked symlinks, altered frozen manifests and out of scope subject edits",
+        "task loader preserves absent catalog behavior",
+        "task Git reads ignore replacement objects for declared immutable revisions",
+        "task loader reads actual object-form source-size baselines and verifies a shrinking extraction",
+        "task lifecycle validates staged planning, future tests, subject, evidence and receipt commits",
+        "task lifecycle opens acceptance during a frozen successor and rejects undeclared drift",
+        "execution base cannot conceal source edits or use a fabricated review lock",
+        "accepted subject must contain its declared literal test identities even when planning deferred discovery"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p06/logs/P06-migration_task_loader.tap"
+    },
+    {
+      "id": "P06.migration_packages",
+      "requirementIds": [
+        "p06.audit.migration_packages"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_packages.test.mjs"
+      ],
+      "testNames": [
+        "ready package has explicit scope and accepted inputs without claiming acceptance",
+        "a passing reference for another requirement cannot unlock this package",
+        "accepted historical ownership can be explicitly released for a dependent repair",
+        "closed fields, ownership, coverage and inert activation fail closed",
+        "unsafe or duplicate ownership paths cannot alias active ownership",
+        "unknown or unaccepted reference/interface evidence cannot unlock ready work",
+        "implemented dependency alone is not accepted and cannot unlock a child",
+        "cycles, unknown dependencies and duplicate IDs are rejected",
+        "active package ownership overlaps fail even when the named owner is identical",
+        "implemented scope must exist and missing context cannot fabricate readiness"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p06/logs/P06-migration_packages.tap"
+    },
+    {
+      "id": "P06.migration_task_handoffs",
+      "requirementIds": [
+        "p06.audit.migration_task_handoffs"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_handoffs.test.mjs"
+      ],
+      "testNames": [
+        "P06 registered product overlap requires an independently frozen handoff",
+        "P06 exact handoff permits only the named successor and overlapping paths",
+        "P06 forged stale expanded and competing handoffs unlock no product ownership",
+        "P06 unreleased predecessor paths remain reserved",
+        "P06 actual checker keeps pending successor acceptance open and accepts independently verified completion"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p06/logs/P06-migration_task_handoffs.tap"
+    },
+    {
+      "id": "P06.migration_task_metadata",
+      "requirementIds": [
+        "p06.audit.migration_task_metadata"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_metadata.test.mjs"
+      ],
+      "testNames": [
+        "P06 coordinator catalog and review lock evolve through actual activation and receipt snapshots",
+        "P06 metadata evolution cannot conceal source edits or unrelated shard changes",
+        "P06 frozen metadata identities and historical evidence remain immutable",
+        "P06 actual dependency-linked hook snapshots support the complete registered product lifecycle"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p06/logs/P06-migration_task_metadata.tap"
+    }
+  ],
+  "artifacts": []
+}

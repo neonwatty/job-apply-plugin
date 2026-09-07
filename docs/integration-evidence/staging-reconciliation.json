@@ -1,0 +1,72 @@
+{
+  "date": "2026-09-06",
+  "migrationBase": "54405392069ecf146f427f69b37481617c73a934",
+  "stagingMerge": "2ca9d6e2c47948df57e7649a2211d4ec523bb364",
+  "integratedCommit": "feb16c09b3bae240c3402b0556af774b91ff1075",
+  "mergeConflicts": false,
+  "migrationSourceRuntimeContractsUnchanged": true,
+  "exceptionMergeNotFullCISuccess": true,
+  "focused": {
+    "command": "node --test tests_js/python-answer-matching-raw.test.mjs tests_js/raw_json_numeric.test.mjs tests_js/ci-shadow.test.mjs tests_js/workspace_markup.test.mjs",
+    "tests": 33,
+    "passed": 30,
+    "failed": 0,
+    "skipped": 3,
+    "skipReason": "Python 3.12 executable unavailable"
+  },
+  "checks": {
+    "sourceSize": "passed",
+    "testMatrix": "passed: 17 suites, 635 tracked paths",
+    "buildParity": "passed: 3 modules",
+    "typecheck": "passed",
+    "fullBrowserPlatformRelease": "not run"
+  },
+  "fastReceipt": {
+    "schemaVersion": 1,
+    "baseSha": null,
+    "headSha": null,
+    "changedPaths": [],
+    "selectedSuites": [
+      "typescript-check",
+      "node-foundation-fast",
+      "matrix-policy",
+      "source-size",
+      "python-fast",
+      "node-runner-fast"
+    ],
+    "fallbackReason": null,
+    "timings": [
+      {
+        "id": "typescript-check",
+        "durationMs": 272,
+        "status": "passed"
+      },
+      {
+        "id": "node-foundation-fast",
+        "durationMs": 1656,
+        "status": "passed"
+      },
+      {
+        "id": "matrix-policy",
+        "durationMs": 54,
+        "status": "passed"
+      },
+      {
+        "id": "source-size",
+        "durationMs": 179,
+        "status": "passed"
+      },
+      {
+        "id": "python-fast",
+        "durationMs": 3087,
+        "status": "passed"
+      },
+      {
+        "id": "node-runner-fast",
+        "durationMs": 2997,
+        "status": "passed"
+      }
+    ],
+    "status": "passed"
+  }
+}

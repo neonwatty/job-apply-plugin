@@ -1,0 +1,401 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:scripts/job-apply-attempt.py:handoff",
+      "kind": "cli",
+      "command": "handoff",
+      "node": "ATT",
+      "sources": [
+        "scripts/job-apply-attempt.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job-apply-task.py:snapshot",
+      "kind": "cli",
+      "command": "snapshot",
+      "node": "ATT",
+      "sources": [
+        "scripts/job-apply-task.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job-apply-task.py:activity",
+      "kind": "cli",
+      "command": "activity",
+      "node": "ATT",
+      "sources": [
+        "scripts/job-apply-task.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job-apply-task.py:intake",
+      "kind": "cli",
+      "command": "intake",
+      "node": "ATT",
+      "sources": [
+        "scripts/job-apply-task.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job-apply-task.py:select",
+      "kind": "cli",
+      "command": "select",
+      "node": "ATT",
+      "sources": [
+        "scripts/job-apply-task.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job-apply-task.py:resolve-pending-answer",
+      "kind": "cli",
+      "command": "resolve-pending-answer",
+      "node": "ATT",
+      "sources": [
+        "scripts/job-apply-task.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job-apply-task.py:semantic-lookup",
+      "kind": "cli",
+      "command": "semantic-lookup",
+      "node": "ATT",
+      "sources": [
+        "scripts/job-apply-task.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job-apply-task.py:cleanup-preview",
+      "kind": "cli",
+      "command": "cleanup-preview",
+      "node": "ATT",
+      "sources": [
+        "scripts/job-apply-task.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job-apply-task.py:cleanup-approve",
+      "kind": "cli",
+      "command": "cleanup-approve",
+      "node": "ATT",
+      "sources": [
+        "scripts/job-apply-task.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job-apply-task.py:approval-preview",
+      "kind": "cli",
+      "command": "approval-preview",
+      "node": "ATT",
+      "sources": [
+        "scripts/job-apply-task.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job-apply-task.py:approval-approve",
+      "kind": "cli",
+      "command": "approval-approve",
+      "node": "ATT",
+      "sources": [
+        "scripts/job-apply-task.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_policy/cli.py:status",
+      "kind": "cli",
+      "command": "status",
+      "node": "FINAL",
+      "sources": [
+        "scripts/job_apply_policy/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_policy/cli.py:activate",
+      "kind": "cli",
+      "command": "activate",
+      "node": "FINAL",
+      "sources": [
+        "scripts/job_apply_policy/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_policy/cli.py:authorize",
+      "kind": "cli",
+      "command": "authorize",
+      "node": "FINAL",
+      "sources": [
+        "scripts/job_apply_policy/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_policy/cli.py:claim-final-action",
+      "kind": "cli",
+      "command": "claim-final-action",
+      "node": "FINAL",
+      "sources": [
+        "scripts/job_apply_policy/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_policy/cli.py:record-outcome",
+      "kind": "cli",
+      "command": "record-outcome",
+      "node": "FINAL",
+      "sources": [
+        "scripts/job_apply_policy/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_policy/cli.py:kill",
+      "kind": "cli",
+      "command": "kill",
+      "node": "FINAL",
+      "sources": [
+        "scripts/job_apply_policy/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:scripts/job_apply_policy/cli.py:revoke",
+      "kind": "cli",
+      "command": "revoke",
+      "node": "FINAL",
+      "sources": [
+        "scripts/job_apply_policy/cli.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

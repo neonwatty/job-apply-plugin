@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "id": "s05-reference-audit",
+  "assignmentIds": [
+    "S05.R"
+  ],
+  "allowed_files": [
+    "tools/contracts/point-paths/reference.py",
+    "tools/contracts/point-paths/fixtures.py",
+    "tools/contracts/point-paths/support.py",
+    "tests_js/point_paths_reference.test.mjs",
+    "tests_js/point_paths_parent_reference.test.mjs",
+    "tests_js/point_paths_digest_reference.test.mjs",
+    "docs/migration/evidence/s05/reference-vectors.json",
+    "docs/migration/evidence/s05/reference-baselines.json",
+    "docs/migration/evidence/s05/reference.md",
+    "docs/migration/evidence/s05/reference-plan.md",
+    "docs/migration/evidence/s05/reference-audit.json",
+    "docs/migration/evidence/s05/S05.R.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "s05.audit.reference.points",
+    "s05.audit.reference.parents",
+    "s05.audit.reference.digest"
+  ],
+  "cells": [
+    {
+      "id": "s05.reference.points",
+      "requirementIds": [
+        "s05.audit.reference.points"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/point_paths_reference.test.mjs"
+      ],
+      "testNames": [
+        "S05 reference observes point codecs parent order and cache identity under default CPython",
+        "S05 reference observes point codecs parent order and cache identity under CPython 3.12",
+        "S05 reference observes point codecs parent order and cache identity under CPython 3.13",
+        "S05 reference observes point codecs parent order and cache identity under CPython 3.14",
+        "S05 reference rejects caller arguments paths and stdin"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s05/logs/S05-R-points.tap"
+    },
+    {
+      "id": "s05.reference.parents",
+      "requirementIds": [
+        "s05.audit.reference.parents"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/point_paths_parent_reference.test.mjs"
+      ],
+      "testNames": [
+        "S05 reference records managed paths and open native filename cells under default CPython",
+        "S05 reference records managed paths and open native filename cells under CPython 3.12",
+        "S05 reference records managed paths and open native filename cells under CPython 3.13",
+        "S05 reference records managed paths and open native filename cells under CPython 3.14"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s05/logs/S05-R-parents.tap"
+    },
+    {
+      "id": "s05.reference.digest",
+      "requirementIds": [
+        "s05.audit.reference.digest"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/point_paths_digest_reference.test.mjs"
+      ],
+      "testNames": [
+        "S05 reference preserves descriptor and observation baselines under default CPython",
+        "S05 reference preserves descriptor and observation baselines under CPython 3.12",
+        "S05 reference preserves descriptor and observation baselines under CPython 3.13",
+        "S05 reference preserves descriptor and observation baselines under CPython 3.14"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s05/logs/S05-R-digest.tap"
+    }
+  ],
+  "artifacts": []
+}

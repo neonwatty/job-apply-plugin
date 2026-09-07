@@ -1,0 +1,38 @@
+TAP version 13
+# Subtest: persisted JSON chunks and strict UTF8 match Python: python3
+ok 1 - persisted JSON chunks and strict UTF8 match Python: python3
+  ---
+  duration_ms: 33.513334
+  type: 'test'
+  ...
+# 3.14.4: 213 deterministic typed values; seed 711983
+# Subtest: persisted JSON chunks and strict UTF8 match Python: python3.12
+ok 2 - persisted JSON chunks and strict UTF8 match Python: python3.12
+  ---
+  duration_ms: 24.285125
+  type: 'test'
+  ...
+# 3.12.13: 213 deterministic typed values; seed 711983
+# Subtest: persisted JSON chunks and strict UTF8 match Python: python3.13
+ok 3 - persisted JSON chunks and strict UTF8 match Python: python3.13
+  ---
+  duration_ms: 27.174416
+  type: 'test'
+  ...
+# 3.13.13: 213 deterministic typed values; seed 711983
+# Subtest: persisted JSON chunks and strict UTF8 match Python: python3.14
+ok 4 - persisted JSON chunks and strict UTF8 match Python: python3.14
+  ---
+  duration_ms: 26.841375
+  type: 'test'
+  ...
+# 3.14.4: 213 deterministic typed values; seed 711983
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 149.72425

@@ -122,13 +122,8 @@ LEGACY_CALLABLE_SIGNATURES = {
     "_manual_profile_path": "(profile)",
     "_emit_manual_reset": "(profile)",
     "command_reset": "(profile)",
-    "QuietParser": (
-        "(prog=None, usage=None, description=None, epilog=None, parents=[], "
-        "formatter_class=<class 'argparse.HelpFormatter'>, prefix_chars='-', "
-        "fromfile_prefix_chars=None, argument_default=None, "
-        "conflict_handler='error', add_help=True, allow_abbrev=True, "
-        "exit_on_error=True)"
-    ),
+    # The facade inherits the installed argparse constructor, including new keywords.
+    "QuietParser": str(inspect.signature(argparse.ArgumentParser)),
     "parse_args": "(argv)",
     "main": "(argv=None)",
 }
