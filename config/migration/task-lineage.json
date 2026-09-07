@@ -528,6 +528,22 @@
           "sha256": "4a598aebe533d64e55f32633147fdcc5d2aae556043ee53329a689dbb911dcae"
         }
       ]
+    },
+    {
+      "id": "P03.retry1.v3.manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original P03 attempt; freeze corrected complete consumer closure for fresh revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/P03.retry1.I.json",
+          "sha256": "5f6d57971bfaebe16add433a54772060efa5a2eb760188ce2d82b4c0d772a7c9"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/P03.retry1.V.json",
+          "sha256": "0baab53caf813cbb564d3774cd6329642937b4429d53cf9fcbaf2099ad2092f5"
+        }
+      ]
     }
   ],
   "transitions": [
