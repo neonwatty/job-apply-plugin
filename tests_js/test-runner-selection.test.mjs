@@ -121,6 +121,75 @@ test("git selection combines committed, staged, unstaged, deleted, renamed, and 
   }
 });
 
+const REVIEWED_GRAPH_SUBJECT = 'b5407e8688e6486eacf6ab428b93c83ee809c385';
+const GRAPH_ROOT = fileURLToPath(new URL('../', import.meta.url));
+const ANALYZER_FILES = ['consumer-graph.mjs', 'graph-syntax.mjs', 'focused-contracts.mjs', 'focused-closure.mjs']
+  .map(name => `tools/local-checks/${name}`);
+
+// This proof requires the reviewed commit locally. Shallow clones must fetch its history explicitly.
+function reviewedGraphFiles() {
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^GIT_/i.test(key)));
+  const read = (operation, input) => {
+    assert.ok(['tree', 'blobs'].includes(operation));
+    const args = ['--no-replace-objects', ...(operation === 'tree'
+      ? ['ls-tree', '-rz', REVIEWED_GRAPH_SUBJECT] : ['cat-file', '--batch'])];
+    try {
+      return execFileSync('git', args, { cwd: GRAPH_ROOT, env, input, timeout: 10000, maxBuffer: 64 * 1024 * 1024 });
+    } catch (cause) {
+      throw new Error(`Reviewed graph baseline ${REVIEWED_GRAPH_SUBJECT} unavailable; provide its Git history locally (no automatic fetch).`, { cause });
+    }
+  };
+  const entries = read('tree').toString('utf8').split('\0').filter(Boolean).map(row => {
+    const match = /^(100644|100755) blob ([0-9a-f]{40})\t(.+)$/.exec(row);
+    assert.ok(match, `Unsupported baseline tree entry: ${row}`);
+    const [, , oid, file] = match;
+    assert.ok(!path.isAbsolute(file) && !file.split('/').some(part => !part || part === '.' || part === '..'));
+    return { oid, file };
+  });
+  assert.ok(entries.length > 0 && entries.length <= 5000);
+  assert.equal(new Set(entries.map(entry => entry.file)).size, entries.length);
+  const blobs = read('blobs', entries.map(entry => entry.oid).join('\n') + '\n');
+  const files = new Map();
+  let offset = 0;
+  for (const { oid, file } of entries) {
+    const end = blobs.indexOf(10, offset);
+    assert.ok(end >= offset);
+    const header = blobs.subarray(offset, end).toString('ascii');
+    const match = /^([0-9a-f]{40}) blob (\d+)$/.exec(header);
+    assert.ok(match && match[1] === oid, `Missing baseline blob: ${file}`);
+    const size = Number(match[2]);
+    assert.ok(Number.isSafeInteger(size) && size <= 8 * 1024 * 1024 && end + size + 1 < blobs.length);
+    files.set(file, Buffer.from(blobs.subarray(end + 1, end + 1 + size)));
+    offset = end + size + 2;
+    assert.equal(blobs[offset - 1], 10);
+  }
+  assert.equal(offset, blobs.length);
+  return files;
+}
+
+async function reviewedGraphFixture(t) {
+  const { digest } = await import('../tools/local-checks/focused-contracts.mjs');
+  const files = reviewedGraphFiles();
+  const root = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'reviewed-graph-'));
+  t.after(() => fs.promises.rm(root, { recursive: true, force: true }));
+  // Only the implementation under test is overlaid; all caller/data/helper identities stay frozen.
+  const overlayHashes = new Map();
+  for (const file of ANALYZER_FILES) {
+    const bytes = await fs.promises.readFile(path.join(GRAPH_ROOT, file));
+    files.set(file, bytes);
+    overlayHashes.set(file, digest(bytes));
+  }
+  for (const [file, bytes] of files) {
+    await fs.promises.mkdir(path.dirname(path.join(root, file)), { recursive: true });
+    await fs.promises.writeFile(path.join(root, file), bytes);
+  }
+  for (const [file, hash] of overlayHashes) {
+    assert.equal(digest(await fs.promises.readFile(path.join(root, file))), hash);
+    assert.equal(digest(await fs.promises.readFile(path.join(GRAPH_ROOT, file))), hash);
+  }
+  return { root, files, paths: new Set(files.keys()) };
+}
+
 test('P03 graph follows runtime type support and literal child-process dependencies', async t => {
   const { createGraphFixture, GRAPH_SOURCE, GRAPH_RUNTIME, GRAPH_TEST, GRAPH_CHILD } = await import('./local_checks_graph_support.mjs');
   const { discoverConsumerGraph, reverseClosure } = await import('../tools/local-checks/consumer-graph.mjs');
@@ -145,10 +214,10 @@ test('P03 graph rejects unresolved relevant imports and missing owned targets', 
   const { discoverConsumerGraph } = await import('../tools/local-checks/consumer-graph.mjs');
   const { evaluateFocusedClosure } = await import('../tools/local-checks/focused-closure.mjs');
   const f = await createGraphFixture(t);
-  const fixtureRoot = fileURLToPath(new URL('../', import.meta.url));
+  const reviewed = reviewedGraphFiles();
   for (const file of ['migration_task_lineage_git_support.mjs', 'migration_task_lineage_lifecycle.test.mjs',
     'migration_task_replacements.test.mjs']) {
-    await f.write(`tests_js/${file}`, await fs.promises.readFile(path.join(fixtureRoot, 'tests_js', file), 'utf8'));
+    await f.write(`tests_js/${file}`, reviewed.get(`tests_js/${file}`).toString('utf8'));
   }
   const fixtureSite = 'Unresolved execFileSync caller: tests_js/migration_task_lineage_git_support.mjs:2297';
   assert.ok(!(await discoverConsumerGraph(f.root, f.tracked())).reasons.includes(fixtureSite));
@@ -169,11 +238,11 @@ test('P03 graph rejects unresolved relevant imports and missing owned targets', 
     await f.write(GRAPH_SUPPORT, source);
     assert.equal(evaluateFocusedClosure(await discoverConsumerGraph(f.root, f.tracked()), [GRAPH_RUNTIME]).bounded, false);
   }
-  const ownerRoot = fileURLToPath(new URL('../', import.meta.url));
+
   const driver = 'tools/contracts/codepoint-json/reference.py';
   const driverCaller = 'tests_js/codepoint_json_reference.test.mjs';
-  await f.write(driver, await fs.promises.readFile(path.join(ownerRoot, driver), 'utf8'));
-  await f.write(driverCaller, await fs.promises.readFile(path.join(ownerRoot, driverCaller), 'utf8'));
+  await f.write(driver, reviewed.get(driver).toString('utf8'));
+  await f.write(driverCaller, reviewed.get(driverCaller).toString('utf8'));
   const beforeDriver = await discoverConsumerGraph(f.root, f.tracked());
   assert.ok(!beforeDriver.reasons.includes(`Unreviewed executable driver: ${driver}`));
   await f.write(driver, `${f.files.get(driver)}\nimport subprocess\nsubprocess.run(['node', 'new-consumer.mjs'])\n`);
@@ -182,7 +251,7 @@ test('P03 graph rejects unresolved relevant imports and missing owned targets', 
   const helper = 'tests_js/data_copy_support.mjs';
   const helperCaller = 'tests_js/data_copy_ts.test.mjs';
   for (const file of [helper, helperCaller]) {
-    await f.write(file, await fs.promises.readFile(path.join(ownerRoot, file), 'utf8'));
+    await f.write(file, reviewed.get(file).toString('utf8'));
   }
   const beforeHelper = await discoverConsumerGraph(f.root, f.tracked());
   assert.ok(!beforeHelper.reasons.includes(`Unreviewed process source helper: ${helper}`));
@@ -190,8 +259,8 @@ test('P03 graph rejects unresolved relevant imports and missing owned targets', 
   const afterHelper = await discoverConsumerGraph(f.root, f.tracked());
   assert.ok(afterHelper.reasons.includes(`Unreviewed process source helper: ${helper}`));
   const { PYTHON_SOURCE_PATH } = await import('../tools/local-checks/focused-contracts.mjs');
-  for (const file of (await trackedPaths(ownerRoot)).filter(PYTHON_SOURCE_PATH)) {
-    await f.write(file, await fs.promises.readFile(path.join(ownerRoot, file), 'utf8'));
+  for (const file of [...reviewed.keys()].filter(PYTHON_SOURCE_PATH)) {
+    await f.write(file, reviewed.get(file).toString('utf8'));
   }
   const beforeInitialization = await discoverConsumerGraph(f.root, f.tracked());
   assert.ok(!beforeInitialization.reasons.includes('Unreviewed Python source inventory'));
@@ -200,15 +269,15 @@ test('P03 graph rejects unresolved relevant imports and missing owned targets', 
   const afterInitialization = await discoverConsumerGraph(f.root, f.tracked());
   assert.ok(afterInitialization.reasons.includes('Unreviewed Python source inventory'));
   const { SKILL_SOURCE_PATH } = await import('../tools/local-checks/focused-contracts.mjs');
-  for (const file of [...(await trackedPaths(ownerRoot)).filter(SKILL_SOURCE_PATH),
+  for (const file of [...[...reviewed.keys()].filter(SKILL_SOURCE_PATH),
     'tests_js/workspace_skill_support.mjs', 'tests_js/workspace_answers.test.mjs', 'tests_js/workspace_markup.test.mjs']) {
-    await f.write(file, await fs.promises.readFile(path.join(ownerRoot, file), 'utf8'));
+    await f.write(file, reviewed.get(file).toString('utf8'));
   }
   assert.ok(!(await discoverConsumerGraph(f.root, f.tracked())).reasons.includes('Unreviewed skill document inventory'));
   await f.write('skills/job-apply/references/new-consumer.md', '[new source](../../../scripts/new-source.py)\n');
   assert.ok((await discoverConsumerGraph(f.root, f.tracked())).reasons.includes('Unreviewed skill document inventory'));
   for (const file of ['qa/unified_task_spine_oracle.mjs', 'tests_js/unified_task_spine_oracle.test.mjs', 'workspace/index.html']) {
-    await f.write(file, await fs.promises.readFile(path.join(ownerRoot, file), 'utf8'));
+    await f.write(file, reviewed.get(file).toString('utf8'));
   }
   const htmlReason = 'Unreviewed process source helper: workspace/index.html';
   assert.ok(!(await discoverConsumerGraph(f.root, f.tracked())).reasons.includes(htmlReason));
@@ -240,8 +309,9 @@ test('P03 graph re-evaluates newly added consumers from the immutable subject', 
   assert.ok(inspectRunnerBindings(caller, "import * as runner from './test-runner/process.mjs';", RUNNER_MODULES).issues.length);
   const { projectDispatchers } = await import('../tools/local-checks/consumer-graph.mjs');
   const { digest } = await import('../tools/local-checks/focused-contracts.mjs');
-  const ROOT = fileURLToPath(new URL('../', import.meta.url));
-  const actualPaths = new Set(await trackedPaths(ROOT));
+  const baseline = await reviewedGraphFixture(t);
+  const ROOT = baseline.root;
+  const actualPaths = baseline.paths;
   const actualSources = new Map(await Promise.all([...actualPaths].filter(file => /\.(?:js|jsx|mjs|cjs|ts|tsx|mts|cts)$/.test(file))
     .map(async file => [file, await fs.promises.readFile(path.join(ROOT, file), 'utf8')])));
   const actualHashes = new Map([...actualSources].map(([file, source]) => [file, digest(source)]));
@@ -249,6 +319,44 @@ test('P03 graph re-evaluates newly added consumers from the immutable subject', 
   assert.deepEqual(observed.reasons, [], 'reviewed actual dispatcher graph must be proven');
   const actualGraph = await discoverConsumerGraph(ROOT, actualPaths);
   assert.deepEqual(actualGraph.reasons, [], 'actual repository process and data routes must be closed');
+  const liveGraph = await discoverConsumerGraph(GRAPH_ROOT, await trackedPaths(GRAPH_ROOT));
+  const { PYTHON_SOURCE_PATH } = await import('../tools/local-checks/focused-contracts.mjs');
+  const livePython = [...liveGraph.tracked].filter(PYTHON_SOURCE_PATH).sort();
+  const frozenPython = [...baseline.paths].filter(PYTHON_SOURCE_PATH).sort();
+  const pythonChanged = JSON.stringify(livePython) !== JSON.stringify(frozenPython)
+    || livePython.some(file => liveGraph.hashes.get(file) !== digest(baseline.files.get(file)));
+  if (pythonChanged) assert.ok(liveGraph.reasons.includes('Unreviewed Python source inventory'));
+  const impactInput = file => ![...ANALYZER_FILES, 'tests_js/test-runner-selection.test.mjs'].includes(file);
+  const liveInputs = [...liveGraph.tracked].filter(impactInput).sort();
+  const reviewedInputs = [...baseline.paths].filter(impactInput).sort();
+  let unchangedImpactInputs = JSON.stringify(liveInputs) === JSON.stringify(reviewedInputs);
+  if (unchangedImpactInputs) {
+    for (const file of liveInputs) {
+      try {
+        const target = path.join(GRAPH_ROOT, file);
+        if (!(await fs.promises.lstat(target)).isFile()
+          || digest(await fs.promises.readFile(target)) !== digest(baseline.files.get(file))) {
+          unchangedImpactInputs = false;
+          break;
+        }
+      } catch {
+        unchangedImpactInputs = false;
+        break;
+      }
+    }
+  }
+  if (unchangedImpactInputs) assert.deepEqual(liveGraph.reasons, [], 'unchanged reviewed inputs must remain focused');
+  if (liveGraph.reasons.length) assert.equal(evaluateFocusedClosure(liveGraph, []).bounded, false);
+  if (unchangedImpactInputs) assert.equal(evaluateFocusedClosure(liveGraph, []).bounded, true);
+  await fs.promises.mkdir(path.join(ROOT, 'tools/contracts/future-reference'), { recursive: true });
+  const addedDriver = 'tools/contracts/future-reference/reference.py';
+  await fs.promises.writeFile(path.join(ROOT, addedDriver), 'print("new reference")\n');
+  const grown = await discoverConsumerGraph(ROOT, new Set([...actualPaths, addedDriver]));
+  assert.ok(grown.reasons.includes('Unreviewed Python source inventory'));
+  assert.equal(evaluateFocusedClosure(grown, []).bounded, false);
+  assert.notEqual(grown.fingerprint, actualGraph.fingerprint);
+  await fs.promises.rm(path.join(ROOT, addedDriver));
+
   for (const rule of actualGraph.contract.rules) {
     for (const changed of [...rule.runtimePaths ?? [], ...rule.sharedContractPaths ?? [], ...rule.referencePaths ?? [], ...rule.testInputPaths ?? []]) {
       const selected = evaluateFocusedClosure(actualGraph, [changed]);

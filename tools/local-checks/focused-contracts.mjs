@@ -357,8 +357,8 @@ export const PROCESS_RECIPES = [
     repositoryTargets: ["tools/contracts/profile-facts/capture.mjs"],
   },
   {
-    identity: ["tests_js/test-runner-selection.test.mjs","b881f69de5129de22e3a4cfa1f97aabf394b1b4d76dee3ad14acaebe6d629ad1"],
-    callHashes: ["9f03a02c35c07c0527cd5215fd89c8601be28616dd4f4c6da8b6886073710094"],
+    identity: ["tests_js/test-runner-selection.test.mjs", ["b881f69de5129de22e3a4cfa1f97aabf394b1b4d76dee3ad14acaebe6d629ad1", "648aa5c18777f407921fa144c9cde7e6dc26a149576c64d1da21b9827d2590b5"]],
+    callHashes: ["9f03a02c35c07c0527cd5215fd89c8601be28616dd4f4c6da8b6886073710094", "9c0724b08e6e7a448ddbc75a5cb6bda837de0d46e4b3e9623f4592ec31f97653"],
     python: false,
     repositoryTargets: [],
   },
@@ -412,9 +412,11 @@ export const PROCESS_RECIPES = [
     repositoryTargets: ["tests_js/local_checks_graph_support.mjs"],
     requiredSourceBindings: [{"path":"tests_js/local_checks_graph_support.mjs","sha256":"1f7ba40d5d50f9441afc64a50d2299971abd291b5f235de3d4f01fd670229897"}],
   },
-].map(({ identity: [path, sourceSha256], ...recipe }) => ({
-  path, sourceSha256, ...recipe,
-}));
+].flatMap(({ identity: [path, identities], ...recipe }) =>
+  [identities].flat().map(sourceSha256 => ({
+    path, sourceSha256, ...recipe,
+  })),
+);
 
 // Each finite mapping is a specific reviewed expression, never all calls in its file.
 export const FINITE_EXPRESSIONS = new Map([
