@@ -647,6 +647,11 @@
       "path": "docs/migration/evidence/p03/retry1/v3/transition.json",
       "sha256": "250026515ee78b8395e6bed8a2475bc9681f5fdad7f7892bf8fe75bc6152877d",
       "revision": "dc97ea3380e76d90bff658a254eed91195ab803b"
+    },
+    {
+      "path": "docs/migration/evidence/p03/retry2/transition.json",
+      "sha256": "1bbd28b8f54ac8aaafb23f921370f01e5c77a9f012ca2682e746e961def79752",
+      "revision": "8514e546c01c6b7ef8d8456fd6a873545efb3934"
     }
   ]
 }
