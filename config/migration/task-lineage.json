@@ -16,6 +16,18 @@
           "sha256": "8863f9405d139f65658882d22cc3ceee69e98ebda4b3b038a083a0be61c9bd51"
         }
       ]
+    },
+    {
+      "id": "P03.reference-manifest-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze current local testing reference behavior; full consumer-aware mapping acceptance remains open.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/P03.R.json",
+          "sha256": "b38e62dacebec506611b0eb97aeda6853d4557009b1e004ac21eab7932596876"
+        }
+      ]
     }
   ],
   "transitions": []
