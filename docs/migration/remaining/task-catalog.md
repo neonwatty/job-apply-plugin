@@ -1,6 +1,6 @@
 # Remaining migration task catalog
 
-Approved for execution from `94e7d9c`: 115 work packages, 326 separately assignable agent tasks.
+Approved for execution from `94e7d9c`: 116 work packages, 329 separately assignable agent tasks.
 
 Generated from [plan.json](plan.json). Read [execution rules](../remaining-migration-plan.md) before dispatch.
 Every row requires the common acceptance gate as well as its specific criteria. Planning scopes are not write authorization; exact allowed_files must be frozen before implementation.
@@ -77,29 +77,37 @@ References can be prepared ahead of implementation dependencies, using existing 
 - Planning ownership: new src/contracts/raw-json byte-decoding leaves.
 - Acceptance: Frozen UTF8/16/32 detection, BOM, surrogatepass, malformed bytes and mixed surrogate cases match each supported reference profile; preserve explicit codepoints before parsing.
 
-### S03 — Typed parser and ASCII serializer integration
+### S08 — Shared point-aware parser core with legacy entry points
 
-- Agent tasks: S03.R → S03.I → S03.V.
+- Agent tasks: S08.R → S08.I → S08.V.
 - Implementation prerequisites: S01.V, S02.V.
 - Parent gates: SEM.
-- Planning ownership: src/contracts/raw-json value/parser/serializer; typed consumer adapters.
-- Acceptance: Combine only JSON escape pairs, preserve raw/escaped neighbors, duplicate keys, numeric atoms, codepoint error positions and legacy callers; all impacted typed consumers compile together.
+- Planning ownership: existing raw-json scanner/value/serializer extraction and explicit legacy projection; at most eight source modules with one parser implementation.
+- Acceptance: Frozen composed Python JSON witnesses pass for raw versus escaped surrogate neighbors, ordered point-keyed objects, numeric atoms and exact diagnostics; new point-aware entry points share the syntax engine, existing entry points retain their reviewed behavior, and no widened value reaches an unprepared consumer. This accepts preparation only, never public alias activation.
+
+### S03 — Public typed parser and ASCII serializer activation
+
+- Agent tasks: S03.R → S03.I → S03.V.
+- Implementation prerequisites: S08.V, S04.V, S05.V.
+- Parent gates: SEM.
+- Planning ownership: raw-json public value/parser/serializer and shared validation/read/managed-observation composition; one final integration owner, at most eight source modules.
+- Acceptance: Activate the prepared public parser/alias only after point-aware persistence and path consumers pass; combine only adjacent JSON escape pairs, preserve raw/escaped neighbors, ordered distinct keys, numeric atoms and exact codepoint diagnostics. All affected consumers compile and their joint regressions pass on the exact integrated subject; no casts or lossy legacy projection bypass representability.
 
 ### S04 — Codepoint-preserving persisted chunks
 
 - Agent tasks: S04.R → S04.I → S04.V.
-- Implementation prerequisites: S03.V.
+- Implementation prerequisites: S08.V.
 - Parent gates: SEM, TX.
 - Planning ownership: src/contracts/persisted-json.ts; jsonl-json.ts; private-filesystem.ts.
-- Acceptance: Atomic writes encode at each original chunk boundary; JSONL encodes once before open; error object/position, prior bytes and cleanup match frozen atomic/JSONL profiles.
+- Acceptance: Atomic writes encode at each original chunk boundary; JSONL encodes once before open; error object/position, prior bytes and cleanup match frozen atomic/JSONL profiles. Prepare explicit point-aware inputs while public parser activation remains gated by S03; reserve shared read/validation/managed-observation composition to S03.
 
 ### S05 — Text-aware paths and content caches
 
 - Agent tasks: S05.R → S05.I → S05.V.
-- Implementation prerequisites: S03.V.
+- Implementation prerequisites: S08.V.
 - Parent gates: SEM, FS.
 - Planning ownership: POSIX path/byte leaves; managed-resume and digest consumers.
-- Acceptance: Retain path validation/encoding order and raw-byte identity; invalid last components do not fail before valid parent checks; equal text instances share cache keys, pairs/scalars differ.
+- Acceptance: Retain path validation/encoding order and raw-byte identity; invalid last components do not fail before valid parent checks; equal text instances share cache keys, pairs/scalars differ. Prepare explicit point-aware inputs while public parser activation remains gated by S03; reserve shared read/validation/managed-observation composition to S03.
 
 ### S06 — Unicode normalization and answer matching
 

@@ -765,3 +765,26 @@ covers both hook-driven and direct heavy-run entry points. Neither implementatio
 has bypassed its P01 dependency. [P02 host preparation](migration/remaining/p02-host-readiness.md)
 preserves existing support promises and records the unresolved clean-host matrix;
 no developer-machine success is substituted for a missing native cell.
+
+The reference checkpoint is `5a1cfea`: all nine commit checks passed. Independent
+reviews accepted the bounded S01/S02 references for freezing; no implementation
+was activated. A further composed parser reference now covers 38 fixed documents
+and three serializer graphs, with five passing tests and zero skips across the
+installed Python profiles. Independent review accepted its exact typed values,
+ordered keys, ASCII/reload observations, diagnostics and provenance. The Python
+3.12 versus 3.13/3.14 trailing-comma diagnostic difference is preserved explicitly.
+
+Consumer inspection exposed an activation dependency cycle in the initial S03
+scope. The refined map adds S08 shared parser preparation, followed by disjoint
+S04 persistence and S05 path preparation, then S03 public alias/parser activation.
+The generated DAG now has 116 packages and 329 assignments. All canonical parent
+families still reach final conversion; four graph checks pass, including rejection
+of the former cyclic dependency. This is scope refinement before dispatch, not
+acceptance of the new implementation tasks.
+
+P01 review has found and corrected immutable Git replacement handling, malformed
+TAP sequencing, source-size scope/baseline representation and observed-duration
+validation. Its final-snapshot tests are passing, but practical multi-commit
+planning/implementation/evidence lifecycle remains under review. Formal catalogs
+have not been activated. Product ownership handoff and DAG-version evolution
+must remain explicit limits unless independently implemented and verified.

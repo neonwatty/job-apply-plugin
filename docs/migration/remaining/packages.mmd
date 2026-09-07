@@ -15,13 +15,17 @@ flowchart TD
   P00 --> S01
   S02["S02: Python-compatible JSON byte decoder"]
   P00 --> S02
-  S03["S03: Typed parser and ASCII serializer integration"]
-  S01 --> S03
-  S02 --> S03
+  S08["S08: Shared point-aware parser core with legacy entry points"]
+  S01 --> S08
+  S02 --> S08
+  S03["S03: Public typed parser and ASCII serializer activation"]
+  S08 --> S03
+  S04 --> S03
+  S05 --> S03
   S04["S04: Codepoint-preserving persisted chunks"]
-  S03 --> S04
+  S08 --> S04
   S05["S05: Text-aware paths and content caches"]
-  S03 --> S05
+  S08 --> S05
   S06["S06: Unicode normalization and answer matching"]
   S03 --> S06
   S07["S07: Caller depth and diagnostic closure"]

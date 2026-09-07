@@ -13,13 +13,19 @@ test('remaining plan covers canonical families and every assignment reaches fina
   const nodes = expandPlan(plan);
   assert.equal(new Set(nodes.map(node => node.id)).size, nodes.length);
   assert.ok(nodes.find(node => node.id === 'S01.V').dependencies.includes('P01.V'));
-  assert.ok(nodes.find(node => node.id === 'S03.I').dependencies.includes('S01.V'));
+  assert.ok(nodes.find(node => node.id === 'S08.I').dependencies.includes('S01.V'));
+  assert.ok(nodes.find(node => node.id === 'S08.I').dependencies.includes('S02.V'));
+  for (const id of ['S04', 'S05']) {
+    assert.ok(nodes.find(node => node.id === `${id}.I`).dependencies.includes('S08.V'));
+    assert.ok(nodes.find(node => node.id === 'S03.I').dependencies.includes(`${id}.V`));
+  }
   assert.ok(nodes.find(node => node.id === 'S03.I').dependencies.includes('S03.R'));
 });
 
 test('remaining plan rejects cycles, unknown dependencies, detached tasks and authority expansion', () => {
   for (const [mutate, pattern] of [
     [value => value.packages.find(row => row.id === 'P00').dependencies.push('G13'), /cycle/],
+    [value => value.packages.find(row => row.id === 'S04').dependencies.push('S03'), /cycle/],
     [value => value.packages[0].dependencies.push('X99'), /Unknown dependency/],
     [value => value.packages.push({ ...value.packages[0], id: 'X99', dependencies: [] }), /does not contribute/],
     [value => { value.releaseExcluded = false; }, /authority/],

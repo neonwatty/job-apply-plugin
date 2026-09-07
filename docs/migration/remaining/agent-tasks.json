@@ -169,6 +169,33 @@
     ]
   },
   {
+    "id": "S08.R",
+    "package": "S08",
+    "role": "reference",
+    "dependencies": [
+      "P00.V"
+    ]
+  },
+  {
+    "id": "S08.I",
+    "package": "S08",
+    "role": "implementation-or-gate",
+    "dependencies": [
+      "S01.V",
+      "S02.V",
+      "S08.R"
+    ]
+  },
+  {
+    "id": "S08.V",
+    "package": "S08",
+    "role": "independent-review",
+    "dependencies": [
+      "S08.I",
+      "P01.V"
+    ]
+  },
+  {
     "id": "S03.R",
     "package": "S03",
     "role": "reference",
@@ -181,8 +208,9 @@
     "package": "S03",
     "role": "implementation-or-gate",
     "dependencies": [
-      "S01.V",
-      "S02.V",
+      "S08.V",
+      "S04.V",
+      "S05.V",
       "S03.R"
     ]
   },
@@ -208,7 +236,7 @@
     "package": "S04",
     "role": "implementation-or-gate",
     "dependencies": [
-      "S03.V",
+      "S08.V",
       "S04.R"
     ]
   },
@@ -234,7 +262,7 @@
     "package": "S05",
     "role": "implementation-or-gate",
     "dependencies": [
-      "S03.V",
+      "S08.V",
       "S05.R"
     ]
   },

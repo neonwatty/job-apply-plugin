@@ -25,15 +25,15 @@ and post-write rollback remain explicit work. P00 reconciles exact current statu
 
 ## The executable DAG
 
-- [Complete task catalog](remaining/task-catalog.md): 115 proposed work packages,
+- [Complete task catalog](remaining/task-catalog.md): 116 approved work packages,
   their prerequisites, ownership areas and task-specific acceptance criteria.
 - [Package dependency diagram](remaining/dag.md): the full dependency graph.
-- [Agent assignment diagram](remaining/agent-dag.md): the expanded 326-task graph.
+- [Agent assignment diagram](remaining/agent-dag.md): the expanded 329-task graph.
 - [Machine-readable plan](remaining/plan.json) and
   [expanded agent tasks](remaining/agent-tasks.json).
 - Validate with `node tools/migration/check-remaining-plan.mjs`.
 
-The graph contains 326 assignments, **not 326 persistent sessions**. An existing
+The graph contains 329 assignments. An existing
 agent can execute many non-overlapping tasks. Reference work often reuses an
 unchanged accepted receipt; it does not mean recapturing every reference.
 No claim is made that all future file manifests are dispatch-ready today.
@@ -87,7 +87,11 @@ Before any I task becomes Ready, R (or the coordinator for a gate) must freeze:
    validate the amended DAG and retain the parent's integration gate before work.
 4. An exclusive owner for overlapping files. G01 owns Store/CLI assembly, G02 owns
    workspace assembly, J04 owns startup dispatch and U07 owns UI bootstrap.
-   S03 owns the coordinated typed-consumer change; its downstream S04/S05 wait.
+   S08 prepares a shared point-aware parser core after S01/S02. S04 persistence
+   and S05 path preparation can then run in parallel with disjoint files. S03
+   owns the final public parser/alias activation and shared consumer composition
+   after both preparations pass. This prevents a cycle where activation requires
+   downstream consumers that themselves wait for activation.
 
 Planning ownership descriptions are not glob write permissions. New leaves depend
 on shared primitives; primitives/facades must not acquire accidental reverse
