@@ -199,11 +199,11 @@
     },
     {
       "path": "task-contracts.json",
-      "sha256": "182ebf61593e853f13cc1648103b2c3379a0e5182be40723f3f1d3a4c74f0c6f"
+      "sha256": "1f40f2ab993cb45242a24266533d5247f4a7a977aff11c129cd937a2275694f9"
     },
     {
       "path": "task-lineage.json",
-      "sha256": "3d9efb6dddfeb2b6ec85cb9fd6f950ceb84620c7efec12d9989db2e583eeba13"
+      "sha256": "90f060ea75ebc5354a232c026ce519d685416d26d50ce2623aebe11c66eacfb5"
     },
     {
       "path": "task-receipts.json",
