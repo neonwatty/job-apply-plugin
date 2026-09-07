@@ -181,7 +181,7 @@ export async function checkInventory(root, options = {}) {
       for (const binding of Array.isArray(requirement?.testBindings) ? requirement.testBindings : []) {
         if (!safePath(binding?.file) || !registered.has(binding.file) || testIds.has(binding.file)) continue;
         const source = await readFile(resolve(root, binding.file), 'utf8');
-        testIds.set(binding.file, discoverTestIds(binding.file, source));
+        testIds.set(binding.file, discoverTestIds(binding.file, source, { platform: process.platform }));
       }
       for (const file of Array.isArray(requirement?.oracleFiles) ? requirement.oracleFiles : []) {
         if (!safePath(file?.path) || !registered.has(file.path) || files.has(file.path)) continue;

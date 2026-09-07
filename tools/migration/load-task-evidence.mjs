@@ -198,7 +198,7 @@ export async function loadTaskEvidence(root, context) {
       const planningValid = executionBoundary(manifest, receipt.executionBase);
       for (const cell of manifest.cells) {
         const source = io.fileAt(subject, cell.command[2]);
-        const names = source === null ? new Set() : discoverTestIds(cell.command[2], source.toString('utf8'));
+        const names = source === null ? new Set() : discoverTestIds(cell.command[2], source.toString('utf8'), { platform: environments.get(cell.environmentId)?.platform });
         if (cell.testNames.some(name => !names.has(name))) throw new Error('Accepted subject lacks declared literal test identities');
       }
       const fact = { coordinatorChanges: new Set(), metadataInputs: new Set(), executionBase: receipt.executionBase, planningValid, subjectTree: io.tree(subject), revisionsKnown: true,

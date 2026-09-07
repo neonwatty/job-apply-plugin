@@ -52,7 +52,10 @@ export function fixture() {
     assignments: manifestContext.assignments, environments: manifestContext.environments, facts: new Map([[assignment.id, fact]]), clean: true };
   return { manifest, receipt, manifestContext, receiptContext, fact };
 }
-export async function repository({ oversized = false, numericBaseline = false, futureTest = false, lifecycle = false, successor = false } = {}) {
+export async function repository({ oversized = false, numericBaseline = false, futureTest = false, lifecycle = false, successor = false, platformConditional = false, cellPlatform = process.platform } = {}) {
+  const testName = platformConditional ? (process.platform === 'win32' ? 'windows audit' : 'portable audit') : cell.testNames[0];
+  const testSource = platformConditional ? "import test from 'node:test';\nif(process.platform === 'win32'){test('windows audit',()=>1);}else{test('portable audit',()=>1);}\n" : source;
+  const testEnvironment = { ...environment, platform: cellPlatform };
   const root = await mkdtemp(join(tmpdir(), 'migration-task-'));
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_') && !key.startsWith('NODE_TEST_')));
   const git = (...args) => execFileSync('git', args, { cwd: root, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
@@ -61,6 +64,7 @@ export async function repository({ oversized = false, numericBaseline = false, f
   git('init', '-q');
   const baselinePath = '.source-size-baseline.json', extractionPath = 'src/extracted.mts';
   const scopedPackage = clone(packageValue), scopedAudit = clone(audit);
+  scopedAudit.cells[0].testNames = [testName];
   const reviewPath = 'config/migration/tasks/T01.V.json';
   const nextAudit = { ...clone(audit), id: 'audit-T02', assignmentIds: ['T02.I'],
     allowed_files: ['src/example.ts', TEST, 'config/migration/tasks/T02.I.json'],
@@ -69,13 +73,16 @@ export async function repository({ oversized = false, numericBaseline = false, f
   const baseline = ceiling => ({ version: 1, maximumLines: 500, files: { 'src/example.ts': numericBaseline ? ceiling
     : { ceiling, owner: 'author', reason: 'Extract bounded helper', removalPhase: 'T01' } } });
   if (oversized) { scopedPackage.allowed_files.push(baselinePath, extractionPath); scopedAudit.allowed_files = scopedPackage.allowed_files; }
-  await write('src/example.ts', oversized ? 'old\n'.repeat(601) : 'old\n'); if (!futureTest) await write(TEST, source);
+  await write('src/example.ts', oversized ? 'old\n'.repeat(601) : 'old\n'); if (!futureTest) await write(TEST, testSource);
   if (oversized) await write(baselinePath, baseline(601));
   await write('docs/dag.json', successor ? [assignment, { id: 'T01.V', package: 'T01', role: 'independent-review', dependencies: ['T01.I'] },
     { id: 'T02.I', package: 'T02', role: 'implementation-or-gate', dependencies: ['T01.V'] }] : [assignment]);
   if (successor) await write('docs/audit-next.json', nextAudit); await write('docs/audit.json', scopedAudit);
   const base = commit(), f = fixture();
   const fileHash = path => digest(execFileSync('git', ['show', `HEAD:${path}`], { cwd: root, env }));
+  f.manifest.cells[0].testNames = [testName];
+  f.receipt.cells[0].environment = testEnvironment;
+  if (!futureTest) f.manifest.inputs.find(item => item.path === TEST).sha256 = fileHash(TEST);
   if (futureTest) f.manifest.inputs = f.manifest.inputs.filter(input => input.path !== TEST);
   f.manifest.package = scopedPackage; f.manifest.packageSha256 = digest(canonical(structuralPackage(scopedPackage)));
   f.manifest.inputs[0].sha256 = fileHash('src/example.ts');
@@ -90,9 +97,10 @@ export async function repository({ oversized = false, numericBaseline = false, f
   const manifestHash = fileHash(MANIFEST);
   const catalog = { schemaVersion: 1, dag: { ...f.manifest.dag, revision: base },
     assignments: [{ id: assignment.id, author: 'author', reviewer: 'reviewer', manifest: { path: MANIFEST, sha256: manifestHash, revision: planning } }],
-    environments: [environment], audits: [{ ...f.manifest.auditContract, revision: base }] };
+    environments: [testEnvironment], audits: [{ ...f.manifest.auditContract, revision: base }] };
   if (successor) catalog.assignments.push({ id: 'T01.V', author: 'author', reviewer: 'reviewer', manifest: { path: reviewPath, sha256: fileHash(reviewPath), revision: planning } });
   const registry = registries();
+  registry.testIds.set(TEST, new Set([testName]));
   if (futureTest) {
     registry.requirementContext.surfaces.add('planned-surface');
     registry.requirementContext.files.set('docs/audit.json', fileHash('docs/audit.json'));
@@ -100,7 +108,7 @@ export async function repository({ oversized = false, numericBaseline = false, f
     registry.requirements = [{ id: 'planned.valid', family: 'G00', surfaceIds: ['planned-surface'], category: 'valid',
       applicability: { status: 'required' }, platformCells: ['node-local'], expectedArtifacts: ['evidence/audit.json'],
       oracleFiles: [{ path: 'docs/audit.json', sha256: fileHash('docs/audit.json') }],
-      testBindings: [{ suiteId: 'planned-tests', file: TEST, testId: 'audit exact input', command: cell.command,
+      testBindings: [{ suiteId: 'planned-tests', file: TEST, testId: testName, command: cell.command,
         timeoutMs: 10000, maxOutputBytes: 100000 }] }];
   }
   const observations = [];
@@ -125,7 +133,7 @@ export async function repository({ oversized = false, numericBaseline = false, f
   };
   await write('config/migration/task-contracts.json', catalog); await writeLock(); await observe('activation-snapshot', true); const executionBase = commit();
   await observe('activation');
-  if (futureTest) await write(TEST, source);
+  if (futureTest) await write(TEST, testSource);
   await write('src/example.ts', oversized ? 'new\n'.repeat(550) : 'new\n');
   if (oversized) { await write(baselinePath, baseline(550)); await write(extractionPath, 'export const extracted = true;\n'); }
   await observe('subject-snapshot', true);
