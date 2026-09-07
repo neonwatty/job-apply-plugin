@@ -444,6 +444,26 @@
           "sha256": "5a53e0e8e00d46ab8a495d884b30f01038b4600c88439da882eac4caf8e37611"
         }
       ]
+    },
+    {
+      "id": "P09.documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze validated captured-successor currentness with independent actual retirement lifecycle evidence.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p09/approved-dag.json",
+          "sha256": "1cbe912355694e8340c999479a4575d0c76b163005e4370b16462cd6ca768c46"
+        },
+        {
+          "path": "docs/migration/evidence/p09/implementation-audit.json",
+          "sha256": "5a96cbfd75636531cc6d6bd969290b207f2a73de6ea0c441dc484b37fbb94d13"
+        },
+        {
+          "path": "docs/migration/evidence/p09/implementation.md",
+          "sha256": "8f195746d5a2c265591f56730d5ace7145ad134bfc352cb8255e0454eef50708"
+        }
+      ]
     }
   ],
   "transitions": [
