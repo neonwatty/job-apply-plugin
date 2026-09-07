@@ -812,6 +812,22 @@
           "sha256": "bb7bb11ee0ecaf348031fe750620041ab3372899abc71c101e8b618dd053a89c"
         }
       ]
+    },
+    {
+      "id": "P12.manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze isolated historical graph environment proofs while preserving live inherited-context refusal.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p12/P12.I.json",
+          "sha256": "99f553545a943c0168af5b148c7e068ea519b4ea6ca13cd2e1c117c64a5cb6c0"
+        },
+        {
+          "path": "docs/migration/evidence/p12/P12.V.json",
+          "sha256": "b5212f55f04475a10a3aab7c08dd01ea7df936f18cd0aa65219a59add08b74a3"
+        }
+      ]
     }
   ],
   "transitions": [
