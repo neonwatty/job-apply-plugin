@@ -7445,6 +7445,252 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P12.I",
+      "manifestSha256": "99f553545a943c0168af5b148c7e068ea519b4ea6ca13cd2e1c117c64a5cb6c0",
+      "subject": {
+        "sha": "51a31199c95024f59bf4d71779a09dacfce8d154",
+        "tree": "3d3c1d50047cc9637103546149f5e942cc8b264e"
+      },
+      "executionBase": "5e6044bcfd5efb09e24ceb538222f8bc9f2cce13",
+      "evidenceCommit": "c95acfd000079895990165979769a2a7ca0dd1bd",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/test-matrix.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/graph_environment_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/test-runner-selection.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "config/test-matrix.json",
+          "sha256": "bd33a6cecc1b468adf2581582eec1ef13747e404a40ea843721b9cea30511f38"
+        },
+        {
+          "path": "tests_js/test-runner-selection.test.mjs",
+          "sha256": "f87491260538b1aaa3acd0aebb19ddcddb0836fffba05962893a1867c6558b63"
+        },
+        {
+          "path": "tests_js/graph_environment_support.mjs",
+          "sha256": "e1eb2e54ef4f04cfdbbc1056cc510425f565d73c5bba56876b2081079c982290"
+        },
+        {
+          "path": "docs/migration/evidence/p12/implementation.md",
+          "sha256": "542c9ab8f79b4041619f54a9441394814340573463f493ca380b6e3a728d4bf6"
+        },
+        {
+          "path": "docs/migration/evidence/p12/implementation-spec.json",
+          "sha256": "bb7bb11ee0ecaf348031fe750620041ab3372899abc71c101e8b618dd053a89c"
+        },
+        {
+          "path": "docs/migration/evidence/p12/implementation-audit.json",
+          "sha256": "60bca467215264eeb7df8b3d11bf87666b89e76551f013415112d7aa6345c679"
+        },
+        {
+          "path": "docs/migration/evidence/p12/approved-dag.json",
+          "sha256": "eca63c82bdb2b582f5abd5a4c8cccaaaa1961a50a16f59956db0379848d6150c"
+        },
+        {
+          "path": "docs/migration/evidence/p12/P12.I.json",
+          "sha256": "99f553545a943c0168af5b148c7e068ea519b4ea6ca13cd2e1c117c64a5cb6c0"
+        },
+        {
+          "path": "docs/migration/evidence/p12/P12.V.json",
+          "sha256": "b5212f55f04475a10a3aab7c08dd01ea7df936f18cd0aa65219a59add08b74a3"
+        },
+        {
+          "path": "docs/migration/evidence/p12/transition.json",
+          "sha256": "a922c7237a14f9ffd1d0425af1bd616f130a8261b573f56ca7aeda2674b90b7a"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P11.V",
+          "sha256": "3ad660e5dd52809bb72d1f2c76ed47d7293bf678f4b140d3fe6ac54c993b38fb"
+        },
+        {
+          "id": "P10.V",
+          "sha256": "c72ab5aa77b7841d08475d159961307d5de73023c45956a0c8e49862723e7632"
+        },
+        {
+          "id": "P03.retry2.V",
+          "sha256": "bf8967b20ce30e7541f93eeeb4697ce5603b2aeae397701b57e60f5a8c31d43b"
+        }
+      ],
+      "cells": [
+        {
+          "id": "p12.graph-environment",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/test-runner-selection.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 15557.116417000001,
+            "outputBytes": 3191,
+            "tests": 14,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p12/logs/P12-graph-environment.tap",
+            "sha256": "b2e53fab68b0253375b341f367a57756226de87d00fdade4b34aaa4be601a5c9"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "51a31199c95024f59bf4d71779a09dacfce8d154",
+        "subjectTree": "3d3c1d50047cc9637103546149f5e942cc8b264e",
+        "manifestSha256": "99f553545a943c0168af5b148c7e068ea519b4ea6ca13cd2e1c117c64a5cb6c0",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P12.V",
+      "manifestSha256": "b5212f55f04475a10a3aab7c08dd01ea7df936f18cd0aa65219a59add08b74a3",
+      "subject": {
+        "sha": "51a31199c95024f59bf4d71779a09dacfce8d154",
+        "tree": "3d3c1d50047cc9637103546149f5e942cc8b264e"
+      },
+      "executionBase": "5e6044bcfd5efb09e24ceb538222f8bc9f2cce13",
+      "evidenceCommit": "c95acfd000079895990165979769a2a7ca0dd1bd",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/test-matrix.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/graph_environment_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/test-runner-selection.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "config/test-matrix.json",
+          "sha256": "bd33a6cecc1b468adf2581582eec1ef13747e404a40ea843721b9cea30511f38"
+        },
+        {
+          "path": "tests_js/test-runner-selection.test.mjs",
+          "sha256": "f87491260538b1aaa3acd0aebb19ddcddb0836fffba05962893a1867c6558b63"
+        },
+        {
+          "path": "tests_js/graph_environment_support.mjs",
+          "sha256": "e1eb2e54ef4f04cfdbbc1056cc510425f565d73c5bba56876b2081079c982290"
+        },
+        {
+          "path": "docs/migration/evidence/p12/implementation.md",
+          "sha256": "542c9ab8f79b4041619f54a9441394814340573463f493ca380b6e3a728d4bf6"
+        },
+        {
+          "path": "docs/migration/evidence/p12/implementation-spec.json",
+          "sha256": "bb7bb11ee0ecaf348031fe750620041ab3372899abc71c101e8b618dd053a89c"
+        },
+        {
+          "path": "docs/migration/evidence/p12/implementation-audit.json",
+          "sha256": "60bca467215264eeb7df8b3d11bf87666b89e76551f013415112d7aa6345c679"
+        },
+        {
+          "path": "docs/migration/evidence/p12/approved-dag.json",
+          "sha256": "eca63c82bdb2b582f5abd5a4c8cccaaaa1961a50a16f59956db0379848d6150c"
+        },
+        {
+          "path": "docs/migration/evidence/p12/P12.I.json",
+          "sha256": "99f553545a943c0168af5b148c7e068ea519b4ea6ca13cd2e1c117c64a5cb6c0"
+        },
+        {
+          "path": "docs/migration/evidence/p12/P12.V.json",
+          "sha256": "b5212f55f04475a10a3aab7c08dd01ea7df936f18cd0aa65219a59add08b74a3"
+        },
+        {
+          "path": "docs/migration/evidence/p12/transition.json",
+          "sha256": "a922c7237a14f9ffd1d0425af1bd616f130a8261b573f56ca7aeda2674b90b7a"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P12.I",
+          "sha256": "386e4a3af33ebd948fbf73e051753eb3e0f93045512612bff29540459d04d743"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        }
+      ],
+      "cells": [
+        {
+          "id": "p12.graph-environment",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/test-runner-selection.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 15557.116417000001,
+            "outputBytes": 3191,
+            "tests": 14,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p12/logs/P12-graph-environment.tap",
+            "sha256": "b2e53fab68b0253375b341f367a57756226de87d00fdade4b34aaa4be601a5c9"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "51a31199c95024f59bf4d71779a09dacfce8d154",
+        "subjectTree": "3d3c1d50047cc9637103546149f5e942cc8b264e",
+        "manifestSha256": "b5212f55f04475a10a3aab7c08dd01ea7df936f18cd0aa65219a59add08b74a3",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
