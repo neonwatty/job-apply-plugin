@@ -11,6 +11,22 @@ const nonnegative = value => Number.isFinite(value) && value >= 0;
 const sourceState = value => closed(value, ['path', 'sha256']) && safePath(value.path) && (value.sha256 === null || hash(value.sha256));
 
 export async function loadTaskLineage(io, { head, catalog, frozen, current }) {
+  if (io.head() !== head) throw new Error('HEAD changed before lineage validation');
+  // Histories are queried against HEAD, so keep this cache local and verify HEAD before publishing facts.
+  const histories = new Map(); let historyBytes = 0;
+  function changes(path) {
+    const cached = histories.get(path);
+    if (cached) return [...cached];
+    const revisions = io.changes(path);
+    const size = Buffer.byteLength(path) + revisions.length * 40;
+    if (size <= 8 * 1024 * 1024) {
+      if (histories.size >= 4096 || historyBytes + size > 8 * 1024 * 1024) {
+        histories.clear(); historyBytes = 0;
+      }
+      histories.set(path, [...revisions]); historyBytes += size;
+    }
+    return revisions;
+  }
   const jsonAt = (path, revision) => { const value = io.fileAt(revision, path); return value === null ? null : JSON.parse(value); };
   const root = await frozen(catalog.dag), dagsByHash = new Map([[catalog.dag.sha256, assignmentsFrom(root)]]);
   const bytes = await current(LINEAGE);
@@ -22,7 +38,7 @@ export async function loadTaskLineage(io, { head, catalog, frozen, current }) {
     return value;
   }
   validShard(shard);
-  const history = io.changes(LINEAGE).map(revision => ({ revision, value: validShard(jsonAt(LINEAGE, revision)) }));
+  const history = changes(LINEAGE).map(revision => ({ revision, value: validShard(jsonAt(LINEAGE, revision)) }));
   for (const row of history) for (const key of ['preparations', 'transitions']) {
     if (row.value[key].some(item => !shard[key].some(last => equal(last, item)))) throw new Error('Lineage history removed or replaced records');
     for (const earlier of history) if (earlier.revision !== row.revision && io.ancestor(earlier.revision, row.revision)
@@ -48,7 +64,7 @@ export async function loadTaskLineage(io, { head, catalog, frozen, current }) {
       if (!fileBinding(file) || !preparationPath(file.path) || prepared.has(file.path)) throw new Error('Invalid preparation document');
       const actual = await current(file.path);
       if (actual === null || digest(actual) !== file.sha256 || digest(io.fileAt(revision, file.path) ?? '') !== file.sha256) throw new Error('Prepared document differs');
-      if (io.changes(file.path).some(prior => prior !== revision && io.ancestor(prior, revision)
+      if (changes(file.path).some(prior => prior !== revision && io.ancestor(prior, revision)
         && io.fileAt(prior, file.path) !== null)) throw new Error('Preparation overwrites existing document');
       const originalCatalog = jsonAt(CATALOG, revision);
       const protectedPaths = [originalCatalog?.dag?.path, ...(originalCatalog?.assignments ?? []).map(row => row.manifest?.path),
@@ -60,7 +76,7 @@ export async function loadTaskLineage(io, { head, catalog, frozen, current }) {
     preparationFacts.set(item.id, { filesValid: true, historyValid: true });
   }
   const contracts = [], facts = new Map(), receiptIds = new Set(), handoffTaskIds = new Set();
-  for (const revision of io.changes(RECEIPTS)) {
+  for (const revision of changes(RECEIPTS)) {
     const value = jsonAt(RECEIPTS, revision);
     if (!closed(value, ['schemaVersion', 'receipts']) || value.schemaVersion !== 1 || !Array.isArray(value.receipts)) throw new Error('Invalid historical receipt collection');
     for (const receipt of value.receipts) { if (!text(receipt?.id)) throw new Error('Invalid historical receipt ID'); receiptIds.add(receipt.id); }
@@ -77,7 +93,7 @@ export async function loadTaskLineage(io, { head, catalog, frozen, current }) {
   const ownDagByTask = new Map();
   function originalActivation(id) {
     const authorization = authorizations.get(id);
-    const revisions = io.changes(CATALOG).filter(revision => jsonAt(CATALOG, revision)?.assignments?.some(item => equal(item, authorization)));
+    const revisions = changes(CATALOG).filter(revision => jsonAt(CATALOG, revision)?.assignments?.some(item => equal(item, authorization)));
     const candidates = revisions.filter(revision => !revisions.some(other => other !== revision && io.ancestor(other, revision)));
     if (candidates.length !== 1) throw new Error('Ambiguous original activation');
     return candidates[0];
@@ -257,7 +273,7 @@ export async function loadTaskLineage(io, { head, catalog, frozen, current }) {
       for (const path of paths) {
         if (COORDINATOR.has(path) || planningBindings.has(path) || path === authorizations.get(retirement.id).manifest.path
           || catalog.assignments.some(item => item.manifest.path === path) || catalog.audits.some(item => item.path === path)) continue;
-        const revisions = io.changes(path).filter(revision => revision !== activation && io.ancestor(activation, revision) && io.ancestor(revision, entry.revision)
+        const revisions = changes(path).filter(revision => revision !== activation && io.ancestor(activation, revision) && io.ancestor(revision, entry.revision)
           && io.diff(activation, revision).some(change => change.path === path || change.oldPath === path));
         if (revisions.length && !capture && ![...captures.values()].some(shared => shared.covered.has(path)
           && revisions.every(revision => io.ancestor(revision, shared.evidenceCommit)))) throw new Error('Null attempt conceals historical work');
@@ -281,12 +297,12 @@ export async function loadTaskLineage(io, { head, catalog, frozen, current }) {
     validateVersions(transition, entry.revision, activation);
     const authorizedAtFreeze = new Set([...authorizations].filter(([, value]) => io.ancestor(value.manifest.revision, entry.revision)).map(([id]) => id));
     const receiptedAtFreeze = new Set();
-    for (const revision of io.changes(RECEIPTS).filter(value => io.ancestor(value, entry.revision))) {
+    for (const revision of changes(RECEIPTS).filter(value => io.ancestor(value, entry.revision))) {
       for (const receipt of jsonAt(RECEIPTS, revision).receipts) receiptedAtFreeze.add(receipt.id);
     }
     const authorizedAtActivation = new Set([...authorizations].filter(([, value]) => io.ancestor(value.manifest.revision, activation)).map(([id]) => id));
     const receiptedAtActivation = new Set();
-    for (const revision of io.changes(RECEIPTS).filter(value => io.ancestor(value, activation))) {
+    for (const revision of changes(RECEIPTS).filter(value => io.ancestor(value, activation))) {
       for (const receipt of jsonAt(RECEIPTS, revision).receipts) receiptedAtActivation.add(receipt.id);
     }
     facts.set(transition.id, { immutable: true, beforeActivation: true, attemptsValid: true, versionsValid: true, historyValid: true,
@@ -309,9 +325,25 @@ export async function loadTaskLineage(io, { head, catalog, frozen, current }) {
   const resolved = validateTaskLineage({ preparations: shard.preparations, transitions: contracts }, {
     rootDag: catalog.dag, dagsByHash, manifests, authorizations, receiptIds, handoffTaskIds, facts, preparationFacts });
   if (resolved.errors.length) throw new Error(resolved.errors.join('; '));
+  const capturedSuccessors = new Map();
+  for (const transition of contracts) for (const retirement of transition.retirements) {
+    const original = manifests.get(retirement.id), replacement = manifests.get(retirement.replacementId);
+    const sources = retirement.attempt ? [retirement] : transition.retirements.filter(item => item.attempt
+      && manifests.get(item.id).package.id === original.package.id);
+    if (sources.length !== 1) continue;
+    const attempt = sources[0].attempt;
+    const capturedFiles = new Map(attempt.files.filter(item => item.sha256 !== null
+      && original.package.allowed_files.includes(item.path) && !planningBindings.has(item.path) && !COORDINATOR.has(item.path)
+      && replacement.inputs.some(input => equal(input, item))).map(item => [item.path, item.sha256]));
+    capturedSuccessors.set(retirement.id, { replacementId: retirement.replacementId,
+      subjectSha: attempt.subject.sha, manifestSha256: retirement.manifest.sha256,
+      inputs: new Map(original.inputs.map(item => [item.path, item.sha256])), capturedFiles,
+      allowedFiles: new Set(original.package.allowed_files), valid: true });
+  }
   const allAssignments = new Map();
   for (const dag of dagsByHash.values()) for (const [id, value] of dag) allAssignments.set(id, value);
-  return { ...resolved, allAssignments, ownDagByTask, historicalPackagesByTask, planningBindings, preservedFiles,
+  if (io.head() !== head) throw new Error('HEAD changed during lineage validation');
+  return { ...resolved, capturedSuccessors, allAssignments, ownDagByTask, historicalPackagesByTask, planningBindings, preservedFiles,
     replacementActivations, preservedLogHashes, transitionByTask, freezePoints,
     preparedPath: (path, revision) => {
       const item = prepared.get(path);

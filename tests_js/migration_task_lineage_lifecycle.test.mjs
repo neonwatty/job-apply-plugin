@@ -127,3 +127,102 @@ test('P07 lineage activation and receipt snapshots preserve accepted history', a
   assert.deepEqual((await f.check()).errors, []);
   await assertHandoffLineageCoexistence(t);
 });
+
+test('captured successor lifecycle preserves an accepted reference through retirement and fresh replacement review', async t => {
+  const f = await lineageRepository(t, { lifecycle: true, sharedAudit: true });
+  const history = canonical(f.receipts), h0 = digest(f.io.fileAt(f.git('rev-parse', 'HEAD'), f.sharedPath));
+  assert.deepEqual(f.receipts.map(x => x.id), ['A.R']);
+  const original = await f.freezeOriginal();
+  await f.implement(original, { mismatch: true, sharedVersion: 1 }); await f.capture(original);
+  const h1 = digest(f.io.fileAt(original.subject, f.sharedPath)); assert.notEqual(h0, h1);
+  assert.match(original.log, /unexpected original result/);
+  const first = await f.freezeReplacement(original); await f.activateReplacement(first);
+  assert.equal(first.transition.retirements[1].attempt, null);
+  assert.equal(first.manifests[0].inputs.find(x => x.path === f.sharedPath).sha256, h1);
+  const pending = await f.check(); assert.deepEqual(pending.errors, []);
+  assert.equal(pending.taskEvidence.currentAcceptance, 'open');
+  assert.equal(pending.taskEvidence.acceptedTasks.length, 0);
+  assert.equal(canonical(f.receipts), history);
+  await f.implement(first, { mismatch: true, sharedVersion: 2 }); await f.capture(first);
+  const h2 = digest(f.io.fileAt(first.subject, f.sharedPath)); assert.equal(new Set([h0, h1, h2]).size, 3);
+  const next = await f.freezeReplacement(first, { key: 'B.retry2' }); await f.activateReplacement(next);
+  assert.equal(next.manifests[1].inputs.find(x => x.path === f.sharedPath).sha256, h2);
+  assert.deepEqual((await f.check()).errors, []);
+  await f.implementReplacement(next); await f.capture(next); const accepted = await f.publish(next);
+  assert.deepEqual(accepted.errors, []); assert.ok(accepted.taskEvidence.acceptedTasks.includes('B.retry2.V'));
+  for (const id of ['B.I', 'B.V', 'B.retry1.I', 'B.retry1.V']) {
+    assert.equal(accepted.taskEvidence.acceptedTasks.includes(id), false);
+    assert.equal(f.receipts.some(x => x.id === id), false);
+  }
+  assert.equal(canonical(f.receipts.slice(0, 1)), history);
+  assert.equal(await readFile(join(f.root, original.manifests[0].cells[0].logPath), 'utf8'), original.log);
+  assert.equal(await readFile(join(f.root, first.manifests[0].cells[0].logPath), 'utf8'), first.log);
+  assert.equal(f.git('status', '--porcelain'), '');
+});
+
+test('captured successor lifecycle rejects unbound adoption and keeps invalid batches closed', async t => {
+  const f = await lineageRepository(t, { sharedAudit: true }), original = await f.freezeOriginal();
+  await f.implement(original, { mismatch: true, sharedVersion: 1 }); await f.capture(original);
+  const checkpoint = f.checkpoint();
+  for (const role of [0, 1]) {
+    f.restore(checkpoint);
+    const next = await f.freezeReplacement(original, { changeManifests(items) {
+      items[role].inputs = items[role].inputs.filter(x => x.path !== f.sharedPath);
+    } });
+    await f.activateReplacement(next); const result = await f.check();
+    denied(result); assert.match(result.errors.join('\n'), /adopt|input|bound/i);
+  }
+  for (const mutate of [
+    transition => { transition.retirements[0].attempt.files.find(x => x.path === f.sharedPath).sha256 = '0'.repeat(64); },
+    transition => { transition.retirements[0].attempt = null; },
+    transition => { transition.retirements[0].attempt.artifacts[0].sha256 = '0'.repeat(64); },
+    transition => { transition.retirements[0].replacementId = 'B.I'; },
+  ]) {
+    f.restore(checkpoint);
+    const next = await f.freezeReplacement(original, { mutate }); await f.activateReplacement(next);
+    const result = await f.check(); denied(result); assert.match(result.errors.join('\n'), /capture|attempt|lineage|retir|cycle|artifact|binding/i);
+  }
+  f.restore(checkpoint);
+  const next = await f.freezeReplacement(original); await f.activateReplacement(next);
+  const active = f.checkpoint();
+  const matrix = JSON.parse(await readFile(join(f.root, f.sharedPath), 'utf8'));
+  matrix.suites[0].include.push('tests_js/unbound-future.test.mjs'); await f.write(f.sharedPath, matrix); f.commit();
+  // A pending, owned implementation change is allowed, but cannot manufacture a receipt.
+  const changed = await f.check(); assert.deepEqual(changed.errors, []);
+  assert.equal(changed.taskEvidence.currentAcceptance, 'open'); assert.equal(changed.taskEvidence.acceptedTasks.length, 0);
+  f.restore(active); await f.implementReplacement(next); await f.capture(next);
+  const ready = f.checkpoint();
+  const accepted = await f.publish(next); assert.deepEqual(accepted.errors, []);
+  const valid = f.checkpoint();
+  const wrong = await f.publish(original); denied(wrong); f.restore(valid);
+  f.restore(ready);
+  const invalid = await f.publish(next, { mutate(receipt) {
+    if (receipt.id === 'B.retry1.I') receipt.dependencies[0].sha256 = '0'.repeat(64);
+  } }); denied(invalid); assert.match(invalid.errors.join('\n'), /dependency|bound|receipt/i);
+  f.restore(active);
+  await f.implement(next, { mismatch: true, sharedVersion: 2 }); await f.capture(next);
+  const twice = f.checkpoint();
+  const retry2 = await f.freezeReplacement(next, { key: 'B.retry2' }); await f.activateReplacement(retry2);
+  assert.deepEqual((await f.check()).errors, []);
+  const chain = f.checkpoint();
+  for (const task of [original, next]) {
+    f.restore(chain);
+    await rm(join(f.root, task.manifests[0].cells[0].logPath)); f.commit();
+    const missing = await f.check(); denied(missing); assert.match(missing.errors.join('\n'), /capture|artifact|log|history|lineage/i);
+  }
+  f.restore(twice);
+  const cycle = await f.freezeReplacement(next, { key: 'B.retry2', mutate(transition) {
+    transition.retirements[0].replacementId = 'B.I';
+  } });
+  await f.activateReplacement(cycle); denied(await f.check());
+  const product = await lineageRepository(t, { sharedAudit: true, productBridge: true });
+  const productOriginal = await product.freezeOriginal();
+  await product.implement(productOriginal, { mismatch: true, sharedVersion: 1 });
+  const beforeCapture = await product.check(); denied(beforeCapture);
+  assert.match(beforeCapture.errors.join('\n'), /product edits require a frozen predecessor handoff/);
+  await product.capture(productOriginal);
+  assert.equal(product.packages.find(x => x.id === 'B').status, 'planned');
+  const productRetry = await product.freezeReplacement(productOriginal); await product.activateReplacement(productRetry);
+  const noHandoff = await product.check(); denied(noHandoff);
+  assert.ok(noHandoff.errors.some(error => error.includes('dirty/stale/untracked subject file')), noHandoff.errors.join('\n'));
+});

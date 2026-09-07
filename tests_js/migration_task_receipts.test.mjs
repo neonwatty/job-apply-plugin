@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { validateTaskReceipts } from '../tools/migration/task-receipts.mjs';
 import { parseTaskTap } from '../tools/migration/tap-evidence.mjs';
 import { canonical, digest } from '../tools/migration/evidence-io.mjs';
-import { fixture, clone, tap } from './migration_task_support.mjs';
+import { fixture, clone, tap, capturedSuccessorFixture, completeCapturedEndpoint } from './migration_task_support.mjs';
 
 test('task receipts accept only exact immutable subject evidence and keep parent acceptance open', () => {
   const f = fixture(), result = validateTaskReceipts([f.receipt], f.receiptContext);
@@ -131,4 +131,82 @@ test('task receipts reject duplicate reserved metrics that conceal the terminal 
   assert.equal(parseTaskTap(log), null);
   assert.ok(validateTaskReceipts([f.receipt], f.receiptContext).errors.length);
   assert.equal(parseTaskTap(tap.replace('TAP version 13\n', 'TAP version 13\n# pass 1\n')), null);
+});
+
+test('captured successor bridges preserve historical currentness without accepting retired tasks', () => {
+  const f = capturedSuccessorFixture();
+  const result = validateTaskReceipts([f.receipt], f.receiptContext);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.currentAcceptance, 'open');
+  assert.deepEqual([...result.historicalAcceptedTasks], [f.receipt.id]);
+  assert.equal(result.acceptedTasks.size, 0);
+  assert.equal(result.acceptedPackages.size, 0);
+  assert.equal(result.receiptDigests.has(f.originalId), false);
+  assert.equal(result.receiptDigests.has(f.replacementId), false);
+  assert.notEqual(f.h0, f.h1);
+  assert.equal(f.receiptContext.pendingSuccessors.get(f.endpoint).changedPaths.size, 0);
+  const without = clone(f.receiptContext); delete without.capturedSuccessors;
+  assert.match(validateTaskReceipts([f.receipt], without).errors.join('\n'), /stale/);
+  const edited = capturedSuccessorFixture();
+  edited.fact.currentFiles.set(edited.path, edited.h2);
+  edited.receiptContext.pendingSuccessors.get(edited.endpoint).changedPaths.add(edited.path);
+  const pendingEdit = validateTaskReceipts([edited.receipt], edited.receiptContext);
+  assert.deepEqual(pendingEdit.errors, []); assert.equal(pendingEdit.currentAcceptance, 'open');
+  const completed = capturedSuccessorFixture(), fresh = completeCapturedEndpoint(completed);
+  const accepted = validateTaskReceipts([completed.receipt, fresh], completed.receiptContext);
+  assert.deepEqual(accepted.errors, []); assert.equal(accepted.currentAcceptance, 'accepted');
+  assert.deepEqual([...accepted.acceptedTasks].sort(), [completed.receipt.id, completed.endpoint].sort());
+  assert.equal(accepted.historicalAcceptedTasks.has(completed.originalId), false);
+  fresh.dependencies[0].sha256 = '0'.repeat(64);
+  const invalid = validateTaskReceipts([completed.receipt, fresh], completed.receiptContext);
+  assert.ok(invalid.errors.length); assert.equal(invalid.acceptedTasks.size, 0);
+});
+
+test('captured successor bridges reject forged hashes ownership dependencies and ancestry', () => {
+  const mutations = [
+    f => { f.receiptContext.capturedSuccessors.get(f.originalId).manifestSha256 = '0'.repeat(64); },
+    f => { f.receiptContext.capturedSuccessors.get(f.originalId).inputs.set(f.path, '0'.repeat(64)); },
+    f => { f.receiptContext.capturedSuccessors.get(f.originalId).capturedFiles.set(f.path, '0'.repeat(64)); },
+    f => { f.receiptContext.capturedSuccessors.get(f.originalId).allowedFiles.delete(f.path); },
+    f => { f.receiptContext.manifests.get(f.originalId).package.allowed_files = []; },
+    f => { f.receiptContext.manifests.get(f.endpoint).package.allowed_files = []; },
+    f => { f.receiptContext.capturedSuccessors.get(f.originalId).dependencies.clear(); },
+    f => { f.receiptContext.assignments.get(f.originalId).dependencies = []; },
+    f => { f.receiptContext.capturedSuccessors.get(f.originalId).predecessorSubjects.clear(); },
+    f => { f.receiptContext.capturedSuccessors.get(f.originalId).subjectSha = 'invalid'; },
+    f => { f.receiptContext.capturedSuccessors.get(f.originalId).valid = false; },
+    f => { f.receiptContext.capturedSuccessors = new Map([['unknown', {}]]); },
+    f => { f.fact.currentFiles.set(f.path, f.h2); },
+    f => { f.manifest.kind = 'package'; },
+    f => { f.receiptContext.manifests.get(f.originalId).kind = 'package'; },
+    f => { f.receiptContext.manifests.get(f.endpoint).kind = 'package'; },
+    f => { for (const manifest of f.receiptContext.manifests.values()) manifest.kind = 'package'; },
+  ];
+  for (const [index, mutate] of mutations.entries()) {
+    const f = capturedSuccessorFixture(); mutate(f);
+    const result = validateTaskReceipts([f.receipt], f.receiptContext);
+    assert.ok(result.errors.length, `mutation ${index}`);
+    assert.equal(result.acceptedTasks.size, 0); assert.equal(result.acceptedPackages.size, 0);
+  }
+});
+
+test('captured successor bridges compose transitively and reject cycles and missing adoption', () => {
+  const f = capturedSuccessorFixture({ repeated: true });
+  const result = validateTaskReceipts([f.receipt], f.receiptContext);
+  assert.deepEqual(result.errors, []); assert.equal(result.currentAcceptance, 'open');
+  assert.equal(result.acceptedTasks.size, 0); assert.equal(result.receiptDigests.size, 1);
+  assert.equal(new Set([f.h0, f.h1, f.h2]).size, 3);
+  for (const mutate of [
+    f => f.receiptContext.capturedSuccessors.delete(f.originalId),
+    f => f.receiptContext.capturedSuccessors.delete(f.replacementId),
+    f => { f.receiptContext.capturedSuccessors.get(f.replacementId).replacementId = f.originalId; },
+    f => { f.receiptContext.manifests.get(f.endpoint).inputs = []; },
+    f => { f.receiptContext.manifests.get(f.replacementId).inputs.find(x => x.path === f.path).sha256 = f.h0; },
+    f => { f.receiptContext.capturedSuccessors.get(f.replacementId).predecessorSubjects.delete(f.firstSubject); },
+    f => { f.receiptContext.pendingSuccessors.clear(); },
+  ]) {
+    const bad = capturedSuccessorFixture({ repeated: true }); mutate(bad);
+    const denied = validateTaskReceipts([bad.receipt], bad.receiptContext);
+    assert.ok(denied.errors.length); assert.equal(denied.acceptedTasks.size, 0);
+  }
 });

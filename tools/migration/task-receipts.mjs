@@ -27,6 +27,70 @@ export function validateTaskReceipts(receipts, context) {
     seen.add(id);
     return (context.assignments.get(id)?.dependencies ?? []).some(dep => dep === predecessor || depends(dep, predecessor, seen));
   }
+  const captured = context.capturedSuccessors ?? new Map();
+  if (!(captured instanceof Map)) { errors.push('Invalid captured successor registry'); return result(); }
+  for (const [id, bridge] of captured) {
+    const original = context.manifests.get(id), replacement = context.manifests.get(bridge?.replacementId);
+    const ownDag = context.ownDagByTask?.get(id) ?? context.assignments;
+    const dependencies = new Set();
+    function visit(task) {
+      for (const dependency of ownDag.get(task)?.dependencies ?? []) if (!dependencies.has(dependency)) {
+        dependencies.add(dependency); visit(dependency);
+      }
+    }
+    visit(id);
+    if (!bridge || bridge.valid !== true || !original || !replacement || candidates.has(id)
+      || bridge.manifestSha256 !== context.manifestHashes.get(id) || !sha(bridge.subjectSha)
+      || original.kind !== replacement.kind || original.role !== replacement.role
+      || original.package.id !== replacement.package.id
+      || !(bridge.inputs instanceof Map) || !(bridge.capturedFiles instanceof Map)
+      || !(bridge.allowedFiles instanceof Set) || !(bridge.predecessorSubjects instanceof Set)
+      || !(bridge.dependencies instanceof Set)
+      || !equal([...bridge.inputs].sort(), original.inputs.map(item => [item.path, item.sha256]).sort())
+      || !equal([...bridge.allowedFiles].sort(), [...original.package.allowed_files].sort())
+      || !equal([...bridge.dependencies].sort(), [...dependencies].sort())
+      || [...bridge.predecessorSubjects].some(subject => !sha(subject))
+      || [...bridge.capturedFiles].some(([path, value]) => !hash(value) || !bridge.allowedFiles.has(path)
+        || !replacement.package.allowed_files.includes(path)
+        || !replacement.inputs.some(input => input.path === path && input.sha256 === value))) {
+      errors.push(`Invalid captured successor facts: ${id}`);
+    }
+    const seen = new Set([id]); let next = bridge?.replacementId;
+    while (captured.has(next)) {
+      if (seen.has(next)) { errors.push('Captured successor cycle'); break; }
+      seen.add(next); next = captured.get(next)?.replacementId;
+    }
+  }
+  if (errors.length) return result();
+  function capturedCurrent(rootId, retiredId, path, expected, seen) {
+    if (seen.has(retiredId)) return false;
+    const bridge = captured.get(retiredId), root = context.manifests.get(rootId);
+    const original = context.manifests.get(retiredId);
+    if (root?.kind !== 'audit' || original?.kind !== 'audit'
+      || context.manifests.get(bridge?.replacementId)?.kind !== 'audit') return false;
+    if (!bridge || !bridge.allowedFiles.has(path) || bridge.inputs.get(path) !== expected
+      || !bridge.dependencies.has(rootId) || !bridge.predecessorSubjects.has(candidates.get(rootId)?.subject?.sha)
+      || root?.kind === 'package' && original?.kind !== 'package') return false;
+    const adopted = bridge.capturedFiles.get(path), nextId = bridge.replacementId;
+    if (!hash(adopted) || !depends(nextId, rootId)) return false;
+    const visited = new Set(seen); visited.add(retiredId);
+    if (captured.has(nextId)) {
+      if (!captured.get(nextId).predecessorSubjects.has(bridge.subjectSha)) return false;
+      return capturedCurrent(rootId, nextId, path, adopted, visited);
+    }
+    const candidate = candidates.get(nextId), fact = context.facts.get(nextId);
+    if (candidate) {
+      const file = Array.isArray(candidate.files) && candidate.files.find(item => item.path === path);
+      return !!file && fact?.subjectFiles.get(path) === file.sha256
+        && currentOrSuccessor(nextId, path, file.sha256, visited);
+    }
+    const pending = context.pendingSuccessors?.get(nextId);
+    if (pending?.predecessorSubjects.has(candidates.get(rootId)?.subject?.sha)
+      && (context.facts.get(rootId)?.currentFiles.get(path) === adopted || pending.changedPaths.has(path))) {
+      currentOpen = true; return true;
+    }
+    return false;
+  }
   function currentOrSuccessor(id, path, expected, seen = new Set()) {
     const fact = context.facts.get(id);
     if (fact?.currentFiles.get(path) === expected || fact?.metadataInputs?.has(path)) return true;
@@ -48,6 +112,9 @@ export function validateTaskReceipts(receipts, context) {
         && depends(nextId, id) && pending.predecessorSubjects.has(candidates.get(id)?.subject?.sha) && pending.changedPaths.has(path)) {
         currentOpen = true; return true;
       }
+    }
+    for (const retiredId of captured.keys()) {
+      if (capturedCurrent(id, retiredId, path, expected, seen)) return true;
     }
     return false;
   }

@@ -165,9 +165,9 @@ export async function loadTaskEvidence(root, context) {
         return prior === null ? actual === null : actual !== null && prior.equals(actual);
       });
     }
+    const revisions = pendingManifests.length ? [...new Set([...io.changes(CATALOG), ...io.changes(HANDOFFS), ...io.changes(LINEAGE)])]
+      .sort((a, b) => io.ancestor(a, b) ? -1 : io.ancestor(b, a) ? 1 : 0) : [];
     for (const manifest of pendingManifests) {
-      const revisions = [...new Set([...io.changes(CATALOG), ...io.changes(HANDOFFS), ...io.changes(LINEAGE)])]
-        .sort((a, b) => io.ancestor(a, b) ? -1 : io.ancestor(b, a) ? 1 : 0);
       const activations = revisions.filter(revision => {
         if (io.fileAt(revision, CATALOG) === null) return false;
         try { return (!lineage.replacementActivations.has(manifest.id) || io.ancestor(lineage.replacementActivations.get(manifest.id), revision)) && activated(manifest, catalogAt(revision))
@@ -237,7 +237,22 @@ export async function loadTaskEvidence(root, context) {
     }
     const pendingWork = [...pendingSuccessors].some(([id, pending]) => [...pending.changedPaths].some(path =>
       validated.manifests.get(id).package.allowed_files.includes(path) && !planningBindings.has(path) && !COORDINATOR.has(path)));
-    const verified = validateTaskReceipts(collection.receipts, { manifests: validated.manifests, manifestHashes, assignments, ownDagByTask: lineage.ownDagByTask, environments, facts, pendingSuccessors, pendingWork, clean: true });
+    const capturedSuccessors = new Map();
+    const historicalSubjects = [...collection.receipts.map(receipt => receipt.subject.sha),
+      ...[...lineage.capturedSuccessors.values()].map(item => item.subjectSha)];
+    for (const [id, bridge] of lineage.capturedSuccessors) {
+      const original = validated.manifests.get(id), dag = lineage.ownDagByTask.get(id);
+      const dependencies = new Set();
+      function visit(task) {
+        for (const dependency of dag.get(task)?.dependencies ?? []) if (!dependencies.has(dependency)) {
+          dependencies.add(dependency); visit(dependency);
+        }
+      }
+      visit(id);
+      capturedSuccessors.set(id, { ...bridge, dependencies,
+        predecessorSubjects: new Set(historicalSubjects.filter(subject => io.ancestor(subject, original.base))) });
+    }
+    const verified = validateTaskReceipts(collection.receipts, { manifests: validated.manifests, manifestHashes, assignments, ownDagByTask: lineage.ownDagByTask, environments, facts, pendingSuccessors, capturedSuccessors, pendingWork, clean: true });
     if (verified.errors.length) { errors.push(...verified.errors); return empty(); }
     function priorReceiptClosure(id, revision, seen = new Set()) {
       if (seen.has(id)) return true;
@@ -286,6 +301,7 @@ export async function loadTaskEvidence(root, context) {
       }
     }
     if (errors.length) return empty();
+    if (io.head() !== head) throw new Error('HEAD changed during task evidence validation');
     return { ...verified, ...handoffs, planningTestIds, retiredTasks: lineage.retiredTasks, activeAssignments: lineage.activeAssignments };
   } catch (error) { errors.push(`Task evidence: ${error.message}`); return empty(); }
 }

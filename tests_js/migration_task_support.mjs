@@ -199,3 +199,59 @@ export async function completeSuccessor(repo, next) {
   await repo.observe('successor-receipt-snapshot', true); repo.commit(); await repo.observe('successor-receipt');
   return receipt;
 }
+
+export function capturedSuccessorFixture({ repeated = false } = {}) {
+  const f = fixture(), context = f.receiptContext, path = 'src/example.ts';
+  const h0 = f.fact.subjectFiles.get(path), h1 = digest('captured first edit\n'), h2 = digest('captured second edit\n');
+  const originalId = 'T02.I', replacementId = 'T02.retry1.I';
+  context.capturedSuccessors = new Map(); context.pendingSuccessors = new Map();
+  const addManifest = (id, input, dependencies) => {
+    const manifest = clone(f.manifest);
+    manifest.id = id; manifest.package.id = 'T02'; manifest.inputs.find(item => item.path === path).sha256 = input;
+    context.manifests.set(id, manifest); context.manifestHashes.set(id, digest(canonical(manifest)));
+    context.assignments.set(id, { id, package: 'T02', role: manifest.role, dependencies });
+    return manifest;
+  };
+  addManifest(originalId, h0, [f.receipt.id]);
+  addManifest(replacementId, h1, [f.receipt.id]);
+  const firstSubject = '5'.repeat(40), secondSubject = '6'.repeat(40);
+  function bridge(id, nextId, previous, captured, subject, predecessors) {
+    const manifest = context.manifests.get(id);
+    context.capturedSuccessors.set(id, { replacementId: nextId, subjectSha: subject,
+      manifestSha256: context.manifestHashes.get(id), inputs: new Map(manifest.inputs.map(x => [x.path, x.sha256])),
+      capturedFiles: new Map([[path, captured]]),
+      allowedFiles: new Set(manifest.package.allowed_files), predecessorSubjects: new Set(predecessors),
+      dependencies: new Set([f.receipt.id]), valid: true });
+  }
+  bridge(originalId, replacementId, h0, h1, firstSubject, [f.receipt.subject.sha]);
+  let endpoint = replacementId, finalHash = h1;
+  if (repeated) {
+    endpoint = 'T02.retry2.I'; finalHash = h2;
+    addManifest(endpoint, h2, [f.receipt.id]);
+    bridge(replacementId, endpoint, h1, h2, secondSubject, [f.receipt.subject.sha, firstSubject]);
+  }
+  context.pendingSuccessors.set(endpoint, { changedPaths: new Set(), predecessorSubjects: new Set([f.receipt.subject.sha, firstSubject, secondSubject]) });
+  f.fact.currentFiles.set(path, finalHash);
+  context.facts.set(endpoint, { currentFiles: new Map(f.fact.currentFiles) });
+  return { ...f, path, h0, h1, h2, originalId, replacementId, endpoint, firstSubject, secondSubject };
+}
+
+export function completeCapturedEndpoint(f) {
+  const context = f.receiptContext, manifest = context.manifests.get(f.endpoint), receipt = clone(f.receipt);
+  const logPath = 'evidence/replacement.tap', log = tap.replace('# duration_ms 1', '# duration_ms 2');
+  manifest.cells[0].logPath = logPath;
+  const manifestHash = digest(canonical(manifest)); context.manifestHashes.set(f.endpoint, manifestHash);
+  receipt.id = f.endpoint; receipt.manifestSha256 = manifestHash;
+  receipt.subject = { sha: '7'.repeat(40), tree: '8'.repeat(40) };
+  receipt.files.find(x => x.path === f.path).sha256 = f.fact.currentFiles.get(f.path);
+  receipt.dependencies = [{ id: f.receipt.id, sha256: digest(canonical(f.receipt)) }];
+  receipt.cells[0].log = { path: logPath, sha256: digest(log) };
+  receipt.cells[0].result.durationMs = 2; receipt.cells[0].result.outputBytes = Buffer.byteLength(log);
+  receipt.review = { ...receipt.review, subjectSha: receipt.subject.sha, subjectTree: receipt.subject.tree, manifestSha256: manifestHash };
+  const fact = clone(f.fact); fact.subjectTree = receipt.subject.tree;
+  fact.subjectFiles.set(f.path, f.fact.currentFiles.get(f.path));
+  fact.currentFiles.set(logPath, digest(log)); fact.evidenceFiles.set(logPath, digest(log)); fact.logs.set(logPath, log);
+  fact.predecessorSubjects = new Set([f.receipt.subject.sha, f.firstSubject, f.secondSubject]);
+  context.facts.set(f.endpoint, fact); context.pendingSuccessors.delete(f.endpoint);
+  return receipt;
+}

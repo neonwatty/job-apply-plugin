@@ -20,9 +20,11 @@ const structuralHash = pkg => digest(canonical(structuralPackage(pkg)));
 const record = (id, dependencies) => ({ id, package: id.split('.')[0],
   role: id.endsWith('.V') ? 'independent-review' : 'implementation-or-gate', dependencies });
 
-export async function lineageRepository(t, { lifecycle = false } = {}) {
+export async function lineageRepository(t, { lifecycle = false, sharedAudit = false, productBridge = false } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'migration-lineage-'));
   const observations = [];
+  const sharedPath = 'config/test-matrix.json', auditDefinitions = new Map();
+  const predecessor = sharedAudit && !productBridge ? 'A.R' : 'A.V';
   async function initial(stage) {
     if (!lifecycle) return;
     const result = await checkInventory(root); observations.push({ stage, result });
@@ -70,9 +72,14 @@ export async function lineageRepository(t, { lifecycle = false } = {}) {
       ...(id === 'B' ? [REGISTRY] : []), manifestPath(`${id}.I`), manifestPath(`${id}.V`)],
     surfaceIds: ['fixture'], requirementIds: [`${id}.valid`], dependencies: id === 'C' ? ['B'] : [],
     interfaceIds: ['fixture-interface'], referenceIds: [`${id}-reference`], emittedFiles: [], activation: 'inert', status: 'planned' }));
+  if (sharedAudit) {
+    for (const pkg of packages.slice(0, 2)) pkg.allowed_files.push(sharedPath);
+    if (!productBridge) packages[0].allowed_files = packages[0].allowed_files.filter(p => !p.endsWith('/A.I.json') && !p.endsWith('/A.V.json'));
+    if (!productBridge) packages[0].allowed_files.push(manifestPath('A.R'));
+  }
   const savePackages = () => write(REGISTRY, { schemaVersion: 1, packages });
   await savePackages();
-  const dag = [record('A.I', []), record('A.V', ['A.I']), record('B.I', ['A.V']), record('B.V', ['B.I']), record('C.I', ['B.V']), record('C.V', ['C.I'])];
+  const dag = [...(sharedAudit && !productBridge ? [{ id: 'A.R', package: 'A', role: 'reference', dependencies: [] }] : [record('A.I', []), record('A.V', ['A.I'])]), record('B.I', [predecessor]), record('B.V', ['B.I']), record('C.I', ['B.V']), record('C.V', ['C.I'])];
   await write(doc('dag-original'), dag);
   const contracts = requirements.map(item => ({ id: `${item.id[0]}-reference`, kind: 'reference', requirements: [item.id], filePaths: [item.testBindings[0].file],
     command: item.testBindings[0].command, environmentId: environment.id, author: 'oracle-author', reviewer: 'oracle-reviewer' }));
@@ -109,17 +116,33 @@ export async function lineageRepository(t, { lifecycle = false } = {}) {
     assert.deepEqual([git('rev-parse', 'HEAD'), git('write-tree'), git('status', '--porcelain')], before);
     observations.push({ stage, result }); assert.deepEqual(result.errors, [], stage); return result;
   }
+  async function auditFor(key, tasks, pkg, logPath) {
+    if (!sharedAudit || productBridge || pkg.id === 'C') return;
+    const value = { schemaVersion: 1, id: key, assignmentIds: tasks.map(x => x.id), allowed_files: pkg.allowed_files,
+      emittedFiles: [], dependencies: pkg.dependencies, requirementIds: [pkg.id + '.valid'],
+      cells: [{ id: pkg.id + '-cell', requirementIds: [pkg.id + '.valid'], environmentId: environment.id,
+        reporter: 'node-tap13', command: ['node', '--test', 'tests_js/' + pkg.id.toLowerCase() + '.test.mjs'],
+        testNames: [pkg.id + ' fixed behavior'], timeoutMs: 10000, maxOutputBytes: 100000, logPath }], artifacts: ['evidence/' + pkg.id + '.json'] };
+    const path = doc(key + '-audit');
+    const revision = await prepare(key + '-audit-preparation', [[path, value]]);
+    const bound = binding(path, revision); auditDefinitions.set(key, bound); catalog.audits.push(bound);
+  }
   function makeManifest(task, pkg, base, dagBinding, logPath) {
     const paths = [...pkg.allowed_files, ...(pkg.id === 'B' ? ['config/migration/task-contracts.json', 'config/migration/review-lock.json'] : [])];
-    return { schemaVersion: 1, id: task.id, role: task.role, kind: 'package', dag: { path: dagBinding.path, sha256: dagBinding.sha256 },
-      package: clone(pkg), packageSha256: structuralHash(pkg), auditContract: null, author: pkg.owner, reviewer: `${pkg.id}-reviewer`, base,
+    const auditKey = task.id.replace(/\.(I|V|R)$/, '');
+    const auditBinding = auditDefinitions.get(auditKey);
+    const manifestPackage = auditBinding ? { ...clone(pkg), surfaceIds: [], requirementIds: [], referenceIds: [], interfaceIds: [] } : clone(pkg);
+    return { schemaVersion: 1, id: task.id, role: task.role, kind: auditBinding ? 'audit' : 'package', dag: { path: dagBinding.path, sha256: dagBinding.sha256 },
+      package: manifestPackage, packageSha256: structuralHash(manifestPackage), auditContract: auditBinding ? { path: auditBinding.path, sha256: auditBinding.sha256 } : null, author: pkg.owner, reviewer: `${pkg.id}-reviewer`, base,
       inputs: paths.filter(path => io.fileAt(base, path) !== null).map(path => ({ path, sha256: digest(io.fileAt(base, path)) })),
       oversized: [], cells: [{ id: `${pkg.id}-cell`, requirementIds: pkg.requirementIds, environmentId: environment.id,
         reporter: 'node-tap13', command: ['node', '--test', `tests_js/${pkg.id.toLowerCase()}.test.mjs`], testNames: [`${pkg.id} fixed behavior`],
         timeoutMs: 10000, maxOutputBytes: 100000, logPath }], artifacts: [`evidence/${pkg.id}.json`] };
   }
   async function freezeOriginal(id = 'B', { archived = false } = {}) {
-    const pkg = packages.find(item => item.id === id), base = git('rev-parse', 'HEAD');
+    const pkg = packages.find(item => item.id === id);
+    await auditFor(id, currentDag.filter(x => x.package === id && !x.id.includes('retry')), pkg, 'evidence/' + id + '.tap');
+    const base = git('rev-parse', 'HEAD');
     const manifests = (archived ? dag : currentDag).filter(item => item.package === id && !item.id.includes('retry')).map(task => makeManifest(task, pkg, base, archived ? catalog.dag : currentDagBinding, `evidence/${id}.tap`));
     for (const manifest of manifests) await write(manifestPath(manifest.id), manifest);
     await observe(`${id}-planning`); const planning = commit();
@@ -129,9 +152,15 @@ export async function lineageRepository(t, { lifecycle = false } = {}) {
     await observe(`${id}-activation`); const executionBase = commit();
     return { id, pkg, manifests, base, planning, executionBase, nextDag: currentDag };
   }
-  async function implement(task, { mismatch = false } = {}) {
-    task.pkg = packages.find(item => item.id === task.id);
-    if (task.id === 'B') { task.pkg.status = task.key ? 'implemented' : 'ready'; await savePackages(); }
+  async function implement(task, { mismatch = false, sharedVersion } = {}) {
+    if (!sharedAudit) task.pkg = packages.find(item => item.id === task.id);
+    if (sharedAudit && task.key) await write(task.newPaths.at(-1), 'export const witness = true;\n');
+    if (task.id === 'B' && !sharedAudit) { task.pkg.status = task.key ? 'implemented' : 'ready'; await savePackages(); }
+    if (sharedAudit && sharedVersion !== undefined) {
+      const matrix = JSON.parse(await readFile(join(root, sharedPath), 'utf8'));
+      matrix.suites[0].include = ['tests_js/a.test.mjs', 'tests_js/future-' + sharedVersion + '.test.mjs'];
+      await write(sharedPath, matrix);
+    }
     const path = `src/${task.id.toLowerCase()}.ts`;
     const bytes = `export const value = '${task.id}';\n` + (mismatch ? '// unexpected-result\n' : '');
     await write(path, bytes);
@@ -167,9 +196,9 @@ export async function lineageRepository(t, { lifecycle = false } = {}) {
       const revision = await prepare(`${key}-capture-preparation`, [[path, original.capture]]);
       captureBinding = { path, sha256: digest(io.fileAt(revision, path)) };
     }
-    const base = git('rev-parse', 'HEAD'), nextDag = clone(original.nextDag ?? dag);
+    let base; const nextDag = clone(original.nextDag ?? dag);
     const priorReview = original.manifests[1].id;
-    nextDag.push(record(`${key}.I`, ['A.V']), record(`${key}.V`, [`${key}.I`]));
+    nextDag.push(record(`${key}.I`, [predecessor]), record(`${key}.V`, [`${key}.I`]));
     nextDag.find(task => task.id === 'C.I').dependencies = [`${key}.V`];
     changeDag(nextDag);
     const newPaths = [manifestPath(`${key}.I`), manifestPath(`${key}.V`), `tests_js/${key}-support.mjs`];
@@ -177,12 +206,14 @@ export async function lineageRepository(t, { lifecycle = false } = {}) {
     changePackage(pkg);
     const dagPath = doc(`${key}-dag`), dagBytes = JSON.stringify(nextDag, null, 2) + '\n';
     const dagBinding = { path: dagPath, sha256: digest(dagBytes) };
+    await auditFor(key, nextDag.filter(x => x.id.startsWith(key + '.')), pkg, 'evidence/' + key + '.tap');
+    base = git('rev-parse', 'HEAD');
     const manifests = nextDag.filter(task => task.id.startsWith(`${key}.`)).map(task => makeManifest(task, pkg, base, dagBinding, `evidence/${key}.tap`));
     if (captureBinding) for (const manifest of manifests) manifest.inputs.push(captureBinding);
     changeManifests(manifests);
     const documents = [[dagPath, dagBytes], ...manifests.map(manifest => [manifestPath(manifest.id), manifest])];
     const planning = await prepare(`${key}-documents`, documents);
-    const nextPackages = packages.map(item => clone(item.id === 'B' ? pkg : item));
+    const nextPackages = packages.map(item => clone(item.id === 'B' && (!sharedAudit || productBridge) ? pkg : item));
     changeRegistry(nextPackages);
     const nextRegistry = JSON.stringify({ schemaVersion: 1, packages: nextPackages }, null, 2) + '\n';
     const artifactBindings = original.capture ? [...new Set(original.manifests.flatMap(item => [...item.cells.map(cell => cell.logPath), ...item.artifacts]))]
@@ -195,7 +226,7 @@ export async function lineageRepository(t, { lifecycle = false } = {}) {
         replacementId: `${key}.${index === 0 ? 'I' : 'V'}`, attempt: index === 0 ? attempt : null })),
       additions: manifests.map(manifest => ({ id: manifest.id, manifest: binding(manifestPath(manifest.id), planning) })),
       refinements: [{ id: 'C.I', beforeDependencies: [priorReview], afterDependencies: [`${key}.V`] }],
-      packageVersions: [{ packageId: 'B', originalTaskIds: original.manifests.map(item => item.id), replacementTaskIds: [`${key}.I`, `${key}.V`],
+      packageVersions: sharedAudit && !productBridge ? [] : [{ packageId: 'B', originalTaskIds: original.manifests.map(item => item.id), replacementTaskIds: [`${key}.I`, `${key}.V`],
         previous: { packageSha256: original.manifests[0].packageSha256, registry: binding(REGISTRY, original.key ? original.executionBase : original.planning) },
         next: { packageSha256: structuralHash(pkg), registry: { path: REGISTRY, sha256: digest(nextRegistry) } },
         additions: { allowed_files: newPaths, emittedFiles: [] } }],
@@ -211,7 +242,7 @@ export async function lineageRepository(t, { lifecycle = false } = {}) {
     currentDag = next.nextDag; currentDagBinding = next.transition.nextDag;
     for (const manifest of next.manifests) catalog.assignments.push({ id: manifest.id, author: manifest.author, reviewer: manifest.reviewer,
       manifest: binding(manifestPath(manifest.id), next.planning) });
-    packages[1] = next.pkg;
+    if (!sharedAudit || productBridge) packages[1] = next.pkg;
     await write(REGISTRY, next.nextRegistry); await write('config/migration/task-contracts.json', catalog);
     await write('config/migration/task-lineage.json', lineage); await lock();
     await observe(`${next.key}-activation`); next.executionBase = commit(); return next;
@@ -238,7 +269,7 @@ export async function lineageRepository(t, { lifecycle = false } = {}) {
     await write(next.newPaths.at(-1), 'export const witness = true;\n'); return implement(next);
   }
   const a = await freezeOriginal('A'); await implement(a); await capture(a); const accepted = await publish(a);
-  assert.deepEqual(accepted.errors, []); assert.ok(accepted.taskEvidence.acceptedPackages.includes('A'));
+  assert.deepEqual(accepted.errors, []); assert.ok(sharedAudit && !productBridge ? accepted.taskEvidence.acceptedTasks.includes('A.R') : accepted.taskEvidence.acceptedPackages.includes('A'));
   const acceptedHistory = canonical(receipts);
   const checkpoint = () => ({ revision: git('rev-parse', 'HEAD'), catalog: clone(catalog), lineage: clone(lineage), packages: clone(packages), receipts: clone(receipts), currentDag: clone(currentDag), currentDagBinding: clone(currentDagBinding) });
   function restore(point) { currentDag = clone(point.currentDag); currentDagBinding = clone(point.currentDagBinding); git('reset', '--hard', point.revision); git('clean', '-fd');
@@ -252,6 +283,6 @@ export async function lineageRepository(t, { lifecycle = false } = {}) {
     lineage.preparations = preparations;
     await write('config/migration/task-lineage.json', lineage); await lock(); commit();
   }
-  return { root, git, write, commit, lock, io, binding, check, observe, prepare, freezeOriginal, implement, capture, freezeReplacement,
+  return { root, git, write, commit, lock, io, binding, check, observe, prepare, freezeOriginal, implement, capture, freezeReplacement, sharedPath, predecessor,
     activateReplacement, implementReplacement, publish, packages, catalog, lineage, receipts, observations, acceptedHistory, checkpoint, restore, mergePrepared };
 }
