@@ -299,6 +299,11 @@
       "path": "docs/migration/evidence/s02/retry1/transition-v2.json",
       "sha256": "97375ac2a8d4073e869ccb0de98ac430f0dd6c1aeedec1de7476f7c11ac1dc75",
       "revision": "82e2dbf03c800e9f83cb0ca240770329d1c44bbf"
+    },
+    {
+      "path": "docs/migration/evidence/p03/evidence/v2/transition.json",
+      "sha256": "f4673a582a71b4c1a6be4436194e64f0ab6ceb3fe2ba1b4adfa159eb71167128",
+      "revision": "42a1e40b71a4986cb64c693dc57824968c2cbc68"
     }
   ]
 }
