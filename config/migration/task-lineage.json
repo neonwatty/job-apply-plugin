@@ -464,6 +464,22 @@
           "sha256": "8f195746d5a2c265591f56730d5ace7145ad134bfc352cb8255e0454eef50708"
         }
       ]
+    },
+    {
+      "id": "P09.manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze validated captured-successor currentness with independent actual retirement lifecycle evidence.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p09/P09.I.json",
+          "sha256": "19778cc365da6a569597ae2c36664e7602440a8dd89fd63f98f7cab253a4d399"
+        },
+        {
+          "path": "docs/migration/evidence/p09/P09.V.json",
+          "sha256": "c19239be919254d92318e5545c815d3ed07781f9b990e212248d95ca64d35973"
+        }
+      ]
     }
   ],
   "transitions": [
