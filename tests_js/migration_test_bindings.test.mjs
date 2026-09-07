@@ -28,6 +28,13 @@ test('platform literal bindings select only the explicitly supplied finite branc
     assert.deepEqual(names(source, platform), ['before', equal, 'after']);
     assert.deepEqual(names(source.replace('===', '!=='), platform), ['before', unequal, 'after']);
   }
+  const throwing = header + `if(process.platform === 'win32') {
+    test('windows throw', () => { throw new Error('must not execute Windows callback'); });
+  } else {
+    test('portable throw', () => { throw new Error('must not execute portable callback'); });
+  }`;
+  assert.deepEqual(names(throwing, 'win32'), ['windows throw']);
+  assert.deepEqual(names(throwing, 'darwin'), ['portable throw']);
   assert.deepEqual(names(header + branch.replaceAll('portable', 'windows')), ['windows']);
   assert.throws(() => names(header + branch + "test('portable',()=>1);"), /Duplicate/);
   assert.deepEqual(names(header.replace('import test', 'import {test as check}') + branch.replaceAll('test(', 'check(')), ['portable']);
