@@ -114,5 +114,11 @@
       ]
     }
   ],
-  "transitions": []
+  "transitions": [
+    {
+      "path": "docs/migration/evidence/s02/retry1/transition-v2.json",
+      "sha256": "97375ac2a8d4073e869ccb0de98ac430f0dd6c1aeedec1de7476f7c11ac1dc75",
+      "revision": "82e2dbf03c800e9f83cb0ca240770329d1c44bbf"
+    }
+  ]
 }
