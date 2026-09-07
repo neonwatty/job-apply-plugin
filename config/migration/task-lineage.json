@@ -509,6 +509,11 @@
       "path": "docs/migration/evidence/p08/transition.json",
       "sha256": "a6ef5737d825536f97c76a40a56582e86a959eb1cf739a154630352c70eea457",
       "revision": "47f58df62909c5b9116a1120e87c6328f4e16a8f"
+    },
+    {
+      "path": "docs/migration/evidence/p09/transition.json",
+      "sha256": "315900fdb6980ac61daf9c4d1e370d4223e3afde3e83c69db3b9bad744fc156b",
+      "revision": "99af3fdab8e4ad2d9cf362fd75889555c545650b"
     }
   ]
 }
