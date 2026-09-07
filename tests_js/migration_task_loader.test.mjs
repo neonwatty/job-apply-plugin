@@ -63,11 +63,22 @@ test('task Git reads ignore replacement objects for declared immutable revisions
     const { createEvidenceIO } = await import('../tools/migration/evidence-io.mjs');
     const io = await createEvidenceIO(repo.root), before = io.fileAt(repo.subject, 'src/example.ts');
     const tree = io.tree(repo.subject), diff = io.diff(repo.manifest.base, repo.subject);
+    const copy = io.fileAt(repo.subject, 'src/example.ts'); copy.fill(0);
+    assert.equal(io.fileAt(repo.subject, 'src/example.ts').toString(), before.toString());
+    assert.equal(io.clean(), true);
+    await repo.write('untracked-cache-proof.txt', 'fresh filesystem state');
+    assert.equal(io.clean(), false);
+    await rm(join(repo.root, 'untracked-cache-proof.txt'));
+    assert.equal(io.clean(), true);
     await repo.write('src/example.ts', 'replacement bytes\n'); const replacement = repo.commit();
     repo.git('replace', repo.subject, replacement);
     assert.equal(io.revision(repo.subject), true); assert.equal(io.fileAt(repo.subject, 'src/example.ts').toString(), before.toString());
     assert.equal(io.tree(repo.subject), tree); assert.deepEqual(io.diff(repo.manifest.base, repo.subject), diff);
     assert.equal(io.ancestor(replacement, repo.subject), false);
+    assert.equal(io.ancestor(replacement, repo.subject), false);
+    assert.throws(() => io.fileAt(repo.subject, 'src'), /regular tracked/);
+    const fresh = await createEvidenceIO(repo.root);
+    assert.equal(fresh.fileAt(repo.subject, 'src/example.ts').toString(), before.toString());
   } finally { await repo.cleanup(); }
 });
 test('task loader reads actual object-form source-size baselines and verifies a shrinking extraction', async () => {

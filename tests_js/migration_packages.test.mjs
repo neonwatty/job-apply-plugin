@@ -82,6 +82,7 @@ test('unknown or unaccepted reference/interface evidence cannot unlock ready wor
 });
 
 test('implemented dependency alone is not accepted and cannot unlock a child', () => {
+  validateScopedReadiness();
   const { packages, context } = fixture();
   packages.push({ ...structuredClone(packages[0]), id: 'parent', status: 'implemented',
     allowed_files: ['src/parent.ts'], emittedFiles: [] });
@@ -121,3 +122,30 @@ test('implemented scope must exist and missing context cannot fabricate readines
   assert.ok(validatePackages(packages, {}).length);
   assert.ok(validatePackages(null, context).length);
 });
+
+function validateScopedReadiness() {
+  const empty = () => new Set();
+  const context = { nodes: new Set(['I']), surfaces: new Set(['surface']), requirements: new Set(['req']),
+    sourcePaths: new Set(['src/shared.ts', 'src/reserved.ts']), acceptedInterfaces: empty(), acceptedReferences: new Set(['ref']),
+    acceptedPackages: empty(), requiredRequirements: new Set(['req']), referenceRequirements: new Map([['ref', new Set(['req'])]]),
+    ownershipHandoffs: [{ predecessorPackageId: 'A', successorPackageId: 'B', paths: ['src/shared.ts'] }],
+    historicalReadiness: new Map([['B', new Set(['A'])]]) };
+  const a = { id: 'A', parentNode: 'I', owner: 'author-a', allowed_files: ['src/shared.ts', 'src/reserved.ts'],
+    surfaceIds: ['surface'], requirementIds: ['req'], dependencies: [], interfaceIds: [], referenceIds: ['ref'],
+    emittedFiles: [], activation: 'inert', status: 'implemented' };
+  const b = { ...a, id: 'B', owner: 'author-b', allowed_files: ['src/shared.ts'], dependencies: ['A'], status: 'ready' };
+  assert.deepEqual(validatePackages([a, b], context), []);
+  assert.deepEqual(validatePackages([b, a], context), []);
+  const c = { ...b, id: 'C', allowed_files: ['src/reserved.ts'] };
+  const errors = validatePackages([a, b, c], context);
+  assert.ok(errors.some(error => error.includes('Unaccepted dependency C:A')));
+  assert.ok(errors.some(error => error.includes('Overlapping ownership src/reserved.ts')));
+  assert.equal(context.acceptedPackages.size, 0);
+  const implementedB = { ...b, status: 'implemented' };
+  const d = { ...b, id: 'D', dependencies: ['B'] };
+  context.ownershipHandoffs.push({ predecessorPackageId: 'B', successorPackageId: 'D', paths: ['src/shared.ts'] });
+  context.historicalReadiness.set('D', new Set(['B']));
+  for (const ordered of [[a, implementedB, d], [d, a, implementedB], [implementedB, d, a]]) {
+    assert.deepEqual(validatePackages(ordered, context), []);
+  }
+}

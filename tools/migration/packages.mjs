@@ -29,6 +29,8 @@ export function validatePackages(packages, context) {
       errors.push(`Invalid context registry ${field}`);
     }
   }
+  if (context?.ownershipHandoffs !== undefined && !Array.isArray(context.ownershipHandoffs)) errors.push('Invalid ownership handoffs');
+  if (context?.historicalReadiness !== undefined && !(context.historicalReadiness instanceof Map)) errors.push('Invalid historical readiness');
   if (errors.length) return errors;
   const byId = new Map();
   const structurallyValid = [];
@@ -94,6 +96,26 @@ export function validatePackages(packages, context) {
     }
   }
   const owners = new Map();
+  const transfers = new Map();
+  for (const handoff of context.ownershipHandoffs ?? []) {
+    if (!handoff || !Array.isArray(handoff.paths) || !byId.has(handoff.predecessorPackageId) || !byId.has(handoff.successorPackageId)) {
+      errors.push('Invalid scoped ownership handoff'); continue;
+    }
+    for (const file of handoff.paths) {
+      if (!transfers.has(file)) transfers.set(file, new Map());
+      const edges = transfers.get(file);
+      if (edges.has(handoff.predecessorPackageId)) errors.push(`Competing path handoff ${file}`);
+      edges.set(handoff.predecessorPackageId, handoff.successorPackageId);
+    }
+  }
+  function terminal(file, owner) {
+    const seen = new Set(), edges = transfers.get(file);
+    while (edges?.has(owner)) {
+      if (seen.has(owner)) { errors.push(`Cyclic path handoff ${file}`); return null; }
+      seen.add(owner); owner = edges.get(owner);
+    }
+    return owner;
+  }
   for (const id of context.releasedPackages ?? []) {
     if (!context.acceptedPackages.has(id) || byId.get(id)?.status !== 'implemented') {
       errors.push(`Cannot release unaccepted package ownership ${id}`);
@@ -103,14 +125,15 @@ export function validatePackages(packages, context) {
     for (const id of item.dependencies) {
       if (!byId.has(id)) errors.push(`Unknown dependency ${item.id}:${id}`);
       else if (['ready', 'implemented'].includes(item.status)
-        && (byId.get(id).status !== 'implemented' || !context.acceptedPackages.has(id))) {
+        && (byId.get(id).status !== 'implemented' || !context.acceptedPackages.has(id) && !context.historicalReadiness?.get(item.id)?.has(id))) {
         errors.push(`Unaccepted dependency ${item.id}:${id}`);
       }
     }
     if (!['ready', 'implemented'].includes(item.status) || context.releasedPackages?.has(item.id)) continue;
     for (const file of item.allowed_files) {
-      if (owners.has(file)) errors.push(`Overlapping ownership ${file}:${owners.get(file)}:${item.id}`);
-      else owners.set(file, item.id);
+      const previous = owners.get(file), destination = terminal(file, item.id);
+      if (previous && previous !== destination) errors.push(`Overlapping ownership ${file}:${previous}:${item.id}`);
+      else owners.set(file, destination);
     }
   }
   const visiting = new Set();

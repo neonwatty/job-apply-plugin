@@ -1,10 +1,13 @@
 import { createEvidenceIO, closed, digest, equal, hash, physicalLines, safePath, sha, strings, text } from './evidence-io.mjs';
 import { validateTaskManifests, sourceSizePath } from './task-manifests.mjs';
 import { validateTaskReceipts } from './task-receipts.mjs';
+import { validateTaskHandoffs } from './task-handoffs.mjs';
 import { discoverTestIds } from './test-bindings.mjs';
 
 const CATALOG = 'config/migration/task-contracts.json';
 const REVIEW_LOCK = 'config/migration/review-lock.json';
+const HANDOFFS = 'config/migration/task-handoffs.json';
+const COORDINATOR = new Set([CATALOG, REVIEW_LOCK, HANDOFFS, 'config/migration/task-receipts.json']);
 const RECEIPTS = 'config/migration/task-receipts.json';
 const binding = value => closed(value, ['path', 'sha256', 'revision']) && safePath(value.path) && hash(value.sha256) && sha(value.revision);
 const auditFields = ['schemaVersion', 'id', 'assignmentIds', 'allowed_files', 'emittedFiles', 'dependencies', 'requirementIds', 'cells', 'artifacts'];
@@ -45,7 +48,7 @@ function ceilings(bytes) {
 // Fixed Git/filesystem reads only; execution claims never become executable argv.
 export async function loadTaskEvidence(root, context) {
   const errors = [];
-  const empty = () => ({ errors, acceptedTasks: new Set(), acceptedPackages: new Set(), receiptDigests: new Map(), currentAcceptance: errors.length ? 'invalid' : 'open' });
+  const empty = () => ({ errors, acceptedTasks: new Set(), acceptedPackages: new Set(), receiptDigests: new Map(), currentAcceptance: errors.length ? 'invalid' : 'open', ownershipHandoffs: [], historicalReadiness: new Map() });
   try {
     const io = await createEvidenceIO(root);
     let bytes;
@@ -121,9 +124,19 @@ export async function loadTaskEvidence(root, context) {
     const receiptBytes = await current(RECEIPTS);
     const collection = receiptBytes === null ? { schemaVersion: 1, receipts: [] } : JSON.parse(receiptBytes);
     if (!closed(collection, ['schemaVersion', 'receipts']) || collection.schemaVersion !== 1 || !Array.isArray(collection.receipts)) throw new Error('Invalid task receipts catalog');
-    const planningBindings = new Map([catalog.dag, ...catalog.audits, ...catalog.assignments.map(item => item.manifest)]
+    const handoffBytes = await current(HANDOFFS);
+    const handoffShard = handoffBytes === null ? { schemaVersion: 1, handoffs: [] } : JSON.parse(handoffBytes);
+    if (!closed(handoffShard, ['schemaVersion', 'handoffs']) || handoffShard.schemaVersion !== 1
+      || !Array.isArray(handoffShard.handoffs) || !handoffShard.handoffs.every(binding)
+      || new Set(handoffShard.handoffs.map(item => item.path)).size !== handoffShard.handoffs.length) throw new Error('Invalid handoff shard');
+    const handoffContracts = [];
+    for (const item of handoffShard.handoffs) handoffContracts.push({ binding: item, value: await frozen(item) });
+    const planningBindings = new Map([catalog.dag, ...catalog.audits, ...catalog.assignments.map(item => item.manifest), ...handoffShard.handoffs]
       .map(item => [item.path, item.sha256]));
+    const catalogCache = new Map(), lockCache = new Set(), boundaryCache = new Set();
+    let catalogBytes = 0;
     function catalogAt(revision) {
+      if (catalogCache.has(revision)) return catalogCache.get(revision);
       const value = io.fileAt(revision, CATALOG);
       if (value === null) throw new Error('Execution base lacks task authorization catalog');
       const prior = JSON.parse(value);
@@ -133,9 +146,35 @@ export async function loadTaskEvidence(root, context) {
         if (!Array.isArray(prior[key]) || new Set(prior[key].map(item => item?.id ?? item?.path)).size !== prior[key].length
           || prior[key].some(item => !catalog[key].some(approved => equal(approved, item)))) throw new Error('Planning catalog authorization differs');
       }
+      if (catalogCache.size >= 4096 || catalogBytes + value.length > 8 * 1024 * 1024) { catalogCache.clear(); catalogBytes = 0; }
+      catalogCache.set(revision, prior); catalogBytes += value.length;
       return prior;
     }
+    function collectionAt(path, revision, key, latest) {
+      const bytes = io.fileAt(revision, path);
+      if (bytes === null) return [];
+      const value = JSON.parse(bytes);
+      if (!closed(value, ['schemaVersion', key]) || value.schemaVersion !== 1 || !Array.isArray(value[key])
+        || new Set(value[key].map(item => item?.id ?? item?.path)).size !== value[key].length
+        || value[key].some(item => !latest.some(current => equal(item, current)))) throw new Error('Coordinator evidence identity changed');
+      return value[key];
+    }
+    const histories = new Set();
+    function metadataHistory(path) {
+      if (histories.has(path)) return;
+      const key = path === RECEIPTS ? 'receipts' : 'handoffs';
+      const snapshots = [];
+      for (const revision of io.changes(path)) {
+        const next = path === CATALOG ? (() => { const value = catalogAt(revision); return [...value.assignments, ...value.environments, ...value.audits]; })()
+          : collectionAt(path, revision, key, path === RECEIPTS ? collection.receipts : handoffShard.handoffs);
+        for (const previous of snapshots) if (io.ancestor(previous.revision, revision)
+          && previous.items.some(item => !next.some(value => equal(item, value)))) throw new Error('Coordinator history removed or replaced evidence');
+        snapshots.push({ revision, items: next });
+      }
+      histories.add(path);
+    }
     function reviewLockAt(revision) {
+      if (lockCache.has(revision)) return;
       const value = io.fileAt(revision, REVIEW_LOCK);
       if (value === null) throw new Error('Missing planning review lock');
       const lock = JSON.parse(value);
@@ -144,12 +183,51 @@ export async function loadTaskEvidence(root, context) {
         || !equal(lock.files.map(item => `config/migration/${item?.path}`).sort(), paths.sort())
         || lock.files.some(item => !closed(item, ['path', 'sha256']) || !hash(item.sha256)
           || digest(io.fileAt(revision, `config/migration/${item.path}`) ?? '') !== item.sha256)) throw new Error('Invalid exact planning review lock');
+      if (lockCache.size >= 4096) lockCache.clear();
+      lockCache.add(revision);
     }
     function planningPath(path, revision) {
-      if (path === CATALOG) { catalogAt(revision); return true; }
+      if (path === CATALOG) { catalogAt(revision); metadataHistory(path); return true; }
+      if (path === RECEIPTS || path === HANDOFFS) {
+        collectionAt(path, revision, path === RECEIPTS ? 'receipts' : 'handoffs', path === RECEIPTS ? collection.receipts : handoffShard.handoffs);
+        metadataHistory(path); return true;
+      }
       if (path === REVIEW_LOCK) { reviewLockAt(revision); return true; }
       if (!planningBindings.has(path)) return false;
       return digest(io.fileAt(revision, path) ?? '') === planningBindings.get(path);
+    }
+    function authorizedShardChange(path, base, revision) {
+      const before = io.fileAt(base, path), after = io.fileAt(revision, path);
+      const beforeHash = before === null ? null : digest(before), afterHash = after === null ? null : digest(after);
+      function follow(expected, seen) {
+        if (expected === afterHash) return true;
+        return manifests.some(owner => {
+          if (seen.has(owner.id) || !owner.package.allowed_files.includes(path) || !io.ancestor(owner.base, revision)
+            || baseFiles.get(owner.base)?.get(path) !== expected) return false;
+          const receipt = collection.receipts.find(item => item?.id === owner.id);
+          if (receipt) {
+            if (!sha(receipt.subject?.sha) || !io.ancestor(receipt.subject.sha, revision)) return false;
+            const bytes = io.fileAt(receipt.subject.sha, path), next = bytes === null ? null : digest(bytes);
+            return follow(next, new Set([...seen, owner.id]));
+          }
+          const authorization = authorizations.get(owner.id);
+          return io.ancestor(authorization.manifest.revision, revision) && activated(owner, catalogAt(revision));
+        });
+      }
+      return follow(beforeHash, new Set());
+    }
+    function metadataTransition(manifest, base, revision, parallel = false) {
+      const allowed = new Set(manifest.package.allowed_files);
+      for (const change of io.diff(base, revision)) {
+        if (!change.path.startsWith('config/migration/') || change.path.includes('/', 'config/migration/'.length)) continue;
+        if (COORDINATOR.has(change.path)) {
+          if (!['A', 'M'].includes(change.status) || !planningPath(change.path, revision)) throw new Error('Invalid coordinator transition');
+        } else if (!allowed.has(change.path) && !(parallel && authorizedShardChange(change.path, base, revision))) {
+          throw new Error(`Unrelated shard changed during coordinator transition: ${change.path}`);
+        }
+      }
+      for (const path of [CATALOG, RECEIPTS, HANDOFFS]) metadataHistory(path);
+      reviewLockAt(revision);
     }
     function activated(manifest, planningCatalog) {
       return planningCatalog.assignments.some(item => equal(item, authorizations.get(manifest.id)))
@@ -157,6 +235,8 @@ export async function loadTaskEvidence(root, context) {
         && (!manifest.auditContract || planningCatalog.audits.some(item => item.path === manifest.auditContract.path && item.sha256 === manifest.auditContract.sha256));
     }
     function executionBoundary(manifest, revision) {
+      const key = `${manifest.id}:${revision}`;
+      if (boundaryCache.has(key)) return true;
       const authorization = authorizations.get(manifest.id);
       if (!io.revision(revision) || !io.ancestor(authorization.manifest.revision, revision)
         || !io.ancestor(manifest.base, revision) || !io.ancestor(revision, head)) throw new Error('Invalid execution base ancestry');
@@ -166,27 +246,54 @@ export async function loadTaskEvidence(root, context) {
       for (const change of io.diff(manifest.base, revision)) {
         if (!['A', 'M'].includes(change.status) || !planningPath(change.path, revision)) throw new Error('Source or undeclared edit concealed before execution base');
       }
-      for (const input of manifest.inputs) if (digest(io.fileAt(revision, input.path) ?? '') !== input.sha256) throw new Error('Execution base changed immutable input');
+      for (const input of manifest.inputs) if (digest(io.fileAt(revision, input.path) ?? '') !== input.sha256) {
+        if (!COORDINATOR.has(input.path)) throw new Error('Execution base changed immutable input');
+        metadataTransition(manifest, manifest.base, revision);
+      }
       if (digest(io.fileAt(revision, authorization.manifest.path) ?? '') !== authorization.manifest.sha256) throw new Error('Execution base changed frozen manifest');
+      for (const contract of handoffContracts.filter(item => item.value.successorPackageId === manifest.package.id)) {
+        if (!io.ancestor(contract.binding.revision, revision)
+          || !collectionAt(HANDOFFS, revision, 'handoffs', handoffShard.handoffs).some(item => equal(item, contract.binding))) {
+          throw new Error('Execution base predates handoff activation');
+        }
+      }
+      if (boundaryCache.size >= 4096) boundaryCache.clear();
+      boundaryCache.add(key);
       return true;
     }
+    for (const path of [CATALOG, RECEIPTS, HANDOFFS]) metadataHistory(path);
+    reviewLockAt(head);
     const pendingSuccessors = new Map();
     const pendingManifests = manifests.filter(manifest => !collection.receipts.some(receipt => receipt?.id === manifest.id));
     const pendingPaths = new Set(pendingManifests.flatMap(manifest => [...manifest.package.allowed_files, ...manifest.artifacts, ...manifest.cells.map(cell => cell.logPath)]));
     const evidencePaths = new Set(collection.receipts.flatMap(receipt => [
       ...(Array.isArray(receipt?.artifacts) ? receipt.artifacts.map(item => item?.path) : []),
       ...(Array.isArray(receipt?.cells) ? receipt.cells.map(item => item?.log?.path) : [])]));
-    for (const manifest of pendingManifests) {
-      const executionBase = io.changes(CATALOG).find(revision => {
-        if (io.fileAt(revision, CATALOG) === null) return false;
-        try { return activated(manifest, catalogAt(revision)); } catch { return false; }
+    function completedPeerPath(path) {
+      return collection.receipts.some(receipt => {
+        const owner = validated.manifests.get(receipt?.id), subject = receipt?.subject?.sha;
+        if (!owner?.package.allowed_files.includes(path) || !sha(subject) || !io.revision(subject) || !io.ancestor(subject, head)) return false;
+        const prior = io.fileAt(subject, path), actual = io.fileAt(head, path);
+        return prior === null ? actual === null : actual !== null && prior.equals(actual);
       });
+    }
+    for (const manifest of pendingManifests) {
+      const revisions = [...new Set([...io.changes(CATALOG), ...io.changes(HANDOFFS)])]
+        .sort((a, b) => io.ancestor(a, b) ? -1 : io.ancestor(b, a) ? 1 : 0);
+      const activations = revisions.filter(revision => {
+        if (io.fileAt(revision, CATALOG) === null) return false;
+        try { return activated(manifest, catalogAt(revision))
+          && handoffContracts.filter(item => item.value.successorPackageId === manifest.package.id)
+            .every(item => io.ancestor(item.binding.revision, revision)
+              && collectionAt(HANDOFFS, revision, 'handoffs', handoffShard.handoffs).some(value => equal(value, item.binding))); } catch { return false; }
+      });
+      const executionBase = activations.find(revision => !activations.some(other => other !== revision && io.ancestor(other, revision)));
       executionBoundary(manifest, executionBase);
       const changes = io.diff(executionBase, head);
       for (const change of changes) {
         const paths = [change.path, ...(change.oldPath ? [change.oldPath] : [])];
         if (!['A', 'M', 'D', 'R'].includes(change.status) || paths.some(path => !pendingPaths.has(path)
-          && !evidencePaths.has(path) && path !== RECEIPTS && !planningPath(path, head))) throw new Error('Undeclared pending task drift');
+          && !evidencePaths.has(path) && !completedPeerPath(path) && !planningPath(path, head))) throw new Error(`Undeclared pending task drift: ${change.status} ${change.path}`);
       }
       pendingSuccessors.set(manifest.id, { executionBase, changedPaths: new Set(changes.flatMap(change => [change.path, change.oldPath].filter(Boolean))),
         predecessorSubjects: new Set(collection.receipts.map(receipt => receipt?.subject?.sha).filter(previous => sha(previous) && io.ancestor(previous, manifest.base))) });
@@ -203,7 +310,7 @@ export async function loadTaskEvidence(root, context) {
         const names = source === null ? new Set() : discoverTestIds(cell.command[2], source.toString('utf8'));
         if (cell.testNames.some(name => !names.has(name))) throw new Error('Accepted subject lacks declared literal test identities');
       }
-      const fact = { executionBase: receipt.executionBase, planningValid, subjectTree: io.tree(subject), revisionsKnown: true,
+      const fact = { coordinatorChanges: new Set(), metadataInputs: new Set(), executionBase: receipt.executionBase, planningValid, subjectTree: io.tree(subject), revisionsKnown: true,
         ancestry: io.ancestor(receipt.executionBase, subject) && io.ancestor(subject, receipt.evidenceCommit)
           && io.ancestor(receipt.evidenceCommit, head),
         immutableManifest: digest(io.fileAt(subject, authorization.manifest.path) ?? '') === authorization.manifest.sha256,
@@ -211,11 +318,21 @@ export async function loadTaskEvidence(root, context) {
           .filter(previous => sha(previous) && io.ancestor(previous, manifest.base))),
         diff: io.diff(receipt.executionBase, subject), subjectFiles: new Map(), currentFiles: new Map(), subjectLines: new Map(),
         subjectCeilings: ceilings(io.fileAt(subject, '.source-size-baseline.json')), evidenceFiles: new Map(), logs: new Map() };
+      if (io.diff(receipt.executionBase, subject).some(change => COORDINATOR.has(change.path))) {
+        metadataTransition(manifest, receipt.executionBase, subject);
+        for (const change of io.diff(receipt.executionBase, subject)) if (COORDINATOR.has(change.path)) fact.coordinatorChanges.add(change.path);
+      }
       for (const path of new Set([...manifest.package.allowed_files, ...manifest.inputs.map(item => item.path)])) {
         const immutable = io.fileAt(subject, path), actual = await current(path);
         fact.subjectFiles.set(path, immutable === null ? null : digest(immutable));
         fact.subjectLines.set(path, immutable === null ? 0 : physicalLines(immutable));
         fact.currentFiles.set(path, actual === null ? null : digest(actual));
+        const input = manifest.inputs.find(item => item.path === path);
+        if (input && COORDINATOR.has(path) && (fact.subjectFiles.get(path) !== input.sha256 || fact.currentFiles.get(path) !== input.sha256)) {
+          metadataTransition(manifest, manifest.base, subject);
+          metadataTransition(manifest, subject, head, true);
+          fact.metadataInputs.add(path);
+        }
       }
       const logs = Array.isArray(receipt.cells) ? receipt.cells.map(cell => cell?.log) : [];
       for (const item of [...(Array.isArray(receipt.artifacts) ? receipt.artifacts : []), ...logs]) {
@@ -227,7 +344,57 @@ export async function loadTaskEvidence(root, context) {
       }
       facts.set(receipt.id, fact);
     }
-    const verified = validateTaskReceipts(collection.receipts, { manifests: validated.manifests, manifestHashes, assignments, environments, facts, pendingSuccessors, clean: true });
-    return { ...verified, planningTestIds: verified.errors.length ? new Map() : planningTestIds };
+    const pendingWork = [...pendingSuccessors].some(([id, pending]) => [...pending.changedPaths].some(path =>
+      validated.manifests.get(id).package.allowed_files.includes(path) && !planningBindings.has(path) && !COORDINATOR.has(path)));
+    const verified = validateTaskReceipts(collection.receipts, { manifests: validated.manifests, manifestHashes, assignments, environments, facts, pendingSuccessors, pendingWork, clean: true });
+    if (verified.errors.length) { errors.push(...verified.errors); return empty(); }
+    function priorReceiptClosure(id, revision, seen = new Set()) {
+      if (seen.has(id)) return true;
+      seen.add(id);
+      const prior = collection.receipts.find(item => item.id === id);
+      const historical = collectionAt(RECEIPTS, revision, 'receipts', collection.receipts);
+      if (!prior || !historical.some(item => equal(item, prior)) || !io.ancestor(prior.evidenceCommit, revision)) return false;
+      return prior.dependencies.every(dependency => verified.receiptDigests.get(dependency.id) === dependency.sha256
+        && priorReceiptClosure(dependency.id, revision, seen));
+    }
+    const handoffFacts = new Map();
+    for (const { binding: entry, value } of handoffContracts) {
+      const successor = validated.manifests.get(value?.successorTaskId), predecessor = collection.receipts.find(item => item?.id === value?.predecessorReviewTaskId);
+      if (!successor || !predecessor) continue;
+      const receipt = collection.receipts.find(item => item?.id === value.successorTaskId);
+      const executionBase = receipt?.executionBase ?? pendingSuccessors.get(value.successorTaskId)?.executionBase;
+      const paths = Array.isArray(value.paths) ? value.paths.map(item => item?.path).filter(safePath) : [];
+      handoffFacts.set(value.id, { immutable: true, predecessorReadyAtFreeze: priorReceiptClosure(value.predecessorReviewTaskId, entry.revision), beforeExecution: io.ancestor(entry.revision, executionBase),
+        predecessorAncestry: io.ancestor(predecessor.subject.sha, successor.base),
+        predecessorFiles: new Map(paths.map(path => [path, digest(io.fileAt(predecessor.subject.sha, path) ?? '')])),
+        successorBaseFiles: new Map(paths.map(path => [path, digest(io.fileAt(successor.base, path) ?? '')])) });
+    }
+    const handoffs = validateTaskHandoffs(handoffContracts.map(item => item.value), {
+      packages: new Map(context.packages.map(item => [item.id, item])), manifests: validated.manifests, manifestHashes, assignments,
+      receipts: new Map(collection.receipts.map(item => [item.id, item])), receiptDigests: verified.receiptDigests,
+      historicalAcceptedTasks: verified.historicalAcceptedTasks, facts: handoffFacts });
+    if (handoffs.errors.length) { errors.push(...handoffs.errors); return empty(); }
+    function transferred(from, to, path, seen = new Set()) {
+      if (from === to) return true;
+      if (seen.has(from)) return false;
+      seen.add(from);
+      return handoffContracts.some(item => item.value.predecessorPackageId === from
+        && item.value.paths.some(value => value.path === path) && transferred(item.value.successorPackageId, to, path, new Set(seen)));
+    }
+    for (const successor of manifests.filter(item => item.role !== 'independent-review')) {
+      const changed = pendingSuccessors.get(successor.id)?.changedPaths
+        ?? new Set(facts.get(successor.id)?.diff.flatMap(item => [item.path, item.oldPath].filter(Boolean)) ?? []);
+      for (const predecessor of manifests.filter(item => item.kind === 'package' && item.role === 'independent-review'
+        && item.package.id !== successor.package.id && verified.historicalAcceptedTasks.has(item.id))) {
+        const prior = collection.receipts.find(item => item.id === predecessor.id);
+        if (!io.ancestor(prior.subject.sha, successor.base)) continue;
+        if (predecessor.package.allowed_files.some(path => successor.package.allowed_files.includes(path) && changed.has(path)
+          && (successor.kind !== 'package' || !transferred(predecessor.package.id, successor.package.id, path)))) {
+          errors.push(`${successor.id}: product edits require a frozen predecessor handoff`);
+        }
+      }
+    }
+    if (errors.length) return empty();
+    return { ...verified, ...handoffs, planningTestIds };
   } catch (error) { errors.push(`Task evidence: ${error.message}`); return empty(); }
 }

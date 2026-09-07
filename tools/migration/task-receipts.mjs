@@ -9,9 +9,10 @@ const fileBinding = item => closed(item, ['path', 'sha256']) && safePath(item.pa
 const nonnegative = value => Number.isFinite(value) && value >= 0;
 
 export function validateTaskReceipts(receipts, context) {
-  let currentOpen = false;
+  let currentOpen = context?.pendingWork === true;
+  const historicalAcceptedTasks = new Set();
   const errors = [], acceptedTasks = new Set(), acceptedPackages = new Set(), receiptDigests = new Map();
-  const result = () => ({ errors, acceptedTasks, acceptedPackages, receiptDigests, currentAcceptance: errors.length ? 'invalid' : currentOpen || !acceptedTasks.size ? 'open' : 'accepted' });
+  const result = () => ({ errors, acceptedTasks, acceptedPackages, receiptDigests, historicalAcceptedTasks, currentAcceptance: errors.length ? 'invalid' : currentOpen || !acceptedTasks.size ? 'open' : 'accepted' });
   if (!Array.isArray(receipts)) { errors.push('Task receipts must be an array'); return result(); }
   for (const key of ['manifests', 'manifestHashes', 'assignments', 'environments', 'facts']) {
     if (!(context?.[key] instanceof Map)) errors.push(`Missing task receipt registry ${key}`);
@@ -27,11 +28,12 @@ export function validateTaskReceipts(receipts, context) {
   }
   function currentOrSuccessor(id, path, expected, seen = new Set()) {
     const fact = context.facts.get(id);
-    if (fact?.currentFiles.get(path) === expected) return true;
+    if (fact?.currentFiles.get(path) === expected || fact?.metadataInputs?.has(path)) return true;
     if (seen.has(id)) return false;
     seen.add(id);
     for (const [nextId, candidate] of candidates) {
       const next = context.manifests.get(nextId), nextFact = context.facts.get(nextId);
+      if (context.manifests.get(id)?.kind === 'package' && next?.kind !== 'package') continue;
       if (!next?.package.allowed_files.includes(path) || !next.inputs.some(input => input.path === path && input.sha256 === expected)
         || !depends(nextId, id) || !nextFact?.predecessorSubjects?.has(candidates.get(id)?.subject?.sha)) continue;
       const successor = Array.isArray(candidate.files) && candidate.files.find(file => file?.path === path);
@@ -40,6 +42,7 @@ export function validateTaskReceipts(receipts, context) {
     }
     for (const [nextId, pending] of context.pendingSuccessors ?? []) {
       const next = context.manifests.get(nextId);
+      if (context.manifests.get(id)?.kind === 'package' && next?.kind !== 'package') continue;
       if (next?.package.allowed_files.includes(path) && next.inputs.some(input => input.path === path && input.sha256 === expected)
         && depends(nextId, id) && pending.predecessorSubjects.has(candidates.get(id)?.subject?.sha) && pending.changedPaths.has(path)) {
         currentOpen = true; return true;
@@ -69,7 +72,7 @@ export function validateTaskReceipts(receipts, context) {
     if (!Array.isArray(receipt.diff) || !equal(receipt.diff, fact.diff)) { fail('actual Git diff differs'); continue; }
     else for (const change of receipt.diff) {
       if (!closed(change, ['status', 'oldPath', 'path']) || !['A', 'M', 'D', 'R'].includes(change.status)
-        || !safePath(change.path) || !allowed.includes(change.path)
+        || !safePath(change.path) || !allowed.includes(change.path) && !fact.coordinatorChanges?.has(change.path)
         || (change.status === 'R' ? !safePath(change.oldPath) || !allowed.includes(change.oldPath) : change.oldPath !== null)) fail('out-of-scope change/rename/delete');
     }
     if (!Array.isArray(receipt.files) || !receipt.files.every(fileBinding)
@@ -89,7 +92,7 @@ export function validateTaskReceipts(receipts, context) {
         || change.status === 'R' && change.oldPath === file.path)) fail('missing owned file without deletion');
     }
     for (const input of manifest.inputs) if (!allowed.includes(input.path)
-      && (!currentOrSuccessor(receipt.id, input.path, input.sha256) || fact.subjectFiles.get(input.path) !== input.sha256)) fail('stale immutable input');
+      && (!currentOrSuccessor(receipt.id, input.path, input.sha256) || fact.subjectFiles.get(input.path) !== input.sha256 && !fact.metadataInputs?.has(input.path))) fail('stale immutable input');
     if (!Array.isArray(receipt.artifacts) || !receipt.artifacts.every(binding)
       || !equal(receipt.artifacts.map(item => item.path).sort(), [...manifest.artifacts].sort())) fail('required artifact bindings differ');
     else for (const item of receipt.artifacts) {
@@ -138,6 +141,7 @@ export function validateTaskReceipts(receipts, context) {
     }
   }
   if (errors.length) { receiptDigests.clear(); return result(); }
+  for (const receipt of byId.values()) historicalAcceptedTasks.add(receipt.id);
   if (currentOpen) return result();
   for (const receipt of byId.values()) {
     acceptedTasks.add(receipt.id);

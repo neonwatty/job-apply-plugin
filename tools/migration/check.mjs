@@ -213,7 +213,8 @@ export async function checkInventory(root, options = {}) {
     taskEvidence = tasks;
     errors.push(...tasks.errors);
     errors.push(...validateRequirements(requirements, { ...requirementContext, testIds: tasks.planningTestIds ?? testIds }));
-    errors.push(...validatePackages(packages, { ...packageContext, acceptedPackages: tasks.acceptedPackages }));
+    errors.push(...validatePackages(packages, { ...packageContext, acceptedPackages: tasks.acceptedPackages,
+      ownershipHandoffs: tasks.ownershipHandoffs ?? [], historicalReadiness: tasks.historicalReadiness ?? new Map() }));
   }
   const lock = JSON.parse(await readFile(resolve(directory, 'review-lock.json'), 'utf8'));
   errors.push(...validateReviewLock(lock, hashes));

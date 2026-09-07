@@ -24,6 +24,18 @@ export async function createEvidenceIO(root) {
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
   const git = args => execFileSync('git', ['--no-pager', '--no-replace-objects', ...args], { cwd: canonicalRoot, env, timeout: 5000,
     maxBuffer: 8 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] });
+  // Cache only successful reads addressed by immutable object IDs. Copy buffers on
+  // return so callers cannot poison later observations. Bound retained cache bytes.
+  const immutableCache = new Map(), negativeAncestry = new Set();
+  let cachedBytes = 0;
+  const immutableGit = args => {
+    const key = JSON.stringify(args);
+    if (immutableCache.has(key)) return Buffer.from(immutableCache.get(key));
+    const value = git(args);
+    if (immutableCache.size >= 4096 || cachedBytes + value.length > 8 * 1024 * 1024) { immutableCache.clear(); cachedBytes = 0; }
+    immutableCache.set(key, Buffer.from(value)); cachedBytes += value.length;
+    return value;
+  };
   async function readRepositoryFile(path) {
     if (!safePath(path)) throw new Error('Unsafe prerequisite file path');
     let current = canonicalRoot;
@@ -40,31 +52,41 @@ export async function createEvidenceIO(root) {
   }
   function revision(value) {
     if (!sha(value)) return false;
-    try { return git(['rev-parse', '--verify', `${value}^{commit}`]).toString().trim() === value; }
+    try { return immutableGit(['rev-parse', '--verify', `${value}^{commit}`]).toString().trim() === value; }
     catch { return false; }
   }
   function fileAt(commit, path) {
     if (!sha(commit) || !safePath(path)) throw new Error('Unsafe immutable evidence binding');
-    const entries = git(['ls-tree', '-z', commit, '--', path]).toString().split('\0').filter(Boolean);
+    const entries = immutableGit(['ls-tree', '-r', '-t', '-z', commit]).toString().split('\0')
+      .filter(entry => entry.slice(entry.indexOf('\t') + 1) === path);
     if (!entries.length) return null;
     const entry = entries[0];
     if (entries.length !== 1 || !/^100(?:644|755) blob [a-f0-9]{40}\t/.test(entry)
       || entry.slice(entry.indexOf('\t') + 1) !== path) throw new Error('Immutable evidence must be a regular tracked file');
-    return git(['show', `${commit}:${path}`]);
+    return immutableGit(['cat-file', 'blob', entry.slice(12, 52)]);
   }
   return { root: canonicalRoot, readRepositoryFile, revision, fileAt,
-    changes: path => { if (!safePath(path)) throw new Error('Unsafe history path'); return git(['log', '--reverse', '--topo-order', '--format=%H', 'HEAD', '--', path]).toString().trim().split('\n').filter(Boolean); },
-    pathsAt: commit => { if (!sha(commit)) throw new Error('Invalid tree revision'); return git(['ls-tree', '-r', '--name-only', '-z', commit]).toString().split('\0').filter(Boolean); },
+    changes: path => { if (!safePath(path)) throw new Error('Unsafe history path'); return git(['log', '--full-history', '--reverse', '--topo-order', '--format=%H', 'HEAD', '--', path]).toString().trim().split('\n').filter(Boolean); },
+    pathsAt: commit => { if (!sha(commit)) throw new Error('Invalid tree revision'); return immutableGit(['ls-tree', '-r', '--name-only', '-z', commit]).toString().split('\0').filter(Boolean); },
     head: () => git(['rev-parse', '--verify', 'HEAD']).toString().trim(),
-    tree: commit => { if (!sha(commit)) throw new Error('Invalid subject revision'); return git(['rev-parse', `${commit}^{tree}`]).toString().trim(); },
+    tree: commit => { if (!sha(commit)) throw new Error('Invalid subject revision'); return immutableGit(['rev-parse', `${commit}^{tree}`]).toString().trim(); },
     clean: () => git(['status', '--porcelain=v1', '-z', '--untracked-files=all']).length === 0,
     ancestor: (base, head) => {
       if (!sha(base) || !sha(head)) return false;
-      try { git(['merge-base', '--is-ancestor', base, head]); return true; } catch { return false; }
+      const key = `${base}:${head}`;
+      if (negativeAncestry.has(key)) return false;
+      try { immutableGit(['merge-base', '--is-ancestor', base, head]); return true; }
+      catch (error) {
+        if (error.status === 1 && revision(base) && revision(head)) {
+          if (negativeAncestry.size >= 4096) negativeAncestry.clear();
+          negativeAncestry.add(key);
+        }
+        return false;
+      }
     },
     diff: (base, subject) => {
       if (!sha(base) || !sha(subject)) throw new Error('Invalid diff revisions');
-      const tokens = git(['diff', '--no-ext-diff', '--no-textconv', '--name-status', '-z', '--find-renames', base, subject, '--']).toString().split('\0');
+      const tokens = immutableGit(['diff', '--no-ext-diff', '--no-textconv', '--name-status', '-z', '--find-renames', base, subject, '--']).toString().split('\0');
       const result = [];
       while (tokens[0]) {
         const status = tokens.shift();

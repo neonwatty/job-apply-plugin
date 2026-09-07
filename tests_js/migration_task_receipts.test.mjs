@@ -68,6 +68,18 @@ test('task receipts preserve historical evidence through an approved review and 
   for (const fact of context.facts.values()) fact.currentFiles.set('src/example.ts', nextHash);
   const receipts = [f.receipt, review, successor];
   assert.deepEqual(validateTaskReceipts(receipts, context).errors, []);
+  context.pendingWork = true;
+  const pendingIndependent = validateTaskReceipts(receipts, context);
+  assert.deepEqual(pendingIndependent.errors, []);
+  assert.equal(pendingIndependent.currentAcceptance, 'open');
+  assert.equal(pendingIndependent.acceptedTasks.size, 0);
+  assert.equal(pendingIndependent.acceptedPackages.size, 0);
+  context.pendingWork = false;
+  f.manifest.kind = 'package'; reviewManifest.kind = 'package';
+  assert.ok(validateTaskReceipts(receipts, context).errors.length, 'audit cannot supersede accepted product bytes');
+  context.pendingSuccessors = new Map([[successor.id, { changedPaths: new Set(['src/example.ts']), predecessorSubjects: new Set([f.receipt.subject.sha]) }]]);
+  assert.ok(validateTaskReceipts([f.receipt, review], context).errors.length, 'pending audit cannot supersede product bytes');
+  f.manifest.kind = 'audit'; reviewManifest.kind = 'audit'; context.pendingSuccessors.clear();
   nextFact.predecessorSubjects.clear();
   assert.ok(validateTaskReceipts(receipts, context).errors.some(error => error.includes('stale')));
   nextFact.predecessorSubjects.add(f.receipt.subject.sha); successor.dependencies[0].sha256 = '0'.repeat(64);
