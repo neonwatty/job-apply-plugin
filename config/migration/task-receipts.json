@@ -2853,6 +2853,196 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P03.R",
+      "manifestSha256": "3cddb7b1b87a62485f1207432cf37402daf89043c3f90d4afa863e252bb333ae",
+      "subject": {
+        "sha": "ab659d077374174f5b1c8ee2c40c9bbd9006aeda",
+        "tree": "89f7a100728705e28d3ce0a40f4336c6d632aecd"
+      },
+      "executionBase": "8ef09a75b51a96084c91bb4a95112caf72a8be7b",
+      "evidenceCommit": "e7d6ea9116d0beebf021dd98361b060bb9bbf182",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/local_checks_git.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/local-checks/git.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "config/test-matrix.json",
+          "sha256": "49fe9fdca6ecdcea7af2be2d178dd6223e9c3d421c288cc79964b272dad08bdd"
+        },
+        {
+          "path": "tools/local-checks/git.mjs",
+          "sha256": "d48fc04f3e7fe434f9fd6a0efe00306b0d5947678d4023aba8d2c13913cc2c32"
+        },
+        {
+          "path": "tools/local-checks/policy.mjs",
+          "sha256": "c819357e48a5f92f59329b3737189d773b4b348cca23718845c00576ef54c88b"
+        },
+        {
+          "path": "tools/local-checks/run.mjs",
+          "sha256": "06d223f41e9ce7da8562f9e9e9db6c1f554d25d28a8227999868f39654ae6c36"
+        },
+        {
+          "path": "tools/test-runner/matrix.mjs",
+          "sha256": "eb88ff392a5fbd0de5b27042d83471b91f2324a29e5912211fbd9e07b6279727"
+        },
+        {
+          "path": "tools/test-runner/patterns.mjs",
+          "sha256": "6eb05de69ce7e7531d9a8cc90f628180b05891bc2eaa7f9fa711570dbb730ac2"
+        },
+        {
+          "path": "tools/test-runner/git.mjs",
+          "sha256": "78097d57073dc0ab2057f783e467b9af2720738e8c9a8b73e96caa919f6f07bf"
+        },
+        {
+          "path": "tests_js/local_checks_git.test.mjs",
+          "sha256": "e75701d90919f77104e4df01d1685378e15f83f7c5a74111741610fbb1a156ab"
+        },
+        {
+          "path": "tests_js/local_checks_policy.test.mjs",
+          "sha256": "1c3a478a1b5e2fd4d85a05d77348faaaf375f03d0aa32f38b707bb25c3afbc20"
+        },
+        {
+          "path": "tests_js/test-runner-selection.test.mjs",
+          "sha256": "543ca75020eca436b8075c640b7b970269daf447695a5b6f90d4837aa6de3c55"
+        },
+        {
+          "path": "docs/migration/evidence/p03/reference.md",
+          "sha256": "8863f9405d139f65658882d22cc3ceee69e98ebda4b3b038a083a0be61c9bd51"
+        },
+        {
+          "path": "docs/migration/evidence/p03/reference-audit.json",
+          "sha256": "4b01bab476477f8012700c9de2ad4445e8030a0b09fa0079b2cff979992dceb4"
+        },
+        {
+          "path": "docs/migration/evidence/p03/P03.R.json",
+          "sha256": "b38e62dacebec506611b0eb97aeda6853d4557009b1e004ac21eab7932596876"
+        },
+        {
+          "path": "docs/migration/evidence/p03/reference-audit-v2.json",
+          "sha256": "0ab5d6ef287a086b37ac360d7896bcf56f8ad6c20c341759f12f2af5c80e111a"
+        },
+        {
+          "path": "docs/migration/evidence/p03/P03.R-v2.json",
+          "sha256": "3cddb7b1b87a62485f1207432cf37402daf89043c3f90d4afa863e252bb333ae"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        }
+      ],
+      "cells": [
+        {
+          "id": "P03.R.local_checks_git",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/local_checks_git.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 5354.7285,
+            "outputBytes": 2797,
+            "tests": 12,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03/logs/P03-R-local_checks_git.tap",
+            "sha256": "2fcd98aa265d5c9e0ed0ed7b364a6f33224300dbce7baa2420e91ff641fac7a2"
+          }
+        },
+        {
+          "id": "P03.R.local_checks_policy",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/local_checks_policy.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 76.09670800000004,
+            "outputBytes": 1921,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03/logs/P03-R-local_checks_policy.tap",
+            "sha256": "d01c1ad2afb45e9afa460b8cf7d4916699b9a30e7c6804c923f07181b0fa657e"
+          }
+        },
+        {
+          "id": "P03.R.test-runner-selection",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/test-runner-selection.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 528.0820000000003,
+            "outputBytes": 1535,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03/logs/P03-R-test-runner-selection.tap",
+            "sha256": "ab46e0ff3865c7bc9402f465ce1ea95a0c5e4d88e8fe0711592a37c6d246ef72"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "ab659d077374174f5b1c8ee2c40c9bbd9006aeda",
+        "subjectTree": "89f7a100728705e28d3ce0a40f4336c6d632aecd",
+        "manifestSha256": "3cddb7b1b87a62485f1207432cf37402daf89043c3f90d4afa863e252bb333ae",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
