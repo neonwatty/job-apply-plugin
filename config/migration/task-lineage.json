@@ -392,6 +392,30 @@
           "sha256": "58d9b6706c6eefa00d337a8c9759f86d06ec06bf2adc84a09b48959ac5bcd07c"
         }
       ]
+    },
+    {
+      "id": "P03.retry1.documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original P03 attempt; freeze corrected complete consumer closure for fresh revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry1/approved-dag.json",
+          "sha256": "79da37becc19df1eeee2737347b1a74693ea81db18ed13a682dbcb23948f54ab"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/implementation-audit.json",
+          "sha256": "589391febf08ed00130c9b217fdac22894873bd5cdd1344fd874ec250ccc9d4a"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/implementation.md",
+          "sha256": "9cbdea9c7f02773fcbedb6394d5eae8a77a27076777fe23c6b452121f7f910ea"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/reference-consumers.json",
+          "sha256": "55a5cb507e76a059141c6a231213d947b330f78be1139d902c6598d678dce1c7"
+        }
+      ]
     }
   ],
   "transitions": [
