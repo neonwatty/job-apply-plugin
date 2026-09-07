@@ -3926,6 +3926,332 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P08.I",
+      "manifestSha256": "97ab3a29933de37be3ec771a57ab0bf0d321575183490fedcc69a7864fbac392",
+      "subject": {
+        "sha": "0f65b1cd3683b9f9f76438bbbcd3a98df71cf59d",
+        "tree": "715b20fc5856b226ec3df9ba5b1cb746dbc7d76c"
+      },
+      "executionBase": "a9bb11c4e1e7978702af6b9c515bdc12119279ed",
+      "evidenceCommit": "0944f91539c720ed151895c8588dc120b3b837be",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_task_loader.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_task_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_test_bindings.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/check.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/load-task-evidence.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/test-bindings.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/migration/test-bindings.mjs",
+          "sha256": "8692ab07646f4ba377c47533362f4103f333a4bc06a273cd7c5f0ff74d0fd495"
+        },
+        {
+          "path": "tools/migration/load-task-evidence.mjs",
+          "sha256": "c56ed62d1a0fe07291226449c497e3329f018cab1f81bdfa1d6c1ef2adf4d567"
+        },
+        {
+          "path": "tools/migration/check.mjs",
+          "sha256": "d637bea2bf84e535b1437de123a3ffb3cca0dd9f7edb1663b60565ea59cae024"
+        },
+        {
+          "path": "tests_js/migration_test_bindings.test.mjs",
+          "sha256": "037bd5189dab26ae3eef698a906cb9b573bac2fa2dec9f07f6691756ceb1ddd0"
+        },
+        {
+          "path": "tests_js/migration_task_loader.test.mjs",
+          "sha256": "657ea134978c37e1f27bf965585c312331631dc6aa5148709c17571957ef70fc"
+        },
+        {
+          "path": "tests_js/migration_task_support.mjs",
+          "sha256": "4815ad2e730c72fcfc41c3f35b5ae0c1d674ac3d041eef36dae6206f4aeb317e"
+        },
+        {
+          "path": "docs/migration/evidence/p08/implementation.md",
+          "sha256": "41c723a4a2b60af0f9e5d5fb4756e67d97e0c5bf67b4ab01e5b9c0b5e9f8a50c"
+        },
+        {
+          "path": "docs/migration/evidence/p08/implementation-audit.json",
+          "sha256": "7bba951f75ff98a0d183da6d26d765529620c4ccfc258c16a159888a4904b7c6"
+        },
+        {
+          "path": "docs/migration/evidence/p08/P08.I.json",
+          "sha256": "97ab3a29933de37be3ec771a57ab0bf0d321575183490fedcc69a7864fbac392"
+        },
+        {
+          "path": "docs/migration/evidence/p08/P08.V.json",
+          "sha256": "db9a474e41e7818ed52d1b70bf83645ab68cad4223dd66e96c7533705aee4066"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P07.V",
+          "sha256": "1a7b8fac5037ca46f2cba35c67139969dee20c9e182774e7ec4260bf467acc65"
+        }
+      ],
+      "cells": [
+        {
+          "id": "P08.bindings",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_test_bindings.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 294.524875,
+            "outputBytes": 1982,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p08/logs/P08-bindings.tap",
+            "sha256": "5a1a9bacc0ea53eadc32f0b56e0ed484f3eddcf2ff816931b19d65e9b4ae7024"
+          }
+        },
+        {
+          "id": "P08.lifecycle",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_loader.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 82098.28025000001,
+            "outputBytes": 3017,
+            "tests": 12,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p08/logs/P08-lifecycle.tap",
+            "sha256": "66377021d093327544cf49a33ce96acc184ab06792fad0de5a40e370068eaf37"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "0f65b1cd3683b9f9f76438bbbcd3a98df71cf59d",
+        "subjectTree": "715b20fc5856b226ec3df9ba5b1cb746dbc7d76c",
+        "manifestSha256": "97ab3a29933de37be3ec771a57ab0bf0d321575183490fedcc69a7864fbac392",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P08.V",
+      "manifestSha256": "db9a474e41e7818ed52d1b70bf83645ab68cad4223dd66e96c7533705aee4066",
+      "subject": {
+        "sha": "0f65b1cd3683b9f9f76438bbbcd3a98df71cf59d",
+        "tree": "715b20fc5856b226ec3df9ba5b1cb746dbc7d76c"
+      },
+      "executionBase": "a9bb11c4e1e7978702af6b9c515bdc12119279ed",
+      "evidenceCommit": "0944f91539c720ed151895c8588dc120b3b837be",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_task_loader.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_task_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_test_bindings.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/check.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/load-task-evidence.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/test-bindings.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/migration/test-bindings.mjs",
+          "sha256": "8692ab07646f4ba377c47533362f4103f333a4bc06a273cd7c5f0ff74d0fd495"
+        },
+        {
+          "path": "tools/migration/load-task-evidence.mjs",
+          "sha256": "c56ed62d1a0fe07291226449c497e3329f018cab1f81bdfa1d6c1ef2adf4d567"
+        },
+        {
+          "path": "tools/migration/check.mjs",
+          "sha256": "d637bea2bf84e535b1437de123a3ffb3cca0dd9f7edb1663b60565ea59cae024"
+        },
+        {
+          "path": "tests_js/migration_test_bindings.test.mjs",
+          "sha256": "037bd5189dab26ae3eef698a906cb9b573bac2fa2dec9f07f6691756ceb1ddd0"
+        },
+        {
+          "path": "tests_js/migration_task_loader.test.mjs",
+          "sha256": "657ea134978c37e1f27bf965585c312331631dc6aa5148709c17571957ef70fc"
+        },
+        {
+          "path": "tests_js/migration_task_support.mjs",
+          "sha256": "4815ad2e730c72fcfc41c3f35b5ae0c1d674ac3d041eef36dae6206f4aeb317e"
+        },
+        {
+          "path": "docs/migration/evidence/p08/implementation.md",
+          "sha256": "41c723a4a2b60af0f9e5d5fb4756e67d97e0c5bf67b4ab01e5b9c0b5e9f8a50c"
+        },
+        {
+          "path": "docs/migration/evidence/p08/implementation-audit.json",
+          "sha256": "7bba951f75ff98a0d183da6d26d765529620c4ccfc258c16a159888a4904b7c6"
+        },
+        {
+          "path": "docs/migration/evidence/p08/P08.I.json",
+          "sha256": "97ab3a29933de37be3ec771a57ab0bf0d321575183490fedcc69a7864fbac392"
+        },
+        {
+          "path": "docs/migration/evidence/p08/P08.V.json",
+          "sha256": "db9a474e41e7818ed52d1b70bf83645ab68cad4223dd66e96c7533705aee4066"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P08.I",
+          "sha256": "14367819a2ec0cc1fd06913bb3b1ab12a7d7b732dcb18e98388c6fc3ae0d54bb"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        }
+      ],
+      "cells": [
+        {
+          "id": "P08.bindings",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_test_bindings.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 294.524875,
+            "outputBytes": 1982,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p08/logs/P08-bindings.tap",
+            "sha256": "5a1a9bacc0ea53eadc32f0b56e0ed484f3eddcf2ff816931b19d65e9b4ae7024"
+          }
+        },
+        {
+          "id": "P08.lifecycle",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_loader.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 82098.28025000001,
+            "outputBytes": 3017,
+            "tests": 12,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p08/logs/P08-lifecycle.tap",
+            "sha256": "66377021d093327544cf49a33ce96acc184ab06792fad0de5a40e370068eaf37"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "0f65b1cd3683b9f9f76438bbbcd3a98df71cf59d",
+        "subjectTree": "715b20fc5856b226ec3df9ba5b1cb746dbc7d76c",
+        "manifestSha256": "db9a474e41e7818ed52d1b70bf83645ab68cad4223dd66e96c7533705aee4066",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
