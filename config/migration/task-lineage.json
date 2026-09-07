@@ -736,6 +736,30 @@
           "sha256": "d09d11baef79b1ee4d1d3647094a58c3d228490a6627fbf65da379712c3b0345"
         }
       ]
+    },
+    {
+      "id": "P11.documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze truthful streamed-output failure and bounded owned cleanup without changing output limits.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p11/approved-dag.json",
+          "sha256": "eb11fe5c96b2d668ef32555e2674e7e3ef59dcb1957b930239242bf5cec10caf"
+        },
+        {
+          "path": "docs/migration/evidence/p11/implementation-audit.json",
+          "sha256": "af3cba085cbc3f6be0055b1edb458b0790982534e061136fe792a097a68c1a25"
+        },
+        {
+          "path": "docs/migration/evidence/p11/implementation.md",
+          "sha256": "bf9340dcbea2b8c5ac5232f29c49b8a9ed388d66a4b74e3857a486219899a698"
+        },
+        {
+          "path": "docs/migration/evidence/p11/implementation-spec.json",
+          "sha256": "48a8e5262375abe8298badd9624b0f144da0aa63219a7239c59c8764d51b05cc"
+        }
+      ]
     }
   ],
   "transitions": [

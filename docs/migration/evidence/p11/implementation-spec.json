@@ -1,0 +1,102 @@
+{
+  "status": "draft requiring independent review before any phase",
+  "taskIds": [
+    "P11.I",
+    "P11.V"
+  ],
+  "allowed_files": [
+    "tools/test-runner/process.mjs",
+    "tests_js/test-runner-execution.test.mjs",
+    "docs/migration/evidence/p11/implementation.md",
+    "docs/migration/evidence/p11/implementation-spec.json",
+    "docs/migration/evidence/p11/implementation-audit.json",
+    "docs/migration/evidence/p11/approved-dag.json",
+    "docs/migration/evidence/p11/P11.I.json",
+    "docs/migration/evidence/p11/P11.V.json",
+    "docs/migration/evidence/p11/transition.json"
+  ],
+  "assignments": [
+    {
+      "id": "P11.I",
+      "package": "P11",
+      "role": "implementation-or-gate",
+      "dependencies": [
+        "P10.V",
+        "P03.retry2.V"
+      ]
+    },
+    {
+      "id": "P11.V",
+      "package": "P11",
+      "role": "independent-review",
+      "dependencies": [
+        "P11.I",
+        "P01.V"
+      ]
+    }
+  ],
+  "requirements": [
+    "p11.output-completeness",
+    "p11.overflow-cleanup",
+    "p11.failed-receipt-propagation"
+  ],
+  "cells": [
+    {
+      "id": "p11.output-completeness",
+      "requirementIds": [
+        "p11.output-completeness",
+        "p11.overflow-cleanup",
+        "p11.failed-receipt-propagation"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/test-runner-execution.test.mjs"
+      ],
+      "testNames": [
+        "platform Python selection and generated test commands are explicit",
+        "suite execution streams prefixed failures and aggregates in matrix order",
+        "suite execution honors its concurrency bound and runs each suite once",
+        "process execution terminates hangs and bounds noisy output",
+        "timeout terminates an owned grandchild process tree",
+        "timeout retains group cleanup after the direct parent exits",
+        "receipts contain selection and timing metadata but no commands, output, or environment",
+        "CLI parsing rejects ambiguity and accepts bounded concurrency",
+        "stream prefixes empty lines without trailing spaces and preserves nonempty payloads",
+        "P11 streamed output enforces independent stdout and stderr byte boundaries",
+        "P11 output overflow cannot pass after zero exit or competing termination",
+        "P11 output overflow retains cleanup for an owned surviving descendant",
+        "P11 incomplete output fails suite receipts without leaking captured data"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p11/logs/P11-output-completeness.tap"
+    }
+  ],
+  "artifacts": [],
+  "scope": {
+    "production": [
+      "tools/test-runner/process.mjs"
+    ],
+    "tests": [
+      "tests_js/test-runner-execution.test.mjs"
+    ],
+    "unchanged": [
+      "matrix caps and P10 grouping",
+      "receipt schema",
+      "runCapture",
+      "local-checks process behavior",
+      "all consumer process/Python/helper pins"
+    ],
+    "oldAssertionCorrection": "Existing noisy-output status passed becomes failed with exitCode130/signal output-limit; retain its name and32-byte prefix/marker checks. All other original assertions remain."
+  },
+  "gateRefinement": {
+    "id": "T05.I",
+    "appendDependency": "P11.V",
+    "preserveExistingDependencies": true,
+    "requireNeverFrozenAtActivation": true
+  },
+  "readiness": "Actual clean base and effective DAG resolve at invocation only after passed ancestral P10.V/P03.retry2.V/P01.V; generator does not run validation suites or apply files."
+}
