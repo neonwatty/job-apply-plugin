@@ -724,6 +724,18 @@
           "sha256": "6de5b6fabf964b1814d25814b89495b5e2cb7d5ad29632e10617fd34fb77ac83"
         }
       ]
+    },
+    {
+      "id": "P10.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze isolated reference shards with unchanged output limits and complete consumer ownership.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p10/transition.json",
+          "sha256": "d09d11baef79b1ee4d1d3647094a58c3d228490a6627fbf65da379712c3b0345"
+        }
+      ]
     }
   ],
   "transitions": [
