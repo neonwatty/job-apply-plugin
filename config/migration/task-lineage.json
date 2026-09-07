@@ -52,6 +52,18 @@
           "sha256": "3cddb7b1b87a62485f1207432cf37402daf89043c3f90d4afa863e252bb333ae"
         }
       ]
+    },
+    {
+      "id": "S02.retry1.capture-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original decoder evidence and require an explicit fresh exact-name replacement.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s02/retry1/original-capture.json",
+          "sha256": "4a06be9eec9faf2e3a3915bb120e4b05e5605297aef8685c01f094ff47bb4a2e"
+        }
+      ]
     }
   ],
   "transitions": []

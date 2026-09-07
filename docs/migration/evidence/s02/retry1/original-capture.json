@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "id": "S02.original-unaccepted-capture",
+  "subject": {
+    "sha": "fa21c6847d4d10ae96b70dfb3b819e1b1565188b",
+    "tree": "c2ab98f9f8c90f90b893f03cc53658d9140c2a5c"
+  },
+  "executionBase": "cbd1adcd982a99e995fc4ef2f1f2e573b7c0391e",
+  "attributions": [
+    {
+      "taskId": "S02.I",
+      "manifestSha256": "3e03ed5220fe871e88db69e48f04899e5f9b488151075e46dc6262582150c78c",
+      "cellIds": [
+        "S02.I.decoder",
+        "S02.I.reference",
+        "S02.I.python-text"
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "id": "S02.I.decoder",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/python_json_bytes_ts.test.mjs"
+      ],
+      "environmentId": "node-local",
+      "environment": {
+        "id": "node-local",
+        "platform": "darwin",
+        "node": "v22.22.3",
+        "unicode": "17.0"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "durationMs": 78.166,
+        "outputBytes": 1665
+      },
+      "log": {
+        "path": "docs/migration/evidence/s02/logs/S02.I.decoder.tap",
+        "sha256": "9c833e8f460aec95fa87ddb55a221d6065b716cbd250bd2b95ec89446e9fd292"
+      },
+      "artifacts": [],
+      "diagnostic": null
+    },
+    {
+      "id": "S02.I.reference",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/python_json_bytes_reference.test.mjs"
+      ],
+      "environmentId": "node-local",
+      "environment": {
+        "id": "node-local",
+        "platform": "darwin",
+        "node": "v22.22.3",
+        "unicode": "17.0"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "durationMs": 297.473917,
+        "outputBytes": 1251
+      },
+      "log": {
+        "path": "docs/migration/evidence/s02/logs/S02.I.reference.tap",
+        "sha256": "cc9474092013d96a88504904b9c07c04c0d4589f84fa1f5dff249e815f6b5c2d"
+      },
+      "artifacts": [],
+      "diagnostic": null
+    },
+    {
+      "id": "S02.I.python-text",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/python_text_ts.test.mjs"
+      ],
+      "environmentId": "node-local",
+      "environment": {
+        "id": "node-local",
+        "platform": "darwin",
+        "node": "v22.22.3",
+        "unicode": "17.0"
+      },
+      "result": {
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "durationMs": 255.64379099999996,
+        "outputBytes": 2176
+      },
+      "log": {
+        "path": "docs/migration/evidence/s02/logs/S02.I.python-text.tap",
+        "sha256": "cebc4cba073a3cbb9c39d24a693cefefb5526aceabc5c0497db3033817723691"
+      },
+      "artifacts": [],
+      "diagnostic": {
+        "code": "manifest-test-identity-mismatch",
+        "message": "Frozen cell declares 4 identities but actual TAP contains 8; the passing run does not satisfy the frozen manifest."
+      }
+    }
+  ]
+}
