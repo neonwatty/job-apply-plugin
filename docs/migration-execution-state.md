@@ -739,3 +739,29 @@ plus the repaired TS/emitted artifact pair, were reconciled. Inventory is again
 consistent: 316 source rows, 37 runtime modules, 446 surfaces and 4,380 unmapped
 cells. P00 final review waits for the immutable integration commit and its commit
 gates. Deep/push, whole-node, native-host and final conversion gates remain open.
+
+## P00 accepted; reference and evidence wave active
+
+The immutable staging reconciliation commit is `adb9fb9`. Independent review
+accepted P00.V as a bounded baseline audit after all nine staged checks passed.
+The serial deep run subsequently completed in 727 seconds: 27 suites passed,
+with the foreign Windows suite deferred. Package smoke, isolated Claude/Codex
+installation and packaged browser/CLI walkthroughs passed. Two visible-browser
+opt-ins, 24 POSIX filename cases and one native timestamp filename case were
+skipped internally and remain open. See the exact identity and log hash in the
+[P00 receipt](migration/remaining/p00-reconciliation.md). This is local baseline
+evidence, not full conversion or a receipt for subsequent changes.
+
+P01.I is implementing immutable task manifests, observed test identities,
+dependency/reviewer bindings and fail-closed receipt loading. S01.R and S02.R
+workers prepared closed Python object and byte-decoding references in parallel;
+the combined ten top-level tests pass with zero skips across installed Python
+3.12–3.14. Independent review and immutable reference freezing precede their
+implementation, which also requires P01.V.
+
+[P03 preparation](migration/remaining/p03-reference.md) identifies focused hook
+rules whose JSON/validation consumer sets have grown. P04 reference preparation
+covers both hook-driven and direct heavy-run entry points. Neither implementation
+has bypassed its P01 dependency. [P02 host preparation](migration/remaining/p02-host-readiness.md)
+preserves existing support promises and records the unresolved clean-host matrix;
+no developer-machine success is substituted for a missing native cell.

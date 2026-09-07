@@ -114,7 +114,7 @@ including human-only final submission and restoration of staging CI.
 ## Remaining-migration planning audit
 
 On 2026-09-06, the installed worktree hooks and 30 focused hook regression tests
-were checked: zero failures/skips. See the proposed [remaining task DAG](migration/remaining-migration-plan.md).
+were checked: zero failures/skips. See the approved [remaining task DAG](migration/remaining-migration-plan.md).
 The current deep runner serializes one invocation, not every worktree on a host;
 the coordinator must serialize heavy runs until the planned host lease lands.
 Existing receipts identify runtime versions, not every native executable byte;
