@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, lstatSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { mkdtemp, readFile, realpath, rm, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -36,12 +36,36 @@ export function indexTree(root) {
   } finally { rmSync(temporary, { recursive: true, force: true }); }
 }
 
+function mergeParents(root) {
+  const path = resolve(root, git(root, ['rev-parse', '--git-path', 'MERGE_HEAD']).trim());
+  let metadata;
+  try { metadata = lstatSync(path); }
+  catch (error) { if (error.code === 'ENOENT') return []; throw error; }
+  if (!metadata.isFile() || metadata.size > 8 * 1024 * 1024) {
+    throw new Error('Local checks: malformed MERGE_HEAD metadata.');
+  }
+  const content = readFileSync(path, 'utf8');
+  const refs = content.replace(/\n$/, '').split('\n');
+  if (!refs.every(ref => /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(ref))) {
+    throw new Error('Local checks: malformed MERGE_HEAD metadata.');
+  }
+  for (const ref of new Set(refs)) {
+    if (git(root, ['cat-file', '-t', ref], { allowFailure: true }).trim() !== 'commit') {
+      throw new Error('Local checks: MERGE_HEAD parent is not an existing commit.');
+    }
+  }
+  return refs;
+}
+
 export function indexSnapshot(root) {
   const tree = indexTree(root);
   const parent = git(root, ['rev-parse', '--verify', 'HEAD'], { allowFailure: true }).trim();
-  // An unreferenced object represents the index; no user branch or index changes.
+  const merging = mergeParents(root);
+  if (merging.length && !parent) throw new Error('Local checks: merge metadata without HEAD.');
+  const parents = [...new Set([...(parent ? [parent] : []), ...merging])];
+  // An unreferenced object represents the index and its real merge ancestry.
   const commit = git(root, ['-c', 'user.name=Local checks', '-c', 'user.email=local-checks@invalid',
-    '-c', 'commit.gpgsign=false', 'commit-tree', tree, ...(parent ? ['-p', parent] : []),
+    '-c', 'commit.gpgsign=false', 'commit-tree', tree, ...parents.flatMap(value => ['-p', value]),
     '-m', 'Disposable staged verification snapshot']).trim();
   return { tree, commit, base: parent || commit };
 }

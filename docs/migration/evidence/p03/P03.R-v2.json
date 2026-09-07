@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 1,
+  "id": "P03.R",
+  "role": "reference",
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/bootstrap/approved-dag.json",
+    "sha256": "e8e549ec42440bff841da005d68b91b0e421a864db886203a542b6cfe9a70ec9"
+  },
+  "package": {
+    "id": "P03",
+    "parentNode": "CI",
+    "owner": "jsonl_review",
+    "allowed_files": [
+      "config/test-matrix.json",
+      "tools/local-checks/git.mjs",
+      "tools/local-checks/policy.mjs",
+      "tools/local-checks/run.mjs",
+      "tools/test-runner/matrix.mjs",
+      "tools/test-runner/patterns.mjs",
+      "tools/test-runner/git.mjs",
+      "tests_js/local_checks_git.test.mjs",
+      "tests_js/local_checks_policy.test.mjs",
+      "tests_js/test-runner-selection.test.mjs",
+      "docs/migration/evidence/p03/reference.md",
+      "docs/migration/evidence/p03/reference-audit.json",
+      "docs/migration/evidence/p03/P03.R.json",
+      "docs/migration/evidence/p03/reference-audit-v2.json",
+      "docs/migration/evidence/p03/P03.R-v2.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "c7dc026e6e695454a506ba603f6de49d1c4344f9e6937ba3c5efbfe8184454ec",
+  "auditContract": {
+    "path": "docs/migration/evidence/p03/reference-audit-v2.json",
+    "sha256": "0ab5d6ef287a086b37ac360d7896bcf56f8ad6c20c341759f12f2af5c80e111a"
+  },
+  "author": "jsonl_review",
+  "reviewer": "hooks_audit",
+  "base": "cc7b44894206c4721b0280398cf04ceb4821c44d",
+  "inputs": [
+    {
+      "path": "config/test-matrix.json",
+      "sha256": "49fe9fdca6ecdcea7af2be2d178dd6223e9c3d421c288cc79964b272dad08bdd"
+    },
+    {
+      "path": "tools/local-checks/git.mjs",
+      "sha256": "feba06dce47650ae7952b75d1d530fe0cdcf492a0fffd88344c87760e286082d"
+    },
+    {
+      "path": "tools/local-checks/policy.mjs",
+      "sha256": "c819357e48a5f92f59329b3737189d773b4b348cca23718845c00576ef54c88b"
+    },
+    {
+      "path": "tools/local-checks/run.mjs",
+      "sha256": "06d223f41e9ce7da8562f9e9e9db6c1f554d25d28a8227999868f39654ae6c36"
+    },
+    {
+      "path": "tools/test-runner/matrix.mjs",
+      "sha256": "eb88ff392a5fbd0de5b27042d83471b91f2324a29e5912211fbd9e07b6279727"
+    },
+    {
+      "path": "tools/test-runner/patterns.mjs",
+      "sha256": "6eb05de69ce7e7531d9a8cc90f628180b05891bc2eaa7f9fa711570dbb730ac2"
+    },
+    {
+      "path": "tools/test-runner/git.mjs",
+      "sha256": "78097d57073dc0ab2057f783e467b9af2720738e8c9a8b73e96caa919f6f07bf"
+    },
+    {
+      "path": "tests_js/local_checks_git.test.mjs",
+      "sha256": "7149dbb3f99ce27e57c8bd0fe81b74a113deaa2e050d816de24e676481df3565"
+    },
+    {
+      "path": "tests_js/local_checks_policy.test.mjs",
+      "sha256": "1c3a478a1b5e2fd4d85a05d77348faaaf375f03d0aa32f38b707bb25c3afbc20"
+    },
+    {
+      "path": "tests_js/test-runner-selection.test.mjs",
+      "sha256": "543ca75020eca436b8075c640b7b970269daf447695a5b6f90d4837aa6de3c55"
+    },
+    {
+      "path": "docs/migration/evidence/p03/reference.md",
+      "sha256": "8863f9405d139f65658882d22cc3ceee69e98ebda4b3b038a083a0be61c9bd51"
+    },
+    {
+      "path": "docs/migration/evidence/p03/reference-audit.json",
+      "sha256": "4b01bab476477f8012700c9de2ad4445e8030a0b09fa0079b2cff979992dceb4"
+    },
+    {
+      "path": "docs/migration/evidence/p03/P03.R.json",
+      "sha256": "b38e62dacebec506611b0eb97aeda6853d4557009b1e004ac21eab7932596876"
+    },
+    {
+      "path": "docs/migration/evidence/p03/reference-audit-v2.json",
+      "sha256": "0ab5d6ef287a086b37ac360d7896bcf56f8ad6c20c341759f12f2af5c80e111a"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "ca96d5296019cd001c61c3ace3bb6be6a54976c2db880cca87f92facc14e5ee0"
+    },
+    {
+      "path": "tools/migration/evidence-io.mjs",
+      "sha256": "b2105d8b36ef2d5e1c9859ac33d9a8243b96b2c9d1e94346b357782597eb56d7"
+    },
+    {
+      "path": "tools/local-checks/hook.mjs",
+      "sha256": "ea45841e55dc639d5341ff4f93642cfd95f9ecc4523be15f752168bae39491e1"
+    },
+    {
+      "path": "tools/local-checks/install.mjs",
+      "sha256": "47bac92307376fd46f9948f1df4226cd51424f232dee1bc31945a971be8ecb8e"
+    },
+    {
+      "path": "tools/local-checks/links.mjs",
+      "sha256": "835e66865c6882d01314d3bfc3eeb7427d1ee1032bc10cec7380d9d00e312266"
+    },
+    {
+      "path": "tools/local-checks/process.mjs",
+      "sha256": "8c4c2aace13e95263f9ba8736e29ac9e4dee7f7f56801b4b335fe350195dc440"
+    },
+    {
+      "path": "tools/test-runner/execute.mjs",
+      "sha256": "ba8bbdfdfb2c6569e639351d00ce7eccae8fd8c0655b9053baebb52f69750568"
+    },
+    {
+      "path": "tools/test-runner/process.mjs",
+      "sha256": "164a763c82a474fbd3e9de658471f4b8b32fb54e8743d6f1cb6171be80370c1a"
+    },
+    {
+      "path": "tools/test-runner/receipt.mjs",
+      "sha256": "abc68fd0ce1e82d3861aba60e50f9173b9dcd04a5442d7f17b476c29ee56b2fb"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "P03.R.local_checks_git",
+      "requirementIds": [
+        "p03.reference.audit.local_checks_git"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/local_checks_git.test.mjs"
+      ],
+      "testNames": [
+        "Git helper preserves stdout and resolves only existing commits",
+        "index snapshot isolates staged content and preserves dirty root/index",
+        "unborn staged index and staged deletion/rename produce exact snapshots",
+        "snapshot callback failure removes only owned worktree and preserves original state",
+        "hook alternate index is captured without leaking Git environment into snapshots",
+        "push targets use pushed commits, support multiple refs and ignore deletions",
+        "new branches use merge base with explicitly configured comparison ref",
+        "push validation rejects malformed records and unavailable remote objects",
+        "annotated tag targets peel to the commit actually pushed",
+        "dependency-linked staged snapshots remain clean without hiding unrelated files",
+        "staged merge snapshots preserve two-parent and octopus ancestry without changing owner state",
+        "merge snapshot metadata rejects malformed or noncommit parents and deduplicates valid parents"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p03/logs/P03-R-local_checks_git.tap"
+    },
+    {
+      "id": "P03.R.local_checks_policy",
+      "requirementIds": [
+        "p03.reference.audit.local_checks_policy"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/local_checks_policy.test.mjs"
+      ],
+      "testNames": [
+        "receipt policy fingerprint changes when active runner implementation changes",
+        "documentation stays light while exact inert codec changes add focused tests",
+        "new production modules, global edits, unknown paths and deleted codec escalate",
+        "accepted inert boundaries select focused tests and include dependent validation",
+        "tag pushes require complete local release and platform selection even with no changes",
+        "known renderer changes select their suite without unrelated package tests",
+        "local success rejects missing, failed and wrongly skipped mandatory cells",
+        "only fresh complete deep receipts for the exact identity can satisfy escalation"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p03/logs/P03-R-local_checks_policy.tap"
+    },
+    {
+      "id": "P03.R.test-runner-selection",
+      "requirementIds": [
+        "p03.reference.audit.test-runner-selection"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/test-runner-selection.test.mjs"
+      ],
+      "testNames": [
+        "affected selection unions owners and selects a changed test itself",
+        "global and unknown changes fail closed to the full tier",
+        "real shared Python helpers select every consuming shard",
+        "real production paths conservatively include cross-language consumers",
+        "matrix validation rejects omissions and duplicate full inventory",
+        "name-status parsing preserves both rename paths and deletions",
+        "git selection combines committed, staged, unstaged, deleted, renamed, and untracked paths"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p03/logs/P03-R-test-runner-selection.tap"
+    }
+  ],
+  "artifacts": []
+}

@@ -1,3 +1,4 @@
+import { implementationFor } from './task-lineage.mjs';
 import { validatePackages } from './packages.mjs';
 import { validateRequirements } from './requirements.mjs';
 import { canonical, closed, digest, equal, hash, safePath, sha, strings, text } from './evidence-io.mjs';
@@ -35,9 +36,13 @@ export function validateTaskManifests(manifests, context) {
     const fail = message => errors.push(`${manifest.id}: ${message}`);
     if (manifest.schemaVersion !== 1 || !text(manifest.id) || seen.has(manifest.id)) fail('invalid/duplicate manifest ID');
     seen.add(manifest.id);
-    const assignment = context.assignments.get(manifest.id), authorization = context.authorizations.get(manifest.id);
+    const ownDag = context.ownDagByTask?.get(manifest.id) ?? context.assignments;
+    const assignment = ownDag.get(manifest.id), authorization = context.authorizations.get(manifest.id);
     if (!assignment || manifest.role !== assignment.role || manifest.package?.id !== assignment.package) fail('assignment differs from approved DAG');
-    if (!binding(manifest.dag) || !equal(manifest.dag, context.dag)) fail('approved DAG hash differs');
+    if (manifest.role === 'independent-review') {
+      try { implementationFor(ownDag, manifest.id); } catch (error) { fail(error.message); }
+    }
+    if (!binding(manifest.dag) || !context.ownDagByTask?.has(manifest.id) && !equal(manifest.dag, context.dag)) fail('approved DAG hash differs');
     if (!['package', 'audit'].includes(manifest.kind)) fail('unsupported task form');
     if (!text(manifest.author) || !text(manifest.reviewer) || manifest.author.trim() === manifest.reviewer.trim()
       || authorization?.author !== manifest.author || authorization?.reviewer !== manifest.reviewer) fail('unbound author or independent reviewer');
@@ -47,9 +52,10 @@ export function validateTaskManifests(manifests, context) {
       fail('invalid structural package'); continue;
     }
     if (!hash(manifest.packageSha256) || digest(canonical(structuralPackage(pkg))) !== manifest.packageSha256) fail('structural package hash differs');
-    const registry = context.packages.find(item => item.id === pkg.id);
+    const registeredPackages = context.historicalPackagesByTask?.get(manifest.id) ?? context.packages;
+    const registry = registeredPackages.find(item => item.id === pkg.id);
     if (manifest.kind === 'package' && (!registry || !equal(structuralPackage(pkg), structuralPackage(registry)))) fail('unregistered structural package');
-    const structural = [...context.packages.filter(item => item.id !== pkg.id), pkg].map(item => ({ ...item, status: 'planned' }));
+    const structural = [...registeredPackages.filter(item => item.id !== pkg.id), pkg].map(item => ({ ...item, status: 'planned' }));
     const structuralErrors = validatePackages(structural, context.packageContext);
     errors.push(...structuralErrors.map(error => `${manifest.id}: ${error}`));
     if (structuralErrors.length) continue;

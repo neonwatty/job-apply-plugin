@@ -191,11 +191,15 @@
     },
     {
       "path": "task-contracts.json",
-      "sha256": "ae65c172b5b8175b7edb9760dc69bcb2662641f1bb4aa9d15c74860a943d54f5"
+      "sha256": "78fee217b5891d8c452b7c08692529a09ae86a61c53809fbc917dfc84b76cb6a"
+    },
+    {
+      "path": "task-lineage.json",
+      "sha256": "ab8132e5578aba7b671bd586344ba6f887dd7407aa63ac00c69c83720710281e"
     },
     {
       "path": "task-receipts.json",
-      "sha256": "3290229279d2ab3c17c92d88f338176acdda68f8eeafc159f11e2d87fff3bd8c"
+      "sha256": "ee4c5c0b4b903893089e740d1737db82f2b9e17a3b87be10f6fa3900fb7fa312"
     }
   ]
 }

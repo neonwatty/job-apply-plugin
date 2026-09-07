@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "preparations": [
+    {
+      "id": "P03.reference-audit-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze current local testing reference behavior; full consumer-aware mapping acceptance remains open.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/reference-audit.json",
+          "sha256": "4b01bab476477f8012700c9de2ad4445e8030a0b09fa0079b2cff979992dceb4"
+        },
+        {
+          "path": "docs/migration/evidence/p03/reference.md",
+          "sha256": "8863f9405d139f65658882d22cc3ceee69e98ebda4b3b038a083a0be61c9bd51"
+        }
+      ]
+    },
+    {
+      "id": "P03.reference-manifest-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze current local testing reference behavior; full consumer-aware mapping acceptance remains open.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/P03.R.json",
+          "sha256": "b38e62dacebec506611b0eb97aeda6853d4557009b1e004ac21eab7932596876"
+        }
+      ]
+    },
+    {
+      "id": "P03.reference-audit-v2-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze current local testing reference behavior; full consumer-aware mapping acceptance remains open.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/reference-audit-v2.json",
+          "sha256": "0ab5d6ef287a086b37ac360d7896bcf56f8ad6c20c341759f12f2af5c80e111a"
+        }
+      ]
+    },
+    {
+      "id": "P03.reference-manifest-v2-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze current local testing reference behavior; full consumer-aware mapping acceptance remains open.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/P03.R-v2.json",
+          "sha256": "3cddb7b1b87a62485f1207432cf37402daf89043c3f90d4afa863e252bb333ae"
+        }
+      ]
+    }
+  ],
+  "transitions": []
+}

@@ -1,3 +1,4 @@
+import { implementationFor } from './task-lineage.mjs';
 import { canonical, closed, digest, equal, hash, safePath, sha, strings } from './evidence-io.mjs';
 import { parseTaskTap } from './tap-evidence.mjs';
 import { sourceSizePath } from './task-manifests.mjs';
@@ -132,11 +133,15 @@ export function validateTaskReceipts(receipts, context) {
   }
   for (const receipt of byId.values()) {
     if (!Array.isArray(receipt.dependencies)) continue;
+    if (context.assignments.get(receipt.id)?.role === 'independent-review') {
+      try { implementationFor(context.ownDagByTask?.get(receipt.id) ?? context.assignments, receipt.id); }
+      catch (error) { errors.push(`${receipt.id}: ${error.message}`); continue; }
+    }
     for (const dep of receipt.dependencies) {
       const previous = byId.get(dep?.id);
       if (!previous || dep.sha256 !== receiptDigests.get(dep.id)) errors.push(`${receipt.id}: missing/stale dependency receipt`);
       if (context.assignments.get(receipt.id)?.role === 'independent-review'
-        && dep?.id === `${context.assignments.get(receipt.id).package}.I`
+        && dep?.id === implementationFor(context.ownDagByTask?.get(receipt.id) ?? context.assignments, receipt.id)
         && !equal(previous?.subject, receipt.subject)) errors.push(`${receipt.id}: review subject differs from implementation`);
     }
   }

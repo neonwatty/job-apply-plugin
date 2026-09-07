@@ -2080,6 +2080,1261 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P07.R",
+      "manifestSha256": "dc94d1fd40b2b89c00c8e363dd9e5a15382e34cbda4ea1b64affecce5b79bb44",
+      "subject": {
+        "sha": "cef8e16ad37ae07b96035319b3d0ef65489e78b4",
+        "tree": "9e3fc8f2b0680a5d90fa5883b030b24346207637"
+      },
+      "executionBase": "cef8e16ad37ae07b96035319b3d0ef65489e78b4",
+      "evidenceCommit": "0d9429615fe54f62ee82f8227bcb94d4fc833a8b",
+      "diff": [],
+      "files": [
+        {
+          "path": "docs/migration/evidence/p07/reference-audit.json",
+          "sha256": "45748471a078da40c42e1c09ebbf3f6f262159902bc5b5c50ebbb489618c2559"
+        },
+        {
+          "path": "docs/migration/evidence/p07/P07.R.json",
+          "sha256": "dc94d1fd40b2b89c00c8e363dd9e5a15382e34cbda4ea1b64affecce5b79bb44"
+        },
+        {
+          "path": "docs/migration/evidence/p07/reference.md",
+          "sha256": "44e68b48bd0b0588328b5f3f6f134ac593dbc27d9840d37b5753cc94c9b5aad5"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        }
+      ],
+      "cells": [
+        {
+          "id": "P07.R.migration_task_manifests",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_manifests.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 70.48183399999999,
+            "outputBytes": 1795,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-R-migration_task_manifests.tap",
+            "sha256": "81e7e3830f95694f1579db6d8958885ac2a3f8719893b32edb907dabf368dc64"
+          }
+        },
+        {
+          "id": "P07.R.migration_task_receipts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_receipts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 76.310125,
+            "outputBytes": 2631,
+            "tests": 10,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-R-migration_task_receipts.tap",
+            "sha256": "5700222db67932b902d228b835407e0287b44ed22ed2fed7420acaa69379fc8e"
+          }
+        },
+        {
+          "id": "P07.R.migration_task_metadata",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_metadata.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 80671.05774999999,
+            "outputBytes": 1084,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-R-migration_task_metadata.tap",
+            "sha256": "6202f382783f73d2796e097885eb1e66e30f657cc063eb7e0ca0d73090a7a2c0"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "root",
+        "reviewer": "hooks_audit",
+        "subjectSha": "cef8e16ad37ae07b96035319b3d0ef65489e78b4",
+        "subjectTree": "9e3fc8f2b0680a5d90fa5883b030b24346207637",
+        "manifestSha256": "dc94d1fd40b2b89c00c8e363dd9e5a15382e34cbda4ea1b64affecce5b79bb44",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P07.I",
+      "manifestSha256": "1b63e91752c6fda38da85df5cd8291f83d2b5b1917324fae307af0cbe6239719",
+      "subject": {
+        "sha": "51e3b1a57c52ca40a1a9548eb60749688cdc9bb3",
+        "tree": "a00c65d0e65167802022562ca3eb04bc1a9c2b99"
+      },
+      "executionBase": "f681036fb366c3d1598165b259cea56e3f549803",
+      "evidenceCommit": "3f7edd2b9184a7af2658cb4aa4a7d944cc1ad5c3",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_task_handoff_support.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/migration_task_lineage.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/migration_task_lineage_git_support.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/migration_task_lineage_lifecycle.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/migration_task_lineage_support.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/migration_task_replacements.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/check.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/load-task-evidence.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/migration/load-task-lineage.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/migration/task-lineage.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/task-manifests.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/migration/task-metadata.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/task-receipts.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/migration/task-lineage.mjs",
+          "sha256": "dc54b81df4df29f9c95d2e2e511f03a24aa990d8c589a307306a31d3db69a9cd"
+        },
+        {
+          "path": "tools/migration/load-task-lineage.mjs",
+          "sha256": "ac1e47c83dba8ab7f42f5b46456c386a1ae117314cebc21ad5ca496bf16100c8"
+        },
+        {
+          "path": "tools/migration/load-task-evidence.mjs",
+          "sha256": "c5f97079521453dbaf20b7dc3ec4e132a6cf4dc85a776e165a7d3a6c992d4bd7"
+        },
+        {
+          "path": "tools/migration/task-manifests.mjs",
+          "sha256": "df99a6f882c342d0f9f69720c310754930a5b5a3ae0bc6d1cee9452805c7914a"
+        },
+        {
+          "path": "tools/migration/task-receipts.mjs",
+          "sha256": "386828ad9fd65f3d9c317a17a171dd320df386ee1e7b455d18b543e347b59e2f"
+        },
+        {
+          "path": "tools/migration/task-handoffs.mjs",
+          "sha256": "53f0b202d20c8e0ee7e4e0dbf5d0c2a4e5dbde3705be6d7d3bc4a1fc5c746220"
+        },
+        {
+          "path": "tools/migration/check.mjs",
+          "sha256": "0ec8dbf4a0562b49c18e0af06ea9b1ec34e130691ff80ce405eebd5463aa374d"
+        },
+        {
+          "path": "tools/migration/task-metadata.mjs",
+          "sha256": "fe026cace29806913dbc8b61ea3012b6dce4b421cf28592152c35a68a2c633cd"
+        },
+        {
+          "path": "tests_js/migration_task_manifests.test.mjs",
+          "sha256": "616a108615a2de3f48a2d9272f10907ab968183593fca0ead2555518a85da087"
+        },
+        {
+          "path": "tests_js/migration_task_receipts.test.mjs",
+          "sha256": "f1ff5ea9a7985924da19cb72b491408fd264320a2c1b85a8e82cfc6fc808f7db"
+        },
+        {
+          "path": "tests_js/migration_task_loader.test.mjs",
+          "sha256": "286542027d305eb40a7869fae433b1c01a09f89b37432db39ed3ad2a245214cd"
+        },
+        {
+          "path": "tests_js/migration_packages.test.mjs",
+          "sha256": "f6b570be7684f469cfaa67e0c29028530ac5b29b89ceb346f2dbb0cff82256f2"
+        },
+        {
+          "path": "tests_js/migration_task_handoffs.test.mjs",
+          "sha256": "5c428281eaf4807ab6d276d15320fd367ce50be27e091f8cb35384c1867a0865"
+        },
+        {
+          "path": "tests_js/migration_task_metadata.test.mjs",
+          "sha256": "7f504ef6da451bb2402a892ec7c2c65cc09b821b113da7366866312cd02babf0"
+        },
+        {
+          "path": "tests_js/migration_task_support.mjs",
+          "sha256": "e8f71bbcdad536b23cfb774b472d7e61e33b22c703620d64bab85f0eb72344a0"
+        },
+        {
+          "path": "tests_js/migration_task_handoff_support.mjs",
+          "sha256": "18e4246982906de4c60d078345d32042d7dfc29145347c281df8bb853facdb74"
+        },
+        {
+          "path": "tests_js/migration_task_lineage.test.mjs",
+          "sha256": "f4b60c7cab79dd194981879b8636a1aca36f696f42c56c51001e7f50343e7dd6"
+        },
+        {
+          "path": "tests_js/migration_task_replacements.test.mjs",
+          "sha256": "f265c3385c2fe3ac036689ec70147ed67cdb2d92933baad1045aa945179110ba"
+        },
+        {
+          "path": "tests_js/migration_task_lineage_lifecycle.test.mjs",
+          "sha256": "853d2b7da16c36e1977d5d46936ce200ad4a4a8a937ff15925bfe5657c48fbc2"
+        },
+        {
+          "path": "tests_js/migration_task_lineage_support.mjs",
+          "sha256": "17629d25f97d45812476a3d44810d4a10e8ca01326c5b8e44ddca9958bfeaafa"
+        },
+        {
+          "path": "tests_js/migration_task_lineage_git_support.mjs",
+          "sha256": "8abff6914a0473fed3fe506fd5fe85e1c495bf0cb0077219bf636434a6564dcc"
+        },
+        {
+          "path": "docs/migration/evidence/p07/implementation.md",
+          "sha256": "9566c0d99c90dade1f971b11d6ff3e9119e3a58e0d7dfe7f07b4a88e90209c16"
+        },
+        {
+          "path": "docs/migration/evidence/p07/test-design.md",
+          "sha256": "d5163350510a7b1bdf63d42923a3bf5a0150d9ff46837edacf720f97c77ec12a"
+        },
+        {
+          "path": "docs/migration/evidence/p07/implementation-audit.json",
+          "sha256": "23cd65ab5a038b3de3cd411899f3c8c23978f61a3e5269df923d4c0653751aad"
+        },
+        {
+          "path": "docs/migration/evidence/p07/P07.I.json",
+          "sha256": "1b63e91752c6fda38da85df5cd8291f83d2b5b1917324fae307af0cbe6239719"
+        },
+        {
+          "path": "docs/migration/evidence/p07/P07.V.json",
+          "sha256": "ff9a8c851c0138f41169297dc284d9a83ae00782752b456c29a18b5d9e2f6c3a"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P06.V",
+          "sha256": "ea5890fba9bde514332729504c1fc91ff11753d8d2270bb22ef70d5817fa91a7"
+        },
+        {
+          "id": "P07.R",
+          "sha256": "4ea5d6985488c97685b8130200d9e7662a89489d5c9ac3a94636dc815f7b1621"
+        }
+      ],
+      "cells": [
+        {
+          "id": "P07.migration_task_manifests",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_manifests.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 59.24629099999999,
+            "outputBytes": 1794,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-migration_task_manifests.tap",
+            "sha256": "564dcbf38065adada0a77adc00274fb972748ae46f0716e44f42b090acaffc5d"
+          }
+        },
+        {
+          "id": "P07.migration_task_receipts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_receipts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 64.43245900000005,
+            "outputBytes": 2632,
+            "tests": 10,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-migration_task_receipts.tap",
+            "sha256": "21d61df8d3ae251cd89cd337348d718b224824342a2e8223283264a0f2c637d5"
+          }
+        },
+        {
+          "id": "P07.migration_task_loader",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_loader.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 25085.963834,
+            "outputBytes": 2514,
+            "tests": 10,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-migration_task_loader.tap",
+            "sha256": "a9461462d42deafce4e396385188cecea222df9976e165929ca31eed329ed6a2"
+          }
+        },
+        {
+          "id": "P07.migration_packages",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_packages.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 53.814540999999736,
+            "outputBytes": 2262,
+            "tests": 10,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-migration_packages.tap",
+            "sha256": "c82e86d02a62ceedd3cbe45f5fea055e87b1adf2051a43189be979dcf6395511"
+          }
+        },
+        {
+          "id": "P07.migration_task_handoffs",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_handoffs.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 28077.223125000004,
+            "outputBytes": 1234,
+            "tests": 5,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-migration_task_handoffs.tap",
+            "sha256": "de98d3c017aa3b1cae262ff55b738784033d8053691a7679940a43cbceab7b58"
+          }
+        },
+        {
+          "id": "P07.migration_task_metadata",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_metadata.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 54179.809375,
+            "outputBytes": 1088,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-migration_task_metadata.tap",
+            "sha256": "1524160dbda7b284931ea61522b2f183c3e3ea15ecaffbfd0f80f5b421c8269e"
+          }
+        },
+        {
+          "id": "P07.lineage",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_lineage.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 61.293665999997756,
+            "outputBytes": 1194,
+            "tests": 5,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-lineage.tap",
+            "sha256": "472ec9895017f4a26c7d83e97c71afe35677077a39a30f6993f5f9120b5495fe"
+          }
+        },
+        {
+          "id": "P07.replacements",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_replacements.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 59128.81725000001,
+            "outputBytes": 1217,
+            "tests": 5,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-replacements.tap",
+            "sha256": "b0b8f1c20e92d4eac71e05a89cff5588a90fbcdafca5f03e87f910d513f6394e"
+          }
+        },
+        {
+          "id": "P07.lineage-lifecycle",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_lineage_lifecycle.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 88797.594583,
+            "outputBytes": 964,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-lineage-lifecycle.tap",
+            "sha256": "5c6b8fcdc71a0b4387d44c0a7e1d430c74aee5a5362ed27fc69c5dfac7fc2fe2"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "51e3b1a57c52ca40a1a9548eb60749688cdc9bb3",
+        "subjectTree": "a00c65d0e65167802022562ca3eb04bc1a9c2b99",
+        "manifestSha256": "1b63e91752c6fda38da85df5cd8291f83d2b5b1917324fae307af0cbe6239719",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P07.V",
+      "manifestSha256": "ff9a8c851c0138f41169297dc284d9a83ae00782752b456c29a18b5d9e2f6c3a",
+      "subject": {
+        "sha": "51e3b1a57c52ca40a1a9548eb60749688cdc9bb3",
+        "tree": "a00c65d0e65167802022562ca3eb04bc1a9c2b99"
+      },
+      "executionBase": "f681036fb366c3d1598165b259cea56e3f549803",
+      "evidenceCommit": "3f7edd2b9184a7af2658cb4aa4a7d944cc1ad5c3",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_task_handoff_support.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/migration_task_lineage.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/migration_task_lineage_git_support.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/migration_task_lineage_lifecycle.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/migration_task_lineage_support.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/migration_task_replacements.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/check.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/load-task-evidence.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/migration/load-task-lineage.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/migration/task-lineage.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/task-manifests.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/migration/task-metadata.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/task-receipts.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/migration/task-lineage.mjs",
+          "sha256": "dc54b81df4df29f9c95d2e2e511f03a24aa990d8c589a307306a31d3db69a9cd"
+        },
+        {
+          "path": "tools/migration/load-task-lineage.mjs",
+          "sha256": "ac1e47c83dba8ab7f42f5b46456c386a1ae117314cebc21ad5ca496bf16100c8"
+        },
+        {
+          "path": "tools/migration/load-task-evidence.mjs",
+          "sha256": "c5f97079521453dbaf20b7dc3ec4e132a6cf4dc85a776e165a7d3a6c992d4bd7"
+        },
+        {
+          "path": "tools/migration/task-manifests.mjs",
+          "sha256": "df99a6f882c342d0f9f69720c310754930a5b5a3ae0bc6d1cee9452805c7914a"
+        },
+        {
+          "path": "tools/migration/task-receipts.mjs",
+          "sha256": "386828ad9fd65f3d9c317a17a171dd320df386ee1e7b455d18b543e347b59e2f"
+        },
+        {
+          "path": "tools/migration/task-handoffs.mjs",
+          "sha256": "53f0b202d20c8e0ee7e4e0dbf5d0c2a4e5dbde3705be6d7d3bc4a1fc5c746220"
+        },
+        {
+          "path": "tools/migration/check.mjs",
+          "sha256": "0ec8dbf4a0562b49c18e0af06ea9b1ec34e130691ff80ce405eebd5463aa374d"
+        },
+        {
+          "path": "tools/migration/task-metadata.mjs",
+          "sha256": "fe026cace29806913dbc8b61ea3012b6dce4b421cf28592152c35a68a2c633cd"
+        },
+        {
+          "path": "tests_js/migration_task_manifests.test.mjs",
+          "sha256": "616a108615a2de3f48a2d9272f10907ab968183593fca0ead2555518a85da087"
+        },
+        {
+          "path": "tests_js/migration_task_receipts.test.mjs",
+          "sha256": "f1ff5ea9a7985924da19cb72b491408fd264320a2c1b85a8e82cfc6fc808f7db"
+        },
+        {
+          "path": "tests_js/migration_task_loader.test.mjs",
+          "sha256": "286542027d305eb40a7869fae433b1c01a09f89b37432db39ed3ad2a245214cd"
+        },
+        {
+          "path": "tests_js/migration_packages.test.mjs",
+          "sha256": "f6b570be7684f469cfaa67e0c29028530ac5b29b89ceb346f2dbb0cff82256f2"
+        },
+        {
+          "path": "tests_js/migration_task_handoffs.test.mjs",
+          "sha256": "5c428281eaf4807ab6d276d15320fd367ce50be27e091f8cb35384c1867a0865"
+        },
+        {
+          "path": "tests_js/migration_task_metadata.test.mjs",
+          "sha256": "7f504ef6da451bb2402a892ec7c2c65cc09b821b113da7366866312cd02babf0"
+        },
+        {
+          "path": "tests_js/migration_task_support.mjs",
+          "sha256": "e8f71bbcdad536b23cfb774b472d7e61e33b22c703620d64bab85f0eb72344a0"
+        },
+        {
+          "path": "tests_js/migration_task_handoff_support.mjs",
+          "sha256": "18e4246982906de4c60d078345d32042d7dfc29145347c281df8bb853facdb74"
+        },
+        {
+          "path": "tests_js/migration_task_lineage.test.mjs",
+          "sha256": "f4b60c7cab79dd194981879b8636a1aca36f696f42c56c51001e7f50343e7dd6"
+        },
+        {
+          "path": "tests_js/migration_task_replacements.test.mjs",
+          "sha256": "f265c3385c2fe3ac036689ec70147ed67cdb2d92933baad1045aa945179110ba"
+        },
+        {
+          "path": "tests_js/migration_task_lineage_lifecycle.test.mjs",
+          "sha256": "853d2b7da16c36e1977d5d46936ce200ad4a4a8a937ff15925bfe5657c48fbc2"
+        },
+        {
+          "path": "tests_js/migration_task_lineage_support.mjs",
+          "sha256": "17629d25f97d45812476a3d44810d4a10e8ca01326c5b8e44ddca9958bfeaafa"
+        },
+        {
+          "path": "tests_js/migration_task_lineage_git_support.mjs",
+          "sha256": "8abff6914a0473fed3fe506fd5fe85e1c495bf0cb0077219bf636434a6564dcc"
+        },
+        {
+          "path": "docs/migration/evidence/p07/implementation.md",
+          "sha256": "9566c0d99c90dade1f971b11d6ff3e9119e3a58e0d7dfe7f07b4a88e90209c16"
+        },
+        {
+          "path": "docs/migration/evidence/p07/test-design.md",
+          "sha256": "d5163350510a7b1bdf63d42923a3bf5a0150d9ff46837edacf720f97c77ec12a"
+        },
+        {
+          "path": "docs/migration/evidence/p07/implementation-audit.json",
+          "sha256": "23cd65ab5a038b3de3cd411899f3c8c23978f61a3e5269df923d4c0653751aad"
+        },
+        {
+          "path": "docs/migration/evidence/p07/P07.I.json",
+          "sha256": "1b63e91752c6fda38da85df5cd8291f83d2b5b1917324fae307af0cbe6239719"
+        },
+        {
+          "path": "docs/migration/evidence/p07/P07.V.json",
+          "sha256": "ff9a8c851c0138f41169297dc284d9a83ae00782752b456c29a18b5d9e2f6c3a"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P07.I",
+          "sha256": "3d8b28c9a5ed093179c5e2aec4ef88f53781e2d3f471fde217f9de6e3cae9bf4"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        }
+      ],
+      "cells": [
+        {
+          "id": "P07.migration_task_manifests",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_manifests.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 59.24629099999999,
+            "outputBytes": 1794,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-migration_task_manifests.tap",
+            "sha256": "564dcbf38065adada0a77adc00274fb972748ae46f0716e44f42b090acaffc5d"
+          }
+        },
+        {
+          "id": "P07.migration_task_receipts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_receipts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 64.43245900000005,
+            "outputBytes": 2632,
+            "tests": 10,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-migration_task_receipts.tap",
+            "sha256": "21d61df8d3ae251cd89cd337348d718b224824342a2e8223283264a0f2c637d5"
+          }
+        },
+        {
+          "id": "P07.migration_task_loader",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_loader.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 25085.963834,
+            "outputBytes": 2514,
+            "tests": 10,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-migration_task_loader.tap",
+            "sha256": "a9461462d42deafce4e396385188cecea222df9976e165929ca31eed329ed6a2"
+          }
+        },
+        {
+          "id": "P07.migration_packages",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_packages.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 53.814540999999736,
+            "outputBytes": 2262,
+            "tests": 10,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-migration_packages.tap",
+            "sha256": "c82e86d02a62ceedd3cbe45f5fea055e87b1adf2051a43189be979dcf6395511"
+          }
+        },
+        {
+          "id": "P07.migration_task_handoffs",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_handoffs.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 28077.223125000004,
+            "outputBytes": 1234,
+            "tests": 5,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-migration_task_handoffs.tap",
+            "sha256": "de98d3c017aa3b1cae262ff55b738784033d8053691a7679940a43cbceab7b58"
+          }
+        },
+        {
+          "id": "P07.migration_task_metadata",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_metadata.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 54179.809375,
+            "outputBytes": 1088,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-migration_task_metadata.tap",
+            "sha256": "1524160dbda7b284931ea61522b2f183c3e3ea15ecaffbfd0f80f5b421c8269e"
+          }
+        },
+        {
+          "id": "P07.lineage",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_lineage.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 61.293665999997756,
+            "outputBytes": 1194,
+            "tests": 5,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-lineage.tap",
+            "sha256": "472ec9895017f4a26c7d83e97c71afe35677077a39a30f6993f5f9120b5495fe"
+          }
+        },
+        {
+          "id": "P07.replacements",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_replacements.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 59128.81725000001,
+            "outputBytes": 1217,
+            "tests": 5,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-replacements.tap",
+            "sha256": "b0b8f1c20e92d4eac71e05a89cff5588a90fbcdafca5f03e87f910d513f6394e"
+          }
+        },
+        {
+          "id": "P07.lineage-lifecycle",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_lineage_lifecycle.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 88797.594583,
+            "outputBytes": 964,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-lineage-lifecycle.tap",
+            "sha256": "5c6b8fcdc71a0b4387d44c0a7e1d430c74aee5a5362ed27fc69c5dfac7fc2fe2"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "51e3b1a57c52ca40a1a9548eb60749688cdc9bb3",
+        "subjectTree": "a00c65d0e65167802022562ca3eb04bc1a9c2b99",
+        "manifestSha256": "ff9a8c851c0138f41169297dc284d9a83ae00782752b456c29a18b5d9e2f6c3a",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P03.R",
+      "manifestSha256": "3cddb7b1b87a62485f1207432cf37402daf89043c3f90d4afa863e252bb333ae",
+      "subject": {
+        "sha": "ab659d077374174f5b1c8ee2c40c9bbd9006aeda",
+        "tree": "89f7a100728705e28d3ce0a40f4336c6d632aecd"
+      },
+      "executionBase": "8ef09a75b51a96084c91bb4a95112caf72a8be7b",
+      "evidenceCommit": "e7d6ea9116d0beebf021dd98361b060bb9bbf182",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/local_checks_git.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/local-checks/git.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "config/test-matrix.json",
+          "sha256": "49fe9fdca6ecdcea7af2be2d178dd6223e9c3d421c288cc79964b272dad08bdd"
+        },
+        {
+          "path": "tools/local-checks/git.mjs",
+          "sha256": "d48fc04f3e7fe434f9fd6a0efe00306b0d5947678d4023aba8d2c13913cc2c32"
+        },
+        {
+          "path": "tools/local-checks/policy.mjs",
+          "sha256": "c819357e48a5f92f59329b3737189d773b4b348cca23718845c00576ef54c88b"
+        },
+        {
+          "path": "tools/local-checks/run.mjs",
+          "sha256": "06d223f41e9ce7da8562f9e9e9db6c1f554d25d28a8227999868f39654ae6c36"
+        },
+        {
+          "path": "tools/test-runner/matrix.mjs",
+          "sha256": "eb88ff392a5fbd0de5b27042d83471b91f2324a29e5912211fbd9e07b6279727"
+        },
+        {
+          "path": "tools/test-runner/patterns.mjs",
+          "sha256": "6eb05de69ce7e7531d9a8cc90f628180b05891bc2eaa7f9fa711570dbb730ac2"
+        },
+        {
+          "path": "tools/test-runner/git.mjs",
+          "sha256": "78097d57073dc0ab2057f783e467b9af2720738e8c9a8b73e96caa919f6f07bf"
+        },
+        {
+          "path": "tests_js/local_checks_git.test.mjs",
+          "sha256": "e75701d90919f77104e4df01d1685378e15f83f7c5a74111741610fbb1a156ab"
+        },
+        {
+          "path": "tests_js/local_checks_policy.test.mjs",
+          "sha256": "1c3a478a1b5e2fd4d85a05d77348faaaf375f03d0aa32f38b707bb25c3afbc20"
+        },
+        {
+          "path": "tests_js/test-runner-selection.test.mjs",
+          "sha256": "543ca75020eca436b8075c640b7b970269daf447695a5b6f90d4837aa6de3c55"
+        },
+        {
+          "path": "docs/migration/evidence/p03/reference.md",
+          "sha256": "8863f9405d139f65658882d22cc3ceee69e98ebda4b3b038a083a0be61c9bd51"
+        },
+        {
+          "path": "docs/migration/evidence/p03/reference-audit.json",
+          "sha256": "4b01bab476477f8012700c9de2ad4445e8030a0b09fa0079b2cff979992dceb4"
+        },
+        {
+          "path": "docs/migration/evidence/p03/P03.R.json",
+          "sha256": "b38e62dacebec506611b0eb97aeda6853d4557009b1e004ac21eab7932596876"
+        },
+        {
+          "path": "docs/migration/evidence/p03/reference-audit-v2.json",
+          "sha256": "0ab5d6ef287a086b37ac360d7896bcf56f8ad6c20c341759f12f2af5c80e111a"
+        },
+        {
+          "path": "docs/migration/evidence/p03/P03.R-v2.json",
+          "sha256": "3cddb7b1b87a62485f1207432cf37402daf89043c3f90d4afa863e252bb333ae"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        }
+      ],
+      "cells": [
+        {
+          "id": "P03.R.local_checks_git",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/local_checks_git.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 5354.7285,
+            "outputBytes": 2797,
+            "tests": 12,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03/logs/P03-R-local_checks_git.tap",
+            "sha256": "2fcd98aa265d5c9e0ed0ed7b364a6f33224300dbce7baa2420e91ff641fac7a2"
+          }
+        },
+        {
+          "id": "P03.R.local_checks_policy",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/local_checks_policy.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 76.09670800000004,
+            "outputBytes": 1921,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03/logs/P03-R-local_checks_policy.tap",
+            "sha256": "d01c1ad2afb45e9afa460b8cf7d4916699b9a30e7c6804c923f07181b0fa657e"
+          }
+        },
+        {
+          "id": "P03.R.test-runner-selection",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/test-runner-selection.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 528.0820000000003,
+            "outputBytes": 1535,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03/logs/P03-R-test-runner-selection.tap",
+            "sha256": "ab46e0ff3865c7bc9402f465ce1ea95a0c5e4d88e8fe0711592a37c6d246ef72"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "ab659d077374174f5b1c8ee2c40c9bbd9006aeda",
+        "subjectTree": "89f7a100728705e28d3ce0a40f4336c6d632aecd",
+        "manifestSha256": "3cddb7b1b87a62485f1207432cf37402daf89043c3f90d4afa863e252bb333ae",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }

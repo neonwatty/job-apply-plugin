@@ -246,3 +246,46 @@ export function noAcceptance(result) {
   assert.deepEqual(result.taskEvidence.acceptedPackages, []);
   assert.deepEqual(result.taskEvidence.acceptedTasks, []);
 }
+
+// Exercise both loaders in one real history: a completed named-path handoff and
+// a later lineage refinement of a different, never-frozen consumer.
+export async function assertHandoffLineageCoexistence(t) {
+  const repo = await acceptedProduct(t);
+  const next = await repo.freeze('B'); await repo.authorize(next); await repo.activate(next);
+  await repo.implement(next); const accepted = await repo.complete(next);
+  assert.deepEqual(accepted.errors, []);
+  const io = await createEvidenceIO(repo.root);
+  const beforeReceipts = canonical(repo.receipts), beforeHandoffs = canonical(repo.handoffs);
+  const lineage = { schemaVersion: 1, preparations: [], transitions: [] };
+  const prefix = 'docs/migration/evidence/handoff-coexistence';
+  const dagPath = `${prefix}/next-dag.json`, transitionPath = `${prefix}/transition.json`;
+  const originalDag = JSON.parse(await readFile(join(repo.root, repo.catalog.dag.path), 'utf8'));
+  const nextDag = clone(originalDag), consumer = nextDag.find(item => item.id === 'C.I');
+  assert.equal(repo.catalog.assignments.some(item => item.id === consumer.id), false);
+  const beforeDependencies = [...consumer.dependencies]; consumer.dependencies.push('E.V');
+  async function prepare(id, path, value) {
+    await repo.write(path, value);
+    lineage.preparations.push({ id, author: 'root', reviewer: 'hooks_audit', reason: 'Keep completed P06 handoff while refining an unrelated pending consumer',
+      files: [{ path, sha256: digest(await readFile(join(repo.root, path))) }] });
+    await repo.write('config/migration/task-lineage.json', lineage); await repo.writeLock();
+    const revision = repo.commit(); assert.deepEqual((await repo.check()).errors, []); return revision;
+  }
+  const planning = await prepare('coexistence-dag', dagPath, nextDag);
+  const transition = { schemaVersion: 1, id: 'coexistence-transition', previousDag: repo.catalog.dag,
+    nextDag: { path: dagPath, sha256: digest(io.fileAt(planning, dagPath)), revision: planning },
+    retirements: [], additions: [], refinements: [{ id: consumer.id, beforeDependencies, afterDependencies: consumer.dependencies }],
+    packageVersions: [], witnessMappings: [], author: 'root', reviewer: 'hooks_audit', decision: 'approved',
+    reason: 'Add a prerequisite only to an unfrozen consumer, preserving all handoff-bound tasks' };
+  const frozen = await prepare('coexistence-contract', transitionPath, transition);
+  lineage.transitions.push({ path: transitionPath, sha256: digest(io.fileAt(frozen, transitionPath)), revision: frozen });
+  await repo.write('config/migration/task-lineage.json', lineage); await repo.writeLock(); repo.commit();
+  const result = await repo.check(); assert.deepEqual(result.errors, []);
+  assert.ok(result.taskEvidence.acceptedTasks.includes('A.V'));
+  assert.ok(result.taskEvidence.acceptedTasks.includes('B.V'));
+  assert.equal(canonical(repo.receipts), beforeReceipts); assert.equal(canonical(repo.handoffs), beforeHandoffs);
+  assert.deepEqual(JSON.parse(await readFile(join(repo.root, 'config/migration/task-receipts.json'), 'utf8')).receipts, repo.receipts);
+  for (const handoff of repo.handoffs) {
+    assert.equal(digest(await readFile(join(repo.root, handoff.path))), handoff.sha256);
+    assert.equal(digest(io.fileAt(handoff.revision, handoff.path)), handoff.sha256);
+  }
+}

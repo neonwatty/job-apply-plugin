@@ -220,7 +220,7 @@ export async function checkInventory(root, options = {}) {
   errors.push(...validateReviewLock(lock, hashes));
   return { schemaVersion: 1, status: errors.length ? 'failed' : 'inventory-consistent',
     acceptance: 'open', taskEvidence: { currentAcceptance: taskEvidence.currentAcceptance,
-      acceptedTasks: [...taskEvidence.acceptedTasks].sort(), acceptedPackages: [...taskEvidence.acceptedPackages].sort() }, nodes: nodesFile.nodes.length, sources: sources.length,
+      acceptedTasks: [...taskEvidence.acceptedTasks].sort(), acceptedPackages: [...taskEvidence.acceptedPackages].sort(), retiredTasks: [...(taskEvidence.retiredTasks ?? [])].sort() }, nodes: nodesFile.nodes.length, sources: sources.length,
     surfaces: surfaces.length, requirements: requirements.length, packages: packages.length,
     unmappedRequirementCells: missingRequirementCoverage(surfaces.map((item) => item.id), requirements).length, errors };
 }

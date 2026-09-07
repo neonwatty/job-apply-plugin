@@ -220,3 +220,57 @@ test("dependency-linked staged snapshots remain clean without hiding unrelated f
   }, { dependencies: true });
   assert.equal(command(root, ["status", "--porcelain"]), before);
 });
+
+test("staged merge snapshots preserve two-parent and octopus ancestry without changing owner state", async (t) => {
+  for (const branchCount of [1, 2]) {
+    const root = await fixture(t);
+    const base = command(root, ["rev-parse", "HEAD"]).trim();
+    const heads = [];
+    for (let index = 0; index < branchCount; index++) {
+      command(root, ["checkout", "-b", `side-${index}`, base]);
+      await fs.writeFile(path.join(root, `side-${index}.txt`), `side ${index}\n`);
+      command(root, ["add", "."]);
+      command(root, ["commit", "-m", `side ${index}`]);
+      heads.push(command(root, ["rev-parse", "HEAD"]).trim());
+    }
+    command(root, ["checkout", "main"]);
+    const head = await commitValue(root, "main branch");
+    command(root, ["merge", "--no-ff", "--no-commit", ...heads]);
+    const mergePath = path.resolve(root, command(root, ["rev-parse", "--git-path", "MERGE_HEAD"]).trim());
+    const mergeBytes = await fs.readFile(mergePath);
+    const indexPath = path.resolve(root, command(root, ["rev-parse", "--git-path", "index"]).trim());
+    const beforeStatus = command(root, ["status", "--porcelain=v1", "--untracked-files=all"]);
+    const beforeIndex = await fs.readFile(indexPath);
+    const snapshot = indexSnapshot(root);
+    assert.equal(snapshot.base, head);
+    assert.deepEqual(command(root, ["show", "-s", "--format=%P", snapshot.commit]).trim().split(" "), [head, ...heads]);
+    for (const parent of [head, ...heads]) command(root, ["merge-base", "--is-ancestor", parent, snapshot.commit]);
+    assert.equal(command(root, ["diff", "--cached", "--name-only", snapshot.commit]), "");
+    for (let index = 0; index < branchCount; index++) {
+      assert.equal(command(root, ["show", `${snapshot.commit}:side-${index}.txt`]), `side ${index}\n`);
+    }
+    assert.equal(command(root, ["rev-parse", "HEAD"]).trim(), head);
+    assert.equal(command(root, ["status", "--porcelain=v1", "--untracked-files=all"]), beforeStatus);
+    assert.deepEqual(await fs.readFile(indexPath), beforeIndex);
+    assert.deepEqual(await fs.readFile(mergePath), mergeBytes);
+  }
+});
+
+test("merge snapshot metadata rejects malformed or noncommit parents and deduplicates valid parents", async (t) => {
+  const root = await fixture(t);
+  const head = command(root, ["rev-parse", "HEAD"]).trim();
+  const tree = command(root, ["rev-parse", "HEAD^{tree}"]).trim();
+  const mergePath = path.resolve(root, command(root, ["rev-parse", "--git-path", "MERGE_HEAD"]).trim());
+  const index = await fs.readFile(path.join(root, ".git", "index"));
+  for (const invalid of ["", "\n", "HEAD\n", `${head}\n\n`, `${head} \n`, `${tree}\n`, `${ZERO}\n`]) {
+    await fs.writeFile(mergePath, invalid);
+    assert.throws(() => indexSnapshot(root), /MERGE_HEAD/);
+    assert.equal(await fs.readFile(mergePath, "utf8"), invalid);
+    assert.deepEqual(await fs.readFile(path.join(root, ".git", "index")), index);
+    assert.equal(command(root, ["rev-parse", "HEAD"]).trim(), head);
+  }
+  await fs.writeFile(mergePath, `${head}\n${head}\n`);
+  const snapshot = indexSnapshot(root);
+  assert.equal(command(root, ["show", "-s", "--format=%P", snapshot.commit]).trim(), head);
+  assert.equal(snapshot.base, head);
+});
