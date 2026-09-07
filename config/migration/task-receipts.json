@@ -5820,6 +5820,800 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P03.retry2.I",
+      "manifestSha256": "3a10d3f0de95a6b0e1ccceaa808a8f522426674d23c7e653080e870d3033c1b1",
+      "subject": {
+        "sha": "10ef3e6fcf2f729394ece6eab40ca486d1ead10f",
+        "tree": "23b772df61011b8cf8ff3b98ce5b7a1561da08eb"
+      },
+      "executionBase": "cfb7bbcf4eb0272d83e0a940293ed401f0d9623c",
+      "evidenceCommit": "42200c769a4a952f63134eef5f349f72c3965902",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/test-matrix.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/local_checks_graph_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/local_checks_policy.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/local_checks_run.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/test-runner-selection.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/local-checks/consumer-graph.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/local-checks/focused-closure.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/local-checks/focused-contracts.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/local-checks/graph-syntax.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/local-checks/policy.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/local-checks/run.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/local-checks/policy.mjs",
+          "sha256": "98f929d5a3bdd2a0593b933a584ecfce05bbb8ba17b2281b4467b7c91c020e38"
+        },
+        {
+          "path": "tools/local-checks/run.mjs",
+          "sha256": "3d109666337f7f650f903fdd6f455d86f2b84c6b286e605fe845b6c0fbf8cfcd"
+        },
+        {
+          "path": "tools/local-checks/consumer-graph.mjs",
+          "sha256": "3a90057166e8ce16170cb5552876c1ca636428ac6bf8404df645424c72ab44ca"
+        },
+        {
+          "path": "tools/local-checks/graph-syntax.mjs",
+          "sha256": "a16da353c3ec030521765f68d4510d31231bcba0b68b01260b64b0f09b18b305"
+        },
+        {
+          "path": "tools/local-checks/focused-contracts.mjs",
+          "sha256": "c063a91a57808ff046aaaf1f690bed5238544d7b5b0a8851b160812b27fa10ce"
+        },
+        {
+          "path": "tools/local-checks/focused-closure.mjs",
+          "sha256": "42bbbb7be63d9104b454d0c381c77ac0858592fa7aa5494977a4f4725c5d846a"
+        },
+        {
+          "path": "config/test-matrix.json",
+          "sha256": "b60ca8f373fe3468888db5f774d45010d0540612d1236101023795ad4c428069"
+        },
+        {
+          "path": "tests_js/local_checks_policy.test.mjs",
+          "sha256": "edc832e87e436f4b5e4c636d9bcfb6a184170dbcc7f6bc147f8d009f6965f188"
+        },
+        {
+          "path": "tests_js/local_checks_run.test.mjs",
+          "sha256": "d0783f710b180efb9cb139c7c8b6faf8a53914d06f2c0ab10b057777bef610d8"
+        },
+        {
+          "path": "tests_js/test-runner-selection.test.mjs",
+          "sha256": "648aa5c18777f407921fa144c9cde7e6dc26a149576c64d1da21b9827d2590b5"
+        },
+        {
+          "path": "tests_js/local_checks_graph_support.mjs",
+          "sha256": "1f7ba40d5d50f9441afc64a50d2299971abd291b5f235de3d4f01fd670229897"
+        },
+        {
+          "path": "docs/migration/evidence/p03/implementation.md",
+          "sha256": "51ffaa6df468d045915724e9135ded3f440d6a982e1e2798f7c6243b91a11ad1"
+        },
+        {
+          "path": "docs/migration/evidence/p03/implementation-audit.json",
+          "sha256": "df318ccba9e54f979afada169432bbf3ac652b9905140a198b8e25ff8511f22d"
+        },
+        {
+          "path": "docs/migration/evidence/p03/P03.I.json",
+          "sha256": "caed0a91e588dea40ad00f93f162b1c4100c1177322345f39f47d7e13403db15"
+        },
+        {
+          "path": "docs/migration/evidence/p03/P03.V.json",
+          "sha256": "81cb53101934d2c52ba57706b4869471e5e2fee105ba50c225d64e100bfaa55c"
+        },
+        {
+          "path": "docs/migration/evidence/p03/reference-consumers.json",
+          "sha256": "3d1994a02a23447fcfc8456225f59d87adb2908a9442bc3b0f8783a591bd85b6"
+        },
+        {
+          "path": "docs/migration/evidence/p03/implementation-v2.md",
+          "sha256": "55e340ff418e21df5e71f6dc365e448b696b95bf03576d1ba07356220e793c91"
+        },
+        {
+          "path": "docs/migration/evidence/p03/implementation-audit-v2.json",
+          "sha256": "ae8b01900f48d799f0f89de95afbd2af0c9b42cbf0b778e09cc339f8ac164f56"
+        },
+        {
+          "path": "docs/migration/evidence/p03/P03.I-v2.json",
+          "sha256": "bd37962d056465cdc6a1dcc2203886c1a0088c757181ba8fff0667f2ebb96725"
+        },
+        {
+          "path": "docs/migration/evidence/p03/P03.V-v2.json",
+          "sha256": "b9f527cbb183ccfdc771c9699ef1c480d1f895b5aaee0ee386db6c2695773213"
+        },
+        {
+          "path": "tools/test-runner/process.mjs",
+          "sha256": "b9eea8bec5e3bb21a4bcb820c83414b798b7f25c336b1b639c2f179ca0c13d17"
+        },
+        {
+          "path": "tests_js/test-runner-execution.test.mjs",
+          "sha256": "7728c34652ca2d88464994e1c51317587e5e2d152d0fd4765599721c1e47df43"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/implementation.md",
+          "sha256": "9cbdea9c7f02773fcbedb6394d5eae8a77a27076777fe23c6b452121f7f910ea"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/reference-consumers.json",
+          "sha256": "55a5cb507e76a059141c6a231213d947b330f78be1139d902c6598d678dce1c7"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/implementation-audit.json",
+          "sha256": "589391febf08ed00130c9b217fdac22894873bd5cdd1344fd874ec250ccc9d4a"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/P03.retry1.I.json",
+          "sha256": "9461961a6c79938ab9b407ac7dbcc943782723e963040bfa6e7a8d9574173473"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/P03.retry1.V.json",
+          "sha256": "f80d506ae9d6a6d0a265501a20303e7822637bdb779a42fc503564179580ba89"
+        },
+        {
+          "path": "tools/local-checks/process.mjs",
+          "sha256": "5a9bcd74638a9c2b89e69ae2730710a2ddac02906159b3ae8d012386e4f257db"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/implementation.md",
+          "sha256": "1a54976f545b3d8dbfbe91b8fb63c93533c67f8a0d8984a9fbc9139f50143cc6"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/reference-consumers.json",
+          "sha256": "4a598aebe533d64e55f32633147fdcc5d2aae556043ee53329a689dbb911dcae"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/implementation-audit.json",
+          "sha256": "ceba87fbbaf1a28240386c16cafedce49c475aa89040ba8712303bed41025537"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/P03.retry1.I.json",
+          "sha256": "5f6d57971bfaebe16add433a54772060efa5a2eb760188ce2d82b4c0d772a7c9"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/P03.retry1.V.json",
+          "sha256": "0baab53caf813cbb564d3774cd6329642937b4429d53cf9fcbaf2099ad2092f5"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry2/implementation.md",
+          "sha256": "82efe576ba93852ef8dbd4e24684a27696f7fc982c46d417db0ad2290c363e73"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry2/reference-consumers.json",
+          "sha256": "534703d4ffbf5d5d25490c7ace99e68ebfc3bf124efaf1a344f523cb9e7d4361"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry2/implementation-audit.json",
+          "sha256": "a104365488bc7f834d1b2315b8ad2b0d97c65b4e396c2d0054d524cb6d444f9f"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry2/P03.retry2.I.json",
+          "sha256": "3a10d3f0de95a6b0e1ccceaa808a8f522426674d23c7e653080e870d3033c1b1"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry2/P03.retry2.V.json",
+          "sha256": "c2a2a56eb83485ff4d5b7d0057af315aa57318aa794900c1bf0fbf3196fd5aec"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        },
+        {
+          "id": "P03.R",
+          "sha256": "a186b0e1cc261c3956f4a2d46c1cc024c1f15240c97a2e78d5837ede4c3273cf"
+        },
+        {
+          "id": "P03.evidence.R",
+          "sha256": "3ffcf4c4952c61a72e8bfacd3cfa2e3e443aab127857251d7cc16464d7ecfaf8"
+        },
+        {
+          "id": "P08.V",
+          "sha256": "693d4722a8ca9ed6f324f79b3ad7c7be3528ecc98a567f9b98d65e46c0676a4e"
+        },
+        {
+          "id": "P09.V",
+          "sha256": "39193557ddb39005a4bcda80f102adfb40b98886f4d955e8d7770d1c4a665283"
+        },
+        {
+          "id": "S08.V",
+          "sha256": "586aa183ed48cf73fb79a363e3c1aeef8e07af2f796b0afa2f030a56210bca99"
+        }
+      ],
+      "cells": [
+        {
+          "id": "p03.implementation.v2.local_checks_git",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/local_checks_git.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 1564.143291,
+            "outputBytes": 2787,
+            "tests": 12,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03/retry2/logs/p03.implementation.v2.local_checks_git.tap",
+            "sha256": "d45010b7df3e5d3a945c400fef30594042abecf5f65f82d99b64e235d272b3e2"
+          }
+        },
+        {
+          "id": "p03.implementation.v2.local_checks_policy",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/local_checks_policy.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 621.0370409999998,
+            "outputBytes": 3346,
+            "tests": 14,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03/retry2/logs/p03.implementation.v2.local_checks_policy.tap",
+            "sha256": "850d27c2ec684b0dc37c832a2faf98b3afb09adc7080085a59842b5d2b9e14f9"
+          }
+        },
+        {
+          "id": "p03.implementation.v2.local_checks_run",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/local_checks_run.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 6150.217917000001,
+            "outputBytes": 33157,
+            "tests": 6,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03/retry2/logs/p03.implementation.v2.local_checks_run.tap",
+            "sha256": "259156d82d17ee46ae617d485eedf3e2d3896c49c25273b07ec3a47330d61194"
+          }
+        },
+        {
+          "id": "p03.implementation.v2.test-runner-selection",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/test-runner-selection.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 4642.559375000001,
+            "outputBytes": 2430,
+            "tests": 11,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03/retry2/logs/p03.implementation.v2.test-runner-selection.tap",
+            "sha256": "c4bc76772cd7dc2bc49479fe81f3a8e244095155f0ed3367511b0e7b2223b633"
+          }
+        },
+        {
+          "id": "p03.retry1.reporter-prefix",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/test-runner-execution.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 5178.945042000001,
+            "outputBytes": 1978,
+            "tests": 9,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03/retry2/logs/p03.retry1.reporter-prefix.tap",
+            "sha256": "4b703917efd46dcf2709a319c4b780837dd3e9364dba7d89c2ff540f4d36a116"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "10ef3e6fcf2f729394ece6eab40ca486d1ead10f",
+        "subjectTree": "23b772df61011b8cf8ff3b98ce5b7a1561da08eb",
+        "manifestSha256": "3a10d3f0de95a6b0e1ccceaa808a8f522426674d23c7e653080e870d3033c1b1",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P03.retry2.V",
+      "manifestSha256": "c2a2a56eb83485ff4d5b7d0057af315aa57318aa794900c1bf0fbf3196fd5aec",
+      "subject": {
+        "sha": "10ef3e6fcf2f729394ece6eab40ca486d1ead10f",
+        "tree": "23b772df61011b8cf8ff3b98ce5b7a1561da08eb"
+      },
+      "executionBase": "cfb7bbcf4eb0272d83e0a940293ed401f0d9623c",
+      "evidenceCommit": "42200c769a4a952f63134eef5f349f72c3965902",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/test-matrix.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/local_checks_graph_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/local_checks_policy.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/local_checks_run.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/test-runner-selection.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/local-checks/consumer-graph.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/local-checks/focused-closure.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/local-checks/focused-contracts.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/local-checks/graph-syntax.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/local-checks/policy.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/local-checks/run.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/local-checks/policy.mjs",
+          "sha256": "98f929d5a3bdd2a0593b933a584ecfce05bbb8ba17b2281b4467b7c91c020e38"
+        },
+        {
+          "path": "tools/local-checks/run.mjs",
+          "sha256": "3d109666337f7f650f903fdd6f455d86f2b84c6b286e605fe845b6c0fbf8cfcd"
+        },
+        {
+          "path": "tools/local-checks/consumer-graph.mjs",
+          "sha256": "3a90057166e8ce16170cb5552876c1ca636428ac6bf8404df645424c72ab44ca"
+        },
+        {
+          "path": "tools/local-checks/graph-syntax.mjs",
+          "sha256": "a16da353c3ec030521765f68d4510d31231bcba0b68b01260b64b0f09b18b305"
+        },
+        {
+          "path": "tools/local-checks/focused-contracts.mjs",
+          "sha256": "c063a91a57808ff046aaaf1f690bed5238544d7b5b0a8851b160812b27fa10ce"
+        },
+        {
+          "path": "tools/local-checks/focused-closure.mjs",
+          "sha256": "42bbbb7be63d9104b454d0c381c77ac0858592fa7aa5494977a4f4725c5d846a"
+        },
+        {
+          "path": "config/test-matrix.json",
+          "sha256": "b60ca8f373fe3468888db5f774d45010d0540612d1236101023795ad4c428069"
+        },
+        {
+          "path": "tests_js/local_checks_policy.test.mjs",
+          "sha256": "edc832e87e436f4b5e4c636d9bcfb6a184170dbcc7f6bc147f8d009f6965f188"
+        },
+        {
+          "path": "tests_js/local_checks_run.test.mjs",
+          "sha256": "d0783f710b180efb9cb139c7c8b6faf8a53914d06f2c0ab10b057777bef610d8"
+        },
+        {
+          "path": "tests_js/test-runner-selection.test.mjs",
+          "sha256": "648aa5c18777f407921fa144c9cde7e6dc26a149576c64d1da21b9827d2590b5"
+        },
+        {
+          "path": "tests_js/local_checks_graph_support.mjs",
+          "sha256": "1f7ba40d5d50f9441afc64a50d2299971abd291b5f235de3d4f01fd670229897"
+        },
+        {
+          "path": "docs/migration/evidence/p03/implementation.md",
+          "sha256": "51ffaa6df468d045915724e9135ded3f440d6a982e1e2798f7c6243b91a11ad1"
+        },
+        {
+          "path": "docs/migration/evidence/p03/implementation-audit.json",
+          "sha256": "df318ccba9e54f979afada169432bbf3ac652b9905140a198b8e25ff8511f22d"
+        },
+        {
+          "path": "docs/migration/evidence/p03/P03.I.json",
+          "sha256": "caed0a91e588dea40ad00f93f162b1c4100c1177322345f39f47d7e13403db15"
+        },
+        {
+          "path": "docs/migration/evidence/p03/P03.V.json",
+          "sha256": "81cb53101934d2c52ba57706b4869471e5e2fee105ba50c225d64e100bfaa55c"
+        },
+        {
+          "path": "docs/migration/evidence/p03/reference-consumers.json",
+          "sha256": "3d1994a02a23447fcfc8456225f59d87adb2908a9442bc3b0f8783a591bd85b6"
+        },
+        {
+          "path": "docs/migration/evidence/p03/implementation-v2.md",
+          "sha256": "55e340ff418e21df5e71f6dc365e448b696b95bf03576d1ba07356220e793c91"
+        },
+        {
+          "path": "docs/migration/evidence/p03/implementation-audit-v2.json",
+          "sha256": "ae8b01900f48d799f0f89de95afbd2af0c9b42cbf0b778e09cc339f8ac164f56"
+        },
+        {
+          "path": "docs/migration/evidence/p03/P03.I-v2.json",
+          "sha256": "bd37962d056465cdc6a1dcc2203886c1a0088c757181ba8fff0667f2ebb96725"
+        },
+        {
+          "path": "docs/migration/evidence/p03/P03.V-v2.json",
+          "sha256": "b9f527cbb183ccfdc771c9699ef1c480d1f895b5aaee0ee386db6c2695773213"
+        },
+        {
+          "path": "tools/test-runner/process.mjs",
+          "sha256": "b9eea8bec5e3bb21a4bcb820c83414b798b7f25c336b1b639c2f179ca0c13d17"
+        },
+        {
+          "path": "tests_js/test-runner-execution.test.mjs",
+          "sha256": "7728c34652ca2d88464994e1c51317587e5e2d152d0fd4765599721c1e47df43"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/implementation.md",
+          "sha256": "9cbdea9c7f02773fcbedb6394d5eae8a77a27076777fe23c6b452121f7f910ea"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/reference-consumers.json",
+          "sha256": "55a5cb507e76a059141c6a231213d947b330f78be1139d902c6598d678dce1c7"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/implementation-audit.json",
+          "sha256": "589391febf08ed00130c9b217fdac22894873bd5cdd1344fd874ec250ccc9d4a"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/P03.retry1.I.json",
+          "sha256": "9461961a6c79938ab9b407ac7dbcc943782723e963040bfa6e7a8d9574173473"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/P03.retry1.V.json",
+          "sha256": "f80d506ae9d6a6d0a265501a20303e7822637bdb779a42fc503564179580ba89"
+        },
+        {
+          "path": "tools/local-checks/process.mjs",
+          "sha256": "5a9bcd74638a9c2b89e69ae2730710a2ddac02906159b3ae8d012386e4f257db"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/implementation.md",
+          "sha256": "1a54976f545b3d8dbfbe91b8fb63c93533c67f8a0d8984a9fbc9139f50143cc6"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/reference-consumers.json",
+          "sha256": "4a598aebe533d64e55f32633147fdcc5d2aae556043ee53329a689dbb911dcae"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/implementation-audit.json",
+          "sha256": "ceba87fbbaf1a28240386c16cafedce49c475aa89040ba8712303bed41025537"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/P03.retry1.I.json",
+          "sha256": "5f6d57971bfaebe16add433a54772060efa5a2eb760188ce2d82b4c0d772a7c9"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry1/v3/P03.retry1.V.json",
+          "sha256": "0baab53caf813cbb564d3774cd6329642937b4429d53cf9fcbaf2099ad2092f5"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry2/implementation.md",
+          "sha256": "82efe576ba93852ef8dbd4e24684a27696f7fc982c46d417db0ad2290c363e73"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry2/reference-consumers.json",
+          "sha256": "534703d4ffbf5d5d25490c7ace99e68ebfc3bf124efaf1a344f523cb9e7d4361"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry2/implementation-audit.json",
+          "sha256": "a104365488bc7f834d1b2315b8ad2b0d97c65b4e396c2d0054d524cb6d444f9f"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry2/P03.retry2.I.json",
+          "sha256": "3a10d3f0de95a6b0e1ccceaa808a8f522426674d23c7e653080e870d3033c1b1"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry2/P03.retry2.V.json",
+          "sha256": "c2a2a56eb83485ff4d5b7d0057af315aa57318aa794900c1bf0fbf3196fd5aec"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P03.retry2.I",
+          "sha256": "23729d198d42a90131044ce3dfe53691a00cad34a039396f8b641d37a12b41e1"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        }
+      ],
+      "cells": [
+        {
+          "id": "p03.implementation.v2.local_checks_git",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/local_checks_git.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 1564.143291,
+            "outputBytes": 2787,
+            "tests": 12,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03/retry2/logs/p03.implementation.v2.local_checks_git.tap",
+            "sha256": "d45010b7df3e5d3a945c400fef30594042abecf5f65f82d99b64e235d272b3e2"
+          }
+        },
+        {
+          "id": "p03.implementation.v2.local_checks_policy",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/local_checks_policy.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 621.0370409999998,
+            "outputBytes": 3346,
+            "tests": 14,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03/retry2/logs/p03.implementation.v2.local_checks_policy.tap",
+            "sha256": "850d27c2ec684b0dc37c832a2faf98b3afb09adc7080085a59842b5d2b9e14f9"
+          }
+        },
+        {
+          "id": "p03.implementation.v2.local_checks_run",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/local_checks_run.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 6150.217917000001,
+            "outputBytes": 33157,
+            "tests": 6,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03/retry2/logs/p03.implementation.v2.local_checks_run.tap",
+            "sha256": "259156d82d17ee46ae617d485eedf3e2d3896c49c25273b07ec3a47330d61194"
+          }
+        },
+        {
+          "id": "p03.implementation.v2.test-runner-selection",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/test-runner-selection.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 4642.559375000001,
+            "outputBytes": 2430,
+            "tests": 11,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03/retry2/logs/p03.implementation.v2.test-runner-selection.tap",
+            "sha256": "c4bc76772cd7dc2bc49479fe81f3a8e244095155f0ed3367511b0e7b2223b633"
+          }
+        },
+        {
+          "id": "p03.retry1.reporter-prefix",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/test-runner-execution.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 5178.945042000001,
+            "outputBytes": 1978,
+            "tests": 9,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03/retry2/logs/p03.retry1.reporter-prefix.tap",
+            "sha256": "4b703917efd46dcf2709a319c4b780837dd3e9364dba7d89c2ff540f4d36a116"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "10ef3e6fcf2f729394ece6eab40ca486d1ead10f",
+        "subjectTree": "23b772df61011b8cf8ff3b98ce5b7a1561da08eb",
+        "manifestSha256": "c2a2a56eb83485ff4d5b7d0057af315aa57318aa794900c1bf0fbf3196fd5aec",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
