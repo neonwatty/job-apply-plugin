@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "id": "s04-reference-audit",
+  "assignmentIds": [
+    "S04.R"
+  ],
+  "allowed_files": [
+    "tools/contracts/point-persistence/reference.py",
+    "tools/contracts/point-persistence/fixtures.py",
+    "tools/contracts/point-persistence/support.py",
+    "tests_js/point_persistence_reference.test.mjs",
+    "tests_js/point_persistence_baselines.test.mjs",
+    "docs/migration/evidence/s04/reference-vectors.json",
+    "docs/migration/evidence/s04/reference.md",
+    "docs/migration/evidence/s04/reference-plan.md",
+    "docs/migration/evidence/s04/reference-audit.json",
+    "docs/migration/evidence/s04/S04.R.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "s04.audit.reference.points",
+    "s04.audit.reference.baselines"
+  ],
+  "cells": [
+    {
+      "id": "s04.reference.points",
+      "requirementIds": [
+        "s04.audit.reference.points"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/point_persistence_reference.test.mjs"
+      ],
+      "testNames": [
+        "S04 reference observes point chunks and persistence effects under default CPython",
+        "S04 reference observes point chunks and persistence effects under CPython 3.12",
+        "S04 reference observes point chunks and persistence effects under CPython 3.13",
+        "S04 reference observes point chunks and persistence effects under CPython 3.14",
+        "S04 reference rejects caller arguments paths and stdin"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s04/logs/S04-R-points.tap"
+    },
+    {
+      "id": "s04.reference.baselines",
+      "requirementIds": [
+        "s04.audit.reference.baselines"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/point_persistence_baselines.test.mjs"
+      ],
+      "testNames": [
+        "S04 reference preserves all unchanged atomic baseline witnesses",
+        "S04 reference preserves all unchanged JSONL baseline witnesses"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s04/logs/S04-R-baselines.tap"
+    }
+  ],
+  "artifacts": []
+}

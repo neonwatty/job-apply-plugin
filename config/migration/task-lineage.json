@@ -620,6 +620,70 @@
           "sha256": "1bbd28b8f54ac8aaafb23f921370f01e5c77a9f012ca2682e746e961def79752"
         }
       ]
+    },
+    {
+      "id": "S04.reference-documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze disjoint original-Python reference work at the reviewed point persistence/path registration checkpoint; no runtime acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s04/reference-audit.json",
+          "sha256": "2c5c8c7abce1d443c19e91494b4bbae7394f5be817ba984746f35737a95ad3d3"
+        },
+        {
+          "path": "docs/migration/evidence/s04/reference-plan.md",
+          "sha256": "9cfa6235000def45781ae076f1b84b1bf2fa3e98a76bb4dc46c82fb6a838e571"
+        },
+        {
+          "path": "docs/migration/evidence/s04/reference-vectors.json",
+          "sha256": "5f780fccad0679310cd70f08a7b39493cb86879d4c65a3ffc262637b44bbe04a"
+        }
+      ]
+    },
+    {
+      "id": "S05.reference-documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze disjoint original-Python reference work at the reviewed point persistence/path registration checkpoint; no runtime acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s05/reference-audit.json",
+          "sha256": "05d82a1c1c749d01342c8694b02537ed859fcfc9051d90ac500f5be797c8df0a"
+        },
+        {
+          "path": "docs/migration/evidence/s05/reference-plan.md",
+          "sha256": "633792f3a4ec5d084a468ce643d91724f478099319cf27110225598add2fe104"
+        },
+        {
+          "path": "docs/migration/evidence/s05/reference-vectors.json",
+          "sha256": "4c6af618ffbea1ad274b7d98dc12669c2d38fcb2b3ce72080e5afe5cf14a7967"
+        }
+      ]
+    },
+    {
+      "id": "S04.reference-manifest-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze disjoint original-Python reference work at the reviewed point persistence/path registration checkpoint; no runtime acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s04/S04.R.json",
+          "sha256": "e95e2c18104f5e966929cec58ea18dd95f4b7997b0bfc3ecc0192b880ce3cc8c"
+        }
+      ]
+    },
+    {
+      "id": "S05.reference-manifest-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze disjoint original-Python reference work at the reviewed point persistence/path registration checkpoint; no runtime acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s05/S05.R.json",
+          "sha256": "438d735f67c01d4b044152c5439500321557c8ceb93309447abea55dce3d485e"
+        }
+      ]
     }
   ],
   "transitions": [
