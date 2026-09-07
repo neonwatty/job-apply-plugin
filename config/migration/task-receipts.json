@@ -769,6 +769,168 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "S01.R",
+      "manifestSha256": "fdfdb6b517b81f8331045e95e5734d84ad92f27b72f194688928d9745befd45f",
+      "subject": {
+        "sha": "64a28c2068c582d965b1d7652da7b69afbb4cff2",
+        "tree": "8df4f62c9a7a795c5a5acc6d1c462ba4b565ea56"
+      },
+      "executionBase": "64a28c2068c582d965b1d7652da7b69afbb4cff2",
+      "evidenceCommit": "50cd609e6542fefa3190599aff45376ca2dffad0",
+      "diff": [],
+      "files": [
+        {
+          "path": "tools/contracts/python-object/reference.py",
+          "sha256": "9538767aa71e347c3d9c39165ab364869c11bd8d7994fa3b4801d1893372dbc9"
+        },
+        {
+          "path": "tests_js/python_object_reference.test.mjs",
+          "sha256": "d53a6e27ab07fad36bfd82bc015994a4b915c639e6f4709afd28d0d8964b4dbd"
+        },
+        {
+          "path": "docs/migration/python-object-reference.md",
+          "sha256": "2b918a6a8977b3d5484e1690e82ca832c373e53fcf104741773758e5ec7a7ed9"
+        },
+        {
+          "path": "docs/migration/evidence/s01/reference-audit.json",
+          "sha256": "4a04140794b3b6413ff95bab03767aa5db5dd2125b340ef94e7e8a449429dd0b"
+        },
+        {
+          "path": "docs/migration/evidence/s01/S01.R.json",
+          "sha256": "fdfdb6b517b81f8331045e95e5734d84ad92f27b72f194688928d9745befd45f"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        }
+      ],
+      "cells": [
+        {
+          "id": "s01.reference.python-object",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/python_object_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 350.383083,
+            "outputBytes": 1358,
+            "tests": 5,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s01/logs/S01-R-python-object-reference.tap",
+            "sha256": "5b78be9470ae5e357878bc9c7d17057d31c34b86267b5082665f1d4cb3df1402"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "root",
+        "reviewer": "hooks_audit",
+        "subjectSha": "64a28c2068c582d965b1d7652da7b69afbb4cff2",
+        "subjectTree": "8df4f62c9a7a795c5a5acc6d1c462ba4b565ea56",
+        "manifestSha256": "fdfdb6b517b81f8331045e95e5734d84ad92f27b72f194688928d9745befd45f",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "S02.R",
+      "manifestSha256": "60375a7744b3dfebacd12e53b96493ada7d778c549c3f71f7929317b42bcda36",
+      "subject": {
+        "sha": "64a28c2068c582d965b1d7652da7b69afbb4cff2",
+        "tree": "8df4f62c9a7a795c5a5acc6d1c462ba4b565ea56"
+      },
+      "executionBase": "64a28c2068c582d965b1d7652da7b69afbb4cff2",
+      "evidenceCommit": "50cd609e6542fefa3190599aff45376ca2dffad0",
+      "diff": [],
+      "files": [
+        {
+          "path": "tools/contracts/python-json-bytes/reference.py",
+          "sha256": "a5b14b176b3ee2b9a21c3366a49cf07239d8e057aa3bfb897c20bf5f502bc428"
+        },
+        {
+          "path": "tests_js/python_json_bytes_reference.test.mjs",
+          "sha256": "7c1c97f9582de1ce92ba5f2b6282b037ac09b0ddbd3112fdbb9606e4a7eb0eb8"
+        },
+        {
+          "path": "docs/migration/python-json-bytes-reference.md",
+          "sha256": "f381cc0cadce915ceabcb8589f63450398afb7aec0ccb88982a1001e6a16d5cb"
+        },
+        {
+          "path": "docs/migration/evidence/s02/reference-audit.json",
+          "sha256": "099b42dae8cba942dbce728ede029e493e21772341e8a932999c7c4ee4418d85"
+        },
+        {
+          "path": "docs/migration/evidence/s02/S02.R.json",
+          "sha256": "60375a7744b3dfebacd12e53b96493ada7d778c549c3f71f7929317b42bcda36"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        }
+      ],
+      "cells": [
+        {
+          "id": "S02.R.reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/python_json_bytes_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 286.127334,
+            "outputBytes": 1248,
+            "tests": 5,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s02/logs/S02.R.reference.tap",
+            "sha256": "6dd05f7db8fc2b0a8e2e61dd5e3b93076d0a037ca52a94f77a3e4d5cae7fb20a"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "root",
+        "reviewer": "hooks_audit",
+        "subjectSha": "64a28c2068c582d965b1d7652da7b69afbb4cff2",
+        "subjectTree": "8df4f62c9a7a795c5a5acc6d1c462ba4b565ea56",
+        "manifestSha256": "60375a7744b3dfebacd12e53b96493ada7d778c549c3f71f7929317b42bcda36",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
