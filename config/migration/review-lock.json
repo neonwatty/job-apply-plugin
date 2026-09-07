@@ -190,6 +190,10 @@
       "sha256": "5ae1fc87a6d4cd78f5f3225f5a969c9adff39115360995a1b7f732d70504cb01"
     },
     {
+      "path": "source-catalog-s02.json",
+      "sha256": "4827fee5a9666c9510f1e2bed18b0709b9ca98dc50d9a4ac3155f5164c1a9e81"
+    },
+    {
       "path": "task-contracts.json",
       "sha256": "78fee217b5891d8c452b7c08692529a09ae86a61c53809fbc917dfc84b76cb6a"
     },

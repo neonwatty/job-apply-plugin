@@ -1,0 +1,62 @@
+TAP version 13
+# Subtest: PythonText matches frozen builtin reference: python3
+ok 1 - PythonText matches frozen builtin reference: python3
+  ---
+  duration_ms: 43.315
+  type: 'test'
+  ...
+# 3.14.4: 12 texts, 144 comparisons, three joins; duplicate default version is not an independent profile
+# Subtest: PythonText matches frozen builtin reference: python3.12
+ok 2 - PythonText matches frozen builtin reference: python3.12
+  ---
+  duration_ms: 33.356833
+  type: 'test'
+  ...
+# 3.12.13: 12 texts, 144 comparisons, three joins; duplicate default version is not an independent profile
+# Subtest: PythonText matches frozen builtin reference: python3.13
+ok 3 - PythonText matches frozen builtin reference: python3.13
+  ---
+  duration_ms: 42.133208
+  type: 'test'
+  ...
+# 3.13.13: 12 texts, 144 comparisons, three joins; duplicate default version is not an independent profile
+# Subtest: PythonText matches frozen builtin reference: python3.14
+ok 4 - PythonText matches frozen builtin reference: python3.14
+  ---
+  duration_ms: 41.808541
+  type: 'test'
+  ...
+# 3.14.4: 12 texts, 144 comparisons, three joins; duplicate default version is not an independent profile
+# Subtest: PythonText retains distinct pair/scalar identities across construction and concatenation
+ok 5 - PythonText retains distinct pair/scalar identities across construction and concatenation
+  ---
+  duration_ms: 0.410292
+  type: 'test'
+  ...
+# Subtest: PythonText defensively freezes content and preserves immutable error originals
+ok 6 - PythonText defensively freezes content and preserves immutable error originals
+  ---
+  duration_ms: 0.209375
+  type: 'test'
+  ...
+# Subtest: PythonText rejects malformed runtime inputs and implicit conversion
+ok 7 - PythonText rejects malformed runtime inputs and implicit conversion
+  ---
+  duration_ms: 0.294625
+  type: 'test'
+  ...
+# Subtest: PythonText UTF8 boundary bytes and long concatenation avoid argument-stack limits
+ok 8 - PythonText UTF8 boundary bytes and long concatenation avoid argument-stack limits
+  ---
+  duration_ms: 28.418041
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 231.56025
