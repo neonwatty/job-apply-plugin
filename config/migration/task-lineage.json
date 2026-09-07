@@ -760,6 +760,22 @@
           "sha256": "48a8e5262375abe8298badd9624b0f144da0aa63219a7239c59c8764d51b05cc"
         }
       ]
+    },
+    {
+      "id": "P11.manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze truthful streamed-output failure and bounded owned cleanup without changing output limits.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p11/P11.I.json",
+          "sha256": "b2107963691db063a350ee06926738026bec00393d8c73f9273d9fe7453cb055"
+        },
+        {
+          "path": "docs/migration/evidence/p11/P11.V.json",
+          "sha256": "8e7da06303efc42fdada68b70f9b2ff06345538295f1560a98bfcf3d8c8976ea"
+        }
+      ]
     }
   ],
   "transitions": [
