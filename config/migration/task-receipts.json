@@ -1788,6 +1788,298 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "S01.I",
+      "manifestSha256": "5c13f960e43d414b5e14a824b577b91de700c420a3946bb725b738022191f1f9",
+      "subject": {
+        "sha": "7102b82154d9d42a8282cc8a6d0747c1d8ff1a75",
+        "tree": "a1c5953f89cde0c967a269f7d3dd63bed70c0c7d"
+      },
+      "executionBase": "cbd1adcd982a99e995fc4ef2f1f2e573b7c0391e",
+      "evidenceCommit": "c27d447db667926dfbf23706553c0838f979c745",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/review-lock.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-s01.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/python-object-legacy.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/python-object.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/python-object-legacy.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/python-object.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/python_object_ts.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/python_object_ts_support.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/contracts/python-object.ts",
+          "sha256": "b7b7b5221f8bfff1ce70edd156da30e8e0f739a942b3d19de80f8244ea56a804"
+        },
+        {
+          "path": "src/contracts/python-object-legacy.ts",
+          "sha256": "2e4a4fe379fef37058551bb8b0781d098eb23fefc3cd54b01f43fc63ffbe6df5"
+        },
+        {
+          "path": "runtime/contracts/python-object.js",
+          "sha256": "8777226a4b0fa916e0e7b529edb8c85fa399c39a810b40957b94905e5a0bb3d0"
+        },
+        {
+          "path": "runtime/contracts/python-object-legacy.js",
+          "sha256": "86e4537ed1d8f7885404dcfa09e362804c3bbea59d1aa8e5a600939e083e99ba"
+        },
+        {
+          "path": "tests_js/python_object_ts.test.mjs",
+          "sha256": "842ef43497258aa9ff3be21413334012aa5de67f6ae943d9565de8249281a896"
+        },
+        {
+          "path": "tests_js/python_object_ts_support.mjs",
+          "sha256": "9d4fcb83255404f0bb847446a7356b7866cc85ec9fd4ec69ac14c12a71c52302"
+        },
+        {
+          "path": "docs/migration/evidence/s01/implementation-audit.json",
+          "sha256": "7edb6b052014a34081b1caaddca0d698c745c89716f25f13db64384700fe1576"
+        },
+        {
+          "path": "docs/migration/evidence/s01/S01.I.json",
+          "sha256": "5c13f960e43d414b5e14a824b577b91de700c420a3946bb725b738022191f1f9"
+        },
+        {
+          "path": "docs/migration/evidence/s01/S01.V.json",
+          "sha256": "fe825289bc4a41c8996c16b8a974546a4bbaee64135a54d5299ec5d1b86ff818"
+        },
+        {
+          "path": "config/migration/source-catalog-s01.json",
+          "sha256": "5ae1fc87a6d4cd78f5f3225f5a969c9adff39115360995a1b7f732d70504cb01"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        },
+        {
+          "id": "S01.R",
+          "sha256": "fcb90022a34ce706b19c330ca33fae4f7e48980f8e0ca4a525741eb40fba7e33"
+        }
+      ],
+      "cells": [
+        {
+          "id": "s01.implementation.python-object",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/python_object_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 276.96637499999997,
+            "outputBytes": 2116,
+            "tests": 10,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s01/logs/S01-IV-python-object-implementation.tap",
+            "sha256": "8f8c940d8d2693905443b19ad0b9b1236312a81026324d3a1b923cfb910bbefd"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "7102b82154d9d42a8282cc8a6d0747c1d8ff1a75",
+        "subjectTree": "a1c5953f89cde0c967a269f7d3dd63bed70c0c7d",
+        "manifestSha256": "5c13f960e43d414b5e14a824b577b91de700c420a3946bb725b738022191f1f9",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "S01.V",
+      "manifestSha256": "fe825289bc4a41c8996c16b8a974546a4bbaee64135a54d5299ec5d1b86ff818",
+      "subject": {
+        "sha": "7102b82154d9d42a8282cc8a6d0747c1d8ff1a75",
+        "tree": "a1c5953f89cde0c967a269f7d3dd63bed70c0c7d"
+      },
+      "executionBase": "cbd1adcd982a99e995fc4ef2f1f2e573b7c0391e",
+      "evidenceCommit": "c27d447db667926dfbf23706553c0838f979c745",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/review-lock.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-s01.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/python-object-legacy.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/python-object.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/python-object-legacy.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/python-object.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/python_object_ts.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/python_object_ts_support.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/contracts/python-object.ts",
+          "sha256": "b7b7b5221f8bfff1ce70edd156da30e8e0f739a942b3d19de80f8244ea56a804"
+        },
+        {
+          "path": "src/contracts/python-object-legacy.ts",
+          "sha256": "2e4a4fe379fef37058551bb8b0781d098eb23fefc3cd54b01f43fc63ffbe6df5"
+        },
+        {
+          "path": "runtime/contracts/python-object.js",
+          "sha256": "8777226a4b0fa916e0e7b529edb8c85fa399c39a810b40957b94905e5a0bb3d0"
+        },
+        {
+          "path": "runtime/contracts/python-object-legacy.js",
+          "sha256": "86e4537ed1d8f7885404dcfa09e362804c3bbea59d1aa8e5a600939e083e99ba"
+        },
+        {
+          "path": "tests_js/python_object_ts.test.mjs",
+          "sha256": "842ef43497258aa9ff3be21413334012aa5de67f6ae943d9565de8249281a896"
+        },
+        {
+          "path": "tests_js/python_object_ts_support.mjs",
+          "sha256": "9d4fcb83255404f0bb847446a7356b7866cc85ec9fd4ec69ac14c12a71c52302"
+        },
+        {
+          "path": "docs/migration/evidence/s01/implementation-audit.json",
+          "sha256": "7edb6b052014a34081b1caaddca0d698c745c89716f25f13db64384700fe1576"
+        },
+        {
+          "path": "docs/migration/evidence/s01/S01.I.json",
+          "sha256": "5c13f960e43d414b5e14a824b577b91de700c420a3946bb725b738022191f1f9"
+        },
+        {
+          "path": "docs/migration/evidence/s01/S01.V.json",
+          "sha256": "fe825289bc4a41c8996c16b8a974546a4bbaee64135a54d5299ec5d1b86ff818"
+        },
+        {
+          "path": "config/migration/source-catalog-s01.json",
+          "sha256": "5ae1fc87a6d4cd78f5f3225f5a969c9adff39115360995a1b7f732d70504cb01"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "S01.I",
+          "sha256": "6ee4d13ffe740dfdc94d8711eb8c819ff835b13c0ed0ed313dba0f9601ff6676"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        }
+      ],
+      "cells": [
+        {
+          "id": "s01.implementation.python-object",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/python_object_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 276.96637499999997,
+            "outputBytes": 2116,
+            "tests": 10,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s01/logs/S01-IV-python-object-implementation.tap",
+            "sha256": "8f8c940d8d2693905443b19ad0b9b1236312a81026324d3a1b923cfb910bbefd"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "7102b82154d9d42a8282cc8a6d0747c1d8ff1a75",
+        "subjectTree": "a1c5953f89cde0c967a269f7d3dd63bed70c0c7d",
+        "manifestSha256": "fe825289bc4a41c8996c16b8a974546a4bbaee64135a54d5299ec5d1b86ff818",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
