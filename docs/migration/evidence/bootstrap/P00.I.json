@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "id": "P00.I",
+  "role": "implementation-or-gate",
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/bootstrap/approved-dag.json",
+    "sha256": "e8e549ec42440bff841da005d68b91b0e421a864db886203a542b6cfe9a70ec9"
+  },
+  "package": {
+    "id": "P00",
+    "parentNode": "I",
+    "owner": "root",
+    "allowed_files": [
+      "tools/migration/check.mjs",
+      "tools/migration/check-remaining-plan.mjs",
+      "tests_js/migration_inventory.test.mjs",
+      "tests_js/migration_remaining_plan.test.mjs",
+      "docs/migration/remaining/plan.json",
+      "docs/migration/remaining/task-catalog.md",
+      "docs/migration/remaining/packages.mmd",
+      "docs/migration/remaining/agent-tasks.mmd",
+      "docs/migration/remaining/agent-tasks.json",
+      "config/migration/nodes.json",
+      "docs/migration/evidence/bootstrap/p00-audit.json",
+      "docs/migration/evidence/bootstrap/P00.I.json",
+      "docs/migration/evidence/bootstrap/P00.V.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "02c55009d7d36ce289f88038e000d7dfd2addef6ce0e6e7bd35bd6fd00d1273c",
+  "auditContract": {
+    "path": "docs/migration/evidence/bootstrap/p00-audit.json",
+    "sha256": "e15bb8bb240a6470743f0b226e76ee1aaceb8081aef2e5cafe37128a6123884a"
+  },
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "base": "3ed8f30cdc8cd8096fcc7867730ea44764de9071",
+  "inputs": [
+    {
+      "path": "tools/migration/check.mjs",
+      "sha256": "a49929bafc69cb622d7b8e38cf0ed8b7d306a5a84fb36a7bfad4cef5f56db621"
+    },
+    {
+      "path": "tools/migration/check-remaining-plan.mjs",
+      "sha256": "4283d1a2406481027f5f2a164aeca2f35f472dab5366665c2bebe2597a9e10cb"
+    },
+    {
+      "path": "tests_js/migration_inventory.test.mjs",
+      "sha256": "7c99fb8edbfc290d50935f708c2342cdfc962a1e158b550cbbd800adc945ced4"
+    },
+    {
+      "path": "tests_js/migration_remaining_plan.test.mjs",
+      "sha256": "c9189e5807d65d64233e47877537b33d68bbce44b7576ec953e6c73f9d0fdad0"
+    },
+    {
+      "path": "docs/migration/remaining/plan.json",
+      "sha256": "8457be188db0605d4f640f74a478820d213c5ee07e57c88bec1a2162776fb704"
+    },
+    {
+      "path": "docs/migration/remaining/task-catalog.md",
+      "sha256": "1c4d15506c83fec978d6c57971c3c761ae4b9831326ede9bacf09c352c95bb16"
+    },
+    {
+      "path": "docs/migration/remaining/packages.mmd",
+      "sha256": "9c2bfec44681e84e1e8a6b20ac4b319756faad996dc8b0f922cb26bf87e3ed3b"
+    },
+    {
+      "path": "docs/migration/remaining/agent-tasks.mmd",
+      "sha256": "43fc0da1d8795702c621afbedaceebf40dc2d58e1f9b94cf98405d3a1e07be66"
+    },
+    {
+      "path": "docs/migration/remaining/agent-tasks.json",
+      "sha256": "e8e549ec42440bff841da005d68b91b0e421a864db886203a542b6cfe9a70ec9"
+    },
+    {
+      "path": "config/migration/nodes.json",
+      "sha256": "18ba263ad0d37f2eb82d0261b6ca436bae62205036e77f2c7cdf740b9fd8fd98"
+    },
+    {
+      "path": "docs/migration/evidence/bootstrap/p00-audit.json",
+      "sha256": "e15bb8bb240a6470743f0b226e76ee1aaceb8081aef2e5cafe37128a6123884a"
+    },
+    {
+      "path": "tools/migration/browser-exports.mjs",
+      "sha256": "3d3039688a9cf5671a8656082cd1c69f62605f562c4bbf77c3d5392790c00403"
+    },
+    {
+      "path": "tools/migration/evidence-io.mjs",
+      "sha256": "0edbb50c6ead7963f6e3b5dca2138fa5d71c2dbd4ab254359f8a87212cc227f6"
+    },
+    {
+      "path": "tools/migration/load-prerequisites.mjs",
+      "sha256": "446f46091af5f95e89fef93400281e25a822497cea00c4d78dd7e0964f7c737c"
+    },
+    {
+      "path": "tools/migration/load-task-evidence.mjs",
+      "sha256": "f63db62c036d8e581f7ab990d8fb0c3b04d6dbe2bda4b9a0a0b967dd91fac5dd"
+    },
+    {
+      "path": "tools/migration/packages.mjs",
+      "sha256": "1a2b7ff84198387c72eb5ff510bbe9aff6da235291056b4ef7766d2201b3f0d4"
+    },
+    {
+      "path": "tools/migration/prerequisite-receipts.mjs",
+      "sha256": "45a971019860329405ee8adec70a9d1b7fd2cff78111a5b2931f2febb8ee68a8"
+    },
+    {
+      "path": "tools/migration/requirements.mjs",
+      "sha256": "f1a64d8aa967a26383b468415eee037964493e15db32dcc051982a92d1b89f1c"
+    },
+    {
+      "path": "tools/migration/tap-evidence.mjs",
+      "sha256": "0a3358323e73f6bb0828dc63071603a1263ea6008413c2bf1a620c22c42f3077"
+    },
+    {
+      "path": "tools/migration/task-manifests.mjs",
+      "sha256": "4ed219833b67d72e75f12bb8ad27d7493080a7e0175bb9313bacc939f8ac6909"
+    },
+    {
+      "path": "tools/migration/task-receipts.mjs",
+      "sha256": "f68aab726ce27f6718282cb19b8b905f9e45940c2508cc3df8369a3ec5eccfba"
+    },
+    {
+      "path": "tools/migration/test-bindings.mjs",
+      "sha256": "d94cc57e34b04b23a92300d398bf5c437a30c792d4c26cb74e639e0654a50960"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "p00.migration_inventory",
+      "requirementIds": [
+        "p00.audit.migration_inventory"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_inventory.test.mjs"
+      ],
+      "testNames": [
+        "consistent inventory is not migration acceptance",
+        "deleting, adding or altering inventory records cannot silently shrink coverage",
+        "source edits, additions, deletions and renames require reconciliation",
+        "unknown owners, duplicate identities, missing sources and malformed methods fail",
+        "cycles and unknown dependencies fail",
+        "persisted artifacts and journal variants require valid paths, types and document bindings",
+        "invented passing, skipped or inapplicable evidence cannot close a cell",
+        "source discovery includes new runtime and boundary files, excludes test fixture data",
+        "real checkout detects untracked modules and source drift without changing files"
+      ],
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/bootstrap/logs/P00-migration_inventory.tap"
+    },
+    {
+      "id": "p00.migration_remaining_plan",
+      "requirementIds": [
+        "p00.audit.migration_remaining_plan"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_remaining_plan.test.mjs"
+      ],
+      "testNames": [
+        "remaining plan covers canonical families and every assignment reaches final conversion",
+        "remaining plan rejects cycles, unknown dependencies, detached tasks and authority expansion",
+        "remaining plan cannot hide removed canonical families or malformed tasks",
+        "published catalog and graphs match the machine-readable plan"
+      ],
+      "timeoutMs": 60000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/bootstrap/logs/P00-migration_remaining_plan.tap"
+    }
+  ],
+  "artifacts": []
+}
