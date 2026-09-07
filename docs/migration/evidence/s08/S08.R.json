@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "id": "S08.R",
+  "role": "reference",
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/bootstrap/approved-dag.json",
+    "sha256": "e8e549ec42440bff841da005d68b91b0e421a864db886203a542b6cfe9a70ec9"
+  },
+  "package": {
+    "id": "S08",
+    "parentNode": "SEM",
+    "owner": "root",
+    "allowed_files": [
+      "tools/contracts/codepoint-json/reference.py",
+      "tests_js/codepoint_json_reference.test.mjs",
+      "docs/migration/codepoint-json-reference.md",
+      "docs/migration/evidence/s08/reference-audit.json",
+      "docs/migration/evidence/s08/S08.R.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "eb295067270b11a1df6defc6a9078299815f1eef3cf281cd80d3c253c9fc6af9",
+  "auditContract": {
+    "path": "docs/migration/evidence/s08/reference-audit.json",
+    "sha256": "40e46ce4da3cf6d2e28d2770c28307d13fdd2567e7b0588ba128a561b5fbd467"
+  },
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "base": "3ccb4b276991ddf1f9085d72777c3db683b3b9da",
+  "inputs": [
+    {
+      "path": "tools/contracts/codepoint-json/reference.py",
+      "sha256": "fef264468e9190a80cd6edbc03ec06693f6269edc3df7f30757fb16a8d63c231"
+    },
+    {
+      "path": "tests_js/codepoint_json_reference.test.mjs",
+      "sha256": "9939a313ef84018e2dd742c8994ae34d3e1f203201bfdf81a044538cbe5aff3a"
+    },
+    {
+      "path": "docs/migration/codepoint-json-reference.md",
+      "sha256": "4361290805aadb3bf3e0a38b9c784e3f40a2101348ac4d0c4e49cc7401ae9f29"
+    },
+    {
+      "path": "docs/migration/evidence/s08/reference-audit.json",
+      "sha256": "40e46ce4da3cf6d2e28d2770c28307d13fdd2567e7b0588ba128a561b5fbd467"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "s08.reference.codepoint-json",
+      "requirementIds": [
+        "s08.audit.codepoint-json-reference"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/codepoint_json_reference.test.mjs"
+      ],
+      "testNames": [
+        "S03.R composed codepoint JSON reference: default CPython",
+        "S03.R composed codepoint JSON reference: CPython 3.12",
+        "S03.R composed codepoint JSON reference: CPython 3.13",
+        "S03.R composed codepoint JSON reference: CPython 3.14",
+        "S03.R composed codepoint JSON reference rejects caller input"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s08/logs/S08-R-codepoint-json-reference.tap"
+    }
+  ],
+  "artifacts": []
+}

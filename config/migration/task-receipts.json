@@ -3335,6 +3335,87 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "S08.R",
+      "manifestSha256": "5d6d74d14fbd0e4d6468a82501eb4d0f3aa3b27f152c42e8ae359a1f88f24e20",
+      "subject": {
+        "sha": "dcef82dd501ab2129f8f3efb341c6e7c3667617b",
+        "tree": "f084d3cbf68370146785d520710c7c2a6b0494be"
+      },
+      "executionBase": "dcef82dd501ab2129f8f3efb341c6e7c3667617b",
+      "evidenceCommit": "76c30b9195b97427e935dfcf03e13a91043bcefd",
+      "diff": [],
+      "files": [
+        {
+          "path": "tools/contracts/codepoint-json/reference.py",
+          "sha256": "fef264468e9190a80cd6edbc03ec06693f6269edc3df7f30757fb16a8d63c231"
+        },
+        {
+          "path": "tests_js/codepoint_json_reference.test.mjs",
+          "sha256": "9939a313ef84018e2dd742c8994ae34d3e1f203201bfdf81a044538cbe5aff3a"
+        },
+        {
+          "path": "docs/migration/codepoint-json-reference.md",
+          "sha256": "4361290805aadb3bf3e0a38b9c784e3f40a2101348ac4d0c4e49cc7401ae9f29"
+        },
+        {
+          "path": "docs/migration/evidence/s08/reference-audit.json",
+          "sha256": "40e46ce4da3cf6d2e28d2770c28307d13fdd2567e7b0588ba128a561b5fbd467"
+        },
+        {
+          "path": "docs/migration/evidence/s08/S08.R.json",
+          "sha256": "5d6d74d14fbd0e4d6468a82501eb4d0f3aa3b27f152c42e8ae359a1f88f24e20"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        }
+      ],
+      "cells": [
+        {
+          "id": "s08.reference.codepoint-json",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/codepoint_json_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 498.70766699999996,
+            "outputBytes": 1372,
+            "tests": 5,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-R-codepoint-json-reference.tap",
+            "sha256": "df2774b64dcb0f3deab37b3d6bd00b1209346af39c186511513c6659ab1b9d5d"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "root",
+        "reviewer": "hooks_audit",
+        "subjectSha": "dcef82dd501ab2129f8f3efb341c6e7c3667617b",
+        "subjectTree": "f084d3cbf68370146785d520710c7c2a6b0494be",
+        "manifestSha256": "5d6d74d14fbd0e4d6468a82501eb4d0f3aa3b27f152c42e8ae359a1f88f24e20",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
