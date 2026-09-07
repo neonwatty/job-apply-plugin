@@ -190,3 +190,33 @@ test("annotated tag targets peel to the commit actually pushed", async (t) => {
   assert.equal(targets[0].base, base);
   assert.ok(targets[0].tag);
 });
+
+test("dependency-linked staged snapshots remain clean without hiding unrelated files", async (t) => {
+  const root = await fixture(t);
+  const ignore = await fs.readFile(new URL("../.gitignore", import.meta.url), "utf8");
+  await fs.writeFile(path.join(root, ".gitignore"), ignore);
+  await fs.writeFile(path.join(root, "package-lock.json"), "{}\n");
+  await fs.mkdir(path.join(root, "node_modules"));
+  await fs.writeFile(path.join(root, "node_modules", "fixture.txt"), "dependency\n");
+  command(root, ["add", ".gitignore", "package-lock.json"]);
+  command(root, ["commit", "-m", "dependency fixture"]);
+  await fs.writeFile(path.join(root, "value.txt"), "staged validation\n");
+  command(root, ["add", "value.txt"]);
+  const snapshot = indexSnapshot(root);
+  const before = command(root, ["status", "--porcelain"]);
+  const { createEvidenceIO } = await import("../tools/migration/evidence-io.mjs");
+  await withSnapshot(root, snapshot.commit, async (directory) => {
+    const io = await createEvidenceIO(directory);
+    assert.equal((await fs.lstat(path.join(directory, "node_modules"))).isSymbolicLink(), true);
+    assert.equal(command(directory, ["status", "--porcelain", "--untracked-files=all"]), "");
+    assert.equal(io.clean(), true);
+    assert.match(command(directory, ["check-ignore", "-v", "node_modules"]), /\/node_modules\s+node_modules/);
+    await fs.writeFile(path.join(directory, "untracked-proof.txt"), "not evidence\n");
+    assert.equal(io.clean(), false);
+    assert.equal(command(directory, ["status", "--porcelain", "--untracked-files=all"]), "?? untracked-proof.txt\n");
+    await fs.rm(path.join(directory, "untracked-proof.txt"));
+    await fs.writeFile(path.join(directory, "value.txt"), "tracked drift\n");
+    assert.equal(io.clean(), false);
+  }, { dependencies: true });
+  assert.equal(command(root, ["status", "--porcelain"]), before);
+});
