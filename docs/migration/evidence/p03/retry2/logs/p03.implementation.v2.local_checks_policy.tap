@@ -1,0 +1,94 @@
+TAP version 13
+# Subtest: receipt policy fingerprint changes when active runner implementation changes
+ok 1 - receipt policy fingerprint changes when active runner implementation changes
+  ---
+  duration_ms: 4.173125
+  type: 'test'
+  ...
+# Subtest: documentation stays light while exact inert codec changes add focused tests
+ok 2 - documentation stays light while exact inert codec changes add focused tests
+  ---
+  duration_ms: 0.196667
+  type: 'test'
+  ...
+# Subtest: new production modules, global edits, unknown paths and deleted codec escalate
+ok 3 - new production modules, global edits, unknown paths and deleted codec escalate
+  ---
+  duration_ms: 1.021833
+  type: 'test'
+  ...
+# Subtest: accepted inert boundaries select focused tests and include dependent validation
+ok 4 - accepted inert boundaries select focused tests and include dependent validation
+  ---
+  duration_ms: 0.11025
+  type: 'test'
+  ...
+# Subtest: tag pushes require complete local release and platform selection even with no changes
+ok 5 - tag pushes require complete local release and platform selection even with no changes
+  ---
+  duration_ms: 0.054667
+  type: 'test'
+  ...
+# Subtest: known renderer changes select their suite without unrelated package tests
+ok 6 - known renderer changes select their suite without unrelated package tests
+  ---
+  duration_ms: 0.444875
+  type: 'test'
+  ...
+# Subtest: local success rejects missing, failed and wrongly skipped mandatory cells
+ok 7 - local success rejects missing, failed and wrongly skipped mandatory cells
+  ---
+  duration_ms: 0.091375
+  type: 'test'
+  ...
+# Subtest: only fresh complete deep receipts for the exact identity can satisfy escalation
+ok 8 - only fresh complete deep receipts for the exact identity can satisfy escalation
+  ---
+  duration_ms: 0.161208
+  type: 'test'
+  ...
+# Subtest: P03 runtime focused rules include the independent transitive consumer witnesses
+ok 9 - P03 runtime focused rules include the independent transitive consumer witnesses
+  ---
+  duration_ms: 53.493208
+  type: 'test'
+  ...
+# Subtest: P03 reference-only edits retain bounded direct consumer selection
+ok 10 - P03 reference-only edits retain bounded direct consumer selection
+  ---
+  duration_ms: 27.081542
+  type: 'test'
+  ...
+# Subtest: P03 mutation deleting each required consumer fails independent coverage validation
+ok 11 - P03 mutation deleting each required consumer fails independent coverage validation
+  ---
+  duration_ms: 42.542375
+  type: 'test'
+  ...
+# Subtest: P03 mutation through support and child-process modules cannot conceal a failing consumer
+ok 12 - P03 mutation through support and child-process modules cannot conceal a failing consumer
+  ---
+  duration_ms: 138.092167
+  type: 'test'
+  ...
+# Subtest: P03 shared type changes escalate while source and runtime changes select equivalent coverage
+ok 13 - P03 shared type changes escalate while source and runtime changes select equivalent coverage
+  ---
+  duration_ms: 34.546959
+  type: 'test'
+  ...
+# Subtest: P03 unknown deleted renamed global lock and policy changes retain complete escalation
+ok 14 - P03 unknown deleted renamed global lock and policy changes retain complete escalation
+  ---
+  duration_ms: 87.387
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 555.945542

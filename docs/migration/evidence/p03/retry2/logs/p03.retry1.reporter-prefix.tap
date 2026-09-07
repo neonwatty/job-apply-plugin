@@ -1,0 +1,64 @@
+TAP version 13
+# Subtest: platform Python selection and generated test commands are explicit
+ok 1 - platform Python selection and generated test commands are explicit
+  ---
+  duration_ms: 0.710667
+  type: 'test'
+  ...
+# Subtest: suite execution streams prefixed failures and aggregates in matrix order
+ok 2 - suite execution streams prefixed failures and aggregates in matrix order
+  ---
+  duration_ms: 21.738
+  type: 'test'
+  ...
+# Subtest: suite execution honors its concurrency bound and runs each suite once
+ok 3 - suite execution honors its concurrency bound and runs each suite once
+  ---
+  duration_ms: 24.591708
+  type: 'test'
+  ...
+# Subtest: process execution terminates hangs and bounds noisy output
+ok 4 - process execution terminates hangs and bounds noisy output
+  ---
+  duration_ms: 52.4845
+  type: 'test'
+  ...
+# Subtest: timeout terminates an owned grandchild process tree
+ok 5 - timeout terminates an owned grandchild process tree
+  ---
+  duration_ms: 1210.757208
+  type: 'test'
+  ...
+# Subtest: timeout retains group cleanup after the direct parent exits
+ok 6 - timeout retains group cleanup after the direct parent exits
+  ---
+  duration_ms: 1306.795541
+  type: 'test'
+  ...
+# Subtest: receipts contain selection and timing metadata but no commands, output, or environment
+ok 7 - receipts contain selection and timing metadata but no commands, output, or environment
+  ---
+  duration_ms: 18.405417
+  type: 'test'
+  ...
+# Subtest: CLI parsing rejects ambiguity and accepts bounded concurrency
+ok 8 - CLI parsing rejects ambiguity and accepts bounded concurrency
+  ---
+  duration_ms: 0.339625
+  type: 'test'
+  ...
+# Subtest: stream prefixes empty lines without trailing spaces and preserves nonempty payloads
+ok 9 - stream prefixes empty lines without trailing spaces and preserves nonempty payloads
+  ---
+  duration_ms: 2436.891791
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5113.470542
