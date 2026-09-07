@@ -592,6 +592,22 @@
           "sha256": "534703d4ffbf5d5d25490c7ace99e68ebfc3bf124efaf1a344f523cb9e7d4361"
         }
       ]
+    },
+    {
+      "id": "P03.retry2.manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve active P03.retry1 partial formatter attempt; add accepted S08.V dependency and require fresh complete revalidation.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/retry2/P03.retry2.I.json",
+          "sha256": "3a10d3f0de95a6b0e1ccceaa808a8f522426674d23c7e653080e870d3033c1b1"
+        },
+        {
+          "path": "docs/migration/evidence/p03/retry2/P03.retry2.V.json",
+          "sha256": "c2a2a56eb83485ff4d5b7d0057af315aa57318aa794900c1bf0fbf3196fd5aec"
+        }
+      ]
     }
   ],
   "transitions": [
