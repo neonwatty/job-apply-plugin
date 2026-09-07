@@ -149,7 +149,7 @@
     {
       "id": "node-migration-evidence",
       "kind": "node-test",
-      "include": ["tests_js/migration_task_loader.test.mjs"],
+      "include": ["tests_js/migration_task_loader.test.mjs", "tests_js/migration_task_handoffs.test.mjs", "tests_js/migration_task_metadata.test.mjs"],
       "tiers": ["full"]
     },
     {
@@ -207,6 +207,7 @@
   ],
   "ownership": [
     {"paths": ["tests_js/migration_task_support.mjs"], "suites": ["node-runner-fast", "node-migration-evidence"]},
+    {"paths": ["tests_js/migration_task_handoff_support.mjs"], "suites": ["node-migration-evidence"]},
     {"paths": ["native/posix/timestamps.c", "native/posix/*.h", "tools/build-native-timestamps.mjs", "tests_js/posix_timestamps_support.mjs"], "suites": ["native-posix-timestamps"]},
     {"paths": ["tools/contracts/heavy-run-lease/reference.mjs", "native/posix/flock.c", "native/posix/*.h", "tools/build-native-lock.mjs", "tests_js/exclusive_file_lock_support.mjs"], "suites": ["native-posix-lock"]},
     {"paths": ["tests_js/managed_resume_path_ts_support.mjs", "tests_js/posix_path_bytes_ts_support.mjs", "tests_js/managed_observation_ts_support.mjs", "tests_js/atomic_write_json_ts_support.mjs", "tests_js/installed_artifacts_ts_support.mjs", "tests_js/jsonl_history_support.mjs", "tests_js/data_copy_support.mjs", "tests_js/python_object_ts_support.mjs", "tests_js/python_json_bytes_ts_support.mjs"], "suites": ["node-workspace-other"]},

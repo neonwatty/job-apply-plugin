@@ -15,8 +15,7 @@
     "docs/migration/evidence/s01/implementation-audit.json",
     "docs/migration/evidence/s01/S01.I.json",
     "docs/migration/evidence/s01/S01.V.json",
-    "config/migration/source-catalog-s01.json",
-    "config/migration/review-lock.json"
+    "config/migration/source-catalog-s01.json"
   ],
   "emittedFiles": [
     "runtime/contracts/python-object.js",
