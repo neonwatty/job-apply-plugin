@@ -480,6 +480,18 @@
           "sha256": "c19239be919254d92318e5545c815d3ed07781f9b990e212248d95ca64d35973"
         }
       ]
+    },
+    {
+      "id": "P09.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze validated captured-successor currentness with independent actual retirement lifecycle evidence.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p09/transition.json",
+          "sha256": "315900fdb6980ac61daf9c4d1e370d4223e3afde3e83c69db3b9bad744fc156b"
+        }
+      ]
     }
   ],
   "transitions": [
