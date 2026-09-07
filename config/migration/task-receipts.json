@@ -1788,6 +1788,137 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P07.R",
+      "manifestSha256": "dc94d1fd40b2b89c00c8e363dd9e5a15382e34cbda4ea1b64affecce5b79bb44",
+      "subject": {
+        "sha": "cef8e16ad37ae07b96035319b3d0ef65489e78b4",
+        "tree": "9e3fc8f2b0680a5d90fa5883b030b24346207637"
+      },
+      "executionBase": "cef8e16ad37ae07b96035319b3d0ef65489e78b4",
+      "evidenceCommit": "0d9429615fe54f62ee82f8227bcb94d4fc833a8b",
+      "diff": [],
+      "files": [
+        {
+          "path": "docs/migration/evidence/p07/reference-audit.json",
+          "sha256": "45748471a078da40c42e1c09ebbf3f6f262159902bc5b5c50ebbb489618c2559"
+        },
+        {
+          "path": "docs/migration/evidence/p07/P07.R.json",
+          "sha256": "dc94d1fd40b2b89c00c8e363dd9e5a15382e34cbda4ea1b64affecce5b79bb44"
+        },
+        {
+          "path": "docs/migration/evidence/p07/reference.md",
+          "sha256": "44e68b48bd0b0588328b5f3f6f134ac593dbc27d9840d37b5753cc94c9b5aad5"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        }
+      ],
+      "cells": [
+        {
+          "id": "P07.R.migration_task_manifests",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_manifests.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 70.48183399999999,
+            "outputBytes": 1795,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-R-migration_task_manifests.tap",
+            "sha256": "81e7e3830f95694f1579db6d8958885ac2a3f8719893b32edb907dabf368dc64"
+          }
+        },
+        {
+          "id": "P07.R.migration_task_receipts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_receipts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 76.310125,
+            "outputBytes": 2631,
+            "tests": 10,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-R-migration_task_receipts.tap",
+            "sha256": "5700222db67932b902d228b835407e0287b44ed22ed2fed7420acaa69379fc8e"
+          }
+        },
+        {
+          "id": "P07.R.migration_task_metadata",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_metadata.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 80671.05774999999,
+            "outputBytes": 1084,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p07/logs/P07-R-migration_task_metadata.tap",
+            "sha256": "6202f382783f73d2796e097885eb1e66e30f657cc063eb7e0ca0d73090a7a2c0"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "root",
+        "reviewer": "hooks_audit",
+        "subjectSha": "cef8e16ad37ae07b96035319b3d0ef65489e78b4",
+        "subjectTree": "9e3fc8f2b0680a5d90fa5883b030b24346207637",
+        "manifestSha256": "dc94d1fd40b2b89c00c8e363dd9e5a15382e34cbda4ea1b64affecce5b79bb44",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
