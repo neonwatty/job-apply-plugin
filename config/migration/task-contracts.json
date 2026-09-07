@@ -95,6 +95,46 @@
         "sha256": "9f03615819385637134ebe8189ac19fc2084b1a3e489a361eb37ee06003a9b7e",
         "revision": "d0e067cfb90f3e906f6d963e9b0da161d7792a5a"
       }
+    },
+    {
+      "id": "S01.I",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/s01/S01.I.json",
+        "sha256": "5c13f960e43d414b5e14a824b577b91de700c420a3946bb725b738022191f1f9",
+        "revision": "30e7b4aec60d57b996b153e0c2d8555486259d26"
+      }
+    },
+    {
+      "id": "S01.V",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/s01/S01.V.json",
+        "sha256": "fe825289bc4a41c8996c16b8a974546a4bbaee64135a54d5299ec5d1b86ff818",
+        "revision": "30e7b4aec60d57b996b153e0c2d8555486259d26"
+      }
+    },
+    {
+      "id": "S02.I",
+      "author": "timestamp_tests",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/s02/S02.I.json",
+        "sha256": "3e03ed5220fe871e88db69e48f04899e5f9b488151075e46dc6262582150c78c",
+        "revision": "30e7b4aec60d57b996b153e0c2d8555486259d26"
+      }
+    },
+    {
+      "id": "S02.V",
+      "author": "timestamp_tests",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/s02/S02.V.json",
+        "sha256": "f63752fa69f1240be3bf8f6ddad5edba5e5d7358d1077af99565b6a100400b64",
+        "revision": "30e7b4aec60d57b996b153e0c2d8555486259d26"
+      }
     }
   ],
   "environments": [
@@ -135,6 +175,16 @@
       "path": "docs/migration/evidence/p06/implementation-audit.json",
       "sha256": "6f5131df63be5b68fecc6655ce645c20b2f126921a54dce0ca00dd7c0a3b7b98",
       "revision": "d0e067cfb90f3e906f6d963e9b0da161d7792a5a"
+    },
+    {
+      "path": "docs/migration/evidence/s01/implementation-audit.json",
+      "sha256": "7edb6b052014a34081b1caaddca0d698c745c89716f25f13db64384700fe1576",
+      "revision": "30e7b4aec60d57b996b153e0c2d8555486259d26"
+    },
+    {
+      "path": "docs/migration/evidence/s02/implementation-audit.json",
+      "sha256": "4612ae564b2c0fd24e3804827be07efeb3bf317d044b951a48128148f837f4b0",
+      "revision": "30e7b4aec60d57b996b153e0c2d8555486259d26"
     }
   ]
 }
