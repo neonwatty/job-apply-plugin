@@ -88,6 +88,18 @@
           "sha256": "c508be9d4e8fafa0b83b43edc78e1932a30b6ad134c29806bc6ae1375ce06ddc"
         }
       ]
+    },
+    {
+      "id": "S02.retry1.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original decoder evidence and require an explicit fresh exact-name replacement.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s02/retry1/transition.json",
+          "sha256": "9ea8d1fe7851b1337bd31699b5dcfb5566e70af0d3e18a9e1fcd8d2eefccba18"
+        }
+      ]
     }
   ],
   "transitions": []
