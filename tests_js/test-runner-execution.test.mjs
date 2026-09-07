@@ -5,7 +5,8 @@ import path from "node:path";
 import test from "node:test";
 
 import { executeSuites, pythonExecutable, suiteCommand } from "../tools/test-runner/execute.mjs";
-import { runStreaming } from "../tools/test-runner/process.mjs";
+import { createLinePrefixer, runStreaming } from "../tools/test-runner/process.mjs";
+import { runLocalCommand } from "../tools/local-checks/process.mjs";
 import { buildReceipt, writeReceipt } from "../tools/test-runner/receipt.mjs";
 import { parseArguments } from "../tools/test-runner.mjs";
 
@@ -95,7 +96,8 @@ test("process execution terminates hangs and bounds noisy output", async () => {
   assert.equal((stdout.match(/x/g) ?? []).length, 32);
 });
 
-test("timeout terminates an owned grandchild process tree", { skip: process.platform === "win32" }, async () => {
+test("timeout terminates an owned grandchild process tree", async (t) => {
+  if (process.platform === "win32") { t.skip(); return; }
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "test-runner-tree-"));
   const pidFile = path.join(root, "grandchild.pid");
   const grandchild = "process.on('SIGTERM',()=>{});setInterval(()=>{},1000)";
@@ -118,7 +120,8 @@ test("timeout terminates an owned grandchild process tree", { skip: process.plat
   }
 });
 
-test("timeout retains group cleanup after the direct parent exits", { skip: process.platform === "win32" }, async () => {
+test("timeout retains group cleanup after the direct parent exits", async (t) => {
+  if (process.platform === "win32") { t.skip(); return; }
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "test-runner-orphan-"));
   const pidFile = path.join(root, "grandchild.pid");
   const grandchild = "process.on('SIGTERM',()=>{});setInterval(()=>{},1000)";
@@ -182,4 +185,63 @@ test("CLI parsing rejects ambiguity and accepts bounded concurrency", () => {
   });
   assert.throws(() => parseArguments(["mystery"]), /unknown test tier/);
   assert.throws(() => parseArguments(["full", "--concurrency", "0"]), /concurrency/);
+});
+
+
+test("stream prefixes empty lines without trailing spaces and preserves nonempty payloads", async () => {
+  let stdout = "";
+  let stderr = "";
+  const program = [
+    "const chunks=[Buffer.from('\\n\\n  \\t\\r\\npart'),Buffer.from('ial\\n'),Buffer.from([0xf0,0x90]),Buffer.from([0x80,0x80]),Buffer.from(' tail')];",
+    "let i=0;function next(){if(i===chunks.length)return;const c=chunks[i++];process.stdout.write(c);process.stderr.write(c);setTimeout(next,10)}next();",
+  ].join("");
+  const result = await runStreaming(process.execPath, ["-e", program], {
+    label: "lines", timeoutMs: 2000,
+    stdout: (value) => { stdout += value; }, stderr: (value) => { stderr += value; },
+  });
+  assert.equal(result.status, "passed");
+  const expected = "[lines]\n[lines]\n[lines]   \t\r\n[lines] partial\n[lines] \u{10000} tail\n";
+  assert.equal(stdout, expected);
+  assert.equal(stderr, expected);
+  let localStdout = "";
+  let localStderr = "";
+  const local = await runLocalCommand(process.execPath, ["-e", program], {
+    label: "lines", cwd: process.cwd(), timeoutMs: 2000,
+    stdout: (value) => { localStdout += value; },
+    stderr: (value) => { localStderr += value; },
+  });
+  assert.equal(local.status, "passed");
+  assert.equal(localStdout, expected.slice(0, -1));
+  assert.equal(localStderr, expected.slice(0, -1));
+
+  let limited = "";
+  const limitResult = await runLocalCommand(process.execPath, ["-e",
+    "process.stderr.write('kept');setTimeout(()=>process.stderr.write('x'.repeat(100)),30);setInterval(()=>{},1000)",
+  ], {
+    label: "limited", cwd: process.cwd(), timeoutMs: 2000, maxOutputBytes: 8,
+    stdout: () => {}, stderr: (value) => { limited += value; },
+  });
+  assert.equal(limitResult.status, "failed");
+  assert.equal(limitResult.exitCode, 130);
+  assert.equal(limitResult.signal, "output-limit");
+  assert.equal(limited, "[limited] kept[limited] output-limit; terminating owned process group\n");
+
+  let timedOutput = "";
+  const localTimeout = await runLocalCommand(process.execPath, ["-e",
+    "process.stderr.write('partial');setInterval(()=>{},1000)",
+  ], {
+    label: "local-timeout", cwd: process.cwd(), timeoutMs: 200, maxOutputBytes: 64,
+    stdout: () => {}, stderr: (value) => { timedOutput += value; },
+  });
+  assert.equal(localTimeout.exitCode, 124);
+  assert.equal(localTimeout.signal, "timeout");
+  assert.equal(timedOutput, "[local-timeout] partial[local-timeout] timeout; terminating owned process group\n");
+  for (const finalNewline of [false, true]) {
+    let output = "";
+    const formatter = createLinePrefixer("[direct]", (value) => { output += value; }, { finalNewline });
+    for (const chunk of ["\n", "a", "b\n\n", " \t\r"]) formatter.write(Buffer.from(chunk));
+    formatter.flush();
+    formatter.flush();
+    assert.equal(output, "[direct]\n[direct] ab\n[direct]\n[direct]  \t\r" + (finalNewline ? "\n" : ""));
+  }
 });
