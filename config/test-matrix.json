@@ -143,13 +143,13 @@
     {
       "id": "node-runner-fast",
       "kind": "node-test",
-      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs", "tests_js/local_checks*.test.mjs", "tests_js/migration_inventory.test.mjs", "tests_js/migration_remaining_plan.test.mjs", "tests_js/migration_browser_inventory.test.mjs", "tests_js/migration_packages.test.mjs", "tests_js/migration_requirements.test.mjs", "tests_js/migration_test_bindings.test.mjs", "tests_js/migration_prerequisite_receipts.test.mjs", "tests_js/migration_load_prerequisites.test.mjs", "tests_js/migration_task_manifests.test.mjs", "tests_js/migration_task_receipts.test.mjs"],
+      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs", "tests_js/local_checks*.test.mjs", "tests_js/migration_inventory.test.mjs", "tests_js/migration_remaining_plan.test.mjs", "tests_js/migration_browser_inventory.test.mjs", "tests_js/migration_packages.test.mjs", "tests_js/migration_requirements.test.mjs", "tests_js/migration_test_bindings.test.mjs", "tests_js/migration_prerequisite_receipts.test.mjs", "tests_js/migration_load_prerequisites.test.mjs", "tests_js/migration_task_manifests.test.mjs", "tests_js/migration_task_receipts.test.mjs", "tests_js/migration_task_lineage.test.mjs"],
       "tiers": ["fast", "full"]
     },
     {
       "id": "node-migration-evidence",
       "kind": "node-test",
-      "include": ["tests_js/migration_task_loader.test.mjs", "tests_js/migration_task_handoffs.test.mjs", "tests_js/migration_task_metadata.test.mjs"],
+      "include": ["tests_js/migration_task_loader.test.mjs", "tests_js/migration_task_handoffs.test.mjs", "tests_js/migration_task_metadata.test.mjs", "tests_js/migration_task_replacements.test.mjs", "tests_js/migration_task_lineage_lifecycle.test.mjs"],
       "tiers": ["full"]
     },
     {
@@ -206,6 +206,8 @@
     }
   ],
   "ownership": [
+    {"paths": ["tests_js/migration_task_lineage_support.mjs"], "suites": ["node-runner-fast", "node-migration-evidence"]},
+    {"paths": ["tests_js/migration_task_lineage_git_support.mjs"], "suites": ["node-migration-evidence"]},
     {"paths": ["tests_js/migration_task_support.mjs"], "suites": ["node-runner-fast", "node-migration-evidence"]},
     {"paths": ["tests_js/migration_task_handoff_support.mjs"], "suites": ["node-migration-evidence"]},
     {"paths": ["native/posix/timestamps.c", "native/posix/*.h", "tools/build-native-timestamps.mjs", "tests_js/posix_timestamps_support.mjs"], "suites": ["native-posix-timestamps"]},
