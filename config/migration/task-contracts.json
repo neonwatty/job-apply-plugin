@@ -105,6 +105,26 @@
         "sha256": "dc94d1fd40b2b89c00c8e363dd9e5a15382e34cbda4ea1b64affecce5b79bb44",
         "revision": "be233be0810fd794a72dea770732d4f1ccc774e2"
       }
+    },
+    {
+      "id": "P07.I",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/p07/P07.I.json",
+        "sha256": "1b63e91752c6fda38da85df5cd8291f83d2b5b1917324fae307af0cbe6239719",
+        "revision": "6a72acc9d859d28cc5787ec51dce264fac8cac98"
+      }
+    },
+    {
+      "id": "P07.V",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/p07/P07.V.json",
+        "sha256": "ff9a8c851c0138f41169297dc284d9a83ae00782752b456c29a18b5d9e2f6c3a",
+        "revision": "6a72acc9d859d28cc5787ec51dce264fac8cac98"
+      }
     }
   ],
   "environments": [
@@ -150,6 +170,11 @@
       "path": "docs/migration/evidence/p07/reference-audit.json",
       "sha256": "45748471a078da40c42e1c09ebbf3f6f262159902bc5b5c50ebbb489618c2559",
       "revision": "be233be0810fd794a72dea770732d4f1ccc774e2"
+    },
+    {
+      "path": "docs/migration/evidence/p07/implementation-audit.json",
+      "sha256": "23cd65ab5a038b3de3cd411899f3c8c23978f61a3e5269df923d4c0653751aad",
+      "revision": "6a72acc9d859d28cc5787ec51dce264fac8cac98"
     }
   ]
 }
