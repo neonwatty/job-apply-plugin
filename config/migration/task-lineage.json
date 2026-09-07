@@ -776,6 +776,18 @@
           "sha256": "8e7da06303efc42fdada68b70f9b2ff06345538295f1560a98bfcf3d8c8976ea"
         }
       ]
+    },
+    {
+      "id": "P11.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze truthful streamed-output failure and bounded owned cleanup without changing output limits.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p11/transition.json",
+          "sha256": "b1d50b414d3e2c127a9cf5856cde71ef920b2ec28ff624b700e32182d3b58568"
+        }
+      ]
     }
   ],
   "transitions": [
