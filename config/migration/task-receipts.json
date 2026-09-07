@@ -6983,6 +6983,244 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P10.I",
+      "manifestSha256": "e0c6d48d6facc4f494609004d16bd8077ba352ece88f5800455de544ceb05b07",
+      "subject": {
+        "sha": "e4e85cf125b04bddea2c8b83b70f39bdb36bdfe5",
+        "tree": "26c580a37ad599cea6b9e14fdfd0650b1681019c"
+      },
+      "executionBase": "cba54a01d20e3e69c4ba24ef1858f5ee75e0a185",
+      "evidenceCommit": "f605531b7b6b89610643d0e02679cc3696ed6644",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/test-matrix.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/reference_suite_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/test-runner-selection.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "config/test-matrix.json",
+          "sha256": "0859a8eb3f25160272d579da5f37d6c76d7459c02e48418dc84a0b8ee201f0ed"
+        },
+        {
+          "path": "tests_js/test-runner-selection.test.mjs",
+          "sha256": "1b4d0ddbd0878a66663e41d9f78b8e6fcbcd46c89318c023abc7e8eb8e428310"
+        },
+        {
+          "path": "tests_js/reference_suite_support.mjs",
+          "sha256": "1a1348fca4fa2469d2bfe6fffd6fbf5aaee50a6bdc4cc418840245f1d62e9131"
+        },
+        {
+          "path": "docs/migration/evidence/p10/implementation.md",
+          "sha256": "6b36562b3db9a7595206f7fbd02ad0203a08976cf5b8e51a561354b11eba5357"
+        },
+        {
+          "path": "docs/migration/evidence/p10/implementation-audit.json",
+          "sha256": "0b7507564430b5708cbb3958896536ae13ab5f619c6bd7a1e7c76adb922a0652"
+        },
+        {
+          "path": "docs/migration/evidence/p10/approved-dag.json",
+          "sha256": "bd56e202a38561e9dcb0ac3602ef6c6adf6708f4241e18da98e87b63358e18dd"
+        },
+        {
+          "path": "docs/migration/evidence/p10/P10.I.json",
+          "sha256": "e0c6d48d6facc4f494609004d16bd8077ba352ece88f5800455de544ceb05b07"
+        },
+        {
+          "path": "docs/migration/evidence/p10/P10.V.json",
+          "sha256": "6de5b6fabf964b1814d25814b89495b5e2cb7d5ad29632e10617fd34fb77ac83"
+        },
+        {
+          "path": "docs/migration/evidence/p10/transition.json",
+          "sha256": "d09d11baef79b1ee4d1d3647094a58c3d228490a6627fbf65da379712c3b0345"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P03.retry2.V",
+          "sha256": "bf8967b20ce30e7541f93eeeb4697ce5603b2aeae397701b57e60f5a8c31d43b"
+        },
+        {
+          "id": "S04.R",
+          "sha256": "7be533a916eae6d689073d67c1b2b6751489493d20769ecf5a49c8a4d6441021"
+        },
+        {
+          "id": "S05.R",
+          "sha256": "304ce89bda483fb111648c8de905bb61a55c50601cf9b43ecd07e5a5150f6a9e"
+        }
+      ],
+      "cells": [
+        {
+          "id": "p10.matrix-isolation",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/test-runner-selection.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 6694.028165999999,
+            "outputBytes": 2931,
+            "tests": 13,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p10/logs/P10-matrix-isolation.tap",
+            "sha256": "3231461f1656872d157bf61426778eebd58f562ece338c4bb7cf60bb9c481a96"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "e4e85cf125b04bddea2c8b83b70f39bdb36bdfe5",
+        "subjectTree": "26c580a37ad599cea6b9e14fdfd0650b1681019c",
+        "manifestSha256": "e0c6d48d6facc4f494609004d16bd8077ba352ece88f5800455de544ceb05b07",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P10.V",
+      "manifestSha256": "6de5b6fabf964b1814d25814b89495b5e2cb7d5ad29632e10617fd34fb77ac83",
+      "subject": {
+        "sha": "e4e85cf125b04bddea2c8b83b70f39bdb36bdfe5",
+        "tree": "26c580a37ad599cea6b9e14fdfd0650b1681019c"
+      },
+      "executionBase": "cba54a01d20e3e69c4ba24ef1858f5ee75e0a185",
+      "evidenceCommit": "f605531b7b6b89610643d0e02679cc3696ed6644",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/test-matrix.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/reference_suite_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/test-runner-selection.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "config/test-matrix.json",
+          "sha256": "0859a8eb3f25160272d579da5f37d6c76d7459c02e48418dc84a0b8ee201f0ed"
+        },
+        {
+          "path": "tests_js/test-runner-selection.test.mjs",
+          "sha256": "1b4d0ddbd0878a66663e41d9f78b8e6fcbcd46c89318c023abc7e8eb8e428310"
+        },
+        {
+          "path": "tests_js/reference_suite_support.mjs",
+          "sha256": "1a1348fca4fa2469d2bfe6fffd6fbf5aaee50a6bdc4cc418840245f1d62e9131"
+        },
+        {
+          "path": "docs/migration/evidence/p10/implementation.md",
+          "sha256": "6b36562b3db9a7595206f7fbd02ad0203a08976cf5b8e51a561354b11eba5357"
+        },
+        {
+          "path": "docs/migration/evidence/p10/implementation-audit.json",
+          "sha256": "0b7507564430b5708cbb3958896536ae13ab5f619c6bd7a1e7c76adb922a0652"
+        },
+        {
+          "path": "docs/migration/evidence/p10/approved-dag.json",
+          "sha256": "bd56e202a38561e9dcb0ac3602ef6c6adf6708f4241e18da98e87b63358e18dd"
+        },
+        {
+          "path": "docs/migration/evidence/p10/P10.I.json",
+          "sha256": "e0c6d48d6facc4f494609004d16bd8077ba352ece88f5800455de544ceb05b07"
+        },
+        {
+          "path": "docs/migration/evidence/p10/P10.V.json",
+          "sha256": "6de5b6fabf964b1814d25814b89495b5e2cb7d5ad29632e10617fd34fb77ac83"
+        },
+        {
+          "path": "docs/migration/evidence/p10/transition.json",
+          "sha256": "d09d11baef79b1ee4d1d3647094a58c3d228490a6627fbf65da379712c3b0345"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P10.I",
+          "sha256": "a386ea54d3d0c959298826e66f9ab651c94da5ffd4c4f176c75cdf1054b024f8"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        }
+      ],
+      "cells": [
+        {
+          "id": "p10.matrix-isolation",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/test-runner-selection.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 6694.028165999999,
+            "outputBytes": 2931,
+            "tests": 13,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p10/logs/P10-matrix-isolation.tap",
+            "sha256": "3231461f1656872d157bf61426778eebd58f562ece338c4bb7cf60bb9c481a96"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "e4e85cf125b04bddea2c8b83b70f39bdb36bdfe5",
+        "subjectTree": "26c580a37ad599cea6b9e14fdfd0650b1681019c",
+        "manifestSha256": "6de5b6fabf964b1814d25814b89495b5e2cb7d5ad29632e10617fd34fb77ac83",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
