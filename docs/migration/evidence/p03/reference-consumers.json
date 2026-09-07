@@ -1,0 +1,206 @@
+{
+  "schemaVersion": 1,
+  "status": "draft-not-runtime-contract",
+  "baselineAlways": [
+    "all registered fast suites",
+    "local-build",
+    "local-links"
+  ],
+  "lightGroupId": "local-dependent-unit",
+  "heavyGroupId": "local-dependent-integration",
+  "sourceContractRequires": [
+    "typescript-check",
+    "local-build",
+    "union of lightTests and heavyTests and sharedContractAdditional groups"
+  ],
+  "rules": [
+    {
+      "id": "local-numeric",
+      "runtimePaths": [
+        "src/contracts/raw-json/float-scope.ts",
+        "runtime/contracts/raw-json/float-scope.js"
+      ],
+      "sharedContractPaths": [
+        "src/contracts/raw-json/numeric-atom.ts",
+        "runtime/contracts/raw-json/numeric-atom.js"
+      ],
+      "lightTests": [
+        "tests_js/raw_json_numeric.test.mjs",
+        "tests_js/typed_json_boundary.test.mjs",
+        "tests_js/typed_json_oracle.test.mjs",
+        "tests_js/store_validation_ts.test.mjs",
+        "tests_js/persisted_json_ts.test.mjs",
+        "tests_js/jsonl_json_ts.test.mjs",
+        "tests_js/managed_observation_ts.test.mjs"
+      ],
+      "heavyTests": [
+        "tests_js/store_raw_read_ts.test.mjs",
+        "tests_js/atomic_write_json_ts.test.mjs",
+        "tests_js/jsonl_history_ts.test.mjs",
+        "tests_js/managed_resume_path_ts.test.mjs",
+        "tests_js/exclusive_file_lock_fault_ts.test.mjs",
+        "tests_js/exclusive_file_lock_ts.test.mjs",
+        "tests_js/jsonl_lock_integration.test.mjs"
+      ],
+      "sharedContractAdditionalHeavyTests": [
+        "tests_js/managed_observation_native_ts.test.mjs",
+        "tests_js/posix_path_bytes_ts.test.mjs"
+      ],
+      "referencePaths": [
+        "tools/contracts/raw-json-numeric/reference.py"
+      ],
+      "referenceTests": [
+        "tests_js/raw_json_numeric.test.mjs"
+      ],
+      "testInputPaths": [
+        "tests_js/raw_json_numeric.test.mjs"
+      ],
+      "testInputCompanions": [
+        "tests_js/raw_json_numeric.test.mjs",
+        "tests_js/typed_json_boundary.test.mjs",
+        "tests_js/typed_json_oracle.test.mjs",
+        "tests_js/store_validation_ts.test.mjs"
+      ]
+    },
+    {
+      "id": "local-typed-json",
+      "runtimePaths": [
+        "src/contracts/raw-json/parser.ts",
+        "runtime/contracts/raw-json/parser.js",
+        "src/contracts/raw-json/serializer.ts",
+        "runtime/contracts/raw-json/serializer.js"
+      ],
+      "sharedContractPaths": [
+        "src/contracts/raw-json/value.ts",
+        "runtime/contracts/raw-json/value.js"
+      ],
+      "lightTests": [
+        "tests_js/typed_json_boundary.test.mjs",
+        "tests_js/typed_json_oracle.test.mjs",
+        "tests_js/store_validation_ts.test.mjs",
+        "tests_js/jsonl_json_ts.test.mjs",
+        "tests_js/persisted_json_ts.test.mjs"
+      ],
+      "heavyTests": [
+        "tests_js/store_raw_read_ts.test.mjs",
+        "tests_js/atomic_write_json_ts.test.mjs",
+        "tests_js/jsonl_history_ts.test.mjs",
+        "tests_js/managed_resume_path_ts.test.mjs"
+      ],
+      "sharedContractAdditionalLightTests": [
+        "tests_js/managed_observation_ts.test.mjs"
+      ],
+      "sharedContractAdditionalHeavyTests": [
+        "tests_js/managed_observation_native_ts.test.mjs",
+        "tests_js/posix_path_bytes_ts.test.mjs",
+        "tests_js/exclusive_file_lock_fault_ts.test.mjs",
+        "tests_js/exclusive_file_lock_ts.test.mjs",
+        "tests_js/jsonl_lock_integration.test.mjs"
+      ],
+      "referencePaths": [
+        "tools/contracts/typed-json/reference.py"
+      ],
+      "referenceTests": [
+        "tests_js/typed_json_oracle.test.mjs"
+      ],
+      "testInputPaths": [
+        "tests_js/typed_json_boundary.test.mjs",
+        "tests_js/typed_json_oracle.test.mjs"
+      ],
+      "testInputCompanions": [
+        "tests_js/typed_json_boundary.test.mjs",
+        "tests_js/typed_json_oracle.test.mjs",
+        "tests_js/store_validation_ts.test.mjs"
+      ]
+    },
+    {
+      "id": "local-store-validation",
+      "runtimePaths": [
+        "src/store/validation.ts",
+        "runtime/store/validation.js"
+      ],
+      "lightTests": [
+        "tests_js/store_validation_ts.test.mjs"
+      ],
+      "heavyTests": [
+        "tests_js/store_raw_read_ts.test.mjs",
+        "tests_js/managed_resume_path_ts.test.mjs",
+        "tests_js/posix_path_bytes_ts.test.mjs",
+        "tests_js/managed_observation_native_ts.test.mjs",
+        "tests_js/jsonl_history_ts.test.mjs",
+        "tests_js/jsonl_lock_integration.test.mjs"
+      ],
+      "referencePaths": [
+        "tools/contracts/store-validation/reference.py"
+      ],
+      "referenceTests": [
+        "tests_js/store_validation_ts.test.mjs"
+      ],
+      "testInputPaths": [
+        "tests_js/store_validation_ts.test.mjs"
+      ],
+      "testInputCompanions": [
+        "tests_js/store_validation_ts.test.mjs"
+      ]
+    },
+    {
+      "id": "local-resume-view",
+      "runtimePaths": [
+        "src/workspace-ui/lib/resume-view.ts",
+        "runtime/workspace-ui/lib/resume-view.js"
+      ],
+      "lightTests": [
+        "tests_js/workspace_resume_view_ts.test.mjs",
+        "tests_js/workspace_helpers.test.mjs"
+      ],
+      "heavyTests": [],
+      "testInputPaths": [
+        "tests_js/workspace_resume_view_ts.test.mjs"
+      ],
+      "testInputCompanions": [
+        "tests_js/workspace_resume_view_ts.test.mjs",
+        "tests_js/workspace_helpers.test.mjs"
+      ]
+    },
+    {
+      "id": "local-raw-reference",
+      "referencePaths": [
+        "tools/contracts/answer-matching-raw/capture.mjs",
+        "tools/contracts/answer-matching-raw/fixtures.json",
+        "tools/contracts/answer-matching-raw/reference.py",
+        "contracts/cli/python-answer-matching-raw.schema.json",
+        "test/contract/vectors/python-answer-matching-raw-v1.json"
+      ],
+      "referenceTests": [
+        "tests_js/python-answer-matching-raw.test.mjs"
+      ],
+      "testInputPaths": [
+        "tests_js/python-answer-matching-raw.test.mjs"
+      ],
+      "testInputCompanions": [
+        "tests_js/python-answer-matching-raw.test.mjs"
+      ]
+    },
+    {
+      "id": "local-profile-reference",
+      "referencePaths": [
+        "tools/contracts/profile-facts/capture.mjs",
+        "tools/contracts/profile-facts/driver.py",
+        "tools/contracts/profile-facts/scenarios.py",
+        "contracts/cli/python-profile-fact-mutations.schema.json"
+      ],
+      "referenceTests": [
+        "tests_js/python-profile-fact-contracts.test.mjs"
+      ],
+      "testInputPaths": [
+        "tests_js/python-profile-fact-contracts.test.mjs"
+      ],
+      "testInputCompanions": [
+        "tests_js/python-profile-fact-contracts.test.mjs"
+      ],
+      "conservativeFallbackPaths": [
+        "test/contract/vectors/python-profile-fact-mutations-v1.json"
+      ]
+    }
+  ]
+}

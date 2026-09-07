@@ -136,6 +136,26 @@
           "sha256": "5d6d74d14fbd0e4d6468a82501eb4d0f3aa3b27f152c42e8ae359a1f88f24e20"
         }
       ]
+    },
+    {
+      "id": "P03.implementation-contract-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze independently reviewed P03 affected consumer mapping implementation scope before activation; no implementation acceptance.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03/implementation.md",
+          "sha256": "51ffaa6df468d045915724e9135ded3f440d6a982e1e2798f7c6243b91a11ad1"
+        },
+        {
+          "path": "docs/migration/evidence/p03/implementation-audit.json",
+          "sha256": "df318ccba9e54f979afada169432bbf3ac652b9905140a198b8e25ff8511f22d"
+        },
+        {
+          "path": "docs/migration/evidence/p03/reference-consumers.json",
+          "sha256": "3d1994a02a23447fcfc8456225f59d87adb2908a9442bc3b0f8783a591bd85b6"
+        }
+      ]
     }
   ],
   "transitions": [
