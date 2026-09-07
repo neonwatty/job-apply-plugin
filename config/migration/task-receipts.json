@@ -4252,6 +4252,1226 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "S08.I",
+      "manifestSha256": "a28f0851bce4edb2e3ed0a30b66a0662c67a7eb230327244033f70eee8f1cd34",
+      "subject": {
+        "sha": "bb33fca24865da4386ee0ac205d06adb1a91f313",
+        "tree": "0a916aff1f3127a47e57956a6bd6ce87959ba3de"
+      },
+      "executionBase": "3332e56c6c336f7e407c00d3815bc9677166b79b",
+      "evidenceCommit": "141dc9ed0c1c3c09da86e59ea4eee8a27c52821a",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/review-lock.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-02.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-05.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-s08.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "docs/migration/python-json-points-port.md"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/raw-json/json-serialization-core.js"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "runtime/contracts/raw-json/parser.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/raw-json/point-parser-core.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/raw-json/point-parser.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/raw-json/point-serializer.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/raw-json/point-text-codec.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/raw-json/point-value.js"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "runtime/contracts/raw-json/serializer.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/raw-json/json-serialization-core.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "src/contracts/raw-json/parser.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/raw-json/point-parser-core.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/raw-json/point-parser.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/raw-json/point-serializer.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/raw-json/point-text-codec.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/raw-json/point-value.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "src/contracts/raw-json/serializer.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/jsonl_json_ts.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/persisted_json_ts.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/raw_json_numeric.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/store_validation_ts.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/typed_json_oracle.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/typed_json_points.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/typed_json_points_compat.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/typed_json_points_profiles.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/contracts/raw-json/parser.ts",
+          "sha256": "991dca50454acd430f486f3837cf91962aa211023632136ab54bd2bc8db53444"
+        },
+        {
+          "path": "src/contracts/raw-json/serializer.ts",
+          "sha256": "f0aeb3584ed830ea6612806e32a129013dfd1500d5b680e52c0eb85a46f37493"
+        },
+        {
+          "path": "src/contracts/raw-json/point-value.ts",
+          "sha256": "53cccff53a8278a41ca0866f5e274cf60f3f06495315d142d388cbcc9544612f"
+        },
+        {
+          "path": "src/contracts/raw-json/point-parser-core.ts",
+          "sha256": "491f8d10ac92154858726b68fbeab477c44e6b842a31f799182ff7773154cda3"
+        },
+        {
+          "path": "src/contracts/raw-json/point-text-codec.ts",
+          "sha256": "052ffd794291e408be419924152a3f3255fcd40f9aedaa110ac79540292561fe"
+        },
+        {
+          "path": "src/contracts/raw-json/point-parser.ts",
+          "sha256": "9f87fc28aeebceccd4ef59847058cc35397df98fd6c6c8d8e3c4f9acb41949ec"
+        },
+        {
+          "path": "src/contracts/raw-json/json-serialization-core.ts",
+          "sha256": "d549a9e86b9d7bfb93ad55d8e3f5e3ae47a0db1cd7e3e02483bd191663465f47"
+        },
+        {
+          "path": "src/contracts/raw-json/point-serializer.ts",
+          "sha256": "aa3e880eff91b92904cb452dacda03da41992985a1fd67206263df679233ed06"
+        },
+        {
+          "path": "runtime/contracts/raw-json/parser.js",
+          "sha256": "e56e7a875cea5926b740f8109669476659644595d28b634024d1b427d4ce2825"
+        },
+        {
+          "path": "runtime/contracts/raw-json/serializer.js",
+          "sha256": "854be43fe99dfcad95e2cd1e8763e740a31b0f319712f8c56e9d6e2eecbce390"
+        },
+        {
+          "path": "runtime/contracts/raw-json/point-value.js",
+          "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+        },
+        {
+          "path": "runtime/contracts/raw-json/point-parser-core.js",
+          "sha256": "c077ecc92bdf1f55c3cca8c1ffba728dfde53a3adc69e38e10464b840c910184"
+        },
+        {
+          "path": "runtime/contracts/raw-json/point-text-codec.js",
+          "sha256": "6c5916054ac439ad7a63802fcd2a0445d0366e2ada9df15a0b571c5310bdf12b"
+        },
+        {
+          "path": "runtime/contracts/raw-json/point-parser.js",
+          "sha256": "3214742f49d63491115a2dc12bf25549b2863d3de7b610fde0c5138c4d5d7730"
+        },
+        {
+          "path": "runtime/contracts/raw-json/json-serialization-core.js",
+          "sha256": "8bf9600a57b0ed3f9fce8eaaf12ab383d503ebe71085f00ca46da64dbc5a8a81"
+        },
+        {
+          "path": "runtime/contracts/raw-json/point-serializer.js",
+          "sha256": "4c32aeb1ec85ea5b24e2a53f9dfd4748b84d65379a2752020f4c93a0a1755f73"
+        },
+        {
+          "path": "tests_js/typed_json_points.test.mjs",
+          "sha256": "8b025f68fc0de659ce09342a93b676b62196fb5b0a60211fc9093f9b5113918f"
+        },
+        {
+          "path": "tests_js/typed_json_points_profiles.test.mjs",
+          "sha256": "fde848d7ea573350cba0a9cd541703beb4d5ce8057bf6137a2d4208dd8e251d7"
+        },
+        {
+          "path": "tests_js/typed_json_points_compat.test.mjs",
+          "sha256": "d44fdf6934f8a28f0c0254e599b698df494ef867415617fc1db46c7cc4e3d2a9"
+        },
+        {
+          "path": "docs/migration/python-json-points-port.md",
+          "sha256": "438490cdb3500ccb4b6e3ef84225a45bb34e1a532ac0151c1025f98f7d6528d0"
+        },
+        {
+          "path": "docs/migration/evidence/s08/implementation-audit.json",
+          "sha256": "faa112d6ec38f6e3de1837c26c742166ed0560bf8bf8216bb51364ad15c45623"
+        },
+        {
+          "path": "docs/migration/evidence/s08/S08.I.json",
+          "sha256": "a28f0851bce4edb2e3ed0a30b66a0662c67a7eb230327244033f70eee8f1cd34"
+        },
+        {
+          "path": "docs/migration/evidence/s08/S08.V.json",
+          "sha256": "218899ea4073aac71316b21293a3eaac0a4efd4432560cea93b628d3a4026a62"
+        },
+        {
+          "path": "config/migration/source-catalog-s08.json",
+          "sha256": "09d07a817948f812d918fc9d046efe5a7163cf1039770cb27427d3b70f8b11b0"
+        },
+        {
+          "path": "config/migration/source-catalog-02.json",
+          "sha256": "83fb9e293064e6af97ff36802cea035f1290bd25466bb2ec71679377052b11ab"
+        },
+        {
+          "path": "config/migration/source-catalog-05.json",
+          "sha256": "9d047acdf9200cf4ca06a6cc177123759503bc79a6276dcff1fc49ecf7dcb906"
+        },
+        {
+          "path": "docs/migration/evidence/s08/additional-reference-vectors.json",
+          "sha256": "500ce6a2f35ac9f9e0bfe9ec8a676d0aa1165687a768f53e3bffeacf5048225d"
+        },
+        {
+          "path": "docs/migration/evidence/s08/composed-reference-vectors.json",
+          "sha256": "1ccb7cdb553cd70a1f6107904b595c4a9c9ea720e9d8c5cbc48955233f280e7b"
+        },
+        {
+          "path": "tests_js/typed_json_oracle.test.mjs",
+          "sha256": "427d7fd3abf4a2e8da8ab56c6dcdf9aec4956d0da9282e893682182c3bed7ae3"
+        },
+        {
+          "path": "tests_js/raw_json_numeric.test.mjs",
+          "sha256": "cd7cf65c0e0d67e59a20bfce3e7a0edfe99f00168c2bfc76365524453a66b6c8"
+        },
+        {
+          "path": "tests_js/store_validation_ts.test.mjs",
+          "sha256": "3ea5a15d74374edd94c81e8a2bcb0bd39138cf9ae5e6865b3ad1c0f828e0f80e"
+        },
+        {
+          "path": "tests_js/persisted_json_ts.test.mjs",
+          "sha256": "785b39a1c0348dcdfc53df5a3e968f86e18d789171e8b63568a0d3003ce3d9da"
+        },
+        {
+          "path": "tests_js/jsonl_json_ts.test.mjs",
+          "sha256": "e607311957d866de4ff38b78a1fda86c39bb9f8b9a0bccf0a77d9eb045afb2f9"
+        },
+        {
+          "path": "docs/migration/evidence/s08/implementation.md",
+          "sha256": "063a7fa19b2bf7dd5c54dd97bebcd7f9822904bc51a97ede60d51ae893c6541a"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "S01.V",
+          "sha256": "ac536b74f8b1069698500b265aa91b84b200d0fc4fbb1aa394f0b3cc52ac5caa"
+        },
+        {
+          "id": "S02.retry1.V",
+          "sha256": "819b12489b6bc2644763d76fee3f74dce76b1af0c2afd297205afc3b68f99aa5"
+        },
+        {
+          "id": "S08.R",
+          "sha256": "c1ca7a2e851e160199393dff9de943b1d189660be6443e30de9de1503cee617c"
+        }
+      ],
+      "cells": [
+        {
+          "id": "s08.implementation.points",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/typed_json_points.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 95.51941700000002,
+            "outputBytes": 1690,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-points.tap",
+            "sha256": "13be4d46585804c5870f21c1efab42560fcb452fe45a27638c567c8754d20cab"
+          }
+        },
+        {
+          "id": "s08.implementation.profiles",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/typed_json_points_profiles.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 360.45041700000013,
+            "outputBytes": 12262,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-profiles.tap",
+            "sha256": "94aa0c77b4fac2bcb33ebc7b60b68b53c67053a87577e8b808506cd9f6f390e1"
+          }
+        },
+        {
+          "id": "s08.implementation.compat",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/typed_json_points_compat.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 143.724833,
+            "outputBytes": 1458,
+            "tests": 6,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-compat.tap",
+            "sha256": "ba14e8d6f9b3fa822bd89bd1af8c3b51e481d3580d7565656f324ce35d2cdee2"
+          }
+        },
+        {
+          "id": "s08.implementation.legacy-boundary",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/typed_json_boundary.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 71.53324999999995,
+            "outputBytes": 1809,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-legacy-boundary.tap",
+            "sha256": "b98288af8edcfb8ba9a129676becaf99efcb2576305260e7099fc6512f0317be"
+          }
+        },
+        {
+          "id": "s08.implementation.legacy-oracle",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/typed_json_oracle.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 438.3928329999999,
+            "outputBytes": 2418,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-legacy-oracle.tap",
+            "sha256": "5186bc598be22495f0dfeeb363f1b6c47f7a03f4fa92b5281a317e7c91b2db76"
+          }
+        },
+        {
+          "id": "s08.implementation.numeric",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/raw_json_numeric.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 706.0748330000001,
+            "outputBytes": 2850,
+            "tests": 12,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-numeric.tap",
+            "sha256": "42cecdf6658488bc137c99333f3074f193ebbdb2e49deba7ad7d3c5d8fa96610"
+          }
+        },
+        {
+          "id": "s08.implementation.composed-reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/codepoint_json_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 321.0155420000001,
+            "outputBytes": 1375,
+            "tests": 5,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-composed-reference.tap",
+            "sha256": "7886282a99341a7b0a059d9a78de9e5383e40fcf945a574d86795f1ec79dbac8"
+          }
+        },
+        {
+          "id": "s08.implementation.validation",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/store_validation_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 258.73512500000015,
+            "outputBytes": 1490,
+            "tests": 6,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-validation.tap",
+            "sha256": "7a06874eea2e2d2aa0b93581e03ee51452524432d7856e15b86a8f4bf27e4f05"
+          }
+        },
+        {
+          "id": "s08.implementation.persisted",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/persisted_json_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 174.11733399999957,
+            "outputBytes": 1114,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-persisted.tap",
+            "sha256": "dd1f310d2a9d2036e5eda9ea8be52d6b218a4b891e8c75b3dd0411b955700fa4"
+          }
+        },
+        {
+          "id": "s08.implementation.jsonl",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/jsonl_json_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 155.65554199999997,
+            "outputBytes": 1212,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-jsonl.tap",
+            "sha256": "d26e78bb3394689551b730d5700fb7cac9f1ef010f79323b2a6fb9cac3b29db3"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "bb33fca24865da4386ee0ac205d06adb1a91f313",
+        "subjectTree": "0a916aff1f3127a47e57956a6bd6ce87959ba3de",
+        "manifestSha256": "a28f0851bce4edb2e3ed0a30b66a0662c67a7eb230327244033f70eee8f1cd34",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "S08.V",
+      "manifestSha256": "218899ea4073aac71316b21293a3eaac0a4efd4432560cea93b628d3a4026a62",
+      "subject": {
+        "sha": "bb33fca24865da4386ee0ac205d06adb1a91f313",
+        "tree": "0a916aff1f3127a47e57956a6bd6ce87959ba3de"
+      },
+      "executionBase": "3332e56c6c336f7e407c00d3815bc9677166b79b",
+      "evidenceCommit": "141dc9ed0c1c3c09da86e59ea4eee8a27c52821a",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/review-lock.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-02.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-05.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-s08.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "docs/migration/python-json-points-port.md"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/raw-json/json-serialization-core.js"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "runtime/contracts/raw-json/parser.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/raw-json/point-parser-core.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/raw-json/point-parser.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/raw-json/point-serializer.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/raw-json/point-text-codec.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/raw-json/point-value.js"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "runtime/contracts/raw-json/serializer.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/raw-json/json-serialization-core.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "src/contracts/raw-json/parser.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/raw-json/point-parser-core.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/raw-json/point-parser.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/raw-json/point-serializer.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/raw-json/point-text-codec.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/raw-json/point-value.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "src/contracts/raw-json/serializer.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/jsonl_json_ts.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/persisted_json_ts.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/raw_json_numeric.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/store_validation_ts.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/typed_json_oracle.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/typed_json_points.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/typed_json_points_compat.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/typed_json_points_profiles.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/contracts/raw-json/parser.ts",
+          "sha256": "991dca50454acd430f486f3837cf91962aa211023632136ab54bd2bc8db53444"
+        },
+        {
+          "path": "src/contracts/raw-json/serializer.ts",
+          "sha256": "f0aeb3584ed830ea6612806e32a129013dfd1500d5b680e52c0eb85a46f37493"
+        },
+        {
+          "path": "src/contracts/raw-json/point-value.ts",
+          "sha256": "53cccff53a8278a41ca0866f5e274cf60f3f06495315d142d388cbcc9544612f"
+        },
+        {
+          "path": "src/contracts/raw-json/point-parser-core.ts",
+          "sha256": "491f8d10ac92154858726b68fbeab477c44e6b842a31f799182ff7773154cda3"
+        },
+        {
+          "path": "src/contracts/raw-json/point-text-codec.ts",
+          "sha256": "052ffd794291e408be419924152a3f3255fcd40f9aedaa110ac79540292561fe"
+        },
+        {
+          "path": "src/contracts/raw-json/point-parser.ts",
+          "sha256": "9f87fc28aeebceccd4ef59847058cc35397df98fd6c6c8d8e3c4f9acb41949ec"
+        },
+        {
+          "path": "src/contracts/raw-json/json-serialization-core.ts",
+          "sha256": "d549a9e86b9d7bfb93ad55d8e3f5e3ae47a0db1cd7e3e02483bd191663465f47"
+        },
+        {
+          "path": "src/contracts/raw-json/point-serializer.ts",
+          "sha256": "aa3e880eff91b92904cb452dacda03da41992985a1fd67206263df679233ed06"
+        },
+        {
+          "path": "runtime/contracts/raw-json/parser.js",
+          "sha256": "e56e7a875cea5926b740f8109669476659644595d28b634024d1b427d4ce2825"
+        },
+        {
+          "path": "runtime/contracts/raw-json/serializer.js",
+          "sha256": "854be43fe99dfcad95e2cd1e8763e740a31b0f319712f8c56e9d6e2eecbce390"
+        },
+        {
+          "path": "runtime/contracts/raw-json/point-value.js",
+          "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+        },
+        {
+          "path": "runtime/contracts/raw-json/point-parser-core.js",
+          "sha256": "c077ecc92bdf1f55c3cca8c1ffba728dfde53a3adc69e38e10464b840c910184"
+        },
+        {
+          "path": "runtime/contracts/raw-json/point-text-codec.js",
+          "sha256": "6c5916054ac439ad7a63802fcd2a0445d0366e2ada9df15a0b571c5310bdf12b"
+        },
+        {
+          "path": "runtime/contracts/raw-json/point-parser.js",
+          "sha256": "3214742f49d63491115a2dc12bf25549b2863d3de7b610fde0c5138c4d5d7730"
+        },
+        {
+          "path": "runtime/contracts/raw-json/json-serialization-core.js",
+          "sha256": "8bf9600a57b0ed3f9fce8eaaf12ab383d503ebe71085f00ca46da64dbc5a8a81"
+        },
+        {
+          "path": "runtime/contracts/raw-json/point-serializer.js",
+          "sha256": "4c32aeb1ec85ea5b24e2a53f9dfd4748b84d65379a2752020f4c93a0a1755f73"
+        },
+        {
+          "path": "tests_js/typed_json_points.test.mjs",
+          "sha256": "8b025f68fc0de659ce09342a93b676b62196fb5b0a60211fc9093f9b5113918f"
+        },
+        {
+          "path": "tests_js/typed_json_points_profiles.test.mjs",
+          "sha256": "fde848d7ea573350cba0a9cd541703beb4d5ce8057bf6137a2d4208dd8e251d7"
+        },
+        {
+          "path": "tests_js/typed_json_points_compat.test.mjs",
+          "sha256": "d44fdf6934f8a28f0c0254e599b698df494ef867415617fc1db46c7cc4e3d2a9"
+        },
+        {
+          "path": "docs/migration/python-json-points-port.md",
+          "sha256": "438490cdb3500ccb4b6e3ef84225a45bb34e1a532ac0151c1025f98f7d6528d0"
+        },
+        {
+          "path": "docs/migration/evidence/s08/implementation-audit.json",
+          "sha256": "faa112d6ec38f6e3de1837c26c742166ed0560bf8bf8216bb51364ad15c45623"
+        },
+        {
+          "path": "docs/migration/evidence/s08/S08.I.json",
+          "sha256": "a28f0851bce4edb2e3ed0a30b66a0662c67a7eb230327244033f70eee8f1cd34"
+        },
+        {
+          "path": "docs/migration/evidence/s08/S08.V.json",
+          "sha256": "218899ea4073aac71316b21293a3eaac0a4efd4432560cea93b628d3a4026a62"
+        },
+        {
+          "path": "config/migration/source-catalog-s08.json",
+          "sha256": "09d07a817948f812d918fc9d046efe5a7163cf1039770cb27427d3b70f8b11b0"
+        },
+        {
+          "path": "config/migration/source-catalog-02.json",
+          "sha256": "83fb9e293064e6af97ff36802cea035f1290bd25466bb2ec71679377052b11ab"
+        },
+        {
+          "path": "config/migration/source-catalog-05.json",
+          "sha256": "9d047acdf9200cf4ca06a6cc177123759503bc79a6276dcff1fc49ecf7dcb906"
+        },
+        {
+          "path": "docs/migration/evidence/s08/additional-reference-vectors.json",
+          "sha256": "500ce6a2f35ac9f9e0bfe9ec8a676d0aa1165687a768f53e3bffeacf5048225d"
+        },
+        {
+          "path": "docs/migration/evidence/s08/composed-reference-vectors.json",
+          "sha256": "1ccb7cdb553cd70a1f6107904b595c4a9c9ea720e9d8c5cbc48955233f280e7b"
+        },
+        {
+          "path": "tests_js/typed_json_oracle.test.mjs",
+          "sha256": "427d7fd3abf4a2e8da8ab56c6dcdf9aec4956d0da9282e893682182c3bed7ae3"
+        },
+        {
+          "path": "tests_js/raw_json_numeric.test.mjs",
+          "sha256": "cd7cf65c0e0d67e59a20bfce3e7a0edfe99f00168c2bfc76365524453a66b6c8"
+        },
+        {
+          "path": "tests_js/store_validation_ts.test.mjs",
+          "sha256": "3ea5a15d74374edd94c81e8a2bcb0bd39138cf9ae5e6865b3ad1c0f828e0f80e"
+        },
+        {
+          "path": "tests_js/persisted_json_ts.test.mjs",
+          "sha256": "785b39a1c0348dcdfc53df5a3e968f86e18d789171e8b63568a0d3003ce3d9da"
+        },
+        {
+          "path": "tests_js/jsonl_json_ts.test.mjs",
+          "sha256": "e607311957d866de4ff38b78a1fda86c39bb9f8b9a0bccf0a77d9eb045afb2f9"
+        },
+        {
+          "path": "docs/migration/evidence/s08/implementation.md",
+          "sha256": "063a7fa19b2bf7dd5c54dd97bebcd7f9822904bc51a97ede60d51ae893c6541a"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "S08.I",
+          "sha256": "d5b75c37ef2ed89f02283a6f34222ea0777da86ae52677905f4c9b46e529e213"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        }
+      ],
+      "cells": [
+        {
+          "id": "s08.implementation.points",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/typed_json_points.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 95.51941700000002,
+            "outputBytes": 1690,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-points.tap",
+            "sha256": "13be4d46585804c5870f21c1efab42560fcb452fe45a27638c567c8754d20cab"
+          }
+        },
+        {
+          "id": "s08.implementation.profiles",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/typed_json_points_profiles.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 360.45041700000013,
+            "outputBytes": 12262,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-profiles.tap",
+            "sha256": "94aa0c77b4fac2bcb33ebc7b60b68b53c67053a87577e8b808506cd9f6f390e1"
+          }
+        },
+        {
+          "id": "s08.implementation.compat",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/typed_json_points_compat.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 143.724833,
+            "outputBytes": 1458,
+            "tests": 6,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-compat.tap",
+            "sha256": "ba14e8d6f9b3fa822bd89bd1af8c3b51e481d3580d7565656f324ce35d2cdee2"
+          }
+        },
+        {
+          "id": "s08.implementation.legacy-boundary",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/typed_json_boundary.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 71.53324999999995,
+            "outputBytes": 1809,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-legacy-boundary.tap",
+            "sha256": "b98288af8edcfb8ba9a129676becaf99efcb2576305260e7099fc6512f0317be"
+          }
+        },
+        {
+          "id": "s08.implementation.legacy-oracle",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/typed_json_oracle.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 438.3928329999999,
+            "outputBytes": 2418,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-legacy-oracle.tap",
+            "sha256": "5186bc598be22495f0dfeeb363f1b6c47f7a03f4fa92b5281a317e7c91b2db76"
+          }
+        },
+        {
+          "id": "s08.implementation.numeric",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/raw_json_numeric.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 706.0748330000001,
+            "outputBytes": 2850,
+            "tests": 12,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-numeric.tap",
+            "sha256": "42cecdf6658488bc137c99333f3074f193ebbdb2e49deba7ad7d3c5d8fa96610"
+          }
+        },
+        {
+          "id": "s08.implementation.composed-reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/codepoint_json_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 321.0155420000001,
+            "outputBytes": 1375,
+            "tests": 5,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-composed-reference.tap",
+            "sha256": "7886282a99341a7b0a059d9a78de9e5383e40fcf945a574d86795f1ec79dbac8"
+          }
+        },
+        {
+          "id": "s08.implementation.validation",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/store_validation_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 258.73512500000015,
+            "outputBytes": 1490,
+            "tests": 6,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-validation.tap",
+            "sha256": "7a06874eea2e2d2aa0b93581e03ee51452524432d7856e15b86a8f4bf27e4f05"
+          }
+        },
+        {
+          "id": "s08.implementation.persisted",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/persisted_json_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 174.11733399999957,
+            "outputBytes": 1114,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-persisted.tap",
+            "sha256": "dd1f310d2a9d2036e5eda9ea8be52d6b218a4b891e8c75b3dd0411b955700fa4"
+          }
+        },
+        {
+          "id": "s08.implementation.jsonl",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/jsonl_json_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 155.65554199999997,
+            "outputBytes": 1212,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s08/logs/S08-IV-jsonl.tap",
+            "sha256": "d26e78bb3394689551b730d5700fb7cac9f1ef010f79323b2a6fb9cac3b29db3"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "bb33fca24865da4386ee0ac205d06adb1a91f313",
+        "subjectTree": "0a916aff1f3127a47e57956a6bd6ce87959ba3de",
+        "manifestSha256": "218899ea4073aac71316b21293a3eaac0a4efd4432560cea93b628d3a4026a62",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
