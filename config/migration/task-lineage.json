@@ -1156,6 +1156,18 @@
           "sha256": "6b4d9682261ba2055c98b3ed025b1129de9ac8f58a5b04e718389be36630086d"
         }
       ]
+    },
+    {
+      "id": "core-paths-ui-reference.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Prepare local Mac Store domain and UI reference work in disjoint scopes; reuse accepted evidence and retain later release obligations.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/core-paths-ui/reference-transition.json",
+          "sha256": "e20afcaafa6e87e217b8ae9eabf2189e476bc4df753d2eaae0ac0e3cdc8aa381"
+        }
+      ]
     }
   ],
   "transitions": [
