@@ -1000,6 +1000,22 @@
           "sha256": "1e1c8d8ffea56a0c1cfeb83318153aaa2d03cd3bead3d91735d72f2386ff0bc0"
         }
       ]
+    },
+    {
+      "id": "P05.mac-manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Owner-authorized Mac dogfood scope: qualify this local host; retain broader release obligations without blocking core TypeScript work.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p05/P05.I.json",
+          "sha256": "30635388fb67bcdfbd530f4dcac56b67b183b9b417962ba47c2618de7a1b7c05"
+        },
+        {
+          "path": "docs/migration/evidence/p05/P05.V.json",
+          "sha256": "593ed4c9ef5bdc1ed2080793c138fa457de15194e7947f903f69fd055c36c10f"
+        }
+      ]
     }
   ],
   "transitions": [
