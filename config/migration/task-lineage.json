@@ -923,6 +923,11 @@
       "path": "docs/migration/evidence/p12/transition.json",
       "sha256": "a922c7237a14f9ffd1d0425af1bd616f130a8261b573f56ca7aeda2674b90b7a",
       "revision": "338339f4e0ccbfa987366fe1a9f0ac79c94fa02b"
+    },
+    {
+      "path": "docs/migration/evidence/s04/implementation-transition.json",
+      "sha256": "ac3f6352327f5c49af13ec9faa5ff3a297c92a20482ccf58d9535a432f125a38",
+      "revision": "1c58fa9e5716cb662a83cf43ed3b583eb8589059"
     }
   ]
 }
