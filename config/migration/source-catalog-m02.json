@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "src/contracts/point-filesystem.ts",
+      "sha256": "0cc3d2ce83b01e57f4d735979118302538ac8523cb02ca7970bdc9e2c0f45d4a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/point-filesystem.js",
+      "sha256": "740eb1476164f95d37ace61df69cc78eebd42938eda359aca303dede433abd7e",
+      "classification": "unreviewed"
+    }
+  ]
+}

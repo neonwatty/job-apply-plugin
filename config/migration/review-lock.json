@@ -190,6 +190,10 @@
       "sha256": "f4da5d2b5ca91efe13cb414addb8afc6f255924294bfdaa1d5cdf26f912556ff"
     },
     {
+      "path": "source-catalog-m02.json",
+      "sha256": "0b6ee35143f1ad4f49568ed3d9e15f1cfacf869476a50a151b4fea3fc6f29f41"
+    },
+    {
       "path": "source-catalog-s01.json",
       "sha256": "5ae1fc87a6d4cd78f5f3225f5a969c9adff39115360995a1b7f732d70504cb01"
     },
