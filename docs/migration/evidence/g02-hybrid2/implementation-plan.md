@@ -1,0 +1,3 @@
+# Hybrid frontend integration replacement
+
+Serve TypeScript helpers through the existing Python server, with explicit browser inventory and HTTP/browser surface metadata. Serving changes are active in the checkout; inert is the package schema value, not a claim that the frontend is inactive. Preserve original six browser/HTTP witnesses and original callbacks; add bounded inventory regression tests. No backend cutover, live Store launch or hosted-platform gate is included. Both unreceipted predecessor roles retire with no committed implementation attempt. Retain all old planning documents and ownership paths unchanged.

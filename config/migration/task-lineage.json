@@ -1436,6 +1436,34 @@
           "sha256": "2400b639ae74ea53163ad6e4c62628104e57e7da0658989916461ac0a2fa074b"
         }
       ]
+    },
+    {
+      "id": "g02-hybrid2.documents.preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve original hybrid frontend witnesses while adding explicit browser inventory and surface ownership required for active checkout serving.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/implementation-spec.json",
+          "sha256": "4bbff10626b5cc8eec06a926422b4b5a960e484853b5e18ccf7a54ce058a7c38"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/implementation-plan.md",
+          "sha256": "e4903c7ef9de375d0f7d0bd5495417a76e2568bfd0aa6346e9ca340cfc7a770e"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/integration-dag.json",
+          "sha256": "938e37d2d733b99d5eeba415007398c8e60867a1fde0be597b1d38a4b1283273"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/G02.hybrid2.I.audit.json",
+          "sha256": "49021a4346bec0659a508080469deda17a3f3ae8c3f818b450110fdb3d47c698"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/G02.hybrid2.V.audit.json",
+          "sha256": "2662ecbc6919d5f206f288f9d63cceeb934fc0068e239852351714f668aaa980"
+        }
+      ]
     }
   ],
   "transitions": [
