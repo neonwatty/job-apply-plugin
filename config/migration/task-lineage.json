@@ -1040,6 +1040,22 @@
           "sha256": "55915a61d721d546754f683bdf22bb79c9b5c29e8877fb154213da19f4e772e5"
         }
       ]
+    },
+    {
+      "id": "M02.manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Prepare inert point filesystem codecs against accepted S05 references while native qualification proceeds; retain complete S05 path/cache obligations.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/m02/M02.I.json",
+          "sha256": "ba431c5949ae70afc01760548f10df16d1dc7e19a582a847224bc54abaf459e4"
+        },
+        {
+          "path": "docs/migration/evidence/m02/M02.V.json",
+          "sha256": "ef6c39bf1dc6b222684ab67801daec9da821786ddacf2c2ebd4a833452f98c49"
+        }
+      ]
     }
   ],
   "transitions": [
