@@ -1068,6 +1068,54 @@
           "sha256": "797ae76ea24306ad511d28aa0a107183b3e827f9a2ae71b93c09a5bc5e6ab15d"
         }
       ]
+    },
+    {
+      "id": "core-paths-ui-reference.documents",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Prepare local Mac Store domain and UI reference work in disjoint scopes; reuse accepted evidence and retain later release obligations.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/core-paths-ui/reference-dag.json",
+          "sha256": "12a23a693f86f3072352f8dc063a80044a5f5c66bd61ff62fec42213970de9e3"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain/reference-spec.json",
+          "sha256": "810571942c4cee7c07ba86bbdb92a8b5825b6d6d14b1cb8776df8fea20ee1058"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain/reference-plan.md",
+          "sha256": "9dc7086b41283a47f06be26bce682e58bb7c8593c75801c241b7757f7fc59f61"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain/reference-audit.json",
+          "sha256": "1ddeb14a5e57c254fd5bbdec39c425a90a611234425a332383e8ea3ed47039b7"
+        },
+        {
+          "path": "docs/migration/evidence/u01-reference/reference-spec.json",
+          "sha256": "d24dafa72ff44c9a69ad36c4fa2a38aaab8c33df6cb59c0b89b7a166aca9ffd9"
+        },
+        {
+          "path": "docs/migration/evidence/u01-reference/reference-plan.md",
+          "sha256": "c9911976541cd7ade1a6d417f730acdb7e582d4fc977ea910012348956778396"
+        },
+        {
+          "path": "docs/migration/evidence/u01-reference/reference-audit.json",
+          "sha256": "a52796cb28a521c0443f50812f1b9e759fcf2e3310410b02c10af94dd452549d"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference/reference-spec.json",
+          "sha256": "1e3fee60e79fa46deaf2553e627a00f8c92a407f70786cdcc4cebb7ca4db4b74"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference/reference-plan.md",
+          "sha256": "077603d1a188510ad6f8eb2a553d193eb51e8b180ecb07f91a26ab661e590644"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference/reference-audit.json",
+          "sha256": "f81e58856316c802ebf99919ec5e2d156ceb5127dfdd6f5009616a5f02e50b67"
+        }
+      ]
     }
   ],
   "transitions": [
