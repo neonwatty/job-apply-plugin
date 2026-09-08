@@ -211,11 +211,11 @@
     },
     {
       "path": "task-contracts.json",
-      "sha256": "bf7dffe6bde449c7e62aae66220a6df6842aed7e43767f8b15c6d13404e25093"
+      "sha256": "94854023c9fbc5dc49b51ec2c4199e875a12c4d168c8f8aeff892cccb91c8e8a"
     },
     {
       "path": "task-lineage.json",
-      "sha256": "c7d589e83dfd29762e2c08bf79c0ecccaef64070875b585ff8b0a0c49fcb7ae4"
+      "sha256": "5ce36a28edb8498315fc70113d65320749a0a595b85435d0bb0624c1112eb603"
     },
     {
       "path": "task-receipts.json",
