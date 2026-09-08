@@ -109,3 +109,38 @@ export function observedIO(path, profile, expected) {
   return { io, calls, handles, event, existsCalls: () => existsCalls,
     async cleanup() { for (const handle of handles) await handle.close(); handles.clear(); } };
 }
+
+// Bounded point append observer: all descriptor operations still use owned files.
+export function pointHistoryIO(path, profile, faults = {}, shortWrites = false) {
+  const native = createNativeJsonlHistoryIO(profile);
+  const calls = [], handles = new Set(), writes = [];
+  let rollingBack = false;
+  const fault = stage => { if (Object.hasOwn(faults, stage)) throw faults[stage]; };
+  const io = {
+    async exists(candidate) { calls.push('exists'); return native.exists(candidate); },
+    async open(candidate, flags, mode) {
+      assert.equal(candidate, path); calls.push('open'); fault('open');
+      const handle = await native.open(candidate, flags, mode); handles.add(handle);
+      return {
+        async stat() { calls.push('stat'); fault('stat'); return handle.stat(); },
+        async write(bytes) {
+          calls.push('write');
+          const row = { requested: Buffer.from(bytes), result: null }; writes.push(row);
+          if (writes.length > 1) fault('second-write');
+          fault('write');
+          row.result = await handle.write(shortWrites ? bytes.subarray(0, 3) : bytes);
+          return row.result;
+        },
+        async read(length) { calls.push('read'); return handle.read(length); },
+        async truncate(size) {
+          rollingBack = true; calls.push('truncate'); fault('truncate'); await handle.truncate(size);
+        },
+        async sync() { const stage = rollingBack ? 'rollback-sync' : 'sync'; calls.push(stage); fault(stage); await handle.sync(); },
+        async close() { calls.push('close'); await handle.close(); handles.delete(handle); fault('close'); },
+      };
+    },
+    async chmod(candidate, mode) { assert.equal(candidate, path); assert.equal(mode, 0o600); calls.push('chmod'); await native.chmod(candidate, mode); },
+  };
+  return { io, calls, writes, handles,
+    async cleanup() { for (const handle of handles) await handle.close(); handles.clear(); } };
+}

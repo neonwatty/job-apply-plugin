@@ -3,6 +3,7 @@ import { constants } from "node:fs";
 import { chmod, mkdir, open, rename, stat, unlink } from "node:fs/promises";
 import { filesystemEncode, FilesystemEncodeError } from "../contracts/posix-path-bytes.js";
 import { constructPosixPath, posixParent, validatePathProfile } from "../contracts/posix-path.js";
+import { linkLegacyContext } from "../contracts/persistence-exception.js";
 import { encodePersistedUtf8 } from "../contracts/persisted-json.js";
 import { pythonFilesystemError, withPythonFilesystemErrors } from "../contracts/filesystem-error.js";
 export function isFilesystemError(error) {
@@ -24,7 +25,7 @@ export async function ensurePrivateDirectory(path, io) {
     await io.mkdir(path, { mode: 0o700, parents: true, existOk: true });
     await io.chmod(path, 0o700);
 }
-export async function fsyncDirectory(path, io) {
+export async function fsyncDirectory(path, io, linkContext = linkLegacyContext) {
     let handle;
     try {
         handle = await io.openDirectory(path);
@@ -53,15 +54,15 @@ export async function fsyncDirectory(path, io) {
             await handle.close();
         }
         catch (error) {
-            if (error instanceof Error && failure !== undefined && error !== failure && error.cause === undefined) {
-                error.cause = failure;
-            }
-            throw error;
+            throw linkContext(error, failure);
         }
     }
 }
 /** POSIX native operations. No lock or live Store ownership is implied. */
 export function createNativeAtomicWriteIO(profile) {
+    return createNativeAtomicWriteIOFor(profile, encodePersistedUtf8, linkLegacyContext);
+}
+export function createNativeAtomicWriteIOFor(profile, encode, linkContext) {
     validatePathProfile(profile);
     if (process.platform === "win32")
         throw new Error("Native Windows atomic writes are not supported by this POSIX adapter");
@@ -131,17 +132,13 @@ export function createNativeAtomicWriteIO(profile) {
                         await withPythonFilesystemErrors(handle.close());
                     }
                     catch (closeError) {
-                        if (closeError instanceof Error && closeError !== failure && closeError.cause === undefined)
-                            closeError.cause = failure;
-                        failure = closeError;
+                        failure = linkContext(closeError, failure);
                     }
                     try {
                         await withPythonFilesystemErrors(unlink(nativePath(path)));
                     }
                     catch (cleanupError) {
-                        if (cleanupError instanceof Error && cleanupError !== failure && cleanupError.cause === undefined)
-                            cleanupError.cause = failure;
-                        throw cleanupError;
+                        throw linkContext(cleanupError, failure);
                     }
                     throw failure;
                 }
@@ -189,7 +186,7 @@ export function createNativeAtomicWriteIO(profile) {
                 return {
                     path,
                     async write(text) {
-                        const bytes = encodePersistedUtf8(text);
+                        const bytes = encode(text);
                         if (bytes.length >= 8192 && textCount)
                             await flushText();
                         pendingText.push(bytes);
@@ -213,9 +210,7 @@ export function createNativeAtomicWriteIO(profile) {
                                 await withPythonFilesystemErrors(handle.close());
                             }
                             catch (error) {
-                                if (error instanceof Error && failure !== undefined && error !== failure && error.cause === undefined)
-                                    error.cause = failure;
-                                throw error;
+                                throw linkContext(error, failure);
                             }
                         }
                     },

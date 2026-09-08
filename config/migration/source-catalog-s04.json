@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "src/contracts/persisted-json-core.ts",
+      "sha256": "3524aef4c2d1ed0c2a1d1ca2c9682ff179caf2d2d38c7291c219e651957cee73",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/persistence-exception.ts",
+      "sha256": "0ff8823dae0e711b4c635bc4a83aae4570a618432cf17b250ea7d8bb06c67319",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/point-persistence.ts",
+      "sha256": "e230dc1b12e8ad5f6c5c4287420ac1c64fd8f82246bfdd21daff9fd1030d3889",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/persisted-json-core.js",
+      "sha256": "5a6aba967b58c029aaff613c899ebb675f7c8e6aebb037802a44c4ab9614e77c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/persistence-exception.js",
+      "sha256": "fdadb753373300b02aec11b399aa331d8b0d6296b650ff2d52c941a35218f1e6",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/point-persistence.js",
+      "sha256": "251d9b438da600291447a4c64c836d7980ffa814e008a0822e3b761b4b5541a6",
+      "classification": "unreviewed"
+    }
+  ]
+}

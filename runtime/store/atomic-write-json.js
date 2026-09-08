@@ -1,14 +1,13 @@
 import { iterPersistedJson } from "../contracts/persisted-json.js";
 import { constructPosixPath, posixParent } from "../contracts/posix-path.js";
 import { createNativeAtomicWriteIO, ensurePrivateDirectory, fsyncDirectory, isFilesystemError } from "./private-filesystem.js";
-function withContext(error, previous) {
-    if (error instanceof Error && previous !== undefined && error !== previous && error.cause === undefined) {
-        error.cause = previous;
-    }
-    return error;
-}
+import { linkLegacyContext } from "../contracts/persistence-exception.js";
 /** Atomic document replacement; failures after rename do not roll back installed bytes. */
 export async function atomicWriteJson(path, payload, options, io = createNativeAtomicWriteIO(options.pathProfile)) {
+    return atomicWriteJsonFor(path, iterPersistedJson(payload, options), "\n", io, linkLegacyContext);
+}
+/** One replacement state machine for explicitly selected text and context policies. */
+export async function atomicWriteJsonFor(path, chunks, newline, io, linkContext) {
     path = constructPosixPath("", path);
     const parent = posixParent(path);
     await ensurePrivateDirectory(parent, io);
@@ -20,9 +19,9 @@ export async function atomicWriteJson(path, payload, options, io = createNativeA
         temporaryPath = temporary.path;
         let writeFailure;
         try {
-            for (const chunk of iterPersistedJson(payload, options))
+            for (const chunk of chunks)
                 await temporary.write(chunk);
-            await temporary.write("\n");
+            await temporary.write(newline);
             await temporary.flush();
             await temporary.sync();
         }
@@ -35,14 +34,14 @@ export async function atomicWriteJson(path, payload, options, io = createNativeA
                 await temporary.close();
             }
             catch (error) {
-                throw withContext(error, writeFailure);
+                throw linkContext(error, writeFailure);
             }
         }
         await io.chmod(temporaryPath, 0o600);
         await io.replace(temporaryPath, path);
         temporaryPath = undefined;
         await io.chmod(path, 0o600);
-        await fsyncDirectory(parent, io);
+        await fsyncDirectory(parent, io, linkContext);
     }
     catch (error) {
         failure = error;
@@ -55,7 +54,7 @@ export async function atomicWriteJson(path, payload, options, io = createNativeA
             }
             catch (error) {
                 if (!isFilesystemError(error) || error.code !== "ENOENT")
-                    throw withContext(error, failure);
+                    throw linkContext(error, failure);
             }
         }
     }

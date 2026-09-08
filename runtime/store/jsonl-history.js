@@ -1,3 +1,4 @@
+import { linkLegacyContext } from "../contracts/persistence-exception.js";
 import { constants } from "node:fs";
 import { encodeJsonlJson } from "../contracts/jsonl-json.js";
 import { constructPosixPath } from "../contracts/posix-path.js";
@@ -9,18 +10,16 @@ export class HistoryAppendError extends StoreValidationError {
         this.name = "StoreError";
     }
 }
-function contextual(error, previous) {
-    if (error instanceof Error && previous !== undefined && error !== previous && error.cause === undefined) {
-        error.cause = previous;
-    }
-    return error;
-}
 /** Caller supplies domain idempotency and holds the transaction lock. */
 export async function appendHistoryEvent(path, event, options) {
-    if (await options.isIdempotent(event))
+    return appendHistoryEventFor(path, event, item => options.isIdempotent(item), () => encodeJsonlJson(event, options.serialization), () => options.io ?? createNativeJsonlHistoryIO(options.serialization.pathProfile), linkLegacyContext);
+}
+/** Gate and serialization complete before even selecting a native IO adapter. */
+export async function appendHistoryEventFor(path, event, isIdempotent, serialize, getIO, linkContext) {
+    if (await isIdempotent(event))
         return;
-    const encoded = encodeJsonlJson(event, options.serialization);
-    const io = options.io ?? createNativeJsonlHistoryIO(options.serialization.pathProfile);
+    const encoded = serialize();
+    const io = getIO();
     path = constructPosixPath("", path);
     const handle = await io.open(path, constants.O_WRONLY | constants.O_CREAT | constants.O_APPEND, 0o600);
     // Baseline parity: the initial stat is outside cleanup. Failure does not
@@ -44,7 +43,7 @@ export async function appendHistoryEvent(path, event, options) {
             await handle.sync();
         }
         catch (rollbackError) {
-            failure = contextual(rollbackError, error);
+            failure = linkContext(rollbackError, error);
             throw failure;
         }
         throw error;
@@ -54,7 +53,7 @@ export async function appendHistoryEvent(path, event, options) {
             await handle.close();
         }
         catch (closeError) {
-            throw contextual(closeError, failure);
+            throw linkContext(closeError, failure);
         }
     }
     await io.chmod(path, 0o600);
@@ -86,7 +85,7 @@ export async function repairPendingHistoryTail(path, options) {
             await handle.close();
         }
         catch (closeError) {
-            throw contextual(closeError, failure);
+            throw linkLegacyContext(closeError, failure);
         }
     }
 }
