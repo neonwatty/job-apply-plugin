@@ -83,3 +83,65 @@ test('profile reference: tags retain duplicates, order and String coercion', () 
   assert.deepEqual(h.tagsFromInput(Symbol('synthetic')), ['Symbol(synthetic)']);
   assert.throws(() => h.tagsFromInput(Object.create(null)), TypeError);
 });
+
+test('U01 resume reference preserves counts and default copy', () => {
+  for (const [value, expected] of [
+    [undefined, '0 explicitly assigned active jobs.'],
+    [{ assignedJobCount: 1, implicitJobCount: 2 }, '1 explicitly assigned active job; 2 active jobs use this default.'],
+    [{ assignedJobCount: -1, implicitJobCount: -2 }, '-1 explicitly assigned active jobs; -2 active jobs use this default.'],
+    [{ assignedJobCount: '1', implicitJobCount: Infinity }, '0 explicitly assigned active jobs.'],
+    [{ assignedJobCount: 0.5, implicitJobCount: 1 }, '0 explicitly assigned active jobs; 1 active job use this default.'],
+  ]) assert.equal(h.resumeAssignmentText(value), expected);
+  const frozen = Object.freeze({ assignedJobCount: 1, implicitJobCount: 0 });
+  h.resumeAssignmentText(frozen);
+  assert.deepEqual(frozen, { assignedJobCount: 1, implicitJobCount: 0 });
+});
+
+test('U01 resume reference preserves extraction precedence and malformed projections', () => {
+  for (const [request, proposal, expected] of [
+    [null, null, ['Facts not extracted', 'request', 'neutral']],
+    [{ status: 'cancelled' }, null, ['Facts not extracted', 'request', 'neutral']],
+    [{ status: 'requested' }, null, ['Waiting for a Job Apply agent', 'cancel', 'waiting']],
+    [{ status: 'failed' }, null, ['Fact extraction did not complete', 'retry', 'warning']],
+    [{ status: 'stale' }, null, ['The resume changed after this request', 'fresh', 'warning']],
+    [{ status: 'completed' }, { status: 'pending', staleReasons: { length: -1 } }, ['Extraction review is no longer current', 'fresh', 'warning']],
+    [{ status: 'completed' }, { status: 'pending', staleReasons: [] }, ['Extracted changes need review', 'review', 'review']],
+    [{ status: 'future' }, null, ['Extracted facts were applied or reviewed', 'facts', 'complete']],
+  ]) {
+    const result = h.extractionRequestView(request, proposal);
+    assert.deepEqual(result, { label: expected[0], action: expected[1], tone: expected[2] });
+    assert.notEqual(result, h.extractionRequestView(request, proposal));
+  }
+});
+
+test('U01 resume reference preserves grouping coercion and strict response identity', () => {
+  for (const [path, expected] of [['/firstName', 'Identity'], ['/email', 'Contact'], ['/location', 'Location'],
+    ['/workHistory/0', 'Experience'], ['/education', 'Education'], ['/skills', 'Skills'], ['/githubUrl', 'Links'],
+    [null, 'Additional'], [Symbol('x'), 'Additional'], ['skills', 'Additional'], ['prefix/skills', 'Skills']]) {
+    assert.equal(h.proposalGroupForPath(path), expected);
+  }
+  const shared = {};
+  assert.equal(h.shouldUseResumeResponse(shared, shared, shared, shared), true);
+  assert.equal(h.shouldUseResumeResponse('1', 1, false, false), false);
+  assert.equal(h.shouldUseResumeResponse(1, 1, 0, false), false);
+  assert.equal(h.shouldUseResumeResponse(NaN, NaN, true, true), false);
+});
+
+test('U01 resume reference preserves accessor order and thrown identities', () => {
+  const log = [], failure = { synthetic: true };
+  const resume = { get assignedJobCount() { log.push('assigned'); return 1; },
+    get implicitJobCount() { log.push('implicit'); return 0; } };
+  h.resumeAssignmentText(resume);
+  assert.deepEqual(log, ['assigned', 'assigned', 'implicit', 'implicit']);
+  log.length = 0;
+  h.extractionRequestView({ get status() { log.push('status'); return 'requested'; } },
+    { get status() { throw failure; } });
+  assert.deepEqual(log, ['status', 'status']);
+  assert.throws(() => h.resumeAssignmentText({ get assignedJobCount() { throw failure; } }), e => e === failure);
+  assert.throws(() => h.extractionRequestView({ get status() { throw failure; } }), e => e === failure);
+  assert.throws(() => h.proposalGroupForPath({ [Symbol.toPrimitive](hint) {
+    assert.equal(hint, 'string'); throw failure;
+  } }), e => e === failure);
+  const trap = { [Symbol.toPrimitive]() { throw failure; } };
+  assert.equal(h.shouldUseResumeResponse(trap, trap, trap, trap), true);
+});
