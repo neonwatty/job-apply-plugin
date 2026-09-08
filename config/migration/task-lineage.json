@@ -1016,6 +1016,30 @@
           "sha256": "593ed4c9ef5bdc1ed2080793c138fa457de15194e7947f903f69fd055c36c10f"
         }
       ]
+    },
+    {
+      "id": "M02.documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Prepare inert point filesystem codecs against accepted S05 references while native qualification proceeds; retain complete S05 path/cache obligations.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/m02/approved-dag.json",
+          "sha256": "4a84d41bc1395582f89795ea70fee8c58fadf212181bdcaceadfe5cbbb2ee8b2"
+        },
+        {
+          "path": "docs/migration/evidence/m02/implementation-spec.json",
+          "sha256": "49f5dd16bc37a123877988868f0175c99f7926ca37eb8c2a84e38abe2cbe2087"
+        },
+        {
+          "path": "docs/migration/evidence/m02/implementation.md",
+          "sha256": "18e5fa41bc1e77bc06dd987913df4a81933b96518b547b05062599e4e5a30ca7"
+        },
+        {
+          "path": "docs/migration/evidence/m02/implementation-audit.json",
+          "sha256": "55915a61d721d546754f683bdf22bb79c9b5c29e8877fb154213da19f4e772e5"
+        }
+      ]
     }
   ],
   "transitions": [
