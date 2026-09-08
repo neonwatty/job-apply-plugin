@@ -369,3 +369,14 @@ test('M01 Trusted Fill revocation requests preserve canonical revisions and enco
     return { args: [{ jobId: 'job', get approvalRevision() { log.push('revision'); return ++read === 3 ? 9 : 7; } }] };
   });
 });
+
+import { errorsReference, storageReference, fetchReference, coordinatorReference,
+  stateReference, domReference, fileReference } from './workspace_infrastructure_reference_support.mjs';
+
+test('U02 reference preserves API errors and bounded revision retries', () => errorsReference());
+test('U02 reference preserves token storage and denied storage access', () => storageReference());
+test('U02 reference preserves fetch options response decoding and signal identity', () => fetchReference());
+test('U02 reference preserves stale success failure invalidation and callback throws', () => coordinatorReference());
+test('U02 reference preserves complete state shape and independent mutable containers', () => stateReference());
+test('U02 reference preserves DOM lookup toast replacement and connection guard', () => domReference());
+test('U02 reference preserves FileReader listener ordering and error rejection', () => fileReference());
