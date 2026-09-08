@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "id": "G02.hybrid2.integration-transition",
+  "previousDag": {
+    "path": "docs/migration/evidence/g02-hybrid/integration-dag.json",
+    "sha256": "ccba09337c8f31486b95687e99e6552dc3188395be30cccaed1268788d7ba651",
+    "revision": "4bd4b21e6e37739262288eeb7f08479e4c176a0b"
+  },
+  "nextDag": {
+    "path": "docs/migration/evidence/g02-hybrid2/integration-dag.json",
+    "sha256": "938e37d2d733b99d5eeba415007398c8e60867a1fde0be597b1d38a4b1283273",
+    "revision": "8061447d37e1d0a71b835ef84d5e40db9d2a7e6b"
+  },
+  "retirements": [
+    {
+      "id": "G02.hybrid.I",
+      "manifest": {
+        "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.I.json",
+        "sha256": "efe9190d952d7501c29caa88ba8335563a2e969db25830ae0b1b4ef1877bf7ef",
+        "revision": "4bd4b21e6e37739262288eeb7f08479e4c176a0b"
+      },
+      "replacementId": "G02.hybrid2.I",
+      "attempt": null
+    },
+    {
+      "id": "G02.hybrid.V",
+      "manifest": {
+        "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.V.json",
+        "sha256": "f2ac26d03336f5b3cff1409a1f64c640b4b0a5f8615613e2f975ece913f4c2e3",
+        "revision": "4bd4b21e6e37739262288eeb7f08479e4c176a0b"
+      },
+      "replacementId": "G02.hybrid2.V",
+      "attempt": null
+    }
+  ],
+  "additions": [
+    {
+      "id": "G02.hybrid2.I",
+      "manifest": {
+        "path": "docs/migration/evidence/g02-hybrid2/G02.hybrid2.I.json",
+        "sha256": "5454e51e7015805e98eced1c6c1336662635bf88b5d23ebe9372b3088e583d92",
+        "revision": "8061447d37e1d0a71b835ef84d5e40db9d2a7e6b"
+      }
+    },
+    {
+      "id": "G02.hybrid2.V",
+      "manifest": {
+        "path": "docs/migration/evidence/g02-hybrid2/G02.hybrid2.V.json",
+        "sha256": "5d3e3d67e236a9cbd76a060b21784464414c1133215c70f23d905f0debccc57d",
+        "revision": "8061447d37e1d0a71b835ef84d5e40db9d2a7e6b"
+      }
+    }
+  ],
+  "refinements": [
+    {
+      "id": "G02.I",
+      "beforeDependencies": [
+        "G01.V",
+        "A04.V",
+        "W01.V",
+        "W02.V",
+        "W03.V",
+        "W04.V",
+        "W05.V",
+        "U07.V",
+        "P03.ui-tests.V",
+        "G02.hybrid.V"
+      ],
+      "afterDependencies": [
+        "G01.V",
+        "A04.V",
+        "W01.V",
+        "W02.V",
+        "W03.V",
+        "W04.V",
+        "W05.V",
+        "U07.V",
+        "P03.ui-tests.V",
+        "G02.hybrid2.V"
+      ]
+    }
+  ],
+  "packageVersions": [],
+  "witnessMappings": [
+    {
+      "originalTaskId": "G02.hybrid.I",
+      "replacementTaskId": "G02.hybrid2.I",
+      "originalCellId": "g02.hybrid.browser-assets",
+      "replacementCellId": "g02.hybrid.browser-assets"
+    },
+    {
+      "originalTaskId": "G02.hybrid.V",
+      "replacementTaskId": "G02.hybrid2.V",
+      "originalCellId": "g02.hybrid.browser-assets",
+      "replacementCellId": "g02.hybrid.browser-assets"
+    }
+  ],
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "decision": "approved",
+  "reason": "Preserve original hybrid frontend witnesses while adding explicit browser inventory and surface ownership required for active checkout serving."
+}
