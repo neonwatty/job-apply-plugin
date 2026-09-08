@@ -7691,6 +7691,319 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "S04.I",
+      "manifestSha256": "40c6a5f49420b5cc08be4883bf127538dc7acf26f88b7cdad58eaabd992ee7a6",
+      "subject": {
+        "sha": "80224dae9194bfc71c15686bdb8cf3f2349d59f2",
+        "tree": "3dd28f8fc4de698daa69af158cb8c0797e6f02bb"
+      },
+      "executionBase": "b0f3903b5eac32e8337649a7768de3697768c6d0",
+      "evidenceCommit": "e83ab9aadc076016a34253f012f20fcc5ab0fdee",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/review-lock.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-06.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-s04.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "docs/migration/python-point-persistence-port.md"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/persisted-json-core.js"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "runtime/contracts/persisted-json.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/persistence-exception.js"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "runtime/store/atomic-write-json.js"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "runtime/store/jsonl-history.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/store/point-persistence.js"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "runtime/store/private-filesystem.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/persisted-json-core.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "src/contracts/persisted-json.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/persistence-exception.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "src/store/atomic-write-json.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "src/store/jsonl-history.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/store/point-persistence.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "src/store/private-filesystem.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/atomic_write_json_ts_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/jsonl_history_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/jsonl_json_ts.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/persisted_json_ts.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/contracts/persisted-json.ts",
+          "sha256": "c83b2863ed4f8ead2e592e8fdf24fb9a615273680a50842fec093cffe9a9a1a5"
+        },
+        {
+          "path": "src/contracts/jsonl-json.ts",
+          "sha256": "5bc28e86d18f4a998d3f90b21ef02a7a618adc6627f20850a64592cdd628a76a"
+        },
+        {
+          "path": "src/store/private-filesystem.ts",
+          "sha256": "e27595f544bf23dc7f2f9017ce704cb4f8817af5c3003c75c3e1d7708b463f22"
+        },
+        {
+          "path": "src/store/atomic-write-json.ts",
+          "sha256": "d265f1febf7b4b80de9e383e78f62f186784c67e04f9053dc90b3e2aa7bce1f3"
+        },
+        {
+          "path": "src/store/jsonl-history.ts",
+          "sha256": "d77cacf1a00c49f4faae2bf47a937a29ab08443125dd58f97605f634bf57db88"
+        },
+        {
+          "path": "src/contracts/persisted-json-core.ts",
+          "sha256": "3524aef4c2d1ed0c2a1d1ca2c9682ff179caf2d2d38c7291c219e651957cee73"
+        },
+        {
+          "path": "src/contracts/persistence-exception.ts",
+          "sha256": "0ff8823dae0e711b4c635bc4a83aae4570a618432cf17b250ea7d8bb06c67319"
+        },
+        {
+          "path": "src/store/point-persistence.ts",
+          "sha256": "e230dc1b12e8ad5f6c5c4287420ac1c64fd8f82246bfdd21daff9fd1030d3889"
+        },
+        {
+          "path": "runtime/contracts/persisted-json.js",
+          "sha256": "22af2de52d9db932a0f8f173e4a8230e9ee223e0c62c2b5f32e6c14564a19f5c"
+        },
+        {
+          "path": "runtime/contracts/jsonl-json.js",
+          "sha256": "ee022369d9715ad54fdc984945132e3430df273cbe0326bfb572932d8303fdc9"
+        },
+        {
+          "path": "runtime/store/private-filesystem.js",
+          "sha256": "cece5e0a6c7797a22adc26341bd4d704557dbd6510364d2499a16b4f82c9b3c4"
+        },
+        {
+          "path": "runtime/store/atomic-write-json.js",
+          "sha256": "eba8a1f3010576d1d74f4f5b585dac70a52ccc4e5d66e8be441134cc00afada8"
+        },
+        {
+          "path": "runtime/store/jsonl-history.js",
+          "sha256": "a90b3ec0e54b74d3b3fa6139cad7a34f9e7f1cb89b90982809ca04d437bb7627"
+        },
+        {
+          "path": "runtime/contracts/persisted-json-core.js",
+          "sha256": "5a6aba967b58c029aaff613c899ebb675f7c8e6aebb037802a44c4ab9614e77c"
+        },
+        {
+          "path": "runtime/contracts/persistence-exception.js",
+          "sha256": "fdadb753373300b02aec11b399aa331d8b0d6296b650ff2d52c941a35218f1e6"
+        },
+        {
+          "path": "runtime/store/point-persistence.js",
+          "sha256": "251d9b438da600291447a4c64c836d7980ffa814e008a0822e3b761b4b5541a6"
+        },
+        {
+          "path": "tests_js/persisted_json_ts.test.mjs",
+          "sha256": "620c51b106bc4016ee472f158e7f66a5a68831c037b98cc9bb9df685ebcfc203"
+        },
+        {
+          "path": "tests_js/jsonl_json_ts.test.mjs",
+          "sha256": "c7d2c8959068ef81323fad52b5ece414343f42eb46ac7ef53b0477f7a4374a13"
+        },
+        {
+          "path": "tests_js/atomic_write_json_ts_support.mjs",
+          "sha256": "efb21dd9587c51a6d1e535aeb09a4a24f5dc31f1d71b4316367039b3f76c3b63"
+        },
+        {
+          "path": "tests_js/jsonl_history_support.mjs",
+          "sha256": "f55b61d8d6f82ca2c99d4df7c46774b8c93588f84fb2aa70a95235e4f65d7e41"
+        },
+        {
+          "path": "docs/migration/python-point-persistence-port.md",
+          "sha256": "be5768d4ff0a0610cd1bda2db59bfde8f39f2450687d95a4022c524987db7649"
+        },
+        {
+          "path": "docs/migration/evidence/s04/implementation.md",
+          "sha256": "9d2a5f65c58ee828e531ebbce626a09ed4467d37fa7cd7351c7ee64e6434d612"
+        },
+        {
+          "path": "docs/migration/evidence/s04/implementation-audit.json",
+          "sha256": "cacef81b946b4fb0e8f69a886cba24307629ac7799becd508ccfa5eb77b0080d"
+        },
+        {
+          "path": "docs/migration/evidence/s04/S04.I.json",
+          "sha256": "40c6a5f49420b5cc08be4883bf127538dc7acf26f88b7cdad58eaabd992ee7a6"
+        },
+        {
+          "path": "docs/migration/evidence/s04/S04.V.json",
+          "sha256": "726cfa338470d125d068eff3d16d5b78b5161ec2573c8b1beee34913146738d4"
+        },
+        {
+          "path": "config/migration/source-catalog-06.json",
+          "sha256": "ddc83cc609b3d33d56f2793d4d87db257782a7d276a8c62fe5ff4719df72ab0b"
+        },
+        {
+          "path": "config/migration/source-catalog-s04.json",
+          "sha256": "ce90c0c4da35ff065eab6b77c5cd68aa1c758a5d1dcb207360e7711364ba48b3"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "S08.V",
+          "sha256": "586aa183ed48cf73fb79a363e3c1aeef8e07af2f796b0afa2f030a56210bca99"
+        },
+        {
+          "id": "S04.R",
+          "sha256": "7be533a916eae6d689073d67c1b2b6751489493d20769ecf5a49c8a4d6441021"
+        }
+      ],
+      "cells": [
+        {
+          "id": "s04.implementation.persisted",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/persisted_json_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 341.532083,
+            "outputBytes": 44213,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s04/logs/S04-IV-persisted.tap",
+            "sha256": "8edfebd43fe1bc0a5be89a8e9e8ce57f6f6249e588a68f261f4aa88162d34f5e"
+          }
+        },
+        {
+          "id": "s04.implementation.jsonl",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/jsonl_json_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 278.229333,
+            "outputBytes": 30171,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s04/logs/S04-IV-jsonl.tap",
+            "sha256": "1928b5d9edc40b05c77e74b06bc4640721390aede57c2cbe895c7026cf88937b"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "80224dae9194bfc71c15686bdb8cf3f2349d59f2",
+        "subjectTree": "3dd28f8fc4de698daa69af158cb8c0797e6f02bb",
+        "manifestSha256": "40c6a5f49420b5cc08be4883bf127538dc7acf26f88b7cdad58eaabd992ee7a6",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
