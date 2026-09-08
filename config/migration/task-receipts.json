@@ -8004,6 +8004,272 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "M01.I",
+      "manifestSha256": "b28a70ef58919881aed57e5286e82b0e34c7dac8f434013fc407d4bac509dd2b",
+      "subject": {
+        "sha": "372b455f942fa8c5b7e7d8383fb9c55f251726ab",
+        "tree": "a0f5bd4e72e0efcc4341bae0d2e4ecefe31e0663"
+      },
+      "executionBase": "f08fcee79b522a7ced0aa379f1e76bf854734d80",
+      "evidenceCommit": "aefd829cee2eb2aa87eec581cc88228da2708213",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/review-lock.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-m01.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/workspace-ui/lib/automation-request.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/workspace-ui/lib/automation-request.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/workspace_helpers.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/workspace-ui/lib/automation-request.ts",
+          "sha256": "4bde60e5165aa3edafaba6458730eb194a43ea3f83c75d4019edc84ff93cbc84"
+        },
+        {
+          "path": "runtime/workspace-ui/lib/automation-request.js",
+          "sha256": "ac236f243e821923be48390aaba720ef863f9fa2093cc310631ae9cff9a770a7"
+        },
+        {
+          "path": "tests_js/workspace_helpers.test.mjs",
+          "sha256": "1bef2b13aa7290878016eee312d26944eaa8d18538c17381500b62fa6b3e4ff9"
+        },
+        {
+          "path": "config/migration/source-catalog-m01.json",
+          "sha256": "f4da5d2b5ca91efe13cb414addb8afc6f255924294bfdaa1d5cdf26f912556ff"
+        },
+        {
+          "path": "docs/migration/evidence/m01/approved-dag.json",
+          "sha256": "5f774f203c6a0c2ed8d81811e9c88856ddad2564653e5db58f7cddb32bd05f5a"
+        },
+        {
+          "path": "docs/migration/evidence/m01/implementation-spec.json",
+          "sha256": "845dca4a89a541702a1d509df9e1a996f4bb41cf99b88a7b3f1bd90a5c2bf74b"
+        },
+        {
+          "path": "docs/migration/evidence/m01/implementation.md",
+          "sha256": "5d34a262a2b528c5779db2181cddc50265761009bd47a845907519de22f72bef"
+        },
+        {
+          "path": "docs/migration/evidence/m01/implementation-audit.json",
+          "sha256": "bef80dacb0f8f9d990ea154abb4f6119784b17cfee5d7c34cb2e61b710165df1"
+        },
+        {
+          "path": "docs/migration/evidence/m01/M01.I.json",
+          "sha256": "b28a70ef58919881aed57e5286e82b0e34c7dac8f434013fc407d4bac509dd2b"
+        },
+        {
+          "path": "docs/migration/evidence/m01/M01.V.json",
+          "sha256": "2f5e13c71e93ebae82181dfaf0b0357904b522c87f66f8d043d4dfee617c5395"
+        },
+        {
+          "path": "docs/migration/evidence/m01/transition.json",
+          "sha256": "5dd6b8e4ede299cebcf5dad17369ca92311a5a5806a85a7b6ea8a1598f203c90"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        }
+      ],
+      "cells": [
+        {
+          "id": "m01.requests.node",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_helpers.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 252.32308300000003,
+            "outputBytes": 3610,
+            "tests": 17,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/m01/logs/M01-requests.tap",
+            "sha256": "f2777c22e2d5c30e09814a96d89f7be56afeda98615604b2ed90b5bc710de8f2"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "372b455f942fa8c5b7e7d8383fb9c55f251726ab",
+        "subjectTree": "a0f5bd4e72e0efcc4341bae0d2e4ecefe31e0663",
+        "manifestSha256": "b28a70ef58919881aed57e5286e82b0e34c7dac8f434013fc407d4bac509dd2b",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "M01.V",
+      "manifestSha256": "2f5e13c71e93ebae82181dfaf0b0357904b522c87f66f8d043d4dfee617c5395",
+      "subject": {
+        "sha": "372b455f942fa8c5b7e7d8383fb9c55f251726ab",
+        "tree": "a0f5bd4e72e0efcc4341bae0d2e4ecefe31e0663"
+      },
+      "executionBase": "f08fcee79b522a7ced0aa379f1e76bf854734d80",
+      "evidenceCommit": "aefd829cee2eb2aa87eec581cc88228da2708213",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/review-lock.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-m01.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/workspace-ui/lib/automation-request.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/workspace-ui/lib/automation-request.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/workspace_helpers.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/workspace-ui/lib/automation-request.ts",
+          "sha256": "4bde60e5165aa3edafaba6458730eb194a43ea3f83c75d4019edc84ff93cbc84"
+        },
+        {
+          "path": "runtime/workspace-ui/lib/automation-request.js",
+          "sha256": "ac236f243e821923be48390aaba720ef863f9fa2093cc310631ae9cff9a770a7"
+        },
+        {
+          "path": "tests_js/workspace_helpers.test.mjs",
+          "sha256": "1bef2b13aa7290878016eee312d26944eaa8d18538c17381500b62fa6b3e4ff9"
+        },
+        {
+          "path": "config/migration/source-catalog-m01.json",
+          "sha256": "f4da5d2b5ca91efe13cb414addb8afc6f255924294bfdaa1d5cdf26f912556ff"
+        },
+        {
+          "path": "docs/migration/evidence/m01/approved-dag.json",
+          "sha256": "5f774f203c6a0c2ed8d81811e9c88856ddad2564653e5db58f7cddb32bd05f5a"
+        },
+        {
+          "path": "docs/migration/evidence/m01/implementation-spec.json",
+          "sha256": "845dca4a89a541702a1d509df9e1a996f4bb41cf99b88a7b3f1bd90a5c2bf74b"
+        },
+        {
+          "path": "docs/migration/evidence/m01/implementation.md",
+          "sha256": "5d34a262a2b528c5779db2181cddc50265761009bd47a845907519de22f72bef"
+        },
+        {
+          "path": "docs/migration/evidence/m01/implementation-audit.json",
+          "sha256": "bef80dacb0f8f9d990ea154abb4f6119784b17cfee5d7c34cb2e61b710165df1"
+        },
+        {
+          "path": "docs/migration/evidence/m01/M01.I.json",
+          "sha256": "b28a70ef58919881aed57e5286e82b0e34c7dac8f434013fc407d4bac509dd2b"
+        },
+        {
+          "path": "docs/migration/evidence/m01/M01.V.json",
+          "sha256": "2f5e13c71e93ebae82181dfaf0b0357904b522c87f66f8d043d4dfee617c5395"
+        },
+        {
+          "path": "docs/migration/evidence/m01/transition.json",
+          "sha256": "5dd6b8e4ede299cebcf5dad17369ca92311a5a5806a85a7b6ea8a1598f203c90"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "M01.I",
+          "sha256": "ae43c899e9958321f1927732c92edd892c36825fef53433b04f442969541499b"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        }
+      ],
+      "cells": [
+        {
+          "id": "m01.requests.node",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_helpers.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 252.32308300000003,
+            "outputBytes": 3610,
+            "tests": 17,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/m01/logs/M01-requests.tap",
+            "sha256": "f2777c22e2d5c30e09814a96d89f7be56afeda98615604b2ed90b5bc710de8f2"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "372b455f942fa8c5b7e7d8383fb9c55f251726ab",
+        "subjectTree": "a0f5bd4e72e0efcc4341bae0d2e4ecefe31e0663",
+        "manifestSha256": "2f5e13c71e93ebae82181dfaf0b0357904b522c87f66f8d043d4dfee617c5395",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
