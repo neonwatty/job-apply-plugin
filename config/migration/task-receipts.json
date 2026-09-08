@@ -8004,6 +8004,228 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P02.I",
+      "manifestSha256": "dc704997a542c6d4b99eed60eb22048d0011db8a1a069644f598bba189613d16",
+      "subject": {
+        "sha": "ad65adc893d60f3cd0cdd06a9faffbd2e159f650",
+        "tree": "9fee71d233b5745429bd127ead6b8fb462368710"
+      },
+      "executionBase": "f08fcee79b522a7ced0aa379f1e76bf854734d80",
+      "evidenceCommit": "ac56adaff1898a04904b7f656424e220c54aed90",
+      "diff": [
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "docs/migration/local-mac-milestone.md"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/runtime-support.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/migration/local-mac-host.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/migration/local-mac-host.mjs",
+          "sha256": "14fa7c39de71f25d056025216dc32ce76a445f09002b5cf23d8e0e7a400553bd"
+        },
+        {
+          "path": "tests_js/runtime-support.test.mjs",
+          "sha256": "a6f974f4138ad386d3fe5618b6b2cfd60c9d70a744c3475370340d12080cd0ee"
+        },
+        {
+          "path": "docs/migration/local-mac-milestone.md",
+          "sha256": "dee76d5c62fd7f6ed3150093389810db5c1f060647f3ebad7d193c2e61e4fc8c"
+        },
+        {
+          "path": "docs/migration/evidence/p02/mac-dogfood-spec.json",
+          "sha256": "a8a1fe99cdac43779fd6090f116f21ce220f71f1859c6cab0c7aca1e78c40fcf"
+        },
+        {
+          "path": "docs/migration/evidence/p02/mac-dogfood.md",
+          "sha256": "87aa3a8f4f82b74c6ba5d851eec2dd9d75ef4fc3a031c241231736f9c889fd4b"
+        },
+        {
+          "path": "docs/migration/evidence/p02/mac-dogfood-audit.json",
+          "sha256": "e888294e9ad42b6993838163b346a39c1a4841024f10515aff2722b9d70c791a"
+        },
+        {
+          "path": "docs/migration/evidence/p02/P02.I.json",
+          "sha256": "dc704997a542c6d4b99eed60eb22048d0011db8a1a069644f598bba189613d16"
+        },
+        {
+          "path": "docs/migration/evidence/p02/P02.V.json",
+          "sha256": "2b9937418582e2268b823b9909a253b414e19658a708b03682a5b806e9da81e3"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        }
+      ],
+      "cells": [
+        {
+          "id": "p02.mac-dogfood.identity",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/runtime-support.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 1175.1782090000002,
+            "outputBytes": 6379,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p02/logs/mac-dogfood.tap",
+            "sha256": "bff0aef5c378252a0bca8d9ecbca8c077be3fcd64abd6262e1043994c0a766d5"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "ad65adc893d60f3cd0cdd06a9faffbd2e159f650",
+        "subjectTree": "9fee71d233b5745429bd127ead6b8fb462368710",
+        "manifestSha256": "dc704997a542c6d4b99eed60eb22048d0011db8a1a069644f598bba189613d16",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P02.V",
+      "manifestSha256": "2b9937418582e2268b823b9909a253b414e19658a708b03682a5b806e9da81e3",
+      "subject": {
+        "sha": "ad65adc893d60f3cd0cdd06a9faffbd2e159f650",
+        "tree": "9fee71d233b5745429bd127ead6b8fb462368710"
+      },
+      "executionBase": "f08fcee79b522a7ced0aa379f1e76bf854734d80",
+      "evidenceCommit": "ac56adaff1898a04904b7f656424e220c54aed90",
+      "diff": [
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "docs/migration/local-mac-milestone.md"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/runtime-support.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/migration/local-mac-host.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/migration/local-mac-host.mjs",
+          "sha256": "14fa7c39de71f25d056025216dc32ce76a445f09002b5cf23d8e0e7a400553bd"
+        },
+        {
+          "path": "tests_js/runtime-support.test.mjs",
+          "sha256": "a6f974f4138ad386d3fe5618b6b2cfd60c9d70a744c3475370340d12080cd0ee"
+        },
+        {
+          "path": "docs/migration/local-mac-milestone.md",
+          "sha256": "dee76d5c62fd7f6ed3150093389810db5c1f060647f3ebad7d193c2e61e4fc8c"
+        },
+        {
+          "path": "docs/migration/evidence/p02/mac-dogfood-spec.json",
+          "sha256": "a8a1fe99cdac43779fd6090f116f21ce220f71f1859c6cab0c7aca1e78c40fcf"
+        },
+        {
+          "path": "docs/migration/evidence/p02/mac-dogfood.md",
+          "sha256": "87aa3a8f4f82b74c6ba5d851eec2dd9d75ef4fc3a031c241231736f9c889fd4b"
+        },
+        {
+          "path": "docs/migration/evidence/p02/mac-dogfood-audit.json",
+          "sha256": "e888294e9ad42b6993838163b346a39c1a4841024f10515aff2722b9d70c791a"
+        },
+        {
+          "path": "docs/migration/evidence/p02/P02.I.json",
+          "sha256": "dc704997a542c6d4b99eed60eb22048d0011db8a1a069644f598bba189613d16"
+        },
+        {
+          "path": "docs/migration/evidence/p02/P02.V.json",
+          "sha256": "2b9937418582e2268b823b9909a253b414e19658a708b03682a5b806e9da81e3"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P02.I",
+          "sha256": "d5cf9b904f43bd4a48e78c2dd90b253ad985def65483196f3bbd49a655cb8070"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        }
+      ],
+      "cells": [
+        {
+          "id": "p02.mac-dogfood.identity",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/runtime-support.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 1175.1782090000002,
+            "outputBytes": 6379,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p02/logs/mac-dogfood.tap",
+            "sha256": "bff0aef5c378252a0bca8d9ecbca8c077be3fcd64abd6262e1043994c0a766d5"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "ad65adc893d60f3cd0cdd06a9faffbd2e159f650",
+        "subjectTree": "9fee71d233b5745429bd127ead6b8fb462368710",
+        "manifestSha256": "2b9937418582e2268b823b9909a253b414e19658a708b03682a5b806e9da81e3",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
