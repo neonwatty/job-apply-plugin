@@ -980,6 +980,26 @@
           "sha256": "5dd6b8e4ede299cebcf5dad17369ca92311a5a5806a85a7b6ea8a1598f203c90"
         }
       ]
+    },
+    {
+      "id": "P05.mac-documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Owner-authorized Mac dogfood scope: qualify this local host; retain broader release obligations without blocking core TypeScript work.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p05/mac-dogfood-spec.json",
+          "sha256": "a048766236c975762694150083d92d820e7493d1c480fc5c0e680d4e2648ac38"
+        },
+        {
+          "path": "docs/migration/evidence/p05/mac-dogfood.md",
+          "sha256": "d1313f6563986192677f3bb5bdd22fd4cc54ab7f075907c196d5dcfd8877cb16"
+        },
+        {
+          "path": "docs/migration/evidence/p05/mac-dogfood-audit.json",
+          "sha256": "1e1c8d8ffea56a0c1cfeb83318153aaa2d03cd3bead3d91735d72f2386ff0bc0"
+        }
+      ]
     }
   ],
   "transitions": [
