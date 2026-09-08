@@ -9465,6 +9465,118 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "U02.R",
+      "manifestSha256": "213a36a7650d459f2256f8503540114b6fb23a357f9c542bc830173ef7083622",
+      "subject": {
+        "sha": "79c8ba91bc6b5a9c6c3adb6d629fff8fa6d8968d",
+        "tree": "421fc5e0777c6dc265b4158246448139af994644"
+      },
+      "executionBase": "56b51aafaf57ff0e29299496dae4dbd3d56b8d95",
+      "evidenceCommit": "875f6cefac410af98f8508a387c0bd2236087724",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/workspace_helpers.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/workspace_infrastructure_reference_support.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tests_js/workspace_helpers.test.mjs",
+          "sha256": "752391347ac67ab2624ab3b5ad7297f6e12c618de8f5502fefa2d3636780bb4e"
+        },
+        {
+          "path": "tests_js/workspace_infrastructure_reference_support.mjs",
+          "sha256": "91a69f3e8267076e31ee705546018965ec32b342fcb65f443426864913a62810"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference/reference-spec.json",
+          "sha256": "1e3fee60e79fa46deaf2553e627a00f8c92a407f70786cdcc4cebb7ca4db4b74"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference/reference-plan.md",
+          "sha256": "077603d1a188510ad6f8eb2a553d193eb51e8b180ecb07f91a26ab661e590644"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference/reference-audit.json",
+          "sha256": "f81e58856316c802ebf99919ec5e2d156ceb5127dfdd6f5009616a5f02e50b67"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference/U02.R.json",
+          "sha256": "6b4d9682261ba2055c98b3ed025b1129de9ac8f58a5b04e718389be36630086d"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference-v2/reference-spec.json",
+          "sha256": "c035eab70585299472b347fd109e988dc16f460fea89a3d2c49b39206b4417a2"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference-v2/reference-audit.json",
+          "sha256": "f0c7ad117d26e872af0e479e9e497a7af1b57cfabcd98d1ea9a664f938404be8"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference-v2/U02.R.json",
+          "sha256": "213a36a7650d459f2256f8503540114b6fb23a357f9c542bc830173ef7083622"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        },
+        {
+          "id": "M01.V",
+          "sha256": "6614cc8c0643fe031eff89a6363e0561b60ec3bb05e703050ef8e3457e098cba"
+        }
+      ],
+      "cells": [
+        {
+          "id": "U02-original-reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_helpers.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 222.81575,
+            "outputBytes": 5118,
+            "tests": 24,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/ui/logs/U02-original-reference.tap",
+            "sha256": "0683fbf88e25f0783bb7152f9f4e8c54be3454724fcc2e205b266e54ce0f1c7a"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "79c8ba91bc6b5a9c6c3adb6d629fff8fa6d8968d",
+        "subjectTree": "421fc5e0777c6dc265b4158246448139af994644",
+        "manifestSha256": "213a36a7650d459f2256f8503540114b6fb23a357f9c542bc830173ef7083622",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
