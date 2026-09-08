@@ -1056,6 +1056,18 @@
           "sha256": "ef6c39bf1dc6b222684ab67801daec9da821786ddacf2c2ebd4a833452f98c49"
         }
       ]
+    },
+    {
+      "id": "M02.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Prepare inert point filesystem codecs against accepted S05 references while native qualification proceeds; retain complete S05 path/cache obligations.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/m02/transition.json",
+          "sha256": "797ae76ea24306ad511d28aa0a107183b3e827f9a2ae71b93c09a5bc5e6ab15d"
+        }
+      ]
     }
   ],
   "transitions": [
