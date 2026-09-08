@@ -545,6 +545,16 @@
         "sha256": "213a36a7650d459f2256f8503540114b6fb23a357f9c542bc830173ef7083622",
         "revision": "58fa57de673f657751752b3511de6ab1491321f5"
       }
+    },
+    {
+      "id": "S05.domain2.R",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/s05-domain-v3/S05.domain2.R.json",
+        "sha256": "17181c0ad2466010335c61f96107e999b446e5033b0eb28c66f7a2dee6560916",
+        "revision": "2b464ccecea7a19956a48fcda13e5fb4229bac2d"
+      }
     }
   ],
   "environments": [
@@ -720,6 +730,11 @@
       "path": "docs/migration/evidence/u02-reference-v2/reference-audit.json",
       "sha256": "f0c7ad117d26e872af0e479e9e497a7af1b57cfabcd98d1ea9a664f938404be8",
       "revision": "58fa57de673f657751752b3511de6ab1491321f5"
+    },
+    {
+      "path": "docs/migration/evidence/s05-domain-v3/reference-audit.json",
+      "sha256": "a3f7b6595574ae4daf7c2b148a1b4b5521202233d984b4beba7d10fc4f1591a5",
+      "revision": "3c9250bd5fe132670d7a9f08210aba37e433ba23"
     }
   ]
 }

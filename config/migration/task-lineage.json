@@ -1307,6 +1307,11 @@
       "path": "docs/migration/evidence/core-paths-ui/reference-transition.json",
       "sha256": "e20afcaafa6e87e217b8ae9eabf2189e476bc4df753d2eaae0ac0e3cdc8aa381",
       "revision": "b0d32bde828bee19babf6e835a8451d3c1b56a61"
+    },
+    {
+      "path": "docs/migration/evidence/s05-domain-v3/reference-transition.json",
+      "sha256": "59d57f7837ddc5846fbf66ac8cac2abc173c652655016b48b5ad25c90858b0a2",
+      "revision": "3c9250bd5fe132670d7a9f08210aba37e433ba23"
     }
   ]
 }
