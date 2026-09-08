@@ -585,6 +585,26 @@
         "sha256": "629c90ae12f11417832b548f4413a01e485d7dafa6069df5e2f5dfaab0bb2650",
         "revision": "a18a45c6b7af238d1b852f658ab1e4d8c15c8037"
       }
+    },
+    {
+      "id": "P03.ui-tests.I",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.I.json",
+        "sha256": "99d0c4b86ad25bda1094f85c1c151a881a8e49dd4a50abf84a3f1bfe8e514d2c",
+        "revision": "311b7380792c7647fb64e2e38e7584f337d73ddb"
+      }
+    },
+    {
+      "id": "P03.ui-tests.V",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.V.json",
+        "sha256": "3d80dc21ffe4da5cfe251d4e77f9aaa18bba578b504a32c2957cd64961438524",
+        "revision": "311b7380792c7647fb64e2e38e7584f337d73ddb"
+      }
     }
   ],
   "environments": [
@@ -780,6 +800,16 @@
       "path": "docs/migration/evidence/u01-core-port/U01.V.audit.json",
       "sha256": "354563364d9a3d68540ba3ba19b047b1716901e5eed3d0cb9a4cbbd473f7df18",
       "revision": "a18a45c6b7af238d1b852f658ab1e4d8c15c8037"
+    },
+    {
+      "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.I.audit.json",
+      "sha256": "169529b733845a92753f009c740d9c03931591577548dde3869a9e589143c5ab",
+      "revision": "0b142ba647e6923df724a0b651cdfc47268c50ce"
+    },
+    {
+      "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.V.audit.json",
+      "sha256": "5213e47d6b6b760aa740cb0d3a765a51b12e426cbe6d49c8a010d9f5cc25d890",
+      "revision": "0b142ba647e6923df724a0b651cdfc47268c50ce"
     }
   ]
 }

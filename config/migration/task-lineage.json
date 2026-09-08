@@ -1457,6 +1457,11 @@
       "path": "docs/migration/evidence/s05-domain-v4/reference-transition.json",
       "sha256": "1f509c17d9137c576c966742885200ea5e506d55d8cbf52f7d75e515c88ab3d3",
       "revision": "83045bedd7038c68134d44a759a3a45c93c5f363"
+    },
+    {
+      "path": "docs/migration/evidence/p03-ui-tests/integration-transition.json",
+      "sha256": "bc337c0c686fbe4d6d557226394c8cef3abeb99bdb14003a9abfcfc885543290",
+      "revision": "0b142ba647e6923df724a0b651cdfc47268c50ce"
     }
   ]
 }
