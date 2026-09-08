@@ -9577,6 +9577,295 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "S05.domain3.R",
+      "manifestSha256": "e62c2412222f07b6d0e781d2cabf35c20d17e1918a0771e515a990caffa9dbc2",
+      "subject": {
+        "sha": "0c166867386d5c37974fdc0fa8f9f3610fc333da",
+        "tree": "9363780eadf273e1213d20189f7a7e0241ab3ecb"
+      },
+      "executionBase": "6a8e302f1d264022e8e2288f736697283153b177",
+      "evidenceCommit": "43ec22a8476e76c5dfccc4ece31237d5f72ede93",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/test-matrix.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_task_loader.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/point_paths_domain_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/point_paths_reference.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/resume_modified_at_reference.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/contracts/point-path-domain/fixtures.py"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/contracts/point-path-domain/reference.py"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/contracts/point-path-domain/support.py"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/evidence-io.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/contracts/point-path-domain/reference.py",
+          "sha256": "2580ea18f09f6b1950e8824a0692f27c298adec77fef7a2e3159f044d889799e"
+        },
+        {
+          "path": "tools/contracts/point-path-domain/fixtures.py",
+          "sha256": "e2cc816f3dd3bda5a4595a762c15b52e85a981bb8bd62811cb279a423c1bcff0"
+        },
+        {
+          "path": "tools/contracts/point-path-domain/support.py",
+          "sha256": "49b3c22ecf792354f8b4ad42a6bc990a93cb3a36b46d3c2cd8384a7a8f8dfa92"
+        },
+        {
+          "path": "tests_js/resume_modified_at_reference.test.mjs",
+          "sha256": "aee7183a79dd4bc4edbed70adbcbb964ebaf0a8f10d14274b32e679f05b07b40"
+        },
+        {
+          "path": "tests_js/point_paths_domain_support.mjs",
+          "sha256": "2687af23349e267f65a7a741938185f9da24aab7a7e3e75d77f132f032df0863"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v2/reference-spec.json",
+          "sha256": "28a8cb3a0241240cd2fafb7ee2599e5bf5dbd23231073e1278bc48d29f53a045"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v2/reference-plan.md",
+          "sha256": "a13ded6acb7563f5a908507f71ade18b89ae87c224332bb9c0679dfd78a24032"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v2/reference-audit.json",
+          "sha256": "cd91d87e12e0e7617b9f6162438d745f2d03c6c01ad90548fc678edc28c0ca34"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v2/S05.domain.R.json",
+          "sha256": "5bd2aa32fd588a3e38b1666a9468324390fa83921bc86a4a0dc9477cf8ca26b4"
+        },
+        {
+          "path": "config/test-matrix.json",
+          "sha256": "e8a76ff75921263090954be94f8749dcdcc99f86a895e83d2dabaa925d6d8374"
+        },
+        {
+          "path": "tests_js/point_paths_reference.test.mjs",
+          "sha256": "adadd2a0a89ee3d687041b76a277d1d42da94011898ceb627b15ccc24b1995f8"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v3/reference-spec.json",
+          "sha256": "9b32615765447aea98cb43c79070bfb235be5f299d8990ed98d062380e2053ec"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v3/reference-audit.json",
+          "sha256": "a3f7b6595574ae4daf7c2b148a1b4b5521202233d984b4beba7d10fc4f1591a5"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v3/S05.domain2.R.json",
+          "sha256": "17181c0ad2466010335c61f96107e999b446e5033b0eb28c66f7a2dee6560916"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v3/reference-dag.json",
+          "sha256": "4a0e8f9022f8a47d719f83d211f86a7fee5331182cd23e20e14a91c03a3a96b2"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v3/reference-transition.json",
+          "sha256": "59d57f7837ddc5846fbf66ac8cac2abc173c652655016b48b5ad25c90858b0a2"
+        },
+        {
+          "path": "tools/migration/evidence-io.mjs",
+          "sha256": "b515ab42b60270fd8282af1bf01a9b44b3de6a909ff9e6f892110d02ab2eb5d6"
+        },
+        {
+          "path": "tests_js/migration_task_loader.test.mjs",
+          "sha256": "2c2cf66310e73883d2417b4c5dc5d929da4fa879d98837326962271437f5d106"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v4/reference-spec.json",
+          "sha256": "988b2f3eaa01e8baa8a7f11128bc27ca2aac6fecd44fb8c75f7ea6aabd9e089b"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v4/reference-audit.json",
+          "sha256": "5bf64e3737167503092007a65132173bf347d7dc5b1d28846dd12b70d5233bdf"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v4/S05.domain3.R.json",
+          "sha256": "e62c2412222f07b6d0e781d2cabf35c20d17e1918a0771e515a990caffa9dbc2"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v4/reference-dag.json",
+          "sha256": "8b3a19b4d4d7c7421225a9f5061dc14d65643198c153265d98cc729eae8d3aa8"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v4/reference-transition.json",
+          "sha256": "1f509c17d9137c576c966742885200ea5e506d55d8cbf52f7d75e515c88ab3d3"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        },
+        {
+          "id": "S05.R",
+          "sha256": "304ce89bda483fb111648c8de905bb61a55c50601cf9b43ecd07e5a5150f6a9e"
+        },
+        {
+          "id": "M02.V",
+          "sha256": "a953288b93e03dde8d6d7f05a1980ed4ceee081d41c267fead57c1ed1176bad1"
+        },
+        {
+          "id": "S04.V",
+          "sha256": "c308d9f21efcb704215f9e78fb1a5aaf3dc597204282600238547e5936a70f1d"
+        },
+        {
+          "id": "P12.V",
+          "sha256": "ec247a75c7a3544e39e8b3114455002a5eeaa7a8f987645856bce959b6f8abe9"
+        },
+        {
+          "id": "M01.V",
+          "sha256": "6614cc8c0643fe031eff89a6363e0561b60ec3bb05e703050ef8e3457e098cba"
+        },
+        {
+          "id": "U01.R",
+          "sha256": "dc447d50c8b26c1be1381134f3017f1161231564d667f4a1eb8d7d595ec489f2"
+        },
+        {
+          "id": "U02.R",
+          "sha256": "e77d63779f755df00e58cfb66674f9d3494e22c3b292e24abe3178dac01d33dd"
+        },
+        {
+          "id": "P03.retry2.V",
+          "sha256": "bf8967b20ce30e7541f93eeeb4697ce5603b2aeae397701b57e60f5a8c31d43b"
+        }
+      ],
+      "cells": [
+        {
+          "id": "s05.domain.reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/resume_modified_at_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 768.800834,
+            "outputBytes": 432286,
+            "tests": 10,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s05-domain-v4/logs/s05.domain.reference.tap",
+            "sha256": "9af5923288c7383f38aec601617b4f8b3e6e3d1874065cf0c9d9f85070a2ce88"
+          }
+        },
+        {
+          "id": "s05.domain2.registration",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/point_paths_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 444.33124999999995,
+            "outputBytes": 719958,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s05-domain-v4/logs/s05.domain2.registration.tap",
+            "sha256": "2226f18626f62436186ecd30ddf1777c0d6a7109e9a4a8f498020e90655be60d"
+          }
+        },
+        {
+          "id": "s05.domain3.cache",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_loader.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 15335.635333000002,
+            "outputBytes": 3703,
+            "tests": 15,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s05-domain-v4/logs/cache.tap",
+            "sha256": "351776bb4af195fcdbd56761b565c8404534c0b4acc67adefaf8368ba080010e"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "0c166867386d5c37974fdc0fa8f9f3610fc333da",
+        "subjectTree": "9363780eadf273e1213d20189f7a7e0241ab3ecb",
+        "manifestSha256": "e62c2412222f07b6d0e781d2cabf35c20d17e1918a0771e515a990caffa9dbc2",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
