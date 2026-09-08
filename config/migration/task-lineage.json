@@ -936,6 +936,38 @@
           "sha256": "bef80dacb0f8f9d990ea154abb4f6119784b17cfee5d7c34cb2e61b710165df1"
         }
       ]
+    },
+    {
+      "id": "P02.mac-manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Owner-authorized Mac dogfood scope: qualify this local host; retain broader release obligations without blocking core TypeScript work.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p02/P02.I.json",
+          "sha256": "dc704997a542c6d4b99eed60eb22048d0011db8a1a069644f598bba189613d16"
+        },
+        {
+          "path": "docs/migration/evidence/p02/P02.V.json",
+          "sha256": "2b9937418582e2268b823b9909a253b414e19658a708b03682a5b806e9da81e3"
+        }
+      ]
+    },
+    {
+      "id": "M01.manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Prepare inert pure request builders in parallel with local Mac qualification; retain all existing integration/release prerequisites.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/m01/M01.I.json",
+          "sha256": "b28a70ef58919881aed57e5286e82b0e34c7dac8f434013fc407d4bac509dd2b"
+        },
+        {
+          "path": "docs/migration/evidence/m01/M01.V.json",
+          "sha256": "2f5e13c71e93ebae82181dfaf0b0357904b522c87f66f8d043d4dfee617c5395"
+        }
+      ]
     }
   ],
   "transitions": [
