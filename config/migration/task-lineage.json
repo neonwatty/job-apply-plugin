@@ -1308,6 +1308,22 @@
           "sha256": "354563364d9a3d68540ba3ba19b047b1716901e5eed3d0cb9a4cbbd473f7df18"
         }
       ]
+    },
+    {
+      "id": "core-paths-ui-u01-implementation.U01.manifests",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Accept the next inert Mac core TypeScript modules against preserved original behavior and focused local evidence.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/u01-core-port/U01.I.json",
+          "sha256": "b5a00f661d90611a7aa230dae4dbd61ac24e6c7a8107ff2a2465d9aecd8a1ba4"
+        },
+        {
+          "path": "docs/migration/evidence/u01-core-port/U01.V.json",
+          "sha256": "629c90ae12f11417832b548f4413a01e485d7dafa6069df5e2f5dfaab0bb2650"
+        }
+      ]
     }
   ],
   "transitions": [
