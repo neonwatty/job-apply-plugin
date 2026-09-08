@@ -1216,6 +1216,18 @@
           "sha256": "4a0e8f9022f8a47d719f83d211f86a7fee5331182cd23e20e14a91c03a3a96b2"
         }
       ]
+    },
+    {
+      "id": "S05.domain2.manifest.preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve the original Store reference obligations while explicitly owning test support registration; retire the unexecuted assignment with no fabricated attempt.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s05-domain-v3/S05.domain2.R.json",
+          "sha256": "17181c0ad2466010335c61f96107e999b446e5033b0eb28c66f7a2dee6560916"
+        }
+      ]
     }
   ],
   "transitions": [
