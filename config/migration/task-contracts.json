@@ -495,6 +495,26 @@
         "sha256": "593ed4c9ef5bdc1ed2080793c138fa457de15194e7947f903f69fd055c36c10f",
         "revision": "0e02100ad8586abd13f1cef164558046c822d740"
       }
+    },
+    {
+      "id": "M02.I",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/m02/M02.I.json",
+        "sha256": "ba431c5949ae70afc01760548f10df16d1dc7e19a582a847224bc54abaf459e4",
+        "revision": "ef4baebc78a145730d85c079b369f71468dcf840"
+      }
+    },
+    {
+      "id": "M02.V",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/m02/M02.V.json",
+        "sha256": "ef6c39bf1dc6b222684ab67801daec9da821786ddacf2c2ebd4a833452f98c49",
+        "revision": "ef4baebc78a145730d85c079b369f71468dcf840"
+      }
     }
   ],
   "environments": [
@@ -650,6 +670,11 @@
       "path": "docs/migration/evidence/p05/mac-dogfood-audit.json",
       "sha256": "1e1c8d8ffea56a0c1cfeb83318153aaa2d03cd3bead3d91735d72f2386ff0bc0",
       "revision": "0e02100ad8586abd13f1cef164558046c822d740"
+    },
+    {
+      "path": "docs/migration/evidence/m02/implementation-audit.json",
+      "sha256": "55915a61d721d546754f683bdf22bb79c9b5c29e8877fb154213da19f4e772e5",
+      "revision": "80fa2058bf9733bd2f6831cc5438cdebc3139d08"
     }
   ]
 }
