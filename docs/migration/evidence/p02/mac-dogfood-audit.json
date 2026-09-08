@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "id": "p02-mac-dogfood-audit",
+  "assignmentIds": [
+    "P02.I",
+    "P02.V"
+  ],
+  "allowed_files": [
+    "tools/migration/local-mac-host.mjs",
+    "tests_js/runtime-support.test.mjs",
+    "docs/migration/local-mac-milestone.md",
+    "docs/migration/evidence/p02/mac-dogfood-spec.json",
+    "docs/migration/evidence/p02/mac-dogfood.md",
+    "docs/migration/evidence/p02/mac-dogfood-audit.json",
+    "docs/migration/evidence/p02/P02.I.json",
+    "docs/migration/evidence/p02/P02.V.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "p02.mac.identity",
+    "p02.mac.scope"
+  ],
+  "cells": [
+    {
+      "id": "p02.mac-dogfood.identity",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/runtime-support.test.mjs"
+      ],
+      "testNames": [
+        "missing, timed out and inaccessible runtimes return the same closed receipt",
+        "stable versions distinguish availability from provisional launch compatibility",
+        "malformed, prerelease, noisy and oversized output never reaches receipts",
+        "probe uses a fixed version-only command with bounded execution and no shell",
+        "unsupported platform or architecture cannot be mistaken for proven support",
+        "P02 Mac dogfood scope preserves deferred release qualification",
+        "P02 local Mac identity binds actual executables and rejects drift"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p02/logs/mac-dogfood.tap",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "requirementIds": [
+        "p02.mac.scope",
+        "p02.mac.identity"
+      ]
+    }
+  ],
+  "artifacts": []
+}

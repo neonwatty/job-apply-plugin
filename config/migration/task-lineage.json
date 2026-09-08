@@ -892,6 +892,50 @@
           "sha256": "726cfa338470d125d068eff3d16d5b78b5161ec2573c8b1beee34913146738d4"
         }
       ]
+    },
+    {
+      "id": "P02.mac-documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Owner-authorized Mac dogfood scope: qualify this local host; retain broader release obligations without blocking core TypeScript work.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p02/mac-dogfood-spec.json",
+          "sha256": "a8a1fe99cdac43779fd6090f116f21ce220f71f1859c6cab0c7aca1e78c40fcf"
+        },
+        {
+          "path": "docs/migration/evidence/p02/mac-dogfood.md",
+          "sha256": "87aa3a8f4f82b74c6ba5d851eec2dd9d75ef4fc3a031c241231736f9c889fd4b"
+        },
+        {
+          "path": "docs/migration/evidence/p02/mac-dogfood-audit.json",
+          "sha256": "e888294e9ad42b6993838163b346a39c1a4841024f10515aff2722b9d70c791a"
+        }
+      ]
+    },
+    {
+      "id": "M01.documents-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Prepare inert pure request builders in parallel with local Mac qualification; retain all existing integration/release prerequisites.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/m01/approved-dag.json",
+          "sha256": "5f774f203c6a0c2ed8d81811e9c88856ddad2564653e5db58f7cddb32bd05f5a"
+        },
+        {
+          "path": "docs/migration/evidence/m01/implementation-spec.json",
+          "sha256": "845dca4a89a541702a1d509df9e1a996f4bb41cf99b88a7b3f1bd90a5c2bf74b"
+        },
+        {
+          "path": "docs/migration/evidence/m01/implementation.md",
+          "sha256": "5d34a262a2b528c5779db2181cddc50265761009bd47a845907519de22f72bef"
+        },
+        {
+          "path": "docs/migration/evidence/m01/implementation-audit.json",
+          "sha256": "bef80dacb0f8f9d990ea154abb4f6119784b17cfee5d7c34cb2e61b710165df1"
+        }
+      ]
     }
   ],
   "transitions": [
