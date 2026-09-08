@@ -30,9 +30,19 @@ export async function createEvidenceIO(root) {
   let cachedBytes = 0;
   const immutableGit = args => {
     const key = JSON.stringify(args);
-    if (immutableCache.has(key)) return Buffer.from(immutableCache.get(key));
+    if (immutableCache.has(key)) {
+      const cached = immutableCache.get(key);
+      immutableCache.delete(key);
+      immutableCache.set(key, cached);
+      return Buffer.from(cached);
+    }
     const value = git(args);
-    if (immutableCache.size >= 4096 || cachedBytes + value.length > 8 * 1024 * 1024) { immutableCache.clear(); cachedBytes = 0; }
+    while (immutableCache.size >= 4096 || cachedBytes + value.length > 8 * 1024 * 1024) {
+      const oldest = immutableCache.keys().next().value;
+      if (oldest === undefined) return value;
+      cachedBytes -= immutableCache.get(oldest).length;
+      immutableCache.delete(oldest);
+    }
     immutableCache.set(key, Buffer.from(value)); cachedBytes += value.length;
     return value;
   };
@@ -75,6 +85,13 @@ export async function createEvidenceIO(root) {
       if (!sha(base) || !sha(head)) return false;
       const key = `${base}:${head}`;
       if (negativeAncestry.has(key)) return false;
+      try {
+        const history = immutableGit(['rev-list', head]);
+        // Match complete object-ID lines only. Nonmembership is not authoritative:
+        // merge-base also accepts tag IDs, and shallow boundaries can change.
+        const index = history.indexOf(`${base}\n`);
+        if (index >= 0 && (index === 0 || history[index - 1] === 10)) return true;
+      } catch { /* Preserve the original query when history exceeds read limits. */ }
       try { immutableGit(['merge-base', '--is-ancestor', base, head]); return true; }
       catch (error) {
         if (error.status === 1 && revision(base) && revision(head)) {

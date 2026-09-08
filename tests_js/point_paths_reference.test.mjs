@@ -390,3 +390,36 @@ test('S05 point filesystem codec preserves trusted text identity and leaves lega
     || (point >= 0xdc80 && point <= 0xdcff)));
   assert.deepEqual(filesystemEncodePoint(decoded), Buffer.from(allBytes));
 });
+
+// Immutable prior matrix canonicalization preserves every key and array order.
+const registrationBaselineSha256 = '9df019e90b2bf485917f94364c36cbfd6ab8dd94f8d3ced21c383957985183ac';
+const registrationOwnership = {
+  "paths": [
+    "tests_js/point_paths_domain_support.mjs",
+    "tests_js/point_managed_path_support.mjs",
+    "tests_js/point_managed_observation_support.mjs",
+    "tests_js/point_managed_native_support.mjs"
+  ],
+  "suites": [
+    "node-workspace-other",
+    "node-reference-s05"
+  ]
+};
+
+test('S05 path support registration preserves the exact prior matrix', t => {
+  const matrix = JSON.parse(readFileSync(join(root, 'config/test-matrix.json'), 'utf8'));
+  assert.deepEqual(matrix.ownership.at(-1), registrationOwnership);
+  for (const path of registrationOwnership.paths) {
+    const owners = matrix.ownership.filter(rule => rule.paths.includes(path));
+    assert.deepEqual(owners, [registrationOwnership], path);
+  }
+  for (const id of registrationOwnership.suites) {
+    const suites = matrix.suites.filter(suite => suite.id === id);
+    assert.equal(suites.length, 1);
+    assert.equal(suites[0].kind, 'node-test');
+    assert.ok(suites[0].tiers.includes('full'));
+  }
+  matrix.ownership.pop();
+  assert.equal(hash(JSON.stringify(matrix)), registrationBaselineSha256);
+  t.diagnostic(JSON.stringify({ registrationBaselineSha256, ownership: registrationOwnership }));
+});
