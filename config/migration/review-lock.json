@@ -186,6 +186,10 @@
       "sha256": "ddc83cc609b3d33d56f2793d4d87db257782a7d276a8c62fe5ff4719df72ab0b"
     },
     {
+      "path": "source-catalog-m01.json",
+      "sha256": "f4da5d2b5ca91efe13cb414addb8afc6f255924294bfdaa1d5cdf26f912556ff"
+    },
+    {
       "path": "source-catalog-s01.json",
       "sha256": "5ae1fc87a6d4cd78f5f3225f5a969c9adff39115360995a1b7f732d70504cb01"
     },
@@ -211,7 +215,7 @@
     },
     {
       "path": "task-receipts.json",
-      "sha256": "a585c1752962e4c4fc462384a1325443b2be88171ff1e6205d11bed9816fd12c"
+      "sha256": "6f0428846a45e3d8e9e0531ff4fed0800caeeef80ec68dc02400f47a06cae2b3"
     }
   ]
 }

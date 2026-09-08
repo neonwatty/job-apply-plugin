@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "src/workspace-ui/lib/automation-request.ts",
+      "sha256": "4bde60e5165aa3edafaba6458730eb194a43ea3f83c75d4019edc84ff93cbc84",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/automation-request.js",
+      "sha256": "ac236f243e821923be48390aaba720ef863f9fa2093cc310631ae9cff9a770a7",
+      "classification": "unreviewed"
+    }
+  ]
+}
