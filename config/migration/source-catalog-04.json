@@ -198,7 +198,7 @@
     },
     {
       "path": "scripts/job_apply_workspace/__init__.py",
-      "sha256": "cc5a9faef05e7d0db633383f2bb6feb3b45ac51cb860c962db7afeb8c59137c2",
+      "sha256": "4c0763d4d350961e76c819521cc7ac0f80cfdd5026ae9f161782b6664a7b21a4",
       "classification": "unreviewed"
     },
     {
@@ -258,7 +258,7 @@
     },
     {
       "path": "scripts/job_apply_workspace/queries.py",
-      "sha256": "ebef03248a68a9795d640ec2a7cfab07216884335a1ad9687d8905bd75e99856",
+      "sha256": "a34746be015c28e2ba8e69cf1931e7dd6db1c9ca0167f3ebaf8e5cfe722a1673",
       "classification": "unreviewed"
     },
     {

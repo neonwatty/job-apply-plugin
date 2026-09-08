@@ -99,3 +99,12 @@ test("navigation has a collision-free row and focus-safe narrow-width overflow",
   assert.match(css, /@media \(max-width:\s*760px\)\s*\{[\s\S]*?\.nav-group\s*\{[^}]*flex:\s*0 0 calc\(100% - \.9rem\)[^}]*min-width:\s*0[^}]*scroll-snap-align:\s*start/);
   assert.match(css, /@media \(max-width:\s*760px\)\s*\{[\s\S]*?\.nav-link\s*\{[^}]*padding-inline:\s*\.35rem[^}]*scroll-snap-align:\s*none/);
 });
+
+
+import { hybridAssets } from './workspace_hybrid_assets_support.mjs';
+import { hybridBrowser } from './workspace_hybrid_browser_support.mjs';
+test('hybrid UI serves exact TypeScript helper assets through guarded Python routes', { timeout: 15000 }, () => hybridAssets());
+test('hybrid UI boots real Python server with compiled helper identities and navigation', { timeout: 100000 }, async t => {
+  const result = await hybridBrowser();
+  t.diagnostic(JSON.stringify(result));
+});

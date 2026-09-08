@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { discoverBrowserExports, checkBrowserBindings } from './browser-exports.mjs';
+import { detectServingMap, HYBRID_RUNTIME_PATHS } from './browser-serving-map.mjs';
 import { validateRequirements, missingRequirementCoverage } from './requirements.mjs';
 import { validatePackages } from './packages.mjs';
 import { discoverTestIds } from './test-bindings.mjs';
@@ -161,17 +162,27 @@ export async function checkInventory(root, options = {}) {
   const paths = allPaths.filter(inSourceScope);
   const actual = new Map();
   const browserFiles = new Map();
+  const servingFiles = new Map();
   for (const path of new Set(paths)) {
     try {
       const bytes = await readFile(resolve(root, path));
       actual.set(path, createHash('sha256').update(bytes).digest('hex'));
       if (path.startsWith('workspace/') && path.endsWith('.js')) browserFiles.set(path, bytes.toString('utf8'));
+      if (HYBRID_RUNTIME_PATHS.includes(path)
+        || ['scripts/job_apply_workspace/__init__.py', 'scripts/job_apply_workspace/queries.py'].includes(path)) {
+        servingFiles.set(path, bytes.toString('utf8'));
+      }
     }
     catch (error) { if (error.code !== 'ENOENT') throw error; }
   }
   let taskEvidence = { currentAcceptance: 'open', acceptedTasks: new Set(), acceptedPackages: new Set() };
   const errors = validateInventory({ nodes: nodesFile.nodes, sources, surfaces }, actual, options);
-  errors.push(...checkBrowserBindings(discoverBrowserExports(browserFiles), surfaces));
+  const servingMap = detectServingMap(new Map([...browserFiles, ...servingFiles]));
+  if (servingMap) for (const path of HYBRID_RUNTIME_PATHS) {
+    if (!servingFiles.has(path)) throw new Error(`Missing browser export source: ${path}`);
+    browserFiles.set(path, servingFiles.get(path));
+  }
+  errors.push(...checkBrowserBindings(discoverBrowserExports(browserFiles, servingMap), surfaces));
   if (requirements.length || packages.length) {
     const matrix = await loadMatrix(root);
     const testIds = new Map();

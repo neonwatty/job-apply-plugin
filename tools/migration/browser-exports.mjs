@@ -1,8 +1,10 @@
 import ts from 'typescript';
 import { posix } from 'node:path';
+import { validateServingMap, HYBRID_RUNTIME_PATHS } from './browser-serving-map.mjs';
 
 // Parse only. Browser initialization, network requests and imports never execute.
-export function discoverBrowserExports(files) {
+export function discoverBrowserExports(files, servingMap) {
+  validateServingMap(servingMap);
   const cache = new Map();
   const visiting = new Set();
   function exportsOf(path) {
@@ -26,7 +28,11 @@ export function discoverBrowserExports(files) {
           if (!ts.isStringLiteral(statement.moduleSpecifier)
             || !statement.moduleSpecifier.text.startsWith('.')) throw new Error(`Unsupported browser re-export: ${path}`);
           target = posix.normalize(posix.join(posix.dirname(path), statement.moduleSpecifier.text));
-          if (!target.startsWith('workspace/')) throw new Error(`Browser re-export escapes workspace: ${path}`);
+          if (servingMap && Object.hasOwn(servingMap, target)) target = servingMap[target];
+          if (!target.startsWith('workspace/')
+            && !(servingMap && HYBRID_RUNTIME_PATHS.includes(target))) {
+            throw new Error(`Browser re-export escapes workspace: ${path}`);
+          }
         }
         if (!statement.exportClause) {
           if (!target) throw new Error(`Missing export-star target: ${path}`);

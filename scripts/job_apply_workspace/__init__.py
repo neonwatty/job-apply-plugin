@@ -22,7 +22,9 @@ ASSETS = {
     "/bootstrap.js": ("bootstrap.js", "text/javascript; charset=utf-8"),
     "/lib/api.js": ("lib/api.js", "text/javascript; charset=utf-8"),
     "/lib/dom.js": ("lib/dom.js", "text/javascript; charset=utf-8"),
-    "/lib/helpers.js": ("lib/helpers.js", "text/javascript; charset=utf-8"),
+    "/lib/helpers.js": ("lib/helpers-bridge.js",
+                           "text/javascript; charset=utf-8"),
+    "/lib/helpers-original.js": ("lib/helpers.js", "text/javascript; charset=utf-8"),
     "/lib/state.js": ("lib/state.js", "text/javascript; charset=utf-8"),
     "/features/activity.js": ("features/activity.js", "text/javascript; charset=utf-8"),
     "/features/answers.js": ("features/answers.js", "text/javascript; charset=utf-8"),
@@ -37,6 +39,15 @@ ASSETS = {
     "/styles.css": ("styles.css", "text/css; charset=utf-8"),
 }
 
+
+RUNTIME_ASSET_ROOT = ROOT / "runtime" / "workspace-ui" / "lib"
+RUNTIME_ASSETS = {
+    "/runtime/workspace-ui/lib/answer-view.js": ("answer-view.js", "text/javascript; charset=utf-8"),
+    "/runtime/workspace-ui/lib/profile-view.js": ("profile-view.js", "text/javascript; charset=utf-8"),
+    "/runtime/workspace-ui/lib/resume-view.js": ("resume-view.js", "text/javascript; charset=utf-8"),
+    "/runtime/workspace-ui/lib/trash-view.js": ("trash-view.js", "text/javascript; charset=utf-8"),
+    "/runtime/workspace-ui/lib/activity-view.js": ("activity-view.js", "text/javascript; charset=utf-8"),
+}
 
 _RUNTIME_PROVIDER: Callable[[], dict[str, Any]] = lambda: globals()
 

@@ -3,19 +3,23 @@
   "files": [
     {
       "path": "browser-app-01-surfaces.json",
-      "sha256": "4ea6235f44faad25f758cb308548caf80358335700285ed4b47500a0b8803efa"
+      "sha256": "3b7315fda4337f14fa1de7e6542556b6afd36c47f73a3401368f1890c3a6b133"
     },
     {
       "path": "browser-app-02-surfaces.json",
-      "sha256": "eb8b4518ec4481e022770df75aa3e6a8be7de60386a9a9137b3a6c9ad48c3600"
+      "sha256": "04f75994f9ce9732edffb10b51e7d6c54c6e95b1dd93c1146f7fccc4095107db"
     },
     {
       "path": "browser-app-03-surfaces.json",
-      "sha256": "59ba858a42bc2a950d67dcf24f57a19f5cf2ecaa38a34bf0b0e844dfb0768b03"
+      "sha256": "65730fd0d5a3c2143462c760a60588458ab8814f2061757f7ed031380208593f"
     },
     {
       "path": "browser-feature-surfaces.json",
       "sha256": "2c36a1d5a089bf832f48d463962fe57c4a8f150f4eb2b2edf224d117034c5655"
+    },
+    {
+      "path": "browser-g02-hybrid2-surfaces.json",
+      "sha256": "7c8b97fc5cd38521af6a46e198d54bbfccde331bdc7bcf2a40afbf4a99b88a64"
     },
     {
       "path": "browser-lib-01-surfaces.json",
@@ -80,6 +84,10 @@
     {
       "path": "http-asset-surfaces.json",
       "sha256": "90e7e2c9c6539291573e4f19343f45452c49979b612dcc7b5f119dfd72700df3"
+    },
+    {
+      "path": "http-g02-hybrid2-surfaces.json",
+      "sha256": "9807b8eb1bf6dbb680643acef90693183628bf1d14dad4e78f874390fb7f070a"
     },
     {
       "path": "http-read-detail-surfaces.json",
@@ -175,7 +183,7 @@
     },
     {
       "path": "source-catalog-04.json",
-      "sha256": "c4d89d61564a1c6d60760a9884b366a9457415811b2f169b9bfec039f8ccbd07"
+      "sha256": "5b766419f4ad630c51969174fb71d6c5bbd22c89b2436491aaa180cf1af45abc"
     },
     {
       "path": "source-catalog-05.json",
@@ -184,6 +192,10 @@
     {
       "path": "source-catalog-06.json",
       "sha256": "ddc83cc609b3d33d56f2793d4d87db257782a7d276a8c62fe5ff4719df72ab0b"
+    },
+    {
+      "path": "source-catalog-g02-hybrid.json",
+      "sha256": "ac3805d3ae08643b2baf0966cb6e0113cf947d54cb4a34e1db5cd114d906de07"
     },
     {
       "path": "source-catalog-m01.json",

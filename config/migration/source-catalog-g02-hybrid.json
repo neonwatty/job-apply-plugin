@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "workspace/lib/helpers-bridge.js",
+      "sha256": "c475f199d60d10ab20e1a5da1829f8f3f1df94cb21226cbd1659824a3e4678b3",
+      "classification": "unreviewed"
+    }
+  ]
+}

@@ -53,3 +53,41 @@ test('local export lists and multiple star binding chains require explicit revie
     ['workspace/d.js', 'export const x = 1, y = 2;'],
   ])), /Ambiguous/);
 });
+
+import { HYBRID_SERVING_MAP, HYBRID_RUNTIME_PATHS, detectServingMap } from '../tools/migration/browser-serving-map.mjs';
+const hybridFiles = () => new Map([
+  ['workspace/app.js', 'export * from "./lib/helpers.js";'],
+  ['workspace/lib/helpers.js', 'export function original() {} export function fileToBase64() {}'],
+  ['workspace/lib/helpers-bridge.js', 'export { compiled } from "../../runtime/workspace-ui/lib/answer-view.js"; export { fileToBase64 } from "./helpers-original.js";'],
+  ...HYBRID_RUNTIME_PATHS.map(path => [path, 'export function compiled() {}']),
+]);
+test('closed browser serving map preserves physical originals and actual app runtime origins', () => {
+  const found = discoverBrowserExports(hybridFiles(), HYBRID_SERVING_MAP);
+  assert.deepEqual(found.find(row => row.path === 'workspace/app.js' && row.name === 'compiled').sources,
+    ['workspace/app.js', 'workspace/lib/helpers-bridge.js', 'runtime/workspace-ui/lib/answer-view.js']);
+  assert.deepEqual(found.find(row => row.path === 'workspace/app.js' && row.name === 'fileToBase64').sources,
+    ['workspace/app.js', 'workspace/lib/helpers-bridge.js', 'workspace/lib/helpers.js']);
+  assert.ok(found.some(row => row.path === 'workspace/lib/helpers.js' && row.name === 'original'));
+  assert.equal(found.filter(row => row.path.startsWith('runtime/')).length, 5);
+  assert.deepEqual(checkBrowserBindings(found, found.map(row => ({kind:'browser',export:row.name,sources:row.sources}))), []);
+  assert.throws(() => discoverBrowserExports(hybridFiles()), /escapes workspace/);
+});
+test('closed browser serving map rejects arbitrary aliases accessors missing leaves and escapes', () => {
+  for (const map of [null, {}, {...HYBRID_SERVING_MAP, extra:'workspace/x.js'},
+    {...HYBRID_SERVING_MAP, 'workspace/lib/helpers.js':'workspace/lib/helpers.js'},
+    Object.create(HYBRID_SERVING_MAP), Object.defineProperty({...HYBRID_SERVING_MAP}, 'workspace/lib/helpers.js', {get(){throw Error('never execute');}})]) {
+    assert.throws(() => discoverBrowserExports(hybridFiles(), map), /Unsupported browser serving map/);
+  }
+  const missing = hybridFiles();missing.delete(HYBRID_RUNTIME_PATHS[0]);
+  assert.throws(() => discoverBrowserExports(missing, HYBRID_SERVING_MAP), /Missing browser export source/);
+  const escaping = hybridFiles();escaping.set('workspace/lib/helpers-bridge.js','export * from "../../runtime/private.js";');
+  assert.throws(() => discoverBrowserExports(escaping, HYBRID_SERVING_MAP), /escapes workspace/);
+  const cyclic = hybridFiles();cyclic.set('workspace/lib/helpers-bridge.js','export * from "./helpers.js";');
+  assert.throws(() => discoverBrowserExports(cyclic, HYBRID_SERVING_MAP), /Cyclic/);
+});
+test('browser serving detection stays disabled without bridge and rejects unreviewed server bytes', () => {
+  assert.equal(detectServingMap(new Map()), undefined);
+  assert.throws(() => detectServingMap(hybridFiles()), /serving implementation requires review/);
+  const bad = hybridFiles();bad.set('scripts/job_apply_workspace/__init__.py','ASSETS = {}');
+  assert.throws(() => detectServingMap(bad), /serving implementation requires review/);
+});
