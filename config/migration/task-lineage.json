@@ -1228,6 +1228,18 @@
           "sha256": "17181c0ad2466010335c61f96107e999b446e5033b0eb28c66f7a2dee6560916"
         }
       ]
+    },
+    {
+      "id": "S05.domain2.transition.preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve the original Store reference obligations while explicitly owning test support registration; retire the unexecuted assignment with no fabricated attempt.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s05-domain-v3/reference-transition.json",
+          "sha256": "59d57f7837ddc5846fbf66ac8cac2abc173c652655016b48b5ad25c90858b0a2"
+        }
+      ]
     }
   ],
   "transitions": [
