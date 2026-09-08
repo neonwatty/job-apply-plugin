@@ -1136,6 +1136,26 @@
           "sha256": "cd91d87e12e0e7617b9f6162438d745f2d03c6c01ad90548fc678edc28c0ca34"
         }
       ]
+    },
+    {
+      "id": "core-paths-ui-reference.manifests",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Prepare local Mac Store domain and UI reference work in disjoint scopes; reuse accepted evidence and retain later release obligations.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s05-domain-v2/S05.domain.R.json",
+          "sha256": "5bd2aa32fd588a3e38b1666a9468324390fa83921bc86a4a0dc9477cf8ca26b4"
+        },
+        {
+          "path": "docs/migration/evidence/u01-reference/U01.R.json",
+          "sha256": "c8720cfe3445721d22212336d5e6d767827d2e8603580a2d3f3901c26a9c9a42"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference/U02.R.json",
+          "sha256": "6b4d9682261ba2055c98b3ed025b1129de9ac8f58a5b04e718389be36630086d"
+        }
+      ]
     }
   ],
   "transitions": [
