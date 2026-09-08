@@ -1260,6 +1260,18 @@
           "sha256": "8b3a19b4d4d7c7421225a9f5061dc14d65643198c153265d98cc729eae8d3aa8"
         }
       ]
+    },
+    {
+      "id": "S05.domain3.manifest.preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Preserve all existing Store reference and registration witnesses while owning the bounded immutable Git cache correction and its loader regression; retire the uncommitted predecessor without fabricating an attempt.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s05-domain-v4/S05.domain3.R.json",
+          "sha256": "e62c2412222f07b6d0e781d2cabf35c20d17e1918a0771e515a990caffa9dbc2"
+        }
+      ]
     }
   ],
   "transitions": [
