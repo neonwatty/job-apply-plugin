@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "id": "M01.mac-parallel-transition",
+  "previousDag": {
+    "path": "docs/migration/evidence/s04/implementation-dag.json",
+    "sha256": "20d6f5bcdee165f74db0714b2be67695c2c31ec77ed04d36a7c75187978bfa79",
+    "revision": "fd43d510f2e657b4897f924c2dd406f4552ee8ab"
+  },
+  "nextDag": {
+    "path": "docs/migration/evidence/m01/approved-dag.json",
+    "sha256": "5f774f203c6a0c2ed8d81811e9c88856ddad2564653e5db58f7cddb32bd05f5a",
+    "revision": "5fcecdb1459d4e8e71de90a35f725e50a3db4e0f"
+  },
+  "retirements": [],
+  "additions": [
+    {
+      "id": "M01.I",
+      "manifest": {
+        "path": "docs/migration/evidence/m01/M01.I.json",
+        "sha256": "b28a70ef58919881aed57e5286e82b0e34c7dac8f434013fc407d4bac509dd2b",
+        "revision": "5fcecdb1459d4e8e71de90a35f725e50a3db4e0f"
+      }
+    },
+    {
+      "id": "M01.V",
+      "manifest": {
+        "path": "docs/migration/evidence/m01/M01.V.json",
+        "sha256": "2f5e13c71e93ebae82181dfaf0b0357904b522c87f66f8d043d4dfee617c5395",
+        "revision": "5fcecdb1459d4e8e71de90a35f725e50a3db4e0f"
+      }
+    }
+  ],
+  "refinements": [
+    {
+      "id": "U02.I",
+      "beforeDependencies": [
+        "U01.V",
+        "U02.R"
+      ],
+      "afterDependencies": [
+        "U01.V",
+        "U02.R",
+        "M01.V"
+      ]
+    },
+    {
+      "id": "P05.I",
+      "beforeDependencies": [
+        "P01.V",
+        "P02.V"
+      ],
+      "afterDependencies": [
+        "P01.V",
+        "P02.V",
+        "S04.I"
+      ]
+    }
+  ],
+  "packageVersions": [],
+  "witnessMappings": [],
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "decision": "approved",
+  "reason": "Add inert UI preparation while preserving U01.V/U02.R, and bind local Mac native qualification to accepted S04 implementation without weakening broader release obligations."
+}

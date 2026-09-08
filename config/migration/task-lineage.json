@@ -968,6 +968,18 @@
           "sha256": "2f5e13c71e93ebae82181dfaf0b0357904b522c87f66f8d043d4dfee617c5395"
         }
       ]
+    },
+    {
+      "id": "M01.transition-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Prepare inert pure request builders in parallel with local Mac qualification; retain all existing integration/release prerequisites.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/m01/transition.json",
+          "sha256": "5dd6b8e4ede299cebcf5dad17369ca92311a5a5806a85a7b6ea8a1598f203c90"
+        }
+      ]
     }
   ],
   "transitions": [
