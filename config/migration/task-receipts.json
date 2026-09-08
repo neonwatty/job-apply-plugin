@@ -8492,6 +8492,276 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "M02.I",
+      "manifestSha256": "ba431c5949ae70afc01760548f10df16d1dc7e19a582a847224bc54abaf459e4",
+      "subject": {
+        "sha": "47ba882e46a5269c0d56b649cb886822d10f2429",
+        "tree": "34a3eaa3371d9cda2b8060f2970c97465d797215"
+      },
+      "executionBase": "673ea1aa8c648b95e813f95432eb42fed1439640",
+      "evidenceCommit": "67b20daf3a7029f4491698cab3db5e4cb576a3f8",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/review-lock.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-m02.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/point-filesystem.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/point-filesystem.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/point_paths_reference.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/contracts/point-filesystem.ts",
+          "sha256": "0cc3d2ce83b01e57f4d735979118302538ac8523cb02ca7970bdc9e2c0f45d4a"
+        },
+        {
+          "path": "runtime/contracts/point-filesystem.js",
+          "sha256": "740eb1476164f95d37ace61df69cc78eebd42938eda359aca303dede433abd7e"
+        },
+        {
+          "path": "tests_js/point_paths_reference.test.mjs",
+          "sha256": "ce1bce883838e8520ce94fcf796bb9a7b7fa4dc574f26c3b096e0da2b8eb5abc"
+        },
+        {
+          "path": "config/migration/source-catalog-m02.json",
+          "sha256": "0b6ee35143f1ad4f49568ed3d9e15f1cfacf869476a50a151b4fea3fc6f29f41"
+        },
+        {
+          "path": "docs/migration/evidence/m02/approved-dag.json",
+          "sha256": "4a84d41bc1395582f89795ea70fee8c58fadf212181bdcaceadfe5cbbb2ee8b2"
+        },
+        {
+          "path": "docs/migration/evidence/m02/implementation-spec.json",
+          "sha256": "49f5dd16bc37a123877988868f0175c99f7926ca37eb8c2a84e38abe2cbe2087"
+        },
+        {
+          "path": "docs/migration/evidence/m02/implementation.md",
+          "sha256": "18e5fa41bc1e77bc06dd987913df4a81933b96518b547b05062599e4e5a30ca7"
+        },
+        {
+          "path": "docs/migration/evidence/m02/implementation-audit.json",
+          "sha256": "55915a61d721d546754f683bdf22bb79c9b5c29e8877fb154213da19f4e772e5"
+        },
+        {
+          "path": "docs/migration/evidence/m02/M02.I.json",
+          "sha256": "ba431c5949ae70afc01760548f10df16d1dc7e19a582a847224bc54abaf459e4"
+        },
+        {
+          "path": "docs/migration/evidence/m02/M02.V.json",
+          "sha256": "ef6c39bf1dc6b222684ab67801daec9da821786ddacf2c2ebd4a833452f98c49"
+        },
+        {
+          "path": "docs/migration/evidence/m02/transition.json",
+          "sha256": "797ae76ea24306ad511d28aa0a107183b3e827f9a2ae71b93c09a5bc5e6ab15d"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "S05.R",
+          "sha256": "304ce89bda483fb111648c8de905bb61a55c50601cf9b43ecd07e5a5150f6a9e"
+        },
+        {
+          "id": "S08.V",
+          "sha256": "586aa183ed48cf73fb79a363e3c1aeef8e07af2f796b0afa2f030a56210bca99"
+        }
+      ],
+      "cells": [
+        {
+          "id": "m02.codec.node",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/point_paths_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 497.87858299999994,
+            "outputBytes": 721800,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/m02/logs/M02-codec.tap",
+            "sha256": "a0807551d311a192dd45fc844a5c4bbe5ce28a557658e379c29c22ea662db5d4"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "47ba882e46a5269c0d56b649cb886822d10f2429",
+        "subjectTree": "34a3eaa3371d9cda2b8060f2970c97465d797215",
+        "manifestSha256": "ba431c5949ae70afc01760548f10df16d1dc7e19a582a847224bc54abaf459e4",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "M02.V",
+      "manifestSha256": "ef6c39bf1dc6b222684ab67801daec9da821786ddacf2c2ebd4a833452f98c49",
+      "subject": {
+        "sha": "47ba882e46a5269c0d56b649cb886822d10f2429",
+        "tree": "34a3eaa3371d9cda2b8060f2970c97465d797215"
+      },
+      "executionBase": "673ea1aa8c648b95e813f95432eb42fed1439640",
+      "evidenceCommit": "67b20daf3a7029f4491698cab3db5e4cb576a3f8",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/review-lock.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-m02.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/point-filesystem.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/point-filesystem.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/point_paths_reference.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/contracts/point-filesystem.ts",
+          "sha256": "0cc3d2ce83b01e57f4d735979118302538ac8523cb02ca7970bdc9e2c0f45d4a"
+        },
+        {
+          "path": "runtime/contracts/point-filesystem.js",
+          "sha256": "740eb1476164f95d37ace61df69cc78eebd42938eda359aca303dede433abd7e"
+        },
+        {
+          "path": "tests_js/point_paths_reference.test.mjs",
+          "sha256": "ce1bce883838e8520ce94fcf796bb9a7b7fa4dc574f26c3b096e0da2b8eb5abc"
+        },
+        {
+          "path": "config/migration/source-catalog-m02.json",
+          "sha256": "0b6ee35143f1ad4f49568ed3d9e15f1cfacf869476a50a151b4fea3fc6f29f41"
+        },
+        {
+          "path": "docs/migration/evidence/m02/approved-dag.json",
+          "sha256": "4a84d41bc1395582f89795ea70fee8c58fadf212181bdcaceadfe5cbbb2ee8b2"
+        },
+        {
+          "path": "docs/migration/evidence/m02/implementation-spec.json",
+          "sha256": "49f5dd16bc37a123877988868f0175c99f7926ca37eb8c2a84e38abe2cbe2087"
+        },
+        {
+          "path": "docs/migration/evidence/m02/implementation.md",
+          "sha256": "18e5fa41bc1e77bc06dd987913df4a81933b96518b547b05062599e4e5a30ca7"
+        },
+        {
+          "path": "docs/migration/evidence/m02/implementation-audit.json",
+          "sha256": "55915a61d721d546754f683bdf22bb79c9b5c29e8877fb154213da19f4e772e5"
+        },
+        {
+          "path": "docs/migration/evidence/m02/M02.I.json",
+          "sha256": "ba431c5949ae70afc01760548f10df16d1dc7e19a582a847224bc54abaf459e4"
+        },
+        {
+          "path": "docs/migration/evidence/m02/M02.V.json",
+          "sha256": "ef6c39bf1dc6b222684ab67801daec9da821786ddacf2c2ebd4a833452f98c49"
+        },
+        {
+          "path": "docs/migration/evidence/m02/transition.json",
+          "sha256": "797ae76ea24306ad511d28aa0a107183b3e827f9a2ae71b93c09a5bc5e6ab15d"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "M02.I",
+          "sha256": "f3afdaaf160d5122871daf9ca4c506fcd665da8e4e7271aef8fe8e4cae44e647"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        }
+      ],
+      "cells": [
+        {
+          "id": "m02.codec.node",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/point_paths_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 497.87858299999994,
+            "outputBytes": 721800,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/m02/logs/M02-codec.tap",
+            "sha256": "a0807551d311a192dd45fc844a5c4bbe5ce28a557658e379c29c22ea662db5d4"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "47ba882e46a5269c0d56b649cb886822d10f2429",
+        "subjectTree": "34a3eaa3371d9cda2b8060f2970c97465d797215",
+        "manifestSha256": "ef6c39bf1dc6b222684ab67801daec9da821786ddacf2c2ebd4a833452f98c49",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }
