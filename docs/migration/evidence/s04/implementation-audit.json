@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "id": "s04-implementation-audit",
+  "assignmentIds": [
+    "S04.I",
+    "S04.V"
+  ],
+  "allowed_files": [
+    "src/contracts/persisted-json.ts",
+    "src/contracts/jsonl-json.ts",
+    "src/store/private-filesystem.ts",
+    "src/store/atomic-write-json.ts",
+    "src/store/jsonl-history.ts",
+    "src/contracts/persisted-json-core.ts",
+    "src/contracts/persistence-exception.ts",
+    "src/store/point-persistence.ts",
+    "runtime/contracts/persisted-json.js",
+    "runtime/contracts/jsonl-json.js",
+    "runtime/store/private-filesystem.js",
+    "runtime/store/atomic-write-json.js",
+    "runtime/store/jsonl-history.js",
+    "runtime/contracts/persisted-json-core.js",
+    "runtime/contracts/persistence-exception.js",
+    "runtime/store/point-persistence.js",
+    "tests_js/persisted_json_ts.test.mjs",
+    "tests_js/jsonl_json_ts.test.mjs",
+    "tests_js/atomic_write_json_ts_support.mjs",
+    "tests_js/jsonl_history_support.mjs",
+    "docs/migration/python-point-persistence-port.md",
+    "docs/migration/evidence/s04/implementation.md",
+    "docs/migration/evidence/s04/implementation-audit.json",
+    "docs/migration/evidence/s04/S04.I.json",
+    "docs/migration/evidence/s04/S04.V.json",
+    "config/migration/source-catalog-06.json",
+    "config/migration/source-catalog-s04.json"
+  ],
+  "emittedFiles": [
+    "runtime/contracts/persisted-json.js",
+    "runtime/contracts/jsonl-json.js",
+    "runtime/store/private-filesystem.js",
+    "runtime/store/atomic-write-json.js",
+    "runtime/store/jsonl-history.js",
+    "runtime/contracts/persisted-json-core.js",
+    "runtime/contracts/persistence-exception.js",
+    "runtime/store/point-persistence.js"
+  ],
+  "dependencies": [],
+  "requirementIds": [
+    "s04.i.chunks",
+    "s04.i.atomic",
+    "s04.i.exceptions",
+    "s04.i.boundaries",
+    "s04.i.jsonl",
+    "s04.i.rollback",
+    "s04.i.legacy"
+  ],
+  "cells": [
+    {
+      "id": "s04.implementation.persisted",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/persisted_json_ts.test.mjs"
+      ],
+      "testNames": [
+        "persisted JSON chunks and strict UTF8 match Python: python3",
+        "persisted JSON chunks and strict UTF8 match Python: python3.12",
+        "persisted JSON chunks and strict UTF8 match Python: python3.13",
+        "persisted JSON chunks and strict UTF8 match Python: python3.14",
+        "S04 point persisted chunks preserve explicit codepoints and profile order",
+        "S04 point atomic writes preserve native chunk failures and cleanup context",
+        "S04 point persistence preserves explicit causes and reused exception identity",
+        "S04 point persistence rejects forged inputs and preserves legacy mixed-key boundaries"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s04/logs/S04-IV-persisted.tap",
+      "requirementIds": [
+        "s04.i.atomic",
+        "s04.i.boundaries",
+        "s04.i.chunks",
+        "s04.i.exceptions",
+        "s04.i.legacy"
+      ]
+    },
+    {
+      "id": "s04.implementation.jsonl",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/jsonl_json_ts.test.mjs"
+      ],
+      "testNames": [
+        "JSONL bytes match actual Python default spacing and strict UTF8: python3",
+        "JSONL bytes match actual Python default spacing and strict UTF8: python3.12",
+        "JSONL bytes match actual Python default spacing and strict UTF8: python3.13",
+        "JSONL bytes match actual Python default spacing and strict UTF8: python3.14",
+        "S04 point JSONL preserves complete serialization before strict encoding",
+        "S04 point JSONL native append preserves gate identity and unopened failures",
+        "S04 point JSONL preserves explicit causes through rollback and close",
+        "S04 point persistence entrypoints leave legacy values and public parser behavior unchanged"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s04/logs/S04-IV-jsonl.tap",
+      "requirementIds": [
+        "s04.i.boundaries",
+        "s04.i.exceptions",
+        "s04.i.jsonl",
+        "s04.i.legacy",
+        "s04.i.rollback"
+      ]
+    }
+  ],
+  "artifacts": []
+}

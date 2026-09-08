@@ -203,7 +203,7 @@
     },
     {
       "path": "task-lineage.json",
-      "sha256": "90f060ea75ebc5354a232c026ce519d685416d26d50ce2623aebe11c66eacfb5"
+      "sha256": "e7bb05a74145b0df5e27726207314b09870d674a96a9dcda76929690f28ece59"
     },
     {
       "path": "task-receipts.json",
