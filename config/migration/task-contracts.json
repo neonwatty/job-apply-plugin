@@ -605,6 +605,26 @@
         "sha256": "3d80dc21ffe4da5cfe251d4e77f9aaa18bba578b504a32c2957cd64961438524",
         "revision": "311b7380792c7647fb64e2e38e7584f337d73ddb"
       }
+    },
+    {
+      "id": "G02.hybrid.I",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.I.json",
+        "sha256": "efe9190d952d7501c29caa88ba8335563a2e969db25830ae0b1b4ef1877bf7ef",
+        "revision": "4bd4b21e6e37739262288eeb7f08479e4c176a0b"
+      }
+    },
+    {
+      "id": "G02.hybrid.V",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.V.json",
+        "sha256": "f2ac26d03336f5b3cff1409a1f64c640b4b0a5f8615613e2f975ece913f4c2e3",
+        "revision": "4bd4b21e6e37739262288eeb7f08479e4c176a0b"
+      }
     }
   ],
   "environments": [
@@ -810,6 +830,16 @@
       "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.V.audit.json",
       "sha256": "5213e47d6b6b760aa740cb0d3a765a51b12e426cbe6d49c8a010d9f5cc25d890",
       "revision": "0b142ba647e6923df724a0b651cdfc47268c50ce"
+    },
+    {
+      "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.I.audit.json",
+      "sha256": "ec7f4c96e682b17b47fdff00391208a4fa678c6960fdb126c54dfea01b2eeb61",
+      "revision": "a19fa8e2ebdd1607756d8fff35b3b29c0ca64421"
+    },
+    {
+      "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.V.audit.json",
+      "sha256": "1881ff906749f27a1c3062a155a04ca02f89a87c3c6d35248acb688f52c088df",
+      "revision": "a19fa8e2ebdd1607756d8fff35b3b29c0ca64421"
     }
   ]
 }

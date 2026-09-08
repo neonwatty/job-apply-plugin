@@ -1518,6 +1518,11 @@
       "path": "docs/migration/evidence/p03-ui-tests/integration-transition.json",
       "sha256": "bc337c0c686fbe4d6d557226394c8cef3abeb99bdb14003a9abfcfc885543290",
       "revision": "0b142ba647e6923df724a0b651cdfc47268c50ce"
+    },
+    {
+      "path": "docs/migration/evidence/g02-hybrid/integration-transition.json",
+      "sha256": "2400b639ae74ea53163ad6e4c62628104e57e7da0658989916461ac0a2fa074b",
+      "revision": "a19fa8e2ebdd1607756d8fff35b3b29c0ca64421"
     }
   ]
 }
