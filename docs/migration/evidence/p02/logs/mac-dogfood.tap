@@ -1,0 +1,53 @@
+TAP version 13
+# Subtest: missing, timed out and inaccessible runtimes return the same closed receipt
+ok 1 - missing, timed out and inaccessible runtimes return the same closed receipt
+  ---
+  duration_ms: 0.846834
+  type: 'test'
+  ...
+# Subtest: stable versions distinguish availability from provisional launch compatibility
+ok 2 - stable versions distinguish availability from provisional launch compatibility
+  ---
+  duration_ms: 0.44225
+  type: 'test'
+  ...
+# Subtest: malformed, prerelease, noisy and oversized output never reaches receipts
+ok 3 - malformed, prerelease, noisy and oversized output never reaches receipts
+  ---
+  duration_ms: 0.142708
+  type: 'test'
+  ...
+# Subtest: probe uses a fixed version-only command with bounded execution and no shell
+ok 4 - probe uses a fixed version-only command with bounded execution and no shell
+  ---
+  duration_ms: 0.0925
+  type: 'test'
+  ...
+# Subtest: unsupported platform or architecture cannot be mistaken for proven support
+ok 5 - unsupported platform or architecture cannot be mistaken for proven support
+  ---
+  duration_ms: 0.590958
+  type: 'test'
+  ...
+# Subtest: P02 Mac dogfood scope preserves deferred release qualification
+ok 6 - P02 Mac dogfood scope preserves deferred release qualification
+  ---
+  duration_ms: 2.204833
+  type: 'test'
+  ...
+# Subtest: P02 local Mac identity binds actual executables and rejects drift
+ok 7 - P02 local Mac identity binds actual executables and rejects drift
+  ---
+  duration_ms: 1102.548708
+  type: 'test'
+  ...
+# {"kind":"actual-local-mac-identity","before":{"schemaVersion":1,"scope":"mac-dogfood","platform":"darwin","arch":"arm64","macOS":{"version":"26.4.1","build":"25E253"},"node":{"requested":"process.execPath","resolved":"/Users/neonwatty/.nvm/versions/node/v22.22.3/bin/node","sha256":"5d9d3872911e2340a43b707962e68143de8a4e8d54628845c0c4f2de1fb7cd5c","version":"22.22.3","unicode":"17.0"},"python":[{"alias":"python3","resolved":"/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/bin/python3.14","version":"3.14.4","implementation":"CPython","profile":"3.14","filesystemEncoding":"utf-8","filesystemErrors":"surrogateescape","sha256":"5c3ea934d18a7979253ca08ff16151db78a896be29dbc37fd9bf7e7c549593b8"},{"alias":"python3.12","resolved":"/Users/neonwatty/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/bin/python3.12","version":"3.12.13","implementation":"CPython","profile":"3.12","filesystemEncoding":"utf-8","filesystemErrors":"surrogateescape","sha256":"36984af9f922aec72ba5b03e811ee92512268785007192e20f826cbd07cf8d04"},{"alias":"python3.13","resolved":"/opt/homebrew/Cellar/python@3.13/3.13.13/Frameworks/Python.framework/Versions/3.13/bin/python3.13","version":"3.13.13","implementation":"CPython","profile":"3.13","filesystemEncoding":"utf-8","filesystemErrors":"surrogateescape","sha256":"1c779e61f6218c42bad6d164b72fba890b9c33c96e562fd425266713cbce7a71"},{"alias":"python3.14","resolved":"/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/bin/python3.14","version":"3.14.4","implementation":"CPython","profile":"3.14","filesystemEncoding":"utf-8","filesystemErrors":"surrogateescape","sha256":"5c3ea934d18a7979253ca08ff16151db78a896be29dbc37fd9bf7e7c549593b8"}],"compiler":{"requested":"clang","resolved":"/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang","sha256":"7def90dd8829726686213a747fc5bff1583df933dae5edc55d755479e0bfe00a","version":"Apple clang version 21.0.0 (clang-2100.1.1.101)\\nTarget: arm64-apple-darwin25.4.0\\nThread model: posix\\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\\n"},"deferred":["Linux/Windows native qualification","other Mac OS/CPU/runtime versions","clean-host/offline customer installation","browser and native account integrations","physical durability and release deployment"]},"after":{"schemaVersion":1,"scope":"mac-dogfood","platform":"darwin","arch":"arm64","macOS":{"version":"26.4.1","build":"25E253"},"node":{"requested":"process.execPath","resolved":"/Users/neonwatty/.nvm/versions/node/v22.22.3/bin/node","sha256":"5d9d3872911e2340a43b707962e68143de8a4e8d54628845c0c4f2de1fb7cd5c","version":"22.22.3","unicode":"17.0"},"python":[{"alias":"python3","resolved":"/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/bin/python3.14","version":"3.14.4","implementation":"CPython","profile":"3.14","filesystemEncoding":"utf-8","filesystemErrors":"surrogateescape","sha256":"5c3ea934d18a7979253ca08ff16151db78a896be29dbc37fd9bf7e7c549593b8"},{"alias":"python3.12","resolved":"/Users/neonwatty/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/bin/python3.12","version":"3.12.13","implementation":"CPython","profile":"3.12","filesystemEncoding":"utf-8","filesystemErrors":"surrogateescape","sha256":"36984af9f922aec72ba5b03e811ee92512268785007192e20f826cbd07cf8d04"},{"alias":"python3.13","resolved":"/opt/homebrew/Cellar/python@3.13/3.13.13/Frameworks/Python.framework/Versions/3.13/bin/python3.13","version":"3.13.13","implementation":"CPython","profile":"3.13","filesystemEncoding":"utf-8","filesystemErrors":"surrogateescape","sha256":"1c779e61f6218c42bad6d164b72fba890b9c33c96e562fd425266713cbce7a71"},{"alias":"python3.14","resolved":"/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/bin/python3.14","version":"3.14.4","implementation":"CPython","profile":"3.14","filesystemEncoding":"utf-8","filesystemErrors":"surrogateescape","sha256":"5c3ea934d18a7979253ca08ff16151db78a896be29dbc37fd9bf7e7c549593b8"}],"compiler":{"requested":"clang","resolved":"/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang","sha256":"7def90dd8829726686213a747fc5bff1583df933dae5edc55d755479e0bfe00a","version":"Apple clang version 21.0.0 (clang-2100.1.1.101)\\nTarget: arm64-apple-darwin25.4.0\\nThread model: posix\\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\\n"},"deferred":["Linux/Windows native qualification","other Mac OS/CPU/runtime versions","clean-host/offline customer installation","browser and native account integrations","physical durability and release deployment"]}}
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1150.7065
