@@ -1,0 +1,639 @@
+{
+  "schemaVersion": 1,
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/s04/implementation-dag.json",
+    "sha256": "20d6f5bcdee165f74db0714b2be67695c2c31ec77ed04d36a7c75187978bfa79"
+  },
+  "package": {
+    "id": "S04",
+    "parentNode": "SEM",
+    "owner": "timestamp_tests",
+    "allowed_files": [
+      "src/contracts/persisted-json.ts",
+      "src/contracts/jsonl-json.ts",
+      "src/store/private-filesystem.ts",
+      "src/store/atomic-write-json.ts",
+      "src/store/jsonl-history.ts",
+      "src/contracts/persisted-json-core.ts",
+      "src/contracts/persistence-exception.ts",
+      "src/store/point-persistence.ts",
+      "runtime/contracts/persisted-json.js",
+      "runtime/contracts/jsonl-json.js",
+      "runtime/store/private-filesystem.js",
+      "runtime/store/atomic-write-json.js",
+      "runtime/store/jsonl-history.js",
+      "runtime/contracts/persisted-json-core.js",
+      "runtime/contracts/persistence-exception.js",
+      "runtime/store/point-persistence.js",
+      "tests_js/persisted_json_ts.test.mjs",
+      "tests_js/jsonl_json_ts.test.mjs",
+      "tests_js/atomic_write_json_ts_support.mjs",
+      "tests_js/jsonl_history_support.mjs",
+      "docs/migration/python-point-persistence-port.md",
+      "docs/migration/evidence/s04/implementation.md",
+      "docs/migration/evidence/s04/implementation-audit.json",
+      "docs/migration/evidence/s04/S04.I.json",
+      "docs/migration/evidence/s04/S04.V.json",
+      "config/migration/source-catalog-06.json",
+      "config/migration/source-catalog-s04.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [
+      "runtime/contracts/persisted-json.js",
+      "runtime/contracts/jsonl-json.js",
+      "runtime/store/private-filesystem.js",
+      "runtime/store/atomic-write-json.js",
+      "runtime/store/jsonl-history.js",
+      "runtime/contracts/persisted-json-core.js",
+      "runtime/contracts/persistence-exception.js",
+      "runtime/store/point-persistence.js"
+    ],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "64f8a03292da869d431f4dceb96830eb285df8b4566722b8011489db85b5ecef",
+  "auditContract": {
+    "path": "docs/migration/evidence/s04/implementation-audit.json",
+    "sha256": "cacef81b946b4fb0e8f69a886cba24307629ac7799becd508ccfa5eb77b0080d"
+  },
+  "author": "timestamp_tests",
+  "reviewer": "hooks_audit",
+  "base": "4d673e1cfcfd9dd61e455080e9a95e058354b76c",
+  "inputs": [
+    {
+      "path": ".source-size-baseline.json",
+      "sha256": "8b0071c47e04b1d32246d9498fc35d6fd05e1868455b73bbcc4eebc97551d8a3"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "bff9159b51b5c650dae52806f0002c335a59211a815ea813be01e78a51e81d84"
+    },
+    {
+      "path": "config/migration/source-catalog-06.json",
+      "sha256": "b42198b044534f37d96d5d5231db0e38db354a04f0ba958c4c8a31906ffe5196"
+    },
+    {
+      "path": "config/test-matrix.json",
+      "sha256": "bd33a6cecc1b468adf2581582eec1ef13747e404a40ea843721b9cea30511f38"
+    },
+    {
+      "path": "docs/migration/evidence/s04/S04.R.json",
+      "sha256": "e95e2c18104f5e966929cec58ea18dd95f4b7997b0bfc3ecc0192b880ce3cc8c"
+    },
+    {
+      "path": "docs/migration/evidence/s04/implementation-audit.json",
+      "sha256": "cacef81b946b4fb0e8f69a886cba24307629ac7799becd508ccfa5eb77b0080d"
+    },
+    {
+      "path": "docs/migration/evidence/s04/implementation-dag.json",
+      "sha256": "20d6f5bcdee165f74db0714b2be67695c2c31ec77ed04d36a7c75187978bfa79"
+    },
+    {
+      "path": "docs/migration/evidence/s04/implementation-spec.json",
+      "sha256": "4763b1f30e5a8c3ad604bd64fde6128a55521771cacf1b4e2c8fccf5c24ce7d6"
+    },
+    {
+      "path": "docs/migration/evidence/s04/implementation.md",
+      "sha256": "9d2a5f65c58ee828e531ebbce626a09ed4467d37fa7cd7351c7ee64e6434d612"
+    },
+    {
+      "path": "docs/migration/evidence/s04/logs/S04-R-baselines.tap",
+      "sha256": "e41186a202f343b555e693fdfb6fe96438aac3c9339412258585e8daccdabb48"
+    },
+    {
+      "path": "docs/migration/evidence/s04/logs/S04-R-points.tap",
+      "sha256": "fe9ab714f90b173beb366ea518f15edb9fc3c740faacf6367cb2a59516c094d9"
+    },
+    {
+      "path": "docs/migration/evidence/s04/reference-audit.json",
+      "sha256": "2c5c8c7abce1d443c19e91494b4bbae7394f5be817ba984746f35737a95ad3d3"
+    },
+    {
+      "path": "docs/migration/evidence/s04/reference-plan.md",
+      "sha256": "9cfa6235000def45781ae076f1b84b1bf2fa3e98a76bb4dc46c82fb6a838e571"
+    },
+    {
+      "path": "docs/migration/evidence/s04/reference-vectors.json",
+      "sha256": "5f780fccad0679310cd70f08a7b39493cb86879d4c65a3ffc262637b44bbe04a"
+    },
+    {
+      "path": "docs/migration/evidence/s04/reference.md",
+      "sha256": "d27b8723ec05f9dace098f4dfbfab5aca18e8aea358a7f6265de693ed4877e55"
+    },
+    {
+      "path": "docs/migration/evidence/s08/additional-reference-vectors.json",
+      "sha256": "500ce6a2f35ac9f9e0bfe9ec8a676d0aa1165687a768f53e3bffeacf5048225d"
+    },
+    {
+      "path": "docs/migration/evidence/s08/composed-reference-vectors.json",
+      "sha256": "1ccb7cdb553cd70a1f6107904b595c4a9c9ea720e9d8c5cbc48955233f280e7b"
+    },
+    {
+      "path": "docs/testing.md",
+      "sha256": "4cf81b1898cd42b58c17be993ed7c23d494970006386990fbf5a59611b3b0904"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "7ee9e2f989ec77ba9ab97847266792da033d9ebd98fd3643a26d73430d076c17"
+    },
+    {
+      "path": "package.json",
+      "sha256": "c652d020e5b1762c2bc703c563124c23f87c978f87af9c299f0a661253c40200"
+    },
+    {
+      "path": "runtime/contracts/filesystem-error.js",
+      "sha256": "8a7cf4849b7f2774a924e6a04e6943aacd34049e5056ae2770d11aa74afcad02"
+    },
+    {
+      "path": "runtime/contracts/jsonl-json.js",
+      "sha256": "ee022369d9715ad54fdc984945132e3430df273cbe0326bfb572932d8303fdc9"
+    },
+    {
+      "path": "runtime/contracts/persisted-json.js",
+      "sha256": "743f54a24eb6afc853f9d49374e1a3f4cc9041f6f2c2fe22fba731cd1cb3ed04"
+    },
+    {
+      "path": "runtime/contracts/posix-path-bytes.js",
+      "sha256": "0efde48362bfeeeb08d28bc52aaf47f94119f46b396abe8d14ec585a17d14ba5"
+    },
+    {
+      "path": "runtime/contracts/posix-path.js",
+      "sha256": "0dfc066624aed50b277864450920a7258a651355e827fd176e670317b87f9c04"
+    },
+    {
+      "path": "runtime/contracts/python-byte-errors.js",
+      "sha256": "daa79fc6661bc8b85229e57bc8d3ae17149588ceb8097303ad7b2d0f0327e52a"
+    },
+    {
+      "path": "runtime/contracts/python-json-bytes.js",
+      "sha256": "9d221128859f631b26e1e0bc61d334325a9451a7f239f37bacbe1a6d50db37e7"
+    },
+    {
+      "path": "runtime/contracts/python-object.js",
+      "sha256": "8777226a4b0fa916e0e7b529edb8c85fa399c39a810b40957b94905e5a0bb3d0"
+    },
+    {
+      "path": "runtime/contracts/python-text.js",
+      "sha256": "cdd6e3d8d634e2a2957e27759616d7b7a57e66347fa97c6d11855046bf551b4a"
+    },
+    {
+      "path": "runtime/contracts/python-utf16-decode.js",
+      "sha256": "f8c4191a9414da5b8caf4c9bcb38dabeb4c5f6989ede9abeb026bb3e846bad9c"
+    },
+    {
+      "path": "runtime/contracts/python-utf32-decode.js",
+      "sha256": "28425269b80eed6dd5413cd1781da9280baf23501ee50acdb980bf7449d0600b"
+    },
+    {
+      "path": "runtime/contracts/python-utf8-decode.js",
+      "sha256": "ca07e2da6a45bffeb2bd01b949e58879a751dec97ae243f2dd6a703b7e0f1311"
+    },
+    {
+      "path": "runtime/contracts/raw-json/float-scope.js",
+      "sha256": "db9834010226b2ad1c41adf7194e068e4fd9b4710a5585a656bd566d9543e675"
+    },
+    {
+      "path": "runtime/contracts/raw-json/json-serialization-core.js",
+      "sha256": "8bf9600a57b0ed3f9fce8eaaf12ab383d503ebe71085f00ca46da64dbc5a8a81"
+    },
+    {
+      "path": "runtime/contracts/raw-json/numeric-atom.js",
+      "sha256": "313f206f7767398f6a3ed61fb3c15f5f90d8eb7cd835a6402816bc19e1003188"
+    },
+    {
+      "path": "runtime/contracts/raw-json/parser.js",
+      "sha256": "e56e7a875cea5926b740f8109669476659644595d28b634024d1b427d4ce2825"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-parser-core.js",
+      "sha256": "c077ecc92bdf1f55c3cca8c1ffba728dfde53a3adc69e38e10464b840c910184"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-parser.js",
+      "sha256": "3214742f49d63491115a2dc12bf25549b2863d3de7b610fde0c5138c4d5d7730"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-serializer.js",
+      "sha256": "4c32aeb1ec85ea5b24e2a53f9dfd4748b84d65379a2752020f4c93a0a1755f73"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-text-codec.js",
+      "sha256": "6c5916054ac439ad7a63802fcd2a0445d0366e2ada9df15a0b571c5310bdf12b"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-value.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+    },
+    {
+      "path": "runtime/contracts/raw-json/serializer.js",
+      "sha256": "854be43fe99dfcad95e2cd1e8763e740a31b0f319712f8c56e9d6e2eecbce390"
+    },
+    {
+      "path": "runtime/contracts/raw-json/value.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+    },
+    {
+      "path": "runtime/store/atomic-write-json.js",
+      "sha256": "19288b5ce6d862075e1b6517f0e2d6cba70226e69e013f6802818965ea9fd28a"
+    },
+    {
+      "path": "runtime/store/jsonl-history-io.js",
+      "sha256": "e0cad305d415a73d83bd008354c40fde66efddc8c12c2782048a40e7571e6932"
+    },
+    {
+      "path": "runtime/store/jsonl-history.js",
+      "sha256": "f7e02b1045eab673ab1ed752c7b485b85e06b968bbaecabd8e3cd204ec23bc49"
+    },
+    {
+      "path": "runtime/store/private-filesystem.js",
+      "sha256": "ae06c9911a5af7bd5f589321a7888a62af4fe955c83620ae19e9086c780acbc4"
+    },
+    {
+      "path": "runtime/store/read-file.js",
+      "sha256": "a8dc8b3704a284df441c2a3972051f05884d4a432cc6d1ee02da4d6705483405"
+    },
+    {
+      "path": "runtime/store/read-json-object.js",
+      "sha256": "2a2166d49f056597f31f0f8f143c34d0e280d11f8f4e463e2e98a6ec9b1aeacf"
+    },
+    {
+      "path": "runtime/store/validation.js",
+      "sha256": "85e308945a77b5c09d61758113d91cfd0e6fb366fe92f98f36c19c8e05ee3a0a"
+    },
+    {
+      "path": "scripts/check-source-size.py",
+      "sha256": "df742cd09fae4f559e0515874c4f7fa2728fdcd3304211f16d1aa324df6ba8d8"
+    },
+    {
+      "path": "scripts/job_apply_store/__init__.py",
+      "sha256": "d1f3908a9875fdeda94a2d1823b0e42edb29c7814a638b8edcdc15e127052a04"
+    },
+    {
+      "path": "scripts/job_apply_store/base.py",
+      "sha256": "e1deee9f49d012eac54f3ef4990c7641d43874afa699c8d12d79919599f27c88"
+    },
+    {
+      "path": "scripts/job_apply_store/constants.py",
+      "sha256": "4438a36055842e18af0ae806fed1f61bf8280908995f7295662a4213226e8b5c"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/__init__.py",
+      "sha256": "b112b206edd338aa0dd2a17d1414be2c843d6d44337249d59079a82129cd0c26"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/coordinator/__init__.py",
+      "sha256": "8515203ac4bc80d5d722deffa1879e08518b2a200a7bdbab5425c8dee43ee1be"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/coordinator/persistence.py",
+      "sha256": "1296863bad9412b852879a3b9c653a98ca61375811df2690600e6f69bc7c3177"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/resumes/__init__.py",
+      "sha256": "9ff7cd33ef9e3c17454ac38ab147f3eaec75e44816a6ea8fa0a5d3fa381dfba0"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/resumes/storage.py",
+      "sha256": "97ec178e0b3ddc1d3be97b1c6c34983ecf9c50caa9c6f4fd4125dbb71c6db6fe"
+    },
+    {
+      "path": "scripts/job_apply_store/errors.py",
+      "sha256": "be48cff00389f30d0f51f95ec154baec6162a57350b2ab3cfcb531da7456e01c"
+    },
+    {
+      "path": "scripts/job_apply_store/io.py",
+      "sha256": "6e4b36c224fdf34924f14fecbd6d8afaf398afcff455509b85a817008c407d53"
+    },
+    {
+      "path": "scripts/job_apply_store/normalization.py",
+      "sha256": "8c299675838779908a1d3876db22fc2d9b32a2e08a890246357193b1d20b2beb"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/__init__.py",
+      "sha256": "b8e8d8f492cf48c33321d01db8899357f333cf94b93e5f20835cce62104524e3"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/accounts.py",
+      "sha256": "aa62b41eabe54f13c3b3fbb9791dedafc98dbac9d4e68262452e69bfb2457ddc"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/extraction.py",
+      "sha256": "6437704da0aefe5b3351c129a5b3e36e49da4db9a8d56c60ba19d28825b5d7d8"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/jobs_resumes.py",
+      "sha256": "1ad4bffefc7cc6a605d2fa04b0d2e1ccb5804091064083787f4126c157274c83"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/profile_answers.py",
+      "sha256": "599715a998b68fb0ac1ab67c0930564fda9fb69206084c12dafccfb83c9e65d9"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/sessions.py",
+      "sha256": "9d1c6158facc0724e5500defbc8027931e2112927677d9f3b79d5a8fde5339ce"
+    },
+    {
+      "path": "src/contracts/filesystem-error.ts",
+      "sha256": "c4a96e096a3d9d9ab53a72ba6316e6a36debf07840f15471043932af3409ca22"
+    },
+    {
+      "path": "src/contracts/jsonl-json.ts",
+      "sha256": "5bc28e86d18f4a998d3f90b21ef02a7a618adc6627f20850a64592cdd628a76a"
+    },
+    {
+      "path": "src/contracts/persisted-json.ts",
+      "sha256": "ee5f2a4bf5aef1c326b992c6566e1317629b3b31c8a054e6299b6e4a4e9f8a50"
+    },
+    {
+      "path": "src/contracts/posix-path-bytes.ts",
+      "sha256": "ef3495003e22e409385f7943afc768f88e172ed9732256fe14a19ffac2adba87"
+    },
+    {
+      "path": "src/contracts/posix-path.ts",
+      "sha256": "41c277795eef979813310920155934e0ee9653342bdf1a1f447212223076eebd"
+    },
+    {
+      "path": "src/contracts/python-byte-errors.ts",
+      "sha256": "c592f684ac5ffc17d3800e008b07fabadddc5c14d3a1f537ef4fdea69d740c6f"
+    },
+    {
+      "path": "src/contracts/python-json-bytes.ts",
+      "sha256": "347a11d6792529ad2a2ad9f4f02a767abb1db10a568292d9c2ebbe49ecb86e70"
+    },
+    {
+      "path": "src/contracts/python-object.ts",
+      "sha256": "b7b7b5221f8bfff1ce70edd156da30e8e0f739a942b3d19de80f8244ea56a804"
+    },
+    {
+      "path": "src/contracts/python-text.ts",
+      "sha256": "934fd2271c7e1d61056889fd7125d6dc16559271504687bcdec8c980a796ae78"
+    },
+    {
+      "path": "src/contracts/python-utf16-decode.ts",
+      "sha256": "8efa7d6d210464ba6e9a79d14acf92b0019dfc70fd86a9f6e1ca92842a02b094"
+    },
+    {
+      "path": "src/contracts/python-utf32-decode.ts",
+      "sha256": "0afc517e79879826985deb08805f1e5408e7728af1227cf742b0741b2f6c76e6"
+    },
+    {
+      "path": "src/contracts/python-utf8-decode.ts",
+      "sha256": "89020d76d9bc572244285e61379e72c4e8ef3c4c7e0c57d236ffc7a82dc8b1b2"
+    },
+    {
+      "path": "src/contracts/raw-json/float-scope.ts",
+      "sha256": "b2b6905612bd7159c978d78aada33886078cd063ae19740fddbebe1fed4c111b"
+    },
+    {
+      "path": "src/contracts/raw-json/json-serialization-core.ts",
+      "sha256": "d549a9e86b9d7bfb93ad55d8e3f5e3ae47a0db1cd7e3e02483bd191663465f47"
+    },
+    {
+      "path": "src/contracts/raw-json/numeric-atom.ts",
+      "sha256": "2ee4cb4a2275c8e18e83d23090d313682356b52f3e597d246e659b33c0a18dd8"
+    },
+    {
+      "path": "src/contracts/raw-json/parser.ts",
+      "sha256": "991dca50454acd430f486f3837cf91962aa211023632136ab54bd2bc8db53444"
+    },
+    {
+      "path": "src/contracts/raw-json/point-parser-core.ts",
+      "sha256": "491f8d10ac92154858726b68fbeab477c44e6b842a31f799182ff7773154cda3"
+    },
+    {
+      "path": "src/contracts/raw-json/point-parser.ts",
+      "sha256": "9f87fc28aeebceccd4ef59847058cc35397df98fd6c6c8d8e3c4f9acb41949ec"
+    },
+    {
+      "path": "src/contracts/raw-json/point-serializer.ts",
+      "sha256": "aa3e880eff91b92904cb452dacda03da41992985a1fd67206263df679233ed06"
+    },
+    {
+      "path": "src/contracts/raw-json/point-text-codec.ts",
+      "sha256": "052ffd794291e408be419924152a3f3255fcd40f9aedaa110ac79540292561fe"
+    },
+    {
+      "path": "src/contracts/raw-json/point-value.ts",
+      "sha256": "53cccff53a8278a41ca0866f5e274cf60f3f06495315d142d388cbcc9544612f"
+    },
+    {
+      "path": "src/contracts/raw-json/serializer.ts",
+      "sha256": "f0aeb3584ed830ea6612806e32a129013dfd1500d5b680e52c0eb85a46f37493"
+    },
+    {
+      "path": "src/contracts/raw-json/value.ts",
+      "sha256": "4fb77f47254d9b980c5cb3f4c89e6c664dd1dfea8a0fee229ce29a9bc6104407"
+    },
+    {
+      "path": "src/store/atomic-write-json.ts",
+      "sha256": "e8a46849a18a7af4b79998fda468d0c43542e27d31f29edd2e8dd7cacfea21d4"
+    },
+    {
+      "path": "src/store/jsonl-history-io.ts",
+      "sha256": "a4008b3ffb553cf66fc446a2b5c0fa87bf2513c99e645b46543a91c0ba0f40d8"
+    },
+    {
+      "path": "src/store/jsonl-history.ts",
+      "sha256": "7e7f96db276397a35ddbabe7b0a4d61cd34c31ce7c73b585397dc22e9334e24f"
+    },
+    {
+      "path": "src/store/private-filesystem.ts",
+      "sha256": "148e3027b7e479aad29e8a652f9169b36c55acadc29b120287c61a1f81a090f7"
+    },
+    {
+      "path": "src/store/read-file.ts",
+      "sha256": "d95b7ce2ec4ba3289ff9757ac825e0a90a46d0eeb82cc1cb1c0186314656fcf2"
+    },
+    {
+      "path": "src/store/read-json-object.ts",
+      "sha256": "5aa9d4d2d99e45ebc37eda205179b18572cc3df76ade653a0b3a75fb822d247f"
+    },
+    {
+      "path": "src/store/validation.ts",
+      "sha256": "c8f3922ea86636822248397bea0b50c26cc2f80e10bda9070aa0abac4ae58f14"
+    },
+    {
+      "path": "tests_js/atomic_write_json_reference.test.mjs",
+      "sha256": "f022146fca2bf619338cd6113b788c728fc387bcba09f94022f954432a6d9d57"
+    },
+    {
+      "path": "tests_js/atomic_write_json_ts.test.mjs",
+      "sha256": "0e7d3095e9745fa703a5d77d389f296a34ae0cec9cb3296693b24dfafb56e473"
+    },
+    {
+      "path": "tests_js/atomic_write_json_ts_support.mjs",
+      "sha256": "aa1c47385d7bdaf9a32f38f424e0e4871dd29709955de446343b72756b16be30"
+    },
+    {
+      "path": "tests_js/jsonl_append_reference.test.mjs",
+      "sha256": "2f4ee1c18f2c4cdb3b59a2a6403cb113d4f7890b72fff57e1bc7655c49b0d66f"
+    },
+    {
+      "path": "tests_js/jsonl_history_support.mjs",
+      "sha256": "568251ce79bdb030e6790c7621f772713ea1bff4b9e3e61625004d5622c86ac1"
+    },
+    {
+      "path": "tests_js/jsonl_history_ts.test.mjs",
+      "sha256": "e86a23ae82f9b3c6412ead4836b21030edc2a551d4bf7e441dee1fb78c59cbb5"
+    },
+    {
+      "path": "tests_js/jsonl_json_ts.test.mjs",
+      "sha256": "e607311957d866de4ff38b78a1fda86c39bb9f8b9a0bccf0a77d9eb045afb2f9"
+    },
+    {
+      "path": "tests_js/persisted_json_ts.test.mjs",
+      "sha256": "785b39a1c0348dcdfc53df5a3e968f86e18d789171e8b63568a0d3003ce3d9da"
+    },
+    {
+      "path": "tests_js/point_persistence_baselines.test.mjs",
+      "sha256": "490dbede153c9b1784cbb7da2fb8ab600ba2965f17b092971f00e3c50af04f32"
+    },
+    {
+      "path": "tests_js/point_persistence_reference.test.mjs",
+      "sha256": "17d5509db54762c1cb9a5dcc51eb64375ca5f660dc02e7ae97cc6dfbecbce742"
+    },
+    {
+      "path": "tests_js/python_text_acceptance.test.mjs",
+      "sha256": "16103a567ec1701a4941bba6672a8b8c5857474e2c06e71058493b8bdd52dd35"
+    },
+    {
+      "path": "tests_js/python_text_ts.test.mjs",
+      "sha256": "c278910ac938782dbfea8f049235d5a6bcfb32d4fc9ebe1f46d93d5129308585"
+    },
+    {
+      "path": "tests_js/typed_json_points.test.mjs",
+      "sha256": "8b025f68fc0de659ce09342a93b676b62196fb5b0a60211fc9093f9b5113918f"
+    },
+    {
+      "path": "tests_js/typed_json_points_compat.test.mjs",
+      "sha256": "d44fdf6934f8a28f0c0254e599b698df494ef867415617fc1db46c7cc4e3d2a9"
+    },
+    {
+      "path": "tests_js/typed_json_points_profiles.test.mjs",
+      "sha256": "fde848d7ea573350cba0a9cd541703beb4d5ce8057bf6137a2d4208dd8e251d7"
+    },
+    {
+      "path": "tools/build-runtime.mjs",
+      "sha256": "fa9dc44fdad05da0157eec34ac6ed552d51570cfe92ed133f855ae2e9d13a0dd"
+    },
+    {
+      "path": "tools/contracts/atomic-write-json/reference.py",
+      "sha256": "283e45f35c5485a645fa71844958749e541108be5b55cad6a76fcc8687182381"
+    },
+    {
+      "path": "tools/contracts/atomic-write-json/support.py",
+      "sha256": "a95c02ec86844aa931d20c26238d56436cdb576e0902ca7307f1b5d560fdfa39"
+    },
+    {
+      "path": "tools/contracts/codepoint-json/reference.py",
+      "sha256": "fef264468e9190a80cd6edbc03ec06693f6269edc3df7f30757fb16a8d63c231"
+    },
+    {
+      "path": "tools/contracts/jsonl-append/reference.py",
+      "sha256": "6a877e92fb9c0ecbbcc19a76e4f15b4dd1f4112304c2c7b7aed2958647783d13"
+    },
+    {
+      "path": "tools/contracts/jsonl-append/support.py",
+      "sha256": "cb6c28460033dea72c93807a457b6abefc2f98f0903519805d1fcf348224c0ea"
+    },
+    {
+      "path": "tools/contracts/point-persistence/fixtures.py",
+      "sha256": "14f5edcefbc90af2d66391f6dbaefd19045c4bf0aff33cf0282262b62031ac64"
+    },
+    {
+      "path": "tools/contracts/point-persistence/reference.py",
+      "sha256": "b8400c89e7801880631e0530b891bb165c48ed35f5541365bd83d0650cb5497a"
+    },
+    {
+      "path": "tools/contracts/point-persistence/support.py",
+      "sha256": "e7b0b1c301cd971889244e01a7487d3be68a6b790b4028be6406aadefd6e639c"
+    },
+    {
+      "path": "tools/contracts/python-text/reference.py",
+      "sha256": "1e661e4071274822cb2a7570ad98f5e76b24731f9c26aeef00cd3773c89c0286"
+    },
+    {
+      "path": "tools/migration/tap-evidence.mjs",
+      "sha256": "0a3358323e73f6bb0828dc63071603a1263ea6008413c2bf1a620c22c42f3077"
+    },
+    {
+      "path": "tools/runtime-build/inventory.mjs",
+      "sha256": "06a07f1948f0d366d5192b2e5886bcc62da443d946070724b4a36bc054a9ecfe"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "a5bbfb581960ff5215cf6f5ed0ae26464b32d3c7040d26c9b73d12bcc4986c8f"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "s04.implementation.persisted",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/persisted_json_ts.test.mjs"
+      ],
+      "testNames": [
+        "persisted JSON chunks and strict UTF8 match Python: python3",
+        "persisted JSON chunks and strict UTF8 match Python: python3.12",
+        "persisted JSON chunks and strict UTF8 match Python: python3.13",
+        "persisted JSON chunks and strict UTF8 match Python: python3.14",
+        "S04 point persisted chunks preserve explicit codepoints and profile order",
+        "S04 point atomic writes preserve native chunk failures and cleanup context",
+        "S04 point persistence preserves explicit causes and reused exception identity",
+        "S04 point persistence rejects forged inputs and preserves legacy mixed-key boundaries"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s04/logs/S04-IV-persisted.tap",
+      "requirementIds": [
+        "s04.i.atomic",
+        "s04.i.boundaries",
+        "s04.i.chunks",
+        "s04.i.exceptions",
+        "s04.i.legacy"
+      ]
+    },
+    {
+      "id": "s04.implementation.jsonl",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/jsonl_json_ts.test.mjs"
+      ],
+      "testNames": [
+        "JSONL bytes match actual Python default spacing and strict UTF8: python3",
+        "JSONL bytes match actual Python default spacing and strict UTF8: python3.12",
+        "JSONL bytes match actual Python default spacing and strict UTF8: python3.13",
+        "JSONL bytes match actual Python default spacing and strict UTF8: python3.14",
+        "S04 point JSONL preserves complete serialization before strict encoding",
+        "S04 point JSONL native append preserves gate identity and unopened failures",
+        "S04 point JSONL preserves explicit causes through rollback and close",
+        "S04 point persistence entrypoints leave legacy values and public parser behavior unchanged"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s04/logs/S04-IV-jsonl.tap",
+      "requirementIds": [
+        "s04.i.boundaries",
+        "s04.i.exceptions",
+        "s04.i.jsonl",
+        "s04.i.legacy",
+        "s04.i.rollback"
+      ]
+    }
+  ],
+  "artifacts": [],
+  "id": "S04.V",
+  "role": "independent-review"
+}

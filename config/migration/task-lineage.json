@@ -876,6 +876,22 @@
           "sha256": "ac3f6352327f5c49af13ec9faa5ff3a297c92a20482ccf58d9535a432f125a38"
         }
       ]
+    },
+    {
+      "id": "S04.implementation-manifests-preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Prepare point persistence with exact legacy boundaries and retain P05 native validation dependency.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s04/S04.I.json",
+          "sha256": "40c6a5f49420b5cc08be4883bf127538dc7acf26f88b7cdad58eaabd992ee7a6"
+        },
+        {
+          "path": "docs/migration/evidence/s04/S04.V.json",
+          "sha256": "726cfa338470d125d068eff3d16d5b78b5161ec2573c8b1beee34913146738d4"
+        }
+      ]
     }
   ],
   "transitions": [
