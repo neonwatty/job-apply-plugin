@@ -1116,6 +1116,26 @@
           "sha256": "f81e58856316c802ebf99919ec5e2d156ceb5127dfdd6f5009616a5f02e50b67"
         }
       ]
+    },
+    {
+      "id": "core-paths-ui-reference.store-host-correction",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Supersede unactivated Store reference host to preserve historical baseline source pins; unchanged domain semantics and DAG.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/s05-domain-v2/reference-spec.json",
+          "sha256": "28a8cb3a0241240cd2fafb7ee2599e5bf5dbd23231073e1278bc48d29f53a045"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v2/reference-plan.md",
+          "sha256": "a13ded6acb7563f5a908507f71ade18b89ae87c224332bb9c0679dfd78a24032"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v2/reference-audit.json",
+          "sha256": "cd91d87e12e0e7617b9f6162438d745f2d03c6c01ad90548fc678edc28c0ca34"
+        }
+      ]
     }
   ],
   "transitions": [
