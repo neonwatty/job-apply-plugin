@@ -9291,6 +9291,180 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "U01.R",
+      "manifestSha256": "c8720cfe3445721d22212336d5e6d767827d2e8603580a2d3f3901c26a9c9a42",
+      "subject": {
+        "sha": "03ff8022237036fc23567a1a4557231087a9ecf8",
+        "tree": "b3aeb73e30090ca361c599820e120ea16be3f763"
+      },
+      "executionBase": "dd59933b2485d9ddc9089df23addbce8b6610158",
+      "evidenceCommit": "28c007d955ef5f932ffb8fc153723336c27b6241",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/workspace_profile_helpers_reference.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tests_js/workspace_profile_helpers_reference.test.mjs",
+          "sha256": "030cd5825218c8e881b847b6e5a5e288d2eda1a95ca5cd6ee56b621949735bc7"
+        },
+        {
+          "path": "docs/migration/evidence/u01-reference/reference-spec.json",
+          "sha256": "d24dafa72ff44c9a69ad36c4fa2a38aaab8c33df6cb59c0b89b7a166aca9ffd9"
+        },
+        {
+          "path": "docs/migration/evidence/u01-reference/reference-plan.md",
+          "sha256": "c9911976541cd7ade1a6d417f730acdb7e582d4fc977ea910012348956778396"
+        },
+        {
+          "path": "docs/migration/evidence/u01-reference/reference-audit.json",
+          "sha256": "a52796cb28a521c0443f50812f1b9e759fcf2e3310410b02c10af94dd452549d"
+        },
+        {
+          "path": "docs/migration/evidence/u01-reference/U01.R.json",
+          "sha256": "c8720cfe3445721d22212336d5e6d767827d2e8603580a2d3f3901c26a9c9a42"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        }
+      ],
+      "cells": [
+        {
+          "id": "U01-reference-workspace_activity_helpers_reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_activity_helpers_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 51.886250000000004,
+            "outputBytes": 1566,
+            "tests": 6,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/ui/logs/U01-reference-workspace_activity_helpers_reference.tap",
+            "sha256": "0097aad427fee0fdb1097fab05b8a09de043a3c616bba663ed9b1e0ed432e986"
+          }
+        },
+        {
+          "id": "U01-reference-workspace_answer_helpers_reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_answer_helpers_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 52.81724999999999,
+            "outputBytes": 1071,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/ui/logs/U01-reference-workspace_answer_helpers_reference.tap",
+            "sha256": "6307a229e2802935b6c7344b4b438cc87da65baa5fda13d498c34fb9dd5f1f32"
+          }
+        },
+        {
+          "id": "U01-reference-workspace_profile_helpers_reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_profile_helpers_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 55.38704200000001,
+            "outputBytes": 2596,
+            "tests": 11,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/ui/logs/U01-reference-workspace_profile_helpers_reference.tap",
+            "sha256": "248e88e61835829b3a541a06c03cac8c4e62d34bc034ae9f007d9f3752b2ab1f"
+          }
+        },
+        {
+          "id": "U01-reference-workspace_trash_reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_trash_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 53.920457999999996,
+            "outputBytes": 1709,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/ui/logs/U01-reference-workspace_trash_reference.tap",
+            "sha256": "4db3e9273aebff4456d027c2cd7cfe941adc012fdf63883d2969e0d5b3fb5576"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "03ff8022237036fc23567a1a4557231087a9ecf8",
+        "subjectTree": "b3aeb73e30090ca361c599820e120ea16be3f763",
+        "manifestSha256": "c8720cfe3445721d22212336d5e6d767827d2e8603580a2d3f3901c26a9c9a42",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }

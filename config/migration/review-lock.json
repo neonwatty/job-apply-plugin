@@ -215,11 +215,11 @@
     },
     {
       "path": "task-lineage.json",
-      "sha256": "04c956004346ef66bd802993f08511c16908a846dff4e4214ed98e7ada6f427a"
+      "sha256": "d3e20f17a82c6bc7c3225ebb2bb520f7084886ff0c104998ed5685bc2a70b48b"
     },
     {
       "path": "task-receipts.json",
-      "sha256": "539a32b6883f7efda35fbda7463e082b179e6f697fe820375d593451662f25d9"
+      "sha256": "27ad1c88644a8a8917f31e07887dac29be42b848888ed749c49ebf52b2378e1a"
     }
   ]
 }
