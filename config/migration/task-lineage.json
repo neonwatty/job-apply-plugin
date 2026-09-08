@@ -1324,6 +1324,34 @@
           "sha256": "629c90ae12f11417832b548f4413a01e485d7dafa6069df5e2f5dfaab0bb2650"
         }
       ]
+    },
+    {
+      "id": "p03-ui-tests.documents.preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Permit bounded literal test timeout declarations needed by existing UI evidence while preserving rejection of skipped, dynamic and unsupported declarations.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/implementation-spec.json",
+          "sha256": "45dae81595565efe9e5f6c155933ded55db718ef515269ad8c4af25a774243be"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/implementation-plan.md",
+          "sha256": "81344b33891f76083ecfe1fa96a2bc626694cabb9fedc1b7db5a4c16c0fa6112"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/integration-dag.json",
+          "sha256": "8a1f7e8fbbea1e538355a47dda29dcc8c8ccb72cab475f2ddcc5cb32b2301127"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.I.audit.json",
+          "sha256": "169529b733845a92753f009c740d9c03931591577548dde3869a9e589143c5ab"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.V.audit.json",
+          "sha256": "5213e47d6b6b760aa740cb0d3a765a51b12e426cbe6d49c8a010d9f5cc25d890"
+        }
+      ]
     }
   ],
   "transitions": [
