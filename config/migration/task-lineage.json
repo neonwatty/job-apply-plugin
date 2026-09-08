@@ -1168,6 +1168,22 @@
           "sha256": "e20afcaafa6e87e217b8ae9eabf2189e476bc4df753d2eaae0ac0e3cdc8aa381"
         }
       ]
+    },
+    {
+      "id": "core-paths-ui-u02-refreeze.documents",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Freeze the unactivated U02 reference after the effective DAG transition and existing UI source; preserve all original obligations.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/u02-reference-v2/reference-spec.json",
+          "sha256": "c035eab70585299472b347fd109e988dc16f460fea89a3d2c49b39206b4417a2"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference-v2/reference-audit.json",
+          "sha256": "f0c7ad117d26e872af0e479e9e497a7af1b57cfabcd98d1ea9a664f938404be8"
+        }
+      ]
     }
   ],
   "transitions": [

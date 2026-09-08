@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "task": "U02.R",
+  "previousManifest": {
+    "path": "docs/migration/evidence/u02-reference/U02.R.json",
+    "sha256": "6b4d9682261ba2055c98b3ed025b1129de9ac8f58a5b04e718389be36630086d",
+    "revision": "03ff8022237036fc23567a1a4557231087a9ecf8"
+  },
+  "dag": {
+    "path": "docs/migration/evidence/core-paths-ui/reference-dag.json",
+    "sha256": "12a23a693f86f3072352f8dc063a80044a5f5c66bd61ff62fec42213970de9e3",
+    "revision": "6618a8fb0b23c59abbfcfadcd3fbc39542903adf"
+  },
+  "reason": "The prior prepared manifest predates DAG activation and source integration. It remains unactivated; this fresh base preserves exact24 original witnesses and all ownership.",
+  "allowed_files": [
+    "tests_js/workspace_helpers.test.mjs",
+    "tests_js/workspace_infrastructure_reference_support.mjs",
+    "docs/migration/evidence/u02-reference/reference-spec.json",
+    "docs/migration/evidence/u02-reference/reference-plan.md",
+    "docs/migration/evidence/u02-reference/reference-audit.json",
+    "docs/migration/evidence/u02-reference/U02.R.json",
+    "docs/migration/evidence/u02-reference-v2/reference-spec.json",
+    "docs/migration/evidence/u02-reference-v2/reference-audit.json",
+    "docs/migration/evidence/u02-reference-v2/U02.R.json"
+  ],
+  "cells": [
+    {
+      "id": "U02-original-reference",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_helpers.test.mjs"
+      ],
+      "testNames": [
+        "unified Trash helpers filter types and require exact type-specific phrases",
+        "unified Trash helpers ignore stale success and failure side effects",
+        "fragment token is decoded without accepting unrelated URL data",
+        "fragment token survives a same-tab reload without remaining in the URL",
+        "API client authenticates in memory and surfaces revision conflicts",
+        "Facts save retry policy is bounded and limited to revision conflicts",
+        "jobs filter by status and human-visible fields",
+        "form values become a supported Store patch",
+        "resume tag drafts are trimmed without inventing durable browser state",
+        "resume assignment copy uses canonical projection counts",
+        "resume refresh results stay bound to their requested Active or Trash view",
+        "extraction request view is honest and closed for every state",
+        "proposal groups keep deterministic order and unknown paths visible",
+        "status actions preserve guarded ready, acquire, and applied boundaries",
+        "M01 employer account requests preserve revision checks, coercion and explicit clear",
+        "M01 Trusted Fill approval packets preserve field order, copying and coercion failures",
+        "M01 Trusted Fill revocation requests preserve canonical revisions and encoded paths",
+        "U02 reference preserves API errors and bounded revision retries",
+        "U02 reference preserves token storage and denied storage access",
+        "U02 reference preserves fetch options response decoding and signal identity",
+        "U02 reference preserves stale success failure invalidation and callback throws",
+        "U02 reference preserves complete state shape and independent mutable containers",
+        "U02 reference preserves DOM lookup toast replacement and connection guard",
+        "U02 reference preserves FileReader listener ordering and error rejection"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/ui/logs/U02-original-reference.tap",
+      "requirementIds": [
+        "u02.api-errors",
+        "u02.auth-storage",
+        "u02.fetch",
+        "u02.coordinator",
+        "u02.state",
+        "u02.dom",
+        "u02.file-reader"
+      ]
+    }
+  ]
+}
