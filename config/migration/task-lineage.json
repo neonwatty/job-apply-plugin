@@ -1579,6 +1579,11 @@
       "path": "docs/migration/evidence/g02-hybrid/integration-transition.json",
       "sha256": "2400b639ae74ea53163ad6e4c62628104e57e7da0658989916461ac0a2fa074b",
       "revision": "a19fa8e2ebdd1607756d8fff35b3b29c0ca64421"
+    },
+    {
+      "path": "docs/migration/evidence/g02-hybrid2/integration-transition.json",
+      "sha256": "b264ab7dd2b74831a8ad8147c287d43544759dbaf0f913d251be68e4ee71e3d2",
+      "revision": "f5c7886128eb8951e3e9248dddfb5bff4ba62f0d"
     }
   ]
 }
