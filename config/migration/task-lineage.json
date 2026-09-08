@@ -1424,6 +1424,18 @@
           "sha256": "f2ac26d03336f5b3cff1409a1f64c640b4b0a5f8615613e2f975ece913f4c2e3"
         }
       ]
+    },
+    {
+      "id": "g02-hybrid.transition.preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Wire accepted TypeScript UI helpers to the existing Python server for bounded checkout/package integration while preserving the final assembly gate.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/g02-hybrid/integration-transition.json",
+          "sha256": "2400b639ae74ea53163ad6e4c62628104e57e7da0658989916461ac0a2fa074b"
+        }
+      ]
     }
   ],
   "transitions": [
