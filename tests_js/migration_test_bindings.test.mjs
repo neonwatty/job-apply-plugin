@@ -141,3 +141,43 @@ test('current inventory discovery uses explicit current platform without changin
     }
   } finally { await rm(root, { recursive: true, force: true }); }
 });
+
+test('literal timeout options recognize safe positive integers and existing UI declaration shapes', () => {
+  for (const value of ['1', '30_000', '100000', '9007199254740991', '0x10', '1e3']) {
+    assert.deepEqual(names(header + `test('bounded', {timeout:${value}}, () => { throw new Error('never execute'); });`), ['bounded']);
+  }
+  assert.deepEqual(names(header + "test('quoted', {'timeout': 30000}, function () { return 1; });"), ['quoted']);
+  const ui = header + "test('U01 browser', {timeout:30000}, async () => { await browser(); });"
+    + "test('hybrid assets', {timeout:15000}, () => hybridAssets());"
+    + "test('hybrid browser', {timeout:100000}, async t => { t.diagnostic(await hybridBrowser()); });";
+  assert.deepEqual(names(ui), ['U01 browser', 'hybrid assets', 'hybrid browser']);
+  assert.deepEqual([...discoverTestIds('x.mjs', ui)], ['U01 browser', 'hybrid assets', 'hybrid browser']);
+});
+
+test('literal timeout options reject dynamic unsafe and test-suppressing object forms', () => {
+  for (const options of ['{}', '{skip:true}', '{todo:true}', '{only:true}', '{timeout:0}', '{timeout:-1}',
+    '{timeout:+1}', '{timeout:1.5}', '{timeout:Infinity}', '{timeout:NaN}', '{timeout:9007199254740992}',
+    '{timeout:1e309}', '{timeout:1n}', '{timeout:"30"}', '{timeout:null}', '{timeout:true}',
+    '{timeout:duration}', '{timeout:30*1000}', '{timeout:(30000)}', 'options', 'makeOptions()',
+    '({timeout:30000})', '[30000]', '{timeout:{value:30000}}', '{...options}',
+    '{timeout:30000,...options}', '{timeout:30000,skip:false}', '{timeout:1,timeout:2}',
+    '{["timeout"]:30000}', '{get timeout(){return 30000;}}', '{set timeout(value){}}',
+    '{timeout(){return 30000;}}', '{timeout}', '{__proto__:null,timeout:30000}']) {
+    assert.deepEqual(names(header + `test('rejected', ${options}, () => 1);`), [], options);
+  }
+});
+
+test('literal timeout options retain callback alias conditional and duplicate guards', () => {
+  for (const declaration of ["test('empty',{timeout:1},()=>{});", "test('not callback',{timeout:1},callback);",
+    "test('arity',{timeout:1},()=>1,extra);", "test.skip('skip',{timeout:1},()=>1);",
+    "test.only('only',{timeout:1},()=>1);", "test.todo('todo',{timeout:1},()=>1);",
+    "other('unbound',{timeout:1},()=>1);"]) assert.deepEqual(names(header + declaration), []);
+  const bounded = branch.replaceAll(',()=>1)', ',{timeout:30000},()=>1)');
+  assert.deepEqual(names(header + bounded), ['portable']);
+  assert.deepEqual(names(header + bounded, 'win32'), ['windows']);
+  assert.deepEqual(names(header + "process.platform='win32';" + bounded), []);
+  assert.deepEqual(names(header + bounded.replace('timeout:30000', 'skip:true')), []);
+  assert.deepEqual(names("import {test as check} from 'node:test'; check('alias',{timeout:1},()=>1);"), ['alias']);
+  assert.throws(() => names(header + "test('same',()=>1);test('same',{timeout:1},()=>2);"), /Duplicate/);
+  assert.throws(() => names(header + "test('malformed',{timeout:},()=>1);"), /Invalid test source/);
+});

@@ -80,12 +80,25 @@ function conditionalSafe(tree, aliases) {
   visit(tree);
   return safe;
 }
+function literalTimeoutOptions(node) {
+  if (!ts.isObjectLiteralExpression(node) || node.properties.length !== 1) return false;
+  const property = node.properties[0];
+  if (!ts.isPropertyAssignment(property)
+    || !(ts.isIdentifier(property.name) || ts.isStringLiteral(property.name))
+    || property.name.text !== 'timeout'
+    || !ts.isNumericLiteral(property.initializer)) return false;
+  const timeout = Number(property.initializer.text);
+  return Number.isSafeInteger(timeout) && timeout > 0;
+}
 function directName(statement, aliases) {
   if (!ts.isExpressionStatement(statement) || !ts.isCallExpression(statement.expression)) return undefined;
   const call = statement.expression;
   if (!ts.isIdentifier(call.expression) || !aliases.has(call.expression.text)) return undefined;
-  const [name, callback] = call.arguments;
-  if (call.arguments.length !== 2 || !name || !ts.isStringLiteral(name) || !callback
+  const name = call.arguments[0];
+  const callback = call.arguments.length === 3 ? call.arguments[2] : call.arguments[1];
+  if ((call.arguments.length !== 2
+      && !(call.arguments.length === 3 && literalTimeoutOptions(call.arguments[1])))
+    || !name || !ts.isStringLiteral(name) || !callback
     || !(ts.isArrowFunction(callback) || ts.isFunctionExpression(callback))) return undefined;
   if (ts.isBlock(callback.body) && !callback.body.statements.length) return undefined;
   return name.text;
