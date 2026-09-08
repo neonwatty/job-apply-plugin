@@ -1352,6 +1352,22 @@
           "sha256": "5213e47d6b6b760aa740cb0d3a765a51b12e426cbe6d49c8a010d9f5cc25d890"
         }
       ]
+    },
+    {
+      "id": "p03-ui-tests.manifests.preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Permit bounded literal test timeout declarations needed by existing UI evidence while preserving rejection of skipped, dynamic and unsupported declarations.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.I.json",
+          "sha256": "99d0c4b86ad25bda1094f85c1c151a881a8e49dd4a50abf84a3f1bfe8e514d2c"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.V.json",
+          "sha256": "3d80dc21ffe4da5cfe251d4e77f9aaa18bba578b504a32c2957cd64961438524"
+        }
+      ]
     }
   ],
   "transitions": [
