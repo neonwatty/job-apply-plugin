@@ -61,3 +61,5 @@ After the Python release, reconcile main into staging in a dedicated integration
 | --- | --- |
 | Skill cleanup from PR #51 | Already present in staging. |
 | Release branch CI and guidance | Branch-specific setup; preserve migration CI policy during later reconciliation. |
+
+| PR #56: UTF-8 legacy report fixture | Forward-port the explicit UTF-8 fixture write to staging; its suspended CI did not establish Windows acceptance for this backported test. Pending. |
