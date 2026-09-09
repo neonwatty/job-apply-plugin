@@ -102,7 +102,31 @@ say where to paste the handoff. Failed browser opening gives local fallback
 instructions without repeating the private URL or exception.
 
 A scripted clean synthetic Store walkthrough verified import, queued extraction,
-and persistence after server stop/relaunch. This is developer verification, not
+Facts populated through a prepared extraction candidate, job creation, ready check,
+and Ready status after server stop/relaunch. The complete path is retained in
+`tests_js/workspace_setup_journey.test.mjs`. This is developer verification, not
 an independent fresh-user timing measurement or actual agent extraction acceptance.
 Remaining: observe a fresh user following only the guide, record time and assistance,
 and verify the host-managed launcher lifecycle on the intended desktop environment.
+
+
+### Owner setup acceptance record
+
+Use a fresh host conversation and the setup guide without additional coaching.
+Record the candidate commit, host/version, OS/Python, elapsed time, extra commands,
+confusing steps, and whether help was needed. Stop at a prepared job; no submission
+is needed. Use synthetic data for the first pass.
+
+- [ ] Installed skill launches the workspace in a fresh conversation.
+- [ ] Resume import and agent handoff are understandable without extra explanation.
+- [ ] Actual agent extraction completes; the owner can find and review the result.
+- [ ] The owner creates a job, resolves its ready check, and reaches Ready.
+- [ ] Stopping and relaunching preserves saved work and opens a working new URL.
+
+These observations remain pending. Automated test duration is not a human setup time.
+
+
+Phase 4 observation: Facts provenance is nested inside field labels, so an exact
+accessible name such as “First name” changes when provenance loads. Evaluate
+separating the field name from its provenance description in the accessibility
+walkthrough; the setup regression selects the stable field path after data loads.
