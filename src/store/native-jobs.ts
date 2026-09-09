@@ -11,6 +11,10 @@ import { atomicWritePointJson } from "./point-persistence.js";
 import { withExclusiveFileLock } from "./exclusive-file-lock.js";
 import type { PosixFlockProvider } from "./posix-flock.js";
 import { NativeResumeFiles } from "./native-resume-files.js";
+import { NativeExtractionJournal, closeRequestsForResumes, extractionJournalName, validateExtractionResumes } from "./native-extraction-journal.js";
+import { validateExtractionRequests } from "../contracts/workspace/extraction-requests.js";
+import { validateExtractions } from "../contracts/workspace/extraction-proposals.js";
+import type { ExtractionTransaction } from "../workspace-core/extraction-context.js";
 
 import { validateProfile } from "../contracts/workspace/profile.js";
 import { validateGroups } from "../contracts/workspace/fact-groups.js";
@@ -18,8 +22,8 @@ import { validateAnswers } from "../contracts/workspace/answers.js";
 import type { AnswerReferenceCounts } from "../workspace-core/answers.js";
 
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
-const marker = '{"mode":"native-jobs-fixture","version":4}\n';
-const allowed = new Set([".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "answers.json", "resume-operation.json", "resume-files"]);
+const marker = '{"mode":"native-jobs-fixture","version":5}\n';
+const allowed = new Set([".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "answers.json", "resume-operation.json", "resume-files", "resume-extractions.json", "resume-extraction-requests.json", "resume-extraction-journal.json"]);
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
 
@@ -43,6 +47,11 @@ export async function initializeJobsFixture(root: string): Promise<void> {
     await atomicWritePointJson(join(root, `${name}.json`), fromJSON(payload), options);
   }
   await atomicWritePointJson(join(root, `${journalName}.json`), fromJSON({ schemaVersion: 1, operation: null }), options);
+  for (const [name, key] of [["resume-extractions", "proposals"], ["resume-extraction-requests", "requests"]]) {
+    await atomicWritePointJson(join(root, `${name}.json`), fromJSON({ schemaVersion: 1, [key!]: {},
+      metadata: { createdAt: now, updatedAt: now } }), options);
+  }
+  await atomicWritePointJson(join(root, `${extractionJournalName}.json`), fromJSON({ schemaVersion: 1, operation: null }), options);
   await mkdir(join(root, "resume-files"), { mode: 0o700 });
   await chmod(join(root, "resume-files"), 0o700);
   const lock = await open(join(root, ".store.lock"), "wx", 0o600);
@@ -97,10 +106,10 @@ export class NativeJobsRepository implements JobsRepository {
     return value;
   }
 
-  private async journal(): Promise<Document> {
-    const value = object(parsePythonPointJsonBytes(await this.read(`${journalName}.json`), {
+  private async journal(name = journalName): Promise<Document> {
+    const value = object(parsePythonPointJsonBytes(await this.read(`${name}.json`), {
       diagnosticProfile: "3.12", intMaxStrDigits: 4300,
-    }), journalName);
+    }), name);
     if (int(get(value, "schemaVersion")) !== 1n) throw new JobsError("resume recovery schema version is unsupported");
     return value;
   }
@@ -111,7 +120,24 @@ export class NativeJobsRepository implements JobsRepository {
     await this.write(join(this.root, `${journalName}.json`), journal, documentOptions);
   }
 
+  private extractionJournal(): NativeExtractionJournal {
+    return new NativeExtractionJournal(() => this.journal(extractionJournalName),
+      (name, document) => this.write(join(this.root, `${name}.json`), document, documentOptions));
+  }
+
+  private async saveResumes(document: Document): Promise<void> {
+    validateExtractionResumes(document);
+    const requests = validateExtractionRequests(await this.document("resume-extraction-requests"));
+    const closed = closeRequestsForResumes(requests, document);
+    if (closed) await this.extractionJournal().commit("resume-request-close", { requests: closed, resumes: document });
+    else await this.write(join(this.root, "resumes.json"), document, documentOptions);
+  }
+
   private async recoverResumes(): Promise<Document> {
+    // The extraction journal can contain the resume document intended by the file
+    // journal. Finish it first so subsequent file recovery never restores an older
+    // extraction snapshot over a newly installed resume. Validate before file I/O.
+    await this.extractionJournal().recover();
     const files = new NativeResumeFiles(this.root);
     const journal = await this.journal();
     if (journal.size !== 2) throw new JobsError("invalid resume recovery journal");
@@ -119,8 +145,7 @@ export class NativeJobsRepository implements JobsRepository {
     const operation = get(journal, "operation");
     await files.recover(operation === null ? null : object(operation, "resume recovery operation"), resumes,
       async document => {
-        validateResumeReferences(object(get(document, "resumes"), "resumes.resumes"));
-        await this.write(join(this.root, "resumes.json"), document, documentOptions);
+        await this.saveResumes(document);
         resumes = document;
       }, async () => this.saveJournal(null));
     return resumes;
@@ -165,12 +190,22 @@ export class NativeJobsRepository implements JobsRepository {
       validateResumeReferences(object(get(document, "resumes"), "resumes.resumes"));
       return operation({ document, files,
         save: async value => {
-          validateResumeReferences(object(get(value, "resumes"), "resumes.resumes"));
-          await this.write(join(this.root, "resumes.json"), value, documentOptions);
+          await this.saveResumes(value);
         },
         saveJournal: async value => this.saveJournal(value),
       });
     }, { provider: this.provider, pathProfile: "3.12", signal: AbortSignal.timeout(30_000) });
+  }
+
+  async extractionTransaction<T>(operation: (transaction: ExtractionTransaction) => Promise<T>): Promise<T> {
+    return this.transaction(async () => operation({
+      profile: validateProfile(await this.document("profile")),
+      resumes: validateExtractionResumes(await this.document("resumes")),
+      requests: validateExtractionRequests(await this.document("resume-extraction-requests")),
+      proposals: validateExtractions(await this.document("resume-extractions")),
+      files: new NativeResumeFiles(this.root),
+      commit: (kind, updates) => this.extractionJournal().commit(kind, updates),
+    }));
   }
 
   async profileTransaction<T>(operation: (document: Document, save: (document: Document) => Promise<void>) => Promise<T>): Promise<T> {

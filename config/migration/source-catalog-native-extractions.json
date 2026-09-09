@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "apps/companion/components/Extractions.tsx",
+      "sha256": "343bf8b6fe7cedebb5418591a09ccb1b880a60aae82238b7dec8b4bbc26ff68f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/extraction-model.ts",
+      "sha256": "a2f7190011185bf6f582db04726b9563d738f4c5811dd251a540cf1f2d6e0f2e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/extraction-review.tsx",
+      "sha256": "720a6bed5b9b4b5cefe8fb18ec77a0af559282f97317ea18a7bfec0c579511fc",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/cli/native-extractions.js",
+      "sha256": "4b3b1c21635df57f408adf8ccfab81e000d30fa8cee9c8c4982ad8dee6b15c4c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/extraction-pointers.js",
+      "sha256": "bbbb452f611ccfcb3db7801c728defea44866b272f1ae977074c3868b2fffd5c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/extraction-proposals.js",
+      "sha256": "38f707c38e3876bd3b4b8a44209d96155f0b803a7767afbb2805fe29c12961bb",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/extraction-requests.js",
+      "sha256": "1859106885d1ad5eb7a798f77ea56f54f1743fd02d80f66254b388606599fc4c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/native-extraction-journal.js",
+      "sha256": "9b6f6aecad5cc89c4867677a16e8f77ce96dedde6fc94b898fac669962e57d57",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/extraction-context.js",
+      "sha256": "155bf4072ee6d2b08c582413d897a4ed7e67b31571ecedb13859845e7be7b5bb",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/extraction-proposal-state.js",
+      "sha256": "2d35f6ea0d6ae9ef9214eec5aba4bded5c6e4ab37e13add23409d4c115fd4304",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/extraction-proposals.js",
+      "sha256": "874fe07207fce34a9f424b19d45fe7b8969874082e2b85de33e79af20fb3f838",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/extraction-requests.js",
+      "sha256": "4a92fa78a3cd2a5b5024213378bb8dbaf0678d0564b17034edb16cb833495c04",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/extraction.js",
+      "sha256": "922b9ec9d06bde48a08c281ce6b8564198239a81461ca3ef78db915b2dd2352f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/extractions-http.js",
+      "sha256": "1fb0d989426ef6b22e2c4a42572c29ae6caf9f265535e2e021b1f88bcbf1a525",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-extractions.ts",
+      "sha256": "55a12aa0d4da68928cd081704736f9b6d901c932644c7d58c679469544d8dec5",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/extraction-pointers.ts",
+      "sha256": "768e6fca6508951fb8bb78aad78beac630747286122ff6cbc7ff8612ef5302ef",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/extraction-proposals.ts",
+      "sha256": "d69810ed6c1a6e9bf4e183ff83279bd169ba5546ad1c05276a94d079d6658ae1",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/extraction-requests.ts",
+      "sha256": "101ce3f902c3f2909a4d3f64c051b7f1997e5793e2766281fdef038a8f032c99",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/native-extraction-journal.ts",
+      "sha256": "bd85393749b2ae808c41f3bb1b663767472257a8c3795cf661b10605f99635af",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/extraction-context.ts",
+      "sha256": "6ee6a2260e720405792f04ba3753d50118f7790f5131104a737fecb2a56fb242",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/extraction-proposal-state.ts",
+      "sha256": "de335577ffe68f0eeca01b188e3f9449cccce0c82d1c91fa9c98e41c8daa84b7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/extraction-proposals.ts",
+      "sha256": "c968793feef658e6d17390de5bb7ee45d8debaea3768f22122aa0797136adde1",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/extraction-requests.ts",
+      "sha256": "86e2df274f03b8853b9dbe0646cd586f9edeeddce51c06463cbabc91123803d5",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/extraction.ts",
+      "sha256": "7867089f9480788e65b04a5ed1eb93f208ea88e10fd1af3f648022d12e910696",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/extractions-http.ts",
+      "sha256": "498816e52be4940fc840bd0aaed296ebee1fefa5ce6cd459d0fb540c5d65b075",
+      "classification": "unreviewed"
+    }
+  ]
+}

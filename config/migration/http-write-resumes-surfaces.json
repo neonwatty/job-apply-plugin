@@ -47,7 +47,10 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/extractions-http.ts",
+        "src/workspace-core/extraction.ts",
+        "src/store/native-jobs.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -75,7 +78,10 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/extractions-http.ts",
+        "src/workspace-core/extraction.ts",
+        "src/store/native-jobs.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -103,7 +109,10 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/extractions-http.ts",
+        "src/workspace-core/extraction.ts",
+        "src/store/native-jobs.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -317,7 +326,10 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/extractions-http.ts",
+        "src/workspace-core/extraction.ts",
+        "src/store/native-jobs.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

@@ -13,7 +13,7 @@
     },
     {
       "path": "apps/companion/components/Companion.tsx",
-      "sha256": "f36f98e97b467c2853244755bbc344d6d3372a5e6bff8f0560eb6bcd359bfa0b",
+      "sha256": "892a63d53e4a5d455f7cbf0d000f9eba1803fe2d46efcbb008ac51d85fdfb81c",
       "classification": "unreviewed"
     },
     {
@@ -38,7 +38,7 @@
     },
     {
       "path": "apps/companion/components/client.ts",
-      "sha256": "06fd7fce7cca30e855cf210a99d192206045b7a4d5c1681d2fe58d1b270fdd33",
+      "sha256": "b767b874663a38e0297ddae0183f7b155bd3a94da6f49593e1513ea419920730",
       "classification": "unreviewed"
     },
     {

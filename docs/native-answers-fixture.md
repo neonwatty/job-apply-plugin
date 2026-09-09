@@ -2,7 +2,7 @@
 
 This tranche provides lossless answer contracts, shared domain services, HTTP/CLI
 leaf adapters and a React editor. It is not a complete phase 8 migration or a
-live Store activation. Native fixture version 4 wires these services into the
+live Store activation. Native fixture version 5 wires these services into the
 shared Store lock, HTTP and CLI dispatch, and the Answers tab. Existing fixtures
 are rejected rather than upgraded; initialize a new isolated fixture using the
 [native fixture guide](native-jobs-fixture.md).
