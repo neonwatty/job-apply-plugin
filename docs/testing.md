@@ -14,6 +14,26 @@ Install the staged commit and outgoing push hooks with `npm run hooks:install`.
 See the [local hook protocol](local-testing-protocol.md) for escalation and
 24-hour deep-validation receipt reuse.
 
+## Next.js Companion on Mac
+
+Run `npm ci` at the repository root; the root lockfile includes the
+`apps/companion` workspace. The library checks above remain separate from the
+React application's DOM/JSX configuration. Run `npm run companion:typecheck`
+for that application; the fast and full tiers include it.
+
+For a local production build, run `npm run companion:build`, then
+`npm run companion:start -- --root /absolute/path/to/test-store`.
+The build also assembles the standalone application. For development, use
+`npm run companion:dev -- --root /absolute/path/to/test-store`. Start through
+these launchers so the Next application receives its owned Python server URL
+and authentication configuration. Use an isolated Store for development checks.
+
+The launcher supervises both local services. Python remains the sole Store
+writer; the React application forwards supported API requests to that server.
+This does not activate a TypeScript Store writer or complete installed-plugin
+packaging. Existing Python launchers remain available. Checkout validation and
+standalone application validation do not replace installed-plugin smoke tests.
+
 ## Supported tiers
 
 ```text

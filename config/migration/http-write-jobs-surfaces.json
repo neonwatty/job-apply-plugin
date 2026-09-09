@@ -9,7 +9,13 @@
       "node": "JOB",
       "sources": [
         "scripts/job_apply_workspace/handler.py",
-        "scripts/job_apply_workspace/domains/jobs.py"
+        "scripts/job_apply_workspace/domains/jobs.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts",
+        "src/cli/native-jobs-server.ts",
+        "src/workspace-core/jobs-http.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -33,7 +39,11 @@
       "node": "JOB",
       "sources": [
         "scripts/job_apply_workspace/handler.py",
-        "scripts/job_apply_workspace/domains/jobs.py"
+        "scripts/job_apply_workspace/domains/jobs.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -57,7 +67,11 @@
       "node": "JOB",
       "sources": [
         "scripts/job_apply_workspace/handler.py",
-        "scripts/job_apply_workspace/domains/jobs.py"
+        "scripts/job_apply_workspace/domains/jobs.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -81,7 +95,11 @@
       "node": "JOB",
       "sources": [
         "scripts/job_apply_workspace/handler.py",
-        "scripts/job_apply_workspace/domains/jobs.py"
+        "scripts/job_apply_workspace/domains/jobs.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -105,7 +123,11 @@
       "node": "JOB",
       "sources": [
         "scripts/job_apply_workspace/handler.py",
-        "scripts/job_apply_workspace/domains/jobs.py"
+        "scripts/job_apply_workspace/domains/jobs.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -129,7 +151,11 @@
       "node": "JOB",
       "sources": [
         "scripts/job_apply_workspace/handler.py",
-        "scripts/job_apply_workspace/domains/jobs.py"
+        "scripts/job_apply_workspace/domains/jobs.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -153,7 +179,11 @@
       "node": "JOB",
       "sources": [
         "scripts/job_apply_workspace/handler.py",
-        "scripts/job_apply_workspace/domains/jobs.py"
+        "scripts/job_apply_workspace/domains/jobs.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -177,7 +207,11 @@
       "node": "JOB",
       "sources": [
         "scripts/job_apply_workspace/handler.py",
-        "scripts/job_apply_workspace/domains/jobs.py"
+        "scripts/job_apply_workspace/domains/jobs.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -201,7 +235,11 @@
       "node": "JOB",
       "sources": [
         "scripts/job_apply_workspace/handler.py",
-        "scripts/job_apply_workspace/domains/jobs.py"
+        "scripts/job_apply_workspace/domains/jobs.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -225,7 +263,13 @@
       "node": "JOB",
       "sources": [
         "scripts/job_apply_workspace/handler.py",
-        "scripts/job_apply_workspace/domains/jobs.py"
+        "scripts/job_apply_workspace/domains/jobs.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts",
+        "src/cli/native-jobs-server.ts",
+        "src/workspace-core/jobs-http.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

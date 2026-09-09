@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/cli/native-jobs-server.js",
+      "sha256": "a0da41c227e4235ee8cdcf65cb96eb3f5b2ab0e2bbacee4428ada64643ab489d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/cli/native-jobs.js",
+      "sha256": "7a7ea70691e8096889220931dffd40403253c54f6a60d52f553d8fa89eabaed1",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/job-url.js",
+      "sha256": "7eff509e99b5f7493848bcb5f20d079c0dfeb9184d09ab0c09375f16eddcd0ce",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/jobs.js",
+      "sha256": "63972ae3d662a1f7610bc43e74717a6cc6555477b7509b4f0a0f93be317d0f7c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/resume-reference.js",
+      "sha256": "948931dc4277afecd2dc2eb2bfeac6042b83a332539830b8a2e69353d876d595",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/values.js",
+      "sha256": "058034f0b1ec85c3e57f60e97d33c50e1d8321a827d2e13c9fd5d766074ff5a4",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/native-jobs.js",
+      "sha256": "84552e090970936434bd6e5611c2b06db0e5b420211c3ec7f862f9fd50f817ef",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/job-provenance.js",
+      "sha256": "0eee632303d41334822ac5f4c21637431ed8f3f1a5c7cb901dcd33616a0af210",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/jobs-http.js",
+      "sha256": "982b762303f8146ab7e620ea9154b8bd9de3aa91a3d6a14fcdd120733daf7ace",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/jobs.js",
+      "sha256": "4e92884264ed9ee6e5466bcce9efb1e7746c089af832dfab3be50896f5c8fdb0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-jobs-server.ts",
+      "sha256": "fb5cf4367d37f54fcd2aec78c1cbf3be5372ba328b5e2e8b7b4776fa6197baf4",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-jobs.ts",
+      "sha256": "2da7e49e0105b67334966fd2a05752f0d90fd07a6e0faf17c2cbe4f49f43f605",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/job-url.ts",
+      "sha256": "68eb0ba0d9d3a43324850f29971141a502ff284d0f21d1ce2b57730d28baf683",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/jobs.ts",
+      "sha256": "2d6e765adc5ebe006a095747a67c71b359ce7985cfe20d122adddf4e616e9e2f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/resume-reference.ts",
+      "sha256": "5b101b22b4831ad842a9b5f6815cd2e5a661c2b287a796d66dfa41a4b4614e1f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/values.ts",
+      "sha256": "f0f9fad315f5fa91f90d73e9bb48c14cf68d4afec13d6a08c7eca57bfeaf8096",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/native-jobs.ts",
+      "sha256": "6d480c0531c11f0ae4cdeae5d2e93968d32754c6479fa83dc4d9812238518e95",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/job-provenance.ts",
+      "sha256": "b3d03ed0fca2c6780d4f58bbb40c20352a3ee53c709d7feb6214131a575d33dd",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/jobs-http.ts",
+      "sha256": "24a0b5cefffb46c294277b045e93784f29e33ef21834ea3b03dccb6f99d8b367",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/jobs.ts",
+      "sha256": "db3e520063460c0f855754f0304f15e981b14c1113b1d45d87a2c589e4892f74",
+      "classification": "unreviewed"
+    }
+  ]
+}

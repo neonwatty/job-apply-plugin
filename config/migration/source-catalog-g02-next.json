@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "apps/companion/app/layout.tsx",
+      "sha256": "bab7fc8d29ed0cd67ead43df9771a2cb039f3736eefd33046e82b20c2bfcebf5",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/app/page.tsx",
+      "sha256": "037084751239820e9d715d869f7d94a4de534566a21868ee5a0a50f4b5d1490c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/Companion.tsx",
+      "sha256": "745f5f8854d163c335ae894753297d9d1cc5ac869d2024027e1b3e47eff755f4",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/JobEditor.tsx",
+      "sha256": "fd4d0522672785b2607c844a2acf2adef4bc5b22a325f2ec508aaf00c366446f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/Jobs.tsx",
+      "sha256": "94c5ee26574327f56f21609c973d4fabd6840039215038245d78bfa24e35b5b0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/Overview.tsx",
+      "sha256": "581cba99f50d8efaaf4643627f70c2bc4ffd5e5ece219066167df4091dae221f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/client.ts",
+      "sha256": "195d10eb4bac68838ae3903cee5ab498360378200e92055ed6c4d384ffa48854",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/companion.css",
+      "sha256": "c0be880fe08d539ebcb3fae3d959008c13727418548bb28d3dc99e27cca3dbaa",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/contracts.ts",
+      "sha256": "0f5c5b8b2c7d242cca706253d74aa89a1848136302678a0a1579a587e3de497c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/job-editor-state.ts",
+      "sha256": "f6c4e24cec24767e5be28e0e35bf972b9f35ce2df62cdead4909d7d20c464b98",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/launch.mjs",
+      "sha256": "54d936ab8d67cad6317283ff1a6184617cbe838b2dd28548137c8d0aa10e46f2",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/next-env.d.ts",
+      "sha256": "1862ac4bbbc5192d4bf562161df66ea547ed3e67173100656ab606ae9797db2b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/next.config.ts",
+      "sha256": "a2c5a4a9c589d5228bfe3af2e34596b4d529f1f00c3fb34c16a2606410c33238",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/package-standalone.mjs",
+      "sha256": "8323782ed36afc74afc5c6fd54ffa3d16e67cfd2c3f41d899965928ae3bf37b4",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/package.json",
+      "sha256": "52cee55a3ef38cbc2e80b88a4eb862cce31f013fa9acdab23d5f137f20d1b486",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/proxy.ts",
+      "sha256": "b2e344a889335ed889702deabbd621b67b813f5cfaf23531c054c514a7a6069f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/server/assets.ts",
+      "sha256": "ee099839071fb6ead661fa5161c035a9effdbeaedb9913465b8270e502664fd4",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/server/config.ts",
+      "sha256": "c0703fd0b644d66bca671026efc88ea606535a0f919961e6e6c26987696a10a2",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/server/forward.ts",
+      "sha256": "e0b68229a4df63c20c07143cb1f683931f1c582e2e739dd1f2fb6a6bbac285b0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/server/routes.ts",
+      "sha256": "eaa32f257c6d08f6e4e9a9da6f533e7c2f4feec368baed5e1575c28abecfd8ce",
+      "classification": "unreviewed"
+    }
+  ]
+}

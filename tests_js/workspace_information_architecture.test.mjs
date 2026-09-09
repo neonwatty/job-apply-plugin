@@ -108,3 +108,12 @@ test('hybrid UI boots real Python server with compiled helper identities and nav
   const result = await hybridBrowser();
   t.diagnostic(JSON.stringify(result));
 });
+
+import { nextSecurity } from './workspace_next_security_support.mjs';
+import { nextEditor } from './workspace_next_editor_support.mjs';
+import { nextBrowser } from './workspace_next_browser_support.mjs';
+test('Next Companion enforces local transport security and bounded proxy contracts', { timeout: 15000 }, () => nextSecurity());
+test('Next Companion editor preserves drafts and validates canonical response contracts', () => nextEditor());
+test('Next Companion production standalone supports editing conflicts reload and legacy navigation', { timeout: 120000 }, async t => {
+  t.diagnostic(JSON.stringify(await nextBrowser()));
+});

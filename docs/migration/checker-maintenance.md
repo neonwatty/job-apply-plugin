@@ -38,3 +38,28 @@ No historical checkpoint or cache-based acceptance is introduced. A later
 checkpoint policy requires independently successful audit evidence and explicit
 invalidation rules. This maintenance policy is not a general product workflow
 exception; candidate integration must reconcile its own source boundaries.
+
+## Product integration after the historical boundary
+
+The Next integration adopts a flat snapshot-and-tests workflow. Historical
+assignment, prerequisite, package and receipt records end at
+`ab6964edb5b3e45d5c6c9578947acb3468dee42b`, the checked maintenance commit.
+Every descendant inventory check still runs the complete historical inventory,
+prerequisite and task audit on a disposable checkout of that exact commit.
+There is no stored-success shortcut. Audit failure, timeout, missing output or
+changed historical records fails the current check.
+
+All `docs/migration/evidence/` records and migration configuration other than
+source/surface catalogs and their review lock must remain byte-identical to
+that boundary. New or changed historical acceptance records are rejected.
+Other repository histories retain the original protocol.
+
+Current source hashes, browser exports, source/surface relationships, inventory
+lock and declared requirement test bindings are validated against the current
+snapshot. Existing hooks and affected suites still run on that snapshot. New
+product source does not need an activation/implementation/receipt commit cycle.
+Historical package acceptance cannot unlock current code: the report includes
+`historicalAudit` separately and leaves current acceptance open with no accepted
+tasks or packages. Workflow and release acceptance still require actual current
+integration and package evidence; an inventory-consistent result alone does not
+satisfy them.

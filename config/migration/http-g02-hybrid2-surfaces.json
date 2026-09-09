@@ -9,7 +9,11 @@
       "node": "UIF",
       "sources": [
         "scripts/job_apply_workspace/queries.py",
-        "scripts/job_apply_workspace/__init__.py"
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -33,7 +37,11 @@
       "node": "UIF",
       "sources": [
         "scripts/job_apply_workspace/queries.py",
-        "scripts/job_apply_workspace/__init__.py"
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -57,7 +65,11 @@
       "node": "UIF",
       "sources": [
         "scripts/job_apply_workspace/queries.py",
-        "scripts/job_apply_workspace/__init__.py"
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -81,7 +93,11 @@
       "node": "UIF",
       "sources": [
         "scripts/job_apply_workspace/queries.py",
-        "scripts/job_apply_workspace/__init__.py"
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -105,7 +121,11 @@
       "node": "UIF",
       "sources": [
         "scripts/job_apply_workspace/queries.py",
-        "scripts/job_apply_workspace/__init__.py"
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -129,7 +149,11 @@
       "node": "UIF",
       "sources": [
         "scripts/job_apply_workspace/queries.py",
-        "scripts/job_apply_workspace/__init__.py"
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -153,7 +177,11 @@
       "node": "UIF",
       "sources": [
         "scripts/job_apply_workspace/queries.py",
-        "scripts/job_apply_workspace/__init__.py"
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -177,7 +205,11 @@
       "node": "UIF",
       "sources": [
         "scripts/job_apply_workspace/queries.py",
-        "scripts/job_apply_workspace/__init__.py"
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -201,7 +233,11 @@
       "node": "UIF",
       "sources": [
         "scripts/job_apply_workspace/queries.py",
-        "scripts/job_apply_workspace/__init__.py"
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -225,7 +261,11 @@
       "node": "UIF",
       "sources": [
         "scripts/job_apply_workspace/queries.py",
-        "scripts/job_apply_workspace/__init__.py"
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -249,7 +289,11 @@
       "node": "UIF",
       "sources": [
         "scripts/job_apply_workspace/queries.py",
-        "scripts/job_apply_workspace/__init__.py"
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -273,7 +317,11 @@
       "node": "UIF",
       "sources": [
         "scripts/job_apply_workspace/queries.py",
-        "scripts/job_apply_workspace/__init__.py"
+        "scripts/job_apply_workspace/__init__.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

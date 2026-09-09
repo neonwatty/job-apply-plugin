@@ -420,6 +420,18 @@ test('S05 path support registration preserves the exact prior matrix', t => {
     assert.ok(suites[0].tiers.includes('full'));
   }
   matrix.ownership.pop();
+  // Companion adds coverage without changing any prior registration. Remove
+  // only the exact reviewed additions before comparing the original matrix.
+  const companionPaths = ['apps/companion/**/*.ts', 'apps/companion/**/*.tsx',
+    'apps/companion/**/*.mjs', 'apps/companion/**/*.css', 'apps/companion/package.json'];
+  for (const path of companionPaths) {
+    assert.equal(matrix.inventory.include.filter(value => value === path).length, 1);
+  }
+  matrix.inventory.include = matrix.inventory.include.filter(path => !companionPaths.includes(path));
+  assert.deepEqual(matrix.suites.shift(), { id: 'companion-typescript-check', kind: 'command',
+    command: ['npm', 'run', 'companion:typecheck'], tiers: ['fast', 'full'] });
+  assert.deepEqual(matrix.ownership.shift(), { paths: ['apps/companion/**'],
+    suites: ['companion-typescript-check', 'node-workspace-other', 'migration-inventory', 'source-size'] });
   assert.equal(hash(JSON.stringify(matrix)), registrationBaselineSha256);
   t.diagnostic(JSON.stringify({ registrationBaselineSha256, ownership: registrationOwnership }));
 });

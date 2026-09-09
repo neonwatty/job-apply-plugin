@@ -49,7 +49,10 @@ export function child(script, args = []) {
         const timer = setTimeout(() => { pending.delete(check); reject(new Error(`Missing child message ${expected}: ${errors}`)); }, milliseconds);
         function check(error) {
           if (lines.includes(expected)) { clearTimeout(timer); pending.delete(check); resolve(); }
-          else if (error) { clearTimeout(timer); pending.delete(check); reject(error); }
+          else if (error) {
+            clearTimeout(timer); pending.delete(check);
+            reject(new Error(`Waiting for ${expected}; received ${JSON.stringify(lines)}: ${error.message}`));
+          }
         }
         pending.add(check); check();
       });

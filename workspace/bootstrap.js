@@ -26,9 +26,11 @@ export function createWorkspaceContext(token, fetchImpl = globalThis.fetch) {
 }
 
 export function bootstrapWorkspace(scope = globalThis) {
+  const destination = new URLSearchParams(scope.location.hash.replace(/^#/, "")).get("workspace");
   const token = sessionToken(scope.location.hash, safeSessionStorage(scope));
   if (scope.location.hash) scope.history.replaceState(null, "", scope.location.pathname);
   const context = createWorkspaceContext(token);
+  context.initialWorkspace = ["facts", "resumes", "attention", "answers", "automation", "trash"].includes(destination) ? destination : null;
   for (const install of FEATURE_INSTALLERS) install(context);
   return context;
 }

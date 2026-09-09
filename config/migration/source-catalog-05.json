@@ -88,7 +88,7 @@
     },
     {
       "path": "workspace/bootstrap.js",
-      "sha256": "cab93d10769a32bd01991b1965dd1d0daa3d7ad0e2c8a20f4c2f1fcd193d690e",
+      "sha256": "904d7564cabe4f1c79ba651b744474121889155f2f567281823c58e7a914c5e0",
       "classification": "unreviewed"
     },
     {
@@ -108,7 +108,7 @@
     },
     {
       "path": "workspace/features/bindings.js",
-      "sha256": "a71d9196946c76b510b7347b8349dc8282ebb4d1b4e5e44412a56ced7b561f05",
+      "sha256": "8a25444892a514f303683d878947a68f13f711bc0c407eabcf714c5b473770cd",
       "classification": "unreviewed"
     },
     {

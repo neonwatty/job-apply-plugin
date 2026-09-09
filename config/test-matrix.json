@@ -6,6 +6,11 @@
       "tests_js/**/*.mjs",
       "tools/**/*.mjs",
       "src/**/*.ts",
+      "apps/companion/**/*.ts",
+      "apps/companion/**/*.tsx",
+      "apps/companion/**/*.mjs",
+      "apps/companion/**/*.css",
+      "apps/companion/package.json",
       "runtime/**/*.js",
       "scripts/**/*.py",
       "scripts/**/*.sh",
@@ -43,6 +48,12 @@
     ".github/workflows/**"
   ],
   "suites": [
+    {
+      "id": "companion-typescript-check",
+      "kind": "command",
+      "command": ["npm", "run", "companion:typecheck"],
+      "tiers": ["fast", "full"]
+    },
     {
       "id": "migration-inventory",
       "kind": "command",
@@ -232,6 +243,7 @@
     }
   ],
   "ownership": [
+    {"paths": ["apps/companion/**"], "suites": ["companion-typescript-check", "node-workspace-other", "migration-inventory", "source-size"]},
     {"paths": ["tests_js/local_checks_graph_support.mjs"], "suites": ["node-runner-fast", "node-migration-evidence"]},
     {"paths": ["tests_js/migration_task_lineage_support.mjs"], "suites": ["node-runner-fast", "node-migration-evidence"]},
     {"paths": ["tests_js/migration_task_lineage_git_support.mjs"], "suites": ["node-migration-evidence"]},

@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "http:GET:/legacy/",
+      "kind": "http",
+      "method": "GET",
+      "path": "/legacy/",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/legacy/{asset}",
+      "kind": "http",
+      "method": "GET",
+      "path": "/legacy/{asset}",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/_next/{asset}",
+      "kind": "http",
+      "method": "GET",
+      "path": "/_next/{asset}",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/proxy.ts",
+        "apps/companion/next.config.ts",
+        "apps/companion/package.json"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/legacy/",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/legacy/",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/legacy/{asset}",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/legacy/{asset}",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/assets.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:HEAD:/_next/{asset}",
+      "kind": "http",
+      "method": "HEAD",
+      "path": "/_next/{asset}",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/proxy.ts",
+        "apps/companion/next.config.ts",
+        "apps/companion/package.json"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/legacy",
+      "kind": "http",
+      "method": "GET",
+      "path": "/legacy",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/proxy.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:companion:launch",
+      "kind": "cli",
+      "command": "companion:start [--root ROOT] [--port PORT] [--plugin-root PATH] [--dev]",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/launch.mjs",
+        "apps/companion/package-standalone.mjs",
+        "scripts/job-apply-workspace.py",
+        "package.json",
+        "apps/companion/package.json"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}
