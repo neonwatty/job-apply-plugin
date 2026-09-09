@@ -1,3 +1,4 @@
+import { profileHttp } from "./profile-http.js";
 import type { JobsService } from "./jobs.js";
 import type { NativeJobsRepository } from "../store/native-jobs.js";
 import { fixtureError } from "../store/native-jobs.js";
@@ -16,6 +17,8 @@ const envelope = (key: string, value: Value): Value => set(emptyObject(), key, v
 export async function jobsHttp(service: JobsService, repository: NativeJobsRepository,
   method: string, path: string, body = ""): Promise<ApiResult> {
   try {
+    const facts = await profileHttp(repository, method, path, body);
+    if (facts) return facts;
     if (method === "GET") {
       if (path === "/api/boot") {
         await service.list();
@@ -51,7 +54,7 @@ export async function jobsHttp(service: JobsService, repository: NativeJobsRepos
       if (revision === null || revision < 1n) return apiError(400, "request_error", "expectedRevision must be a positive integer");
       return response(await service.update(decodeURIComponent(match[1]!), get(payload, "patch"), revision));
     }
-    return apiError(501, "unsupported_native_workflow", "This synthetic native fixture supports Jobs create, get, list and update only.");
+    return apiError(501, "unsupported_native_workflow", "This synthetic native fixture supports Jobs and Facts/profile only.");
   } catch (error) {
     if (error instanceof JobsError) {
       return error.message.includes("revision conflict") ? apiError(409, "revision_conflict", error.message)

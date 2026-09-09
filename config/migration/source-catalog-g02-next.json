@@ -13,7 +13,7 @@
     },
     {
       "path": "apps/companion/components/Companion.tsx",
-      "sha256": "745f5f8854d163c335ae894753297d9d1cc5ac869d2024027e1b3e47eff755f4",
+      "sha256": "0234c0ce69b8e8786e547d53090d1069d8552ebe0cfb22110906664813a5450c",
       "classification": "unreviewed"
     },
     {
@@ -33,12 +33,12 @@
     },
     {
       "path": "apps/companion/components/client.ts",
-      "sha256": "195d10eb4bac68838ae3903cee5ab498360378200e92055ed6c4d384ffa48854",
+      "sha256": "97942aea7092eeef123d7853f08907cd5aee0cf79dba3283fa2d5056a85b6ceb",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/companion.css",
-      "sha256": "c0be880fe08d539ebcb3fae3d959008c13727418548bb28d3dc99e27cca3dbaa",
+      "sha256": "79d6c01e3af8cf2de1f81df91f9eb086fbb484ec25c2ac1b5eec515a2b711f34",
       "classification": "unreviewed"
     },
     {
@@ -63,7 +63,7 @@
     },
     {
       "path": "apps/companion/next.config.ts",
-      "sha256": "a2c5a4a9c589d5228bfe3af2e34596b4d529f1f00c3fb34c16a2606410c33238",
+      "sha256": "99da814503644fb0c168da17c8498750c8cececa4b34aa3c8c91965020e34c1c",
       "classification": "unreviewed"
     },
     {

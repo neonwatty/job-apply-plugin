@@ -1,3 +1,4 @@
+import { nativeFactsBrowser } from './workspace_native_facts_browser_support.mjs';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import { spawn, execFile } from 'node:child_process';
@@ -72,11 +73,12 @@ export async function nativeJobsBrowser(buildRoot) {
     await page.getByRole('button', { name: /Native fixture role/ }).click();
     assert.equal(await page.locator('dialog [name="notes"]').inputValue(), 'Browser draft');
     assert.equal(await page.locator('dialog [name="company"]').inputValue(), 'CLI writer');
+    const facts = await nativeFactsBrowser(page, root, fixture, buildRoot);
     const token = new URLSearchParams(new URL(startup.url).hash.slice(1)).get('token');
     const unsupported = await fetch(startup.origin + '/api/overview', { headers: { Authorization: `Bearer ${token}` } });
     assert.equal(unsupported.status, 501);
     assert.deepEqual(pageErrors, []);
-    return { browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
+    return { facts, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
   } finally {
     if (browser) await browser.close();
     if (child && child.exitCode === null && child.signalCode === null) {

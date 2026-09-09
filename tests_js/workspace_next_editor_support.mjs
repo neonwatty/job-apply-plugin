@@ -8,16 +8,19 @@ const root = new URL('../apps/companion/components/', import.meta.url);
 async function modules(run) {
     const temp = await mkdtemp(join(tmpdir(), 'react-editor-'));
     try {
-        for (const name of ['contracts', 'job-editor-state', 'client']) {
+        for (const name of ['contracts', 'job-editor-state', 'client', 'facts-model']) {
             const text = await readFile(new URL(name + '.ts', root), 'utf8');
             const js = ts.transpileModule(text, {
                 compilerOptions: {
                     target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022
                 }
-            }).outputText.replace("'./contracts'", "'./contracts.mjs'");
+            }).outputText.replaceAll("'./contracts'", "'./contracts.mjs'")
+                .replaceAll("'./facts-model'", "'./facts-model.mjs'")
+                .replace(/'\.\.\/\.\.\/\.\.\/src\/([^']+)'/g, (_match, path) =>
+                    JSON.stringify(new URL('../runtime/' + path + '.js', import.meta.url).href));
             await writeFile(join(temp, name + '.mjs'), js);
         }
-        await run(await import(pathToFileURL(join(temp, 'job-editor-state.mjs'))), await import(pathToFileURL(join(temp, 'contracts.mjs'))), await import(pathToFileURL(join(temp, 'client.mjs'))));
+        await run(await import(pathToFileURL(join(temp, 'job-editor-state.mjs'))), await import(pathToFileURL(join(temp, 'contracts.mjs'))), await import(pathToFileURL(join(temp, 'client.mjs'))), await import(pathToFileURL(join(temp, 'facts-model.mjs'))));
     }
     finally {
         await rm(temp, {
@@ -100,7 +103,24 @@ async function cancellationAssertions() {
         } finally { globalThis.fetch = original; }
     });
 }
+async function factsDraftAssertions() {
+    return modules((_m, _c, _client, facts) => {
+        const base = facts.snapshot('{"profile":{"name":"Old","extra":{"huge":9007199254740993,"float":1.0,"note":"Old"}},"revision":1,"factProvenance":{}}');
+        const draft = facts.snapshot('{"profile":{"name":"Mine","extra":{"huge":9007199254740993,"float":1.0,"note":"Changed"}},"revision":1,"factProvenance":{}}');
+        const latest = facts.snapshot('{"profile":{"name":"Old","phone":"Other","extra":{"huge":9007199254740993,"float":1.0,"note":"Old"}},"revision":2,"factProvenance":{}}');
+        const rebased = facts.reapplyDraft(base.profile, draft.profile, latest.profile);
+        const payload = facts.patchBody(latest, rebased);
+        assert.match(payload, /9007199254740993/);
+        assert.match(payload, /1\.0/);
+        const parsed = JSON.parse(payload);
+        assert.equal(parsed.expectedRevision, 2);
+        assert.equal(parsed.patch.name, 'Mine');
+        assert.equal(Object.hasOwn(parsed.patch, 'phone'), false);
+        assert.deepEqual(parsed.atomicPaths, ['/name', '/extra']);
+    });
+}
 export async function nextEditor() {
+    await factsDraftAssertions();
     await editorDraftAssertions();
     await editorDtoAssertions();
     await cancellationAssertions();

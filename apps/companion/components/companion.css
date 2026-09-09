@@ -237,3 +237,8 @@ nav a {
   .notice dl>div { grid-template-columns:1fr; }
   .hero { padding:1.25rem; }
 }
+.fact-card { margin-block: 1rem; padding: 1rem; border: 1px solid #cbd5e1; border-radius: .6rem; }
+.fact-entry { margin-block: .6rem; padding-inline-start: .5rem; border-inline-start: 2px solid #cbd5e1; }
+.fact-card fieldset { min-width: 0; margin-block: .5rem; }
+.fact-card pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.fact-card input, .fact-card select, section[aria-label="Fact groups"] textarea { max-width: 100%; }

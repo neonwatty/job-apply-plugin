@@ -68,7 +68,12 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/cli/native-jobs-server.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/profile-http.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/profile.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -230,7 +235,12 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/cli/native-jobs-server.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/profile-http.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/fact-groups.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

@@ -7,8 +7,8 @@ launcher continues to use Python compatibility mode.
 Supported operations are `job-create`, `job-get`, `job-list` and `job-update`,
 including URL deduplication, revisions and human/agent provenance. Resume
 selection validates a read-only registry; it does not inspect content or assert
-preflight readiness. Profile and resume documents remain unchanged. Other
-workflows return `unsupported_native_workflow`; they never fall back to Python.
+preflight readiness. Jobs operations leave profile and resume documents unchanged.
+Facts/profile operations are also available; see the linked guide below. Other workflows return `unsupported_native_workflow`; they never fall back to Python.
 
 ## Run against a new synthetic root
 
@@ -46,7 +46,7 @@ lossless numeric/text codec; browser editing requires safe integer revisions.
 
 ## Boundaries and recovery
 
-Only the readiness marker, Store lock, Jobs document and read-only profile/resume
+Only the readiness marker, Store lock, Jobs, profile, fact-groups and read-only resume
 documents are permitted in the fixture root. Unsupported domain state, journals,
 leftover temporary files, symlinks, hard links and non-private files are rejected.
 Keep the failed fixture for diagnosis; do not remove unknown state to force it
@@ -61,3 +61,7 @@ The tests create independent Python and native roots, compare Jobs behavior,
 exercise native CLI contention with an empty PATH, inject persistence failures,
 kill a lock holder, and run a production Next/browser conflict-and-reload flow.
 No owner account, live Store, visible browser or plugin installation is used.
+
+Facts/profile is also available in newly initialized version 2 synthetic fixtures.
+See [Facts/profile commands and limits](native-facts-fixture.md). Older version 1
+fixtures must be recreated at a new path; they are not automatically upgraded.

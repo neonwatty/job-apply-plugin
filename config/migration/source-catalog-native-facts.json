@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "apps/companion/components/FactGroups.tsx",
+      "sha256": "cc3a34acee2c8759fc72cb18b0599c97a8d8eeb1467f87c9e0af7d9eea05854a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/FactValue.tsx",
+      "sha256": "7e77425dec6d1f7ddd7570de3df8f7ed80c3cefbf2c0ad4823f36132e8769d88",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/Facts.tsx",
+      "sha256": "715b3207019e1a7fc178b6ae5b38ab7aad534cc95ecfd40100396e4ee5ed5276",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/facts-model.ts",
+      "sha256": "c058174bfe7077c36b196acf0d0890a54dcdcebaa14683f07081ea985672b7e0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/cli/native-profile.js",
+      "sha256": "fded458e09c518cfd9085334e745db4dff61ba0967725bee19353429f3047f65",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/casefold.js",
+      "sha256": "e98cde02bd9c2295b71314d1f987ef62a871421837650b439417873dd104e944",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/fact-groups.js",
+      "sha256": "668f502bf05fa94f9c2a3f682ae26cd6b9a37286479e73b9a36d5f48ca2e16e9",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/profile.js",
+      "sha256": "03c8d4cf6f7a7c4390c87c8d1a6f56d8291be3d7132dcbcb3c5b22a315450af5",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/fact-groups.js",
+      "sha256": "a3133d14dce8b1b30f103f2e366ebc457710995a9b604fd1b7ec2a6c5e2a2ec5",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/profile-http.js",
+      "sha256": "3bbaee088dff3b30472049d80c1174dfa57f73b34a3744ba34482203e2d7a388",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/profile-patch.js",
+      "sha256": "6a2d9e69ebb8cb6b20e8b19343a112846d9a6b51cc9b66b579f907d0b54193f7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/profile.js",
+      "sha256": "c7a9327610d0b960a156581b7287f2ad988322ee6bc2dfd232da32517695de9a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-profile.ts",
+      "sha256": "f602ebf5bc576801406824aa6e0bcad73e7f944edcc0732f6f3f314cb6dbb582",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/casefold.ts",
+      "sha256": "38dc6bf2a171b72cda9922f640bfda1bf0805dcb70edc7faa55439b0a47e66ee",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/fact-groups.ts",
+      "sha256": "50711cfd3883aff65ea69afa590919c2d4c09e7c3dbc4280446d4834108d2239",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/profile.ts",
+      "sha256": "148f2473c1b06c12a4f058afa22aec75323ec80d404c673b8af1e5c3065da704",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/fact-groups.ts",
+      "sha256": "67429baf9b1001c2e2300111756f784975d3d8074f042040117283b7e1bb9ebc",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/profile-http.ts",
+      "sha256": "9dc7e7d846b0b5f2cf3d26cc71f30bd31c7dc454961e25eaddeae4ed8bbfeeb4",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/profile-patch.ts",
+      "sha256": "99eb3df377e03f820c1054c4c6d78d352595e723d644584e450c2b9be51db1b9",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/profile.ts",
+      "sha256": "146425e5ce2e8618230e4f5cefa3dc8bc7802ce2a21a873318923afdd3d9f586",
+      "classification": "unreviewed"
+    }
+  ]
+}

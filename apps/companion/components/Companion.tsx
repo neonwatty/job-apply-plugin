@@ -3,6 +3,7 @@ import { useCallback,useEffect,useState } from 'react';
 import { createClient,sessionToken,type Client } from './client';
 import type { Boot } from './contracts';
 import { Overview } from './Overview';
+import { Facts } from './Facts';
 import { Jobs } from './Jobs';
 import './companion.css';
 export default function Companion() {
@@ -10,7 +11,7 @@ export default function Companion() {
     const [boot,setBoot]=useState<Boot|null>(null);
     const [error,setError]=useState('');
     const [token,setToken]=useState('');
-    const [tab,setTab]=useState<'overview'|'jobs'>('overview');
+    const [tab,setTab]=useState<'overview'|'jobs'|'facts'>('overview');
     const [dirty,setDirty]=useState(false);
     const [attempt,setAttempt]=useState(0);
     useEffect(() => {
@@ -51,10 +52,10 @@ export default function Companion() {
         return () => window.removeEventListener('beforeunload',before);
     },[dirty]);
     const dirtyChanged=useCallback((value: boolean) => setDirty(value),[]);
-    function navigate(next: 'overview'|'jobs') {
+    function navigate(next: 'overview'|'jobs'|'facts') {
         if(next===tab)
             return;
-        if(dirty&&!confirm('Discard unsaved job changes?'))
+        if(dirty&&!confirm('Discard unsaved changes?'))
             return;
         setDirty(false);
         setTab(next);
@@ -80,15 +81,16 @@ export default function Companion() {
             </button>}
             <button aria-current={tab==='jobs'? 'page':undefined} onClick={() => navigate('jobs')}>Jobs
             </button>
+            <button aria-current={tab==='facts'?'page':undefined} onClick={()=>navigate('facts')}>Facts</button>
             {token&&!nativeFixture&&<a href={legacyHref} onClick={event => {
-                if(dirty&&!confirm('Discard unsaved job changes?'))
+                if(dirty&&!confirm('Discard unsaved changes?'))
                     event.preventDefault();
             }}>Open full workspace
             </a>}
         </nav>
         <p className="trust">Your canonical data stays local. You direct changes and submissions; agents assist from the same record.
         </p>
-        {nativeFixture&&<p role="status">Synthetic native Jobs workspace. Create and edit jobs here; other workflows are not available yet.</p>}
+        {nativeFixture&&<p role="status">Synthetic native Jobs workspace. Create and edit jobs and facts here; other workflows are not available yet.</p>}
         {error&&<p role="alert" className="error">
             {error}{' '}
             {token&&<button onClick={() => setAttempt(value => value+1)}>Retry connection</button>}
@@ -103,7 +105,7 @@ export default function Companion() {
         </section>:boot?.status==='ready'&&client? (tab==='overview'? <Overview
             client={client}
             openJobs={() => navigate('jobs')}
-            legacyHref={legacyHref} />:<Jobs client={client} dirtyChanged={dirtyChanged} />):!error&&<p>Loading workspace…
+            legacyHref={legacyHref} />:tab==='facts'?<Facts client={client} dirtyChanged={dirtyChanged}/>:<Jobs client={client} dirtyChanged={dirtyChanged} />):!error&&<p>Loading workspace…
             </p>}
     </main>;
 }
