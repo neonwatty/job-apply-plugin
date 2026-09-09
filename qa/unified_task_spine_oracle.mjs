@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { waitForLinkedAnswerReturn } from "./unified_task_spine_answer.mjs";
 
 const REPO_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const PYTHON = process.env.PYTHON || "python3";
@@ -61,6 +62,8 @@ const PUBLIC_STAGES = new Set([
   "setup", "ux_intake", "agent_intake", "selection", "first_acquisition",
   "attention_open", "answer_open", "answer_save", "answer_recheck",
   "second_acquisition", "final_verification", "cleanup",
+  "answer_save_response", "answer_save_closed", "answer_save_activity",
+  "answer_save_draft", "answer_save_focus_wait",
 ]);
 
 class OracleFailure extends Error {
@@ -239,7 +242,7 @@ function publicReportIsSafe(report) {
   return forbidden.every((value) => !serialized.toLowerCase().includes(value.toLowerCase()));
 }
 
-export async function runOracle() {
+export async function runOracle({ configurePage = async () => {} } = {}) {
   const temporary = await mkdtemp(join(tmpdir(), "unified-task-spine-"));
   const storeRoot = join(temporary, "store");
   const storeScript = join(REPO_ROOT, "scripts", "job-apply-store.py");
@@ -293,6 +296,7 @@ export async function runOracle() {
     const startup = await waitForStartup(server);
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
+    await configurePage(page);
     const pageErrors = [];
     page.on("pageerror", () => pageErrors.push(true));
     await page.addInitScript(() => { globalThis.setInterval = () => 0; });
@@ -395,12 +399,16 @@ export async function runOracle() {
       && response.request().method() === "GET"
     ));
     await answerDialog.getByRole("button", { name: "Save answer" }).click();
+    stage = "answer_save_response";
     check((await answerSaved).ok(), "answer_save_response_failed");
+    stage = "answer_save_closed";
     await answerDialog.waitFor({ state: "hidden" });
+    stage = "answer_save_activity";
     check((await activityReloaded).ok(), "activity_reload_failed");
+    stage = "answer_save_draft";
     check(await jobDialog.getByLabel("Notes").inputValue() === "unsaved synthetic draft", "draft_lost_on_answer_save");
-    await page.waitForFunction(() => document.activeElement?.textContent?.trim() === "Open in Answers");
-    check(await openAnswer.evaluate((button) => document.activeElement === button), "focus_not_restored");
+    stage = "answer_save_focus_wait";
+    await waitForLinkedAnswerReturn(page);
     stage = "answer_recheck";
     const answerResolved = page.waitForResponse((response) => (
       new URL(response.url()).pathname === `/api/jobs/${encodeURIComponent(selectedId)}/resolve-pending-answer`

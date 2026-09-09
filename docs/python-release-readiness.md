@@ -1,6 +1,6 @@
 # Python release readiness spec
 
-Status: planned. Baseline assessed: `c1b180b3` on 2026-09-09.
+Status: phase 1 in progress. Baseline assessed: `c1b180b3` on 2026-09-09.
 
 ## Objective and scope
 
@@ -27,7 +27,9 @@ acceptance. A retry alone does not close a recurring failure.
   with the installed candidate. Upgrade from the actual previous release using
   a populated synthetic Store; verify package selection and preservation of
   Facts, Answers, jobs, managed files, sessions, and history. Cover both hosts.
-- [ ] **4. Refine through workspace QA.** Walk all eight views and test empty,
+- [ ] **4. Audit and refine workspace UX.** Produce a prioritized usability and
+  visual backlog covering navigation, layout, readability, terminology, forms,
+  and feedback, with acceptance criteria for each change. Walk all eight views and test empty,
   loading, error, conflict, restart, and recovery states. Check keyboard/focus,
   zoom, and smaller windows. Track defects and verify their fixes by journey.
 - [ ] **5. Dogfood installed-agent workflows.** Exercise actual PDF/DOCX/TXT
@@ -65,7 +67,7 @@ testing retains its explicit opt-in.
 
 | Phase | Status | Evidence / outstanding work |
 | --- | --- | --- |
-| 1 | Next | Recurring `answer_save`; cause unresolved |
+| 1 | In progress | Controlled focus race reproduced; fix and regression pass; full/package/CI acceptance pending |
 | 2 | Planned | Prerequisites and fresh-user journey |
 | 3 | Planned | Actual prior-release upgrade and installed-agent sessions |
 | 4 | Planned | Observed workspace QA and refinements |
@@ -75,3 +77,17 @@ testing retains its explicit opt-in.
 Record behavioral fixes and TypeScript follow-up in the
 [release lane ledger](python-release.md). Update this table as evidence arrives;
 historical green checks do not qualify a subsequently changed candidate.
+
+### Phase 1 investigation receipt
+
+Controlled response-body scheduling reproduced a false early focus success:
+native answer-dialog closure focused the old action; activity rendering then
+replaced that node before the separate identity assertion. The oracle now waits
+for the refreshed recheck action and its matching focused edit action together.
+The regression fails with the original focus predicate and passes with the fix.
+Additional allowlisted stages distinguish response, closure, activity, draft,
+and focus failures without exposing response contents.
+
+This establishes a test race, not an answer persistence defect. Historical CI
+reports identify only `answer_save`, so they cannot conclusively attribute every
+previous failure to this race. Final candidate checks remain required.

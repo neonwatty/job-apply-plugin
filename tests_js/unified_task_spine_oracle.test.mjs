@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-import { publicFailureReport } from "../qa/unified_task_spine_oracle.mjs";
+import { publicFailureReport, runOracle } from "../qa/unified_task_spine_oracle.mjs";
 
 const REPO_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -20,6 +20,10 @@ test("oracle failures expose only allowlisted diagnostic stages", () => {
     error: "oracle_failed",
     stage: "answer_save",
   });
+  for (const stage of ["answer_save_response", "answer_save_closed", "answer_save_activity", "answer_save_draft", "answer_save_focus_wait"]) {
+    sensitive.stage = stage;
+    assert.equal(publicFailureReport(sensitive).stage, stage);
+  }
   sensitive.stage = "token at /tmp/private-path";
   const serialized = JSON.stringify(publicFailureReport(sensitive));
   assert.match(serialized, /"stage":"unknown"/);
@@ -71,4 +75,51 @@ test("unified task spine oracle is executable, deterministic, closed, and privac
   });
   assert.equal(report.transcript.at(-1), "closed_without_final_action");
   assert.doesNotMatch(stdout, /claim_|https?:\/\/|answerKey|answerValue|resumePath|browserState|credential|bearer|token|\/tmp\//i);
+});
+
+
+test("answer return waits for rendered activity and restored focus", { timeout: 90_000 }, async () => {
+  let completedBeforeReturn = null;
+  const report = await runOracle({ configurePage: async (page) => {
+    // Hold JSON consumption after real response headers arrive, to exercise
+    // native dialog focus restoration before the application's asynchronous return.
+    await page.addInitScript(() => {
+      const json = Response.prototype.json;
+      globalThis.answerTiming = { armed: false };
+      Response.prototype.json = async function (...args) {
+        const data = await json.apply(this, args);
+        const path = new URL(this.url).pathname;
+        const timing = globalThis.answerTiming;
+        if (timing.armed && path.endsWith("/activity")) {
+          await new Promise((resolve) => { timing.activity = resolve; });
+        }
+        if (timing.armed && path === "/api/attention") {
+          await new Promise((resolve) => { timing.attention = resolve; });
+        }
+        return data;
+      };
+      document.addEventListener("click", (event) => {
+        if (event.target.id === "answer-save") globalThis.answerTiming.armed = true;
+      }, true);
+    });
+    const wait = page.waitForFunction.bind(page);
+    page.waitForFunction = async (...args) => {
+      let completed = false;
+      const waiting = wait(...args).then((result) => { completed = true; return result; });
+      await wait(() => Boolean(globalThis.answerTiming.activity && globalThis.answerTiming.attention));
+      await wait(() => document.activeElement?.textContent?.trim() === "Open in Answers");
+      await page.evaluate(() => globalThis.answerTiming.activity());
+      await page.getByRole("button", { name: "Recheck this revision", exact: true }).waitFor();
+      assert.equal(await page.getByRole("button", { name: "Open in Answers", exact: true })
+        .evaluate((button) => button === document.activeElement), false);
+      completedBeforeReturn = completed;
+      await page.evaluate(() => {
+        globalThis.answerTiming.armed = false;
+        globalThis.answerTiming.attention();
+      });
+      return waiting;
+    };
+  } });
+  assert.equal(completedBeforeReturn, false, "must not accept focus on the pre-refresh action");
+  assert.equal(report.result, "pass");
 });
