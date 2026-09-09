@@ -2,6 +2,7 @@ import { implementationFor } from './task-lineage.mjs';
 import { canonical, closed, digest, equal, hash, safePath, sha, strings } from './evidence-io.mjs';
 import { parseTaskTap } from './tap-evidence.mjs';
 import { sourceSizePath } from './task-manifests.mjs';
+import { MAINTENANCE_FILES } from './snapshot-maintenance.mjs';
 
 const fields = ['schemaVersion', 'id', 'manifestSha256', 'subject', 'executionBase', 'evidenceCommit', 'diff', 'files',
   'dependencies', 'cells', 'artifacts', 'review', 'status'];
@@ -94,6 +95,11 @@ export function validateTaskReceipts(receipts, context) {
   function currentOrSuccessor(id, path, expected, seen = new Set()) {
     const fact = context.facts.get(id);
     if (fact?.currentFiles.get(path) === expected || fact?.metadataInputs?.has(path)) return true;
+    if (context.maintenancePaths?.has(path) && MAINTENANCE_FILES.includes(path)) {
+      // The historical subject still needs exact valid evidence. Its changed
+      // checker implementation has no current acceptance until separately tested.
+      currentOpen = true; return true;
+    }
     if (seen.has(id)) return false;
     seen.add(id);
     for (const [nextId, candidate] of candidates) {

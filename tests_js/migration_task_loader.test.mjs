@@ -294,6 +294,7 @@ test('immutable ancestry amortizes successful heads and preserves bounded fallba
       assert.deepEqual(argv.slice(0, 2), ['--no-pager', '--no-replace-objects']);
       assert.equal(options.timeout, 5000); assert.equal(options.maxBuffer, 8388608);
       const args = argv.slice(2); calls.push(args);
+      if (args[0] === 'rev-parse' && args[1] === '--git-path') return Buffer.from('/nonexistent-synthetic-graph/' + args[2]);
       if (args[0] === 'rev-list') {
         if (failHistory) throw Object.assign(Error('bounded failure'), { code: 'ETIMEDOUT' });
         return Buffer.from(Array.from({ length: 200 }, (_, n) => id(n + 1)).join('\\n') + '\\n');
@@ -302,7 +303,7 @@ test('immutable ancestry amortizes successful heads and preserves bounded fallba
         if (args[2] === id(999)) throw Object.assign(Error('not ancestor'), { status: 1 });
         return Buffer.alloc(0);
       }
-      return Buffer.from(args[2].slice(0, 40) + '\\n');
+      return Buffer.from((args[2].startsWith(id(998)) ? id(1) : args[2].slice(0, 40)) + '\\n');
     };
     syncBuiltinESMExports();
     const { createEvidenceIO } = await import(${JSON.stringify(moduleUrl)});
@@ -313,10 +314,17 @@ test('immutable ancestry amortizes successful heads and preserves bounded fallba
     assert.equal(io.ancestor(id(998), id(200)), true); // absent tag-like ID takes original path
     assert.equal(io.ancestor(id(999), id(200)), false);
     assert.equal(io.ancestor(id(999), id(200)), false);
-    assert.equal(calls.filter(args => args[0] === 'merge-base' && args[2] === id(999)).length, 1);
+    assert.equal(calls.filter(args => args[0] === 'merge-base' && args[2] === id(999)).length, 0);
     failHistory = true;
     assert.equal(io.ancestor(id(1), id(201)), true);
     assert.equal(calls.filter(args => args[0] === 'merge-base' && args[3] === id(201)).length, 1);
+    failHistory = false;
+    const negatives = await createEvidenceIO(process.cwd());
+    const start = calls.length;
+    for (let n = 1000; n < 6000; n++) assert.equal(negatives.ancestor(id(n), id(200)), false);
+    assert.equal(negatives.ancestor(id(1000), id(200)), false);
+    assert.equal(calls.slice(start).filter(args => args[0] === 'merge-base').length, 0);
+    assert.equal(calls.slice(start).filter(args => args[0] === 'rev-list').length, 1);
   `], { encoding: 'utf8', timeout: 10000, maxBuffer: 1048576 });
   assert.equal(child.error, undefined); assert.equal(child.status, 0, child.stderr);
 });
@@ -341,5 +349,21 @@ test('immutable ancestry agrees with Git on branches tags unknown IDs and replac
     assert.equal(io.ancestor(left, right), false);
     const fresh = await createEvidenceIO(repo.root);
     assert.equal(fresh.ancestor(left, right), false); assert.equal(fresh.ancestor(base, right), true);
+  } finally { await repo.cleanup(); }
+});
+
+test('ancestry invalidates positive and negative history when shallow boundaries change', async () => {
+  const repo = await repository();
+  try {
+    const { createEvidenceIO } = await import('../tools/migration/evidence-io.mjs');
+    const base = repo.git('rev-parse', 'HEAD');
+    await repo.write('descendant', 'synthetic'); const head = repo.commit();
+    const io = await createEvidenceIO(repo.root);
+    assert.equal(io.ancestor(base, head), true);
+    await repo.write('.git/shallow', head + '\n');
+    assert.equal(io.ancestor(base, head), false);
+    assert.equal(io.ancestor(base, head), false);
+    await rm(join(repo.root, '.git/shallow'));
+    assert.equal(io.ancestor(base, head), true);
   } finally { await repo.cleanup(); }
 });

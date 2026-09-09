@@ -1,5 +1,6 @@
 import { closed, digest, equal, hash, safePath, sha, strings, text } from './evidence-io.mjs';
 import { assignmentsFrom, binding, fileBinding, preparationPath, validateTaskLineage } from './task-lineage.mjs';
+import { containsRecords, firstActivations, historicalJson, preservesHistory, recordKeys } from './history-records.mjs';
 
 const LINEAGE = 'config/migration/task-lineage.json';
 const CATALOG = 'config/migration/task-contracts.json';
@@ -27,7 +28,7 @@ export async function loadTaskLineage(io, { head, catalog, frozen, current }) {
     }
     return revisions;
   }
-  const jsonAt = (path, revision) => { const value = io.fileAt(revision, path); return value === null ? null : JSON.parse(value); };
+  const jsonAt = historicalJson(io);
   const root = await frozen(catalog.dag), dagsByHash = new Map([[catalog.dag.sha256, assignmentsFrom(root)]]);
   const bytes = await current(LINEAGE);
   const shard = bytes === null ? { schemaVersion: 1, preparations: [], transitions: [] } : JSON.parse(bytes);
@@ -39,16 +40,20 @@ export async function loadTaskLineage(io, { head, catalog, frozen, current }) {
   }
   validShard(shard);
   const history = changes(LINEAGE).map(revision => ({ revision, value: validShard(jsonAt(LINEAGE, revision)) }));
-  for (const row of history) for (const key of ['preparations', 'transitions']) {
-    if (row.value[key].some(item => !shard[key].some(last => equal(last, item)))) throw new Error('Lineage history removed or replaced records');
-    for (const earlier of history) if (earlier.revision !== row.revision && io.ancestor(earlier.revision, row.revision)
-      && earlier.value[key].some(item => !row.value[key].some(next => equal(item, next)))) throw new Error('Lineage branch erased ancestral records');
+  const indexed = new Map();
+  for (const key of ['preparations', 'transitions']) {
+    const rows = history.map(row => ({ revision: row.revision, records: recordKeys(row.value[key]) }));
+    indexed.set(key, rows);
+    const latest = recordKeys(shard[key]);
+    if (rows.some(row => !containsRecords(latest, row.records))) throw new Error('Lineage history removed or replaced records');
+    if (!preservesHistory(rows, io.ancestor, { topological: true })) throw new Error('Lineage branch erased ancestral records');
   }
   const firstRecord = (key, item) => {
-    const candidates = history.filter(row => row.value[key].some(value => equal(value, item)));
-    const first = candidates.filter(row => !candidates.some(other => other !== row && io.ancestor(other.revision, row.revision)));
+    const [identity] = recordKeys([item]);
+    const candidates = indexed.get(key).filter(row => row.records.has(identity)).map(row => row.revision);
+    const first = firstActivations(candidates, io.ancestor);
     if (first.length !== 1) throw new Error('Ambiguous lineage first activation');
-    return first[0].revision;
+    return first[0];
   };
   const prepared = new Map(), preparationFacts = new Map(), planningBindings = new Map();
   for (const item of [catalog.dag, ...catalog.audits, ...catalog.assignments.map(item => item.manifest)]) planningBindings.set(item.path, item.sha256);
@@ -94,7 +99,7 @@ export async function loadTaskLineage(io, { head, catalog, frozen, current }) {
   function originalActivation(id) {
     const authorization = authorizations.get(id);
     const revisions = changes(CATALOG).filter(revision => jsonAt(CATALOG, revision)?.assignments?.some(item => equal(item, authorization)));
-    const candidates = revisions.filter(revision => !revisions.some(other => other !== revision && io.ancestor(other, revision)));
+    const candidates = firstActivations(revisions, io.ancestor);
     if (candidates.length !== 1) throw new Error('Ambiguous original activation');
     return candidates[0];
   }

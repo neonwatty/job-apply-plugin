@@ -1,4 +1,5 @@
 import { readFile, lstat, realpath } from 'node:fs/promises';
+import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -28,6 +29,23 @@ export async function createEvidenceIO(root) {
   // return so callers cannot poison later observations. Bound retained cache bytes.
   const immutableCache = new Map(), negativeAncestry = new Set();
   let cachedBytes = 0;
+  const graphPaths = ['shallow', 'info/grafts'].map(path =>
+    resolve(canonicalRoot, git(['rev-parse', '--git-path', path]).toString().trim()));
+  let graphIdentity;
+  function refreshGraph() {
+    const identity = JSON.stringify(graphPaths.map(path => {
+      try {
+        if (statSync(path).size > 8 * 1024 * 1024) throw new Error('Git graph metadata exceeds reader budget');
+        return digest(readFileSync(path));
+      }
+      catch (error) { if (error.code === 'ENOENT') return null; throw error; }
+    }));
+    if (identity !== graphIdentity) {
+      immutableCache.clear(); negativeAncestry.clear(); cachedBytes = 0;
+      graphIdentity = identity;
+    }
+    return identity;
+  }
   const immutableGit = args => {
     const key = JSON.stringify(args);
     if (immutableCache.has(key)) {
@@ -76,6 +94,10 @@ export async function createEvidenceIO(root) {
     return immutableGit(['cat-file', 'blob', entry.slice(12, 52)]);
   }
   return { root: canonicalRoot, readRepositoryFile, revision, fileAt,
+    parents: commit => {
+      if (!sha(commit)) throw new Error('Invalid parent revision');
+      return git(['rev-list', '--parents', '-n', '1', commit]).toString().trim().split(' ').slice(1);
+    },
     changes: path => { if (!safePath(path)) throw new Error('Unsafe history path'); return git(['log', '--full-history', '--reverse', '--topo-order', '--format=%H', 'HEAD', '--', path]).toString().trim().split('\n').filter(Boolean); },
     pathsAt: commit => { if (!sha(commit)) throw new Error('Invalid tree revision'); return immutableGit(['ls-tree', '-r', '--name-only', '-z', commit]).toString().split('\0').filter(Boolean); },
     head: () => git(['rev-parse', '--verify', 'HEAD']).toString().trim(),
@@ -83,14 +105,18 @@ export async function createEvidenceIO(root) {
     clean: () => git(['status', '--porcelain=v1', '-z', '--untracked-files=all']).length === 0,
     ancestor: (base, head) => {
       if (!sha(base) || !sha(head)) return false;
+      const identity = refreshGraph();
       const key = `${base}:${head}`;
       if (negativeAncestry.has(key)) return false;
       try {
         const history = immutableGit(['rev-list', head]);
-        // Match complete object-ID lines only. Nonmembership is not authoritative:
-        // merge-base also accepts tag IDs, and shallow boundaries can change.
+        // Match complete object-ID lines. For exact commit IDs, rev-list and
+        // merge-base use the same reachability relation, including shallow/graft
+        // boundaries. Tags and unknown IDs retain Git's original fallback.
         const index = history.indexOf(`${base}\n`);
-        if (index >= 0 && (index === 0 || history[index - 1] === 10)) return true;
+        if (index >= 0 && (index === 0 || history[index - 1] === 10)
+          && refreshGraph() === identity) return true;
+        if (revision(base) && revision(head) && refreshGraph() === identity) return false;
       } catch { /* Preserve the original query when history exceeds read limits. */ }
       try { immutableGit(['merge-base', '--is-ancestor', base, head]); return true; }
       catch (error) {
