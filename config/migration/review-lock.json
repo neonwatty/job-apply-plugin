@@ -39,7 +39,7 @@
     },
     {
       "path": "browser-native-answers-surfaces.json",
-      "sha256": "deabe52901fe767c22222812550ad77e8d43f7376d690af6a41496a34056ce25"
+      "sha256": "ea58b6456169b0e56a3145f65c892ec18ccf97f1962c556796699c60ba2ce5c4"
     },
     {
       "path": "browser-native-extractions-surfaces.json",
@@ -79,7 +79,7 @@
     },
     {
       "path": "cli-native-answers-surfaces.json",
-      "sha256": "1f799e53cf30108c9b90e93170703bd9c5679680a7227ef68496965cf7e4ce7d"
+      "sha256": "fbd1eae1ff673e11460f9f67997bfd3579b9b3cf90126bf71dd162b1716d1f9d"
     },
     {
       "path": "cli-native-extractions-surfaces.json",
@@ -147,7 +147,7 @@
     },
     {
       "path": "http-write-answers-surfaces.json",
-      "sha256": "beb7a8d7d037c44ea637e7567aab712430b2a3126c3e95a5495cae1bda4c9b10"
+      "sha256": "69ec48f6981d0390cad39193d91952e8252f48a764c25e7fbfaa548430011a37"
     },
     {
       "path": "http-write-jobs-surfaces.json",
@@ -254,8 +254,12 @@
       "sha256": "0b6ee35143f1ad4f49568ed3d9e15f1cfacf869476a50a151b4fea3fc6f29f41"
     },
     {
+      "path": "source-catalog-native-answer-reuse.json",
+      "sha256": "bf0db4a7633a6a8fbe1537c4e930c9381f1b1914d67711a2f6b8669712534077"
+    },
+    {
       "path": "source-catalog-native-answers.json",
-      "sha256": "a06c2a518e825df270d17373ab1580e4ece2fe5b482ebd0b1561afeb4a114b17"
+      "sha256": "9fed876ccc9a99f74ec8252154f5aedbbe786a426115c51dc5f5b8071a57c6cd"
     },
     {
       "path": "source-catalog-native-extractions.json",

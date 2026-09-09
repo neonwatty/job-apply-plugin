@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnswerFields } from './answer-fields';
 import { string, get, object, parse, serialize } from '../../../src/contracts/workspace/values';
-import { answerDraft, answerMutation, answerPath, answerSnapshot, reapplyAnswer } from './answer-model';
+import { answerCreateMutation, newAnswerDraft, answerDraft, answerMutation, answerPath, answerSnapshot, reapplyAnswer } from './answer-model';
 import type { AnswerClient, Document } from './answer-model';
 
 export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyChanged: (dirty: boolean) => void }) {
@@ -10,6 +10,7 @@ export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyC
   const [loaded, setLoaded] = useState(false);
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('accepted');
+  const [creating, setCreating] = useState(false);
   const [base, setBase] = useState<Document | null>(null);
   const [draft, setDraft] = useState<Document | null>(null);
   const [latest, setLatest] = useState<Document | null>(null);
@@ -26,7 +27,7 @@ export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyC
   const listGeneration = useRef(0);
   const listRequest = useRef<AbortController | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
-  const dirty = invalid || base !== null && draft !== null && serialize(draft) !== serialize(answerDraft(base));
+  const dirty = creating || invalid || base !== null && draft !== null && serialize(draft) !== serialize(answerDraft(base));
   useEffect(() => { dirtyChanged(dirty || busy); return () => dirtyChanged(false); }, [dirty, busy, dirtyChanged]);
   useEffect(() => () => { generation.current++; listGeneration.current++; request.current?.abort(); listRequest.current?.abort(); }, []);
   async function refreshList() {
@@ -67,6 +68,7 @@ export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyC
         setLatest(next);
         setNotice('Latest answer loaded. Your draft is retained.');
       } else {
+        setCreating(false);
         setBase(next);
         setDraft(answerDraft(next));
         setInvalid(false);
@@ -79,11 +81,35 @@ export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyC
       if (version === generation.current && !controller.signal.aborted) setError(failure instanceof Error ? failure.message : 'Unable to load answer');
     } finally { if (version === generation.current) setBusy(false); }
   }
+  function startNew() {
+    if (dirty && !confirm('Discard your unsaved answer changes?')) return;
+    request.current?.abort();
+    generation.current++;
+    setCreating(true);
+    setBase(null);
+    setDraft(newAnswerDraft());
+    setLatest(null);
+    setRemember(false);
+    setInvalid(false);
+    setEditorVersion(value => value + 1);
+    setError('');
+    setNotice('');
+    heading.current?.focus();
+  }
+  function cancelNew() {
+    if (!confirm('Discard this new answer?')) return;
+    setCreating(false);
+    setDraft(null);
+    setRemember(false);
+    setInvalid(false);
+    setError('');
+    setNotice('New answer discarded.');
+  }
   async function save(action = '') {
-    if (!base || !draft || invalid || !editorForm.current?.reportValidity()) return;
-    const key = string(get(base, 'key'))!;
+    if ((!base && !creating) || !draft || invalid || !editorForm.current?.reportValidity()) return;
+    const key = base ? string(get(base, 'key'))! : null;
     let body: string;
-    try { body = answerMutation(base, draft, remember); }
+    try { body = creating ? answerCreateMutation(draft, remember) : answerMutation(base!, draft, remember); }
     catch (failure) { setError(failure instanceof Error ? failure.message : 'Invalid JSON draft'); return; }
     const controller = new AbortController();
     request.current?.abort();
@@ -93,31 +119,37 @@ export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyC
     setError('');
     setNotice('');
     try {
-      const raw = await client.answerRequest(answerPath(key) + (action ? `/${action}` : ''), action ? 'POST' : 'PATCH', body, controller.signal);
+      const raw = await client.answerRequest(creating ? '/api/answers' : answerPath(key!) + (action ? `/${action}` : ''), creating || action ? 'POST' : 'PATCH', body, controller.signal);
       if (version !== generation.current) return;
       const next = answerSnapshot(raw);
+      setCreating(false);
       setBase(next);
       setDraft(answerDraft(next));
         setInvalid(false);
         setEditorVersion(value => value + 1);
       setLatest(null);
       setRemember(false);
-      setNotice('Answer saved.');
+      setNotice(creating ? 'Answer created.' : 'Answer saved.');
       void refreshList();
     } catch (failure) {
       if (version !== generation.current || controller.signal.aborted) return;
-      setError(failure instanceof Error ? failure.message : 'Unable to save answer');
+      const message = failure instanceof Error ? failure.message : 'Unable to save answer';
+      setError(creating && message === 'existing answer put requires expected revision'
+        ? 'An answer to this question already exists for this scope. Your draft is retained. Search for the existing answer to edit it.'
+        : message);
+      if (creating) return;
       // A failed mutation never replaces the draft. Loading latest state is read-only.
       try {
-        const raw = await client.answerRequest(answerPath(key), 'GET', undefined, controller.signal);
+        const raw = await client.answerRequest(answerPath(key!), 'GET', undefined, controller.signal);
         if (version === generation.current) setLatest(answerSnapshot(raw));
       } catch { /* Preserve the original mutation error and draft. */ }
     } finally { if (version === generation.current) setBusy(false); }
   }
   return <section>
     <h1>Answers</h1>
-    <p>Find, edit and review remembered answers. Sensitive values stay hidden until you reveal them.</p>
+    <p>Create, find, edit and review remembered answers. Sensitive values stay hidden until you reveal them.</p>
     <p>Merge, cleanup and pending application questions are not available in this native fixture.</p>
+    <button disabled={busy} onClick={startNew}>New answer</button>
     <form onSubmit={event => { event.preventDefault(); void refreshList(); }}>
       <label>Find answers<input value={query} onChange={event => setQuery(event.target.value)} /></label>
       <label>Review status<select aria-label="Review status" value={status} onChange={event => setStatus(event.target.value)}>
@@ -135,9 +167,10 @@ export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyC
         <span> {get(item, 'valueRedacted') === true ? 'Sensitive value hidden' : get(item, 'hasValue') === true ? 'Value retained' : 'No retained value'}</span>
       </li>;
     })}</ul>
-    <h2 ref={heading} tabIndex={-1}>Answer editor</h2>
-    {base && draft && <div>
-      <button disabled={busy || invalid} onClick={() => void select(string(get(base, 'key'))!, true)}>Refresh selected answer</button>
+    <h2 ref={heading} tabIndex={-1}>{creating ? 'New answer' : 'Answer editor'}</h2>
+    {draft && (base || creating) && <div>
+      {creating && <p>Create an accepted answer. Choose its state and scope, and give consent before storing a sensitive value.</p>}
+      {base && <><button disabled={busy || invalid} onClick={() => void select(string(get(base, 'key'))!, true)}>Refresh selected answer</button>
       {get(base, 'valueRedacted') === true && <button disabled={busy || dirty} onClick={() => void select(string(get(base, 'key'))!, false, true)}>Reveal sensitive value</button>}
       {latest && <aside role="alert"><p>Your draft is retained. Review the latest revision before saving.</p>
         <button disabled={busy || invalid} onClick={() => {
@@ -158,14 +191,15 @@ export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyC
           setInvalid(false);
           setEditorVersion(value => value + 1);
         }}>Load saved answer</button>
-      </aside>}
+      </aside>}</>}
       <form ref={editorForm} onChange={event => setInvalid(!event.currentTarget.checkValidity())} onSubmit={event => { event.preventDefault(); void save(); }}>
         <fieldset disabled={busy}>
-          <legend>Edit answer</legend>
-          <AnswerFields key={editorVersion} draft={draft} change={setDraft} remember={remember} />
-          <label><input type="checkbox" checked={remember} onChange={event => setRemember(event.target.checked)} />I consent to remembering the sensitive value in this edit.</label>
-          <button disabled={!dirty || Boolean(latest) || invalid}>Save answer</button>
-          {string(get(base, 'reviewStatus')) === 'pending' && <>
+          <legend>{creating ? 'Create answer' : 'Edit answer'}</legend>
+          <AnswerFields key={editorVersion} draft={draft} change={setDraft} remember={remember} creating={creating} />
+          <label><input type="checkbox" checked={remember} onChange={event => setRemember(event.target.checked)} />I consent to remembering the sensitive value in this {creating ? 'new answer' : 'edit'}.</label>
+          <button disabled={!dirty || Boolean(latest) || invalid}>{creating ? 'Create answer' : 'Save answer'}</button>
+          {creating && <button type="button" onClick={cancelNew}>Discard new answer</button>}
+          {base && string(get(base, 'reviewStatus')) === 'pending' && <>
             <button type="button" disabled={Boolean(latest) || invalid} onClick={() => void save('accept')}>Accept answer</button>
             <button type="button" disabled={Boolean(latest) || invalid} onClick={() => void save('decline')}>Decline answer</button>
           </>}

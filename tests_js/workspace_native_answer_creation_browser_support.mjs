@@ -1,0 +1,47 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+
+export async function nativeAnswerCreationBrowser(page, root) {
+  const answers = async () => Object.values(JSON.parse(await readFile(join(root, 'answers.json'), 'utf8')).answers);
+  await page.getByRole('button', { name: 'New answer', exact: true }).click();
+  await page.getByLabel('Question', { exact: true }).fill('Browser-created question?');
+  await page.getByLabel('Answer value', { exact: true }).fill('Created in the browser');
+  await page.getByRole('button', { name: 'Create answer', exact: true }).click();
+  await page.getByText('Answer created.', { exact: true }).waitFor();
+  assert.equal((await answers()).find(record => record.question === 'Browser-created question?').value, 'Created in the browser');
+  await page.getByRole('button', { name: 'New answer', exact: true }).click();
+  await page.getByLabel('Question', { exact: true }).fill('Browser-created question?');
+  await page.getByLabel('Answer value', { exact: true }).fill('Must not overwrite');
+  await page.getByRole('button', { name: 'Create answer', exact: true }).click();
+  await page.getByRole('alert').filter({ hasText: /already exists for this scope/ }).waitFor();
+  assert.equal(await page.getByLabel('Answer value', { exact: true }).inputValue(), 'Must not overwrite');
+  assert.equal((await answers()).find(record => record.question === 'Browser-created question?').value, 'Created in the browser');
+  page.once('dialog', dialog => dialog.dismiss());
+  await page.getByRole('button', { name: 'Jobs', exact: true }).click();
+  assert.equal(await page.getByLabel('Answer value', { exact: true }).inputValue(), 'Must not overwrite');
+  await page.getByLabel('Question', { exact: true }).fill('Private browser-created question?');
+  await page.getByLabel(/^Sensitivity$/i).selectOption('personal');
+  await page.getByRole('button', { name: 'Create answer', exact: true }).click();
+  await page.getByRole('alert').filter({ hasText: /remember consent/ }).waitFor();
+  assert.equal((await answers()).some(record => record.question === 'Private browser-created question?'), false);
+  await page.getByLabel('I consent to remembering the sensitive value in this new answer.').check();
+  await page.getByRole('button', { name: 'Create answer', exact: true }).click();
+  await page.getByText('Answer created.', { exact: true }).waitFor();
+  assert.equal(await page.getByLabel('Answer value', { exact: true }).count(), 0);
+  assert.equal((await answers()).find(record => record.question === 'Private browser-created question?').value, 'Must not overwrite');
+  await page.getByRole('button', { name: 'New answer', exact: true }).click();
+  assert.equal(await page.getByLabel('I consent to remembering the sensitive value in this new answer.').isChecked(), false);
+  await page.getByLabel('Question', { exact: true }).fill('Discard this new answer');
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: 'Discard new answer', exact: true }).click();
+  await page.getByText('New answer discarded.', { exact: true }).waitFor();
+  assert.equal((await answers()).some(record => record.question === 'Discard this new answer'), false);
+  await page.reload();
+  await page.getByRole('button', { name: 'Answers', exact: true }).click();
+  await page.getByRole('button', { name: 'Browser-created question?', exact: true }).click();
+  assert.equal(await page.getByLabel('Answer value', { exact: true }).inputValue(), 'Created in the browser');
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  return { creation: true, duplicateRetainsDraft: true, dirtyNavigation: true, sensitiveConsent: true, discard: true, reload: true, narrow: true };
+}

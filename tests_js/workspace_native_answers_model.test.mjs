@@ -50,3 +50,33 @@ test('field type changes remain intentional edits including boolean-to-number sc
   assert.deepEqual(JSON.parse(body).patch.scope, { flag: 1 });
   assert.match(body, /"value":1\.0/);
 });
+
+test('new answers default to confirmed user facts without edit revision or explicit identity', () => {
+  const draft = model.newAnswerDraft();
+  assert.equal(serialize(get(draft, 'state')), '"confirmed"');
+  assert.equal(serialize(get(draft, 'source')), '"user"');
+  set(draft, 'question', text('Portfolio rating'));
+  set(draft, 'value', parse('9007199254740993'));
+  set(draft, 'scope', parse('{"rating":1.0}'));
+  // Existing identity/review metadata must never turn create into overwrite.
+  set(draft, 'key', text('existing-key'));
+  set(draft, 'revision', parse('9'));
+  set(draft, 'reviewStatus', text('pending'));
+  const body = model.answerCreateMutation(draft, false);
+  const payload = record(body), answer = object(get(payload, 'answer'), 'answer');
+  assert.equal(has(payload, 'expectedRevision'), false);
+  for (const field of ['key', 'revision', 'reviewStatus']) assert.equal(has(answer, field), false);
+  assert.equal(serialize(get(answer, 'value')), '9007199254740993');
+  assert.equal(serialize(get(answer, 'scope')), '{"rating":1.0}');
+  assert.equal(get(payload, 'rememberSensitive'), false);
+});
+
+test('create consent is explicit and each new draft starts fresh', () => {
+  const draft = model.newAnswerDraft();
+  set(draft, 'question', text('Private answer'));
+  set(draft, 'state', text('sensitive'));
+  set(draft, 'value', text('Retained only with consent'));
+  assert.equal(get(record(model.answerCreateMutation(draft, true)), 'rememberSensitive'), true);
+  assert.equal(serialize(get(model.newAnswerDraft(), 'question')), '""');
+  assert.equal(get(record(model.answerCreateMutation(model.newAnswerDraft(), false)), 'rememberSensitive'), false);
+});

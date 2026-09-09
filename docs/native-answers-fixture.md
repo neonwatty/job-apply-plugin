@@ -35,14 +35,33 @@ exclusion on its own. Do not open an existing Python Store with these leaves.
 `null` for unsupported routes. The parent owns authentication, body limits,
 error-to-status mapping and unsupported-route handling. Encoded `by-key` paths
 use UTF-8 base64url. Supported routes are query, put, observe, detail, update,
-explicit reveal and accept/decline. Semantic lookup and cleanup routes remain
-unsupported.
+explicit reveal and accept/decline. Semantic lookup is available through
+`POST /api/answers/semantic`; cleanup routes remain unsupported.
 
 `answerCommands` and `runAnswerCommand` provide answer-key, get, find, list, put,
 observe, update, reveal and review. The native parser recognizes the boolean
 flags `--remember-sensitive`, `--include-trashed`, `--trashed-only` and
 `--all-review-statuses`. Review uses the existing `--decision` option. Exact
-question/alias lookup is supported; semantic reuse authorization is not.
+question/alias lookup and deterministic semantic reuse evaluation are supported.
+`answer-semantic-lookup --input FILE` (or `--input -`) evaluates a lookup packet
+against current canonical records under the shared Store lock.
+
+The semantic packet requires `question`, `scope`, `fieldClass`, `sensitivity`,
+`mode`, and `useAuthority`. Optional fields are `limit` (1–100, default 5) and
+`allowedSensitiveFieldClasses`. Modes are `strict` and `bounded_loose`;
+authorities are `none`, `accepted_record`, `per_use`, and `bounded_policy`.
+The response contains value-free candidate keys, confidence bands and reason
+codes, plus `mutated: false`. Matching preserves negation and downgrades ambiguous
+leaders. Compatible scope, category, sensitivity, accepted confirmed state,
+present value, confidence and explicit authority are all required for
+`reuse_eligible`. Sensitive reuse in strict mode requires per-use authority;
+bounded-policy authority also requires bounded-loose mode and an allowlisted
+field class. These decisions do not authorize remembering a value, changing
+application state or submitting an application. Pending-field resolution still
+requires the coordinator workflow.
+Normalization and tokenization follow Python 3.12's Unicode 15 tables, including
+on newer Node runtimes. The checked-in character ranges are generated with
+`tools/contracts/answer-matching/unicode.py` using that explicit Python version.
 
 ## React integration
 
@@ -51,13 +70,16 @@ Render `Answers` with `dirtyChanged` and an authenticated `AnswerClient` whose
 existing bounded request transport in raw mode so integer and float tokens do
 not pass through ordinary JSON parsing.
 
-The leaf supports value-free search, status filters, selecting an answer,
+The leaf supports creating answers, value-free search, status filters, selecting an answer,
 explicit sensitive reveal, ordinary labeled fields with lossless typed value editing, accept/decline, draft retention
 and selective reapply after loading a newer revision. Consent starts unchecked
 and resets after selection, save and conflict reapply. Unsupported merge,
-cleanup and pending application questions are identified in the UI. Creation is
-available through the service/CLI/HTTP; the leaf UI does not yet have a creation
-form. The native browser walkthrough covers editing, CLI conflicts and selective
+cleanup and pending application questions are identified in the UI. New answers
+use labeled fields and default to confirmed user facts. Creation omits an
+expected revision so duplicate identities are rejected atomically; failed
+creation retains the draft. Each new form starts with sensitive-memory consent
+unchecked, and saved sensitive values return to a hidden state. The native
+browser walkthrough covers creation, duplicates, discard, editing, CLI conflicts and selective
 reapply, sensitive reveal and remember consent, pending review and saved reload.
 
 ## Verification and remaining work
@@ -75,5 +97,5 @@ remain required; the domain tests alone do not certify crash recovery.
 
 Merge and cleanup commit require the coordinator journal plus reference/session
 rewrites. No single-document substitute is supplied. Full phase 8 acceptance
-also requires semantic matching/reuse policy, cleanup preview binding, complete
+also requires cleanup preview binding, complete
 React workflows, coordinator recovery and full release acceptance.

@@ -234,6 +234,42 @@
         "recovery": "unverified",
         "platform": "unverified"
       }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:answer-semantic-lookup",
+      "kind": "cli",
+      "command": "answer-semantic-lookup",
+      "node": "ANS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-answers.ts",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answers.ts",
+        "src/workspace-core/answers.ts",
+        "src/contracts/workspace/answer-match-features.ts",
+        "src/contracts/workspace/answer-match-reuse.ts",
+        "src/contracts/workspace/answer-match-scoring.ts",
+        "src/contracts/workspace/answer-match-unicode-alnum-astral.ts",
+        "src/contracts/workspace/answer-match-unicode-alnum-bmp.ts",
+        "src/contracts/workspace/answer-match-unicode-assigned-astral.ts",
+        "src/contracts/workspace/answer-match-unicode-assigned-bmp.ts",
+        "src/contracts/workspace/answer-match-unicode.ts",
+        "src/contracts/workspace/answer-match-vocabulary.ts",
+        "src/workspace-core/answer-match.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
     }
   ]
 }

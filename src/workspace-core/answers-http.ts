@@ -28,8 +28,9 @@ function decodeKey(value: string): string {
 }
 export async function answerHttp(repository: AnswerRepository, method: string, path: string, body: string): Promise<{ status: number; body: string } | null> {
   if (!path.startsWith('/api/answers')) return null;
-  if (['/api/answers/semantic', '/api/answers/cleanup-preview', '/api/answers/cleanup-approve'].includes(path)) return null;
+  if (['/api/answers/cleanup-preview', '/api/answers/cleanup-approve'].includes(path)) return null;
   const service = new AnswersService(repository);
+  if (method === 'POST' && path === '/api/answers/semantic') return response(await service.semanticLookup(parse(body)));
   if (method === 'POST' && path === '/api/answers/query') {
     const payload = object(parse(body), 'body');
     fields(payload, ['query', 'state', 'reviewStatus', 'includeTrashed', 'trashedOnly', 'offset', 'limit']);

@@ -1,6 +1,7 @@
 import { answerKey, answerNames, answerPatchFields, answerRevision, answerReviews, answerStates, answerView, fallback, normalizeAliases, normalizeAnswerQuestion, sameAnswerScope, sensitiveAnswer, validateAnswer, validateAnswers } from '../contracts/workspace/answers.js';
 import { emptyObject } from '../contracts/workspace/jobs.js';
 import { copy, get, has, int, integer, keys, object, same, set, string, text, JobsError } from '../contracts/workspace/values.js';
+import { semanticLookup } from './answer-match.js';
 export function answerProjection(record, references, detail = false, reveal = false) {
     const view = answerView(record), result = emptyObject();
     for (const key of keys(view))
@@ -39,6 +40,9 @@ export class AnswersService {
     constructor(repository, now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')) {
         this.repository = repository;
         this.now = now;
+    }
+    semanticLookup(incoming) {
+        return this.repository.answerTransaction(async (document) => semanticLookup(validateAnswers(document), incoming));
     }
     get(key, reveal = false, includeTrashed = false) {
         return this.repository.answerTransaction(async (raw, _save, references) => {
