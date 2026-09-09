@@ -8,7 +8,7 @@ commands in `package.json` for focused diagnosis.
 ```text
 npm run check:size
 npm run test:fast
-npm run test:affected -- --base origin/staging
+npm run test:affected -- --base origin/codex/python-release
 npm run test:full
 npm run test:platform
 npm run test:release
@@ -94,6 +94,6 @@ mark either gate complete.
 Required Windows and deterministic macOS contracts remain on pull requests.
 Visible live-browser/native observations are advisory in the scheduled or
 manual nightly workflow. Release installation evidence runs nightly and for
-staging/main, version tags, and manual dispatch. No CI timing percentile or
+staging/main/Python release branch, version tags, and manual dispatch. No CI timing percentile or
 observation-window completion is claimed yet; current timings are individual
 local measurements.

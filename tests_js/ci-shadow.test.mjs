@@ -77,9 +77,12 @@ test("validation workflow preserves contexts, replaces stale modules, and keeps 
   assert.match(workflow, /Shadow only: full deterministic shards still execute/);
   assert.match(workflow, /permissions:\n  contents: read/);
   assert.match(workflow, /cancel-in-progress: true/);
-  assert.match(workflow, /push:\n    branches: \[main, staging\]/);
+  assert.match(workflow, /push:\n    branches: \[main, staging, codex\/python-release\]/);
   assert.match(workflow, /policy:[\s\S]*?actions\/checkout@v4\n        with:\n          fetch-depth: 0[\s\S]*?python-shards:/);
   assert.doesNotMatch(workflow, /owner-approved-visible-browser-tests/);
+  assert.match(workflow, /pull_request:\n    branches: \[main, staging, codex\/python-release\]/);
+  const release = fs.readFileSync(path.join(ROOT, ".github/workflows/release.yml"), "utf8");
+  assert.match(release, /push:\n    branches: \[main, staging, codex\/python-release\]/);
   const nightly = fs.readFileSync(path.join(ROOT, ".github/workflows/nightly.yml"), "utf8");
   assert.match(nightly, /workflow_dispatch:/);
   assert.match(nightly, /deterministic-full:[\s\S]*?fetch-depth: 0[\s\S]*?macos-live-advisory:/);

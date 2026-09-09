@@ -8,7 +8,7 @@ Determine the repository boundary with `git rev-parse --show-toplevel`. Keep sea
 
 Finish the requested change, run affected checks, and fix failures caused by the change. Read documentation relevant to the changed workflow; no full repository survey is required for a small edit.
 
-Use `npm run test:affected -- --base origin/staging` for the affected suite selection; see [testing tiers](docs/testing.md) for options and broader release checks. Use the existing commit/push hooks rather than repeating a successful unchanged suite. Isolated fixture checks may run without repeated approval. Disruptive visible-browser/native account tests retain their explicit opt-in; never run them against the owner’s active browser merely because another local check needs them.
+Use `npm run test:affected -- --base origin/codex/python-release` for the affected suite selection; see [testing tiers](docs/testing.md) for options and broader release checks. This Python release branch has no TypeScript local-check hooks; run the documented testing tiers directly. Isolated fixture checks may run without repeated approval. Disruptive visible-browser/native account tests retain their explicit opt-in; never run them against the owner’s active browser merely because another local check needs them.
 
 For skill changes, keep entry points concise and load references by task. Coordinate agent instructions with Companion status, draft preservation, and handoff behavior. Preserve manual submission, consent, managed-resume identity, and revision boundaries. Include reachable references in documentation and installed-package checks.
 
@@ -41,3 +41,13 @@ least one extraction target for that file. Keep module dependencies directional:
 new leaf modules may depend on shared primitives, but shared primitives and
 facades must not depend on leaves. One owner edits the Store facade and one
 owner edits the workspace bootstrap at a time.
+
+## Python release lane
+
+This branch descends from pre-TypeScript staging checkpoint `3319033` (PR #47).
+Target refinement PRs at `codex/python-release`; staging remains the TypeScript
+migration lane. Do not merge staging wholesale or copy its runtime launchers.
+Use a separate worktree, port, and synthetic Store for release QA. Never point
+migration writers at the release Store. Record fixes and their migration
+follow-up in `docs/python-release.md`. Final release acceptance and publication
+are separate from creating this branch.

@@ -2,9 +2,9 @@ name: Validate Plugin
 
 on:
   push:
-    branches: [main, staging]
+    branches: [main, staging, codex/python-release]
   pull_request:
-    branches: [main, staging]
+    branches: [main, staging, codex/python-release]
 
 permissions:
   contents: read

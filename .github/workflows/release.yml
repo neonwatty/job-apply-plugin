@@ -2,7 +2,7 @@ name: Release Validation
 
 on:
   push:
-    branches: [main, staging]
+    branches: [main, staging, codex/python-release]
     tags: ['v*']
   workflow_dispatch:
 
