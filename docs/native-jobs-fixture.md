@@ -72,7 +72,12 @@ verify resume byte/metadata recovery, reject file swaps, kill a lock holder, and
 run a production Next/browser conflict-and-reload flow with managed resume import.
 No owner account, live Store, visible browser or plugin installation is used.
 
-Facts/profile and managed resumes are available in newly initialized version 3
+Facts/profile and managed resumes are available in newly initialized version 4
 synthetic fixtures. See [Facts/profile commands and limits](native-facts-fixture.md).
 Older version 1 and 2 fixtures must be recreated at a new path; they are not
 automatically upgraded.
+
+Version 4 also initializes `answers.json` for remembered-answer query, editing,
+review and explicit reveal through native HTTP/CLI and the Answers tab. It still
+rejects session/history and coordinator state; merge, cleanup and pending
+questions are unavailable. See [Answers scope](native-answers-fixture.md).

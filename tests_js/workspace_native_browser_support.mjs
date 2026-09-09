@@ -1,5 +1,6 @@
 import { nativeFactsBrowser } from './workspace_native_facts_browser_support.mjs';
 import { resumeDraftBrowser } from './workspace_native_resumes_browser_support.mjs';
+import { nativeAnswersBrowser } from './workspace_native_answers_browser_support.mjs';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import { spawn, execFile } from 'node:child_process';
@@ -94,11 +95,12 @@ export async function nativeJobsBrowser(buildRoot) {
     assert.equal(browserResume.label, 'Browser resume updated');
     assert.equal(await readFile(join(root, 'resume-files', browserResume.managedFile), 'utf8'), 'updated browser resume');
     await resumeDraftBrowser(page, root, fixture, buildRoot, browserResume.id);
+    const answers = await nativeAnswersBrowser(page, root, fixture, buildRoot);
     const token = new URLSearchParams(new URL(startup.url).hash.slice(1)).get('token');
     const unsupported = await fetch(startup.origin + '/api/overview', { headers: { Authorization: `Bearer ${token}` } });
     assert.equal(unsupported.status, 501);
     assert.deepEqual(pageErrors, []);
-    return { facts, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
+    return { facts, answers, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
   } finally {
     if (browser) await browser.close();
     if (child && child.exitCode === null && child.signalCode === null) {

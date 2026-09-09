@@ -10,9 +10,10 @@ import { withExclusiveFileLock } from "./exclusive-file-lock.js";
 import { NativeResumeFiles } from "./native-resume-files.js";
 import { validateProfile } from "../contracts/workspace/profile.js";
 import { validateGroups } from "../contracts/workspace/fact-groups.js";
+import { validateAnswers } from "../contracts/workspace/answers.js";
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 };
-const marker = '{"mode":"native-jobs-fixture","version":3}\n';
-const allowed = new Set([".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "resume-operation.json", "resume-files"]);
+const marker = '{"mode":"native-jobs-fixture","version":4}\n';
+const allowed = new Set([".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "answers.json", "resume-operation.json", "resume-files"]);
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 };
 /** Creates a NEW synthetic root only. Never adopts or initializes an existing Store. */
@@ -21,10 +22,11 @@ export async function initializeJobsFixture(root) {
         throw new JobsError("fixture root must be an absolute normalized path");
     await mkdir(root, { mode: 0o700 });
     const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
-    for (const name of ["jobs", "profile", "resumes", "fact-groups"]) {
+    for (const name of ["jobs", "profile", "resumes", "fact-groups", "answers"]) {
         const payload = name === "fact-groups" ? { schemaVersion: 1, groups: {}, metadata: { createdAt: now, updatedAt: now } }
-            : name === "profile" ? { schemaVersion: 1, profile: {}, metadata: { createdAt: now, updatedAt: now, revision: 1, factProvenance: {} } }
-                : { schemaVersion: 1, [name]: {}, metadata: { updatedAt: now } };
+            : name === "answers" ? { schemaVersion: 1, answers: {}, redirects: {}, metadata: { updatedAt: now } }
+                : name === "profile" ? { schemaVersion: 1, profile: {}, metadata: { createdAt: now, updatedAt: now, revision: 1, factProvenance: {} } }
+                    : { schemaVersion: 1, [name]: {}, metadata: { updatedAt: now } };
         await atomicWritePointJson(join(root, `${name}.json`), fromJSON(payload), options);
     }
     await atomicWritePointJson(join(root, `${journalName}.json`), fromJSON({ schemaVersion: 1, operation: null }), options);
@@ -184,6 +186,14 @@ export class NativeJobsRepository {
             validateGroups(document);
             await this.write(join(this.root, "fact-groups.json"), document, options);
         }));
+    }
+    async answerTransaction(operation) {
+        // transaction validates the closed fixture inventory under the shared lock.
+        // No session/history state can exist here, so reference counts are empty.
+        return this.transaction(async () => operation(validateAnswers(await this.document("answers")), async (document) => {
+            validateAnswers(document);
+            await this.write(join(this.root, "answers.json"), document, options);
+        }, new Map()));
     }
     async resumeSummaries() {
         // Reuse the lock and all root checks for projections too.

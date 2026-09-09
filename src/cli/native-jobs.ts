@@ -1,4 +1,5 @@
 import { profileCommands, runProfileCommand } from "./native-profile.js";
+import { answerCommands, runAnswerCommand } from "./native-answers.js";
 import { readFile } from "node:fs/promises";
 import { realpathSync } from "node:fs";
 import { basename } from "node:path";
@@ -20,7 +21,7 @@ export async function runJobsCli(args: string[], input: () => Promise<string>): 
       command = key;
     } else {
       if (options.has(key)) throw new JobsError("duplicate CLI option");
-      if (["--include-trashed", "--trashed-only", "--replace"].includes(key)) options.set(key, "true");
+      if (["--include-trashed", "--trashed-only", "--replace", "--remember-sensitive", "--all-review-statuses"].includes(key)) options.set(key, "true");
       else {
         const value = args[++index];
         if (!value || value.startsWith("--")) throw new JobsError("missing CLI option value");
@@ -30,6 +31,7 @@ export async function runJobsCli(args: string[], input: () => Promise<string>): 
   }
   const fields: Record<string, string[]> = {
     ...profileCommands,
+    ...answerCommands,
     "fixture-init": [], "job-create": ["--input", "--origin"], "job-get": ["--id", "--include-trashed"],
     "job-list": ["--status", "--include-trashed", "--trashed-only"],
     "job-update": ["--id", "--input", "--expected-revision", "--origin"],
@@ -57,6 +59,7 @@ export async function runJobsCli(args: string[], input: () => Promise<string>): 
     return parse(file === "-" ? await input() : await readFile(file, "utf8"));
   };
   if (Object.hasOwn(profileCommands, command!)) return serialize(await runProfileCommand(command!, repository, options, payload));
+  if (Object.hasOwn(answerCommands, command!)) return serialize(await runAnswerCommand(command!, repository, options, payload));
   if (command === "resume-import") {
     const path = required("--path"), content = await new NativeResumeFiles(root).readPath(path);
     return serialize(await resumes.import(await payload(), basename(path), content, true));

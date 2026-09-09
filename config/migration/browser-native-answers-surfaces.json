@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "browser:apps/companion/components/Answers.tsx:Answers",
+      "kind": "browser",
+      "export": "Answers",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/Answers.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/answer-fields.tsx:AnswerFields",
+      "kind": "browser",
+      "export": "AnswerFields",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/answer-fields.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/answer-model.ts:answerPath",
+      "kind": "browser",
+      "export": "answerPath",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/answer-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/answer-model.ts:answerSnapshot",
+      "kind": "browser",
+      "export": "answerSnapshot",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/answer-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/answer-model.ts:answerDraft",
+      "kind": "browser",
+      "export": "answerDraft",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/answer-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/answer-model.ts:answerPatch",
+      "kind": "browser",
+      "export": "answerPatch",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/answer-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/answer-model.ts:reapplyAnswer",
+      "kind": "browser",
+      "export": "reapplyAnswer",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/answer-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/answer-model.ts:answerMutation",
+      "kind": "browser",
+      "export": "answerMutation",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/answer-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/answer-model.ts:cloneAnswer",
+      "kind": "browser",
+      "export": "cloneAnswer",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/answer-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

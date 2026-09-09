@@ -14,10 +14,12 @@ import { NativeResumeFiles } from "./native-resume-files.js";
 
 import { validateProfile } from "../contracts/workspace/profile.js";
 import { validateGroups } from "../contracts/workspace/fact-groups.js";
+import { validateAnswers } from "../contracts/workspace/answers.js";
+import type { AnswerReferenceCounts } from "../workspace-core/answers.js";
 
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
-const marker = '{"mode":"native-jobs-fixture","version":3}\n';
-const allowed = new Set([".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "resume-operation.json", "resume-files"]);
+const marker = '{"mode":"native-jobs-fixture","version":4}\n';
+const allowed = new Set([".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "answers.json", "resume-operation.json", "resume-files"]);
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
 
@@ -33,8 +35,9 @@ export async function initializeJobsFixture(root: string): Promise<void> {
   if (!isAbsolute(root) || root !== resolve(root)) throw new JobsError("fixture root must be an absolute normalized path");
   await mkdir(root, { mode: 0o700 });
   const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
-  for (const name of ["jobs", "profile", "resumes", "fact-groups"]) {
+  for (const name of ["jobs", "profile", "resumes", "fact-groups", "answers"]) {
     const payload = name === "fact-groups" ? { schemaVersion: 1, groups: {}, metadata: { createdAt: now, updatedAt: now } }
+      : name === "answers" ? { schemaVersion: 1, answers: {}, redirects: {}, metadata: { updatedAt: now } }
       : name === "profile" ? { schemaVersion: 1, profile: {}, metadata: { createdAt: now, updatedAt: now, revision: 1, factProvenance: {} } }
       : { schemaVersion: 1, [name]: {}, metadata: { updatedAt: now } };
     await atomicWritePointJson(join(root, `${name}.json`), fromJSON(payload), options);
@@ -182,6 +185,15 @@ export class NativeJobsRepository implements JobsRepository {
       validateGroups(document);
       await this.write(join(this.root, "fact-groups.json"), document, options);
     }));
+  }
+
+  async answerTransaction<T>(operation: (document: Document, save: (document: Document) => Promise<void>, references: AnswerReferenceCounts) => Promise<T>): Promise<T> {
+    // transaction validates the closed fixture inventory under the shared lock.
+    // No session/history state can exist here, so reference counts are empty.
+    return this.transaction(async () => operation(validateAnswers(await this.document("answers")), async document => {
+      validateAnswers(document);
+      await this.write(join(this.root, "answers.json"), document, options);
+    }, new Map()));
   }
 
   async resumeSummaries(): Promise<Value[]> {

@@ -37,6 +37,7 @@ export function createClient(token: string) {
         return btoa(binary);
     }
     return {
+        answerRequest: async (path: string, method: string, body: string | undefined, signal: AbortSignal) => request(path, method, body, signal, true) as Promise<string>,
         profile: async (signal?: AbortSignal) => snapshot(await request('/api/profile', 'GET', undefined, signal, true) as string),
         patchProfile: async (body: string, signal?: AbortSignal) => snapshot(await request('/api/profile', 'PATCH', body, signal, true) as string),
         groups: async (signal?: AbortSignal) => request('/api/fact-groups', 'GET', undefined, signal),

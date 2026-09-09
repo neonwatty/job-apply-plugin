@@ -54,7 +54,10 @@
       "artifact": "json",
       "node": "ANS",
       "sources": [
-        "scripts/job_apply_store/base.py"
+        "scripts/job_apply_store/base.py",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answers.ts",
+        "src/workspace-core/answers.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

@@ -6,13 +6,14 @@ import { Overview } from './Overview';
 import { Facts } from './Facts';
 import { Jobs } from './Jobs';
 import { Resumes } from './Resumes';
+import { Answers } from './Answers';
 import './companion.css';
 export default function Companion() {
     const [client,setClient]=useState<Client|null>(null);
     const [boot,setBoot]=useState<Boot|null>(null);
     const [error,setError]=useState('');
     const [token,setToken]=useState('');
-    const [tab,setTab]=useState<'overview'|'jobs'|'facts'|'resumes'>('overview');
+    const [tab,setTab]=useState<'overview'|'jobs'|'facts'|'resumes'|'answers'>('overview');
     const [dirty,setDirty]=useState(false);
     const [attempt,setAttempt]=useState(0);
     useEffect(() => {
@@ -53,7 +54,7 @@ export default function Companion() {
         return () => window.removeEventListener('beforeunload',before);
     },[dirty]);
     const dirtyChanged=useCallback((value: boolean) => setDirty(value),[]);
-    function navigate(next: 'overview'|'jobs'|'facts'|'resumes') {
+    function navigate(next: 'overview'|'jobs'|'facts'|'resumes'|'answers') {
         if(next===tab)
             return;
         if(dirty&&!confirm('Discard unsaved changes?'))
@@ -84,6 +85,7 @@ export default function Companion() {
             </button>
             <button aria-current={tab==='facts'?'page':undefined} onClick={()=>navigate('facts')}>Facts</button>
             <button aria-current={tab==='resumes'?'page':undefined} onClick={()=>navigate('resumes')}>Resumes</button>
+            {nativeFixture&&<button aria-current={tab==='answers'?'page':undefined} onClick={()=>navigate('answers')}>Answers</button>}
             {token&&!nativeFixture&&<a href={legacyHref} onClick={event => {
                 if(dirty&&!confirm('Discard unsaved changes?'))
                     event.preventDefault();
@@ -92,7 +94,7 @@ export default function Companion() {
         </nav>
         <p className="trust">Your canonical data stays local. You direct changes and submissions; agents assist from the same record.
         </p>
-        {nativeFixture&&<p role="status">Synthetic native workspace. Create and edit jobs, facts, and managed resumes here; other workflows are not available yet.</p>}
+        {nativeFixture&&<p role="status">Synthetic native workspace. Manage jobs, facts, resumes and remembered answers here; other workflows are not available yet.</p>}
         {error&&<p role="alert" className="error">
             {error}{' '}
             {token&&<button onClick={() => setAttempt(value => value+1)}>Retry connection</button>}
@@ -107,7 +109,7 @@ export default function Companion() {
         </section>:boot?.status==='ready'&&client? (tab==='overview'? <Overview
             client={client}
             openJobs={() => navigate('jobs')}
-            legacyHref={legacyHref} />:tab==='facts'?<Facts client={client} dirtyChanged={dirtyChanged}/>:tab==='resumes'?<Resumes client={client} dirtyChanged={dirtyChanged}/>:<Jobs client={client} dirtyChanged={dirtyChanged} />):!error&&<p>Loading workspace…
+            legacyHref={legacyHref} />:tab==='facts'?<Facts client={client} dirtyChanged={dirtyChanged}/>:tab==='resumes'?<Resumes client={client} dirtyChanged={dirtyChanged}/>:tab==='answers'?<Answers client={client} dirtyChanged={dirtyChanged}/>:<Jobs client={client} dirtyChanged={dirtyChanged} />):!error&&<p>Loading workspace…
             </p>}
     </main>;
 }
