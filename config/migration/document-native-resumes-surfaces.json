@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "document:resume-operation.json",
+      "kind": "document",
+      "path": "resume-operation.json",
+      "artifact": "json",
+      "node": "RES",
+      "sources": [
+        "src/store/native-jobs.ts",
+        "src/store/native-resume-files.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "document:resume-files/.native-<uuid>.tmp",
+      "kind": "document",
+      "path": "resume-files/.native-<uuid>.tmp",
+      "artifact": "temporary",
+      "node": "RES",
+      "sources": [
+        "src/store/native-resume-files.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

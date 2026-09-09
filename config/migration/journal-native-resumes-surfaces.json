@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "journal:resume-operation.json:operation:null",
+      "kind": "journal",
+      "path": "resume-operation.json",
+      "discriminator": "operation",
+      "value": null,
+      "node": "RES",
+      "sources": [
+        "src/store/native-jobs.ts",
+        "src/store/native-resume-files.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:resume-operation.json:operation.kind:install",
+      "kind": "journal",
+      "path": "resume-operation.json",
+      "discriminator": "operation.kind",
+      "value": "install",
+      "node": "RES",
+      "sources": [
+        "src/store/native-jobs.ts",
+        "src/store/native-resume-files.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

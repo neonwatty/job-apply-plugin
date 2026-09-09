@@ -44,7 +44,7 @@ export async function nativeJobsBrowser(buildRoot) {
     });
     page.on('pageerror', error => pageErrors.push(error.message));
     await page.goto(startup.url);
-    await page.getByText(/Synthetic native Jobs workspace/).waitFor();
+    await page.getByText(/Synthetic native workspace/).waitFor();
     assert.equal(await page.getByRole('link', { name: 'Open full workspace' }).count(), 0);
     await page.getByRole('button', { name: 'New job', exact: true }).click();
     await page.locator('dialog [name="url"]').fill('https://example.invalid/native');
@@ -74,11 +74,29 @@ export async function nativeJobsBrowser(buildRoot) {
     assert.equal(await page.locator('dialog [name="notes"]').inputValue(), 'Browser draft');
     assert.equal(await page.locator('dialog [name="company"]').inputValue(), 'CLI writer');
     const facts = await nativeFactsBrowser(page, root, fixture, buildRoot);
+    await page.getByRole('button', { name: 'Resumes', exact: true }).click();
+    await page.getByRole('button', { name: 'Import resume', exact: true }).click();
+    await page.getByLabel('Label', { exact: true }).fill('Browser resume');
+    await page.getByLabel('Tags, separated by commas').fill('browser, primary');
+    await page.getByLabel('Resume file').setInputFiles({ name: 'browser.txt', mimeType: 'text/plain', buffer: Buffer.from('browser resume') });
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByText('Resume imported', { exact: true }).waitFor();
+    await page.getByRole('button', { name: /Browser resume · Default/ }).click();
+    await page.getByLabel('Label', { exact: true }).fill('Browser resume updated');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByText('Resume details saved', { exact: true }).waitFor();
+    await page.getByLabel('Replacement file').setInputFiles({ name: 'updated.txt', mimeType: 'text/plain', buffer: Buffer.from('updated browser resume') });
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByText('Resume file replaced', { exact: true }).waitFor();
+    const resumeDocument = JSON.parse(await readFile(join(root, 'resumes.json'), 'utf8'));
+    const browserResume = Object.values(resumeDocument.resumes)[0];
+    assert.equal(browserResume.label, 'Browser resume updated');
+    assert.equal(await readFile(join(root, 'resume-files', browserResume.managedFile), 'utf8'), 'updated browser resume');
     const token = new URLSearchParams(new URL(startup.url).hash.slice(1)).get('token');
     const unsupported = await fetch(startup.origin + '/api/overview', { headers: { Authorization: `Bearer ${token}` } });
     assert.equal(unsupported.status, 501);
     assert.deepEqual(pageErrors, []);
-    return { facts, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
+    return { facts, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
   } finally {
     if (browser) await browser.close();
     if (child && child.exitCode === null && child.signalCode === null) {

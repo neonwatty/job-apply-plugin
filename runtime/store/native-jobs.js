@@ -1,17 +1,20 @@
 import { constants } from "node:fs";
-import { lstat, mkdir, open, readdir, realpath } from "node:fs/promises";
+import { chmod, lstat, mkdir, open, readdir, realpath } from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
 import { parsePythonPointJsonBytes } from "../contracts/raw-json/point-parser.js";
 import { validateJobsDocument, safeId } from "../contracts/workspace/jobs.js";
 import { validateResumeReferences } from "../contracts/workspace/resume-reference.js";
-import { fromJSON, get, int, object, string, serialize, JobsError } from "../contracts/workspace/values.js";
+import { fromJSON, get, int, object, set, string, serialize, JobsError } from "../contracts/workspace/values.js";
 import { atomicWritePointJson } from "./point-persistence.js";
 import { withExclusiveFileLock } from "./exclusive-file-lock.js";
+import { NativeResumeFiles } from "./native-resume-files.js";
 import { validateProfile } from "../contracts/workspace/profile.js";
 import { validateGroups } from "../contracts/workspace/fact-groups.js";
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 };
-const marker = '{"mode":"native-jobs-fixture","version":2}\n';
-const allowed = new Set([".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json"]);
+const marker = '{"mode":"native-jobs-fixture","version":3}\n';
+const allowed = new Set([".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "resume-operation.json", "resume-files"]);
+const journalName = "resume-operation";
+const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 };
 /** Creates a NEW synthetic root only. Never adopts or initializes an existing Store. */
 export async function initializeJobsFixture(root) {
     if (!isAbsolute(root) || root !== resolve(root))
@@ -24,6 +27,9 @@ export async function initializeJobsFixture(root) {
                 : { schemaVersion: 1, [name]: {}, metadata: { updatedAt: now } };
         await atomicWritePointJson(join(root, `${name}.json`), fromJSON(payload), options);
     }
+    await atomicWritePointJson(join(root, `${journalName}.json`), fromJSON({ schemaVersion: 1, operation: null }), options);
+    await mkdir(join(root, "resume-files"), { mode: 0o700 });
+    await chmod(join(root, "resume-files"), 0o700);
     const lock = await open(join(root, ".store.lock"), "wx", 0o600);
     await lock.close();
     // The readiness marker is written last; partial initialization is never adopted.
@@ -93,14 +99,42 @@ export class NativeJobsRepository {
         object(get(value, "metadata"), `${name}.metadata`);
         return value;
     }
+    async journal() {
+        const value = object(parsePythonPointJsonBytes(await this.read(`${journalName}.json`), {
+            diagnosticProfile: "3.12", intMaxStrDigits: 4300,
+        }), journalName);
+        if (int(get(value, "schemaVersion")) !== 1n)
+            throw new JobsError("resume recovery schema version is unsupported");
+        return value;
+    }
+    async saveJournal(operation) {
+        const journal = fromJSON({ schemaVersion: 1, operation: null });
+        set(journal, "operation", operation);
+        await this.write(join(this.root, `${journalName}.json`), journal, documentOptions);
+    }
+    async recoverResumes() {
+        const files = new NativeResumeFiles(this.root);
+        const journal = await this.journal();
+        if (journal.size !== 2)
+            throw new JobsError("invalid resume recovery journal");
+        let resumes = await this.document("resumes");
+        const operation = get(journal, "operation");
+        await files.recover(operation === null ? null : object(operation, "resume recovery operation"), resumes, async (document) => {
+            validateResumeReferences(object(get(document, "resumes"), "resumes.resumes"));
+            await this.write(join(this.root, "resumes.json"), document, documentOptions);
+            resumes = document;
+        }, async () => this.saveJournal(null));
+        return resumes;
+    }
     async transaction(operation) {
         await this.validateRoot();
         return withExclusiveFileLock(join(this.root, ".store.lock"), async () => {
             await this.validateRoot(true);
+            const resumesDocument = await this.recoverResumes();
             const document = validateJobsDocument(await this.document("jobs"));
             // Read-only projections: no Python initialization, repair, extraction or preflight.
             object(get(await this.document("profile"), "profile"), "profile.profile");
-            const resumes = object(get(await this.document("resumes"), "resumes"), "resumes.resumes");
+            const resumes = object(get(resumesDocument, "resumes"), "resumes.resumes");
             validateResumeReferences(resumes);
             return operation({ document,
                 requireResume: async (id) => {
@@ -121,6 +155,22 @@ export class NativeJobsRepository {
                     validateJobsDocument(value);
                     await this.write(join(this.root, "jobs.json"), value, options);
                 }, });
+        }, { provider: this.provider, pathProfile: "3.12", signal: AbortSignal.timeout(30_000) });
+    }
+    async resumeTransaction(operation) {
+        await this.validateRoot();
+        return withExclusiveFileLock(join(this.root, ".store.lock"), async () => {
+            await this.validateRoot(true);
+            const files = new NativeResumeFiles(this.root);
+            const document = await this.recoverResumes();
+            validateResumeReferences(object(get(document, "resumes"), "resumes.resumes"));
+            return operation({ document, files,
+                save: async (value) => {
+                    validateResumeReferences(object(get(value, "resumes"), "resumes.resumes"));
+                    await this.write(join(this.root, "resumes.json"), value, documentOptions);
+                },
+                saveJournal: async (value) => this.saveJournal(value),
+            });
         }, { provider: this.provider, pathProfile: "3.12", signal: AbortSignal.timeout(30_000) });
     }
     async profileTransaction(operation) {

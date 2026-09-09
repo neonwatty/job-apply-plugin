@@ -13,7 +13,7 @@
     },
     {
       "path": "apps/companion/components/Companion.tsx",
-      "sha256": "0234c0ce69b8e8786e547d53090d1069d8552ebe0cfb22110906664813a5450c",
+      "sha256": "bf9e06f2b21b57c64309eaa3ebaa209e7bec90dfa8624c13b3b65f8f63b6be59",
       "classification": "unreviewed"
     },
     {
@@ -32,18 +32,23 @@
       "classification": "unreviewed"
     },
     {
+      "path": "apps/companion/components/Resumes.tsx",
+      "sha256": "924b557ccba6d8d5615eeac3621f9aa6c395e7cc51375a16963142432ea0486c",
+      "classification": "unreviewed"
+    },
+    {
       "path": "apps/companion/components/client.ts",
-      "sha256": "97942aea7092eeef123d7853f08907cd5aee0cf79dba3283fa2d5056a85b6ceb",
+      "sha256": "808fd59c56821aaaf2e479a6eff3c5aaaa5b364b73a3f1ccf4fe37eecee55b0c",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/companion.css",
-      "sha256": "79d6c01e3af8cf2de1f81df91f9eb086fbb484ec25c2ac1b5eec515a2b711f34",
+      "sha256": "c99f25c3d09d42272391980aec1b07c3d9b4d14b880ed7609626760eb7ff0a20",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/contracts.ts",
-      "sha256": "0f5c5b8b2c7d242cca706253d74aa89a1848136302678a0a1579a587e3de497c",
+      "sha256": "036484999b9d81303e2c1fc94f002fd6d262363e5b3a770dc73ebbd86193e550",
       "classification": "unreviewed"
     },
     {
