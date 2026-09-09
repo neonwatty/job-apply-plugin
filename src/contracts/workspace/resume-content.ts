@@ -39,7 +39,7 @@ export function validateResumeContent(filename: string, content: Buffer): { exte
   if (content.length > resumeLimit) throw new JobsError('resume file exceeds the 10 MiB limit');
   if (!content.length) throw new JobsError('resume file is empty');
   try {
-    if (extension === '.pdf' && content.subarray(0, 5).toString('ascii') !== '%PDF-') throw Error('pdf');
+    if (extension === '.pdf' && !content.subarray(0, 5).equals(Buffer.from('%PDF-'))) throw Error('pdf');
     if (extension === '.txt') {
       if (content.includes(0)) throw Error('nul');
       new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(content);

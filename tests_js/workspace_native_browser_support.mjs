@@ -1,4 +1,5 @@
 import { nativeFactsBrowser } from './workspace_native_facts_browser_support.mjs';
+import { resumeDraftBrowser } from './workspace_native_resumes_browser_support.mjs';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import { spawn, execFile } from 'node:child_process';
@@ -92,6 +93,7 @@ export async function nativeJobsBrowser(buildRoot) {
     const browserResume = Object.values(resumeDocument.resumes)[0];
     assert.equal(browserResume.label, 'Browser resume updated');
     assert.equal(await readFile(join(root, 'resume-files', browserResume.managedFile), 'utf8'), 'updated browser resume');
+    await resumeDraftBrowser(page, root, fixture, buildRoot, browserResume.id);
     const token = new URLSearchParams(new URL(startup.url).hash.slice(1)).get('token');
     const unsupported = await fetch(startup.origin + '/api/overview', { headers: { Authorization: `Bearer ${token}` } });
     assert.equal(unsupported.status, 501);

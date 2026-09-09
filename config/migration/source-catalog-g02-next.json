@@ -33,7 +33,7 @@
     },
     {
       "path": "apps/companion/components/Resumes.tsx",
-      "sha256": "924b557ccba6d8d5615eeac3621f9aa6c395e7cc51375a16963142432ea0486c",
+      "sha256": "2db9aa0f85931033ef5271a2100f1c46fc25634f2110511c7bdaebde219576dc",
       "classification": "unreviewed"
     },
     {
@@ -48,7 +48,7 @@
     },
     {
       "path": "apps/companion/components/contracts.ts",
-      "sha256": "036484999b9d81303e2c1fc94f002fd6d262363e5b3a770dc73ebbd86193e550",
+      "sha256": "60f7bc222c5c34bc861666edef1991ee9713f97b8bdfbda6abec9c941c2f8529",
       "classification": "unreviewed"
     },
     {

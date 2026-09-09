@@ -227,7 +227,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "6034a417e2fff287534e08c18bca8f613787456c9d2c1612df1899d59b8e4bb2"
+      "sha256": "dc5a2fedfd6cf2a532e623e9c2da77ba5b0c69f6b96af8fcd30d41a7a11dcda2"
     },
     {
       "path": "source-catalog-m01.json",
@@ -247,7 +247,7 @@
     },
     {
       "path": "source-catalog-native-resumes.json",
-      "sha256": "e82dad4597982c84b76c845d3069eb80d963dda1efdad575f7faf74fbca5edb1"
+      "sha256": "29dd7f8508a7d203df336e2dad4c4b643daf4c4441f4cbee96d4ea0f5d15cc17"
     },
     {
       "path": "source-catalog-s01.json",

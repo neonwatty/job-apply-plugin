@@ -51,7 +51,7 @@ export function validateResumeContent(filename, content) {
     if (!content.length)
         throw new JobsError('resume file is empty');
     try {
-        if (extension === '.pdf' && content.subarray(0, 5).toString('ascii') !== '%PDF-')
+        if (extension === '.pdf' && !content.subarray(0, 5).equals(Buffer.from('%PDF-')))
             throw Error('pdf');
         if (extension === '.txt') {
             if (content.includes(0))

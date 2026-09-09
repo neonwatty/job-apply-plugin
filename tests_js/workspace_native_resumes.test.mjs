@@ -31,6 +31,7 @@ test('native managed resumes preserve bytes, revisions, privacy and recovery', {
     await t.test('PDF, DOCX, UTF-8 and 10 MiB content boundaries fail closed', async () => {
       assert.equal(validateResumeContent('resume.pdf', Buffer.from('%PDF-1.4\n')).mediaType, 'application/pdf');
       assert.throws(() => validateResumeContent('resume.pdf', Buffer.from('not pdf')), /does not match/);
+      assert.throws(() => validateResumeContent('resume.pdf', Buffer.from([0xa5, 0xd0, 0xc4, 0xc6, 0xad])), /does not match/);
       assert.throws(() => validateResumeContent('resume.txt', Buffer.from([0xff])), /does not match/);
       assert.throws(() => validateResumeContent('resume.rtf', Buffer.from('text')), /format must/);
       assert.throws(() => validateResumeContent('resume.txt', Buffer.alloc(10 * 1024 * 1024 + 1, 1)), /10 MiB/);

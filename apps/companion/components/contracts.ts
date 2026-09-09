@@ -79,12 +79,12 @@ export function workspaceState(value: unknown): WorkspaceState {
 export function resume(value: unknown): ResumeRecord {
     if (!object(value) || typeof value.id !== 'string' || typeof value.label !== 'string'
         || typeof value.default !== 'boolean' || typeof value.revision !== 'number'
-        || !Number.isSafeInteger(value.revision) || value.revision < 1 || !Array.isArray(value.tags)
-        || value.tags.some(tag => typeof tag !== 'string') || typeof value.createdAt !== 'string'
+        || !Number.isSafeInteger(value.revision) || value.revision < 1
+        || value.tags !== undefined && (!Array.isArray(value.tags) || value.tags.some(tag => typeof tag !== 'string')) || typeof value.createdAt !== 'string'
         || typeof value.updatedAt !== 'string' || value.storageKind !== undefined && value.storageKind !== 'managed')
         return invalid();
     return { ...value, id: value.id, label: value.label, default: value.default,
-        revision: value.revision, tags: value.tags as string[], createdAt: value.createdAt,
+        revision: value.revision, tags: value.tags === undefined ? [] : value.tags as string[], createdAt: value.createdAt,
         updatedAt: value.updatedAt, storageKind: value.storageKind } as ResumeRecord;
 }
 export function resumeList(value: unknown): ResumeRecord[] {
