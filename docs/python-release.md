@@ -37,6 +37,8 @@ scheduled release-branch coverage. Use explicit branch dispatch when needed.
 
 ## Release acceptance
 
+Track execution in the [Python release readiness spec](python-release-readiness.md).
+
 - [ ] Current release-head portable full tests pass.
 - [ ] Required Linux, Windows, and macOS CI jobs and aggregate PR gate pass.
 - [ ] Isolated fresh Claude/Codex installation and upgrade/package smoke pass.
@@ -61,5 +63,5 @@ After the Python release, reconcile main into staging in a dedicated integration
 | --- | --- |
 | Skill cleanup from PR #51 | Already present in staging. |
 | Release branch CI and guidance | Branch-specific setup; preserve migration CI policy during later reconciliation. |
-
 | PR #56: UTF-8 legacy report fixture | Forward-port the explicit UTF-8 fixture write to staging; its suspended CI did not establish Windows acceptance for this backported test. Pending. |
+| Phase 1: task-spine answer-return synchronization | Test-only fix: wait for refreshed actions and focus together; controlled response-body regression and value-free stages. Audit migration oracle for the same race and port its behavioral check. Pending. |
