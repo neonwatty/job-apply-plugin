@@ -1592,6 +1592,18 @@
           "sha256": "f6cb9c2ee1e40a9d643f7528412a5302508bbf3dc912a14ea7015663317fb963"
         }
       ]
+    },
+    {
+      "id": "g02-nextperf.transition.preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Reduce repeated immutable Git reads with an explicit 32 MiB retained cache and shared base facts so normal frontend integration can remain within its existing time limit.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/g02-nextperf/integration-transition.json",
+          "sha256": "ac9ecef59e23544562d3c5b254b644dd39d9605c2bcbe3b6c696fea0024b73d4"
+        }
+      ]
     }
   ],
   "transitions": [
