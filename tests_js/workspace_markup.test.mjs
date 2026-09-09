@@ -139,7 +139,7 @@ test("resume extraction onboarding oracle is packaged in every protected OS vali
     const block = workflow.slice(start, next === -1 ? undefined : next);
     assert.ok(block.includes(command), job);
   }
-  assert.match(workflow, /pull_request:\n\s+branches: \[main, staging\]/);
+  assert.match(workflow, /pull_request:\n\s+branches: \[main, staging, codex\/python-release\]/);
 });
 
 test("styles include visible focus, reduced motion, contrast mode, and responsive behavior", async () => {
