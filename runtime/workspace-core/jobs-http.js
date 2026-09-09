@@ -1,3 +1,4 @@
+import { profileHttp } from "./profile-http.js";
 import { fixtureError } from "../store/native-jobs.js";
 import { JobsError, fromJSON, get, int, keys, object, parse, serialize, set } from "../contracts/workspace/values.js";
 import { emptyObject } from "../contracts/workspace/jobs.js";
@@ -8,6 +9,9 @@ const envelope = (key, value) => set(emptyObject(), key, value);
 /** Transport-independent dispatch. Host/token/Origin/body bounds belong to the adapter. */
 export async function jobsHttp(service, repository, method, path, body = "") {
     try {
+        const facts = await profileHttp(repository, method, path, body);
+        if (facts)
+            return facts;
         if (method === "GET") {
             if (path === "/api/boot") {
                 await service.list();
@@ -45,7 +49,7 @@ export async function jobsHttp(service, repository, method, path, body = "") {
                 return apiError(400, "request_error", "expectedRevision must be a positive integer");
             return response(await service.update(decodeURIComponent(match[1]), get(payload, "patch"), revision));
         }
-        return apiError(501, "unsupported_native_workflow", "This synthetic native fixture supports Jobs create, get, list and update only.");
+        return apiError(501, "unsupported_native_workflow", "This synthetic native fixture supports Jobs and Facts/profile only.");
     }
     catch (error) {
         if (error instanceof JobsError) {

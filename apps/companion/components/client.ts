@@ -1,3 +1,4 @@
+import { snapshot } from './facts-model';
 import { boot, job, object, overview, workspaceState, type JobFields } from './contracts';
 export class ApiError extends Error {
     constructor(public status: number, public code: string, message: string) {
@@ -5,7 +6,7 @@ export class ApiError extends Error {
     }
 }
 export function createClient(token: string) {
-    async function request(path: string, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<unknown> {
+    async function request(path: string, method = 'GET', body?: unknown, signal?: AbortSignal, raw = false): Promise<unknown> {
         const deadline = AbortSignal.timeout(30_000);
         const response = await fetch(path, {
             signal: signal ? AbortSignal.any([signal, deadline]) : deadline,
@@ -13,11 +14,12 @@ export function createClient(token: string) {
                 Authorization: `Bearer ${token}`, ...(body === undefined ? {} : {
                     'Content-Type': 'application/json'
                 })
-            }, body: body === undefined ? undefined : JSON.stringify(body), cache: 'no-store'
+            }, body: body === undefined ? undefined : raw ? String(body) : JSON.stringify(body), cache: 'no-store'
         });
         let payload: unknown = null;
         try {
-            payload = await response.json();
+            const content = await response.text();
+            payload = raw && response.ok ? content : JSON.parse(content);
         }
         catch { /* Status handling remains authoritative. */
         }
@@ -28,6 +30,12 @@ export function createClient(token: string) {
         return payload;
     }
     return {
+        profile: async (signal?: AbortSignal) => snapshot(await request('/api/profile', 'GET', undefined, signal, true) as string),
+        patchProfile: async (body: string, signal?: AbortSignal) => snapshot(await request('/api/profile', 'PATCH', body, signal, true) as string),
+        groups: async (signal?: AbortSignal) => request('/api/fact-groups', 'GET', undefined, signal),
+        createGroup: async (group: unknown, signal?: AbortSignal) => request('/api/fact-groups', 'POST', { group }, signal),
+        updateGroup: async (id: string, expectedRevision: number, patch: unknown, signal?: AbortSignal) => request(`/api/fact-groups/${encodeURIComponent(id)}`, 'PATCH', { patch, expectedRevision }, signal),
+        deleteGroup: async (id: string, expectedRevision: number, signal?: AbortSignal) => request(`/api/fact-groups/${encodeURIComponent(id)}/delete`, 'POST', { expectedRevision }, signal),
         boot: async (signal?: AbortSignal) => boot(await request('/api/boot', 'GET', undefined, signal)),
         state: async (signal?: AbortSignal) => workspaceState(await request('/api/state', 'GET', undefined, signal)),
         overview: async (signal?: AbortSignal) => overview(await request('/api/overview', 'GET', undefined, signal)),

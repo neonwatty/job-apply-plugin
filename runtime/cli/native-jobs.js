@@ -1,3 +1,4 @@
+import { profileCommands, runProfileCommand } from "./native-profile.js";
 import { readFile } from "node:fs/promises";
 import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
@@ -18,7 +19,7 @@ export async function runJobsCli(args, input) {
         else {
             if (options.has(key))
                 throw new JobsError("duplicate CLI option");
-            if (["--include-trashed", "--trashed-only"].includes(key))
+            if (["--include-trashed", "--trashed-only", "--replace"].includes(key))
                 options.set(key, "true");
             else {
                 const value = args[++index];
@@ -29,6 +30,7 @@ export async function runJobsCli(args, input) {
         }
     }
     const fields = {
+        ...profileCommands,
         "fixture-init": [], "job-create": ["--input", "--origin"], "job-get": ["--id", "--include-trashed"],
         "job-list": ["--status", "--include-trashed", "--trashed-only"],
         "job-update": ["--id", "--input", "--expected-revision", "--origin"],
@@ -54,6 +56,8 @@ export async function runJobsCli(args, input) {
         const file = required("--input");
         return parse(file === "-" ? await input() : await readFile(file, "utf8"));
     };
+    if (Object.hasOwn(profileCommands, command))
+        return serialize(await runProfileCommand(command, repository, options, payload));
     if (command === "job-create")
         return serialize(await service.create(await payload(), options.get("--origin")));
     if (command === "job-get")

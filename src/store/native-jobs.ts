@@ -11,17 +11,21 @@ import { atomicWritePointJson } from "./point-persistence.js";
 import { withExclusiveFileLock } from "./exclusive-file-lock.js";
 import type { PosixFlockProvider } from "./posix-flock.js";
 
+import { validateProfile } from "../contracts/workspace/profile.js";
+import { validateGroups } from "../contracts/workspace/fact-groups.js";
+
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
-const marker = '{"mode":"native-jobs-fixture","version":1}\n';
-const allowed = new Set([".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json"]);
+const marker = '{"mode":"native-jobs-fixture","version":2}\n';
+const allowed = new Set([".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json"]);
 
 /** Creates a NEW synthetic root only. Never adopts or initializes an existing Store. */
 export async function initializeJobsFixture(root: string): Promise<void> {
   if (!isAbsolute(root) || root !== resolve(root)) throw new JobsError("fixture root must be an absolute normalized path");
   await mkdir(root, { mode: 0o700 });
   const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
-  for (const name of ["jobs", "profile", "resumes"]) {
-    const payload = name === "profile" ? { schemaVersion: 1, profile: {}, metadata: { updatedAt: now } }
+  for (const name of ["jobs", "profile", "resumes", "fact-groups"]) {
+    const payload = name === "fact-groups" ? { schemaVersion: 1, groups: {}, metadata: { createdAt: now, updatedAt: now } }
+      : name === "profile" ? { schemaVersion: 1, profile: {}, metadata: { createdAt: now, updatedAt: now, revision: 1, factProvenance: {} } }
       : { schemaVersion: 1, [name]: {}, metadata: { updatedAt: now } };
     await atomicWritePointJson(join(root, `${name}.json`), fromJSON(payload), options);
   }
@@ -104,6 +108,20 @@ export class NativeJobsRepository implements JobsRepository {
         },
       });
     }, { provider: this.provider, pathProfile: "3.12", signal: AbortSignal.timeout(30_000) });
+  }
+
+  async profileTransaction<T>(operation: (document: Document, save: (document: Document) => Promise<void>) => Promise<T>): Promise<T> {
+    return this.transaction(async () => operation(validateProfile(await this.document("profile")), async document => {
+      validateProfile(document);
+      await this.write(join(this.root, "profile.json"), document, options);
+    }));
+  }
+
+  async groupsTransaction<T>(operation: (document: Document, save: (document: Document) => Promise<void>) => Promise<T>): Promise<T> {
+    return this.transaction(async () => operation(validateGroups(await this.document("fact-groups")), async document => {
+      validateGroups(document);
+      await this.write(join(this.root, "fact-groups.json"), document, options);
+    }));
   }
 
   async resumeSummaries(): Promise<Value[]> {
