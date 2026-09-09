@@ -37,6 +37,8 @@ scheduled release-branch coverage. Use explicit branch dispatch when needed.
 
 ## Release acceptance
 
+Track execution in the [Python release readiness spec](python-release-readiness.md).
+
 - [ ] Current release-head portable full tests pass.
 - [ ] Required Linux, Windows, and macOS CI jobs and aggregate PR gate pass.
 - [ ] Isolated fresh Claude/Codex installation and upgrade/package smoke pass.
