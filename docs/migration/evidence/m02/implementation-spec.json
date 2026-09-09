@@ -1,0 +1,810 @@
+{
+  "schemaVersion": 1,
+  "status": "Read-only next-core readiness; not a frozen manifest or source authorization",
+  "head": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+  "effectiveDag": {
+    "path": "docs/migration/evidence/m01/approved-dag.json",
+    "sha256": "5f774f203c6a0c2ed8d81811e9c88856ddad2564653e5db58f7cddb32bd05f5a",
+    "revision": "5fcecdb1459d4e8e71de90a35f725e50a3db4e0f"
+  },
+  "recommendation": "Prepare the inert codepoint filesystem byte codec only; retain full S05 path/cache implementation as unfinished",
+  "allowed_files": [
+    "src/contracts/point-filesystem.ts",
+    "runtime/contracts/point-filesystem.js",
+    "tests_js/point_paths_reference.test.mjs",
+    "config/migration/source-catalog-m02.json",
+    "docs/migration/evidence/m02/approved-dag.json",
+    "docs/migration/evidence/m02/implementation-spec.json",
+    "docs/migration/evidence/m02/implementation.md",
+    "docs/migration/evidence/m02/implementation-audit.json",
+    "docs/migration/evidence/m02/M02.I.json",
+    "docs/migration/evidence/m02/M02.V.json",
+    "docs/migration/evidence/m02/transition.json"
+  ],
+  "productionModules": 1,
+  "emittedModules": 1,
+  "existingTestLines": 309,
+  "physicalLineLimit": 500,
+  "extractionTargets": [],
+  "apis": [
+    "filesystemEncodePoint(text: PythonText): Buffer",
+    "filesystemDecodePoint(bytes: Uint8Array): PythonText"
+  ],
+  "composition": {
+    "encode": "Use trusted captured point contents and shared legacy filesystemEncode for scalar/surrogateescape spans without joining caller points through UTF16. Preserve literal-pair versus scalar distinction. New errors must retain the original caller PythonText identity with exact encoding/reason/start/end/message from canonical contents. Do not reuse filesystemEncode generic legacy error as the new full diagnostic.",
+    "decode": "Reuse existing filesystemDecode and explicitly construct PythonText from its decoded scalar/escape output. This projection is lossless only because the existing decoder emits valid scalars or U+DC80..U+DCFF, never a literal high-surrogate point; document/test this image invariant. Do not apply this conversion to arbitrary caller PythonText.",
+    "direction": "New leaf may depend on accepted python-text, pointContents and posix-path-bytes; no facade/shared primitive may import or re-export the point leaf. No existing production module changes; no caches, parent resolvers, IO adapters or public parser routing."
+  },
+  "acceptedReference": {
+    "id": "S05.R",
+    "subject": {
+      "sha": "1f5a4e7a15d1d793147f26160d2c88bbab2cb7c4",
+      "tree": "b2fd36ea5fe747813e31b1a98d265af333779124"
+    },
+    "manifestSha256": "438d735f67c01d4b044152c5439500321557c8ceb93309447abea55dce3d485e",
+    "codecCaseIds": [
+      "encode-empty",
+      "encode-nul",
+      "encode-scalar",
+      "encode-high",
+      "encode-low",
+      "encode-low7f",
+      "encode-escape80",
+      "encode-escapeff",
+      "encode-pair",
+      "encode-high-escape",
+      "encode-adjacent-escapes",
+      "encode-nul-high",
+      "decode-empty",
+      "decode-ascii-nul",
+      "decode-max-scalar",
+      "decode-scalar",
+      "decode-ff",
+      "decode-80",
+      "decode-overlong2",
+      "decode-overlong3",
+      "decode-surrogate-pair-bytes",
+      "decode-truncated4",
+      "decode-mixed",
+      "decode-out-of-range"
+    ],
+    "count": 24,
+    "profiles": [
+      "3.12",
+      "3.13",
+      "3.14"
+    ],
+    "vectorSha256": "4c6af618ffbea1ad274b7d98dc12669c2d38fcb2b3ce72080e5afe5cf14a7967",
+    "existingCell": {
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 433.56025,
+      "outputBytes": 716014,
+      "tests": 5,
+      "failures": 0,
+      "skips": 0,
+      "cancelled": 0,
+      "todo": 0
+    },
+    "receiptBinding": {
+      "id": "S05.R",
+      "manifestSha256": "438d735f67c01d4b044152c5439500321557c8ceb93309447abea55dce3d485e",
+      "subject": {
+        "sha": "1f5a4e7a15d1d793147f26160d2c88bbab2cb7c4",
+        "tree": "b2fd36ea5fe747813e31b1a98d265af333779124"
+      },
+      "evidenceCommit": "05a24a82f04be271b29f372143795c6f47d21bc9",
+      "sourceTestSha256": "ced650ecb6f1a5f73ff92ab98ef6fdd36981e8c982f4b9ce892f175772d565ee",
+      "log": {
+        "path": "docs/migration/evidence/s05/logs/S05-R-points.tap",
+        "sha256": "26925bb3de4efc44129c7f6801c84156454bebd214e123693ace5a1df98e782d"
+      }
+    }
+  },
+  "appendTests": {
+    "path": "tests_js/point_paths_reference.test.mjs",
+    "preserveExactOriginalCallbacks": [
+      "S05 reference observes point codecs parent order and cache identity under default CPython",
+      "S05 reference observes point codecs parent order and cache identity under CPython 3.12",
+      "S05 reference observes point codecs parent order and cache identity under CPython 3.13",
+      "S05 reference observes point codecs parent order and cache identity under CPython 3.14",
+      "S05 reference rejects caller arguments paths and stdin"
+    ],
+    "newNames": [
+      "S05 point filesystem codec matches the accepted24 surrogateescape observations",
+      "S05 point filesystem codec preserves trusted text identity and leaves legacy bytes unchanged"
+    ],
+    "rules": [
+      "Use fixed independent inputs from frozen encode/decode recipes, compare all24 complete rows to immutable expected data; do not regenerate vectors.",
+      "Check unchanged input byte arrays, NUL acceptance, valid scalar roundtrips and escaped byte identity; compare full Unicode fields and original error.object identity.",
+      "Hostile branded text subclass accessors/methods must not override canonical contents; reject forged prototypes. Preserve all original5callbacks/provenance/refusal checks verbatim.",
+      "No nested test registration or reference driver/data mutation. Keep all48 original reference observations distinct from the24 TS codec parity results."
+    ]
+  },
+  "assignments": [
+    {
+      "id": "M02.I",
+      "package": "M02",
+      "role": "implementation-or-gate",
+      "dependencies": [
+        "S05.R",
+        "S08.V"
+      ]
+    },
+    {
+      "id": "M02.V",
+      "package": "M02",
+      "role": "independent-review",
+      "dependencies": [
+        "M02.I",
+        "P01.V"
+      ]
+    }
+  ],
+  "refinement": {
+    "id": "S05.I",
+    "beforeDependencies": [
+      "S08.V",
+      "S05.R"
+    ],
+    "afterDependencies": [
+      "S08.V",
+      "S05.R",
+      "M02.V"
+    ],
+    "preserveExisting": true
+  },
+  "receiptContinuity": {
+    "frozenOverlaps": [
+      {
+        "id": "S05.R",
+        "kind": "audit",
+        "role": "reference",
+        "manifest": {
+          "path": "docs/migration/evidence/s05/S05.R.json",
+          "sha256": "438d735f67c01d4b044152c5439500321557c8ceb93309447abea55dce3d485e",
+          "revision": "eabbd3d054c99c1dd10add5225b7879978b030c3"
+        },
+        "owned": [
+          "tests_js/point_paths_reference.test.mjs"
+        ],
+        "inputs": []
+      }
+    ],
+    "rule": "tools/migration/task-receipts.mjs currentOrSuccessor permits a changed owned file where successor owns it, binds exact prior bytes, depends on prior task, and preserves prior subject ancestry. The only frozen holder of this test is S05.R, kind audit. The package-review handoff restriction in load-task-evidence.mjs does not apply to this audit reference predecessor.",
+    "require": "Final freeze validates current accepted S05.R receipt and ancestor, immutable test hash, active ownership and pending predecessor continuity; preserve old receipts/logs/driver/vector bytes. No matrix registration step is necessary because this exact test path already exists and is registered."
+  },
+  "relevantBindings": [
+    {
+      "path": "src/contracts/posix-path-bytes.ts",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "ef3495003e22e409385f7943afc768f88e172ed9732256fe14a19ffac2adba87"
+    },
+    {
+      "path": "runtime/contracts/posix-path-bytes.js",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "0efde48362bfeeeb08d28bc52aaf47f94119f46b396abe8d14ec585a17d14ba5"
+    },
+    {
+      "path": "src/contracts/python-text.ts",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "934fd2271c7e1d61056889fd7125d6dc16559271504687bcdec8c980a796ae78"
+    },
+    {
+      "path": "runtime/contracts/python-text.js",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "cdd6e3d8d634e2a2957e27759616d7b7a57e66347fa97c6d11855046bf551b4a"
+    },
+    {
+      "path": "src/contracts/raw-json/point-text-codec.ts",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "052ffd794291e408be419924152a3f3255fcd40f9aedaa110ac79540292561fe"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-text-codec.js",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "6c5916054ac439ad7a63802fcd2a0445d0366e2ada9df15a0b571c5310bdf12b"
+    },
+    {
+      "path": "docs/migration/evidence/s05/reference-vectors.json",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "4c6af618ffbea1ad274b7d98dc12669c2d38fcb2b3ce72080e5afe5cf14a7967"
+    },
+    {
+      "path": "docs/migration/evidence/s05/S05.R.json",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "438d735f67c01d4b044152c5439500321557c8ceb93309447abea55dce3d485e"
+    },
+    {
+      "path": "tools/contracts/point-paths/reference.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "b4a7c94be6098cbfb53dc8c5f548b574d4e9b7e9aa9e3fedfc8288f1269c1454"
+    },
+    {
+      "path": "tools/contracts/point-paths/fixtures.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "5bf7a455f7995088c1bef89f3c9f07121ad059d0c78f4c37ef80b7f99e99292e"
+    },
+    {
+      "path": "tools/contracts/point-paths/support.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "7fea6f59851b5664b24197d201bc5728e31ac8eca1a28f50e64ecc29807f9cca"
+    },
+    {
+      "path": "tests_js/point_paths_reference.test.mjs",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "ced650ecb6f1a5f73ff92ab98ef6fdd36981e8c982f4b9ce892f175772d565ee"
+    }
+  ],
+  "exactOpenGap": {
+    "fullS05": "16 managed-parent rows and8 cache sequences remain unimplemented. These are independent of the codec byte transformation and must not be claimed complete by codec acceptance.",
+    "supplemental32": "The prior domain supplement is required before broad managedPointResumePath/managedPointResumeObservation accepting all PythonPointJson record values:12 managedFile type rows,9 numeric/null/NaN cache sequences,8 late-hashability cases,3 missing-id precedence cases. None is an input to the two codec-only APIs.",
+    "subtleCodecBound": "Accepted encode-high-escape observes error span0..2 for[0xD800,0xDC80], including the following otherwise escapable low surrogate. Do not implement a one-point error span or assume strict UTF8 and filesystem error handlers are interchangeable. The24 fixed observations are bounded coverage, not proof of every mixed surrogate run.",
+    "native": "Five invalid-byte-name setup obligations remain open as documented by S05.R; this leaf creates no filenames, resolves no parents, and touches no Store. Local codec acceptance does not require success on those five operations or other hosts. Full S05.V native gate remains separately reviewed."
+  },
+  "verification": [
+    "Independent exact API/error and package-split review before freeze",
+    "Normal immutable documents/manifests/transition/activation; no shortcut source edits",
+    "Exact7-name cell with all4CPython aliases and0skip/fail/cancel/todo on frozen localMac environment",
+    "typecheck, deterministic build:check, source-size and required affected suite; preserve old codec/native regression behavior via normal selection",
+    "Independent source/test/evidence review before splitV; no fullS05 or cross-host acceptance"
+  ],
+  "id": "m02-point-filesystem-codec-preparation",
+  "package": {
+    "id": "M02",
+    "parentNode": "SEM",
+    "activation": "inert",
+    "purpose": "Prepare explicit-point filesystem byte codec for later S05 parent/path/cache integration",
+    "owner": "jsonl_review"
+  },
+  "roles": {
+    "coordinator": "root",
+    "author": "jsonl_review",
+    "reviewer": "hooks_audit"
+  },
+  "moduleBudget": {
+    "production": 1,
+    "maximumAuthorizedProduction": 1,
+    "globalPackageMaximum": 8,
+    "runtime": 1,
+    "tests": 1,
+    "physicalLinesPerFile": 500,
+    "existingOversized": [],
+    "extractionTargets": []
+  },
+  "apiContract": {
+    "functions": [
+      "filesystemEncodePoint(text: PythonText): Buffer",
+      "filesystemDecodePoint(bytes: Uint8Array): PythonText"
+    ],
+    "exportedRuntimeNames": [
+      "filesystemEncodePoint",
+      "filesystemDecodePoint"
+    ],
+    "encodeInput": "Any genuine PythonText including branded subclasses; read accepted captured pointContents, never virtual getters. Forged prototypes reject with TypeError.",
+    "decodeInput": "Uint8Array including Buffer and offset views; inspect only its byte slice and leave original bytes unchanged.",
+    "outputs": "Encode returns fresh Buffer. Decode returns genuine PythonText with scalar and raw invalid-byte escape identity. NUL is legal; no native IO or string-accepting overload.",
+    "errors": {
+      "class": "Unchanged accepted PythonUnicodeEncodeError",
+      "name": "UnicodeEncodeError",
+      "encoding": "utf-8",
+      "reason": "surrogates not allowed",
+      "object": "Exact original caller PythonText, even hostile branded subclass; only a newly-created error can be assigned this identity after canonical message construction.",
+      "coordinates": "Exact start/end codepoint offsets into complete original input; high+escape frozen span0..2.",
+      "message": "Exact complete message from frozen codec rows.",
+      "errno": null,
+      "cause": null,
+      "context": null,
+      "suppressContext": false,
+      "misuse": "Forged input TypeError is separate from frozen UnicodeEncodeError parity; no cleanup contexts are introduced."
+    }
+  },
+  "frozenCodecInputs": [
+    {
+      "id": "encode-empty",
+      "operation": "os.fsencode",
+      "inputPoints": []
+    },
+    {
+      "id": "encode-nul",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        0
+      ]
+    },
+    {
+      "id": "encode-scalar",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        65536
+      ]
+    },
+    {
+      "id": "encode-high",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        55296
+      ]
+    },
+    {
+      "id": "encode-low",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        56320
+      ]
+    },
+    {
+      "id": "encode-low7f",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        56447
+      ]
+    },
+    {
+      "id": "encode-escape80",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        56448
+      ]
+    },
+    {
+      "id": "encode-escapeff",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        56575
+      ]
+    },
+    {
+      "id": "encode-pair",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        55296,
+        56320
+      ]
+    },
+    {
+      "id": "encode-high-escape",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        55296,
+        56448
+      ]
+    },
+    {
+      "id": "encode-adjacent-escapes",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        56448,
+        56575
+      ]
+    },
+    {
+      "id": "encode-nul-high",
+      "operation": "os.fsencode",
+      "inputPoints": [
+        0,
+        55296
+      ]
+    },
+    {
+      "id": "decode-empty",
+      "operation": "os.fsdecode",
+      "inputHex": ""
+    },
+    {
+      "id": "decode-ascii-nul",
+      "operation": "os.fsdecode",
+      "inputHex": "610062"
+    },
+    {
+      "id": "decode-max-scalar",
+      "operation": "os.fsdecode",
+      "inputHex": "f48fbfbf"
+    },
+    {
+      "id": "decode-scalar",
+      "operation": "os.fsdecode",
+      "inputHex": "f0908080"
+    },
+    {
+      "id": "decode-ff",
+      "operation": "os.fsdecode",
+      "inputHex": "ff"
+    },
+    {
+      "id": "decode-80",
+      "operation": "os.fsdecode",
+      "inputHex": "80"
+    },
+    {
+      "id": "decode-overlong2",
+      "operation": "os.fsdecode",
+      "inputHex": "c0af"
+    },
+    {
+      "id": "decode-overlong3",
+      "operation": "os.fsdecode",
+      "inputHex": "e08080"
+    },
+    {
+      "id": "decode-surrogate-pair-bytes",
+      "operation": "os.fsdecode",
+      "inputHex": "eda080edb080"
+    },
+    {
+      "id": "decode-truncated4",
+      "operation": "os.fsdecode",
+      "inputHex": "f09080"
+    },
+    {
+      "id": "decode-mixed",
+      "operation": "os.fsdecode",
+      "inputHex": "61ff62"
+    },
+    {
+      "id": "decode-out-of-range",
+      "operation": "os.fsdecode",
+      "inputHex": "f4908080"
+    }
+  ],
+  "coordinatorOwnership": {
+    "newSourceCatalog": "config/migration/source-catalog-m02.json",
+    "docsRoot": "docs/migration/evidence/m02",
+    "documents": [
+      "implementation.md",
+      "implementation-spec.json",
+      "implementation-audit.json",
+      "approved-dag.json",
+      "M02.I.json",
+      "M02.V.json",
+      "transition.json"
+    ],
+    "rule": "Explicitly include actual coordinator artifacts in final reviewed manifest scope; only3worker implementation files. No matrix edit."
+  },
+  "taskIds": [
+    "M02.I",
+    "M02.V"
+  ],
+  "cells": [
+    {
+      "command": [
+        "node",
+        "--test",
+        "tests_js/point_paths_reference.test.mjs"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "testNames": [
+        "S05 reference observes point codecs parent order and cache identity under default CPython",
+        "S05 reference observes point codecs parent order and cache identity under CPython 3.12",
+        "S05 reference observes point codecs parent order and cache identity under CPython 3.13",
+        "S05 reference observes point codecs parent order and cache identity under CPython 3.14",
+        "S05 reference rejects caller arguments paths and stdin",
+        "S05 point filesystem codec matches the accepted24 surrogateescape observations",
+        "S05 point filesystem codec preserves trusted text identity and leaves legacy bytes unchanged"
+      ],
+      "budget": "Existing accepted5-name cell took433.56025ms and716014bytes. Retain its full raw diagnostics. The2new fixed codec callbacks fit remaining332562bytes; this is a proposed budget, not measured execution. No skips/clipping/output-cap changes.",
+      "logPath": "docs/migration/evidence/m02/logs/M02-codec.tap",
+      "id": "m02.codec.node"
+    }
+  ],
+  "inputClosureDerivation": {
+    "base": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+    "method": "Retain full S05.R immutable manifest/Python closure plus fixed original driver/data/test inputs and recursively follow local imports/reexports in new leaf dependency source/runtime/build seeds; source .js specifiers resolve to .ts. Existing codec regression source and compiler/matrix/size policy included. Final new coordinator planning documents must be bound at freeze.",
+    "execution": "Existing5 callbacks continue only fixed original point-path driver and fixed provenance probe; no new executable/interpreter selector."
+  },
+  "inputClosure": [
+    {
+      "path": ".source-size-baseline.json",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "8b0071c47e04b1d32246d9498fc35d6fd05e1868455b73bbcc4eebc97551d8a3"
+    },
+    {
+      "path": "AGENTS.md",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "bff9159b51b5c650dae52806f0002c335a59211a815ea813be01e78a51e81d84"
+    },
+    {
+      "path": "config/test-matrix.json",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "bd33a6cecc1b468adf2581582eec1ef13747e404a40ea843721b9cea30511f38"
+    },
+    {
+      "path": "docs/migration/evidence/p03/retry2/approved-dag.json",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "b48eb60db792265bba692ff042027ed143da9ef25cc7d301c4e94f6ce84e5570"
+    },
+    {
+      "path": "docs/migration/evidence/s05/S05.R.json",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "438d735f67c01d4b044152c5439500321557c8ceb93309447abea55dce3d485e"
+    },
+    {
+      "path": "docs/migration/evidence/s05/reference-audit.json",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "05d82a1c1c749d01342c8694b02537ed859fcfc9051d90ac500f5be797c8df0a"
+    },
+    {
+      "path": "docs/migration/evidence/s05/reference-plan.md",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "633792f3a4ec5d084a468ce643d91724f478099319cf27110225598add2fe104"
+    },
+    {
+      "path": "docs/migration/evidence/s05/reference-vectors.json",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "4c6af618ffbea1ad274b7d98dc12669c2d38fcb2b3ce72080e5afe5cf14a7967"
+    },
+    {
+      "path": "docs/migration/evidence/s05/reference.md",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "1cdbe1b3b0d13fd7c90d228a1ad69f7aa40ddd500cf7e72af61d20bf38466a84"
+    },
+    {
+      "path": "package-lock.json",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "7ee9e2f989ec77ba9ab97847266792da033d9ebd98fd3643a26d73430d076c17"
+    },
+    {
+      "path": "package.json",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "c652d020e5b1762c2bc703c563124c23f87c978f87af9c299f0a661253c40200"
+    },
+    {
+      "path": "runtime/contracts/posix-path-bytes.js",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "0efde48362bfeeeb08d28bc52aaf47f94119f46b396abe8d14ec585a17d14ba5"
+    },
+    {
+      "path": "runtime/contracts/python-text.js",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "cdd6e3d8d634e2a2957e27759616d7b7a57e66347fa97c6d11855046bf551b4a"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-text-codec.js",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "6c5916054ac439ad7a63802fcd2a0445d0366e2ada9df15a0b571c5310bdf12b"
+    },
+    {
+      "path": "scripts/job_apply_store/__init__.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "d1f3908a9875fdeda94a2d1823b0e42edb29c7814a638b8edcdc15e127052a04"
+    },
+    {
+      "path": "scripts/job_apply_store/base.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "e1deee9f49d012eac54f3ef4990c7641d43874afa699c8d12d79919599f27c88"
+    },
+    {
+      "path": "scripts/job_apply_store/constants.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "4438a36055842e18af0ae806fed1f61bf8280908995f7295662a4213226e8b5c"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/__init__.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "b112b206edd338aa0dd2a17d1414be2c843d6d44337249d59079a82129cd0c26"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/coordinator/__init__.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "8515203ac4bc80d5d722deffa1879e08518b2a200a7bdbab5425c8dee43ee1be"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/coordinator/persistence.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "1296863bad9412b852879a3b9c653a98ca61375811df2690600e6f69bc7c3177"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/resumes/__init__.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "9ff7cd33ef9e3c17454ac38ab147f3eaec75e44816a6ea8fa0a5d3fa381dfba0"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/resumes/storage.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "97ec178e0b3ddc1d3be97b1c6c34983ecf9c50caa9c6f4fd4125dbb71c6db6fe"
+    },
+    {
+      "path": "scripts/job_apply_store/errors.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "be48cff00389f30d0f51f95ec154baec6162a57350b2ab3cfcb531da7456e01c"
+    },
+    {
+      "path": "scripts/job_apply_store/io.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "6e4b36c224fdf34924f14fecbd6d8afaf398afcff455509b85a817008c407d53"
+    },
+    {
+      "path": "scripts/job_apply_store/normalization.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "8c299675838779908a1d3876db22fc2d9b32a2e08a890246357193b1d20b2beb"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/__init__.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "b8e8d8f492cf48c33321d01db8899357f333cf94b93e5f20835cce62104524e3"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/accounts.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "aa62b41eabe54f13c3b3fbb9791dedafc98dbac9d4e68262452e69bfb2457ddc"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/extraction.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "6437704da0aefe5b3351c129a5b3e36e49da4db9a8d56c60ba19d28825b5d7d8"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/jobs_resumes.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "1ad4bffefc7cc6a605d2fa04b0d2e1ccb5804091064083787f4126c157274c83"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/profile_answers.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "599715a998b68fb0ac1ab67c0930564fda9fb69206084c12dafccfb83c9e65d9"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/sessions.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "9d1c6158facc0724e5500defbc8027931e2112927677d9f3b79d5a8fde5339ce"
+    },
+    {
+      "path": "src/contracts/posix-path-bytes.ts",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "ef3495003e22e409385f7943afc768f88e172ed9732256fe14a19ffac2adba87"
+    },
+    {
+      "path": "src/contracts/python-text.ts",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "934fd2271c7e1d61056889fd7125d6dc16559271504687bcdec8c980a796ae78"
+    },
+    {
+      "path": "src/contracts/raw-json/point-text-codec.ts",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "052ffd794291e408be419924152a3f3255fcd40f9aedaa110ac79540292561fe"
+    },
+    {
+      "path": "tests_js/atomic_write_json_reference.test.mjs",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "f022146fca2bf619338cd6113b788c728fc387bcba09f94022f954432a6d9d57"
+    },
+    {
+      "path": "tests_js/jsonl_append_reference.test.mjs",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "2f4ee1c18f2c4cdb3b59a2a6403cb113d4f7890b72fff57e1bc7655c49b0d66f"
+    },
+    {
+      "path": "tests_js/managed_observation_reference.test.mjs",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "bbaf38d7ab716f0d0757c09cb7dabef820eb60572dca5abd817581953730821e"
+    },
+    {
+      "path": "tests_js/managed_resume_path_reference.test.mjs",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "e642dfed8368bf2f280d61b6b42f8f3b50264a0c418574677d3085b18cca4f36"
+    },
+    {
+      "path": "tests_js/point_paths_reference.test.mjs",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "ced650ecb6f1a5f73ff92ab98ef6fdd36981e8c982f4b9ce892f175772d565ee"
+    },
+    {
+      "path": "tests_js/posix_path_bytes_reference.test.mjs",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "a4e3153c2ff1dfa7a2ef4ba191d07aee8460d0d11122b9f6f7f308c1338dd6aa"
+    },
+    {
+      "path": "tests_js/posix_path_bytes_ts.test.mjs",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "c388412888b81f2cddcc560bd496ed7ba279ccbc0b67328cc85ed7447645b447"
+    },
+    {
+      "path": "tests_js/posix_path_bytes_ts_support.mjs",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "08f4177520af95466c77fe39b92a26a0cccf81d8895b09074e3e9ea06a481db7"
+    },
+    {
+      "path": "tests_js/private_file_digest_reference.test.mjs",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "8ea60743e987c0df0f5da922a13f5a8753f58fb506f5782b41313da66284dcd8"
+    },
+    {
+      "path": "tools/build-runtime.mjs",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "fa9dc44fdad05da0157eec34ac6ed552d51570cfe92ed133f855ae2e9d13a0dd"
+    },
+    {
+      "path": "tools/contracts/atomic-write-json/reference.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "283e45f35c5485a645fa71844958749e541108be5b55cad6a76fcc8687182381"
+    },
+    {
+      "path": "tools/contracts/atomic-write-json/support.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "a95c02ec86844aa931d20c26238d56436cdb576e0902ca7307f1b5d560fdfa39"
+    },
+    {
+      "path": "tools/contracts/jsonl-append/reference.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "6a877e92fb9c0ecbbcc19a76e4f15b4dd1f4112304c2c7b7aed2958647783d13"
+    },
+    {
+      "path": "tools/contracts/jsonl-append/support.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "cb6c28460033dea72c93807a457b6abefc2f98f0903519805d1fcf348224c0ea"
+    },
+    {
+      "path": "tools/contracts/managed-observation/native.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "bf00ae00da09b75cff6da59e5450efb5acfc71a747d48bff1b06fb1f67e6431d"
+    },
+    {
+      "path": "tools/contracts/managed-observation/reference.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "d6b170e99a986c5d1a15a134bc6044cd559fa06d2c5381d90d3b49ec104e7a0b"
+    },
+    {
+      "path": "tools/contracts/managed-resume-path/reference.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "133a81e18fdbe0265fd49c2908fa79831fc3d1cd958a23e40bbc702ec36a7de4"
+    },
+    {
+      "path": "tools/contracts/point-paths/fixtures.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "5bf7a455f7995088c1bef89f3c9f07121ad059d0c78f4c37ef80b7f99e99292e"
+    },
+    {
+      "path": "tools/contracts/point-paths/reference.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "b4a7c94be6098cbfb53dc8c5f548b574d4e9b7e9aa9e3fedfc8288f1269c1454"
+    },
+    {
+      "path": "tools/contracts/point-paths/support.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "7fea6f59851b5664b24197d201bc5728e31ac8eca1a28f50e64ecc29807f9cca"
+    },
+    {
+      "path": "tools/contracts/posix-path-bytes/reference.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "5a51271c11cf812328d31d9864c736bbbdf8bb80e2c27db17d266073c2855325"
+    },
+    {
+      "path": "tools/contracts/private-file-digest/reference.py",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "7dba1564bd23b7659b33550a2eff3f2582794bdac714a50205f40e2ac554b783"
+    },
+    {
+      "path": "tools/migration/load-task-evidence.mjs",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "bdebb937679d70d0987004561f5d9cf40bc5a6a6b3b2a068ec4b4f8fef98ede3"
+    },
+    {
+      "path": "tools/migration/tap-evidence.mjs",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "0a3358323e73f6bb0828dc63071603a1263ea6008413c2bf1a620c22c42f3077"
+    },
+    {
+      "path": "tools/migration/task-receipts.mjs",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "2ac168e57ab71e78aa18decb4ff79ef1a3481b941779dc0618b31f1ec5f80b5f"
+    },
+    {
+      "path": "tools/runtime-build/inventory.mjs",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "06a07f1948f0d366d5192b2e5886bcc62da443d946070724b4a36bc054a9ecfe"
+    },
+    {
+      "path": "tsconfig.json",
+      "revision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "sha256": "a5bbfb581960ff5215cf6f5ed0ae26464b32d3c7040d26c9b73d12bcc4986c8f"
+    }
+  ],
+  "parallelSafety": {
+    "P05InputCollisions": [],
+    "checkedRevision": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+    "rule": "Checked exact3worker files against every frozenP05 manifest owned/input paths; no collisions. Pure new leaf and appended existing test do not authorize modifying shared metadata. Root serializes coordinator catalog and transition commits."
+  }
+}

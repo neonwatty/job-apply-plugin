@@ -1,3 +1,7 @@
+import { PythonText, PythonUnicodeEncodeError } from '../runtime/contracts/python-text.js';
+import { filesystemEncode, filesystemDecode } from '../runtime/contracts/posix-path-bytes.js';
+import { pointContents } from '../runtime/contracts/raw-json/point-text-codec.js';
+import { filesystemEncodePoint, filesystemDecodePoint } from '../runtime/contracts/point-filesystem.js';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync, realpathSync } from 'node:fs';
@@ -306,4 +310,128 @@ test('S05 reference rejects caller arguments paths and stdin', () => {
     assert.equal(run.stdout, '');
     assert.equal(run.stderr, 'point_paths_reference_input_rejected\n');
   }
+});
+
+
+const codecEncodeInputs = [[], [0], [0x10000], [0xd800], [0xdc00], [0xdc7f],
+  [0xdc80], [0xdcff], [0xd800, 0xdc00], [0xd800, 0xdc80], [0xdc80, 0xdcff], [0, 0xd800]];
+const codecDecodeInputs = ['', '610062', 'f48fbfbf', 'f0908080', 'ff', '80',
+  'c0af', 'e08080', 'eda080edb080', 'f09080', '61ff62', 'f4908080'];
+function codecError(error, input) {
+  assert.ok(error instanceof PythonUnicodeEncodeError);
+  assert.equal(error.object, input);
+  return { name: error.name, message: error.message, errno: error.errno ?? null,
+    cause: error.cause ?? null, context: error.context ?? null,
+    suppressContext: error.suppressContext ?? false, encoding: error.encoding,
+    objectPoints: [...pointContents(error.object)], objectHex: null,
+    start: error.start, end: error.end, reason: error.reason };
+}
+test('S05 point filesystem codec matches the accepted24 surrogateescape observations', t => {
+  const actual = [];
+  for (const [index, inputPoints] of codecEncodeInputs.entries()) {
+    const input = PythonText.fromCodePoints(inputPoints);
+    let outputHex = null, error = null;
+    try {
+      const output = filesystemEncodePoint(input);
+      assert.ok(Buffer.isBuffer(output));
+      outputHex = output.toString('hex');
+      assert.deepEqual(pointContents(filesystemDecodePoint(output)), inputPoints);
+      assert.notEqual(filesystemEncodePoint(input), output);
+    } catch (caught) { error = codecError(caught, input); }
+    assert.deepEqual(pointContents(input), inputPoints);
+    actual.push({ id: `encode-${encode[index]}`, operation: 'os.fsencode', inputPoints, outputHex, error });
+  }
+  for (const [index, inputHex] of codecDecodeInputs.entries()) {
+    const input = Buffer.from(inputHex, 'hex'), before = Buffer.from(input);
+    const output = filesystemDecodePoint(input);
+    assert.ok(output instanceof PythonText);
+    assert.deepEqual(input, before);
+    assert.deepEqual(filesystemEncodePoint(output), input);
+    actual.push({ id: `decode-${decode[index]}`, operation: 'os.fsdecode', inputHex,
+      outputPoints: [...pointContents(output)], error: null });
+  }
+  assert.deepEqual(actual, vectors.codecs.map(row => ({ ...row, error: fullError(row.error) })));
+  t.diagnostic(JSON.stringify({ kind: 'typescript-codec24', cases: actual }));
+});
+test('S05 point filesystem codec preserves trusted text identity and leaves legacy bytes unchanged', () => {
+  class HostileText extends PythonText {
+    get codePoints() { throw new Error('virtual points'); }
+    get length() { throw new Error('virtual length'); }
+    encodeUtf8() { throw new Error('virtual encoding'); }
+    toString() { throw new Error('virtual string'); }
+    [Symbol.toPrimitive]() { throw new Error('virtual coercion'); }
+  }
+  const branded = points => Reflect.construct(PythonText, [points], HostileText);
+  assert.equal(filesystemEncodePoint(branded([0x10000, 0xdc80, 0])).toString('hex'), 'f09080808000');
+  for (const inputPoints of [[0xd800], [0xd800, 0xdc80], [0, 0xd800]]) {
+    const input = branded(inputPoints);
+    const want = vectors.codecs.find(row => JSON.stringify(row.inputPoints) === JSON.stringify(inputPoints));
+    assert.throws(() => filesystemEncodePoint(input), error => {
+      assert.deepEqual(codecError(error, input), fullError(want.error));
+      return true;
+    });
+  }
+  for (const forged of [Object.create(PythonText.prototype), {}, 'text', null]) {
+    assert.throws(() => filesystemEncodePoint(forged), TypeError);
+  }
+  for (const [input, outputHex] of [['\u{10000}', 'f0908080'], ['\ud800\udc80', 'f0908280'],
+    ['\udc80\udcff', '80ff'], ['a\0b', '610062']]) {
+    assert.equal(filesystemEncode(input).toString('hex'), outputHex);
+    assert.equal(filesystemDecode(Buffer.from(outputHex, 'hex')), input);
+  }
+  assert.throws(() => filesystemEncode('\ud800'), { name: 'UnicodeEncodeError' });
+  const backing = new Uint8Array([0x7e, 0xf0, 0x90, 0x80, 0x80, 0xff, 0, 0x7e]);
+  const before = new Uint8Array(backing), view = backing.subarray(1, 7);
+  assert.deepEqual(pointContents(filesystemDecodePoint(view)), [0x10000, 0xdcff, 0]);
+  assert.deepEqual(backing, before);
+  const allBytes = Uint8Array.from({ length: 256 }, (_, index) => index);
+  const decoded = filesystemDecodePoint(allBytes);
+  assert.ok(pointContents(decoded).every(point => point < 0xd800 || point > 0xdfff
+    || (point >= 0xdc80 && point <= 0xdcff)));
+  assert.deepEqual(filesystemEncodePoint(decoded), Buffer.from(allBytes));
+});
+
+// Immutable prior matrix canonicalization preserves every key and array order.
+const registrationBaselineSha256 = '9df019e90b2bf485917f94364c36cbfd6ab8dd94f8d3ced21c383957985183ac';
+const registrationOwnership = {
+  "paths": [
+    "tests_js/point_paths_domain_support.mjs",
+    "tests_js/point_managed_path_support.mjs",
+    "tests_js/point_managed_observation_support.mjs",
+    "tests_js/point_managed_native_support.mjs"
+  ],
+  "suites": [
+    "node-workspace-other",
+    "node-reference-s05"
+  ]
+};
+
+test('S05 path support registration preserves the exact prior matrix', t => {
+  const matrix = JSON.parse(readFileSync(join(root, 'config/test-matrix.json'), 'utf8'));
+  assert.deepEqual(matrix.ownership.at(-1), registrationOwnership);
+  for (const path of registrationOwnership.paths) {
+    const owners = matrix.ownership.filter(rule => rule.paths.includes(path));
+    assert.deepEqual(owners, [registrationOwnership], path);
+  }
+  for (const id of registrationOwnership.suites) {
+    const suites = matrix.suites.filter(suite => suite.id === id);
+    assert.equal(suites.length, 1);
+    assert.equal(suites[0].kind, 'node-test');
+    assert.ok(suites[0].tiers.includes('full'));
+  }
+  matrix.ownership.pop();
+  // Companion adds coverage without changing any prior registration. Remove
+  // only the exact reviewed additions before comparing the original matrix.
+  const companionPaths = ['apps/companion/**/*.ts', 'apps/companion/**/*.tsx',
+    'apps/companion/**/*.mjs', 'apps/companion/**/*.css', 'apps/companion/package.json'];
+  for (const path of companionPaths) {
+    assert.equal(matrix.inventory.include.filter(value => value === path).length, 1);
+  }
+  matrix.inventory.include = matrix.inventory.include.filter(path => !companionPaths.includes(path));
+  assert.deepEqual(matrix.suites.shift(), { id: 'companion-typescript-check', kind: 'command',
+    command: ['npm', 'run', 'companion:typecheck'], tiers: ['fast', 'full'] });
+  assert.deepEqual(matrix.ownership.shift(), { paths: ['apps/companion/**'],
+    suites: ['companion-typescript-check', 'node-workspace-other', 'migration-inventory', 'source-size'] });
+  assert.equal(hash(JSON.stringify(matrix)), registrationBaselineSha256);
+  t.diagnostic(JSON.stringify({ registrationBaselineSha256, ownership: registrationOwnership }));
 });

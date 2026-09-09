@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "id": "P03.ui-tests.integration-transition",
+  "previousDag": {
+    "path": "docs/migration/evidence/s05-domain-v4/reference-dag.json",
+    "sha256": "8b3a19b4d4d7c7421225a9f5061dc14d65643198c153265d98cc729eae8d3aa8",
+    "revision": "48e83ca0715c975b56436e78e14e4e1aa47f1584"
+  },
+  "nextDag": {
+    "path": "docs/migration/evidence/p03-ui-tests/integration-dag.json",
+    "sha256": "8a1f7e8fbbea1e538355a47dda29dcc8c8ccb72cab475f2ddcc5cb32b2301127",
+    "revision": "311b7380792c7647fb64e2e38e7584f337d73ddb"
+  },
+  "retirements": [],
+  "additions": [
+    {
+      "id": "P03.ui-tests.I",
+      "manifest": {
+        "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.I.json",
+        "sha256": "99d0c4b86ad25bda1094f85c1c151a881a8e49dd4a50abf84a3f1bfe8e514d2c",
+        "revision": "311b7380792c7647fb64e2e38e7584f337d73ddb"
+      }
+    },
+    {
+      "id": "P03.ui-tests.V",
+      "manifest": {
+        "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.V.json",
+        "sha256": "3d80dc21ffe4da5cfe251d4e77f9aaa18bba578b504a32c2957cd64961438524",
+        "revision": "311b7380792c7647fb64e2e38e7584f337d73ddb"
+      }
+    }
+  ],
+  "refinements": [
+    {
+      "id": "G02.I",
+      "beforeDependencies": [
+        "G01.V",
+        "A04.V",
+        "W01.V",
+        "W02.V",
+        "W03.V",
+        "W04.V",
+        "W05.V",
+        "U07.V"
+      ],
+      "afterDependencies": [
+        "G01.V",
+        "A04.V",
+        "W01.V",
+        "W02.V",
+        "W03.V",
+        "W04.V",
+        "W05.V",
+        "U07.V",
+        "P03.ui-tests.V"
+      ]
+    }
+  ],
+  "packageVersions": [],
+  "witnessMappings": [],
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "decision": "approved",
+  "reason": "Permit bounded literal test timeout declarations needed by existing UI evidence while preserving rejection of skipped, dynamic and unsupported declarations."
+}

@@ -1,0 +1,67 @@
+import type { JobsService } from "./jobs.js";
+import type { NativeJobsRepository } from "../store/native-jobs.js";
+import { fixtureError } from "../store/native-jobs.js";
+import { JobsError, fromJSON, get, int, keys, object, parse, serialize, set } from "../contracts/workspace/values.js";
+import type { Value } from "../contracts/workspace/values.js";
+import { emptyObject } from "../contracts/workspace/jobs.js";
+import { PythonObject } from "../contracts/python-object.js";
+
+export type ApiResult = { status: number; body: string };
+const response = (value: Value, status = 200): ApiResult => ({ status, body: serialize(value) });
+export const apiError = (status: number, code: string, message: string): ApiResult =>
+  response(fromJSON({ error: { code, message } }), status);
+const envelope = (key: string, value: Value): Value => set(emptyObject(), key, value);
+
+/** Transport-independent dispatch. Host/token/Origin/body bounds belong to the adapter. */
+export async function jobsHttp(service: JobsService, repository: NativeJobsRepository,
+  method: string, path: string, body = ""): Promise<ApiResult> {
+  try {
+    if (method === "GET") {
+      if (path === "/api/boot") {
+        await service.list();
+        return response(fromJSON({ status: "ready", mode: "native-jobs-fixture" }));
+      }
+      if (path === "/api/jobs") return response(envelope("jobs", await service.list()));
+      if (path === "/api/state") {
+        const state = object(envelope("jobs", await service.list()), "state");
+        set(state, "resumes", await repository.resumeSummaries());
+        return response(state);
+      }
+      const match = /^\/api\/jobs\/([^/]+)$/.exec(path);
+      if (match) {
+        const job = await service.get(decodeURIComponent(match[1]!));
+        return job === null ? apiError(404, "not_found", "job does not exist") : response(job);
+      }
+    }
+    if (method === "POST" && path === "/api/jobs") {
+      const payload = object(parse(body), "body");
+      if (payload.size !== 1 || keys(payload)[0] !== "job" || !(get(payload, "job") instanceof PythonObject)) {
+        return apiError(400, "request_error", "body must contain only a job object");
+      }
+      return response(await service.create(get(payload, "job")));
+    }
+    const match = /^\/api\/jobs\/([^/]+)$/.exec(path);
+    if (method === "PATCH" && match) {
+      const payload = object(parse(body), "body");
+      if (payload.size !== 2 || keys(payload).some(key => !["patch", "expectedRevision"].includes(key))
+        || !(get(payload, "patch") instanceof PythonObject)) {
+        return apiError(400, "request_error", "body requires patch and expectedRevision");
+      }
+      const revision = int(get(payload, "expectedRevision"));
+      if (revision === null || revision < 1n) return apiError(400, "request_error", "expectedRevision must be a positive integer");
+      return response(await service.update(decodeURIComponent(match[1]!), get(payload, "patch"), revision));
+    }
+    return apiError(501, "unsupported_native_workflow", "This synthetic native fixture supports Jobs create, get, list and update only.");
+  } catch (error) {
+    if (error instanceof JobsError) {
+      return error.message.includes("revision conflict") ? apiError(409, "revision_conflict", error.message)
+        : error.message.includes("does not exist") ? apiError(404, "not_found", error.message)
+        : error.message === "active job URL already exists" ? apiError(409, "duplicate_active_blocked", error.message)
+        : apiError(400, "store_rejected", error.message);
+    }
+    if (error instanceof Error && ["JSONDecodeError", "ValueError"].includes(error.name)) {
+      return apiError(400, "request_error", "body must be valid JSON");
+    }
+    return apiError(503, "store_unavailable", fixtureError(error));
+  }
+}

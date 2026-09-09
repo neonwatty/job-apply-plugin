@@ -1,0 +1,17 @@
+TAP version 13
+# Subtest: helper browser contract: emitted modules load and preserve browser-native behavior
+ok 1 - helper browser contract: emitted modules load and preserve browser-native behavior
+  ---
+  duration_ms: 325.235791
+  type: 'test'
+  ...
+# Chromium 151.0.7922.34; 35 inert exports; no application or Store launched
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 502.342959

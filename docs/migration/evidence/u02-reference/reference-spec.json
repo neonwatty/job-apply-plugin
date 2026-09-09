@@ -1,0 +1,202 @@
+{
+  "id": "U02-R",
+  "assignmentIds": [
+    "U02.R"
+  ],
+  "dependenciesByTask": {
+    "U02.R": [
+      "P00.V",
+      "M01.V"
+    ]
+  },
+  "workerAllowedFiles": [
+    "tests_js/workspace_helpers.test.mjs",
+    "tests_js/workspace_infrastructure_reference_support.mjs"
+  ],
+  "inputs": [
+    {
+      "path": ".source-size-baseline.json",
+      "sha256": "8b0071c47e04b1d32246d9498fc35d6fd05e1868455b73bbcc4eebc97551d8a3"
+    },
+    {
+      "path": "config/test-matrix.json",
+      "sha256": "bd33a6cecc1b468adf2581582eec1ef13747e404a40ea843721b9cea30511f38"
+    },
+    {
+      "path": "docs/migration/evidence/m01/M01.I.json",
+      "sha256": "b28a70ef58919881aed57e5286e82b0e34c7dac8f434013fc407d4bac509dd2b"
+    },
+    {
+      "path": "docs/migration/evidence/m01/M01.V.json",
+      "sha256": "2f5e13c71e93ebae82181dfaf0b0357904b522c87f66f8d043d4dfee617c5395"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "7ee9e2f989ec77ba9ab97847266792da033d9ebd98fd3643a26d73430d076c17"
+    },
+    {
+      "path": "package.json",
+      "sha256": "c652d020e5b1762c2bc703c563124c23f87c978f87af9c299f0a661253c40200"
+    },
+    {
+      "path": "runtime/workspace-ui/lib/automation-request.js",
+      "sha256": "ac236f243e821923be48390aaba720ef863f9fa2093cc310631ae9cff9a770a7"
+    },
+    {
+      "path": "tests_js/workspace_helpers.test.mjs",
+      "sha256": "1bef2b13aa7290878016eee312d26944eaa8d18538c17381500b62fa6b3e4ff9"
+    },
+    {
+      "path": "tests_js/workspace_test_support.mjs",
+      "sha256": "f64c9e0c4291bf4c019693835c29322a80fe6559f14b047bdddf536d97e70082"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "a5bbfb581960ff5215cf6f5ed0ae26464b32d3c7040d26c9b73d12bcc4986c8f"
+    },
+    {
+      "path": "workspace/app.js",
+      "sha256": "4a50101e09cf0b5c70480074beae1ca193dffb16817d8ac8612c089c866b41c4"
+    },
+    {
+      "path": "workspace/bootstrap.js",
+      "sha256": "cab93d10769a32bd01991b1965dd1d0daa3d7ad0e2c8a20f4c2f1fcd193d690e"
+    },
+    {
+      "path": "workspace/features/activity.js",
+      "sha256": "ea68a9c2dd6880438229b5bb965c35c5b8235b36dc77df39b69dcc3b5ff8844e"
+    },
+    {
+      "path": "workspace/features/answers.js",
+      "sha256": "0e52d101f15a2453f2dfb75030224e0629a023d0d3532fd59255e23d61c75ad1"
+    },
+    {
+      "path": "workspace/features/automation.js",
+      "sha256": "e85037840fce9a20f7aa07c612c634dc6e8593bc970a6c40342f0787a55bffd3"
+    },
+    {
+      "path": "workspace/features/bindings.js",
+      "sha256": "a71d9196946c76b510b7347b8349dc8282ebb4d1b4e5e44412a56ced7b561f05"
+    },
+    {
+      "path": "workspace/features/facts.js",
+      "sha256": "3bcf4565f20237d03260ee0500bb4c6fed0a4917a35486551962ba99f301aabd"
+    },
+    {
+      "path": "workspace/features/jobs.js",
+      "sha256": "dfc365a7eb2be0afbce3859e1fba012329cf84371c67b200fc28ac5b84199a2b"
+    },
+    {
+      "path": "workspace/features/navigation.js",
+      "sha256": "1bf514de76dd7edad2cc3f17e962b2b425f6f89558abdc0a875a8783c84574f0"
+    },
+    {
+      "path": "workspace/features/overview.js",
+      "sha256": "d65133c691d5a1cc66ef863d60672ef32a967140e40c821eaf13ff193995246d"
+    },
+    {
+      "path": "workspace/features/resumes.js",
+      "sha256": "d2003cae799cceb859c0f1120473c7df4c13182f3c3ab7692dd119f81b242607"
+    },
+    {
+      "path": "workspace/features/trash.js",
+      "sha256": "36e114dfdc85f9ee98b8624043adf1de26591d51a6d776d035bdc703c005ffb3"
+    },
+    {
+      "path": "workspace/lib/api.js",
+      "sha256": "999b7881edfd229ef1e2660f58736b96ddba3dea2e6bc2fd6194e26da1c06556"
+    },
+    {
+      "path": "workspace/lib/dom.js",
+      "sha256": "9c366cc6b5e5bbab2c6b74db36f45445ea533c20086e29eebd02e6cce5a0e78e"
+    },
+    {
+      "path": "workspace/lib/helpers.js",
+      "sha256": "6fdaab7896a1944dde732c9cb239507968d30a5bd50ee35e7249c06d89bcb33e"
+    },
+    {
+      "path": "workspace/lib/state.js",
+      "sha256": "f726687cb368d1238d0e9bd6c287dee9313631c51d43363441febbb966b16218"
+    }
+  ],
+  "cells": [
+    {
+      "id": "U02-original-reference",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_helpers.test.mjs"
+      ],
+      "testNames": [
+        "unified Trash helpers filter types and require exact type-specific phrases",
+        "unified Trash helpers ignore stale success and failure side effects",
+        "fragment token is decoded without accepting unrelated URL data",
+        "fragment token survives a same-tab reload without remaining in the URL",
+        "API client authenticates in memory and surfaces revision conflicts",
+        "Facts save retry policy is bounded and limited to revision conflicts",
+        "jobs filter by status and human-visible fields",
+        "form values become a supported Store patch",
+        "resume tag drafts are trimmed without inventing durable browser state",
+        "resume assignment copy uses canonical projection counts",
+        "resume refresh results stay bound to their requested Active or Trash view",
+        "extraction request view is honest and closed for every state",
+        "proposal groups keep deterministic order and unknown paths visible",
+        "status actions preserve guarded ready, acquire, and applied boundaries",
+        "M01 employer account requests preserve revision checks, coercion and explicit clear",
+        "M01 Trusted Fill approval packets preserve field order, copying and coercion failures",
+        "M01 Trusted Fill revocation requests preserve canonical revisions and encoded paths",
+        "U02 reference preserves API errors and bounded revision retries",
+        "U02 reference preserves token storage and denied storage access",
+        "U02 reference preserves fetch options response decoding and signal identity",
+        "U02 reference preserves stale success failure invalidation and callback throws",
+        "U02 reference preserves complete state shape and independent mutable containers",
+        "U02 reference preserves DOM lookup toast replacement and connection guard",
+        "U02 reference preserves FileReader listener ordering and error rejection"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/ui/logs/U02-original-reference.tap",
+      "requirementIds": [
+        "u02.api-errors",
+        "u02.auth-storage",
+        "u02.fetch",
+        "u02.coordinator",
+        "u02.state",
+        "u02.dom",
+        "u02.file-reader"
+      ]
+    }
+  ],
+  "emittedFiles": [],
+  "parentNode": "UI0",
+  "author": "timestamp_tests",
+  "reviewer": "hooks_audit",
+  "freezeAfter": [],
+  "inputAdditionsAtFreeze": [],
+  "packageId": "U02",
+  "directory": "docs/migration/evidence/u02-reference",
+  "auditId": "u02-reference-audit",
+  "behavior": [
+    "ApiError preserves original truthy defaults and field values; retry keeps module-local instanceof and max2 default.",
+    "Token String/falsy coercion and URLSearchParams; storage write-before-read and catch fallback; denied sessionStorage getter returnsnull.",
+    "createApi captures defaultfetch on creation; Authorization override order, Content-Type only when body!==undefined, raw options/signal identity; JSON parse failure returnsnull forsuccess; non-ok ApiError and fetch rejection identity.",
+    "Latest coordinator preserves stale success/failure false with no callback; invalidation increments counter; success callback throws enter failure callback; failure callback throw rejects; callbacks are not awaited. No new AbortController policy.",
+    "State exact own keys/order/defaults and fresh arrays/maps/sets/weakmaps each creation; four coordinators have independent counters.",
+    "DOM query ordering/captured form/dialog; coercion statusLabel/escapeText; toast cancels previous timer and schedules3500ms; online guard reads overview.unavailable before querying; global/accessor errors preserved.",
+    "FileReader listeners load/error before readAsDataURL; load String(result).split comma limit2; error exact message; sync constructor/read failure rejects promise; preserve event order.",
+    "Synthetic headless Chromium only; unexpected network blocked; original and runtime module contracts observed side by side, no Nodeglobals/bootstrap."
+  ],
+  "prerequisiteReceipts": [
+    {
+      "id": "P00.V",
+      "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+    },
+    {
+      "id": "M01.V",
+      "sha256": "6614cc8c0643fe031eff89a6363e0561b60ec3bb05e703050ef8e3457e098cba"
+    }
+  ],
+  "plan": "# UI infrastructure reference\n\nAppend seven original-only cases to the existing workspace helper test entry\npoint, using separately owned test support. Cover API errors, auth storage,\nrequest options and signals, stale responses, callback errors, complete state\nshape, DOM lookup and timers, and FileReader events and failures.\n\nPreserve all existing callbacks and approved request-builder behavior. Fixtures\nuse synthetic browser globals and owned state; no owner browser or Store is used.\nThe TypeScript port must preserve the original global-access timing and must not\ninvent cancellation behavior. Bootstrap and app routing remain separate work.\n"
+}

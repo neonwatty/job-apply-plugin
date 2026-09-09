@@ -5,7 +5,7 @@ from __future__ import annotations
 from http import HTTPStatus
 from typing import Any
 
-from . import ASSETS, ASSET_ROOT, runtime
+from . import ASSETS, ASSET_ROOT, RUNTIME_ASSETS, RUNTIME_ASSET_ROOT, runtime
 from .projections import (
     public_extraction_request,
     public_proposal_detail,
@@ -21,11 +21,15 @@ class QueryMixin:
 
     def _asset(self, path: str) -> None:
         asset = ASSETS.get(path)
+        root = ASSET_ROOT
+        if asset is None:
+            asset = RUNTIME_ASSETS.get(path)
+            root = RUNTIME_ASSET_ROOT
         if asset is None:
             self._error(HTTPStatus.NOT_FOUND, "route not found", "not_found")
             return
         try:
-            body = (ASSET_ROOT / asset[0]).read_bytes()
+            body = (root / asset[0]).read_bytes()
         except OSError:
             self._error(
                 HTTPStatus.INTERNAL_SERVER_ERROR,

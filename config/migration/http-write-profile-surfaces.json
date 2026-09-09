@@ -9,7 +9,11 @@
       "node": "PF",
       "sources": [
         "scripts/job_apply_workspace/handler.py",
-        "scripts/job_apply_workspace/domains/profile.py"
+        "scripts/job_apply_workspace/domains/profile.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -33,7 +37,11 @@
       "node": "PF",
       "sources": [
         "scripts/job_apply_workspace/handler.py",
-        "scripts/job_apply_workspace/domains/profile.py"
+        "scripts/job_apply_workspace/domains/profile.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -57,7 +65,11 @@
       "node": "PF",
       "sources": [
         "scripts/job_apply_workspace/handler.py",
-        "scripts/job_apply_workspace/domains/profile.py"
+        "scripts/job_apply_workspace/domains/profile.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -81,7 +93,11 @@
       "node": "PF",
       "sources": [
         "scripts/job_apply_workspace/handler.py",
-        "scripts/job_apply_workspace/domains/profile.py"
+        "scripts/job_apply_workspace/domains/profile.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

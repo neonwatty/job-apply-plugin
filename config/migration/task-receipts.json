@@ -7691,6 +7691,3883 @@
         "decision": "approved"
       },
       "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "S04.I",
+      "manifestSha256": "40c6a5f49420b5cc08be4883bf127538dc7acf26f88b7cdad58eaabd992ee7a6",
+      "subject": {
+        "sha": "80224dae9194bfc71c15686bdb8cf3f2349d59f2",
+        "tree": "3dd28f8fc4de698daa69af158cb8c0797e6f02bb"
+      },
+      "executionBase": "b0f3903b5eac32e8337649a7768de3697768c6d0",
+      "evidenceCommit": "e83ab9aadc076016a34253f012f20fcc5ab0fdee",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/review-lock.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-06.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-s04.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "docs/migration/python-point-persistence-port.md"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/persisted-json-core.js"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "runtime/contracts/persisted-json.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/persistence-exception.js"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "runtime/store/atomic-write-json.js"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "runtime/store/jsonl-history.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/store/point-persistence.js"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "runtime/store/private-filesystem.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/persisted-json-core.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "src/contracts/persisted-json.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/persistence-exception.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "src/store/atomic-write-json.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "src/store/jsonl-history.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/store/point-persistence.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "src/store/private-filesystem.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/atomic_write_json_ts_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/jsonl_history_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/jsonl_json_ts.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/persisted_json_ts.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/contracts/persisted-json.ts",
+          "sha256": "c83b2863ed4f8ead2e592e8fdf24fb9a615273680a50842fec093cffe9a9a1a5"
+        },
+        {
+          "path": "src/contracts/jsonl-json.ts",
+          "sha256": "5bc28e86d18f4a998d3f90b21ef02a7a618adc6627f20850a64592cdd628a76a"
+        },
+        {
+          "path": "src/store/private-filesystem.ts",
+          "sha256": "e27595f544bf23dc7f2f9017ce704cb4f8817af5c3003c75c3e1d7708b463f22"
+        },
+        {
+          "path": "src/store/atomic-write-json.ts",
+          "sha256": "d265f1febf7b4b80de9e383e78f62f186784c67e04f9053dc90b3e2aa7bce1f3"
+        },
+        {
+          "path": "src/store/jsonl-history.ts",
+          "sha256": "d77cacf1a00c49f4faae2bf47a937a29ab08443125dd58f97605f634bf57db88"
+        },
+        {
+          "path": "src/contracts/persisted-json-core.ts",
+          "sha256": "3524aef4c2d1ed0c2a1d1ca2c9682ff179caf2d2d38c7291c219e651957cee73"
+        },
+        {
+          "path": "src/contracts/persistence-exception.ts",
+          "sha256": "0ff8823dae0e711b4c635bc4a83aae4570a618432cf17b250ea7d8bb06c67319"
+        },
+        {
+          "path": "src/store/point-persistence.ts",
+          "sha256": "e230dc1b12e8ad5f6c5c4287420ac1c64fd8f82246bfdd21daff9fd1030d3889"
+        },
+        {
+          "path": "runtime/contracts/persisted-json.js",
+          "sha256": "22af2de52d9db932a0f8f173e4a8230e9ee223e0c62c2b5f32e6c14564a19f5c"
+        },
+        {
+          "path": "runtime/contracts/jsonl-json.js",
+          "sha256": "ee022369d9715ad54fdc984945132e3430df273cbe0326bfb572932d8303fdc9"
+        },
+        {
+          "path": "runtime/store/private-filesystem.js",
+          "sha256": "cece5e0a6c7797a22adc26341bd4d704557dbd6510364d2499a16b4f82c9b3c4"
+        },
+        {
+          "path": "runtime/store/atomic-write-json.js",
+          "sha256": "eba8a1f3010576d1d74f4f5b585dac70a52ccc4e5d66e8be441134cc00afada8"
+        },
+        {
+          "path": "runtime/store/jsonl-history.js",
+          "sha256": "a90b3ec0e54b74d3b3fa6139cad7a34f9e7f1cb89b90982809ca04d437bb7627"
+        },
+        {
+          "path": "runtime/contracts/persisted-json-core.js",
+          "sha256": "5a6aba967b58c029aaff613c899ebb675f7c8e6aebb037802a44c4ab9614e77c"
+        },
+        {
+          "path": "runtime/contracts/persistence-exception.js",
+          "sha256": "fdadb753373300b02aec11b399aa331d8b0d6296b650ff2d52c941a35218f1e6"
+        },
+        {
+          "path": "runtime/store/point-persistence.js",
+          "sha256": "251d9b438da600291447a4c64c836d7980ffa814e008a0822e3b761b4b5541a6"
+        },
+        {
+          "path": "tests_js/persisted_json_ts.test.mjs",
+          "sha256": "620c51b106bc4016ee472f158e7f66a5a68831c037b98cc9bb9df685ebcfc203"
+        },
+        {
+          "path": "tests_js/jsonl_json_ts.test.mjs",
+          "sha256": "c7d2c8959068ef81323fad52b5ece414343f42eb46ac7ef53b0477f7a4374a13"
+        },
+        {
+          "path": "tests_js/atomic_write_json_ts_support.mjs",
+          "sha256": "efb21dd9587c51a6d1e535aeb09a4a24f5dc31f1d71b4316367039b3f76c3b63"
+        },
+        {
+          "path": "tests_js/jsonl_history_support.mjs",
+          "sha256": "f55b61d8d6f82ca2c99d4df7c46774b8c93588f84fb2aa70a95235e4f65d7e41"
+        },
+        {
+          "path": "docs/migration/python-point-persistence-port.md",
+          "sha256": "be5768d4ff0a0610cd1bda2db59bfde8f39f2450687d95a4022c524987db7649"
+        },
+        {
+          "path": "docs/migration/evidence/s04/implementation.md",
+          "sha256": "9d2a5f65c58ee828e531ebbce626a09ed4467d37fa7cd7351c7ee64e6434d612"
+        },
+        {
+          "path": "docs/migration/evidence/s04/implementation-audit.json",
+          "sha256": "cacef81b946b4fb0e8f69a886cba24307629ac7799becd508ccfa5eb77b0080d"
+        },
+        {
+          "path": "docs/migration/evidence/s04/S04.I.json",
+          "sha256": "40c6a5f49420b5cc08be4883bf127538dc7acf26f88b7cdad58eaabd992ee7a6"
+        },
+        {
+          "path": "docs/migration/evidence/s04/S04.V.json",
+          "sha256": "726cfa338470d125d068eff3d16d5b78b5161ec2573c8b1beee34913146738d4"
+        },
+        {
+          "path": "config/migration/source-catalog-06.json",
+          "sha256": "ddc83cc609b3d33d56f2793d4d87db257782a7d276a8c62fe5ff4719df72ab0b"
+        },
+        {
+          "path": "config/migration/source-catalog-s04.json",
+          "sha256": "ce90c0c4da35ff065eab6b77c5cd68aa1c758a5d1dcb207360e7711364ba48b3"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "S08.V",
+          "sha256": "586aa183ed48cf73fb79a363e3c1aeef8e07af2f796b0afa2f030a56210bca99"
+        },
+        {
+          "id": "S04.R",
+          "sha256": "7be533a916eae6d689073d67c1b2b6751489493d20769ecf5a49c8a4d6441021"
+        }
+      ],
+      "cells": [
+        {
+          "id": "s04.implementation.persisted",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/persisted_json_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 341.532083,
+            "outputBytes": 44213,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s04/logs/S04-IV-persisted.tap",
+            "sha256": "8edfebd43fe1bc0a5be89a8e9e8ce57f6f6249e588a68f261f4aa88162d34f5e"
+          }
+        },
+        {
+          "id": "s04.implementation.jsonl",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/jsonl_json_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 278.229333,
+            "outputBytes": 30171,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s04/logs/S04-IV-jsonl.tap",
+            "sha256": "1928b5d9edc40b05c77e74b06bc4640721390aede57c2cbe895c7026cf88937b"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "80224dae9194bfc71c15686bdb8cf3f2349d59f2",
+        "subjectTree": "3dd28f8fc4de698daa69af158cb8c0797e6f02bb",
+        "manifestSha256": "40c6a5f49420b5cc08be4883bf127538dc7acf26f88b7cdad58eaabd992ee7a6",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P02.I",
+      "manifestSha256": "dc704997a542c6d4b99eed60eb22048d0011db8a1a069644f598bba189613d16",
+      "subject": {
+        "sha": "ad65adc893d60f3cd0cdd06a9faffbd2e159f650",
+        "tree": "9fee71d233b5745429bd127ead6b8fb462368710"
+      },
+      "executionBase": "f08fcee79b522a7ced0aa379f1e76bf854734d80",
+      "evidenceCommit": "ac56adaff1898a04904b7f656424e220c54aed90",
+      "diff": [
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "docs/migration/local-mac-milestone.md"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/runtime-support.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/migration/local-mac-host.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/migration/local-mac-host.mjs",
+          "sha256": "14fa7c39de71f25d056025216dc32ce76a445f09002b5cf23d8e0e7a400553bd"
+        },
+        {
+          "path": "tests_js/runtime-support.test.mjs",
+          "sha256": "a6f974f4138ad386d3fe5618b6b2cfd60c9d70a744c3475370340d12080cd0ee"
+        },
+        {
+          "path": "docs/migration/local-mac-milestone.md",
+          "sha256": "dee76d5c62fd7f6ed3150093389810db5c1f060647f3ebad7d193c2e61e4fc8c"
+        },
+        {
+          "path": "docs/migration/evidence/p02/mac-dogfood-spec.json",
+          "sha256": "a8a1fe99cdac43779fd6090f116f21ce220f71f1859c6cab0c7aca1e78c40fcf"
+        },
+        {
+          "path": "docs/migration/evidence/p02/mac-dogfood.md",
+          "sha256": "87aa3a8f4f82b74c6ba5d851eec2dd9d75ef4fc3a031c241231736f9c889fd4b"
+        },
+        {
+          "path": "docs/migration/evidence/p02/mac-dogfood-audit.json",
+          "sha256": "e888294e9ad42b6993838163b346a39c1a4841024f10515aff2722b9d70c791a"
+        },
+        {
+          "path": "docs/migration/evidence/p02/P02.I.json",
+          "sha256": "dc704997a542c6d4b99eed60eb22048d0011db8a1a069644f598bba189613d16"
+        },
+        {
+          "path": "docs/migration/evidence/p02/P02.V.json",
+          "sha256": "2b9937418582e2268b823b9909a253b414e19658a708b03682a5b806e9da81e3"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        }
+      ],
+      "cells": [
+        {
+          "id": "p02.mac-dogfood.identity",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/runtime-support.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 1175.1782090000002,
+            "outputBytes": 6379,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p02/logs/mac-dogfood.tap",
+            "sha256": "bff0aef5c378252a0bca8d9ecbca8c077be3fcd64abd6262e1043994c0a766d5"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "ad65adc893d60f3cd0cdd06a9faffbd2e159f650",
+        "subjectTree": "9fee71d233b5745429bd127ead6b8fb462368710",
+        "manifestSha256": "dc704997a542c6d4b99eed60eb22048d0011db8a1a069644f598bba189613d16",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P02.V",
+      "manifestSha256": "2b9937418582e2268b823b9909a253b414e19658a708b03682a5b806e9da81e3",
+      "subject": {
+        "sha": "ad65adc893d60f3cd0cdd06a9faffbd2e159f650",
+        "tree": "9fee71d233b5745429bd127ead6b8fb462368710"
+      },
+      "executionBase": "f08fcee79b522a7ced0aa379f1e76bf854734d80",
+      "evidenceCommit": "ac56adaff1898a04904b7f656424e220c54aed90",
+      "diff": [
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "docs/migration/local-mac-milestone.md"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/runtime-support.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/migration/local-mac-host.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/migration/local-mac-host.mjs",
+          "sha256": "14fa7c39de71f25d056025216dc32ce76a445f09002b5cf23d8e0e7a400553bd"
+        },
+        {
+          "path": "tests_js/runtime-support.test.mjs",
+          "sha256": "a6f974f4138ad386d3fe5618b6b2cfd60c9d70a744c3475370340d12080cd0ee"
+        },
+        {
+          "path": "docs/migration/local-mac-milestone.md",
+          "sha256": "dee76d5c62fd7f6ed3150093389810db5c1f060647f3ebad7d193c2e61e4fc8c"
+        },
+        {
+          "path": "docs/migration/evidence/p02/mac-dogfood-spec.json",
+          "sha256": "a8a1fe99cdac43779fd6090f116f21ce220f71f1859c6cab0c7aca1e78c40fcf"
+        },
+        {
+          "path": "docs/migration/evidence/p02/mac-dogfood.md",
+          "sha256": "87aa3a8f4f82b74c6ba5d851eec2dd9d75ef4fc3a031c241231736f9c889fd4b"
+        },
+        {
+          "path": "docs/migration/evidence/p02/mac-dogfood-audit.json",
+          "sha256": "e888294e9ad42b6993838163b346a39c1a4841024f10515aff2722b9d70c791a"
+        },
+        {
+          "path": "docs/migration/evidence/p02/P02.I.json",
+          "sha256": "dc704997a542c6d4b99eed60eb22048d0011db8a1a069644f598bba189613d16"
+        },
+        {
+          "path": "docs/migration/evidence/p02/P02.V.json",
+          "sha256": "2b9937418582e2268b823b9909a253b414e19658a708b03682a5b806e9da81e3"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P02.I",
+          "sha256": "d5cf9b904f43bd4a48e78c2dd90b253ad985def65483196f3bbd49a655cb8070"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        }
+      ],
+      "cells": [
+        {
+          "id": "p02.mac-dogfood.identity",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/runtime-support.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 1175.1782090000002,
+            "outputBytes": 6379,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p02/logs/mac-dogfood.tap",
+            "sha256": "bff0aef5c378252a0bca8d9ecbca8c077be3fcd64abd6262e1043994c0a766d5"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "ad65adc893d60f3cd0cdd06a9faffbd2e159f650",
+        "subjectTree": "9fee71d233b5745429bd127ead6b8fb462368710",
+        "manifestSha256": "2b9937418582e2268b823b9909a253b414e19658a708b03682a5b806e9da81e3",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "M01.I",
+      "manifestSha256": "b28a70ef58919881aed57e5286e82b0e34c7dac8f434013fc407d4bac509dd2b",
+      "subject": {
+        "sha": "372b455f942fa8c5b7e7d8383fb9c55f251726ab",
+        "tree": "a0f5bd4e72e0efcc4341bae0d2e4ecefe31e0663"
+      },
+      "executionBase": "f08fcee79b522a7ced0aa379f1e76bf854734d80",
+      "evidenceCommit": "aefd829cee2eb2aa87eec581cc88228da2708213",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/review-lock.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-m01.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/workspace-ui/lib/automation-request.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/workspace-ui/lib/automation-request.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/workspace_helpers.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/workspace-ui/lib/automation-request.ts",
+          "sha256": "4bde60e5165aa3edafaba6458730eb194a43ea3f83c75d4019edc84ff93cbc84"
+        },
+        {
+          "path": "runtime/workspace-ui/lib/automation-request.js",
+          "sha256": "ac236f243e821923be48390aaba720ef863f9fa2093cc310631ae9cff9a770a7"
+        },
+        {
+          "path": "tests_js/workspace_helpers.test.mjs",
+          "sha256": "1bef2b13aa7290878016eee312d26944eaa8d18538c17381500b62fa6b3e4ff9"
+        },
+        {
+          "path": "config/migration/source-catalog-m01.json",
+          "sha256": "f4da5d2b5ca91efe13cb414addb8afc6f255924294bfdaa1d5cdf26f912556ff"
+        },
+        {
+          "path": "docs/migration/evidence/m01/approved-dag.json",
+          "sha256": "5f774f203c6a0c2ed8d81811e9c88856ddad2564653e5db58f7cddb32bd05f5a"
+        },
+        {
+          "path": "docs/migration/evidence/m01/implementation-spec.json",
+          "sha256": "845dca4a89a541702a1d509df9e1a996f4bb41cf99b88a7b3f1bd90a5c2bf74b"
+        },
+        {
+          "path": "docs/migration/evidence/m01/implementation.md",
+          "sha256": "5d34a262a2b528c5779db2181cddc50265761009bd47a845907519de22f72bef"
+        },
+        {
+          "path": "docs/migration/evidence/m01/implementation-audit.json",
+          "sha256": "bef80dacb0f8f9d990ea154abb4f6119784b17cfee5d7c34cb2e61b710165df1"
+        },
+        {
+          "path": "docs/migration/evidence/m01/M01.I.json",
+          "sha256": "b28a70ef58919881aed57e5286e82b0e34c7dac8f434013fc407d4bac509dd2b"
+        },
+        {
+          "path": "docs/migration/evidence/m01/M01.V.json",
+          "sha256": "2f5e13c71e93ebae82181dfaf0b0357904b522c87f66f8d043d4dfee617c5395"
+        },
+        {
+          "path": "docs/migration/evidence/m01/transition.json",
+          "sha256": "5dd6b8e4ede299cebcf5dad17369ca92311a5a5806a85a7b6ea8a1598f203c90"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        }
+      ],
+      "cells": [
+        {
+          "id": "m01.requests.node",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_helpers.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 252.32308300000003,
+            "outputBytes": 3610,
+            "tests": 17,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/m01/logs/M01-requests.tap",
+            "sha256": "f2777c22e2d5c30e09814a96d89f7be56afeda98615604b2ed90b5bc710de8f2"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "372b455f942fa8c5b7e7d8383fb9c55f251726ab",
+        "subjectTree": "a0f5bd4e72e0efcc4341bae0d2e4ecefe31e0663",
+        "manifestSha256": "b28a70ef58919881aed57e5286e82b0e34c7dac8f434013fc407d4bac509dd2b",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "M01.V",
+      "manifestSha256": "2f5e13c71e93ebae82181dfaf0b0357904b522c87f66f8d043d4dfee617c5395",
+      "subject": {
+        "sha": "372b455f942fa8c5b7e7d8383fb9c55f251726ab",
+        "tree": "a0f5bd4e72e0efcc4341bae0d2e4ecefe31e0663"
+      },
+      "executionBase": "f08fcee79b522a7ced0aa379f1e76bf854734d80",
+      "evidenceCommit": "aefd829cee2eb2aa87eec581cc88228da2708213",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/review-lock.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-m01.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/workspace-ui/lib/automation-request.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/workspace-ui/lib/automation-request.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/workspace_helpers.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/workspace-ui/lib/automation-request.ts",
+          "sha256": "4bde60e5165aa3edafaba6458730eb194a43ea3f83c75d4019edc84ff93cbc84"
+        },
+        {
+          "path": "runtime/workspace-ui/lib/automation-request.js",
+          "sha256": "ac236f243e821923be48390aaba720ef863f9fa2093cc310631ae9cff9a770a7"
+        },
+        {
+          "path": "tests_js/workspace_helpers.test.mjs",
+          "sha256": "1bef2b13aa7290878016eee312d26944eaa8d18538c17381500b62fa6b3e4ff9"
+        },
+        {
+          "path": "config/migration/source-catalog-m01.json",
+          "sha256": "f4da5d2b5ca91efe13cb414addb8afc6f255924294bfdaa1d5cdf26f912556ff"
+        },
+        {
+          "path": "docs/migration/evidence/m01/approved-dag.json",
+          "sha256": "5f774f203c6a0c2ed8d81811e9c88856ddad2564653e5db58f7cddb32bd05f5a"
+        },
+        {
+          "path": "docs/migration/evidence/m01/implementation-spec.json",
+          "sha256": "845dca4a89a541702a1d509df9e1a996f4bb41cf99b88a7b3f1bd90a5c2bf74b"
+        },
+        {
+          "path": "docs/migration/evidence/m01/implementation.md",
+          "sha256": "5d34a262a2b528c5779db2181cddc50265761009bd47a845907519de22f72bef"
+        },
+        {
+          "path": "docs/migration/evidence/m01/implementation-audit.json",
+          "sha256": "bef80dacb0f8f9d990ea154abb4f6119784b17cfee5d7c34cb2e61b710165df1"
+        },
+        {
+          "path": "docs/migration/evidence/m01/M01.I.json",
+          "sha256": "b28a70ef58919881aed57e5286e82b0e34c7dac8f434013fc407d4bac509dd2b"
+        },
+        {
+          "path": "docs/migration/evidence/m01/M01.V.json",
+          "sha256": "2f5e13c71e93ebae82181dfaf0b0357904b522c87f66f8d043d4dfee617c5395"
+        },
+        {
+          "path": "docs/migration/evidence/m01/transition.json",
+          "sha256": "5dd6b8e4ede299cebcf5dad17369ca92311a5a5806a85a7b6ea8a1598f203c90"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "M01.I",
+          "sha256": "ae43c899e9958321f1927732c92edd892c36825fef53433b04f442969541499b"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        }
+      ],
+      "cells": [
+        {
+          "id": "m01.requests.node",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_helpers.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 252.32308300000003,
+            "outputBytes": 3610,
+            "tests": 17,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/m01/logs/M01-requests.tap",
+            "sha256": "f2777c22e2d5c30e09814a96d89f7be56afeda98615604b2ed90b5bc710de8f2"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "372b455f942fa8c5b7e7d8383fb9c55f251726ab",
+        "subjectTree": "a0f5bd4e72e0efcc4341bae0d2e4ecefe31e0663",
+        "manifestSha256": "2f5e13c71e93ebae82181dfaf0b0357904b522c87f66f8d043d4dfee617c5395",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "M02.I",
+      "manifestSha256": "ba431c5949ae70afc01760548f10df16d1dc7e19a582a847224bc54abaf459e4",
+      "subject": {
+        "sha": "47ba882e46a5269c0d56b649cb886822d10f2429",
+        "tree": "34a3eaa3371d9cda2b8060f2970c97465d797215"
+      },
+      "executionBase": "673ea1aa8c648b95e813f95432eb42fed1439640",
+      "evidenceCommit": "67b20daf3a7029f4491698cab3db5e4cb576a3f8",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/review-lock.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-m02.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/point-filesystem.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/point-filesystem.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/point_paths_reference.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/contracts/point-filesystem.ts",
+          "sha256": "0cc3d2ce83b01e57f4d735979118302538ac8523cb02ca7970bdc9e2c0f45d4a"
+        },
+        {
+          "path": "runtime/contracts/point-filesystem.js",
+          "sha256": "740eb1476164f95d37ace61df69cc78eebd42938eda359aca303dede433abd7e"
+        },
+        {
+          "path": "tests_js/point_paths_reference.test.mjs",
+          "sha256": "ce1bce883838e8520ce94fcf796bb9a7b7fa4dc574f26c3b096e0da2b8eb5abc"
+        },
+        {
+          "path": "config/migration/source-catalog-m02.json",
+          "sha256": "0b6ee35143f1ad4f49568ed3d9e15f1cfacf869476a50a151b4fea3fc6f29f41"
+        },
+        {
+          "path": "docs/migration/evidence/m02/approved-dag.json",
+          "sha256": "4a84d41bc1395582f89795ea70fee8c58fadf212181bdcaceadfe5cbbb2ee8b2"
+        },
+        {
+          "path": "docs/migration/evidence/m02/implementation-spec.json",
+          "sha256": "49f5dd16bc37a123877988868f0175c99f7926ca37eb8c2a84e38abe2cbe2087"
+        },
+        {
+          "path": "docs/migration/evidence/m02/implementation.md",
+          "sha256": "18e5fa41bc1e77bc06dd987913df4a81933b96518b547b05062599e4e5a30ca7"
+        },
+        {
+          "path": "docs/migration/evidence/m02/implementation-audit.json",
+          "sha256": "55915a61d721d546754f683bdf22bb79c9b5c29e8877fb154213da19f4e772e5"
+        },
+        {
+          "path": "docs/migration/evidence/m02/M02.I.json",
+          "sha256": "ba431c5949ae70afc01760548f10df16d1dc7e19a582a847224bc54abaf459e4"
+        },
+        {
+          "path": "docs/migration/evidence/m02/M02.V.json",
+          "sha256": "ef6c39bf1dc6b222684ab67801daec9da821786ddacf2c2ebd4a833452f98c49"
+        },
+        {
+          "path": "docs/migration/evidence/m02/transition.json",
+          "sha256": "797ae76ea24306ad511d28aa0a107183b3e827f9a2ae71b93c09a5bc5e6ab15d"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "S05.R",
+          "sha256": "304ce89bda483fb111648c8de905bb61a55c50601cf9b43ecd07e5a5150f6a9e"
+        },
+        {
+          "id": "S08.V",
+          "sha256": "586aa183ed48cf73fb79a363e3c1aeef8e07af2f796b0afa2f030a56210bca99"
+        }
+      ],
+      "cells": [
+        {
+          "id": "m02.codec.node",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/point_paths_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 497.87858299999994,
+            "outputBytes": 721800,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/m02/logs/M02-codec.tap",
+            "sha256": "a0807551d311a192dd45fc844a5c4bbe5ce28a557658e379c29c22ea662db5d4"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "47ba882e46a5269c0d56b649cb886822d10f2429",
+        "subjectTree": "34a3eaa3371d9cda2b8060f2970c97465d797215",
+        "manifestSha256": "ba431c5949ae70afc01760548f10df16d1dc7e19a582a847224bc54abaf459e4",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "M02.V",
+      "manifestSha256": "ef6c39bf1dc6b222684ab67801daec9da821786ddacf2c2ebd4a833452f98c49",
+      "subject": {
+        "sha": "47ba882e46a5269c0d56b649cb886822d10f2429",
+        "tree": "34a3eaa3371d9cda2b8060f2970c97465d797215"
+      },
+      "executionBase": "673ea1aa8c648b95e813f95432eb42fed1439640",
+      "evidenceCommit": "67b20daf3a7029f4491698cab3db5e4cb576a3f8",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/review-lock.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-m02.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/point-filesystem.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/point-filesystem.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/point_paths_reference.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/contracts/point-filesystem.ts",
+          "sha256": "0cc3d2ce83b01e57f4d735979118302538ac8523cb02ca7970bdc9e2c0f45d4a"
+        },
+        {
+          "path": "runtime/contracts/point-filesystem.js",
+          "sha256": "740eb1476164f95d37ace61df69cc78eebd42938eda359aca303dede433abd7e"
+        },
+        {
+          "path": "tests_js/point_paths_reference.test.mjs",
+          "sha256": "ce1bce883838e8520ce94fcf796bb9a7b7fa4dc574f26c3b096e0da2b8eb5abc"
+        },
+        {
+          "path": "config/migration/source-catalog-m02.json",
+          "sha256": "0b6ee35143f1ad4f49568ed3d9e15f1cfacf869476a50a151b4fea3fc6f29f41"
+        },
+        {
+          "path": "docs/migration/evidence/m02/approved-dag.json",
+          "sha256": "4a84d41bc1395582f89795ea70fee8c58fadf212181bdcaceadfe5cbbb2ee8b2"
+        },
+        {
+          "path": "docs/migration/evidence/m02/implementation-spec.json",
+          "sha256": "49f5dd16bc37a123877988868f0175c99f7926ca37eb8c2a84e38abe2cbe2087"
+        },
+        {
+          "path": "docs/migration/evidence/m02/implementation.md",
+          "sha256": "18e5fa41bc1e77bc06dd987913df4a81933b96518b547b05062599e4e5a30ca7"
+        },
+        {
+          "path": "docs/migration/evidence/m02/implementation-audit.json",
+          "sha256": "55915a61d721d546754f683bdf22bb79c9b5c29e8877fb154213da19f4e772e5"
+        },
+        {
+          "path": "docs/migration/evidence/m02/M02.I.json",
+          "sha256": "ba431c5949ae70afc01760548f10df16d1dc7e19a582a847224bc54abaf459e4"
+        },
+        {
+          "path": "docs/migration/evidence/m02/M02.V.json",
+          "sha256": "ef6c39bf1dc6b222684ab67801daec9da821786ddacf2c2ebd4a833452f98c49"
+        },
+        {
+          "path": "docs/migration/evidence/m02/transition.json",
+          "sha256": "797ae76ea24306ad511d28aa0a107183b3e827f9a2ae71b93c09a5bc5e6ab15d"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "M02.I",
+          "sha256": "f3afdaaf160d5122871daf9ca4c506fcd665da8e4e7271aef8fe8e4cae44e647"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        }
+      ],
+      "cells": [
+        {
+          "id": "m02.codec.node",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/point_paths_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 497.87858299999994,
+            "outputBytes": 721800,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/m02/logs/M02-codec.tap",
+            "sha256": "a0807551d311a192dd45fc844a5c4bbe5ce28a557658e379c29c22ea662db5d4"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "47ba882e46a5269c0d56b649cb886822d10f2429",
+        "subjectTree": "34a3eaa3371d9cda2b8060f2970c97465d797215",
+        "manifestSha256": "ef6c39bf1dc6b222684ab67801daec9da821786ddacf2c2ebd4a833452f98c49",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P05.I",
+      "manifestSha256": "30635388fb67bcdfbd530f4dcac56b67b183b9b417962ba47c2618de7a1b7c05",
+      "subject": {
+        "sha": "d7c519069307ce36ad2b082cb940a116c8b4d4d4",
+        "tree": "8d908c7467be91a7093af043908ea76eb0ea0d38"
+      },
+      "executionBase": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "evidenceCommit": "4aead6ffa6838535aaaccb233d71aebd7a521145",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/posix_flock.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/migration/local-mac-required-cells.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/migration/local-mac-required-cells.mjs",
+          "sha256": "29a89413bca3d45ba5089a2fb87d8f58803127a1c2bfef279b74040956ae313e"
+        },
+        {
+          "path": "tests_js/posix_flock.test.mjs",
+          "sha256": "f89624f536a745212383afe1e0fe5f0e6a133279629d879f8060a37de3bd6862"
+        },
+        {
+          "path": "docs/migration/evidence/p05/mac-dogfood-spec.json",
+          "sha256": "a048766236c975762694150083d92d820e7493d1c480fc5c0e680d4e2648ac38"
+        },
+        {
+          "path": "docs/migration/evidence/p05/mac-dogfood.md",
+          "sha256": "d1313f6563986192677f3bb5bdd22fd4cc54ab7f075907c196d5dcfd8877cb16"
+        },
+        {
+          "path": "docs/migration/evidence/p05/mac-dogfood-audit.json",
+          "sha256": "1e1c8d8ffea56a0c1cfeb83318153aaa2d03cd3bead3d91735d72f2386ff0bc0"
+        },
+        {
+          "path": "docs/migration/evidence/p05/P05.I.json",
+          "sha256": "30635388fb67bcdfbd530f4dcac56b67b183b9b417962ba47c2618de7a1b7c05"
+        },
+        {
+          "path": "docs/migration/evidence/p05/P05.V.json",
+          "sha256": "593ed4c9ef5bdc1ed2080793c138fa457de15194e7947f903f69fd055c36c10f"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        },
+        {
+          "id": "P02.V",
+          "sha256": "91e1ef277cab8bf4e8028a04d299b68c2db8a36acba7a7b8dcc169b09127e11f"
+        },
+        {
+          "id": "S04.I",
+          "sha256": "ba59a691548ecf9660ecc2131efd39abc7d9270533b3e47cfb0da536afc5c9db"
+        }
+      ],
+      "cells": [
+        {
+          "id": "p05.mac-dogfood.required-native",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/posix_flock.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 5130.304042000001,
+            "outputBytes": 113402,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p05/logs/mac-dogfood.tap",
+            "sha256": "1371493f68f8dfde63e50c87c1f0f3acce53278cabb572804f12bbdadf038d47"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "d7c519069307ce36ad2b082cb940a116c8b4d4d4",
+        "subjectTree": "8d908c7467be91a7093af043908ea76eb0ea0d38",
+        "manifestSha256": "30635388fb67bcdfbd530f4dcac56b67b183b9b417962ba47c2618de7a1b7c05",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P05.V",
+      "manifestSha256": "593ed4c9ef5bdc1ed2080793c138fa457de15194e7947f903f69fd055c36c10f",
+      "subject": {
+        "sha": "d7c519069307ce36ad2b082cb940a116c8b4d4d4",
+        "tree": "8d908c7467be91a7093af043908ea76eb0ea0d38"
+      },
+      "executionBase": "86d688dd72968ad0ca1bee2bef3140d33684461b",
+      "evidenceCommit": "4aead6ffa6838535aaaccb233d71aebd7a521145",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/posix_flock.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/migration/local-mac-required-cells.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/migration/local-mac-required-cells.mjs",
+          "sha256": "29a89413bca3d45ba5089a2fb87d8f58803127a1c2bfef279b74040956ae313e"
+        },
+        {
+          "path": "tests_js/posix_flock.test.mjs",
+          "sha256": "f89624f536a745212383afe1e0fe5f0e6a133279629d879f8060a37de3bd6862"
+        },
+        {
+          "path": "docs/migration/evidence/p05/mac-dogfood-spec.json",
+          "sha256": "a048766236c975762694150083d92d820e7493d1c480fc5c0e680d4e2648ac38"
+        },
+        {
+          "path": "docs/migration/evidence/p05/mac-dogfood.md",
+          "sha256": "d1313f6563986192677f3bb5bdd22fd4cc54ab7f075907c196d5dcfd8877cb16"
+        },
+        {
+          "path": "docs/migration/evidence/p05/mac-dogfood-audit.json",
+          "sha256": "1e1c8d8ffea56a0c1cfeb83318153aaa2d03cd3bead3d91735d72f2386ff0bc0"
+        },
+        {
+          "path": "docs/migration/evidence/p05/P05.I.json",
+          "sha256": "30635388fb67bcdfbd530f4dcac56b67b183b9b417962ba47c2618de7a1b7c05"
+        },
+        {
+          "path": "docs/migration/evidence/p05/P05.V.json",
+          "sha256": "593ed4c9ef5bdc1ed2080793c138fa457de15194e7947f903f69fd055c36c10f"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P05.I",
+          "sha256": "6c58742b594d5ca54b6dc59cfc29578b10803d2a9ea0ae3feef426062d4739c7"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        }
+      ],
+      "cells": [
+        {
+          "id": "p05.mac-dogfood.required-native",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/posix_flock.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 5130.304042000001,
+            "outputBytes": 113402,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p05/logs/mac-dogfood.tap",
+            "sha256": "1371493f68f8dfde63e50c87c1f0f3acce53278cabb572804f12bbdadf038d47"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "d7c519069307ce36ad2b082cb940a116c8b4d4d4",
+        "subjectTree": "8d908c7467be91a7093af043908ea76eb0ea0d38",
+        "manifestSha256": "593ed4c9ef5bdc1ed2080793c138fa457de15194e7947f903f69fd055c36c10f",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "S04.V",
+      "manifestSha256": "726cfa338470d125d068eff3d16d5b78b5161ec2573c8b1beee34913146738d4",
+      "subject": {
+        "sha": "80224dae9194bfc71c15686bdb8cf3f2349d59f2",
+        "tree": "3dd28f8fc4de698daa69af158cb8c0797e6f02bb"
+      },
+      "executionBase": "b0f3903b5eac32e8337649a7768de3697768c6d0",
+      "evidenceCommit": "e83ab9aadc076016a34253f012f20fcc5ab0fdee",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/review-lock.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-06.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-s04.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "docs/migration/python-point-persistence-port.md"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/persisted-json-core.js"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "runtime/contracts/persisted-json.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/contracts/persistence-exception.js"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "runtime/store/atomic-write-json.js"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "runtime/store/jsonl-history.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "runtime/store/point-persistence.js"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "runtime/store/private-filesystem.js"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/persisted-json-core.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "src/contracts/persisted-json.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/contracts/persistence-exception.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "src/store/atomic-write-json.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "src/store/jsonl-history.ts"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "src/store/point-persistence.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "src/store/private-filesystem.ts"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/atomic_write_json_ts_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/jsonl_history_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/jsonl_json_ts.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/persisted_json_ts.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "src/contracts/persisted-json.ts",
+          "sha256": "c83b2863ed4f8ead2e592e8fdf24fb9a615273680a50842fec093cffe9a9a1a5"
+        },
+        {
+          "path": "src/contracts/jsonl-json.ts",
+          "sha256": "5bc28e86d18f4a998d3f90b21ef02a7a618adc6627f20850a64592cdd628a76a"
+        },
+        {
+          "path": "src/store/private-filesystem.ts",
+          "sha256": "e27595f544bf23dc7f2f9017ce704cb4f8817af5c3003c75c3e1d7708b463f22"
+        },
+        {
+          "path": "src/store/atomic-write-json.ts",
+          "sha256": "d265f1febf7b4b80de9e383e78f62f186784c67e04f9053dc90b3e2aa7bce1f3"
+        },
+        {
+          "path": "src/store/jsonl-history.ts",
+          "sha256": "d77cacf1a00c49f4faae2bf47a937a29ab08443125dd58f97605f634bf57db88"
+        },
+        {
+          "path": "src/contracts/persisted-json-core.ts",
+          "sha256": "3524aef4c2d1ed0c2a1d1ca2c9682ff179caf2d2d38c7291c219e651957cee73"
+        },
+        {
+          "path": "src/contracts/persistence-exception.ts",
+          "sha256": "0ff8823dae0e711b4c635bc4a83aae4570a618432cf17b250ea7d8bb06c67319"
+        },
+        {
+          "path": "src/store/point-persistence.ts",
+          "sha256": "e230dc1b12e8ad5f6c5c4287420ac1c64fd8f82246bfdd21daff9fd1030d3889"
+        },
+        {
+          "path": "runtime/contracts/persisted-json.js",
+          "sha256": "22af2de52d9db932a0f8f173e4a8230e9ee223e0c62c2b5f32e6c14564a19f5c"
+        },
+        {
+          "path": "runtime/contracts/jsonl-json.js",
+          "sha256": "ee022369d9715ad54fdc984945132e3430df273cbe0326bfb572932d8303fdc9"
+        },
+        {
+          "path": "runtime/store/private-filesystem.js",
+          "sha256": "cece5e0a6c7797a22adc26341bd4d704557dbd6510364d2499a16b4f82c9b3c4"
+        },
+        {
+          "path": "runtime/store/atomic-write-json.js",
+          "sha256": "eba8a1f3010576d1d74f4f5b585dac70a52ccc4e5d66e8be441134cc00afada8"
+        },
+        {
+          "path": "runtime/store/jsonl-history.js",
+          "sha256": "a90b3ec0e54b74d3b3fa6139cad7a34f9e7f1cb89b90982809ca04d437bb7627"
+        },
+        {
+          "path": "runtime/contracts/persisted-json-core.js",
+          "sha256": "5a6aba967b58c029aaff613c899ebb675f7c8e6aebb037802a44c4ab9614e77c"
+        },
+        {
+          "path": "runtime/contracts/persistence-exception.js",
+          "sha256": "fdadb753373300b02aec11b399aa331d8b0d6296b650ff2d52c941a35218f1e6"
+        },
+        {
+          "path": "runtime/store/point-persistence.js",
+          "sha256": "251d9b438da600291447a4c64c836d7980ffa814e008a0822e3b761b4b5541a6"
+        },
+        {
+          "path": "tests_js/persisted_json_ts.test.mjs",
+          "sha256": "620c51b106bc4016ee472f158e7f66a5a68831c037b98cc9bb9df685ebcfc203"
+        },
+        {
+          "path": "tests_js/jsonl_json_ts.test.mjs",
+          "sha256": "c7d2c8959068ef81323fad52b5ece414343f42eb46ac7ef53b0477f7a4374a13"
+        },
+        {
+          "path": "tests_js/atomic_write_json_ts_support.mjs",
+          "sha256": "efb21dd9587c51a6d1e535aeb09a4a24f5dc31f1d71b4316367039b3f76c3b63"
+        },
+        {
+          "path": "tests_js/jsonl_history_support.mjs",
+          "sha256": "f55b61d8d6f82ca2c99d4df7c46774b8c93588f84fb2aa70a95235e4f65d7e41"
+        },
+        {
+          "path": "docs/migration/python-point-persistence-port.md",
+          "sha256": "be5768d4ff0a0610cd1bda2db59bfde8f39f2450687d95a4022c524987db7649"
+        },
+        {
+          "path": "docs/migration/evidence/s04/implementation.md",
+          "sha256": "9d2a5f65c58ee828e531ebbce626a09ed4467d37fa7cd7351c7ee64e6434d612"
+        },
+        {
+          "path": "docs/migration/evidence/s04/implementation-audit.json",
+          "sha256": "cacef81b946b4fb0e8f69a886cba24307629ac7799becd508ccfa5eb77b0080d"
+        },
+        {
+          "path": "docs/migration/evidence/s04/S04.I.json",
+          "sha256": "40c6a5f49420b5cc08be4883bf127538dc7acf26f88b7cdad58eaabd992ee7a6"
+        },
+        {
+          "path": "docs/migration/evidence/s04/S04.V.json",
+          "sha256": "726cfa338470d125d068eff3d16d5b78b5161ec2573c8b1beee34913146738d4"
+        },
+        {
+          "path": "config/migration/source-catalog-06.json",
+          "sha256": "ddc83cc609b3d33d56f2793d4d87db257782a7d276a8c62fe5ff4719df72ab0b"
+        },
+        {
+          "path": "config/migration/source-catalog-s04.json",
+          "sha256": "ce90c0c4da35ff065eab6b77c5cd68aa1c758a5d1dcb207360e7711364ba48b3"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "S04.I",
+          "sha256": "ba59a691548ecf9660ecc2131efd39abc7d9270533b3e47cfb0da536afc5c9db"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        },
+        {
+          "id": "P05.V",
+          "sha256": "5595b6b53e804da297c2e0c770b57b7d6fe98d1f0f3d4d32beab47e431d7f616"
+        }
+      ],
+      "cells": [
+        {
+          "id": "s04.implementation.persisted",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/persisted_json_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 341.532083,
+            "outputBytes": 44213,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s04/logs/S04-IV-persisted.tap",
+            "sha256": "8edfebd43fe1bc0a5be89a8e9e8ce57f6f6249e588a68f261f4aa88162d34f5e"
+          }
+        },
+        {
+          "id": "s04.implementation.jsonl",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/jsonl_json_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 278.229333,
+            "outputBytes": 30171,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s04/logs/S04-IV-jsonl.tap",
+            "sha256": "1928b5d9edc40b05c77e74b06bc4640721390aede57c2cbe895c7026cf88937b"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "80224dae9194bfc71c15686bdb8cf3f2349d59f2",
+        "subjectTree": "3dd28f8fc4de698daa69af158cb8c0797e6f02bb",
+        "manifestSha256": "726cfa338470d125d068eff3d16d5b78b5161ec2573c8b1beee34913146738d4",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "U01.R",
+      "manifestSha256": "c8720cfe3445721d22212336d5e6d767827d2e8603580a2d3f3901c26a9c9a42",
+      "subject": {
+        "sha": "03ff8022237036fc23567a1a4557231087a9ecf8",
+        "tree": "b3aeb73e30090ca361c599820e120ea16be3f763"
+      },
+      "executionBase": "dd59933b2485d9ddc9089df23addbce8b6610158",
+      "evidenceCommit": "28c007d955ef5f932ffb8fc153723336c27b6241",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/workspace_profile_helpers_reference.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tests_js/workspace_profile_helpers_reference.test.mjs",
+          "sha256": "030cd5825218c8e881b847b6e5a5e288d2eda1a95ca5cd6ee56b621949735bc7"
+        },
+        {
+          "path": "docs/migration/evidence/u01-reference/reference-spec.json",
+          "sha256": "d24dafa72ff44c9a69ad36c4fa2a38aaab8c33df6cb59c0b89b7a166aca9ffd9"
+        },
+        {
+          "path": "docs/migration/evidence/u01-reference/reference-plan.md",
+          "sha256": "c9911976541cd7ade1a6d417f730acdb7e582d4fc977ea910012348956778396"
+        },
+        {
+          "path": "docs/migration/evidence/u01-reference/reference-audit.json",
+          "sha256": "a52796cb28a521c0443f50812f1b9e759fcf2e3310410b02c10af94dd452549d"
+        },
+        {
+          "path": "docs/migration/evidence/u01-reference/U01.R.json",
+          "sha256": "c8720cfe3445721d22212336d5e6d767827d2e8603580a2d3f3901c26a9c9a42"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        }
+      ],
+      "cells": [
+        {
+          "id": "U01-reference-workspace_activity_helpers_reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_activity_helpers_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 51.886250000000004,
+            "outputBytes": 1566,
+            "tests": 6,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/ui/logs/U01-reference-workspace_activity_helpers_reference.tap",
+            "sha256": "0097aad427fee0fdb1097fab05b8a09de043a3c616bba663ed9b1e0ed432e986"
+          }
+        },
+        {
+          "id": "U01-reference-workspace_answer_helpers_reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_answer_helpers_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 52.81724999999999,
+            "outputBytes": 1071,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/ui/logs/U01-reference-workspace_answer_helpers_reference.tap",
+            "sha256": "6307a229e2802935b6c7344b4b438cc87da65baa5fda13d498c34fb9dd5f1f32"
+          }
+        },
+        {
+          "id": "U01-reference-workspace_profile_helpers_reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_profile_helpers_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 55.38704200000001,
+            "outputBytes": 2596,
+            "tests": 11,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/ui/logs/U01-reference-workspace_profile_helpers_reference.tap",
+            "sha256": "248e88e61835829b3a541a06c03cac8c4e62d34bc034ae9f007d9f3752b2ab1f"
+          }
+        },
+        {
+          "id": "U01-reference-workspace_trash_reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_trash_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 53.920457999999996,
+            "outputBytes": 1709,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/ui/logs/U01-reference-workspace_trash_reference.tap",
+            "sha256": "4db3e9273aebff4456d027c2cd7cfe941adc012fdf63883d2969e0d5b3fb5576"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "03ff8022237036fc23567a1a4557231087a9ecf8",
+        "subjectTree": "b3aeb73e30090ca361c599820e120ea16be3f763",
+        "manifestSha256": "c8720cfe3445721d22212336d5e6d767827d2e8603580a2d3f3901c26a9c9a42",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "U02.R",
+      "manifestSha256": "213a36a7650d459f2256f8503540114b6fb23a357f9c542bc830173ef7083622",
+      "subject": {
+        "sha": "79c8ba91bc6b5a9c6c3adb6d629fff8fa6d8968d",
+        "tree": "421fc5e0777c6dc265b4158246448139af994644"
+      },
+      "executionBase": "56b51aafaf57ff0e29299496dae4dbd3d56b8d95",
+      "evidenceCommit": "875f6cefac410af98f8508a387c0bd2236087724",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/workspace_helpers.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/workspace_infrastructure_reference_support.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tests_js/workspace_helpers.test.mjs",
+          "sha256": "752391347ac67ab2624ab3b5ad7297f6e12c618de8f5502fefa2d3636780bb4e"
+        },
+        {
+          "path": "tests_js/workspace_infrastructure_reference_support.mjs",
+          "sha256": "91a69f3e8267076e31ee705546018965ec32b342fcb65f443426864913a62810"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference/reference-spec.json",
+          "sha256": "1e3fee60e79fa46deaf2553e627a00f8c92a407f70786cdcc4cebb7ca4db4b74"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference/reference-plan.md",
+          "sha256": "077603d1a188510ad6f8eb2a553d193eb51e8b180ecb07f91a26ab661e590644"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference/reference-audit.json",
+          "sha256": "f81e58856316c802ebf99919ec5e2d156ceb5127dfdd6f5009616a5f02e50b67"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference/U02.R.json",
+          "sha256": "6b4d9682261ba2055c98b3ed025b1129de9ac8f58a5b04e718389be36630086d"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference-v2/reference-spec.json",
+          "sha256": "c035eab70585299472b347fd109e988dc16f460fea89a3d2c49b39206b4417a2"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference-v2/reference-audit.json",
+          "sha256": "f0c7ad117d26e872af0e479e9e497a7af1b57cfabcd98d1ea9a664f938404be8"
+        },
+        {
+          "path": "docs/migration/evidence/u02-reference-v2/U02.R.json",
+          "sha256": "213a36a7650d459f2256f8503540114b6fb23a357f9c542bc830173ef7083622"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        },
+        {
+          "id": "M01.V",
+          "sha256": "6614cc8c0643fe031eff89a6363e0561b60ec3bb05e703050ef8e3457e098cba"
+        }
+      ],
+      "cells": [
+        {
+          "id": "U02-original-reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_helpers.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 222.81575,
+            "outputBytes": 5118,
+            "tests": 24,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/ui/logs/U02-original-reference.tap",
+            "sha256": "0683fbf88e25f0783bb7152f9f4e8c54be3454724fcc2e205b266e54ce0f1c7a"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "79c8ba91bc6b5a9c6c3adb6d629fff8fa6d8968d",
+        "subjectTree": "421fc5e0777c6dc265b4158246448139af994644",
+        "manifestSha256": "213a36a7650d459f2256f8503540114b6fb23a357f9c542bc830173ef7083622",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "S05.domain3.R",
+      "manifestSha256": "e62c2412222f07b6d0e781d2cabf35c20d17e1918a0771e515a990caffa9dbc2",
+      "subject": {
+        "sha": "0c166867386d5c37974fdc0fa8f9f3610fc333da",
+        "tree": "9363780eadf273e1213d20189f7a7e0241ab3ecb"
+      },
+      "executionBase": "6a8e302f1d264022e8e2288f736697283153b177",
+      "evidenceCommit": "43ec22a8476e76c5dfccc4ece31237d5f72ede93",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/test-matrix.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_task_loader.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/point_paths_domain_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/point_paths_reference.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/resume_modified_at_reference.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/contracts/point-path-domain/fixtures.py"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/contracts/point-path-domain/reference.py"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/contracts/point-path-domain/support.py"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/evidence-io.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/contracts/point-path-domain/reference.py",
+          "sha256": "2580ea18f09f6b1950e8824a0692f27c298adec77fef7a2e3159f044d889799e"
+        },
+        {
+          "path": "tools/contracts/point-path-domain/fixtures.py",
+          "sha256": "e2cc816f3dd3bda5a4595a762c15b52e85a981bb8bd62811cb279a423c1bcff0"
+        },
+        {
+          "path": "tools/contracts/point-path-domain/support.py",
+          "sha256": "49b3c22ecf792354f8b4ad42a6bc990a93cb3a36b46d3c2cd8384a7a8f8dfa92"
+        },
+        {
+          "path": "tests_js/resume_modified_at_reference.test.mjs",
+          "sha256": "aee7183a79dd4bc4edbed70adbcbb964ebaf0a8f10d14274b32e679f05b07b40"
+        },
+        {
+          "path": "tests_js/point_paths_domain_support.mjs",
+          "sha256": "2687af23349e267f65a7a741938185f9da24aab7a7e3e75d77f132f032df0863"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v2/reference-spec.json",
+          "sha256": "28a8cb3a0241240cd2fafb7ee2599e5bf5dbd23231073e1278bc48d29f53a045"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v2/reference-plan.md",
+          "sha256": "a13ded6acb7563f5a908507f71ade18b89ae87c224332bb9c0679dfd78a24032"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v2/reference-audit.json",
+          "sha256": "cd91d87e12e0e7617b9f6162438d745f2d03c6c01ad90548fc678edc28c0ca34"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v2/S05.domain.R.json",
+          "sha256": "5bd2aa32fd588a3e38b1666a9468324390fa83921bc86a4a0dc9477cf8ca26b4"
+        },
+        {
+          "path": "config/test-matrix.json",
+          "sha256": "e8a76ff75921263090954be94f8749dcdcc99f86a895e83d2dabaa925d6d8374"
+        },
+        {
+          "path": "tests_js/point_paths_reference.test.mjs",
+          "sha256": "adadd2a0a89ee3d687041b76a277d1d42da94011898ceb627b15ccc24b1995f8"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v3/reference-spec.json",
+          "sha256": "9b32615765447aea98cb43c79070bfb235be5f299d8990ed98d062380e2053ec"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v3/reference-audit.json",
+          "sha256": "a3f7b6595574ae4daf7c2b148a1b4b5521202233d984b4beba7d10fc4f1591a5"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v3/S05.domain2.R.json",
+          "sha256": "17181c0ad2466010335c61f96107e999b446e5033b0eb28c66f7a2dee6560916"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v3/reference-dag.json",
+          "sha256": "4a0e8f9022f8a47d719f83d211f86a7fee5331182cd23e20e14a91c03a3a96b2"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v3/reference-transition.json",
+          "sha256": "59d57f7837ddc5846fbf66ac8cac2abc173c652655016b48b5ad25c90858b0a2"
+        },
+        {
+          "path": "tools/migration/evidence-io.mjs",
+          "sha256": "b515ab42b60270fd8282af1bf01a9b44b3de6a909ff9e6f892110d02ab2eb5d6"
+        },
+        {
+          "path": "tests_js/migration_task_loader.test.mjs",
+          "sha256": "2c2cf66310e73883d2417b4c5dc5d929da4fa879d98837326962271437f5d106"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v4/reference-spec.json",
+          "sha256": "988b2f3eaa01e8baa8a7f11128bc27ca2aac6fecd44fb8c75f7ea6aabd9e089b"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v4/reference-audit.json",
+          "sha256": "5bf64e3737167503092007a65132173bf347d7dc5b1d28846dd12b70d5233bdf"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v4/S05.domain3.R.json",
+          "sha256": "e62c2412222f07b6d0e781d2cabf35c20d17e1918a0771e515a990caffa9dbc2"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v4/reference-dag.json",
+          "sha256": "8b3a19b4d4d7c7421225a9f5061dc14d65643198c153265d98cc729eae8d3aa8"
+        },
+        {
+          "path": "docs/migration/evidence/s05-domain-v4/reference-transition.json",
+          "sha256": "1f509c17d9137c576c966742885200ea5e506d55d8cbf52f7d75e515c88ab3d3"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        },
+        {
+          "id": "S05.R",
+          "sha256": "304ce89bda483fb111648c8de905bb61a55c50601cf9b43ecd07e5a5150f6a9e"
+        },
+        {
+          "id": "M02.V",
+          "sha256": "a953288b93e03dde8d6d7f05a1980ed4ceee081d41c267fead57c1ed1176bad1"
+        },
+        {
+          "id": "S04.V",
+          "sha256": "c308d9f21efcb704215f9e78fb1a5aaf3dc597204282600238547e5936a70f1d"
+        },
+        {
+          "id": "P12.V",
+          "sha256": "ec247a75c7a3544e39e8b3114455002a5eeaa7a8f987645856bce959b6f8abe9"
+        },
+        {
+          "id": "M01.V",
+          "sha256": "6614cc8c0643fe031eff89a6363e0561b60ec3bb05e703050ef8e3457e098cba"
+        },
+        {
+          "id": "U01.R",
+          "sha256": "dc447d50c8b26c1be1381134f3017f1161231564d667f4a1eb8d7d595ec489f2"
+        },
+        {
+          "id": "U02.R",
+          "sha256": "e77d63779f755df00e58cfb66674f9d3494e22c3b292e24abe3178dac01d33dd"
+        },
+        {
+          "id": "P03.retry2.V",
+          "sha256": "bf8967b20ce30e7541f93eeeb4697ce5603b2aeae397701b57e60f5a8c31d43b"
+        }
+      ],
+      "cells": [
+        {
+          "id": "s05.domain.reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/resume_modified_at_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 768.800834,
+            "outputBytes": 432286,
+            "tests": 10,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s05-domain-v4/logs/s05.domain.reference.tap",
+            "sha256": "9af5923288c7383f38aec601617b4f8b3e6e3d1874065cf0c9d9f85070a2ce88"
+          }
+        },
+        {
+          "id": "s05.domain2.registration",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/point_paths_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 444.33124999999995,
+            "outputBytes": 719958,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s05-domain-v4/logs/s05.domain2.registration.tap",
+            "sha256": "2226f18626f62436186ecd30ddf1777c0d6a7109e9a4a8f498020e90655be60d"
+          }
+        },
+        {
+          "id": "s05.domain3.cache",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_task_loader.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 15335.635333000002,
+            "outputBytes": 3703,
+            "tests": 15,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/s05-domain-v4/logs/cache.tap",
+            "sha256": "351776bb4af195fcdbd56761b565c8404534c0b4acc67adefaf8368ba080010e"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "jsonl_review",
+        "reviewer": "hooks_audit",
+        "subjectSha": "0c166867386d5c37974fdc0fa8f9f3610fc333da",
+        "subjectTree": "9363780eadf273e1213d20189f7a7e0241ab3ecb",
+        "manifestSha256": "e62c2412222f07b6d0e781d2cabf35c20d17e1918a0771e515a990caffa9dbc2",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P03.ui-tests.I",
+      "manifestSha256": "99d0c4b86ad25bda1094f85c1c151a881a8e49dd4a50abf84a3f1bfe8e514d2c",
+      "subject": {
+        "sha": "e3feb174420027e6cc84e3894d53f398961e6a23",
+        "tree": "a7e76352af25a349e7fa7cd87f71928490d72a22"
+      },
+      "executionBase": "061d37afb5bc1222e905c39653a51269a6a40c2d",
+      "evidenceCommit": "f4b010b39394d120bdce250fc8b5d4f6770b4afa",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_test_bindings.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/test-bindings.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/migration/test-bindings.mjs",
+          "sha256": "b64c1222a23a6ce3a53a5f90d8069c4fc2cefbfaadcd1b24f28b4075f552e3f6"
+        },
+        {
+          "path": "tests_js/migration_test_bindings.test.mjs",
+          "sha256": "55d6912e80386c2b9cb8787962f28686547b9f441509fe893182cad486d32500"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/implementation-spec.json",
+          "sha256": "45dae81595565efe9e5f6c155933ded55db718ef515269ad8c4af25a774243be"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/implementation-plan.md",
+          "sha256": "81344b33891f76083ecfe1fa96a2bc626694cabb9fedc1b7db5a4c16c0fa6112"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/integration-dag.json",
+          "sha256": "8a1f7e8fbbea1e538355a47dda29dcc8c8ccb72cab475f2ddcc5cb32b2301127"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/integration-transition.json",
+          "sha256": "bc337c0c686fbe4d6d557226394c8cef3abeb99bdb14003a9abfcfc885543290"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.I.audit.json",
+          "sha256": "169529b733845a92753f009c740d9c03931591577548dde3869a9e589143c5ab"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.V.audit.json",
+          "sha256": "5213e47d6b6b760aa740cb0d3a765a51b12e426cbe6d49c8a010d9f5cc25d890"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.I.json",
+          "sha256": "99d0c4b86ad25bda1094f85c1c151a881a8e49dd4a50abf84a3f1bfe8e514d2c"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.V.json",
+          "sha256": "3d80dc21ffe4da5cfe251d4e77f9aaa18bba578b504a32c2957cd64961438524"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "S05.domain3.R",
+          "sha256": "f1ad4adfc2754e01e991abbee61da569c3621f9735900281cf82d28150802095"
+        }
+      ],
+      "cells": [
+        {
+          "id": "P03.ui-tests.bindings",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_test_bindings.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 249.802209,
+            "outputBytes": 2698,
+            "tests": 11,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03-ui-tests/logs/P03.ui-tests.bindings.tap",
+            "sha256": "c0252caa9d7d0976e372278f97d82a1a2e19d635188844e465fd2e97a4069e8c"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "root",
+        "reviewer": "hooks_audit",
+        "subjectSha": "e3feb174420027e6cc84e3894d53f398961e6a23",
+        "subjectTree": "a7e76352af25a349e7fa7cd87f71928490d72a22",
+        "manifestSha256": "99d0c4b86ad25bda1094f85c1c151a881a8e49dd4a50abf84a3f1bfe8e514d2c",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "P03.ui-tests.V",
+      "manifestSha256": "3d80dc21ffe4da5cfe251d4e77f9aaa18bba578b504a32c2957cd64961438524",
+      "subject": {
+        "sha": "e3feb174420027e6cc84e3894d53f398961e6a23",
+        "tree": "a7e76352af25a349e7fa7cd87f71928490d72a22"
+      },
+      "executionBase": "061d37afb5bc1222e905c39653a51269a6a40c2d",
+      "evidenceCommit": "f4b010b39394d120bdce250fc8b5d4f6770b4afa",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_test_bindings.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/test-bindings.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "tools/migration/test-bindings.mjs",
+          "sha256": "b64c1222a23a6ce3a53a5f90d8069c4fc2cefbfaadcd1b24f28b4075f552e3f6"
+        },
+        {
+          "path": "tests_js/migration_test_bindings.test.mjs",
+          "sha256": "55d6912e80386c2b9cb8787962f28686547b9f441509fe893182cad486d32500"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/implementation-spec.json",
+          "sha256": "45dae81595565efe9e5f6c155933ded55db718ef515269ad8c4af25a774243be"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/implementation-plan.md",
+          "sha256": "81344b33891f76083ecfe1fa96a2bc626694cabb9fedc1b7db5a4c16c0fa6112"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/integration-dag.json",
+          "sha256": "8a1f7e8fbbea1e538355a47dda29dcc8c8ccb72cab475f2ddcc5cb32b2301127"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/integration-transition.json",
+          "sha256": "bc337c0c686fbe4d6d557226394c8cef3abeb99bdb14003a9abfcfc885543290"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.I.audit.json",
+          "sha256": "169529b733845a92753f009c740d9c03931591577548dde3869a9e589143c5ab"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.V.audit.json",
+          "sha256": "5213e47d6b6b760aa740cb0d3a765a51b12e426cbe6d49c8a010d9f5cc25d890"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.I.json",
+          "sha256": "99d0c4b86ad25bda1094f85c1c151a881a8e49dd4a50abf84a3f1bfe8e514d2c"
+        },
+        {
+          "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.V.json",
+          "sha256": "3d80dc21ffe4da5cfe251d4e77f9aaa18bba578b504a32c2957cd64961438524"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P03.ui-tests.I",
+          "sha256": "1e1340d93f6faf3b14ce38f961d2c7ba60022f367c410470ebee295b7a4c5eb1"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        }
+      ],
+      "cells": [
+        {
+          "id": "P03.ui-tests.bindings",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_test_bindings.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 249.802209,
+            "outputBytes": 2698,
+            "tests": 11,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/p03-ui-tests/logs/P03.ui-tests.bindings.tap",
+            "sha256": "c0252caa9d7d0976e372278f97d82a1a2e19d635188844e465fd2e97a4069e8c"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "root",
+        "reviewer": "hooks_audit",
+        "subjectSha": "e3feb174420027e6cc84e3894d53f398961e6a23",
+        "subjectTree": "a7e76352af25a349e7fa7cd87f71928490d72a22",
+        "manifestSha256": "3d80dc21ffe4da5cfe251d4e77f9aaa18bba578b504a32c2957cd64961438524",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "U01.I",
+      "manifestSha256": "b5a00f661d90611a7aa230dae4dbd61ac24e6c7a8107ff2a2465d9aecd8a1ba4",
+      "subject": {
+        "sha": "e97ac8b1731ce630f3d9dbd3f24852b1743c9d21",
+        "tree": "0c3b2443eb7c47d8869f554733f923b3047ff17c"
+      },
+      "executionBase": "b11131b23aae76e102313668ad3ec0f77efcf771",
+      "evidenceCommit": "f4b010b39394d120bdce250fc8b5d4f6770b4afa",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/workspace_resume_view_ts.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "runtime/workspace-ui/lib/activity-view.js",
+          "sha256": "417ff0ff0ddb43fb34082353f2e40635265f2071f497be928caa745273ff7ec7"
+        },
+        {
+          "path": "runtime/workspace-ui/lib/answer-view.js",
+          "sha256": "2588f374d9b3a00c1fbbc54d359daf9bea00367c624bc70d3092ca39d90c2573"
+        },
+        {
+          "path": "runtime/workspace-ui/lib/profile-view.js",
+          "sha256": "8be62aa24ba0c8a13811ec35a13b801318aa11dedbd1c511278f0982c1814afe"
+        },
+        {
+          "path": "runtime/workspace-ui/lib/resume-view.js",
+          "sha256": "c6cedcfe438c68e02275da36f06e4eaca5b2212275fc3ce9b898343f7a9c586a"
+        },
+        {
+          "path": "runtime/workspace-ui/lib/trash-view.js",
+          "sha256": "87e621b4f4ad389bbf428ced3a487d6f72d85c15c65096518257154c1ac7c836"
+        },
+        {
+          "path": "src/workspace-ui/lib/activity-view.ts",
+          "sha256": "779d7ee2c9e06c82595d021a1aed408e89bf138e7e0811049b886f23a9c58105"
+        },
+        {
+          "path": "src/workspace-ui/lib/answer-view.ts",
+          "sha256": "11ea6b2a9e9a2442e61f81e44f59a4090e66303edab436e1eef04024e19a5b01"
+        },
+        {
+          "path": "src/workspace-ui/lib/profile-view.ts",
+          "sha256": "9cd3886a190c9c44bb2a848879ecdda5ef0cf3260405f34f226c348f9600b5a0"
+        },
+        {
+          "path": "src/workspace-ui/lib/resume-view.ts",
+          "sha256": "5aa051a8e22bc217977f61ba15176ea6e5cbc1672752a0cfc48ba89c1fc725ab"
+        },
+        {
+          "path": "src/workspace-ui/lib/trash-view.ts",
+          "sha256": "902e583fd4a30b84969270ab0221edbe81cdd931178acc6f074f49614506c4eb"
+        },
+        {
+          "path": "tests_js/workspace_activity_helpers_ts.test.mjs",
+          "sha256": "5befdfa638ded9b1bdb6dfb779e5700c06f3fbb9b68dfde16ef04776d993315c"
+        },
+        {
+          "path": "tests_js/workspace_answer_helpers_ts.test.mjs",
+          "sha256": "b4998e1006fb0de5c8d7c5baba58bdba7e37d8dbf4bf9ef358c48d8bb8d15038"
+        },
+        {
+          "path": "tests_js/workspace_helpers_browser_ts.test.mjs",
+          "sha256": "3f9048a2205f28bc43478019ea446c8dba692d3ecb0b734f2fee5c8f7318c18d"
+        },
+        {
+          "path": "tests_js/workspace_profile_helpers_ts.test.mjs",
+          "sha256": "1a696737ffb9c71c56d12d380bca6de683448d56ee22055baf7efeb90da0a516"
+        },
+        {
+          "path": "tests_js/workspace_resume_view_ts.test.mjs",
+          "sha256": "0bdc1c6e1dec865e5ebb60dc6e168061f0a3722bc55fdce54a962c77523a585d"
+        },
+        {
+          "path": "tests_js/workspace_trash_view_ts.test.mjs",
+          "sha256": "69ca6f67d55e4b46a054d647997c10dd0e641d46a84857d4134171cb549a3756"
+        },
+        {
+          "path": "docs/migration/evidence/u01-core-port/implementation-spec.json",
+          "sha256": "d0356f27dd49af4525eb1120894ea3e80ba95159c06ab00ba552d8198428d9ca"
+        },
+        {
+          "path": "docs/migration/evidence/u01-core-port/implementation-plan.md",
+          "sha256": "2b628b6c9ccaebb6b6b4137d92393f06a8684050242098e5c0323ffb85a8834d"
+        },
+        {
+          "path": "docs/migration/evidence/u01-core-port/U01.I.audit.json",
+          "sha256": "141f0f364c5b7df8b0c669b017bb2a713cc89eca6184736e47e197783224ff3d"
+        },
+        {
+          "path": "docs/migration/evidence/u01-core-port/U01.V.audit.json",
+          "sha256": "354563364d9a3d68540ba3ba19b047b1716901e5eed3d0cb9a4cbbd473f7df18"
+        },
+        {
+          "path": "docs/migration/evidence/u01-core-port/U01.I.json",
+          "sha256": "b5a00f661d90611a7aa230dae4dbd61ac24e6c7a8107ff2a2465d9aecd8a1ba4"
+        },
+        {
+          "path": "docs/migration/evidence/u01-core-port/U01.V.json",
+          "sha256": "629c90ae12f11417832b548f4413a01e485d7dafa6069df5e2f5dfaab0bb2650"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "P00.V",
+          "sha256": "0b0ff9b9c44cce7c94b5b630f0c361bab1435780b64c96faf89f2d5bf2676627"
+        },
+        {
+          "id": "U01.R",
+          "sha256": "dc447d50c8b26c1be1381134f3017f1161231564d667f4a1eb8d7d595ec489f2"
+        }
+      ],
+      "cells": [
+        {
+          "id": "U01-reference-workspace_activity_helpers_reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_activity_helpers_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 58.67375,
+            "outputBytes": 1566,
+            "tests": 6,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_activity_helpers_reference.tap",
+            "sha256": "fccc1c072259b7e7c1d2930a7c7c3fab3b05c0ad5161ec3b1daa325d7704aaa9"
+          }
+        },
+        {
+          "id": "U01-reference-workspace_answer_helpers_reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_answer_helpers_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 55.47104199999998,
+            "outputBytes": 1074,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_answer_helpers_reference.tap",
+            "sha256": "364b5eb7e0f6421b74f9695fa3ab6394c78793681124cf16e98a5f2d2ae8c136"
+          }
+        },
+        {
+          "id": "U01-reference-workspace_profile_helpers_reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_profile_helpers_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 58.413625000000025,
+            "outputBytes": 2601,
+            "tests": 11,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_profile_helpers_reference.tap",
+            "sha256": "dab92830007c539290bd8e37a217438633e242cee554ec488c00826777caab45"
+          }
+        },
+        {
+          "id": "U01-reference-workspace_trash_reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_trash_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 58.44100000000003,
+            "outputBytes": 1709,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_trash_reference.tap",
+            "sha256": "f6ad5356c612b2de0601219d27d778d281a897f861ba90b8e8ee3a4cf5bb0557"
+          }
+        },
+        {
+          "id": "U01-differential-workspace_activity_helpers_ts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_activity_helpers_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 55.604333,
+            "outputBytes": 1021,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_activity_helpers_ts.tap",
+            "sha256": "2fff1ece19ada6c609228c306b0ec0a29d1aa8185ca1e86c2a2f000fba98edf1"
+          }
+        },
+        {
+          "id": "U01-differential-workspace_answer_helpers_ts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_answer_helpers_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 57.162582999999984,
+            "outputBytes": 1029,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_answer_helpers_ts.tap",
+            "sha256": "b872ae5f2aade40719f4859c4f096628a8c03dd54f8c7a7a1cacb466e3c4d505"
+          }
+        },
+        {
+          "id": "U01-differential-workspace_profile_helpers_ts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_profile_helpers_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 54.66879099999994,
+            "outputBytes": 973,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_profile_helpers_ts.tap",
+            "sha256": "d96084f597c3eec8e17ea60829e8a157b652fb962d35514f239abd2598f5099c"
+          }
+        },
+        {
+          "id": "U01-differential-workspace_resume_view_ts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_resume_view_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 56.792542000000026,
+            "outputBytes": 1760,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_resume_view_ts.tap",
+            "sha256": "f31e9ab17d49ce755d0358685216f4634afdcb7871d73c39af03c6c0e83887a9"
+          }
+        },
+        {
+          "id": "U01-differential-workspace_trash_view_ts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_trash_view_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 54.260625000000005,
+            "outputBytes": 1127,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_trash_view_ts.tap",
+            "sha256": "b942dd55f6f1a03fb3dd4fd924096c0f8e51fc90d4b87e576976091d9b8a1fb0"
+          }
+        },
+        {
+          "id": "U01-browser",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_helpers_browser_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 524.3162080000001,
+            "outputBytes": 433,
+            "tests": 1,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-browser.tap",
+            "sha256": "1f929d12137393e14314bf2e18a8dc558ccd5d96894aa3734d5baaae72285af2"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "e97ac8b1731ce630f3d9dbd3f24852b1743c9d21",
+        "subjectTree": "0c3b2443eb7c47d8869f554733f923b3047ff17c",
+        "manifestSha256": "b5a00f661d90611a7aa230dae4dbd61ac24e6c7a8107ff2a2465d9aecd8a1ba4",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "U01.V",
+      "manifestSha256": "629c90ae12f11417832b548f4413a01e485d7dafa6069df5e2f5dfaab0bb2650",
+      "subject": {
+        "sha": "e97ac8b1731ce630f3d9dbd3f24852b1743c9d21",
+        "tree": "0c3b2443eb7c47d8869f554733f923b3047ff17c"
+      },
+      "executionBase": "b11131b23aae76e102313668ad3ec0f77efcf771",
+      "evidenceCommit": "f4b010b39394d120bdce250fc8b5d4f6770b4afa",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/workspace_resume_view_ts.test.mjs"
+        }
+      ],
+      "files": [
+        {
+          "path": "runtime/workspace-ui/lib/activity-view.js",
+          "sha256": "417ff0ff0ddb43fb34082353f2e40635265f2071f497be928caa745273ff7ec7"
+        },
+        {
+          "path": "runtime/workspace-ui/lib/answer-view.js",
+          "sha256": "2588f374d9b3a00c1fbbc54d359daf9bea00367c624bc70d3092ca39d90c2573"
+        },
+        {
+          "path": "runtime/workspace-ui/lib/profile-view.js",
+          "sha256": "8be62aa24ba0c8a13811ec35a13b801318aa11dedbd1c511278f0982c1814afe"
+        },
+        {
+          "path": "runtime/workspace-ui/lib/resume-view.js",
+          "sha256": "c6cedcfe438c68e02275da36f06e4eaca5b2212275fc3ce9b898343f7a9c586a"
+        },
+        {
+          "path": "runtime/workspace-ui/lib/trash-view.js",
+          "sha256": "87e621b4f4ad389bbf428ced3a487d6f72d85c15c65096518257154c1ac7c836"
+        },
+        {
+          "path": "src/workspace-ui/lib/activity-view.ts",
+          "sha256": "779d7ee2c9e06c82595d021a1aed408e89bf138e7e0811049b886f23a9c58105"
+        },
+        {
+          "path": "src/workspace-ui/lib/answer-view.ts",
+          "sha256": "11ea6b2a9e9a2442e61f81e44f59a4090e66303edab436e1eef04024e19a5b01"
+        },
+        {
+          "path": "src/workspace-ui/lib/profile-view.ts",
+          "sha256": "9cd3886a190c9c44bb2a848879ecdda5ef0cf3260405f34f226c348f9600b5a0"
+        },
+        {
+          "path": "src/workspace-ui/lib/resume-view.ts",
+          "sha256": "5aa051a8e22bc217977f61ba15176ea6e5cbc1672752a0cfc48ba89c1fc725ab"
+        },
+        {
+          "path": "src/workspace-ui/lib/trash-view.ts",
+          "sha256": "902e583fd4a30b84969270ab0221edbe81cdd931178acc6f074f49614506c4eb"
+        },
+        {
+          "path": "tests_js/workspace_activity_helpers_ts.test.mjs",
+          "sha256": "5befdfa638ded9b1bdb6dfb779e5700c06f3fbb9b68dfde16ef04776d993315c"
+        },
+        {
+          "path": "tests_js/workspace_answer_helpers_ts.test.mjs",
+          "sha256": "b4998e1006fb0de5c8d7c5baba58bdba7e37d8dbf4bf9ef358c48d8bb8d15038"
+        },
+        {
+          "path": "tests_js/workspace_helpers_browser_ts.test.mjs",
+          "sha256": "3f9048a2205f28bc43478019ea446c8dba692d3ecb0b734f2fee5c8f7318c18d"
+        },
+        {
+          "path": "tests_js/workspace_profile_helpers_ts.test.mjs",
+          "sha256": "1a696737ffb9c71c56d12d380bca6de683448d56ee22055baf7efeb90da0a516"
+        },
+        {
+          "path": "tests_js/workspace_resume_view_ts.test.mjs",
+          "sha256": "0bdc1c6e1dec865e5ebb60dc6e168061f0a3722bc55fdce54a962c77523a585d"
+        },
+        {
+          "path": "tests_js/workspace_trash_view_ts.test.mjs",
+          "sha256": "69ca6f67d55e4b46a054d647997c10dd0e641d46a84857d4134171cb549a3756"
+        },
+        {
+          "path": "docs/migration/evidence/u01-core-port/implementation-spec.json",
+          "sha256": "d0356f27dd49af4525eb1120894ea3e80ba95159c06ab00ba552d8198428d9ca"
+        },
+        {
+          "path": "docs/migration/evidence/u01-core-port/implementation-plan.md",
+          "sha256": "2b628b6c9ccaebb6b6b4137d92393f06a8684050242098e5c0323ffb85a8834d"
+        },
+        {
+          "path": "docs/migration/evidence/u01-core-port/U01.I.audit.json",
+          "sha256": "141f0f364c5b7df8b0c669b017bb2a713cc89eca6184736e47e197783224ff3d"
+        },
+        {
+          "path": "docs/migration/evidence/u01-core-port/U01.V.audit.json",
+          "sha256": "354563364d9a3d68540ba3ba19b047b1716901e5eed3d0cb9a4cbbd473f7df18"
+        },
+        {
+          "path": "docs/migration/evidence/u01-core-port/U01.I.json",
+          "sha256": "b5a00f661d90611a7aa230dae4dbd61ac24e6c7a8107ff2a2465d9aecd8a1ba4"
+        },
+        {
+          "path": "docs/migration/evidence/u01-core-port/U01.V.json",
+          "sha256": "629c90ae12f11417832b548f4413a01e485d7dafa6069df5e2f5dfaab0bb2650"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "U01.I",
+          "sha256": "1b690f7597016cf922d61cf709ac829b064389809332686249666bf901d866bd"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        }
+      ],
+      "cells": [
+        {
+          "id": "U01-reference-workspace_activity_helpers_reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_activity_helpers_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 58.67375,
+            "outputBytes": 1566,
+            "tests": 6,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_activity_helpers_reference.tap",
+            "sha256": "fccc1c072259b7e7c1d2930a7c7c3fab3b05c0ad5161ec3b1daa325d7704aaa9"
+          }
+        },
+        {
+          "id": "U01-reference-workspace_answer_helpers_reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_answer_helpers_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 55.47104199999998,
+            "outputBytes": 1074,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_answer_helpers_reference.tap",
+            "sha256": "364b5eb7e0f6421b74f9695fa3ab6394c78793681124cf16e98a5f2d2ae8c136"
+          }
+        },
+        {
+          "id": "U01-reference-workspace_profile_helpers_reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_profile_helpers_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 58.413625000000025,
+            "outputBytes": 2601,
+            "tests": 11,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_profile_helpers_reference.tap",
+            "sha256": "dab92830007c539290bd8e37a217438633e242cee554ec488c00826777caab45"
+          }
+        },
+        {
+          "id": "U01-reference-workspace_trash_reference",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_trash_reference.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 58.44100000000003,
+            "outputBytes": 1709,
+            "tests": 7,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-reference-workspace_trash_reference.tap",
+            "sha256": "f6ad5356c612b2de0601219d27d778d281a897f861ba90b8e8ee3a4cf5bb0557"
+          }
+        },
+        {
+          "id": "U01-differential-workspace_activity_helpers_ts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_activity_helpers_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 55.604333,
+            "outputBytes": 1021,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_activity_helpers_ts.tap",
+            "sha256": "2fff1ece19ada6c609228c306b0ec0a29d1aa8185ca1e86c2a2f000fba98edf1"
+          }
+        },
+        {
+          "id": "U01-differential-workspace_answer_helpers_ts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_answer_helpers_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 57.162582999999984,
+            "outputBytes": 1029,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_answer_helpers_ts.tap",
+            "sha256": "b872ae5f2aade40719f4859c4f096628a8c03dd54f8c7a7a1cacb466e3c4d505"
+          }
+        },
+        {
+          "id": "U01-differential-workspace_profile_helpers_ts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_profile_helpers_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 54.66879099999994,
+            "outputBytes": 973,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_profile_helpers_ts.tap",
+            "sha256": "d96084f597c3eec8e17ea60829e8a157b652fb962d35514f239abd2598f5099c"
+          }
+        },
+        {
+          "id": "U01-differential-workspace_resume_view_ts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_resume_view_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 56.792542000000026,
+            "outputBytes": 1760,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_resume_view_ts.tap",
+            "sha256": "f31e9ab17d49ce755d0358685216f4634afdcb7871d73c39af03c6c0e83887a9"
+          }
+        },
+        {
+          "id": "U01-differential-workspace_trash_view_ts",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_trash_view_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 54.260625000000005,
+            "outputBytes": 1127,
+            "tests": 4,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-differential-workspace_trash_view_ts.tap",
+            "sha256": "b942dd55f6f1a03fb3dd4fd924096c0f8e51fc90d4b87e576976091d9b8a1fb0"
+          }
+        },
+        {
+          "id": "U01-browser",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_helpers_browser_ts.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 524.3162080000001,
+            "outputBytes": 433,
+            "tests": 1,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/u01-core-port/logs/U01-browser.tap",
+            "sha256": "1f929d12137393e14314bf2e18a8dc558ccd5d96894aa3734d5baaae72285af2"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "timestamp_tests",
+        "reviewer": "hooks_audit",
+        "subjectSha": "e97ac8b1731ce630f3d9dbd3f24852b1743c9d21",
+        "subjectTree": "0c3b2443eb7c47d8869f554733f923b3047ff17c",
+        "manifestSha256": "629c90ae12f11417832b548f4413a01e485d7dafa6069df5e2f5dfaab0bb2650",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "G02.hybrid2.I",
+      "manifestSha256": "5454e51e7015805e98eced1c6c1336662635bf88b5d23ebe9372b3088e583d92",
+      "subject": {
+        "sha": "fc3d12124024e749cf64ab1f076594759bc95ba6",
+        "tree": "ab1ccd90a2d20c798f5acd7eb4db94df7f23d922"
+      },
+      "executionBase": "3338e1d4f8ccdfc399a96460f60af3c80786886d",
+      "evidenceCommit": "49636c088c3535c71c583de6b550bb8b86f1c3c7",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/browser-app-01-surfaces.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/browser-app-02-surfaces.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/browser-app-03-surfaces.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/browser-g02-hybrid2-surfaces.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/http-g02-hybrid2-surfaces.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/review-lock.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-04.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-g02-hybrid.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "scripts/job_apply_workspace/__init__.py"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "scripts/job_apply_workspace/queries.py"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_browser_inventory.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/workspace_hybrid_assets_support.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/workspace_hybrid_browser_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/workspace_information_architecture.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/browser-exports.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/migration/browser-serving-map.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/check.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "workspace/lib/helpers-bridge.js"
+        }
+      ],
+      "files": [
+        {
+          "path": "scripts/job_apply_workspace/__init__.py",
+          "sha256": "4c0763d4d350961e76c819521cc7ac0f80cfdd5026ae9f161782b6664a7b21a4"
+        },
+        {
+          "path": "scripts/job_apply_workspace/queries.py",
+          "sha256": "a34746be015c28e2ba8e69cf1931e7dd6db1c9ca0167f3ebaf8e5cfe722a1673"
+        },
+        {
+          "path": "workspace/lib/helpers-bridge.js",
+          "sha256": "c475f199d60d10ab20e1a5da1829f8f3f1df94cb21226cbd1659824a3e4678b3"
+        },
+        {
+          "path": "tests_js/workspace_information_architecture.test.mjs",
+          "sha256": "4bae9c3fc5248168127350579ca9fe473d3b5927865619d7a282a2b10aa7796e"
+        },
+        {
+          "path": "tests_js/workspace_hybrid_assets_support.mjs",
+          "sha256": "1d95b01ca40a96748e09960ef8fb0df36067754685b4558d4e4d7446fa0a0e92"
+        },
+        {
+          "path": "tests_js/workspace_hybrid_browser_support.mjs",
+          "sha256": "b35fa3bbb4b4ca58ff7dfcb449b12b8c33290f3c59a0ef05e21ccf7ed65d9122"
+        },
+        {
+          "path": "config/migration/source-catalog-04.json",
+          "sha256": "5b766419f4ad630c51969174fb71d6c5bbd22c89b2436491aaa180cf1af45abc"
+        },
+        {
+          "path": "config/migration/source-catalog-g02-hybrid.json",
+          "sha256": "ac3805d3ae08643b2baf0966cb6e0113cf947d54cb4a34e1db5cd114d906de07"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid/implementation-spec.json",
+          "sha256": "feefef7b6ddd47c4e91d2f6eddd353a1b553050f6461739ad27b0e639785daf4"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid/implementation-plan.md",
+          "sha256": "4ca31ca17b8fdde3bddc961aaab56c7400b01733ec61ed60c978aa21061de3c8"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid/integration-dag.json",
+          "sha256": "ccba09337c8f31486b95687e99e6552dc3188395be30cccaed1268788d7ba651"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid/integration-transition.json",
+          "sha256": "2400b639ae74ea53163ad6e4c62628104e57e7da0658989916461ac0a2fa074b"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.I.audit.json",
+          "sha256": "ec7f4c96e682b17b47fdff00391208a4fa678c6960fdb126c54dfea01b2eeb61"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.V.audit.json",
+          "sha256": "1881ff906749f27a1c3062a155a04ca02f89a87c3c6d35248acb688f52c088df"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.I.json",
+          "sha256": "efe9190d952d7501c29caa88ba8335563a2e969db25830ae0b1b4ef1877bf7ef"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.V.json",
+          "sha256": "f2ac26d03336f5b3cff1409a1f64c640b4b0a5f8615613e2f975ece913f4c2e3"
+        },
+        {
+          "path": "tools/migration/browser-exports.mjs",
+          "sha256": "9715ef2a53927e5e9f026cf08b9c91ea3baa9900860fd1a6c7845c72a2a320bb"
+        },
+        {
+          "path": "tools/migration/check.mjs",
+          "sha256": "e242cd3c20b96c572adcf785eac910b3504375a4df26c764601fea937ae94f26"
+        },
+        {
+          "path": "tools/migration/browser-serving-map.mjs",
+          "sha256": "395db59e48f6a68e40e1b2e213eafdf49ede0e19682267e19cc92e1aac4699e0"
+        },
+        {
+          "path": "tests_js/migration_browser_inventory.test.mjs",
+          "sha256": "c377e1fd228df0aeefb8629f10fce634b13b4b7606ab3c135270e9f3d510eaa1"
+        },
+        {
+          "path": "config/migration/browser-app-01-surfaces.json",
+          "sha256": "3b7315fda4337f14fa1de7e6542556b6afd36c47f73a3401368f1890c3a6b133"
+        },
+        {
+          "path": "config/migration/browser-app-02-surfaces.json",
+          "sha256": "04f75994f9ce9732edffb10b51e7d6c54c6e95b1dd93c1146f7fccc4095107db"
+        },
+        {
+          "path": "config/migration/browser-app-03-surfaces.json",
+          "sha256": "65730fd0d5a3c2143462c760a60588458ab8814f2061757f7ed031380208593f"
+        },
+        {
+          "path": "config/migration/browser-g02-hybrid2-surfaces.json",
+          "sha256": "7c8b97fc5cd38521af6a46e198d54bbfccde331bdc7bcf2a40afbf4a99b88a64"
+        },
+        {
+          "path": "config/migration/http-g02-hybrid2-surfaces.json",
+          "sha256": "9807b8eb1bf6dbb680643acef90693183628bf1d14dad4e78f874390fb7f070a"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/implementation-spec.json",
+          "sha256": "4bbff10626b5cc8eec06a926422b4b5a960e484853b5e18ccf7a54ce058a7c38"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/implementation-plan.md",
+          "sha256": "e4903c7ef9de375d0f7d0bd5495417a76e2568bfd0aa6346e9ca340cfc7a770e"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/integration-dag.json",
+          "sha256": "938e37d2d733b99d5eeba415007398c8e60867a1fde0be597b1d38a4b1283273"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/integration-transition.json",
+          "sha256": "b264ab7dd2b74831a8ad8147c287d43544759dbaf0f913d251be68e4ee71e3d2"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/G02.hybrid2.I.audit.json",
+          "sha256": "49021a4346bec0659a508080469deda17a3f3ae8c3f818b450110fdb3d47c698"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/G02.hybrid2.V.audit.json",
+          "sha256": "2662ecbc6919d5f206f288f9d63cceeb934fc0068e239852351714f668aaa980"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/G02.hybrid2.I.json",
+          "sha256": "5454e51e7015805e98eced1c6c1336662635bf88b5d23ebe9372b3088e583d92"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/G02.hybrid2.V.json",
+          "sha256": "5d3e3d67e236a9cbd76a060b21784464414c1133215c70f23d905f0debccc57d"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "U01.V",
+          "sha256": "7735207adbf5d517da228138c1045dc239b4fc44c37bb1d748b27e98e9bb2fbc"
+        },
+        {
+          "id": "P03.ui-tests.V",
+          "sha256": "b8e40a508d07616fbef20382641ef91bf745e1d4898eb58e085e9e10fa832fac"
+        }
+      ],
+      "cells": [
+        {
+          "id": "g02.hybrid.browser-assets",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_information_architecture.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 4991.144708,
+            "outputBytes": 3013,
+            "tests": 6,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/g02-hybrid2/logs/g02.hybrid.browser-assets.tap",
+            "sha256": "d9776f6f186e6578137c076d9b9206f7ffcb1db21b95e23899af8c567bda8e23"
+          }
+        },
+        {
+          "id": "g02.hybrid2.browser-inventory",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_browser_inventory.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 190.95241599999918,
+            "outputBytes": 1991,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/g02-hybrid2/logs/browser-inventory.tap",
+            "sha256": "5321db8f37914defa4b16a93de6662d4622677374ec603cbd1b9bafa533d679d"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "root",
+        "reviewer": "hooks_audit",
+        "subjectSha": "fc3d12124024e749cf64ab1f076594759bc95ba6",
+        "subjectTree": "ab1ccd90a2d20c798f5acd7eb4db94df7f23d922",
+        "manifestSha256": "5454e51e7015805e98eced1c6c1336662635bf88b5d23ebe9372b3088e583d92",
+        "decision": "approved"
+      },
+      "status": "passed"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "G02.hybrid2.V",
+      "manifestSha256": "5d3e3d67e236a9cbd76a060b21784464414c1133215c70f23d905f0debccc57d",
+      "subject": {
+        "sha": "fc3d12124024e749cf64ab1f076594759bc95ba6",
+        "tree": "ab1ccd90a2d20c798f5acd7eb4db94df7f23d922"
+      },
+      "executionBase": "3338e1d4f8ccdfc399a96460f60af3c80786886d",
+      "evidenceCommit": "49636c088c3535c71c583de6b550bb8b86f1c3c7",
+      "diff": [
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/browser-app-01-surfaces.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/browser-app-02-surfaces.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/browser-app-03-surfaces.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/browser-g02-hybrid2-surfaces.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/http-g02-hybrid2-surfaces.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/review-lock.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-04.json"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "config/migration/source-catalog-g02-hybrid.json"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "scripts/job_apply_workspace/__init__.py"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "scripts/job_apply_workspace/queries.py"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/migration_browser_inventory.test.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/workspace_hybrid_assets_support.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tests_js/workspace_hybrid_browser_support.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tests_js/workspace_information_architecture.test.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/browser-exports.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "tools/migration/browser-serving-map.mjs"
+        },
+        {
+          "status": "M",
+          "oldPath": null,
+          "path": "tools/migration/check.mjs"
+        },
+        {
+          "status": "A",
+          "oldPath": null,
+          "path": "workspace/lib/helpers-bridge.js"
+        }
+      ],
+      "files": [
+        {
+          "path": "scripts/job_apply_workspace/__init__.py",
+          "sha256": "4c0763d4d350961e76c819521cc7ac0f80cfdd5026ae9f161782b6664a7b21a4"
+        },
+        {
+          "path": "scripts/job_apply_workspace/queries.py",
+          "sha256": "a34746be015c28e2ba8e69cf1931e7dd6db1c9ca0167f3ebaf8e5cfe722a1673"
+        },
+        {
+          "path": "workspace/lib/helpers-bridge.js",
+          "sha256": "c475f199d60d10ab20e1a5da1829f8f3f1df94cb21226cbd1659824a3e4678b3"
+        },
+        {
+          "path": "tests_js/workspace_information_architecture.test.mjs",
+          "sha256": "4bae9c3fc5248168127350579ca9fe473d3b5927865619d7a282a2b10aa7796e"
+        },
+        {
+          "path": "tests_js/workspace_hybrid_assets_support.mjs",
+          "sha256": "1d95b01ca40a96748e09960ef8fb0df36067754685b4558d4e4d7446fa0a0e92"
+        },
+        {
+          "path": "tests_js/workspace_hybrid_browser_support.mjs",
+          "sha256": "b35fa3bbb4b4ca58ff7dfcb449b12b8c33290f3c59a0ef05e21ccf7ed65d9122"
+        },
+        {
+          "path": "config/migration/source-catalog-04.json",
+          "sha256": "5b766419f4ad630c51969174fb71d6c5bbd22c89b2436491aaa180cf1af45abc"
+        },
+        {
+          "path": "config/migration/source-catalog-g02-hybrid.json",
+          "sha256": "ac3805d3ae08643b2baf0966cb6e0113cf947d54cb4a34e1db5cd114d906de07"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid/implementation-spec.json",
+          "sha256": "feefef7b6ddd47c4e91d2f6eddd353a1b553050f6461739ad27b0e639785daf4"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid/implementation-plan.md",
+          "sha256": "4ca31ca17b8fdde3bddc961aaab56c7400b01733ec61ed60c978aa21061de3c8"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid/integration-dag.json",
+          "sha256": "ccba09337c8f31486b95687e99e6552dc3188395be30cccaed1268788d7ba651"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid/integration-transition.json",
+          "sha256": "2400b639ae74ea53163ad6e4c62628104e57e7da0658989916461ac0a2fa074b"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.I.audit.json",
+          "sha256": "ec7f4c96e682b17b47fdff00391208a4fa678c6960fdb126c54dfea01b2eeb61"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.V.audit.json",
+          "sha256": "1881ff906749f27a1c3062a155a04ca02f89a87c3c6d35248acb688f52c088df"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.I.json",
+          "sha256": "efe9190d952d7501c29caa88ba8335563a2e969db25830ae0b1b4ef1877bf7ef"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.V.json",
+          "sha256": "f2ac26d03336f5b3cff1409a1f64c640b4b0a5f8615613e2f975ece913f4c2e3"
+        },
+        {
+          "path": "tools/migration/browser-exports.mjs",
+          "sha256": "9715ef2a53927e5e9f026cf08b9c91ea3baa9900860fd1a6c7845c72a2a320bb"
+        },
+        {
+          "path": "tools/migration/check.mjs",
+          "sha256": "e242cd3c20b96c572adcf785eac910b3504375a4df26c764601fea937ae94f26"
+        },
+        {
+          "path": "tools/migration/browser-serving-map.mjs",
+          "sha256": "395db59e48f6a68e40e1b2e213eafdf49ede0e19682267e19cc92e1aac4699e0"
+        },
+        {
+          "path": "tests_js/migration_browser_inventory.test.mjs",
+          "sha256": "c377e1fd228df0aeefb8629f10fce634b13b4b7606ab3c135270e9f3d510eaa1"
+        },
+        {
+          "path": "config/migration/browser-app-01-surfaces.json",
+          "sha256": "3b7315fda4337f14fa1de7e6542556b6afd36c47f73a3401368f1890c3a6b133"
+        },
+        {
+          "path": "config/migration/browser-app-02-surfaces.json",
+          "sha256": "04f75994f9ce9732edffb10b51e7d6c54c6e95b1dd93c1146f7fccc4095107db"
+        },
+        {
+          "path": "config/migration/browser-app-03-surfaces.json",
+          "sha256": "65730fd0d5a3c2143462c760a60588458ab8814f2061757f7ed031380208593f"
+        },
+        {
+          "path": "config/migration/browser-g02-hybrid2-surfaces.json",
+          "sha256": "7c8b97fc5cd38521af6a46e198d54bbfccde331bdc7bcf2a40afbf4a99b88a64"
+        },
+        {
+          "path": "config/migration/http-g02-hybrid2-surfaces.json",
+          "sha256": "9807b8eb1bf6dbb680643acef90693183628bf1d14dad4e78f874390fb7f070a"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/implementation-spec.json",
+          "sha256": "4bbff10626b5cc8eec06a926422b4b5a960e484853b5e18ccf7a54ce058a7c38"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/implementation-plan.md",
+          "sha256": "e4903c7ef9de375d0f7d0bd5495417a76e2568bfd0aa6346e9ca340cfc7a770e"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/integration-dag.json",
+          "sha256": "938e37d2d733b99d5eeba415007398c8e60867a1fde0be597b1d38a4b1283273"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/integration-transition.json",
+          "sha256": "b264ab7dd2b74831a8ad8147c287d43544759dbaf0f913d251be68e4ee71e3d2"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/G02.hybrid2.I.audit.json",
+          "sha256": "49021a4346bec0659a508080469deda17a3f3ae8c3f818b450110fdb3d47c698"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/G02.hybrid2.V.audit.json",
+          "sha256": "2662ecbc6919d5f206f288f9d63cceeb934fc0068e239852351714f668aaa980"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/G02.hybrid2.I.json",
+          "sha256": "5454e51e7015805e98eced1c6c1336662635bf88b5d23ebe9372b3088e583d92"
+        },
+        {
+          "path": "docs/migration/evidence/g02-hybrid2/G02.hybrid2.V.json",
+          "sha256": "5d3e3d67e236a9cbd76a060b21784464414c1133215c70f23d905f0debccc57d"
+        }
+      ],
+      "dependencies": [
+        {
+          "id": "G02.hybrid2.I",
+          "sha256": "c9c04852b0e08f76c0dfa0b6435131a5f53a6c916f1381d68d1d23e9a1f77820"
+        },
+        {
+          "id": "P01.V",
+          "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8"
+        }
+      ],
+      "cells": [
+        {
+          "id": "g02.hybrid.browser-assets",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_information_architecture.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 4991.144708,
+            "outputBytes": 3013,
+            "tests": 6,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/g02-hybrid2/logs/g02.hybrid.browser-assets.tap",
+            "sha256": "d9776f6f186e6578137c076d9b9206f7ffcb1db21b95e23899af8c567bda8e23"
+          }
+        },
+        {
+          "id": "g02.hybrid2.browser-inventory",
+          "environment": {
+            "id": "node-local",
+            "platform": "darwin",
+            "node": "v22.22.3",
+            "unicode": "17.0"
+          },
+          "command": [
+            "node",
+            "--test",
+            "tests_js/migration_browser_inventory.test.mjs"
+          ],
+          "result": {
+            "exitCode": 0,
+            "timedOut": false,
+            "durationMs": 190.95241599999918,
+            "outputBytes": 1991,
+            "tests": 8,
+            "failures": 0,
+            "skips": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "log": {
+            "path": "docs/migration/evidence/g02-hybrid2/logs/browser-inventory.tap",
+            "sha256": "5321db8f37914defa4b16a93de6662d4622677374ec603cbd1b9bafa533d679d"
+          }
+        }
+      ],
+      "artifacts": [],
+      "review": {
+        "author": "root",
+        "reviewer": "hooks_audit",
+        "subjectSha": "fc3d12124024e749cf64ab1f076594759bc95ba6",
+        "subjectTree": "ab1ccd90a2d20c798f5acd7eb4db94df7f23d922",
+        "manifestSha256": "5d3e3d67e236a9cbd76a060b21784464414c1133215c70f23d905f0debccc57d",
+        "decision": "approved"
+      },
+      "status": "passed"
     }
   ]
 }

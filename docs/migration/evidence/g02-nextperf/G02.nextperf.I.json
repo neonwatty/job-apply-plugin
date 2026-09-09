@@ -1,0 +1,222 @@
+{
+  "schemaVersion": 1,
+  "id": "G02.nextperf.I",
+  "role": "implementation-or-gate",
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/g02-nextperf/integration-dag.json",
+    "sha256": "ee7ae374bbc1af91f827fca1c18172566f3d5c455e8c1f7cd2c92db60910da94"
+  },
+  "package": {
+    "id": "G02.nextperf",
+    "parentNode": "ASSEMBLE",
+    "owner": "root",
+    "allowed_files": [
+      "tools/migration/load-task-evidence.mjs",
+      "tools/migration/evidence-io.mjs",
+      "tests_js/migration_task_loader.test.mjs",
+      "tests_js/migration_task_support.mjs",
+      "docs/migration/evidence/g02-nextperf/implementation-spec.json",
+      "docs/migration/evidence/g02-nextperf/implementation-plan.md",
+      "docs/migration/evidence/g02-nextperf/integration-dag.json",
+      "docs/migration/evidence/g02-nextperf/integration-transition.json",
+      "docs/migration/evidence/g02-nextperf/G02.nextperf.I.audit.json",
+      "docs/migration/evidence/g02-nextperf/G02.nextperf.V.audit.json",
+      "docs/migration/evidence/g02-nextperf/G02.nextperf.I.json",
+      "docs/migration/evidence/g02-nextperf/G02.nextperf.V.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "e8bde8752a56243fbbfeea331785af54977ff928fa34a20a9f4b439fff6b22c8",
+  "auditContract": {
+    "path": "docs/migration/evidence/g02-nextperf/G02.nextperf.I.audit.json",
+    "sha256": "af876677c98b97d038d249823d01ef423c1a63f928f90de78f118a50ca0b99b5"
+  },
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "base": "d51c840906fbc4007a6fbe03b4ed396448d6f159",
+  "inputs": [
+    {
+      "path": ".source-size-baseline.json",
+      "sha256": "8b0071c47e04b1d32246d9498fc35d6fd05e1868455b73bbcc4eebc97551d8a3"
+    },
+    {
+      "path": "config/test-matrix.json",
+      "sha256": "e8a76ff75921263090954be94f8749dcdcc99f86a895e83d2dabaa925d6d8374"
+    },
+    {
+      "path": "docs/migration/evidence/g02-hybrid2/integration-dag.json",
+      "sha256": "938e37d2d733b99d5eeba415007398c8e60867a1fde0be597b1d38a4b1283273"
+    },
+    {
+      "path": "docs/migration/evidence/g02-nextperf/G02.nextperf.I.audit.json",
+      "sha256": "af876677c98b97d038d249823d01ef423c1a63f928f90de78f118a50ca0b99b5"
+    },
+    {
+      "path": "docs/migration/evidence/g02-nextperf/G02.nextperf.V.audit.json",
+      "sha256": "0b99eab9ef7814867d2d945965d70ec2e8a33be609b68f15a83f971d479f98e9"
+    },
+    {
+      "path": "docs/migration/evidence/g02-nextperf/implementation-plan.md",
+      "sha256": "01611f99e6fad080ebeb2b07ff516da98e704c6156a891f326c9a02e25fc529e"
+    },
+    {
+      "path": "docs/migration/evidence/g02-nextperf/implementation-spec.json",
+      "sha256": "8c5cf5d0c4f7eb9ced1f6894a2862e18bffb68500963f0d1479498b9eb4a08a8"
+    },
+    {
+      "path": "docs/migration/evidence/g02-nextperf/integration-dag.json",
+      "sha256": "ee7ae374bbc1af91f827fca1c18172566f3d5c455e8c1f7cd2c92db60910da94"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "7ee9e2f989ec77ba9ab97847266792da033d9ebd98fd3643a26d73430d076c17"
+    },
+    {
+      "path": "package.json",
+      "sha256": "c652d020e5b1762c2bc703c563124c23f87c978f87af9c299f0a661253c40200"
+    },
+    {
+      "path": "tests_js/migration_task_loader.test.mjs",
+      "sha256": "2c2cf66310e73883d2417b4c5dc5d929da4fa879d98837326962271437f5d106"
+    },
+    {
+      "path": "tests_js/migration_task_support.mjs",
+      "sha256": "ddbf80c4d7559f7fd34ab4c9e72fd5b865555deffc8816ae58f20b7d5fef65a2"
+    },
+    {
+      "path": "tools/migration/browser-exports.mjs",
+      "sha256": "9715ef2a53927e5e9f026cf08b9c91ea3baa9900860fd1a6c7845c72a2a320bb"
+    },
+    {
+      "path": "tools/migration/browser-serving-map.mjs",
+      "sha256": "395db59e48f6a68e40e1b2e213eafdf49ede0e19682267e19cc92e1aac4699e0"
+    },
+    {
+      "path": "tools/migration/check-remaining-plan.mjs",
+      "sha256": "4283d1a2406481027f5f2a164aeca2f35f472dab5366665c2bebe2597a9e10cb"
+    },
+    {
+      "path": "tools/migration/check.mjs",
+      "sha256": "e242cd3c20b96c572adcf785eac910b3504375a4df26c764601fea937ae94f26"
+    },
+    {
+      "path": "tools/migration/evidence-io.mjs",
+      "sha256": "b515ab42b60270fd8282af1bf01a9b44b3de6a909ff9e6f892110d02ab2eb5d6"
+    },
+    {
+      "path": "tools/migration/load-prerequisites.mjs",
+      "sha256": "446f46091af5f95e89fef93400281e25a822497cea00c4d78dd7e0964f7c737c"
+    },
+    {
+      "path": "tools/migration/load-task-evidence.mjs",
+      "sha256": "bdebb937679d70d0987004561f5d9cf40bc5a6a6b3b2a068ec4b4f8fef98ede3"
+    },
+    {
+      "path": "tools/migration/load-task-lineage.mjs",
+      "sha256": "af7906e84bc37f4e8baa71ffe7b3a51d176b542aeb1daa7bca98479243c17628"
+    },
+    {
+      "path": "tools/migration/local-mac-host.mjs",
+      "sha256": "14fa7c39de71f25d056025216dc32ce76a445f09002b5cf23d8e0e7a400553bd"
+    },
+    {
+      "path": "tools/migration/local-mac-required-cells.mjs",
+      "sha256": "29a89413bca3d45ba5089a2fb87d8f58803127a1c2bfef279b74040956ae313e"
+    },
+    {
+      "path": "tools/migration/packages.mjs",
+      "sha256": "6f9b64a114cbe0e316689a6a4ceb0d27034dc10a29c41e749b49853890c813f0"
+    },
+    {
+      "path": "tools/migration/prerequisite-receipts.mjs",
+      "sha256": "45a971019860329405ee8adec70a9d1b7fd2cff78111a5b2931f2febb8ee68a8"
+    },
+    {
+      "path": "tools/migration/requirements.mjs",
+      "sha256": "f1a64d8aa967a26383b468415eee037964493e15db32dcc051982a92d1b89f1c"
+    },
+    {
+      "path": "tools/migration/tap-evidence.mjs",
+      "sha256": "0a3358323e73f6bb0828dc63071603a1263ea6008413c2bf1a620c22c42f3077"
+    },
+    {
+      "path": "tools/migration/task-handoffs.mjs",
+      "sha256": "53f0b202d20c8e0ee7e4e0dbf5d0c2a4e5dbde3705be6d7d3bc4a1fc5c746220"
+    },
+    {
+      "path": "tools/migration/task-lineage.mjs",
+      "sha256": "dc54b81df4df29f9c95d2e2e511f03a24aa990d8c589a307306a31d3db69a9cd"
+    },
+    {
+      "path": "tools/migration/task-manifests.mjs",
+      "sha256": "df99a6f882c342d0f9f69720c310754930a5b5a3ae0bc6d1cee9452805c7914a"
+    },
+    {
+      "path": "tools/migration/task-metadata.mjs",
+      "sha256": "fe026cace29806913dbc8b61ea3012b6dce4b421cf28592152c35a68a2c633cd"
+    },
+    {
+      "path": "tools/migration/task-receipts.mjs",
+      "sha256": "2ac168e57ab71e78aa18decb4ff79ef1a3481b941779dc0618b31f1ec5f80b5f"
+    },
+    {
+      "path": "tools/migration/test-bindings.mjs",
+      "sha256": "b64c1222a23a6ce3a53a5f90d8069c4fc2cefbfaadcd1b24f28b4075f552e3f6"
+    },
+    {
+      "path": "tools/test-runner/matrix.mjs",
+      "sha256": "eb88ff392a5fbd0de5b27042d83471b91f2324a29e5912211fbd9e07b6279727"
+    },
+    {
+      "path": "tools/test-runner/patterns.mjs",
+      "sha256": "6eb05de69ce7e7531d9a8cc90f628180b05891bc2eaa7f9fa711570dbb730ac2"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "g02.nextperf.immutable-facts",
+      "environmentId": "node-local",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_loader.test.mjs"
+      ],
+      "reporter": "node-tap13",
+      "testNames": [
+        "task loader binds actual tested Git subject separately from later evidence commits",
+        "task loader rejects dirty and untracked evidence without executing receipt commands",
+        "task loader rejects tracked symlinks, altered frozen manifests and out of scope subject edits",
+        "task loader preserves absent catalog behavior",
+        "task Git reads ignore replacement objects for declared immutable revisions",
+        "task loader reads actual object-form source-size baselines and verifies a shrinking extraction",
+        "task lifecycle validates staged planning, future tests, subject, evidence and receipt commits",
+        "task lifecycle opens acceptance during a frozen successor and rejects undeclared drift",
+        "execution base cannot conceal source edits or use a fabricated review lock",
+        "accepted subject must contain its declared literal test identities even when planning deferred discovery",
+        "platform task evidence binds actual conditional capture to the frozen cell environment",
+        "platform task evidence rejects wrong-platform same-count outputs and immutable source drift",
+        "immutable Git cache retains hot reads within explicit count and byte bounds",
+        "immutable ancestry amortizes successful heads and preserves bounded fallback",
+        "immutable ancestry agrees with Git on branches tags unknown IDs and replacements",
+        "base facts reuse immutable paths including absence without crossing bases or hiding validation",
+        "immutable cache retains below 32 MiB and evicts above it with unchanged read limits"
+      ],
+      "timeoutMs": 90000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/g02-nextperf/logs/immutable-facts.tap",
+      "requirementIds": [
+        "g02.nextperf.immutable-facts"
+      ]
+    }
+  ],
+  "artifacts": []
+}

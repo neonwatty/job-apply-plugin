@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "id": "s05-domain-v4-audit",
+  "assignmentIds": [
+    "S05.domain3.R"
+  ],
+  "allowed_files": [
+    "tools/contracts/point-path-domain/reference.py",
+    "tools/contracts/point-path-domain/fixtures.py",
+    "tools/contracts/point-path-domain/support.py",
+    "tests_js/resume_modified_at_reference.test.mjs",
+    "tests_js/point_paths_domain_support.mjs",
+    "docs/migration/evidence/s05-domain-v2/reference-spec.json",
+    "docs/migration/evidence/s05-domain-v2/reference-plan.md",
+    "docs/migration/evidence/s05-domain-v2/reference-audit.json",
+    "docs/migration/evidence/s05-domain-v2/S05.domain.R.json",
+    "config/test-matrix.json",
+    "tests_js/point_paths_reference.test.mjs",
+    "docs/migration/evidence/s05-domain-v3/reference-spec.json",
+    "docs/migration/evidence/s05-domain-v3/reference-audit.json",
+    "docs/migration/evidence/s05-domain-v3/S05.domain2.R.json",
+    "docs/migration/evidence/s05-domain-v3/reference-dag.json",
+    "docs/migration/evidence/s05-domain-v3/reference-transition.json",
+    "tools/migration/evidence-io.mjs",
+    "tests_js/migration_task_loader.test.mjs",
+    "docs/migration/evidence/s05-domain-v4/reference-spec.json",
+    "docs/migration/evidence/s05-domain-v4/reference-audit.json",
+    "docs/migration/evidence/s05-domain-v4/S05.domain3.R.json",
+    "docs/migration/evidence/s05-domain-v4/reference-dag.json",
+    "docs/migration/evidence/s05-domain-v4/reference-transition.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "s05.domain.admitted-values",
+    "s05.domain.cache",
+    "s05.domain.key-identity",
+    "s05.domain.order",
+    "s05.domain.provenance",
+    "s05.domain.refusal",
+    "s05.domain.registration"
+  ],
+  "cells": [
+    {
+      "id": "s05.domain.reference",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/resume_modified_at_reference.test.mjs"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "testNames": [
+        "resume timestamp reference: python3",
+        "resume timestamp reference: python3.12",
+        "resume timestamp reference: python3.13",
+        "resume timestamp reference: python3.14",
+        "resume timestamp reference rejects caller arguments and input",
+        "S05 domain reference preserves admitted values and cache identity under default CPython",
+        "S05 domain reference preserves admitted values and cache identity under CPython 3.12",
+        "S05 domain reference preserves admitted values and cache identity under CPython 3.13",
+        "S05 domain reference preserves admitted values and cache identity under CPython 3.14",
+        "S05 domain reference rejects caller arguments paths and stdin"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s05-domain-v4/logs/s05.domain.reference.tap",
+      "requirementIds": [
+        "s05.domain.admitted-values",
+        "s05.domain.key-identity",
+        "s05.domain.order",
+        "s05.domain.provenance",
+        "s05.domain.refusal"
+      ]
+    },
+    {
+      "id": "s05.domain2.registration",
+      "requirementIds": [
+        "s05.domain.registration"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/point_paths_reference.test.mjs"
+      ],
+      "testNames": [
+        "S05 reference observes point codecs parent order and cache identity under default CPython",
+        "S05 reference observes point codecs parent order and cache identity under CPython 3.12",
+        "S05 reference observes point codecs parent order and cache identity under CPython 3.13",
+        "S05 reference observes point codecs parent order and cache identity under CPython 3.14",
+        "S05 reference rejects caller arguments paths and stdin",
+        "S05 point filesystem codec matches the accepted24 surrogateescape observations",
+        "S05 point filesystem codec preserves trusted text identity and leaves legacy bytes unchanged",
+        "S05 path support registration preserves the exact prior matrix"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s05-domain-v4/logs/s05.domain2.registration.tap"
+    },
+    {
+      "id": "s05.domain3.cache",
+      "requirementIds": [
+        "s05.domain.cache"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_task_loader.test.mjs"
+      ],
+      "testNames": [
+        "task loader binds actual tested Git subject separately from later evidence commits",
+        "task loader rejects dirty and untracked evidence without executing receipt commands",
+        "task loader rejects tracked symlinks, altered frozen manifests and out of scope subject edits",
+        "task loader preserves absent catalog behavior",
+        "task Git reads ignore replacement objects for declared immutable revisions",
+        "task loader reads actual object-form source-size baselines and verifies a shrinking extraction",
+        "task lifecycle validates staged planning, future tests, subject, evidence and receipt commits",
+        "task lifecycle opens acceptance during a frozen successor and rejects undeclared drift",
+        "execution base cannot conceal source edits or use a fabricated review lock",
+        "accepted subject must contain its declared literal test identities even when planning deferred discovery",
+        "platform task evidence binds actual conditional capture to the frozen cell environment",
+        "platform task evidence rejects wrong-platform same-count outputs and immutable source drift",
+        "immutable Git cache retains hot reads without increasing count or byte bounds",
+        "immutable ancestry amortizes successful heads and preserves bounded fallback",
+        "immutable ancestry agrees with Git on branches tags unknown IDs and replacements"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s05-domain-v4/logs/cache.tap"
+    }
+  ],
+  "artifacts": []
+}

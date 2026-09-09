@@ -1,0 +1,34 @@
+TAP version 13
+# Subtest: activity gates retain absent job results and suppress unchanged queue membership
+ok 1 - activity gates retain absent job results and suppress unchanged queue membership
+  ---
+  duration_ms: 0.366958
+  type: 'test'
+  ...
+# Subtest: activity TS covers twelve exports with ordinary, missing and invalid inputs
+ok 2 - activity TS covers twelve exports with ordinary, missing and invalid inputs
+  ---
+  duration_ms: 1.537333
+  type: 'test'
+  ...
+# Subtest: activity TS preserves custom callbacks/returns, access order and thrown errors
+ok 3 - activity TS preserves custom callbacks/returns, access order and thrown errors
+  ---
+  duration_ms: 0.354125
+  type: 'test'
+  ...
+# Subtest: activity TS retains array/record identities and avoids mutating frozen inputs
+ok 4 - activity TS retains array/record identities and avoids mutating frozen inputs
+  ---
+  duration_ms: 0.079084
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 33.39925

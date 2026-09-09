@@ -1,0 +1,266 @@
+{
+  "schemaVersion": 1,
+  "id": "P03.ui-tests.V",
+  "role": "independent-review",
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/p03-ui-tests/integration-dag.json",
+    "sha256": "8a1f7e8fbbea1e538355a47dda29dcc8c8ccb72cab475f2ddcc5cb32b2301127"
+  },
+  "package": {
+    "id": "P03.ui-tests",
+    "parentNode": "CI",
+    "owner": "root",
+    "allowed_files": [
+      "tools/migration/test-bindings.mjs",
+      "tests_js/migration_test_bindings.test.mjs",
+      "docs/migration/evidence/p03-ui-tests/implementation-spec.json",
+      "docs/migration/evidence/p03-ui-tests/implementation-plan.md",
+      "docs/migration/evidence/p03-ui-tests/integration-dag.json",
+      "docs/migration/evidence/p03-ui-tests/integration-transition.json",
+      "docs/migration/evidence/p03-ui-tests/P03.ui-tests.I.audit.json",
+      "docs/migration/evidence/p03-ui-tests/P03.ui-tests.V.audit.json",
+      "docs/migration/evidence/p03-ui-tests/P03.ui-tests.I.json",
+      "docs/migration/evidence/p03-ui-tests/P03.ui-tests.V.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "03b91ac66d87d74bed44cdf35d06c23c5a5b2d6708103ba2e7444755249da83d",
+  "auditContract": {
+    "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.V.audit.json",
+    "sha256": "5213e47d6b6b760aa740cb0d3a765a51b12e426cbe6d49c8a010d9f5cc25d890"
+  },
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "base": "4baf49ae738ada0dfe4d49519f44d54c82b1a307",
+  "inputs": [
+    {
+      "path": ".source-size-baseline.json",
+      "sha256": "8b0071c47e04b1d32246d9498fc35d6fd05e1868455b73bbcc4eebc97551d8a3"
+    },
+    {
+      "path": "config/test-matrix.json",
+      "sha256": "e8a76ff75921263090954be94f8749dcdcc99f86a895e83d2dabaa925d6d8374"
+    },
+    {
+      "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.I.audit.json",
+      "sha256": "169529b733845a92753f009c740d9c03931591577548dde3869a9e589143c5ab"
+    },
+    {
+      "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.V.audit.json",
+      "sha256": "5213e47d6b6b760aa740cb0d3a765a51b12e426cbe6d49c8a010d9f5cc25d890"
+    },
+    {
+      "path": "docs/migration/evidence/p03-ui-tests/implementation-plan.md",
+      "sha256": "81344b33891f76083ecfe1fa96a2bc626694cabb9fedc1b7db5a4c16c0fa6112"
+    },
+    {
+      "path": "docs/migration/evidence/p03-ui-tests/implementation-spec.json",
+      "sha256": "45dae81595565efe9e5f6c155933ded55db718ef515269ad8c4af25a774243be"
+    },
+    {
+      "path": "docs/migration/evidence/p03-ui-tests/integration-dag.json",
+      "sha256": "8a1f7e8fbbea1e538355a47dda29dcc8c8ccb72cab475f2ddcc5cb32b2301127"
+    },
+    {
+      "path": "docs/migration/evidence/p08/approved-dag.json",
+      "sha256": "763c50631ece1a641d2f256802479df0bd5af71d8c0e6ced64712ddea001a563"
+    },
+    {
+      "path": "docs/migration/evidence/p08/implementation-audit.json",
+      "sha256": "7bba951f75ff98a0d183da6d26d765529620c4ccfc258c16a159888a4904b7c6"
+    },
+    {
+      "path": "docs/migration/evidence/p08/implementation.md",
+      "sha256": "41c723a4a2b60af0f9e5d5fb4756e67d97e0c5bf67b4ab01e5b9c0b5e9f8a50c"
+    },
+    {
+      "path": "docs/migration/evidence/s05-domain-v4/reference-dag.json",
+      "sha256": "8b3a19b4d4d7c7421225a9f5061dc14d65643198c153265d98cc729eae8d3aa8"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "7ee9e2f989ec77ba9ab97847266792da033d9ebd98fd3643a26d73430d076c17"
+    },
+    {
+      "path": "package.json",
+      "sha256": "c652d020e5b1762c2bc703c563124c23f87c978f87af9c299f0a661253c40200"
+    },
+    {
+      "path": "runtime/contracts/python-text.js",
+      "sha256": "cdd6e3d8d634e2a2957e27759616d7b7a57e66347fa97c6d11855046bf551b4a"
+    },
+    {
+      "path": "runtime/contracts/raw-json/float-scope.js",
+      "sha256": "db9834010226b2ad1c41adf7194e068e4fd9b4710a5585a656bd566d9543e675"
+    },
+    {
+      "path": "runtime/contracts/raw-json/json-serialization-core.js",
+      "sha256": "8bf9600a57b0ed3f9fce8eaaf12ab383d503ebe71085f00ca46da64dbc5a8a81"
+    },
+    {
+      "path": "runtime/contracts/raw-json/numeric-atom.js",
+      "sha256": "313f206f7767398f6a3ed61fb3c15f5f90d8eb7cd835a6402816bc19e1003188"
+    },
+    {
+      "path": "runtime/contracts/raw-json/parser.js",
+      "sha256": "e56e7a875cea5926b740f8109669476659644595d28b634024d1b427d4ce2825"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-parser-core.js",
+      "sha256": "c077ecc92bdf1f55c3cca8c1ffba728dfde53a3adc69e38e10464b840c910184"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-text-codec.js",
+      "sha256": "6c5916054ac439ad7a63802fcd2a0445d0366e2ada9df15a0b571c5310bdf12b"
+    },
+    {
+      "path": "runtime/contracts/raw-json/serializer.js",
+      "sha256": "854be43fe99dfcad95e2cd1e8763e740a31b0f319712f8c56e9d6e2eecbce390"
+    },
+    {
+      "path": "runtime/store/validation.js",
+      "sha256": "85e308945a77b5c09d61758113d91cfd0e6fb366fe92f98f36c19c8e05ee3a0a"
+    },
+    {
+      "path": "tests_js/migration_task_loader.test.mjs",
+      "sha256": "2c2cf66310e73883d2417b4c5dc5d929da4fa879d98837326962271437f5d106"
+    },
+    {
+      "path": "tests_js/migration_task_support.mjs",
+      "sha256": "ddbf80c4d7559f7fd34ab4c9e72fd5b865555deffc8816ae58f20b7d5fef65a2"
+    },
+    {
+      "path": "tests_js/migration_test_bindings.test.mjs",
+      "sha256": "037bd5189dab26ae3eef698a906cb9b573bac2fa2dec9f07f6691756ceb1ddd0"
+    },
+    {
+      "path": "tests_js/raw_json_numeric.test.mjs",
+      "sha256": "cd7cf65c0e0d67e59a20bfce3e7a0edfe99f00168c2bfc76365524453a66b6c8"
+    },
+    {
+      "path": "tests_js/store_validation_ts.test.mjs",
+      "sha256": "3ea5a15d74374edd94c81e8a2bcb0bd39138cf9ae5e6865b3ad1c0f828e0f80e"
+    },
+    {
+      "path": "tests_js/typed_json_oracle.test.mjs",
+      "sha256": "427d7fd3abf4a2e8da8ab56c6dcdf9aec4956d0da9282e893682182c3bed7ae3"
+    },
+    {
+      "path": "tools/migration/browser-exports.mjs",
+      "sha256": "3d3039688a9cf5671a8656082cd1c69f62605f562c4bbf77c3d5392790c00403"
+    },
+    {
+      "path": "tools/migration/check.mjs",
+      "sha256": "d637bea2bf84e535b1437de123a3ffb3cca0dd9f7edb1663b60565ea59cae024"
+    },
+    {
+      "path": "tools/migration/evidence-io.mjs",
+      "sha256": "b515ab42b60270fd8282af1bf01a9b44b3de6a909ff9e6f892110d02ab2eb5d6"
+    },
+    {
+      "path": "tools/migration/load-prerequisites.mjs",
+      "sha256": "446f46091af5f95e89fef93400281e25a822497cea00c4d78dd7e0964f7c737c"
+    },
+    {
+      "path": "tools/migration/load-task-evidence.mjs",
+      "sha256": "bdebb937679d70d0987004561f5d9cf40bc5a6a6b3b2a068ec4b4f8fef98ede3"
+    },
+    {
+      "path": "tools/migration/load-task-lineage.mjs",
+      "sha256": "af7906e84bc37f4e8baa71ffe7b3a51d176b542aeb1daa7bca98479243c17628"
+    },
+    {
+      "path": "tools/migration/packages.mjs",
+      "sha256": "6f9b64a114cbe0e316689a6a4ceb0d27034dc10a29c41e749b49853890c813f0"
+    },
+    {
+      "path": "tools/migration/prerequisite-receipts.mjs",
+      "sha256": "45a971019860329405ee8adec70a9d1b7fd2cff78111a5b2931f2febb8ee68a8"
+    },
+    {
+      "path": "tools/migration/requirements.mjs",
+      "sha256": "f1a64d8aa967a26383b468415eee037964493e15db32dcc051982a92d1b89f1c"
+    },
+    {
+      "path": "tools/migration/tap-evidence.mjs",
+      "sha256": "0a3358323e73f6bb0828dc63071603a1263ea6008413c2bf1a620c22c42f3077"
+    },
+    {
+      "path": "tools/migration/task-handoffs.mjs",
+      "sha256": "53f0b202d20c8e0ee7e4e0dbf5d0c2a4e5dbde3705be6d7d3bc4a1fc5c746220"
+    },
+    {
+      "path": "tools/migration/task-lineage.mjs",
+      "sha256": "dc54b81df4df29f9c95d2e2e511f03a24aa990d8c589a307306a31d3db69a9cd"
+    },
+    {
+      "path": "tools/migration/task-manifests.mjs",
+      "sha256": "df99a6f882c342d0f9f69720c310754930a5b5a3ae0bc6d1cee9452805c7914a"
+    },
+    {
+      "path": "tools/migration/task-metadata.mjs",
+      "sha256": "fe026cace29806913dbc8b61ea3012b6dce4b421cf28592152c35a68a2c633cd"
+    },
+    {
+      "path": "tools/migration/task-receipts.mjs",
+      "sha256": "2ac168e57ab71e78aa18decb4ff79ef1a3481b941779dc0618b31f1ec5f80b5f"
+    },
+    {
+      "path": "tools/migration/test-bindings.mjs",
+      "sha256": "8692ab07646f4ba377c47533362f4103f333a4bc06a273cd7c5f0ff74d0fd495"
+    },
+    {
+      "path": "tools/test-runner/matrix.mjs",
+      "sha256": "eb88ff392a5fbd0de5b27042d83471b91f2324a29e5912211fbd9e07b6279727"
+    },
+    {
+      "path": "tools/test-runner/patterns.mjs",
+      "sha256": "6eb05de69ce7e7531d9a8cc90f628180b05891bc2eaa7f9fa711570dbb730ac2"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "a5bbfb581960ff5215cf6f5ed0ae26464b32d3c7040d26c9b73d12bcc4986c8f"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "P03.ui-tests.bindings",
+      "environmentId": "node-local",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_test_bindings.test.mjs"
+      ],
+      "reporter": "node-tap13",
+      "testNames": [
+        "literal test bindings require node:test imports and nonempty direct declarations",
+        "malformed syntax and duplicate declared test IDs cannot bind requirements",
+        "platform literal bindings select only the explicitly supplied finite branch in source order",
+        "platform literal bindings preserve no-context behavior and reject unsupported syntax",
+        "platform literal bindings reject shadowed process and node test identities",
+        "platform literal bindings reject process mutation and escaped process aliases",
+        "platform literal bindings match the three frozen S08 platform declarations",
+        "current inventory discovery uses explicit current platform without changing no-context consumers",
+        "literal timeout options recognize safe positive integers and existing UI declaration shapes",
+        "literal timeout options reject dynamic unsafe and test-suppressing object forms",
+        "literal timeout options retain callback alias conditional and duplicate guards"
+      ],
+      "timeoutMs": 180000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/p03-ui-tests/logs/P03.ui-tests.bindings.tap",
+      "requirementIds": [
+        "p03.ui-tests.timeout-recognition"
+      ]
+    }
+  ],
+  "artifacts": []
+}

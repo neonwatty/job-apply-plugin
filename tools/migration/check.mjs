@@ -4,12 +4,15 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { discoverBrowserExports, checkBrowserBindings } from './browser-exports.mjs';
+import { discoverNextBrowserExports, isNextComponentSource } from './next-surfaces.mjs';
+import { detectServingMap, HYBRID_RUNTIME_PATHS } from './browser-serving-map.mjs';
 import { validateRequirements, missingRequirementCoverage } from './requirements.mjs';
 import { validatePackages } from './packages.mjs';
 import { discoverTestIds } from './test-bindings.mjs';
 import { loadMatrix, suiteFiles } from '../test-runner/matrix.mjs';
 import { loadTaskEvidence } from './load-task-evidence.mjs';
 import { loadPrerequisites } from './load-prerequisites.mjs';
+import { auditHistoricalBoundary } from './historical-boundary.mjs';
 
 export const SCENARIOS = ['valid', 'invalid', 'missing', 'noop', 'privacy', 'conflict',
   'concurrency', 'interruption', 'recovery', 'platform'];
@@ -17,7 +20,9 @@ const CODE = /\.(?:py|js|mjs|ts|swift|sh|html|css|c|h)$/;
 const ROOTS = new Set(['scripts', 'workspace', 'qa', 'native', 'src', 'runtime']);
 const MANIFESTS = new Set(['package.json', '.codex-plugin/plugin.json',
   '.claude-plugin/plugin.json', '.claude-plugin/marketplace.json', '.agents/plugins/marketplace.json']);
-export const inSourceScope = (path) => (ROOTS.has(path.split('/')[0]) && CODE.test(path)) || MANIFESTS.has(path);
+const COMPANION_SOURCE = /^apps\/companion\/.+\.(?:ts|tsx|mjs|css)$/;
+export const inSourceScope = (path) => (ROOTS.has(path.split('/')[0]) && CODE.test(path))
+  || MANIFESTS.has(path) || COMPANION_SOURCE.test(path) || path === 'apps/companion/package.json';
 const safePath = (path) => typeof path === 'string' && path.trim().length > 0
   && !/^[a-z]:/i.test(path) && !/[\u0000-\u001f\u007f]/.test(path)
   && !path.startsWith('/') && !path.includes('\\') && !path.split('/').some((part) => ['..', '.', ''].includes(part));
@@ -161,17 +166,32 @@ export async function checkInventory(root, options = {}) {
   const paths = allPaths.filter(inSourceScope);
   const actual = new Map();
   const browserFiles = new Map();
+  const nextComponentFiles = new Map();
+  const servingFiles = new Map();
   for (const path of new Set(paths)) {
     try {
       const bytes = await readFile(resolve(root, path));
       actual.set(path, createHash('sha256').update(bytes).digest('hex'));
+      if (isNextComponentSource(path)) nextComponentFiles.set(path, bytes.toString('utf8'));
       if (path.startsWith('workspace/') && path.endsWith('.js')) browserFiles.set(path, bytes.toString('utf8'));
+      if (HYBRID_RUNTIME_PATHS.includes(path)
+        || ['scripts/job_apply_workspace/__init__.py', 'scripts/job_apply_workspace/queries.py'].includes(path)) {
+        servingFiles.set(path, bytes.toString('utf8'));
+      }
     }
     catch (error) { if (error.code !== 'ENOENT') throw error; }
   }
   let taskEvidence = { currentAcceptance: 'open', acceptedTasks: new Set(), acceptedPackages: new Set() };
   const errors = validateInventory({ nodes: nodesFile.nodes, sources, surfaces }, actual, options);
-  errors.push(...checkBrowserBindings(discoverBrowserExports(browserFiles), surfaces));
+  const servingMap = detectServingMap(new Map([...browserFiles, ...servingFiles]));
+  if (servingMap) for (const path of HYBRID_RUNTIME_PATHS) {
+    if (!servingFiles.has(path)) throw new Error(`Missing browser export source: ${path}`);
+    browserFiles.set(path, servingFiles.get(path));
+  }
+  const browserExports = [...discoverBrowserExports(browserFiles, servingMap),
+    ...discoverNextBrowserExports(nextComponentFiles)];
+  errors.push(...checkBrowserBindings(browserExports, surfaces));
+  const historicalAudit = await auditHistoricalBoundary(root, snapshot => checkInventory(snapshot));
   if (requirements.length || packages.length) {
     const matrix = await loadMatrix(root);
     const testIds = new Map();
@@ -196,30 +216,36 @@ export async function checkInventory(root, options = {}) {
       platforms: new Set(['node-local']),
       suites: new Map(matrix.suites.filter((suite) => suite.kind === 'node-test')
         .map((suite) => [suite.id, new Set(suiteFiles(suite, planningPaths))])) };
-    const prerequisites = await loadPrerequisites(root, { requirements,
-      registeredTests: new Set(matrix.suites.filter((suite) => suite.kind === 'node-test')
-        .flatMap((suite) => suiteFiles(suite, allPaths))) });
-    errors.push(...prerequisites.errors);
-    // Only independently scoped, immutable prerequisite evidence can unlock work.
-    const packageContext = { nodes, surfaces: surfaceIds,
-      requirements: new Set(requirements.map((item) => item?.id)), sourcePaths: registered,
-      acceptedInterfaces: prerequisites.acceptedInterfaces, acceptedReferences: prerequisites.acceptedReferences,
-      knownInterfaces: prerequisites.knownInterfaces, knownReferences: prerequisites.knownReferences,
-      requiredRequirements: new Set(requirements.filter((item) => item?.applicability?.status === 'required').map((item) => item.id)),
-      referenceRequirements: prerequisites.referenceRequirements,
-      acceptedPackages: new Set() };
-    const tasks = await loadTaskEvidence(root, { packages, requirements, packageContext, requirementContext, testIds,
-      registeredTests: new Set(matrix.suites.filter(suite => suite.kind === 'node-test').flatMap(suite => suiteFiles(suite, planningPaths))) });
-    taskEvidence = tasks;
-    errors.push(...tasks.errors);
-    errors.push(...validateRequirements(requirements, { ...requirementContext, testIds: tasks.planningTestIds ?? testIds }));
-    errors.push(...validatePackages(packages, { ...packageContext, acceptedPackages: tasks.acceptedPackages,
-      ownershipHandoffs: tasks.ownershipHandoffs ?? [], historicalReadiness: tasks.historicalReadiness ?? new Map() }));
+    if (historicalAudit) {
+      // Frozen packages/prerequisites are audited at their original source. They
+      // cannot unlock current code; current test bindings still must resolve.
+      errors.push(...validateRequirements(requirements, requirementContext));
+    } else {
+      const prerequisites = await loadPrerequisites(root, { requirements,
+        registeredTests: new Set(matrix.suites.filter((suite) => suite.kind === 'node-test')
+          .flatMap((suite) => suiteFiles(suite, allPaths))) });
+      errors.push(...prerequisites.errors);
+      // Only independently scoped, immutable prerequisite evidence can unlock work.
+      const packageContext = { nodes, surfaces: surfaceIds,
+        requirements: new Set(requirements.map((item) => item?.id)), sourcePaths: registered,
+        acceptedInterfaces: prerequisites.acceptedInterfaces, acceptedReferences: prerequisites.acceptedReferences,
+        knownInterfaces: prerequisites.knownInterfaces, knownReferences: prerequisites.knownReferences,
+        requiredRequirements: new Set(requirements.filter((item) => item?.applicability?.status === 'required').map((item) => item.id)),
+        referenceRequirements: prerequisites.referenceRequirements,
+        acceptedPackages: new Set() };
+      const tasks = await loadTaskEvidence(root, { packages, requirements, packageContext, requirementContext, testIds,
+        registeredTests: new Set(matrix.suites.filter(suite => suite.kind === 'node-test').flatMap(suite => suiteFiles(suite, planningPaths))) });
+      taskEvidence = tasks;
+      errors.push(...tasks.errors);
+      errors.push(...validateRequirements(requirements, { ...requirementContext, testIds: tasks.planningTestIds ?? testIds }));
+      errors.push(...validatePackages(packages, { ...packageContext, acceptedPackages: tasks.acceptedPackages,
+        ownershipHandoffs: tasks.ownershipHandoffs ?? [], historicalReadiness: tasks.historicalReadiness ?? new Map() }));
+    }
   }
   const lock = JSON.parse(await readFile(resolve(directory, 'review-lock.json'), 'utf8'));
   errors.push(...validateReviewLock(lock, hashes));
   return { schemaVersion: 1, status: errors.length ? 'failed' : 'inventory-consistent',
-    acceptance: 'open', taskEvidence: { currentAcceptance: taskEvidence.currentAcceptance,
+    acceptance: 'open', ...(historicalAudit ? { historicalAudit } : {}), taskEvidence: { currentAcceptance: taskEvidence.currentAcceptance,
       acceptedTasks: [...taskEvidence.acceptedTasks].sort(), acceptedPackages: [...taskEvidence.acceptedPackages].sort(), retiredTasks: [...(taskEvidence.retiredTasks ?? [])].sort() }, nodes: nodesFile.nodes.length, sources: sources.length,
     surfaces: surfaces.length, requirements: requirements.length, packages: packages.length,
     unmappedRequirementCells: missingRequirementCoverage(surfaces.map((item) => item.id), requirements).length, errors };

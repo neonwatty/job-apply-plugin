@@ -1,3 +1,5 @@
+import { linkLegacyContext } from "../contracts/persistence-exception.js";
+import type { ContextLinker } from "../contracts/persistence-exception.js";
 import { constants } from "node:fs";
 import { encodeJsonlJson } from "../contracts/jsonl-json.js";
 import type { PersistedJsonOptions } from "../contracts/persisted-json.js";
@@ -25,22 +27,29 @@ export class HistoryAppendError extends StoreValidationError {
   }
 }
 
-function contextual(error: unknown, previous: unknown): unknown {
-  if (error instanceof Error && previous !== undefined && error !== previous && error.cause === undefined) {
-    error.cause = previous;
-  }
-  return error;
-}
-
 /** Caller supplies domain idempotency and holds the transaction lock. */
 export async function appendHistoryEvent(
   path: string,
   event: PythonJson,
   options: AppendHistoryOptions,
 ): Promise<void> {
-  if (await options.isIdempotent(event)) return;
-  const encoded = encodeJsonlJson(event, options.serialization);
-  const io = options.io ?? createNativeJsonlHistoryIO(options.serialization.pathProfile);
+  return appendHistoryEventFor(path, event, item => options.isIdempotent(item),
+    () => encodeJsonlJson(event, options.serialization),
+    () => options.io ?? createNativeJsonlHistoryIO(options.serialization.pathProfile), linkLegacyContext);
+}
+
+/** Gate and serialization complete before even selecting a native IO adapter. */
+export async function appendHistoryEventFor<V>(
+  path: string,
+  event: V,
+  isIdempotent: (event: V) => Promise<boolean>,
+  serialize: () => Buffer,
+  getIO: () => JsonlHistoryIO,
+  linkContext: ContextLinker,
+): Promise<void> {
+  if (await isIdempotent(event)) return;
+  const encoded = serialize();
+  const io = getIO();
   path = constructPosixPath("", path);
   const handle = await io.open(path, constants.O_WRONLY | constants.O_CREAT | constants.O_APPEND, 0o600);
   // Baseline parity: the initial stat is outside cleanup. Failure does not
@@ -61,13 +70,13 @@ export async function appendHistoryEvent(
       await handle.truncate(originalSize);
       await handle.sync();
     } catch (rollbackError) {
-      failure = contextual(rollbackError, error);
+      failure = linkContext(rollbackError, error);
       throw failure;
     }
     throw error;
   } finally {
     try { await handle.close(); }
-    catch (closeError) { throw contextual(closeError, failure); }
+    catch (closeError) { throw linkContext(closeError, failure); }
   }
   await io.chmod(path, 0o600);
 }
@@ -91,6 +100,6 @@ export async function repairPendingHistoryTail(path: string, options: RepairHist
     throw error;
   } finally {
     try { await handle.close(); }
-    catch (closeError) { throw contextual(closeError, failure); }
+    catch (closeError) { throw linkLegacyContext(closeError, failure); }
   }
 }

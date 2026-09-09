@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "id": "G02.next.integration-transition",
+  "previousDag": {
+    "path": "docs/migration/evidence/g02-hybrid2/integration-dag.json",
+    "sha256": "938e37d2d733b99d5eeba415007398c8e60867a1fde0be597b1d38a4b1283273",
+    "revision": "8061447d37e1d0a71b835ef84d5e40db9d2a7e6b"
+  },
+  "nextDag": {
+    "path": "docs/migration/evidence/g02-next/integration-dag.json",
+    "sha256": "efe60b39fd17fe76c4bb7e45dffb347ff5a9072245a7fc24b8b3c8f7c1b4b862",
+    "revision": "23cd1a1d778b16d19e565d0dfa3b4028678271a3"
+  },
+  "retirements": [],
+  "additions": [
+    {
+      "id": "G02.next.I",
+      "manifest": {
+        "path": "docs/migration/evidence/g02-next/G02.next.I.json",
+        "sha256": "c567c1cde217734d65e45847a64b490c7c3c0ab9e1f2228ffaa017b6d4383f6d",
+        "revision": "23cd1a1d778b16d19e565d0dfa3b4028678271a3"
+      }
+    },
+    {
+      "id": "G02.next.V",
+      "manifest": {
+        "path": "docs/migration/evidence/g02-next/G02.next.V.json",
+        "sha256": "1676b7757fb060c352c7df8d463092fe0c28a9884424f5440025715441d55820",
+        "revision": "23cd1a1d778b16d19e565d0dfa3b4028678271a3"
+      }
+    }
+  ],
+  "refinements": [
+    {
+      "id": "G02.I",
+      "beforeDependencies": [
+        "G01.V",
+        "A04.V",
+        "W01.V",
+        "W02.V",
+        "W03.V",
+        "W04.V",
+        "W05.V",
+        "U07.V",
+        "P03.ui-tests.V",
+        "G02.hybrid2.V"
+      ],
+      "afterDependencies": [
+        "G01.V",
+        "A04.V",
+        "W01.V",
+        "W02.V",
+        "W03.V",
+        "W04.V",
+        "W05.V",
+        "U07.V",
+        "P03.ui-tests.V",
+        "G02.hybrid2.V",
+        "G02.next.V"
+      ]
+    }
+  ],
+  "packageVersions": [],
+  "witnessMappings": [],
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "decision": "approved",
+  "reason": "Implement approved Mac-first Next.js frontend without waiting for hosted test matrices or backend domain migration."
+}

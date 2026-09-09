@@ -48,17 +48,17 @@
     },
     {
       "path": "src/contracts/persisted-json.ts",
-      "sha256": "ee5f2a4bf5aef1c326b992c6566e1317629b3b31c8a054e6299b6e4a4e9f8a50",
+      "sha256": "c83b2863ed4f8ead2e592e8fdf24fb9a615273680a50842fec093cffe9a9a1a5",
       "classification": "unreviewed"
     },
     {
       "path": "src/store/private-filesystem.ts",
-      "sha256": "148e3027b7e479aad29e8a652f9169b36c55acadc29b120287c61a1f81a090f7",
+      "sha256": "e27595f544bf23dc7f2f9017ce704cb4f8817af5c3003c75c3e1d7708b463f22",
       "classification": "unreviewed"
     },
     {
       "path": "src/store/atomic-write-json.ts",
-      "sha256": "e8a46849a18a7af4b79998fda468d0c43542e27d31f29edd2e8dd7cacfea21d4",
+      "sha256": "d265f1febf7b4b80de9e383e78f62f186784c67e04f9053dc90b3e2aa7bce1f3",
       "classification": "unreviewed"
     },
     {
@@ -78,17 +78,17 @@
     },
     {
       "path": "runtime/contracts/persisted-json.js",
-      "sha256": "743f54a24eb6afc853f9d49374e1a3f4cc9041f6f2c2fe22fba731cd1cb3ed04",
+      "sha256": "22af2de52d9db932a0f8f173e4a8230e9ee223e0c62c2b5f32e6c14564a19f5c",
       "classification": "unreviewed"
     },
     {
       "path": "runtime/store/private-filesystem.js",
-      "sha256": "ae06c9911a5af7bd5f589321a7888a62af4fe955c83620ae19e9086c780acbc4",
+      "sha256": "cece5e0a6c7797a22adc26341bd4d704557dbd6510364d2499a16b4f82c9b3c4",
       "classification": "unreviewed"
     },
     {
       "path": "runtime/store/atomic-write-json.js",
-      "sha256": "19288b5ce6d862075e1b6517f0e2d6cba70226e69e013f6802818965ea9fd28a",
+      "sha256": "eba8a1f3010576d1d74f4f5b585dac70a52ccc4e5d66e8be441134cc00afada8",
       "classification": "unreviewed"
     },
     {
@@ -133,7 +133,7 @@
     },
     {
       "path": "src/store/jsonl-history.ts",
-      "sha256": "7e7f96db276397a35ddbabe7b0a4d61cd34c31ce7c73b585397dc22e9334e24f",
+      "sha256": "d77cacf1a00c49f4faae2bf47a937a29ab08443125dd58f97605f634bf57db88",
       "classification": "unreviewed"
     },
     {
@@ -148,7 +148,7 @@
     },
     {
       "path": "runtime/store/jsonl-history.js",
-      "sha256": "f7e02b1045eab673ab1ed752c7b485b85e06b968bbaecabd8e3cd204ec23bc49",
+      "sha256": "a90b3ec0e54b74d3b3fa6139cad7a34f9e7f1cb89b90982809ca04d437bb7627",
       "classification": "unreviewed"
     },
     {

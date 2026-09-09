@@ -1,3 +1,4 @@
+import { observeDomain, refuseDomain } from './point_paths_domain_support.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -40,8 +41,7 @@ const native = [
   ['-600', 'bea421f5f40489ae', '1969-12-31T23:59:59Z'],
 ];
 const keys = (value, expected) => assert.deepEqual(Object.keys(value).sort(), expected.sort());
-for (const executable of ['python3', 'python3.12', 'python3.13', 'python3.14']) {
-  test(`resume timestamp reference: ${executable}`, (t) => {
+function observeLegacy(executable, t) {
     if (process.platform === 'win32') return t.skip('Native Windows timestamp profile remains unverified');
     const run = spawnSync(executable, ['-I', driver], { input: '', encoding: 'utf8', timeout: 10000, maxBuffer: 128 * 1024 });
     if (run.error?.code === 'ENOENT' && executable !== 'python3') return t.skip('Interpreter executable alias unavailable; profile not observed');
@@ -64,8 +64,12 @@ for (const executable of ['python3', 'python3.12', 'python3.13', 'python3.14']) 
       requestedNs, actualNs: requestedNs, secondsHex, value, unchanged: true,
     })));
     t.diagnostic(`${receipt.profile.python}: 24 exact binary64 cases, four native stat conversions; no live Store`);
-  });
 }
+test('resume timestamp reference: python3', t => observeLegacy('python3', t));
+test('resume timestamp reference: python3.12', t => observeLegacy('python3.12', t));
+test('resume timestamp reference: python3.13', t => observeLegacy('python3.13', t));
+test('resume timestamp reference: python3.14', t => observeLegacy('python3.14', t));
+
 
 test('resume timestamp reference rejects caller arguments and input', () => {
   const executable = process.platform === 'win32' ? 'python' : 'python3';
@@ -76,3 +80,9 @@ test('resume timestamp reference rejects caller arguments and input', () => {
     assert.equal(run.stderr, 'resume_modified_at_reference_input_rejected\n');
   }
 });
+
+test('S05 domain reference preserves admitted values and cache identity under default CPython', t => observeDomain(t, 'python3'));
+test('S05 domain reference preserves admitted values and cache identity under CPython 3.12', t => observeDomain(t, 'python3.12', '3.12'));
+test('S05 domain reference preserves admitted values and cache identity under CPython 3.13', t => observeDomain(t, 'python3.13', '3.13'));
+test('S05 domain reference preserves admitted values and cache identity under CPython 3.14', t => observeDomain(t, 'python3.14', '3.14'));
+test('S05 domain reference rejects caller arguments paths and stdin', () => refuseDomain());

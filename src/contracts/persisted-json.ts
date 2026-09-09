@@ -1,12 +1,9 @@
 import { floatScope } from "./raw-json/float-scope.js";
 import type { PythonJson } from "./raw-json/value.js";
-import { validatePathProfile } from "./posix-path.js";
-import type { PythonPathProfile } from "./posix-path.js";
+import { iterPersistence } from "./persisted-json-core.js";
+import type { PersistenceOptions } from "./persisted-json-core.js";
 
-export interface PersistedJsonOptions {
-  pathProfile: PythonPathProfile;
-  intMaxStrDigits: number;
-}
+export type PersistedJsonOptions = PersistenceOptions;
 
 export class PersistedJsonError extends Error {
   constructor(name: "ValueError" | "UnicodeEncodeError", message: string) {
@@ -48,12 +45,6 @@ function compareKeys(left: string, right: string): number {
 
 /** Python json.dump(indent=2, sort_keys=True, ensure_ascii=False) text chunks. */
 export function* iterPersistedJson(value: PythonJson, options: PersistedJsonOptions): Generator<string> {
-  validatePathProfile(options.pathProfile);
-  if (!Number.isSafeInteger(options.intMaxStrDigits) || options.intMaxStrDigits < 0
-    || options.intMaxStrDigits > 0 && options.intMaxStrDigits < 640) {
-    throw new RangeError("intMaxStrDigits must be zero or an integer of at least 640");
-  }
-  const active = new Set<object>();
   function scalar(item: unknown): string | undefined {
     if (item === null) return "null";
     if (typeof item === "boolean") return item ? "true" : "false";
@@ -72,52 +63,25 @@ export function* iterPersistedJson(value: PythonJson, options: PersistedJsonOpti
     return undefined;
   }
 
-  function* encode(item: unknown, depth: number): Generator<string> {
-    const primitive = scalar(item);
-    if (primitive !== undefined) {
-      yield primitive;
-      return;
-    }
-    if (!Array.isArray(item) && !(item instanceof Map)) throw new TypeError("Object is not JSON serializable");
-    if (item instanceof Map ? item.size === 0 : item.length === 0) {
-      yield item instanceof Map ? "{}" : "[]";
-      return;
-    }
-    if (active.has(item)) throw new PersistedJsonError("ValueError", "Circular reference detected");
-    active.add(item);
-    const indent = "\n" + "  ".repeat(depth + 1);
-    if (Array.isArray(item)) {
-      for (let index = 0; index < item.length; index += 1) {
-        const prefix = (index ? "," : "[") + indent;
-        const child = scalar(item[index]);
-        if (child !== undefined) yield prefix + child;
-        else {
-          yield prefix;
-          yield* encode(item[index], depth + 1);
+  yield* iterPersistence<unknown, string>(value, options, {
+    literal: ascii => ascii,
+    concat: parts => parts.join(""),
+  }, {
+    scalar,
+    array: item => Array.isArray(item) ? { identity: item, items: item } : undefined,
+    object: item => item instanceof Map ? {
+      identity: item,
+      empty: item.size === 0,
+      sortedEntries() {
+        const keys: unknown[] = [...item.keys()];
+        if (!keys.every((key): key is string => typeof key === "string")) {
+          throw new TypeError("Persisted JSON object keys must be strings");
         }
-      }
-      yield "\n" + "  ".repeat(depth);
-      yield "]";
-    } else {
-      yield "{";
-      if (options.pathProfile === "3.12") yield indent;
-      const keys: unknown[] = [...item.keys()];
-      if (!keys.every((key): key is string => typeof key === "string")) {
-        throw new TypeError("Persisted JSON object keys must be strings");
-      }
-      keys.sort(compareKeys);
-      for (let index = 0; index < keys.length; index += 1) {
-        if (index > 0) yield "," + indent;
-        else if (options.pathProfile !== "3.12") yield indent;
-        const key = keys[index]!;
-        yield quote(key);
-        yield ": ";
-        yield* encode(item.get(key), depth + 1);
-      }
-      yield "\n" + "  ".repeat(depth);
-      yield "}";
-    }
-    active.delete(item);
-  }
-  yield* encode(value, 0);
+        keys.sort(compareKeys);
+        return keys.map(key => ({ key: quote(key), readValue: () => item.get(key) }));
+      },
+    } : undefined,
+    unsupported() { throw new TypeError("Object is not JSON serializable"); },
+    circular() { throw new PersistedJsonError("ValueError", "Circular reference detected"); },
+  });
 }

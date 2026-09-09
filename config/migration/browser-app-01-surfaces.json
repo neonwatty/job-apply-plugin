@@ -261,7 +261,8 @@
       "node": "UIF",
       "sources": [
         "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "workspace/lib/helpers-bridge.js",
+        "runtime/workspace-ui/lib/activity-view.js"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -284,7 +285,8 @@
       "node": "UIF",
       "sources": [
         "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "workspace/lib/helpers-bridge.js",
+        "runtime/workspace-ui/lib/answer-view.js"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -307,7 +309,8 @@
       "node": "UIF",
       "sources": [
         "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "workspace/lib/helpers-bridge.js",
+        "runtime/workspace-ui/lib/answer-view.js"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -330,7 +333,8 @@
       "node": "UIF",
       "sources": [
         "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "workspace/lib/helpers-bridge.js",
+        "runtime/workspace-ui/lib/answer-view.js"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -353,7 +357,8 @@
       "node": "UIF",
       "sources": [
         "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "workspace/lib/helpers-bridge.js",
+        "runtime/workspace-ui/lib/answer-view.js"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -376,7 +381,8 @@
       "node": "UIF",
       "sources": [
         "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "workspace/lib/helpers-bridge.js",
+        "runtime/workspace-ui/lib/answer-view.js"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -399,7 +405,8 @@
       "node": "UIF",
       "sources": [
         "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "workspace/lib/helpers-bridge.js",
+        "runtime/workspace-ui/lib/answer-view.js"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -422,7 +429,8 @@
       "node": "UIF",
       "sources": [
         "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "workspace/lib/helpers-bridge.js",
+        "runtime/workspace-ui/lib/answer-view.js"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -445,7 +453,8 @@
       "node": "UIF",
       "sources": [
         "workspace/app.js",
-        "workspace/lib/helpers.js"
+        "workspace/lib/helpers-bridge.js",
+        "runtime/workspace-ui/lib/answer-view.js"
       ],
       "effects": "unclassified",
       "scenarios": {

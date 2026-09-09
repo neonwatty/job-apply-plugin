@@ -114,3 +114,53 @@ test("pure helpers leave caller projections unchanged", () => {
   port.shouldUseResumeResponse(request, request, false, false);
   assert.deepEqual({ resume, request, proposal }, before);
 });
+
+test('U01 resume differential preserves getters and coercion order', () => {
+  function observe(api) {
+    const log = []; let assigned = 0;
+    const counts = api.resumeAssignmentText({
+      get assignedJobCount() { log.push('assigned'); return ++assigned; },
+      get implicitJobCount() { log.push('implicit'); return 1; },
+    });
+    const extraction = api.extractionRequestView({ get status() { log.push('request.status'); return 'completed'; } }, {
+      get status() { log.push('proposal.status'); return 'pending'; },
+      get staleReasons() { log.push('staleReasons'); return { get length() { log.push('length'); return 1; } }; },
+    });
+    const group = api.proposalGroupForPath({ [Symbol.toPrimitive](hint) { log.push(hint); return '/skills/0'; } });
+    const identity = { [Symbol.toPrimitive]() { throw Error('identity must not coerce'); } };
+    const response = api.shouldUseResumeResponse(identity, identity, identity, identity);
+    return { counts, extraction, group, response, log };
+  }
+  const original = observe(reference), candidate = observe(port);
+  assert.deepEqual(candidate, original);
+  assert.equal(candidate.counts, '2 explicitly assigned active jobs; 1 active job use this default.');
+  assert.deepEqual(candidate.log, ['assigned', 'assigned', 'implicit', 'implicit',
+    'request.status', 'request.status', 'request.status', 'request.status', 'request.status',
+    'proposal.status', 'staleReasons', 'length', 'string']);
+  assert.equal(candidate.group, 'Skills'); assert.equal(candidate.response, true);
+});
+
+test('U01 resume differential preserves original thrown identity and short circuits', () => {
+  const failure = { synthetic: 'caller failure' };
+  const cases = [
+    ['resumeAssignmentText', () => [{ get assignedJobCount() { throw failure; } }]],
+    ['resumeAssignmentText', () => [{ assignedJobCount: 1, get implicitJobCount() { throw failure; } }]],
+    ['extractionRequestView', () => [{ get status() { throw failure; } }]],
+    ['extractionRequestView', () => [{ status: 'completed' }, { get status() { throw failure; } }]],
+    ['extractionRequestView', () => [{ status: 'completed' }, { status: 'pending', get staleReasons() { throw failure; } }]],
+    ['proposalGroupForPath', () => [{ [Symbol.toPrimitive]() { throw failure; } }]],
+  ];
+  for (const [name, argumentsFor] of cases) {
+    assert.throws(() => reference[name](...argumentsFor()), error => error === failure);
+    assert.throws(() => port[name](...argumentsFor()), error => error === failure);
+  }
+  for (const api of [reference, port]) {
+    const blocked = { get status() { throw failure; } };
+    assert.deepEqual(api.extractionRequestView(null, blocked), { label: 'Facts not extracted', action: 'request', tone: 'neutral' });
+    assert.deepEqual(api.extractionRequestView({ status: 'requested' }, blocked),
+      { label: 'Waiting for a Job Apply agent', action: 'cancel', tone: 'waiting' });
+    const trap = { [Symbol.toPrimitive]() { throw failure; } };
+    assert.equal(api.shouldUseResumeResponse(1, 2, trap, trap), false);
+    assert.equal(api.shouldUseResumeResponse(trap, trap, trap, trap), true);
+  }
+});

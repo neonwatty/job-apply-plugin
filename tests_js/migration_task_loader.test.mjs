@@ -235,3 +235,135 @@ test('platform task evidence rejects wrong-platform same-count outputs and immut
     } finally { await repo.cleanup(); }
   }
 });
+
+test('immutable Git cache retains hot reads without increasing count or byte bounds', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const moduleUrl = new URL('../tools/migration/evidence-io.mjs', import.meta.url).href;
+  const child = spawnSync(process.execPath, ['--input-type=module', '-e', `
+    import assert from 'node:assert/strict';
+    import childProcess from 'node:child_process';
+    import { syncBuiltinESMExports } from 'node:module';
+    const calls = new Map(), id = n => n.toString(16).padStart(40, '0');
+    let fail = false;
+    childProcess.execFileSync = (command, argv, options) => {
+      assert.equal(command, 'git');
+      assert.deepEqual(argv.slice(0, 2), ['--no-pager', '--no-replace-objects']);
+      assert.equal(options.timeout, 5000); assert.equal(options.maxBuffer, 8 * 1024 * 1024);
+      const args = argv.slice(2), key = JSON.stringify(args);
+      calls.set(key, (calls.get(key) ?? 0) + 1);
+      if (fail) throw new Error('read failed');
+      if (args[0] === 'ls-tree') return Buffer.from('100644 blob ' + args.at(-1) + '\\tfile\\0');
+      if (args[0] === 'cat-file') return Buffer.alloc(3 * 1024 * 1024, 65);
+      return Buffer.from(id(9000));
+    };
+    syncBuiltinESMExports();
+    const { createEvidenceIO } = await import(${JSON.stringify(moduleUrl)});
+    const count = args => calls.get(JSON.stringify(args)) ?? 0;
+    const io = await createEvidenceIO(process.cwd());
+    for (let n = 1; n <= 4096; n++) io.tree(id(n));
+    io.tree(id(1)); io.tree(id(4097)); io.tree(id(1));
+    assert.equal(count(['rev-parse', id(1) + '^{tree}']), 1);
+    io.tree(id(2)); assert.equal(count(['rev-parse', id(2) + '^{tree}']), 2);
+    fail = true; assert.throws(() => io.tree(id(5000)), /read failed/);
+    fail = false; io.tree(id(5000));
+    assert.equal(count(['rev-parse', id(5000) + '^{tree}']), 2);
+    const bytes = await createEvidenceIO(process.cwd());
+    bytes.fileAt(id(6000), 'file'); bytes.fileAt(id(6001), 'file');
+    bytes.fileAt(id(6000), 'file'); bytes.fileAt(id(6002), 'file');
+    const copy = bytes.fileAt(id(6000), 'file'); copy.fill(0);
+    assert.equal(bytes.fileAt(id(6000), 'file')[0], 65);
+    assert.equal(count(['cat-file', 'blob', id(6000)]), 1);
+    bytes.fileAt(id(6001), 'file');
+    assert.equal(count(['cat-file', 'blob', id(6001)]), 2);
+  `], { encoding: 'utf8', timeout: 10000, maxBuffer: 1024 * 1024 });
+  assert.equal(child.error, undefined);
+  assert.equal(child.status, 0, child.stderr);
+});
+
+test('immutable ancestry amortizes successful heads and preserves bounded fallback', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const moduleUrl = new URL('../tools/migration/evidence-io.mjs', import.meta.url).href;
+  const child = spawnSync(process.execPath, ['--input-type=module', '-e', `
+    import assert from 'node:assert/strict';
+    import cp from 'node:child_process';
+    import { syncBuiltinESMExports } from 'node:module';
+    const id = n => n.toString(16).padStart(40, '0'), calls = [];
+    let failHistory = false;
+    cp.execFileSync = (command, argv, options) => {
+      assert.equal(command, 'git');
+      assert.deepEqual(argv.slice(0, 2), ['--no-pager', '--no-replace-objects']);
+      assert.equal(options.timeout, 5000); assert.equal(options.maxBuffer, 8388608);
+      const args = argv.slice(2); calls.push(args);
+      if (args[0] === 'rev-parse' && args[1] === '--git-path') return Buffer.from('/nonexistent-synthetic-graph/' + args[2]);
+      if (args[0] === 'rev-list') {
+        if (failHistory) throw Object.assign(Error('bounded failure'), { code: 'ETIMEDOUT' });
+        return Buffer.from(Array.from({ length: 200 }, (_, n) => id(n + 1)).join('\\n') + '\\n');
+      }
+      if (args[0] === 'merge-base') {
+        if (args[2] === id(999)) throw Object.assign(Error('not ancestor'), { status: 1 });
+        return Buffer.alloc(0);
+      }
+      return Buffer.from((args[2].startsWith(id(998)) ? id(1) : args[2].slice(0, 40)) + '\\n');
+    };
+    syncBuiltinESMExports();
+    const { createEvidenceIO } = await import(${JSON.stringify(moduleUrl)});
+    const io = await createEvidenceIO(process.cwd());
+    for (let n = 1; n <= 200; n++) assert.equal(io.ancestor(id(n), id(200)), true);
+    assert.equal(calls.filter(args => args[0] === 'rev-list').length, 1);
+    assert.equal(calls.filter(args => args[0] === 'merge-base').length, 0);
+    assert.equal(io.ancestor(id(998), id(200)), true); // absent tag-like ID takes original path
+    assert.equal(io.ancestor(id(999), id(200)), false);
+    assert.equal(io.ancestor(id(999), id(200)), false);
+    assert.equal(calls.filter(args => args[0] === 'merge-base' && args[2] === id(999)).length, 0);
+    failHistory = true;
+    assert.equal(io.ancestor(id(1), id(201)), true);
+    assert.equal(calls.filter(args => args[0] === 'merge-base' && args[3] === id(201)).length, 1);
+    failHistory = false;
+    const negatives = await createEvidenceIO(process.cwd());
+    const start = calls.length;
+    for (let n = 1000; n < 6000; n++) assert.equal(negatives.ancestor(id(n), id(200)), false);
+    assert.equal(negatives.ancestor(id(1000), id(200)), false);
+    assert.equal(calls.slice(start).filter(args => args[0] === 'merge-base').length, 0);
+    assert.equal(calls.slice(start).filter(args => args[0] === 'rev-list').length, 1);
+  `], { encoding: 'utf8', timeout: 10000, maxBuffer: 1048576 });
+  assert.equal(child.error, undefined); assert.equal(child.status, 0, child.stderr);
+});
+
+test('immutable ancestry agrees with Git on branches tags unknown IDs and replacements', async () => {
+  const repo = await repository();
+  try {
+    const { createEvidenceIO } = await import('../tools/migration/evidence-io.mjs');
+    const base = repo.git('rev-parse', 'HEAD');
+    await repo.write('left.txt', 'left'); const left = repo.commit();
+    repo.git('checkout', '--detach', base);
+    await repo.write('right.txt', 'right'); const right = repo.commit();
+    repo.git('tag', '-a', 'synthetic-ancestor', '-m', 'synthetic', base);
+    const tag = repo.git('rev-parse', 'synthetic-ancestor');
+    const io = await createEvidenceIO(repo.root);
+    assert.equal(io.ancestor(base, left), true); assert.equal(io.ancestor(base, right), true);
+    assert.equal(io.ancestor(left, right), false); assert.equal(io.ancestor(right, left), false);
+    assert.equal(io.ancestor(tag, right), true);
+    assert.equal(io.ancestor('f'.repeat(40), right), false);
+    assert.equal(io.ancestor(base, 'f'.repeat(40)), false);
+    repo.git('replace', right, left);
+    assert.equal(io.ancestor(left, right), false);
+    const fresh = await createEvidenceIO(repo.root);
+    assert.equal(fresh.ancestor(left, right), false); assert.equal(fresh.ancestor(base, right), true);
+  } finally { await repo.cleanup(); }
+});
+
+test('ancestry invalidates positive and negative history when shallow boundaries change', async () => {
+  const repo = await repository();
+  try {
+    const { createEvidenceIO } = await import('../tools/migration/evidence-io.mjs');
+    const base = repo.git('rev-parse', 'HEAD');
+    await repo.write('descendant', 'synthetic'); const head = repo.commit();
+    const io = await createEvidenceIO(repo.root);
+    assert.equal(io.ancestor(base, head), true);
+    await repo.write('.git/shallow', head + '\n');
+    assert.equal(io.ancestor(base, head), false);
+    assert.equal(io.ancestor(base, head), false);
+    await rm(join(repo.root, '.git/shallow'));
+    assert.equal(io.ancestor(base, head), true);
+  } finally { await repo.cleanup(); }
+});

@@ -1,0 +1,1040 @@
+{
+  "schemaVersion": 1,
+  "status": "External refreshed P05 freeze proposal; P02 receipt commit still requires clean accepted-base verification; no activation or acceptance claim",
+  "inputRevision": "c38eba80305c3b56a8c165cce581b1cf26f6903f",
+  "author": "timestamp_tests",
+  "reviewer": "hooks_audit",
+  "coordinator": "root",
+  "physicalLineLimit": 500,
+  "scope": "Mac dogfood milestone only; no broad release or clean-host acceptance",
+  "requiredHost": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "macOSVersion": "26.4.1",
+    "macOSBuild": "25E253",
+    "nodeVersion": "22.22.3",
+    "unicodeVersion": "17.0"
+  },
+  "deferred": [
+    "Linux/Windows native qualification",
+    "other Mac OS/CPU/runtime versions",
+    "clean-host/offline customer installation",
+    "browser and native account integrations",
+    "physical durability and release deployment"
+  ],
+  "forbiddenEdits": [
+    "config/test-matrix.json",
+    "tools/migration/tap-evidence.mjs",
+    "all accepted S04 source/test/reference files"
+  ],
+  "authority": "User explicitly requested Mac-priority change now and continued core conversion. Qualify only the actual local milestone; preserve deferred release obligations.",
+  "id": "P05-mac-dogfood-proposal",
+  "assignmentIds": [
+    "P05.I",
+    "P05.V"
+  ],
+  "dependencies": {
+    "P05.I": [
+      "P01.V",
+      "P02.V",
+      "S04.I"
+    ],
+    "P05.V": [
+      "P05.I",
+      "P01.V"
+    ]
+  },
+  "workerAllowedFiles": [
+    "tools/migration/local-mac-required-cells.mjs",
+    "tests_js/posix_flock.test.mjs"
+  ],
+  "coordinatorProposedFiles": [
+    "docs/migration/evidence/p05/mac-dogfood-audit.json",
+    "docs/migration/evidence/p05/mac-dogfood-spec.json",
+    "docs/migration/evidence/p05/P05.I.json",
+    "docs/migration/evidence/p05/P05.V.json"
+  ],
+  "apis": [
+    "validateRequiredCellResult(declaration: FrozenCell, observation: RequiredCellObservation): void",
+    "runLocalMacPersistenceCells(): Promise<LocalMacPersistenceEvidence>",
+    "observeLocalMacNativeAddon(): Promise<NativeAddonEvidence>"
+  ],
+  "outputSchema": {
+    "schemaVersion": 1,
+    "scope": "mac-dogfood-persistence",
+    "hostBefore": "P02 LocalMacHostIdentity",
+    "hostAfter": "identical P02 LocalMacHostIdentity",
+    "cells": [
+      {
+        "id": "exact frozen S04 cell id",
+        "command": "exact frozen node --test argv",
+        "stdout": "complete untrimmed UTF8 TAP",
+        "stderr": "complete untrimmed UTF8 stderr; success requires empty",
+        "stdoutSha256": "SHA256 raw stdout bytes",
+        "stderrSha256": "SHA256 raw stderr bytes",
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "durationMs": "actual nonnegative wall time",
+        "outputBytes": "combined raw byte count",
+        "names": "exact ordered frozen literal names",
+        "tests": 8,
+        "failures": 0,
+        "skips": 0,
+        "cancelled": 0,
+        "todo": 0
+      }
+    ]
+  },
+  "rules": [
+    "Frozen child cell declarations are copied verbatim from S04 specification below, including names, commands, timeouts and byte budgets. Sequential invocation only.",
+    "Capture identity before and after EACH required child and native addon run. Fail on host, binary, alias or compiler drift. Fail on OS mismatch, missing aliases, compiler/build/load failure, stderr, signal, timeout or oversized output.",
+    "Use fixed process.execPath child executable with frozen arguments; no arbitrary commands/paths/env override API. Explicit compiler argument is the P02 resolved binary.",
+    "Reuse parseTaskTap without edits. Reject null parse, names/order/count mismatch, any skip/cancel/todo/failure/nested report, incomplete summary, budgets exceeded, hash/byte-count mismatch.",
+    "Negative test observations include nested skipped child with otherwise zero exit, direct skip, todo, malformed/truncated TAP, renamed/omitted result, timeout, nonzero exit, stderr and output oversize. Keep these fixtures separate from required positive observations.",
+    "Preserve complete child raw output inside diagnostic JSON (not trimmed or summarized); outer capture therefore retains reconstructable exact child stdout/stderr bytes plus hashes. No detached file artifacts unless coordinator adds exact paths before freeze.",
+    "Original native flock callback remains intact. Add a separate owned-addon witness that captures actual compiler/header/source/artifact bytes and verifies real lock contention; temporary binaries are removed after identity capture.",
+    "No native browser/account outputs are created. Existing kernel flock operations plus S04 real filesystem fixtures qualify only this local milestone."
+  ],
+  "requiredCells": [
+    {
+      "id": "s04.implementation.persisted",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/persisted_json_ts.test.mjs"
+      ],
+      "testNames": [
+        "persisted JSON chunks and strict UTF8 match Python: python3",
+        "persisted JSON chunks and strict UTF8 match Python: python3.12",
+        "persisted JSON chunks and strict UTF8 match Python: python3.13",
+        "persisted JSON chunks and strict UTF8 match Python: python3.14",
+        "S04 point persisted chunks preserve explicit codepoints and profile order",
+        "S04 point atomic writes preserve native chunk failures and cleanup context",
+        "S04 point persistence preserves explicit causes and reused exception identity",
+        "S04 point persistence rejects forged inputs and preserves legacy mixed-key boundaries"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s04/logs/S04-IV-persisted.tap",
+      "requirementIds": [
+        "s04.i.atomic",
+        "s04.i.boundaries",
+        "s04.i.chunks",
+        "s04.i.exceptions",
+        "s04.i.legacy"
+      ]
+    },
+    {
+      "id": "s04.implementation.jsonl",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/jsonl_json_ts.test.mjs"
+      ],
+      "testNames": [
+        "JSONL bytes match actual Python default spacing and strict UTF8: python3",
+        "JSONL bytes match actual Python default spacing and strict UTF8: python3.12",
+        "JSONL bytes match actual Python default spacing and strict UTF8: python3.13",
+        "JSONL bytes match actual Python default spacing and strict UTF8: python3.14",
+        "S04 point JSONL preserves complete serialization before strict encoding",
+        "S04 point JSONL native append preserves gate identity and unopened failures",
+        "S04 point JSONL preserves explicit causes through rollback and close",
+        "S04 point persistence entrypoints leave legacy values and public parser behavior unchanged"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s04/logs/S04-IV-jsonl.tap",
+      "requirementIds": [
+        "s04.i.boundaries",
+        "s04.i.exceptions",
+        "s04.i.jsonl",
+        "s04.i.legacy",
+        "s04.i.rollback"
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "id": "p05.mac-dogfood.required-native",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/posix_flock.test.mjs"
+      ],
+      "testNames": [
+        "native nonblocking flock binds descriptors, validates arguments and preserves kernel ownership",
+        "P05 required cells reject skipped nested malformed and incomplete evidence",
+        "P05 local Mac native addon binds compiler and actual owned kernel operations",
+        "P05 local Mac persistence cells preserve all frozen witnesses and raw output"
+      ],
+      "timeoutMs": 480000,
+      "maxOutputBytes": 8388608,
+      "logPath": "docs/migration/evidence/p05/logs/mac-dogfood.tap"
+    }
+  ],
+  "budgets": {
+    "nativeCompileTimeoutMs": 30000,
+    "nativeCompileMaxOutputBytes": 1048576,
+    "rationale": "Existing native-lock builder is bounded at30s; original and added native builds cost at most60s. Two unchanged S04 children retain120s/1MiB each. Eight20s host-collection envelopes allow160s for required before/after identities and shared reporting, yielding460s plus20s orchestration room. Outer480s is a new gate budget, not an enlargement of either frozen S04 child.8MiB outer evidence bound is repository maximum and retains complete JSON-escaped child outputs plus identity/native facts; overflow fails, never truncates to pass."
+  },
+  "inputs": [
+    {
+      "path": ".source-size-baseline.json",
+      "sha256": "8b0071c47e04b1d32246d9498fc35d6fd05e1868455b73bbcc4eebc97551d8a3",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "bff9159b51b5c650dae52806f0002c335a59211a815ea813be01e78a51e81d84",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "config/migration/source-catalog-06.json",
+      "sha256": "ddc83cc609b3d33d56f2793d4d87db257782a7d276a8c62fe5ff4719df72ab0b",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "config/migration/source-catalog-s04.json",
+      "sha256": "ce90c0c4da35ff065eab6b77c5cd68aa1c758a5d1dcb207360e7711364ba48b3",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "config/test-matrix.json",
+      "sha256": "bd33a6cecc1b468adf2581582eec1ef13747e404a40ea843721b9cea30511f38",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/p02/P02.I.json",
+      "sha256": "dc704997a542c6d4b99eed60eb22048d0011db8a1a069644f598bba189613d16",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/p02/P02.V.json",
+      "sha256": "2b9937418582e2268b823b9909a253b414e19658a708b03682a5b806e9da81e3",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/p02/logs/mac-dogfood.tap",
+      "sha256": "bff0aef5c378252a0bca8d9ecbca8c077be3fcd64abd6262e1043994c0a766d5",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/p02/mac-dogfood-audit.json",
+      "sha256": "e888294e9ad42b6993838163b346a39c1a4841024f10515aff2722b9d70c791a",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/p02/mac-dogfood-spec.json",
+      "sha256": "a8a1fe99cdac43779fd6090f116f21ce220f71f1859c6cab0c7aca1e78c40fcf",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/p02/mac-dogfood.md",
+      "sha256": "87aa3a8f4f82b74c6ba5d851eec2dd9d75ef4fc3a031c241231736f9c889fd4b",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/s04/S04.I.json",
+      "sha256": "40c6a5f49420b5cc08be4883bf127538dc7acf26f88b7cdad58eaabd992ee7a6",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/s04/S04.R.json",
+      "sha256": "e95e2c18104f5e966929cec58ea18dd95f4b7997b0bfc3ecc0192b880ce3cc8c",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/s04/S04.V.json",
+      "sha256": "726cfa338470d125d068eff3d16d5b78b5161ec2573c8b1beee34913146738d4",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/s04/implementation-audit.json",
+      "sha256": "cacef81b946b4fb0e8f69a886cba24307629ac7799becd508ccfa5eb77b0080d",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/s04/implementation-dag.json",
+      "sha256": "20d6f5bcdee165f74db0714b2be67695c2c31ec77ed04d36a7c75187978bfa79",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/s04/implementation-spec.json",
+      "sha256": "4763b1f30e5a8c3ad604bd64fde6128a55521771cacf1b4e2c8fccf5c24ce7d6",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/s04/implementation.md",
+      "sha256": "9d2a5f65c58ee828e531ebbce626a09ed4467d37fa7cd7351c7ee64e6434d612",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/s04/logs/S04-R-baselines.tap",
+      "sha256": "e41186a202f343b555e693fdfb6fe96438aac3c9339412258585e8daccdabb48",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/s04/logs/S04-R-points.tap",
+      "sha256": "fe9ab714f90b173beb366ea518f15edb9fc3c740faacf6367cb2a59516c094d9",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/s04/reference-audit.json",
+      "sha256": "2c5c8c7abce1d443c19e91494b4bbae7394f5be817ba984746f35737a95ad3d3",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/s04/reference-plan.md",
+      "sha256": "9cfa6235000def45781ae076f1b84b1bf2fa3e98a76bb4dc46c82fb6a838e571",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/s04/reference-vectors.json",
+      "sha256": "5f780fccad0679310cd70f08a7b39493cb86879d4c65a3ffc262637b44bbe04a",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/s04/reference.md",
+      "sha256": "d27b8723ec05f9dace098f4dfbfab5aca18e8aea358a7f6265de693ed4877e55",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/s08/additional-reference-vectors.json",
+      "sha256": "500ce6a2f35ac9f9e0bfe9ec8a676d0aa1165687a768f53e3bffeacf5048225d",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/evidence/s08/composed-reference-vectors.json",
+      "sha256": "1ccb7cdb553cd70a1f6107904b595c4a9c9ea720e9d8c5cbc48955233f280e7b",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/local-mac-milestone.md",
+      "sha256": "dee76d5c62fd7f6ed3150093389810db5c1f060647f3ebad7d193c2e61e4fc8c",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/migration/python-point-persistence-port.md",
+      "sha256": "be5768d4ff0a0610cd1bda2db59bfde8f39f2450687d95a4022c524987db7649",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "docs/testing.md",
+      "sha256": "4cf81b1898cd42b58c17be993ed7c23d494970006386990fbf5a59611b3b0904",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "native/posix/flock.c",
+      "sha256": "511590e191f8764402e9bf2b03ee8307716bf79f2801d411667d3423ca444907",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "7ee9e2f989ec77ba9ab97847266792da033d9ebd98fd3643a26d73430d076c17",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "package.json",
+      "sha256": "c652d020e5b1762c2bc703c563124c23f87c978f87af9c299f0a661253c40200",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/filesystem-error.js",
+      "sha256": "8a7cf4849b7f2774a924e6a04e6943aacd34049e5056ae2770d11aa74afcad02",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/jsonl-json.js",
+      "sha256": "ee022369d9715ad54fdc984945132e3430df273cbe0326bfb572932d8303fdc9",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/persisted-json-core.js",
+      "sha256": "5a6aba967b58c029aaff613c899ebb675f7c8e6aebb037802a44c4ab9614e77c",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/persisted-json.js",
+      "sha256": "22af2de52d9db932a0f8f173e4a8230e9ee223e0c62c2b5f32e6c14564a19f5c",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/persistence-exception.js",
+      "sha256": "fdadb753373300b02aec11b399aa331d8b0d6296b650ff2d52c941a35218f1e6",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/posix-path-bytes.js",
+      "sha256": "0efde48362bfeeeb08d28bc52aaf47f94119f46b396abe8d14ec585a17d14ba5",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/posix-path.js",
+      "sha256": "0dfc066624aed50b277864450920a7258a651355e827fd176e670317b87f9c04",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/python-byte-errors.js",
+      "sha256": "daa79fc6661bc8b85229e57bc8d3ae17149588ceb8097303ad7b2d0f0327e52a",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/python-json-bytes.js",
+      "sha256": "9d221128859f631b26e1e0bc61d334325a9451a7f239f37bacbe1a6d50db37e7",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/python-object.js",
+      "sha256": "8777226a4b0fa916e0e7b529edb8c85fa399c39a810b40957b94905e5a0bb3d0",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/python-text.js",
+      "sha256": "cdd6e3d8d634e2a2957e27759616d7b7a57e66347fa97c6d11855046bf551b4a",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/python-utf16-decode.js",
+      "sha256": "f8c4191a9414da5b8caf4c9bcb38dabeb4c5f6989ede9abeb026bb3e846bad9c",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/python-utf32-decode.js",
+      "sha256": "28425269b80eed6dd5413cd1781da9280baf23501ee50acdb980bf7449d0600b",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/python-utf8-decode.js",
+      "sha256": "ca07e2da6a45bffeb2bd01b949e58879a751dec97ae243f2dd6a703b7e0f1311",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/raw-json/float-scope.js",
+      "sha256": "db9834010226b2ad1c41adf7194e068e4fd9b4710a5585a656bd566d9543e675",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/raw-json/json-serialization-core.js",
+      "sha256": "8bf9600a57b0ed3f9fce8eaaf12ab383d503ebe71085f00ca46da64dbc5a8a81",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/raw-json/numeric-atom.js",
+      "sha256": "313f206f7767398f6a3ed61fb3c15f5f90d8eb7cd835a6402816bc19e1003188",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/raw-json/parser.js",
+      "sha256": "e56e7a875cea5926b740f8109669476659644595d28b634024d1b427d4ce2825",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-parser-core.js",
+      "sha256": "c077ecc92bdf1f55c3cca8c1ffba728dfde53a3adc69e38e10464b840c910184",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-parser.js",
+      "sha256": "3214742f49d63491115a2dc12bf25549b2863d3de7b610fde0c5138c4d5d7730",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-serializer.js",
+      "sha256": "4c32aeb1ec85ea5b24e2a53f9dfd4748b84d65379a2752020f4c93a0a1755f73",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-text-codec.js",
+      "sha256": "6c5916054ac439ad7a63802fcd2a0445d0366e2ada9df15a0b571c5310bdf12b",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/raw-json/point-value.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/raw-json/serializer.js",
+      "sha256": "854be43fe99dfcad95e2cd1e8763e740a31b0f319712f8c56e9d6e2eecbce390",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/contracts/raw-json/value.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/store/atomic-write-json.js",
+      "sha256": "eba8a1f3010576d1d74f4f5b585dac70a52ccc4e5d66e8be441134cc00afada8",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/store/exclusive-file-lock.js",
+      "sha256": "c0f882e731f575c2e3a3ce0e3f635a2ea16a6a271e590401d565abf271bc49f5",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/store/jsonl-history-io.js",
+      "sha256": "e0cad305d415a73d83bd008354c40fde66efddc8c12c2782048a40e7571e6932",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/store/jsonl-history.js",
+      "sha256": "a90b3ec0e54b74d3b3fa6139cad7a34f9e7f1cb89b90982809ca04d437bb7627",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/store/point-persistence.js",
+      "sha256": "251d9b438da600291447a4c64c836d7980ffa814e008a0822e3b761b4b5541a6",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/store/posix-flock.js",
+      "sha256": "db26be00c90e3767294cc06ca5bf0858da5b77202b539d7d2c22cf6ba62e9d85",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/store/private-filesystem.js",
+      "sha256": "cece5e0a6c7797a22adc26341bd4d704557dbd6510364d2499a16b4f82c9b3c4",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/store/read-file.js",
+      "sha256": "a8dc8b3704a284df441c2a3972051f05884d4a432cc6d1ee02da4d6705483405",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/store/read-json-object.js",
+      "sha256": "2a2166d49f056597f31f0f8f143c34d0e280d11f8f4e463e2e98a6ec9b1aeacf",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "runtime/store/validation.js",
+      "sha256": "85e308945a77b5c09d61758113d91cfd0e6fb366fe92f98f36c19c8e05ee3a0a",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "scripts/check-source-size.py",
+      "sha256": "df742cd09fae4f559e0515874c4f7fa2728fdcd3304211f16d1aa324df6ba8d8",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "scripts/job_apply_store/__init__.py",
+      "sha256": "d1f3908a9875fdeda94a2d1823b0e42edb29c7814a638b8edcdc15e127052a04",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "scripts/job_apply_store/base.py",
+      "sha256": "e1deee9f49d012eac54f3ef4990c7641d43874afa699c8d12d79919599f27c88",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "scripts/job_apply_store/constants.py",
+      "sha256": "4438a36055842e18af0ae806fed1f61bf8280908995f7295662a4213226e8b5c",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/__init__.py",
+      "sha256": "b112b206edd338aa0dd2a17d1414be2c843d6d44337249d59079a82129cd0c26",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/coordinator/__init__.py",
+      "sha256": "8515203ac4bc80d5d722deffa1879e08518b2a200a7bdbab5425c8dee43ee1be",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/coordinator/persistence.py",
+      "sha256": "1296863bad9412b852879a3b9c653a98ca61375811df2690600e6f69bc7c3177",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/resumes/__init__.py",
+      "sha256": "9ff7cd33ef9e3c17454ac38ab147f3eaec75e44816a6ea8fa0a5d3fa381dfba0",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "scripts/job_apply_store/domains/resumes/storage.py",
+      "sha256": "97ec178e0b3ddc1d3be97b1c6c34983ecf9c50caa9c6f4fd4125dbb71c6db6fe",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "scripts/job_apply_store/errors.py",
+      "sha256": "be48cff00389f30d0f51f95ec154baec6162a57350b2ab3cfcb531da7456e01c",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "scripts/job_apply_store/io.py",
+      "sha256": "6e4b36c224fdf34924f14fecbd6d8afaf398afcff455509b85a817008c407d53",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "scripts/job_apply_store/normalization.py",
+      "sha256": "8c299675838779908a1d3876db22fc2d9b32a2e08a890246357193b1d20b2beb",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/__init__.py",
+      "sha256": "b8e8d8f492cf48c33321d01db8899357f333cf94b93e5f20835cce62104524e3",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/accounts.py",
+      "sha256": "aa62b41eabe54f13c3b3fbb9791dedafc98dbac9d4e68262452e69bfb2457ddc",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/extraction.py",
+      "sha256": "6437704da0aefe5b3351c129a5b3e36e49da4db9a8d56c60ba19d28825b5d7d8",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/jobs_resumes.py",
+      "sha256": "1ad4bffefc7cc6a605d2fa04b0d2e1ccb5804091064083787f4126c157274c83",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/profile_answers.py",
+      "sha256": "599715a998b68fb0ac1ab67c0930564fda9fb69206084c12dafccfb83c9e65d9",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "scripts/job_apply_store/validation/sessions.py",
+      "sha256": "9d1c6158facc0724e5500defbc8027931e2112927677d9f3b79d5a8fde5339ce",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/filesystem-error.ts",
+      "sha256": "c4a96e096a3d9d9ab53a72ba6316e6a36debf07840f15471043932af3409ca22",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/jsonl-json.ts",
+      "sha256": "5bc28e86d18f4a998d3f90b21ef02a7a618adc6627f20850a64592cdd628a76a",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/persisted-json-core.ts",
+      "sha256": "3524aef4c2d1ed0c2a1d1ca2c9682ff179caf2d2d38c7291c219e651957cee73",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/persisted-json.ts",
+      "sha256": "c83b2863ed4f8ead2e592e8fdf24fb9a615273680a50842fec093cffe9a9a1a5",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/persistence-exception.ts",
+      "sha256": "0ff8823dae0e711b4c635bc4a83aae4570a618432cf17b250ea7d8bb06c67319",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/posix-path-bytes.ts",
+      "sha256": "ef3495003e22e409385f7943afc768f88e172ed9732256fe14a19ffac2adba87",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/posix-path.ts",
+      "sha256": "41c277795eef979813310920155934e0ee9653342bdf1a1f447212223076eebd",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/python-byte-errors.ts",
+      "sha256": "c592f684ac5ffc17d3800e008b07fabadddc5c14d3a1f537ef4fdea69d740c6f",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/python-json-bytes.ts",
+      "sha256": "347a11d6792529ad2a2ad9f4f02a767abb1db10a568292d9c2ebbe49ecb86e70",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/python-object.ts",
+      "sha256": "b7b7b5221f8bfff1ce70edd156da30e8e0f739a942b3d19de80f8244ea56a804",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/python-text.ts",
+      "sha256": "934fd2271c7e1d61056889fd7125d6dc16559271504687bcdec8c980a796ae78",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/python-utf16-decode.ts",
+      "sha256": "8efa7d6d210464ba6e9a79d14acf92b0019dfc70fd86a9f6e1ca92842a02b094",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/python-utf32-decode.ts",
+      "sha256": "0afc517e79879826985deb08805f1e5408e7728af1227cf742b0741b2f6c76e6",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/python-utf8-decode.ts",
+      "sha256": "89020d76d9bc572244285e61379e72c4e8ef3c4c7e0c57d236ffc7a82dc8b1b2",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/raw-json/float-scope.ts",
+      "sha256": "b2b6905612bd7159c978d78aada33886078cd063ae19740fddbebe1fed4c111b",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/raw-json/json-serialization-core.ts",
+      "sha256": "d549a9e86b9d7bfb93ad55d8e3f5e3ae47a0db1cd7e3e02483bd191663465f47",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/raw-json/numeric-atom.ts",
+      "sha256": "2ee4cb4a2275c8e18e83d23090d313682356b52f3e597d246e659b33c0a18dd8",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/raw-json/parser.ts",
+      "sha256": "991dca50454acd430f486f3837cf91962aa211023632136ab54bd2bc8db53444",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/raw-json/point-parser-core.ts",
+      "sha256": "491f8d10ac92154858726b68fbeab477c44e6b842a31f799182ff7773154cda3",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/raw-json/point-parser.ts",
+      "sha256": "9f87fc28aeebceccd4ef59847058cc35397df98fd6c6c8d8e3c4f9acb41949ec",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/raw-json/point-serializer.ts",
+      "sha256": "aa3e880eff91b92904cb452dacda03da41992985a1fd67206263df679233ed06",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/raw-json/point-text-codec.ts",
+      "sha256": "052ffd794291e408be419924152a3f3255fcd40f9aedaa110ac79540292561fe",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/raw-json/point-value.ts",
+      "sha256": "53cccff53a8278a41ca0866f5e274cf60f3f06495315d142d388cbcc9544612f",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/raw-json/serializer.ts",
+      "sha256": "f0aeb3584ed830ea6612806e32a129013dfd1500d5b680e52c0eb85a46f37493",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/contracts/raw-json/value.ts",
+      "sha256": "4fb77f47254d9b980c5cb3f4c89e6c664dd1dfea8a0fee229ce29a9bc6104407",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/store/atomic-write-json.ts",
+      "sha256": "d265f1febf7b4b80de9e383e78f62f186784c67e04f9053dc90b3e2aa7bce1f3",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/store/jsonl-history-io.ts",
+      "sha256": "a4008b3ffb553cf66fc446a2b5c0fa87bf2513c99e645b46543a91c0ba0f40d8",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/store/jsonl-history.ts",
+      "sha256": "d77cacf1a00c49f4faae2bf47a937a29ab08443125dd58f97605f634bf57db88",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/store/point-persistence.ts",
+      "sha256": "e230dc1b12e8ad5f6c5c4287420ac1c64fd8f82246bfdd21daff9fd1030d3889",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/store/private-filesystem.ts",
+      "sha256": "e27595f544bf23dc7f2f9017ce704cb4f8817af5c3003c75c3e1d7708b463f22",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/store/read-file.ts",
+      "sha256": "d95b7ce2ec4ba3289ff9757ac825e0a90a46d0eeb82cc1cb1c0186314656fcf2",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/store/read-json-object.ts",
+      "sha256": "5aa9d4d2d99e45ebc37eda205179b18572cc3df76ade653a0b3a75fb822d247f",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "src/store/validation.ts",
+      "sha256": "c8f3922ea86636822248397bea0b50c26cc2f80e10bda9070aa0abac4ae58f14",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tests_js/atomic_write_json_reference.test.mjs",
+      "sha256": "f022146fca2bf619338cd6113b788c728fc387bcba09f94022f954432a6d9d57",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tests_js/atomic_write_json_ts.test.mjs",
+      "sha256": "0e7d3095e9745fa703a5d77d389f296a34ae0cec9cb3296693b24dfafb56e473",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tests_js/atomic_write_json_ts_support.mjs",
+      "sha256": "efb21dd9587c51a6d1e535aeb09a4a24f5dc31f1d71b4316367039b3f76c3b63",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tests_js/exclusive_file_lock_support.mjs",
+      "sha256": "c79cc94f9e61f1692bfa3109e59eab12a56bc479d9e69c24fc0fbbda9f23b9f9",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tests_js/jsonl_append_reference.test.mjs",
+      "sha256": "2f4ee1c18f2c4cdb3b59a2a6403cb113d4f7890b72fff57e1bc7655c49b0d66f",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tests_js/jsonl_history_support.mjs",
+      "sha256": "f55b61d8d6f82ca2c99d4df7c46774b8c93588f84fb2aa70a95235e4f65d7e41",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tests_js/jsonl_history_ts.test.mjs",
+      "sha256": "e86a23ae82f9b3c6412ead4836b21030edc2a551d4bf7e441dee1fb78c59cbb5",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tests_js/jsonl_json_ts.test.mjs",
+      "sha256": "c7d2c8959068ef81323fad52b5ece414343f42eb46ac7ef53b0477f7a4374a13",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tests_js/persisted_json_ts.test.mjs",
+      "sha256": "620c51b106bc4016ee472f158e7f66a5a68831c037b98cc9bb9df685ebcfc203",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tests_js/point_persistence_baselines.test.mjs",
+      "sha256": "490dbede153c9b1784cbb7da2fb8ab600ba2965f17b092971f00e3c50af04f32",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tests_js/point_persistence_reference.test.mjs",
+      "sha256": "17d5509db54762c1cb9a5dcc51eb64375ca5f660dc02e7ae97cc6dfbecbce742",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tests_js/posix_flock.test.mjs",
+      "sha256": "792cd98f4502b6e72f43572259ad38059614d175a364ab366e48a474f00c81fd",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tests_js/python_text_acceptance.test.mjs",
+      "sha256": "16103a567ec1701a4941bba6672a8b8c5857474e2c06e71058493b8bdd52dd35",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tests_js/python_text_ts.test.mjs",
+      "sha256": "c278910ac938782dbfea8f049235d5a6bcfb32d4fc9ebe1f46d93d5129308585",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tests_js/typed_json_points.test.mjs",
+      "sha256": "8b025f68fc0de659ce09342a93b676b62196fb5b0a60211fc9093f9b5113918f",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tests_js/typed_json_points_compat.test.mjs",
+      "sha256": "d44fdf6934f8a28f0c0254e599b698df494ef867415617fc1db46c7cc4e3d2a9",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tests_js/typed_json_points_profiles.test.mjs",
+      "sha256": "fde848d7ea573350cba0a9cd541703beb4d5ce8057bf6137a2d4208dd8e251d7",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tools/build-native-lock.mjs",
+      "sha256": "b49f30be5e89ac44facde30ccb7f7b60415199df451ee065f2161ee7f3387c80",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tools/build-runtime.mjs",
+      "sha256": "fa9dc44fdad05da0157eec34ac6ed552d51570cfe92ed133f855ae2e9d13a0dd",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tools/contracts/atomic-write-json/reference.py",
+      "sha256": "283e45f35c5485a645fa71844958749e541108be5b55cad6a76fcc8687182381",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tools/contracts/atomic-write-json/support.py",
+      "sha256": "a95c02ec86844aa931d20c26238d56436cdb576e0902ca7307f1b5d560fdfa39",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tools/contracts/codepoint-json/reference.py",
+      "sha256": "fef264468e9190a80cd6edbc03ec06693f6269edc3df7f30757fb16a8d63c231",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tools/contracts/jsonl-append/reference.py",
+      "sha256": "6a877e92fb9c0ecbbcc19a76e4f15b4dd1f4112304c2c7b7aed2958647783d13",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tools/contracts/jsonl-append/support.py",
+      "sha256": "cb6c28460033dea72c93807a457b6abefc2f98f0903519805d1fcf348224c0ea",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tools/contracts/point-persistence/fixtures.py",
+      "sha256": "14f5edcefbc90af2d66391f6dbaefd19045c4bf0aff33cf0282262b62031ac64",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tools/contracts/point-persistence/reference.py",
+      "sha256": "b8400c89e7801880631e0530b891bb165c48ed35f5541365bd83d0650cb5497a",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tools/contracts/point-persistence/support.py",
+      "sha256": "e7b0b1c301cd971889244e01a7487d3be68a6b790b4028be6406aadefd6e639c",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tools/contracts/python-text/reference.py",
+      "sha256": "1e661e4071274822cb2a7570ad98f5e76b24731f9c26aeef00cd3773c89c0286",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tools/migration/local-mac-host.mjs",
+      "sha256": "14fa7c39de71f25d056025216dc32ce76a445f09002b5cf23d8e0e7a400553bd",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tools/migration/tap-evidence.mjs",
+      "sha256": "0a3358323e73f6bb0828dc63071603a1263ea6008413c2bf1a620c22c42f3077",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tools/runtime-build/inventory.mjs",
+      "sha256": "06a07f1948f0d366d5192b2e5886bcc62da443d946070724b4a36bc054a9ecfe",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "a5bbfb581960ff5215cf6f5ed0ae26464b32d3c7040d26c9b73d12bcc4986c8f",
+      "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f"
+    }
+  ],
+  "additionalInputsAtActualFreeze": [],
+  "overlaps": "posix_flock test, build-native-lock tool, exclusive_file_lock_support and native/posix/flock.c have no current manifest owners/read bindings. P05 only reads S04 files; S04.I direct prerequisite preserves evidence ancestry. It does not modify the matrix or S04.V frozen inputs.",
+  "nativeAddonOutputSchema": {
+    "schemaVersion": 1,
+    "scope": "mac-dogfood-native-addon",
+    "hostBefore": "P02 LocalMacHostIdentity",
+    "hostAfter": "identical P02 LocalMacHostIdentity",
+    "compiler": "same resolved binary supplied explicitly to buildNativeLock",
+    "build": "original buildNativeLock receipt including sourceSha256, headerHashes, artifactSha256, NAPI, platform, arch, node version",
+    "artifactBytesSha256": "independently rehashed before load and after kernel operations",
+    "operations": [
+      "first descriptor lock succeeds",
+      "second descriptor contention returns false",
+      "unlock first",
+      "second descriptor lock succeeds",
+      "unlock second"
+    ],
+    "cleanup": "owned temporary handles/directory closed/removed; no live paths"
+  },
+  "inputRefreshAudit": {
+    "originalInputCount": 142,
+    "currentInputCount": 150,
+    "changedOriginalInputs": [],
+    "allInputBytesReadFromGitRevision": "ac56adaff1898a04904b7f656424e220c54aed90",
+    "collectorStaticImports": [
+      "node:child_process",
+      "node:fs",
+      "node:fs/promises",
+      "node:crypto",
+      "node:path",
+      "node:util"
+    ],
+    "collectorLocalImportClosure": [
+      "tools/migration/local-mac-host.mjs"
+    ],
+    "note": "No staged coordinator metadata is included in immutable source bindings. Root must refresh at final clean integrated P05 freeze base."
+  },
+  "positiveWitnessPolicy": {
+    "collector": "Use exact accepted P02 collectLocalMacHost, validateLocalMacHost and assertLocalMacHostUnchanged APIs. No host substitutes or injected acceptance identities.",
+    "nonmatchingHost": "Required positive outer identity/native/persistence witnesses explicitly t.skip on initial LOCAL_MAC_HOST_MISMATCH only; strict outer zero-skip capture rejects acceptance. Negative fixture assertions are separate and never replace a positive native witness.",
+    "matchingHost": "Missing Python aliases/compiler/headers, malformed identity, timeouts, all probe failures and any during-run identity drift are failures, never skips.",
+    "duringRun": "Once the initial positive host check passes, a subsequent mismatch or identity drift must fail; do not catch as a skip."
+  },
+  "rawOutputTransport": {
+    "method": "Append t.diagnostic(JSON.stringify({kind, ...complete observation})) without truncation. Node TAP reporter may escape diagnostic text; decode its reversible escaping before JSON.parse and byte reconstruction.",
+    "requiredInvariant": "UTF8 bytes reconstructed from recorded stdout/stderr must hash to recorded raw hashes and length must equal recorded raw byte counts; preserve every newline including final LF.",
+    "validation": "Add a negative/roundtrip fixture containing LF, CR, tabs, literal backslash-n, quotes and non-ASCII text, proving reporter transport reversibility and rejecting lossy normalization.",
+    "budgets": "Frozen S04 120000ms/1048576byte limits remain unchanged per child; outer480000ms/8388608byte ceiling. No output trimming to satisfy budgets."
+  },
+  "newSourceClosure": {
+    "tools/migration/local-mac-required-cells.mjs": [
+      "tools/migration/local-mac-host.mjs",
+      "tools/migration/tap-evidence.mjs",
+      "tools/build-native-lock.mjs",
+      "runtime/store/posix-flock.js",
+      "docs/migration/evidence/s04/implementation-spec.json"
+    ],
+    "tests_js/posix_flock.test.mjs": "Preserve original callback/imports; append3 frozen literal cases using new runner. All existing imported files are in142original pins."
+  },
+  "prerequisiteReceipts": [
+    {
+      "id": "P01.V",
+      "sha256": "2d49ae6223eb738812b801a8f0e95c7324b17cff95d490e92e254f8a7a0f7ef8",
+      "subject": {
+        "sha": "ac3a12d7e7a26450dc48513efdc74162f419b7de",
+        "tree": "ec8e5ae8cd48dfdba95598620a8da1eeda9a9847"
+      },
+      "evidenceCommit": "4275a9c2edd23da9d67110a888cfb8bf17162e00"
+    },
+    {
+      "id": "S04.I",
+      "sha256": "ba59a691548ecf9660ecc2131efd39abc7d9270533b3e47cfb0da536afc5c9db",
+      "subject": {
+        "sha": "80224dae9194bfc71c15686bdb8cf3f2349d59f2",
+        "tree": "3dd28f8fc4de698daa69af158cb8c0797e6f02bb"
+      },
+      "evidenceCommit": "e83ab9aadc076016a34253f012f20fcc5ab0fdee"
+    },
+    {
+      "id": "P02.I",
+      "sha256": "d5cf9b904f43bd4a48e78c2dd90b253ad985def65483196f3bbd49a655cb8070",
+      "subject": {
+        "sha": "ad65adc893d60f3cd0cdd06a9faffbd2e159f650",
+        "tree": "9fee71d233b5745429bd127ead6b8fb462368710"
+      },
+      "evidenceCommit": "ac56adaff1898a04904b7f656424e220c54aed90"
+    },
+    {
+      "id": "P02.V",
+      "sha256": "91e1ef277cab8bf4e8028a04d299b68c2db8a36acba7a7b8dcc169b09127e11f",
+      "subject": {
+        "sha": "ad65adc893d60f3cd0cdd06a9faffbd2e159f650",
+        "tree": "9fee71d233b5745429bd127ead6b8fb462368710"
+      },
+      "evidenceCommit": "ac56adaff1898a04904b7f656424e220c54aed90"
+    }
+  ],
+  "prerequisiteVerification": {
+    "status": "verified at clean accepted integrated base",
+    "revision": "c38eba80305c3b56a8c165cce581b1cf26f6903f",
+    "P02ReceiptCommit": "c4ea016e12a379bd32ba6cd57db349874bffab78",
+    "M01ReceiptCommit": "ff6a5b1588230cf8c0daaf44a2097a693bd561a0"
+  }
+}

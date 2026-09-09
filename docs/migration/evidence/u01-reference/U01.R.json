@@ -1,0 +1,239 @@
+{
+  "schemaVersion": 1,
+  "kind": "audit",
+  "dag": {
+    "path": "docs/migration/evidence/core-paths-ui/reference-dag.json",
+    "sha256": "12a23a693f86f3072352f8dc063a80044a5f5c66bd61ff62fec42213970de9e3"
+  },
+  "package": {
+    "id": "U01",
+    "parentNode": "UI0",
+    "owner": "timestamp_tests",
+    "allowed_files": [
+      "tests_js/workspace_profile_helpers_reference.test.mjs",
+      "docs/migration/evidence/u01-reference/reference-spec.json",
+      "docs/migration/evidence/u01-reference/reference-plan.md",
+      "docs/migration/evidence/u01-reference/reference-audit.json",
+      "docs/migration/evidence/u01-reference/U01.R.json"
+    ],
+    "surfaceIds": [],
+    "requirementIds": [],
+    "dependencies": [],
+    "interfaceIds": [],
+    "referenceIds": [],
+    "emittedFiles": [],
+    "activation": "inert",
+    "status": "planned"
+  },
+  "packageSha256": "2e296a4de54d6b9fda98e5840f3e1dadb3b00490441e48170f8c19101f49fe39",
+  "auditContract": {
+    "path": "docs/migration/evidence/u01-reference/reference-audit.json",
+    "sha256": "a52796cb28a521c0443f50812f1b9e759fcf2e3310410b02c10af94dd452549d"
+  },
+  "author": "timestamp_tests",
+  "reviewer": "hooks_audit",
+  "base": "34980dcbdc9a3d65ba4dee68014fc64645fc1fb5",
+  "inputs": [
+    {
+      "path": ".source-size-baseline.json",
+      "sha256": "8b0071c47e04b1d32246d9498fc35d6fd05e1868455b73bbcc4eebc97551d8a3"
+    },
+    {
+      "path": "config/test-matrix.json",
+      "sha256": "bd33a6cecc1b468adf2581582eec1ef13747e404a40ea843721b9cea30511f38"
+    },
+    {
+      "path": "docs/migration/evidence/core-paths-ui/reference-dag.json",
+      "sha256": "12a23a693f86f3072352f8dc063a80044a5f5c66bd61ff62fec42213970de9e3"
+    },
+    {
+      "path": "docs/migration/evidence/u01-reference/reference-audit.json",
+      "sha256": "a52796cb28a521c0443f50812f1b9e759fcf2e3310410b02c10af94dd452549d"
+    },
+    {
+      "path": "docs/migration/evidence/u01-reference/reference-plan.md",
+      "sha256": "c9911976541cd7ade1a6d417f730acdb7e582d4fc977ea910012348956778396"
+    },
+    {
+      "path": "docs/migration/evidence/u01-reference/reference-spec.json",
+      "sha256": "d24dafa72ff44c9a69ad36c4fa2a38aaab8c33df6cb59c0b89b7a166aca9ffd9"
+    },
+    {
+      "path": "docs/migration/remaining-helper-reference.md",
+      "sha256": "f65addce9c6db1e1c951b47ee5b234e472c17af8bd4b8a8daf5130637de6d88f"
+    },
+    {
+      "path": "docs/migration/trash-helper-reference.md",
+      "sha256": "7ea83fc4e4ad314d9334f34f40fcfa305244bbd50a0a7e943ab97217e070cffe"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "7ee9e2f989ec77ba9ab97847266792da033d9ebd98fd3643a26d73430d076c17"
+    },
+    {
+      "path": "package.json",
+      "sha256": "c652d020e5b1762c2bc703c563124c23f87c978f87af9c299f0a661253c40200"
+    },
+    {
+      "path": "tests_js/workspace_activity_helpers_reference.test.mjs",
+      "sha256": "f952f5e334b1309d0a48134af45bce1541d0989a0d7c1cadda848ba3c8721648"
+    },
+    {
+      "path": "tests_js/workspace_answer_helpers_reference.test.mjs",
+      "sha256": "e8a9477ad6ada0d71ee411bacf4764d15de2bcf5b65aa1462301d2b5e4a327f9"
+    },
+    {
+      "path": "tests_js/workspace_profile_helpers_reference.test.mjs",
+      "sha256": "c39ab8dc7c1720074aa578e5388275597ba43f2c9bd1b88f473ae1435869e36d"
+    },
+    {
+      "path": "tests_js/workspace_trash_reference.test.mjs",
+      "sha256": "bb5907980f1109ce9b5504ded901b493ff7707607f5e0d13f809bf3983642d24"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "a5bbfb581960ff5215cf6f5ed0ae26464b32d3c7040d26c9b73d12bcc4986c8f"
+    },
+    {
+      "path": "workspace/lib/helpers.js",
+      "sha256": "6fdaab7896a1944dde732c9cb239507968d30a5bd50ee35e7249c06d89bcb33e"
+    }
+  ],
+  "oversized": [],
+  "cells": [
+    {
+      "id": "U01-reference-workspace_activity_helpers_reference",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_activity_helpers_reference.test.mjs"
+      ],
+      "testNames": [
+        "activity reference: job filter preserves identity/order and status short circuit",
+        "activity reference: transition and readiness maps preserve inherited lookup behavior",
+        "activity reference: revision policies retain integer checks, ties and reference returns",
+        "activity reference: signatures and announcements preserve field selection and ordered copy",
+        "activity reference: attention signatures preserve order and blocker special-case exactness",
+        "activity reference: owner next-step copy and prototype lookups remain observable"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/ui/logs/U01-reference-workspace_activity_helpers_reference.tap",
+      "requirementIds": [
+        "u01.filterJobs",
+        "u01.transitionsFor",
+        "u01.canMarkReadyFrom",
+        "u01.shouldUseActivityResponse",
+        "u01.newestCanonicalJob",
+        "u01.activitySignature",
+        "u01.activityAnnouncement",
+        "u01.attentionMembershipSignature",
+        "u01.attentionAnnouncement",
+        "u01.attentionMissingInformationText",
+        "u01.attentionBlockerSummary",
+        "u01.ownerBetaNextStep"
+      ]
+    },
+    {
+      "id": "U01-reference-workspace_answer_helpers_reference",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_answer_helpers_reference.test.mjs"
+      ],
+      "testNames": [
+        "answer reference: consent and summary retain truthiness and precedence",
+        "answer reference: identity and request gates preserve strict comparison and short circuits",
+        "answer reference: API keys use UTF8 URL-safe base64 and unescaped action suffix",
+        "answer reference: scope comparison preserves JSON coercions and never promises Python equivalence"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/ui/logs/U01-reference-workspace_answer_helpers_reference.tap",
+      "requirementIds": [
+        "u01.answerNeedsFreshConsent",
+        "u01.answerSummary",
+        "u01.canRevealAnswer",
+        "u01.canRefreshAnswerDraft",
+        "u01.canApplyAnswerReveal",
+        "u01.canApplyAnswerDialogResponse",
+        "u01.canApplyAnswerDialogMutation",
+        "u01.answerApiPath",
+        "u01.sameAnswerScope"
+      ]
+    },
+    {
+      "id": "U01-reference-workspace_profile_helpers_reference",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_profile_helpers_reference.test.mjs"
+      ],
+      "testNames": [
+        "profile reference: form patch fixes fields and preserves priority coercion",
+        "profile reference: pointers decode escapes, own keys and primitive boxing",
+        "profile reference: patches safely retain prototype-named own fields and ordered collisions",
+        "profile reference: overlapping patch paths mutate aliased caller parents and reject frozen parents",
+        "profile reference: conflicts preserve map baselines, structured conflicts and draft order",
+        "profile reference: provenance selects longest ancestor or sorted descendant summary",
+        "profile reference: tags retain duplicates, order and String coercion",
+        "U01 resume reference preserves counts and default copy",
+        "U01 resume reference preserves extraction precedence and malformed projections",
+        "U01 resume reference preserves grouping coercion and strict response identity",
+        "U01 resume reference preserves accessor order and thrown identities"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/ui/logs/U01-reference-workspace_profile_helpers_reference.tap",
+      "requirementIds": [
+        "u01.formPatch",
+        "u01.pointerValue",
+        "u01.patchForPaths",
+        "u01.conflictingPaths",
+        "u01.summarizeProvenance",
+        "u01.tagsFromInput",
+        "u01.resumeAssignmentText",
+        "u01.extractionRequestView",
+        "u01.proposalGroupForPath",
+        "u01.shouldUseResumeResponse"
+      ]
+    },
+    {
+      "id": "U01-reference-workspace_trash_reference",
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_trash_reference.test.mjs"
+      ],
+      "testNames": [
+        "trash-reference: delete phrases retain falsy defaults and String coercion",
+        "trash-reference: filtering preserves order, item identity and strict type matching",
+        "trash-reference: missing collections and malformed elements keep existing behavior",
+        "trash-reference: blockers sum integers only without clamping negatives",
+        "trash-reference: lifecycle messages preserve defaults, coercion and count suffix",
+        "trash-reference: revision conflict takes precedence without consulting other fields",
+        "trash-reference: presentation functions leave frozen caller records unchanged"
+      ],
+      "timeoutMs": 30000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/ui/logs/U01-reference-workspace_trash_reference.tap",
+      "requirementIds": [
+        "u01.typedDeletePhrase",
+        "u01.filterTrashItems",
+        "u01.trashBlockerText",
+        "u01.lifecycleErrorText"
+      ]
+    }
+  ],
+  "artifacts": [],
+  "id": "U01.R",
+  "role": "reference"
+}

@@ -8,7 +8,11 @@
       "path": "/api/trusted-fill/{id}",
       "node": "PROJ",
       "sources": [
-        "scripts/job_apply_workspace/queries.py"
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -31,7 +35,11 @@
       "path": "/api/employer-accounts/{id}",
       "node": "PROJ",
       "sources": [
-        "scripts/job_apply_workspace/queries.py"
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -54,7 +62,11 @@
       "path": "/api/fact-groups/{id}",
       "node": "PROJ",
       "sources": [
-        "scripts/job_apply_workspace/queries.py"
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -77,7 +89,11 @@
       "path": "/api/answers/by-key/{encodedKey}",
       "node": "PROJ",
       "sources": [
-        "scripts/job_apply_workspace/queries.py"
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -100,7 +116,11 @@
       "path": "/api/jobs/{id}/pending-answers/{reference}",
       "node": "PROJ",
       "sources": [
-        "scripts/job_apply_workspace/queries.py"
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -123,7 +143,11 @@
       "path": "/api/answers/{legacyKey}",
       "node": "PROJ",
       "sources": [
-        "scripts/job_apply_workspace/queries.py"
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -146,7 +170,11 @@
       "path": "/api/resumes/{id}",
       "node": "PROJ",
       "sources": [
-        "scripts/job_apply_workspace/queries.py"
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -169,7 +197,11 @@
       "path": "/api/resumes/{id}/content",
       "node": "PROJ",
       "sources": [
-        "scripts/job_apply_workspace/queries.py"
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -192,7 +224,11 @@
       "path": "/api/resume-proposals/{id}",
       "node": "PROJ",
       "sources": [
-        "scripts/job_apply_workspace/queries.py"
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -215,7 +251,13 @@
       "path": "/api/jobs/{id}",
       "node": "PROJ",
       "sources": [
-        "scripts/job_apply_workspace/queries.py"
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts",
+        "src/cli/native-jobs-server.ts",
+        "src/workspace-core/jobs-http.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -238,7 +280,11 @@
       "path": "/api/jobs/{id}/activity",
       "node": "PROJ",
       "sources": [
-        "scripts/job_apply_workspace/queries.py"
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -261,7 +307,11 @@
       "path": "/api/jobs/{id}/preflight",
       "node": "PROJ",
       "sources": [
-        "scripts/job_apply_workspace/queries.py"
+        "scripts/job_apply_workspace/queries.py",
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

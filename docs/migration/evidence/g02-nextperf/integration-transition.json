@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "id": "G02.nextperf.integration-transition",
+  "previousDag": {
+    "path": "docs/migration/evidence/g02-hybrid2/integration-dag.json",
+    "sha256": "938e37d2d733b99d5eeba415007398c8e60867a1fde0be597b1d38a4b1283273",
+    "revision": "8061447d37e1d0a71b835ef84d5e40db9d2a7e6b"
+  },
+  "nextDag": {
+    "path": "docs/migration/evidence/g02-nextperf/integration-dag.json",
+    "sha256": "ee7ae374bbc1af91f827fca1c18172566f3d5c455e8c1f7cd2c92db60910da94",
+    "revision": "66565bbec1c258ef0edff5539248ac6282bd48b5"
+  },
+  "retirements": [],
+  "additions": [
+    {
+      "id": "G02.nextperf.I",
+      "manifest": {
+        "path": "docs/migration/evidence/g02-nextperf/G02.nextperf.I.json",
+        "sha256": "25b648a6efe99b53140254086e1e28d9fab70303417f1988704f352680e1c93d",
+        "revision": "66565bbec1c258ef0edff5539248ac6282bd48b5"
+      }
+    },
+    {
+      "id": "G02.nextperf.V",
+      "manifest": {
+        "path": "docs/migration/evidence/g02-nextperf/G02.nextperf.V.json",
+        "sha256": "f6cb9c2ee1e40a9d643f7528412a5302508bbf3dc912a14ea7015663317fb963",
+        "revision": "66565bbec1c258ef0edff5539248ac6282bd48b5"
+      }
+    }
+  ],
+  "refinements": [
+    {
+      "id": "G02.I",
+      "beforeDependencies": [
+        "G01.V",
+        "A04.V",
+        "W01.V",
+        "W02.V",
+        "W03.V",
+        "W04.V",
+        "W05.V",
+        "U07.V",
+        "P03.ui-tests.V",
+        "G02.hybrid2.V"
+      ],
+      "afterDependencies": [
+        "G01.V",
+        "A04.V",
+        "W01.V",
+        "W02.V",
+        "W03.V",
+        "W04.V",
+        "W05.V",
+        "U07.V",
+        "P03.ui-tests.V",
+        "G02.hybrid2.V",
+        "G02.nextperf.V"
+      ]
+    }
+  ],
+  "packageVersions": [],
+  "witnessMappings": [],
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "decision": "approved",
+  "reason": "Reduce repeated immutable Git reads with an explicit 32 MiB retained cache and shared base facts so normal frontend integration can remain within its existing time limit."
+}

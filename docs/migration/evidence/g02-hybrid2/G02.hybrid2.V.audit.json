@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "id": "g02-hybrid2-review-audit",
+  "assignmentIds": [
+    "G02.hybrid2.V"
+  ],
+  "allowed_files": [
+    "scripts/job_apply_workspace/__init__.py",
+    "scripts/job_apply_workspace/queries.py",
+    "workspace/lib/helpers-bridge.js",
+    "tests_js/workspace_information_architecture.test.mjs",
+    "tests_js/workspace_hybrid_assets_support.mjs",
+    "tests_js/workspace_hybrid_browser_support.mjs",
+    "config/migration/source-catalog-04.json",
+    "config/migration/source-catalog-g02-hybrid.json",
+    "docs/migration/evidence/g02-hybrid/implementation-spec.json",
+    "docs/migration/evidence/g02-hybrid/implementation-plan.md",
+    "docs/migration/evidence/g02-hybrid/integration-dag.json",
+    "docs/migration/evidence/g02-hybrid/integration-transition.json",
+    "docs/migration/evidence/g02-hybrid/G02.hybrid.I.audit.json",
+    "docs/migration/evidence/g02-hybrid/G02.hybrid.V.audit.json",
+    "docs/migration/evidence/g02-hybrid/G02.hybrid.I.json",
+    "docs/migration/evidence/g02-hybrid/G02.hybrid.V.json",
+    "tools/migration/browser-exports.mjs",
+    "tools/migration/check.mjs",
+    "tools/migration/browser-serving-map.mjs",
+    "tests_js/migration_browser_inventory.test.mjs",
+    "config/migration/browser-app-01-surfaces.json",
+    "config/migration/browser-app-02-surfaces.json",
+    "config/migration/browser-app-03-surfaces.json",
+    "config/migration/browser-g02-hybrid2-surfaces.json",
+    "config/migration/http-g02-hybrid2-surfaces.json",
+    "docs/migration/evidence/g02-hybrid2/implementation-spec.json",
+    "docs/migration/evidence/g02-hybrid2/implementation-plan.md",
+    "docs/migration/evidence/g02-hybrid2/integration-dag.json",
+    "docs/migration/evidence/g02-hybrid2/integration-transition.json",
+    "docs/migration/evidence/g02-hybrid2/G02.hybrid2.I.audit.json",
+    "docs/migration/evidence/g02-hybrid2/G02.hybrid2.V.audit.json",
+    "docs/migration/evidence/g02-hybrid2/G02.hybrid2.I.json",
+    "docs/migration/evidence/g02-hybrid2/G02.hybrid2.V.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "g02.hybrid.serving",
+    "g02.hybrid2.browser-inventory"
+  ],
+  "cells": [
+    {
+      "id": "g02.hybrid.browser-assets",
+      "environmentId": "node-local",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/workspace_information_architecture.test.mjs"
+      ],
+      "reporter": "node-tap13",
+      "testNames": [
+        "global navigation exposes the pipeline, application data, and controls model",
+        "navigation preserves button, badge, active-state, and event-binding contracts",
+        "persistent trust context explains local data and human control",
+        "navigation has a collision-free row and focus-safe narrow-width overflow",
+        "hybrid UI serves exact TypeScript helper assets through guarded Python routes",
+        "hybrid UI boots real Python server with compiled helper identities and navigation"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/g02-hybrid2/logs/g02.hybrid.browser-assets.tap",
+      "requirementIds": [
+        "g02.hybrid.serving"
+      ]
+    },
+    {
+      "id": "g02.hybrid2.browser-inventory",
+      "environmentId": "node-local",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/migration_browser_inventory.test.mjs"
+      ],
+      "reporter": "node-tap13",
+      "testNames": [
+        "static export discovery never executes browser bootstrap and preserves barrel origins",
+        "renamed and namespace exports stay public without importing their module",
+        "missing modules, invalid syntax, escaping and ambiguous reexports fail closed",
+        "added, deleted, renamed or source-unbound exports require ledger reconciliation",
+        "local export lists and multiple star binding chains require explicit review",
+        "closed browser serving map preserves physical originals and actual app runtime origins",
+        "closed browser serving map rejects arbitrary aliases accessors missing leaves and escapes",
+        "browser serving detection stays disabled without bridge and rejects unreviewed server bytes"
+      ],
+      "timeoutMs": 20000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/g02-hybrid2/logs/browser-inventory.tap",
+      "requirementIds": [
+        "g02.hybrid2.browser-inventory"
+      ]
+    }
+  ],
+  "artifacts": []
+}

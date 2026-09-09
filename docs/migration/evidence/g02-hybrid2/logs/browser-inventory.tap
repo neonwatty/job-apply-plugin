@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: static export discovery never executes browser bootstrap and preserves barrel origins
+ok 1 - static export discovery never executes browser bootstrap and preserves barrel origins
+  ---
+  duration_ms: 3.262417
+  type: 'test'
+  ...
+# Subtest: renamed and namespace exports stay public without importing their module
+ok 2 - renamed and namespace exports stay public without importing their module
+  ---
+  duration_ms: 0.506875
+  type: 'test'
+  ...
+# Subtest: missing modules, invalid syntax, escaping and ambiguous reexports fail closed
+ok 3 - missing modules, invalid syntax, escaping and ambiguous reexports fail closed
+  ---
+  duration_ms: 1.131417
+  type: 'test'
+  ...
+# Subtest: added, deleted, renamed or source-unbound exports require ledger reconciliation
+ok 4 - added, deleted, renamed or source-unbound exports require ledger reconciliation
+  ---
+  duration_ms: 0.12
+  type: 'test'
+  ...
+# Subtest: local export lists and multiple star binding chains require explicit review
+ok 5 - local export lists and multiple star binding chains require explicit review
+  ---
+  duration_ms: 0.495917
+  type: 'test'
+  ...
+# Subtest: closed browser serving map preserves physical originals and actual app runtime origins
+ok 6 - closed browser serving map preserves physical originals and actual app runtime origins
+  ---
+  duration_ms: 0.660083
+  type: 'test'
+  ...
+# Subtest: closed browser serving map rejects arbitrary aliases accessors missing leaves and escapes
+ok 7 - closed browser serving map rejects arbitrary aliases accessors missing leaves and escapes
+  ---
+  duration_ms: 0.520042
+  type: 'test'
+  ...
+# Subtest: browser serving detection stays disabled without bridge and rejects unreviewed server bytes
+ok 8 - browser serving detection stays disabled without bridge and rejects unreviewed server bytes
+  ---
+  duration_ms: 0.214209
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 167.172833

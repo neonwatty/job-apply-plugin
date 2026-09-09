@@ -1,4 +1,5 @@
 import { closed, digest, equal, hash, sha } from './evidence-io.mjs';
+import { containsRecords, recordKeys } from './history-records.mjs';
 
 export const CATALOG = 'config/migration/task-contracts.json';
 export const REVIEW_LOCK = 'config/migration/review-lock.json';
@@ -43,9 +44,10 @@ function metadataHistory(path) {
   for (const revision of io.changes(path)) {
     const next = path === CATALOG ? (() => { const value = catalogAt(revision); return [...value.assignments, ...value.environments, ...value.audits]; })()
       : collectionAt(path, revision, key, path === RECEIPTS ? collection.receipts : handoffShard.handoffs);
-    for (const previous of snapshots) if (io.ancestor(previous.revision, revision)
-      && previous.items.some(item => !next.some(value => equal(item, value)))) throw new Error('Coordinator history removed or replaced evidence');
-    snapshots.push({ revision, items: next });
+    const records = recordKeys(next);
+    for (const previous of snapshots) if (!containsRecords(records, previous.records)
+      && io.ancestor(previous.revision, revision)) throw new Error('Coordinator history removed or replaced evidence');
+    snapshots.push({ revision, records });
   }
   histories.add(path);
 }

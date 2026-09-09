@@ -267,10 +267,14 @@ export function installBindings(context) {
   } else {
     (async () => {
       try {
+        const initialGeneration = state.navigationGeneration;
         const boot = await api("/api/boot");
         if (boot.status !== "ready") { renderDegradedBoot(boot); return; }
         ensureWorkspacePolling();
         await Promise.all([refreshOverview({ quiet: true }), refresh({ quiet: true }), refreshAttention({ quiet: true }), refreshTrash({ quiet: true })]);
+        if (context.initialWorkspace && state.navigationGeneration === initialGeneration) {
+          await showWorkspace(context.initialWorkspace);
+        }
       } catch (error) {
         setConnection(false, error.message);
         $("#overview-live").textContent = `Workspace startup failed: ${error.message}`;

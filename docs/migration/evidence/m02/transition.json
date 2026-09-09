@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "id": "M02.mac-parallel-transition",
+  "previousDag": {
+    "path": "docs/migration/evidence/m01/approved-dag.json",
+    "sha256": "5f774f203c6a0c2ed8d81811e9c88856ddad2564653e5db58f7cddb32bd05f5a",
+    "revision": "5fcecdb1459d4e8e71de90a35f725e50a3db4e0f"
+  },
+  "nextDag": {
+    "path": "docs/migration/evidence/m02/approved-dag.json",
+    "sha256": "4a84d41bc1395582f89795ea70fee8c58fadf212181bdcaceadfe5cbbb2ee8b2",
+    "revision": "ef4baebc78a145730d85c079b369f71468dcf840"
+  },
+  "retirements": [],
+  "additions": [
+    {
+      "id": "M02.I",
+      "manifest": {
+        "path": "docs/migration/evidence/m02/M02.I.json",
+        "sha256": "ba431c5949ae70afc01760548f10df16d1dc7e19a582a847224bc54abaf459e4",
+        "revision": "ef4baebc78a145730d85c079b369f71468dcf840"
+      }
+    },
+    {
+      "id": "M02.V",
+      "manifest": {
+        "path": "docs/migration/evidence/m02/M02.V.json",
+        "sha256": "ef6c39bf1dc6b222684ab67801daec9da821786ddacf2c2ebd4a833452f98c49",
+        "revision": "ef4baebc78a145730d85c079b369f71468dcf840"
+      }
+    }
+  ],
+  "refinements": [
+    {
+      "id": "S05.I",
+      "beforeDependencies": [
+        "S08.V",
+        "S05.R"
+      ],
+      "afterDependencies": [
+        "S08.V",
+        "S05.R",
+        "M02.V"
+      ]
+    }
+  ],
+  "packageVersions": [],
+  "witnessMappings": [],
+  "author": "root",
+  "reviewer": "hooks_audit",
+  "decision": "approved",
+  "reason": "Add point filesystem codec preparation to S05.I while preserving S08.V and S05.R; full path/cache implementation remains open."
+}

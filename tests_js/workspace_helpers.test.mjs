@@ -1,7 +1,7 @@
+import test from "node:test";
 import {
   assert,
   resolve,
-  test,
   ApiError,
   FACT_SAVE_REVISION_RETRIES,
   canMarkReadyFrom,
@@ -218,3 +218,165 @@ test("status actions preserve guarded ready, acquire, and applied boundaries", (
   assert.equal(canMarkReadyFrom("needs_info"), true);
   assert.equal(canMarkReadyFrom("awaiting_review"), false);
 });
+
+import { fileURLToPath } from 'node:url';
+import * as originalRequests from '../workspace/lib/api.js';
+import * as preparedRequests from '../runtime/workspace-ui/lib/automation-request.js';
+
+function requestObservation(api, name, factory) {
+  const log = [], sentinel = new RangeError('fixture sentinel');
+  const { args, inspect = () => null } = factory(log, sentinel);
+  let result, error;
+  try { result = api[name](...args); }
+  catch (failure) {
+    error = { constructor: failure?.constructor?.name, name: failure?.name, message: failure?.message,
+      sentinel: failure === sentinel };
+  }
+  const after = inspect(result, error);
+  return { result, error, keys: result && Object.keys(result),
+    optionKeys: result?.options && Object.keys(result.options), log, after };
+}
+function compareRequest(name, factory) {
+  assert.deepEqual(requestObservation(preparedRequests, name, factory), requestObservation(originalRequests, name, factory), name);
+}
+function tracedRecord(values, log, sentinel, stop) {
+  return new Proxy(values, { get(target, key, receiver) {
+    log.push(String(key));
+    if (key === stop) throw sentinel;
+    return Reflect.get(target, key, receiver);
+  } });
+}
+const approvalValues = () => ({ jobId: ' job-one ', expectedJobRevision: '4', realmRef: 'a'.repeat(64),
+  answerRefs: 'question.b\r\nquestion.a\n', observedQuestionFingerprint: `sha256:${'1'.repeat(64)}`,
+  observedControlFingerprint: `sha256:${'2'.repeat(64)}`, formFingerprint: `sha256:${'3'.repeat(64)}`,
+  allowedOperations: ['select_option', 'fill_text'], durationMinutes: '30' });
+
+test('M01 employer account requests preserve revision checks, coercion and explicit clear', () => {
+  const root = fileURLToPath(new URL('../', import.meta.url));
+  assert.ok(!process.env.JOB_WORKSPACE_TEST_ROOT || resolve(process.env.JOB_WORKSPACE_TEST_ROOT) === resolve(root), 'reference root must match this repository');
+  for (const api of [originalRequests, preparedRequests]) {
+    const account = Object.freeze({ realmRef: 'a'.repeat(64), revision: 7 });
+    assert.deepEqual(api.employerAccountOverrideRequest(account, ' owner@example.com '), {
+      path: `/api/employer-accounts/${'a'.repeat(64)}`, options: { method: 'PATCH',
+        body: '{"patch":{"signupEmailOverride":"owner@example.com"},"expectedRevision":7}' },
+    });
+    assert.equal(api.employerAccountOverrideRequest(account, '', true).options.body,
+      '{"patch":{"signupEmailOverride":null},"expectedRevision":7}');
+    assert.throws(() => api.employerAccountOverrideRequest({ ...account, revision: 0 }, ''), /canonical employer account revision/);
+  }
+  for (const account of [undefined, null, false, 1, 'account', {}, { realmRef: 1, revision: 7 }]) {
+    compareRequest('employerAccountOverrideRequest', () => ({ args: [structuredClone(account), 'mail'] }));
+  }
+  for (const revision of [undefined, 0, -1, 1.5, '7', NaN, Infinity, 7]) {
+    compareRequest('employerAccountOverrideRequest', () => ({ args: [{ realmRef: 'realm', revision }, 'mail'] }));
+  }
+  for (const realmRef of ['', 'a/b?c#d e', 'é😀', '\ud800']) for (const clear of [false, true, 1, '', null]) {
+    compareRequest('employerAccountOverrideRequest', () => ({ args: [Object.freeze({ realmRef, revision: 7 }), ' mail ', clear] }));
+  }
+  for (const email of [undefined, null, false, 0, NaN, '', ' mail ', Symbol('mail')]) {
+    compareRequest('employerAccountOverrideRequest', () => ({ args: [{ realmRef: 'realm', revision: 7 }, email] }));
+  }
+  for (const stop of [undefined, 'realmRef', 'revision', 'coerce']) for (const clear of [false, true]) {
+    compareRequest('employerAccountOverrideRequest', (log, sentinel) => ({
+      args: [tracedRecord(Object.create({ realmRef: 'realm', revision: 7 }), log, sentinel, stop),
+        { [Symbol.toPrimitive](hint) { log.push(`email:${hint}`); if (stop === 'coerce') throw sentinel; return ' mail '; } }, clear],
+    }));
+  }
+  compareRequest('employerAccountOverrideRequest', log => {
+    let read = 0;
+    return { args: [{ realmRef: 'realm', get revision() { log.push('revision'); return ++read === 3 ? 9 : 7; } }, 'mail'] };
+  });
+});
+
+test('M01 Trusted Fill approval packets preserve field order, copying and coercion failures', () => {
+  for (const api of [originalRequests, preparedRequests]) {
+    const values = approvalValues(); Object.freeze(values.allowedOperations); Object.freeze(values);
+    const packet = api.trustedFillApprovalPacket(values);
+    assert.deepEqual(packet, { jobId: 'job-one', expectedJobRevision: 4, realmRef: 'a'.repeat(64),
+      answerRefs: ['question.b', 'question.a'], observedQuestionFingerprint: `sha256:${'1'.repeat(64)}`,
+      observedControlFingerprint: `sha256:${'2'.repeat(64)}`, formFingerprint: `sha256:${'3'.repeat(64)}`,
+      allowedOperations: ['fill_text', 'select_option'], durationMinutes: 30 });
+    assert.notEqual(packet.allowedOperations, values.allowedOperations);
+    assert.notEqual(packet.answerRefs, api.trustedFillApprovalPacket(values).answerRefs);
+  }
+  for (const value of [undefined, null, false, 1, 'values', {}]) {
+    compareRequest('trustedFillApprovalPacket', () => ({ args: [structuredClone(value)] }));
+  }
+  for (const field of Object.keys(approvalValues())) for (const value of [undefined, null, false, 0, '', NaN, Infinity, Symbol('value')]) {
+    compareRequest('trustedFillApprovalPacket', () => ({ args: [{ ...approvalValues(), [field]: value }] }));
+  }
+  for (const answerRefs of [' a\r\n\n a\nb \n', '\r', '', ' x\ry ']) {
+    compareRequest('trustedFillApprovalPacket', () => ({ args: [{ ...approvalValues(), answerRefs }] }));
+  }
+  for (const makeOperations of [() => ['b', 'a', 'b'], () => new Set(['b', 'a']), () => 'ba',
+    () => [, 'b', undefined, 'a'], () => ({}), () => 7]) {
+    compareRequest('trustedFillApprovalPacket', () => {
+      const allowedOperations = makeOperations(), before = Array.isArray(allowedOperations) ? allowedOperations.slice() : null;
+      return { args: [{ ...approvalValues(), allowedOperations }], inspect(result) {
+        if (before) assert.deepEqual(allowedOperations, before);
+        return { copied: result ? result.allowedOperations !== allowedOperations : null };
+      } };
+    });
+  }
+  for (const stop of [undefined, ...Object.keys(approvalValues())]) {
+    compareRequest('trustedFillApprovalPacket', (log, sentinel) => ({ args: [tracedRecord(approvalValues(), log, sentinel, stop)] }));
+  }
+  for (const field of ['jobId', 'expectedJobRevision', 'realmRef', 'answerRefs', 'observedQuestionFingerprint',
+    'observedControlFingerprint', 'formFingerprint', 'durationMinutes']) for (const throws of [false, true]) {
+    compareRequest('trustedFillApprovalPacket', (log, sentinel) => ({ args: [{ ...approvalValues(), [field]: {
+      [Symbol.toPrimitive](hint) { log.push(`${field}:${hint}`); if (throws) throw sentinel; return ' 12 '; },
+    } }] }));
+  }
+  for (const stop of [undefined, 'iterator', 'next', 'sort']) {
+    compareRequest('trustedFillApprovalPacket', (log, sentinel) => {
+      const element = label => ({ toString() { log.push(`sort:${label}`); if (stop === 'sort') throw sentinel; return label; } });
+      const entries = [element('b'), element('a')];
+      const allowedOperations = { [Symbol.iterator]() {
+        log.push('iterator'); if (stop === 'iterator') throw sentinel; let index = 0;
+        return { next() { log.push(`next:${index}`); if (stop === 'next') throw sentinel;
+          return index < entries.length ? { value: entries[index++], done: false } : { done: true }; } };
+      } };
+      return { args: [{ ...approvalValues(), allowedOperations }], inspect(result) {
+        if (!result) return null;
+        const identities = result.allowedOperations.map(item => entries.indexOf(item));
+        result.allowedOperations = identities;
+        return { identities, originalOrder: entries.map(item => item === entries[0] ? 0 : 1) };
+      } };
+    });
+  }
+});
+
+test('M01 Trusted Fill revocation requests preserve canonical revisions and encoded paths', () => {
+  for (const api of [originalRequests, preparedRequests]) {
+    assert.deepEqual(api.trustedFillRevokeRequest(Object.freeze({ jobId: 'job-one', approvalRevision: 7 })), {
+      path: '/api/trusted-fill/job-one/revoke', options: { method: 'POST', body: '{"expectedApprovalRevision":7}' },
+    });
+    assert.throws(() => api.trustedFillRevokeRequest({ jobId: 'job-one', approvalRevision: 0 }), /canonical Trusted Fill approval revision/);
+  }
+  for (const status of [undefined, null, false, 1, 'status', {}, { jobId: 1, approvalRevision: 7 }]) {
+    compareRequest('trustedFillRevokeRequest', () => ({ args: [structuredClone(status)] }));
+  }
+  for (const approvalRevision of [undefined, 0, -1, 1.5, '7', NaN, Infinity, 7]) for (const jobId of ['', 'a/b?c#d e', 'é😀', '\ud800']) {
+    compareRequest('trustedFillRevokeRequest', () => ({ args: [Object.freeze({ jobId, approvalRevision })] }));
+  }
+  for (const stop of [undefined, 'jobId', 'approvalRevision']) {
+    compareRequest('trustedFillRevokeRequest', (log, sentinel) => ({
+      args: [tracedRecord(Object.create({ jobId: 'job', approvalRevision: 7 }), log, sentinel, stop)],
+    }));
+  }
+  compareRequest('trustedFillRevokeRequest', log => {
+    let read = 0;
+    return { args: [{ jobId: 'job', get approvalRevision() { log.push('revision'); return ++read === 3 ? 9 : 7; } }] };
+  });
+});
+
+import { errorsReference, storageReference, fetchReference, coordinatorReference,
+  stateReference, domReference, fileReference } from './workspace_infrastructure_reference_support.mjs';
+
+test('U02 reference preserves API errors and bounded revision retries', () => errorsReference());
+test('U02 reference preserves token storage and denied storage access', () => storageReference());
+test('U02 reference preserves fetch options response decoding and signal identity', () => fetchReference());
+test('U02 reference preserves stale success failure invalidation and callback throws', () => coordinatorReference());
+test('U02 reference preserves complete state shape and independent mutable containers', () => stateReference());
+test('U02 reference preserves DOM lookup toast replacement and connection guard', () => domReference());
+test('U02 reference preserves FileReader listener ordering and error rejection', () => fileReference());

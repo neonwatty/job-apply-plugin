@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "id": "s05-domain-audit",
+  "assignmentIds": [
+    "S05.domain.R"
+  ],
+  "allowed_files": [
+    "tools/contracts/point-path-domain/reference.py",
+    "tools/contracts/point-path-domain/fixtures.py",
+    "tools/contracts/point-path-domain/support.py",
+    "tests_js/managed_observation_reference.test.mjs",
+    "tests_js/point_paths_domain_support.mjs",
+    "docs/migration/evidence/s05-domain/reference-spec.json",
+    "docs/migration/evidence/s05-domain/reference-plan.md",
+    "docs/migration/evidence/s05-domain/reference-audit.json",
+    "docs/migration/evidence/s05-domain/S05.domain.R.json"
+  ],
+  "emittedFiles": [],
+  "dependencies": [],
+  "requirementIds": [
+    "s05.domain.admitted-values",
+    "s05.domain.key-identity",
+    "s05.domain.order",
+    "s05.domain.provenance",
+    "s05.domain.refusal"
+  ],
+  "cells": [
+    {
+      "id": "s05.domain.reference",
+      "command": [
+        "node",
+        "--test",
+        "tests_js/managed_observation_reference.test.mjs"
+      ],
+      "environmentId": "node-local",
+      "reporter": "node-tap13",
+      "testNames": [
+        "managed observation reference: python3",
+        "managed observation reference: python3.12",
+        "managed observation reference: python3.13",
+        "managed observation reference: python3.14",
+        "managed observation reference rejects caller arguments and input",
+        "S05 domain reference preserves admitted values and cache identity under default CPython",
+        "S05 domain reference preserves admitted values and cache identity under CPython 3.12",
+        "S05 domain reference preserves admitted values and cache identity under CPython 3.13",
+        "S05 domain reference preserves admitted values and cache identity under CPython 3.14",
+        "S05 domain reference rejects caller arguments paths and stdin"
+      ],
+      "timeoutMs": 120000,
+      "maxOutputBytes": 1048576,
+      "logPath": "docs/migration/evidence/s05-domain/logs/s05.domain.reference.tap",
+      "requirementIds": [
+        "s05.domain.admitted-values",
+        "s05.domain.key-identity",
+        "s05.domain.order",
+        "s05.domain.provenance",
+        "s05.domain.refusal"
+      ]
+    }
+  ],
+  "artifacts": []
+}

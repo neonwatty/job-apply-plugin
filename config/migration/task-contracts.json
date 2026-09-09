@@ -415,6 +415,236 @@
         "sha256": "b5212f55f04475a10a3aab7c08dd01ea7df936f18cd0aa65219a59add08b74a3",
         "revision": "738a8748ab53a048fbe1fb4908d9b9f139e78625"
       }
+    },
+    {
+      "id": "S04.I",
+      "author": "timestamp_tests",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/s04/S04.I.json",
+        "sha256": "40c6a5f49420b5cc08be4883bf127538dc7acf26f88b7cdad58eaabd992ee7a6",
+        "revision": "7a21de1c32db3063db196cf577af42b9e8393058"
+      }
+    },
+    {
+      "id": "S04.V",
+      "author": "timestamp_tests",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/s04/S04.V.json",
+        "sha256": "726cfa338470d125d068eff3d16d5b78b5161ec2573c8b1beee34913146738d4",
+        "revision": "7a21de1c32db3063db196cf577af42b9e8393058"
+      }
+    },
+    {
+      "id": "P02.I",
+      "author": "timestamp_tests",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/p02/P02.I.json",
+        "sha256": "dc704997a542c6d4b99eed60eb22048d0011db8a1a069644f598bba189613d16",
+        "revision": "ae8b3ee049a687c981e1f1f581a7fbc8acd1738a"
+      }
+    },
+    {
+      "id": "P02.V",
+      "author": "timestamp_tests",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/p02/P02.V.json",
+        "sha256": "2b9937418582e2268b823b9909a253b414e19658a708b03682a5b806e9da81e3",
+        "revision": "ae8b3ee049a687c981e1f1f581a7fbc8acd1738a"
+      }
+    },
+    {
+      "id": "M01.I",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/m01/M01.I.json",
+        "sha256": "b28a70ef58919881aed57e5286e82b0e34c7dac8f434013fc407d4bac509dd2b",
+        "revision": "5fcecdb1459d4e8e71de90a35f725e50a3db4e0f"
+      }
+    },
+    {
+      "id": "M01.V",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/m01/M01.V.json",
+        "sha256": "2f5e13c71e93ebae82181dfaf0b0357904b522c87f66f8d043d4dfee617c5395",
+        "revision": "5fcecdb1459d4e8e71de90a35f725e50a3db4e0f"
+      }
+    },
+    {
+      "id": "P05.I",
+      "author": "timestamp_tests",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/p05/P05.I.json",
+        "sha256": "30635388fb67bcdfbd530f4dcac56b67b183b9b417962ba47c2618de7a1b7c05",
+        "revision": "0e02100ad8586abd13f1cef164558046c822d740"
+      }
+    },
+    {
+      "id": "P05.V",
+      "author": "timestamp_tests",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/p05/P05.V.json",
+        "sha256": "593ed4c9ef5bdc1ed2080793c138fa457de15194e7947f903f69fd055c36c10f",
+        "revision": "0e02100ad8586abd13f1cef164558046c822d740"
+      }
+    },
+    {
+      "id": "M02.I",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/m02/M02.I.json",
+        "sha256": "ba431c5949ae70afc01760548f10df16d1dc7e19a582a847224bc54abaf459e4",
+        "revision": "ef4baebc78a145730d85c079b369f71468dcf840"
+      }
+    },
+    {
+      "id": "M02.V",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/m02/M02.V.json",
+        "sha256": "ef6c39bf1dc6b222684ab67801daec9da821786ddacf2c2ebd4a833452f98c49",
+        "revision": "ef4baebc78a145730d85c079b369f71468dcf840"
+      }
+    },
+    {
+      "id": "S05.domain.R",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/s05-domain-v2/S05.domain.R.json",
+        "sha256": "5bd2aa32fd588a3e38b1666a9468324390fa83921bc86a4a0dc9477cf8ca26b4",
+        "revision": "6618a8fb0b23c59abbfcfadcd3fbc39542903adf"
+      }
+    },
+    {
+      "id": "U01.R",
+      "author": "timestamp_tests",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/u01-reference/U01.R.json",
+        "sha256": "c8720cfe3445721d22212336d5e6d767827d2e8603580a2d3f3901c26a9c9a42",
+        "revision": "b0d32bde828bee19babf6e835a8451d3c1b56a61"
+      }
+    },
+    {
+      "id": "U02.R",
+      "author": "timestamp_tests",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/u02-reference-v2/U02.R.json",
+        "sha256": "213a36a7650d459f2256f8503540114b6fb23a357f9c542bc830173ef7083622",
+        "revision": "58fa57de673f657751752b3511de6ab1491321f5"
+      }
+    },
+    {
+      "id": "S05.domain2.R",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/s05-domain-v3/S05.domain2.R.json",
+        "sha256": "17181c0ad2466010335c61f96107e999b446e5033b0eb28c66f7a2dee6560916",
+        "revision": "2b464ccecea7a19956a48fcda13e5fb4229bac2d"
+      }
+    },
+    {
+      "id": "S05.domain3.R",
+      "author": "jsonl_review",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/s05-domain-v4/S05.domain3.R.json",
+        "sha256": "e62c2412222f07b6d0e781d2cabf35c20d17e1918a0771e515a990caffa9dbc2",
+        "revision": "48e83ca0715c975b56436e78e14e4e1aa47f1584"
+      }
+    },
+    {
+      "id": "U01.I",
+      "author": "timestamp_tests",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/u01-core-port/U01.I.json",
+        "sha256": "b5a00f661d90611a7aa230dae4dbd61ac24e6c7a8107ff2a2465d9aecd8a1ba4",
+        "revision": "a18a45c6b7af238d1b852f658ab1e4d8c15c8037"
+      }
+    },
+    {
+      "id": "U01.V",
+      "author": "timestamp_tests",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/u01-core-port/U01.V.json",
+        "sha256": "629c90ae12f11417832b548f4413a01e485d7dafa6069df5e2f5dfaab0bb2650",
+        "revision": "a18a45c6b7af238d1b852f658ab1e4d8c15c8037"
+      }
+    },
+    {
+      "id": "P03.ui-tests.I",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.I.json",
+        "sha256": "99d0c4b86ad25bda1094f85c1c151a881a8e49dd4a50abf84a3f1bfe8e514d2c",
+        "revision": "311b7380792c7647fb64e2e38e7584f337d73ddb"
+      }
+    },
+    {
+      "id": "P03.ui-tests.V",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.V.json",
+        "sha256": "3d80dc21ffe4da5cfe251d4e77f9aaa18bba578b504a32c2957cd64961438524",
+        "revision": "311b7380792c7647fb64e2e38e7584f337d73ddb"
+      }
+    },
+    {
+      "id": "G02.hybrid.I",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.I.json",
+        "sha256": "efe9190d952d7501c29caa88ba8335563a2e969db25830ae0b1b4ef1877bf7ef",
+        "revision": "4bd4b21e6e37739262288eeb7f08479e4c176a0b"
+      }
+    },
+    {
+      "id": "G02.hybrid.V",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.V.json",
+        "sha256": "f2ac26d03336f5b3cff1409a1f64c640b4b0a5f8615613e2f975ece913f4c2e3",
+        "revision": "4bd4b21e6e37739262288eeb7f08479e4c176a0b"
+      }
+    },
+    {
+      "id": "G02.hybrid2.I",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/g02-hybrid2/G02.hybrid2.I.json",
+        "sha256": "5454e51e7015805e98eced1c6c1336662635bf88b5d23ebe9372b3088e583d92",
+        "revision": "8061447d37e1d0a71b835ef84d5e40db9d2a7e6b"
+      }
+    },
+    {
+      "id": "G02.hybrid2.V",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "manifest": {
+        "path": "docs/migration/evidence/g02-hybrid2/G02.hybrid2.V.json",
+        "sha256": "5d3e3d67e236a9cbd76a060b21784464414c1133215c70f23d905f0debccc57d",
+        "revision": "8061447d37e1d0a71b835ef84d5e40db9d2a7e6b"
+      }
     }
   ],
   "environments": [
@@ -550,6 +780,96 @@
       "path": "docs/migration/evidence/p12/implementation-audit.json",
       "sha256": "60bca467215264eeb7df8b3d11bf87666b89e76551f013415112d7aa6345c679",
       "revision": "738a8748ab53a048fbe1fb4908d9b9f139e78625"
+    },
+    {
+      "path": "docs/migration/evidence/s04/implementation-audit.json",
+      "sha256": "cacef81b946b4fb0e8f69a886cba24307629ac7799becd508ccfa5eb77b0080d",
+      "revision": "7a21de1c32db3063db196cf577af42b9e8393058"
+    },
+    {
+      "path": "docs/migration/evidence/p02/mac-dogfood-audit.json",
+      "sha256": "e888294e9ad42b6993838163b346a39c1a4841024f10515aff2722b9d70c791a",
+      "revision": "ae8b3ee049a687c981e1f1f581a7fbc8acd1738a"
+    },
+    {
+      "path": "docs/migration/evidence/m01/implementation-audit.json",
+      "sha256": "bef80dacb0f8f9d990ea154abb4f6119784b17cfee5d7c34cb2e61b710165df1",
+      "revision": "ae8b3ee049a687c981e1f1f581a7fbc8acd1738a"
+    },
+    {
+      "path": "docs/migration/evidence/p05/mac-dogfood-audit.json",
+      "sha256": "1e1c8d8ffea56a0c1cfeb83318153aaa2d03cd3bead3d91735d72f2386ff0bc0",
+      "revision": "0e02100ad8586abd13f1cef164558046c822d740"
+    },
+    {
+      "path": "docs/migration/evidence/m02/implementation-audit.json",
+      "sha256": "55915a61d721d546754f683bdf22bb79c9b5c29e8877fb154213da19f4e772e5",
+      "revision": "80fa2058bf9733bd2f6831cc5438cdebc3139d08"
+    },
+    {
+      "path": "docs/migration/evidence/s05-domain-v2/reference-audit.json",
+      "sha256": "cd91d87e12e0e7617b9f6162438d745f2d03c6c01ad90548fc678edc28c0ca34",
+      "revision": "b0d32bde828bee19babf6e835a8451d3c1b56a61"
+    },
+    {
+      "path": "docs/migration/evidence/u01-reference/reference-audit.json",
+      "sha256": "a52796cb28a521c0443f50812f1b9e759fcf2e3310410b02c10af94dd452549d",
+      "revision": "b0d32bde828bee19babf6e835a8451d3c1b56a61"
+    },
+    {
+      "path": "docs/migration/evidence/u02-reference-v2/reference-audit.json",
+      "sha256": "f0c7ad117d26e872af0e479e9e497a7af1b57cfabcd98d1ea9a664f938404be8",
+      "revision": "58fa57de673f657751752b3511de6ab1491321f5"
+    },
+    {
+      "path": "docs/migration/evidence/s05-domain-v3/reference-audit.json",
+      "sha256": "a3f7b6595574ae4daf7c2b148a1b4b5521202233d984b4beba7d10fc4f1591a5",
+      "revision": "3c9250bd5fe132670d7a9f08210aba37e433ba23"
+    },
+    {
+      "path": "docs/migration/evidence/s05-domain-v4/reference-audit.json",
+      "sha256": "5bf64e3737167503092007a65132173bf347d7dc5b1d28846dd12b70d5233bdf",
+      "revision": "83045bedd7038c68134d44a759a3a45c93c5f363"
+    },
+    {
+      "path": "docs/migration/evidence/u01-core-port/U01.I.audit.json",
+      "sha256": "141f0f364c5b7df8b0c669b017bb2a713cc89eca6184736e47e197783224ff3d",
+      "revision": "a18a45c6b7af238d1b852f658ab1e4d8c15c8037"
+    },
+    {
+      "path": "docs/migration/evidence/u01-core-port/U01.V.audit.json",
+      "sha256": "354563364d9a3d68540ba3ba19b047b1716901e5eed3d0cb9a4cbbd473f7df18",
+      "revision": "a18a45c6b7af238d1b852f658ab1e4d8c15c8037"
+    },
+    {
+      "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.I.audit.json",
+      "sha256": "169529b733845a92753f009c740d9c03931591577548dde3869a9e589143c5ab",
+      "revision": "0b142ba647e6923df724a0b651cdfc47268c50ce"
+    },
+    {
+      "path": "docs/migration/evidence/p03-ui-tests/P03.ui-tests.V.audit.json",
+      "sha256": "5213e47d6b6b760aa740cb0d3a765a51b12e426cbe6d49c8a010d9f5cc25d890",
+      "revision": "0b142ba647e6923df724a0b651cdfc47268c50ce"
+    },
+    {
+      "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.I.audit.json",
+      "sha256": "ec7f4c96e682b17b47fdff00391208a4fa678c6960fdb126c54dfea01b2eeb61",
+      "revision": "a19fa8e2ebdd1607756d8fff35b3b29c0ca64421"
+    },
+    {
+      "path": "docs/migration/evidence/g02-hybrid/G02.hybrid.V.audit.json",
+      "sha256": "1881ff906749f27a1c3062a155a04ca02f89a87c3c6d35248acb688f52c088df",
+      "revision": "a19fa8e2ebdd1607756d8fff35b3b29c0ca64421"
+    },
+    {
+      "path": "docs/migration/evidence/g02-hybrid2/G02.hybrid2.I.audit.json",
+      "sha256": "49021a4346bec0659a508080469deda17a3f3ae8c3f818b450110fdb3d47c698",
+      "revision": "f5c7886128eb8951e3e9248dddfb5bff4ba62f0d"
+    },
+    {
+      "path": "docs/migration/evidence/g02-hybrid2/G02.hybrid2.V.audit.json",
+      "sha256": "2662ecbc6919d5f206f288f9d63cceeb934fc0068e239852351714f668aaa980",
+      "revision": "f5c7886128eb8951e3e9248dddfb5bff4ba62f0d"
     }
   ]
 }

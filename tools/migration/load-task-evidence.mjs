@@ -5,6 +5,8 @@ import { validateTaskManifests, sourceSizePath } from './task-manifests.mjs';
 import { validateTaskReceipts } from './task-receipts.mjs';
 import { validateTaskHandoffs } from './task-handoffs.mjs';
 import { discoverTestIds } from './test-bindings.mjs';
+import { firstActivations } from './history-records.mjs';
+import { maintenancePaths } from './snapshot-maintenance.mjs';
 
 const binding = value => closed(value, ['path', 'sha256', 'revision']) && safePath(value.path) && hash(value.sha256) && sha(value.revision);
 const auditFields = ['schemaVersion', 'id', 'assignmentIds', 'allowed_files', 'emittedFiles', 'dependencies', 'requirementIds', 'cells', 'artifacts'];
@@ -33,6 +35,7 @@ export async function loadTaskEvidence(root, context) {
     catch (error) { if (error.code === 'ENOENT') return empty(); throw error; }
     const head = io.head();
     if (!io.clean()) throw new Error('Task evidence requires a clean tracked checkout');
+    const maintenance = maintenancePaths(io, head);
     async function current(path) {
       const tracked = io.fileAt(head, path);
       let actual = null;
@@ -175,13 +178,14 @@ export async function loadTaskEvidence(root, context) {
             .every(item => io.ancestor(item.binding.revision, revision)
               && collectionAt(HANDOFFS, revision, 'handoffs', handoffShard.handoffs).some(value => equal(value, item.binding))); } catch { return false; }
       });
-      const executionBase = activations.find(revision => !activations.some(other => other !== revision && io.ancestor(other, revision)));
+      const executionBase = firstActivations(activations, io.ancestor)[0];
       executionBoundary(manifest, executionBase);
       const changes = io.diff(executionBase, head);
       for (const change of changes) {
         const paths = [change.path, ...(change.oldPath ? [change.oldPath] : [])];
         if (!['A', 'M', 'D', 'R'].includes(change.status) || paths.some(path => !pendingPaths.has(path)
-          && !evidencePaths.has(path) && !completedPeerPath(path) && !planningPath(path, head))) throw new Error(`Undeclared pending task drift: ${change.status} ${change.path}`);
+          && !evidencePaths.has(path) && !completedPeerPath(path) && !planningPath(path, head)
+          && !maintenance.has(path))) throw new Error(`Undeclared pending task drift: ${change.status} ${change.path}`);
       }
       pendingSuccessors.set(manifest.id, { executionBase, changedPaths: new Set(changes.flatMap(change => [change.path, change.oldPath].filter(Boolean))),
         predecessorSubjects: new Set(collection.receipts.map(receipt => receipt?.subject?.sha).filter(previous => sha(previous) && io.ancestor(previous, manifest.base))) });
@@ -252,7 +256,7 @@ export async function loadTaskEvidence(root, context) {
       capturedSuccessors.set(id, { ...bridge, dependencies,
         predecessorSubjects: new Set(historicalSubjects.filter(subject => io.ancestor(subject, original.base))) });
     }
-    const verified = validateTaskReceipts(collection.receipts, { manifests: validated.manifests, manifestHashes, assignments, ownDagByTask: lineage.ownDagByTask, environments, facts, pendingSuccessors, capturedSuccessors, pendingWork, clean: true });
+    const verified = validateTaskReceipts(collection.receipts, { manifests: validated.manifests, manifestHashes, assignments, ownDagByTask: lineage.ownDagByTask, environments, facts, pendingSuccessors, capturedSuccessors, pendingWork, maintenancePaths: maintenance, clean: true });
     if (verified.errors.length) { errors.push(...verified.errors); return empty(); }
     function priorReceiptClosure(id, revision, seen = new Set()) {
       if (seen.has(id)) return true;
