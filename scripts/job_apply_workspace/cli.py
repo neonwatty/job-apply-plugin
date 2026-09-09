@@ -16,10 +16,24 @@ from . import LOOPBACK, runtime
 from .handler import WorkspaceServer
 
 
+def open_browser(browser: Any, url: str) -> None:
+    try:
+        opened = browser.open(url)
+    except (webbrowser.Error, OSError):
+        opened = False
+    if not opened:
+        print(
+            "The browser could not be opened automatically. Open the complete "
+            "workspace URL printed above in your browser. Keep this process "
+            "running while you work.",
+            file=sys.stderr, flush=True,
+        )
+
+
 def build_parser() -> argparse.ArgumentParser:
     store_module = runtime()["STORE_MODULE"]
     parser = argparse.ArgumentParser(
-        description="Start the local Job Apply Jobs workspace"
+        description="Start the local Job Apply workspace"
     )
     parser.add_argument(
         "--root",
@@ -81,7 +95,7 @@ def main() -> int:
         )
     if not args.no_open:
         browser = workspace_runtime.get("webbrowser", webbrowser)
-        threading.Timer(0.15, lambda: browser.open(url)).start()
+        threading.Timer(0.15, lambda: open_browser(browser, url)).start()
 
     stopping = threading.Event()
 

@@ -59,7 +59,7 @@ export function installResumes(context) {
     const request = resume.extractionRequest;
     if (request?.status === "failed") return `${view.label}. ${extractionFailureText[request.failureReason] || "Try again when a Job Apply agent is available."}`;
     if (request?.status === "stale") return `${view.label}. The old request cannot be applied to the new content.`;
-    if (request?.status === "requested") return `${view.label}. No agent is assigned until you hand off this request.`;
+    if (request?.status === "requested") return `${view.label}. Copy the agent handoff and paste it into your Codex task or Claude Code session. The agent reads your resume; return here to review any proposed changes.`;
     return view.label;
   }
 
