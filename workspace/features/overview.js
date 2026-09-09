@@ -79,6 +79,7 @@ export function installOverview(context) {
     $("#next-step-heading").textContent = heading;
     $("#next-step-copy").textContent = copy;
     $("#next-step-action").dataset.workspace = projection.targetWorkspace;
+    $("#next-step-action").textContent = ({ resumes: "Open Resumes", facts: "Open Facts", jobs: "Open Jobs", attention: "Open Needs Attention" })[projection.targetWorkspace] || "Open workspace";
     $("#setup-resume").textContent = `${projection.setup.hasResume ? "✓" : "○"} Resume ${projection.setup.hasResume ? "available" : "needed"}`;
     $("#setup-facts").textContent = `${projection.setup.hasProfileFacts ? "✓" : "○"} Application facts ${projection.setup.hasProfileFacts ? "available" : "need review"}`;
     $("#setup-resume").classList.toggle("complete", projection.setup.hasResume);

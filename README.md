@@ -59,6 +59,10 @@ Choose either supported host:
 
 Codex stays inside its selected Browser plugin surface. Claude Code does not require Playwright; an already-configured Playwright integration may be used only for one inaccessible iframe or custom control.
 
+The Python release is validated with **Python 3.12**. Check `python3 --version`
+(or `py -3.12 --version` on Windows). The local workspace needs no Node runtime
+or frontend build. See the [setup guide](docs/setup.md) for launch and troubleshooting.
+
 ## Installation
 
 ### Codex
@@ -91,17 +95,17 @@ The examples below use Codex syntax. In Claude Code, replace the leading `$` wit
 
 ### First Time Setup
 
-1. Invoke the skill:
-   ```
-   $job-apply:job-apply
-   ```
+1. Open the workspace with `$job-apply:job-workspace` in a new Codex task,
+   or `/job-apply:job-workspace` in a new Claude Code session.
+2. In **Resumes**, import a PDF, DOCX, or UTF-8 TXT file and choose
+   **Request fact extraction**.
+3. Choose **Copy agent handoff** and paste it into your host conversation.
+   The request waits until you ask an agent to process it.
+4. Review **Facts** and any **Extraction reviews** in the resume's details.
+5. Add an opportunity in **Jobs**, run its ready check, and mark it **Ready**.
 
-2. Provide your resume path when prompted:
-   ```
-   ~/Documents/resume.pdf
-   ```
-
-3. Review and confirm extracted profile information
+Follow the [setup guide](docs/setup.md) for detailed steps, restart instructions,
+and common setup problems.
 
 ### Applying to Jobs
 

@@ -50,7 +50,7 @@
   <main id="workspace-content">
     <div id="overview-workspace">
       <section class="hero overview-hero" aria-labelledby="overview-title">
-        <div><p class="eyebrow">PRIVATE OWNER WORKSPACE</p><h2 id="overview-title">Know what to do next.</h2><p>Your setup and next step are derived from the canonical local Store. This browser keeps no onboarding-complete flag and never submits an application.</p></div>
+        <div><p class="eyebrow">PRIVATE OWNER WORKSPACE</p><h2 id="overview-title">Know what to do next.</h2><p>Start with a resume, review your application facts, then prepare a job. Your progress stays on this computer. Only you can submit an application.</p></div>
         <div class="hero-actions"><button id="overview-refresh" class="button secondary" type="button">Refresh</button></div>
       </section>
       <div id="boot-recovery" class="recovery-panel hidden" role="alert" tabindex="-1">
@@ -71,14 +71,14 @@
         </article>
         <article class="handoff-card" aria-labelledby="handoff-heading">
           <p class="eyebrow">READY-JOB HANDOFF</p><h2 id="handoff-heading">Start an application agent</h2>
-          <p>When a job is Ready, use one supported copy-only invocation. The workspace does not detect your host, run commands, or submit.</p>
+          <p>When a job is Ready, copy the command for your host and paste it into a Codex task or Claude Code session. Copying does not start an agent.</p>
           <div class="invocation"><span>Codex</span><code>$job-apply:job-apply</code><button class="button secondary copy-invocation" data-copy="$job-apply:job-apply" type="button">Copy Codex invocation</button></div>
           <div class="invocation"><span>Claude Code</span><code>/job-apply:job-apply</code><button class="button secondary copy-invocation" data-copy="/job-apply:job-apply" type="button">Copy Claude Code invocation</button></div>
           <label class="clipboard-fallback hidden" role="alert">Clipboard unavailable. Select and copy this invocation manually. <input class="clipboard-fallback-value" readonly aria-label="Invocation to copy"></label>
           <p class="safety-note">The agent stops for final review. Only you may submit on the third-party site.</p>
         </article>
         <article class="recovery-card" aria-labelledby="recovery-heading">
-          <p class="eyebrow">RESTART &amp; RECOVERY</p><h2 id="recovery-heading">Canonical state survives this browser</h2>
+          <p class="eyebrow">RESTART &amp; RECOVERY</p><h2 id="recovery-heading">Your progress survives a restart</h2>
           <p>Restart the launcher to reconnect. Stale revision conflicts preserve your draft and require review; interrupted attempts appear in Needs Attention; Trash restores individual records.</p>
           <div class="button-row"><button class="button secondary overview-link" data-workspace="attention" type="button">Open Needs Attention</button><button class="button secondary overview-link" data-workspace="trash" type="button">Open Trash</button></div>
         </article>

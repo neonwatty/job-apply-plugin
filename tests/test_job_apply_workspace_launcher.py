@@ -1,7 +1,28 @@
 from tests.support.workspace_case import *
+import io
+from contextlib import redirect_stderr
 
 
 class WorkspaceProcessTests(unittest.TestCase):
+    def test_browser_open_failure_keeps_private_url_out_of_guidance(self):
+        for failure in (False, OSError("private-path")):
+            browser = mock.Mock()
+            if isinstance(failure, Exception):
+                browser.open.side_effect = failure
+            else:
+                browser.open.return_value = failure
+            output = io.StringIO()
+            with redirect_stderr(output):
+                WORKSPACE._cli.open_browser(browser, "http://127.0.0.1/#token=private")
+            self.assertIn("complete workspace URL printed above", output.getvalue())
+            self.assertNotIn("private", output.getvalue())
+
+    def test_successful_browser_open_needs_no_fallback(self):
+        output = io.StringIO()
+        with redirect_stderr(output):
+            WORKSPACE._cli.open_browser(mock.Mock(open=mock.Mock(return_value=True)), "http://127.0.0.1/")
+        self.assertEqual(output.getvalue(), "")
+
     def test_launcher_reports_fragment_token_and_stops_cleanly(self):
         with tempfile.TemporaryDirectory() as temporary:
             process = subprocess.Popen(
