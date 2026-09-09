@@ -9,6 +9,7 @@ export const answerCommands = {
     'answer-put': ['--input', '--expected-revision', '--remember-sensitive'],
     'answer-observe': ['--input'],
     'answer-semantic-lookup': ['--input'],
+    'answer-cleanup-preview': [],
     'answer-update': ['--key', '--input', '--expected-revision', '--remember-sensitive'],
     'answer-review': ['--key', '--decision', '--input', '--expected-revision', '--remember-sensitive'],
 };
@@ -45,6 +46,7 @@ export async function runAnswerCommand(command, repository, options, payload) {
         }
         case 'answer-put': return service.put(await payload(), consent, options.has('--expected-revision') ? revision() : null);
         case 'answer-observe': return service.observe(await payload());
+        case 'answer-cleanup-preview': return service.cleanupPreview();
         case 'answer-semantic-lookup': return service.semanticLookup(await payload());
         case 'answer-update': return service.update(required('--key'), await payload(), revision(), consent);
         case 'answer-review': {

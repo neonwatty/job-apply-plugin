@@ -1,11 +1,13 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { AnswerFields } from './answer-fields';
+import { AnswerCleanup } from './AnswerCleanup';
 import { string, get, object, parse, serialize } from '../../../src/contracts/workspace/values';
 import { answerCreateMutation, newAnswerDraft, answerDraft, answerMutation, answerPath, answerSnapshot, reapplyAnswer } from './answer-model';
 import type { AnswerClient, Document } from './answer-model';
 
 export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyChanged: (dirty: boolean) => void }) {
+  const [cleanupRevision, setCleanupRevision] = useState(0);
   const [items, setItems] = useState<Document[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [query, setQuery] = useState('');
@@ -130,6 +132,7 @@ export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyC
       setLatest(null);
       setRemember(false);
       setNotice(creating ? 'Answer created.' : 'Answer saved.');
+      setCleanupRevision(value => value + 1);
       void refreshList();
     } catch (failure) {
       if (version !== generation.current || controller.signal.aborted) return;
@@ -148,7 +151,8 @@ export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyC
   return <section>
     <h1>Answers</h1>
     <p>Create, find, edit and review remembered answers. Sensitive values stay hidden until you reveal them.</p>
-    <p>Merge, cleanup and pending application questions are not available in this native fixture.</p>
+    <p>Merging answers and resolving pending application questions are not available in this native fixture.</p>
+    <AnswerCleanup client={client} revision={cleanupRevision} />
     <button disabled={busy} onClick={startNew}>New answer</button>
     <form onSubmit={event => { event.preventDefault(); void refreshList(); }}>
       <label>Find answers<input value={query} onChange={event => setQuery(event.target.value)} /></label>

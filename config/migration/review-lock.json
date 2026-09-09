@@ -39,7 +39,7 @@
     },
     {
       "path": "browser-native-answers-surfaces.json",
-      "sha256": "ea58b6456169b0e56a3145f65c892ec18ccf97f1962c556796699c60ba2ce5c4"
+      "sha256": "0fae647d01fcd85aaa4bf1fcf1d2c9efe4034dd5cb24635c9fbbb7261df582ef"
     },
     {
       "path": "browser-native-extractions-surfaces.json",
@@ -79,7 +79,7 @@
     },
     {
       "path": "cli-native-answers-surfaces.json",
-      "sha256": "fbd1eae1ff673e11460f9f67997bfd3579b9b3cf90126bf71dd162b1716d1f9d"
+      "sha256": "13688d093d5bf1b395ac65f3c1c51c00d3573c97660b72f0b96b649644a25c5e"
     },
     {
       "path": "cli-native-extractions-surfaces.json",
@@ -135,7 +135,7 @@
     },
     {
       "path": "http-read-surfaces.json",
-      "sha256": "8bbc18ba8fbbb4064a46d4d6c981e91b038f6af88c1aa7c73bfa32da925d4397"
+      "sha256": "ac34ae674d035785270b38dfe3dbdc895be7d7b68bbfd3f9c5bf0efaee3aa6a1"
     },
     {
       "path": "http-write-accounts-surfaces.json",
@@ -254,12 +254,16 @@
       "sha256": "0b6ee35143f1ad4f49568ed3d9e15f1cfacf869476a50a151b4fea3fc6f29f41"
     },
     {
+      "path": "source-catalog-native-answer-cleanup.json",
+      "sha256": "9079cf96fdd7e7150293a64434769b6f025bdf31ced0d2ddade52c1fbc56cc70"
+    },
+    {
       "path": "source-catalog-native-answer-reuse.json",
-      "sha256": "bf0db4a7633a6a8fbe1537c4e930c9381f1b1914d67711a2f6b8669712534077"
+      "sha256": "f3aac3fcef51599ba380272569d1f8ab63ee8a0734bc1637a41c18ea1c8efdaf"
     },
     {
       "path": "source-catalog-native-answers.json",
-      "sha256": "9fed876ccc9a99f74ec8252154f5aedbbe786a426115c51dc5f5b8071a57c6cd"
+      "sha256": "ff374e1b59a73a383e2d26c1caebba9c78c3fd6b2c20116fbf47a69154604439"
     },
     {
       "path": "source-catalog-native-extractions.json",

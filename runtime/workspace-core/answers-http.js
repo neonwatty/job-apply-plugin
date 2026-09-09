@@ -34,9 +34,11 @@ function decodeKey(value) {
 export async function answerHttp(repository, method, path, body) {
     if (!path.startsWith('/api/answers'))
         return null;
-    if (['/api/answers/cleanup-preview', '/api/answers/cleanup-approve'].includes(path))
+    if (path === '/api/answers/cleanup-approve')
         return null;
     const service = new AnswersService(repository);
+    if (path === '/api/answers/cleanup-preview')
+        return method === 'GET' ? response(await service.cleanupPreview()) : null;
     if (method === 'POST' && path === '/api/answers/semantic')
         return response(await service.semanticLookup(parse(body)));
     if (method === 'POST' && path === '/api/answers/query') {

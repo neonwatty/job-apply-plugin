@@ -2,6 +2,7 @@ import { answerKey, answerNames, answerPatchFields, answerRevision, answerReview
 import { emptyObject } from '../contracts/workspace/jobs.js';
 import { copy, get, has, int, integer, keys, object, same, set, string, text, JobsError } from '../contracts/workspace/values.js';
 import { semanticLookup } from './answer-match.js';
+import { previewAnswerCleanup } from './answer-cleanup.js';
 export function answerProjection(record, references, detail = false, reveal = false) {
     const view = answerView(record), result = emptyObject();
     for (const key of keys(view))
@@ -40,6 +41,9 @@ export class AnswersService {
     constructor(repository, now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')) {
         this.repository = repository;
         this.now = now;
+    }
+    cleanupPreview() {
+        return this.repository.answerTransaction(async (document) => previewAnswerCleanup(validateAnswers(document)));
     }
     semanticLookup(incoming) {
         return this.repository.answerTransaction(async (document) => semanticLookup(validateAnswers(document), incoming));

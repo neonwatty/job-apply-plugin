@@ -8,7 +8,7 @@
     },
     {
       "path": "runtime/contracts/workspace/answer-match-reuse.js",
-      "sha256": "9483749d8cdc9e714534d25b1c7e78b5aad2a37eb5096809e705b36c12d78104",
+      "sha256": "7edde7899ae87f942f6f5c77647e0e2c7f65309ebb6396df27458945652b5c33",
       "classification": "unreviewed"
     },
     {
@@ -58,7 +58,7 @@
     },
     {
       "path": "src/contracts/workspace/answer-match-reuse.ts",
-      "sha256": "843810f8f8a10eb1cd7a4116337216a7bf7519186ced184531b0b6e491c7c701",
+      "sha256": "f9942d70326857d3c22a32c0e9c4d29d6bcae025ed7c4b9d0e23d105898d4159",
       "classification": "unreviewed"
     },
     {

@@ -8,17 +8,17 @@
     },
     {
       "path": "src/workspace-core/answers.ts",
-      "sha256": "00509d0f2eccff738955328306231cc3b014898a89d50a5fe528155325f439e6",
+      "sha256": "743cb2a8869b61b802ce6237eca58dfafd8e66af10790eec86c3738e9533ce6c",
       "classification": "unreviewed"
     },
     {
       "path": "src/workspace-core/answers-http.ts",
-      "sha256": "552aec485e9a0505fa615196fb328c115724e7e781012653805a8d4a7d972983",
+      "sha256": "aa6edb283d986378705a961221c8948bbaca421435b1b2979065e5e591711608",
       "classification": "unreviewed"
     },
     {
       "path": "src/cli/native-answers.ts",
-      "sha256": "6ef0cc67e2aeb0490df7afa290203d5db471d1f23c454cccab9b1d850be2b959",
+      "sha256": "dab882b029b1c49551237384b72963375b8c0859536173eceb4f7158a9730bc1",
       "classification": "unreviewed"
     },
     {
@@ -28,22 +28,22 @@
     },
     {
       "path": "runtime/workspace-core/answers.js",
-      "sha256": "615ce93f751ad78bcecd85b34dc84ce59dfac7b62513645d16a84ca5291ccb78",
+      "sha256": "e1b97d34a586df573ba7de82e608b91c7a76e89db407b5a7fb399ba1269e8fff",
       "classification": "unreviewed"
     },
     {
       "path": "runtime/workspace-core/answers-http.js",
-      "sha256": "1f491221bc628e46ee9c380296bb78164bbfbd5fd0539d43df1351cbdbbacd1e",
+      "sha256": "f2500c01c941614a8e589969b9d5c12ded8ecb07ff4dc48cb4d9f7c00f33dbbb",
       "classification": "unreviewed"
     },
     {
       "path": "runtime/cli/native-answers.js",
-      "sha256": "f4d30451afdf0ac02a6acc92a2feaf198613f181992a2966e45944563fc1a875",
+      "sha256": "ec00db33744245ea569516b5bafa6205c9fad648518e59342f7051fbacaf6dae",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/Answers.tsx",
-      "sha256": "d05f78aaf61e23427abd72416159c31aecb54992e56f0e686252c0c1d675b8fb",
+      "sha256": "8f47ff3a4a7949b25aacb1dbe6bd2764428d221d3ea722ffb2233021204c3f58",
       "classification": "unreviewed"
     },
     {

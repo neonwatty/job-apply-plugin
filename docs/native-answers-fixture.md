@@ -97,5 +97,21 @@ remain required; the domain tests alone do not certify crash recovery.
 
 Merge and cleanup commit require the coordinator journal plus reference/session
 rewrites. No single-document substitute is supplied. Full phase 8 acceptance
-also requires cleanup preview binding, complete
-React workflows, coordinator recovery and full release acceptance.
+also requires complete React workflows, coordinator recovery and full release acceptance.
+
+## Cleanup preview
+
+`GET /api/answers/cleanup-preview` and `answer-cleanup-preview` return the same
+revision-bound preview under the shared Store lock. The Answers screen offers
+**Preview cleanup**, including loading, retry and empty states. It lists the
+accepted winner and pending duplicate questions, without revealing stored values.
+A successful answer save clears the displayed preview; refresh the preview after
+changes from another client.
+
+Only an unambiguous exact/high match with compatible scope, field class and
+sensitivity is proposed. The winner must be active, accepted, confirmed and have
+a retained value; the duplicate must be active and pending. Multiple eligible
+winners suppress a proposal. The `answer-cleanup-v1` token covers the proposals
+and every answer revision using the Python-compatible canonical representation.
+Preview is read-only: it neither merges answers nor grants approval. Cleanup
+approval and durable merging remain unavailable in this fixture.

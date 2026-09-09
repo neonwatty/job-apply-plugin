@@ -3,6 +3,7 @@ import { emptyObject } from '../contracts/workspace/jobs.js';
 import { copy, get, has, int, integer, keys, object, same, set, string, text, JobsError } from '../contracts/workspace/values.js';
 import type { Document, Value } from '../contracts/workspace/values.js';
 import { semanticLookup } from './answer-match.js';
+import { previewAnswerCleanup } from './answer-cleanup.js';
 
 export interface AnswerReferences { sessions: bigint; history: bigint }
 export type AnswerReferenceCounts = ReadonlyMap<string, AnswerReferences>;
@@ -42,6 +43,9 @@ function collision(document: Document, candidate: Document, key: string): void {
 }
 export class AnswersService {
   constructor(readonly repository: AnswerRepository, private readonly now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')) {}
+  cleanupPreview(): Promise<Value> {
+    return this.repository.answerTransaction(async document => previewAnswerCleanup(validateAnswers(document)));
+  }
   semanticLookup(incoming: Value): Promise<Value> {
     return this.repository.answerTransaction(async document => semanticLookup(validateAnswers(document), incoming));
   }

@@ -2,12 +2,78 @@
   "schemaVersion": 1,
   "surfaces": [
     {
+      "id": "browser:apps/companion/components/AnswerCleanup.tsx:AnswerCleanup",
+      "kind": "browser",
+      "export": "AnswerCleanup",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/AnswerCleanup.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
       "id": "browser:apps/companion/components/Answers.tsx:Answers",
       "kind": "browser",
       "export": "Answers",
       "node": "UIF",
       "sources": [
         "apps/companion/components/Answers.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/answer-cleanup-model.ts:cleanupPreview",
+      "kind": "browser",
+      "export": "cleanupPreview",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/answer-cleanup-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/answer-cleanup-model.ts:cleanupExplanation",
+      "kind": "browser",
+      "export": "cleanupExplanation",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/answer-cleanup-model.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

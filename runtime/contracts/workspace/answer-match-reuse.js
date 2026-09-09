@@ -3,7 +3,7 @@ import { fallback } from './answers.js';
 import { fromJSON, get, object, string, text } from './values.js';
 import { AnswerMatchError, answerMatchKey, fieldClass, metadataReasons, scopeFingerprint, sensitivity } from './answer-match-features.js';
 import { reasonCodes } from './answer-match-vocabulary.js';
-function policyReasons(record) {
+export function policyReasons(record) {
     const status = string(fallback(record, 'recordStatus', text('active')));
     const review = string(fallback(record, 'reviewStatus', text('accepted')));
     const state = string(get(record, 'state'));

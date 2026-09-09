@@ -8,7 +8,7 @@ export interface ReuseInput {
   match: Value; candidate: Value; scope: Value; fieldClass: Value; sensitivity: Value;
   mode: Value; useAuthority: Value; allowedSensitiveFieldClasses?: Value;
 }
-function policyReasons(record: Document): string[] {
+export function policyReasons(record: Document): string[] {
   const status = string(fallback(record,'recordStatus',text('active')));
   const review = string(fallback(record,'reviewStatus',text('accepted')));
   const state = string(get(record,'state'));
