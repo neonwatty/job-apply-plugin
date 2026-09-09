@@ -1,4 +1,4 @@
-import { get, int, keys, object, parse, string } from '../../../src/contracts/workspace/values';
+import { get, int, integer, keys, object, parse, serialize, set, string } from '../../../src/contracts/workspace/values';
 import type { Document } from '../../../src/contracts/workspace/values';
 
 export interface CleanupPair {
@@ -29,8 +29,13 @@ function revision(record: Document, field: string): bigint {
   return value;
 }
 
-// Validate the token, but never retain it in the presentation model.
-export function cleanupPreview(raw: string): CleanupPair[] {
+export interface CleanupPreview {
+  previewToken: string;
+  pairs: CleanupPair[];
+}
+
+// The token is retained only for the approval request, never rendered.
+export function cleanupPreview(raw: string): CleanupPreview {
   const response = object(parse(raw), 'cleanup preview');
   closed(response, ['proposals', 'previewToken', 'mutated']);
   const token = requiredString(response, 'previewToken');
@@ -39,7 +44,7 @@ export function cleanupPreview(raw: string): CleanupPair[] {
   }
   const proposals = get(response, 'proposals');
   if (!Array.isArray(proposals)) throw Error('Invalid cleanup preview');
-  return proposals.map(value => {
+  const pairs = proposals.map(value => {
     const record = object(value, 'cleanup proposal');
     closed(record, ['winnerKey', 'duplicateKey', 'confidenceBand', 'reasonCodes', 'winnerRevision', 'duplicateRevision', 'winnerQuestion', 'duplicateQuestion']);
     const confidenceBand = requiredString(record, 'confidenceBand');
@@ -57,10 +62,32 @@ export function cleanupPreview(raw: string): CleanupPair[] {
       duplicateQuestion: requiredString(record, 'duplicateQuestion'),
       winnerRevision: revision(record, 'winnerRevision'),
       duplicateRevision: revision(record, 'duplicateRevision'),
-      confidenceBand,
+      confidenceBand: confidenceBand as CleanupPair['confidenceBand'],
       reasonCodes,
     };
   });
+  return { previewToken: token, pairs };
+}
+
+export function cleanupApproval(preview: CleanupPreview, pair: CleanupPair): string {
+  if (!preview.pairs.includes(pair)) throw Error('Invalid cleanup approval');
+  const body = object(parse(JSON.stringify({
+    approval: {
+      previewToken: preview.previewToken, winnerKey: pair.winnerKey, duplicateKey: pair.duplicateKey,
+    },
+    ownerConfirmed: true,
+  })), 'cleanup approval');
+  const approval = object(get(body, 'approval'), 'approval');
+  set(approval, 'winnerRevision', integer(pair.winnerRevision));
+  set(approval, 'duplicateRevision', integer(pair.duplicateRevision));
+  return serialize(body);
+}
+
+export function cleanupApproved(raw: string): void {
+  const result = object(parse(raw), 'cleanup approval result');
+  closed(result, ['approved', 'result']);
+  if (get(result, 'approved') !== true) throw Error('Invalid cleanup approval result');
+  revision(object(get(result, 'result'), 'answer'), 'revision');
 }
 
 export function cleanupExplanation(pair: CleanupPair): string {

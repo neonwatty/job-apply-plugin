@@ -10,6 +10,10 @@ import type { JobsRepository, JobsTransaction } from "../workspace-core/jobs.js"
 import { atomicWritePointJson } from "./point-persistence.js";
 import { withExclusiveFileLock } from "./exclusive-file-lock.js";
 import type { PosixFlockProvider } from "./posix-flock.js";
+import { NativeAnswerJournal, validateIdleCoordinator, answerJournalName } from "./native-answer-journal.js";
+import { answerReferenceCounts } from "../contracts/workspace/answer-sessions.js";
+import { validateAnswerSession, validateAnswerHistory } from "../contracts/workspace/answer-session-validation.js";
+import type { AnswerMergeTransaction } from "../workspace-core/answer-merges.js";
 import { NativeResumeFiles } from "./native-resume-files.js";
 import { NativeExtractionJournal, closeRequestsForResumes, extractionJournalName, validateExtractionResumes } from "./native-extraction-journal.js";
 import { validateExtractionRequests } from "../contracts/workspace/extraction-requests.js";
@@ -18,12 +22,13 @@ import type { ExtractionTransaction } from "../workspace-core/extraction-context
 
 import { validateProfile } from "../contracts/workspace/profile.js";
 import { validateGroups } from "../contracts/workspace/fact-groups.js";
+import { strip } from "../contracts/workspace/job-url.js";
 import { validateAnswers } from "../contracts/workspace/answers.js";
 import type { AnswerReferenceCounts } from "../workspace-core/answers.js";
 
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
-const marker = '{"mode":"native-jobs-fixture","version":5}\n';
-const allowed = new Set([".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "answers.json", "resume-operation.json", "resume-files", "resume-extractions.json", "resume-extraction-requests.json", "resume-extraction-journal.json"]);
+const marker = '{"mode":"native-jobs-fixture","version":6}\n';
+const allowed = new Set([".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "answers.json", "resume-operation.json", "resume-files", "resume-extractions.json", "resume-extraction-requests.json", "resume-extraction-journal.json", "sessions", "applications.jsonl", "coordinator.json", "coordinator-journal.json"]);
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
 
@@ -54,6 +59,12 @@ export async function initializeJobsFixture(root: string): Promise<void> {
   await atomicWritePointJson(join(root, `${extractionJournalName}.json`), fromJSON({ schemaVersion: 1, operation: null }), options);
   await mkdir(join(root, "resume-files"), { mode: 0o700 });
   await chmod(join(root, "resume-files"), 0o700);
+  await mkdir(join(root, "sessions"), { mode: 0o700 });
+  await atomicWritePointJson(join(root, "coordinator.json"), fromJSON({ schemaVersion: 1, claim: null }), options);
+  await atomicWritePointJson(join(root, "coordinator-journal.json"), fromJSON({ schemaVersion: 1, operation: null }), options);
+  const history = await open(join(root, "applications.jsonl"), "wx", 0o600);
+  await history.sync();
+  await history.close();
   const lock = await open(join(root, ".store.lock"), "wx", 0o600);
   await lock.close();
   // The readiness marker is written last; partial initialization is never adopted.
@@ -137,6 +148,7 @@ export class NativeJobsRepository implements JobsRepository {
     // The extraction journal can contain the resume document intended by the file
     // journal. Finish it first so subsequent file recovery never restores an older
     // extraction snapshot over a newly installed resume. Validate before file I/O.
+    await this.recoverAnswers();
     await this.extractionJournal().recover();
     const files = new NativeResumeFiles(this.root);
     const journal = await this.journal();
@@ -223,12 +235,51 @@ export class NativeJobsRepository implements JobsRepository {
   }
 
   async answerTransaction<T>(operation: (document: Document, save: (document: Document) => Promise<void>, references: AnswerReferenceCounts) => Promise<T>): Promise<T> {
-    // transaction validates the closed fixture inventory under the shared lock.
-    // No session/history state can exist here, so reference counts are empty.
-    return this.transaction(async () => operation(validateAnswers(await this.document("answers")), async document => {
-      validateAnswers(document);
-      await this.write(join(this.root, "answers.json"), document, options);
-    }, new Map()));
+    return this.transaction(async () => {
+      const document = validateAnswers(await this.document("answers"));
+      return operation(document, async next => {
+        validateAnswers(next);
+        await this.write(join(this.root, "answers.json"), next, options);
+      }, answerReferenceCounts(document, await this.answerSessions(), await this.answerHistory()));
+    });
+  }
+
+  private answerJournal(): NativeAnswerJournal {
+    return new NativeAnswerJournal((name, document) => this.write(join(this.root, `${name}.json`), document, options));
+  }
+
+  private async answerSessions(): Promise<Document[]> {
+    const directory = join(this.root, "sessions"), stat = await lstat(directory);
+    if (!stat.isDirectory() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0 || stat.uid !== process.getuid?.()) throw new JobsError("native sessions directory must be private and owned");
+    const sessions: Document[] = [];
+    for (const name of (await readdir(directory)).sort()) {
+      if (!name.endsWith('.json')) throw new JobsError("native sessions contains unsupported state");
+      const id = safeId(name.slice(0, -5));
+      const session = validateAnswerSession(parsePythonPointJsonBytes(await this.read(`sessions/${name}`), { diagnosticProfile: "3.12", intMaxStrDigits: 4300 }));
+      if (string(get(session, "applicationId")) !== id) throw new JobsError("session identity does not match its file");
+      sessions.push(session);
+    }
+    return sessions;
+  }
+
+  private async answerHistory(): Promise<Document[]> {
+    const content = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(await this.read('applications.jsonl'));
+    return content.split('\n').filter(line => strip(line)).map(line => validateAnswerHistory(parsePythonPointJsonBytes(Buffer.from(line), { diagnosticProfile: "3.12", intMaxStrDigits: 4300 })));
+  }
+
+  private async recoverAnswers(): Promise<void> {
+    validateIdleCoordinator(await this.journal('coordinator'));
+    const sessions = await this.answerSessions();
+    await this.answerHistory();
+    await this.answerJournal().recover(await this.journal(answerJournalName), validateAnswers(await this.document('answers')), sessions);
+  }
+
+  async answerMergeTransaction<T>(operation: (transaction: AnswerMergeTransaction) => Promise<T>): Promise<T> {
+    return this.transaction(async () => {
+      const document = validateAnswers(await this.document('answers'));
+      const sessions = await this.answerSessions(), history = await this.answerHistory();
+      return operation({ document, sessions, history, commit: value => this.answerJournal().commit(value, document, sessions) });
+    });
   }
 
   async resumeSummaries(): Promise<Value[]> {

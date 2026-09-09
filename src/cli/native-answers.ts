@@ -1,3 +1,4 @@
+import { AnswerMergeService } from '../workspace-core/answer-merges.js';
 import { answerKey } from '../contracts/workspace/answers.js';
 import { AnswersService } from '../workspace-core/answers.js';
 import type { AnswerRepository } from '../workspace-core/answers.js';
@@ -13,6 +14,8 @@ export const answerCommands: Record<string, string[]> = {
   'answer-observe': ['--input'],
   'answer-semantic-lookup': ['--input'],
   'answer-cleanup-preview': [],
+  'answer-cleanup-approve': ['--input', '--owner-confirmed'],
+  'answer-merge': ['--winner-key', '--source-key', '--expected-winner-revision', '--expected-source-revision'],
   'answer-update': ['--key', '--input', '--expected-revision', '--remember-sensitive'],
   'answer-review': ['--key', '--decision', '--input', '--expected-revision', '--remember-sensitive'],
 };
@@ -23,8 +26,8 @@ export async function runAnswerCommand(command: string, repository: AnswerReposi
     if (!value) throw new JobsError(`required option: ${key}`);
     return value;
   };
-  const revision = (): bigint => {
-    const value = required('--expected-revision');
+  const revision = (field = '--expected-revision'): bigint => {
+    const value = required(field);
     if (!/^[0-9]+$/.test(value) || BigInt(value) < 1n) throw new JobsError('expected revision must be a positive integer');
     return BigInt(value);
   };
@@ -45,6 +48,8 @@ export async function runAnswerCommand(command: string, repository: AnswerReposi
     }
     case 'answer-put': return service.put(await payload(), consent, options.has('--expected-revision') ? revision() : null);
     case 'answer-observe': return service.observe(await payload());
+    case 'answer-cleanup-approve': return new AnswerMergeService(repository).approve(await payload(), options.has('--owner-confirmed'));
+    case 'answer-merge': return new AnswerMergeService(repository).merge(required('--winner-key'), required('--source-key'), revision('--expected-winner-revision'), revision('--expected-source-revision'));
     case 'answer-cleanup-preview': return service.cleanupPreview();
     case 'answer-semantic-lookup': return service.semanticLookup(await payload());
     case 'answer-update': return service.update(required('--key'), await payload(), revision(), consent);

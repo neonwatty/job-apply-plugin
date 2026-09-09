@@ -16,9 +16,9 @@ const pair = {
 const response = proposals => ({ proposals, previewToken: `answer-cleanup-v1.${'a'.repeat(64)}`, mutated: false });
 
 test('cleanup preview accepts empty results and preserves lossless positive revisions', () => {
-  assert.deepEqual(model.cleanupPreview(JSON.stringify(response([]))), []);
+  assert.deepEqual(model.cleanupPreview(JSON.stringify(response([]))), { previewToken: response([]).previewToken, pairs: [] });
   const raw = JSON.stringify(response([pair])).replace('"winnerRevision":1', '"winnerRevision":9007199254740993');
-  const result = model.cleanupPreview(raw);
+  const result = model.cleanupPreview(raw).pairs;
   assert.equal(result[0].winnerRevision, 9007199254740993n);
   assert.equal(result[0].duplicateRevision, 2n);
   assert.equal('previewToken' in result[0], false);
@@ -54,4 +54,31 @@ test('cleanup revisions reject boolean, float, exponent, string, zero and negati
       assert.throws(() => model.cleanupPreview(raw), `${field}=${invalid}`);
     }
   }
+});
+
+
+test('cleanup approval has the exact owner-confirmed shape and lossless revisions', () => {
+  const raw = JSON.stringify(response([pair])).replace('"winnerRevision":1', '"winnerRevision":9007199254740993');
+  const preview = model.cleanupPreview(raw);
+  const body = model.cleanupApproval(preview, preview.pairs[0]);
+  assert.match(body, /"winnerRevision":9007199254740993/);
+  const decoded = JSON.parse(body);
+  assert.deepEqual(Object.keys(decoded).sort(), ['approval', 'ownerConfirmed']);
+  assert.equal(decoded.ownerConfirmed, true);
+  assert.deepEqual(Object.keys(decoded.approval).sort(), [
+    'duplicateKey', 'duplicateRevision', 'previewToken', 'winnerKey', 'winnerRevision',
+  ]);
+  assert.equal(decoded.approval.previewToken, response([]).previewToken);
+  assert.equal(decoded.approval.winnerKey, 'accepted');
+  assert.equal(decoded.approval.duplicateKey, 'pending');
+  assert.equal(decoded.approval.duplicateRevision, 2);
+  assert.throws(() => model.cleanupApproval(preview, { ...preview.pairs[0] }));
+});
+
+test('cleanup approval requires a successful persisted answer response', () => {
+  assert.equal(model.cleanupApproved('{"approved":true,"result":{"revision":9007199254740993}}'), undefined);
+  for (const invalid of [null, {}, { approved: false, result: { revision: 1 } },
+    { approved: true, result: {} }, { approved: true, result: { revision: 0 } },
+    { approved: true, result: { revision: 1 }, extra: true },
+  ]) assert.throws(() => model.cleanupApproved(JSON.stringify(invalid)));
 });

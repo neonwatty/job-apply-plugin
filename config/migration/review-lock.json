@@ -39,7 +39,7 @@
     },
     {
       "path": "browser-native-answers-surfaces.json",
-      "sha256": "0fae647d01fcd85aaa4bf1fcf1d2c9efe4034dd5cb24635c9fbbb7261df582ef"
+      "sha256": "f3d5afc54c635bcc087dfd131fe495cb191e5c201386879e695a9ead9352a71c"
     },
     {
       "path": "browser-native-extractions-surfaces.json",
@@ -79,7 +79,7 @@
     },
     {
       "path": "cli-native-answers-surfaces.json",
-      "sha256": "13688d093d5bf1b395ac65f3c1c51c00d3573c97660b72f0b96b649644a25c5e"
+      "sha256": "4b8915bbcefe4a01c07d9d2269365ca82dfe146be14e165ddd3e9e51b570f403"
     },
     {
       "path": "cli-native-extractions-surfaces.json",
@@ -103,7 +103,7 @@
     },
     {
       "path": "document-01-surfaces.json",
-      "sha256": "0bf1907dd70fdb9e76da995ba6522b979158baa763147c0c8890b21e9736d784"
+      "sha256": "e40a1120beada72f4309c65d47891c119d2c207d1517ac0883584dc6640722f9"
     },
     {
       "path": "document-02-surfaces.json",
@@ -143,11 +143,11 @@
     },
     {
       "path": "http-write-answers-02-surfaces.json",
-      "sha256": "68b243d60c99c87320d442629a2a5825fae7a469cf294539118c63eb93172ccc"
+      "sha256": "9bebb4810d86e3efa0ecac1efb4b82ccdad560a45adfc27b4642f98228989cea"
     },
     {
       "path": "http-write-answers-surfaces.json",
-      "sha256": "69ec48f6981d0390cad39193d91952e8252f48a764c25e7fbfaa548430011a37"
+      "sha256": "382bc35282fc868af312be49f14e5052585dc18bb564c5dda188f28af1ef47c4"
     },
     {
       "path": "http-write-jobs-surfaces.json",
@@ -167,7 +167,7 @@
     },
     {
       "path": "journal-01-surfaces.json",
-      "sha256": "0dc5b0c108fc229764d0381cc38390bf291ce373a1f7215202941bba70f6a055"
+      "sha256": "57979af6d15eb917f9144e488b3e39d9d6dd5c589b06aef56df5ad6c191ad1f6"
     },
     {
       "path": "journal-02-surfaces.json",
@@ -255,7 +255,11 @@
     },
     {
       "path": "source-catalog-native-answer-cleanup.json",
-      "sha256": "9079cf96fdd7e7150293a64434769b6f025bdf31ced0d2ddade52c1fbc56cc70"
+      "sha256": "cc6a6d670c9bbd8c21275158a0cc8705850484d922544eeb5f8476d136a516c8"
+    },
+    {
+      "path": "source-catalog-native-answer-merge.json",
+      "sha256": "eca9033c0488be05dee9fab734a98782f460adae605ff3f3929879b3a258b660"
     },
     {
       "path": "source-catalog-native-answer-reuse.json",
@@ -263,7 +267,7 @@
     },
     {
       "path": "source-catalog-native-answers.json",
-      "sha256": "ff374e1b59a73a383e2d26c1caebba9c78c3fd6b2c20116fbf47a69154604439"
+      "sha256": "db9f5a8bcaa5745dbe3ea07248cddc95f7e15073cd9f8519be1be468b0cc9a5b"
     },
     {
       "path": "source-catalog-native-extractions.json",
@@ -275,7 +279,7 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "bdb629946968ecb5e8239937c998d7d183770482e45cff2dd0ca2c77df11bfda"
+      "sha256": "262e50c84cfbeeef2f609bca48a1e1d408b8384a6947edc65dade95cd8195665"
     },
     {
       "path": "source-catalog-native-resumes.json",

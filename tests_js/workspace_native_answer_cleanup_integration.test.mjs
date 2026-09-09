@@ -41,7 +41,7 @@ test('cleanup HTTP and Python-free CLI preserve Python token and canonical bytes
     assert.doesNotMatch(cli.stdout, /PRIVATE-CLEANUP-VALUE/);
     assert.deepEqual(await snapshot(), before);
     const unsupported = await jobsHttp(jobs, repository, 'POST', '/api/answers/cleanup-approve', '{}');
-    assert.equal(unsupported.status, 501);
+    assert.equal(unsupported.status, 400);
     assert.deepEqual(await snapshot(), before);
     await writer.put(fromJSON({ question: 'Unrelated answer?', state: 'missing' }));
     const changed = JSON.parse(serialize(await service.cleanupPreview()));

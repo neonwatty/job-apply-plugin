@@ -3,12 +3,12 @@
   "sources": [
     {
       "path": "apps/companion/components/AnswerCleanup.tsx",
-      "sha256": "326388a8c4e0029a4925eb1934cdefd5cc2f85a415953c2640e7d1a816a9c198",
+      "sha256": "d649b016c48bce97fb42f8be73b5451ef96512ba1065296b19fbbbd78799da7d",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/answer-cleanup-model.ts",
-      "sha256": "914bb915ed8884beab45b0bed5f13d076f65203fa30b4d634562ec64af500734",
+      "sha256": "f999fa1d6801e50573c2bb1f3e375a7b20f641a69fd2d9a0742884c52583d225",
       "classification": "unreviewed"
     },
     {

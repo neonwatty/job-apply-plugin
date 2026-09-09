@@ -1,3 +1,4 @@
+import { AnswerMergeService } from './answer-merges.js';
 import { AnswersService } from './answers.js';
 import { emptyObject } from '../contracts/workspace/jobs.js';
 import { get, has, int, keys, object, parse, serialize, string, JobsError } from '../contracts/workspace/values.js';
@@ -34,8 +35,15 @@ function decodeKey(value) {
 export async function answerHttp(repository, method, path, body) {
     if (!path.startsWith('/api/answers'))
         return null;
-    if (path === '/api/answers/cleanup-approve')
-        return null;
+    if (path === '/api/answers/cleanup-approve') {
+        if (method !== 'POST')
+            return null;
+        const payload = object(parse(body), 'cleanup approval');
+        fields(payload, ['approval', 'ownerConfirmed'], ['approval', 'ownerConfirmed']);
+        if (get(payload, 'ownerConfirmed') !== true)
+            throw new JobsError('cleanup requires an explicit owner-approved preview');
+        return response(await new AnswerMergeService(repository).approve(get(payload, 'approval'), true));
+    }
     const service = new AnswersService(repository);
     if (path === '/api/answers/cleanup-preview')
         return method === 'GET' ? response(await service.cleanupPreview()) : null;
@@ -84,7 +92,7 @@ export async function answerHttp(repository, method, path, body) {
         fields(payload, ['answer'], ['answer']);
         return response(await service.observe(get(payload, 'answer')));
     }
-    const match = /^\/api\/answers\/(?:by-key\/([^/]+)|([^/]+))(?:\/(reveal|accept|decline))?$/.exec(path);
+    const match = /^\/api\/answers\/(?:by-key\/([^/]+)|([^/]+))(?:\/(reveal|accept|decline|merge))?$/.exec(path);
     if (!match)
         return null;
     const key = match[1] ? decodeKey(match[1]) : decodeURIComponent(match[2]);
@@ -101,6 +109,10 @@ export async function answerHttp(repository, method, path, body) {
     }
     if (method === 'POST' && match[3]) {
         const payload = object(parse(body), 'body');
+        if (match[3] === 'merge') {
+            fields(payload, ['winnerKey', 'expectedWinnerRevision', 'expectedSourceRevision'], ['winnerKey', 'expectedWinnerRevision', 'expectedSourceRevision']);
+            return response(await new AnswerMergeService(repository).merge(string(get(payload, 'winnerKey')), key, int(get(payload, 'expectedWinnerRevision')), int(get(payload, 'expectedSourceRevision'))));
+        }
         if (match[3] === 'reveal') {
             fields(payload, []);
             const revealed = await service.get(key, true);

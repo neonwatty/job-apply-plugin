@@ -2,7 +2,7 @@
 
 This tranche provides lossless answer contracts, shared domain services, HTTP/CLI
 leaf adapters and a React editor. It is not a complete phase 8 migration or a
-live Store activation. Native fixture version 5 wires these services into the
+live Store activation. Native fixture version 6 wires these services into the
 shared Store lock, HTTP and CLI dispatch, and the Answers tab. Existing fixtures
 are rejected rather than upgraded; initialize a new isolated fixture using the
 [native fixture guide](native-jobs-fixture.md).
@@ -36,12 +36,12 @@ exclusion on its own. Do not open an existing Python Store with these leaves.
 error-to-status mapping and unsupported-route handling. Encoded `by-key` paths
 use UTF-8 base64url. Supported routes are query, put, observe, detail, update,
 explicit reveal and accept/decline. Semantic lookup is available through
-`POST /api/answers/semantic`; cleanup routes remain unsupported.
+`POST /api/answers/semantic`. Cleanup preview/approval and explicit merge are also supported.
 
 `answerCommands` and `runAnswerCommand` provide answer-key, get, find, list, put,
 observe, update, reveal and review. The native parser recognizes the boolean
 flags `--remember-sensitive`, `--include-trashed`, `--trashed-only` and
-`--all-review-statuses`. Review uses the existing `--decision` option. Exact
+`--all-review-statuses`. Cleanup approval requires `--owner-confirmed`. Review uses the existing `--decision` option. Exact
 question/alias lookup and deterministic semantic reuse evaluation are supported.
 `answer-semantic-lookup --input FILE` (or `--input -`) evaluates a lookup packet
 against current canonical records under the shared Store lock.
@@ -73,8 +73,7 @@ not pass through ordinary JSON parsing.
 The leaf supports creating answers, value-free search, status filters, selecting an answer,
 explicit sensitive reveal, ordinary labeled fields with lossless typed value editing, accept/decline, draft retention
 and selective reapply after loading a newer revision. Consent starts unchecked
-and resets after selection, save and conflict reapply. Unsupported merge,
-cleanup and pending application questions are identified in the UI. New answers
+and resets after selection, save and conflict reapply. Pending application questions remain unavailable in the UI. New answers
 use labeled fields and default to confirmed user facts. Creation omits an
 expected revision so duplicate identities are rejected atomically; failed
 creation retains the draft. Each new form starts with sensitive-memory consent
@@ -95,9 +94,9 @@ state, concurrent revisions, failed persistence, corrupt documents and rejected
 unsupported reference state. Existing native lock and atomic-write fault tests
 remain required; the domain tests alone do not certify crash recovery.
 
-Merge and cleanup commit require the coordinator journal plus reference/session
-rewrites. No single-document substitute is supplied. Full phase 8 acceptance
-also requires complete React workflows, coordinator recovery and full release acceptance.
+Merge and cleanup approval use the coordinator journal and session rewrites.
+Full phase 8 acceptance still requires pending-question resolution, active claim
+workflows and complete coordinator/release acceptance.
 
 ## Cleanup preview
 
@@ -113,5 +112,45 @@ sensitivity is proposed. The winner must be active, accepted, confirmed and have
 a retained value; the duplicate must be active and pending. Multiple eligible
 winners suppress a proposal. The `answer-cleanup-v1` token covers the proposals
 and every answer revision using the Python-compatible canonical representation.
-Preview is read-only: it neither merges answers nor grants approval. Cleanup
-approval and durable merging remain unavailable in this fixture.
+Preview is read-only: it neither merges answers nor grants approval. The UI
+requires a separate confirmation for each proposed merge.
+
+
+## Durable merge and approval
+
+Fixture v6 adds private `sessions/*.json`, `applications.jsonl`, `coordinator.json`
+and `coordinator-journal.json`. New synthetic roots start with an idle coordinator;
+active claims and journal kinds other than `answer_merge` are rejected. Existing
+fixtures and live Stores are not upgraded or adopted.
+
+`AnswerMergeService` uses `answerMergeTransaction` to hold the shared lock across
+preview validation, revision/collision checks, session projection and journal
+commit. Every domain entry point replays pending merges before reading state.
+The journal retains the Python `answer_merge` operation shape. Replay writes
+answers, affected sessions, the idle coordinator, then clears the journal.
+Interrupted replay resumes without increasing the winner revision twice.
+
+The winner retains its value, consent and authority. The source becomes a
+flattened redirect; aliases and observation metadata combine. Session references
+are rewritten and obsolete source-bound approvals and match evidence are removed.
+History stays byte-for-byte unchanged; its answer references resolve through
+redirects. Invalid sessions/history or unsupported coordinator state prevent writes.
+
+Direct merge uses `answer-merge --winner-key KEY --source-key KEY
+--expected-winner-revision N --expected-source-revision N`, or
+`POST /api/answers/by-key/ENCODED_SOURCE/merge` with `winnerKey`,
+`expectedWinnerRevision` and `expectedSourceRevision`.
+
+Cleanup approval uses `answer-cleanup-approve --input FILE --owner-confirmed`.
+The input contains exactly `previewToken`, `winnerKey`, `duplicateKey`,
+`winnerRevision` and `duplicateRevision`. HTTP accepts
+`POST /api/answers/cleanup-approve` with `{approval, ownerConfirmed: true}`.
+The service recomputes the preview under the lock and rejects stale tokens or
+selections absent from the preview before any durable write.
+
+The Answers screen requires confirmation per pair, disables approval while an
+answer draft is dirty, and locks editing during the merge. Successful merges clear
+the editor and refresh the list. Failed or uncertain requests consume the displayed
+preview; refresh it to inspect current state before retrying. No merge is applied
+optimistically. Real SIGKILL tests cover journal, answer, session, coordinator and
+journal-clear boundaries, followed by fresh-process and idempotent recovery.

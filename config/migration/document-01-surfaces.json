@@ -204,7 +204,14 @@
       "artifact": "jsonl",
       "node": "JOB",
       "sources": [
-        "scripts/job_apply_store/base.py"
+        "scripts/job_apply_store/base.py",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answer-merge.ts",
+        "src/contracts/workspace/answer-session-fields.ts",
+        "src/contracts/workspace/answer-session-validation.ts",
+        "src/contracts/workspace/answer-sessions.ts",
+        "src/store/native-answer-journal.ts",
+        "src/workspace-core/answer-merges.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -250,7 +257,14 @@
       "artifact": "json",
       "node": "SESS",
       "sources": [
-        "scripts/job_apply_store/base.py"
+        "scripts/job_apply_store/base.py",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answer-merge.ts",
+        "src/contracts/workspace/answer-session-fields.ts",
+        "src/contracts/workspace/answer-session-validation.ts",
+        "src/contracts/workspace/answer-sessions.ts",
+        "src/store/native-answer-journal.ts",
+        "src/workspace-core/answer-merges.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -273,7 +287,14 @@
       "artifact": "json",
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/base.py"
+        "scripts/job_apply_store/base.py",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answer-merge.ts",
+        "src/contracts/workspace/answer-session-fields.ts",
+        "src/contracts/workspace/answer-session-validation.ts",
+        "src/contracts/workspace/answer-sessions.ts",
+        "src/store/native-answer-journal.ts",
+        "src/workspace-core/answer-merges.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

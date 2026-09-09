@@ -83,8 +83,8 @@ test('HTTP and CLI share validation, explicit reveal and revision boundaries', a
   await assert.rejects(answerHttp(repository, 'POST', `${path}/reveal`, '{"extra":true}'), /unsupported/);
   await assert.rejects(answerHttp(repository, 'PATCH', path, '{"patch":{"source":"user"},"expectedRevision":false}'), /positive integer/);
   await assert.rejects(answerHttp(repository, 'POST', '/api/answers', '{"answer":{},"rememberSensitive":"yes"}'), /boolean/);
-  assert.equal(await answerHttp(repository, 'POST', `${path}/merge`, '{}'), null);
-  assert.equal(await answerHttp(repository, 'POST', '/api/answers/cleanup-approve', '{}'), null);
+  await assert.rejects(answerHttp(repository, 'POST', `${path}/merge`, '{}'), /unsupported or missing/);
+  await assert.rejects(answerHttp(repository, 'POST', '/api/answers/cleanup-approve', '{}'), /unsupported or missing/);
 });
 test('exact matching respects alias, scope, accepted review and pending retries', async () => {
   const { service } = fixture();
