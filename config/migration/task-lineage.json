@@ -1520,6 +1520,22 @@
           "sha256": "ff90e22ca6a93ac7e197656203fce134a10c2e35f8597996bfe37a7de5912276"
         }
       ]
+    },
+    {
+      "id": "g02-next.manifests.preparation",
+      "author": "root",
+      "reviewer": "hooks_audit",
+      "reason": "Implement approved Mac-first Next.js frontend without waiting for hosted test matrices or backend domain migration.",
+      "files": [
+        {
+          "path": "docs/migration/evidence/g02-next/G02.next.I.json",
+          "sha256": "c567c1cde217734d65e45847a64b490c7c3c0ab9e1f2228ffaa017b6d4383f6d"
+        },
+        {
+          "path": "docs/migration/evidence/g02-next/G02.next.V.json",
+          "sha256": "1676b7757fb060c352c7df8d463092fe0c28a9884424f5440025715441d55820"
+        }
+      ]
     }
   ],
   "transitions": [
