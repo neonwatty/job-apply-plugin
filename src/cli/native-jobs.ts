@@ -1,4 +1,6 @@
 import { profileCommands, runProfileCommand } from "./native-profile.js";
+import { answerCommands, runAnswerCommand } from "./native-answers.js";
+import { extractionCommands, runExtractionCommand } from "./native-extractions.js";
 import { readFile } from "node:fs/promises";
 import { realpathSync } from "node:fs";
 import { basename } from "node:path";
@@ -10,7 +12,7 @@ import { parse, serialize, JobsError } from "../contracts/workspace/values.js";
 import { ResumeService } from "../workspace-core/resumes.js";
 import { NativeResumeFiles } from "../store/native-resume-files.js";
 
-export async function runJobsCli(args: string[], input: () => Promise<string>): Promise<string> {
+export async function runJobsCli(args: string[], input: (limit?: number) => Promise<string>): Promise<string> {
   const options = new Map<string, string>();
   let command: string | undefined;
   for (let index = 0; index < args.length; index++) {
@@ -20,7 +22,7 @@ export async function runJobsCli(args: string[], input: () => Promise<string>): 
       command = key;
     } else {
       if (options.has(key)) throw new JobsError("duplicate CLI option");
-      if (["--include-trashed", "--trashed-only", "--replace"].includes(key)) options.set(key, "true");
+      if (["--include-trashed", "--trashed-only", "--replace", "--remember-sensitive", "--all-review-statuses", "--summary-only"].includes(key)) options.set(key, "true");
       else {
         const value = args[++index];
         if (!value || value.startsWith("--")) throw new JobsError("missing CLI option value");
@@ -30,6 +32,8 @@ export async function runJobsCli(args: string[], input: () => Promise<string>): 
   }
   const fields: Record<string, string[]> = {
     ...profileCommands,
+    ...answerCommands,
+    ...extractionCommands,
     "fixture-init": [], "job-create": ["--input", "--origin"], "job-get": ["--id", "--include-trashed"],
     "job-list": ["--status", "--include-trashed", "--trashed-only"],
     "job-update": ["--id", "--input", "--expected-revision", "--origin"],
@@ -54,9 +58,14 @@ export async function runJobsCli(args: string[], input: () => Promise<string>): 
   const resumes = new ResumeService(repository);
   const payload = async () => {
     const file = required("--input");
-    return parse(file === "-" ? await input() : await readFile(file, "utf8"));
+    // Extraction candidates permit 256 KiB after normalization. Allow JSON
+    // escaping and formatting overhead while keeping stdin bounded.
+    const limit = ["resume-proposal-create", "resume-extraction-request-complete"].includes(command!) ? 2 * 1024 * 1024 : 65536;
+    return parse(file === "-" ? await input(limit) : await readFile(file, "utf8"));
   };
   if (Object.hasOwn(profileCommands, command!)) return serialize(await runProfileCommand(command!, repository, options, payload));
+  if (Object.hasOwn(answerCommands, command!)) return serialize(await runAnswerCommand(command!, repository, options, payload));
+  if (Object.hasOwn(extractionCommands, command!)) return serialize(await runExtractionCommand(command!, repository, options, payload));
   if (command === "resume-import") {
     const path = required("--path"), content = await new NativeResumeFiles(root).readPath(path);
     return serialize(await resumes.import(await payload(), basename(path), content, true));
@@ -84,12 +93,12 @@ export async function runJobsCli(args: string[], input: () => Promise<string>): 
 
 if (process.argv[1] && pathToFileURL(realpathSync(process.argv[1])).href === import.meta.url) {
   try {
-    const result = await runJobsCli(process.argv.slice(2), async () => {
+    const result = await runJobsCli(process.argv.slice(2), async (limit = 65536) => {
       const chunks: Buffer[] = [];
       let size = 0;
       for await (const chunk of process.stdin) {
         size += chunk.length;
-        if (size > 65536) throw new JobsError("input exceeds 64 KiB");
+        if (size > limit) throw new JobsError(`input exceeds ${limit / 1024} KiB`);
         chunks.push(Buffer.from(chunk));
       }
       return Buffer.concat(chunks).toString("utf8");

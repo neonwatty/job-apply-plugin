@@ -54,7 +54,10 @@
       "artifact": "json",
       "node": "ANS",
       "sources": [
-        "scripts/job_apply_store/base.py"
+        "scripts/job_apply_store/base.py",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answers.ts",
+        "src/workspace-core/answers.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -126,7 +129,9 @@
       "artifact": "json",
       "node": "RES",
       "sources": [
-        "scripts/job_apply_store/base.py"
+        "scripts/job_apply_store/base.py",
+        "src/store/native-jobs.ts",
+        "src/store/native-extraction-journal.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -149,7 +154,9 @@
       "artifact": "json",
       "node": "RES",
       "sources": [
-        "scripts/job_apply_store/base.py"
+        "scripts/job_apply_store/base.py",
+        "src/store/native-jobs.ts",
+        "src/store/native-extraction-journal.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -172,7 +179,9 @@
       "artifact": "json",
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/base.py"
+        "scripts/job_apply_store/base.py",
+        "src/store/native-jobs.ts",
+        "src/store/native-extraction-journal.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

@@ -1,0 +1,239 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:src/cli/native-jobs.ts:answer-key",
+      "kind": "cli",
+      "command": "answer-key",
+      "node": "ANS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-answers.ts",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answers.ts",
+        "src/workspace-core/answers.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:answer-find",
+      "kind": "cli",
+      "command": "answer-find",
+      "node": "ANS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-answers.ts",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answers.ts",
+        "src/workspace-core/answers.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:answer-get",
+      "kind": "cli",
+      "command": "answer-get",
+      "node": "ANS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-answers.ts",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answers.ts",
+        "src/workspace-core/answers.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:answer-reveal",
+      "kind": "cli",
+      "command": "answer-reveal",
+      "node": "ANS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-answers.ts",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answers.ts",
+        "src/workspace-core/answers.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:answer-list",
+      "kind": "cli",
+      "command": "answer-list",
+      "node": "ANS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-answers.ts",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answers.ts",
+        "src/workspace-core/answers.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:answer-put",
+      "kind": "cli",
+      "command": "answer-put",
+      "node": "ANS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-answers.ts",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answers.ts",
+        "src/workspace-core/answers.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:answer-observe",
+      "kind": "cli",
+      "command": "answer-observe",
+      "node": "ANS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-answers.ts",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answers.ts",
+        "src/workspace-core/answers.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:answer-update",
+      "kind": "cli",
+      "command": "answer-update",
+      "node": "ANS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-answers.ts",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answers.ts",
+        "src/workspace-core/answers.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:answer-review",
+      "kind": "cli",
+      "command": "answer-review",
+      "node": "ANS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-answers.ts",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answers.ts",
+        "src/workspace-core/answers.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

@@ -18,8 +18,10 @@ export async function nextSecurity() {
             if (/\.tsx?$/.test(name)) components.set(`apps/companion/components/${name}`,
                 await readFile(join(componentDirectory, name), 'utf8'));
         }
-        const surfaces = JSON.parse(await readFile(join(root,
-            'config/migration/browser-g02-next-surfaces.json'), 'utf8')).surfaces;
+        const catalogs = ['browser-g02-next-surfaces.json', 'browser-native-answers-surfaces.json',
+            'browser-native-extractions-surfaces.json'];
+        const surfaces = (await Promise.all(catalogs.map(async name =>
+            JSON.parse(await readFile(join(root, 'config/migration', name), 'utf8')).surfaces))).flat();
         assert.deepEqual(checkBrowserBindings(discoverNextBrowserExports(components), surfaces), []);
         const example = 'apps/companion/components/example.tsx';
         assert.deepEqual(discoverNextBrowserExports(new Map([[example,

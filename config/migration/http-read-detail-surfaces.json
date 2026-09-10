@@ -98,7 +98,12 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/answers-http.ts",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answers.ts",
+        "src/workspace-core/answers.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -152,7 +157,12 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/answers-http.ts",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answers.ts",
+        "src/workspace-core/answers.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -245,7 +255,10 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/extractions-http.ts",
+        "src/workspace-core/extraction.ts",
+        "src/store/native-jobs.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

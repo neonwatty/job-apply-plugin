@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "src/contracts/workspace/answers.ts",
+      "sha256": "efa837cb825230ba4ec40182443cb661a8a3a20f0c3d7b58363b8746f83cbe57",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/answers.ts",
+      "sha256": "55c741fc60a54d9a5b632c107f366018e17c48130b39b725c69688747574fb55",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/answers-http.ts",
+      "sha256": "64c69aabd1c08b43bfc1d3efeede132d660fa774e5682be9128bc6dee218509e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-answers.ts",
+      "sha256": "ab35fd27ee583021acb2900853f827e70ae73a8e1fc640979f8b35c06becae13",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/answers.js",
+      "sha256": "8b0881ce6bee817a6bd14f1eee77292af78a54b94c159669a512b612e1a9257b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/answers.js",
+      "sha256": "aa00d9285feba7f2325a3955114c8daf8ced035ad0807fb8c58d01c9360f0490",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/answers-http.js",
+      "sha256": "95552854b484903cc58323b97744bcc7df1b34ac430cedb4db80a64c7c6d140d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/cli/native-answers.js",
+      "sha256": "ac908afc5a9a856c4b11b6b18dfc5f49d68b343362d23a114257519cee44c34e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/Answers.tsx",
+      "sha256": "0248f018d86c39a513ea10bbb5e7728c02e1db37f8af13f0663a05be54a52061",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/answer-fields.tsx",
+      "sha256": "1271ab64a41c45e1301665648936a1a2ca8b65ae1b1177d0009f992cf848433c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/answer-model.ts",
+      "sha256": "078fc1a4b6b68a4dd22eb32b3d7bd294a40ad03f8a4cd014a50e5913a71d754f",
+      "classification": "unreviewed"
+    }
+  ]
+}

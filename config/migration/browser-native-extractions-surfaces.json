@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "browser:apps/companion/components/Extractions.tsx:Extractions",
+      "kind": "browser",
+      "export": "Extractions",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/Extractions.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/extraction-model.ts:extractionList",
+      "kind": "browser",
+      "export": "extractionList",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/extraction-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/extraction-model.ts:proposalSnapshot",
+      "kind": "browser",
+      "export": "proposalSnapshot",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/extraction-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/extraction-model.ts:pendingPaths",
+      "kind": "browser",
+      "export": "pendingPaths",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/extraction-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/extraction-model.ts:candidateValue",
+      "kind": "browser",
+      "export": "candidateValue",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/extraction-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/extraction-model.ts:replacementScope",
+      "kind": "browser",
+      "export": "replacementScope",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/extraction-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/extraction-model.ts:reapplyChoices",
+      "kind": "browser",
+      "export": "reapplyChoices",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/extraction-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/extraction-model.ts:reviewMutation",
+      "kind": "browser",
+      "export": "reviewMutation",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/extraction-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/extraction-model.ts:requestMutation",
+      "kind": "browser",
+      "export": "requestMutation",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/extraction-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/extraction-review.tsx:ExtractionReview",
+      "kind": "browser",
+      "export": "ExtractionReview",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/extraction-review.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

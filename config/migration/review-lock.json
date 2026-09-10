@@ -38,6 +38,14 @@
       "sha256": "e012ca65fdf04343c960da5ce0a36e6a56d5b55f01074226c77bd35fcbe5408f"
     },
     {
+      "path": "browser-native-answers-surfaces.json",
+      "sha256": "deabe52901fe767c22222812550ad77e8d43f7376d690af6a41496a34056ce25"
+    },
+    {
+      "path": "browser-native-extractions-surfaces.json",
+      "sha256": "ac960232d6b5234f38fab48d567eabf436f72e291def557f9f52ab53cedee658"
+    },
+    {
       "path": "cli-01-surfaces.json",
       "sha256": "b05ac334f9949992f3497f79885033b970692cb798e831d4866d62050ce56841"
     },
@@ -70,6 +78,14 @@
       "sha256": "adcbc8737ec21bf25b4e0ea251fb2c7b34e577486f778e79aee43810fa946c07"
     },
     {
+      "path": "cli-native-answers-surfaces.json",
+      "sha256": "1f799e53cf30108c9b90e93170703bd9c5679680a7227ef68496965cf7e4ce7d"
+    },
+    {
+      "path": "cli-native-extractions-surfaces.json",
+      "sha256": "48b2da4e3573d28c16e3b8914b27ca34ae5379573e0214c5da84e034ee0f4801"
+    },
+    {
       "path": "cli-native-facts-surfaces.json",
       "sha256": "b9710c5943613cea49bf1742e5aea7570220f3ef2db45e956ea4576adcbae223"
     },
@@ -87,7 +103,7 @@
     },
     {
       "path": "document-01-surfaces.json",
-      "sha256": "832cba04c3b722bbea66f242d3e2ce587e988732c8abcd7d0f3cd8f2cdf5f7de"
+      "sha256": "0bf1907dd70fdb9e76da995ba6522b979158baa763147c0c8890b21e9736d784"
     },
     {
       "path": "document-02-surfaces.json",
@@ -115,11 +131,11 @@
     },
     {
       "path": "http-read-detail-surfaces.json",
-      "sha256": "6b35b0079111a16eb7cc3b9a197c646467983d8d2e083b4d4d662dcefbc19bfc"
+      "sha256": "dd8d077cbb24c86469471b48c86f2e1fc4e266b63d32a1ddc5fe071c4dad789e"
     },
     {
       "path": "http-read-surfaces.json",
-      "sha256": "91c59a29e0b3cad192438bbdeb11858abb377bab1e7cb9bb45cef54919a99a1a"
+      "sha256": "8bbc18ba8fbbb4064a46d4d6c981e91b038f6af88c1aa7c73bfa32da925d4397"
     },
     {
       "path": "http-write-accounts-surfaces.json",
@@ -127,11 +143,11 @@
     },
     {
       "path": "http-write-answers-02-surfaces.json",
-      "sha256": "40aa2d382f575d8f363d3c98852adb2bc562ba9811e8148ac7c2dcbe8a96ef97"
+      "sha256": "68b243d60c99c87320d442629a2a5825fae7a469cf294539118c63eb93172ccc"
     },
     {
       "path": "http-write-answers-surfaces.json",
-      "sha256": "10ea3e206a02ae3dedb2f2ec2195f7df936b530cc3f9b2386463d5a7d2f9db36"
+      "sha256": "beb7a8d7d037c44ea637e7567aab712430b2a3126c3e95a5495cae1bda4c9b10"
     },
     {
       "path": "http-write-jobs-surfaces.json",
@@ -143,7 +159,7 @@
     },
     {
       "path": "http-write-resumes-surfaces.json",
-      "sha256": "bd5d9621cdd4a79983c36c74517ebebdc69c1dc530bb1cc676e238680f6fabf6"
+      "sha256": "62274f8bdaf20fabf79a3988d41d134a3459452d2ba7eea5215d7a8feb7f36a8"
     },
     {
       "path": "http-write-surfaces.json",
@@ -155,7 +171,7 @@
     },
     {
       "path": "journal-02-surfaces.json",
-      "sha256": "1051479ffce514db1e766054102e7fc7a95188074052ea3ac4bed616178a8bb7"
+      "sha256": "91e0d6c0969a8d400e980d2f6723b15af49be60232299453dfca06307e77d5d8"
     },
     {
       "path": "journal-03-surfaces.json",
@@ -227,7 +243,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "dc5a2fedfd6cf2a532e623e9c2da77ba5b0c69f6b96af8fcd30d41a7a11dcda2"
+      "sha256": "faf16f790ebda4d05c2a5b47335dfe26ef11b49e5d3788f6ba62d902a34fa39c"
     },
     {
       "path": "source-catalog-m01.json",
@@ -238,12 +254,20 @@
       "sha256": "0b6ee35143f1ad4f49568ed3d9e15f1cfacf869476a50a151b4fea3fc6f29f41"
     },
     {
+      "path": "source-catalog-native-answers.json",
+      "sha256": "926b5cbbc68d64cef6a1d3e73b988e2ea34e1a726d383c37b1d7b1b4ffd3d791"
+    },
+    {
+      "path": "source-catalog-native-extractions.json",
+      "sha256": "0ccd58b8d6e52a0f2818b43e8cd8d16dd39dc1f52898f3a61e42aa2ea77602f7"
+    },
+    {
       "path": "source-catalog-native-facts.json",
       "sha256": "8a41ab419b7b46311658f0ec43e970c7cda36f6322aa8dba415c41ae9e6e6424"
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "9919e0c9935d3ea92654fef70c5f06c2502fac4d86967d45acc2424f1c0c893e"
+      "sha256": "bdb629946968ecb5e8239937c998d7d183770482e45cff2dd0ca2c77df11bfda"
     },
     {
       "path": "source-catalog-native-resumes.json",

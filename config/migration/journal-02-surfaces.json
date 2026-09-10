@@ -9,7 +9,9 @@
       "value": null,
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/domains/extractions/journal.py"
+        "scripts/job_apply_store/domains/extractions/journal.py",
+        "src/store/native-jobs.ts",
+        "src/store/native-extraction-journal.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -33,7 +35,9 @@
       "value": "create",
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/domains/extractions/journal.py"
+        "scripts/job_apply_store/domains/extractions/journal.py",
+        "src/store/native-jobs.ts",
+        "src/store/native-extraction-journal.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -57,7 +61,9 @@
       "value": "review",
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/domains/extractions/journal.py"
+        "scripts/job_apply_store/domains/extractions/journal.py",
+        "src/store/native-jobs.ts",
+        "src/store/native-extraction-journal.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -81,7 +87,9 @@
       "value": "request-create",
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/domains/extractions/journal.py"
+        "scripts/job_apply_store/domains/extractions/journal.py",
+        "src/store/native-jobs.ts",
+        "src/store/native-extraction-journal.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -105,7 +113,9 @@
       "value": "request-close",
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/domains/extractions/journal.py"
+        "scripts/job_apply_store/domains/extractions/journal.py",
+        "src/store/native-jobs.ts",
+        "src/store/native-extraction-journal.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -129,7 +139,9 @@
       "value": "request-retry",
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/domains/extractions/journal.py"
+        "scripts/job_apply_store/domains/extractions/journal.py",
+        "src/store/native-jobs.ts",
+        "src/store/native-extraction-journal.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -153,7 +165,9 @@
       "value": "request-complete",
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/domains/extractions/journal.py"
+        "scripts/job_apply_store/domains/extractions/journal.py",
+        "src/store/native-jobs.ts",
+        "src/store/native-extraction-journal.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -177,7 +191,9 @@
       "value": "resume-request-close",
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/domains/extractions/journal.py"
+        "scripts/job_apply_store/domains/extractions/journal.py",
+        "src/store/native-jobs.ts",
+        "src/store/native-extraction-journal.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
