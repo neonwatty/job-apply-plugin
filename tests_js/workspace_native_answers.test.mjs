@@ -116,3 +116,21 @@ test('HTTP missing answer details fail explicitly for direct and encoded identit
     await assert.rejects(answerHttp(repository, 'GET', path, ''), /answer does not exist/);
   }
 });
+
+test('encoded answer keys preserve a leading BOM and never select or update its unprefixed peer', async () => {
+  const { service, repository } = fixture();
+  for (const [key, question, value] of [['x', 'Unprefixed question?', 'unprefixed'], ['\ufeffx', 'Prefixed question?', 'prefixed']]) {
+    await service.put(fromJSON({ key, question, state: 'confirmed', value }));
+  }
+  const path = '/api/answers/by-key/' + Buffer.from('\ufeffx').toString('base64url');
+  const selected = JSON.parse((await answerHttp(repository, 'GET', path, '')).body);
+  assert.equal(selected.key, '\ufeffx');
+  assert.equal(selected.value, 'prefixed');
+  const updated = JSON.parse((await answerHttp(repository, 'PATCH', path,
+    JSON.stringify({ patch: { value: 'updated-prefixed' }, expectedRevision: 1 }))).body);
+  assert.equal(updated.key, '\ufeffx');
+  assert.equal(updated.revision, 2);
+  assert.equal(plain(await service.get('x')).value, 'unprefixed');
+  assert.equal(plain(await service.get('x')).revision, 1);
+  assert.equal(plain(await service.get('\ufeffx')).value, 'updated-prefixed');
+});
