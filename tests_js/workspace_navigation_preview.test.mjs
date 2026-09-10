@@ -28,6 +28,8 @@ test('synthetic PDF has an authenticated browser preview', { timeout: 60_000 }, 
     const response = page.waitForResponse(response => response.url().endsWith('/content'));
     const popup = page.waitForEvent('popup');
     await page.locator('.resume-card').getByRole('button', { name: 'View PDF', exact: true }).click();
+    assert.equal(await page.locator('#resume-dialog').evaluate(node => node.open), false,
+      'preview must not open metadata or replacement controls');
     const content = await response;
     assert.equal(content.status(), 200);
     assert.match(content.headers()['content-type'], /application\/pdf/);
@@ -37,6 +39,29 @@ test('synthetic PDF has an authenticated browser preview', { timeout: 60_000 }, 
     assert.equal((await page.request.get(content.url())).status(), 401);
     // Headless shell does not render Chrome's PDF viewer; owner visual acceptance is separate.
     await preview.close();
+    const card = page.locator('.resume-card');
+    await page.route('**/api/resumes/*/content', route => route.abort());
+    await card.getByRole('button', { name: 'View PDF', exact: true }).click();
+    await page.getByText(/Resume preview failed: cannot reach the Companion/).waitFor();
+    assert.equal(await page.locator('#resume-dialog').evaluate(node => node.open), false);
+    assert.equal(await card.getByRole('button', { name: 'View PDF', exact: true }).isEnabled(), true);
+    await page.unroute('**/api/resumes/*/content');
+    await card.getByRole('button', { name: 'Manage', exact: true }).click();
+    const details = page.locator('#resume-dialog');
+    assert.equal(await details.getByRole('group', { name: 'Current document', exact: true }).locator('input[type=file]').count(), 0);
+    assert.equal(await details.getByRole('group', { name: 'Replace document', exact: true }).locator('input[type=file]').count(), 1);
+    await page.route('**/api/resumes/*/content', route => route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }));
+    await details.getByRole('button', { name: 'View PDF', exact: true }).click();
+    await details.getByText(/Resume preview failed: this workspace session is no longer authorized/).waitFor();
+    await page.unroute('**/api/resumes/*/content');
+    await details.getByRole('button', { name: 'Close resume details' }).click();
+    await page.route('**/api/resume-proposals', route => route.abort());
+    await page.locator('#resumes-refresh').click();
+    await page.getByText(/Extraction reviews could not load: cannot reach the Companion/).waitFor();
+    await page.unroute('**/api/resume-proposals');
+    await page.locator('#resumes-refresh').click();
+    await page.locator('#resumes-error').waitFor({ state: 'hidden' });
+
   } finally { await cleanupOwnerBetaScenario(context); }
 });
 

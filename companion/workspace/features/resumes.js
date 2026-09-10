@@ -1,3 +1,4 @@
+import { ApiError } from "../lib/api.js";
 import * as helpers from "../lib/helpers.js";
 
 export function installResumes(context) {
@@ -28,6 +29,47 @@ export function installResumes(context) {
   const refresh = (...args) => coordinators.refresh(...args);
   const currentValues = (...args) => coordinators.currentValues(...args);
   function resumeError(message, dialogError = false) { const node = $(dialogError ? "#resume-error" : "#resumes-error"); node.textContent = message; node.classList.remove("hidden"); }
+
+  function operationFailure(operation, error) {
+    if (error instanceof TypeError) return `${operation}: cannot reach the Companion. Check that it is running, reopen its current workspace URL, then try again. Your saved resume has not been replaced.`;
+    if (error.status === 401) return `${operation}: this workspace session is no longer authorized. Reopen the current URL printed by the Companion and try again.`;
+    if (error.status === 404) return `${operation}: the requested record or file is unavailable. Refresh Resumes and try again; your replacement selection is not required for preview.`;
+    return `${operation}: ${error.message}. Refresh Resumes and try again.`;
+  }
+
+  async function openResumeContent(resume, button, inDetails = false) {
+    if (!resume) return;
+    const errorNode = $(inDetails ? "#resume-error" : "#resumes-error");
+    errorNode.classList.add("hidden");
+    errorNode.dataset.operation = "content";
+    if (button) button.disabled = true;
+    try {
+      const response = await fetch(`/api/resumes/${encodeURIComponent(resume.id)}/content`, {
+        headers: { Authorization: `Bearer ${dom.token}` },
+      });
+      if (!response.ok) {
+        let payload = null;
+        try { payload = await response.json(); } catch { /* use HTTP status */ }
+        throw new ApiError(response.status, payload);
+      }
+      if (resume.mediaType?.startsWith("text/plain")) {
+        $("#resume-preview").textContent = await response.text();
+        $("#preview-dialog").showModal();
+      } else {
+        const url = URL.createObjectURL(await response.blob());
+        const link = document.createElement("a");
+        link.href = url; link.target = "_blank"; link.rel = "noopener";
+        if (resume.mediaType?.includes("wordprocessingml")) link.download = `resume-${resume.id}.docx`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      }
+    } catch (error) {
+      const operation = resume.mediaType?.includes("wordprocessingml") ? "Resume download failed" : "Resume preview failed";
+      resumeError(operationFailure(operation, error), inDetails);
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
 
   function assignmentText(resume) {
     return resumeAssignmentText(resume);
@@ -140,10 +182,7 @@ export function installResumes(context) {
         const preview = document.createElement("button");
         preview.type = "button"; preview.className = "button primary";
         preview.textContent = contentLabel(resume);
-        preview.addEventListener("click", () => {
-          openResume(resume.id, preview);
-          $("#resume-content").click();
-        });
+        preview.addEventListener("click", () => openResumeContent(resume, preview));
         card.append(preview);
       }
       card.append(buildExtractionControls(resume), open); list.append(card);
@@ -156,9 +195,11 @@ export function installResumes(context) {
     const requestId = ++resumeState.requestId;
     resumeState.loading = true; $("#resumes-loading").classList.remove("hidden");
     try {
-      const [library, proposals] = await Promise.all([api(requestedTrash ? "/api/resumes/trash" : "/api/resumes"), api("/api/resume-proposals")]);
+      const [library, proposals] = await Promise.all([api(requestedTrash ? "/api/resumes/trash" : "/api/resumes").catch(error => { throw new Error(operationFailure("Resume library could not load", error)); }), api("/api/resume-proposals").catch(error => { throw new Error(operationFailure("Extraction reviews could not load", error)); })]);
       if (!shouldUseResumeResponse(requestId, resumeState.requestId, requestedTrash, resumeState.trash)) return;
-      resumeState.items = library.resumes; resumeState.proposals = proposals.proposals; resumeState.loaded = true; renderResumes();
+      resumeState.items = library.resumes; resumeState.proposals = proposals.proposals; resumeState.loaded = true;
+      if ($("#resumes-error").dataset.operation === "library") $("#resumes-error").classList.add("hidden");
+      renderResumes();
       if (resumeState.selected) {
         const latest = resumeState.items.find((item) => item.id === resumeState.selected.id);
         if (latest) {
@@ -167,7 +208,7 @@ export function installResumes(context) {
         }
       }
       if (!quiet) toast("Resumes refreshed from the canonical store");
-    } catch (error) { if (shouldUseResumeResponse(requestId, resumeState.requestId, requestedTrash, resumeState.trash)) { resumeError(error.message); $("#resumes-loading").classList.add("hidden"); } }
+    } catch (error) { if (shouldUseResumeResponse(requestId, resumeState.requestId, requestedTrash, resumeState.trash)) { $("#resumes-error").dataset.operation = "library"; resumeError(error.message); $("#resumes-loading").classList.add("hidden"); } }
     finally { if (requestId === resumeState.requestId) resumeState.loading = false; }
   }
 
@@ -191,7 +232,7 @@ export function installResumes(context) {
     for (const proposal of status.items) { const row = document.createElement("div"); row.className = "proposal-summary"; const text = document.createElement("span"); text.textContent = `${proposal.status} · ${proposal.pendingCount} pending`; row.append(text); if (proposal.status === "pending") { const button = document.createElement("button"); button.type = "button"; button.className = "button secondary"; button.textContent = "Review"; button.addEventListener("click", () => openProposal(proposal.id)); row.append(button); } holder.append(row); }
   }
 
-  function openResume(id, opener) { const resume = resumeState.items.find((item) => item.id === id); if (!resume) return; resumeState.opener = opener; resumeState.dirtyMetadata.clear(); $("#resume-form").elements.file.value = ""; $("#resume-error").classList.add("hidden"); $("#resume-conflict").classList.add("hidden"); renderResumeDialog(resume); $("#resume-dialog").showModal(); setTimeout(() => $("#resume-form").elements.label.focus(), 0); }
+  function openResume(id, opener) { const resume = resumeState.items.find((item) => item.id === id); if (!resume) return; resumeState.opener = opener; resumeState.dirtyMetadata.clear(); $("#resume-form").elements.file.value = ""; $("#resume-error").classList.add("hidden"); $("#resume-conflict").classList.add("hidden"); renderResumeDialog(resume); $("#resume-dialog").showModal(); $("#resume-form").elements.label.focus(); }
 
   async function focusResumeRequest(resumeId) {
     if ($("#proposal-dialog").open) $("#proposal-dialog").close(); if ($("#resume-dialog").open) $("#resume-dialog").close();
@@ -267,5 +308,5 @@ export function installResumes(context) {
   }
 
 
-  Object.assign(coordinators, { resumeError, assignmentText, proposalStatus, proposalForRequest, extractionStatusText, handoffText, copyExtractionHandoff, runExtractionAction, buildExtractionControls, renderResumes, refreshResumes, renderResumeDialog, openResume, focusResumeRequest, requestFreshForProposal, uploadEnvelope, mutateResume, mutateResumeFile, openProposal, submitProposalReview });
+  Object.assign(coordinators, { resumeError, openResumeContent, assignmentText, proposalStatus, proposalForRequest, extractionStatusText, handoffText, copyExtractionHandoff, runExtractionAction, buildExtractionControls, renderResumes, refreshResumes, renderResumeDialog, openResume, focusResumeRequest, requestFreshForProposal, uploadEnvelope, mutateResume, mutateResumeFile, openProposal, submitProposalReview });
 }

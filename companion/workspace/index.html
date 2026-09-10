@@ -504,7 +504,17 @@
       <p id="resume-assignment"></p><p id="resume-proposal-status"></p>
       <section class="resume-extraction" aria-labelledby="resume-extraction-heading"><h3 id="resume-extraction-heading">Fact extraction</h3><p id="resume-extraction-status" class="extraction-status" role="status"></p><div class="button-row"><button id="resume-extraction-action" class="button primary" type="button"></button><button id="resume-handoff-copy" class="button secondary hidden" type="button">Copy agent handoff</button></div><label id="resume-handoff-fallback" class="clipboard-fallback hidden" role="alert">Clipboard unavailable. Select and copy this handoff manually. <input readonly aria-label="Extraction request handoff to copy"></label></section>
       <fieldset><legend>Metadata</legend><div class="form-grid"><label>Label <input name="label" required></label><label>Tags (comma separated) <input name="tags"></label></div><button class="button primary" type="submit">Save metadata</button></fieldset>
-      <fieldset><legend>Managed file</legend><label>Replacement file <input name="file" type="file" accept=".pdf,.docx,.txt"></label><div class="button-row"><button id="resume-content" class="button secondary" type="button">Preview or download</button><button id="resume-replace" class="button secondary" type="button">Replace file</button><button id="resume-adopt" class="button secondary hidden" type="button">Adopt into managed storage</button></div></fieldset>
+      <fieldset>
+        <legend>Current document</legend>
+        <p>View the saved document without selecting a replacement.</p>
+        <button id="resume-content" class="button secondary" type="button">Preview or download</button>
+      </fieldset>
+      <fieldset>
+        <legend>Replace document</legend>
+        <p>Choose a file only when you want to change the saved document.</p>
+        <label>Replacement file <input name="file" type="file" accept=".pdf,.docx,.txt"></label>
+        <div class="button-row"><button id="resume-replace" class="button secondary" type="button">Replace file</button><button id="resume-adopt" class="button secondary hidden" type="button">Adopt into managed storage</button></div>
+      </fieldset>
       <section aria-labelledby="proposal-heading"><h3 id="proposal-heading">Extraction reviews</h3><div id="resume-proposals"></div></section>
       <div id="resume-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>This resume changed elsewhere</h3><p>Your metadata and selected file remain in place. Refresh the canonical record, review your draft, then reapply it explicitly.</p><button id="resume-conflict-refresh" class="button secondary" type="button">Refresh canonical revision</button></div>
       <p id="resume-error" class="error hidden" role="alert"></p>
