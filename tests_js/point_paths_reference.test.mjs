@@ -432,6 +432,23 @@ test('S05 path support registration preserves the exact prior matrix', t => {
     command: ['npm', 'run', 'companion:typecheck'], tiers: ['fast', 'full'] });
   assert.deepEqual(matrix.ownership.shift(), { paths: ['apps/companion/**'],
     suites: ['companion-typescript-check', 'node-workspace-other', 'migration-inventory', 'source-size'] });
+  // Validate the exact portable/native split before removing only those
+  // reviewed additions from the historical matrix comparison.
+  const nativeIndex = matrix.suites.findIndex(suite => suite.id === 'native-frozen-reference-profiles');
+  assert.ok(nativeIndex >= 0);
+  assert.deepEqual(matrix.suites.splice(nativeIndex, 1), [{
+    id: 'native-frozen-reference-profiles', kind: 'node-test',
+    include: ['tests_js/typed_json_points_profiles.test.mjs'],
+    platforms: ['darwin'], tiers: ['full', 'platform']
+  }]);
+  const workspace = matrix.suites.find(suite => suite.id === 'node-workspace-other');
+  assert.deepEqual(workspace.exclude, ['tests_js/typed_json_points_profiles.test.mjs']);
+  delete workspace.exclude;
+  const profilePath = 'tests_js/resume_stat_profile_support.mjs';
+  const profileOwners = matrix.ownership.filter(rule => rule.paths.includes(profilePath));
+  assert.equal(profileOwners.length, 1);
+  assert.deepEqual(profileOwners[0].suites, ['node-workspace-other']);
+  assert.equal(profileOwners[0].paths.shift(), profilePath);
   assert.equal(hash(JSON.stringify(matrix)), registrationBaselineSha256);
   t.diagnostic(JSON.stringify({ registrationBaselineSha256, ownership: registrationOwnership }));
 });
