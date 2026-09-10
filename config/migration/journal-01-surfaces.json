@@ -9,7 +9,14 @@
       "value": null,
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/domains/coordinator/persistence.py"
+        "scripts/job_apply_store/domains/coordinator/persistence.py",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answer-merge.ts",
+        "src/contracts/workspace/answer-session-fields.ts",
+        "src/contracts/workspace/answer-session-validation.ts",
+        "src/contracts/workspace/answer-sessions.ts",
+        "src/store/native-answer-journal.ts",
+        "src/workspace-core/answer-merges.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -33,7 +40,14 @@
       "value": "answer_merge",
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/domains/coordinator/persistence.py"
+        "scripts/job_apply_store/domains/coordinator/persistence.py",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answer-merge.ts",
+        "src/contracts/workspace/answer-session-fields.ts",
+        "src/contracts/workspace/answer-session-validation.ts",
+        "src/contracts/workspace/answer-sessions.ts",
+        "src/store/native-answer-journal.ts",
+        "src/workspace-core/answer-merges.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -57,7 +71,11 @@
       "value": "answer_resolution",
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/domains/coordinator/persistence.py"
+        "scripts/job_apply_store/domains/coordinator/persistence.py",
+        "src/store/native-jobs.ts",
+        "src/store/native-answer-resolution-journal.ts",
+        "src/workspace-core/pending-answers.ts",
+        "src/contracts/workspace/answer-resolution.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

@@ -102,7 +102,15 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answer-merge.ts",
+        "src/contracts/workspace/answer-session-fields.ts",
+        "src/contracts/workspace/answer-session-validation.ts",
+        "src/contracts/workspace/answer-sessions.ts",
+        "src/store/native-answer-journal.ts",
+        "src/workspace-core/answer-merges.ts",
+        "src/workspace-core/answers-http.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

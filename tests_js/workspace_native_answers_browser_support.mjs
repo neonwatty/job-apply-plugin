@@ -3,6 +3,9 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { nativePendingAnswersBrowser } from './workspace_native_pending_answers_browser_support.mjs';
+import { nativeAnswerCleanupBrowser } from './workspace_native_answer_cleanup_browser_support.mjs';
+import { nativeAnswerCreationBrowser } from './workspace_native_answer_creation_browser_support.mjs';
 
 const execute = promisify(execFile);
 
@@ -66,5 +69,8 @@ export async function nativeAnswersBrowser(page, root, fixture, buildRoot) {
     assert.equal(await page.getByLabel('Answer value', { exact: true }).inputValue(), 'My answer draft');
     await page.setViewportSize({ width: 390, height: 844 });
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
-    return { persistedEdits: true, cliConflictReapply: true, losslessScope: true, explicitSensitiveConsent: true, review: true, reload: true, narrow: true };
+    const creation = await nativeAnswerCreationBrowser(page, root);
+    const cleanup = await nativeAnswerCleanupBrowser(page, root, cli);
+    const pendingQuestions = await nativePendingAnswersBrowser(page, root, cli);
+    return { pendingQuestions, cleanup, creation, persistedEdits: true, cliConflictReapply: true, losslessScope: true, explicitSensitiveConsent: true, review: true, reload: true, narrow: true };
 }

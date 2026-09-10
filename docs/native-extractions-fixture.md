@@ -2,7 +2,7 @@
 
 The synthetic native workspace supports resume extraction requests, proposals,
 and review through shared TypeScript services. Create a fresh fixture using
-[the native launcher guide](native-jobs-fixture.md). Fixture version 5 adds
+[the native launcher guide](native-jobs-fixture.md). Extraction support was introduced in fixture version 5 and continues in version 7. It adds
 `resume-extractions.json`, `resume-extraction-requests.json`, and
 `resume-extraction-journal.json`. Earlier fixtures must be recreated at a new
 path. Existing Python Stores remain unsupported.

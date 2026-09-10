@@ -40,3 +40,14 @@ export function answerMutation(base: Document, draft: Document, remember: boolea
   return serialize(result);
 }
 export const cloneAnswer = (record: Document): Document => copy(record);
+
+export function newAnswerDraft(): Document {
+  return object(parse('{"question":"","aliases":[],"value":"","state":"confirmed","source":"user","scope":{},"fieldClass":"general","sensitivity":"none"}'), 'new answer');
+}
+export function answerCreateMutation(draft: Document, remember: boolean): string {
+  const result = new PythonObject<Value>();
+  // Omitting expectedRevision makes put reject an existing key atomically.
+  set(result, 'answer', answerDraft(draft));
+  set(result, 'rememberSensitive', remember);
+  return serialize(result);
+}

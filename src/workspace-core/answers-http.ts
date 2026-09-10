@@ -1,3 +1,4 @@
+import { AnswerMergeService } from './answer-merges.js';
 import { AnswersService } from './answers.js';
 import type { AnswerQuery, AnswerRepository } from './answers.js';
 import { emptyObject } from '../contracts/workspace/jobs.js';
@@ -28,8 +29,16 @@ function decodeKey(value: string): string {
 }
 export async function answerHttp(repository: AnswerRepository, method: string, path: string, body: string): Promise<{ status: number; body: string } | null> {
   if (!path.startsWith('/api/answers')) return null;
-  if (['/api/answers/semantic', '/api/answers/cleanup-preview', '/api/answers/cleanup-approve'].includes(path)) return null;
+  if (path === '/api/answers/cleanup-approve') {
+    if (method !== 'POST') return null;
+    const payload = object(parse(body), 'cleanup approval');
+    fields(payload, ['approval', 'ownerConfirmed'], ['approval', 'ownerConfirmed']);
+    if (get(payload, 'ownerConfirmed') !== true) throw new JobsError('cleanup requires an explicit owner-approved preview');
+    return response(await new AnswerMergeService(repository).approve(get(payload, 'approval'), true));
+  }
   const service = new AnswersService(repository);
+  if (path === '/api/answers/cleanup-preview') return method === 'GET' ? response(await service.cleanupPreview()) : null;
+  if (method === 'POST' && path === '/api/answers/semantic') return response(await service.semanticLookup(parse(body)));
   if (method === 'POST' && path === '/api/answers/query') {
     const payload = object(parse(body), 'body');
     fields(payload, ['query', 'state', 'reviewStatus', 'includeTrashed', 'trashedOnly', 'offset', 'limit']);
@@ -65,7 +74,7 @@ export async function answerHttp(repository: AnswerRepository, method: string, p
     fields(payload, ['answer'], ['answer']);
     return response(await service.observe(get(payload, 'answer')));
   }
-  const match = /^\/api\/answers\/(?:by-key\/([^/]+)|([^/]+))(?:\/(reveal|accept|decline))?$/.exec(path);
+  const match = /^\/api\/answers\/(?:by-key\/([^/]+)|([^/]+))(?:\/(reveal|accept|decline|merge))?$/.exec(path);
   if (!match) return null;
   const key = match[1] ? decodeKey(match[1]) : decodeURIComponent(match[2]!);
   if (method === 'GET' && !match[3]) {
@@ -80,6 +89,10 @@ export async function answerHttp(repository: AnswerRepository, method: string, p
   }
   if (method === 'POST' && match[3]) {
     const payload = object(parse(body), 'body');
+    if (match[3] === 'merge') {
+      fields(payload, ['winnerKey', 'expectedWinnerRevision', 'expectedSourceRevision'], ['winnerKey', 'expectedWinnerRevision', 'expectedSourceRevision']);
+      return response(await new AnswerMergeService(repository).merge(string(get(payload, 'winnerKey'))!, key, int(get(payload, 'expectedWinnerRevision'))!, int(get(payload, 'expectedSourceRevision'))!));
+    }
     if (match[3] === 'reveal') {
       fields(payload, []);
       const revealed = await service.get(key, true);

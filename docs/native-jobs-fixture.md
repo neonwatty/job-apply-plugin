@@ -53,9 +53,9 @@ lossless numeric/text codec; browser editing requires safe integer revisions.
 
 ## Boundaries and recovery
 
-Only the readiness marker, Store lock, Jobs, profile, fact-groups, resume registry,
-resume operation journal and private managed-file directory are permitted in the
-fixture root. Resume replacement writes a durable intent before installing bytes;
+Only the initialized fixture inventory is permitted: the readiness marker, Store
+lock, Jobs, profile, fact-groups, answers, resume registry/files and extraction
+documents/journals, private sessions/history and idle coordinator/journal. Resume replacement writes a durable intent before installing bytes;
 the next locked operation rolls that exact record forward after interruption and
 clears owned staging files. Unknown state, symlinks, hard links, permissive files
 and mismatched recovery identities are rejected. Keep the failed fixture for
@@ -72,15 +72,14 @@ verify resume byte/metadata recovery, reject file swaps, kill a lock holder, and
 run a production Next/browser conflict-and-reload flow with managed resume import.
 No owner account, live Store, visible browser or plugin installation is used.
 
-Facts/profile and managed resumes are available in newly initialized version 5
+Facts/profile and managed resumes are available in newly initialized version 7
 synthetic fixtures. See [Facts/profile commands and limits](native-facts-fixture.md).
 Older fixtures must be recreated at a new path; they are not
 automatically upgraded.
 
-Version 5 also initializes `answers.json` for remembered-answer query, editing,
-review and explicit reveal through native HTTP/CLI and the Answers tab. It still
-rejects session/history and coordinator state; merge, cleanup and pending
-questions are unavailable. See [Answers scope](native-answers-fixture.md).
+Version 7 also initializes `answers.json` for remembered-answer query, editing,
+review and explicit reveal through native HTTP/CLI and the Answers tab. It supports durable merge, cleanup approval and idle pending-question resolution;
+active coordinator claims remain unavailable. See [Answers scope](native-answers-fixture.md).
 
 Extraction requests, proposals and review use the shared lock and extraction
 journal. See [Extraction workflow and limits](native-extractions-fixture.md).

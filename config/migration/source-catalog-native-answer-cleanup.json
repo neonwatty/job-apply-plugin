@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "apps/companion/components/AnswerCleanup.tsx",
+      "sha256": "d649b016c48bce97fb42f8be73b5451ef96512ba1065296b19fbbbd78799da7d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/answer-cleanup-model.ts",
+      "sha256": "f999fa1d6801e50573c2bb1f3e375a7b20f641a69fd2d9a0742884c52583d225",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/answer-match-cleanup.js",
+      "sha256": "712202f2fce6a4b85ff8507fa19fd88fee8833d7b496787713ae5de75bb2df86",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/answer-cleanup.js",
+      "sha256": "5a301e11610c157f4c69d3cfb0848634a0c8338ca37da2a94a7ca30d641028e4",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/answer-match-cleanup.ts",
+      "sha256": "4caf4e8935a44bcab500aae0e109d1ed178d0fc76bbfe3ad2872b28ffeefc30a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/answer-cleanup.ts",
+      "sha256": "af57927418a84db8cec70d0e68342fdc9662e55f9922013e98cf5b1265603594",
+      "classification": "unreviewed"
+    }
+  ]
+}

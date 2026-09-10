@@ -39,7 +39,7 @@
     },
     {
       "path": "browser-native-answers-surfaces.json",
-      "sha256": "deabe52901fe767c22222812550ad77e8d43f7376d690af6a41496a34056ce25"
+      "sha256": "cc0772c27c2b5cf296d0fb73d243f32b4bfbde961f1a29a37e4b41f541dc79c7"
     },
     {
       "path": "browser-native-extractions-surfaces.json",
@@ -79,7 +79,7 @@
     },
     {
       "path": "cli-native-answers-surfaces.json",
-      "sha256": "1f799e53cf30108c9b90e93170703bd9c5679680a7227ef68496965cf7e4ce7d"
+      "sha256": "bbb71b096d75f3cb7f33cf946859f0163b66d431c2b5c5c3597ddd69a9df88c9"
     },
     {
       "path": "cli-native-extractions-surfaces.json",
@@ -103,7 +103,7 @@
     },
     {
       "path": "document-01-surfaces.json",
-      "sha256": "0bf1907dd70fdb9e76da995ba6522b979158baa763147c0c8890b21e9736d784"
+      "sha256": "e40a1120beada72f4309c65d47891c119d2c207d1517ac0883584dc6640722f9"
     },
     {
       "path": "document-02-surfaces.json",
@@ -135,7 +135,7 @@
     },
     {
       "path": "http-read-surfaces.json",
-      "sha256": "8bbc18ba8fbbb4064a46d4d6c981e91b038f6af88c1aa7c73bfa32da925d4397"
+      "sha256": "83d6316a567e0b04e344c92ff4ce6e9cde1cb6826199165a9c852065cafec0bf"
     },
     {
       "path": "http-write-accounts-surfaces.json",
@@ -143,15 +143,15 @@
     },
     {
       "path": "http-write-answers-02-surfaces.json",
-      "sha256": "68b243d60c99c87320d442629a2a5825fae7a469cf294539118c63eb93172ccc"
+      "sha256": "9bebb4810d86e3efa0ecac1efb4b82ccdad560a45adfc27b4642f98228989cea"
     },
     {
       "path": "http-write-answers-surfaces.json",
-      "sha256": "beb7a8d7d037c44ea637e7567aab712430b2a3126c3e95a5495cae1bda4c9b10"
+      "sha256": "382bc35282fc868af312be49f14e5052585dc18bb564c5dda188f28af1ef47c4"
     },
     {
       "path": "http-write-jobs-surfaces.json",
-      "sha256": "1377391d7fd56687bba1dbccfe71e230b55be82ecfc32dd93d56637ce673d1c6"
+      "sha256": "ffa938ec3fc4ccf77d344b88b497c4766c1ac1165d78befe3f2fc2cb2fbbceb9"
     },
     {
       "path": "http-write-profile-surfaces.json",
@@ -167,7 +167,7 @@
     },
     {
       "path": "journal-01-surfaces.json",
-      "sha256": "0dc5b0c108fc229764d0381cc38390bf291ce373a1f7215202941bba70f6a055"
+      "sha256": "62143ea52b6c8adbe62c9810f8edaa6f367321d2a4ac4324946772a433bb1741"
     },
     {
       "path": "journal-02-surfaces.json",
@@ -243,7 +243,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "faf16f790ebda4d05c2a5b47335dfe26ef11b49e5d3788f6ba62d902a34fa39c"
+      "sha256": "6d1d673e6b95dc51ce95c7fd89ffda572ea3018b8e7dac0f672722d4580d80ba"
     },
     {
       "path": "source-catalog-m01.json",
@@ -254,8 +254,20 @@
       "sha256": "0b6ee35143f1ad4f49568ed3d9e15f1cfacf869476a50a151b4fea3fc6f29f41"
     },
     {
+      "path": "source-catalog-native-answer-cleanup.json",
+      "sha256": "c819b8b9447817aa908b5a5626aa9d239b2cfecd46f4caf1cfebb931415129ee"
+    },
+    {
+      "path": "source-catalog-native-answer-merge.json",
+      "sha256": "eca9033c0488be05dee9fab734a98782f460adae605ff3f3929879b3a258b660"
+    },
+    {
+      "path": "source-catalog-native-answer-reuse.json",
+      "sha256": "f3aac3fcef51599ba380272569d1f8ab63ee8a0734bc1637a41c18ea1c8efdaf"
+    },
+    {
       "path": "source-catalog-native-answers.json",
-      "sha256": "926b5cbbc68d64cef6a1d3e73b988e2ea34e1a726d383c37b1d7b1b4ffd3d791"
+      "sha256": "d53992f00a314edaf8745531ec9f4c3bda984be79663009f46c39e16be3dda42"
     },
     {
       "path": "source-catalog-native-extractions.json",
@@ -267,7 +279,11 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "bdb629946968ecb5e8239937c998d7d183770482e45cff2dd0ca2c77df11bfda"
+      "sha256": "11ed40f696ab7f22ad0408ba9088c950ec8361112f9dd5f642a12aa81ac43682"
+    },
+    {
+      "path": "source-catalog-native-pending-answers.json",
+      "sha256": "c84db8c21807b6646ce92f8b985094bda927c07ea0423066370ea63cfbfa0179"
     },
     {
       "path": "source-catalog-native-resumes.json",

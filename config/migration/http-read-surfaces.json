@@ -181,7 +181,25 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/answers-http.ts",
+        "src/cli/native-jobs.ts",
+        "src/cli/native-answers.ts",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/answers.ts",
+        "src/workspace-core/answers.ts",
+        "src/contracts/workspace/answer-match-features.ts",
+        "src/contracts/workspace/answer-match-reuse.ts",
+        "src/contracts/workspace/answer-match-scoring.ts",
+        "src/contracts/workspace/answer-match-unicode-alnum-astral.ts",
+        "src/contracts/workspace/answer-match-unicode-alnum-bmp.ts",
+        "src/contracts/workspace/answer-match-unicode-assigned-astral.ts",
+        "src/contracts/workspace/answer-match-unicode-assigned-bmp.ts",
+        "src/contracts/workspace/answer-match-unicode.ts",
+        "src/contracts/workspace/answer-match-vocabulary.ts",
+        "src/workspace-core/answer-match.ts",
+        "src/contracts/workspace/answer-match-cleanup.ts",
+        "src/workspace-core/answer-cleanup.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -473,6 +491,35 @@
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
         "apps/companion/server/routes.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/pending-answers",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/pending-answers",
+      "node": "ANS",
+      "sources": [
+        "src/store/native-jobs.ts",
+        "src/workspace-core/pending-answers.ts",
+        "src/contracts/workspace/answer-resolution.ts",
+        "src/workspace-core/pending-answers-http.ts",
+        "src/workspace-core/jobs-http.ts",
+        "apps/companion/server/routes.ts",
+        "apps/companion/server/forward.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
