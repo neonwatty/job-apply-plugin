@@ -90,7 +90,7 @@ test("Facts saved views organize canonical paths without owning facts", { timeou
     await page.addInitScript(() => { globalThis.setInterval = () => 0; });
     await page.goto(startup.url); await page.getByText("Canonical store connected").waitFor();
     await page.getByRole("button", { name: "Facts", exact: true }).click();
-    await page.getByRole("button", { name: "Agent shortlist" }).waitFor();
+    await page.getByRole("tab", { name: "Agent shortlist" }).waitFor();
 
     const noticeContrast = await page.locator("#facts-status").evaluate((element) => {
       const style = getComputedStyle(element); const parse = (value) => value.match(/[\d.]+/g).slice(0, 3).map(Number);
@@ -100,10 +100,10 @@ test("Facts saved views organize canonical paths without owning facts", { timeou
     });
     assert.ok(noticeContrast >= 7, `notice contrast was ${noticeContrast}`);
 
-    await page.getByRole("button", { name: "Identity & contact" }).click();
+    await page.getByRole("tab", { name: "Identity & contact" }).click();
     assert.equal(await page.locator('#facts-form [data-fact-section]:not(.fact-view-hidden)').count(), 1);
     await page.getByLabel("First name").fill("Draft survives views");
-    await page.getByRole("button", { name: "Agent shortlist" }).click();
+    await page.getByRole("tab", { name: "Agent shortlist" }).click();
     assert.equal(await page.getByLabel("First name").inputValue(), "Draft survives views");
     assert.equal(await page.getByLabel("Skills (one per line)").isVisible(), true);
     assert.equal(await page.locator("#work-history").locator("xpath=ancestor::section[1]").getAttribute("data-fact-path-hidden"), "");
@@ -113,7 +113,7 @@ test("Facts saved views organize canonical paths without owning facts", { timeou
     await page.locator('#fact-group-paths input[value="/location/city"]').check();
     await page.locator('#fact-group-paths input[value="/location/country"]').check();
     await page.getByRole("button", { name: "Save group" }).click();
-    await page.getByRole("button", { name: "Location shortlist" }).waitFor();
+    await page.getByRole("tab", { name: "Location shortlist" }).waitFor();
     let groups = await cli("fact-group-list");
     const browserGroup = groups.find((group) => group.label === "Location shortlist");
     assert.deepEqual(browserGroup.paths, ["/location/city", "/location/country"]);
@@ -122,12 +122,12 @@ test("Facts saved views organize canonical paths without owning facts", { timeou
     await page.getByLabel("Group name").fill("Location essentials");
     await page.getByLabel("Display order").fill("5");
     await page.getByRole("button", { name: "Save group" }).click();
-    await page.getByRole("button", { name: "Location essentials" }).waitFor();
+    await page.getByRole("tab", { name: "Location essentials" }).waitFor();
     groups = await cli("fact-group-list");
     const renamed = groups.find((group) => group.id === browserGroup.id);
     assert.equal(renamed.label, "Location essentials"); assert.equal(renamed.order, 5);
 
-    await page.getByRole("button", { name: "Agent shortlist" }).click();
+    await page.getByRole("tab", { name: "Agent shortlist" }).click();
     await page.getByRole("button", { name: "Edit group" }).click();
     await cli("fact-group-update", ["--id", agentGroup.id, "--expected-revision", String(agentGroup.revision)], { label: "Agent canonical" });
     await page.getByLabel("Group name").fill("Stale browser label");
@@ -136,11 +136,11 @@ test("Facts saved views organize canonical paths without owning facts", { timeou
     assert.equal((await cli("fact-group-get", ["--id", agentGroup.id])).label, "Agent canonical");
     await page.getByRole("button", { name: "Cancel" }).click();
 
-    await page.getByRole("button", { name: "Location essentials" }).click();
+    await page.getByRole("tab", { name: "Location essentials" }).click();
     await page.getByRole("button", { name: "Edit group" }).click();
     page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: "Remove group" }).click();
-    await page.getByRole("button", { name: "Location essentials" }).waitFor({ state: "detached" });
+    await page.getByRole("tab", { name: "Location essentials" }).waitFor({ state: "detached" });
     assert.equal((await cli("fact-group-list")).some((group) => group.id === browserGroup.id), false);
     const finalProfile = await cli("profile-inspect");
     assert.deepEqual(finalProfile.profile, profile.profile);

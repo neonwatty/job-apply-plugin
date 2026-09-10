@@ -66,7 +66,7 @@ export function installFacts(context) {
     for (const group of factGroupState.items) {
       const button = document.createElement("button"); button.type = "button"; button.className = "fact-group-chip";
       button.dataset.factView = `custom:${group.id}`; button.dataset.groupId = group.id; button.textContent = group.label;
-      button.setAttribute("aria-pressed", "false"); button.addEventListener("click", () => applyFactView(button.dataset.factView)); holder.append(button);
+      button.addEventListener("click", () => applyFactView(button.dataset.factView)); holder.append(button);
     }
     applyFactView(factGroupState.selectedView, { announce: false });
   }
@@ -100,7 +100,11 @@ export function installFacts(context) {
     }
     for (const button of document.querySelectorAll("[data-fact-view]")) {
       const active = button.dataset.factView === view;
-      button.classList.toggle("active", active); button.setAttribute("aria-pressed", String(active));
+      button.classList.toggle("active", active);
+      button.id = `fact-tab-${button.dataset.factView}`;
+      button.setAttribute("role", "tab"); button.setAttribute("aria-selected", String(active));
+      button.setAttribute("aria-controls", "facts-content"); button.tabIndex = active ? 0 : -1;
+      if (active) $("#facts-content").setAttribute("aria-labelledby", button.id);
     }
     $("#fact-group-edit").classList.toggle("hidden", !custom);
     $("#fact-view-empty").classList.toggle("hidden", visibleControls > 0);
@@ -222,15 +226,45 @@ export function installFacts(context) {
     container.replaceChildren();
     items.forEach((item, index) => {
       const row = document.createElement("div"); row.className = "repeater-item form-grid"; row._base = item && typeof item === "object" ? { ...item } : {};
+      const heading = document.createElement("h4"); heading.className = "wide";
+      heading.textContent = `${container.dataset.repeater === "work" ? "Position" : "Education"} ${index + 1}`; row.append(heading);
       for (const [field, text, type] of repeaterSchemas[container.dataset.repeater]) {
         const label = document.createElement("label"); label.textContent = text;
         const input = document.createElement(field === "description" ? "textarea" : "input"); input.dataset.itemField = field;
         if (type === "checkbox") { input.type = "checkbox"; input.checked = item?.[field] === true; }
         else input.value = item?.[field] ?? "";
-        input.setAttribute("aria-label", `${text}, item ${index + 1}`); label.append(input); row.append(label);
+        input.setAttribute("aria-label", `${text}, item ${index + 1}`);
+        if (field === "description") { label.className = "wide"; input.rows = 5; }
+        label.append(input); row.append(label);
       }
       const remove = document.createElement("button"); remove.type = "button"; remove.className = "button danger"; remove.textContent = `Remove ${container.dataset.repeater === "work" ? "position" : "education"}`;
-      remove.addEventListener("click", () => { row.remove(); markFactDirty(container); }); row.append(remove); container.append(row);
+      remove.addEventListener("click", () => {
+        const values = controlValue(container); values.splice(index, 1); renderRepeater(container, values); markFactDirty(container);
+        container.querySelectorAll(".repeater-item")[Math.min(index, values.length - 1)]?.querySelector("input")?.focus();
+        if (!values.length) $(container.dataset.repeater === "work" ? "#add-work" : "#add-education").focus();
+      }); row.append(remove); container.append(row);
+      if (container.dataset.repeater === "work") {
+        const promotion = document.createElement("button"); promotion.type = "button"; promotion.className = "button secondary";
+        promotion.textContent = "Add promotion"; promotion.setAttribute("aria-label", `Add promotion after position ${index + 1}`);
+        promotion.addEventListener("click", () => {
+          const values = controlValue(container), source = values[index];
+          values.splice(index + 1, 0, { company: source.company, description: source.description, current: false });
+          renderRepeater(container, values); markFactDirty(container);
+          container.querySelectorAll(".repeater-item")[index + 1].querySelector('[data-item-field="title"]').focus();
+        }); row.append(promotion);
+        const share = document.createElement("button"); share.type = "button"; share.className = "button secondary wide";
+        share.textContent = "Copy description to company roles"; share.setAttribute("aria-label", `Copy description from position ${index + 1} to other roles at this company`);
+        share.addEventListener("click", () => {
+          const values = controlValue(container), source = values[index];
+          const company = source.company.trim().toLowerCase();
+          const targets = values.filter((value, other) => other !== index && company && value.company.trim().toLowerCase() === company);
+          if (!targets.length) { toast("No other roles at this company. Add a promotion first."); return; }
+          if (!confirm(`Replace the descriptions of ${targets.length} other role(s) at ${source.company}? This remains a draft until Save.`)) return;
+          for (const target of targets) target.description = source.description;
+          renderRepeater(container, values); markFactDirty(container);
+          container.querySelectorAll(".repeater-item")[index].querySelector('[data-item-field="description"]').focus();
+        }); row.append(share);
+      }
     });
   }
 

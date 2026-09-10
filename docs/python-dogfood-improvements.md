@@ -107,3 +107,23 @@ The canonical selector uses assignment/default/sole active resume without changi
 saved job states. Focused synthetic regressions cover ambiguity, broken choices,
 acquisition consistency, and repeat intake. Full owner dogfooding, manual UI
 readiness presentation, and the Facts editing work package remain to be qualified.
+
+### Facts editing implementation
+
+The optional companion now offers separate Work history, Education and Skills
+fact tabs alongside contact/location/link views and saved custom groups. Tabs
+support arrows/Home/End and retain the same draft controls. A single sticky Save
+action remains visible on desktop/mobile, saves changes across all tabs, and
+supports Ctrl/Cmd+S outside dialogs. Existing revision-conflict handling remains
+in force.
+
+Work-history rows have numbered headings and full-width descriptions. Add
+promotion creates a draft role with the same company/description and blank title
+and dates. Copy description to company roles asks before replacing other matching
+roles' descriptions; unrelated employers and other fields stay unchanged. No
+shared-description schema or inferred career facts were introduced.
+
+Synthetic browser checks exercise desktop/mobile visibility, keyboard tab
+selection, drafts across tabs, promotion fields, cancelled/accepted description
+copying, unknown-field preservation, and persisted multi-tab edits. Owner review
+and complete release dogfooding remain open.
