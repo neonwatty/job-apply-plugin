@@ -1,4 +1,5 @@
 import { claimsBrowser } from './workspace_native_claims_browser_support.mjs';
+import { jobTransitionsBrowser } from './workspace_native_job_transitions_browser_support.mjs';
 import { projectionsBrowser } from './workspace_native_projections_browser_support.mjs';
 import { nativeFactsBrowser } from './workspace_native_facts_browser_support.mjs';
 import { resumeDraftBrowser } from './workspace_native_resumes_browser_support.mjs';
@@ -133,10 +134,29 @@ export async function nativeJobsBrowser(buildRoot) {
       await execute(process.execPath,[cli,'--root',root,'--native-lock',fixture.receipt.artifact,
         'task-select','--id',job.id,'--expected-revision',String(current.revision),'--owner-confirmed'],{env:{PATH:''}});
     }});
+    const transitions = await jobTransitionsBrowser(page, {
+      jobId: job.id,
+      readJob: async () => JSON.parse(await readFile(join(root, 'jobs.json'), 'utf8')).jobs[job.id],
+      prepareInterrupted: async () => {
+        // root was initialized above from nativeFixture(), never an owner Store.
+        const coordinator = JSON.parse(await readFile(join(root, 'coordinator.json'), 'utf8'));
+        assert.equal(coordinator.claim, null);
+        const path = join(root, 'jobs.json');
+        const document = JSON.parse(await readFile(path, 'utf8'));
+        const current = document.jobs[job.id];
+        assert.equal(current.status, 'applied');
+        current.status = 'in_progress';
+        current.closedOutcome = null;
+        current.revision++;
+        current.updatedAt = new Date().toISOString();
+        document.metadata.updatedAt = current.updatedAt;
+        await writeFile(path, JSON.stringify(document), { mode: 0o600 });
+      },
+    });
     const unsupported = await fetch(startup.origin + '/api/trash', { headers: { Authorization: `Bearer ${token}` } });
     assert.equal(unsupported.status, 501);
     assert.deepEqual(pageErrors, []);
-    return { projections, claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
+    return { transitions, projections, claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
   } finally {
     releaseInitialClaim?.();
     if (browser) await browser.close();

@@ -1,4 +1,5 @@
 import { claimsHttp } from './claims-http.js';
+import { jobTransitionsHttp } from './job-transitions-http.js';
 import { workspaceProjectionsHttp } from './workspace-projections-http.js';
 import { pendingAnswersHttp } from './pending-answers-http.js';
 import { profileHttp } from "./profile-http.js";
@@ -16,6 +17,9 @@ const envelope = (key, value) => set(emptyObject(), key, value);
 /** Transport-independent dispatch. Host/token/Origin/body bounds belong to the adapter. */
 export async function jobsHttp(service, repository, method, path, body = "") {
     try {
+        const transition = await jobTransitionsHttp(repository, method, path, body);
+        if (transition)
+            return transition;
         const projection = await workspaceProjectionsHttp(repository, method, path);
         if (projection)
             return projection;

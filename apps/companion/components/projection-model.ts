@@ -7,11 +7,11 @@ export const attentionReasons = {
 export type AttentionReason = keyof typeof attentionReasons;
 export const recoveryGuidance = {
   expired: 'Resume this attempt using the supported CLI claim-recover command for this job.',
-  interrupted: 'This attempt was interrupted without an active claim. Recovery for this state is not available in the native workspace yet.',
+  interrupted: 'Open Job details and change this interrupted attempt to Needs information, then resolve it before starting a new attempt.',
 };
 export const attentionGuidance: Record<AttentionReason, string> = {
   expired_agent_attempt: recoveryGuidance.expired, claimless_interrupted_attempt: recoveryGuidance.interrupted,
-  awaiting_human_review: 'Open Job details and personally review and submit on the third-party site. Recording Applied or Closed in the native workspace is deferred.',
+  awaiting_human_review: 'Personally review and submit on the third-party site, then confirm Applied in Job details. You can also close the job with an outcome.',
   browser_action_required: 'Continue in the visible browser. Saved information is already known; do not create or re-enter an answer in Companion.',
   needs_information: 'Open Job details and resolve missing facts, resume, or answers. Run preflight, then mark the job Ready.',
 };

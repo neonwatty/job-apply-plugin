@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "browser:apps/companion/components/JobTransitions.tsx:JobTransitions",
+      "kind": "browser",
+      "export": "JobTransitions",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/JobTransitions.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/job-transition-model.ts:closedOutcomes",
+      "kind": "browser",
+      "export": "closedOutcomes",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/job-transition-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/job-transition-model.ts:transitionTargets",
+      "kind": "browser",
+      "export": "transitionTargets",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/job-transition-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/job-transition-model.ts:transitionBody",
+      "kind": "browser",
+      "export": "transitionBody",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/job-transition-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/job-transition-model.ts:transitionConfirmation",
+      "kind": "browser",
+      "export": "transitionConfirmation",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/job-transition-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/job-transition-model.ts:transitionAcknowledgement",
+      "kind": "browser",
+      "export": "transitionAcknowledgement",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/job-transition-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/job-transition-model.ts:transitionFailure",
+      "kind": "browser",
+      "export": "transitionFailure",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/job-transition-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

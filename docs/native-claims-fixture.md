@@ -58,8 +58,13 @@ writing documents, repairs an interrupted final history append and avoids duplic
 events and revision increments. All domain entry points recover pending journals.
 
 Ordinary edits cannot change a claimed job; unrelated jobs remain editable.
+[Ordinary job transitions](native-job-transitions-fixture.md) also reject a claim
+on that job, including an expired claim and same-status requests. They support
+claimless interruption recovery, owner-confirmed Applied status, closing outcomes
+and reopening without modifying sessions or application history.
 Answer merge and pending-answer resolution require an idle coordinator, including
 when they concern a different job. Complete the handoff first. A legacy session
 with no review envelope can be rebuilt once, only with complete final-review
-evidence and reviewed history; a partial or null envelope is rejected. Broader
-attention projections and live Store activation remain separate work.
+evidence and reviewed history; a partial or null envelope is rejected.
+[Native projections](native-projections-fixture.md) provide Overview, Needs Attention
+and Activity in the synthetic fixture. Live Store activation remains separate work.
