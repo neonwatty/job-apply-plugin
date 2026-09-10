@@ -5,10 +5,14 @@ import type { Job, JobFields, WorkspaceState } from './contracts';
 import { edit, observe, openEditor, reapply, type Editor } from './job-editor-state';
 import { JobEditor } from './JobEditor';
 import { Claims } from './Claims';
+import { JobActivity } from './JobActivity';
 
-export function Jobs({ client, dirtyChanged, claimsEnabled = false }: {
+export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJobId, jobOpened, openAnswers }: {
     client: Client;
     claimsEnabled?: boolean;
+    requestedJobId?: string | null;
+    jobOpened?: () => void;
+    openAnswers?: () => void;
     dirtyChanged: (dirty: boolean) => void;
 }) {
     const [data, setData] = useState<WorkspaceState | null>(null);
@@ -65,6 +69,13 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false }: {
         dirtyChanged(Boolean(editor?.dirty.size) || busy || claimsDirty);
         return () => dirtyChanged(false);
     }, [editor, busy, claimsDirty, dirtyChanged]);
+    useEffect(() => {
+        if (!requestedJobId || !data || loading || loadError || claimsActive) return;
+        const selected = data.jobs.find(job => job.id === requestedJobId);
+        if (selected) open(selected);
+        else setError('The selected job is no longer available. Refresh Jobs to check its current state.');
+        jobOpened?.();
+    }, [requestedJobId, data, loading, loadError, claimsActive, jobOpened]);
 
     function open(job: Job | null) {
         if (mutation.current || claimsActive) return;
@@ -149,6 +160,7 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false }: {
             {data ? 'Showing previously loaded jobs. ' : 'Jobs could not be loaded. '}{loadError}{' '}
             <button disabled={busy} onClick={() => void refresh()}>Retry loading jobs</button>
         </p>}
+        {!editor && error && <p role="alert" className="error">{error}</p>}
         <div className="filters">
             <label>Search jobs<input value={query} onChange={e => setQuery(e.target.value)} /></label>
             <label>Status<select value={status} onChange={e => setStatus(e.target.value)}>
@@ -186,6 +198,9 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false }: {
                     setEditor(openEditor(editor.latest));
                     setError('');
                 }
-            }} />}
+            }} >
+            {claimsEnabled && editor.selected && <JobActivity client={client} jobId={editor.selected.id}
+                refreshKey={editor.selected.revision} openAnswers={openAnswers} />}
+        </JobEditor>}
     </section>;
 }

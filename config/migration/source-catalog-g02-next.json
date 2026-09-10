@@ -13,22 +13,22 @@
     },
     {
       "path": "apps/companion/components/Companion.tsx",
-      "sha256": "4b724f74163ce3b799c8aecf371b29795d2d6cc9b0a424699f161112cb143f26",
+      "sha256": "c7094e4f71fa89adbd11baade44b8175dc052d4f7e9dc21cef98a874e8e5d6ba",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/JobEditor.tsx",
-      "sha256": "fd4d0522672785b2607c844a2acf2adef4bc5b22a325f2ec508aaf00c366446f",
+      "sha256": "2556555521566b54fd04ef8f6adb78eb1dc05755f888b7a66afc6abfbf7218e7",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/Jobs.tsx",
-      "sha256": "878a91279d498b798d165060d8af33e65237e6b9df441624b8b447f2e0aa35fb",
+      "sha256": "620ac39dfe6d3e3df1aa59d87d9560d4d065d2fd762f371a95c49ad10cc27ae7",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/Overview.tsx",
-      "sha256": "581cba99f50d8efaaf4643627f70c2bc4ffd5e5ece219066167df4091dae221f",
+      "sha256": "4c8d4b6598c33a657a3ce708afd5e3c8dacec31ffbab44b0f7221ead579ee809",
       "classification": "unreviewed"
     },
     {

@@ -3,10 +3,11 @@ import { useEffect, useRef, useState } from 'react';
 import type { Client } from './client';
 import type { OverviewData } from './contracts';
 
-export function Overview({ client, openJobs, legacyHref }: {
+export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
     client: Client;
     openJobs: () => void;
     legacyHref: string;
+    openWorkspace?: (workspace: 'facts' | 'resumes' | 'attention') => void;
 }) {
     const [data, setData] = useState<OverviewData | null>(null);
     const [error, setError] = useState('');
@@ -64,15 +65,17 @@ export function Overview({ client, openJobs, legacyHref }: {
                 <h2>{heading}</h2>
                 <p>Your canonical data stays local. You direct changes and submissions.</p>
                 {target === 'jobs' ? <button className="primary" onClick={openJobs}>Open Jobs</button>
+                    : openWorkspace && (target === 'facts' || target === 'resumes' || target === 'attention')
+                        ? <button className="primary" onClick={() => openWorkspace(target)}>Open {destinations[target]}</button>
                     : <a className="button primary" href={link(destination)}>Open {destinations[destination]}</a>}
             </div>
             <section aria-labelledby="setup-heading">
                 <h2 id="setup-heading">Application setup</h2>
                 <ul className="setup-list">
                     <li><span>{data.setup.hasProfileFacts ? 'Profile facts added' : 'Add your profile facts'}</span>
-                        <a href={link('facts')}>Edit Facts</a></li>
+                        {openWorkspace ? <button onClick={() => openWorkspace('facts')}>Edit Facts</button> : <a href={link('facts')}>Edit Facts</a>}</li>
                     <li><span>{data.setup.hasResume ? 'Resume available' : 'Add a resume'}</span>
-                        <a href={link('resumes')}>Manage Resumes</a></li>
+                        {openWorkspace ? <button onClick={() => openWorkspace('resumes')}>Manage Resumes</button> : <a href={link('resumes')}>Manage Resumes</a>}</li>
                 </ul>
             </section>
             <div className="counts">

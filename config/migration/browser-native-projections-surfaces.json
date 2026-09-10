@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "browser:apps/companion/components/JobActivity.tsx:JobActivity",
+      "kind": "browser",
+      "export": "JobActivity",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/JobActivity.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/NeedsAttention.tsx:NeedsAttention",
+      "kind": "browser",
+      "export": "NeedsAttention",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/NeedsAttention.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/projection-model.ts:attentionReasons",
+      "kind": "browser",
+      "export": "attentionReasons",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/projection-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/projection-model.ts:recoveryGuidance",
+      "kind": "browser",
+      "export": "recoveryGuidance",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/projection-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/projection-model.ts:attentionGuidance",
+      "kind": "browser",
+      "export": "attentionGuidance",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/projection-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/projection-model.ts:attentionProjection",
+      "kind": "browser",
+      "export": "attentionProjection",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/projection-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/projection-model.ts:filterAttention",
+      "kind": "browser",
+      "export": "filterAttention",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/projection-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/projection-model.ts:activityProjection",
+      "kind": "browser",
+      "export": "activityProjection",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/projection-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/projection-view.ts:useProjection",
+      "kind": "browser",
+      "export": "useProjection",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/projection-view.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/projection-view.ts:humanize",
+      "kind": "browser",
+      "export": "humanize",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/projection-view.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

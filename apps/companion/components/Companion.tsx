@@ -8,13 +8,16 @@ import { Jobs } from './Jobs';
 import { Resumes } from './Resumes';
 import { Answers } from './Answers';
 import { Extractions } from './Extractions';
+import { NeedsAttention } from './NeedsAttention';
 import './companion.css';
+type WorkspaceTab = 'overview'|'jobs'|'facts'|'resumes'|'answers'|'extractions'|'attention';
 export default function Companion() {
     const [client,setClient]=useState<Client|null>(null);
     const [boot,setBoot]=useState<Boot|null>(null);
     const [error,setError]=useState('');
     const [token,setToken]=useState('');
-    const [tab,setTab]=useState<'overview'|'jobs'|'facts'|'resumes'|'answers'|'extractions'>('overview');
+    const [tab,setTab]=useState<WorkspaceTab>('overview');
+    const [requestedJob,setRequestedJob]=useState<string|null>(null);
     const [dirty,setDirty]=useState(false);
     const [attempt,setAttempt]=useState(0);
     useEffect(() => {
@@ -55,7 +58,8 @@ export default function Companion() {
         return () => window.removeEventListener('beforeunload',before);
     },[dirty]);
     const dirtyChanged=useCallback((value: boolean) => setDirty(value),[]);
-    function navigate(next: 'overview'|'jobs'|'facts'|'resumes'|'answers'|'extractions') {
+    const jobOpened=useCallback(() => setRequestedJob(null),[]);
+    function navigate(next: WorkspaceTab) {
         if(next===tab)
             return;
         if(dirty&&!confirm('Discard unsaved changes?'))
@@ -80,8 +84,9 @@ export default function Companion() {
             </span>
         </div>
         <nav aria-label="Workspace sections">
-            {!nativeFixture&&<button aria-current={tab==='overview'? 'page':undefined} onClick={() => navigate('overview')}>Overview
-            </button>}
+            <button aria-current={tab==='overview'? 'page':undefined} onClick={() => navigate('overview')}>Overview
+            </button>
+            {nativeFixture&&<button aria-current={tab==='attention'?'page':undefined} onClick={() => navigate('attention')}>Needs Attention</button>}
             <button aria-current={tab==='jobs'? 'page':undefined} onClick={() => navigate('jobs')}>Jobs
             </button>
             <button aria-current={tab==='facts'?'page':undefined} onClick={()=>navigate('facts')}>Facts</button>
@@ -96,7 +101,7 @@ export default function Companion() {
         </nav>
         <p className="trust">Your canonical data stays local. You direct changes and submissions; agents assist from the same record.
         </p>
-        {nativeFixture&&<p role="status">Synthetic native workspace. Manage jobs, facts, resumes, extraction reviews and remembered answers here; other workflows are not available yet.</p>}
+        {nativeFixture&&<p role="status">Synthetic native workspace. Manage jobs, facts, resumes, extraction reviews and remembered answers; review your next step, attention items and application activity.</p>}
         {error&&<p role="alert" className="error">
             {error}{' '}
             {token&&<button onClick={() => setAttempt(value => value+1)}>Retry connection</button>}
@@ -111,7 +116,8 @@ export default function Companion() {
         </section>:boot?.status==='ready'&&client? (tab==='overview'? <Overview
             client={client}
             openJobs={() => navigate('jobs')}
-            legacyHref={legacyHref} />:tab==='facts'?<Facts client={client} dirtyChanged={dirtyChanged}/>:tab==='resumes'?<Resumes client={client} dirtyChanged={dirtyChanged}/>:tab==='extractions'?<Extractions client={client} dirtyChanged={dirtyChanged}/>:tab==='answers'?<Answers client={client} dirtyChanged={dirtyChanged}/>:<Jobs client={client} dirtyChanged={dirtyChanged} claimsEnabled={nativeFixture} />):!error&&<p>Loading workspace…
+            openWorkspace={nativeFixture ? navigate : undefined}
+            legacyHref={legacyHref} />:tab==='attention'?<NeedsAttention client={client} openJob={id => { setRequestedJob(id); navigate('jobs'); }}/>:tab==='facts'?<Facts client={client} dirtyChanged={dirtyChanged}/>:tab==='resumes'?<Resumes client={client} dirtyChanged={dirtyChanged}/>:tab==='extractions'?<Extractions client={client} dirtyChanged={dirtyChanged}/>:tab==='answers'?<Answers client={client} dirtyChanged={dirtyChanged}/>:<Jobs client={client} dirtyChanged={dirtyChanged} claimsEnabled={nativeFixture} requestedJobId={requestedJob} jobOpened={jobOpened} openAnswers={() => navigate('answers')} />):!error&&<p>Loading workspace…
             </p>}
     </main>;
 }
