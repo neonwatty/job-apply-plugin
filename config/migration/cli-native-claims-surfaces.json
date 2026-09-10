@@ -175,6 +175,32 @@
         "recovery": "unverified",
         "platform": "unverified"
       }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:job-review-restart",
+      "kind": "cli",
+      "command": "job-review-restart",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-claims.ts",
+        "src/workspace-core/claims.ts",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/review-restart.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
     }
   ]
 }

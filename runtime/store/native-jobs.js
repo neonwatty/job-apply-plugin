@@ -22,7 +22,7 @@ import { validateProfile } from "../contracts/workspace/profile.js";
 import { validateGroups } from "../contracts/workspace/fact-groups.js";
 import { validateAnswers } from "../contracts/workspace/answers.js";
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 };
-const marker = '{"mode":"native-jobs-fixture","version":8}\n';
+const marker = '{"mode":"native-jobs-fixture","version":9}\n';
 const allowed = new Set([".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "answers.json", "resume-operation.json", "resume-files", "resume-extractions.json", "resume-extraction-requests.json", "resume-extraction-journal.json", "sessions", "applications.jsonl", "coordinator.json", "coordinator-journal.json"]);
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 };
@@ -298,7 +298,7 @@ export class NativeJobsRepository {
         return this.transaction(async () => {
             const jobs = validateJobsDocument(await this.document('jobs'));
             return operation({ jobs, coordinator: validateCoordinator(await this.journal('coordinator')),
-                sessions: await this.answerSessions(), answers: validateAnswers(await this.document('answers')),
+                sessions: await this.answerSessions(), history: await this.answerHistory(), answers: validateAnswers(await this.document('answers')),
                 profile: validateProfile(await this.document('profile')), resumes: validateExtractionResumes(await this.document('resumes')),
                 files: new NativeResumeFiles(this.root),
                 saveJobs: async (document) => { validateJobsDocument(document); await this.write(join(this.root, 'jobs.json'), document, options); },

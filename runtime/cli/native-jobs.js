@@ -26,7 +26,7 @@ export async function runJobsCli(args, input) {
         else {
             if (options.has(key))
                 throw new JobsError("duplicate CLI option");
-            if (["--include-trashed", "--trashed-only", "--replace", "--remember-sensitive", "--all-review-statuses", "--summary-only", "--owner-confirmed"].includes(key))
+            if (["--include-trashed", "--trashed-only", "--replace", "--remember-sensitive", "--all-review-statuses", "--summary-only", "--owner-confirmed", "--owner-confirmed-not-submitted"].includes(key))
                 options.set(key, "true");
             else {
                 const value = args[++index];

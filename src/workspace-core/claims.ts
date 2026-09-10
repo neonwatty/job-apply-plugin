@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { claimExpired, claimHeartbeatSeconds, claimLeaseSeconds, heartbeatClaim, makeClaim, publicClaim, requireClaim, requireJobUnclaimed } from '../contracts/workspace/claims.js';
 import { buildClaimSession, validateClaimHandoff } from '../contracts/workspace/claim-session.js';
+import { validateReviewRestartEvidence } from '../contracts/workspace/review-restart.js';
 import { safeId, validateJob } from '../contracts/workspace/jobs.js';
 import { strip } from '../contracts/workspace/job-url.js';
 import { copy, fromJSON, get, has, int, integer, object, set, string, text, JobsError } from '../contracts/workspace/values.js';
@@ -10,7 +11,7 @@ import { preflightJobRecord } from './job-preflight.js';
 
 export interface ClaimTransaction {
   jobs: Document; coordinator: Document; profile: Document; resumes: Document; answers: Document;
-  sessions: Document[]; files: NativeResumeFiles;
+  sessions: Document[]; history: Document[]; files: NativeResumeFiles;
   saveJobs(document:Document):Promise<void>;
   saveCoordinator(document:Document):Promise<void>;
   saveSession(document:Document):Promise<void>;
@@ -89,6 +90,31 @@ export class ClaimsService {
       const resume = copy(object(get(object(get(tx.resumes,'resumes'),'resumes'),string(get(preflight,'resumeId'))!),'resume'));
       set(resume,'path',string(get(resume,'storageKind')) === 'managed' ? text(tx.files.path(resume)) : get(resume,'path'));
       await tx.commit(operation('acquire',job,now,'job-started','in_progress',claim));
+      const result = doc({token});set(result,'job',transitioned(job,'in_progress',now));set(result,'resume',resume);
+      return set(result,'claim',publicClaim(claim,this.now()));
+    });
+  }
+  restart(id:string,ownerLabel:Value,expectedRevision:bigint,ownerConfirmedNotSubmitted:boolean):Promise<Value> {
+    safeId(id);
+    if (ownerConfirmedNotSubmitted !== true) throw new JobsError('review restart requires explicit owner confirmation that the application was not submitted');
+    owner(ownerLabel);
+    if (typeof expectedRevision !== 'bigint' || expectedRevision < 1n) throw new JobsError('job revision is invalid');
+    return this.repository.claimTransaction(async tx => {
+      const current = get(tx.coordinator,'claim');
+      if (current !== null) throw new JobsError(claimExpired(object(current,'claim'),this.now()) ? 'expired claim requires explicit same-job recovery' : 'another live job claim already exists');
+      const job = activeJob(tx.jobs,id);
+      if (int(get(job,'revision')) !== expectedRevision) throw new JobsError('job revision conflict');
+      if (string(get(job,'status')) !== 'awaiting_review') throw new JobsError('review restart requires an awaiting_review job');
+      const session = tx.sessions.find(item => string(get(item,'applicationId')) === id) ?? null;
+      const event = validateReviewRestartEvidence(job,session,tx.history);
+      const preflight = await preflightJobRecord(job,tx.profile,tx.resumes,tx.files);
+      const rawResume = get(object(get(tx.resumes,'resumes'),'resumes'),string(get(preflight,'resumeId')) ?? '');
+      if (get(preflight,'ready') !== true || rawResume === null || string(get(object(rawResume,'resume'),'storageKind')) !== 'managed') throw new JobsError('job is not ready with a current managed resume');
+      const resume = copy(object(rawResume,'resume'));
+      set(resume,'path',text(tx.files.path(resume)));
+      const now = this.now(), {claim,token} = makeClaim(id,ownerLabel,now);
+      // The prior review remains immutable evidence; new progress belongs to the new revision.
+      await tx.commit(operation('review_restart',job,now,event,'in_progress',claim));
       const result = doc({token});set(result,'job',transitioned(job,'in_progress',now));set(result,'resume',resume);
       return set(result,'claim',publicClaim(claim,this.now()));
     });

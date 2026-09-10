@@ -8,6 +8,7 @@ export async function claimsHttp(repository:ClaimRepository,method:string,path:s
   const service = new ClaimsService(repository);
   if (method === 'GET' && path === '/api/claims') return {status:200,body:serialize(await service.status())};
   const shapes:Record<string,string[]> = {
+    'review-restart':['jobId','ownerLabel','expectedRevision','ownerConfirmedNotSubmitted'],
     select:['jobId','expectedRevision','ownerConfirmed'], acquire:['jobId','ownerLabel','expectedRevision'],
     heartbeat:['jobId','token'],recover:['jobId','ownerLabel'],progress:['jobId','token','session'],
     handoff:['jobId','token','status','session','expectedRevision'],
@@ -26,6 +27,7 @@ export async function claimsHttp(repository:ClaimRepository,method:string,path:s
   };
   let result:Value;
   if (action === 'select') result = await service.select(id,revision(),get(payload,'ownerConfirmed') === true);
+  else if (action === 'review-restart') result = await service.restart(id,get(payload,'ownerLabel'),revision(),get(payload,'ownerConfirmedNotSubmitted') === true);
   else if (action === 'acquire') result = await service.acquire(id,get(payload,'ownerLabel'),revision());
   else if (action === 'heartbeat') result = await service.heartbeat(id,get(payload,'token'));
   else if (action === 'recover') result = await service.recover(id,get(payload,'ownerLabel'));

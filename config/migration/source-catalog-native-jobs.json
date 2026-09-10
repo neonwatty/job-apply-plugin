@@ -8,7 +8,7 @@
     },
     {
       "path": "runtime/cli/native-jobs.js",
-      "sha256": "2581263768a3c6ddaa3695741022e60644e55b467641bb4dd5b55ee330b8f373",
+      "sha256": "312c7b4562d965cdc1b4de1dab5f14d6c7690f8ff470b5e83bb2e5590d281dee",
       "classification": "unreviewed"
     },
     {
@@ -33,7 +33,7 @@
     },
     {
       "path": "runtime/store/native-jobs.js",
-      "sha256": "236bfd38aa565990c00768622f91843d644c642498093e3d8618727a329d2a9c",
+      "sha256": "8a87a16971fe888ab7ae32066b194a40497a1a68007aa9c57c1cbf3474905f40",
       "classification": "unreviewed"
     },
     {
@@ -58,7 +58,7 @@
     },
     {
       "path": "src/cli/native-jobs.ts",
-      "sha256": "e878b9280a23f361fffbc339722e40abdbc780dc4d69f29e2b1ac74e8b68b14c",
+      "sha256": "d97009b8cef103b34c8d8ed7b29d47de0a594ec0d01061bd2270c7817d928759",
       "classification": "unreviewed"
     },
     {
@@ -83,7 +83,7 @@
     },
     {
       "path": "src/store/native-jobs.ts",
-      "sha256": "a59815f1f00d44d48ca965646d2489deb26adef78af7d6bc8f089f3a0a9616c7",
+      "sha256": "46cb2cadfe59aab1ca2f921bc96adce98c271cf1317f5ef07eca7545b64ffcaa",
       "classification": "unreviewed"
     },
     {

@@ -32,6 +32,7 @@ export function Extractions({ client, dirtyChanged }: { client: ExtractionClient
   const [choices, setChoices] = useState<Choices>({});
   const [confirmed, setConfirmed] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [writing, setWriting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState('');
@@ -42,7 +43,7 @@ export function Extractions({ client, dirtyChanged }: { client: ExtractionClient
   const dirty = Object.keys(choices).length > 0;
   const managed = resumes.filter(item => string(get(item, 'storageKind')) === 'managed' && get(item, 'deletedAt') === null);
   const selectedResume = managed.find(item => string(get(item, 'id')) === resumeId);
-  useEffect(() => { dirtyChanged(dirty || busy); return () => dirtyChanged(false); }, [dirty, busy, dirtyChanged]);
+  useEffect(() => { dirtyChanged(dirty || writing); return () => dirtyChanged(false); }, [dirty, writing, dirtyChanged]);
   useEffect(() => () => {
     generation.current++;
     listGeneration.current++;
@@ -102,20 +103,23 @@ export function Extractions({ client, dirtyChanged }: { client: ExtractionClient
     request.current?.abort();
     request.current = controller;
     setBusy(true);
+    setWriting(true);
     setError('');
     setNotice('');
     const path = '/api/resume-extraction-requests' + (record ? `/${encodeURIComponent(string(get(record, 'requestId'))!)}/${action}` : '');
     try {
       await client.extractionRequest(path, 'POST', requestMutation(resume, record, action), controller.signal);
       if (version !== generation.current) return;
+      setWriting(false);
       setNotice(action === 'cancel' ? 'Extraction request cancelled.' : 'Extraction requested. An agent can now extract facts from this resume.');
       await refreshLists();
     } catch (failure) {
       if (version === generation.current && !controller.signal.aborted) {
+        setWriting(false);
         setError(failure instanceof Error ? failure.message : 'Unable to update extraction request');
         await refreshLists();
       }
-    } finally { if (version === generation.current) setBusy(false); }
+    } finally { if (version === generation.current) { setBusy(false); setWriting(false); } }
   }
   async function saveReview() {
     if (!base || latest) return;
@@ -127,12 +131,14 @@ export function Extractions({ client, dirtyChanged }: { client: ExtractionClient
     request.current = controller;
     const id = string(get(base, 'id'))!;
     setBusy(true);
+    setWriting(true);
     setError('');
     setNotice('');
     try {
       await client.extractionRequest(`/api/resume-proposals/${encodeURIComponent(id)}/review`, 'POST', body, controller.signal);
       if (version !== generation.current) return;
       // The mutation succeeded even if its subsequent detail refresh fails.
+      setWriting(false);
       setBase(null);
       setChoices({});
       setConfirmed([]);
@@ -145,12 +151,13 @@ export function Extractions({ client, dirtyChanged }: { client: ExtractionClient
       await refreshLists();
     } catch (failure) {
       if (version !== generation.current || controller.signal.aborted) return;
+      setWriting(false);
       setError(failure instanceof Error ? failure.message : 'Unable to save review');
       try {
         const next = proposalSnapshot(await client.extractionRequest(`/api/resume-proposals/${encodeURIComponent(id)}`, 'GET', undefined, controller.signal));
         if (version === generation.current && string(get(next, 'id')) === id) setLatest(next);
       } catch { /* Keep the original failure and unsaved choices visible. */ }
-    } finally { if (version === generation.current) setBusy(false); }
+    } finally { if (version === generation.current) { setBusy(false); setWriting(false); } }
   }
   const staleReasons = base ? get(base, 'staleReasons') : null;
   const stale = Array.isArray(staleReasons) && staleReasons.length > 0;

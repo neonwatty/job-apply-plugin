@@ -118,9 +118,9 @@ requires a separate confirmation for each proposed merge.
 
 ## Durable merge and approval
 
-Fixture v8 includes private `sessions/*.json`, `applications.jsonl`, `coordinator.json`
+Fixture v9 includes private `sessions/*.json`, `applications.jsonl`, `coordinator.json`
 and `coordinator-journal.json`. New synthetic roots start with an idle coordinator;
-[active claims](native-claims-fixture.md) and their acquisition, recovery and
+[active claims](native-claims-fixture.md) and their acquisition, reviewed restart, recovery and
 handoff journals are supported. Answer merges and pending-answer resolution
 require an idle coordinator. Existing
 fixtures and live Stores are not upgraded or adopted.

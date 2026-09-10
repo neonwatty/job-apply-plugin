@@ -5,7 +5,7 @@ import { fromJSON, get, has, int, integer, keys, object, parse, serialize, set, 
 import type { Document } from '../contracts/workspace/values.js';
 import { NativeClaimHistory } from './native-claim-history.js';
 
-export const claimOperationKinds = new Set(['acquire','recover','handoff']);
+export const claimOperationKinds = new Set(['acquire','review_restart','recover','handoff']);
 export function validateClaimJournal(journal: Document): Document {
   if (journal.size !== 2 || int(get(journal,'schemaVersion')) !== 1n || !has(journal,'operation')) throw new JobsError('invalid coordinator journal');
   const operation = object(get(journal,'operation'),'coordinator journal operation');
@@ -19,6 +19,7 @@ export function validateClaimJournal(journal: Document): Document {
   if (string(get(event,'applicationId')) !== id) throw new JobsError('coordinator history identity does not match');
   if (kind !== 'recover' && (int(get(operation,'expectedRevision')) === null || int(get(operation,'expectedRevision'))! < 1n)) throw new JobsError('coordinator journal revision is invalid');
   if (kind === 'acquire' && (string(get(operation,'sourceStatus')) !== 'ready' || string(get(operation,'targetStatus')) !== 'in_progress')) throw new JobsError('coordinator acquisition transition is invalid');
+  if (kind === 'review_restart' && (string(get(operation,'sourceStatus')) !== 'awaiting_review' || string(get(operation,'targetStatus')) !== 'in_progress')) throw new JobsError('coordinator review restart transition is invalid');
   if (kind === 'handoff') {
     if (string(get(operation,'sourceStatus')) !== 'in_progress' || !['needs_info','awaiting_review'].includes(string(get(operation,'targetStatus'))!)) throw new JobsError('coordinator handoff transition is invalid');
     if (string(get(validateAnswerSession(get(operation,'session')),'applicationId')) !== id) throw new JobsError('coordinator session identity does not match');

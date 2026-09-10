@@ -67,16 +67,18 @@ export function Claims({ client, jobs, disabled, changed, activityChanged, navig
     }, [client]);
     useEffect(() => { activityChanged(owned || busy); return () => activityChanged(false); }, [owned, busy, activityChanged]);
     useEffect(() => { navigationChanged(owned || writing); return () => navigationChanged(false); }, [owned, writing, navigationChanged]);
-    async function action(kind: 'select' | 'acquire' | 'recover' | 'heartbeat' | 'handoff') {
+    async function action(kind: 'select' | 'acquire' | 'review-restart' | 'recover' | 'heartbeat' | 'handoff') {
         if (pending.current) return;
         const held = credential.current;
         const current = kind === 'heartbeat' || kind === 'handoff' ? held?.job : selected;
         if (!current && kind !== 'recover') return;
         if (kind === 'select' && !confirm(`Select ${String(current!.role || current!.id)} for application work at revision ${current!.revision}?`)) return;
+        if (kind === 'review-restart' && !confirm(`Confirm you have not submitted this application. Restart ${String(current!.role || current!.id)} at revision ${current!.revision} for another review? Final submission remains yours.`)) return;
         const controller = new AbortController(); pending.current = controller; setBusy(true); setWriting(true); setError(''); setNotice('');
         try {
             const body = kind === 'select' ? { jobId: current!.id, expectedRevision: current!.revision, ownerConfirmed: true }
                 : kind === 'acquire' ? { jobId: current!.id, expectedRevision: current!.revision, ownerLabel: owner }
+                : kind === 'review-restart' ? { jobId: current!.id, expectedRevision: current!.revision, ownerLabel: owner, ownerConfirmedNotSubmitted: true }
                 : kind === 'recover' ? { jobId: claim!.jobId, ownerLabel: owner }
                 : kind === 'heartbeat' ? { jobId: current!.id, token: held!.token }
                 : { jobId: current!.id, token: held!.token, expectedRevision: current!.revision, status: 'needs_info',
@@ -84,7 +86,7 @@ export function Claims({ client, jobs, disabled, changed, activityChanged, navig
                         blockers: [{ type: 'information', code: 'owner-input-required' }] } };
             const value = await request('/' + kind, body, controller.signal);
             if (!alive.current || controller.signal.aborted) return;
-            if (kind === 'acquire' || kind === 'recover') {
+            if (kind === 'acquire' || kind === 'recover' || kind === 'review-restart') {
                 const nextClaim = claimValue(value.claim), nextJob = decodeJob(value.job);
                 if (!nextClaim || typeof value.token !== 'string' || !value.token) throw Error('Invalid acquisition');
                 credential.current = { token: value.token, job: nextJob, claimId: nextClaim.claimId };
@@ -141,6 +143,7 @@ export function Claims({ client, jobs, disabled, changed, activityChanged, navig
             {selected && <p>Selected revision {selected.revision}. Refresh the jobs list and choose again after a conflict.</p>}
             <button disabled={blocked || !selected} onClick={() => void action('select')}>Select this job</button>{' '}
             <button disabled={blocked || selected?.status !== 'ready' || !owner.trim()} onClick={() => void action('acquire')}>Acquire application work</button>
+            {selected?.status === 'awaiting_review' && <button disabled={blocked || !owner.trim()} onClick={() => void action('review-restart')}>Restart reviewed application</button>}
         </>}
         {claim?.expired && <button disabled={blocked || !owner.trim()} onClick={() => void action('recover')}>Recover expired application</button>}
         {owned && !claim?.expired && <button disabled={blocked} onClick={() => void action('handoff')}>Return for owner input</button>}

@@ -18,7 +18,28 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   await cli('profile-patch', ['--source', 'user', '--expected-revision', String(profile.metadata.revision)], { employer: ['Existing employer'] });
   await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
   await page.getByLabel('Resume to extract').selectOption(resume.id);
-  await page.getByRole('button', { name: 'Request extraction', exact: true }).click();
+  // With no review choices, an unacknowledged request write still needs navigation protection.
+  let releaseWrite, writeStarted;
+  const writeGate = new Promise(resolve => { releaseWrite = resolve; });
+  const writeEntered = new Promise(resolve => { writeStarted = resolve; });
+  await page.route('**/api/resume-extraction-requests', async route => {
+    if (route.request().method() === 'POST') { writeStarted(); await writeGate; }
+    await route.continue();
+  });
+  let writePrompt;
+  const dismissWrite = async dialog => { writePrompt = dialog.message(); await dialog.dismiss(); };
+  try {
+    await page.getByRole('button', { name: 'Request extraction', exact: true }).click();
+    await writeEntered;
+    page.on('dialog', dismissWrite);
+    await page.getByRole('button', { name: 'Jobs', exact: true }).click();
+    assert.equal(typeof writePrompt, 'string', 'An unacknowledged extraction request must guard navigation');
+    await page.getByRole('heading', { name: 'Resume extraction', exact: true }).waitFor();
+  } finally {
+    page.off('dialog', dismissWrite);
+    releaseWrite();
+    await page.unroute('**/api/resume-extraction-requests');
+  }
   await page.getByRole('button', { name: 'Cancel extraction', exact: true }).waitFor();
   await page.getByRole('button', { name: 'Cancel extraction', exact: true }).click();
   await page.getByText('Extraction request cancelled.', { exact: true }).waitFor();
@@ -45,8 +66,33 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   await page.getByRole('button', { name: 'Reapply my decisions', exact: true }).click();
   assert.equal(await page.getByLabel('I confirm replacing /employer for /employer/title.').isChecked(), false);
   await page.getByLabel('I confirm replacing /employer for /employer/title.').check();
-  await page.getByRole('button', { name: 'Save review decisions', exact: true }).click();
-  await page.getByText('Review decisions saved.', { exact: true }).waitFor();
+  // Once the write is acknowledged, a slow detail read must not claim the saved decisions are dirty.
+  let releaseDetail, detailStarted;
+  const detailGate = new Promise(resolve => { releaseDetail = resolve; });
+  const detailEntered = new Promise(resolve => { detailStarted = resolve; });
+  const detailPath = `**/api/resume-proposals/${result.proposalSummary.id}`;
+  const dialogs = [];
+  const dismissDialog = async dialog => { dialogs.push(dialog.message()); await dialog.dismiss(); };
+  await page.route(detailPath, async route => {
+    detailStarted();
+    await detailGate;
+    await route.continue();
+  });
+  try {
+    await page.getByRole('button', { name: 'Save review decisions', exact: true }).click();
+    await page.getByText('Review decisions saved.', { exact: true }).waitFor();
+    await detailEntered;
+    page.on('dialog', dismissDialog);
+    await page.getByRole('button', { name: 'Jobs', exact: true }).click();
+    assert.deepEqual(dialogs, [], 'Saved review decisions must allow navigation during the detail refresh');
+    await page.getByRole('heading', { name: 'Jobs', exact: true }).waitFor();
+  } finally {
+    page.off('dialog', dismissDialog);
+    releaseDetail();
+    await page.unroute(detailPath);
+  }
+  await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
+  await page.getByRole('button', { name: 'Review extraction result', exact: true }).click();
   await page.getByText('This proposal is complete. No further review is needed.', { exact: true }).waitFor();
   profile = await document('profile');
   assert.equal(profile.profile.employer.title, 'Engineer');
@@ -56,5 +102,6 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   assert.equal((await document('resume-extractions')).proposals[result.proposalSummary.id].status, 'completed');
   await page.setViewportSize({ width: 390, height: 844 });
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
-  return { requestCancel: true, cliCompletion: true, replacementConsent: true, conflictReapply: true, provenance: true, narrow: true };
+  return { requestCancel: true, cliCompletion: true, replacementConsent: true, conflictReapply: true,
+    pendingWriteNavigationGuard: true, savedNavigationDuringRefresh: true, provenance: true, narrow: true };
 }

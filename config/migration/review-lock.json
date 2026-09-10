@@ -83,7 +83,7 @@
     },
     {
       "path": "cli-native-claims-surfaces.json",
-      "sha256": "09810dd8553247c6a265c27a2c12790313c8b5db5b372723d7e84a31f6dd1b99"
+      "sha256": "f63132d680ba790131f9b9e4e2fc81ad0b1abdf8ee161bfdb804943ac398f8c9"
     },
     {
       "path": "cli-native-extractions-surfaces.json",
@@ -135,7 +135,7 @@
     },
     {
       "path": "http-native-claims-surfaces.json",
-      "sha256": "3f1f986998a1824d6c8d99a4bef9f9969ad931cec2768cec84a78579defa6d20"
+      "sha256": "3192149822e06167a25f849689b9fcc68f829bfd40ac8d0923eee8c24c396ad9"
     },
     {
       "path": "http-read-detail-surfaces.json",
@@ -175,7 +175,7 @@
     },
     {
       "path": "journal-01-surfaces.json",
-      "sha256": "4035b629e5d5223e9ec9e449012393ee960c0139e10ec7a0043584530715ffa5"
+      "sha256": "d2131a630b1e45e8b8c416dd97928357ec1e2bb4b02b6734d2a3e210cdbd215a"
     },
     {
       "path": "journal-02-surfaces.json",
@@ -251,7 +251,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "821097bba1c91450dd91a5d5062a8b20b734e51e855b0596bb38121802374a24"
+      "sha256": "d7488366d6a60227b244b6e6e35d6f0de59856b36f93ccb07a144751a382ac02"
     },
     {
       "path": "source-catalog-m01.json",
@@ -279,11 +279,11 @@
     },
     {
       "path": "source-catalog-native-claims.json",
-      "sha256": "73d0eb2f6bd8509745ad5771e00663128979acc63ef25525187ab2c11cfc76be"
+      "sha256": "4e6cf635ff0237706cdfa8b0a8cc01210382ca8df322e77b817c6619cc38e2af"
     },
     {
       "path": "source-catalog-native-extractions.json",
-      "sha256": "0ccd58b8d6e52a0f2818b43e8cd8d16dd39dc1f52898f3a61e42aa2ea77602f7"
+      "sha256": "aa76199456b7285281ce3f0a32a098f337d37e6d66b40dc6927693c9064c4658"
     },
     {
       "path": "source-catalog-native-facts.json",
@@ -291,7 +291,7 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "d0653eae3e3a109e5adf7d5ea49f7b5445cd7791cf721397062b607651e62649"
+      "sha256": "ccc7789775a78e1eb71ede45a2381c0471c9efb87cd4fb13903cfbe9365c0706"
     },
     {
       "path": "source-catalog-native-pending-answers.json",

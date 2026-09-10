@@ -1,6 +1,7 @@
 import { ClaimsService } from '../workspace-core/claims.js';
 import { object, text, JobsError } from '../contracts/workspace/values.js';
 export const claimCommands = {
+    'job-review-restart': ['--id', '--owner', '--expected-revision', '--owner-confirmed-not-submitted'],
     'task-select': ['--id', '--expected-revision', '--owner-confirmed'],
     'job-acquire': ['--id', '--owner', '--expected-revision'], 'claim-status': [],
     'claim-heartbeat': ['--id', '--token'], 'claim-recover': ['--id', '--owner'],
@@ -26,6 +27,8 @@ export async function runClaimCommand(command, repository, options, payload) {
     const id = required('--id');
     if (command === 'task-select')
         return service.select(id, revision(), options.has('--owner-confirmed'));
+    if (command === 'job-review-restart')
+        return service.restart(id, text(required('--owner')), revision(), options.has('--owner-confirmed-not-submitted'));
     if (command === 'job-acquire')
         return service.acquire(id, text(required('--owner')), revision());
     if (command === 'claim-recover')
