@@ -110,6 +110,9 @@ export function installFacts(context) {
     $("#fact-view-empty").classList.toggle("hidden", visibleControls > 0);
     $("#facts-form").classList.toggle("hidden", visibleControls === 0);
     const label = custom?.label || (document.querySelector(`[data-fact-view="${CSS.escape(view)}"]`)?.textContent || "All facts").trim();
+    $("#facts-title").textContent = label;
+    $("#facts-form-title").textContent = label;
+    if (!$("#facts-workspace").classList.contains("hidden")) document.title = `${label} · Job Apply Workspace`;
     if (announce) $("#fact-view-status").textContent = `Showing ${label}. ${visibleControls} fact field${visibleControls === 1 ? "" : "s"} available.`;
   }
 

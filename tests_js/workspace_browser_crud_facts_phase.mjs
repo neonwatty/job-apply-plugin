@@ -63,7 +63,6 @@ export async function runBrowserCrudFactsPhase(context) {
 
     await openWorkspace(page, "facts");
     await page.waitForFunction(() => document.querySelector('[data-path="/firstName"]')?.value === "Ada");
-    await page.locator(".readiness-disclosure summary").click();
     const readiness = page.locator("#profile-readiness");
     await readiness.getByRole("heading", { name: "Profile readiness" }).waitFor();
     assert.deepEqual(await readiness.locator("h3").allTextContents(), ["Essential setup", "Common coverage", "Review health"]);

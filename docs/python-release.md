@@ -136,7 +136,8 @@ Use a compact sticky header with grouped dropdowns and a mobile Menu disclosure.
 The Ink & blue foundation applies neutral surfaces, readable light/dark colors,
 consistent compact page headings and reduced-motion-aware transitions across
 all eight destinations. Navigation resets scroll and focuses the destination
-heading; Escape dismisses menus. Facts readiness is a collapsed disclosure.
+heading; Escape dismisses menus. Facts readiness is integrated beneath the tabs, and the title follows the selected
+section. An explicit Light/Dark/System selector persists the browser preference.
 Move Facts section selection before readiness, reduce its introductory spacing,
 and explain draft retention. Existing tabs and all-facts view remain available.
 Expose View PDF, Preview text, or Download DOCX on managed resume cards and in

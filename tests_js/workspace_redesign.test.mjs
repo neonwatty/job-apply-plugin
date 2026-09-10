@@ -11,7 +11,7 @@ for (const [width, colorScheme] of [[1280, "light"], [390, "light"], [1280, "dar
       const errors = [];
       page.on("pageerror", error => errors.push(error.message));
       await page.goto(context.running.startup.url);
-      assert.ok((await page.locator('.topbar').boundingBox()).height <= 80);
+      assert.ok((await page.locator('.topbar').boundingBox()).height <= 58);
       if (width === 390) {
         await page.locator("#workspace-menu-toggle").click();
         await page.keyboard.press("Escape");
@@ -29,6 +29,20 @@ for (const [width, colorScheme] of [[1280, "light"], [390, "light"], [1280, "dar
         assert.equal(await page.locator(`#nav-${section}`).getAttribute('aria-current'), 'page');
         assert.ok(await page.locator(`#${section}-workspace .hero h2`).evaluate(el => el === document.activeElement));
       }
+      await openWorkspace(page, "facts");
+      await page.getByRole("tab", {name:"Work history", exact:true}).click();
+      assert.equal(await page.locator("#facts-title").innerText(), "Work history");
+      assert.equal(await page.locator("#profile-readiness").isVisible(), true);
+      assert.equal(await page.locator("details:has(#profile-readiness)").count(), 0);
+      await page.screenshot({path:`/tmp/cleanup-facts-${width}-${colorScheme}.png`});
+      await page.getByLabel("Color theme", {exact:true}).selectOption("light");
+      assert.equal(await page.locator("html").getAttribute("data-theme"), "light");
+      await page.reload();
+      assert.equal(await page.locator("html").getAttribute("data-theme"), "light");
+      await page.getByLabel("Color theme", {exact:true}).selectOption("dark");
+      assert.equal(await page.locator("html").getAttribute("data-theme"), "dark");
+      await page.getByLabel("Color theme", {exact:true}).selectOption("system");
+      assert.equal(await page.locator("html").getAttribute("data-theme"), colorScheme);
       await openWorkspaceMenu(page, "facts");
       await page.locator(".topbar h1").click();
       assert.equal(await page.locator("#nav-group-application-data").getAttribute("aria-expanded"), "false");

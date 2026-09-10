@@ -20,6 +20,7 @@ ASSETS = {
     "/index.html": ("index.html", "text/html; charset=utf-8"),
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
     "/bootstrap.js": ("bootstrap.js", "text/javascript; charset=utf-8"),
+    "/lib/theme.js": ("lib/theme.js", "text/javascript; charset=utf-8"),
     "/lib/api.js": ("lib/api.js", "text/javascript; charset=utf-8"),
     "/lib/dom.js": ("lib/dom.js", "text/javascript; charset=utf-8"),
     "/lib/helpers.js": ("lib/helpers.js", "text/javascript; charset=utf-8"),

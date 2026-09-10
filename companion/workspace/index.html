@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <title>Overview · Job Apply Workspace</title>
+  <script src="/lib/theme.js"></script>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -41,6 +42,7 @@
         </div>
       </div>
     </nav>
+    <select id="color-theme" aria-label="Color theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select>
     <div class="connection" aria-live="polite">
       <span id="connection-dot" class="dot"></span>
       <span id="connection-label">Connecting…</span>
@@ -149,7 +151,7 @@
 
     <div id="facts-workspace" class="hidden">
       <section class="hero" aria-labelledby="facts-title">
-        <div><p class="eyebrow">Facts Workspace</p><h2 id="facts-title">Application facts</h2><p>Keep the details your agent uses accurate and up to date.</p></div>
+        <div><p class="eyebrow">Facts Workspace</p><h2 id="facts-title">All facts</h2><p>Keep the details your agent uses accurate and up to date.</p></div>
       </section>
       <section class="facts-organizer" aria-labelledby="facts-organizer-title">
         <div class="facts-organizer-heading"><div><p class="eyebrow">FACT SECTIONS</p><h2 id="facts-organizer-title">Choose a section to edit</h2><p>Switch between contact details, work history, education and skills below. Your unsaved edits stay when you switch tabs.</p></div><div class="button-row"><button id="fact-group-edit" class="button secondary hidden" type="button">Edit group</button><button id="fact-group-new" class="button primary" type="button">New group</button></div></div>
@@ -167,12 +169,10 @@
         </div>
         <p id="fact-view-status" class="visually-hidden" role="status" aria-live="polite">Showing all facts.</p>
       </section>
-      <details class="readiness-disclosure"><summary>Profile readiness · View missing details</summary>
       <section id="profile-readiness" class="profile-readiness" aria-labelledby="profile-readiness-title" tabindex="-1">
         <div class="readiness-heading"><div><p class="eyebrow">ADVISORY CHECK</p><h2 id="profile-readiness-title">Profile readiness</h2></div><p>Individual jobs may still require additional information.</p></div>
         <div id="profile-readiness-sections" class="readiness-sections" aria-live="polite"></div>
       </section>
-      </details>
       <section id="facts-content" class="facts-panel" role="tabpanel" aria-labelledby="facts-form-title" tabindex="0">
         <div class="panel-heading"><div><p class="eyebrow">CANONICAL PROFILE</p><h2 id="facts-form-title">Applicant facts</h2></div><p id="facts-revision">Revision —</p></div>
         <div id="fact-view-empty" class="empty-state compact-empty hidden"><span class="empty-icon" aria-hidden="true">◇</span><h3>No matching facts yet</h3><p>This saved view still exists. Edit the group to add current canonical fact paths.</p></div>

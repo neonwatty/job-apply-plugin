@@ -146,12 +146,9 @@ test("styles include visible focus, reduced motion, contrast mode, and responsiv
   const css = await readFile(join(REPO_ROOT, "companion", "workspace", "styles.css"), "utf8");
   assert.match(css, /:focus-visible/);
   assert.match(css, /prefers-reduced-motion/);
-  assert.match(css, /prefers-color-scheme: dark/);
-  assert.match(css, /--notice-bg:\s*#e7f3ec/);
-  assert.match(css, /--notice-ink:\s*#204d38/);
-  assert.match(css, /--notice-line:\s*#b9d8c7/);
-  assert.match(css, /--notice-bg:#22372d/);
-  assert.match(css, /--notice-ink:#d8eee4/);
+  const theme = await readFile(join(REPO_ROOT, "companion", "workspace", "lib", "theme.js"), "utf8");
+  assert.match(theme, /prefers-color-scheme: dark/);
+  assert.match(css, /:root\[data-theme="dark"\]/);
   assert.match(css, /\.notice\s*\{[^}]*color:\s*var\(--notice-ink\)[^}]*background:\s*var\(--notice-bg\)[^}]*border:\s*1px solid var\(--notice-line\)/);
   assert.match(css, /@media \(max-width:/);
 });

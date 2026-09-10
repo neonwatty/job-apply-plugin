@@ -99,7 +99,7 @@ export function installNavigation(context) {
       const active = button.closest(".nav-group").querySelector(".nav-link.active");
       button.classList.toggle("active", Boolean(active));
     }
-    document.title = `${overview ? "Overview" : attention ? "Needs Attention" : facts ? "Facts" : resumes ? "Resumes" : answers ? "Answers" : automation ? "Automation" : trash ? "Trash" : "Jobs"} · Job Apply Workspace`;
+    document.title = `${overview ? "Overview" : attention ? "Needs Attention" : facts ? $("#facts-title").textContent : resumes ? "Resumes" : answers ? "Answers" : automation ? "Automation" : trash ? "Trash" : "Jobs"} · Job Apply Workspace`;
     if (overview && !overviewState.available) await refreshOverview({ quiet: true });
     if (attention && !attentionState.loaded) await refreshAttention();
     if (facts && (!profileState.loaded || !factGroupState.loaded)) await Promise.all([

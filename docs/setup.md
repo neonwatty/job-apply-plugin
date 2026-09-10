@@ -92,8 +92,10 @@ The sticky navigation groups destinations under Pipeline (Overview, Jobs, Needs
 Attention), Application Data (Facts, Resumes, Answers), and Controls (Automation,
 Trash). Select a group to open its destinations; on smaller screens, open **Menu**
 first. Escape closes a dropdown and returns focus to its group. In Facts, use the
-section tabs to focus a section; switching tabs retains drafts. Expand **Profile
-readiness** when you want to review missing details.
+section tabs to focus a section; switching tabs retains drafts. Readiness guidance
+stays visible beneath the tabs, and the page title follows
+the section you select. Use the header’s **Color theme** selector for Light, Dark,
+or System; the browser remembers your choice.
 Managed resume cards offer **View PDF**, **Preview text**, or **Download DOCX**.
 PDF viewing opens your browser's PDF viewer in a separate tab; browser settings
 may instead download it. PDF is optional; DOCX and TXT remain supported.
