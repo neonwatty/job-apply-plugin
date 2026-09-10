@@ -65,17 +65,27 @@ or frontend build. See the [setup guide](docs/setup.md) for launch and troublesh
 
 ## Installation
 
+Build the agent-only package from this checkout first (Python 3.12):
+
+```bash
+python3 scripts/build-plugin.py
+```
+
+The repository marketplace points to `dist/plugin`; it excludes the companion.
+For an updated build, choose a fresh output directory with `--output` and register
+that directory as the marketplace.
+
 ### Codex
 
 ```bash
-codex plugin marketplace add neonwatty/job-apply-plugin
+codex plugin marketplace add /absolute/path/to/job-apply-plugin/dist/plugin
 codex plugin add job-apply@neonwatty-plugins
 ```
 
 Start a new Codex task after installation, then invoke `$job-apply:job-apply`.
 
 When testing an unreleased branch, first check out the exact commit in an isolated
-worktree and pass that worktree's absolute path to `codex plugin marketplace add`.
+worktree, build the package, and pass the generated `dist/plugin` absolute path to `codex plugin marketplace add`.
 After installing, confirm that `codex plugin list --json` selects the manifest's
 version directory and start a new Codex task. This keeps branch tests tied to one
 explicit candidate instead of a previously cached package with the same version.
@@ -83,11 +93,13 @@ explicit candidate instead of a previously cached package with the same version.
 ### Claude Code
 
 ```bash
-claude plugin marketplace add neonwatty/job-apply-plugin
+claude plugin marketplace add /absolute/path/to/job-apply-plugin/dist/plugin
 claude plugin install job-apply@neonwatty-plugins
 ```
 
 Start a new Claude Code session after installation, then invoke `/job-apply:job-apply`.
+
+The UI is optional and installed separately. See [companion installation and lifecycle](companion/README.md).
 
 ## Usage
 
@@ -161,7 +173,8 @@ Results are automatically saved to `~/.claude-job-searches/`. Both Codex and Cla
 The optional workspace gives you keyboard-accessible **Overview**, **Jobs**, **Needs Attention**, **Facts**, **Resumes**, **Answers**, **Application Activity**, and unified **Trash** views backed by the same canonical records used by the CLI skills. From the plugin directory, start it with one command:
 
 ```bash
-python3 scripts/job-apply-workspace.py
+python3 companion/install.py
+python3 ~/.local/share/job-apply-companion/companion.py
 ```
 
 The launcher binds only to `127.0.0.1`, chooses a free port, opens the complete authenticated URL in your default browser, and stops cleanly with Ctrl-C. It requires Python 3 but no Node runtime, account, cloud service, telemetry, or separate database.

@@ -83,7 +83,7 @@ test("Facts saved views organize canonical paths without owning facts", { timeou
       firstName: "Synthetic", location: { city: "Phoenix", country: "US" }, skills: ["Python"], futureFact: { enabled: true },
     });
     const agentGroup = await cli("fact-group-create", [], { label: "Agent shortlist", paths: ["/firstName", "/skills"], order: 10 });
-    server = spawn(PYTHON, [join(REPO_ROOT, "scripts", "job-apply-workspace.py"), "--root", storeRoot, "--port", "0", "--no-open", "--json"], { cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"] });
+    server = spawn(PYTHON, [join(REPO_ROOT, "companion", "scripts", "job-apply-workspace.py"), "--root", storeRoot, "--port", "0", "--no-open", "--json"], { cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"] });
     const startup = await waitForStartup(server);
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage(); const pageErrors = []; page.on("pageerror", (error) => pageErrors.push(error));

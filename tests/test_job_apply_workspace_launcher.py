@@ -26,7 +26,7 @@ class WorkspaceProcessTests(unittest.TestCase):
     def test_launcher_reports_fragment_token_and_stops_cleanly(self):
         with tempfile.TemporaryDirectory() as temporary:
             process = subprocess.Popen(
-                [sys.executable, str(ROOT / "scripts" / "job-apply-workspace.py"), "--root", str(Path(temporary) / "store"), "--port", "0", "--no-open", "--json"],
+                [sys.executable, str(ROOT / "companion" / "scripts" / "job-apply-workspace.py"), "--root", str(Path(temporary) / "store"), "--port", "0", "--no-open", "--json"],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                 creationflags=(subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0),
             )
@@ -59,7 +59,7 @@ class WorkspaceProcessTests(unittest.TestCase):
             environment[WORKSPACE.STORE_MODULE.STORE_ENV] = str(store)
             environment.pop("JOB_APPLY_STORE", None)
             process = subprocess.Popen(
-                [sys.executable, str(ROOT / "scripts" / "job-apply-workspace.py"), "--port", "0", "--no-open", "--json"],
+                [sys.executable, str(ROOT / "companion" / "scripts" / "job-apply-workspace.py"), "--port", "0", "--no-open", "--json"],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=environment,
                 creationflags=(subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0),
             )

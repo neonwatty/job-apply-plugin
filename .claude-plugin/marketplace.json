@@ -9,10 +9,7 @@
   "plugins": [
     {
       "name": "job-apply",
-      "source": {
-        "source": "github",
-        "repo": "neonwatty/job-apply-plugin"
-      },
+      "source": "./dist/plugin",
       "description": "AI-powered job application assistant for Claude Code and Codex covering LinkedIn, Greenhouse, Ashby, Lever, Rippling, and Workday",
       "category": "productivity"
     }

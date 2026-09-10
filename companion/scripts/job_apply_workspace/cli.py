@@ -80,6 +80,8 @@ def main() -> int:
         return 2
     url = f"{server.origin}/#token={server.token}"
     details = {
+        "companionVersion": json.loads((workspace_runtime["ROOT"] / "version.json").read_text())["version"],
+        "storeRoot": str(store_root.resolve()),
         "url": url,
         "origin": server.origin,
         "host": LOOPBACK,
@@ -88,6 +90,7 @@ def main() -> int:
     if args.json:
         print(json.dumps(details, separators=(",", ":")), flush=True)
     else:
+        print(f"Job Apply Companion {details['companionVersion']}; Store: {details['storeRoot']}", flush=True)
         print(f"Job Apply workspace: {url}", flush=True)
         print(
             "Press Ctrl-C to stop. Data stays in the canonical local store.",

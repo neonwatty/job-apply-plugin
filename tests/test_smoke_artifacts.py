@@ -29,7 +29,7 @@ class SmokeArtifactContainmentTests(unittest.TestCase):
                 assert_critical_bytes(installed, source, label="installed")
 
     def test_inventory_and_receipts_reject_symlinked_ancestors(self):
-        for relative in ("scripts", "skills/answer-memory", ".codex-plugin", "workspace"):
+        for relative in ("scripts", "skills/answer-memory", ".codex-plugin", "skills"):
             with self.subTest(relative=relative), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 source = source_fixture(root / "source")

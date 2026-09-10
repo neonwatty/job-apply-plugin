@@ -5,7 +5,7 @@ import argparse
 from pathlib import Path
 
 
-def run(fixture: Path, smoke_root: Path) -> None:
+def run(fixture: Path, smoke_root: Path, companion: Path) -> None:
     import base64
     import http.client
     import importlib.util
@@ -18,8 +18,8 @@ def run(fixture: Path, smoke_root: Path) -> None:
 
     fixture = Path(fixture)
     smoke_root = Path(smoke_root)
-    launcher = fixture / "scripts" / "job-apply-workspace.py"
-    assets = [fixture / "workspace" / name for name in ("index.html", "app.js", "styles.css")]
+    launcher = companion / "scripts" / "job-apply-workspace.py"
+    assets = [companion / "workspace" / name for name in ("index.html", "app.js", "styles.css")]
     if not launcher.is_file() or not all(asset.is_file() for asset in assets):
         raise SystemExit("packaged fixture is missing the Jobs workspace launcher or assets")
 
@@ -49,7 +49,7 @@ def run(fixture: Path, smoke_root: Path) -> None:
         raise SystemExit("packaged skills do not preserve the extraction handoff boundary")
     packaged_app = "\n".join(
         path.read_text(encoding="utf-8")
-        for path in sorted((fixture / "workspace").rglob("*.js"))
+        for path in sorted((companion / "workspace").rglob("*.js"))
     )
     if packaged_app.count('"/api/resume-extraction-requests"') != 1:
         raise SystemExit("packaged workspace request collection route changed unexpectedly")
@@ -245,8 +245,9 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("fixture", type=Path)
     parser.add_argument("smoke_root", type=Path)
+    parser.add_argument("companion", type=Path)
     arguments = parser.parse_args()
-    run(arguments.fixture, arguments.smoke_root)
+    run(arguments.fixture, arguments.smoke_root, arguments.companion)
 
 
 if __name__ == "__main__":

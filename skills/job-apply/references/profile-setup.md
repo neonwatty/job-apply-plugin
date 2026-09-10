@@ -14,7 +14,7 @@ If `profile-get` returns an empty object, or if the user requests a reset:
    - `education[]`: array of { school, degree, field, startDate, endDate, gpa }
    - `skills[]`: array of skill strings
    - Do not store a resume path in the profile; the resume ID and managed library are authoritative.
-5. **Obtain profile review** without echoing raw applicant values in chat; use the owner-visible canonical workspace for reviewing values and ask about missing facts by field name.
+5. **Obtain profile review** with a readable summary of the extracted facts in the conversation. Ask about missing or uncertain facts; do not infer confirmation. The owner may instead choose the optional Facts UI. Do not require a companion installation. Keep applicant values out of diagnostics and durable operational receipts.
 6. **Inspect and save confirmed profile** by running `profile-inspect`, retaining its revision, then calling `profile-replace --input <private-temp-profile.json> --expected-revision <inspected-revision> --source user`. Remove the temporary input. If the revision conflicts, stop and review the newly inspected profile; never replace unseen changes.
 
 For re-extraction from a managed resume, do not replace the profile wholesale or

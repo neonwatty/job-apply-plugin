@@ -19,8 +19,6 @@ FIXED_CRITICAL_FILES = (
 CRITICAL_TREES = (
     "skills",
     "scripts/job_apply_store",
-    "scripts/job_apply_workspace",
-    "workspace",
 )
 
 
@@ -109,6 +107,9 @@ def assert_critical_bytes(installed: Path, source: Path, *, label: str) -> None:
     """Assert exact bytes for the complete critical inventory."""
     installed = installed.resolve(strict=True)
     source = source.resolve(strict=True)
+    for relative in ("companion", "workspace", "scripts/job_apply_workspace"):
+        if (installed / relative).exists():
+            raise SystemExit(f"{label} contains companion runtime: {relative}")
     expected = critical_paths(source)
     if critical_paths(installed) != expected:
         raise SystemExit(f"{label} critical package inventory differs")

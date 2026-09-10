@@ -6,20 +6,22 @@ allowed-tools: Bash
 
 # Job Workspace
 
-Start the packaged, local-only companion when the user asks to review their next step, manage canonical Jobs, Facts, Resumes, reusable Answers and observed questions, supervise Application Activity or Needs Attention, or recover Trash in a browser.
+Start the optional, independently installed local-only companion when the user asks to review their next step, manage canonical Jobs, Facts, Resumes, reusable Answers and observed questions, supervise Application Activity or Needs Attention, or recover Trash in a browser.
 
 ## Launch
 
-1. Resolve `<plugin-root>` safely. In Codex, use the installed skill path and walk up from `skills/job-workspace/SKILL.md`; use `PLUGIN_ROOT` only after confirming it contains both `scripts/job-apply-workspace.py` and `workspace/index.html`. In Claude Code, use `CLAUDE_PLUGIN_ROOT` after the same checks.
+1. Resolve `<plugin-root>` safely. In Codex, use the installed skill path and walk up from `skills/job-workspace/SKILL.md`; use `PLUGIN_ROOT` only after confirming it contains `scripts/job-apply-workspace.py` (the discovery launcher). In Claude Code, use `CLAUDE_PLUGIN_ROOT` after the same checks.
 2. Run exactly:
 
    ```bash
    python3 "<plugin-root>/scripts/job-apply-workspace.py"
    ```
 
-3. Leave the process attached while the user works. Report that Ctrl-C stops it cleanly.
+3. If the companion is missing, explain that it is optional. Install from a source checkout with `python3 companion/install.py`; never install or serve the UI inside the plugin cache. A custom prefix uses `JOB_APPLY_COMPANION_HOME`. The plugin and Store CLI remain usable without it.
 
-The launcher chooses a free port, binds only to `127.0.0.1`, opens the browser, and imports the same canonical Store implementation bundled in `scripts/job-apply-store.py`. The browser never reads or writes store files directly. It needs no account, cloud service, telemetry, separate database, Node runtime, or frontend installation.
+4. Leave the process attached while the user works. Report that Ctrl-C stops it cleanly.
+
+The launcher chooses a free port, binds only to `127.0.0.1`, opens the browser, and uses its own installed copy of the canonical Store implementation. The browser never reads or writes store files directly. It needs no account, cloud service, telemetry, separate database, Node runtime, or frontend installation.
 
 ## Boundaries and completion
 

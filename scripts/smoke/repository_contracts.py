@@ -228,8 +228,8 @@ def run(root: Path, smoke_root: Path) -> None:
     codex_entries = codex_marketplace.get("plugins", [])
     if len(codex_entries) != 1 or codex_entries[0].get("name") != "job-apply":
         raise SystemExit("Codex marketplace must expose exactly the job-apply plugin")
-    if codex_entries[0].get("source") != {"source": "local", "path": "./"}:
-        raise SystemExit("Codex marketplace must point at the repository-root plugin")
+    if codex_entries[0].get("source") != {"source": "local", "path": "./dist/plugin"}:
+        raise SystemExit("Codex marketplace must point at the built agent-only distribution")
 
     skill_dirs = {path.name for path in (root / "skills").iterdir() if path.is_dir()}
     if skill_dirs != expected:

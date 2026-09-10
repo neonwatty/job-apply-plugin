@@ -89,3 +89,12 @@ Keep a behavioral forward-port ledger in [python-release.md](python-release.md).
 Coordinate compatible core contracts and lifecycle guarantees with TypeScript
 work through dedicated follow-ups; do not overwrite migration files or share a
 live Store between implementations.
+
+### Companion separation implementation
+
+The UI/server extraction and independent installer are now implemented in
+[companion](../companion/README.md), including distribution boundaries, stable
+launch/restart, atomic version selection and core compatibility checks. Agent-only
+plugin output is built with `python3 scripts/build-plugin.py`. This supersedes the
+interim-only scope above. The owner's live walkthrough has not been replaced;
+owner acceptance and the other onboarding/Facts work packages remain open.

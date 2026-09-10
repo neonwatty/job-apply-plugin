@@ -81,3 +81,15 @@ After the Python release, reconcile main into staging in a dedicated integration
 | Phase 1: task-spine answer-return synchronization | Test-only fix: wait for refreshed actions and focus together; controlled response-body regression and value-free stages. Audit migration oracle for the same race and port its behavioral check. Pending. |
 | Phase 2: setup guidance and browser-open fallback | Port user-facing handoff wording where applicable; validate the migration launcher independently. Pending. |
 | Workspace asset lifetime hardening | Adopted from owner investigation patch; reproduce package removal/startup failure in migration runtime. Interim only; companion separation remains required. Pending. |
+
+### Independent Python companion
+
+UI assets and HTTP implementation now live under `companion/`. The agent-only
+marketplace build excludes them; a separate Python installer creates immutable
+versioned runtime bundles outside host caches. The plugin workspace command is
+only an optional installation discovery launcher. See
+[installation and compatibility](../companion/README.md).
+
+Migration follow-up: preserve the independent installation and optional-agent
+contract when introducing the TypeScript companion. Python contract 1 does not
+assert compatibility with migration writers or authorize a shared live Store.

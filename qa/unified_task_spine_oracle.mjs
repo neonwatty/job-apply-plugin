@@ -290,7 +290,7 @@ export async function runOracle({ configurePage = async () => {} } = {}) {
     const resume = await store("resume-create", [], { id: "oracle-resume", label: "Synthetic resume", path: sourceResume });
 
     server = spawn(PYTHON, [
-      join(REPO_ROOT, "scripts", "job-apply-workspace.py"),
+      join(REPO_ROOT, "companion", "scripts", "job-apply-workspace.py"),
       "--root", storeRoot, "--port", "0", "--no-open", "--json",
     ], { cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"] });
     const startup = await waitForStartup(server);

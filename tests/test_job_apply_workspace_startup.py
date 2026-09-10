@@ -5,7 +5,7 @@ import shutil
 class WorkspaceServerTests(WorkspaceCase):
     def test_missing_asset_aborts_before_store_initialization(self):
         assets = Path(self.temporary.name) / "incomplete-assets"
-        shutil.copytree(ROOT / "workspace", assets)
+        shutil.copytree(ROOT / "companion" / "workspace", assets)
         (assets / "features" / "facts.js").unlink()
         root = Path(self.temporary.name) / "must-not-initialize"
         with mock.patch.object(WORKSPACE, "ASSET_ROOT", assets):
@@ -17,10 +17,10 @@ class WorkspaceServerTests(WorkspaceCase):
     def test_running_workspace_survives_removal_of_installed_package(self):
         package = Path(self.temporary.name) / "installed-plugin"
         shutil.copytree(ROOT / "scripts", package / "scripts")
-        shutil.copytree(ROOT / "workspace", package / "workspace")
-        isolated = load_module("removed_package_workspace", package / "scripts/job-apply-workspace.py")
+        shutil.copytree(ROOT / "companion", package / "companion")
+        isolated = load_module("removed_package_workspace", package / "companion/scripts/job-apply-workspace.py")
         expected = {
-            route: ((package / "workspace" / filename).read_bytes(), media_type)
+            route: ((package / "companion" / "workspace" / filename).read_bytes(), media_type)
             for route, (filename, media_type) in isolated.ASSETS.items()
         }
         server = isolated.WorkspaceServer(Path(self.temporary.name) / "retained-store", 0)

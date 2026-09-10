@@ -10,7 +10,8 @@
       "qa/**/*.py",
       "qa/**/*.js",
       "qa/**/*.mjs",
-      "workspace/**/*.js",
+      "companion/workspace/**/*.js",
+      "companion/**/*.py",
       "native/macos/*.swift"
     ]
   },
@@ -152,6 +153,7 @@
     }
   ],
   "ownership": [
+    {"paths": ["companion/**"], "suites": ["python-workspace-contracts", "node-workspace-other", "release-package"]},
     {
       "paths": ["tests/__init__.py", "tests/support/**"],
       "suites": [
@@ -171,7 +173,7 @@
     {"paths": ["scripts/check-links.sh"], "suites": ["docs-links"]},
     {"paths": ["scripts/smoke-plugin.sh"], "suites": ["release-package"]},
     {"paths": ["scripts/job-apply-workspace.py"], "suites": ["python-workspace-contracts"]},
-    {"paths": ["scripts/job_apply_workspace/**"], "suites": ["python-workspace-contracts", "node-workspace-other"]},
+    {"paths": ["companion/scripts/job_apply_workspace/**"], "suites": ["python-workspace-contracts", "node-workspace-other"]},
     {"paths": ["scripts/job-apply-store.py", "scripts/job_apply_store/**"], "suites": ["python-workspace-contracts"]},
     {"paths": ["scripts/*account*.py", "scripts/*credential*.py", "scripts/job_apply_trusted_fill.py"], "suites": ["python-accounts"]},
     {
@@ -191,7 +193,7 @@
     {"paths": ["qa/**/*.py"], "suites": ["python-qa"]},
     {"paths": ["qa/**"], "suites": ["python-qa", "node-recorder", "node-renderer", "node-workspace-other"]},
     {"paths": ["qa/*.mjs"], "suites": ["node-workspace-other"]},
-    {"paths": ["workspace/**"], "suites": ["python-workspace-contracts", "node-workspace-other"]},
+    {"paths": ["companion/workspace/**"], "suites": ["python-workspace-contracts", "node-workspace-other"]},
     {"paths": ["native/macos/**"], "suites": ["macos-native-contracts"]},
     {"paths": ["skills/**", "scripts/skill_documents.py"], "suites": ["python-fast", "python-core", "python-qa", "python-workspace-contracts", "node-workspace-other", "release-package", "docs-links"]},
     {"paths": ["docs/**", "README.md", "AGENTS.md"], "suites": ["docs-links"]}

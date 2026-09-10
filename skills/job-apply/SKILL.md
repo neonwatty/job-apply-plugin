@@ -28,6 +28,6 @@ Read only the matching platform notes when needed: [LinkedIn](references/linkedi
 
 Obtain the bounded post-readiness consent before entering applicant data. Reuse matching authorization within that pass; do not ask again for unchanged scope, destination, and purpose. Keep sensitive current-use consent separate from permission to remember.
 
-Never echo raw applicant values in chat or diagnostics. Use field names, counts, and states. Keep claim tokens, resume paths, candidate values, and browser state out of reports and durable sessions.
+Never echo raw applicant values in diagnostics or operational reports. Use field names, counts, and states there. For user-directed resume/profile review, present a readable summary in the conversation; the companion is optional. Keep claim tokens, resume paths, candidate values, and browser state out of reports and durable sessions.
 
 An ordinary application is handed off only after observed required controls, accepted upload, and the Store-recomputed current-attempt readiness report permit `awaiting_review`. Save `needs_info` and release the claim before waiting for missing input. If a known answer cannot be entered, report **Browser action required**, preserve the visible draft, and do not ask the owner to provide that answer again. Report success only after the helper confirms the durable handoff.

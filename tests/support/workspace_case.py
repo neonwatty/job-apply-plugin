@@ -27,7 +27,7 @@ def load_module(name, path):
     return module
 
 
-WORKSPACE = load_module("job_apply_workspace_test", ROOT / "scripts" / "job-apply-workspace.py")
+WORKSPACE = load_module("job_apply_workspace_test", ROOT / "companion" / "scripts" / "job-apply-workspace.py")
 
 
 class WorkspaceCase(unittest.TestCase):

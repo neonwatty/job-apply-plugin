@@ -1,5 +1,5 @@
 import {
-  assert, chromium, join, mkdtemp, PYTHON, REPO_ROOT, rm, spawn, spawnSync, tmpdir, writeFile,
+  assert, chromium, join, mkdtemp, PYTHON, COMPANION_ROOT, REPO_ROOT, rm, spawn, spawnSync, tmpdir, writeFile,
 } from "./workspace_test_support.mjs";
 
 export async function createOwnerBetaScenario() {
@@ -31,7 +31,7 @@ export async function createOwnerBetaScenario() {
     child.once("exit", (code) => { clearTimeout(timer); rejectStartup(new Error(`workspace exited during startup (${code}): ${stderr}`)); });
   });
   const launch = async () => {
-    const child = spawn(PYTHON, [join(REPO_ROOT, "scripts", "job-apply-workspace.py"), "--root", storeRoot, "--port", "0", "--no-open", "--json"], { cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(PYTHON, [join(COMPANION_ROOT, "scripts", "job-apply-workspace.py"), "--root", storeRoot, "--port", "0", "--no-open", "--json"], { cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"] });
     return { child, startup: await waitForStartup(child) };
   };
   const stop = async (child) => {
