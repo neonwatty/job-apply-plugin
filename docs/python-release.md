@@ -93,3 +93,9 @@ only an optional installation discovery launcher. See
 Migration follow-up: preserve the independent installation and optional-agent
 contract when introducing the TypeScript companion. Python contract 1 does not
 assert compatibility with migration writers or authorize a shared live Store.
+
+Windows lifecycle follow-up: companion/discovery launchers run the selected entry
+point in the attached Python process. Do not use `os.execv` for portable process
+ownership: on Windows the original process can exit while the server retains its
+pipes. Startup tests use a bounded wait and verify launcher termination stops the
+server. Preserve this lifecycle guarantee in the TypeScript companion launcher.

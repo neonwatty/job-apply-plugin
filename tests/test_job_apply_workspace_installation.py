@@ -3,6 +3,8 @@ import http.client
 import importlib.util
 import json
 import os
+import queue
+import threading
 from pathlib import Path
 import shutil
 import subprocess
@@ -37,10 +39,11 @@ class CompanionInstallationTests(unittest.TestCase):
         return subprocess.run([sys.executable, *map(str, args)], capture_output=True,
                               text=True, timeout=30, **kwargs)
 
-    def start(self):
-        process = subprocess.Popen([sys.executable, str(self.prefix / 'companion.py'),
+    def start(self, launcher=None):
+        process = subprocess.Popen([sys.executable, str(launcher or self.prefix / 'companion.py'),
                                     '--root', str(self.store), '--no-open', '--json'],
-                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                   env={**os.environ, 'JOB_APPLY_COMPANION_HOME': str(self.prefix)})
         def cleanup():
             if process.poll() is None:
                 process.terminate()
@@ -48,8 +51,15 @@ class CompanionInstallationTests(unittest.TestCase):
             process.stdout.close()
             process.stderr.close()
         self.addCleanup(cleanup)
-        line = process.stdout.readline()
-        self.assertTrue(line, process.stderr.read() if process.poll() is not None else 'no startup output')
+        output = queue.Queue()
+        reader = threading.Thread(target=lambda: output.put(process.stdout.readline()), daemon=True)
+        reader.start()
+        try:
+            line = output.get(timeout=15)
+        except queue.Empty:
+            self.fail('companion did not report startup within 15 seconds')
+        self.assertTrue(line, 'companion exited without startup details')
+        self.assertIsNone(process.poll(), 'attached launcher exited while the server was starting')
         return process, json.loads(line)
 
     def request(self, details, path):
@@ -93,6 +103,21 @@ class CompanionInstallationTests(unittest.TestCase):
         status = self.command(self.prefix / 'companion.py', '--status', '--root', self.store)
         self.assertEqual(json.loads(status.stdout)['version'], '1.3.6')
         self.assertNotIn('token', status.stdout)
+
+    def test_plugin_discovery_keeps_server_attached_and_stops_it(self):
+        self.installer.install(self.prefix)
+        process, details = self.start(ROOT / 'scripts/job-apply-workspace.py')
+        self.assertIn(b'Jobs Workspace', self.request(details, '/'))
+        self.assertIsNone(process.poll())
+        process.terminate()
+        process.wait(timeout=10)
+        connection = http.client.HTTPConnection('127.0.0.1', details['port'], timeout=2)
+        try:
+            with self.assertRaises(OSError):
+                connection.request('GET', '/')
+                connection.getresponse()
+        finally:
+            connection.close()
 
     def test_incompatible_or_damaged_installation_fails_before_store_creation(self):
         receipt = self.installer.install(self.prefix)

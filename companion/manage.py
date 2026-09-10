@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import os
+import runpy
 from pathlib import Path
 import sys
 
@@ -48,8 +49,10 @@ def main() -> int:
                           'storeRoot': root, 'installation': str(bundle),
                           'status': 'installed', 'coreApi': receipt['coreApi']}))
         return 0
-    command = [sys.executable, str(bundle / 'scripts/job-apply-workspace.py'), '--root', root, *remaining]
-    os.execv(sys.executable, command)
+    # Keep the attached process identity on Windows as well as POSIX.
+    # Windows execv can exit the parent while the server keeps inherited pipes.
+    sys.argv = [str(bundle / 'scripts/job-apply-workspace.py'), '--root', root, *remaining]
+    runpy.run_path(sys.argv[0], run_name='__main__')
     return 0
 
 
