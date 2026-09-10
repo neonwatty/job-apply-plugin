@@ -205,6 +205,17 @@ export class NativeJobsRepository implements JobsRepository {
     }, { provider: this.provider, pathProfile: "3.12", signal: AbortSignal.timeout(30_000) });
   }
 
+  async upsertTransaction<T>(operation: (transaction: Pick<JobsTransaction, "document" | "save">) => Promise<T>): Promise<T> {
+    return this.transaction(async ({ document }) => operation({ document,
+      // Python ingestion may update claimed jobs without changing claim/session evidence.
+      // Keep that authority separate from the ordinary Jobs save guard.
+      save: async value => {
+        validateJobsDocument(value);
+        await this.write(join(this.root, "jobs.json"), value, options);
+      },
+    }));
+  }
+
   async resumeTransaction<T>(operation: (transaction: ResumeTransaction) => Promise<T>): Promise<T> {
     await this.validateRoot();
     return withExclusiveFileLock(join(this.root, ".store.lock"), async () => {

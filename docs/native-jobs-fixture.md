@@ -11,7 +11,8 @@ metadata update, file replacement, legacy adoption, default selection, integrity
 check, content read and resolution are available through the same Store lock.
 Facts/profile operations, [active claims](native-claims-fixture.md),
 [workspace projections](native-projections-fixture.md), and
-[job status transitions](native-job-transitions-fixture.md) are also available. Other
+[job status transitions](native-job-transitions-fixture.md), and
+[CLI job upsert preview/commit](native-job-upsert-fixture.md) are also available. Other
 workflows return `unsupported_native_workflow`; they never fall back to Python.
 
 ## Run against a new synthetic root

@@ -106,6 +106,10 @@
       "sha256": "3310d133626397a57545af50e70591523b906036cdf4a0d04884e4a1630f1c3b"
     },
     {
+      "path": "cli-native-job-upsert-surfaces.json",
+      "sha256": "6d98fac8d272d2552aebabab3d7468998b53adfe6f5777329785c28edd853197"
+    },
+    {
       "path": "cli-native-jobs-surfaces.json",
       "sha256": "8757138a819fd1166abfeb7e86aed548a42f3d2d6f832da404370f9c483e8963"
     },
@@ -310,8 +314,12 @@
       "sha256": "d3586b035af22d3f4b4fa3ba3aa7d9e1bc781632317005aff9d158ac78625772"
     },
     {
+      "path": "source-catalog-native-job-upsert.json",
+      "sha256": "46000867500a9b5e7492a7602af8369fc24ad3c7d2ba863174357d1e38f51864"
+    },
+    {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "38ef913d3e0ed7235a3ff4e81091f7e750e09fb68be7a39be4f51b85d0dec223"
+      "sha256": "c6f3bd835dcd6654205e198ca6090f2ddebd3590d6570d213266d7d8b709a178"
     },
     {
       "path": "source-catalog-native-pending-answers.json",

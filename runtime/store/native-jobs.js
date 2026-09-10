@@ -205,6 +205,16 @@ export class NativeJobsRepository {
                 }, });
         }, { provider: this.provider, pathProfile: "3.12", signal: AbortSignal.timeout(30_000) });
     }
+    async upsertTransaction(operation) {
+        return this.transaction(async ({ document }) => operation({ document,
+            // Python ingestion may update claimed jobs without changing claim/session evidence.
+            // Keep that authority separate from the ordinary Jobs save guard.
+            save: async (value) => {
+                validateJobsDocument(value);
+                await this.write(join(this.root, "jobs.json"), value, options);
+            },
+        }));
+    }
     async resumeTransaction(operation) {
         await this.validateRoot();
         return withExclusiveFileLock(join(this.root, ".store.lock"), async () => {

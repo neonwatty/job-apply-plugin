@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:src/cli/native-jobs.ts:job-upsert-preview",
+      "kind": "cli",
+      "command": "job-upsert-preview",
+      "node": "JOB",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-job-upsert.ts",
+        "src/workspace-core/job-upsert.ts",
+        "src/workspace-core/job-upsert-plan.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:job-upsert-commit",
+      "kind": "cli",
+      "command": "job-upsert-commit",
+      "node": "JOB",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-job-upsert.ts",
+        "src/workspace-core/job-upsert.ts",
+        "src/workspace-core/job-upsert-plan.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}
