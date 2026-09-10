@@ -1,5 +1,6 @@
 import { claimsBrowser } from './workspace_native_claims_browser_support.mjs';
 import { jobTransitionsBrowser } from './workspace_native_job_transitions_browser_support.mjs';
+import { jobUpsertBrowser } from './workspace_native_job_upsert_browser_support.mjs';
 import { projectionsBrowser } from './workspace_native_projections_browser_support.mjs';
 import { nativeFactsBrowser } from './workspace_native_facts_browser_support.mjs';
 import { resumeDraftBrowser } from './workspace_native_resumes_browser_support.mjs';
@@ -153,10 +154,22 @@ export async function nativeJobsBrowser(buildRoot) {
         await writeFile(path, JSON.stringify(document), { mode: 0o600 });
       },
     });
+    const upsert = await jobUpsertBrowser(page, {
+      readDocument: () => readFile(join(root, 'jobs.json'), 'utf8'),
+      upsert: async (payload, origin, previewToken) => {
+        const input = join(fixture.root, 'browser-upsert.json');
+        await writeFile(input, JSON.stringify(payload), { mode: 0o600 });
+        const args = [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
+          previewToken ? 'job-upsert-commit' : 'job-upsert-preview', '--input', input, '--origin', origin];
+        if (previewToken) args.push('--token', previewToken);
+        const result = await execute(process.execPath, args, { env: { PATH: '' } });
+        return JSON.parse(result.stdout);
+      },
+    });
     const unsupported = await fetch(startup.origin + '/api/trash', { headers: { Authorization: `Bearer ${token}` } });
     assert.equal(unsupported.status, 501);
     assert.deepEqual(pageErrors, []);
-    return { transitions, projections, claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
+    return { upsert, transitions, projections, claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
   } finally {
     releaseInitialClaim?.();
     if (browser) await browser.close();

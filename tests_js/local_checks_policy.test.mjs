@@ -192,3 +192,13 @@ test('P03 unknown deleted renamed global lock and policy changes retain complete
   assert.equal(selectLocalPlan(matrix, f.tracked(), ['README.md'], { closure, mode: 'deep' }).native.flatMap(s => s.include).length, 6);
   assert.equal(selectLocalPlan(matrix, f.tracked(), [], { closure, mode: 'commit' }).heavy.length, 0);
 });
+
+test('fresh native obligations keep the deep execution ceiling while quick checks stay bounded', async () => {
+  const { localSuiteTimeout } = await import('../tools/local-checks/run.mjs');
+  const native = {id:'native-posix-lock'};
+  assert.equal(localSuiteTimeout('push',native,[native]),localSuiteTimeout('deep',native,[]));
+  assert.equal(localSuiteTimeout('push',{...native,timeoutMs:240000},[native]),240000);
+  assert.equal(localSuiteTimeout('push',{id:'quick',timeoutMs:240000},[native]),120000);
+  assert.equal(localSuiteTimeout('commit',native,[]),120000);
+  assert.equal(localSuiteTimeout('push',native,[native]),900000);
+});
