@@ -1,3 +1,7 @@
+import { NativeClaimJournal, claimOperationKinds, validateClaimJournal } from './native-claim-journal.js';
+import { NativeClaimHistory } from './native-claim-history.js';
+import { validateCoordinator, requireJobUnclaimed } from '../contracts/workspace/claims.js';
+import type { ClaimTransaction } from '../workspace-core/claims.js';
 import { constants } from "node:fs";
 import { chmod, lstat, mkdir, open, readdir, realpath } from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
@@ -12,9 +16,9 @@ import { withExclusiveFileLock } from "./exclusive-file-lock.js";
 import type { PosixFlockProvider } from "./posix-flock.js";
 import { NativeAnswerResolutionJournal } from "./native-answer-resolution-journal.js";
 import type { PendingAnswerTransaction } from "../workspace-core/pending-answers.js";
-import { NativeAnswerJournal, validateIdleCoordinator, answerJournalName } from "./native-answer-journal.js";
+import { NativeAnswerJournal, answerJournalName } from "./native-answer-journal.js";
 import { answerReferenceCounts } from "../contracts/workspace/answer-sessions.js";
-import { validateAnswerSession, validateAnswerHistory } from "../contracts/workspace/answer-session-validation.js";
+import { validateAnswerSession } from "../contracts/workspace/answer-session-validation.js";
 import type { AnswerMergeTransaction } from "../workspace-core/answer-merges.js";
 import { NativeResumeFiles } from "./native-resume-files.js";
 import { NativeExtractionJournal, closeRequestsForResumes, extractionJournalName, validateExtractionResumes } from "./native-extraction-journal.js";
@@ -24,12 +28,11 @@ import type { ExtractionTransaction } from "../workspace-core/extraction-context
 
 import { validateProfile } from "../contracts/workspace/profile.js";
 import { validateGroups } from "../contracts/workspace/fact-groups.js";
-import { strip } from "../contracts/workspace/job-url.js";
 import { validateAnswers } from "../contracts/workspace/answers.js";
 import type { AnswerReferenceCounts } from "../workspace-core/answers.js";
 
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
-const marker = '{"mode":"native-jobs-fixture","version":7}\n';
+const marker = '{"mode":"native-jobs-fixture","version":8}\n';
 const allowed = new Set([".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "answers.json", "resume-operation.json", "resume-files", "resume-extractions.json", "resume-extraction-requests.json", "resume-extraction-journal.json", "sessions", "applications.jsonl", "coordinator.json", "coordinator-journal.json"]);
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
@@ -78,7 +81,8 @@ export async function initializeJobsFixture(root: string): Promise<void> {
 
 export class NativeJobsRepository implements JobsRepository {
   constructor(readonly root: string, private readonly provider: PosixFlockProvider,
-    private readonly write = atomicWritePointJson) {}
+    private readonly write = atomicWritePointJson,
+    private readonly checkpoint: (stage:string)=>Promise<void> = async () => {}) {}
 
   private async read(name: string): Promise<Buffer> {
     const handle = await open(join(this.root, name), constants.O_RDONLY | constants.O_NOFOLLOW);
@@ -175,7 +179,12 @@ export class NativeJobsRepository implements JobsRepository {
       object(get(await this.document("profile"), "profile"), "profile.profile");
       const resumes = object(get(resumesDocument, "resumes"), "resumes.resumes");
       validateResumeReferences(resumes);
+      const coordinator = validateCoordinator(await this.journal('coordinator'));
+      const claim = get(coordinator,'claim');
+      const claimedId = claim === null ? null : string(get(object(claim,'claim'),'jobId'));
+      const originalClaimed = claimedId === null ? null : serialize(get(object(get(document,'jobs'),'jobs'),claimedId));
       return operation({ document,
+        requireUnclaimed: id => requireJobUnclaimed(coordinator,id),
         requireResume: async (id: Value) => {
           if (id === null) return;
           const value = string(id);
@@ -189,6 +198,7 @@ export class NativeJobsRepository implements JobsRepository {
         },
         save: async value => {
           validateJobsDocument(value);
+          if (claimedId !== null && serialize(get(object(get(value,'jobs'),'jobs'),claimedId)) !== originalClaimed) throw new JobsError('claimed job requires a coordinator operation');
           await this.write(join(this.root, "jobs.json"), value, options);
         },
       });
@@ -264,27 +274,51 @@ export class NativeJobsRepository implements JobsRepository {
     return sessions;
   }
 
-  private async answerHistory(): Promise<Document[]> {
-    const content = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(await this.read('applications.jsonl'));
-    return content.split('\n').filter(line => strip(line)).map(line => validateAnswerHistory(parsePythonPointJsonBytes(Buffer.from(line), { diagnosticProfile: "3.12", intMaxStrDigits: 4300 })));
+  private history(): NativeClaimHistory { return new NativeClaimHistory(this.root); }
+  private async answerHistory(): Promise<Document[]> { return this.history().read(); }
+  private claimJournal(): NativeClaimJournal {
+    return new NativeClaimJournal((name,document) => this.write(join(this.root,`${name}.json`),document,options),this.history(),this.checkpoint);
+  }
+  private async recoverAnswers(): Promise<void> {
+    const coordinator = validateCoordinator(await this.journal('coordinator'));
+    const sessions = await this.answerSessions();
+    const journal = await this.journal(answerJournalName), operation = get(journal,'operation');
+    if (operation !== null && claimOperationKinds.has(string(get(object(operation,'coordinator operation'),'kind'))!)) {
+      validateClaimJournal(journal);
+      await this.history().repairPendingTail();
+      await this.claimJournal().recover(journal,validateJobsDocument(await this.document('jobs')));
+      return;
+    }
+    await this.answerHistory();
+    if (operation !== null && get(coordinator,'claim') !== null) throw new JobsError('answer recovery requires an idle coordinator');
+    if (operation !== null && string(get(object(operation,'coordinator operation'),'kind')) === 'answer_resolution') {
+      await this.resolutionJournal().recover(journal,validateJobsDocument(await this.document('jobs')),sessions);
+    } else await this.answerJournal().recover(journal,validateAnswers(await this.document('answers')),sessions);
   }
 
-  private async recoverAnswers(): Promise<void> {
-    validateIdleCoordinator(await this.journal('coordinator'));
-    const sessions = await this.answerSessions();
-    await this.answerHistory();
-    const journal = await this.journal(answerJournalName);
-    const operation = get(journal, 'operation');
-    if (operation !== null && string(get(object(operation, 'coordinator operation'), 'kind')) === 'answer_resolution') {
-      await this.resolutionJournal().recover(journal, validateJobsDocument(await this.document('jobs')), sessions);
-    } else await this.answerJournal().recover(journal, validateAnswers(await this.document('answers')), sessions);
+  async claimTransaction<T>(operation:(transaction:ClaimTransaction)=>Promise<T>):Promise<T> {
+    return this.transaction(async () => {
+      const jobs = validateJobsDocument(await this.document('jobs'));
+      return operation({jobs,coordinator:validateCoordinator(await this.journal('coordinator')),
+        sessions:await this.answerSessions(), answers:validateAnswers(await this.document('answers')),
+        profile:validateProfile(await this.document('profile')),resumes:validateExtractionResumes(await this.document('resumes')),
+        files:new NativeResumeFiles(this.root),
+        saveJobs:async document => { validateJobsDocument(document);await this.write(join(this.root,'jobs.json'),document,options); },
+        saveCoordinator:async document => { validateCoordinator(document);await this.write(join(this.root,'coordinator.json'),document,options); },
+        saveSession:async document => { validateAnswerSession(document);await this.write(join(this.root,`sessions/${safeId(string(get(document,'applicationId')))}.json`),document,options); },
+        commit:operation => this.claimJournal().commit(operation,jobs)});
+    });
   }
 
   async answerMergeTransaction<T>(operation: (transaction: AnswerMergeTransaction) => Promise<T>): Promise<T> {
     return this.transaction(async () => {
       const document = validateAnswers(await this.document('answers'));
       const sessions = await this.answerSessions(), history = await this.answerHistory();
-      return operation({ document, sessions, history, commit: value => this.answerJournal().commit(value, document, sessions) });
+      const coordinator = validateCoordinator(await this.journal('coordinator'));
+      return operation({document,sessions,history,commit:value => {
+        if (get(coordinator,'claim') !== null) throw new JobsError('answer merge requires an idle coordinator');
+        return this.answerJournal().commit(value,document,sessions);
+      }});
     });
   }
 
@@ -295,9 +329,13 @@ export class NativeJobsRepository implements JobsRepository {
   async pendingAnswerTransaction<T>(operation: (transaction: PendingAnswerTransaction) => Promise<T>): Promise<T> {
     return this.transaction(async () => {
       const jobs = validateJobsDocument(await this.document('jobs')), sessions = await this.answerSessions();
+      const coordinator = validateCoordinator(await this.journal('coordinator'));
       return operation({ jobs, sessions, answers: validateAnswers(await this.document('answers')),
         profile: validateProfile(await this.document('profile')), resumes: validateExtractionResumes(await this.document('resumes')),
-        files: new NativeResumeFiles(this.root), commit: value => this.resolutionJournal().commit(value, jobs, sessions) });
+        files: new NativeResumeFiles(this.root), requireUnclaimed: id => requireJobUnclaimed(coordinator,id), commit: value => {
+          if (get(coordinator,'claim') !== null) throw new JobsError('answer resolution requires an idle coordinator');
+          return this.resolutionJournal().commit(value,jobs,sessions);
+        } });
     });
   }
 

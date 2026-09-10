@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "apps/companion/components/Claims.tsx",
+      "sha256": "55250cd607e692c495889b468ba945b984739c30ddaa73f237d3eac19f2a3e1d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/cli/native-claims.js",
+      "sha256": "5d4117f694fa82ec850cb47c99fafc3a56770f5abf492646173571be39ece480",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/claim-session-pending.js",
+      "sha256": "4e15261c3a7c3409fb8e6ca40dc0b9c3d53a7b11f5e439d6d437793559206dd1",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/claim-session-readiness.js",
+      "sha256": "28c1eb237316ab5973c5d32f3fbd5e4e2fcae33c8b438b0827fcf9b36827b81d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/claim-session.js",
+      "sha256": "8256ff9744553af208fe42f3047a9609b1d3271ede20b8b69a6936452d28f4fc",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/claim-time.js",
+      "sha256": "3640ca406a04d2e1b52569dd78a474655fa73250f84488273bdb6b7197135a2f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/claims.js",
+      "sha256": "024b46b581df51421375f6ab579e443be7b636aa7044978326669d11c140c234",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/native-claim-history.js",
+      "sha256": "deeae329578287e30829ddef79119936badc7e6ddab2fba9fd689b09999a2a10",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/native-claim-journal.js",
+      "sha256": "6f6158c76d6c03dc2d90b50d72ee8577802d1fcd651a04b1c03bcb003e0021dc",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/claims-http.js",
+      "sha256": "43795b75d117e586dfe5192472a0b91340ce1829be9276ebc0ba12fa2d6b459d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/claims.js",
+      "sha256": "23f6d734e07f794f727a344065ba17b9d0a07aae828b1a4f5131d7deb9e14800",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-claims.ts",
+      "sha256": "ba9441b0bb68942779f8506b8985a54e73999c7d8ddbe4200a00ba61ab02af93",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/claim-session-pending.ts",
+      "sha256": "5506e45e1c23f90c9ad9ff0bdca39be2e1bf429dd903ef700c7a330508fab75d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/claim-session-readiness.ts",
+      "sha256": "896e19e01f29e8a2ebb932e7fb0e1c35a3502bbb36a8f8ae1a8852408048ba93",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/claim-session.ts",
+      "sha256": "8b58e628987ce16009165d54f505f79c9ccc32fee0192f960ae5c30d77da3ea7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/claim-time.ts",
+      "sha256": "c2fa084134be640199da70ade39471cc88abc3724f3456973903c446205b13c2",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/claims.ts",
+      "sha256": "032f6184fb3194f15bc698f27353b9149e7a32fab7dffad633f32bf24ceec7b8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/native-claim-history.ts",
+      "sha256": "fe1b877b48f361cf424c195aab17f5cda5be0d9722a260397eb78efaebb4232a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/native-claim-journal.ts",
+      "sha256": "f174f3f8a16a84111f0bca4ce3b7b6f73e66c9c12f3de3b66c167211ca4b4392",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/claims-http.ts",
+      "sha256": "dad301002abfb44e0acb2a6fe5fc3c2ff0a78ae4ca525c80e2d4ec31eeb34ec1",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/claims.ts",
+      "sha256": "6406a6e80d27e891cccfcd069851c681d6a1dd5868517ecf19c73ee28da693f8",
+      "classification": "unreviewed"
+    }
+  ]
+}

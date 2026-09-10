@@ -99,7 +99,10 @@
       "value": "acquire",
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/domains/coordinator/persistence.py"
+        "scripts/job_apply_store/domains/coordinator/persistence.py",
+        "src/store/native-claim-journal.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/claims.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -147,7 +150,10 @@
       "value": "recover",
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/domains/coordinator/persistence.py"
+        "scripts/job_apply_store/domains/coordinator/persistence.py",
+        "src/store/native-claim-journal.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/claims.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -171,7 +177,10 @@
       "value": "handoff",
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/domains/coordinator/persistence.py"
+        "scripts/job_apply_store/domains/coordinator/persistence.py",
+        "src/store/native-claim-journal.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/claims.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

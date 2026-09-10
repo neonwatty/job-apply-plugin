@@ -1,3 +1,4 @@
+import { claimsHttp } from './claims-http.js';
 import { pendingAnswersHttp } from './pending-answers-http.js';
 import { profileHttp } from "./profile-http.js";
 import { fixtureError } from "../store/native-jobs.js";
@@ -14,6 +15,9 @@ const envelope = (key, value) => set(emptyObject(), key, value);
 /** Transport-independent dispatch. Host/token/Origin/body bounds belong to the adapter. */
 export async function jobsHttp(service, repository, method, path, body = "") {
     try {
+        const claim = await claimsHttp(repository, method, path, body);
+        if (claim)
+            return claim;
         const pending = await pendingAnswersHttp(repository, method, path, body);
         if (pending)
             return pending;

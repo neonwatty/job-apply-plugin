@@ -55,6 +55,7 @@ export class PendingAnswersService {
                 throw new JobsError('answer resolution revision is invalid');
         }
         return this.repository.pendingAnswerTransaction(async (transaction) => {
+            transaction.requireUnclaimed?.(jobId);
             const rawJob = get(object(get(transaction.jobs, 'jobs'), 'jobs'), jobId);
             if (rawJob === null || get(object(rawJob, 'job'), 'deletedAt') !== null)
                 throw new JobsError('job does not exist');

@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:src/cli/native-jobs.ts:task-select",
+      "kind": "cli",
+      "command": "task-select",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-claims.ts",
+        "src/workspace-core/claims.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:job-acquire",
+      "kind": "cli",
+      "command": "job-acquire",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-claims.ts",
+        "src/workspace-core/claims.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:claim-status",
+      "kind": "cli",
+      "command": "claim-status",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-claims.ts",
+        "src/workspace-core/claims.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:claim-heartbeat",
+      "kind": "cli",
+      "command": "claim-heartbeat",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-claims.ts",
+        "src/workspace-core/claims.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:claim-recover",
+      "kind": "cli",
+      "command": "claim-recover",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-claims.ts",
+        "src/workspace-core/claims.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:claim-progress",
+      "kind": "cli",
+      "command": "claim-progress",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-claims.ts",
+        "src/workspace-core/claims.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:claim-handoff",
+      "kind": "cli",
+      "command": "claim-handoff",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-claims.ts",
+        "src/workspace-core/claims.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

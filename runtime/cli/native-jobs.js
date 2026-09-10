@@ -1,3 +1,4 @@
+import { claimCommands, runClaimCommand } from './native-claims.js';
 import { pendingAnswerCommands, runPendingAnswerCommand } from './native-pending-answers.js';
 import { profileCommands, runProfileCommand } from "./native-profile.js";
 import { answerCommands, runAnswerCommand } from "./native-answers.js";
@@ -36,6 +37,7 @@ export async function runJobsCli(args, input) {
         }
     }
     const fields = {
+        ...claimCommands,
         ...pendingAnswerCommands,
         ...profileCommands,
         ...answerCommands,
@@ -73,6 +75,8 @@ export async function runJobsCli(args, input) {
         const limit = ["resume-proposal-create", "resume-extraction-request-complete"].includes(command) ? 2 * 1024 * 1024 : 65536;
         return parse(file === "-" ? await input(limit) : await readFile(file, "utf8"));
     };
+    if (Object.hasOwn(claimCommands, command))
+        return serialize(await runClaimCommand(command, repository, options, payload));
     if (Object.hasOwn(pendingAnswerCommands, command))
         return serialize(await runPendingAnswerCommand(command, repository, options));
     if (Object.hasOwn(profileCommands, command))

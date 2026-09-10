@@ -1,3 +1,4 @@
+import { claimsBrowser } from './workspace_native_claims_browser_support.mjs';
 import { nativeFactsBrowser } from './workspace_native_facts_browser_support.mjs';
 import { resumeDraftBrowser } from './workspace_native_resumes_browser_support.mjs';
 import { nativeAnswersBrowser } from './workspace_native_answers_browser_support.mjs';
@@ -14,7 +15,7 @@ const execute = promisify(execFile);
 
 export async function nativeJobsBrowser(buildRoot) {
   const fixture = await nativeFixture();
-  let child, browser;
+  let child, browser, releaseInitialClaim;
   try {
     const root = join(await realpath(fixture.root), 'jobs');
     await initializeJobsFixture(root);
@@ -46,9 +47,22 @@ export async function nativeJobsBrowser(buildRoot) {
       }
     });
     page.on('pageerror', error => pageErrors.push(error.message));
+    let initialClaimSeen;
+    const claimStarted = new Promise(resolve => { initialClaimSeen = resolve; });
+    const claimGate = new Promise(resolve => { releaseInitialClaim = resolve; });
+    let firstClaim = true;
+    await page.route('**/api/claims', async route => {
+      if (firstClaim && route.request().method() === 'GET') {
+        firstClaim = false; initialClaimSeen(); await claimGate;
+      }
+      await route.continue();
+    });
     await page.goto(startup.url);
     await page.getByText(/Synthetic native workspace/).waitFor();
     assert.equal(await page.getByRole('link', { name: 'Open full workspace' }).count(), 0);
+    await claimStarted;
+    await page.locator('[data-job-create]:disabled').waitFor();
+    releaseInitialClaim();
     await page.getByRole('button', { name: 'New job', exact: true }).click();
     await page.locator('dialog [name="url"]').fill('https://example.invalid/native');
     await page.locator('dialog [name="role"]').fill('Native fixture role');
@@ -98,12 +112,23 @@ export async function nativeJobsBrowser(buildRoot) {
     await resumeDraftBrowser(page, root, fixture, buildRoot, browserResume.id);
     const answers = await nativeAnswersBrowser(page, root, fixture, buildRoot);
     const extractions = await nativeExtractionsBrowser(page, root, fixture, buildRoot);
+    await page.getByRole('button',{name:'Jobs',exact:true}).click();
+    await page.setViewportSize({width:390,height:844});
+    await claimsBrowser(page,{jobId:job.id,expireClaim:async id => {
+      const coordinatorPath = join(root,'coordinator.json');
+      const coordinator = JSON.parse(await readFile(coordinatorPath,'utf8'));
+      assert.equal(coordinator.claim.jobId,id);
+      coordinator.claim.expiresAt = '2000-01-01T00:00:00Z';
+      await writeFile(coordinatorPath,JSON.stringify(coordinator),{mode:0o600});
+    }});
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     const token = new URLSearchParams(new URL(startup.url).hash.slice(1)).get('token');
     const unsupported = await fetch(startup.origin + '/api/overview', { headers: { Authorization: `Bearer ${token}` } });
     assert.equal(unsupported.status, 501);
     assert.deepEqual(pageErrors, []);
-    return { facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
+    return { claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
   } finally {
+    releaseInitialClaim?.();
     if (browser) await browser.close();
     if (child && child.exitCode === null && child.signalCode === null) {
       await new Promise((resolve, reject) => {

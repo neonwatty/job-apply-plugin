@@ -78,7 +78,8 @@ const io={...native,async open(...args){const handle=await native.open(...args);
  return {...handle,async write(bytes){
   const count=await handle.write(process.argv[4]==='partial'?bytes.subarray(0,7):bytes);
   report('bytes-written');
-  await new Promise(()=>{});
+  // Keep the suspended write reachable so FileHandle GC cannot release the lock.
+  await new Promise(resolve=>{globalThis.retainInterruptedWrite=resolve;});
   return count;
  }};}};
 const keeper=setInterval(()=>{},1000);
