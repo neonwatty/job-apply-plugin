@@ -163,3 +163,10 @@ server reproduced a request-thread stderr/finalization failure on Python 3.9 and
 3.12. The orderly-shutdown test now consumes the response before stopping.
 Abrupt-disconnect shutdown deserves a separate regression/fix before final release
 acceptance; this UX change does not alter server shutdown behavior.
+
+CI timing fixes: retire the attempt broker socket and PID before acknowledging a
+terminal request, so an immediate review restart cannot reach a retiring broker.
+A regression deliberately delays shutdown and verifies the replacement remains
+reachable. Job dialogs now focus synchronously when opened; deferred focus could
+interrupt editing. Trash focus skips cards absent from the refreshed canonical
+list. Forward-port these broker lifecycle and focus fixes to the TypeScript lane.

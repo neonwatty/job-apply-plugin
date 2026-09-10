@@ -127,7 +127,10 @@ export function installBindings(context) {
     if (state.pollIntervalId !== null) return;
     state.pollIntervalId = setInterval(pollWorkspace, 4000);
   }
-  function firstListDestination() { return $(".job-card") || $("#new-job"); }
+  function firstListDestination() {
+    return [...document.querySelectorAll("#job-list .job-card")]
+      .find((card) => state.jobs.some((job) => job.id === card.dataset.id)) || $("#new-job");
+  }
 
   form.addEventListener("submit", save); form.addEventListener("input", (event) => { if (state.selected && event.target.name) { state.dirty = true; state.dirtyFields.add(event.target.name); } });
   $("#nav-overview").addEventListener("click", () => navigateWorkspace("overview")); $("#nav-jobs").addEventListener("click", () => navigateWorkspace("jobs")); $("#nav-attention").addEventListener("click", () => navigateWorkspace("attention")); $("#nav-facts").addEventListener("click", () => navigateWorkspace("facts")); $("#nav-resumes").addEventListener("click", () => navigateWorkspace("resumes")); $("#nav-answers").addEventListener("click", () => navigateWorkspace("answers")); $("#nav-automation").addEventListener("click", () => navigateWorkspace("automation")); $("#nav-trash").addEventListener("click", () => navigateWorkspace("trash"));

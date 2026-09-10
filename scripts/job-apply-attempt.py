@@ -307,6 +307,21 @@ def run_broker(root: Path) -> int:
     listener = bind_listener(path)
     process_path.write_text(f"{os.getpid()}\n", encoding="ascii")
     process_path.chmod(0o600)
+    retired = False
+
+    def retire_endpoint() -> None:
+        nonlocal retired
+        if retired:
+            return
+        listener.close()
+        path.unlink(missing_ok=True)
+        try:
+            if process_path.read_text(encoding="ascii").strip() == str(os.getpid()):
+                process_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        retired = True
+
     acquired = False
     deadline = time.monotonic() + IDLE_SECONDS
 
@@ -337,6 +352,10 @@ def run_broker(root: Path) -> int:
                 except Exception:
                     response = {"ok": False, "error": {"code": "request_rejected"}}
                     complete = not acquired
+                # A terminal reply permits a new broker immediately. Retire this
+                # endpoint first, and never unlink its replacement in finally.
+                if complete:
+                    retire_endpoint()
                 try:
                     send_response(connection, response)
                 except OSError:
@@ -345,14 +364,8 @@ def run_broker(root: Path) -> int:
                     break
         return 0
     finally:
+        retire_endpoint()
         broker.close()
-        listener.close()
-        path.unlink(missing_ok=True)
-        try:
-            if process_path.read_text(encoding="ascii").strip() == str(os.getpid()):
-                process_path.unlink(missing_ok=True)
-        except OSError:
-            pass
 
 
 def detached_broker(root: Path) -> None:
