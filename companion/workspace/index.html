@@ -542,6 +542,15 @@
     </form>
   </dialog>
 
+  <dialog id="pdf-preview-dialog" aria-labelledby="pdf-preview-title">
+    <div class="dialog-shell pdf-shell">
+      <div class="dialog-heading"><h2 id="pdf-preview-title">PDF preview</h2><button class="icon-button" type="button" data-close="pdf-preview-dialog" aria-label="Close PDF preview" autofocus>×</button></div>
+      <p id="pdf-loading" role="status">Loading PDF…</p>
+      <p id="pdf-error" class="error" role="alert" hidden></p>
+      <iframe id="pdf-frame" title="Resume PDF document" hidden></iframe>
+      <div id="pdf-fallback" hidden><p id="pdf-fallback-copy"></p><a id="pdf-download" class="button secondary">Download PDF</a></div>
+    </div>
+  </dialog>
   <dialog id="preview-dialog" aria-labelledby="preview-title"><div class="dialog-shell"><div class="dialog-heading"><h2 id="preview-title">Text resume preview</h2><button class="icon-button" type="button" data-close="preview-dialog" aria-label="Close preview">×</button></div><pre id="resume-preview" class="resume-preview"></pre></div></dialog>
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>

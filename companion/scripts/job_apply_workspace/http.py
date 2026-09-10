@@ -32,7 +32,7 @@ class HttpMixin:
             "Content-Security-Policy",
             "default-src 'self'; script-src 'self'; style-src 'self'; "
             "img-src 'self' data:; connect-src 'self'; base-uri 'none'; "
-            "form-action 'self'; frame-ancestors 'none'",
+            "form-action 'self'; frame-src blob:; object-src 'none'; frame-ancestors 'none'",
         )
         super().end_headers()
 

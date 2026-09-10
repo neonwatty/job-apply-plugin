@@ -11,6 +11,8 @@ class WorkspaceServerTests(WorkspaceCase):
         self.assertIn(b"Jobs Workspace", body)
         header_map = dict(headers)
         self.assertIn("default-src 'self'", header_map["Content-Security-Policy"])
+        self.assertIn("frame-src blob:", header_map["Content-Security-Policy"])
+        self.assertIn("object-src 'none'", header_map["Content-Security-Policy"])
         self.assertEqual(header_map["Cache-Control"], "no-store")
         for path in ("/../scripts/job-apply-store.py", "/%2e%2e/scripts/job-apply-store.py", "/api/files", "/api/command"):
             status, _headers, _body = self.request("GET", path, token=path.startswith("/api/"), origin=False)

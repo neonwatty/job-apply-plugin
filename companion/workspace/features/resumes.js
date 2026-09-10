@@ -37,12 +37,47 @@ export function installResumes(context) {
     return `${operation}: ${error.message}. Refresh Resumes and try again.`;
   }
 
+  let pdfGeneration = 0;
+  let pdfUrl = null;
+  let pdfOpener = null;
+  let pdfResumeId = null;
+  const pdfDialog = $("#pdf-preview-dialog");
+  function clearPdf() {
+    $("#pdf-frame").removeAttribute("src");
+    $("#pdf-download").removeAttribute("href");
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    pdfUrl = null;
+  }
+  pdfDialog.addEventListener("close", () => {
+    if (pdfDialog.open) return;
+    pdfGeneration += 1;
+    clearPdf();
+    const opener = pdfOpener?.isConnected ? pdfOpener
+      : document.querySelector(`[data-resume-preview="${CSS.escape(pdfResumeId || "")}"]`);
+    if (opener) opener.disabled = false;
+    if (opener?.getClientRects().length) opener.focus();
+    pdfOpener = null;
+  });
+
   async function openResumeContent(resume, button, inDetails = false) {
     if (!resume) return;
     const errorNode = $(inDetails ? "#resume-error" : "#resumes-error");
     errorNode.classList.add("hidden");
     errorNode.dataset.operation = "content";
     if (button) button.disabled = true;
+    const isPdf = resume.mediaType === "application/pdf";
+    let generation;
+    if (isPdf) {
+      generation = ++pdfGeneration;
+      clearPdf();
+      pdfOpener = button; pdfResumeId = resume.id;
+      $("#pdf-preview-title").textContent = `${resume.label || "Resume"} — PDF preview`;
+      $("#pdf-loading").hidden = false;
+      $("#pdf-error").hidden = true;
+      $("#pdf-frame").hidden = true;
+      $("#pdf-fallback").hidden = true;
+      pdfDialog.showModal();
+    }
     try {
       const response = await fetch(`/api/resumes/${encodeURIComponent(resume.id)}/content`, {
         headers: { Authorization: `Bearer ${dom.token}` },
@@ -52,7 +87,23 @@ export function installResumes(context) {
         try { payload = await response.json(); } catch { /* use HTTP status */ }
         throw new ApiError(response.status, payload);
       }
-      if (resume.mediaType?.startsWith("text/plain")) {
+      if (isPdf) {
+        const blob = await response.blob();
+        if (generation !== pdfGeneration || !pdfDialog.open) return;
+        pdfUrl = URL.createObjectURL(blob);
+        $("#pdf-download").href = pdfUrl;
+        $("#pdf-download").download = `resume-${resume.id}.pdf`;
+        $("#pdf-loading").hidden = true;
+        $("#pdf-fallback").hidden = false;
+        const supported = navigator.pdfViewerEnabled !== false;
+        $("#pdf-fallback-copy").textContent = supported
+          ? "If the PDF is blank or cannot be displayed here, download it to view in your PDF reader."
+          : "This browser does not support embedded PDF viewing. Download the PDF to view it in your PDF reader.";
+        if (supported) {
+          $("#pdf-frame").src = pdfUrl;
+          $("#pdf-frame").hidden = false;
+        }
+      } else if (resume.mediaType?.startsWith("text/plain")) {
         $("#resume-preview").textContent = await response.text();
         $("#preview-dialog").showModal();
       } else {
@@ -65,9 +116,14 @@ export function installResumes(context) {
       }
     } catch (error) {
       const operation = resume.mediaType?.includes("wordprocessingml") ? "Resume download failed" : "Resume preview failed";
-      resumeError(operationFailure(operation, error), inDetails);
+      if (isPdf) {
+        if (generation !== pdfGeneration || !pdfDialog.open) return;
+        $("#pdf-loading").hidden = true;
+        $("#pdf-error").textContent = operationFailure(operation, error);
+        $("#pdf-error").hidden = false;
+      } else resumeError(operationFailure(operation, error), inDetails);
     } finally {
-      if (button) button.disabled = false;
+      if (button && (!isPdf || generation === pdfGeneration)) button.disabled = false;
     }
   }
 
@@ -181,7 +237,7 @@ export function installResumes(context) {
       if (resume.storageKind === "managed" && !resume.deletedAt) {
         const preview = document.createElement("button");
         preview.type = "button"; preview.className = "button primary";
-        preview.textContent = contentLabel(resume);
+        preview.textContent = contentLabel(resume); preview.dataset.resumePreview = resume.id;
         preview.addEventListener("click", () => openResumeContent(resume, preview));
         card.append(preview);
       }

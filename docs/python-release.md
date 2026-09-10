@@ -180,3 +180,11 @@ handle was unavailable, so the reason for its exit is unknown. This change does
 not repair or restart that instance. Browser policy restriction HOST-03 and owner
 PDF readability acceptance remain open; synthetic HTTP/action checks are separate.
 Forward-port these direct-preview and error-context changes to TypeScript.
+
+UX-06: PDF preview stays in the Companion tab using a modal embedded viewer,
+with Close/Escape returning to the previous view. Authenticated bytes become a
+short-lived blob URL, revoked on close; late responses cannot reopen the viewer.
+An explicit download fallback remains available for unsupported or blank native
+PDF renderers. TXT and DOCX behavior is unchanged. Embedded readability requires
+owner acceptance; isolated headless tests verify wiring, not native rendering.
+Forward-port this presentation and cancellation behavior to TypeScript separately.
