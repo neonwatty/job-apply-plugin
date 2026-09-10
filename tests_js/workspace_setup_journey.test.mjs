@@ -1,3 +1,4 @@
+import { openWorkspace } from "./workspace_menu_support.mjs";
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
@@ -35,11 +36,11 @@ test("guided setup reaches Ready and survives restart", { timeout: 90_000 }, asy
     });
     assert.equal(completion.request.status,'completed');
     assert.equal(completion.proposalSummary.pendingCount,0);
-    await page.getByRole('button',{name:'Facts',exact:true}).click();
+    await openWorkspace(page, "facts");
     await page.waitForFunction(() =>
       document.querySelector('#facts-workspace input[data-path="/firstName"]')?.value === 'Ada');
     assert.equal(await page.locator('#facts-workspace input[data-path="/firstName"]').inputValue(),'Ada');
-    await page.getByRole('button',{name:'Jobs',exact:true}).click();
+    await openWorkspace(page, "jobs");
     await page.getByRole('button',{name:'New job',exact:true}).click();
     const dialog = page.locator('#job-dialog');
     await dialog.getByLabel('Job URL',{exact:true}).fill('https://example.invalid/jobs/setup');
@@ -53,7 +54,7 @@ test("guided setup reaches Ready and survives restart", { timeout: 90_000 }, asy
     await dialog.getByText('No blocking issues').waitFor();
     await dialog.getByRole('button',{name:'Mark ready',exact:true}).click();
     await dialog.waitFor({state:'hidden'});
-    await page.getByRole('button',{name:'Overview',exact:true}).click();
+    await openWorkspace(page, "overview");
     await page.getByRole('heading',{name:'Hand off a ready job',exact:true}).waitFor();
     await context.stop(context.running.child);
     context.running = await context.launch();

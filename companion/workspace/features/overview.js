@@ -74,6 +74,7 @@ export function installOverview(context) {
   }
 
   function renderOverview(projection) {
+    coordinators.refreshReadiness();
     overviewState.projection = projection; overviewState.available = true;
     const [heading, copy] = ownerBetaNextStep(projection.nextAction);
     $("#next-step-heading").textContent = heading;
@@ -119,7 +120,7 @@ export function installOverview(context) {
     $("#boot-recovery-guidance").textContent = boot.guidance;
     $("#boot-recovery").classList.remove("hidden");
     $("#boot-recovery").focus();
-    for (const button of document.querySelectorAll(".workspace-nav button:not(#nav-overview)")) button.disabled = true;
+    for (const button of document.querySelectorAll(".workspace-nav .nav-link:not(#nav-overview)")) button.disabled = true;
     $("#overview-refresh").disabled = true;
     setConnection(false, "Canonical store unavailable — recovery guidance shown");
   }

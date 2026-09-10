@@ -305,7 +305,8 @@ export async function runOracle({ configurePage = async () => {} } = {}) {
 
     stage = "ux_intake";
     const uxUrl = "https://ux-first.example.invalid/jobs/canonical";
-    await page.getByRole("button", { name: "Jobs", exact: true }).click();
+    await page.locator("#nav-group-pipeline").click();
+    await page.locator("#nav-jobs").click();
     await page.getByRole("button", { name: "New job" }).click();
     const jobDialog = page.locator("#job-dialog");
     await jobDialog.getByLabel("Job URL").fill(uxUrl);
@@ -374,6 +375,7 @@ export async function runOracle({ configurePage = async () => {} } = {}) {
     stage = "attention_open";
     await page.reload();
     await page.getByText("Canonical store connected").waitFor();
+    await page.locator("#nav-group-pipeline").click();
     await page.locator("#nav-attention").click();
     await page.locator(`[data-attention-id="${selectedId}"]`).click();
     await jobDialog.getByText(/Canonical status needs info/i).waitFor();
@@ -443,7 +445,8 @@ export async function runOracle({ configurePage = async () => {} } = {}) {
     const finalSnapshot = await task("snapshot");
     check(finalActivity.activity.job.status === "awaiting_review", "cli_not_awaiting_review");
     check(finalSnapshot.snapshot.jobs.find((job) => job.id === selectedId)?.status === "awaiting_review", "snapshot_not_awaiting_review");
-    await page.getByRole("button", { name: "Jobs", exact: true }).click();
+    await page.locator("#nav-group-pipeline").click();
+    await page.locator("#nav-jobs").click();
     await page.locator("#refresh").click();
     await page.locator(`[data-id="${selectedId}"]`).click();
     await jobDialog.getByText(/Canonical status awaiting review/i).waitFor();

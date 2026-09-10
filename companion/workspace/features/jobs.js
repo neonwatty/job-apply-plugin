@@ -142,7 +142,7 @@ export function installJobs(context) {
     state.selected = null; state.latest = null; state.draft = null; fillForm(null); $("#job-dialog-title").textContent = "Capture a job"; $("#dialog-kicker").textContent = "NEW CANONICAL RECORD";
     state.activity = null; state.activityJobId = null; activityRefreshCoordinator.invalidate();
     for (const id of ["trash-job", "preflight-job", "mark-ready", "status-actions", "application-activity", "ready-handoff"]) $("#" + id).classList.add("hidden");
-    dialog.showModal(); setTimeout(() => form.elements.url.focus(), 0);
+    dialog.showModal(); form.elements.url.focus();
   }
 
   function openExisting(id, opener = null) {
@@ -152,7 +152,7 @@ export function installJobs(context) {
     clearPreflightReadiness();
     rememberOpener(id, opener);
     state.selected = job; state.latest = null; state.draft = null; fillForm(job); $("#job-dialog-title").textContent = job.role || "Job details"; $("#dialog-kicker").textContent = `${statusLabel(job.status).toUpperCase()} · REVISION ${job.revision}`;
-    state.activity = null; state.activityJobId = id; prepareActivity(job); renderJobControls(job); dialog.showModal(); loadActivity(id); if (job.status === "ready") preflight(); setTimeout(() => form.elements.role.focus(), 0);
+    state.activity = null; state.activityJobId = id; prepareActivity(job); renderJobControls(job); dialog.showModal(); loadActivity(id); if (job.status === "ready") preflight(); form.elements.role.focus();
   }
 
   function currentValues() { return Object.fromEntries(new FormData(form).entries()); }

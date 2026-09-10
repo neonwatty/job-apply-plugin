@@ -10,10 +10,11 @@ import { installJobs } from "./features/jobs.js";
 import { installNavigation } from "./features/navigation.js";
 import { installOverview } from "./features/overview.js";
 import { installResumes } from "./features/resumes.js";
+import { installReadiness } from "./features/readiness.js";
 import { installTrash } from "./features/trash.js";
 
 const FEATURE_INSTALLERS = [
-  installOverview, installFacts, installTrash, installAutomation, installNavigation,
+  installReadiness, installOverview, installFacts, installTrash, installAutomation, installNavigation,
   installAnswers, installResumes, installJobs, installActivity, installBindings,
 ];
 

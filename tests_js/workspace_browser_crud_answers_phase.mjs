@@ -1,3 +1,4 @@
+import { openWorkspace, openWorkspaceMenu } from "./workspace_menu_support.mjs";
 import {
   answerApiPath, assert,
 } from "./workspace_test_support.mjs";
@@ -5,7 +6,7 @@ import {
 export async function runBrowserCrudAnswersPhase(context) {
   const { cli, page } = context;
     const cliObserved = await cli("answer-observe", [], { question: "Will you relocate for this role?", state: "missing", scope: { ats: "browser" } });
-    await page.getByRole("button", { name: "Answers" }).click();
+    await openWorkspace(page, "answers");
     await page.locator("#answer-view").selectOption("pending");
     await page.getByRole("heading", { name: "Will you relocate for this role?" }).waitFor();
     const observedCard = page.locator(".answer-card").filter({ hasText: "Will you relocate for this role?" });

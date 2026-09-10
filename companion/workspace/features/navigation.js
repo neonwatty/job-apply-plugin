@@ -39,6 +39,57 @@ export function installNavigation(context) {
   const refresh = (...args) => coordinators.refresh(...args);
   const openExisting = (...args) => coordinators.openExisting(...args);
   const formatActivityTime = (...args) => coordinators.formatActivityTime(...args);
+  $("#brand-home").addEventListener("click", event => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    navigateWorkspace("overview");
+  });
+  const menuToggle = $("#workspace-menu-toggle");
+  const nav = $("#workspace-navigation");
+  const groupButtons = [...document.querySelectorAll(".nav-group-label")];
+  function closeNavigation() {
+    for (const button of groupButtons) {
+      button.setAttribute("aria-expanded", "false");
+      document.getElementById(button.getAttribute("aria-controls")).hidden = true;
+    }
+    menuToggle.setAttribute("aria-expanded", "false");
+    nav.classList.remove("mobile-open");
+  }
+  for (const button of groupButtons) {
+    button.addEventListener("click", () => {
+      const expanded = button.getAttribute("aria-expanded") === "true";
+      for (const other of groupButtons) {
+        const open = other === button && !expanded;
+        other.setAttribute("aria-expanded", String(open));
+        document.getElementById(other.getAttribute("aria-controls")).hidden = !open;
+      }
+    });
+  }
+  menuToggle.addEventListener("click", () => {
+    const open = menuToggle.getAttribute("aria-expanded") !== "true";
+    closeNavigation();
+    menuToggle.setAttribute("aria-expanded", String(open));
+    nav.classList.toggle("mobile-open", open);
+  });
+  document.addEventListener("click", event => {
+    if (!nav.contains(event.target) && !menuToggle.contains(event.target)) closeNavigation();
+  });
+  function dismissWithEscape(event) {
+    if (event.key !== "Escape") return;
+    const group = event.target.closest(".nav-group");
+    const trigger = group?.querySelector(".nav-group-label");
+    event.preventDefault();
+    if (trigger?.getAttribute("aria-expanded") === "true") {
+      trigger.setAttribute("aria-expanded", "false");
+      document.getElementById(trigger.getAttribute("aria-controls")).hidden = true;
+      trigger.focus();
+    } else {
+      closeNavigation();
+      (menuToggle.getClientRects().length ? menuToggle : trigger)?.focus();
+    }
+  }
+  nav.addEventListener("keydown", dismissWithEscape);
+  menuToggle.addEventListener("keydown", dismissWithEscape);
   async function showWorkspace(name) {
     const overview = name === "overview";
     const attention = name === "attention";
@@ -48,8 +99,12 @@ export function installNavigation(context) {
     const automation = name === "automation";
     const trash = name === "trash";
     $("#overview-workspace").classList.toggle("hidden", !overview); $("#jobs-workspace").classList.toggle("hidden", overview || attention || facts || resumes || answers || automation || trash); $("#attention-workspace").classList.toggle("hidden", !attention); $("#facts-workspace").classList.toggle("hidden", !facts); $("#resumes-workspace").classList.toggle("hidden", !resumes); $("#answers-workspace").classList.toggle("hidden", !answers); $("#automation-workspace").classList.toggle("hidden", !automation); $("#trash-workspace").classList.toggle("hidden", !trash);
-    for (const section of ["overview", "jobs", "attention", "facts", "resumes", "answers", "automation", "trash"]) { const active = name === section; $(`#nav-${section}`).classList.toggle("active", active); $(`#nav-${section}`).toggleAttribute("aria-current", active); }
-    document.title = `${overview ? "Overview" : attention ? "Needs Attention" : facts ? "Facts" : resumes ? "Resumes" : answers ? "Answers" : automation ? "Automation" : trash ? "Trash" : "Jobs"} · Job Apply Workspace`;
+    for (const section of ["overview", "jobs", "attention", "facts", "resumes", "answers", "automation", "trash"]) { const active = name === section; $(`#nav-${section}`).classList.toggle("active", active); if (active) $(`#nav-${section}`).setAttribute("aria-current", "page"); else $(`#nav-${section}`).removeAttribute("aria-current"); }
+    for (const button of groupButtons) {
+      const active = button.closest(".nav-group").querySelector(".nav-link.active");
+      button.classList.toggle("active", Boolean(active));
+    }
+    document.title = `${overview ? "Overview" : attention ? "Needs Attention" : facts ? $("#facts-title").textContent : resumes ? "Resumes" : answers ? "Answers" : automation ? "Automation" : trash ? "Trash" : "Jobs"} · Job Apply Workspace`;
     if (overview && !overviewState.available) await refreshOverview({ quiet: true });
     if (attention && !attentionState.loaded) await refreshAttention();
     if (facts && (!profileState.loaded || !factGroupState.loaded)) await Promise.all([
@@ -62,10 +117,16 @@ export function installNavigation(context) {
     if (trash && !trashState.loaded) await refreshTrash();
   }
 
-  function navigateWorkspace(name) {
-    state.navigationGeneration += 1;
+  async function navigateWorkspace(name) {
+    const generation = ++state.navigationGeneration;
     attentionState.detailRequestSequence += 1;
-    return showWorkspace(name);
+    closeNavigation();
+    await showWorkspace(name);
+    if (generation !== state.navigationGeneration) return;
+    const heading = $(`#${name}-workspace .hero h2`);
+    heading.setAttribute("tabindex", "-1");
+    heading.focus({ preventScroll: true });
+    window.scrollTo({ top: 0, behavior: "instant" });
   }
 
   function attentionButton(jobId) { return document.querySelector(`[data-attention-id="${CSS.escape(jobId)}"]`); }

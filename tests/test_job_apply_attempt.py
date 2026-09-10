@@ -200,6 +200,43 @@ class AttemptProtocolTests(unittest.TestCase):
             "job-restarted",
         )
 
+    def test_handoff_retires_endpoint_before_acknowledging_completion(self):
+        # Hold shutdown open so an immediate restart deterministically overlaps it.
+        wrapper = self.root / "slow_broker.py"
+        wrapper.write_text(
+            "import importlib.util, sys, time\n"
+            f"spec = importlib.util.spec_from_file_location('attempt', {str(SCRIPT)!r})\n"
+            "module = importlib.util.module_from_spec(spec)\n"
+            "spec.loader.exec_module(module)\n"
+            "original = module.AttemptBroker.close\n"
+            "def slow_close(self):\n"
+            "    time.sleep(0.5)\n"
+            "    original(self)\n"
+            "module.AttemptBroker.close = slow_close\n"
+            "raise SystemExit(module.run_broker(module.Path(sys.argv[1])))\n",
+            encoding="utf-8",
+        )
+        process = subprocess.Popen(
+            [sys.executable, str(wrapper), str(self.store_root)],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        try:
+            endpoint = ATTEMPT.socket_path(self.store_root)
+            deadline = time.monotonic() + 5
+            while not ATTEMPT.pid_path(self.store_root).exists():
+                self.assertLess(time.monotonic(), deadline)
+                time.sleep(0.01)
+            self.move_to_review()
+            self.assertFalse(endpoint.exists(), "handoff acknowledged a retiring endpoint")
+            _command, result, response = self.restart_review()
+            self.assertEqual(result.returncode, 0, response)
+            process.wait(timeout=5)
+            self.assertEqual(self.run_client("heartbeat")[2]["event"], "heartbeat")
+        finally:
+            if process.poll() is None:
+                process.kill()
+            process.wait(timeout=5)
+
     def test_legacy_review_restart_broker_rebuilds_under_same_private_claim(self):
         self.move_to_review()
         session_path = self.store._session_path(self.job["id"])

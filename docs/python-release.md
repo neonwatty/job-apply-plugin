@@ -127,3 +127,46 @@ in the independent companion. Existing canonical paths, atomic work-history
 patches and revision-conflict protection are retained. Forward-port the visible
 editing behavior and keyboard/draft guarantees to the TypeScript companion;
 do not share a live Store or merge its implementation wholesale.
+
+### Navigation and resume discoverability follow-up
+
+Owner findings UX-02/03/04: retain Pipeline (Overview, Jobs, Needs Attention),
+Application Data (Facts, Resumes, Answers), and Controls (Automation, Trash).
+Use a compact sticky header with grouped dropdowns and a mobile Menu disclosure.
+The Job Apply brand links to Overview through the same navigation coordinator,
+preserving Facts drafts and the selected tab.
+The Ink & blue foundation applies neutral surfaces, readable light/dark colors,
+consistent compact page headings and reduced-motion-aware transitions across
+all eight destinations. Navigation resets scroll and focuses the destination
+heading; Escape dismisses menus. Profile readiness lives on Overview and opens in a side panel from Facts,
+preserving the current tab and draft. A sun/moon button toggles light/dark with
+reduced-motion-aware transitions and persists the browser preference.
+Move Facts section selection before readiness, reduce its introductory spacing,
+and explain draft retention. Existing tabs and all-facts view remain available.
+Expose View PDF, Preview text, or Download DOCX on managed resume cards and in
+Manage. The existing authenticated content route and format support are unchanged.
+Forward-port these navigation and discoverability behaviors to TypeScript separately.
+
+The owner browser's localhost port matched the recorded candidate companion PID;
+no page navigation, restart, installation replacement, or Store mutation was used
+for that identity check. Automated synthetic PDF checks verify authenticated bytes,
+unauthenticated rejection and the browser-open action. Headless shell cannot qualify
+visual PDF rendering; owner PDF readability and UX acceptance remain open.
+
+Motion polish: readiness opens and closes with a short slide; Escape, close and
+backdrop clicks share dismissal and restore focus. Menus transition both ways,
+page/tab content fades briefly, and reduced-motion preferences disable movement.
+Forward-port these interaction details with the UX foundation.
+
+Verification follow-up: abandoning a response body and immediately stopping the
+server reproduced a request-thread stderr/finalization failure on Python 3.9 and
+3.12. The orderly-shutdown test now consumes the response before stopping.
+Abrupt-disconnect shutdown deserves a separate regression/fix before final release
+acceptance; this UX change does not alter server shutdown behavior.
+
+CI timing fixes: retire the attempt broker socket and PID before acknowledging a
+terminal request, so an immediate review restart cannot reach a retiring broker.
+A regression deliberately delays shutdown and verifies the replacement remains
+reachable. Job dialogs now focus synchronously when opened; deferred focus could
+interrupt editing. Trash focus skips cards absent from the refreshed canonical
+list. Forward-port these broker lifecycle and focus fixes to the TypeScript lane.

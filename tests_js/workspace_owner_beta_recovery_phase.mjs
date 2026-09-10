@@ -1,3 +1,4 @@
+import { openWorkspace, openWorkspaceMenu } from "./workspace_menu_support.mjs";
 import {
   assert, join, writeFile,
 } from "./workspace_test_support.mjs";
@@ -223,24 +224,24 @@ export async function runOwnerBetaFreshnessRestartPhase(context) {
     assert.equal(await readyHandoff.isVisible(), false);
     await page.getByRole("button", { name: "Close job details" }).click();
     await jobDialog.waitFor({ state: "hidden" });
-    await page.locator("#nav-overview").click();
+    await openWorkspace(page, "overview");
     const claim = await cli("job-acquire", ["--id", job.id, "--owner", "owner-beta-agent", "--expected-revision", String(job.revision)]);
     job = (await cli("claim-handoff", ["--id", job.id, "--token", claim.token, "--status", "needs_info", "--expected-revision", String(claim.job.revision)], {
       status: "active", step: "questions", answerKeys: [], pendingFields: [{ question: "Work authorization?", state: "missing", sensitive: true }],
     })).job;
     await page.locator("#overview-refresh").click();
-    await page.getByRole("heading", { name: "Resolve Needs Attention" }).waitFor();
+    await page.getByRole("heading", { name: "Needs attention" }).waitFor();
 
     await stop(running.child); running = null;
     context.running = running;
     running = await launch();
     context.running = running;
     await page.goto(running.startup.url);
-    await page.getByRole("heading", { name: "Resolve Needs Attention" }).waitFor();
-    await page.locator("#nav-attention").click();
+    await page.getByRole("heading", { name: "Needs attention" }).waitFor();
+    await openWorkspace(page, "attention");
     await page.getByText("Needs information", { exact: true }).waitFor();
     job = await cli("job-transition", ["--id", job.id, "--status", "saved", "--expected-revision", String(job.revision)]);
-    await page.getByRole("button", { name: "Overview", exact: true }).click();
+    await openWorkspace(page, "overview");
     await page.locator("#overview-refresh").click();
     await page.getByRole("heading", { name: "Prepare the next job" }).waitFor();
 
@@ -256,6 +257,6 @@ export async function runOwnerBetaFreshnessRestartPhase(context) {
     assert.match(recovery, /No canonical values or filesystem paths were exposed to this browser/);
     assert.match(recovery, /Nothing was automatically repaired, downgraded, or overwritten/);
     assert.equal(recovery.includes(privateCorruption), false);
-    assert.equal(await page.getByRole("button", { name: "Jobs", exact: true }).isDisabled(), true);
+    assert.equal(await page.locator("#nav-jobs").isDisabled(), true);
   Object.assign(context, { job, ownerResume, running });
 }

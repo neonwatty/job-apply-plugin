@@ -1,3 +1,4 @@
+import { openWorkspace, openWorkspaceMenu } from "./workspace_menu_support.mjs";
 import {
   assert, chromium, join, liveReviewSession, minimalSyntheticPdf, mkdtemp, PYTHON, readFile,
   COMPANION_ROOT, REPO_ROOT, resolve, rm, spawn, spawnSync, test, tmpdir, writeFile,
@@ -112,8 +113,8 @@ test("Needs Attention browser and CLI walkthrough converges all canonical reason
     });
     await page.goto(startup.url);
     await page.getByText("Canonical store connected").waitFor();
-    await page.locator("#attention-nav-count").getByText("4", { exact: true }).waitFor();
-    await page.locator("#nav-attention").click();
+    await page.locator("#attention-nav-count").getByText("4", { exact: true }).waitFor({state:"attached"});
+    await openWorkspace(page, "attention");
     await page.locator("#attention-count").getByText("4 jobs", { exact: true }).waitFor();
     assert.deepEqual(await page.locator(".attention-reason").allTextContents(), [
       "Expired agent attempt", "Interrupted agent attempt", "Awaiting your review", "Needs information",
@@ -139,16 +140,16 @@ test("Needs Attention browser and CLI walkthrough converges all canonical reason
     await page.route(abandonedDetailPattern, delayAbandonedDetail);
     await page.locator('[data-attention-id="expired-attention"]').click();
     await abandonedDetailSeen;
-    await page.getByRole("button", { name: "Facts", exact: true }).click();
-    await page.getByRole("heading", { name: "Your canonical application facts." }).waitFor();
+    await openWorkspace(page, "facts");
+    await page.getByRole("heading", { name: "All facts", exact: true }).waitFor();
     const abandonedDetailResponse = page.waitForResponse((response) => new URL(response.url()).pathname === `/api/jobs/${expired.id}` && response.ok());
     releaseAbandonedDetail();
     await abandonedDetailResponse;
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     assert.equal(await page.locator("#job-dialog[open]").count(), 0);
-    assert.match(await page.title(), /^Facts/);
+    assert.match(await page.title(), /^All facts/);
     await page.unroute(abandonedDetailPattern, delayAbandonedDetail);
-    await page.locator("#nav-attention").click();
+    await openWorkspace(page, "attention");
     await page.locator("#attention-count").getByText("4 jobs", { exact: true }).waitFor();
 
     let releaseEarlierSelection;
@@ -199,16 +200,16 @@ test("Needs Attention browser and CLI walkthrough converges all canonical reason
     await page.getByRole("button", { name: "Close job details" }).click();
     await page.locator("#job-dialog").waitFor({ state: "hidden" });
     await attentionReturnSeen;
-    await page.getByRole("button", { name: "Facts", exact: true }).click();
-    await page.getByRole("heading", { name: "Your canonical application facts." }).waitFor();
+    await openWorkspace(page, "facts");
+    await page.getByRole("heading", { name: "All facts", exact: true }).waitFor();
     const attentionReturnResponse = page.waitForResponse((response) => new URL(response.url()).pathname === "/api/attention" && response.ok());
     releaseAttentionReturn();
     await attentionReturnResponse;
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-    assert.match(await page.title(), /^Facts/);
+    assert.match(await page.title(), /^All facts/);
     assert.equal(await page.locator("#facts-workspace.hidden").count(), 0);
     await page.unroute("**/api/attention", delayNextAttention);
-    await page.getByRole("button", { name: /Needs Attention/ }).click();
+    await openWorkspace(page, "attention");
     await page.locator("#attention-count").getByText("4 jobs", { exact: true }).waitFor();
 
     let releaseStaleDetail;

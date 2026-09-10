@@ -1,3 +1,4 @@
+import { openWorkspace, openWorkspaceMenu } from "./workspace_menu_support.mjs";
 import {
   assert,
   mkdtemp,
@@ -109,7 +110,7 @@ test("open Job detail polling keeps the latest selected activity and announces o
     });
     await page.goto(startup.url);
     await page.getByText("Canonical store connected").waitFor();
-    await page.getByRole("button", { name: "Jobs", exact: true }).click();
+    await openWorkspace(page, "jobs");
 
     const pollingCard = page.getByRole("button", { name: /Polling Engineer/ });
     const activityPattern = `**/api/jobs/${pollingJob.id}/activity`;

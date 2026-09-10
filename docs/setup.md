@@ -85,3 +85,18 @@ the new role and dates. The draft copies only the company and description.
 **Copy description to company roles** asks before replacing descriptions for
 other positions with the same company name. Review the drafts and save when
 ready. Conflicting changes from another client still require explicit review.
+
+### Finding your data in the companion
+
+The sticky navigation groups destinations under Pipeline (Overview, Jobs, Needs
+Attention), Application Data (Facts, Resumes, Answers), and Controls (Automation,
+Trash). Select a group to open its destinations; on smaller screens, open **Menu**
+first. Escape closes a dropdown and returns focus to its group. In Facts, use the
+section tabs to focus a section; switching tabs retains drafts. The page title follows the selected section. **View readiness** opens a side
+panel without leaving your draft; the full checklist lives on Overview. Close
+it with Escape, the close button, or a click on the backdrop. The
+header’s sun/moon button switches light and dark mode and remembers your choice.
+Until you choose, it follows your system theme.
+Managed resume cards offer **View PDF**, **Preview text**, or **Download DOCX**.
+PDF viewing opens your browser's PDF viewer in a separate tab; browser settings
+may instead download it. PDF is optional; DOCX and TXT remain supported.

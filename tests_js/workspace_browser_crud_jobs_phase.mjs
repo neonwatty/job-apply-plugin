@@ -10,6 +10,13 @@ export async function runBrowserCrudJobsPhase(context) {
     assert.equal(await page.getByRole("listitem").locator("button").count(), 1);
     assert.equal(await cliButton.getAttribute("role"), null);
 
+    const focusOnOpen = await cliButton.evaluate((button) => {
+      button.click();
+      return document.activeElement?.getAttribute("name");
+    });
+    assert.equal(focusOnOpen, "role", "opening must focus immediately, before editing starts");
+    await page.getByRole("button", { name: "Close job details" }).click();
+    await page.locator("#job-dialog").waitFor({ state: "hidden" });
     await cliButton.focus();
     await page.keyboard.press("Enter");
     await page.locator("#job-dialog[open]").waitFor();

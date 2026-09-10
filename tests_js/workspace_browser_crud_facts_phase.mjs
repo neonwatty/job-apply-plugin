@@ -1,3 +1,4 @@
+import { openWorkspace, openWorkspaceMenu } from "./workspace_menu_support.mjs";
 import {
   assert, chromium, FACT_SAVE_REVISION_RETRIES, join, minimalSyntheticPdf, PYTHON, COMPANION_ROOT, REPO_ROOT,
   spawn, writeFile,
@@ -60,13 +61,16 @@ export async function runBrowserCrudFactsPhase(context) {
     await page.getByText("Canonical store connected").waitFor();
     const jobDialog = page.locator("#job-dialog");
 
-    await page.getByRole("button", { name: "Facts" }).click();
+    await openWorkspace(page, "facts");
     await page.waitForFunction(() => document.querySelector('[data-path="/firstName"]')?.value === "Ada");
+    await page.getByRole("button", {name:"View readiness", exact:true}).click();
     const readiness = page.locator("#profile-readiness");
     await readiness.getByRole("heading", { name: "Profile readiness" }).waitFor();
     assert.deepEqual(await readiness.locator("h3").allTextContents(), ["Essential setup", "Common coverage", "Review health"]);
     assert.match(await readiness.innerText(), /Individual jobs may still require additional information\./);
     assert.doesNotMatch(await readiness.innerText(), /score|percent|application ready|\d+%/i);
+    await page.getByRole("button", {name:"Close profile readiness"}).click();
+    await page.locator("#readiness-dialog").waitFor({state:"hidden"});
     assert.equal(await page.getByLabel("First name").inputValue(), "Ada");
     assert.equal(await page.getByLabel("Postal code").inputValue(), "85001");
     assert.equal(await page.getByLabel("Minimum base salary").inputValue(), "$150K");
@@ -211,7 +215,7 @@ export async function runBrowserCrudFactsPhase(context) {
     assert.equal(await page.getByRole("button", { name: "Save changes" }).isEnabled(), true);
     await page.unroute("**/api/profile");
     await completeFactsSave(page, () => page.getByRole("button", { name: "Save changes" }).click());
-    await page.getByRole("button", { name: "Resumes" }).click();
+    await openWorkspace(page, "resumes");
     await page.getByRole("heading", { name: "Browser resume" }).waitFor();
   Object.assign(context, { browser, server, cliJob, page, pageErrors, jobDialog, profile });
 }

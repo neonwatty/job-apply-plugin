@@ -1,3 +1,4 @@
+import { openWorkspace, openWorkspaceMenu } from "./workspace_menu_support.mjs";
 import {
   assert,
   mkdtemp,
@@ -89,7 +90,7 @@ test("Facts saved views organize canonical paths without owning facts", { timeou
     const page = await browser.newPage(); const pageErrors = []; page.on("pageerror", (error) => pageErrors.push(error));
     await page.addInitScript(() => { globalThis.setInterval = () => 0; });
     await page.goto(startup.url); await page.getByText("Canonical store connected").waitFor();
-    await page.getByRole("button", { name: "Facts", exact: true }).click();
+    await openWorkspace(page, "facts");
     await page.getByRole("tab", { name: "Agent shortlist" }).waitFor();
 
     const noticeContrast = await page.locator("#facts-status").evaluate((element) => {

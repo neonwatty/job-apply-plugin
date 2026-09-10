@@ -127,7 +127,10 @@ export function installBindings(context) {
     if (state.pollIntervalId !== null) return;
     state.pollIntervalId = setInterval(pollWorkspace, 4000);
   }
-  function firstListDestination() { return $(".job-card") || $("#new-job"); }
+  function firstListDestination() {
+    return [...document.querySelectorAll("#job-list .job-card")]
+      .find((card) => state.jobs.some((job) => job.id === card.dataset.id)) || $("#new-job");
+  }
 
   form.addEventListener("submit", save); form.addEventListener("input", (event) => { if (state.selected && event.target.name) { state.dirty = true; state.dirtyFields.add(event.target.name); } });
   $("#nav-overview").addEventListener("click", () => navigateWorkspace("overview")); $("#nav-jobs").addEventListener("click", () => navigateWorkspace("jobs")); $("#nav-attention").addEventListener("click", () => navigateWorkspace("attention")); $("#nav-facts").addEventListener("click", () => navigateWorkspace("facts")); $("#nav-resumes").addEventListener("click", () => navigateWorkspace("resumes")); $("#nav-answers").addEventListener("click", () => navigateWorkspace("answers")); $("#nav-automation").addEventListener("click", () => navigateWorkspace("automation")); $("#nav-trash").addEventListener("click", () => navigateWorkspace("trash"));
@@ -250,7 +253,7 @@ export function installBindings(context) {
       if (attentionReturnJobId) {
         refreshAttention({ quiet: true }).then(() => {
           if (attentionReturnGeneration !== state.navigationGeneration) return;
-          showWorkspace("attention").then(() => (attentionButton(attentionReturnJobId) || $("#nav-attention")).focus());
+          showWorkspace("attention").then(() => (attentionButton(attentionReturnJobId) || $("#attention-refresh")).focus());
         });
         return;
       }
@@ -269,7 +272,7 @@ export function installBindings(context) {
     });
   });
   $("#resume-dialog").addEventListener("close", () => { const destination = resumeState.opener?.isConnected ? resumeState.opener : $("#resumes-refresh"); resumeState.selected = null; resumeState.opener = null; setTimeout(() => destination?.focus(), 0); });
-  $("#trash-delete-dialog").addEventListener("close", () => { const destination = trashState.opener?.isConnected ? trashState.opener : $("#nav-trash"); trashState.selected = null; trashState.opener = null; setTimeout(() => destination?.focus(), 0); });
+  $("#trash-delete-dialog").addEventListener("close", () => { const destination = trashState.opener?.isConnected ? trashState.opener : $("#trash-refresh"); trashState.selected = null; trashState.opener = null; setTimeout(() => destination?.focus(), 0); });
 
   Object.assign(coordinators, { pollWorkspace, ensureWorkspacePolling, firstListDestination });
 

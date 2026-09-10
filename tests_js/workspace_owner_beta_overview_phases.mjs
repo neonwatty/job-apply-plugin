@@ -1,3 +1,4 @@
+import { openWorkspace, openWorkspaceMenu } from "./workspace_menu_support.mjs";
 import {
   assert, join, minimalSyntheticPdf, writeFile,
 } from "./workspace_test_support.mjs";
@@ -18,8 +19,8 @@ export async function runOwnerBetaOverviewAndPreflightPhase(context) {
     assert.equal(await page.getByRole("button", { name: "Copy Codex invocation" }).getAttribute("data-copy"), "$job-apply:job-apply");
     assert.equal(await page.getByRole("button", { name: "Copy Claude Code invocation" }).getAttribute("data-copy"), "/job-apply:job-apply");
 
-    await page.getByRole("button", { name: "Automation" }).click();
-    await page.getByRole("heading", { name: "Account controls that fail closed." }).waitFor();
+    await openWorkspace(page, "automation");
+    await page.locator("#automation-title").waitFor();
     await page.getByLabel("Exact employer portal URL").fill("https://acme.wd5.myworkdayjobs.com/en-US/jobs/one");
     await page.getByLabel("Optional signup email override").fill("realm@example.com");
     await page.getByRole("button", { name: "Add resolved realm" }).click();
@@ -39,7 +40,7 @@ export async function runOwnerBetaOverviewAndPreflightPhase(context) {
     const realmConflict = overrideForm.getByRole("alert");
     await realmConflict.waitFor();
     assert.equal(await realmConflict.evaluate((element) => element === document.activeElement), true);
-    await page.getByRole("button", { name: "Overview" }).click();
+    await openWorkspace(page, "overview");
 
     const bootPattern = "**/api/boot";
     await page.route(bootPattern, (route) => route.fulfill({
@@ -121,7 +122,7 @@ export async function runOwnerBetaOverviewAndPreflightPhase(context) {
     job = await cli("job-transition", ["--id", job.id, "--status", "ready", "--expected-revision", String(job.revision)]);
     await page.locator("#overview-refresh").click();
     await page.getByRole("heading", { name: "Hand off a ready job" }).waitFor();
-    await page.locator("#nav-jobs").click();
+    await openWorkspace(page, "jobs");
     await page.locator("#refresh").click();
     await page.getByRole("button", { name: /Owner Beta Engineer/ }).click();
     const readyHandoff = page.locator("#ready-handoff");

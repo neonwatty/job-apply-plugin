@@ -78,7 +78,7 @@ export function installResumes(context) {
   async function runExtractionAction(resume, action) {
     const request = resume.extractionRequest;
     if (action === "review") { const proposal = proposalForRequest(resume); if (proposal) await openProposal(proposal.id); return; }
-    if (action === "facts") { if ($("#resume-dialog").open) $("#resume-dialog").close(); await navigateWorkspace("facts"); $("#profile-readiness").focus(); return; }
+    if (action === "facts") { if ($("#resume-dialog").open) $("#resume-dialog").close(); await navigateWorkspace("facts"); coordinators.openReadiness(); return; }
     try {
       let path = "/api/resume-extraction-requests"; let body = { resumeId: resume.id, expectedResumeRevision: resume.revision };
       if (action === "cancel") { path += `/${encodeURIComponent(request.requestId)}/cancel`; body = { expectedRevision: request.revision }; }
@@ -116,6 +116,12 @@ export function installResumes(context) {
     wrapper.append(status, buttons); return wrapper;
   }
 
+  function contentLabel(resume) {
+    if (resume.mediaType === "application/pdf") return "View PDF";
+    if (resume.mediaType?.startsWith("text/plain")) return "Preview text";
+    return "Download DOCX";
+  }
+
   function renderResumes() {
     $("#resumes-loading").classList.add("hidden");
     $("#resumes-active").classList.toggle("active", !resumeState.trash); $("#resumes-trash").classList.toggle("active", resumeState.trash);
@@ -129,7 +135,18 @@ export function installResumes(context) {
       const tags = document.createElement("p"); tags.textContent = resume.tags?.length ? `Tags: ${resume.tags.join(", ")}` : "No tags";
       const assignment = document.createElement("p"); assignment.textContent = assignmentText(resume);
       const open = document.createElement("button"); open.type = "button"; open.className = "button secondary"; open.textContent = "Manage"; open.addEventListener("click", () => openResume(resume.id, open));
-      card.append(heading, meta, tags, assignment, buildExtractionControls(resume), open); list.append(card);
+      card.append(heading, meta, tags, assignment);
+      if (resume.storageKind === "managed" && !resume.deletedAt) {
+        const preview = document.createElement("button");
+        preview.type = "button"; preview.className = "button primary";
+        preview.textContent = contentLabel(resume);
+        preview.addEventListener("click", () => {
+          openResume(resume.id, preview);
+          $("#resume-content").click();
+        });
+        card.append(preview);
+      }
+      card.append(buildExtractionControls(resume), open); list.append(card);
     }
     $("#resumes-status").textContent = `${resumeState.items.length} ${resumeState.trash ? "trashed" : "active"} resume${resumeState.items.length === 1 ? "" : "s"}.`;
   }
@@ -169,6 +186,7 @@ export function installResumes(context) {
     $("#resume-handoff-copy").classList.toggle("hidden", resume.extractionRequest?.status !== "requested"); $("#resume-handoff-fallback").classList.add("hidden");
     $("#resume-default").classList.toggle("hidden", resume.default || Boolean(resume.deletedAt)); $("#resume-trash-action").classList.toggle("hidden", Boolean(resume.deletedAt)); $("#resume-restore").classList.toggle("hidden", !resume.deletedAt); $("#resume-delete").classList.toggle("hidden", !resume.deletedAt);
     $("#resume-content").classList.toggle("hidden", resume.storageKind !== "managed" || Boolean(resume.deletedAt)); $("#resume-replace").classList.toggle("hidden", resume.storageKind !== "managed" || Boolean(resume.deletedAt)); $("#resume-adopt").classList.toggle("hidden", resume.storageKind === "managed" || Boolean(resume.deletedAt));
+    $("#resume-content").textContent = contentLabel(resume);
     const holder = $("#resume-proposals"); holder.replaceChildren();
     for (const proposal of status.items) { const row = document.createElement("div"); row.className = "proposal-summary"; const text = document.createElement("span"); text.textContent = `${proposal.status} · ${proposal.pendingCount} pending`; row.append(text); if (proposal.status === "pending") { const button = document.createElement("button"); button.type = "button"; button.className = "button secondary"; button.textContent = "Review"; button.addEventListener("click", () => openProposal(proposal.id)); row.append(button); } holder.append(row); }
   }

@@ -1,3 +1,4 @@
+import { openWorkspace, openWorkspaceMenu } from "./workspace_menu_support.mjs";
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createOwnerBetaScenario, startOwnerBetaScenario, cleanupOwnerBetaScenario } from './workspace_owner_beta_scenario_support.mjs';
@@ -18,7 +19,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
       const page = await context.browser.newPage({ viewport });
       const errors = []; page.on('pageerror', error => errors.push(error.message));
       await page.goto(context.running.startup.url);
-      await page.getByRole('button', { name: 'Facts', exact: true }).click();
+      await openWorkspace(page, "facts");
       await page.locator('[data-path="/firstName"]').waitFor();
       await page.getByRole('tab', { name: 'Work history', exact: true }).click();
       await page.locator('#fact-group-nav').scrollIntoViewIfNeeded();
