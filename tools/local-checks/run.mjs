@@ -52,6 +52,11 @@ async function environmentIdentity(root) {
     installedLock: hash(await readFile(join(root, 'node_modules/.package-lock.json'))) };
 }
 
+export function localSuiteTimeout(mode, suite, nativeSuites) {
+  const native = nativeSuites.some(candidate => candidate.id === suite.id);
+  return mode === 'deep' || native ? (suite.timeoutMs ?? 900_000) : 120_000;
+}
+
 export async function runTarget(root, target, { mode, paths }) {
   return withSnapshot(root, target.commit, async (snapshot) => {
     const matrix = await loadMatrix(snapshot);
@@ -107,7 +112,7 @@ export async function runTarget(root, target, { mode, paths }) {
     const suites = selected.map((suite) => ({
       ...suite,
       ...(suite.id === 'source-size' ? { command: ['npm', 'run', 'check:size', '--', '--base', target.base] } : {}),
-      timeoutMs: mode === 'deep' ? (suite.timeoutMs ?? 900_000) : 120_000,
+      timeoutMs: localSuiteTimeout(mode, suite, plan.native),
     }));
     const startedAt = Date.now();
     let log = '';

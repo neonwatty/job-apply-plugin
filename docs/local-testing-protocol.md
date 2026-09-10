@@ -119,3 +119,10 @@ The current deep runner serializes one invocation, not every worktree on a host;
 the coordinator must serialize heavy runs until the planned host lease lands.
 Existing receipts identify runtime versions, not every native executable byte;
 required native cells and child-test skips need the stricter acceptance receipts.
+
+
+Fresh native obligations at push use the same bounded execution timeout as deep
+validation: the configured suite timeout, or 15 minutes by default. Their
+browser, crash-recovery and cross-process tests still run freshly and must
+pass. Quick commit and focused push checks keep their two-minute per-suite
+timeout. A timeout remains a failure; it never counts as completed evidence.
