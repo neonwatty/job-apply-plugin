@@ -1,6 +1,7 @@
 import { openWorkspace, openWorkspaceMenu } from "./workspace_menu_support.mjs";
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { PYTHON, spawnSync, readFile } from './workspace_test_support.mjs';
 import { createOwnerBetaScenario, startOwnerBetaScenario, cleanupOwnerBetaScenario } from './workspace_owner_beta_scenario_support.mjs';
 
 function syntheticPdf() {
@@ -51,6 +52,7 @@ test('synthetic PDF has an authenticated browser preview', { timeout: 60_000 }, 
     await page.waitForFunction(() => !document.querySelector('#pdf-frame').hasAttribute('src'));
     assert.equal(await page.evaluate(async url => { try { await fetch(url); return true; } catch { return false; } }, blobUrl), false);
     const card = page.locator('.resume-card');
+    await page.waitForFunction(() => document.activeElement?.matches('.resume-card [data-resume-preview]'));
     await page.evaluate(() => Object.defineProperty(navigator, 'pdfViewerEnabled', { configurable: true, value: false }));
     await card.getByRole('button', { name: 'View PDF', exact: true }).click();
     await page.getByText(/This browser does not support embedded PDF viewing/).waitFor();
@@ -64,6 +66,7 @@ test('synthetic PDF has an authenticated browser preview', { timeout: 60_000 }, 
     assert.ok(box.width <= 391 && box.height <= 845, JSON.stringify(box));
     await page.keyboard.press('Escape');
     await preview.waitFor({ state: 'hidden' });
+    await page.waitForFunction(() => document.activeElement?.matches('.resume-card [data-resume-preview]'));
     await page.setViewportSize({ width: 1280, height: 844 });
     let releaseContent;
     const contentGate = new Promise(resolve => { releaseContent = resolve; });
@@ -89,6 +92,20 @@ test('synthetic PDF has an authenticated browser preview', { timeout: 60_000 }, 
     const details = page.locator('#resume-dialog');
     assert.equal(await details.getByRole('group', { name: 'Current document', exact: true }).locator('input[type=file]').count(), 0);
     assert.equal(await details.getByRole('group', { name: 'Replace document', exact: true }).locator('input[type=file]').count(), 1);
+    await details.locator('input[name=label]').fill('Unsaved resume label');
+    await details.locator('input[name=tags]').fill('unsaved-tag');
+    await details.locator('input[type=file]').setInputFiles({ name: 'unsubmitted.txt', mimeType: 'text/plain', buffer: Buffer.from('Unsubmitted replacement') });
+    for (const closeWith of ['button', 'Escape']) {
+      await details.getByRole('button', { name: 'View PDF', exact: true }).click();
+      await page.getByText(/This browser does not support embedded PDF viewing/).waitFor();
+      if (closeWith === 'Escape') await page.keyboard.press('Escape');
+      else await page.getByRole('button', { name: 'Close PDF preview' }).click();
+      await page.waitForFunction(() => document.activeElement?.id === 'resume-content');
+      assert.equal(await details.evaluate(node => node.open), true);
+      assert.equal(await details.locator('input[name=label]').inputValue(), 'Unsaved resume label');
+      assert.equal(await details.locator('input[name=tags]').inputValue(), 'unsaved-tag');
+      assert.equal(await details.locator('input[type=file]').evaluate(node => node.files[0].name), 'unsubmitted.txt');
+    }
     await page.route('**/api/resumes/*/content', route => route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }));
     await details.getByRole('button', { name: 'View PDF', exact: true }).click();
     await page.getByText(/Resume preview failed: this workspace session is no longer authorized/).waitFor();
@@ -102,6 +119,41 @@ test('synthetic PDF has an authenticated browser preview', { timeout: 60_000 }, 
     await page.locator('#resumes-refresh').click();
     await page.locator('#resumes-error').waitFor({ state: 'hidden' });
 
+  } finally { await cleanupOwnerBetaScenario(context); }
+});
+
+test('TXT previews in-app and DOCX downloads unchanged bytes', { timeout: 60_000 }, async () => {
+  const context = await createOwnerBetaScenario();
+  try {
+    await startOwnerBetaScenario(context);
+    const page = await context.browser.newPage();
+    await page.goto(context.running.startup.url);
+    await openWorkspace(page, 'resumes');
+    const generated = spawnSync(PYTHON, ['-c', `import io, sys, zipfile
+out = io.BytesIO()
+with zipfile.ZipFile(out, 'w') as archive:
+    archive.writestr('[Content_Types].xml', '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>')
+    archive.writestr('word/document.xml', '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Synthetic DOCX</w:t></w:r></w:p></w:body></w:document>')
+sys.stdout.buffer.write(out.getvalue())`]);
+    assert.equal(generated.status, 0);
+    const text = Buffer.from('Synthetic TXT resume');
+    for (const [name, buffer] of [['synthetic.txt', text], ['synthetic.docx', generated.stdout]]) {
+      await page.locator('#resume-import input[name=label]').fill(name);
+      await page.locator('#resume-import input[type=file]').setInputFiles({ name, mimeType: name.endsWith('.txt') ? 'text/plain' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', buffer });
+      await page.getByRole('button', { name: 'Import resume', exact: true }).click();
+      await page.locator('.resume-card').filter({ has: page.getByRole('heading', { name, exact: true }) }).waitFor();
+    }
+    await page.getByRole('button', { name: 'Preview text', exact: true }).click();
+    await page.locator('#preview-dialog').waitFor();
+    assert.equal(await page.locator('#resume-preview').textContent(), text.toString());
+    assert.equal(await page.locator('#resume-dialog').evaluate(node => node.open), false);
+    await page.getByRole('button', { name: 'Close preview', exact: true }).click();
+    const downloadEvent = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Download DOCX', exact: true }).click();
+    const download = await downloadEvent;
+    assert.match(download.suggestedFilename(), /\.docx$/);
+    assert.deepEqual(await readFile(await download.path()), generated.stdout);
+    assert.equal(await page.locator('#pdf-preview-dialog').evaluate(node => node.open), false);
   } finally { await cleanupOwnerBetaScenario(context); }
 });
 

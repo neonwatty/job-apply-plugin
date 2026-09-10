@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import importlib
 import inspect
+import os
 import tempfile
 import unittest
 import uuid
@@ -10,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from unittest import mock
 
+from tests.support.resume_file_clock import fixed_staged_resume_mtime
 from tests.support.store_domain_contract import (
     assert_composed_store_lifecycle,
     assert_method_contract,
@@ -54,7 +56,8 @@ class JobCrudDomainTests(unittest.TestCase):
         return original, extracted
 
     def both(self, stores, operation):
-        results = [operation(store) for store in stores]
+        with fixed_staged_resume_mtime(self.facade, stores):
+            results = [operation(store) for store in stores]
         self.assertEqual(results[0], results[1])
         assert_store_trees_equal(self, stores[0].root, stores[1].root)
         return results[0]
@@ -178,6 +181,22 @@ class JobCrudDomainTests(unittest.TestCase):
             self.assertIn("nonterminal", self.both_error(
                 stores, lambda store: store.delete_job("guarded", trashed["revision"])
             ))
+
+    def test_lifecycle_comparison_controls_staged_file_clock_boundaries(self):
+        set_private_mode = self.facade._set_private_mode
+        staged_times = []
+
+        def cross_second_boundary(path, mode):
+            set_private_mode(path, mode)
+            if path.suffix == ".tmp" and path.parent.name == "resume-files":
+                timestamp = 1_725_451_200_000_000_000 + len(staged_times) * 1_000_000_000
+                os.utime(path, ns=(timestamp, timestamp))
+                staged_times.append(timestamp)
+
+        with mock.patch.object(self.facade, "_set_private_mode", side_effect=cross_second_boundary):
+            self.test_transition_trash_restore_delete_and_guards_are_exact()
+        self.assertEqual(len(staged_times), 2)
+        self.assertNotEqual(*staged_times)
 
     def test_live_claim_and_missing_resume_block_mutations(self):
         for index, store_type in enumerate((self.facade.Store, self.composed)):
