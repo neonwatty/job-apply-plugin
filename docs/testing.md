@@ -137,3 +137,17 @@ manual nightly workflow. Release installation evidence runs nightly and for
 staging/main, version tags, and manual dispatch. No CI timing percentile or
 observation-window completion is claimed yet; current timings are individual
 local measurements.
+
+## Portable and historical interpreter evidence
+
+The Linux workspace CI job provisions CPython 3.12, 3.13 and 3.14 and runs fresh
+codepoint-JSON differential observations, including interpreter/module provenance.
+These comparisons do not grant historical migration acceptance to a new build.
+
+`native-frozen-reference-profiles` remains in the full and platform tiers on
+Darwin. It runs the unchanged S08 acceptance test against the exact recorded
+macOS ARM64 interpreter/stdlib/native-module hashes; missing or different builds
+fail that native gate. The Linux workspace suite excludes this host-bound test
+and includes the separate portable comparison instead. Frozen receipts and their
+strict checks are unchanged. A green portable CI run does not certify replay of
+historical native acceptance; local deep verification retains that requirement.
