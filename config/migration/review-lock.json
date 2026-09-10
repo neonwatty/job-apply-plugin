@@ -23,7 +23,7 @@
     },
     {
       "path": "browser-g02-next-surfaces.json",
-      "sha256": "41ab076190a4efbc76187a8b4a7fc7548e26c2173a94597f459f474f534e1a2d"
+      "sha256": "9add2687760c1d47831e02903d5b2840394f86f9672507b522a33f5e461d8656"
     },
     {
       "path": "browser-lib-01-surfaces.json",
@@ -78,16 +78,24 @@
       "sha256": "8757138a819fd1166abfeb7e86aed548a42f3d2d6f832da404370f9c483e8963"
     },
     {
+      "path": "cli-native-resumes-surfaces.json",
+      "sha256": "23b9fd1e5a29720b5b4143d59a9767dfb9ee98a00e09ef3962f9112c9cda4e5c"
+    },
+    {
       "path": "cli-root-01-surfaces.json",
       "sha256": "12f7e2a79b07b0f67b299487ac7d0a06d967a0d373e3da336a91b06fc040695a"
     },
     {
       "path": "document-01-surfaces.json",
-      "sha256": "587549e629a01ff979f134e5b36f5fe64b22704a72568b9b2b7031583979cf97"
+      "sha256": "832cba04c3b722bbea66f242d3e2ce587e988732c8abcd7d0f3cd8f2cdf5f7de"
     },
     {
       "path": "document-02-surfaces.json",
       "sha256": "387d7d0e5cd60e6ce9b68fae4de02853de3f9cad1bcf9661d90183e9f3a63995"
+    },
+    {
+      "path": "document-native-resumes-surfaces.json",
+      "sha256": "ccdefde93534faa31fc3c45e772b83703914b11323f45d1d858dd86c127de42d"
     },
     {
       "path": "http-asset-head-surfaces.json",
@@ -107,11 +115,11 @@
     },
     {
       "path": "http-read-detail-surfaces.json",
-      "sha256": "5091bb0404d8e6e287b3bb17bf75dd896084e70686596263e455cfefd5b8e641"
+      "sha256": "6b35b0079111a16eb7cc3b9a197c646467983d8d2e083b4d4d662dcefbc19bfc"
     },
     {
       "path": "http-read-surfaces.json",
-      "sha256": "dc366ac18df0c8f83dff4760c4c72a7735c197820b66eacb5494dd3c4b8de60e"
+      "sha256": "91c59a29e0b3cad192438bbdeb11858abb377bab1e7cb9bb45cef54919a99a1a"
     },
     {
       "path": "http-write-accounts-surfaces.json",
@@ -135,7 +143,7 @@
     },
     {
       "path": "http-write-resumes-surfaces.json",
-      "sha256": "ca80dc8b73ef731cec47536ec4f55eda522d8f43d979443dc0efdc4d2b43a4df"
+      "sha256": "bd5d9621cdd4a79983c36c74517ebebdc69c1dc530bb1cc676e238680f6fabf6"
     },
     {
       "path": "http-write-surfaces.json",
@@ -152,6 +160,10 @@
     {
       "path": "journal-03-surfaces.json",
       "sha256": "20e3c3ab40814076290bb43fd37c91dec03884686abe372fbe0908b224b171da"
+    },
+    {
+      "path": "journal-native-resumes-surfaces.json",
+      "sha256": "85609a0155cb88c4335662b0ed827ebc4e09745840bce1c16f40897321c15ad4"
     },
     {
       "path": "nodes.json",
@@ -215,7 +227,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "58aa2cdb60b38bf86cd6f5ba70206706810959e841b2fe378027695d2e1213f3"
+      "sha256": "dc5a2fedfd6cf2a532e623e9c2da77ba5b0c69f6b96af8fcd30d41a7a11dcda2"
     },
     {
       "path": "source-catalog-m01.json",
@@ -231,7 +243,11 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "e1d6ab27a514f8315c5b35b2b07f51850047a980760ff18de62b2ed7769ab931"
+      "sha256": "9919e0c9935d3ea92654fef70c5f06c2502fac4d86967d45acc2424f1c0c893e"
+    },
+    {
+      "path": "source-catalog-native-resumes.json",
+      "sha256": "29dd7f8508a7d203df336e2dad4c4b643daf4c4441f4cbee96d4ea0f5d15cc17"
     },
     {
       "path": "source-catalog-s01.json",

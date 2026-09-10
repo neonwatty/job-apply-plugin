@@ -6,8 +6,8 @@ services between HTTP and the native CLI. The default launcher remains Python.
 No live Store is adopted, migrated or activated by this change.
 
 Create a new root using the [native fixture instructions](native-jobs-fixture.md).
-The fixture marker is now version 2 and initialization also creates
-`fact-groups.json`. Version 1 disposable fixtures must be recreated at a new
+The fixture marker is now version 3 and initialization also creates
+`fact-groups.json`. Version 1 and 2 disposable fixtures must be recreated at a new
 path; existing roots are never automatically upgraded. Profile replacement with
 revision zero cannot initialize or recover a missing profile in this mode.
 

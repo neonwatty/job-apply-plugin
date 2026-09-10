@@ -6,8 +6,10 @@ import { JobsError, fromJSON, get, int, keys, object, parse, serialize, set } fr
 import type { Value } from "../contracts/workspace/values.js";
 import { emptyObject } from "../contracts/workspace/jobs.js";
 import { PythonObject } from "../contracts/python-object.js";
+import { ResumeService } from "./resumes.js";
+import { resumesHttp } from "./resumes-http.js";
 
-export type ApiResult = { status: number; body: string };
+export type ApiResult = { status: number; body: string | Buffer; contentType?: string; disposition?: string };
 const response = (value: Value, status = 200): ApiResult => ({ status, body: serialize(value) });
 export const apiError = (status: number, code: string, message: string): ApiResult =>
   response(fromJSON({ error: { code, message } }), status);
@@ -17,6 +19,8 @@ const envelope = (key: string, value: Value): Value => set(emptyObject(), key, v
 export async function jobsHttp(service: JobsService, repository: NativeJobsRepository,
   method: string, path: string, body = ""): Promise<ApiResult> {
   try {
+    const resumes = await resumesHttp(new ResumeService(repository), method, path, body);
+    if (resumes) return resumes;
     const facts = await profileHttp(repository, method, path, body);
     if (facts) return facts;
     if (method === "GET") {
@@ -58,8 +62,11 @@ export async function jobsHttp(service: JobsService, repository: NativeJobsRepos
   } catch (error) {
     if (error instanceof JobsError) {
       return error.message.includes("revision conflict") ? apiError(409, "revision_conflict", error.message)
+        : error.message.includes("content is too large") ? apiError(413, "request_error", error.message)
+        : error.message === "managed resume content is unavailable" ? apiError(409, "content_unavailable", error.message)
         : error.message.includes("does not exist") ? apiError(404, "not_found", error.message)
         : error.message === "active job URL already exists" ? apiError(409, "duplicate_active_blocked", error.message)
+        : ["resume id already exists", "resume file is already managed"].includes(error.message) ? apiError(409, "duplicate_resume_blocked", error.message)
         : apiError(400, "store_rejected", error.message);
     }
     if (error instanceof Error && ["JSONDecodeError", "ValueError"].includes(error.name)) {

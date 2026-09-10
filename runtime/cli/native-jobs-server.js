@@ -4,6 +4,8 @@ import { JobsService } from "../workspace-core/jobs.js";
 import { jobsHttp, apiError } from "../workspace-core/jobs-http.js";
 import { NativeJobsRepository } from "../store/native-jobs.js";
 import { loadPosixFlockProvider } from "../store/posix-flock.js";
+const maxBody = 64 * 1024;
+const maxUpload = 4 * Math.ceil(10 * 1024 * 1024 / 3) + maxBody;
 const args = process.argv.slice(2);
 if (args.length !== 4 || args[0] !== "--root" || args[2] !== "--native-lock") {
     throw new Error("usage: native-jobs-server --root /synthetic/root --native-lock /artifact.node");
@@ -15,8 +17,9 @@ const token = randomBytes(32).toString("base64url");
 let origin = "";
 const server = createServer(async (request, response) => {
     const send = (result) => {
-        response.writeHead(result.status, { "Content-Type": "application/json", "Cache-Control": "no-store",
-            "X-Content-Type-Options": "nosniff", "Connection": "close" });
+        response.writeHead(result.status, { "Content-Type": result.contentType ?? "application/json", "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff", "Connection": "close",
+            ...(result.disposition ? { "Content-Disposition": result.disposition } : {}) });
         response.end(result.body);
     };
     const fail = (status, code, message) => send(apiError(status, code, message));
@@ -46,14 +49,15 @@ const server = createServer(async (request, response) => {
             const length = request.headers["content-length"];
             if (!length || !/^\d+$/.test(length))
                 return fail(411, "request_error", "a valid Content-Length is required");
-            if (Number(length) > 65536)
+            const limit = path === "/api/resumes/import" || /^\/api\/resumes\/[^/]+\/(replace|adopt)$/.test(path) ? maxUpload : maxBody;
+            if (Number(length) > limit)
                 return fail(413, "request_error", "request body is too large");
             request.setTimeout(30_000, () => request.destroy());
             const chunks = [];
             let size = 0;
             for await (const chunk of request) {
                 size += chunk.length;
-                if (size > 65536)
+                if (size > limit)
                     return fail(413, "request_error", "request body is too large");
                 chunks.push(Buffer.from(chunk));
             }

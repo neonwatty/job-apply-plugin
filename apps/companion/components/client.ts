@@ -1,5 +1,5 @@
 import { snapshot } from './facts-model';
-import { boot, job, object, overview, workspaceState, type JobFields } from './contracts';
+import { boot, job, object, overview, resume, resumeList, workspaceState, type JobFields } from './contracts';
 export class ApiError extends Error {
     constructor(public status: number, public code: string, message: string) {
         super(message);
@@ -29,6 +29,13 @@ export function createClient(token: string) {
         }
         return payload;
     }
+    async function encoded(file: File): Promise<string> {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        let binary = '';
+        for (let offset = 0; offset < bytes.length; offset += 32768)
+            binary += String.fromCharCode(...bytes.subarray(offset, offset + 32768));
+        return btoa(binary);
+    }
     return {
         profile: async (signal?: AbortSignal) => snapshot(await request('/api/profile', 'GET', undefined, signal, true) as string),
         patchProfile: async (body: string, signal?: AbortSignal) => snapshot(await request('/api/profile', 'PATCH', body, signal, true) as string),
@@ -45,6 +52,19 @@ export function createClient(token: string) {
         }, signal)),
         update: async (id: string, revision: number, fields: JobFields, signal?: AbortSignal) => job(await request(`/api/jobs/${encodeURIComponent(id)}`, 'PATCH', {
             patch: fields, expectedRevision: revision
+        }, signal)),
+        resumes: async (signal?: AbortSignal) => resumeList(await request('/api/resumes', 'GET', undefined, signal)),
+        importResume: async (metadata: unknown, file: File, signal?: AbortSignal) => resume(await request('/api/resumes/import', 'POST', {
+            metadata, filename: file.name, content: await encoded(file)
+        }, signal)),
+        updateResume: async (id: string, expectedRevision: number, patch: unknown, signal?: AbortSignal) => resume(await request(`/api/resumes/${encodeURIComponent(id)}`, 'PATCH', {
+            patch, expectedRevision
+        }, signal)),
+        setDefaultResume: async (id: string, expectedRevision: number, signal?: AbortSignal) => resume(await request(`/api/resumes/${encodeURIComponent(id)}/default`, 'POST', {
+            expectedRevision
+        }, signal)),
+        replaceResume: async (id: string, expectedRevision: number, file: File, adopt: boolean, signal?: AbortSignal) => resume(await request(`/api/resumes/${encodeURIComponent(id)}/${adopt ? 'adopt' : 'replace'}`, 'POST', {
+            metadata: { expectedRevision }, filename: file.name, content: await encoded(file)
         }, signal))
     };
 }

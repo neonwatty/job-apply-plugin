@@ -137,6 +137,15 @@ section {
 .job-card span,.job-card small {
   color:var(--muted)
 }
+.editor-panel {
+  display:grid;
+  gap:1rem;
+  margin-top:1.5rem;
+  padding:1.5rem;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:var(--paper)
+}
 label {
   display:grid;
   gap:.45rem;

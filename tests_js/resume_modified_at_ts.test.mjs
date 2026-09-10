@@ -1,3 +1,4 @@
+import { nativeStatTimeMode } from './resume_stat_profile_support.mjs';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -104,12 +105,13 @@ for (const executable of [primary, 'python3.12', 'python3.13', 'python3.14']) {
     if (executable !== primary) assert.ok(receipt.profile.python.startsWith(executable.replace('python', '') + '.'));
     assert.equal(receipt.cases.length, 24);
     assert.equal(receipt.nativeCases.length, 4);
+    const nativeMode = nativeStatTimeMode(receipt.nativeCases);
     for (const item of receipt.cases) assert.deepEqual(observe(decode(item.secondsHex)), item.outcome, item.id);
     for (const item of receipt.nativeCases) {
       assert.equal(item.unchanged, true);
       assert.equal(resumeModifiedAt(decode(item.secondsHex)), item.value);
       const encoded = Buffer.alloc(8);
-      encoded.writeDoubleBE(statSecondsFromNanoseconds(BigInt(item.actualNs), 'fused'));
+      encoded.writeDoubleBE(statSecondsFromNanoseconds(BigInt(item.actualNs), nativeMode));
       assert.equal(encoded.toString('hex'), item.secondsHex, `native conversion ${item.actualNs}`);
     }
     const generated = generatedHex();
@@ -147,7 +149,7 @@ for (const executable of [primary, 'python3.12', 'python3.13', 'python3.14']) {
     assert.equal(nativeRows.length, 50);
     for (const [actualNs, secondsHex] of nativeRows) {
       const encoded = Buffer.alloc(8);
-      encoded.writeDoubleBE(statSecondsFromNanoseconds(BigInt(actualNs), 'fused'));
+      encoded.writeDoubleBE(statSecondsFromNanoseconds(BigInt(actualNs), nativeMode));
       assert.equal(encoded.toString('hex'), secondsHex, `native st_mtime ${actualNs}`);
     }
     t.diagnostic(`${receipt.profile.python}: 24 fixed, 4 native seconds values, ${generated.length} generated binary64 values; seed 343465`);

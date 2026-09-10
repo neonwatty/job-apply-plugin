@@ -1,0 +1,230 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:src/cli/native-jobs.ts:resume-import",
+      "kind": "cli",
+      "command": "resume-import",
+      "node": "RES",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/store/native-jobs.ts",
+        "src/store/native-resume-files.ts",
+        "src/workspace-core/resumes.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:resume-get",
+      "kind": "cli",
+      "command": "resume-get",
+      "node": "RES",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/store/native-jobs.ts",
+        "src/store/native-resume-files.ts",
+        "src/workspace-core/resumes.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:resume-list",
+      "kind": "cli",
+      "command": "resume-list",
+      "node": "RES",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/store/native-jobs.ts",
+        "src/store/native-resume-files.ts",
+        "src/workspace-core/resumes.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:resume-update",
+      "kind": "cli",
+      "command": "resume-update",
+      "node": "RES",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/store/native-jobs.ts",
+        "src/store/native-resume-files.ts",
+        "src/workspace-core/resumes.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:resume-replace",
+      "kind": "cli",
+      "command": "resume-replace",
+      "node": "RES",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/store/native-jobs.ts",
+        "src/store/native-resume-files.ts",
+        "src/workspace-core/resumes.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:resume-adopt",
+      "kind": "cli",
+      "command": "resume-adopt",
+      "node": "RES",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/store/native-jobs.ts",
+        "src/store/native-resume-files.ts",
+        "src/workspace-core/resumes.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:resume-set-default",
+      "kind": "cli",
+      "command": "resume-set-default",
+      "node": "RES",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/store/native-jobs.ts",
+        "src/store/native-resume-files.ts",
+        "src/workspace-core/resumes.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:resume-resolve",
+      "kind": "cli",
+      "command": "resume-resolve",
+      "node": "RES",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/store/native-jobs.ts",
+        "src/store/native-resume-files.ts",
+        "src/workspace-core/resumes.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:resume-check",
+      "kind": "cli",
+      "command": "resume-check",
+      "node": "RES",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/store/native-jobs.ts",
+        "src/store/native-resume-files.ts",
+        "src/workspace-core/resumes.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

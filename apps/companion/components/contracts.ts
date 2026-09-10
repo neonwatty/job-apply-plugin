@@ -21,6 +21,16 @@ export type Resume = {
     label: string;
     default: boolean;
 };
+export type ResumeRecord = Resume & {
+    storageKind?: 'managed';
+    mediaType?: string;
+    tags: string[];
+    observedSize?: number;
+    observedModifiedAt?: string;
+    revision: number;
+    createdAt: string;
+    updatedAt: string;
+};
 export type WorkspaceState = {
     jobs: Job[];
     resumes: Resume[];
@@ -65,6 +75,21 @@ export function workspaceState(value: unknown): WorkspaceState {
             };
         })
     };
+}
+export function resume(value: unknown): ResumeRecord {
+    if (!object(value) || typeof value.id !== 'string' || typeof value.label !== 'string'
+        || typeof value.default !== 'boolean' || typeof value.revision !== 'number'
+        || !Number.isSafeInteger(value.revision) || value.revision < 1
+        || value.tags !== undefined && (!Array.isArray(value.tags) || value.tags.some(tag => typeof tag !== 'string')) || typeof value.createdAt !== 'string'
+        || typeof value.updatedAt !== 'string' || value.storageKind !== undefined && value.storageKind !== 'managed')
+        return invalid();
+    return { ...value, id: value.id, label: value.label, default: value.default,
+        revision: value.revision, tags: value.tags === undefined ? [] : value.tags as string[], createdAt: value.createdAt,
+        updatedAt: value.updatedAt, storageKind: value.storageKind } as ResumeRecord;
+}
+export function resumeList(value: unknown): ResumeRecord[] {
+    if (!object(value) || !Array.isArray(value.resumes)) return invalid();
+    return value.resumes.map(resume);
 }
 export function boot(value: unknown): Boot {
     if (!object(value))

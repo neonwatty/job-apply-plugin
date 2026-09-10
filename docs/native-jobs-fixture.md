@@ -6,9 +6,11 @@ launcher continues to use Python compatibility mode.
 
 Supported operations are `job-create`, `job-get`, `job-list` and `job-update`,
 including URL deduplication, revisions and human/agent provenance. Resume
-selection validates a read-only registry; it does not inspect content or assert
-preflight readiness. Jobs operations leave profile and resume documents unchanged.
-Facts/profile operations are also available; see the linked guide below. Other workflows return `unsupported_native_workflow`; they never fall back to Python.
+selection validates the shared registry. Managed resume import, list, get,
+metadata update, file replacement, legacy adoption, default selection, integrity
+check, content read and resolution are available through the same Store lock.
+Facts/profile operations are also available; see the linked guide below. Other
+workflows return `unsupported_native_workflow`; they never fall back to Python.
 
 ## Run against a new synthetic root
 
@@ -39,6 +41,11 @@ The CLI accepts the same input shapes as the corresponding Python Jobs commands:
 node runtime/cli/native-jobs.js --root /private/tmp/new-native-jobs --native-lock /absolute/flock.node job-create --input /absolute/synthetic-job.json --origin human
 node runtime/cli/native-jobs.js --root /private/tmp/new-native-jobs --native-lock /absolute/flock.node job-list
 node runtime/cli/native-jobs.js --root /private/tmp/new-native-jobs --native-lock /absolute/flock.node job-update --id JOB_ID --expected-revision 1 --input /absolute/synthetic-patch.json
+node runtime/cli/native-jobs.js --root /private/tmp/new-native-jobs --native-lock /absolute/flock.node resume-import --path /absolute/resume.pdf --input /absolute/resume-metadata.json
+node runtime/cli/native-jobs.js --root /private/tmp/new-native-jobs --native-lock /absolute/flock.node resume-list
+node runtime/cli/native-jobs.js --root /private/tmp/new-native-jobs --native-lock /absolute/flock.node resume-replace --id RESUME_ID --path /absolute/replacement.pdf --expected-revision 1
+node runtime/cli/native-jobs.js --root /private/tmp/new-native-jobs --native-lock /absolute/flock.node resume-set-default --id RESUME_ID --expected-revision 2
+node runtime/cli/native-jobs.js --root /private/tmp/new-native-jobs --native-lock /absolute/flock.node resume-check --id RESUME_ID
 ```
 
 Input can also come from stdin with `--input -`. CLI JSON output uses the
@@ -46,11 +53,13 @@ lossless numeric/text codec; browser editing requires safe integer revisions.
 
 ## Boundaries and recovery
 
-Only the readiness marker, Store lock, Jobs, profile, fact-groups and read-only resume
-documents are permitted in the fixture root. Unsupported domain state, journals,
-leftover temporary files, symlinks, hard links and non-private files are rejected.
-Keep the failed fixture for diagnosis; do not remove unknown state to force it
-open. No automatic recovery or repair is implemented here.
+Only the readiness marker, Store lock, Jobs, profile, fact-groups, resume registry,
+resume operation journal and private managed-file directory are permitted in the
+fixture root. Resume replacement writes a durable intent before installing bytes;
+the next locked operation rolls that exact record forward after interruption and
+clears owned staging files. Unknown state, symlinks, hard links, permissive files
+and mismatched recovery identities are rejected. Keep the failed fixture for
+diagnosis; do not remove unknown state to force it open.
 
 The marker restricts this native implementation; it cannot stop an older Python
 writer. Do not point Python, compatibility mode or real applicant data at this
@@ -59,9 +68,11 @@ milestones.
 
 The tests create independent Python and native roots, compare Jobs behavior,
 exercise native CLI contention with an empty PATH, inject persistence failures,
-kill a lock holder, and run a production Next/browser conflict-and-reload flow.
+verify resume byte/metadata recovery, reject file swaps, kill a lock holder, and
+run a production Next/browser conflict-and-reload flow with managed resume import.
 No owner account, live Store, visible browser or plugin installation is used.
 
-Facts/profile is also available in newly initialized version 2 synthetic fixtures.
-See [Facts/profile commands and limits](native-facts-fixture.md). Older version 1
-fixtures must be recreated at a new path; they are not automatically upgraded.
+Facts/profile and managed resumes are available in newly initialized version 3
+synthetic fixtures. See [Facts/profile commands and limits](native-facts-fixture.md).
+Older version 1 and 2 fixtures must be recreated at a new path; they are not
+automatically upgraded.

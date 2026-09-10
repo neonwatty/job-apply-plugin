@@ -62,6 +62,13 @@ async function editorDraftAssertions() {
 }
 async function editorDtoAssertions() {
     return modules((m, c) => {
+        const legacyResume = {
+            id: 'legacy', label: 'Legacy', default: true, revision: 1,
+            createdAt: '2026-09-09T00:00:00Z', updatedAt: '2026-09-09T00:00:00Z'
+        };
+        assert.deepEqual(c.resumeList({ resumes: [legacyResume] })[0].tags, []);
+        assert.throws(() => c.resume({ ...legacyResume, tags: null }));
+        assert.throws(() => c.resume({ ...legacyResume, tags: [1] }));
         assert.throws(() => c.job({
             id: 'x', revision: 0, status: 'saved', url: 'x'
         }));

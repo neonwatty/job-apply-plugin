@@ -88,6 +88,14 @@ def capture(lane, case):
             elif lane == 'accelerator':
                 if selected is None:
                     return {'id': lane + ':' + case, 'status': 'unavailable', 'reason': 'no selected native accelerator'}
+                # This lane observes one controlled accelerator and its buffered
+                # fallback. A second native helper would bypass Streams' witnesses
+                # (copy_file_range can fall through to sendfile on Python 3.14).
+                for flag, helper in [('_HAS_FCOPYFILE', '_fastcopy_fcopyfile'),
+                                     ('_USE_CP_COPY_FILE_RANGE', '_fastcopy_copy_file_range'),
+                                     ('_USE_CP_SENDFILE', '_fastcopy_sendfile')]:
+                    if helper != selected and hasattr(shutil, flag):
+                        patches.append(patch.object(shutil, flag, False))
                 def accelerated(fsrc, fdst, *args):
                     streams.mark('accelerator', helper=selected)
                     if case == 'fallback': raise shutil._GiveupOnFastCopy(OSError(errno.ENOTSUP, 'synthetic unsupported'))
