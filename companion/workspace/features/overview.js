@@ -74,6 +74,7 @@ export function installOverview(context) {
   }
 
   function renderOverview(projection) {
+    coordinators.refreshReadiness();
     overviewState.projection = projection; overviewState.available = true;
     const [heading, copy] = ownerBetaNextStep(projection.nextAction);
     $("#next-step-heading").textContent = heading;

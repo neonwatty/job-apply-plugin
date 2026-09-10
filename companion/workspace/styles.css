@@ -308,3 +308,27 @@ dialog::backdrop { background: #10182865; backdrop-filter: blur(2px); }
 
 #facts-revision { margin: 0; color: var(--muted); font-size: .75rem; }
 #facts-form fieldset { margin-top: 14px; }
+
+/* Readiness is an Overview resource, available on demand while editing. */
+.readiness-card { grid-column: 1 / -1; padding: 20px 22px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+#readiness-home #profile-readiness { margin: 0; padding: 0; border: 0; }
+.text-button { padding: 0; margin-left: 8px; border: 0; background: transparent; color: var(--forest); font-size: inherit; text-decoration: underline; text-underline-offset: 3px; }
+#readiness-dialog { position: fixed; inset: 0 0 0 auto; margin: 0; width: min(480px, 100vw); max-width: 100vw; height: 100dvh; max-height: 100dvh; border-radius: 0; padding: 24px; overflow: auto; }
+#readiness-dialog[open] { animation: drawer-enter 200ms ease-out; }
+.readiness-drawer-toolbar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+#readiness-dialog .readiness-heading { display: block; }
+#readiness-dialog .readiness-sections { grid-template-columns: 1fr; gap: 24px; }
+#readiness-dialog #profile-readiness h2 { font-size: 1.4rem; }
+#readiness-dialog #profile-readiness h3 { font-size: .9rem; }
+#readiness-dialog #profile-readiness .readiness-list { display: grid; font-size: .85rem; gap: 8px; }
+#color-theme.theme-toggle { display: grid; place-items: center; width: 36px; height: 36px; min-height: 36px; padding: 7px; border: 1px solid var(--line); border-radius: 50%; background: var(--panel); color: var(--ink); cursor: pointer; }
+.theme-toggle svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.theme-sun,.theme-moon { transform-origin: center; transition: opacity 180ms ease, transform 220ms ease; }
+.theme-sun { opacity: 0; transform: rotate(-90deg) scale(.5); }
+.theme-moon { opacity: 1; transform: rotate(0) scale(1); }
+[data-theme="dark"] .theme-sun { opacity: 1; transform: rotate(0) scale(1); }
+[data-theme="dark"] .theme-moon { opacity: 0; transform: rotate(90deg) scale(.5); }
+.theme-transition body,.theme-transition header,.theme-transition section,.theme-transition article,.theme-transition button,.theme-transition input,.theme-transition textarea,.theme-transition dialog { transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease; }
+@keyframes drawer-enter { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: translateX(0); } }
+@media (max-width: 760px) { #readiness-dialog { width: 100vw; padding: 20px; } }
+@media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation: none !important; transition: none !important; } }

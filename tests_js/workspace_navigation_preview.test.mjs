@@ -49,8 +49,8 @@ for (const width of [1280, 390]) {
       await page.goto(context.running.startup.url);
       await openWorkspace(page, "facts");
       const tabs = await page.locator('#fact-group-nav').boundingBox();
-      const readiness = await page.locator('#profile-readiness').boundingBox();
-      assert.ok(tabs.y < readiness.y, 'fact sections precede advisory readiness');
+      assert.ok(tabs);
+      assert.equal(await page.locator('#profile-readiness').isVisible(), false);
       await page.getByRole('tab', { name: 'Identity & contact', exact: true }).click();
       await page.locator('[data-path="/firstName"]').fill('Unsaved synthetic draft');
       for (const section of ['overview', 'jobs', 'attention', 'resumes', 'answers', 'automation', 'trash', 'facts']) {

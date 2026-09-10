@@ -78,7 +78,7 @@ export function installResumes(context) {
   async function runExtractionAction(resume, action) {
     const request = resume.extractionRequest;
     if (action === "review") { const proposal = proposalForRequest(resume); if (proposal) await openProposal(proposal.id); return; }
-    if (action === "facts") { if ($("#resume-dialog").open) $("#resume-dialog").close(); await navigateWorkspace("facts"); $("#profile-readiness").focus(); return; }
+    if (action === "facts") { if ($("#resume-dialog").open) $("#resume-dialog").close(); await navigateWorkspace("facts"); coordinators.openReadiness(); return; }
     try {
       let path = "/api/resume-extraction-requests"; let body = { resumeId: resume.id, expectedResumeRevision: resume.revision };
       if (action === "cancel") { path += `/${encodeURIComponent(request.requestId)}/cancel`; body = { expectedRevision: request.revision }; }

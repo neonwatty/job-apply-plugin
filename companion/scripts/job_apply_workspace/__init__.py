@@ -29,6 +29,7 @@ ASSETS = {
     "/features/answers.js": ("features/answers.js", "text/javascript; charset=utf-8"),
     "/features/automation.js": ("features/automation.js", "text/javascript; charset=utf-8"),
     "/features/bindings.js": ("features/bindings.js", "text/javascript; charset=utf-8"),
+    "/features/readiness.js": ("features/readiness.js", "text/javascript; charset=utf-8"),
     "/features/facts.js": ("features/facts.js", "text/javascript; charset=utf-8"),
     "/features/jobs.js": ("features/jobs.js", "text/javascript; charset=utf-8"),
     "/features/navigation.js": ("features/navigation.js", "text/javascript; charset=utf-8"),

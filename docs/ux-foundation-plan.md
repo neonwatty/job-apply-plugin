@@ -6,7 +6,7 @@ This work updates PR #65, still open, without merging or replacing owner walkthr
 
 - [x] Add grouped dropdown navigation with a mobile menu, Escape/outside-click dismissal, active group/destination and deliberate page focus/scroll.
 - [x] Apply Ink & blue light/dark tokens and compact headers across all eight pages; remove promotional-size typography and improve labels, buttons, notices, dialogs and responsive spacing.
-- [x] Integrate Facts readiness beneath the tabs and make the title follow selection. Preserve existing drafts, default views and all Store/approval contracts.
+- [x] Place readiness on Overview with an on-demand Facts panel; title follows selection. Preserve existing drafts, default views and all Store/approval contracts.
 - [x] Adapt browser tests to explicit menu navigation; verify keyboard dismissal, responsive layout, focus/scroll, contrast and existing journeys.
 - [x] Run affected suites, inspect a separately installed candidate, provide browser QA and exact commit receipt.
 
@@ -21,4 +21,5 @@ controls and Skip to workspace. A separate installed candidate uses only a
 synthetic Store, with PDF and TXT examples. Owner visual acceptance remains open.
 
 Owner cleanup: tighten the header to 56px; show the selected Facts tab as the
-page heading; keep readiness inline; add a persistent Light/Dark/System selector.
+page heading; place readiness on Overview with an on-demand Facts panel; add a persistent
+animated sun/moon toggle.
