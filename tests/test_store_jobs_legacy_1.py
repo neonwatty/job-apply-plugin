@@ -12,7 +12,7 @@ class StoreTests(StoreTestCase):
 - **Posted**: 2026-09-06
 - **Salary**: Unknown
 - **URL**: https://example.com/jobs/python
-""")
+""", encoding="utf-8")
         with mock.patch.object(STORE_MODULE.Path, "home", return_value=self.home):
             discovery = self.store.preview_legacy_jobs([])
             self.assertEqual([item["state"] for item in discovery["items"]], ["valid"])
