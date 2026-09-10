@@ -132,8 +132,11 @@ do not share a live Store or merge its implementation wholesale.
 
 Owner findings UX-02/03/04: retain Pipeline (Overview, Jobs, Needs Attention),
 Application Data (Facts, Resumes, Answers), and Controls (Automation, Trash).
-Give each group a prominent heading and nested destinations in a sticky bar;
-show all groups together on narrow screens without horizontal navigation scrolling.
+Use a compact sticky header with grouped dropdowns and a mobile Menu disclosure.
+The Ink & blue foundation applies neutral surfaces, readable light/dark colors,
+consistent compact page headings and reduced-motion-aware transitions across
+all eight destinations. Navigation resets scroll and focuses the destination
+heading; Escape dismisses menus. Facts readiness is a collapsed disclosure.
 Move Facts section selection before readiness, reduce its introductory spacing,
 and explain draft retention. Existing tabs and all-facts view remain available.
 Expose View PDF, Preview text, or Download DOCX on managed resume cards and in

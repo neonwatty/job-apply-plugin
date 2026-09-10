@@ -119,7 +119,7 @@ export function installOverview(context) {
     $("#boot-recovery-guidance").textContent = boot.guidance;
     $("#boot-recovery").classList.remove("hidden");
     $("#boot-recovery").focus();
-    for (const button of document.querySelectorAll(".workspace-nav button:not(#nav-overview)")) button.disabled = true;
+    for (const button of document.querySelectorAll(".workspace-nav .nav-link:not(#nav-overview)")) button.disabled = true;
     $("#overview-refresh").disabled = true;
     setConnection(false, "Canonical store unavailable — recovery guidance shown");
   }

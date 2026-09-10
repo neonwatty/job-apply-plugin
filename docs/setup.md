@@ -90,8 +90,10 @@ ready. Conflicting changes from another client still require explicit review.
 
 The sticky navigation groups destinations under Pipeline (Overview, Jobs, Needs
 Attention), Application Data (Facts, Resumes, Answers), and Controls (Automation,
-Trash). All three groups remain visible on smaller screens. In Facts, use the
-section tabs above readiness to focus a section; switching tabs retains drafts.
+Trash). Select a group to open its destinations; on smaller screens, open **Menu**
+first. Escape closes a dropdown and returns focus to its group. In Facts, use the
+section tabs to focus a section; switching tabs retains drafts. Expand **Profile
+readiness** when you want to review missing details.
 Managed resume cards offer **View PDF**, **Preview text**, or **Download DOCX**.
 PDF viewing opens your browser's PDF viewer in a separate tab; browser settings
 may instead download it. PDF is optional; DOCX and TXT remain supported.

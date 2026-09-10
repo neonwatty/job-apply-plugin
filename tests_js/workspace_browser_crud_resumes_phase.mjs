@@ -1,3 +1,4 @@
+import { openWorkspace, openWorkspaceMenu } from "./workspace_menu_support.mjs";
 import { assert } from "./workspace_test_support.mjs";
 
 export async function runBrowserCrudResumesPhase(context) {
@@ -126,14 +127,14 @@ export async function runBrowserCrudResumesPhase(context) {
     await page.getByText("This default resume is in use by active jobs. Assign another default first.").waitFor();
     await resumeDialog.getByRole("button", { name: "Close resume details" }).click();
 
-    await page.getByRole("button", { name: "Jobs" }).click();
+    await openWorkspace(page, "jobs");
     await page.getByRole("button", { name: /CLI Engineer/ }).click();
     await jobDialog.getByLabel("Resume").selectOption(uploaded.id);
     await page.getByRole("button", { name: "Save job" }).click();
     await jobDialog.waitFor({ state: "hidden" });
     assert.equal((await cli("job-get", ["--id", cliJob.id])).resumeId, uploaded.id);
 
-    await page.getByRole("button", { name: "Resumes" }).click();
+    await openWorkspace(page, "resumes");
     await page.locator(".resume-card").filter({ hasText: "Browser resume" }).getByRole("button", { name: "Manage" }).click();
     await resumeDialog.getByRole("button", { name: "Make default" }).click();
     await resumeDialog.waitFor({ state: "hidden" });
@@ -146,7 +147,7 @@ export async function runBrowserCrudResumesPhase(context) {
     await page.getByText("This resume is assigned to an active job. Reassign that job first.").waitFor();
     await resumeDialog.getByRole("button", { name: "Close resume details" }).click();
 
-    await page.getByRole("button", { name: "Jobs" }).click();
+    await openWorkspace(page, "jobs");
     await page.getByRole("button", { name: /CLI Engineer/ }).click();
     await jobDialog.getByLabel("Resume").selectOption("browser-resume");
     await page.getByRole("button", { name: "Save job" }).click();
@@ -154,7 +155,7 @@ export async function runBrowserCrudResumesPhase(context) {
     const reassignedCliJob = await cli("job-get", ["--id", cliJob.id]);
     assert.equal(reassignedCliJob.resumeId, "browser-resume");
 
-    await page.getByRole("button", { name: "Resumes" }).click();
+    await openWorkspace(page, "resumes");
     await manageLifecycleUpload().click();
     page.once("dialog", (prompt) => prompt.accept());
     await resumeDialog.getByRole("button", { name: "Move to trash" }).click();
@@ -257,6 +258,6 @@ export async function runBrowserCrudResumesPhase(context) {
     await page.waitForTimeout(500);
     assert.equal(await page.getByRole("heading", { name: "Browser resume" }).count(), 0);
     await page.unroute(/\/api\/resumes$/);
-    await page.getByRole("button", { name: "Jobs" }).click();
+    await openWorkspace(page, "jobs");
   Object.assign(context, { profile, reassignedCliJob });
 }

@@ -1,3 +1,4 @@
+import { openWorkspace, openWorkspaceMenu } from "./workspace_menu_support.mjs";
 import {
   assert, join, writeFile,
 } from "./workspace_test_support.mjs";
@@ -19,7 +20,7 @@ export async function runBrowserCrudTrashShutdownPhase(context) {
     await cli("history-append", [], { applicationId: "trash-ui-history", event: "reviewed", answerKeys: [protectedAnswer.key] });
     await cli("answer-trash", ["--key", protectedAnswer.key, "--expected-revision", String(protectedAnswer.revision)]);
 
-    await page.locator("#nav-trash").click();
+    await openWorkspace(page, "trash");
     await page.locator("#trash-refresh").click();
     await page.getByText("1 jobs · 1 resumes · 2 answers").waitFor();
     const trashWorkspaceText = await page.locator("#trash-workspace").innerText();

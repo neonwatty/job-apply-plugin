@@ -36,10 +36,10 @@ test("global navigation exposes the pipeline, application data, and controls mod
     const position = html.indexOf(`id="${groupId}"`);
     assert.ok(position > priorPosition, `${label} group is in the expected order`);
     priorPosition = position;
-    assert.match(html, new RegExp(`<span id="${groupId}" class="nav-group-label">${label}</span>`));
+    assert.match(html, new RegExp(`<button id="${groupId}" class="nav-group-label"[^>]*>${label} `));
     const markup = groupMarkup(html, groupId);
     assert.deepEqual(
-      [...markup.matchAll(/<button id="([^"]+)"/g)].map((match) => match[1]),
+      [...markup.matchAll(/<button id="([^"]+)"/g)].map((match) => match[1]).filter(id => id !== groupId),
       buttonIds,
       `${label} contains only its assigned destinations`,
     );
@@ -74,14 +74,14 @@ test("navigation preserves button, badge, active-state, and event-binding contra
   assert.match(html, /id="trash-nav-count" aria-label="trashed records">0</);
   assert.ok(app.includes('for (const section of ["overview", "jobs", "attention", "facts", "resumes", "answers", "automation", "trash"])'));
   assert.ok(app.includes('$(`#nav-${section}`).classList.toggle("active", active)'));
-  assert.ok(app.includes('$(`#nav-${section}`).toggleAttribute("aria-current", active)'));
+  assert.ok(app.includes('setAttribute("aria-current", "page")'));
 });
 
 test("persistent trust context explains local data and human control", async () => {
   const [html] = await readWorkspaceFiles();
   assert.match(html, /id="workspace-trust-context" class="trust-context">Your canonical data stays local\./);
   assert.match(html, /You direct changes and submissions; agents assist from the same record\./);
-  assert.match(html, /<nav class="workspace-nav" aria-label="Workspace sections" aria-describedby="workspace-trust-context">/);
+  assert.match(html, /<nav id="workspace-navigation" class="workspace-nav" aria-label="Workspace sections" aria-describedby="workspace-trust-context">/);
 });
 
 // Responsive sticky navigation is exercised in workspace_navigation_preview.test.mjs.

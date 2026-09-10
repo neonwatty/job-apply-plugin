@@ -250,7 +250,7 @@ export function installBindings(context) {
       if (attentionReturnJobId) {
         refreshAttention({ quiet: true }).then(() => {
           if (attentionReturnGeneration !== state.navigationGeneration) return;
-          showWorkspace("attention").then(() => (attentionButton(attentionReturnJobId) || $("#nav-attention")).focus());
+          showWorkspace("attention").then(() => (attentionButton(attentionReturnJobId) || $("#attention-refresh")).focus());
         });
         return;
       }
@@ -269,7 +269,7 @@ export function installBindings(context) {
     });
   });
   $("#resume-dialog").addEventListener("close", () => { const destination = resumeState.opener?.isConnected ? resumeState.opener : $("#resumes-refresh"); resumeState.selected = null; resumeState.opener = null; setTimeout(() => destination?.focus(), 0); });
-  $("#trash-delete-dialog").addEventListener("close", () => { const destination = trashState.opener?.isConnected ? trashState.opener : $("#nav-trash"); trashState.selected = null; trashState.opener = null; setTimeout(() => destination?.focus(), 0); });
+  $("#trash-delete-dialog").addEventListener("close", () => { const destination = trashState.opener?.isConnected ? trashState.opener : $("#trash-refresh"); trashState.selected = null; trashState.opener = null; setTimeout(() => destination?.focus(), 0); });
 
   Object.assign(coordinators, { pollWorkspace, ensureWorkspacePolling, firstListDestination });
 

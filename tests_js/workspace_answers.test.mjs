@@ -1,3 +1,4 @@
+import { openWorkspace, openWorkspaceMenu } from "./workspace_menu_support.mjs";
 import { skillText } from "./workspace_skill_support.mjs";
 import {
   assert,
@@ -120,7 +121,7 @@ test("pending answer browser journey preserves Job draft and reaches Ready, reac
     const page = await browser.newPage(); const pageErrors = []; page.on("pageerror", (error) => pageErrors.push(error));
     await page.addInitScript(() => { globalThis.setInterval = () => 0; });
     await page.goto(startup.url); await page.getByText("Canonical store connected").waitFor();
-    await page.locator("#nav-attention").click();
+    await openWorkspace(page, "attention");
     await page.locator('[data-attention-id="pending-job"]').click();
     const jobDialog = page.locator("#job-dialog"); const answerDialog = page.locator("#answer-dialog");
     await jobDialog.getByLabel("Notes").fill("unsaved browser draft");
@@ -169,7 +170,7 @@ test("pending answer browser journey preserves Job draft and reaches Ready, reac
     for (const field of ["id", "revision", "contentRevision", "digest"]) assert.equal(second.resume[field], first.resume[field]);
     assert.deepEqual(await readFile(second.resume.path), await readFile(first.resume.path));
     job = (await cli("claim-handoff", ["--id", job.id, "--token", second.token, "--status", "awaiting_review", "--expected-revision", String(second.job.revision)], await liveReviewSession(second.job.revision))).job;
-    await page.getByRole("button", { name: "Jobs", exact: true }).click(); await page.locator("#refresh").click();
+    await openWorkspace(page, "jobs"); await page.locator("#refresh").click();
     await page.getByRole("button", { name: /Pending Journey/ }).click();
     await jobDialog.getByText(/Canonical status awaiting review/i).waitFor();
     const events = await cli("history-list");

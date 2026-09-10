@@ -15,26 +15,27 @@
       <h1>Job Apply</h1>
       <p id="workspace-trust-context" class="trust-context">Your canonical data stays local. You direct changes and submissions; agents assist from the same record.</p>
     </div>
-    <nav class="workspace-nav" aria-label="Workspace sections" aria-describedby="workspace-trust-context">
+    <button id="workspace-menu-toggle" type="button" aria-expanded="false" aria-controls="workspace-navigation">Menu <span aria-hidden="true">☰</span></button>
+    <nav id="workspace-navigation" class="workspace-nav" aria-label="Workspace sections" aria-describedby="workspace-trust-context">
       <div class="nav-group" role="group" aria-labelledby="nav-group-pipeline">
-        <span id="nav-group-pipeline" class="nav-group-label">Pipeline</span>
-        <div class="nav-group-links">
+        <button id="nav-group-pipeline" class="nav-group-label" type="button" aria-expanded="false" aria-controls="nav-links-pipeline">Pipeline <span aria-hidden="true">⌄</span></button>
+        <div id="nav-links-pipeline" class="nav-group-links" hidden>
           <button id="nav-overview" class="nav-link active" type="button" aria-current="page">Overview</button>
           <button id="nav-jobs" class="nav-link" type="button">Jobs</button>
           <button id="nav-attention" class="nav-link" type="button">Needs Attention <span id="attention-nav-count" aria-label="attention count">0</span></button>
         </div>
       </div>
       <div class="nav-group" role="group" aria-labelledby="nav-group-application-data">
-        <span id="nav-group-application-data" class="nav-group-label">Application Data</span>
-        <div class="nav-group-links">
+        <button id="nav-group-application-data" class="nav-group-label" type="button" aria-expanded="false" aria-controls="nav-links-application-data">Application Data <span aria-hidden="true">⌄</span></button>
+        <div id="nav-links-application-data" class="nav-group-links" hidden>
           <button id="nav-facts" class="nav-link" type="button">Facts</button>
           <button id="nav-resumes" class="nav-link" type="button">Resumes</button>
           <button id="nav-answers" class="nav-link" type="button">Answers</button>
         </div>
       </div>
       <div class="nav-group" role="group" aria-labelledby="nav-group-controls">
-        <span id="nav-group-controls" class="nav-group-label">Controls</span>
-        <div class="nav-group-links">
+        <button id="nav-group-controls" class="nav-group-label" type="button" aria-expanded="false" aria-controls="nav-links-controls">Controls <span aria-hidden="true">⌄</span></button>
+        <div id="nav-links-controls" class="nav-group-links" hidden>
           <button id="nav-automation" class="nav-link" type="button">Automation</button>
           <button id="nav-trash" class="nav-link" type="button">Trash <span id="trash-nav-count" aria-label="trashed records">0</span></button>
         </div>
@@ -49,7 +50,7 @@
   <main id="workspace-content">
     <div id="overview-workspace">
       <section class="hero overview-hero" aria-labelledby="overview-title">
-        <div><p class="eyebrow">PRIVATE OWNER WORKSPACE</p><h2 id="overview-title">Know what to do next.</h2><p>Start with a resume, review your application facts, then prepare a job. Your progress stays on this computer. Only you can submit an application.</p></div>
+        <div><p class="eyebrow">PRIVATE OWNER WORKSPACE</p><h2 id="overview-title">Overview</h2><p>Start with a resume, review your application facts, then prepare a job. Your progress stays on this computer. Only you can submit an application.</p></div>
         <div class="hero-actions"><button id="overview-refresh" class="button secondary" type="button">Refresh</button></div>
       </section>
       <div id="boot-recovery" class="recovery-panel hidden" role="alert" tabindex="-1">
@@ -89,8 +90,8 @@
     <section class="hero" aria-labelledby="workspace-title">
       <div>
         <p class="eyebrow">Jobs Workspace</p>
-        <h2 id="workspace-title">Keep every opportunity moving.</h2>
-        <p>One canonical local queue shared with your Job Apply agents. Nothing leaves this device until you choose to use it on a job site.</p>
+        <h2 id="workspace-title">Jobs</h2>
+        <p>Save opportunities, prepare applications, and track your progress.</p>
       </div>
       <div class="hero-actions">
         <button id="refresh" class="button secondary" type="button">Refresh</button>
@@ -133,7 +134,7 @@
 
     <div id="attention-workspace" class="hidden">
       <section class="hero" aria-labelledby="attention-title">
-        <div><p class="eyebrow">Needs Attention</p><h2 id="attention-title">A calm queue for human intervention.</h2><p>Every row is derived from the canonical local Store. Open a job to use its existing resolution actions.</p></div>
+        <div><p class="eyebrow">Needs Attention</p><h2 id="attention-title">Needs attention</h2><p>Review what needs your input and continue when you’re ready.</p></div>
         <div class="hero-actions"><button id="attention-refresh" class="button secondary" type="button">Refresh</button></div>
       </section>
       <section class="attention-panel" aria-labelledby="attention-list-heading">
@@ -148,7 +149,7 @@
 
     <div id="facts-workspace" class="hidden">
       <section class="hero" aria-labelledby="facts-title">
-        <div><p class="eyebrow">Facts Workspace</p><h2 id="facts-title">Your canonical application facts.</h2><p>Review and selectively edit the same local profile used by Job Apply agents.</p></div>
+        <div><p class="eyebrow">Facts Workspace</p><h2 id="facts-title">Application facts</h2><p>Keep the details your agent uses accurate and up to date.</p></div>
       </section>
       <section class="facts-organizer" aria-labelledby="facts-organizer-title">
         <div class="facts-organizer-heading"><div><p class="eyebrow">FACT SECTIONS</p><h2 id="facts-organizer-title">Choose a section to edit</h2><p>Switch between contact details, work history, education and skills below. Your unsaved edits stay when you switch tabs.</p></div><div class="button-row"><button id="fact-group-edit" class="button secondary hidden" type="button">Edit group</button><button id="fact-group-new" class="button primary" type="button">New group</button></div></div>
@@ -166,10 +167,12 @@
         </div>
         <p id="fact-view-status" class="visually-hidden" role="status" aria-live="polite">Showing all facts.</p>
       </section>
+      <details class="readiness-disclosure"><summary>Profile readiness · View missing details</summary>
       <section id="profile-readiness" class="profile-readiness" aria-labelledby="profile-readiness-title" tabindex="-1">
         <div class="readiness-heading"><div><p class="eyebrow">ADVISORY CHECK</p><h2 id="profile-readiness-title">Profile readiness</h2></div><p>Individual jobs may still require additional information.</p></div>
         <div id="profile-readiness-sections" class="readiness-sections" aria-live="polite"></div>
       </section>
+      </details>
       <section id="facts-content" class="facts-panel" role="tabpanel" aria-labelledby="facts-form-title" tabindex="0">
         <div class="panel-heading"><div><p class="eyebrow">CANONICAL PROFILE</p><h2 id="facts-form-title">Applicant facts</h2></div><p id="facts-revision">Revision —</p></div>
         <div id="fact-view-empty" class="empty-state compact-empty hidden"><span class="empty-icon" aria-hidden="true">◇</span><h3>No matching facts yet</h3><p>This saved view still exists. Edit the group to add current canonical fact paths.</p></div>
@@ -220,7 +223,7 @@
 
     <div id="resumes-workspace" class="hidden">
       <section class="hero" aria-labelledby="resumes-title">
-        <div><p class="eyebrow">Resumes Workspace</p><h2 id="resumes-title">Your private resume library.</h2><p>Managed files stay in the canonical local store and remain available to Job Apply agents and the CLI.</p></div>
+        <div><p class="eyebrow">Resumes Workspace</p><h2 id="resumes-title">Resumes</h2><p>Your resumes, ready to review and use with your agent.</p></div>
         <div class="hero-actions"><button id="resumes-refresh" class="button secondary" type="button">Refresh</button></div>
       </section>
       <section class="resumes-panel" aria-labelledby="resume-library-heading">
@@ -238,7 +241,7 @@
 
     <div id="answers-workspace" class="hidden">
       <section class="hero" aria-labelledby="answers-title">
-        <div><p class="eyebrow">Answers Workspace</p><h2 id="answers-title">Reusable answers, reviewed by you.</h2><p>Observed questions and reusable answers share one canonical local record. Sensitive values stay hidden until you explicitly reveal them.</p></div>
+        <div><p class="eyebrow">Answers Workspace</p><h2 id="answers-title">Answers</h2><p>Review saved answers and questions from your agent. Sensitive answers stay hidden.</p></div>
         <div class="hero-actions"><button id="answers-cleanup" class="button secondary" type="button">Preview cleanup</button><button id="answers-refresh" class="button secondary" type="button">Refresh</button><button id="answer-new" class="button primary" type="button">New answer</button></div>
       </section>
       <section class="answers-panel" aria-labelledby="answer-library-heading">
@@ -253,7 +256,7 @@
 
     <div id="trash-workspace" class="hidden">
       <section class="hero" aria-labelledby="trash-title">
-        <div><p class="eyebrow">Unified recovery</p><h2 id="trash-title">Trash</h2><p>Restore or permanently delete one canonical record at a time. Application history and audit evidence are never deleted here.</p></div>
+        <div><p class="eyebrow">Unified recovery</p><h2 id="trash-title">Trash</h2><p>Restore deleted items or remove them permanently. Your application history is preserved.</p></div>
         <div class="hero-actions"><button id="trash-refresh" class="button secondary" type="button">Refresh</button></div>
       </section>
       <section class="trash-panel" aria-labelledby="trash-list-heading">
@@ -268,7 +271,7 @@
 
     <div id="automation-workspace" class="hidden">
       <section class="hero" aria-labelledby="automation-title">
-        <div><p class="eyebrow">Companion Automation</p><h2 id="automation-title">Account controls that fail closed.</h2><p>This surface shows redacted settings, tenant metadata, and protected-operation recovery. The reviewed macOS Workday seam remains disabled until a separate one-shot owner approval; ordinary Greenhouse applications need no account. No live execution control or final application action is reachable here.</p></div>
+        <div><p class="eyebrow">Companion Automation</p><h2 id="automation-title">Automation settings</h2><p>This surface shows redacted settings, tenant metadata, and protected-operation recovery. The reviewed macOS Workday seam remains disabled until a separate one-shot owner approval; ordinary Greenhouse applications need no account. No live execution control or final application action is reachable here.</p></div>
         <div class="hero-actions"><button id="automation-refresh" class="button secondary" type="button">Refresh</button></div>
       </section>
       <section class="automation-panel" aria-labelledby="automation-settings-title">
