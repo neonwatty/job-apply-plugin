@@ -29,12 +29,12 @@ test('activity rejects malformed revision and eligibility',()=>{
 });
 
 test('native recovery and review guidance describes only supported authority',()=>{
- assert.equal(model.recoveryGuidance.interrupted, 'This attempt was interrupted without an active claim. Recovery for this state is not available in the native workspace yet.');
+ assert.match(model.recoveryGuidance.interrupted, /change this interrupted attempt to Needs information/);
  assert.equal(model.attentionGuidance.claimless_interrupted_attempt, model.recoveryGuidance.interrupted);
  assert.doesNotMatch(model.attentionGuidance.claimless_interrupted_attempt, /job-transition/);
  assert.match(model.recoveryGuidance.expired, /claim-recover/);
- assert.match(model.attentionGuidance.awaiting_human_review, /personally review and submit on the third-party site/);
- assert.match(model.attentionGuidance.awaiting_human_review, /Recording Applied or Closed in the native workspace is deferred/);
+ assert.match(model.attentionGuidance.awaiting_human_review, /Personally review and submit on the third-party site/);
+ assert.match(model.attentionGuidance.awaiting_human_review, /confirm Applied in Job details/);
 });
 
 test('attention and activity allow a null unbound attempt revision but reject malformed bindings',()=>{

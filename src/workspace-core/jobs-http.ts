@@ -1,4 +1,5 @@
 import { claimsHttp } from './claims-http.js';
+import { jobTransitionsHttp } from './job-transitions-http.js';
 import { workspaceProjectionsHttp } from './workspace-projections-http.js';
 import { pendingAnswersHttp } from './pending-answers-http.js';
 import { profileHttp } from "./profile-http.js";
@@ -24,6 +25,8 @@ const envelope = (key: string, value: Value): Value => set(emptyObject(), key, v
 export async function jobsHttp(service: JobsService, repository: NativeJobsRepository,
   method: string, path: string, body = ""): Promise<ApiResult> {
   try {
+    const transition = await jobTransitionsHttp(repository, method, path, body);
+    if (transition) return transition;
     const projection = await workspaceProjectionsHttp(repository, method, path);
     if (projection) return projection;
     const claim = await claimsHttp(repository,method,path,body);

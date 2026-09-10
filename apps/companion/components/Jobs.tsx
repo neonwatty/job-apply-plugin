@@ -6,6 +6,7 @@ import { edit, observe, openEditor, reapply, type Editor } from './job-editor-st
 import { JobEditor } from './JobEditor';
 import { Claims } from './Claims';
 import { JobActivity } from './JobActivity';
+import { JobTransitions } from './JobTransitions';
 
 export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJobId, jobOpened, openAnswers }: {
     client: Client;
@@ -18,6 +19,7 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
     const [data, setData] = useState<WorkspaceState | null>(null);
     const [editor, setEditor] = useState<Editor | null>(null);
     const [busy, setBusy] = useState(false);
+    const [transitionBusy, setTransitionBusy] = useState(false);
     const [claimsActive, setClaimsActive] = useState(false);
     const [claimsDirty, setClaimsDirty] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -66,9 +68,9 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
         };
     }, [client]);
     useEffect(() => {
-        dirtyChanged(Boolean(editor?.dirty.size) || busy || claimsDirty);
+        dirtyChanged(Boolean(editor?.dirty.size) || busy || transitionBusy || claimsDirty);
         return () => dirtyChanged(false);
-    }, [editor, busy, claimsDirty, dirtyChanged]);
+    }, [editor, busy, transitionBusy, claimsDirty, dirtyChanged]);
     useEffect(() => {
         if (!requestedJobId || !data || loading || loadError || claimsActive) return;
         const selected = data.jobs.find(job => job.id === requestedJobId);
@@ -78,7 +80,7 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
     }, [requestedJobId, data, loading, loadError, claimsActive, jobOpened]);
 
     function open(job: Job | null) {
-        if (mutation.current || claimsActive) return;
+        if (mutation.current || transitionBusy || claimsActive) return;
         if (editor?.dirty.size && !confirm('Discard unsaved job changes?')) return;
         generation.current++;
         setError('');
@@ -86,14 +88,14 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
         setEditor(openEditor(job));
     }
     function close() {
-        if (mutation.current) return;
+        if (mutation.current || transitionBusy) return;
         if (editor?.dirty.size && !confirm('Discard unsaved job changes?')) return;
         generation.current++;
         setEditor(null);
         setError('');
     }
     async function save() {
-        if (!editor || mutation.current || editor.missing || editor.latest) return;
+        if (!editor || mutation.current || transitionBusy || editor.missing || editor.latest) return;
         const current = editor;
         const version = generation.current;
         const controller = new AbortController();
@@ -151,14 +153,14 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
         <header>
             <div><p className="eyebrow">Your pipeline</p><h1>Jobs</h1></div>
             <div>
-                <button disabled={busy} onClick={() => void refresh()}>Refresh</button>{' '}
-                <button className="primary" data-job-create disabled={busy || claimsActive} onClick={() => open(null)}>New job</button>
+                <button disabled={busy || transitionBusy} onClick={() => void refresh()}>Refresh</button>{' '}
+                <button className="primary" data-job-create disabled={busy || transitionBusy || claimsActive} onClick={() => open(null)}>New job</button>
             </div>
         </header>
         <p role="status">{loading ? (data ? 'Refreshing jobs…' : 'Loading jobs…') : notice}</p>
         {loadError && <p role="alert" className="error">
             {data ? 'Showing previously loaded jobs. ' : 'Jobs could not be loaded. '}{loadError}{' '}
-            <button disabled={busy} onClick={() => void refresh()}>Retry loading jobs</button>
+            <button disabled={busy || transitionBusy} onClick={() => void refresh()}>Retry loading jobs</button>
         </p>}
         {!editor && error && <p role="alert" className="error">{error}</p>}
         <div className="filters">
@@ -170,7 +172,7 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
             </select></label>
         </div>
         <div className="job-list">
-            {jobs.map(job => <button className="job-card" disabled={busy || claimsActive} key={job.id} onClick={() => open(job)}>
+            {jobs.map(job => <button className="job-card" disabled={busy || transitionBusy || claimsActive} key={job.id} onClick={() => open(job)}>
                 <strong>{String(job.role || job.url)}</strong>
                 <span>{String(job.company || '')} · {String(job.location || '')}</span>
                 <small>{job.status.replaceAll('_', ' ')} · revision {job.revision}</small>
@@ -179,9 +181,9 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
         {data && !loading && !loadError && !jobs.length && (allJobs.length
             ? <p>No jobs match these filters. <button onClick={() => { setQuery(''); setStatus(''); }}>Clear filters</button></p>
             : <p>No jobs yet. Capture a job to get started.</p>)}
-        {claimsEnabled && <Claims client={client} jobs={allJobs} disabled={busy || loading || Boolean(editor?.dirty.size)}
+        {claimsEnabled && <Claims client={client} jobs={allJobs} disabled={busy || transitionBusy || loading || Boolean(editor?.dirty.size)}
             activityChanged={setClaimsActive} navigationChanged={setClaimsDirty} changed={() => { void refresh(); }} />}
-        {editor && <JobEditor editor={editor} resumes={data?.resumes ?? []} busy={busy || claimsActive} error={error}
+        {editor && <JobEditor editor={editor} resumes={data?.resumes ?? []} busy={busy || transitionBusy || claimsActive} error={error}
             change={(fields: Partial<JobFields>) => setEditor(current => current ? edit(current, fields) : current)}
             close={close} save={() => void save()}
             refresh={() => {
@@ -199,6 +201,15 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
                     setError('');
                 }
             }} >
+            {claimsEnabled && editor.selected && <JobTransitions client={client} job={editor.selected}
+                disabled={busy || loading || claimsActive || Boolean(editor.dirty.size) || Boolean(editor.latest) || editor.missing}
+                onBusyChanged={setTransitionBusy} onChanged={job => {
+                    // The write is acknowledged: replace the clean editor before a background read.
+                    refreshRequest.current?.abort(); listGeneration.current++;
+                    setData(current => current ? {...current,jobs:current.jobs.map(item=>item.id===job.id?job:item)} : current);
+                    setEditor(openEditor(job)); setError('');
+                    void refresh();
+                }} />}
             {claimsEnabled && editor.selected && <JobActivity client={client} jobId={editor.selected.id}
                 refreshKey={editor.selected.revision} openAnswers={openAnswers} />}
         </JobEditor>}

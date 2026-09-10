@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "apps/companion/components/JobTransitions.tsx",
+      "sha256": "a92cd352404b526caaba390f4ea5168d1dccec65fc518b17ae4ac2da292fe4b5",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/job-transition-model.ts",
+      "sha256": "3e85e19c6785a72756fc7d9571cae58419b662b3a0e0daedff2d97d412bd89c6",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/cli/native-job-transitions.js",
+      "sha256": "831fa09b8cc4feb57afbe5796bb2a48384327e950a961e50182163d65097e50f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/job-transitions-http.js",
+      "sha256": "193aa062eea6b58926438a432b332c1a952604607322a0cb75fdf433e40ee845",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/job-transitions.js",
+      "sha256": "8bcea6077ecdb78385aac0d2b7aa1eec04e844e08f9a70bc64ee90014bb64b90",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-job-transitions.ts",
+      "sha256": "ee364a4ba72e77d93ce6de2daf4777003b245df42a0e9b667699d03ff94921d7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/job-transitions-http.ts",
+      "sha256": "7f160ce64292b04b0a3fb5f281282657c8467ca6cb8dd21c041bfddcbca0c447",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/job-transitions.ts",
+      "sha256": "9ce8713117a83ba45225c1eaad2f8601b9c0dca4a434a2d3ce05884f441a92dc",
+      "classification": "unreviewed"
+    }
+  ]
+}

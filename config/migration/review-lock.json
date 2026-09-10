@@ -46,6 +46,10 @@
       "sha256": "ac960232d6b5234f38fab48d567eabf436f72e291def557f9f52ab53cedee658"
     },
     {
+      "path": "browser-native-job-transitions-surfaces.json",
+      "sha256": "2afb9c0150aad10440a77dea64415886b478a1c83060fad8ac694c23f73a2f4b"
+    },
+    {
       "path": "browser-native-projections-surfaces.json",
       "sha256": "8d0522433ddaa7e6efaad2d80a50b994b20e767ee5ae75b94f3d59353c4eb820"
     },
@@ -96,6 +100,10 @@
     {
       "path": "cli-native-facts-surfaces.json",
       "sha256": "b9710c5943613cea49bf1742e5aea7570220f3ef2db45e956ea4576adcbae223"
+    },
+    {
+      "path": "cli-native-job-transitions-surfaces.json",
+      "sha256": "3310d133626397a57545af50e70591523b906036cdf4a0d04884e4a1630f1c3b"
     },
     {
       "path": "cli-native-jobs-surfaces.json",
@@ -167,7 +175,7 @@
     },
     {
       "path": "http-write-jobs-surfaces.json",
-      "sha256": "ffa938ec3fc4ccf77d344b88b497c4766c1ac1165d78befe3f2fc2cb2fbbceb9"
+      "sha256": "86b63f3fbe0dc1ae2a75a3897b6debb14392d04a063dd6201916c01281c5ed77"
     },
     {
       "path": "http-write-profile-surfaces.json",
@@ -259,7 +267,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "2877d59f50b3b70a2001d75ff5b79bf30a3baa94837a12a71451e1b7500ef093"
+      "sha256": "3fa963521183a55ab54bbd404e5b7ae794fe7c386a5ca63aeb585a2ad109b208"
     },
     {
       "path": "source-catalog-m01.json",
@@ -298,8 +306,12 @@
       "sha256": "8a41ab419b7b46311658f0ec43e970c7cda36f6322aa8dba415c41ae9e6e6424"
     },
     {
+      "path": "source-catalog-native-job-transitions.json",
+      "sha256": "d3586b035af22d3f4b4fa3ba3aa7d9e1bc781632317005aff9d158ac78625772"
+    },
+    {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "6783f12f7d886afd6d2779b26b0233209dcb7d8dc770a99b8bab248fd0dedf90"
+      "sha256": "38ef913d3e0ed7235a3ff4e81091f7e750e09fb68be7a39be4f51b85d0dec223"
     },
     {
       "path": "source-catalog-native-pending-answers.json",
@@ -307,7 +319,7 @@
     },
     {
       "path": "source-catalog-native-projections.json",
-      "sha256": "6c6261242acc2c2d5197faf70c08c0cd8bda903701f0a80f19bdc783d05a712e"
+      "sha256": "9547436e8a2bdb0556915f4e87687aa65f3bee908312b3f461301476e9bcc421"
     },
     {
       "path": "source-catalog-native-resumes.json",

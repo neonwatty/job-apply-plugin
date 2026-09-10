@@ -24,6 +24,6 @@ The response contracts preserve Python behavior for native-supported records. Ex
 
 ## Remaining work
 
-Expired claims can be recovered explicitly through native application controls. Claimless interruption recovery, recording Applied/Closed outcomes, lifecycle/Trash, and the remaining application transitions are not available in this native fixture yet. The UI states these limits. API guidance retains the existing Python contract; compatibility command names are not authorization to run Python against a native fixture.
+Expired claims can be recovered explicitly through native application controls. [Native job transitions](native-job-transitions-fixture.md) now support claimless interruption recovery, owner-confirmed Applied status, Closed outcomes and reopening. Trash, restore, permanent deletion, intake/upsert and legacy job import remain unavailable. API guidance retains the existing Python contract; compatibility command names are not authorization to run Python against a native fixture.
 
 Final submission on third-party sites remains human-only. Live Store adoption, native writer activation, and final Python-free package cutover remain separate milestones.
