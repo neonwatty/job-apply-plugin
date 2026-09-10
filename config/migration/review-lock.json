@@ -251,7 +251,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "5c368e49cd8e75b4fa3bfde3e238be208543f342552ba38de724c66b72d14bf1"
+      "sha256": "821097bba1c91450dd91a5d5062a8b20b734e51e855b0596bb38121802374a24"
     },
     {
       "path": "source-catalog-m01.json",
@@ -279,7 +279,7 @@
     },
     {
       "path": "source-catalog-native-claims.json",
-      "sha256": "2dab7fc38adfff4d4fea18d84314a12b53dd58c6cfec58e4e8fd44167cbe84c1"
+      "sha256": "73d0eb2f6bd8509745ad5771e00663128979acc63ef25525187ab2c11cfc76be"
     },
     {
       "path": "source-catalog-native-extractions.json",

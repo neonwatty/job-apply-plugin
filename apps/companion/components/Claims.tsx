@@ -11,14 +11,15 @@ function claimValue(value: unknown): Claim | null {
         expiresAt: String(value.expiresAt), expired: value.expired };
 }
 
-export function Claims({ client, jobs, disabled, changed, activityChanged }: {
+export function Claims({ client, jobs, disabled, changed, activityChanged, navigationChanged }: {
     client: Client; jobs: Job[]; disabled: boolean; changed: () => void;
-    activityChanged: (active: boolean) => void;
+    activityChanged: (active: boolean) => void; navigationChanged: (dirty: boolean) => void;
 }) {
     const [claim, setClaim] = useState<Claim | null>(null);
     const [selected, setSelected] = useState<Job | null>(null);
     const [owner, setOwner] = useState('Companion owner');
     const [busy, setBusy] = useState(false);
+    const [writing, setWriting] = useState(false);
     const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
@@ -65,13 +66,14 @@ export function Claims({ client, jobs, disabled, changed, activityChanged }: {
         return () => { alive.current = false; pending.current?.abort(); pending.current = null; credential.current = null; };
     }, [client]);
     useEffect(() => { activityChanged(owned || busy); return () => activityChanged(false); }, [owned, busy, activityChanged]);
+    useEffect(() => { navigationChanged(owned || writing); return () => navigationChanged(false); }, [owned, writing, navigationChanged]);
     async function action(kind: 'select' | 'acquire' | 'recover' | 'heartbeat' | 'handoff') {
         if (pending.current) return;
         const held = credential.current;
         const current = kind === 'heartbeat' || kind === 'handoff' ? held?.job : selected;
         if (!current && kind !== 'recover') return;
         if (kind === 'select' && !confirm(`Select ${String(current!.role || current!.id)} for application work at revision ${current!.revision}?`)) return;
-        const controller = new AbortController(); pending.current = controller; setBusy(true); setError(''); setNotice('');
+        const controller = new AbortController(); pending.current = controller; setBusy(true); setWriting(true); setError(''); setNotice('');
         try {
             const body = kind === 'select' ? { jobId: current!.id, expectedRevision: current!.revision, ownerConfirmed: true }
                 : kind === 'acquire' ? { jobId: current!.id, expectedRevision: current!.revision, ownerLabel: owner }
@@ -106,7 +108,7 @@ export function Claims({ client, jobs, disabled, changed, activityChanged }: {
         } finally {
             if (pending.current === controller) {
                 pending.current = null;
-                if (alive.current) setBusy(false);
+                if (alive.current) { setBusy(false); setWriting(false); }
             }
         }
     }

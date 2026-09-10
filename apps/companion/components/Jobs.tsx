@@ -15,6 +15,7 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false }: {
     const [editor, setEditor] = useState<Editor | null>(null);
     const [busy, setBusy] = useState(false);
     const [claimsActive, setClaimsActive] = useState(false);
+    const [claimsDirty, setClaimsDirty] = useState(false);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
     const [error, setError] = useState('');
@@ -61,9 +62,9 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false }: {
         };
     }, [client]);
     useEffect(() => {
-        dirtyChanged(Boolean(editor?.dirty.size) || busy || claimsActive);
+        dirtyChanged(Boolean(editor?.dirty.size) || busy || claimsDirty);
         return () => dirtyChanged(false);
-    }, [editor, busy, claimsActive, dirtyChanged]);
+    }, [editor, busy, claimsDirty, dirtyChanged]);
 
     function open(job: Job | null) {
         if (mutation.current || claimsActive) return;
@@ -167,7 +168,7 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false }: {
             ? <p>No jobs match these filters. <button onClick={() => { setQuery(''); setStatus(''); }}>Clear filters</button></p>
             : <p>No jobs yet. Capture a job to get started.</p>)}
         {claimsEnabled && <Claims client={client} jobs={allJobs} disabled={busy || loading || Boolean(editor?.dirty.size)}
-            activityChanged={setClaimsActive} changed={() => { void refresh(); }} />}
+            activityChanged={setClaimsActive} navigationChanged={setClaimsDirty} changed={() => { void refresh(); }} />}
         {editor && <JobEditor editor={editor} resumes={data?.resumes ?? []} busy={busy || claimsActive} error={error}
             change={(fields: Partial<JobFields>) => setEditor(current => current ? edit(current, fields) : current)}
             close={close} save={() => void save()}
