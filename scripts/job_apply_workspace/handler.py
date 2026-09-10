@@ -56,6 +56,16 @@ class WorkspaceServer(ThreadingHTTPServer):
     allow_reuse_address = False
 
     def __init__(self, root: Path, port: int, token: str | None = None):
+        # Plugin caches may be replaced while this process is still running.
+        # Capture the complete allowlist before touching the Store or binding.
+        workspace_runtime = runtime()
+        try:
+            self.assets = {
+                route: ((workspace_runtime["ASSET_ROOT"] / filename).read_bytes(), media_type)
+                for route, (filename, media_type) in workspace_runtime["ASSETS"].items()
+            }
+        except OSError:
+            raise OSError("workspace assets are unavailable; reinstall this version and restart") from None
         store_module = runtime()["STORE_MODULE"]
         self.store = store_module.Store(root)
         self.boot_status = {"status": "ready", "code": "ready"}

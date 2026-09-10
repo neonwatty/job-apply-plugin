@@ -37,6 +37,20 @@ scheduled release-branch coverage. Use explicit branch dispatch when needed.
 
 ## Release acceptance
 
+### Running workspace and plugin cache replacement
+
+The Python server snapshots its allowlisted static assets before initializing the
+Store or binding a port. An already-running server therefore keeps serving its
+original UI when its installed plugin directory is removed or replaced. Missing
+assets at startup abort with a sanitized reinstall/restart message. This does not
+prevent host cache replacement or make a deleted CLI executable restartable.
+
+Regression coverage removes a disposable complete installation after startup and
+checks every asset route, HEAD, authenticated job creation/readback, and rejected
+unauthenticated access. An incomplete asset tree must fail before Store creation.
+Migration follow-up: apply equivalent lifetime ownership to the TypeScript/React
+server assets; do not share its Store with the Python witness.
+
 Track execution in the [Python release readiness spec](python-release-readiness.md).
 
 - [ ] Current release-head portable full tests pass.
@@ -66,3 +80,4 @@ After the Python release, reconcile main into staging in a dedicated integration
 | PR #56: UTF-8 legacy report fixture | Forward-port the explicit UTF-8 fixture write to staging; its suspended CI did not establish Windows acceptance for this backported test. Pending. |
 | Phase 1: task-spine answer-return synchronization | Test-only fix: wait for refreshed actions and focus together; controlled response-body regression and value-free stages. Audit migration oracle for the same race and port its behavioral check. Pending. |
 | Phase 2: setup guidance and browser-open fallback | Port user-facing handoff wording where applicable; validate the migration launcher independently. Pending. |
+| Workspace asset lifetime hardening | Adopted from owner investigation patch; reproduce package removal/startup failure in migration runtime. Interim only; companion separation remains required. Pending. |
