@@ -19,7 +19,11 @@ Four additional cases set exact nanosecond mtimes on an owned temporary file,
 then capture actual stat float bits and formatted output. They include negative
 600 nanoseconds: the native stat float differs from the directly supplied
 decimal float `-0.0000006`. File content, size, mode and mtime remain unchanged
-during observation. These exact native conversion checks fail closed if another
+during observation. The negative fixture identifies one of two exact CPython
+build arithmetic profiles: fused multiplication/addition or separately rounded
+operations. Every native row must match that same profile; the operating system
+alone does not select it. Both modes retain independent exact-arithmetic tests.
+These exact native conversion checks fail closed if another
 filesystem rounds differently; they do not silently normalize away differences.
 
 Each capture binds the production source hash and interpreter/platform profile.
@@ -32,3 +36,7 @@ This bounded reference does not cover every representable float, all calendar
 boundaries, malformed metadata objects, property access errors or all native
 nanosecond-to-float conversions. Those obligations remain for the timestamp and
 observation implementations and their broader independent tests.
+
+The S05 native domain probes in the reference test use a Darwin-only driver and
+are explicitly skipped elsewhere. These skips do not establish S05 acceptance on
+another platform; Darwin retains the mandatory interpreter probes.

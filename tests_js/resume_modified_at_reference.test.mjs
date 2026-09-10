@@ -1,3 +1,4 @@
+import { nativeStatTimeMode } from './resume_stat_profile_support.mjs';
 import { observeDomain, refuseDomain } from './point_paths_domain_support.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -60,8 +61,11 @@ function observeLegacy(executable, t) {
     assert.deepEqual(receipt.cases, fixtures.map(([id, secondsHex, result]) => ({ id, secondsHex,
       outcome: result.endsWith('Error') ? { kind: 'error', name: result } : { kind: 'value', value: result },
     })));
+    const mode = nativeStatTimeMode(receipt.nativeCases);
     assert.deepEqual(receipt.nativeCases, native.map(([requestedNs, secondsHex, value]) => ({
-      requestedNs, actualNs: requestedNs, secondsHex, value, unchanged: true,
+      requestedNs, actualNs: requestedNs,
+      secondsHex: requestedNs === '-600' && mode === 'separate' ? 'bea421f5f4000000' : secondsHex,
+      value, unchanged: true,
     })));
     t.diagnostic(`${receipt.profile.python}: 24 exact binary64 cases, four native stat conversions; no live Store`);
 }
@@ -81,8 +85,8 @@ test('resume timestamp reference rejects caller arguments and input', () => {
   }
 });
 
-test('S05 domain reference preserves admitted values and cache identity under default CPython', t => observeDomain(t, 'python3'));
-test('S05 domain reference preserves admitted values and cache identity under CPython 3.12', t => observeDomain(t, 'python3.12', '3.12'));
-test('S05 domain reference preserves admitted values and cache identity under CPython 3.13', t => observeDomain(t, 'python3.13', '3.13'));
-test('S05 domain reference preserves admitted values and cache identity under CPython 3.14', t => observeDomain(t, 'python3.14', '3.14'));
+test('S05 domain reference preserves admitted values and cache identity under default CPython', { skip: process.platform !== 'darwin' && 'S05 native domain driver supports Darwin only' }, t => observeDomain(t, 'python3'));
+test('S05 domain reference preserves admitted values and cache identity under CPython 3.12', { skip: process.platform !== 'darwin' && 'S05 native domain driver supports Darwin only' }, t => observeDomain(t, 'python3.12', '3.12'));
+test('S05 domain reference preserves admitted values and cache identity under CPython 3.13', { skip: process.platform !== 'darwin' && 'S05 native domain driver supports Darwin only' }, t => observeDomain(t, 'python3.13', '3.13'));
+test('S05 domain reference preserves admitted values and cache identity under CPython 3.14', { skip: process.platform !== 'darwin' && 'S05 native domain driver supports Darwin only' }, t => observeDomain(t, 'python3.14', '3.14'));
 test('S05 domain reference rejects caller arguments paths and stdin', () => refuseDomain());
