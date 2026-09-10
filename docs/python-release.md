@@ -127,3 +127,21 @@ in the independent companion. Existing canonical paths, atomic work-history
 patches and revision-conflict protection are retained. Forward-port the visible
 editing behavior and keyboard/draft guarantees to the TypeScript companion;
 do not share a live Store or merge its implementation wholesale.
+
+### Navigation and resume discoverability follow-up
+
+Owner findings UX-02/03/04: retain Pipeline (Overview, Jobs, Needs Attention),
+Application Data (Facts, Resumes, Answers), and Controls (Automation, Trash).
+Give each group a prominent heading and nested destinations in a sticky bar;
+show all groups together on narrow screens without horizontal navigation scrolling.
+Move Facts section selection before readiness, reduce its introductory spacing,
+and explain draft retention. Existing tabs and all-facts view remain available.
+Expose View PDF, Preview text, or Download DOCX on managed resume cards and in
+Manage. The existing authenticated content route and format support are unchanged.
+Forward-port these navigation and discoverability behaviors to TypeScript separately.
+
+The owner browser's localhost port matched the recorded candidate companion PID;
+no page navigation, restart, installation replacement, or Store mutation was used
+for that identity check. Automated synthetic PDF checks verify authenticated bytes,
+unauthenticated rejection and the browser-open action. Headless shell cannot qualify
+visual PDF rendering; owner PDF readability and UX acceptance remain open.

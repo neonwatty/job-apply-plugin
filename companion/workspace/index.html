@@ -15,8 +15,7 @@
       <h1>Job Apply</h1>
       <p id="workspace-trust-context" class="trust-context">Your canonical data stays local. You direct changes and submissions; agents assist from the same record.</p>
     </div>
-    <p id="workspace-nav-overflow-hint" class="nav-overflow-hint">Scroll horizontally to explore all navigation groups <span aria-hidden="true">→</span></p>
-    <nav class="workspace-nav" aria-label="Workspace sections" aria-describedby="workspace-trust-context workspace-nav-overflow-hint">
+    <nav class="workspace-nav" aria-label="Workspace sections" aria-describedby="workspace-trust-context">
       <div class="nav-group" role="group" aria-labelledby="nav-group-pipeline">
         <span id="nav-group-pipeline" class="nav-group-label">Pipeline</span>
         <div class="nav-group-links">
@@ -26,7 +25,7 @@
         </div>
       </div>
       <div class="nav-group" role="group" aria-labelledby="nav-group-application-data">
-        <span id="nav-group-application-data" class="nav-group-label">Application data</span>
+        <span id="nav-group-application-data" class="nav-group-label">Application Data</span>
         <div class="nav-group-links">
           <button id="nav-facts" class="nav-link" type="button">Facts</button>
           <button id="nav-resumes" class="nav-link" type="button">Resumes</button>
@@ -151,12 +150,8 @@
       <section class="hero" aria-labelledby="facts-title">
         <div><p class="eyebrow">Facts Workspace</p><h2 id="facts-title">Your canonical application facts.</h2><p>Review and selectively edit the same local profile used by Job Apply agents.</p></div>
       </section>
-      <section id="profile-readiness" class="profile-readiness" aria-labelledby="profile-readiness-title" tabindex="-1">
-        <div class="readiness-heading"><div><p class="eyebrow">ADVISORY CHECK</p><h2 id="profile-readiness-title">Profile readiness</h2></div><p>Individual jobs may still require additional information.</p></div>
-        <div id="profile-readiness-sections" class="readiness-sections" aria-live="polite"></div>
-      </section>
       <section class="facts-organizer" aria-labelledby="facts-organizer-title">
-        <div class="facts-organizer-heading"><div><p class="eyebrow">SAVED VIEWS</p><h2 id="facts-organizer-title">Focus the facts you need</h2><p>Built-in sections and custom groups change only this view. Canonical facts stay in place.</p></div><div class="button-row"><button id="fact-group-edit" class="button secondary hidden" type="button">Edit group</button><button id="fact-group-new" class="button primary" type="button">New group</button></div></div>
+        <div class="facts-organizer-heading"><div><p class="eyebrow">FACT SECTIONS</p><h2 id="facts-organizer-title">Choose a section to edit</h2><p>Switch between contact details, work history, education and skills below. Your unsaved edits stay when you switch tabs.</p></div><div class="button-row"><button id="fact-group-edit" class="button secondary hidden" type="button">Edit group</button><button id="fact-group-new" class="button primary" type="button">New group</button></div></div>
         <div id="fact-group-nav" class="fact-group-nav" role="tablist" aria-label="Fact views">
           <button class="fact-group-chip active" type="button" data-fact-view="all" id="fact-tab-all" role="tab" aria-controls="facts-content" aria-selected="true" tabindex="0">All facts</button>
           <button class="fact-group-chip" type="button" data-fact-view="identity" id="fact-tab-identity" role="tab" aria-controls="facts-content" aria-selected="false" tabindex="-1">Identity &amp; contact</button>
@@ -170,6 +165,10 @@
           <span id="custom-fact-groups" class="custom-fact-groups"></span>
         </div>
         <p id="fact-view-status" class="visually-hidden" role="status" aria-live="polite">Showing all facts.</p>
+      </section>
+      <section id="profile-readiness" class="profile-readiness" aria-labelledby="profile-readiness-title" tabindex="-1">
+        <div class="readiness-heading"><div><p class="eyebrow">ADVISORY CHECK</p><h2 id="profile-readiness-title">Profile readiness</h2></div><p>Individual jobs may still require additional information.</p></div>
+        <div id="profile-readiness-sections" class="readiness-sections" aria-live="polite"></div>
       </section>
       <section id="facts-content" class="facts-panel" role="tabpanel" aria-labelledby="facts-form-title" tabindex="0">
         <div class="panel-heading"><div><p class="eyebrow">CANONICAL PROFILE</p><h2 id="facts-form-title">Applicant facts</h2></div><p id="facts-revision">Revision —</p></div>

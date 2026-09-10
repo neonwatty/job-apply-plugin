@@ -27,7 +27,7 @@ test("global navigation exposes the pipeline, application data, and controls mod
   const [html] = await readWorkspaceFiles();
   const expectedGroups = [
     ["nav-group-pipeline", "Pipeline", ["nav-overview", "nav-jobs", "nav-attention"]],
-    ["nav-group-application-data", "Application data", ["nav-facts", "nav-resumes", "nav-answers"]],
+    ["nav-group-application-data", "Application Data", ["nav-facts", "nav-resumes", "nav-answers"]],
     ["nav-group-controls", "Controls", ["nav-automation", "nav-trash"]],
   ];
 
@@ -81,21 +81,7 @@ test("persistent trust context explains local data and human control", async () 
   const [html] = await readWorkspaceFiles();
   assert.match(html, /id="workspace-trust-context" class="trust-context">Your canonical data stays local\./);
   assert.match(html, /You direct changes and submissions; agents assist from the same record\./);
-  assert.match(html, /<nav class="workspace-nav" aria-label="Workspace sections" aria-describedby="workspace-trust-context workspace-nav-overflow-hint">/);
+  assert.match(html, /<nav class="workspace-nav" aria-label="Workspace sections" aria-describedby="workspace-trust-context">/);
 });
 
-test("navigation has a collision-free row and focus-safe narrow-width overflow", async () => {
-  const [html, css] = await readWorkspaceFiles();
-  assert.match(html, /id="workspace-nav-overflow-hint" class="nav-overflow-hint">Scroll horizontally to explore all navigation groups/);
-  assert.match(css, /\.topbar\s*\{[^}]*grid-template-columns:\s*minmax\(0,1fr\) auto/);
-  assert.match(css, /\.workspace-nav\s*\{[^}]*grid-column:\s*1\s*\/\s*-1[^}]*display:\s*flex[^}]*width:\s*100%[^}]*min-width:\s*0/);
-  assert.match(css, /\.connection\s*\{[^}]*grid-column:\s*2[^}]*grid-row:\s*1[^}]*justify-self:\s*end/);
-  assert.match(css, /\.nav-group\s*\{[^}]*min-width:\s*max-content/);
-  assert.match(css, /@media \(max-width:\s*1100px\)\s*\{[\s\S]*?\.workspace-nav\s*\{[^}]*overflow-x:\s*auto[^}]*overscroll-behavior-inline:\s*contain[^}]*scroll-padding-inline:\s*\.45rem[^}]*scroll-snap-type:\s*inline proximity/);
-  assert.match(css, /@media \(max-width:\s*1100px\)\s*\{[\s\S]*?\.nav-link\s*\{[^}]*scroll-margin-inline:\s*\.45rem[^}]*scroll-snap-align:\s*center/);
-  assert.match(css, /@media \(max-width:\s*760px\)\s*\{[\s\S]*?\.nav-overflow-hint\s*\{[^}]*display:\s*block/);
-  assert.match(css, /@media \(max-width:\s*760px\)\s*\{[\s\S]*?\.connection\s*\{[^}]*grid-column:\s*1[^}]*grid-row:\s*2[^}]*justify-self:\s*start/);
-  assert.match(css, /@media \(max-width:\s*760px\)\s*\{[\s\S]*?\.workspace-nav\s*\{[^}]*scroll-snap-type:\s*inline mandatory/);
-  assert.match(css, /@media \(max-width:\s*760px\)\s*\{[\s\S]*?\.nav-group\s*\{[^}]*flex:\s*0 0 calc\(100% - \.9rem\)[^}]*min-width:\s*0[^}]*scroll-snap-align:\s*start/);
-  assert.match(css, /@media \(max-width:\s*760px\)\s*\{[\s\S]*?\.nav-link\s*\{[^}]*padding-inline:\s*\.35rem[^}]*scroll-snap-align:\s*none/);
-});
+// Responsive sticky navigation is exercised in workspace_navigation_preview.test.mjs.
