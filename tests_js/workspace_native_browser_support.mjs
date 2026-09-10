@@ -1,4 +1,5 @@
 import { claimsBrowser } from './workspace_native_claims_browser_support.mjs';
+import { projectionsBrowser } from './workspace_native_projections_browser_support.mjs';
 import { nativeFactsBrowser } from './workspace_native_facts_browser_support.mjs';
 import { resumeDraftBrowser } from './workspace_native_resumes_browser_support.mjs';
 import { nativeAnswersBrowser } from './workspace_native_answers_browser_support.mjs';
@@ -63,6 +64,10 @@ export async function nativeJobsBrowser(buildRoot) {
     await claimStarted;
     await page.locator('[data-job-create]:disabled').waitFor();
     releaseInitialClaim();
+    await page.locator('[data-job-create]:enabled').waitFor();
+    await page.getByRole('button',{name:'Needs Attention',exact:true}).click();
+    await page.getByText('No jobs need attention.',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Jobs',exact:true}).click();
     await page.getByRole('button', { name: 'New job', exact: true }).click();
     await page.locator('dialog [name="url"]').fill('https://example.invalid/native');
     await page.locator('dialog [name="role"]').fill('Native fixture role');
@@ -123,10 +128,15 @@ export async function nativeJobsBrowser(buildRoot) {
     }});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     const token = new URLSearchParams(new URL(startup.url).hash.slice(1)).get('token');
-    const unsupported = await fetch(startup.origin + '/api/overview', { headers: { Authorization: `Bearer ${token}` } });
+    const projections = await projectionsBrowser(page,{jobId:job.id,markReady:async()=>{
+      const current = JSON.parse(await readFile(join(root,'jobs.json'),'utf8')).jobs[job.id];
+      await execute(process.execPath,[cli,'--root',root,'--native-lock',fixture.receipt.artifact,
+        'task-select','--id',job.id,'--expected-revision',String(current.revision),'--owner-confirmed'],{env:{PATH:''}});
+    }});
+    const unsupported = await fetch(startup.origin + '/api/trash', { headers: { Authorization: `Bearer ${token}` } });
     assert.equal(unsupported.status, 501);
     assert.deepEqual(pageErrors, []);
-    return { claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
+    return { projections, claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
   } finally {
     releaseInitialClaim?.();
     if (browser) await browser.close();

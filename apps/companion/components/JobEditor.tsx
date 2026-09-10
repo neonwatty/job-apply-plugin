@@ -1,7 +1,9 @@
 import { useEffect,useId,useRef } from 'react';
+import type { ReactNode } from 'react';
 import { textFields,type JobFields,type Resume } from './contracts';
 import type { Editor } from './job-editor-state';
-export function JobEditor({ editor,resumes,busy,error,change,close,save,reapply,load,refresh }: {
+export function JobEditor({ editor,resumes,busy,error,change,close,save,reapply,load,refresh,children }: {
+    children?: ReactNode;
     editor: Editor;
     resumes: Resume[];
     busy: boolean;
@@ -163,5 +165,6 @@ export function JobEditor({ editor,resumes,busy,error,change,close,save,reapply,
 
 
         </form>
+        {children}
     </dialog>;
 }

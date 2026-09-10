@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "apps/companion/components/JobActivity.tsx",
+      "sha256": "31d86a46e3ece931c79dc4e16456eeb5db1cf962fc62a72854f762b163b166ba",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/NeedsAttention.tsx",
+      "sha256": "68fc90f773371b59893b23979315c0bbb3a821eb1c6d7ba76ac763a15997513d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/projection-model.ts",
+      "sha256": "172fc6f45027f193144b4086fd241867ce52d51380060ef18ca78eab7fc0e102",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/projection-view.ts",
+      "sha256": "c90f9241a81eb657a39eaa54c06b98acf6addb5743540c4ffc592a3f96c6a376",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/cli/native-projections.js",
+      "sha256": "10b33a7734490d534e153f5cbd423e799f6934c72b859c613080c613e1f85e2f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/workspace-projections-http.js",
+      "sha256": "59ef614900dee29f9a32754519d72d91a400034cdad21218003d5e3992c2cbdc",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/workspace-projections.js",
+      "sha256": "b86a78120ffd7b45c9bca0ce47b10b42af59b7a55acfc3f1e33c323f8e5809b1",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-projections.ts",
+      "sha256": "477471d05760ec95735d2ef14571498cc13d8bd4cc9e27ebd9d90c027f80041b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/workspace-projections-http.ts",
+      "sha256": "b49b29207e62df81a6283211b0326bf81cab19985591542662b023294bd39c77",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/workspace-projections.ts",
+      "sha256": "718afe784743c9a107ce781469ed90723af22ecae1f032014ce85a5a540876f5",
+      "classification": "unreviewed"
+    }
+  ]
+}
