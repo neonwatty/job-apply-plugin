@@ -18,25 +18,26 @@ with application sites. The local workspace opens in your default browser.
 
 ## From installation to your first prepared job
 
-1. **Open the workspace.** Invoke `$job-apply:job-workspace` in Codex or
-   `/job-apply:job-workspace` in Claude Code. The agent resolves the installed
-   plugin location and launches the workspace. Keep the launcher process running.
-2. **Import a resume.** From Overview choose **Open Resumes**. Give the file a
-   label and import a PDF, DOCX, or UTF-8 TXT file, up to 10 MiB. Job Apply keeps
-   a managed copy; importing does not edit your source document.
-3. **Ask the agent to extract facts.** Choose **Request fact extraction**, then
-   **Copy agent handoff**. Paste the handoff into your Codex task or Claude Code
-   session. Copying or queuing a request alone does not start an agent.
-4. **Review the result.** Return to **Facts** to check the extracted information.
-   Extraction can fill absent, unprotected facts. Open the resume's **Manage**
-   details and **Extraction reviews** for changes requiring your decision.
-   Accept only changes you want; resolve conflicts explicitly.
-5. **Prepare a job.** Open **Jobs**, choose **New job**, and save the opportunity.
-   Open its details, choose **Run ready check**, resolve listed blockers, and
-   mark it **Ready**. Use resume details to choose a default if needed.
-6. **Hand off when ready.** Copy your host's Job Apply command from Overview and
-   paste it into that host. The agent prepares the application and stops for your
-   review. You control final submission on the application site.
+1. **Ask the agent to set up your resume.** Supply its local path, or let the
+   agent ask for it. It imports a managed copy and completes fact extraction;
+   no UI installation or copied extraction handoff is required.
+2. **Review the result in the conversation.** Check contact details, work history,
+   education, and skills. The agent flags uncertainty and preserves existing
+   confirmed facts. Choose explicitly how to resolve proposed conflicts.
+3. **Choose job intake.** Supply a job URL, point to a browser page and select a
+   count/filter, or use manual Jobs entry in the optional companion. The agent
+   previews and saves the authorized selection, preserving existing job states.
+4. **Read the automatic readiness results.** After agent intake, it checks saved
+   jobs without another prompt. It uses an assigned resume, default, or sole
+   active resume. A damaged file stays blocked; multiple resumes without an
+   assignment/default require your choice. Passing checks leaves jobs saved.
+5. **Choose when to apply.** Explicitly select the job to prepare. Readiness
+   alone does not start an application. Final submission remains yours.
+
+To review or edit in a browser, install the [optional companion](../companion/README.md)
+and invoke the workspace skill. Manual resume upload and extraction handoffs
+remain available there. For manual job entry, the agent can check your saved
+selection when you return to the conversation.
 
 ## Stop and return later
 
@@ -61,7 +62,7 @@ are not a substitute for saving before stopping.
 | A record changed elsewhere | Refresh the record, review the preserved draft, and explicitly reapply your changes. |
 | Store recovery message appears | Stop the workspace and preserve the data directory. Follow the recovery guidance; do not delete or reset your Store to bypass it. |
 
-For a manual launch, resolve the installed plugin directory and run:
+To install and launch the optional companion from a source checkout:
 
 ```text
 python3 "<source-checkout>/companion/install.py"

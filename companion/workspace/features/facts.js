@@ -303,7 +303,7 @@ export function installFacts(context) {
   }
 
   const readinessNames = {
-    first_name: "First name", last_name: "Last name", email: "Email", default_resume: "Default resume",
+    first_name: "First name", last_name: "Last name", email: "Email", default_resume: "Default or sole resume",
     phone: "Phone", location: "Location", work_history: "Work history", education: "Education",
     skills: "Skills", professional_links: "Professional links",
   };
