@@ -119,3 +119,11 @@ TypeScript lane. Tests use prepared synthetic extraction facts to verify Store
 behavior; they do not establish semantic extraction quality or owner acceptance.
 Manual UI intake can be checked when the owner returns to the agent; automatic
 checks do not imply a background agent or an automatic Ready/status transition.
+
+### Facts UI refinement
+
+Fact-type tabs, a sticky Save action and promotion/description editing live only
+in the independent companion. Existing canonical paths, atomic work-history
+patches and revision-conflict protection are retained. Forward-port the visible
+editing behavior and keyboard/draft guarantees to the TypeScript companion;
+do not share a live Store or merge its implementation wholesale.

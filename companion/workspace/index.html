@@ -150,28 +150,28 @@
     <div id="facts-workspace" class="hidden">
       <section class="hero" aria-labelledby="facts-title">
         <div><p class="eyebrow">Facts Workspace</p><h2 id="facts-title">Your canonical application facts.</h2><p>Review and selectively edit the same local profile used by Job Apply agents.</p></div>
-        <div class="hero-actions"><button id="facts-refresh" class="button secondary" type="button">Refresh</button><button id="facts-save" class="button primary" type="button">Save changes</button></div>
       </section>
-      <p id="facts-status" class="notice" role="status">Open Facts to load the canonical profile.</p>
       <section id="profile-readiness" class="profile-readiness" aria-labelledby="profile-readiness-title" tabindex="-1">
         <div class="readiness-heading"><div><p class="eyebrow">ADVISORY CHECK</p><h2 id="profile-readiness-title">Profile readiness</h2></div><p>Individual jobs may still require additional information.</p></div>
         <div id="profile-readiness-sections" class="readiness-sections" aria-live="polite"></div>
       </section>
       <section class="facts-organizer" aria-labelledby="facts-organizer-title">
         <div class="facts-organizer-heading"><div><p class="eyebrow">SAVED VIEWS</p><h2 id="facts-organizer-title">Focus the facts you need</h2><p>Built-in sections and custom groups change only this view. Canonical facts stay in place.</p></div><div class="button-row"><button id="fact-group-edit" class="button secondary hidden" type="button">Edit group</button><button id="fact-group-new" class="button primary" type="button">New group</button></div></div>
-        <div id="fact-group-nav" class="fact-group-nav" role="toolbar" aria-label="Fact views">
-          <button class="fact-group-chip active" type="button" data-fact-view="all" aria-pressed="true">All facts</button>
-          <button class="fact-group-chip" type="button" data-fact-view="identity" aria-pressed="false">Identity &amp; contact</button>
-          <button class="fact-group-chip" type="button" data-fact-view="location" aria-pressed="false">Location</button>
-          <button class="fact-group-chip" type="button" data-fact-view="links" aria-pressed="false">Professional links</button>
-          <button class="fact-group-chip" type="button" data-fact-view="experience" aria-pressed="false">Experience &amp; skills</button>
-          <button class="fact-group-chip" type="button" data-fact-view="preferences" aria-pressed="false">Search preferences</button>
-          <button class="fact-group-chip" type="button" data-fact-view="additional" aria-pressed="false">Additional facts</button>
+        <div id="fact-group-nav" class="fact-group-nav" role="tablist" aria-label="Fact views">
+          <button class="fact-group-chip active" type="button" data-fact-view="all" id="fact-tab-all" role="tab" aria-controls="facts-content" aria-selected="true" tabindex="0">All facts</button>
+          <button class="fact-group-chip" type="button" data-fact-view="identity" id="fact-tab-identity" role="tab" aria-controls="facts-content" aria-selected="false" tabindex="-1">Identity &amp; contact</button>
+          <button class="fact-group-chip" type="button" data-fact-view="location" id="fact-tab-location" role="tab" aria-controls="facts-content" aria-selected="false" tabindex="-1">Location</button>
+          <button class="fact-group-chip" type="button" data-fact-view="links" id="fact-tab-links" role="tab" aria-controls="facts-content" aria-selected="false" tabindex="-1">Professional links</button>
+          <button class="fact-group-chip" type="button" data-fact-view="experience" id="fact-tab-experience" role="tab" aria-controls="facts-content" aria-selected="false" tabindex="-1">Work history</button>
+          <button class="fact-group-chip" type="button" data-fact-view="education" id="fact-tab-education" role="tab" aria-controls="facts-content" aria-selected="false" tabindex="-1">Education</button>
+          <button class="fact-group-chip" type="button" data-fact-view="skills" id="fact-tab-skills" role="tab" aria-controls="facts-content" aria-selected="false" tabindex="-1">Skills</button>
+          <button class="fact-group-chip" type="button" data-fact-view="preferences" id="fact-tab-preferences" role="tab" aria-controls="facts-content" aria-selected="false" tabindex="-1">Search preferences</button>
+          <button class="fact-group-chip" type="button" data-fact-view="additional" id="fact-tab-additional" role="tab" aria-controls="facts-content" aria-selected="false" tabindex="-1">Additional facts</button>
           <span id="custom-fact-groups" class="custom-fact-groups"></span>
         </div>
         <p id="fact-view-status" class="visually-hidden" role="status" aria-live="polite">Showing all facts.</p>
       </section>
-      <section class="facts-panel" aria-labelledby="facts-form-title">
+      <section id="facts-content" class="facts-panel" role="tabpanel" aria-labelledby="facts-form-title" tabindex="0">
         <div class="panel-heading"><div><p class="eyebrow">CANONICAL PROFILE</p><h2 id="facts-form-title">Applicant facts</h2></div><p id="facts-revision">Revision —</p></div>
         <div id="fact-view-empty" class="empty-state compact-empty hidden"><span class="empty-icon" aria-hidden="true">◇</span><h3>No matching facts yet</h3><p>This saved view still exists. Edit the group to add current canonical fact paths.</p></div>
         <form id="facts-form">
@@ -192,9 +192,13 @@
             <label>Portfolio URL <input data-path="/portfolioUrl" type="url"><small data-provenance="/portfolioUrl"></small></label>
             <label>GitHub URL <input data-path="/githubUrl" type="url"><small data-provenance="/githubUrl"></small></label>
           </div></fieldset>
-          <fieldset data-fact-section="experience"><legend>Experience and skills</legend><div class="form-grid">
+          <fieldset data-fact-section="experience"><legend>Work history</legend><div class="form-grid">
             <section class="repeater wide" aria-labelledby="work-history-heading"><div class="repeater-heading"><h3 id="work-history-heading">Work history</h3><button id="add-work" class="button secondary" type="button">Add position</button></div><div id="work-history" data-path="/workHistory" data-repeater="work" data-atomic></div><small data-provenance="/workHistory"></small></section>
+          </div></fieldset>
+          <fieldset data-fact-section="education"><legend>Education</legend><div class="form-grid">
             <section class="repeater wide" aria-labelledby="education-heading"><div class="repeater-heading"><h3 id="education-heading">Education</h3><button id="add-education" class="button secondary" type="button">Add education</button></div><div id="education-list" data-path="/education" data-repeater="education" data-atomic></div><small data-provenance="/education"></small></section>
+          </div></fieldset>
+          <fieldset data-fact-section="skills"><legend>Skills</legend><div class="form-grid">
             <label class="wide">Skills (one per line) <textarea data-path="/skills" data-lines data-atomic rows="4"></textarea><small data-provenance="/skills"></small></label>
           </div></fieldset>
           <fieldset data-fact-section="preferences"><legend>Search preferences</legend><div class="form-grid">
@@ -209,6 +213,10 @@
         <div id="facts-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>Some facts changed elsewhere</h3><p>Choose whether conflicting fields keep the latest canonical value or replace it with your draft. Structured values are never reapplied automatically.</p><ul id="facts-conflict-list"></ul><div class="button-row"><button id="facts-use-latest" class="button secondary" type="button">Use latest for conflicts</button><button id="facts-use-mine" class="button primary" type="button">Use my values for conflicts</button></div></div>
         <p id="facts-error" class="error hidden" role="alert"></p>
       </section>
+      <div class="facts-save-bar" aria-label="Save facts">
+        <div><p id="facts-status" class="notice" role="status">Open Facts to load the canonical profile.</p><small>Saves edits across all fact tabs. Ctrl/Cmd+S</small></div>
+        <div class="button-row"><button id="facts-refresh" class="button secondary" type="button">Refresh</button><button id="facts-save" class="button primary" type="button" aria-keyshortcuts="Control+s Meta+s">Save changes</button></div>
+      </div>
     </div>
 
     <div id="resumes-workspace" class="hidden">

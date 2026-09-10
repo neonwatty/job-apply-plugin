@@ -202,6 +202,18 @@ export function installBindings(context) {
   $("#fact-group-delete").addEventListener("click", deleteFactGroup);
   $("#fact-group-dialog").addEventListener("close", () => { factGroupState.editing = null; const target = factGroupState.opener?.isConnected ? factGroupState.opener : $("#fact-group-new"); factGroupState.opener = null; target.focus(); });
   $("#facts-form").addEventListener("input", (event) => { const control = event.target.closest("[data-path]"); if (control) markFactDirty(control); });
+  $("#fact-group-nav").addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    const tabs = [...document.querySelectorAll("#fact-group-nav [data-fact-view]")];
+    const index = tabs.indexOf(event.target); if (index < 0) return;
+    event.preventDefault();
+    const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+    applyFactView(tabs[next].dataset.factView); tabs[next].focus();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "s" || $("#facts-workspace").classList.contains("hidden") || document.querySelector("dialog[open]")) return;
+    event.preventDefault(); if (!$("#facts-save").disabled) saveFacts();
+  });
   $("#add-work").addEventListener("click", () => addRepeaterItem("/workHistory")); $("#add-education").addEventListener("click", () => addRepeaterItem("/education"));
   $("#facts-save").addEventListener("click", saveFacts); $("#facts-refresh").addEventListener("click", () => refreshProfile());
   $("#facts-use-latest").addEventListener("click", () => resolveFactConflicts(false)); $("#facts-use-mine").addEventListener("click", () => resolveFactConflicts(true));

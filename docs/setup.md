@@ -72,3 +72,16 @@ python3 ~/.local/share/job-apply-companion/companion.py
 On Windows with the Python launcher, use `py -3.12` in place of `python3`.
 For isolated development QA, add `--root <synthetic-store-directory> --port 0
 --no-open`. Never use the same Store for Python and TypeScript migration writers.
+
+## Edit facts in the optional companion
+
+Choose a fact tab such as Work history, Education or Skills. Use Left/Right or
+Home/End while a tab has focus. Switching tabs preserves drafts. The sticky
+**Save changes** button saves edits across every tab; Ctrl/Cmd+S does the same
+when no dialog is open. Drafts still need saving before stopping the companion.
+
+For a promotion, choose **Add promotion** on a work-history position and enter
+the new role and dates. The draft copies only the company and description.
+**Copy description to company roles** asks before replacing descriptions for
+other positions with the same company name. Review the drafts and save when
+ready. Conflicting changes from another client still require explicit review.
