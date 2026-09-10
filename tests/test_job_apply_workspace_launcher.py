@@ -37,7 +37,10 @@ class WorkspaceProcessTests(unittest.TestCase):
                 self.assertIn("/#token=", details["url"])
                 connection = http.client.HTTPConnection("127.0.0.1", details["port"], timeout=3)
                 connection.request("GET", "/", headers={"Host": f"127.0.0.1:{details['port']}"})
-                self.assertEqual(connection.getresponse().status, 200)
+                with connection.getresponse() as response:
+                    self.assertEqual(response.status, 200)
+                    # Finish the request before testing orderly process shutdown.
+                    response.read()
                 connection.close()
                 if os.name == "nt":
                     process.send_signal(signal.CTRL_BREAK_EVENT)

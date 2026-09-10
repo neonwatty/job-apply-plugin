@@ -70,6 +70,7 @@ export async function runBrowserCrudFactsPhase(context) {
     assert.match(await readiness.innerText(), /Individual jobs may still require additional information\./);
     assert.doesNotMatch(await readiness.innerText(), /score|percent|application ready|\d+%/i);
     await page.getByRole("button", {name:"Close profile readiness"}).click();
+    await page.locator("#readiness-dialog").waitFor({state:"hidden"});
     assert.equal(await page.getByLabel("First name").inputValue(), "Ada");
     assert.equal(await page.getByLabel("Postal code").inputValue(), "85001");
     assert.equal(await page.getByLabel("Minimum base salary").inputValue(), "$150K");

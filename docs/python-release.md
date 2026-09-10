@@ -150,3 +150,14 @@ no page navigation, restart, installation replacement, or Store mutation was use
 for that identity check. Automated synthetic PDF checks verify authenticated bytes,
 unauthenticated rejection and the browser-open action. Headless shell cannot qualify
 visual PDF rendering; owner PDF readability and UX acceptance remain open.
+
+Motion polish: readiness opens and closes with a short slide; Escape, close and
+backdrop clicks share dismissal and restore focus. Menus transition both ways,
+page/tab content fades briefly, and reduced-motion preferences disable movement.
+Forward-port these interaction details with the UX foundation.
+
+Verification follow-up: abandoning a response body and immediately stopping the
+server reproduced a request-thread stderr/finalization failure on Python 3.9 and
+3.12. The orderly-shutdown test now consumes the response before stopping.
+Abrupt-disconnect shutdown deserves a separate regression/fix before final release
+acceptance; this UX change does not alter server shutdown behavior.

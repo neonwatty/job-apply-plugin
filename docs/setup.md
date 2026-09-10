@@ -93,7 +93,8 @@ Attention), Application Data (Facts, Resumes, Answers), and Controls (Automation
 Trash). Select a group to open its destinations; on smaller screens, open **Menu**
 first. Escape closes a dropdown and returns focus to its group. In Facts, use the
 section tabs to focus a section; switching tabs retains drafts. The page title follows the selected section. **View readiness** opens a side
-panel without leaving your draft; the full checklist lives on Overview. The
+panel without leaving your draft; the full checklist lives on Overview. Close
+it with Escape, the close button, or a click on the backdrop. The
 header’s sun/moon button switches light and dark mode and remembers your choice.
 Until you choose, it follows your system theme.
 Managed resume cards offer **View PDF**, **Preview text**, or **Download DOCX**.

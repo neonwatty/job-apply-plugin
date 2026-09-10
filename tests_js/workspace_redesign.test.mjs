@@ -41,7 +41,7 @@ for (const [width, colorScheme] of [[1280, "light"], [390, "light"], [1280, "dar
       assert.equal(Math.round((await page.locator("#readiness-dialog").boundingBox()).width), Math.min(480, width));
       await page.screenshot({animations:"disabled", path:`/tmp/readiness-drawer-${width}-${colorScheme}.png`});
       await page.keyboard.press("Escape");
-      assert.equal(await page.locator("#readiness-dialog").isVisible(), false);
+      await page.locator("#readiness-dialog").waitFor({state:"hidden"});
       await page.getByRole("tab", {name:"Identity & contact", exact:true}).click();
       assert.equal(await page.getByLabel("First name").inputValue(), "Unsaved draft");
       await page.getByRole("tab", {name:"Work history", exact:true}).click();

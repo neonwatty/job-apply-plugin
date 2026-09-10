@@ -332,3 +332,22 @@ dialog::backdrop { background: #10182865; backdrop-filter: blur(2px); }
 @keyframes drawer-enter { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: translateX(0); } }
 @media (max-width: 760px) { #readiness-dialog { width: 100vw; padding: 20px; } }
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation: none !important; transition: none !important; } }
+
+/* Short, reversible transitions; content remains interactive only in its active state. */
+#readiness-dialog[open] { animation: drawer-enter 220ms cubic-bezier(.2,.8,.2,1); }
+#readiness-dialog::backdrop { transition: background-color 180ms ease, backdrop-filter 180ms ease; }
+#readiness-dialog.closing::backdrop { background-color: transparent; backdrop-filter: blur(0); }
+@keyframes drawer-enter { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+.nav-group-links { animation: none; opacity: 1; transform: translateY(0); transition: opacity 140ms ease, transform 140ms ease, display 140ms allow-discrete; }
+.nav-group-links[hidden] { opacity: 0; transform: translateY(-4px); pointer-events: none; }
+@starting-style { .nav-group-links:not([hidden]) { opacity: 0; transform: translateY(-4px); } #readiness-dialog[open]::backdrop { background-color: transparent; backdrop-filter: blur(0); } }
+.nav-group-label span { transition: transform 160ms ease; }
+.nav-group-label[aria-expanded="true"] span { transform: rotate(180deg); }
+@keyframes content-enter { from { opacity: .45; } to { opacity: 1; } }
+#workspace-content > div:not(.hidden),#facts-form fieldset:not(.fact-view-hidden) { animation: content-enter 150ms ease-out; }
+@media (max-width: 760px) {
+  .workspace-nav { opacity: 0; transform: translateY(-4px); transition: opacity 140ms ease, transform 140ms ease, display 140ms allow-discrete; }
+  .workspace-nav.mobile-open { opacity: 1; transform: translateY(0); }
+  @starting-style { .workspace-nav.mobile-open { opacity: 0; transform: translateY(-4px); } }
+}
+@media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation: none !important; transition: none !important; } }
