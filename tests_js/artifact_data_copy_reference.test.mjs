@@ -204,3 +204,28 @@ test('data-only reference rejects external input', () => {
     assert.equal(run.status, 2); assert.equal(run.stdout, ''); assert.equal(run.stderr, 'artifact_data_copy_input_rejected\n');
   }
 });
+
+
+test('controlled copy_file_range fallback cannot escape through native sendfile', t => {
+  if (!['darwin', 'linux'].includes(process.platform)) return t.skip('Native POSIX reference required');
+  const script = `import contextlib,io,json,runpy,shutil
+from unittest.mock import patch
+with contextlib.redirect_stdout(io.StringIO()):
+    driver = runpy.run_path(${JSON.stringify(reference)})
+def secondary(*args):
+    raise AssertionError('controlled lane escaped through secondary accelerator')
+with patch.object(shutil, '_HAS_FCOPYFILE', False), \
+     patch.object(shutil, '_USE_CP_COPY_FILE_RANGE', True), \
+     patch.object(shutil, '_USE_CP_SENDFILE', True), \
+     patch.object(shutil, '_fastcopy_sendfile', secondary):
+    rows = [driver['capture']('accelerator', case) for case in ['fallback', 'partial-error']]
+print(json.dumps({'bufferSize':shutil.COPY_BUFSIZE, 'accelerator':'_fastcopy_copy_file_range', 'cases':rows}))`;
+  const run = spawnSync('python3.14', ['-I', '-c', script], { input: '', encoding: 'utf8', timeout: 20000, maxBuffer: 8 * 1024 * 1024 });
+  if (run.error?.code === 'ENOENT') return t.skip('Interpreter alias unavailable');
+  assert.ifError(run.error);
+  assert.equal(run.status, 0, run.stderr);
+  assert.equal(run.stderr, '');
+  const receipt = JSON.parse(run.stdout);
+  assert.deepEqual(receipt.cases.map(row => row.id), ['accelerator:fallback', 'accelerator:partial-error']);
+  for (const row of receipt.cases) checkCopy(row, receipt);
+});
