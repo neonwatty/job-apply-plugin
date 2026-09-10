@@ -4,14 +4,17 @@ import { ApiError, type Client } from './client';
 import type { Job, JobFields, WorkspaceState } from './contracts';
 import { edit, observe, openEditor, reapply, type Editor } from './job-editor-state';
 import { JobEditor } from './JobEditor';
+import { Claims } from './Claims';
 
-export function Jobs({ client, dirtyChanged }: {
+export function Jobs({ client, dirtyChanged, claimsEnabled = false }: {
     client: Client;
+    claimsEnabled?: boolean;
     dirtyChanged: (dirty: boolean) => void;
 }) {
     const [data, setData] = useState<WorkspaceState | null>(null);
     const [editor, setEditor] = useState<Editor | null>(null);
     const [busy, setBusy] = useState(false);
+    const [claimsActive, setClaimsActive] = useState(false);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
     const [error, setError] = useState('');
@@ -58,12 +61,13 @@ export function Jobs({ client, dirtyChanged }: {
         };
     }, [client]);
     useEffect(() => {
-        dirtyChanged(Boolean(editor?.dirty.size) || busy);
+        dirtyChanged(Boolean(editor?.dirty.size) || busy || claimsActive);
         return () => dirtyChanged(false);
-    }, [editor, busy, dirtyChanged]);
+    }, [editor, busy, claimsActive, dirtyChanged]);
 
     function open(job: Job | null) {
-        if (mutation.current) return;
+        if (mutation.current || claimsActive) return;
+        if (editor?.dirty.size && !confirm('Discard unsaved job changes?')) return;
         generation.current++;
         setError('');
         setNotice('');
@@ -162,7 +166,9 @@ export function Jobs({ client, dirtyChanged }: {
         {data && !loading && !loadError && !jobs.length && (allJobs.length
             ? <p>No jobs match these filters. <button onClick={() => { setQuery(''); setStatus(''); }}>Clear filters</button></p>
             : <p>No jobs yet. Capture a job to get started.</p>)}
-        {editor && <JobEditor editor={editor} resumes={data?.resumes ?? []} busy={busy} error={error}
+        {claimsEnabled && <Claims client={client} jobs={allJobs} disabled={busy || loading || Boolean(editor?.dirty.size)}
+            activityChanged={setClaimsActive} changed={() => { void refresh(); }} />}
+        {editor && <JobEditor editor={editor} resumes={data?.resumes ?? []} busy={busy || claimsActive} error={error}
             change={(fields: Partial<JobFields>) => setEditor(current => current ? edit(current, fields) : current)}
             close={close} save={() => void save()}
             refresh={() => {

@@ -13,7 +13,7 @@
     },
     {
       "path": "apps/companion/components/Companion.tsx",
-      "sha256": "892a63d53e4a5d455f7cbf0d000f9eba1803fe2d46efcbb008ac51d85fdfb81c",
+      "sha256": "4b724f74163ce3b799c8aecf371b29795d2d6cc9b0a424699f161112cb143f26",
       "classification": "unreviewed"
     },
     {
@@ -23,7 +23,7 @@
     },
     {
       "path": "apps/companion/components/Jobs.tsx",
-      "sha256": "94c5ee26574327f56f21609c973d4fabd6840039215038245d78bfa24e35b5b0",
+      "sha256": "ac1038245a2a07b011bac2d4107e17fc456f23d9ae69044cf984dc3c1f4050a7",
       "classification": "unreviewed"
     },
     {
@@ -103,7 +103,7 @@
     },
     {
       "path": "apps/companion/server/routes.ts",
-      "sha256": "693dd3413975e75b1a7b4d012049d5964a4a990e47f5c778968ebb99cf912a7d",
+      "sha256": "a5b8a3807b9c981db027c5be7a2a37dc8038628c636289553e1e64eb35fb3381",
       "classification": "unreviewed"
     }
   ]

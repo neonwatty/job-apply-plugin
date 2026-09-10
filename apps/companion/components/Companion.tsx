@@ -111,7 +111,7 @@ export default function Companion() {
         </section>:boot?.status==='ready'&&client? (tab==='overview'? <Overview
             client={client}
             openJobs={() => navigate('jobs')}
-            legacyHref={legacyHref} />:tab==='facts'?<Facts client={client} dirtyChanged={dirtyChanged}/>:tab==='resumes'?<Resumes client={client} dirtyChanged={dirtyChanged}/>:tab==='extractions'?<Extractions client={client} dirtyChanged={dirtyChanged}/>:tab==='answers'?<Answers client={client} dirtyChanged={dirtyChanged}/>:<Jobs client={client} dirtyChanged={dirtyChanged} />):!error&&<p>Loading workspace…
+            legacyHref={legacyHref} />:tab==='facts'?<Facts client={client} dirtyChanged={dirtyChanged}/>:tab==='resumes'?<Resumes client={client} dirtyChanged={dirtyChanged}/>:tab==='extractions'?<Extractions client={client} dirtyChanged={dirtyChanged}/>:tab==='answers'?<Answers client={client} dirtyChanged={dirtyChanged}/>:<Jobs client={client} dirtyChanged={dirtyChanged} claimsEnabled={nativeFixture} />):!error&&<p>Loading workspace…
             </p>}
     </main>;
 }

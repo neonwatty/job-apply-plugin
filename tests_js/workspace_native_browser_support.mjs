@@ -1,3 +1,4 @@
+import { claimsBrowser } from './workspace_native_claims_browser_support.mjs';
 import { nativeFactsBrowser } from './workspace_native_facts_browser_support.mjs';
 import { resumeDraftBrowser } from './workspace_native_resumes_browser_support.mjs';
 import { nativeAnswersBrowser } from './workspace_native_answers_browser_support.mjs';
@@ -98,11 +99,21 @@ export async function nativeJobsBrowser(buildRoot) {
     await resumeDraftBrowser(page, root, fixture, buildRoot, browserResume.id);
     const answers = await nativeAnswersBrowser(page, root, fixture, buildRoot);
     const extractions = await nativeExtractionsBrowser(page, root, fixture, buildRoot);
+    await page.getByRole('button',{name:'Jobs',exact:true}).click();
+    await page.setViewportSize({width:390,height:844});
+    await claimsBrowser(page,{jobId:job.id,expireClaim:async id => {
+      const coordinatorPath = join(root,'coordinator.json');
+      const coordinator = JSON.parse(await readFile(coordinatorPath,'utf8'));
+      assert.equal(coordinator.claim.jobId,id);
+      coordinator.claim.expiresAt = '2000-01-01T00:00:00Z';
+      await writeFile(coordinatorPath,JSON.stringify(coordinator),{mode:0o600});
+    }});
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     const token = new URLSearchParams(new URL(startup.url).hash.slice(1)).get('token');
     const unsupported = await fetch(startup.origin + '/api/overview', { headers: { Authorization: `Bearer ${token}` } });
     assert.equal(unsupported.status, 501);
     assert.deepEqual(pageErrors, []);
-    return { facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
+    return { claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
   } finally {
     if (browser) await browser.close();
     if (child && child.exitCode === null && child.signalCode === null) {

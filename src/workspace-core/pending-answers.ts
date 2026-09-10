@@ -9,6 +9,7 @@ import type { NativeResumeFiles } from '../store/native-resume-files.js';
 import { preflightJobRecord } from './job-preflight.js';
 
 export interface PendingAnswerTransaction {
+  requireUnclaimed?(id:string):void;
   jobs: Document; answers: Document; sessions: Document[];
   profile: Document; resumes: Document; files: NativeResumeFiles;
   commit(operation: Document): Promise<void>;
@@ -51,6 +52,7 @@ export class PendingAnswersService {
       if (typeof revision !== 'bigint' || revision < 1n) throw new JobsError('answer resolution revision is invalid');
     }
     return this.repository.pendingAnswerTransaction(async transaction => {
+      transaction.requireUnclaimed?.(jobId);
       const rawJob = get(object(get(transaction.jobs, 'jobs'), 'jobs'), jobId);
       if (rawJob === null || get(object(rawJob, 'job'), 'deletedAt') !== null) throw new JobsError('job does not exist');
       const job = object(rawJob, 'job');

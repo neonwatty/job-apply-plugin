@@ -9,7 +9,8 @@ including URL deduplication, revisions and human/agent provenance. Resume
 selection validates the shared registry. Managed resume import, list, get,
 metadata update, file replacement, legacy adoption, default selection, integrity
 check, content read and resolution are available through the same Store lock.
-Facts/profile operations are also available; see the linked guide below. Other
+Facts/profile operations and [active claims](native-claims-fixture.md) are also
+available. Other
 workflows return `unsupported_native_workflow`; they never fall back to Python.
 
 ## Run against a new synthetic root
@@ -55,7 +56,7 @@ lossless numeric/text codec; browser editing requires safe integer revisions.
 
 Only the initialized fixture inventory is permitted: the readiness marker, Store
 lock, Jobs, profile, fact-groups, answers, resume registry/files and extraction
-documents/journals, private sessions/history and idle coordinator/journal. Resume replacement writes a durable intent before installing bytes;
+documents/journals, private sessions/history and coordinator/journal. Resume replacement writes a durable intent before installing bytes;
 the next locked operation rolls that exact record forward after interruption and
 clears owned staging files. Unknown state, symlinks, hard links, permissive files
 and mismatched recovery identities are rejected. Keep the failed fixture for

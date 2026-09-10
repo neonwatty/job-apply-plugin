@@ -87,6 +87,7 @@ export class JobsService {
             if (value === null || get(object(value, "job record"), "deletedAt") !== null)
                 throw new JobsError("job does not exist");
             const current = object(value, "job record");
+            transaction.requireUnclaimed?.(id);
             if (int(get(current, "revision")) !== expectedRevision)
                 throw new JobsError("job revision conflict");
             const currentProvenance = has(current, "provenance") ? object(get(current, "provenance"), "job provenance") : emptyObject();
