@@ -13,7 +13,7 @@
     },
     {
       "path": "src/workspace-core/answers-http.ts",
-      "sha256": "9486b702290679d74d3a1e808c1aad0e45d2d02bf5f95d2cb1b9062ebcce89ab",
+      "sha256": "64c69aabd1c08b43bfc1d3efeede132d660fa774e5682be9128bc6dee218509e",
       "classification": "unreviewed"
     },
     {
@@ -33,7 +33,7 @@
     },
     {
       "path": "runtime/workspace-core/answers-http.js",
-      "sha256": "42afc7942b54a494a2a58c134e7b94aed4f9d0d243bebd26cd09155a18e35242",
+      "sha256": "95552854b484903cc58323b97744bcc7df1b34ac430cedb4db80a64c7c6d140d",
       "classification": "unreviewed"
     },
     {
