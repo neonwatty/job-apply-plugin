@@ -47,6 +47,10 @@ for (const [width, colorScheme] of [[1280, "light"], [390, "light"], [1280, "dar
       await page.getByRole("tab", {name:"Work history", exact:true}).click();
       assert.equal(await page.locator("#facts-title").innerText(), "Work history");
       await page.getByRole("button", {name: colorScheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}).click();
+      await page.getByRole("link", {name:"Job Apply home",exact:true}).click();
+      await page.locator("#overview-workspace").waitFor({state:"visible"});
+      await openWorkspace(page, "facts");
+      assert.equal(await page.locator("#facts-title").innerText(), "Work history");
       const selectedTheme = colorScheme === "dark" ? "light" : "dark";
       assert.equal(await page.locator("html").getAttribute("data-theme"), selectedTheme);
       await page.reload();

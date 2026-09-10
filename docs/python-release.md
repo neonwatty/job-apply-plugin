@@ -133,6 +133,8 @@ do not share a live Store or merge its implementation wholesale.
 Owner findings UX-02/03/04: retain Pipeline (Overview, Jobs, Needs Attention),
 Application Data (Facts, Resumes, Answers), and Controls (Automation, Trash).
 Use a compact sticky header with grouped dropdowns and a mobile Menu disclosure.
+The Job Apply brand links to Overview through the same navigation coordinator,
+preserving Facts drafts and the selected tab.
 The Ink & blue foundation applies neutral surfaces, readable light/dark colors,
 consistent compact page headings and reduced-motion-aware transitions across
 all eight destinations. Navigation resets scroll and focuses the destination

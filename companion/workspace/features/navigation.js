@@ -39,6 +39,11 @@ export function installNavigation(context) {
   const refresh = (...args) => coordinators.refresh(...args);
   const openExisting = (...args) => coordinators.openExisting(...args);
   const formatActivityTime = (...args) => coordinators.formatActivityTime(...args);
+  $("#brand-home").addEventListener("click", event => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    navigateWorkspace("overview");
+  });
   const menuToggle = $("#workspace-menu-toggle");
   const nav = $("#workspace-navigation");
   const groupButtons = [...document.querySelectorAll(".nav-group-label")];
