@@ -2,7 +2,7 @@
 
 This tranche provides lossless answer contracts, shared domain services, HTTP/CLI
 leaf adapters and a React editor. It is not a complete phase 8 migration or a
-live Store activation. Native fixture version 6 wires these services into the
+live Store activation. Native fixture version 7 wires these services into the
 shared Store lock, HTTP and CLI dispatch, and the Answers tab. Existing fixtures
 are rejected rather than upgraded; initialize a new isolated fixture using the
 [native fixture guide](native-jobs-fixture.md).
@@ -95,8 +95,8 @@ unsupported reference state. Existing native lock and atomic-write fault tests
 remain required; the domain tests alone do not certify crash recovery.
 
 Merge and cleanup approval use the coordinator journal and session rewrites.
-Full phase 8 acceptance still requires pending-question resolution, active claim
-workflows and complete coordinator/release acceptance.
+Full phase 8 acceptance still requires active claim workflows and complete
+coordinator/release acceptance. Idle pending-question resolution is described below.
 
 ## Cleanup preview
 
@@ -118,14 +118,15 @@ requires a separate confirmation for each proposed merge.
 
 ## Durable merge and approval
 
-Fixture v6 adds private `sessions/*.json`, `applications.jsonl`, `coordinator.json`
+Fixture v7 includes private `sessions/*.json`, `applications.jsonl`, `coordinator.json`
 and `coordinator-journal.json`. New synthetic roots start with an idle coordinator;
-active claims and journal kinds other than `answer_merge` are rejected. Existing
+active claims and journal kinds other than `answer_merge` and
+`answer_resolution` are rejected. Existing
 fixtures and live Stores are not upgraded or adopted.
 
 `AnswerMergeService` uses `answerMergeTransaction` to hold the shared lock across
 preview validation, revision/collision checks, session projection and journal
-commit. Every domain entry point replays pending merges before reading state.
+commit. Every domain entry point replays pending merges and resolutions before reading state.
 The journal retains the Python `answer_merge` operation shape. Replay writes
 answers, affected sessions, the idle coordinator, then clears the journal.
 Interrupted replay resumes without increasing the winner revision twice.
@@ -154,3 +155,32 @@ the editor and refresh the list. Failed or uncertain requests consume the displa
 preview; refresh it to inspect current state before retrying. No merge is applied
 optimistically. Real SIGKILL tests cover journal, answer, session, coordinator and
 journal-clear boundaries, followed by fresh-process and idempotent recovery.
+
+## Pending questions
+
+`GET /api/pending-answers` and `pending-answer-list` list needs-info Jobs with
+pending questions. The projection contains question text, reference, eligibility
+and current Job/session/answer revisions, without stored answer values. The
+**Pending questions** panel in Answers can open the referenced saved answer and
+requires an explicit confirmation for each resolution. Dirty drafts disable
+resolution; an in-flight resolution locks the editor. Attempts consume the
+snapshot, so failed or uncertain requests require refreshing before retrying.
+
+`POST /api/jobs/{id}/resolve-pending-answer` accepts exactly `reference`,
+`expectedJobRevision`, `expectedSessionRevision`, `expectedAnswerRevision` and
+`ownerConfirmed: true`. The CLI is `resolve-pending-answer --id ID --reference REF
+--expected-job-revision N --expected-session-revision N --expected-answer-revision N
+--owner-confirmed`. All three revisions are checked under the shared Store lock.
+
+Only an accepted, confirmed, retained non-sensitive answer can resolve its durable
+pending reference. Resolution removes that field and its associated blockers,
+records the canonical answer key, and advances the Job revision. Remaining
+questions, blockers or required browser handoffs keep the Job in `needs_info`.
+The final question can move it to `ready` only when profile/resume preflight passes;
+a failed preflight leaves the question and Job unchanged.
+
+The Python-shaped `answer_resolution` journal persists intent, Job, session,
+idle coordinator and journal clear in order. Each domain entry recovers interrupted
+resolution before reading current state. Real process-kill tests cover all five
+write boundaries and idempotent recovery. General active-claim acquisition,
+handoff and existing-Store adoption remain outside this synthetic fixture.

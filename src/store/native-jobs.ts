@@ -10,6 +10,8 @@ import type { JobsRepository, JobsTransaction } from "../workspace-core/jobs.js"
 import { atomicWritePointJson } from "./point-persistence.js";
 import { withExclusiveFileLock } from "./exclusive-file-lock.js";
 import type { PosixFlockProvider } from "./posix-flock.js";
+import { NativeAnswerResolutionJournal } from "./native-answer-resolution-journal.js";
+import type { PendingAnswerTransaction } from "../workspace-core/pending-answers.js";
 import { NativeAnswerJournal, validateIdleCoordinator, answerJournalName } from "./native-answer-journal.js";
 import { answerReferenceCounts } from "../contracts/workspace/answer-sessions.js";
 import { validateAnswerSession, validateAnswerHistory } from "../contracts/workspace/answer-session-validation.js";
@@ -27,7 +29,7 @@ import { validateAnswers } from "../contracts/workspace/answers.js";
 import type { AnswerReferenceCounts } from "../workspace-core/answers.js";
 
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
-const marker = '{"mode":"native-jobs-fixture","version":6}\n';
+const marker = '{"mode":"native-jobs-fixture","version":7}\n';
 const allowed = new Set([".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "answers.json", "resume-operation.json", "resume-files", "resume-extractions.json", "resume-extraction-requests.json", "resume-extraction-journal.json", "sessions", "applications.jsonl", "coordinator.json", "coordinator-journal.json"]);
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
@@ -271,7 +273,11 @@ export class NativeJobsRepository implements JobsRepository {
     validateIdleCoordinator(await this.journal('coordinator'));
     const sessions = await this.answerSessions();
     await this.answerHistory();
-    await this.answerJournal().recover(await this.journal(answerJournalName), validateAnswers(await this.document('answers')), sessions);
+    const journal = await this.journal(answerJournalName);
+    const operation = get(journal, 'operation');
+    if (operation !== null && string(get(object(operation, 'coordinator operation'), 'kind')) === 'answer_resolution') {
+      await this.resolutionJournal().recover(journal, validateJobsDocument(await this.document('jobs')), sessions);
+    } else await this.answerJournal().recover(journal, validateAnswers(await this.document('answers')), sessions);
   }
 
   async answerMergeTransaction<T>(operation: (transaction: AnswerMergeTransaction) => Promise<T>): Promise<T> {
@@ -279,6 +285,19 @@ export class NativeJobsRepository implements JobsRepository {
       const document = validateAnswers(await this.document('answers'));
       const sessions = await this.answerSessions(), history = await this.answerHistory();
       return operation({ document, sessions, history, commit: value => this.answerJournal().commit(value, document, sessions) });
+    });
+  }
+
+  private resolutionJournal(): NativeAnswerResolutionJournal {
+    return new NativeAnswerResolutionJournal((name, document) => this.write(join(this.root, `${name}.json`), document, options));
+  }
+
+  async pendingAnswerTransaction<T>(operation: (transaction: PendingAnswerTransaction) => Promise<T>): Promise<T> {
+    return this.transaction(async () => {
+      const jobs = validateJobsDocument(await this.document('jobs')), sessions = await this.answerSessions();
+      return operation({ jobs, sessions, answers: validateAnswers(await this.document('answers')),
+        profile: validateProfile(await this.document('profile')), resumes: validateExtractionResumes(await this.document('resumes')),
+        files: new NativeResumeFiles(this.root), commit: value => this.resolutionJournal().commit(value, jobs, sessions) });
     });
   }
 

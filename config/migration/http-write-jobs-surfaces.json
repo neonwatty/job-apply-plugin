@@ -71,7 +71,12 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/pending-answers.ts",
+        "src/contracts/workspace/answer-resolution.ts",
+        "src/workspace-core/pending-answers-http.ts",
+        "src/workspace-core/jobs-http.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

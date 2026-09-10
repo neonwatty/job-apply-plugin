@@ -39,7 +39,7 @@
     },
     {
       "path": "browser-native-answers-surfaces.json",
-      "sha256": "f3d5afc54c635bcc087dfd131fe495cb191e5c201386879e695a9ead9352a71c"
+      "sha256": "cc0772c27c2b5cf296d0fb73d243f32b4bfbde961f1a29a37e4b41f541dc79c7"
     },
     {
       "path": "browser-native-extractions-surfaces.json",
@@ -79,7 +79,7 @@
     },
     {
       "path": "cli-native-answers-surfaces.json",
-      "sha256": "4b8915bbcefe4a01c07d9d2269365ca82dfe146be14e165ddd3e9e51b570f403"
+      "sha256": "bbb71b096d75f3cb7f33cf946859f0163b66d431c2b5c5c3597ddd69a9df88c9"
     },
     {
       "path": "cli-native-extractions-surfaces.json",
@@ -135,7 +135,7 @@
     },
     {
       "path": "http-read-surfaces.json",
-      "sha256": "ac34ae674d035785270b38dfe3dbdc895be7d7b68bbfd3f9c5bf0efaee3aa6a1"
+      "sha256": "83d6316a567e0b04e344c92ff4ce6e9cde1cb6826199165a9c852065cafec0bf"
     },
     {
       "path": "http-write-accounts-surfaces.json",
@@ -151,7 +151,7 @@
     },
     {
       "path": "http-write-jobs-surfaces.json",
-      "sha256": "1377391d7fd56687bba1dbccfe71e230b55be82ecfc32dd93d56637ce673d1c6"
+      "sha256": "ffa938ec3fc4ccf77d344b88b497c4766c1ac1165d78befe3f2fc2cb2fbbceb9"
     },
     {
       "path": "http-write-profile-surfaces.json",
@@ -167,7 +167,7 @@
     },
     {
       "path": "journal-01-surfaces.json",
-      "sha256": "57979af6d15eb917f9144e488b3e39d9d6dd5c589b06aef56df5ad6c191ad1f6"
+      "sha256": "62143ea52b6c8adbe62c9810f8edaa6f367321d2a4ac4324946772a433bb1741"
     },
     {
       "path": "journal-02-surfaces.json",
@@ -243,7 +243,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "faf16f790ebda4d05c2a5b47335dfe26ef11b49e5d3788f6ba62d902a34fa39c"
+      "sha256": "6d1d673e6b95dc51ce95c7fd89ffda572ea3018b8e7dac0f672722d4580d80ba"
     },
     {
       "path": "source-catalog-m01.json",
@@ -255,7 +255,7 @@
     },
     {
       "path": "source-catalog-native-answer-cleanup.json",
-      "sha256": "cc6a6d670c9bbd8c21275158a0cc8705850484d922544eeb5f8476d136a516c8"
+      "sha256": "c819b8b9447817aa908b5a5626aa9d239b2cfecd46f4caf1cfebb931415129ee"
     },
     {
       "path": "source-catalog-native-answer-merge.json",
@@ -267,7 +267,7 @@
     },
     {
       "path": "source-catalog-native-answers.json",
-      "sha256": "db9f5a8bcaa5745dbe3ea07248cddc95f7e15073cd9f8519be1be468b0cc9a5b"
+      "sha256": "ea1f30d86c94d019ed6dc24cce1736875d6d4cc5113c07d403f825a89cdd080a"
     },
     {
       "path": "source-catalog-native-extractions.json",
@@ -279,7 +279,11 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "262e50c84cfbeeef2f609bca48a1e1d408b8384a6947edc65dade95cd8195665"
+      "sha256": "11ed40f696ab7f22ad0408ba9088c950ec8361112f9dd5f642a12aa81ac43682"
+    },
+    {
+      "path": "source-catalog-native-pending-answers.json",
+      "sha256": "c84db8c21807b6646ce92f8b985094bda927c07ea0423066370ea63cfbfa0179"
     },
     {
       "path": "source-catalog-native-resumes.json",

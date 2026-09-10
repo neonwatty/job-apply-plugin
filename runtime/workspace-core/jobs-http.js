@@ -1,3 +1,4 @@
+import { pendingAnswersHttp } from './pending-answers-http.js';
 import { profileHttp } from "./profile-http.js";
 import { fixtureError } from "../store/native-jobs.js";
 import { JobsError, fromJSON, get, int, keys, object, parse, serialize, set } from "../contracts/workspace/values.js";
@@ -13,6 +14,9 @@ const envelope = (key, value) => set(emptyObject(), key, value);
 /** Transport-independent dispatch. Host/token/Origin/body bounds belong to the adapter. */
 export async function jobsHttp(service, repository, method, path, body = "") {
     try {
+        const pending = await pendingAnswersHttp(repository, method, path, body);
+        if (pending)
+            return pending;
         const extraction = await extractionHttp(repository, method, path, body);
         if (extraction)
             return extraction;
@@ -67,7 +71,7 @@ export async function jobsHttp(service, repository, method, path, body = "") {
     catch (error) {
         if (error instanceof JobsError) {
             return error.message.includes("revision conflict") ? apiError(409, "revision_conflict", error.message)
-                : ["resume proposal is stale", "answer cleanup preview is stale"].includes(error.message) ? apiError(409, "stale_conflict", error.message)
+                : ["resume proposal is stale", "answer cleanup preview is stale", "pending question reference is stale"].includes(error.message) ? apiError(409, "stale_conflict", error.message)
                     : error.message === "proposal review baseline changed" ? apiError(409, "baseline_conflict", error.message)
                         : error.message.includes("content is too large") ? apiError(413, "request_error", error.message)
                             : error.message === "managed resume content is unavailable" ? apiError(409, "content_unavailable", error.message)

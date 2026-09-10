@@ -1,3 +1,4 @@
+import { pendingAnswerCommands, runPendingAnswerCommand } from './native-pending-answers.js';
 import { profileCommands, runProfileCommand } from "./native-profile.js";
 import { answerCommands, runAnswerCommand } from "./native-answers.js";
 import { extractionCommands, runExtractionCommand } from "./native-extractions.js";
@@ -31,6 +32,7 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
     }
   }
   const fields: Record<string, string[]> = {
+    ...pendingAnswerCommands,
     ...profileCommands,
     ...answerCommands,
     ...extractionCommands,
@@ -63,6 +65,7 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
     const limit = ["resume-proposal-create", "resume-extraction-request-complete"].includes(command!) ? 2 * 1024 * 1024 : 65536;
     return parse(file === "-" ? await input(limit) : await readFile(file, "utf8"));
   };
+  if (Object.hasOwn(pendingAnswerCommands, command!)) return serialize(await runPendingAnswerCommand(command!, repository, options));
   if (Object.hasOwn(profileCommands, command!)) return serialize(await runProfileCommand(command!, repository, options, payload));
   if (Object.hasOwn(answerCommands, command!)) return serialize(await runAnswerCommand(command!, repository, options, payload));
   if (Object.hasOwn(extractionCommands, command!)) return serialize(await runExtractionCommand(command!, repository, options, payload));

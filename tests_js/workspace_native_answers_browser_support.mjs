@@ -3,6 +3,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { nativePendingAnswersBrowser } from './workspace_native_pending_answers_browser_support.mjs';
 import { nativeAnswerCleanupBrowser } from './workspace_native_answer_cleanup_browser_support.mjs';
 import { nativeAnswerCreationBrowser } from './workspace_native_answer_creation_browser_support.mjs';
 
@@ -70,5 +71,6 @@ export async function nativeAnswersBrowser(page, root, fixture, buildRoot) {
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
     const creation = await nativeAnswerCreationBrowser(page, root);
     const cleanup = await nativeAnswerCleanupBrowser(page, root, cli);
-    return { cleanup, creation, persistedEdits: true, cliConflictReapply: true, losslessScope: true, explicitSensitiveConsent: true, review: true, reload: true, narrow: true };
+    const pendingQuestions = await nativePendingAnswersBrowser(page, root, cli);
+    return { pendingQuestions, cleanup, creation, persistedEdits: true, cliConflictReapply: true, losslessScope: true, explicitSensitiveConsent: true, review: true, reload: true, narrow: true };
 }

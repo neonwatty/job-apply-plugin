@@ -1,4 +1,4 @@
-// Explicit existing Python API contract; no caller-selected upstream destinations.
+// Explicit Companion API allowlist; no caller-selected upstream destinations.
 export const apiRoutes = [
   [
     "GET",
@@ -67,6 +67,10 @@ export const apiRoutes = [
   [
     "GET",
     "/api/overview"
+  ],
+  [
+    "GET",
+    "/api/pending-answers"
   ],
   [
     "GET",

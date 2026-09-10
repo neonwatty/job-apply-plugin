@@ -505,6 +505,35 @@
         "recovery": "unverified",
         "platform": "unverified"
       }
+    },
+    {
+      "id": "http:GET:/api/pending-answers",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/pending-answers",
+      "node": "ANS",
+      "sources": [
+        "src/store/native-jobs.ts",
+        "src/workspace-core/pending-answers.ts",
+        "src/contracts/workspace/answer-resolution.ts",
+        "src/workspace-core/pending-answers-http.ts",
+        "src/workspace-core/jobs-http.ts",
+        "apps/companion/server/routes.ts",
+        "apps/companion/server/forward.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
     }
   ]
 }

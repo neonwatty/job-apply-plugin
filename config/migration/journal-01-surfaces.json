@@ -71,7 +71,11 @@
       "value": "answer_resolution",
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/domains/coordinator/persistence.py"
+        "scripts/job_apply_store/domains/coordinator/persistence.py",
+        "src/store/native-jobs.ts",
+        "src/store/native-answer-resolution-journal.ts",
+        "src/workspace-core/pending-answers.ts",
+        "src/contracts/workspace/answer-resolution.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

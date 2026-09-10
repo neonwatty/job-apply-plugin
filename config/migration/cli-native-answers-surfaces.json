@@ -396,6 +396,58 @@
         "recovery": "unverified",
         "platform": "unverified"
       }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:pending-answer-list",
+      "kind": "cli",
+      "command": "pending-answer-list",
+      "node": "ANS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-pending-answers.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/pending-answers.ts",
+        "src/contracts/workspace/answer-resolution.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:resolve-pending-answer",
+      "kind": "cli",
+      "command": "resolve-pending-answer",
+      "node": "ANS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-pending-answers.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/pending-answers.ts",
+        "src/contracts/workspace/answer-resolution.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
     }
   ]
 }

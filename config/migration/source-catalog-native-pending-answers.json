@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "apps/companion/components/PendingAnswers.tsx",
+      "sha256": "c333045613853ea275239bf5b730c182a709494e40f9d07c825d5fe9142924f8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/pending-answer-model.ts",
+      "sha256": "cf0967031d7982b059438351e881ee6e494dcd5f555fdd331ab291864c4cabc7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/cli/native-pending-answers.js",
+      "sha256": "ed3cf505ecf6672a9a41cd841a1f04b911bba2dcc272dfc79c67afc019cf42e0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/answer-resolution.js",
+      "sha256": "301298ef456cd14b3dcfb1232edf5667f8a083853e7cf9843c1abaa997c5cec5",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/canonical-json.js",
+      "sha256": "a8a0d272f18162361f47ea3614ccba9d6026f8325ceed917a74135299f723225",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/native-answer-resolution-journal.js",
+      "sha256": "5107a1927ef3f9b979e67bad00a8bce42eb2a364a0ef4625f1c724a87dc20cbc",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/job-preflight.js",
+      "sha256": "234946e727d4ffd1ce542de896e916eac2ae18cc79f1dc7907e0b434f1311d38",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/pending-answers-http.js",
+      "sha256": "b6b4d86e6ac7c7c18be776f30f30340c779417e238ccdc6e59717d3c0cc55a95",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/pending-answers.js",
+      "sha256": "565ced08c4a7350f30fe81af2449dbac4968066f0f6c8c44be6a4253e9981607",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-pending-answers.ts",
+      "sha256": "1e6fe342488962501a4b2216e7f7cab5d3b6658bdc715ca2704128ef25278be8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/answer-resolution.ts",
+      "sha256": "4bc282462885f38ee5470cf1198b3443c3bff66297a0c25628050e7e655b0dc7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/canonical-json.ts",
+      "sha256": "be5a75938db1d51725c638b27e8b7f30ede5183067b72e7756ac329cb663db44",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/native-answer-resolution-journal.ts",
+      "sha256": "b5fba257d7e57972cb35b667a9f2e59d5e404f8c89620b721f3eb74a35b60470",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/job-preflight.ts",
+      "sha256": "39ca2088aa755094ee90406781b38c4ce7839ce3d7a01e34a34f66b3e2315200",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/pending-answers-http.ts",
+      "sha256": "a3da5281086365babe0c0766eeab73f0edf600f6e2588ea4a70ff5a941c96640",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/pending-answers.ts",
+      "sha256": "ad6913418d2fc324041ddb0e5f0518965b1ce96d1f1e0ddd6bc2567d59d75d4e",
+      "classification": "unreviewed"
+    }
+  ]
+}

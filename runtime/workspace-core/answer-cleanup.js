@@ -1,33 +1,11 @@
 import { createHash } from 'node:crypto';
-import { PythonObject } from '../contracts/python-object.js';
-import { PythonText } from '../contracts/python-text.js';
-import { serializeJsonGraph } from '../contracts/raw-json/json-serialization-core.js';
+import { canonicalJson } from '../contracts/workspace/canonical-json.js';
 import { fallback } from '../contracts/workspace/answers.js';
 import { proposeCleanup } from '../contracts/workspace/answer-match-cleanup.js';
 import { emptyObject } from '../contracts/workspace/jobs.js';
 import { strip } from '../contracts/workspace/job-url.js';
-import { copy, get, integer, object, serialize, set, string, text, JobsError } from '../contracts/workspace/values.js';
+import { copy, get, integer, object, set, string, text, JobsError } from '../contracts/workspace/values.js';
 import { semanticCandidate } from './answer-match.js';
-/** Python compact, sorted, ensure_ascii=False JSON, without losing integer precision. */
-function canonicalJson(value) {
-    const quote = (item) => {
-        if (item.codePoints.some(point => point >= 0xd800 && point <= 0xdfff)) {
-            throw new JobsError('answer cleanup preview is invalid');
-        }
-        return JSON.stringify(string(item));
-    };
-    return serializeJsonGraph(value, current => {
-        if (current instanceof PythonText)
-            return { kind: 'scalar', text: quote(current) };
-        if (Array.isArray(current))
-            return { kind: 'array', identity: current, items: current };
-        if (current instanceof PythonObject)
-            return { kind: 'object', identity: current,
-                entries: [...current.entries()].sort(([left], [right]) => left.compare(right))
-                    .map(([key, item]) => [quote(key), item]) };
-        return { kind: 'scalar', text: serialize(current) };
-    }, () => new JobsError('answer cleanup preview is invalid'));
-}
 /** Called under the repository lock with a validated canonical Answers document. */
 export function previewAnswerCleanup(document) {
     const records = object(get(document, 'answers'), 'answers');
@@ -56,6 +34,6 @@ export function previewAnswerCleanup(document) {
         return result;
     });
     const tokenInput = set(set(emptyObject(), 'proposals', proposals), 'revisions', revisions);
-    const token = `answer-cleanup-v1.${createHash('sha256').update(canonicalJson(tokenInput), 'utf8').digest('hex')}`;
+    const token = `answer-cleanup-v1.${createHash('sha256').update(canonicalJson(tokenInput, 'answer cleanup preview is invalid'), 'utf8').digest('hex')}`;
     return set(set(set(emptyObject(), 'proposals', proposals), 'previewToken', text(token)), 'mutated', false);
 }
