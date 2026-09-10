@@ -140,7 +140,7 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false }: {
             <div><p className="eyebrow">Your pipeline</p><h1>Jobs</h1></div>
             <div>
                 <button disabled={busy} onClick={() => void refresh()}>Refresh</button>{' '}
-                <button className="primary" data-job-create disabled={busy} onClick={() => open(null)}>New job</button>
+                <button className="primary" data-job-create disabled={busy || claimsActive} onClick={() => open(null)}>New job</button>
             </div>
         </header>
         <p role="status">{loading ? (data ? 'Refreshing jobs…' : 'Loading jobs…') : notice}</p>
@@ -157,7 +157,7 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false }: {
             </select></label>
         </div>
         <div className="job-list">
-            {jobs.map(job => <button className="job-card" key={job.id} onClick={() => open(job)}>
+            {jobs.map(job => <button className="job-card" disabled={busy || claimsActive} key={job.id} onClick={() => open(job)}>
                 <strong>{String(job.role || job.url)}</strong>
                 <span>{String(job.company || '')} · {String(job.location || '')}</span>
                 <small>{job.status.replaceAll('_', ' ')} · revision {job.revision}</small>

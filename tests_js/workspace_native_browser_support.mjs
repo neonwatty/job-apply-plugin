@@ -15,7 +15,7 @@ const execute = promisify(execFile);
 
 export async function nativeJobsBrowser(buildRoot) {
   const fixture = await nativeFixture();
-  let child, browser;
+  let child, browser, releaseInitialClaim;
   try {
     const root = join(await realpath(fixture.root), 'jobs');
     await initializeJobsFixture(root);
@@ -47,9 +47,22 @@ export async function nativeJobsBrowser(buildRoot) {
       }
     });
     page.on('pageerror', error => pageErrors.push(error.message));
+    let initialClaimSeen;
+    const claimStarted = new Promise(resolve => { initialClaimSeen = resolve; });
+    const claimGate = new Promise(resolve => { releaseInitialClaim = resolve; });
+    let firstClaim = true;
+    await page.route('**/api/claims', async route => {
+      if (firstClaim && route.request().method() === 'GET') {
+        firstClaim = false; initialClaimSeen(); await claimGate;
+      }
+      await route.continue();
+    });
     await page.goto(startup.url);
     await page.getByText(/Synthetic native workspace/).waitFor();
     assert.equal(await page.getByRole('link', { name: 'Open full workspace' }).count(), 0);
+    await claimStarted;
+    await page.locator('[data-job-create]:disabled').waitFor();
+    releaseInitialClaim();
     await page.getByRole('button', { name: 'New job', exact: true }).click();
     await page.locator('dialog [name="url"]').fill('https://example.invalid/native');
     await page.locator('dialog [name="role"]').fill('Native fixture role');
@@ -115,6 +128,7 @@ export async function nativeJobsBrowser(buildRoot) {
     assert.deepEqual(pageErrors, []);
     return { claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
   } finally {
+    releaseInitialClaim?.();
     if (browser) await browser.close();
     if (child && child.exitCode === null && child.signalCode === null) {
       await new Promise((resolve, reject) => {
