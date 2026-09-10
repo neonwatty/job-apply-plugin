@@ -3,6 +3,7 @@ export const apiRoutes = [
   ["GET","/api/claims"],
   ["POST","/api/claims/select"],
   ["POST","/api/claims/acquire"],
+  ["POST","/api/claims/review-restart"],
   ["POST","/api/claims/heartbeat"],
   ["POST","/api/claims/recover"],
   ["POST","/api/claims/progress"],

@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
+import { reviewRestartBrowser } from './workspace_native_review_restart_browser_support.mjs';
 
 // The caller owns the disposable fixture and prepares one preflight-ready job.
 // expireClaim must adjust only that fixture's lease; never use an owner Store.
 export async function claimsBrowser(page, { jobId, expireClaim }) {
     const panel = page.getByRole('region', { name: 'Active application', exact: true });
-    await panel.getByText('No active application claim.', { exact: true }).waitFor();
+    try { await panel.getByText('No active application claim.', { exact: true }).waitFor(); }
+    catch (error) { throw Error(`${error.message}\n${await page.locator('body').innerText()}`); }
     await panel.getByRole('combobox', { name: 'Job for application work', exact: true }).selectOption(jobId);
     page.once('dialog', dialog => dialog.accept());
     await panel.getByRole('button', { name: 'Select this job', exact: true }).click();
@@ -43,4 +45,5 @@ export async function claimsBrowser(page, { jobId, expireClaim }) {
     await panel.getByText('Application returned for owner input.', { exact: true }).waitFor();
     await panel.getByText('No active application claim.', { exact: true }).waitFor();
     assert.equal((await page.locator('body').innerText()).includes(recoveredPayload.token), false);
+    await reviewRestartBrowser(page, jobId);
 }

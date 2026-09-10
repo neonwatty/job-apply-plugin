@@ -126,7 +126,10 @@
       "value": "review_restart",
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/domains/coordinator/persistence.py"
+        "scripts/job_apply_store/domains/coordinator/persistence.py",
+        "src/store/native-claim-journal.ts",
+        "src/store/native-claim-history.ts",
+        "src/workspace-core/claims.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

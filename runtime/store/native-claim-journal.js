@@ -3,7 +3,7 @@ import { validateAnswerHistory, validateAnswerSession } from '../contracts/works
 import { validateJobsDocument, safeId } from '../contracts/workspace/jobs.js';
 import { fromJSON, get, has, int, integer, keys, object, parse, serialize, set, string, JobsError } from '../contracts/workspace/values.js';
 import { NativeClaimHistory } from './native-claim-history.js';
-export const claimOperationKinds = new Set(['acquire', 'recover', 'handoff']);
+export const claimOperationKinds = new Set(['acquire', 'review_restart', 'recover', 'handoff']);
 export function validateClaimJournal(journal) {
     if (journal.size !== 2 || int(get(journal, 'schemaVersion')) !== 1n || !has(journal, 'operation'))
         throw new JobsError('invalid coordinator journal');
@@ -23,6 +23,8 @@ export function validateClaimJournal(journal) {
         throw new JobsError('coordinator journal revision is invalid');
     if (kind === 'acquire' && (string(get(operation, 'sourceStatus')) !== 'ready' || string(get(operation, 'targetStatus')) !== 'in_progress'))
         throw new JobsError('coordinator acquisition transition is invalid');
+    if (kind === 'review_restart' && (string(get(operation, 'sourceStatus')) !== 'awaiting_review' || string(get(operation, 'targetStatus')) !== 'in_progress'))
+        throw new JobsError('coordinator review restart transition is invalid');
     if (kind === 'handoff') {
         if (string(get(operation, 'sourceStatus')) !== 'in_progress' || !['needs_info', 'awaiting_review'].includes(string(get(operation, 'targetStatus'))))
             throw new JobsError('coordinator handoff transition is invalid');

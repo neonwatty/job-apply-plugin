@@ -24,7 +24,7 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
       command = key;
     } else {
       if (options.has(key)) throw new JobsError("duplicate CLI option");
-      if (["--include-trashed", "--trashed-only", "--replace", "--remember-sensitive", "--all-review-statuses", "--summary-only", "--owner-confirmed"].includes(key)) options.set(key, "true");
+      if (["--include-trashed", "--trashed-only", "--replace", "--remember-sensitive", "--all-review-statuses", "--summary-only", "--owner-confirmed", "--owner-confirmed-not-submitted"].includes(key)) options.set(key, "true");
       else {
         const value = args[++index];
         if (!value || value.startsWith("--")) throw new JobsError("missing CLI option value");
