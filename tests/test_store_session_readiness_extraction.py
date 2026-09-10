@@ -19,7 +19,8 @@ from tests.support import store_fixtures
 
 
 METHOD_HASHES = {
-    'profile_preparedness': 'af2d047ad657c641cb20c88919a5e131d488c95598088d2cd68db3e1ce1b6563',
+    # Intentional sole-resume behavior change; covered by test_store_agent_onboarding.
+    'profile_preparedness': '8b5ab9129278b53a8a7050d4121ec7c99b8d08bb9ad7f13e2109de15586edf1c',
     '_readiness_blocker_type': '692401032aac15c30a35fb7149052062de0f24d2644d286b13ed5848103e7f60',
     '_recompute_readiness': 'd1d475381152f79d166d6f055ce48b83e24428fca13fb678cce77eaf73c6271f',
 }

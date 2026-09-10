@@ -99,3 +99,23 @@ point in the attached Python process. Do not use `os.execv` for portable process
 ownership: on Windows the original process can exit while the server retains its
 pipes. Startup tests use a bounded wait and verify launcher termination stops the
 server. Preserve this lifecycle guarantee in the TypeScript companion launcher.
+
+### Agent-first onboarding and readiness
+
+Onboarding imports or uses the selected managed resume, creates an exact extraction
+request, completes semantic extraction in the active agent, and presents owner
+review in chat. It preserves confirmed facts and offers optional browser/manual
+job intake after review. Queue instructions reuse existing authorization for the
+selected scope and run preflight after create/update/noop commits.
+
+Job preflight now resolves assignment, default, then sole active resume, retaining
+all ordinary file/integrity checks. It does not persist a default or assignment;
+multiple active resumes remain ambiguous, and broken explicit/default choices
+never silently fall back. Acquisition consumes the same preflight result. Facts
+preparedness and resume-choice labels recognize the sole-resume path as well.
+
+Forward-port these selection semantics and agent routing independently to the
+TypeScript lane. Tests use prepared synthetic extraction facts to verify Store
+behavior; they do not establish semantic extraction quality or owner acceptance.
+Manual UI intake can be checked when the owner returns to the agent; automatic
+checks do not imply a background agent or an automatic Ready/status transition.

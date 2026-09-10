@@ -308,7 +308,11 @@ class JobOverviewMixin:
                 ),
                 None,
             )
-            resume_id = default["id"] if default is not None else None
+            active = [item for item in resumes.values() if item.get("deletedAt") is None]
+            # A sole record still goes through the ordinary file/integrity checks.
+            # Never discard a broken assignment/default to pick another resume.
+            selected = default if default is not None else (active[0] if len(active) == 1 else None)
+            resume_id = selected["id"] if selected is not None else None
         resume = resumes.get(resume_id) if resume_id is not None else None
         if resume is None or resume.get("deletedAt") is not None:
             errors.append("resume_missing")

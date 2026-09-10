@@ -98,3 +98,12 @@ launch/restart, atomic version selection and core compatibility checks. Agent-on
 plugin output is built with `python3 scripts/build-plugin.py`. This supersedes the
 interim-only scope above. The owner's live walkthrough has not been replaced;
 owner acceptance and the other onboarding/Facts work packages remain open.
+
+### Agent onboarding implementation
+
+Agent-first routing, explicit extraction request creation, conversational review,
+repeatable authorized queue intake and automatic agent preflight are implemented.
+The canonical selector uses assignment/default/sole active resume without changing
+saved job states. Focused synthetic regressions cover ambiguity, broken choices,
+acquisition consistency, and repeat intake. Full owner dogfooding, manual UI
+readiness presentation, and the Facts editing work package remain to be qualified.

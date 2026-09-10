@@ -67,6 +67,10 @@ class SessionReadinessMixin:
                 if item.get("default") and item.get("deletedAt") is None
             ), None)
 
+            if default_resume is None:
+                active = [item for item in resumes.values() if item.get("deletedAt") is None]
+                default_resume = active[0] if len(active) == 1 else None
+
             essential_setup = []
             for item_id, key in (
                 ("first_name", "firstName"),

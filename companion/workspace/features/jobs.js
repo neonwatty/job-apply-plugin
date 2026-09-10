@@ -124,7 +124,7 @@ export function installJobs(context) {
   }
 
   function fillResumeOptions(selected) {
-    const select = form.elements.resumeId; select.replaceChildren(new Option("Use default resume", ""));
+    const select = form.elements.resumeId; select.replaceChildren(new Option("Use default or sole resume", ""));
     for (const resume of state.resumes) select.append(new Option(`${resume.label || resume.id}${resume.default ? " · default" : ""}`, resume.id));
     select.value = selected || "";
   }
