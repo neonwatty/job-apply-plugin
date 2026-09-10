@@ -1,6 +1,6 @@
 import {
   assert, chromium, join, liveReviewSession, minimalSyntheticPdf, mkdtemp, PYTHON, readFile,
-  REPO_ROOT, resolve, rm, spawn, spawnSync, test, tmpdir, writeFile,
+  COMPANION_ROOT, REPO_ROOT, resolve, rm, spawn, spawnSync, test, tmpdir, writeFile,
 } from "./workspace_test_support.mjs";
 import {
   cleanupOwnerBetaScenario, createOwnerBetaScenario, startOwnerBetaScenario,
@@ -101,7 +101,7 @@ test("Needs Attention browser and CLI walkthrough converges all canonical reason
     coordinator.claim.expiresAt = "2000-01-01T00:00:00Z";
     await writeFile(coordinatorPath, JSON.stringify(coordinator));
 
-    server = spawn(PYTHON, [join(REPO_ROOT, "scripts", "job-apply-workspace.py"), "--root", storeRoot, "--port", "0", "--no-open", "--json"], { cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"] });
+    server = spawn(PYTHON, [join(COMPANION_ROOT, "scripts", "job-apply-workspace.py"), "--root", storeRoot, "--port", "0", "--no-open", "--json"], { cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"] });
     const startup = await waitForStartup(server);
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();

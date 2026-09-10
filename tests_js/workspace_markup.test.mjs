@@ -9,7 +9,7 @@ import {
 } from "./workspace_test_support.mjs";
 
 test("Companion markup exposes advisory readiness and safe review controls", async () => {
-  const html = await readFile(join(REPO_ROOT, "workspace", "index.html"), "utf8");
+  const html = await readFile(join(REPO_ROOT, "companion", "workspace", "index.html"), "utf8");
   assert.match(html, /id="profile-readiness"/);
   assert.match(html, /Individual jobs may still require additional information\./);
   assert.match(html, /id="proposal-keep-all"[^>]*>Keep all current</);
@@ -20,9 +20,9 @@ test("Companion markup exposes advisory readiness and safe review controls", asy
 
 
 test("workspace markup has semantic dialogs, labels, live regions, and no remote assets", async () => {
-  const html = await readFile(join(REPO_ROOT, "workspace", "index.html"), "utf8");
+  const html = await readFile(join(REPO_ROOT, "companion", "workspace", "index.html"), "utf8");
   const app = (await Promise.all(["activity.js", "answers.js", "bindings.js"].map(
-    (name) => readFile(join(REPO_ROOT, "workspace", "features", name), "utf8"),
+    (name) => readFile(join(REPO_ROOT, "companion", "workspace", "features", name), "utf8"),
   ))).join("\n");
   assert.match(html, /<main(?:\s|>)/);
   assert.match(html, /<dialog id="job-dialog" aria-labelledby=/);
@@ -97,7 +97,7 @@ test("skill and documentation contracts keep extraction agent-owned and context-
   const jobApply = skillText(REPO_ROOT, "job-apply");
   const workspaceSkill = skillText(REPO_ROOT, "job-workspace");
   const readme = await readFile(join(REPO_ROOT, "README.md"), "utf8");
-  const app = await readFile(join(REPO_ROOT, "workspace", "features", "resumes.js"), "utf8");
+  const app = await readFile(join(REPO_ROOT, "companion", "workspace", "features", "resumes.js"), "utf8");
 
   assert.match(jobApply, /resume-extraction-request-list --status requested/);
   assert.match(jobApply, /Never scan for extraction requests during every job application/);
@@ -143,7 +143,7 @@ test("resume extraction onboarding oracle is packaged in every protected OS vali
 });
 
 test("styles include visible focus, reduced motion, contrast mode, and responsive behavior", async () => {
-  const css = await readFile(join(REPO_ROOT, "workspace", "styles.css"), "utf8");
+  const css = await readFile(join(REPO_ROOT, "companion", "workspace", "styles.css"), "utf8");
   assert.match(css, /:focus-visible/);
   assert.match(css, /prefers-reduced-motion/);
   assert.match(css, /prefers-color-scheme: dark/);

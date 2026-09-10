@@ -137,7 +137,7 @@ class Oracle:
                 and companion.server.store.get_profile()["email"] == extracted_email
                 and companion.server.store.get_profile()["skills"] == [extracted_skill]
             )
-            grouping_source = (ROOT / "workspace" / "lib" / "helpers.js").read_text(encoding="utf-8")
+            grouping_source = (ROOT / "companion" / "workspace" / "lib" / "helpers.js").read_text(encoding="utf-8")
             grouped = all(fragment in grouping_source for fragment in (
                 'return "Identity"', 'return "Contact"', 'return "Additional"'
             ))

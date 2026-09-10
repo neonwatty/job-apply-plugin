@@ -1,6 +1,6 @@
 # Python release readiness spec
 
-Status: phase 2 in progress. Baseline assessed: `c1b180b3` on 2026-09-09.
+Status: phase 2 re-scoped after owner dogfooding; availability hardening in progress. Baseline assessed: `c1b180b3` on 2026-09-09.
 
 ## Objective and scope
 
@@ -8,6 +8,13 @@ Release the Python CLI/plugin and HTML/JavaScript workspace with reliable tests,
 straightforward setup, verified upgrades, and observed owner workflows.
 Refinement PRs target `codex/python-release`; final release targets `main`.
 Keep the TypeScript migration independent, with separate Stores and ports.
+
+## Owner-directed revision
+
+The [dogfooding improvement plan](python-dogfood-improvements.md) now controls
+implementation order: availability, separately managed optional companion,
+UI-free agent onboarding, repeatable intake/readiness, then Facts refinements.
+The earlier UI-first setup guide describes the current build, not the target flow.
 
 ## Ordered acceptance checklist
 
@@ -20,8 +27,8 @@ acceptance. A retry alone does not close a recurring failure.
   and fix the demonstrated cause. Add a focused regression check and obtain
   passing full, cross-platform, and package validation on the resulting candidate.
 - [ ] **2. Simplify setup.** Document supported Python/host prerequisites and one
-  concise path: install → launch → import resume → extract/review Facts → prepare
-  a job. Verify launch, stop, relaunch, and actionable failure guidance. Record
+  agent-first path: install plugin → provide resume → extract/review in chat →
+  choose intake → automatic readiness check. Offer the separate companion optionally. Verify launch, stop, relaunch, and actionable failure guidance. Record
   fresh-user completion time, confusion, and assistance required.
 - [ ] **3. Qualify installs and upgrades.** Exercise fresh Claude/Codex sessions
   with the installed candidate. Upgrade from the actual previous release using
@@ -68,7 +75,7 @@ testing retains its explicit opt-in.
 | Phase | Status | Evidence / outstanding work |
 | --- | --- | --- |
 | 1 | Complete | PR #57 merged; 20 repeated runs, full local/package tests, and CI run `34406170344` passed |
-| 2 | In progress | Setup guide, clearer handoffs and launch fallback; independent fresh-user acceptance remains |
+| 2 | Re-scoped | Owner dogfooding completed; agent-first and optional-companion improvements required |
 | 3 | Planned | Actual prior-release upgrade and installed-agent sessions |
 | 4 | Planned | Observed workspace QA and refinements |
 | 5 | Planned | Installed-agent and owner acceptance |
@@ -123,7 +130,10 @@ is needed. Use synthetic data for the first pass.
 - [ ] The owner creates a job, resolves its ready check, and reaches Ready.
 - [ ] Stopping and relaunching preserves saved work and opens a working new URL.
 
-These observations remain pending. Automated test duration is not a human setup time.
+The owner has since exercised extraction, review, selected live intake, preflight,
+and recovery; see the revised improvement plan. Acceptance is still pending and
+this checklist is not evidence that the old UI-first experience was accepted.
+Automated test duration is not a human setup time.
 
 
 Phase 4 observation: Facts provenance is nested inside field labels, so an exact

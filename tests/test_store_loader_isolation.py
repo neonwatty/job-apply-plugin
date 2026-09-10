@@ -488,7 +488,7 @@ class StoreLoaderIsolationTests(unittest.TestCase):
                     scripts = root / "scripts"
                     task = direct_module(scripts / "job-apply-task.py", f"copied_task_{suffix}")
                     attempt = direct_module(scripts / "job-apply-attempt.py", f"copied_attempt_{suffix}")
-                    workspace = direct_module(scripts / "job-apply-workspace.py", f"copied_workspace_{suffix}")
+                    workspace = direct_module(root / "companion/scripts/job-apply-workspace.py", f"copied_workspace_{suffix}")
                     stores = [task.load_store_module(), attempt.load_store_module(), workspace.STORE_MODULE]
                     for store in stores:
                         self.assertEqual(Path(store.__file__).resolve().parent, scripts.resolve())

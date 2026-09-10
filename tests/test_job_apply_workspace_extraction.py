@@ -12,8 +12,8 @@ from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FACADE = ROOT / "scripts" / "job-apply-workspace.py"
-PACKAGE = ROOT / "scripts" / "job_apply_workspace"
+FACADE = ROOT / "companion" / "scripts" / "job-apply-workspace.py"
+PACKAGE = ROOT / "companion" / "scripts" / "job_apply_workspace"
 PUBLIC = (
     "LOOPBACK",
     "MAX_BODY_BYTES",
@@ -94,7 +94,7 @@ class WorkspaceExtractionTests(unittest.TestCase):
                 roots.append(root)
             modules = [
                 load_workspace(
-                    root / "scripts" / "job-apply-workspace.py", f"workspace_{index}"
+                    root / "companion" / "scripts" / "job-apply-workspace.py", f"workspace_{index}"
                 )
                 for index, root in enumerate(roots)
             ]
@@ -137,7 +137,7 @@ class WorkspaceExtractionTests(unittest.TestCase):
                 or name.startswith(modules[1]._PACKAGE_NAME + ".")
             }
             refreshed = load_workspace(
-                roots[0] / "scripts" / "job-apply-workspace.py", "workspace_reload"
+                roots[0] / "companion" / "scripts" / "job-apply-workspace.py", "workspace_reload"
             )
             self.assertIsNot(refreshed.WorkspaceHandler, modules[0].WorkspaceHandler)
             for name, value in b_snapshot.items():

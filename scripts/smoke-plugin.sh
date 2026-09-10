@@ -21,8 +21,6 @@ mkdir -p \
   "$SMOKE_FIXTURE_DIR" \
   "$SMOKE_UPGRADE_FIXTURE_DIR"
 
-echo "Validating plugin manifest"
-claude plugin validate "$REPO_ROOT"
 echo "Checking Store CLI entry point"
 python3 "$REPO_ROOT/scripts/job-apply-store.py" --help >/dev/null
 echo "Checking task CLI entry point"
@@ -37,21 +35,8 @@ python3 "$REPO_ROOT/scripts/smoke/repository_contracts.py" "$REPO_ROOT" "$SMOKE_
 python3 "$REPO_ROOT/scripts/check-final-action-docs.py" "$REPO_ROOT/skills/job-apply/SKILL.md"
 
 echo "Creating isolated working-tree marketplace fixture"
-tar --exclude='./.git' \
-  --exclude='./.qa-private' \
-  --exclude='./qa/runs' \
-  --exclude='./.job-apply-qa' \
-  --exclude='./node_modules' \
-  --exclude='./coverage' \
-  --exclude='./dist' \
-  --exclude='./build' \
-  --exclude='__pycache__' \
-  --exclude='*.py[co]' \
-  --exclude='./.worktrees' \
-  --exclude='./docs/goals' \
-  --exclude='./test_resumes' \
-  -cf - -C "$REPO_ROOT" . \
-  | tar -xf - -C "$SMOKE_FIXTURE_DIR"
+python3 "$REPO_ROOT/scripts/build-plugin.py" --output "$SMOKE_FIXTURE_DIR"
+claude plugin validate "$SMOKE_FIXTURE_DIR"
 python3 "$REPO_ROOT/scripts/smoke/fixture_build.py" verify "$SMOKE_FIXTURE_DIR"
 
 echo "Creating isolated prior-version Codex upgrade fixture"
@@ -72,9 +57,11 @@ python3 "$REPO_ROOT/scripts/smoke/upgrade_verify.py" upgrade \
   "$SMOKE_TEMP_ROOT/codex-upgrade-plugin-list.json" "$SMOKE_CODEX_UPGRADE_HOME" \
   "$SMOKE_FIXTURE_DIR"
 
-python3 "$REPO_ROOT/scripts/smoke/workspace_verify.py" "$SMOKE_FIXTURE_DIR" "$SMOKE_TEMP_ROOT"
+python3 "$REPO_ROOT/companion/install.py" --prefix "$SMOKE_TEMP_ROOT/companion-install" > "$SMOKE_TEMP_ROOT/companion-install.json"
+SMOKE_COMPANION_BUNDLE="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["bundle"])' "$SMOKE_TEMP_ROOT/companion-install.json")"
+python3 "$REPO_ROOT/scripts/smoke/workspace_verify.py" "$SMOKE_FIXTURE_DIR" "$SMOKE_TEMP_ROOT" "$SMOKE_COMPANION_BUNDLE"
 echo "Running Playwright and CLI walkthrough against packaged fixture"
-JOB_WORKSPACE_TEST_ROOT="$SMOKE_FIXTURE_DIR" node --test \
+JOB_WORKSPACE_TEST_ROOT="$SMOKE_FIXTURE_DIR" JOB_WORKSPACE_COMPANION_ROOT="$SMOKE_COMPANION_BUNDLE" node --test \
   --test-name-pattern='owner beta clean packaged|real browser and CLI share CRUD|Needs Attention browser and CLI walkthrough' \
   "$REPO_ROOT/tests_js/workspace.test.mjs"
 echo "Packaged Playwright and CLI walkthrough, including Needs Attention and unified Trash, passed"

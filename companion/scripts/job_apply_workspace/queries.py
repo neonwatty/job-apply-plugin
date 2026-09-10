@@ -5,7 +5,7 @@ from __future__ import annotations
 from http import HTTPStatus
 from typing import Any
 
-from . import ASSETS, ASSET_ROOT, runtime
+from . import runtime
 from .projections import (
     public_extraction_request,
     public_proposal_detail,
@@ -20,19 +20,11 @@ class QueryMixin:
     """Read-only routes over the public Store API."""
 
     def _asset(self, path: str) -> None:
-        asset = ASSETS.get(path)
+        asset = self.server.assets.get(path)
         if asset is None:
             self._error(HTTPStatus.NOT_FOUND, "route not found", "not_found")
             return
-        try:
-            body = (ASSET_ROOT / asset[0]).read_bytes()
-        except OSError:
-            self._error(
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-                "workspace asset is unavailable",
-            )
-            return
-        self._send_bytes(HTTPStatus.OK, body, asset[1])
+        self._send_bytes(HTTPStatus.OK, asset[0], asset[1])
 
     def do_HEAD(self) -> None:
         path = self._path()

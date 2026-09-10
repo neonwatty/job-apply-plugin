@@ -1,5 +1,5 @@
 import {
-  assert, chromium, FACT_SAVE_REVISION_RETRIES, join, minimalSyntheticPdf, PYTHON, REPO_ROOT,
+  assert, chromium, FACT_SAVE_REVISION_RETRIES, join, minimalSyntheticPdf, PYTHON, COMPANION_ROOT, REPO_ROOT,
   spawn, writeFile,
 } from "./workspace_test_support.mjs";
 
@@ -40,7 +40,7 @@ export async function runBrowserCrudFactsPhase(context) {
     await cli("resume-create", [], { id: "browser-resume", label: "Browser resume", path: resumePath });
     const cliJob = await cli("job-create", [], { url: "https://example.com/jobs/cli-browser", role: "CLI Engineer", company: "CLI Co" });
 
-    server = spawn(PYTHON, [join(REPO_ROOT, "scripts", "job-apply-workspace.py"), "--root", storeRoot, "--port", "0", "--no-open", "--json"], { cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"] });
+    server = spawn(PYTHON, [join(COMPANION_ROOT, "scripts", "job-apply-workspace.py"), "--root", storeRoot, "--port", "0", "--no-open", "--json"], { cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"] });
     context.server = server;
     const startup = await waitForStartup(server);
     browser = await chromium.launch({ headless: true });

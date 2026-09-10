@@ -42,15 +42,15 @@ class SmokeHarnessSplitTests(unittest.TestCase):
                 self.assertIn(f"{tree}/nested/module.test", inventory)
             self.assertEqual(tuple(sorted(inventory)), inventory)
             assert_critical_bytes(target, source, label="installed Codex")
-            changed = target / "scripts/job_apply_workspace/nested/module.test"
+            changed = target / "scripts/job_apply_store/nested/module.test"
             changed.write_bytes(b"changed\n")
             with self.assertRaisesRegex(
                 SystemExit,
-                "installed Codex bytes differ for scripts/job_apply_workspace",
+                "installed Codex bytes differ for scripts/job_apply_store",
             ):
                 assert_critical_bytes(target, source, label="installed Codex")
             changed.write_bytes((source / changed.relative_to(target)).read_bytes())
-            extra = target / "workspace/nested/unexpected.js"
+            extra = target / "skills/nested/unexpected.js"
             extra.write_bytes(b"unexpected\n")
             with self.assertRaisesRegex(SystemExit, "critical package inventory differs"):
                 assert_critical_bytes(target, source, label="installed Codex")
@@ -68,8 +68,8 @@ class SmokeHarnessSplitTests(unittest.TestCase):
     def test_critical_receipt_rejects_symlinks(self):
         with tempfile.TemporaryDirectory() as directory:
             source = source_fixture(Path(directory) / "source")
-            linked = source / "workspace/nested/linked.js"
-            linked.symlink_to(source / "workspace/nested/module.test")
+            linked = source / "skills/nested/linked.js"
+            linked.symlink_to(source / "skills/nested/module.test")
             with self.assertRaisesRegex(SystemExit, "contains a symlink"):
                 critical_paths(source)
 

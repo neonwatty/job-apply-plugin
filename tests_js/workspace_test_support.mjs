@@ -12,6 +12,8 @@ const SOURCE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const REPO_ROOT = process.env.JOB_WORKSPACE_TEST_ROOT
   ? resolve(process.env.JOB_WORKSPACE_TEST_ROOT)
   : SOURCE_ROOT;
+const COMPANION_ROOT = process.env.JOB_WORKSPACE_COMPANION_ROOT
+  ? resolve(process.env.JOB_WORKSPACE_COMPANION_ROOT) : join(REPO_ROOT, "companion");
 const PYTHON = process.env.PYTHON || "python3";
 
 function minimalSyntheticPdf() {
@@ -133,7 +135,7 @@ const {
   tokenFromHash,
   transitionsFor,
   typedDeletePhrase,
-} = await import(pathToFileURL(join(REPO_ROOT, "workspace", "app.js")).href);
+} = await import(pathToFileURL(join(COMPANION_ROOT, "workspace", "app.js")).href);
 
 
 export {
@@ -153,6 +155,7 @@ export {
   pathToFileURL,
   test,
   chromium,
+  COMPANION_ROOT,
   SOURCE_ROOT,
   REPO_ROOT,
   PYTHON,

@@ -1,3 +1,5 @@
+> The companion is optional and now installed independently. Agent/CLI setup does not require it. See [installation and lifecycle](../companion/README.md).
+
 # Set up Job Apply
 
 ## Before you start
@@ -62,7 +64,8 @@ are not a substitute for saving before stopping.
 For a manual launch, resolve the installed plugin directory and run:
 
 ```text
-python3 "<plugin-root>/scripts/job-apply-workspace.py"
+python3 "<source-checkout>/companion/install.py"
+python3 ~/.local/share/job-apply-companion/companion.py
 ```
 
 On Windows with the Python launcher, use `py -3.12` in place of `python3`.

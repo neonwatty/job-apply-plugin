@@ -75,7 +75,8 @@ jobs:
       - run: npm run test:auto-submit
       - run: npm run test:qa-browser
       - run: npm install -g @anthropic-ai/claude-code @openai/codex
-      - run: claude plugin validate .
+      - run: python3 scripts/build-plugin.py
+      - run: claude plugin validate dist/plugin
       - name: Validate JSON syntax
         run: |
           python3 -m json.tool .claude-plugin/plugin.json > /dev/null

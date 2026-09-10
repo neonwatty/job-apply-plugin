@@ -59,9 +59,9 @@ test("real production paths conservatively include cross-language consumers", as
   const cases = new Map([
     ["scripts/qa-replay.py", ["python-qa", "python-workspace-contracts", "python-accounts", "python-core", "node-recorder", "node-renderer", "node-workspace-other"]],
     ["scripts/job_apply_store/domains/jobs/crud.py", ["python-workspace-contracts", "python-accounts", "python-core", "node-workspace-other"]],
-    ["scripts/job_apply_workspace/server.py", ["python-workspace-contracts", "node-workspace-other"]],
+    ["companion/scripts/job_apply_workspace/server.py", ["python-workspace-contracts", "node-workspace-other"]],
     ["qa/renderer/server.py", ["python-qa", "node-recorder", "node-renderer", "node-workspace-other"]],
-    ["workspace/server/routes.js", ["python-workspace-contracts", "node-workspace-other"]],
+    ["companion/workspace/server/routes.js", ["python-workspace-contracts", "node-workspace-other"]],
   ]);
   for (const [changed, expected] of cases) {
     const selected = selectAffected(realMatrix, realPaths, [changed]);

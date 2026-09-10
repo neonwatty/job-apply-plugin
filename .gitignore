@@ -21,3 +21,6 @@ test_resumes/
 # Private Job Apply QA recordings and local run evidence
 .qa-private/
 qa/runs/
+
+# Built agent-only distribution
+dist/

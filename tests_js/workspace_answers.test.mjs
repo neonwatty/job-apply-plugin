@@ -66,7 +66,7 @@ test("answer-memory documents guarded profile and preference mutations", async (
 });
 
 test("answer browser routes encode canonical keys at every path boundary", async () => {
-  const app = await readFile(join(REPO_ROOT, "workspace", "features", "answers.js"), "utf8");
+  const app = await readFile(join(REPO_ROOT, "companion", "workspace", "features", "answers.js"), "utf8");
   for (const expression of [
     "answerApiPath(answer.key, action)",
     "answerApiPath(selected.key)",
@@ -114,7 +114,7 @@ test("pending answer browser journey preserves Job draft and reaches Ready, reac
     await cli("answer-put", [], { key: "durable.decoy", question: "Shared visible wording?", scope: { decoy: true }, state: "confirmed", value: "decoy" });
     await cli("answer-put", [], { key: "durable.target", question: "Different canonical wording", state: "missing" });
 
-    server = spawn(PYTHON, [join(REPO_ROOT, "scripts", "job-apply-workspace.py"), "--root", storeRoot, "--port", "0", "--no-open", "--json"], { cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"] });
+    server = spawn(PYTHON, [join(REPO_ROOT, "companion", "scripts", "job-apply-workspace.py"), "--root", storeRoot, "--port", "0", "--no-open", "--json"], { cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"] });
     const startup = await waitForStartup(server);
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage(); const pageErrors = []; page.on("pageerror", (error) => pageErrors.push(error));

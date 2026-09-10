@@ -1,7 +1,55 @@
 from tests.support.workspace_case import *
+import shutil
 
 
 class WorkspaceServerTests(WorkspaceCase):
+    def test_missing_asset_aborts_before_store_initialization(self):
+        assets = Path(self.temporary.name) / "incomplete-assets"
+        shutil.copytree(ROOT / "companion" / "workspace", assets)
+        (assets / "features" / "facts.js").unlink()
+        root = Path(self.temporary.name) / "must-not-initialize"
+        with mock.patch.object(WORKSPACE, "ASSET_ROOT", assets):
+            with self.assertRaisesRegex(OSError, "workspace assets are unavailable") as caught:
+                WORKSPACE.WorkspaceServer(root, 0)
+        self.assertNotIn(str(assets), str(caught.exception))
+        self.assertFalse(root.exists())
+
+    def test_running_workspace_survives_removal_of_installed_package(self):
+        package = Path(self.temporary.name) / "installed-plugin"
+        shutil.copytree(ROOT / "scripts", package / "scripts")
+        shutil.copytree(ROOT / "companion", package / "companion")
+        isolated = load_module("removed_package_workspace", package / "companion/scripts/job-apply-workspace.py")
+        expected = {
+            route: ((package / "companion" / "workspace" / filename).read_bytes(), media_type)
+            for route, (filename, media_type) in isolated.ASSETS.items()
+        }
+        server = isolated.WorkspaceServer(Path(self.temporary.name) / "retained-store", 0)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        original = self.server
+        self.server = server
+        try:
+            # Only this disposable installation is removed, never a live cache.
+            shutil.rmtree(package)
+            for route, (content, media_type) in expected.items():
+                with self.subTest(route=route):
+                    status, headers, body = self.request("GET", route, token=False, origin=False)
+                    self.assertEqual(status, 200)
+                    self.assertEqual(body, content)
+                    self.assertEqual(dict(headers)["Content-Type"], media_type)
+            status, headers, body = self.request("HEAD", "/", token=False, origin=False)
+            self.assertEqual((status, body), (200, b""))
+            self.assertEqual(int(dict(headers)["Content-Length"]), len(expected["/"][0]))
+            job = self.create_job("https://example.invalid/cache-removal")
+            status, _, state = self.request("GET", "/api/state", origin=False)
+            self.assertEqual(status, 200)
+            self.assertEqual(state["jobs"][0]["id"], job["id"])
+            status, _, _ = self.request("GET", "/api/state", token=False, origin=False)
+            self.assertEqual(status, 401)
+        finally:
+            self.server = original
+            server.shutdown(); server.server_close(); thread.join(timeout=2)
+
     def test_owner_beta_boot_and_overview_are_authenticated_and_value_free(self):
         status, _headers, body = self.request("GET", "/api/boot", token=False, origin=False)
         self.assertEqual((status, body["error"]["code"]), (401, "token_rejected"))

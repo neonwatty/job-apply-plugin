@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { createCoordinators, createWorkspaceState } from "../workspace/lib/state.js";
+import { createCoordinators, createWorkspaceState } from "../companion/workspace/lib/state.js";
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const FEATURE_NAMES = [
@@ -14,7 +14,7 @@ const FEATURE_NAMES = [
 
 test("browser features consume one explicit context without sideways feature imports", async () => {
   for (const name of FEATURE_NAMES) {
-    const source = await readFile(join(ROOT, "workspace", "features", `${name}.js`), "utf8");
+    const source = await readFile(join(ROOT, "companion", "workspace", "features", `${name}.js`), "utf8");
     assert.match(source, new RegExp(`export function install${name[0].toUpperCase()}${name.slice(1)}\\(context\\)`));
     assert.match(source, /const \{ api, state: stores, dom, coordinators \} = context/);
     assert.doesNotMatch(source, /from ["']\.\/|from ["']\.\.\/features\//);
@@ -33,7 +33,7 @@ test("workspace state is fresh per bootstrap and coordinators are not shared", (
 });
 
 test("server static assets remain an explicit closed allowlist", async () => {
-  const server = await readFile(join(ROOT, "scripts", "job_apply_workspace", "__init__.py"), "utf8");
+  const server = await readFile(join(ROOT, "companion", "scripts", "job_apply_workspace", "__init__.py"), "utf8");
   for (const path of [
     "/app.js", "/bootstrap.js", "/lib/api.js", "/lib/dom.js", "/lib/helpers.js",
     "/lib/state.js", ...FEATURE_NAMES.map((name) => `/features/${name}.js`),

@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_FIXTURE = Path("qa/testdata/resumes/owner-like-redacted.pdf")
 EXPECTED_FIXTURE_SHA256 = "aa5db02218f2eb40ab26521fb614b8bc86527fa11ee1c531b5555f6b54aad551"
 STORE_SCRIPT = ROOT / "scripts" / "job-apply-store.py"
-WORKSPACE_SCRIPT = ROOT / "scripts" / "job-apply-workspace.py"
+WORKSPACE_SCRIPT = ROOT / "companion" / "scripts" / "job-apply-workspace.py"
 RECEIPT_KEYS = (
     "requestShared",
     "autofillObserved",
