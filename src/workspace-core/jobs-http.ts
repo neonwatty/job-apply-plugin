@@ -1,3 +1,4 @@
+import { automationHttp } from './automation-http.js';
 import { answerLifecycleHttp } from './answer-lifecycle-http.js';
 import { trashHttp } from './trash-http.js';
 import { claimsHttp } from './claims-http.js';
@@ -27,6 +28,8 @@ const envelope = (key: string, value: Value): Value => set(emptyObject(), key, v
 export async function jobsHttp(service: JobsService, repository: NativeJobsRepository,
   method: string, path: string, body = ""): Promise<ApiResult> {
   try {
+    const automation = await automationHttp(repository, method, path, body);
+    if (automation) return automation;
     const answerLifecycle = await answerLifecycleHttp(repository, method, path, body);
     if (answerLifecycle) return answerLifecycle;
     const trash = await trashHttp(repository, method, path, body);

@@ -1,3 +1,4 @@
+import { automationHttp } from './automation-http.js';
 import { answerLifecycleHttp } from './answer-lifecycle-http.js';
 import { trashHttp } from './trash-http.js';
 import { claimsHttp } from './claims-http.js';
@@ -19,6 +20,9 @@ const envelope = (key, value) => set(emptyObject(), key, value);
 /** Transport-independent dispatch. Host/token/Origin/body bounds belong to the adapter. */
 export async function jobsHttp(service, repository, method, path, body = "") {
     try {
+        const automation = await automationHttp(repository, method, path, body);
+        if (automation)
+            return automation;
         const answerLifecycle = await answerLifecycleHttp(repository, method, path, body);
         if (answerLifecycle)
             return answerLifecycle;

@@ -1,3 +1,5 @@
+import { initialAutomationDocuments, automationTransaction as runAutomationTransaction } from './native-automation.js';
+import type { AutomationTransaction } from '../workspace-core/automation.js';
 import type { GroupedApprovalTransaction } from '../workspace-core/grouped-approvals.js';
 import { NativeClaimJournal, claimOperationKinds, validateClaimJournal } from './native-claim-journal.js';
 import { NativeClaimHistory } from './native-claim-history.js';
@@ -33,8 +35,8 @@ import { validateAnswers } from "../contracts/workspace/answers.js";
 import type { AnswerReferenceCounts } from "../workspace-core/answers.js";
 
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
-const marker = '{"mode":"native-jobs-fixture","version":9}\n';
-const allowed = new Set([".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "answers.json", "resume-operation.json", "resume-files", "resume-extractions.json", "resume-extraction-requests.json", "resume-extraction-journal.json", "sessions", "applications.jsonl", "coordinator.json", "coordinator-journal.json"]);
+const marker = '{"mode":"native-jobs-fixture","version":10}\n';
+const allowed = new Set(["automation-settings.json", "employer-accounts.json", ".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "answers.json", "resume-operation.json", "resume-files", "resume-extractions.json", "resume-extraction-requests.json", "resume-extraction-journal.json", "sessions", "applications.jsonl", "coordinator.json", "coordinator-journal.json"]);
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
 
@@ -73,6 +75,9 @@ export async function initializeJobsFixture(root: string): Promise<void> {
   await history.close();
   const lock = await open(join(root, ".store.lock"), "wx", 0o600);
   await lock.close();
+  for (const [name, document] of Object.entries(initialAutomationDocuments(now))) {
+    await atomicWritePointJson(join(root, `${name}.json`), document, options);
+  }
   // The readiness marker is written last; partial initialization is never adopted.
   const handle = await open(join(root, ".native-jobs-fixture"), "wx", 0o600);
   try { await handle.writeFile(marker); await handle.sync(); } finally { await handle.close(); }
@@ -394,6 +399,13 @@ export class NativeJobsRepository implements JobsRepository {
           return this.resolutionJournal().commit(value,jobs,sessions);
         } });
     });
+  }
+
+  async automationTransaction<T>(operation: (tx: AutomationTransaction) => Promise<T>): Promise<T> {
+    return this.transaction(async () => runAutomationTransaction({
+      read: name => name === 'automation-settings' ? this.journal(name) : this.document(name),
+      write: (name, document) => this.write(join(this.root, `${name}.json`), document, options),
+    }, operation));
   }
 
   async resumeSummaries(): Promise<Value[]> {

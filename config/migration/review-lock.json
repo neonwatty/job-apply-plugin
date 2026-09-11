@@ -330,6 +330,10 @@
       "sha256": "e0a72c236f94a774feb2f1a9c14d423342beee9668a28f2bb295cd86a6ef06a6"
     },
     {
+      "path": "source-catalog-native-automation.json",
+      "sha256": "5aa53af7ed281784e01b17133d13099330543af6e04b3784c96a2726b80c108e"
+    },
+    {
       "path": "source-catalog-native-claims.json",
       "sha256": "4e6cf635ff0237706cdfa8b0a8cc01210382ca8df322e77b817c6619cc38e2af"
     },
@@ -359,7 +363,7 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "0c1b711663c8a24298e9fd05bb3e1a403885dd2da7a2adbf022eb735a8854521"
+      "sha256": "544d544a43e69ff918009ce0ba1a1a1675d604606517e6b1e0ec9241a6c6f95e"
     },
     {
       "path": "source-catalog-native-legacy-jobs.json",
