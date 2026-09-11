@@ -52,7 +52,7 @@ export function installAnswers(context) {
     $("#answers-clear-filters").classList.toggle("hidden", !filtered);
     const inTrash = $("#answer-view").value === "trash";
     $("#answers-empty h3").textContent = filtered ? "No matching answers" : inTrash ? "No answers in Trash" : "No answers in this view";
-    $("#answers-empty p").textContent = filtered ? "Clear your search or state filter to see more answers." : inTrash ? "Restored answers are back in your Library. Choose Library to see them." : "Create an answer or wait for an agent to observe a question.";
+    $("#answers-empty p").textContent = filtered ? "Clear your search or state filter to see more answers." : inTrash ? "Restored answers return to their previous view. Check Library, Observed inbox, or Declined." : "Create an answer or wait for an agent to observe a question.";
     $("#answers-empty").classList.toggle("hidden", answerState.items.length !== 0);
     for (const answer of answerState.items) {
       const item = document.createElement("div"); item.setAttribute("role", "listitem");

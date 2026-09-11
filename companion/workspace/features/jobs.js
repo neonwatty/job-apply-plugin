@@ -220,7 +220,7 @@ export function installJobs(context) {
   async function preflight({ clearAtStart = true } = {}) {
     if (!state.selected) return null;
     if (!state.canonicalStateCurrent) {
-      showFormError("Workspace data is refreshing. Run ready check again when it finishes.");
+      $("#ready-check-status").textContent = "Workspace data is refreshing. Run ready check again when it finishes.";
       return null;
     }
     const requestedId = state.selected.id;
@@ -247,10 +247,10 @@ export function installJobs(context) {
         || !current
       ) return null;
       if (current.revision !== requestedRevision || result.revision !== requestedRevision) {
-        $("#ready-check-status").textContent = "This job changed during the check. Refresh Jobs and run ready check again.";
         if (result.revision > current.revision) {
           clearPreflightReadiness({ hidePanel: false });
         }
+        $("#ready-check-status").textContent = "This job changed during the check. Refresh Jobs and run ready check again.";
         return null;
       }
       if (

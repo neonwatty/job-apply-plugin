@@ -25,6 +25,27 @@ test('desktop readiness refresh explains invalidation and final trash restore ke
     await page.waitForResponse(response => response.url().endsWith('/api/state'));
     await page.getByText('Workspace data refreshed. Run ready check again to see current results.', { exact: true }).waitFor({ timeout: 3000 });
     assert.equal(await page.locator('#mark-ready').isVisible(), false);
+    let releaseRefresh;
+    const gate = new Promise(resolve => { releaseRefresh = resolve; });
+    await page.route('**/api/state', async route => { await gate; await route.continue(); });
+    try {
+      const requested = page.waitForRequest(request => request.url().endsWith('/api/state'));
+      await page.evaluate(() => document.querySelector('#refresh').click());
+      await requested;
+      await dialog.getByRole('button', { name: 'Run ready check', exact: true }).click();
+      await page.getByText('Workspace data is refreshing. Run ready check again when it finishes.', { exact: true }).waitFor();
+      const refreshed = page.waitForResponse(response => response.url().endsWith('/api/state'));
+      releaseRefresh();
+      await refreshed;
+    } finally {
+      releaseRefresh();
+      await page.unroute('**/api/state');
+    }
+    await dialog.getByRole('button', { name: 'Run ready check', exact: true }).click();
+    await page.locator('#preflight-panel').waitFor();
+    assert.equal(await page.locator('#form-error').isVisible(), false);
+    assert.equal(await page.locator('#ready-check-status').textContent(), '');
+
     page.once('dialog', dialog => dialog.accept());
     await page.locator('#trash-job').click();
     await dialog.waitFor({ state: 'hidden' });
@@ -41,7 +62,7 @@ test('desktop readiness refresh explains invalidation and final trash restore ke
     await openWorkspace(page, 'answers');
     await page.locator('#answer-view').selectOption('trash');
     await page.getByRole('heading', { name: 'No answers in Trash', exact: true }).waitFor();
-    assert.match(await page.locator('#answers-empty').innerText(), /Choose Library/);
+    assert.match(await page.locator('#answers-empty').innerText(), /previous view.*Library, Observed inbox, or Declined/);
     await page.locator('#answer-view').selectOption('accepted');
     await page.locator('#answer-search').fill('No matching synthetic answer');
     await page.getByRole('heading', { name: 'No matching answers', exact: true }).waitFor();
