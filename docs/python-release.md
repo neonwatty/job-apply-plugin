@@ -293,3 +293,21 @@ submitted override revision, and canonical answer value. Both fail before the fi
 The CI timeout/null lookup alone does not prove every historical failure shared
 these causes. Forward-port focus-at-entry behavior, preserving user focus after
 async completion, into the TypeScript UI.
+
+
+### Outdated Automation responses and deterministic comparison clocks
+
+A controlled browser schedule reproduces a second Automation draft hazard:
+an older initial load can render after the add-portal refresh and detach an
+in-progress override input. Automation refreshes now discard both successes and
+errors superseded by a newer refresh. Regression tests hold the initial response
+until an override draft exists, then verify draft identity/value, successful
+revision-2 save, and absence of an obsolete error. The observed CI timeout alone
+does not establish that every prior override failure had this cause.
+
+The Store overview equivalence test also left its trash comparison outside the
+fixed wall-clock patch; executions across a second boundary produced unequal
+timestamps. Both trash operations now use the same explicit clock, retaining full
+record/tree equality and an exact deletedAt assertion. Runtime timestamp behavior
+is unchanged. Forward-port the Automation response-order guard and deterministic
+comparison-clock setup to the TypeScript lane where applicable.

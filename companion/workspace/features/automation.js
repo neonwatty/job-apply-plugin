@@ -71,12 +71,17 @@ export function installAutomation(context) {
     }
   }
 
+  let automationRefreshSequence = 0;
   async function refreshAutomation({ quiet = false } = {}) {
+    const sequence = ++automationRefreshSequence;
     try {
-      const projection = await api("/api/automation"); renderAutomation(projection);
+      const projection = await api("/api/automation");
+      if (sequence !== automationRefreshSequence) return;
+      renderAutomation(projection);
       $("#automation-error").classList.add("hidden"); $("#automation-conflict").classList.add("hidden");
       if (!quiet) toast("Automation controls refreshed");
     } catch (error) {
+      if (sequence !== automationRefreshSequence) return;
       $("#automation-error").textContent = error.message; $("#automation-error").classList.remove("hidden");
     }
   }
