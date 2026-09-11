@@ -349,6 +349,16 @@ export class NativeJobsRepository {
                 commit: operation => this.claimJournal().commit(operation, jobs) });
         });
     }
+    async groupedApprovalTransaction(operation) {
+        return this.transaction(async () => operation({
+            jobs: validateJobsDocument(await this.document('jobs')),
+            sessions: await this.answerSessions(), answers: validateAnswers(await this.document('answers')),
+            saveSession: async (document) => {
+                validateAnswerSession(document);
+                await this.write(join(this.root, `sessions/${safeId(string(get(document, 'applicationId')))}.json`), document, options);
+            },
+        }));
+    }
     async answerMergeTransaction(operation) {
         return this.transaction(async () => {
             const document = validateAnswers(await this.document('answers'));

@@ -1,3 +1,4 @@
+import type { GroupedApprovalTransaction } from '../workspace-core/grouped-approvals.js';
 import { NativeClaimJournal, claimOperationKinds, validateClaimJournal } from './native-claim-journal.js';
 import { NativeClaimHistory } from './native-claim-history.js';
 import { validateCoordinator, requireJobUnclaimed } from '../contracts/workspace/claims.js';
@@ -353,6 +354,17 @@ export class NativeJobsRepository implements JobsRepository {
         saveSession:async document => { validateAnswerSession(document);await this.write(join(this.root,`sessions/${safeId(string(get(document,'applicationId')))}.json`),document,options); },
         commit:operation => this.claimJournal().commit(operation,jobs)});
     });
+  }
+
+  async groupedApprovalTransaction<T>(operation: (transaction: GroupedApprovalTransaction) => Promise<T>): Promise<T> {
+    return this.transaction(async () => operation({
+      jobs: validateJobsDocument(await this.document('jobs')),
+      sessions: await this.answerSessions(), answers: validateAnswers(await this.document('answers')),
+      saveSession: async document => {
+        validateAnswerSession(document);
+        await this.write(join(this.root, `sessions/${safeId(string(get(document, 'applicationId')))}.json`), document, options);
+      },
+    }));
   }
 
   async answerMergeTransaction<T>(operation: (transaction: AnswerMergeTransaction) => Promise<T>): Promise<T> {
