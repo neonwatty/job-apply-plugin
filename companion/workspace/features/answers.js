@@ -88,7 +88,7 @@ export function installAnswers(context) {
   function showAnswerDetail(selected, opener, pendingJobId = null, pendingReference = null) {
     answerState.dialogGeneration += 1; answerState.opener = opener || document.activeElement;
     answerState.pendingJobId = pendingJobId; answerState.pendingReference = pendingReference; answerState.selected = selected; populateAnswerForm(selected);
-    $("#answer-kicker").textContent = `CANONICAL · REVISION ${selected.revision}`; $("#answer-dialog").showModal(); setTimeout(() => $("#answer-form").elements.question.focus(), 0);
+    $("#answer-kicker").textContent = `CANONICAL · REVISION ${selected.revision}`; $("#answer-dialog").showModal(); $("#answer-form").elements.question.focus();
   }
 
   async function openAnswer(answer, opener) {
@@ -100,7 +100,7 @@ export function installAnswers(context) {
       showAnswerDetail(selected, requestedOpener);
     } catch (error) { if (requestSequence === answerState.detailRequestSequence) answerError(error.message); }
   }
-  function newAnswer() { answerState.detailRequestSequence += 1; answerState.dialogGeneration += 1; answerState.selected = null; answerState.opener = document.activeElement; answerState.pendingJobId = null; answerState.pendingReference = null; populateAnswerForm(null); $("#answer-kicker").textContent = "NEW CANONICAL RECORD"; $("#answer-dialog").showModal(); setTimeout(() => $("#answer-form").elements.question.focus(), 0); }
+  function newAnswer() { answerState.detailRequestSequence += 1; answerState.dialogGeneration += 1; answerState.selected = null; answerState.opener = document.activeElement; answerState.pendingJobId = null; answerState.pendingReference = null; populateAnswerForm(null); $("#answer-kicker").textContent = "NEW CANONICAL RECORD"; $("#answer-dialog").showModal(); $("#answer-form").elements.question.focus(); }
 
   function answerFormPayload(onlyDirty = false) {
     const form = $("#answer-form"); let scope; try { scope = JSON.parse(form.elements.scope.value); } catch { throw new Error("Scope must be a valid JSON object."); } if (!scope || Array.isArray(scope) || typeof scope !== "object") throw new Error("Scope must be a JSON object.");
