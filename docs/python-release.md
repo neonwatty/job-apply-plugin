@@ -188,3 +188,17 @@ An explicit download fallback remains available for unsupported or blank native
 PDF renderers. TXT and DOCX behavior is unchanged. Embedded readability requires
 owner acceptance; isolated headless tests verify wiring, not native rendering.
 Forward-port this presentation and cancellation behavior to TypeScript separately.
+
+### Desktop Facts conflicts and TXT preview focus
+
+Facts comparisons now ignore JSON object key order, including nested work-history
+objects. PATCH responses and subsequent canonical reads can serialize identical
+objects differently; this must not create a conflict on the next save. Array
+order, missing fields, and changed values still participate in conflict checks.
+TXT preview restores focus to its invoking button after Close or Escape, with a
+current-card fallback if the resume list was refreshed while the dialog was open.
+
+Migration follow-up: use semantic JSON comparisons for draft bases and restore
+focus by stable resume identity when preview triggers are replaced. These desktop
+regressions use isolated synthetic data; owner walkthrough acceptance and
+smaller-screen QA remain separate.

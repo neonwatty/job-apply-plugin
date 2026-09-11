@@ -21,6 +21,7 @@ export function installFacts(context) {
     shouldRetryFactSave,
   } = apiHelpers;
   const {
+    equalJson,
     pointerValue,
     patchForPaths,
     conflictingPaths,
@@ -33,7 +34,6 @@ export function installFacts(context) {
   const namedTopLevel = new Set(["firstName", "lastName", "email", "phone", "location", "linkedInUrl", "portfolioUrl", "githubUrl", "workHistory", "education", "skills", "preferences"]);
   const encodePointer = (value) => String(value).replaceAll("~", "~0").replaceAll("/", "~1");
   const decodePointer = (value) => String(value).replaceAll("~1", "/").replaceAll("~0", "~");
-  const equalJson = (left, right) => JSON.stringify(left) === JSON.stringify(right);
 
   function factPathLabel(control) {
     if (control.dataset.label) return control.dataset.label;
