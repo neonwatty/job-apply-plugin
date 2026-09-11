@@ -213,3 +213,13 @@ shutdown to wake Windows reads. Poll timeouts remain internal and do not expire
 idle browser connections or interrupt Store operations. A regression disables
 the socket shutdown wakeup and still requires all workers to drain; another
 keeps a connection idle across multiple intervals before completing its request.
+
+Shutdown CI follow-up: the owner-beta recovery test waited for `/api/state`
+response headers before retrying readiness. A controlled response-consumption
+gate reproduces the premature click: the client correctly refuses preflight
+while canonical state is pending. The walkthrough now waits for a new rendered
+Jobs refresh-complete announcement, even when its text matches the previous
+announcement. This fixes the demonstrated test race without weakening stale-data
+checks or adding sleeps/retries. The historical timeout alone cannot prove every
+previous failure had this cause. Forward-port the synchronization check to the
+migration walkthrough if it uses response headers as an application-ready signal.
