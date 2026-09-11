@@ -110,7 +110,12 @@ class ShutdownTests(unittest.TestCase):
             server.RequestHandlerClass = Handler
             serving = threading.Thread(target=server.serve_forever)
             serving.start()
-            client = socket.create_connection(server.server_address, timeout=2)
+            # Constrain the receive window before connecting: Windows may otherwise
+            # buffer the entire payload even with a small server send buffer.
+            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 4096)
+            client.settimeout(2)
+            client.connect(server.server_address)
             try:
                 self.assertTrue(entered.wait(2))
                 self.assertFalse(finished.wait(.3))
