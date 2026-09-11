@@ -1,4 +1,3 @@
-import * as apiHelpers from "../lib/api.js";
 import * as helpers from "../lib/helpers.js";
 
 export function installBindings(context) {
@@ -21,9 +20,6 @@ export function installBindings(context) {
   const {
     activityRefreshCoordinator,
   } = coordinators;
-  const {
-    ApiError,
-  } = apiHelpers;
   const {
     canRefreshAnswerDraft,
     canApplyAnswerReveal,
@@ -176,7 +172,7 @@ export function installBindings(context) {
   $("#resume-conflict-refresh").addEventListener("click", async () => { try { const latest = await api(`/api/resumes/${encodeURIComponent(resumeState.selected.id)}`); renderResumeDialog(latest, true); $("#resume-conflict").classList.add("hidden"); $("#resume-form").elements.label.focus(); toast("Canonical revision refreshed; your draft and file selection were preserved"); } catch (error) { resumeError(error.message, true); } });
   $("#resume-extraction-action").addEventListener("click", () => runExtractionAction(resumeState.selected, $("#resume-extraction-action").dataset.action));
   $("#resume-handoff-copy").addEventListener("click", () => copyExtractionHandoff(resumeState.selected.extractionRequest, $("#resume-handoff-fallback")));
-  $("#resume-content").addEventListener("click", async () => { const resume = resumeState.selected; try { const response = await fetch(`/api/resumes/${encodeURIComponent(resume.id)}/content`, { headers: { Authorization: `Bearer ${token}` } }); if (!response.ok) { let payload = null; try { payload = await response.json(); } catch {} throw new ApiError(response.status, payload); } if (resume.mediaType?.startsWith("text/plain")) { $("#resume-preview").textContent = await response.text(); $("#preview-dialog").showModal(); } else { const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.target = "_blank"; link.rel = "noopener"; if (resume.mediaType?.includes("wordprocessingml")) link.download = `resume-${resume.id}.docx`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 60_000); } } catch (error) { resumeError(error.message, true); } });
+  $("#resume-content").addEventListener("click", (event) => coordinators.openResumeContent(resumeState.selected, event.currentTarget, true));
   $("#proposal-keep-all").addEventListener("click", () => { for (const select of $("#proposal-form").querySelectorAll("select[name]")) select.value = "keep_current"; $("#proposal-error").classList.add("hidden"); });
   $("#proposal-request-fresh").addEventListener("click", requestFreshForProposal);
   $("#proposal-form").addEventListener("submit", async (event) => {
