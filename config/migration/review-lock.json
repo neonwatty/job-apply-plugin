@@ -86,6 +86,10 @@
       "sha256": "adcbc8737ec21bf25b4e0ea251fb2c7b34e577486f778e79aee43810fa946c07"
     },
     {
+      "path": "cli-native-answer-lifecycle-surfaces.json",
+      "sha256": "687fc1341cc0071e64d0c623843fff3c84d90754319d4c24f1efa70515b97316"
+    },
+    {
       "path": "cli-native-answers-surfaces.json",
       "sha256": "bbb71b096d75f3cb7f33cf946859f0163b66d431c2b5c5c3597ddd69a9df88c9"
     },
@@ -191,11 +195,11 @@
     },
     {
       "path": "http-write-answers-02-surfaces.json",
-      "sha256": "9bebb4810d86e3efa0ecac1efb4b82ccdad560a45adfc27b4642f98228989cea"
+      "sha256": "798539653a4536e458db3d1cdd08ab96710d2544cdfbf2340f3428dcc68e2c10"
     },
     {
       "path": "http-write-answers-surfaces.json",
-      "sha256": "382bc35282fc868af312be49f14e5052585dc18bb564c5dda188f28af1ef47c4"
+      "sha256": "0858bb1bbbeb79411924f6b1fc1b71c67f5529a3738e38ff8c9c55479b9c8dac"
     },
     {
       "path": "http-write-jobs-surfaces.json",
@@ -306,6 +310,10 @@
       "sha256": "c819b8b9447817aa908b5a5626aa9d239b2cfecd46f4caf1cfebb931415129ee"
     },
     {
+      "path": "source-catalog-native-answer-lifecycle.json",
+      "sha256": "a000faf03cf2059ed616e4c6d421d55e9bb795dc988c1be97de1de87a02c2c8a"
+    },
+    {
       "path": "source-catalog-native-answer-merge.json",
       "sha256": "eca9033c0488be05dee9fab734a98782f460adae605ff3f3929879b3a258b660"
     },
@@ -315,7 +323,7 @@
     },
     {
       "path": "source-catalog-native-answers.json",
-      "sha256": "d53992f00a314edaf8745531ec9f4c3bda984be79663009f46c39e16be3dda42"
+      "sha256": "e0a72c236f94a774feb2f1a9c14d423342beee9668a28f2bb295cd86a6ef06a6"
     },
     {
       "path": "source-catalog-native-claims.json",
@@ -347,7 +355,7 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "77bd7b44df18a471adcd1060e529fdeabb7cd413080ce897875d954a265c3d4c"
+      "sha256": "0c1b711663c8a24298e9fd05bb3e1a403885dd2da7a2adbf022eb735a8854521"
     },
     {
       "path": "source-catalog-native-legacy-jobs.json",

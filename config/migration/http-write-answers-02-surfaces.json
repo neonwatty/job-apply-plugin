@@ -13,7 +13,12 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/answer-lifecycle-http.ts",
+        "src/workspace-core/answer-lifecycle.ts",
+        "src/contracts/workspace/answer-key.ts",
+        "src/store/native-jobs.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -41,7 +46,12 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/answer-lifecycle-http.ts",
+        "src/workspace-core/answer-lifecycle.ts",
+        "src/contracts/workspace/answer-key.ts",
+        "src/store/native-jobs.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -204,7 +214,12 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/answer-lifecycle-http.ts",
+        "src/workspace-core/answer-lifecycle.ts",
+        "src/contracts/workspace/answer-key.ts",
+        "src/store/native-jobs.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -232,7 +247,12 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/answer-lifecycle-http.ts",
+        "src/workspace-core/answer-lifecycle.ts",
+        "src/contracts/workspace/answer-key.ts",
+        "src/store/native-jobs.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -260,7 +280,12 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/answer-lifecycle-http.ts",
+        "src/workspace-core/answer-lifecycle.ts",
+        "src/contracts/workspace/answer-key.ts",
+        "src/store/native-jobs.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

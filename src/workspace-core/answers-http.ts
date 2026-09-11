@@ -1,3 +1,4 @@
+import { decodeAnswerKey as decodeKey } from '../contracts/workspace/answer-key.js';
 import { AnswerMergeService } from './answer-merges.js';
 import { AnswersService } from './answers.js';
 import type { AnswerQuery, AnswerRepository } from './answers.js';
@@ -18,14 +19,6 @@ function revision(payload: Document): bigint {
   const value = int(get(payload, 'expectedRevision'));
   if (value === null || value < 1n) throw new JobsError('expectedRevision must be a positive integer');
   return value;
-}
-function decodeKey(value: string): string {
-  if (!/^[A-Za-z0-9_-]+$/.test(value) || value.length % 4 === 1) throw new JobsError('encoded answer key is invalid');
-  try {
-    const result = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(Buffer.from(value, 'base64url'));
-    if (!result) throw new Error();
-    return result;
-  } catch { throw new JobsError('encoded answer key is invalid'); }
 }
 export async function answerHttp(repository: AnswerRepository, method: string, path: string, body: string): Promise<{ status: number; body: string } | null> {
   if (!path.startsWith('/api/answers')) return null;
