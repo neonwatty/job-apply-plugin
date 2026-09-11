@@ -118,15 +118,15 @@ export function installNavigation(context) {
   }
 
   async function navigateWorkspace(name) {
-    const generation = ++state.navigationGeneration;
+    state.navigationGeneration += 1;
     attentionState.detailRequestSequence += 1;
     closeNavigation();
-    await showWorkspace(name);
-    if (generation !== state.navigationGeneration) return;
+    const loading = showWorkspace(name);
     const heading = $(`#${name}-workspace .hero h2`);
     heading.setAttribute("tabindex", "-1");
     heading.focus({ preventScroll: true });
     window.scrollTo({ top: 0, behavior: "instant" });
+    await loading;
   }
 
   function attentionButton(jobId) { return document.querySelector(`[data-attention-id="${CSS.escape(jobId)}"]`); }

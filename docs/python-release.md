@@ -223,3 +223,16 @@ announcement. This fixes the demonstrated test race without weakening stale-data
 checks or adding sleeps/retries. The historical timeout alone cannot prove every
 previous failure had this cause. Forward-port the synchronization check to the
 migration walkthrough if it uses response headers as an application-ready signal.
+
+### Input focus during asynchronous work
+
+Controlled browser schedules reproduce two input hazards: navigation completion
+focused its heading after the owner had begun editing an employer override;
+answer-dialog opening queued a question-field focus that could redirect later
+value typing into the question. Navigation now focuses before awaiting initial
+loads, and answer dialogs focus synchronously when opened. Regressions hold the
+account-operation response and defer the old dialog callback, then verify focus,
+submitted override revision, and canonical answer value. Both fail before the fix.
+The CI timeout/null lookup alone does not prove every historical failure shared
+these causes. Forward-port focus-at-entry behavior, preserving user focus after
+async completion, into the TypeScript UI.
