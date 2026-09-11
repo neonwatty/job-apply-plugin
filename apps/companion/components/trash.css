@@ -1,0 +1,18 @@
+.trash-workspace { min-width: 0; }
+.trash-heading, .trash-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; }
+.trash-heading { justify-content: space-between; }
+.trash-list { list-style: none; margin: 1rem 0; padding: 0; display: grid; gap: 1rem; }
+.trash-card { display: flex; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid #87948e; border-radius: .75rem; }
+.trash-card > div { min-width: 0; }
+.trash-card h2, .trash-confirmation p { overflow-wrap: anywhere; }
+.trash-card h2 { font-size: 1.1rem; }
+.trash-workspace button, .trash-confirmation button { min-height: 44px; white-space: normal; }
+.trash-confirmation { width: min(34rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); overflow-y: auto; padding: 1.25rem; border: 1px solid #87948e; border-radius: .75rem; box-sizing: border-box; }
+.trash-confirmation::backdrop { background: rgb(0 0 0 / 50%); }
+.trash-confirmation label { display: grid; gap: .5rem; }
+.trash-confirmation input { min-width: 0; width: 100%; box-sizing: border-box; }
+.trash-confirmation .trash-actions { margin-top: 1rem; justify-content: flex-end; }
+@media (max-width: 600px) {
+    .trash-card { flex-direction: column; }
+    .trash-actions > button { flex: 1 1 8rem; }
+}
