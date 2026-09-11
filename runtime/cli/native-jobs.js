@@ -1,3 +1,4 @@
+import { trashCommands, runTrashCommand } from './native-trash.js';
 import { groupedApprovalCommands, runGroupedApprovalCommand } from './native-grouped-approvals.js';
 import { taskIntakeCommands, runTaskIntakeCommand } from './native-task-intake.js';
 import { legacyJobCommands, runLegacyJobCommand } from './native-legacy-jobs.js';
@@ -46,6 +47,7 @@ export async function runJobsCli(args, input) {
         }
     }
     const fields = {
+        ...trashCommands,
         ...groupedApprovalCommands,
         ...taskIntakeCommands,
         ...legacyJobCommands,
@@ -92,6 +94,8 @@ export async function runJobsCli(args, input) {
             : ["resume-proposal-create", "resume-extraction-request-complete"].includes(command) ? 2 * 1024 * 1024 : 65536;
         return parse(file === "-" ? await input(limit) : await readFile(file, "utf8"));
     };
+    if (Object.hasOwn(trashCommands, command))
+        return serialize(await runTrashCommand(command, repository, options));
     if (Object.hasOwn(groupedApprovalCommands, command))
         return serialize(await runGroupedApprovalCommand(command, repository, options, payload));
     if (Object.hasOwn(taskIntakeCommands, command))

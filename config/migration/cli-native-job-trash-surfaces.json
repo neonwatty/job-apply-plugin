@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:src/cli/native-jobs.ts:trash-list",
+      "kind": "cli",
+      "command": "trash-list",
+      "node": "JOB",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-trash.ts",
+        "src/workspace-core/trash.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:job-trash",
+      "kind": "cli",
+      "command": "job-trash",
+      "node": "JOB",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-trash.ts",
+        "src/workspace-core/trash.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:job-restore",
+      "kind": "cli",
+      "command": "job-restore",
+      "node": "JOB",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-trash.ts",
+        "src/workspace-core/trash.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

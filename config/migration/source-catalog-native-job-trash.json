@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/cli/native-trash.js",
+      "sha256": "438617ba3c91932782c38fa253e5f99f55eee0ff9dc2f57b0227cf1daddc3141",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/trash-http.js",
+      "sha256": "34b2c8cfe900ceaaa481328e42b6f0481c71c84f2ae867f868ba6d5b0aec80a2",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/trash.js",
+      "sha256": "634a63a4313500817a7372db5cacb6fa2ff8f43ad80662f53bc766cf84a7486c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-trash.ts",
+      "sha256": "66e9edb7f6dd7f2ebfa54face31cb0b6ebf98640b3573fa420d375970cb5326c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/trash-http.ts",
+      "sha256": "c8b9dd2f3fb0703b0573774ab065df3823fa0aa711b3dca111ebb02d1967f1d4",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/trash.ts",
+      "sha256": "715a6f634b403402173a29861a4f85785d4f52224360281f299a9c110bafb46a",
+      "classification": "unreviewed"
+    }
+  ]
+}
