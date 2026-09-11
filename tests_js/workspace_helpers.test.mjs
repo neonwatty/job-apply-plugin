@@ -165,7 +165,7 @@ test("resume tag drafts are trimmed without inventing durable browser state", ()
 test("resume assignment copy uses canonical projection counts", () => {
   assert.equal(
     resumeAssignmentText({ assignedJobCount: 2, implicitJobCount: 1 }),
-    "2 explicitly assigned active jobs; 1 active job use this default.",
+    "2 explicitly assigned active jobs; 1 active job uses this default.",
   );
   assert.equal(resumeAssignmentText({ assignedJobCount: 0, implicitJobCount: 0 }), "0 explicitly assigned active jobs.");
 });

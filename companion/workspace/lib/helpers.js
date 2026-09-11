@@ -239,7 +239,7 @@ export function fileToBase64(file) {
 export function resumeAssignmentText(resume) {
   const explicit = Number.isInteger(resume?.assignedJobCount) ? resume.assignedJobCount : 0;
   const implicit = Number.isInteger(resume?.implicitJobCount) ? resume.implicitJobCount : 0;
-  return `${explicit} explicitly assigned active job${explicit === 1 ? "" : "s"}${implicit ? `; ${implicit} active job${implicit === 1 ? "" : "s"} use this default` : ""}.`;
+  return `${explicit} explicitly assigned active job${explicit === 1 ? "" : "s"}${implicit ? `; ${implicit} active job${implicit === 1 ? " uses" : "s use"} this default` : ""}.`;
 }
 
 export function extractionRequestView(request, proposalSummary) {

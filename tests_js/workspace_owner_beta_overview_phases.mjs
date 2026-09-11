@@ -24,7 +24,7 @@ export async function runOwnerBetaOverviewAndPreflightPhase(context) {
     await page.getByLabel("Exact employer portal URL").fill("https://acme.wd5.myworkdayjobs.com/en-US/jobs/one");
     await page.getByLabel("Optional signup email override").fill("realm@example.com");
     await page.getByRole("button", { name: "Add employer portal" }).click();
-    const overrideForm = page.getByRole("form", { name: /Edit signup email override for Workday realm/ });
+    const overrideForm = page.getByRole("form", { name: /Edit signup email override for Workday portal/ });
     await overrideForm.waitFor();
     await overrideForm.getByLabel("Signup email override").fill("replacement@example.com");
     await overrideForm.getByRole("button", { name: "Save override" }).click();

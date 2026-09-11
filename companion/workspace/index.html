@@ -286,7 +286,7 @@
           <label><span><input name="enabled" type="checkbox"> Enable companion automation controls</span></label>
           <label><span><input name="automaticAccountCreation" type="checkbox"> Allow protected account preparation</span><small>Live Workday execution still requires a separate one-shot owner approval.</small></label>
           <label>Global signup email <input name="signupEmail" type="email" autocomplete="email" placeholder="Leave blank to keep the current setting"><small id="automation-email-status">Not configured</small></label>
-          <label>Password strategy <select name="passwordStrategy"><option value="unique_per_realm">Unique per employer realm</option><option value="shared">Shared credential version</option><option value="custom">Custom per realm</option><option value="ask_each_time">Ask each time</option></select></label>
+          <label>Password strategy <select name="passwordStrategy"><option value="unique_per_realm">Unique per employer</option><option value="shared">Shared credential version</option><option value="custom">Custom per employer</option><option value="ask_each_time">Ask each time</option></select></label>
           <div class="button-row"><button class="button primary" type="submit">Save settings</button><button id="automation-copy-profile-email" class="button secondary" type="button">Copy profile email once</button><button id="automation-clear-email" class="button secondary" type="button">Clear signup email</button></div>
           <p class="safety-note">Copying is an explicit one-time snapshot. Later profile edits do not change the signup email, and the copied value is never returned by this action.</p>
         </form>
@@ -294,7 +294,7 @@
         <p id="automation-error" class="error hidden" role="alert"></p>
       </section>
       <section class="automation-panel" aria-labelledby="realm-heading">
-        <div class="panel-heading"><div><p class="eyebrow">EMPLOYER REALMS</p><h2 id="realm-heading">Employer accounts</h2></div></div>
+        <div class="panel-heading"><div><p class="eyebrow">EMPLOYER ACCOUNTS</p><h2 id="realm-heading">Employer accounts</h2></div></div>
         <form id="realm-form" class="automation-form">
           <label>Exact employer portal URL <input name="url" type="url" required placeholder="https://tenant.wd5.myworkdayjobs.com/… or an Oracle Recruiting job URL"></label>
           <label>Optional signup email override <input name="signupEmailOverride" type="email" autocomplete="email"></label>
@@ -305,9 +305,9 @@
       </section>
       <section class="automation-panel" aria-labelledby="account-operation-heading">
         <div class="panel-heading"><div><p class="eyebrow">PROTECTED OPERATION</p><h2 id="account-operation-heading">Account operation recovery</h2></div></div>
-        <p class="safety-note">Recovery never infers success. A stranded operation becomes permanently ambiguous and cannot retry, rotate, or provision again.</p>
+        <p class="safety-note">If account setup was interrupted, record its outcome as unknown. This prevents another setup attempt or credential change; it does not assume the account was created.</p>
         <div id="account-operation-status" class="notice" role="status" aria-live="polite">No operation status loaded.</div>
-        <div class="button-row"><button id="account-operation-refresh" class="button secondary" type="button">Refresh operation status</button><button id="account-operation-recover" class="button danger" type="button" disabled>Mark stranded operation ambiguous</button></div>
+        <div class="button-row"><button id="account-operation-refresh" class="button secondary" type="button">Refresh operation status</button><button id="account-operation-recover" class="button danger" type="button" disabled>Record interrupted setup as unknown</button></div>
         <p id="account-operation-error" class="error hidden" role="alert"></p>
       </section>
       <section class="automation-panel" aria-labelledby="trusted-fill-heading">

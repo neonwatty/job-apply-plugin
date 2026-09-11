@@ -34,14 +34,13 @@ export function installAutomation(context) {
     $("#automation-email-status").textContent = settings.signupEmailConfigured ? "Configured; value remains hidden" : "Not configured";
     const capability = projection.capability;
     const accountFlow = capability.accountFlowAutomation || {};
-    const capabilityReason = capability.reasonCode ? capability.reasonCode.replaceAll("_", " ") : capability.state;
     const workday = accountFlow.workdayPasswordAccountReady ? "Workday account setup supported; separate approval required" : "Workday account automation unavailable";
     const greenhouse = accountFlow.greenhouseAccountlessClassificationReady ? "ordinary Greenhouse applications are accountless" : "Greenhouse account status unresolved";
-    $("#automation-capability").textContent = `${workday} · ${greenhouse} · ${accountFlow.emailOnlyCandidateProfileReady ? "Oracle candidate profiles supported" : "Oracle candidate profiles unavailable"} · ${capabilityReason}. Settings and recovery remain available here; no live execution control is exposed.`;
+    $("#automation-capability").textContent = `${workday} · ${greenhouse} · ${accountFlow.emailOnlyCandidateProfileReady ? "Oracle candidate profiles supported" : "Oracle candidate profiles unavailable"}. Settings and recovery remain available here; no live execution control is exposed.`;
     const list = $("#automation-accounts"); list.replaceChildren();
     for (const account of projection.accounts) {
       const card = document.createElement("article"); card.className = "automation-account"; card.setAttribute("role", "listitem");
-      const realmLabel = account.adapterId === "oracle-recruiting" ? "Oracle Recruiting site" : "Workday realm";
+      const realmLabel = account.adapterId === "oracle-recruiting" ? "Oracle Recruiting site" : "Workday portal";
       const title = document.createElement("h3"); title.textContent = `${realmLabel} · ${account.realmRef.slice(0, 12)}…`;
       const detail = document.createElement("p"); detail.textContent = `${account.lifecycleState.replaceAll("_", " ")} · revision ${account.revision} · ${account.signupEmailOverrideConfigured ? "email override configured" : "global email setting"} · ${String(account.flowKind || "password_candidate_account").replaceAll("_", " ")}`;
       const status = document.createElement("p"); status.textContent = account.credentialRequired === false ? "Email-only candidate profile; no password is created or stored." : (account.providerAssigned ? "Protected credential metadata assigned; value remains inaccessible." : "Credential not provisioned.");
@@ -52,7 +51,7 @@ export function installAutomation(context) {
       const save = document.createElement("button"); save.type = "submit"; save.className = "button secondary"; save.textContent = "Save override";
       const clear = document.createElement("button"); clear.type = "button"; clear.className = "button secondary"; clear.textContent = "Clear override";
       const feedback = document.createElement("p"); feedback.className = "realm-override-feedback visually-hidden"; feedback.setAttribute("role", "status"); feedback.setAttribute("aria-live", "polite");
-      const conflict = document.createElement("div"); conflict.className = "conflict hidden"; conflict.setAttribute("role", "alert"); conflict.tabIndex = -1; conflict.textContent = "This realm changed elsewhere. Nothing was retried. Refresh and review the latest revision.";
+      const conflict = document.createElement("div"); conflict.className = "conflict hidden"; conflict.setAttribute("role", "alert"); conflict.tabIndex = -1; conflict.textContent = "This employer account changed elsewhere. Nothing was retried. Refresh and review the latest revision.";
       const submit = async (clearValue) => {
         conflict.classList.add("hidden"); feedback.classList.add("visually-hidden");
         if (!clearValue && !input.value.trim()) { feedback.textContent = "Enter an email override or choose Clear override."; feedback.classList.remove("visually-hidden"); return; }
@@ -68,7 +67,7 @@ export function installAutomation(context) {
       card.append(title, detail, status, form); list.append(card);
     }
     if (!projection.accounts.length) {
-      const empty = document.createElement("p"); empty.className = "empty-state compact-empty"; empty.textContent = "No employer realms recorded yet."; list.append(empty);
+      const empty = document.createElement("p"); empty.className = "empty-state compact-empty"; empty.textContent = "No employer accounts recorded yet."; list.append(empty);
     }
   }
 
@@ -149,7 +148,7 @@ export function installAutomation(context) {
     if (form.elements.signupEmailOverride.value.trim()) payload.signupEmailOverride = form.elements.signupEmailOverride.value.trim();
     try {
       await api("/api/employer-accounts", { method: "POST", body: JSON.stringify(payload) });
-      form.reset(); await refreshAutomation({ quiet: true }); toast("Resolved employer realm added");
+      form.reset(); await refreshAutomation({ quiet: true }); toast("Employer portal added");
     } catch (error) {
       $("#automation-error").textContent = error.message; $("#automation-error").classList.remove("hidden");
     }

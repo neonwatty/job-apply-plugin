@@ -39,6 +39,10 @@ test('desktop readiness refresh explains invalidation and final trash restore ke
     await page.locator('#trash-empty').waitFor();
     await page.waitForFunction(() => document.activeElement?.id === 'trash-refresh', null, { timeout: 3000 });
     await openWorkspace(page, 'answers');
+    await page.locator('#answer-view').selectOption('trash');
+    await page.getByRole('heading', { name: 'No answers in Trash', exact: true }).waitFor();
+    assert.match(await page.locator('#answers-empty').innerText(), /Choose Library/);
+    await page.locator('#answer-view').selectOption('accepted');
     await page.locator('#answer-search').fill('No matching synthetic answer');
     await page.getByRole('heading', { name: 'No matching answers', exact: true }).waitFor();
     await page.getByRole('button', { name: 'Clear filters', exact: true }).click();

@@ -22,7 +22,7 @@ export async function runBrowserCrudTrashShutdownPhase(context) {
 
     await openWorkspace(page, "trash");
     await page.locator("#trash-refresh").click();
-    await page.getByText("1 jobs · 1 resumes · 2 answers").waitFor();
+    await page.getByText("1 job · 1 resume · 2 answers").waitFor();
     const trashWorkspaceText = await page.locator("#trash-workspace").innerText();
     for (const privateValue of ["private.example", "private-trash-answer", "protected-private-answer", "private-trash-resume.txt"]) {
       assert.equal(trashWorkspaceText.includes(privateValue), false);

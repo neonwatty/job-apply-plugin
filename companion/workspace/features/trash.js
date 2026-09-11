@@ -35,7 +35,7 @@ export function installTrash(context) {
     const type = $("#trash-type-filter").value;
     const items = filterTrashItems(trashState.items, type);
     $("#trash-nav-count").textContent = String(trashState.items.length);
-    $("#trash-counts").textContent = `${trashState.counts.job} jobs · ${trashState.counts.resume} resumes · ${trashState.counts.answer} answers`;
+    $("#trash-counts").textContent = ["job", "resume", "answer"].map(type => `${trashState.counts[type]} ${type}${trashState.counts[type] === 1 ? "" : "s"}`).join(" · ");
     $("#trash-status").textContent = `${items.length} trashed ${type || "record"}${items.length === 1 ? "" : "s"} in this view.`;
     const filteredEmpty = Boolean(type && trashState.items.length);
     $("#trash-empty h3").textContent = filteredEmpty ? "No matching records in Trash" : "Trash is empty";
