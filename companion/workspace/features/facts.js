@@ -238,7 +238,16 @@ export function installFacts(context) {
         else input.value = item?.[field] ?? "";
         input.setAttribute("aria-label", `${text}, item ${index + 1}`);
         if (field === "description") { label.className = "wide"; input.rows = 5; }
-        label.append(input); row.append(label);
+        label.append(input);
+        if (field === "startDate" || field === "endDate") {
+          input.placeholder = "e.g. 2020 or 2020-08";
+          const help = document.createElement("small");
+          help.id = `${container.id}-${index}-${field}-help`;
+          help.textContent = "Free-text date; partial dates are welcome. Use the detail available in your resume.";
+          input.setAttribute("aria-describedby", help.id);
+          label.append(help);
+        }
+        row.append(label);
       }
       const remove = document.createElement("button"); remove.type = "button"; remove.className = "button danger"; remove.textContent = `Remove ${container.dataset.repeater === "work" ? "position" : "education"}`;
       remove.addEventListener("click", () => {

@@ -222,3 +222,7 @@ filter recovery, and progressive disclosure. The reported education date format
 and DOCX download-event timeout remain separate investigations. The observed
 ready-check disappearance was reproduced via refresh invalidation; the original
 walkthrough timing has not been established. Desktop owner retest remains open.
+
+Work and education date fields explicitly describe the existing free-text
+contract, with year and year-month examples. Existing partial dates remain
+valid; this is guidance, not a new parser or Store migration.
