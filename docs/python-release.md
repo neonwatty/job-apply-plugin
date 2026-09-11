@@ -161,8 +161,8 @@ Forward-port these interaction details with the UX foundation.
 Verification follow-up: abandoning a response body and immediately stopping the
 server reproduced a request-thread stderr/finalization failure on Python 3.9 and
 3.12. The orderly-shutdown test now consumes the response before stopping.
-Abrupt-disconnect shutdown deserves a separate regression/fix before final release
-acceptance; this UX change does not alter server shutdown behavior.
+The subsequent request-draining fix below addresses worker lifetime separately
+from the UX changes.
 
 CI timing fixes: retire the attempt broker socket and PID before acknowledging a
 terminal request, so an immediate review restart cannot reach a retiring broker.
@@ -188,3 +188,21 @@ An explicit download fallback remains available for unsupported or blank native
 PDF renderers. TXT and DOCX behavior is unchanged. Embedded readability requires
 owner acceptance; isolated headless tests verify wiring, not native rendering.
 Forward-port this presentation and cancellation behavior to TypeScript separately.
+
+### Request draining during Companion shutdown
+
+The Python server now tracks accepted connections, interrupts pending socket I/O,
+and joins non-daemon request workers before the launcher exits. Work already
+running in the Store can finish before interpreter teardown; idle keepalive and
+incomplete requests do not hold shutdown open. Expected connection errors are
+quiet, while unexpected handler errors retain their traceback.
+
+Regression coverage holds an active handler through shutdown, leaves an
+incomplete request connected, and stops isolated launcher processes with idle,
+partial-body, and abandoned-response clients under supported stop signals.
+This fixes the request-worker lifetime defect recorded above; it does not
+establish why any previously unavailable dogfooding process exited.
+
+Migration follow-up: preserve request draining and Store-operation completion in
+the TypeScript server lifecycle. A Store operation blocked on external work can
+still delay graceful exit; this change does not forcibly interrupt transactions.

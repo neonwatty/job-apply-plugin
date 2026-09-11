@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import secrets
+import socket
+import sys
+import threading
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -52,7 +55,7 @@ def degraded_boot_status(error: Exception) -> dict[str, str]:
 
 
 class WorkspaceServer(ThreadingHTTPServer):
-    daemon_threads = True
+    daemon_threads = False
     allow_reuse_address = False
 
     def __init__(self, root: Path, port: int, token: str | None = None):
@@ -80,8 +83,52 @@ class WorkspaceServer(ThreadingHTTPServer):
             self.store.initialize()
         runtime_secrets = runtime().get("secrets", secrets)
         self.token = token or runtime_secrets.token_urlsafe(32)
+        self._connections_lock = threading.Lock()
+        self._connections: set[socket.socket] = set()
+        self._closing = False
         super().__init__((LOOPBACK, port), WorkspaceHandler)
         self.origin, self.expected_host = loopback_authority(self.server_port)
+
+    def process_request(self, request, client_address):
+        # Register before starting the worker so close cannot miss an accepted socket.
+        with self._connections_lock:
+            closing = self._closing
+            if not closing:
+                self._connections.add(request)
+        if closing:
+            self.shutdown_request(request)
+            return
+        try:
+            super().process_request(request, client_address)
+        except Exception:
+            self.shutdown_request(request)
+            raise
+
+    def shutdown_request(self, request):
+        try:
+            super().shutdown_request(request)
+        finally:
+            with self._connections_lock:
+                self._connections.discard(request)
+
+    def server_close(self):
+        # Stop socket reads/writes, then join workers. Store operations already in
+        # progress finish normally before interpreter teardown can begin.
+        with self._connections_lock:
+            self._closing = True
+            connections = tuple(self._connections)
+        for connection in connections:
+            try:
+                connection.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass  # The peer or request worker already closed this socket.
+        super().server_close()
+
+    def handle_error(self, request, client_address):
+        # A browser disconnect (including shutdown above) is not an app failure.
+        if isinstance(sys.exc_info()[1], ConnectionError):
+            return
+        super().handle_error(request, client_address)
 
 
 class WorkspaceHandler(
