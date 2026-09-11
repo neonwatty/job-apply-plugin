@@ -101,7 +101,11 @@ class ShutdownTests(unittest.TestCase):
                 self.connection.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 4096)
                 entered.set()
                 try:
-                    self.wfile.write(b"x" * (8 * 1024 * 1024))
+                    # Keep producing until shutdown: loopback stacks can absorb
+                    # a fixed payload despite constrained socket buffers.
+                    payload = b"x" * (64 * 1024)
+                    while True:
+                        self.wfile.write(payload)
                 finally:
                     finished.set()
 
