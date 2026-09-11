@@ -5,7 +5,7 @@ import { normalizeJobUrl, strip } from '../contracts/workspace/job-url.js';
 import { emptyObject, ingestFields, validateJob } from '../contracts/workspace/jobs.js';
 import { copy, get, has, set, object, string, text, integer, int, keys, same, fromJSON, parse, serialize, JobsError } from '../contracts/workspace/values.js';
 import type { Document, Value } from '../contracts/workspace/values.js';
-import { mayUpdate, nonempty, stamp } from './job-provenance.js';
+import { mayUpdate, migrationMayUpdate, nonempty, stamp } from './job-provenance.js';
 import type { Origin } from './job-provenance.js';
 
 function normalizeItem(value: Value): Document {
@@ -55,17 +55,18 @@ function batchConflicts(items: (Document | null)[]): Set<number> {
   return conflicts;
 }
 
-function incompatible(current: Document, item: Document): boolean {
+function incompatible(current: Document, item: Document, identityRefresh: boolean, urlRefresh: boolean): boolean {
   const previous = sourceIdentity(current), incoming = sourceIdentity(item);
   const sourceChanged = nonempty(get(current, 'source')) && nonempty(get(item, 'source'))
     && sourceName(current) !== sourceName(item);
   const idChanged = nonempty(get(current, 'sourceId')) && nonempty(get(item, 'sourceId'))
     && strip(string(get(current, 'sourceId'))!) !== strip(string(get(item, 'sourceId'))!);
-  return !same(get(current, 'normalizedUrl'), get(item, 'normalizedUrl'))
-    || previous !== null && incoming !== null && previous !== incoming || sourceChanged || idChanged;
+  return !same(get(current, 'normalizedUrl'), get(item, 'normalizedUrl')) && !urlRefresh
+    || (previous !== null && incoming !== null && previous !== incoming || sourceChanged || idChanged) && !identityRefresh;
 }
 
-export function planJobUpsert(currentDocument: Document, raw: Value[], author: Origin, now: string): {
+export function planJobUpsert(currentDocument: Document, raw: Value[], author: Origin | 'migration', now: string,
+  targetIds?: (string | null)[]): {
   document: Document; decisions: Document[]; changed: boolean;
 } {
   const errors: (string | null)[] = [];
@@ -99,7 +100,9 @@ export function planJobUpsert(currentDocument: Document, raw: Value[], author: O
     const urlMatches = records.filter(record => same(get(record, 'normalizedUrl'), get(item, 'normalizedUrl')));
     const source = sourceIdentity(item);
     const sourceMatches = source === null ? [] : records.filter(record => sourceIdentity(record) === source);
-    const matches = new Map([...urlMatches, ...sourceMatches].map(record => [string(get(record, 'id'))!, record]));
+    const targetId = targetIds?.[index] ?? null;
+    const targetMatches = targetId !== null && has(jobs, targetId) ? [object(get(jobs, targetId), 'job record')] : [];
+    const matches = new Map([...urlMatches, ...sourceMatches, ...targetMatches].map(record => [string(get(record, 'id'))!, record]));
     if (urlMatches.length > 1 || sourceMatches.length > 1 || matches.size > 1
       || [...matches.values()].some(record => get(record, 'deletedAt') !== null)) {
       decide({index, action:'conflict', reason:'job identities do not resolve to one active record'});
@@ -109,13 +112,18 @@ export function planJobUpsert(currentDocument: Document, raw: Value[], author: O
     if (current) {
       const id = string(get(current, 'id'))!;
       const provenance = has(current, 'provenance') ? object(get(current, 'provenance'), 'job provenance') : emptyObject();
-      if (incompatible(current, item)) {
+      const identityRefresh = author === 'migration'
+        && (same(get(current, 'normalizedUrl'), get(item, 'normalizedUrl')) || targetId === id);
+      const urlRefresh = author === 'migration' && targetId === id && migrationMayUpdate(current, provenance, 'url');
+      if (incompatible(current, item, identityRefresh, urlRefresh)) {
         decide({index, action:'conflict', id, reason:'incoming identity is incompatible with stored identity'});
         return;
       }
       const updated = copy(current), accepted: string[] = [];
       for (const field of ingestFields) {
-        if (!has(item, field) || field === 'url' || author === 'agent' && !mayUpdate(current, provenance, field)) continue;
+        if (!has(item, field) || field === 'url' && !urlRefresh
+          || author === 'agent' && !mayUpdate(current, provenance, field)
+          || author === 'migration' && !migrationMayUpdate(current, provenance, field)) continue;
         if (!same(get(current, field), get(item, field))) {
           set(updated, field, get(item, field));
           accepted.push(field);
@@ -125,6 +133,7 @@ export function planJobUpsert(currentDocument: Document, raw: Value[], author: O
         decide({index, action:'noop', id});
         return;
       }
+      if (accepted.includes('url')) set(updated, 'normalizedUrl', get(item, 'normalizedUrl'));
       set(updated, 'provenance', stamp(provenance, accepted, author, updated, now));
       set(updated, 'revision', integer(int(get(current, 'revision'))! + 1n));
       set(updated, 'updatedAt', text(now));

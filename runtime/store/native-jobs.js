@@ -98,7 +98,7 @@ export class NativeJobsRepository {
             await handle.close();
         }
     }
-    async validateRoot(locked = false) {
+    async validateRoot(locked = false, allowMissingJobs = false) {
         if (!isAbsolute(this.root) || this.root !== resolve(this.root) || await realpath(this.root) !== this.root) {
             throw new JobsError("native fixture root must be a real absolute directory");
         }
@@ -107,7 +107,7 @@ export class NativeJobsRepository {
             throw new JobsError("native fixture root must be private and owned");
         }
         const entries = await readdir(this.root);
-        if (locked && entries.some(name => !allowed.has(name)) || [...allowed].some(name => !entries.includes(name))) {
+        if (locked && entries.some(name => !allowed.has(name)) || [...allowed].some(name => !(allowMissingJobs && name === "jobs.json") && !entries.includes(name))) {
             throw new JobsError("native Jobs cannot open unsupported state or recovery journals");
         }
         if ((await this.read(".native-jobs-fixture")).toString("utf8") !== marker) {
@@ -214,6 +214,38 @@ export class NativeJobsRepository {
                 await this.write(join(this.root, "jobs.json"), value, options);
             },
         }));
+    }
+    async legacyTransaction(operation) {
+        await this.validateRoot(false, true);
+        return withExclusiveFileLock(join(this.root, ".store.lock"), async () => {
+            await this.validateRoot(true, true);
+            // A preview must stay read-only; defer imports until existing recovery work is complete.
+            for (const name of [journalName, extractionJournalName, answerJournalName]) {
+                if (get(await this.journal(name), "operation") !== null) {
+                    throw new JobsError("native legacy import requires completed fixture recovery");
+                }
+            }
+            return operation({
+                snapshot: async () => {
+                    try {
+                        const document = validateJobsDocument(await this.document("jobs"));
+                        return { document, snapshot: document };
+                    }
+                    catch (error) {
+                        if (error.code !== 'ENOENT')
+                            throw error;
+                        const document = object(fromJSON({ schemaVersion: 1, jobs: {}, metadata: {
+                                createdAt: '1970-01-01T00:00:00Z', updatedAt: '1970-01-01T00:00:00Z',
+                            } }), 'jobs');
+                        return { document, snapshot: fromJSON({ state: 'missing' }) };
+                    }
+                },
+                save: async (document) => {
+                    validateJobsDocument(document);
+                    await this.write(join(this.root, "jobs.json"), document, options);
+                },
+            });
+        }, { provider: this.provider, pathProfile: "3.12", signal: AbortSignal.timeout(30_000) });
     }
     async resumeTransaction(operation) {
         await this.validateRoot();

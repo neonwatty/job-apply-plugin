@@ -8,7 +8,7 @@
     },
     {
       "path": "runtime/workspace-core/job-upsert-plan.js",
-      "sha256": "724a931bb32e9711894b91b494aeadb30b8c3e8bab34a1021f620194caf8e780",
+      "sha256": "4122bdc6aefe2f471fc8f8dc4feed72732ae24bad781bedb098fe2123e82fc48",
       "classification": "unreviewed"
     },
     {
@@ -23,7 +23,7 @@
     },
     {
       "path": "src/workspace-core/job-upsert-plan.ts",
-      "sha256": "7912f3b226487938298d997cd9bb8c291bf3cf176f09f1941a8ae2dec544b9a1",
+      "sha256": "c0f81818c0b9bef6eb5dac36acab43df8006585bf9f4a8451fa2f4a63d1f193e",
       "classification": "unreviewed"
     },
     {
