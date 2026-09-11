@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/cli/native-task.js",
+      "sha256": "f227ee026943d25d28b3afad4a957365e4f780be20e920665c7b56001ceb9af7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/cli/task-command.js",
+      "sha256": "e5640e721a4a32f6343ed8b11d4700a75d5200ab569690eb9d853bde3921c34c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/cli/task-protocol.js",
+      "sha256": "7c409af49fa649f6dec4deb930b8807e6e73c98e5ea3d16893e4530d0a3811df",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/cli/task-runner.js",
+      "sha256": "fc8b1eb6c4111bf7377ef9c735735441d1da679c53a6dbb7246ca0273f224e79",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-task.ts",
+      "sha256": "4d58ad624fac8b0793de17093b9b51dd5b174c541490a14e058968fcc9d76bbd",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/task-command.ts",
+      "sha256": "12f81837cad2bd95a907a359891c79cc826bf41965e6408af79dfaad91ec3bb7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/task-protocol.ts",
+      "sha256": "993a6276118ddde24ca96ce811f56647c6485b99f4d7d99c231a49f51e092fb9",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/task-runner.ts",
+      "sha256": "08862128094374203cc3601c8bb6d813413ad6b4c86cd0b4d1eea05be7fc7012",
+      "classification": "unreviewed"
+    }
+  ]
+}
