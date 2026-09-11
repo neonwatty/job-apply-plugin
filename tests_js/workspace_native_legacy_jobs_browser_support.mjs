@@ -57,7 +57,9 @@ export async function legacyJobsBrowser(page, { legacy, writeReport, readDocumen
   assert.equal(await readDocument(), beforeRejected);
 
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
-  await page.getByRole('button', { name: new RegExp(role) }).click();
+  // Refresh retains old cards while loading. Open only the acknowledged CLI revision.
+  await page.getByRole('button', { name: new RegExp(role) })
+    .filter({hasText: new RegExp(`revision ${updated.revision}$`)}).click();
   assert.equal(await modal.locator('[name="company"]').inputValue(), 'Human legacy company');
   assert.equal(await modal.locator('[name="url"]').inputValue(), updated.url);
   await modal.locator('[name="url"]').fill('https://example.invalid/human-legacy-url');
