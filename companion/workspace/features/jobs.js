@@ -104,15 +104,17 @@ export function installJobs(context) {
     if (focusedJobId) jobButton(focusedJobId)?.focus();
   }
 
-  function refresh({ quiet = false } = {}) {
+  function refresh({ quiet = false, preserveReadiness = false } = {}) {
     if (state.refreshPromise) return state.refreshPromise;
     state.refreshEpoch += 1;
     state.canonicalStateCurrent = false;
     state.preflightRequestSequence += 1;
     const hadCheck = !$("#preflight-panel").classList.contains("hidden") || Boolean($("#ready-check-status").textContent);
-    clearPreflightReadiness();
+    clearPreflightReadiness({ hidePanel: !preserveReadiness, disableAction: preserveReadiness });
     if (hadCheck && dialog.open) {
-      $("#ready-check-status").textContent = "Workspace data refreshed. Run ready check again to see current results.";
+      $("#ready-check-status").textContent = preserveReadiness
+        ? "Checking for updates…"
+        : "Workspace data refreshed. Run ready check again to see current results.";
     }
     if (state.preflightError) {
       state.preflightError = null;
@@ -138,6 +140,7 @@ export function installJobs(context) {
         if (!quiet) toast("Jobs refreshed from the canonical store");
       } catch (error) {
         state.canonicalStateCurrent = false;
+        if (preserveReadiness) $("#ready-check-status").textContent = "Could not verify current data. Run ready check after reconnecting.";
         setConnection(false, error.message); if (!quiet) showFormError(error.message);
       }
     })().finally(() => { state.refreshPromise = null; });
@@ -217,7 +220,7 @@ export function installJobs(context) {
     } finally { $("#save-job").disabled = false; }
   }
 
-  async function preflight({ clearAtStart = true } = {}) {
+  async function preflight({ clearAtStart = true, scrollToResult = true } = {}) {
     if (!state.selected) return null;
     if (!state.canonicalStateCurrent) {
       $("#ready-check-status").textContent = "Workspace data is refreshing. Run ready check again when it finishes.";
@@ -261,7 +264,7 @@ export function installJobs(context) {
         $("#form-error").textContent = "";
         $("#form-error").classList.add("hidden");
       }
-      renderPreflight(result, { dialogGeneration, refreshEpoch, dependencyObservation }); return result;
+      renderPreflight(result, { dialogGeneration, refreshEpoch, dependencyObservation, scrollToResult }); return result;
     } catch (error) {
       if (
         requestSequence === state.preflightRequestSequence
@@ -281,7 +284,7 @@ export function installJobs(context) {
   }
 
   const issueText = { profile_empty: "Complete your applicant profile", resume_missing: "Assign an active resume", resume_file_missing: "The resume file cannot be found", resume_file_changed: "The resume file changed since it was added", role_missing: "Add a role for clearer handoff", company_missing: "Add a company for clearer handoff" };
-  function renderPreflight(result, { dialogGeneration, refreshEpoch, dependencyObservation }) {
+  function renderPreflight(result, { dialogGeneration, refreshEpoch, dependencyObservation, scrollToResult = true }) {
     $("#ready-check-status").textContent = "";
     const panel = $("#preflight-panel"), body = $("#preflight-results"); body.replaceChildren();
     const summary = document.createElement("p"); summary.textContent = result.ready ? "No blocking issues. This job can be handed to a Job Apply agent." : "Resolve the blocking issues before marking this job ready."; body.append(summary);
@@ -289,7 +292,8 @@ export function installJobs(context) {
     const current = freshestKnownJob(state.selected?.id);
     const currentStatus = current?.status;
     panel.classList.remove("hidden");
-    panel.scrollIntoView({ block: "center" });
+    if (scrollToResult) panel.scrollIntoView({ block: "center" });
+    $("#mark-ready").disabled = false;
     $("#mark-ready").classList.toggle("hidden", !result.ready || !canMarkReadyFrom(currentStatus));
     state.readyHandoffProof = result.ready && currentStatus === "ready" && result.revision === current?.revision
       ? { id: result.id, revision: result.revision, dialogGeneration, refreshEpoch, dependencyObservation }

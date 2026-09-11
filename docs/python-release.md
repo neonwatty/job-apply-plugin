@@ -237,3 +237,11 @@ continuity, review-fixture preparation, and review handoff using allowlisted,
 value-free stages. This improves diagnosis without exposing applicant data or
 weakening acceptance; an intermittent second-acquisition-stage CI failure remains
 unattributed until those diagnostics identify it or reproduction establishes it.
+
+UX-10 follow-up: the four-second background poll previously discarded Saved-job
+readiness results and rechecked only Ready jobs. Polling now keeps an open result
+visible, disables its action while canonical data is refreshed, and rechecks the
+current dialog before enabling it again. Poll rechecks do not scroll the page.
+Explicit refresh still clears proof. A regression removes the managed resume file
+without changing the job revision and verifies that revalidation revokes readiness.
+Forward-port this distinction between visible results and current actionable proof.

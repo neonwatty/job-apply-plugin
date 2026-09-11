@@ -63,10 +63,11 @@ export function installOverview(context) {
     $("#ready-handoff").classList.toggle("hidden", !visible);
   }
 
-  function clearPreflightReadiness({ hidePanel = true } = {}) {
+  function clearPreflightReadiness({ hidePanel = true, disableAction = false } = {}) {
     $("#ready-check-status").textContent = "";
     state.readyHandoffProof = null;
-    $("#mark-ready").classList.add("hidden");
+    if (!disableAction) $("#mark-ready").classList.add("hidden");
+    $("#mark-ready").disabled = disableAction;
     $("#ready-handoff").classList.add("hidden");
     if (hidePanel) {
       $("#preflight-panel").classList.add("hidden");
