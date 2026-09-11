@@ -1,3 +1,4 @@
+import { taskCliBrowser } from './workspace_native_task_cli_browser_support.mjs';
 import { nativeGroupedApprovalsBrowser } from './workspace_native_grouped_approvals_browser_support.mjs';
 import { legacyJobsBrowser } from './workspace_native_legacy_jobs_browser_support.mjs';
 import { taskIntakeBrowser } from './workspace_native_task_intake_browser_support.mjs';
@@ -201,10 +202,11 @@ export async function nativeJobsBrowser(buildRoot) {
       },
     });
     const groupedApprovals = await nativeGroupedApprovalsBrowser(page, root, fixture, buildRoot);
+    const taskCli = await taskCliBrowser(page, root, fixture, buildRoot);
     const unsupported = await fetch(startup.origin + '/api/trash', { headers: { Authorization: `Bearer ${token}` } });
     assert.equal(unsupported.status, 501);
     assert.deepEqual(pageErrors, []);
-    return { groupedApprovals, taskIntake, legacyJobs, upsert, transitions, projections, claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
+    return { taskCli, groupedApprovals, taskIntake, legacyJobs, upsert, transitions, projections, claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
   } finally {
     releaseInitialClaim?.();
     if (browser) await browser.close();

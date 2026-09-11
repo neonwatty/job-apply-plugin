@@ -15,7 +15,8 @@ Facts/profile operations, [active claims](native-claims-fixture.md),
 [CLI job upsert preview/commit](native-job-upsert-fixture.md), and
 [CLI legacy job import](native-legacy-jobs-fixture.md) and
 [CLI single-job task intake](native-task-intake-fixture.md), and
-[CLI grouped answer approvals](native-grouped-approvals-fixture.md) are also available. Other
+[CLI grouped answer approvals](native-grouped-approvals-fixture.md), and the
+[compatibility task CLI](native-task-cli-fixture.md) are also available. Other
 workflows return `unsupported_native_workflow`; they never fall back to Python.
 
 ## Run against a new synthetic root
