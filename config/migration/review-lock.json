@@ -111,7 +111,7 @@
     },
     {
       "path": "cli-native-job-trash-surfaces.json",
-      "sha256": "ddb9940f442a16dcb478d08d8a1c018a10c761e933af4972c5bc0bbe7ebb1137"
+      "sha256": "d3609ccbb2d44f685ac5c9dd7ea0a7537ea66dab837ab30494672ee328274eae"
     },
     {
       "path": "cli-native-job-upsert-surfaces.json",
@@ -199,7 +199,7 @@
     },
     {
       "path": "http-write-jobs-surfaces.json",
-      "sha256": "c10344d5a03033f4550f9f2312d7fa686510d6eb005021d72a384b51a26d9be7"
+      "sha256": "cc4e61028f78841558a294c01ee5f71340fcece6bc63e23c97643ab175af4590"
     },
     {
       "path": "http-write-profile-surfaces.json",
@@ -339,7 +339,7 @@
     },
     {
       "path": "source-catalog-native-job-trash.json",
-      "sha256": "6dd681f77adccd610b69a2bc08f77491885afcf7f69ae9d50411bbb96756a05e"
+      "sha256": "2acfa5a69e084fd7ac11adce3e4097e09a128cf35026cbf102ad401777ac9ff3"
     },
     {
       "path": "source-catalog-native-job-upsert.json",

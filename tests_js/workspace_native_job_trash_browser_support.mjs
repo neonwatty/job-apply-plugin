@@ -78,7 +78,19 @@ export async function jobTrashBrowser(page, root, fixture, buildRoot) {
   assert.equal(await company.inputValue(), job.company);
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   await modal.getByRole('button', { name: 'Close job details', exact: true }).click();
+  const deletion = await cli('job-trash', args(final.revision));
+  const beforeDelete = await readFile(join(root, 'jobs.json'), 'utf8');
+  await assert.rejects(cli('job-delete', args(final.revision)), /revision conflict/);
+  assert.equal(await readFile(join(root, 'jobs.json'), 'utf8'), beforeDelete);
+  assert.deepEqual(await api(`/api/jobs/${job.id}/delete`, { expectedRevision: deletion.revision }),
+    { deleted: true, id: job.id });
+  assert.deepEqual(await cli('job-delete', args(deletion.revision)), { deleted: false, id: job.id });
+  assert.equal((await api('/api/trash')).items.some(value => value.id === job.id), false);
+  await page.reload();
+  await navigation.getByRole('button', { name: 'Jobs', exact: true }).click();
+  await card.waitFor({ state: 'hidden' });
+  assert.equal(JSON.parse(await readFile(join(root, 'jobs.json'), 'utf8')).jobs[job.id], undefined);
   return { cliTrashHidden: true, apiRestoreReload: true, apiTrashCliRestore: true,
-    redactedListingAgreement: true, listingReadOnly: true, staleRevisionRejected: true,
+    apiDeleteCliNoop: true, deletedAbsentAfterReload: true, redactedListingAgreement: true, listingReadOnly: true, staleRevisionRejected: true,
     externalDraftPreserved: true, restoredContentPreserved: true, pythonAbsentFromPath: true };
 }

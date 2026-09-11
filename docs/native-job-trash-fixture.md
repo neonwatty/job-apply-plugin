@@ -1,13 +1,13 @@
 # Native Trash and job recovery fixture
 
 The opt-in version 9 native fixture supports a unified Trash listing and reversible
-job trash/restore through its CLI and authenticated HTTP API. A trashed job is
+job trash/restore and permanent deletion through its CLI and authenticated HTTP API. A trashed job is
 hidden from ordinary Jobs results. Restoring it makes it visible in Companion
 Jobs after Refresh or reload, retaining its saved fields and local status.
 
 This tranche adds API and CLI operations only. The native Companion has no Trash
-section or browser trash/restore buttons yet. Full Trash UI, permanent deletion,
-and resume/answer trash and restore operations remain later work.
+section or browser trash/restore buttons yet. Full Trash UI and
+resume/answer lifecycle operations remain separate integration work.
 
 ## Use a synthetic fixture
 
@@ -32,6 +32,25 @@ expired leases. Restore also rejects
 an unavailable associated resume or an active job with the same normalized URL.
 These failures leave the job unchanged. The commands do not submit an application,
 change its local status, or permanently remove stored content.
+
+## Permanent job deletion
+
+`job-delete --id SYNTHETIC_JOB_ID --expected-revision CURRENT_REVISION` and
+`POST /api/jobs/:id/delete` permanently remove a trashed job. The POST accepts
+only `{"expectedRevision": CURRENT_REVISION}`. The response is `{deleted, id}`,
+not a job record. Missing jobs return `deleted: false`, even with an old revision.
+Existing jobs require the current revision, no coordinator claim (including an
+expired claim), prior trash, and an absent or completed/abandoned session, in
+that order. Session and application history evidence remains byte-for-byte intact.
+Failures before atomic replacement preserve the record. A later failure can
+report an error after deletion has taken effect. Refresh canonical state after
+any failed deletion before deciding whether another attempt is appropriate.
+
+HTTP failures use redacted lifecycle metadata: `recordType: "job"`,
+`operation: "delete"`, and fixed blocker counts. Nonterminal sessions return
+409 `session_reference_blocked` with `nonterminalSessions: 1`. Confirmation is
+an explicit UI responsibility; it is not an additional HTTP request field.
+A client should refresh after success and must not blindly retry conflicts.
 
 ## Listing and HTTP contract
 
