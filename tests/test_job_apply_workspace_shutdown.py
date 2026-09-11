@@ -7,7 +7,7 @@ import threading
 import unittest
 from http.server import BaseHTTPRequestHandler
 
-from tests.support.workspace_case import WORKSPACE, tempfile, Path
+from tests.support.workspace_case import WORKSPACE, tempfile, Path, mock
 
 
 class ShutdownTests(unittest.TestCase):
@@ -79,11 +79,79 @@ class ShutdownTests(unittest.TestCase):
                 client.sendall(b"GET / HTTP/1.1")
                 self.assertTrue(entered.wait(2))
                 server.shutdown()
-                closer = threading.Thread(target=server.server_close, daemon=True)
-                closer.start()
-                closer.join(2)
+                # Model platforms where shutdown does not wake a blocked recv.
+                with mock.patch.object(type(next(iter(server._connections))), "shutdown", return_value=None):
+                    closer = threading.Thread(target=server.server_close, daemon=True)
+                    closer.start()
+                    closer.join(2)
                 self.assertFalse(closer.is_alive(), "idle client blocked shutdown")
                 self.assertTrue(finished.is_set(), "request worker survived shutdown")
+            finally:
+                client.close()
+                server.shutdown()
+                server.server_close()
+                serving.join(2)
+
+    def test_close_unblocks_response_to_client_that_is_not_reading(self):
+        entered = threading.Event()
+        finished = threading.Event()
+
+        class Handler(BaseHTTPRequestHandler):
+            def handle(self):
+                self.connection.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 4096)
+                entered.set()
+                try:
+                    self.wfile.write(b"x" * (8 * 1024 * 1024))
+                finally:
+                    finished.set()
+
+        with tempfile.TemporaryDirectory() as temporary:
+            server = WORKSPACE.WorkspaceServer(Path(temporary), 0)
+            server.RequestHandlerClass = Handler
+            serving = threading.Thread(target=server.serve_forever)
+            serving.start()
+            client = socket.create_connection(server.server_address, timeout=2)
+            try:
+                self.assertTrue(entered.wait(2))
+                self.assertFalse(finished.wait(.3))
+                server.shutdown()
+                with mock.patch.object(type(next(iter(server._connections))), "shutdown", return_value=None):
+                    closer = threading.Thread(target=server.server_close, daemon=True)
+                    closer.start()
+                    closer.join(2)
+                self.assertFalse(closer.is_alive())
+                self.assertTrue(finished.is_set())
+            finally:
+                client.close()
+                server.shutdown()
+                server.server_close()
+                serving.join(2)
+
+    def test_idle_connection_survives_multiple_io_poll_intervals(self):
+        entered = threading.Event()
+        finished = threading.Event()
+        received = []
+
+        class Handler(BaseHTTPRequestHandler):
+            def handle(self):
+                entered.set()
+                received.append(self.rfile.readline())
+                self.wfile.write(b"accepted")
+                finished.set()
+
+        with tempfile.TemporaryDirectory() as temporary:
+            server = WORKSPACE.WorkspaceServer(Path(temporary), 0)
+            server.RequestHandlerClass = Handler
+            serving = threading.Thread(target=server.serve_forever)
+            serving.start()
+            client = socket.create_connection(server.server_address, timeout=2)
+            try:
+                self.assertTrue(entered.wait(2))
+                self.assertFalse(finished.wait(.7))
+                client.sendall(b"delayed request\n")
+                self.assertEqual(client.recv(8), b"accepted")
+                self.assertTrue(finished.wait(2))
+                self.assertEqual(received, [b"delayed request\n"])
             finally:
                 client.close()
                 server.shutdown()

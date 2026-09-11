@@ -206,3 +206,10 @@ establish why any previously unavailable dogfooding process exited.
 Migration follow-up: preserve request draining and Store-operation completion in
 the TypeScript server lifecycle. A Store operation blocked on external work can
 still delay graceful exit; this change does not forcibly interrupt transactions.
+
+Windows shutdown correction: accepted sockets now poll the server close event
+inside read/write operations. This avoids relying on cross-thread socket
+shutdown to wake Windows reads. Poll timeouts remain internal and do not expire
+idle browser connections or interrupt Store operations. A regression disables
+the socket shutdown wakeup and still requires all workers to drain; another
+keeps a connection idle across multiple intervals before completing its request.

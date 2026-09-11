@@ -16,6 +16,7 @@ from . import (
     loopback_authority,
     runtime,
 )
+from .connections import WorkspaceConnection
 from .auth import AuthMixin
 from .domains.accounts import AccountMutationMixin
 from .domains.answers import AnswerMutationMixin
@@ -86,8 +87,13 @@ class WorkspaceServer(ThreadingHTTPServer):
         self._connections_lock = threading.Lock()
         self._connections: set[socket.socket] = set()
         self._closing = False
+        self._closing_event = threading.Event()
         super().__init__((LOOPBACK, port), WorkspaceHandler)
         self.origin, self.expected_host = loopback_authority(self.server_port)
+
+    def get_request(self):
+        connection, address = super().get_request()
+        return WorkspaceConnection(connection, self._closing_event), address
 
     def process_request(self, request, client_address):
         # Register before starting the worker so close cannot miss an accepted socket.
@@ -116,6 +122,7 @@ class WorkspaceServer(ThreadingHTTPServer):
         # progress finish normally before interpreter teardown can begin.
         with self._connections_lock:
             self._closing = True
+            self._closing_event.set()
             connections = tuple(self._connections)
         for connection in connections:
             try:
