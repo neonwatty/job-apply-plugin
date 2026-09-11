@@ -1,3 +1,4 @@
+import { trashHttp } from './trash-http.js';
 import { claimsHttp } from './claims-http.js';
 import { jobTransitionsHttp } from './job-transitions-http.js';
 import { workspaceProjectionsHttp } from './workspace-projections-http.js';
@@ -17,6 +18,9 @@ const envelope = (key, value) => set(emptyObject(), key, value);
 /** Transport-independent dispatch. Host/token/Origin/body bounds belong to the adapter. */
 export async function jobsHttp(service, repository, method, path, body = "") {
     try {
+        const trash = await trashHttp(repository, method, path, body);
+        if (trash)
+            return trash;
         const transition = await jobTransitionsHttp(repository, method, path, body);
         if (transition)
             return transition;
