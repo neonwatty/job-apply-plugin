@@ -103,5 +103,6 @@ separately. Browser coverage verifies that CLI-imported records are visible in
 Companion; it does not add a browser import workflow. Passing checks and CI are
 recorded with the change's validation evidence.
 
-Task intake, general writer activation and installable Python-free packaging
-remain later work.
+[Single-job task intake](native-task-intake-fixture.md) is also available through
+the native fixture CLI. General writer activation and installable Python-free
+packaging remain later work.

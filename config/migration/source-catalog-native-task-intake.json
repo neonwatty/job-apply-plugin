@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/cli/native-task-intake.js",
+      "sha256": "1aedd2f8ca1f4d5a5594485d7f9151ab6cf88133ff63be35709e1361859b08d3",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/task-intake.js",
+      "sha256": "8b461b1774ebb08e1652e5898e41e17481e294fb1ed8476266b1434424995c84",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/task-job-projection.js",
+      "sha256": "57d48d38ae68395f64bb4e2422efeab140e9de2b76779f4dffae8b07d3166a42",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-task-intake.ts",
+      "sha256": "3e9035101b418337a1366fe8dd4556a8d4757e662a13f01165401b5c93c9a924",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/task-intake.ts",
+      "sha256": "cfd10e85ff248df5e96f1c89f85ff32a485c12cb58d781912456c378369475d3",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/task-job-projection.ts",
+      "sha256": "7bd65a09c81cc6700b7bebcc00887d3f9c972994c350f409a59bfc4deee3fc61",
+      "classification": "unreviewed"
+    }
+  ]
+}

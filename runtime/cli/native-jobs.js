@@ -1,3 +1,4 @@
+import { taskIntakeCommands, runTaskIntakeCommand } from './native-task-intake.js';
 import { legacyJobCommands, runLegacyJobCommand } from './native-legacy-jobs.js';
 import { jobUpsertCommands, runJobUpsertCommand } from './native-job-upsert.js';
 import { claimCommands, runClaimCommand } from './native-claims.js';
@@ -44,6 +45,7 @@ export async function runJobsCli(args, input) {
         }
     }
     const fields = {
+        ...taskIntakeCommands,
         ...legacyJobCommands,
         ...jobUpsertCommands,
         ...jobTransitionCommands,
@@ -84,10 +86,12 @@ export async function runJobsCli(args, input) {
         // Extraction candidates permit 256 KiB after normalization. Allow JSON
         // escaping and formatting overhead while keeping stdin bounded.
         // Bulk upsert accepts the same input domain through stdin and files, as Python does.
-        const limit = Object.hasOwn(jobUpsertCommands, command) ? Infinity
+        const limit = (Object.hasOwn(jobUpsertCommands, command) || Object.hasOwn(taskIntakeCommands, command)) ? Infinity
             : ["resume-proposal-create", "resume-extraction-request-complete"].includes(command) ? 2 * 1024 * 1024 : 65536;
         return parse(file === "-" ? await input(limit) : await readFile(file, "utf8"));
     };
+    if (Object.hasOwn(taskIntakeCommands, command))
+        return serialize(await runTaskIntakeCommand(repository, options, payload));
     if (Object.hasOwn(legacyJobCommands, command))
         return serialize(await runLegacyJobCommand(command, repository, options, selected));
     if (Object.hasOwn(jobUpsertCommands, command))
