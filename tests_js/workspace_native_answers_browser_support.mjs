@@ -1,3 +1,4 @@
+import { nativeAnswerLifecycleBrowser } from './workspace_native_lifecycle_answers_browser_support.mjs';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -72,5 +73,6 @@ export async function nativeAnswersBrowser(page, root, fixture, buildRoot) {
     const creation = await nativeAnswerCreationBrowser(page, root);
     const cleanup = await nativeAnswerCleanupBrowser(page, root, cli);
     const pendingQuestions = await nativePendingAnswersBrowser(page, root, cli);
-    return { pendingQuestions, cleanup, creation, persistedEdits: true, cliConflictReapply: true, losslessScope: true, explicitSensitiveConsent: true, review: true, reload: true, narrow: true };
+    const lifecycle = await nativeAnswerLifecycleBrowser(page, root, fixture, buildRoot);
+    return { lifecycle, pendingQuestions, cleanup, creation, persistedEdits: true, cliConflictReapply: true, losslessScope: true, explicitSensitiveConsent: true, review: true, reload: true, narrow: true };
 }

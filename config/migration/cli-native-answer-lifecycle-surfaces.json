@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:src/cli/native-jobs.ts:answer-trash",
+      "kind": "cli",
+      "command": "answer-trash",
+      "node": "ANS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-answer-lifecycle.ts",
+        "src/workspace-core/answer-lifecycle.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:answer-restore",
+      "kind": "cli",
+      "command": "answer-restore",
+      "node": "ANS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-answer-lifecycle.ts",
+        "src/workspace-core/answer-lifecycle.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:answer-delete",
+      "kind": "cli",
+      "command": "answer-delete",
+      "node": "ANS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-answer-lifecycle.ts",
+        "src/workspace-core/answer-lifecycle.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

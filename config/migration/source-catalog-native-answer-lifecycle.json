@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/cli/native-answer-lifecycle.js",
+      "sha256": "df454f449d1b730fc45a10075e0bd507f0367e861bf8f8b6fc0fa2e76ae8b035",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/answer-key.js",
+      "sha256": "3344d2b86c7e84a89ad68be5b9b424078c6d2654cf4b0141033741af6923f74e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/answer-lifecycle-http.js",
+      "sha256": "864b3857ff2c0d0bcbb03d59b9a8c45ca93f9c620d93ca1fde4892e80e20fb51",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/answer-lifecycle.js",
+      "sha256": "dddb2b53407b3712f22c0fc55d182612c90696a97fdf8534a2e4b783ffb623b5",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-answer-lifecycle.ts",
+      "sha256": "523c59b79f33313ba82ac0956ba82aa4aa108716b71454c7c75c4dc95dbdbd8a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/answer-key.ts",
+      "sha256": "9baf547441f935ec1093a538a300a8548880f8e5ae7a3a13a8f90b48680ab8e6",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/answer-lifecycle-http.ts",
+      "sha256": "2ffd8a253182fc26e3e2b7f469a86d95a6dcfccc07c40f28ee5f887b29bb4d65",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/answer-lifecycle.ts",
+      "sha256": "9e360d00e674bee5f0c8fc5fed932c9c416583e3377a5d71b3c1141d70ac765f",
+      "classification": "unreviewed"
+    }
+  ]
+}
