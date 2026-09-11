@@ -1,3 +1,4 @@
+import { refreshJobsAndWait } from "./workspace_refresh_support.mjs";
 import { openWorkspace, openWorkspaceMenu } from "./workspace_menu_support.mjs";
 import {
   assert, join, writeFile,
@@ -42,7 +43,7 @@ export async function runOwnerBetaFreshnessRestartPhase(context) {
     const newerDependencyState = page.waitForResponse((response) => (
       new URL(response.url()).pathname === "/api/state" && response.ok()
     ));
-    await page.locator("#refresh").evaluate((button) => button.click());
+    await refreshJobsAndWait(page);
     await newerDependencyState;
     const dependencyStalePreflightResponse = page.waitForResponse((response) => (
       new URL(response.url()).pathname === `/api/jobs/${job.id}/preflight`
@@ -83,7 +84,7 @@ export async function runOwnerBetaFreshnessRestartPhase(context) {
     const newerStateResponse = page.waitForResponse((response) => (
       new URL(response.url()).pathname === "/api/state" && response.ok()
     ));
-    await page.evaluate(() => document.querySelector("#refresh").click());
+    await refreshJobsAndWait(page);
     await newerStateResponse;
     await jobDialog.getByLabel("Role", { exact: true }).fill("Stale preflight draft");
     await jobDialog.getByRole("button", { name: "Save job" }).click();
@@ -127,7 +128,7 @@ export async function runOwnerBetaFreshnessRestartPhase(context) {
     const changedResumeStateResponse = page.waitForResponse((response) => (
       new URL(response.url()).pathname === "/api/state" && response.ok()
     ));
-    await page.evaluate(() => document.querySelector("#refresh").click());
+    await refreshJobsAndWait(page);
     await changedResumeStateResponse;
 
     await page.getByRole("button", { name: "Close job details" }).click();

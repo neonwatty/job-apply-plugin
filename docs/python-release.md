@@ -161,8 +161,8 @@ Forward-port these interaction details with the UX foundation.
 Verification follow-up: abandoning a response body and immediately stopping the
 server reproduced a request-thread stderr/finalization failure on Python 3.9 and
 3.12. The orderly-shutdown test now consumes the response before stopping.
-Abrupt-disconnect shutdown deserves a separate regression/fix before final release
-acceptance; this UX change does not alter server shutdown behavior.
+The subsequent request-draining fix below addresses worker lifetime separately
+from the UX changes.
 
 CI timing fixes: retire the attempt broker socket and PID before acknowledging a
 terminal request, so an immediate review restart cannot reach a retiring broker.
@@ -245,3 +245,51 @@ current dialog before enabling it again. Poll rechecks do not scroll the page.
 Explicit refresh still clears proof. A regression removes the managed resume file
 without changing the job revision and verifies that revalidation revokes readiness.
 Forward-port this distinction between visible results and current actionable proof.
+
+### Request draining during Companion shutdown
+
+The Python server now tracks accepted connections, interrupts pending socket I/O,
+and joins non-daemon request workers before the launcher exits. Work already
+running in the Store can finish before interpreter teardown; idle keepalive and
+incomplete requests do not hold shutdown open. Expected connection errors are
+quiet, while unexpected handler errors retain their traceback.
+
+Regression coverage holds an active handler through shutdown, leaves an
+incomplete request connected, and stops isolated launcher processes with idle,
+partial-body, and abandoned-response clients under supported stop signals.
+This fixes the request-worker lifetime defect recorded above; it does not
+establish why any previously unavailable dogfooding process exited.
+
+Migration follow-up: preserve request draining and Store-operation completion in
+the TypeScript server lifecycle. A Store operation blocked on external work can
+still delay graceful exit; this change does not forcibly interrupt transactions.
+
+Windows shutdown correction: accepted sockets now poll the server close event
+inside read/write operations. This avoids relying on cross-thread socket
+shutdown to wake Windows reads. Poll timeouts remain internal and do not expire
+idle browser connections or interrupt Store operations. A regression disables
+the socket shutdown wakeup and still requires all workers to drain; another
+keeps a connection idle across multiple intervals before completing its request.
+
+Shutdown CI follow-up: the owner-beta recovery test waited for `/api/state`
+response headers before retrying readiness. A controlled response-consumption
+gate reproduces the premature click: the client correctly refuses preflight
+while canonical state is pending. The walkthrough now waits for a new rendered
+Jobs refresh-complete announcement, even when its text matches the previous
+announcement. This fixes the demonstrated test race without weakening stale-data
+checks or adding sleeps/retries. The historical timeout alone cannot prove every
+previous failure had this cause. Forward-port the synchronization check to the
+migration walkthrough if it uses response headers as an application-ready signal.
+
+### Input focus during asynchronous work
+
+Controlled browser schedules reproduce two input hazards: navigation completion
+focused its heading after the owner had begun editing an employer override;
+answer-dialog opening queued a question-field focus that could redirect later
+value typing into the question. Navigation now focuses before awaiting initial
+loads, and answer dialogs focus synchronously when opened. Regressions hold the
+account-operation response and defer the old dialog callback, then verify focus,
+submitted override revision, and canonical answer value. Both fail before the fix.
+The CI timeout/null lookup alone does not prove every historical failure shared
+these causes. Forward-port focus-at-entry behavior, preserving user focus after
+async completion, into the TypeScript UI.

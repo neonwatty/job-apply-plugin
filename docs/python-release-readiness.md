@@ -1,6 +1,6 @@
 # Python release readiness spec
 
-Status: phase 2 re-scoped after owner dogfooding; availability hardening in progress. Baseline assessed: `c1b180b3` on 2026-09-09.
+Status (2026-09-11): PR #75 UX candidate passes CI and scoped installed Companion QA; PR #72 CI hardening continues. Fresh installed calling-agent acceptance is owner-skipped, not passed. Final integration/release acceptance remains open.
 
 ## Objective and scope
 
@@ -76,9 +76,9 @@ testing retains its explicit opt-in.
 | --- | --- | --- |
 | 1 | Complete | PR #57 merged; 20 repeated runs, full local/package tests, and CI run `34406170344` passed |
 | 2 | Re-scoped | Owner dogfooding completed; agent-first and optional-companion improvements required |
-| 3 | Planned | Actual prior-release upgrade and installed-agent sessions |
-| 4 | Planned | Observed workspace QA and refinements |
-| 5 | Planned | Installed-agent and owner acceptance |
+| 3 | Partial / scope revised | Isolated package smoke passes; actual prior-release upgrade remains open; fresh installed-agent sessions skipped by owner |
+| 4 | Refined / scoped QA | PR #75 CI and installed Companion receipts pass for recorded journeys; DOCX and uncaptured browser branches remain unqualified |
+| 5 | Scope revised | Recorded owner/browser journeys only; fresh installed calling-agent acceptance skipped, not completed |
 | 6 | Planned | Final candidate, review, and release |
 
 Record behavioral fixes and TypeScript follow-up in the
@@ -140,3 +140,23 @@ Phase 4 observation: Facts provenance is nested inside field labels, so an exact
 accessible name such as “First name” changes when provenance loads. Evaluate
 separating the field name from its provenance description in the accessibility
 walkthrough; the setup regression selects the stable field path after data loads.
+
+### Owner acceptance scope update — 2026-09-11
+
+The owner explicitly skipped fresh installed-plugin calling-agent acceptance for
+Claude and Codex because isolated sign-in could not be completed. Record this as
+**not completed**, not a pass. Do not pursue further sign-in or substitute package
+smoke for actual installed-agent acceptance. Keep the limitation in release notes
+and final review. Existing package, controlled browser and installed Companion
+receipts retain their narrower scope. DOCX browser-download confirmation remains
+unqualified under the host inspection restriction.
+
+Browser closeout for installed Companion candidate
+`5ccf85be700f3c4d080623dc8d755038f860425d`: normal-speed readiness action-window
+and actual Ready transition passed; changing/restoring the profile invalidated
+and recovered readiness with unchanged job revision. Answer Trash toast, restore
+view guidance and Automation copy passed. The synthetic answer was restored;
+settings and prior environments were preserved. Brief pending-disabled state,
+no-scroll and missing-resume-specific branches remain controlled-test evidence,
+not independent browser acceptance. This receipt does not qualify later PR #72
+changes or remove the skipped calling-agent/DOCX limitations above.
