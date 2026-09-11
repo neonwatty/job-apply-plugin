@@ -37,6 +37,9 @@ export function installTrash(context) {
     $("#trash-nav-count").textContent = String(trashState.items.length);
     $("#trash-counts").textContent = `${trashState.counts.job} jobs · ${trashState.counts.resume} resumes · ${trashState.counts.answer} answers`;
     $("#trash-status").textContent = `${items.length} trashed ${type || "record"}${items.length === 1 ? "" : "s"} in this view.`;
+    const filteredEmpty = Boolean(type && trashState.items.length);
+    $("#trash-empty h3").textContent = filteredEmpty ? "No matching records in Trash" : "Trash is empty";
+    $("#trash-empty p").textContent = filteredEmpty ? "Choose All types to see other trashed records." : "Records moved to trash remain recoverable until you explicitly delete them.";
     $("#trash-empty").classList.toggle("hidden", items.length !== 0);
     const list = $("#trash-list"); list.replaceChildren();
     for (const item of items) {
@@ -67,6 +70,9 @@ export function installTrash(context) {
     try {
       await api(trashActionPath(item, "restore"), { method: "POST", body: JSON.stringify({ expectedRevision: item.revision }) });
       await Promise.all([refresh({ quiet: true }), refreshTrash({ quiet: true })]); toast(`${item.type} restored`);
+      if (!$("#trash-workspace").classList.contains("hidden")) {
+        ($("#trash-list button") || $("#trash-refresh")).focus();
+      }
     } catch (error) {
       const node = $("#trash-error"); node.textContent = lifecycleErrorText(error); node.classList.remove("hidden");
       if (error.code === "revision_conflict") await refreshTrash({ quiet: true });

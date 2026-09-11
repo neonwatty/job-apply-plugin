@@ -113,7 +113,7 @@ export function installFacts(context) {
     $("#facts-title").textContent = label;
     $("#facts-form-title").textContent = label;
     if (!$("#facts-workspace").classList.contains("hidden")) document.title = `${label} · Job Apply Workspace`;
-    if (announce) $("#fact-view-status").textContent = `Showing ${label}. ${visibleControls} fact field${visibleControls === 1 ? "" : "s"} available.`;
+    $("#fact-view-status").textContent = `Showing ${label}. ${visibleControls} fact field${visibleControls === 1 ? "" : "s"} available.`;
   }
 
   async function refreshFactGroups({ quiet = false } = {}) {

@@ -202,3 +202,23 @@ Migration follow-up: use semantic JSON comparisons for draft bases and restore
 focus by stable resume identity when preview triggers are replaced. These desktop
 regressions use isolated synthetic data; owner walkthrough acceptance and
 smaller-screen QA remain separate.
+
+### Desktop readiness and recovery feedback
+
+Workspace refresh still invalidates readiness proof, but now leaves a visible
+instruction to rerun the check instead of silently removing its result. Pending
+checks announce progress. Restoring a Trash record returns focus to a remaining
+Restore button or Refresh when the list is empty, without pulling focus back
+from another workspace.
+
+Incomplete job cards show hostname/path (excluding URL credentials, query and
+fragment). Empty search views offer Clear filters. Answer trash grammar, custom
+Facts view summaries, job conflict field labels, and Automation wording are
+clearer; technical field-permission inputs are behind an advanced disclosure.
+Authorization, revision checks, and final-submission boundaries are unchanged.
+
+Migration follow-up: preserve stale-readiness explanations, contextual focus,
+filter recovery, and progressive disclosure. The reported education date format
+and DOCX download-event timeout remain separate investigations. The observed
+ready-check disappearance was reproduced via refresh invalidation; the original
+walkthrough timing has not been established. Desktop owner retest remains open.

@@ -64,6 +64,7 @@ export function installOverview(context) {
   }
 
   function clearPreflightReadiness({ hidePanel = true } = {}) {
+    $("#ready-check-status").textContent = "";
     state.readyHandoffProof = null;
     $("#mark-ready").classList.add("hidden");
     $("#ready-handoff").classList.add("hidden");

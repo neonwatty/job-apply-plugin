@@ -35,9 +35,9 @@ export function installAutomation(context) {
     const capability = projection.capability;
     const accountFlow = capability.accountFlowAutomation || {};
     const capabilityReason = capability.reasonCode ? capability.reasonCode.replaceAll("_", " ") : capability.state;
-    const workday = accountFlow.workdayPasswordAccountReady ? "Reviewed Workday seam ready; live execution disabled" : "Workday account automation unavailable";
+    const workday = accountFlow.workdayPasswordAccountReady ? "Workday account setup supported; separate approval required" : "Workday account automation unavailable";
     const greenhouse = accountFlow.greenhouseAccountlessClassificationReady ? "ordinary Greenhouse applications are accountless" : "Greenhouse account status unresolved";
-    $("#automation-capability").textContent = `${workday} · ${greenhouse} · ${accountFlow.emailOnlyCandidateProfileReady ? "Oracle candidate-profile seam ready" : "Oracle candidate-profile seam unavailable"} · ${capabilityReason}. Settings and recovery remain available here; no live execution control is exposed.`;
+    $("#automation-capability").textContent = `${workday} · ${greenhouse} · ${accountFlow.emailOnlyCandidateProfileReady ? "Oracle candidate profiles supported" : "Oracle candidate profiles unavailable"} · ${capabilityReason}. Settings and recovery remain available here; no live execution control is exposed.`;
     const list = $("#automation-accounts"); list.replaceChildren();
     for (const account of projection.accounts) {
       const card = document.createElement("article"); card.className = "automation-account"; card.setAttribute("role", "listitem");
