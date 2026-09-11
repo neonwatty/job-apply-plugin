@@ -102,6 +102,10 @@
       "sha256": "b9710c5943613cea49bf1742e5aea7570220f3ef2db45e956ea4576adcbae223"
     },
     {
+      "path": "cli-native-grouped-approvals-surfaces.json",
+      "sha256": "ad1ffe807f91bf1cfe626471171ac95bbefe39fcf8ea55aaced85d7b3697be40"
+    },
+    {
       "path": "cli-native-job-transitions-surfaces.json",
       "sha256": "3310d133626397a57545af50e70591523b906036cdf4a0d04884e4a1630f1c3b"
     },
@@ -318,6 +322,10 @@
       "sha256": "8a41ab419b7b46311658f0ec43e970c7cda36f6322aa8dba415c41ae9e6e6424"
     },
     {
+      "path": "source-catalog-native-grouped-approvals.json",
+      "sha256": "76fe903c2110f79b75928fbae23d22e521c91f4d4c8e297edd6d03ffe0f20dfe"
+    },
+    {
       "path": "source-catalog-native-job-transitions.json",
       "sha256": "d3586b035af22d3f4b4fa3ba3aa7d9e1bc781632317005aff9d158ac78625772"
     },
@@ -327,7 +335,7 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "c324551966506da7d3105d6bef9a27ad82083f2b1abaf9255cf824f55b59f76b"
+      "sha256": "07f02a2c29bb09d32f4a87861adc3915c6965af74efb0124375aeafdbe5b949f"
     },
     {
       "path": "source-catalog-native-legacy-jobs.json",

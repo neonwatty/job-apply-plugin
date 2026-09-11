@@ -1,3 +1,4 @@
+import { groupedApprovalCommands, runGroupedApprovalCommand } from './native-grouped-approvals.js';
 import { taskIntakeCommands, runTaskIntakeCommand } from './native-task-intake.js';
 import { legacyJobCommands, runLegacyJobCommand } from './native-legacy-jobs.js';
 import { jobUpsertCommands, runJobUpsertCommand } from './native-job-upsert.js';
@@ -45,6 +46,7 @@ export async function runJobsCli(args, input) {
         }
     }
     const fields = {
+        ...groupedApprovalCommands,
         ...taskIntakeCommands,
         ...legacyJobCommands,
         ...jobUpsertCommands,
@@ -90,6 +92,8 @@ export async function runJobsCli(args, input) {
             : ["resume-proposal-create", "resume-extraction-request-complete"].includes(command) ? 2 * 1024 * 1024 : 65536;
         return parse(file === "-" ? await input(limit) : await readFile(file, "utf8"));
     };
+    if (Object.hasOwn(groupedApprovalCommands, command))
+        return serialize(await runGroupedApprovalCommand(command, repository, options, payload));
     if (Object.hasOwn(taskIntakeCommands, command))
         return serialize(await runTaskIntakeCommand(repository, options, payload));
     if (Object.hasOwn(legacyJobCommands, command))
