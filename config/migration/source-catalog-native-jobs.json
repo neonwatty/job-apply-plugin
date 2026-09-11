@@ -8,7 +8,7 @@
     },
     {
       "path": "runtime/cli/native-jobs.js",
-      "sha256": "eed959ab8ab1a91ba9627c5a679579bf8034bde03b8eae4298e5409340a8b1be",
+      "sha256": "1cf062245626d508844e7edfef0f176e4ff97619a345da9d475761276b85afd2",
       "classification": "unreviewed"
     },
     {
@@ -33,12 +33,12 @@
     },
     {
       "path": "runtime/store/native-jobs.js",
-      "sha256": "bbe6ea2d6d54297ed9b36faed293c4f2fa093bcea11c0279642cc7a5af457367",
+      "sha256": "b7ddccad762802242cf56d1bf3bfcd6d30d6b0351fb1708f1c33e54e41535fb1",
       "classification": "unreviewed"
     },
     {
       "path": "runtime/workspace-core/job-provenance.js",
-      "sha256": "0eee632303d41334822ac5f4c21637431ed8f3f1a5c7cb901dcd33616a0af210",
+      "sha256": "a1dd15767febe050d9909db2109b91a6d2ce92226ec42b52192ecfe33f266ee1",
       "classification": "unreviewed"
     },
     {
@@ -58,7 +58,7 @@
     },
     {
       "path": "src/cli/native-jobs.ts",
-      "sha256": "7ff5b7f1095cbeb44334fe4a0b7ae716451edd34d55282e5dc1e165de63837ce",
+      "sha256": "b04a04c0a883b3f30831585b24cedfa7d7edad9f0f48bfe28770f9f16ac02aa7",
       "classification": "unreviewed"
     },
     {
@@ -83,12 +83,12 @@
     },
     {
       "path": "src/store/native-jobs.ts",
-      "sha256": "91efc4be73a8e91e0a93956af18ab9104caf2a261798ce1475f9fce622dfc91e",
+      "sha256": "ab7223c28daa31565260ec9c9321a21db8df77de3644bb2e6e07ace8967710eb",
       "classification": "unreviewed"
     },
     {
       "path": "src/workspace-core/job-provenance.ts",
-      "sha256": "b3d03ed0fca2c6780d4f58bbb40c20352a3ee53c709d7feb6214131a575d33dd",
+      "sha256": "c971eec9c07009bbc90c00687eb2f8d6390ac4941f2ef114274546058b8e3472",
       "classification": "unreviewed"
     },
     {

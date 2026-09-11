@@ -1,3 +1,4 @@
+import { legacyJobsBrowser } from './workspace_native_legacy_jobs_browser_support.mjs';
 import { claimsBrowser } from './workspace_native_claims_browser_support.mjs';
 import { jobTransitionsBrowser } from './workspace_native_job_transitions_browser_support.mjs';
 import { jobUpsertBrowser } from './workspace_native_job_upsert_browser_support.mjs';
@@ -10,7 +11,7 @@ import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { realpath, readFile } from 'node:fs/promises';
+import { realpath, readFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
 import { initializeJobsFixture } from '../runtime/store/native-jobs.js';
@@ -166,10 +167,24 @@ export async function nativeJobsBrowser(buildRoot) {
         return JSON.parse(result.stdout);
       },
     });
+    const legacyHome = join(fixture.root, 'legacy-browser-home');
+    const legacyReports = join(legacyHome, '.claude-job-searches');
+    await mkdir(legacyReports, { recursive: true });
+    const legacyJobs = await legacyJobsBrowser(page, {
+      readDocument: () => readFile(join(root, 'jobs.json'), 'utf8'),
+      writeReport: report => writeFile(join(legacyReports, 'search-browser.md'), report),
+      legacy: async (command, selected, previewToken) => {
+        const args = [cli, '--root', root, '--native-lock', fixture.receipt.artifact, command];
+        for (const id of selected) args.push('--select', id);
+        if (previewToken) args.push('--confirm', previewToken);
+        const result = await execute(process.execPath, args, { env: { PATH: '', HOME: legacyHome } });
+        return JSON.parse(result.stdout);
+      },
+    });
     const unsupported = await fetch(startup.origin + '/api/trash', { headers: { Authorization: `Bearer ${token}` } });
     assert.equal(unsupported.status, 501);
     assert.deepEqual(pageErrors, []);
-    return { upsert, transitions, projections, claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
+    return { legacyJobs, upsert, transitions, projections, claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
   } finally {
     releaseInitialClaim?.();
     if (browser) await browser.close();

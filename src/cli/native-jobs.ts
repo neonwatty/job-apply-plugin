@@ -1,3 +1,4 @@
+import { legacyJobCommands, runLegacyJobCommand } from './native-legacy-jobs.js';
 import { jobUpsertCommands, runJobUpsertCommand } from './native-job-upsert.js';
 import { claimCommands, runClaimCommand } from './native-claims.js';
 import { jobTransitionCommands, runJobTransitionCommand } from './native-job-transitions.js';
@@ -20,22 +21,25 @@ import { NativeResumeFiles } from "../store/native-resume-files.js";
 export async function runJobsCli(args: string[], input: (limit?: number) => Promise<string>): Promise<string> {
   const options = new Map<string, string>();
   let command: string | undefined;
+  const selected: string[] = [];
   for (let index = 0; index < args.length; index++) {
     const key = args[index]!;
     if (!key.startsWith("--")) {
       if (command) throw new JobsError("unexpected CLI argument");
       command = key;
     } else {
-      if (options.has(key)) throw new JobsError("duplicate CLI option");
+      if (options.has(key) && key !== "--select") throw new JobsError("duplicate CLI option");
       if (["--include-trashed", "--trashed-only", "--replace", "--remember-sensitive", "--all-review-statuses", "--summary-only", "--owner-confirmed", "--owner-confirmed-not-submitted", "--user-confirmed"].includes(key)) options.set(key, "true");
       else {
         const value = args[++index];
         if (!value || value.startsWith("--")) throw new JobsError("missing CLI option value");
         options.set(key, value);
+        if (key === "--select") selected.push(value);
       }
     }
   }
   const fields: Record<string, string[]> = {
+    ...legacyJobCommands,
     ...jobUpsertCommands,
     ...jobTransitionCommands,
     ...projectionCommands,
@@ -75,6 +79,7 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
       : ["resume-proposal-create", "resume-extraction-request-complete"].includes(command!) ? 2 * 1024 * 1024 : 65536;
     return parse(file === "-" ? await input(limit) : await readFile(file, "utf8"));
   };
+  if (Object.hasOwn(legacyJobCommands, command!)) return serialize(await runLegacyJobCommand(command!, repository, options, selected));
   if (Object.hasOwn(jobUpsertCommands, command!)) return serialize(await runJobUpsertCommand(command!, repository, options, payload));
   if (Object.hasOwn(jobTransitionCommands, command!)) return serialize(await runJobTransitionCommand(repository, options));
   if (Object.hasOwn(projectionCommands, command!)) return serialize(await runProjectionCommand(command!, repository, options));

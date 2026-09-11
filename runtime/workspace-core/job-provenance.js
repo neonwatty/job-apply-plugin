@@ -27,3 +27,10 @@ export function stamp(provenance, fields, author, record, now) {
         set(result, `/${field}`, fromJSON({ origin: author, observationSource, updatedAt: now }));
     return result;
 }
+/** Only guided legacy imports can refresh previously imported or empty fields. */
+export function migrationMayUpdate(record, provenance, field) {
+    if (!nonempty(get(record, field)))
+        return true;
+    const authored = get(provenance, `/${field}`);
+    return authored instanceof PythonObject && string(get(authored, "origin")) === "migration";
+}

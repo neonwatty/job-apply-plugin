@@ -82,5 +82,6 @@ filling a new field. It checks preview/commit agreement, reload, clean
 navigation and a 390-pixel viewport. Service and CLI tests cover planning,
 token drift and persistence separately.
 
-Legacy import preview/commit and task intake remain later tranches. General
-writer activation and installable Python-free packaging are also deferred.
+[Legacy import preview/commit](native-legacy-jobs-fixture.md) is available through
+its separate guided CLI workflow. Task intake, general writer activation and
+installable Python-free packaging remain deferred.

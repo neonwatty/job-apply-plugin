@@ -114,6 +114,10 @@
       "sha256": "8757138a819fd1166abfeb7e86aed548a42f3d2d6f832da404370f9c483e8963"
     },
     {
+      "path": "cli-native-legacy-jobs-surfaces.json",
+      "sha256": "7a8156760cab566c3ff9d83abe668672987fc15139434773b12db17336e5fa34"
+    },
+    {
       "path": "cli-native-projections-surfaces.json",
       "sha256": "db44fabe54a6f0bfb360f02880cdc06fc2780f4f78c3c0a487492cb485344a06"
     },
@@ -263,7 +267,7 @@
     },
     {
       "path": "source-catalog-06.json",
-      "sha256": "ddc83cc609b3d33d56f2793d4d87db257782a7d276a8c62fe5ff4719df72ab0b"
+      "sha256": "2120acf4272d562eaba575c830999030e4ff0732adac676a05102d07a9d3ee95"
     },
     {
       "path": "source-catalog-g02-hybrid.json",
@@ -315,11 +319,15 @@
     },
     {
       "path": "source-catalog-native-job-upsert.json",
-      "sha256": "46000867500a9b5e7492a7602af8369fc24ad3c7d2ba863174357d1e38f51864"
+      "sha256": "31e6b6cc554c6c19e54f262b1e83834483a11a18577e954d696e7dacb0633f31"
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "c6f3bd835dcd6654205e198ca6090f2ddebd3590d6570d213266d7d8b709a178"
+      "sha256": "7bc32c04ed6daba6bb8b0b5c74d3b12ec353cc4106916d47ab8631f266029c7e"
+    },
+    {
+      "path": "source-catalog-native-legacy-jobs.json",
+      "sha256": "3e0066d9196b88f93260f2368cac0c08d11f8496969c8b020db2174798839786"
     },
     {
       "path": "source-catalog-native-pending-answers.json",

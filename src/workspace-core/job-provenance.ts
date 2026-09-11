@@ -22,9 +22,16 @@ export function protectMigration(current: Document, replacement: Document): void
     }
   }
 }
-export function stamp(provenance: Document, fields: Iterable<string>, author: Origin, record: Document, now: string): Document {
+export function stamp(provenance: Document, fields: Iterable<string>, author: Origin | "migration", record: Document, now: string): Document {
   const result = copy(provenance);
   const observationSource = strip(string(get(record, "source")) ?? "").toLowerCase() || "manual";
   for (const field of fields) set(result, `/${field}`, fromJSON({ origin: author, observationSource, updatedAt: now }));
   return result;
+}
+
+/** Only guided legacy imports can refresh previously imported or empty fields. */
+export function migrationMayUpdate(record: Document, provenance: Document, field: string): boolean {
+  if (!nonempty(get(record, field))) return true;
+  const authored = get(provenance, `/${field}`);
+  return authored instanceof PythonObject && string(get(authored, "origin")) === "migration";
 }

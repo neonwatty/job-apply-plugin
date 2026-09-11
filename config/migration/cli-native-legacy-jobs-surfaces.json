@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:src/cli/native-jobs.ts:legacy-jobs-preview",
+      "kind": "cli",
+      "command": "legacy-jobs-preview",
+      "node": "JOB",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-legacy-jobs.ts",
+        "src/contracts/workspace/legacy-job-report.ts",
+        "src/store/legacy-job-discovery.ts",
+        "src/store/posix-directory.ts",
+        "src/workspace-core/legacy-job-plan.ts",
+        "src/workspace-core/legacy-jobs.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/job-upsert-plan.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:legacy-jobs-commit",
+      "kind": "cli",
+      "command": "legacy-jobs-commit",
+      "node": "JOB",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-legacy-jobs.ts",
+        "src/contracts/workspace/legacy-job-report.ts",
+        "src/store/legacy-job-discovery.ts",
+        "src/store/posix-directory.ts",
+        "src/workspace-core/legacy-job-plan.ts",
+        "src/workspace-core/legacy-jobs.ts",
+        "src/store/native-jobs.ts",
+        "src/workspace-core/job-upsert-plan.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}
