@@ -16,6 +16,8 @@ function lifecycleFailure(error: JobsError, operation: string): Result {
       'not_found', 'This record no longer exists.', {}],
     [message.includes('claimed job'), 'claim_blocked',
       'This job has a coordinator claim that must be released or completed first.', { claims: 1 }],
+    [message.includes('nonterminal application session'), 'session_reference_blocked',
+      'This job has a nonterminal application session that must be completed or abandoned first.', { nonterminalSessions: 1 }],
     [message.includes('active job URL already exists'), 'duplicate_active_blocked',
       'An active job with the same canonical identity already exists.', { duplicateActiveRecords: 1 }],
     [message.includes('assigned resume does not exist'), 'assigned_resume_blocked',
@@ -30,7 +32,7 @@ function lifecycleFailure(error: JobsError, operation: string): Result {
 export async function trashHttp(repository: TrashRepository, method: string, path: string, body: string): Promise<Result | null> {
   const service = new TrashService(repository);
   if (method === 'GET' && path === '/api/trash') return { status: 200, body: serialize(await service.list()) };
-  const match = /^\/api\/jobs\/([^/]+)\/(trash|restore)$/.exec(path);
+  const match = /^\/api\/jobs\/([^/]+)\/(trash|restore|delete)$/.exec(path);
   if (method !== 'POST' || !match) return null;
   const operation = match[2]!;
   let payload;
@@ -45,7 +47,8 @@ export async function trashHttp(repository: TrashRepository, method: string, pat
   try {
     const id = decodeURIComponent(match[1]!);
     return { status: 200, body: serialize(await (operation === 'trash'
-      ? service.trashJob(id, revision) : service.restoreJob(id, revision))) };
+      ? service.trashJob(id, revision) : operation === 'restore'
+        ? service.restoreJob(id, revision) : service.deleteJob(id, revision))) };
   } catch (error) {
     if (error instanceof JobsError) return lifecycleFailure(error, operation);
     if (error instanceof Error && 'code' in error && typeof error.code === 'string' && /^E[A-Z]+$/.test(error.code)) {

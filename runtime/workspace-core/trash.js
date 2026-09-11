@@ -1,6 +1,7 @@
 import { answerReferenceCounts } from '../contracts/workspace/answer-sessions.js';
 import { answerView, fallback } from '../contracts/workspace/answers.js';
 import { casefold } from '../contracts/workspace/casefold.js';
+import { requireJobUnclaimed } from '../contracts/workspace/claims.js';
 import { emptyObject, safeId, validateJob } from '../contracts/workspace/jobs.js';
 import { copy, get, int, integer, object, same, set, string, text, truth, JobsError } from '../contracts/workspace/values.js';
 function records(document, field) {
@@ -94,6 +95,31 @@ export class TrashService {
     }
     restoreJob(id, expectedRevision) {
         return this.setJobDeleted(id, expectedRevision, true);
+    }
+    deleteJob(id, expectedRevision) {
+        safeId(id);
+        return this.repository.claimTransaction(async (transaction) => {
+            const jobs = object(get(transaction.jobs, 'jobs'), 'jobs.jobs');
+            const value = get(jobs, id);
+            const result = set(emptyObject(), 'id', text(id));
+            if (value === null)
+                return set(result, 'deleted', false);
+            const current = object(value, 'job record');
+            if (int(get(current, 'revision')) !== expectedRevision)
+                throw new JobsError('job revision conflict');
+            requireJobUnclaimed(transaction.coordinator, id);
+            if (get(current, 'deletedAt') === null)
+                throw new JobsError('job must be trashed before permanent deletion');
+            const session = transaction.sessions.find(item => string(get(item, 'applicationId')) === id);
+            if (session && !['completed', 'abandoned'].includes(string(get(session, 'status')))) {
+                throw new JobsError('job is referenced by a nonterminal application session');
+            }
+            // Retain session and history evidence, including answer references.
+            jobs.delete(text(id));
+            set(object(get(transaction.jobs, 'metadata'), 'jobs.metadata'), 'updatedAt', text(this.now()));
+            await transaction.saveJobs(transaction.jobs);
+            return set(result, 'deleted', true);
+        });
     }
     setJobDeleted(id, expectedRevision, restore) {
         safeId(id);
