@@ -1,3 +1,4 @@
+import { nativeReactTrashBrowser } from './workspace_react_trash_native_browser_support.mjs';
 import { jobTrashBrowser } from './workspace_native_job_trash_browser_support.mjs';
 import { taskCliBrowser } from './workspace_native_task_cli_browser_support.mjs';
 import { nativeGroupedApprovalsBrowser } from './workspace_native_grouped_approvals_browser_support.mjs';
@@ -205,10 +206,11 @@ export async function nativeJobsBrowser(buildRoot) {
     const groupedApprovals = await nativeGroupedApprovalsBrowser(page, root, fixture, buildRoot);
     const taskCli = await taskCliBrowser(page, root, fixture, buildRoot);
     const jobTrash = await jobTrashBrowser(page, root, fixture, buildRoot);
+    const reactTrash = await nativeReactTrashBrowser(page, root, fixture, buildRoot);
     const unsupported = await fetch(startup.origin + '/api/resumes/fixture/delete', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Origin: startup.origin }, body: JSON.stringify({expectedRevision:1}) });
     assert.equal(unsupported.status, 501);
     assert.deepEqual(pageErrors, []);
-    return { jobTrash, taskCli, groupedApprovals, taskIntake, legacyJobs, upsert, transitions, projections, claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
+    return { reactTrash, jobTrash, taskCli, groupedApprovals, taskIntake, legacyJobs, upsert, transitions, projections, claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
   } finally {
     releaseInitialClaim?.();
     if (browser) await browser.close();

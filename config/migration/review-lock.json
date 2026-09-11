@@ -54,6 +54,10 @@
       "sha256": "8d0522433ddaa7e6efaad2d80a50b994b20e767ee5ae75b94f3d59353c4eb820"
     },
     {
+      "path": "browser-react-trash-surfaces.json",
+      "sha256": "f88a8932187bf02516c9db98aba7f3c38c792c4092e77d9890f7cde2f9b9f28e"
+    },
+    {
       "path": "cli-01-surfaces.json",
       "sha256": "b05ac334f9949992f3497f79885033b970692cb798e831d4866d62050ce56841"
     },
@@ -295,7 +299,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "3fa963521183a55ab54bbd404e5b7ae794fe7c386a5ca63aeb585a2ad109b208"
+      "sha256": "a36604e5da0ba2ac5d7f26818faf7867a003089bba804dee0e959692be765ff0"
     },
     {
       "path": "source-catalog-m01.json",
@@ -380,6 +384,10 @@
     {
       "path": "source-catalog-native-task-intake.json",
       "sha256": "ecc9ad11a7d4d3cf6258e0b93ddbac8224a1fd7207af36542a1a4d533b164973"
+    },
+    {
+      "path": "source-catalog-react-trash.json",
+      "sha256": "759aaa85f8de2674eed82fc65726ddf3aa1c8a78ac7a946071de57b7abf2fa69"
     },
     {
       "path": "source-catalog-s01.json",

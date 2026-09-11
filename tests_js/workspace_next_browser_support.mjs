@@ -1,3 +1,4 @@
+import { reactTrashBrowser } from './workspace_react_trash_browser_support.mjs';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import { spawn, execFile } from 'node:child_process';
@@ -123,6 +124,8 @@ async function productionBrowser(root) {
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
     await nextDraftAndRecovery(page, origin, headers);
     await nextLateRead(page);
+    const trash = await reactTrashBrowser(page, { origin, headers });
+    await page.reload({ waitUntil: 'networkidle' });
     await page.getByRole('link', { name: 'Open full workspace', exact: true }).first().click();
     await page.getByText('Canonical store connected', { exact: true }).waitFor();
     await page.locator('#nav-jobs').click();
@@ -146,7 +149,7 @@ async function productionBrowser(root) {
     assert.equal(await stopped, 1);
     for (const pid of owned) assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });
     await assert.rejects(fetch(origin + '/api/boot', { signal: AbortSignal.timeout(1000) }));
-    return { productionStandalone: true, browser: browser.version(), editing: true,
+    return { trash, productionStandalone: true, browser: browser.version(), editing: true,
       draftRefresh: true, revisionConflict: true, reapply: true, reload: true, legacy: true,
       serviceFailureCleanup: true, httpParity: true, cleanDependencyInstall: true, setupDestinations: true, loadingAndDraftRecovery: true, narrowLayout: true, dialogFocus: true, cancelledStaleRead: true, cspViolations: violations };
   } finally {

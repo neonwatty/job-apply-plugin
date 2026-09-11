@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "apps/companion/components/Trash.tsx",
+      "sha256": "38b9e7561f173503d3eb893dd8edcbdbeaae74e45d2855df32c3e8e074a6b956",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/TrashConfirmation.tsx",
+      "sha256": "a58cd6ee74e9240773268369978c8b0eb8e705a643bf5099feaa7aa5325f4f66",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/trash-client.ts",
+      "sha256": "7a3b4c112683cc890d2fd526f317731c59b21730ceb4c415c4885a98faf43e28",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/trash-model.ts",
+      "sha256": "7c81eb7b5fc7073cd2e5e70289813611d59644a81f9deb01a2a132b85ad35cbb",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/trash.css",
+      "sha256": "d5a5a1f7fd209defa3c7772c699c8ebc3c4a11154320f901285eb4a006718fd3",
+      "classification": "unreviewed"
+    }
+  ]
+}

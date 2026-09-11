@@ -1,5 +1,5 @@
 'use client';
-import { useCallback,useEffect,useState } from 'react';
+import { useCallback,useEffect,useMemo,useState } from 'react';
 import { createClient,sessionToken,type Client } from './client';
 import type { Boot } from './contracts';
 import { Overview } from './Overview';
@@ -10,7 +10,11 @@ import { Answers } from './Answers';
 import { Extractions } from './Extractions';
 import { NeedsAttention } from './NeedsAttention';
 import './companion.css';
-type WorkspaceTab = 'overview'|'jobs'|'facts'|'resumes'|'answers'|'extractions'|'attention';
+import './trash.css';
+import { Trash } from './Trash';
+import { createTrashClient } from './trash-client';
+import { compatibilityTrashCapabilities, nativeTrashCapabilities } from './trash-model';
+type WorkspaceTab = 'overview'|'jobs'|'facts'|'resumes'|'answers'|'extractions'|'attention'|'trash';
 export default function Companion() {
     const [client,setClient]=useState<Client|null>(null);
     const [boot,setBoot]=useState<Boot|null>(null);
@@ -71,6 +75,8 @@ export default function Companion() {
         token
     }).toString()}`;
     const nativeFixture=boot?.status==='ready'&&boot.mode==='native-jobs-fixture';
+    const trashCapabilities=nativeFixture?nativeTrashCapabilities:compatibilityTrashCapabilities;
+    const trashClient=useMemo(() => createTrashClient(token,trashCapabilities),[token,trashCapabilities]);
     return <main className="companion">
         <div className="topbar">
             <div>
@@ -98,6 +104,7 @@ export default function Companion() {
                     event.preventDefault();
             }}>Open full workspace
             </a>}
+            <button aria-current={tab==='trash'?'page':undefined} onClick={() => navigate('trash')}>Trash</button>
         </nav>
         <p className="trust">Your canonical data stays local. You direct changes and submissions; agents assist from the same record.
         </p>
@@ -113,7 +120,7 @@ export default function Companion() {
             <p>
                 {boot.guidance}
             </p>
-        </section>:boot?.status==='ready'&&client? (tab==='overview'? <Overview
+        </section>:boot?.status==='ready'&&client? (tab==='trash'?<Trash client={trashClient} capabilities={trashCapabilities} dirtyChanged={dirtyChanged}/>:tab==='overview'? <Overview
             client={client}
             openJobs={() => navigate('jobs')}
             openWorkspace={nativeFixture ? navigate : undefined}
