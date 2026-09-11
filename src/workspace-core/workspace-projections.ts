@@ -1,3 +1,4 @@
+import { taskJobProjection } from './task-job-projection.js';
 import { createHash } from 'node:crypto';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
 import { claimExpired } from '../contracts/workspace/claims.js';
@@ -44,7 +45,6 @@ function selectedClaim(tx: ProjectionTransaction, id: string): Document | null {
   const claim = object(raw, 'claim');
   return label(claim, 'jobId') === id ? claim : null;
 }
-const jobFields = ['id', 'role', 'company', 'location', 'workplaceType', 'employmentType', 'status', 'priority', 'revision', 'createdAt', 'updatedAt'];
 const sessionFields = ['attemptRevision', 'readiness', 'blockers', 'browserHandoff'];
 const reasons = [
   ['expired_agent_attempt', 'Expired agent attempt', 'Resume this attempt with the CLI claim-recover command for this job.'],
@@ -156,7 +156,7 @@ export class WorkspaceProjectionsService {
       const now = this.now(), overview = await overviewLocked(tx, now), attention = attentionLocked(tx, now);
       const jobs = active(records(tx.jobs, 'jobs')).sort((a, b) => comparePriority(a, b)
         || compareText(label(a, 'createdAt'), label(b, 'createdAt')) || compareText(label(a, 'id'), label(b, 'id')))
-        .map(job => select(job, jobFields));
+        .map(job => taskJobProjection(job));
       const signatureInput = set(set(doc({}), 'overview', overview), 'jobs', jobs);
       set(signatureInput, 'attentionSignature', get(attention, 'snapshotSignature'));
       const result = doc({snapshotSignature:digest(signatureInput)});

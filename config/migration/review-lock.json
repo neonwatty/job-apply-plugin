@@ -126,6 +126,10 @@
       "sha256": "23b9fd1e5a29720b5b4143d59a9767dfb9ee98a00e09ef3962f9112c9cda4e5c"
     },
     {
+      "path": "cli-native-task-intake-surfaces.json",
+      "sha256": "f02dfdea3805c56058502e394c9c8fbcb320bb7001e925c5639d664f0e7b28df"
+    },
+    {
       "path": "cli-root-01-surfaces.json",
       "sha256": "12f7e2a79b07b0f67b299487ac7d0a06d967a0d373e3da336a91b06fc040695a"
     },
@@ -323,7 +327,7 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "7bc32c04ed6daba6bb8b0b5c74d3b12ec353cc4106916d47ab8631f266029c7e"
+      "sha256": "c324551966506da7d3105d6bef9a27ad82083f2b1abaf9255cf824f55b59f76b"
     },
     {
       "path": "source-catalog-native-legacy-jobs.json",
@@ -335,11 +339,15 @@
     },
     {
       "path": "source-catalog-native-projections.json",
-      "sha256": "9547436e8a2bdb0556915f4e87687aa65f3bee908312b3f461301476e9bcc421"
+      "sha256": "a78ee13b41a59fbe409c647d88721f62bf986db60bcdd94bc71e938c88456488"
     },
     {
       "path": "source-catalog-native-resumes.json",
       "sha256": "29dd7f8508a7d203df336e2dad4c4b643daf4c4441f4cbee96d4ea0f5d15cc17"
+    },
+    {
+      "path": "source-catalog-native-task-intake.json",
+      "sha256": "ecc9ad11a7d4d3cf6258e0b93ddbac8224a1fd7207af36542a1a4d533b164973"
     },
     {
       "path": "source-catalog-s01.json",

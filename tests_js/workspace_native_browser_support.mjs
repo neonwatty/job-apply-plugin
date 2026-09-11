@@ -1,4 +1,5 @@
 import { legacyJobsBrowser } from './workspace_native_legacy_jobs_browser_support.mjs';
+import { taskIntakeBrowser } from './workspace_native_task_intake_browser_support.mjs';
 import { claimsBrowser } from './workspace_native_claims_browser_support.mjs';
 import { jobTransitionsBrowser } from './workspace_native_job_transitions_browser_support.mjs';
 import { jobUpsertBrowser } from './workspace_native_job_upsert_browser_support.mjs';
@@ -181,10 +182,27 @@ export async function nativeJobsBrowser(buildRoot) {
         return JSON.parse(result.stdout);
       },
     });
+    const taskIntake = await taskIntakeBrowser(page, {
+      readDocument: () => readFile(join(root, 'jobs.json'), 'utf8'),
+      intake: async (payload, origin) => {
+        const input = join(fixture.root, 'browser-task-intake.json');
+        await writeFile(input, JSON.stringify(payload), { mode: 0o600 });
+        const args = [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
+          'task-intake', '--input', input];
+        if (origin) args.push('--origin', origin);
+        const result = await execute(process.execPath, args, { env: { PATH: '' } });
+        return JSON.parse(result.stdout);
+      },
+      snapshot: async () => {
+        const result = await execute(process.execPath, [cli, '--root', root,
+          '--native-lock', fixture.receipt.artifact, 'task-snapshot'], { env: { PATH: '' } });
+        return JSON.parse(result.stdout);
+      },
+    });
     const unsupported = await fetch(startup.origin + '/api/trash', { headers: { Authorization: `Bearer ${token}` } });
     assert.equal(unsupported.status, 501);
     assert.deepEqual(pageErrors, []);
-    return { legacyJobs, upsert, transitions, projections, claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
+    return { taskIntake, legacyJobs, upsert, transitions, projections, claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
   } finally {
     releaseInitialClaim?.();
     if (browser) await browser.close();
