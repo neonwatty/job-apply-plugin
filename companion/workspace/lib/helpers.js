@@ -60,7 +60,7 @@ export function answerApiPath(key, action = "") {
   return `/api/answers/by-key/${encoded}${action ? `/${action}` : ""}`;
 }
 
-export function sameAnswerScope(left, right) {
+export function equalJson(left, right) {
   const canonical = (value) => {
     if (Array.isArray(value)) return value.map(canonical);
     if (value && typeof value === "object") return Object.fromEntries(
@@ -68,7 +68,11 @@ export function sameAnswerScope(left, right) {
     );
     return value;
   };
-  return JSON.stringify(canonical(left || {})) === JSON.stringify(canonical(right || {}));
+  return JSON.stringify(canonical(left)) === JSON.stringify(canonical(right));
+}
+
+export function sameAnswerScope(left, right) {
+  return equalJson(left || {}, right || {});
 }
 
 export function formPatch(values) {
@@ -204,7 +208,7 @@ export function conflictingPaths(base, latest, drafts, atomicPaths = new Set()) 
     const before = base instanceof Map ? base.get(path) : pointerValue(base, path);
     const now = pointerValue(latest, path);
     const structured = atomicPaths.has(path) || typeof mine === "object" || typeof before === "object" || typeof now === "object";
-    return JSON.stringify(before) !== JSON.stringify(now) && (structured || JSON.stringify(mine) !== JSON.stringify(now));
+    return !equalJson(before, now) && (structured || !equalJson(mine, now));
   }).map(([path]) => path);
 }
 
@@ -235,7 +239,7 @@ export function fileToBase64(file) {
 export function resumeAssignmentText(resume) {
   const explicit = Number.isInteger(resume?.assignedJobCount) ? resume.assignedJobCount : 0;
   const implicit = Number.isInteger(resume?.implicitJobCount) ? resume.implicitJobCount : 0;
-  return `${explicit} explicitly assigned active job${explicit === 1 ? "" : "s"}${implicit ? `; ${implicit} active job${implicit === 1 ? "" : "s"} use this default` : ""}.`;
+  return `${explicit} explicitly assigned active job${explicit === 1 ? "" : "s"}${implicit ? `; ${implicit} active job${implicit === 1 ? " uses" : "s use"} this default` : ""}.`;
 }
 
 export function extractionRequestView(request, proposalSummary) {

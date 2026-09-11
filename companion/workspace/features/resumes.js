@@ -59,6 +59,18 @@ export function installResumes(context) {
     pdfOpener = null;
   });
 
+  let textOpener = null;
+  let textResumeId = null;
+  const textDialog = $("#preview-dialog");
+  textDialog.addEventListener("close", () => {
+    if (textDialog.open) return;
+    const opener = textOpener?.isConnected ? textOpener
+      : document.querySelector(`[data-resume-preview="${CSS.escape(textResumeId || "")}"]`);
+    if (opener) opener.disabled = false;
+    if (opener?.getClientRects().length) opener.focus();
+    textOpener = null;
+  });
+
   async function openResumeContent(resume, button, inDetails = false) {
     if (!resume) return;
     const errorNode = $(inDetails ? "#resume-error" : "#resumes-error");
@@ -105,7 +117,8 @@ export function installResumes(context) {
         }
       } else if (resume.mediaType?.startsWith("text/plain")) {
         $("#resume-preview").textContent = await response.text();
-        $("#preview-dialog").showModal();
+        textOpener = button; textResumeId = resume.id;
+        textDialog.showModal();
       } else {
         const url = URL.createObjectURL(await response.blob());
         const link = document.createElement("a");

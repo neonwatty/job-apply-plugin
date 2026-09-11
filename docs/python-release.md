@@ -189,6 +189,63 @@ PDF renderers. TXT and DOCX behavior is unchanged. Embedded readability requires
 owner acceptance; isolated headless tests verify wiring, not native rendering.
 Forward-port this presentation and cancellation behavior to TypeScript separately.
 
+### Desktop Facts conflicts and TXT preview focus
+
+Facts comparisons now ignore JSON object key order, including nested work-history
+objects. PATCH responses and subsequent canonical reads can serialize identical
+objects differently; this must not create a conflict on the next save. Array
+order, missing fields, and changed values still participate in conflict checks.
+TXT preview restores focus to its invoking button after Close or Escape, with a
+current-card fallback if the resume list was refreshed while the dialog was open.
+
+Migration follow-up: use semantic JSON comparisons for draft bases and restore
+focus by stable resume identity when preview triggers are replaced. These desktop
+regressions use isolated synthetic data; owner walkthrough acceptance and
+smaller-screen QA remain separate.
+
+### Desktop readiness and recovery feedback
+
+Workspace refresh still invalidates readiness proof, but now leaves a visible
+instruction to rerun the check instead of silently removing its result. Pending
+checks announce progress. Restoring a Trash record returns focus to a remaining
+Restore button or Refresh when the list is empty, without pulling focus back
+from another workspace.
+
+Incomplete job cards show hostname/path (excluding URL credentials, query and
+fragment). Empty search views offer Clear filters. Answer trash grammar, custom
+Facts view summaries, job conflict field labels, and Automation wording are
+clearer; technical field-permission inputs are behind an advanced disclosure.
+Authorization, revision checks, and final-submission boundaries are unchanged.
+
+Migration follow-up: preserve stale-readiness explanations, contextual focus,
+filter recovery, and progressive disclosure. The reported education date format
+and DOCX download-event timeout remain separate investigations. The observed
+ready-check disappearance was reproduced via refresh invalidation; the original
+walkthrough timing has not been established. Desktop owner retest remains open.
+
+Work and education date fields explicitly describe the existing free-text
+contract, with year and year-month examples. Existing partial dates remain
+valid; this is guidance, not a new parser or Store migration.
+
+Review follow-up: a ready-check attempt during an in-flight refresh now uses the
+transient readiness status, so a successful retry clears its explanation. Answer
+Trash guidance identifies the previous view rather than promising Library for
+pending or declined answers. Preserve these behaviors in the migration UX.
+
+Package oracle failures now distinguish second acquisition, managed-resume
+continuity, review-fixture preparation, and review handoff using allowlisted,
+value-free stages. This improves diagnosis without exposing applicant data or
+weakening acceptance; an intermittent second-acquisition-stage CI failure remains
+unattributed until those diagnostics identify it or reproduction establishes it.
+
+UX-10 follow-up: the four-second background poll previously discarded Saved-job
+readiness results and rechecked only Ready jobs. Polling now keeps an open result
+visible, disables its action while canonical data is refreshed, and rechecks the
+current dialog before enabling it again. Poll rechecks do not scroll the page.
+Explicit refresh still clears proof. A regression removes the managed resume file
+without changing the job revision and verifies that revalidation revokes readiness.
+Forward-port this distinction between visible results and current actionable proof.
+
 ### Request draining during Companion shutdown
 
 The Python server now tracks accepted connections, interrupts pending socket I/O,
@@ -236,3 +293,21 @@ submitted override revision, and canonical answer value. Both fail before the fi
 The CI timeout/null lookup alone does not prove every historical failure shared
 these causes. Forward-port focus-at-entry behavior, preserving user focus after
 async completion, into the TypeScript UI.
+
+
+### Outdated Automation responses and deterministic comparison clocks
+
+A controlled browser schedule reproduces a second Automation draft hazard:
+an older initial load can render after the add-portal refresh and detach an
+in-progress override input. Automation refreshes now discard both successes and
+errors superseded by a newer refresh. Regression tests hold the initial response
+until an override draft exists, then verify draft identity/value, successful
+revision-2 save, and absence of an obsolete error. The observed CI timeout alone
+does not establish that every prior override failure had this cause.
+
+The Store overview equivalence test also left its trash comparison outside the
+fixed wall-clock patch; executions across a second boundary produced unequal
+timestamps. Both trash operations now use the same explicit clock, retaining full
+record/tree equality and an exact deletedAt assertion. Runtime timestamp behavior
+is unchanged. Forward-port the Automation response-order guard and deterministic
+comparison-clock setup to the TypeScript lane where applicable.

@@ -21,6 +21,7 @@ export function installFacts(context) {
     shouldRetryFactSave,
   } = apiHelpers;
   const {
+    equalJson,
     pointerValue,
     patchForPaths,
     conflictingPaths,
@@ -33,7 +34,6 @@ export function installFacts(context) {
   const namedTopLevel = new Set(["firstName", "lastName", "email", "phone", "location", "linkedInUrl", "portfolioUrl", "githubUrl", "workHistory", "education", "skills", "preferences"]);
   const encodePointer = (value) => String(value).replaceAll("~", "~0").replaceAll("/", "~1");
   const decodePointer = (value) => String(value).replaceAll("~1", "/").replaceAll("~0", "~");
-  const equalJson = (left, right) => JSON.stringify(left) === JSON.stringify(right);
 
   function factPathLabel(control) {
     if (control.dataset.label) return control.dataset.label;
@@ -113,7 +113,7 @@ export function installFacts(context) {
     $("#facts-title").textContent = label;
     $("#facts-form-title").textContent = label;
     if (!$("#facts-workspace").classList.contains("hidden")) document.title = `${label} · Job Apply Workspace`;
-    if (announce) $("#fact-view-status").textContent = `Showing ${label}. ${visibleControls} fact field${visibleControls === 1 ? "" : "s"} available.`;
+    $("#fact-view-status").textContent = `Showing ${label}. ${visibleControls} fact field${visibleControls === 1 ? "" : "s"} available.`;
   }
 
   async function refreshFactGroups({ quiet = false } = {}) {
@@ -238,7 +238,16 @@ export function installFacts(context) {
         else input.value = item?.[field] ?? "";
         input.setAttribute("aria-label", `${text}, item ${index + 1}`);
         if (field === "description") { label.className = "wide"; input.rows = 5; }
-        label.append(input); row.append(label);
+        label.append(input);
+        if (field === "startDate" || field === "endDate") {
+          input.placeholder = "e.g. 2020 or 2020-08";
+          const help = document.createElement("small");
+          help.id = `${container.id}-${index}-${field}-help`;
+          help.textContent = "Free-text date; partial dates are welcome. Use the detail available in your resume.";
+          input.setAttribute("aria-describedby", help.id);
+          label.append(help);
+        }
+        row.append(label);
       }
       const remove = document.createElement("button"); remove.type = "button"; remove.className = "button danger"; remove.textContent = `Remove ${container.dataset.repeater === "work" ? "position" : "education"}`;
       remove.addEventListener("click", () => {

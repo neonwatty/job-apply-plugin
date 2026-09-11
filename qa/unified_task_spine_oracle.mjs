@@ -9,6 +9,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { waitForLinkedAnswerReturn } from "./unified_task_spine_answer.mjs";
+import { OracleFailure, publicFailureReport } from "./unified_task_spine_diagnostics.mjs";
+export { publicFailureReport } from "./unified_task_spine_diagnostics.mjs";
 
 const REPO_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const PYTHON = process.env.PYTHON || "python3";
@@ -57,32 +59,6 @@ const PASS_REPORT = Object.freeze({
     "closed_without_final_action",
   ],
 });
-
-const PUBLIC_STAGES = new Set([
-  "setup", "ux_intake", "agent_intake", "selection", "first_acquisition",
-  "attention_open", "answer_open", "answer_save", "answer_recheck",
-  "second_acquisition", "final_verification", "cleanup",
-  "answer_save_response", "answer_save_closed", "answer_save_activity",
-  "answer_save_draft", "answer_save_focus_wait",
-]);
-
-class OracleFailure extends Error {
-  constructor(code, stage = "cleanup") {
-    super(code);
-    this.stage = stage;
-  }
-}
-
-export function publicFailureReport(error) {
-  return {
-    schemaVersion: 1,
-    oracle: "unified_task_spine",
-    result: "fail",
-    closed: true,
-    error: "oracle_failed",
-    stage: PUBLIC_STAGES.has(error?.stage) ? error.stage : "unknown",
-  };
-}
 
 function check(condition, code) {
   if (!condition) throw new OracleFailure(code);
@@ -430,13 +406,17 @@ export async function runOracle({ configurePage = async () => {} } = {}) {
     );
     attempts.push(secondSession);
     const second = await secondSession.start();
+    stage = "resume_continuity";
     for (const field of ["id", "revision", "contentRevision", "digest"]) {
       check(second.resume[field] === first.resume[field], "resume_identity_changed");
     }
     check(Buffer.compare(await readFile(second.resume.path), resumeBytesBefore) === 0, "resume_bytes_changed");
+    stage = "review_fixture";
+    const reviewSession = await liveReviewSession(second.job.revision);
+    stage = "review_handoff";
     await secondSession.send({
       command: "handoff", status: "awaiting_review",
-      session: await liveReviewSession(second.job.revision),
+      session: reviewSession,
     });
     await secondSession.completed();
 

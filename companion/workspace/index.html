@@ -136,6 +136,7 @@
       <div id="empty" class="empty-state hidden">
         <span class="empty-icon" aria-hidden="true">◎</span><h3>No jobs here yet</h3>
         <p>Capture one opportunity or paste a list of URLs to start your local pipeline.</p>
+        <button id="jobs-clear-filters" class="button secondary hidden" type="button">Clear filters</button>
         <button id="empty-create" class="button primary" type="button">Capture a job</button>
       </div>
       <div id="job-list" class="job-list hidden" role="list"></div>
@@ -251,7 +252,7 @@
       <section class="answers-panel" aria-labelledby="answer-library-heading">
         <div class="panel-heading"><div><p class="eyebrow">CANONICAL LIBRARY</p><h2 id="answer-library-heading">Answers</h2></div><div class="filters"><label>Search <input id="answer-search" type="search" placeholder="Question or alias"></label><label>View <select id="answer-view"><option value="accepted">Library</option><option value="pending">Observed inbox</option><option value="declined">Declined</option><option value="trash">Trash</option></select></label><label>State <select id="answer-state-filter"><option value="">All states</option><option value="confirmed">Confirmed</option><option value="inferred">Inferred</option><option value="missing">Missing</option><option value="sensitive">Sensitive</option></select></label></div></div>
         <p id="answers-status" class="notice" role="status" aria-live="polite">Open Answers to load the canonical library.</p>
-        <div id="answers-empty" class="empty-state hidden"><h3>No answers in this view</h3><p>Create an answer or wait for an agent to observe a question.</p></div>
+        <div id="answers-empty" class="empty-state hidden"><h3>No answers in this view</h3><p>Create an answer or wait for an agent to observe a question.</p><button id="answers-clear-filters" class="button secondary hidden" type="button">Clear filters</button></div>
         <div id="answer-list" class="answer-list" role="list"></div>
         <div class="button-row pagination"><button id="answers-previous" class="button secondary" type="button">Previous</button><button id="answers-next" class="button secondary" type="button">Next</button></div>
         <p id="answers-error" class="error hidden" role="alert"></p>
@@ -275,7 +276,7 @@
 
     <div id="automation-workspace" class="hidden">
       <section class="hero" aria-labelledby="automation-title">
-        <div><p class="eyebrow">Companion Automation</p><h2 id="automation-title">Automation settings</h2><p>This surface shows redacted settings, tenant metadata, and protected-operation recovery. The reviewed macOS Workday seam remains disabled until a separate one-shot owner approval; ordinary Greenhouse applications need no account. No live execution control or final application action is reachable here.</p></div>
+        <div><p class="eyebrow">Companion Automation</p><h2 id="automation-title">Automation settings</h2><p>Manage account preferences and review agent permissions. Workday account setup requires your separate approval each time. Ordinary Greenhouse applications need no account. These controls do not submit applications.</p></div>
         <div class="hero-actions"><button id="automation-refresh" class="button secondary" type="button">Refresh</button></div>
       </section>
       <section class="automation-panel" aria-labelledby="automation-settings-title">
@@ -285,7 +286,7 @@
           <label><span><input name="enabled" type="checkbox"> Enable companion automation controls</span></label>
           <label><span><input name="automaticAccountCreation" type="checkbox"> Allow protected account preparation</span><small>Live Workday execution still requires a separate one-shot owner approval.</small></label>
           <label>Global signup email <input name="signupEmail" type="email" autocomplete="email" placeholder="Leave blank to keep the current setting"><small id="automation-email-status">Not configured</small></label>
-          <label>Password strategy <select name="passwordStrategy"><option value="unique_per_realm">Unique per employer realm</option><option value="shared">Shared credential version</option><option value="custom">Custom per realm</option><option value="ask_each_time">Ask each time</option></select></label>
+          <label>Password strategy <select name="passwordStrategy"><option value="unique_per_realm">Unique per employer</option><option value="shared">Shared credential version</option><option value="custom">Custom per employer</option><option value="ask_each_time">Ask each time</option></select></label>
           <div class="button-row"><button class="button primary" type="submit">Save settings</button><button id="automation-copy-profile-email" class="button secondary" type="button">Copy profile email once</button><button id="automation-clear-email" class="button secondary" type="button">Clear signup email</button></div>
           <p class="safety-note">Copying is an explicit one-time snapshot. Later profile edits do not change the signup email, and the copied value is never returned by this action.</p>
         </form>
@@ -293,25 +294,26 @@
         <p id="automation-error" class="error hidden" role="alert"></p>
       </section>
       <section class="automation-panel" aria-labelledby="realm-heading">
-        <div class="panel-heading"><div><p class="eyebrow">EMPLOYER REALMS</p><h2 id="realm-heading">Tenant-scoped account metadata</h2></div></div>
+        <div class="panel-heading"><div><p class="eyebrow">EMPLOYER ACCOUNTS</p><h2 id="realm-heading">Employer accounts</h2></div></div>
         <form id="realm-form" class="automation-form">
           <label>Exact employer portal URL <input name="url" type="url" required placeholder="https://tenant.wd5.myworkdayjobs.com/… or an Oracle Recruiting job URL"></label>
           <label>Optional signup email override <input name="signupEmailOverride" type="email" autocomplete="email"></label>
-          <button class="button primary" type="submit">Add resolved realm</button>
+          <button class="button primary" type="submit">Add employer portal</button>
         </form>
         <p class="safety-note">Unknown hosts and unproven tenant paths are rejected. Employer names and ATS families are never used as a fallback.</p>
         <div id="automation-accounts" class="automation-accounts" role="list"></div>
       </section>
       <section class="automation-panel" aria-labelledby="account-operation-heading">
         <div class="panel-heading"><div><p class="eyebrow">PROTECTED OPERATION</p><h2 id="account-operation-heading">Account operation recovery</h2></div></div>
-        <p class="safety-note">Recovery never infers success. A stranded operation becomes permanently ambiguous and cannot retry, rotate, or provision again.</p>
+        <p class="safety-note">If account setup was interrupted, record its outcome as unknown. This prevents another setup attempt or credential change; it does not assume the account was created.</p>
         <div id="account-operation-status" class="notice" role="status" aria-live="polite">No operation status loaded.</div>
-        <div class="button-row"><button id="account-operation-refresh" class="button secondary" type="button">Refresh operation status</button><button id="account-operation-recover" class="button danger" type="button" disabled>Mark stranded operation ambiguous</button></div>
+        <div class="button-row"><button id="account-operation-refresh" class="button secondary" type="button">Refresh operation status</button><button id="account-operation-recover" class="button danger" type="button" disabled>Record interrupted setup as unknown</button></div>
         <p id="account-operation-error" class="error hidden" role="alert"></p>
       </section>
       <section class="automation-panel" aria-labelledby="trusted-fill-heading">
-        <div class="panel-heading"><div><p class="eyebrow">GROUNDED TRUSTED FILL</p><h2 id="trusted-fill-heading">Approve exact non-final field operations</h2></div></div>
-        <p class="safety-note">This inert authority evaluates fingerprints only. It cannot operate a browser, authenticate, accept consent, enter credentials, navigate, or activate Submit, Send, Apply, or any equivalent final control.</p>
+        <div class="panel-heading"><div><p class="eyebrow">GROUNDED TRUSTED FILL</p><h2 id="trusted-fill-heading">Advanced agent permissions</h2></div></div>
+        <p class="safety-note">Review an agent-provided request for specific form fields. Approval alone does not run the browser, enter credentials, accept consent, or submit an application. Technical identifiers below bind approval to the exact job and form.</p>
+        <details class="advanced-permissions"><summary>Review agent-provided permission details</summary>
         <form id="trusted-fill-form" class="automation-form">
           <div class="form-grid">
             <label>Claimed job ID <input name="jobId" required></label>
@@ -324,12 +326,13 @@
             <label>Duration in minutes <input name="durationMinutes" type="number" min="1" max="60" value="30" required></label>
           </div>
           <fieldset><legend>Allowed non-final operations</legend><label><span><input name="allowedOperations" value="fill_text" type="checkbox"> Fill text</span></label><label><span><input name="allowedOperations" value="select_option" type="checkbox"> Select option</span></label><label><span><input name="allowedOperations" value="toggle_non_consent" type="checkbox"> Toggle a non-consent field</span></label><label><span><input name="allowedOperations" value="upload_approved_resume" type="checkbox"> Upload the approved resume</span></label></fieldset>
-          <button class="button primary" type="submit">Approve exact packet</button>
+          <button class="button primary" type="submit">Approve these field permissions</button>
         </form>
         <form id="trusted-fill-status-form" class="automation-form">
           <label>Job ID for status or revocation <input name="jobId" required></label>
           <div class="button-row"><button class="button secondary" type="submit">Check approval status</button><button id="trusted-fill-revoke" class="button secondary" type="button" disabled>Revoke approval</button></div>
         </form>
+        </details>
         <div id="trusted-fill-status" class="notice" role="status" aria-live="polite">No approval loaded.</div>
         <div id="trusted-fill-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>Approval changed elsewhere</h3><p>Nothing was retried. Refresh its exact status before another action.</p></div>
         <p id="trusted-fill-error" class="error hidden" role="alert"></p>
@@ -464,7 +467,7 @@
         </div>
       </section>
       <section id="preflight-panel" class="preflight hidden" aria-labelledby="preflight-heading">
-        <h3 id="preflight-heading">Ready check</h3><div id="preflight-results"></div>
+        <h3 id="preflight-heading">Ready check</h3><div id="preflight-results" role="status" aria-live="polite"></div>
       </section>
       <section id="ready-handoff" class="handoff-card compact-handoff hidden" aria-labelledby="ready-handoff-heading">
         <p class="eyebrow">READY FOR AN AGENT</p><h3 id="ready-handoff-heading">Continue outside this workspace</h3>
@@ -473,7 +476,8 @@
         <label class="clipboard-fallback hidden" role="alert">Clipboard unavailable. Select and copy this invocation manually. <input class="clipboard-fallback-value" readonly aria-label="Invocation to copy"></label>
       </section>
       <p id="form-error" class="error hidden" role="alert"></p>
-      <div class="dialog-footer">
+      <div class="dialog-footer job-footer">
+        <p id="ready-check-status" role="status" aria-live="polite"></p>
         <div class="danger-zone"><button id="trash-job" class="button danger hidden" type="button">Move to trash</button></div>
         <div class="button-row">
           <button id="preflight-job" class="button secondary hidden" type="button">Run ready check</button>

@@ -43,11 +43,21 @@ export function installJobs(context) {
     $("#metric-needs").textContent = state.jobs.filter((j) => j.status === "needs_info").length;
   }
 
+  $("#jobs-clear-filters").addEventListener("click", () => {
+    $("#search").value = ""; $("#status-filter").value = "";
+    render(); $("#search").focus();
+  });
+
   function render() {
     metrics(); $("#loading").classList.add("hidden");
     if (dialog.open) return;
     const focusedJobId = document.activeElement instanceof HTMLElement ? document.activeElement.dataset.id : null;
     const jobs = filterJobs(state.jobs, $("#search").value, $("#status-filter").value);
+    const filtered = $("#search").value.trim() || $("#status-filter").value;
+    $("#empty h3").textContent = filtered ? "No matching jobs" : "No jobs here yet";
+    $("#empty p").textContent = filtered ? "Clear your search or status filter to see more jobs." : "Capture one opportunity or paste a list of URLs to start your local pipeline.";
+    $("#jobs-clear-filters").classList.toggle("hidden", !filtered);
+    $("#empty-create").classList.toggle("hidden", Boolean(filtered));
     $("#empty").classList.toggle("hidden", jobs.length !== 0);
     $("#job-list").classList.toggle("hidden", jobs.length === 0);
     const list = $("#job-list");
@@ -73,7 +83,14 @@ export function installJobs(context) {
       if (jobCardRenderKeys.get(button) !== renderKey) {
         const title = document.createElement("div"); title.className = "job-title";
         const mark = document.createElement("span"); mark.className = "company-mark"; mark.textContent = escapeText(job.company || job.role || "J").slice(0, 1).toUpperCase(); mark.setAttribute("aria-hidden", "true");
-        const names = document.createElement("div"); const heading = document.createElement("h3"); heading.textContent = job.role || "Untitled opportunity"; const company = document.createElement("p"); company.textContent = job.company || "Company not set"; names.append(heading, company); title.append(mark, names);
+        const names = document.createElement("div"); const heading = document.createElement("h3"); heading.textContent = job.role || "Untitled opportunity"; const company = document.createElement("p"); company.textContent = job.company || "Company not set"; names.append(heading, company);
+        if (!job.role || !job.company) {
+          const source = document.createElement("p"); source.className = "job-source";
+          try { const url = new URL(job.url); source.textContent = `${url.hostname}${url.pathname}`; }
+          catch { source.textContent = "Saved job link"; }
+          names.append(source);
+        }
+        title.append(mark, names);
         const location = document.createElement("p"); location.textContent = job.location || job.workplaceType || "Location not set";
         const priority = document.createElement("span"); priority.className = "priority"; priority.textContent = job.priority ? "★".repeat(Math.min(job.priority, 5)) : "—"; priority.setAttribute("aria-label", `Priority ${job.priority || 0}`);
         const status = document.createElement("span"); status.className = `status ${job.status}`; status.textContent = statusLabel(job.status);
@@ -87,12 +104,18 @@ export function installJobs(context) {
     if (focusedJobId) jobButton(focusedJobId)?.focus();
   }
 
-  function refresh({ quiet = false } = {}) {
+  function refresh({ quiet = false, preserveReadiness = false } = {}) {
     if (state.refreshPromise) return state.refreshPromise;
     state.refreshEpoch += 1;
     state.canonicalStateCurrent = false;
     state.preflightRequestSequence += 1;
-    clearPreflightReadiness();
+    const hadCheck = !$("#preflight-panel").classList.contains("hidden") || Boolean($("#ready-check-status").textContent);
+    clearPreflightReadiness({ hidePanel: !preserveReadiness, disableAction: preserveReadiness });
+    if (hadCheck && dialog.open) {
+      $("#ready-check-status").textContent = preserveReadiness
+        ? "Checking for updates…"
+        : "Workspace data refreshed. Run ready check again to see current results.";
+    }
     if (state.preflightError) {
       state.preflightError = null;
       $("#form-error").textContent = "";
@@ -117,6 +140,7 @@ export function installJobs(context) {
         if (!quiet) toast("Jobs refreshed from the canonical store");
       } catch (error) {
         state.canonicalStateCurrent = false;
+        if (preserveReadiness) $("#ready-check-status").textContent = "Could not verify current data. Run ready check after reconnecting.";
         setConnection(false, error.message); if (!quiet) showFormError(error.message);
       }
     })().finally(() => { state.refreshPromise = null; });
@@ -173,7 +197,13 @@ export function installJobs(context) {
       $("#reload-latest").disabled = true; $("#rebase-draft").disabled = true;
       $("#conflict").classList.remove("hidden"); $("#conflict").focus(); return;
     }
-    for (const field of ["url", "role", "company", "location", "workplaceType", "employmentType", "compensation", "notes", "description", "resumeId", "priority", "status", "revision"]) { const span = document.createElement("span"); span.textContent = `${field}: ${state.latest[field] ?? "—"}`; holder.append(span); }
+    const labels = { url: "Job URL", role: "Role", company: "Company", location: "Location", workplaceType: "Work arrangement", employmentType: "Employment type", compensation: "Compensation", notes: "Notes", description: "Description", resumeId: "Resume", priority: "Priority", status: "Status", revision: "Revision" };
+    for (const [field, label] of Object.entries(labels)) {
+      const row = document.createElement("div"); row.className = "conflict-field";
+      const name = document.createElement("strong"); name.textContent = label;
+      const value = document.createElement("p"); value.textContent = state.latest[field] ?? "—";
+      row.append(name, value); holder.append(row);
+    }
     $("#conflict").classList.remove("hidden"); $("#conflict").focus();
   }
 
@@ -190,8 +220,12 @@ export function installJobs(context) {
     } finally { $("#save-job").disabled = false; }
   }
 
-  async function preflight({ clearAtStart = true } = {}) {
-    if (!state.selected || !state.canonicalStateCurrent) return null;
+  async function preflight({ clearAtStart = true, scrollToResult = true } = {}) {
+    if (!state.selected) return null;
+    if (!state.canonicalStateCurrent) {
+      $("#ready-check-status").textContent = "Workspace data is refreshing. Run ready check again when it finishes.";
+      return null;
+    }
     const requestedId = state.selected.id;
     const requestedRevision = freshestKnownJob(requestedId)?.revision;
     const refreshEpoch = state.refreshEpoch;
@@ -200,6 +234,7 @@ export function installJobs(context) {
     if (!Number.isInteger(requestedRevision)) return null;
     const requestSequence = ++state.preflightRequestSequence;
     if (clearAtStart) clearPreflightReadiness();
+    $("#ready-check-status").textContent = "Checking profile and resume…";
     try {
       const result = await api(`/api/jobs/${encodeURIComponent(requestedId)}/preflight`);
       const current = freshestKnownJob(requestedId);
@@ -218,6 +253,7 @@ export function installJobs(context) {
         if (result.revision > current.revision) {
           clearPreflightReadiness({ hidePanel: false });
         }
+        $("#ready-check-status").textContent = "This job changed during the check. Refresh Jobs and run ready check again.";
         return null;
       }
       if (
@@ -228,7 +264,7 @@ export function installJobs(context) {
         $("#form-error").textContent = "";
         $("#form-error").classList.add("hidden");
       }
-      renderPreflight(result, { dialogGeneration, refreshEpoch, dependencyObservation }); return result;
+      renderPreflight(result, { dialogGeneration, refreshEpoch, dependencyObservation, scrollToResult }); return result;
     } catch (error) {
       if (
         requestSequence === state.preflightRequestSequence
@@ -248,13 +284,16 @@ export function installJobs(context) {
   }
 
   const issueText = { profile_empty: "Complete your applicant profile", resume_missing: "Assign an active resume", resume_file_missing: "The resume file cannot be found", resume_file_changed: "The resume file changed since it was added", role_missing: "Add a role for clearer handoff", company_missing: "Add a company for clearer handoff" };
-  function renderPreflight(result, { dialogGeneration, refreshEpoch, dependencyObservation }) {
+  function renderPreflight(result, { dialogGeneration, refreshEpoch, dependencyObservation, scrollToResult = true }) {
+    $("#ready-check-status").textContent = "";
     const panel = $("#preflight-panel"), body = $("#preflight-results"); body.replaceChildren();
     const summary = document.createElement("p"); summary.textContent = result.ready ? "No blocking issues. This job can be handed to a Job Apply agent." : "Resolve the blocking issues before marking this job ready."; body.append(summary);
     for (const [label, items] of [["Blocking", result.errors], ["Warnings", result.warnings]]) if (items.length) { const h = document.createElement("strong"); h.textContent = label; const ul = document.createElement("ul"); for (const code of items) { const li = document.createElement("li"); li.textContent = issueText[code] || code; ul.append(li); } body.append(h, ul); }
     const current = freshestKnownJob(state.selected?.id);
     const currentStatus = current?.status;
     panel.classList.remove("hidden");
+    if (scrollToResult) panel.scrollIntoView({ block: "center" });
+    $("#mark-ready").disabled = false;
     $("#mark-ready").classList.toggle("hidden", !result.ready || !canMarkReadyFrom(currentStatus));
     state.readyHandoffProof = result.ready && currentStatus === "ready" && result.revision === current?.revision
       ? { id: result.id, revision: result.revision, dialogGeneration, refreshEpoch, dependencyObservation }

@@ -102,13 +102,15 @@ export function installBindings(context) {
   async function pollWorkspace() {
     refreshOverview({ quiet: true }); refreshAttention({ quiet: true });
     if (dialog.open && state.selected) loadActivity();
-    await refresh({ quiet: true });
+    const checkedDialog = dialog.open && !$("#preflight-panel").classList.contains("hidden")
+      ? state.jobDialogGeneration : null;
+    await refresh({ quiet: true, preserveReadiness: checkedDialog !== null });
     if (dialog.open && state.selected) {
       const listed = state.jobs.find((job) => job.id === state.selected.id);
-      if (state.canonicalStateCurrent && listed?.status === "ready" && !state.preflightPolling) {
+      if (state.canonicalStateCurrent && (listed?.status === "ready" || (listed && checkedDialog === state.jobDialogGeneration)) && !state.preflightPolling) {
         state.preflightPolling = true;
         try {
-          await preflight({ clearAtStart: false });
+          await preflight({ clearAtStart: false, scrollToResult: false });
         } finally {
           state.preflightPolling = false;
         }

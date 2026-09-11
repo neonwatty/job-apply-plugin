@@ -39,8 +39,20 @@ export function installAnswers(context) {
     answerState.busyControls = null;
   }
 
+  $("#answers-clear-filters").addEventListener("click", async () => {
+    $("#answer-search").value = "";
+    $("#answer-state-filter").value = "";
+    await refreshAnswers({ reset: true });
+    $("#answer-search").focus();
+  });
+
   function renderAnswers() {
     const list = $("#answer-list"); list.replaceChildren();
+    const filtered = $("#answer-search").value.trim() || $("#answer-state-filter").value;
+    $("#answers-clear-filters").classList.toggle("hidden", !filtered);
+    const inTrash = $("#answer-view").value === "trash";
+    $("#answers-empty h3").textContent = filtered ? "No matching answers" : inTrash ? "No answers in Trash" : "No answers in this view";
+    $("#answers-empty p").textContent = filtered ? "Clear your search or state filter to see more answers." : inTrash ? "Restored answers return to their previous view. Check Library, Observed inbox, or Declined." : "Create an answer or wait for an agent to observe a question.";
     $("#answers-empty").classList.toggle("hidden", answerState.items.length !== 0);
     for (const answer of answerState.items) {
       const item = document.createElement("div"); item.setAttribute("role", "listitem");
@@ -143,7 +155,7 @@ export function installAnswers(context) {
       const currentDialog = canApplyAnswerDialogMutation(answerState.selected, answer.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open);
       const pendingReturn = Boolean(answerState.pendingJobId && dialog.open);
       if (currentDialog) { if (!pendingReturn) answerState.opener = null; $("#answer-dialog").close(); }
-      await refreshAnswers({ reset: true }); if (currentDialog && !pendingReturn) $("#answer-new").focus(); toast(`Answer ${action === "accept" ? "accepted" : action === "decline" ? "declined" : `${action}d`}`);
+      await refreshAnswers({ reset: true }); if (currentDialog && !pendingReturn) $("#answer-new").focus(); toast(`Answer ${action === "accept" ? "accepted" : action === "decline" ? "declined" : action === "trash" ? "moved to trash" : "restored"}`);
     }
     catch (error) { if (!canApplyAnswerDialogMutation(answerState.selected, answer.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) { toast(error.message); return; } if (error.code === "revision_conflict") { $("#answer-conflict").classList.remove("hidden"); $("#answer-conflict").focus(); } else answerError(lifecycleErrorText(error), true); }
     finally { if (canApplyAnswerDialogMutation(answerState.selected, answer.key, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) setAnswerBusy(false); }

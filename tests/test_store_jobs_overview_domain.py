@@ -162,9 +162,13 @@ class JobOverviewDomainTests(unittest.TestCase):
             self.assertEqual(noop["action"], "noop")
             self.assertEqual(before, [snapshot_tree(store.root) for store in stores])
         self.assertEqual(write.call_count, 2)
-        trashed = self.both(stores, lambda store: store.trash_job(
-            created["job"]["id"], created["job"]["revision"]
-        ))
+        # Both implementations must see the same wall clock, even if execution
+        # crosses a second boundary. The injected coordinator clock is separate.
+        with mock.patch.object(self.facade, "utc_now", return_value="2026-09-04T18:00:01Z"):
+            trashed = self.both(stores, lambda store: store.trash_job(
+                created["job"]["id"], created["job"]["revision"]
+            ))
+        self.assertEqual(trashed["deletedAt"], "2026-09-04T18:00:01Z")
         self.assertEqual(trashed["id"], created["job"]["id"])
         self.assertEqual(
             self.both_error(stores, lambda store: store.intake_task_job({

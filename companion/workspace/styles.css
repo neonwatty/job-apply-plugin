@@ -363,3 +363,15 @@ dialog::backdrop { background: #10182865; backdrop-filter: blur(2px); }
 #pdf-fallback { flex-shrink: 0; font-size: .85rem; }
 #pdf-preview-dialog [hidden] { display: none; }
 @media (max-width: 760px) { #pdf-preview-dialog { width: 100vw; height: 100dvh; margin: 0; border-radius: 0; } }
+
+.job-source { overflow-wrap: anywhere; font-size: .8rem; }
+.conflict-field { padding: .65rem; border: 1px solid currentColor; border-radius: 6px; }
+.conflict-field p { margin: .3rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.advanced-permissions summary { cursor: pointer; padding: .8rem 0; font-weight: 600; }
+.advanced-permissions[open] summary { margin-bottom: .6rem; }
+
+.job-footer { flex-wrap: wrap; }
+#ready-check-status { flex-basis: 100%; margin: 0; color: var(--ink); }
+#ready-check-status:empty { display: none; }
+#preflight-panel { scroll-margin-block: 90px; }
