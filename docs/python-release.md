@@ -226,3 +226,14 @@ walkthrough timing has not been established. Desktop owner retest remains open.
 Work and education date fields explicitly describe the existing free-text
 contract, with year and year-month examples. Existing partial dates remain
 valid; this is guidance, not a new parser or Store migration.
+
+Review follow-up: a ready-check attempt during an in-flight refresh now uses the
+transient readiness status, so a successful retry clears its explanation. Answer
+Trash guidance identifies the previous view rather than promising Library for
+pending or declined answers. Preserve these behaviors in the migration UX.
+
+Package oracle failures now distinguish second acquisition, managed-resume
+continuity, review-fixture preparation, and review handoff using allowlisted,
+value-free stages. This improves diagnosis without exposing applicant data or
+weakening acceptance; an intermittent second-acquisition-stage CI failure remains
+unattributed until those diagnostics identify it or reproduction establishes it.

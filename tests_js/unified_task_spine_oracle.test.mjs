@@ -20,7 +20,7 @@ test("oracle failures expose only allowlisted diagnostic stages", () => {
     error: "oracle_failed",
     stage: "answer_save",
   });
-  for (const stage of ["answer_save_response", "answer_save_closed", "answer_save_activity", "answer_save_draft", "answer_save_focus_wait"]) {
+  for (const stage of ["second_acquisition", "resume_continuity", "review_fixture", "review_handoff", "answer_save_response", "answer_save_closed", "answer_save_activity", "answer_save_draft", "answer_save_focus_wait"]) {
     sensitive.stage = stage;
     assert.equal(publicFailureReport(sensitive).stage, stage);
   }
