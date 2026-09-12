@@ -34,9 +34,21 @@ export function installAutomation(context) {
     $("#automation-email-status").textContent = settings.signupEmailConfigured ? "Configured; value remains hidden" : "Not configured";
     const capability = projection.capability;
     const accountFlow = capability.accountFlowAutomation || {};
-    const workday = accountFlow.workdayPasswordAccountReady ? "Workday account setup supported; separate approval required" : "Workday account automation unavailable";
+    const workday = accountFlow.workdayPasswordAccountReady
+      ? "Workday account setup supported; separate approval required"
+      : accountFlow.workdayPasswordAccountAdapterReviewed
+        ? "Workday reviewed adapter is installed, but live support is unavailable until its reviewed canary passes"
+        : "Workday account automation unavailable";
     const greenhouse = accountFlow.greenhouseAccountlessClassificationReady ? "ordinary Greenhouse applications are accountless" : "Greenhouse account status unresolved";
-    $("#automation-capability").textContent = `${workday} · ${greenhouse} · ${accountFlow.emailOnlyCandidateProfileReady ? "Oracle candidate profiles supported" : "Oracle candidate profiles unavailable"}. Settings and recovery remain available here; no live execution control is exposed.`;
+    const strategy = accountFlow.strategyCapabilities?.[settings.passwordStrategy];
+    const strategyStatus = settings.passwordStrategy === "manual"
+      ? "Manual account setup remains owner-managed"
+      : strategy?.state === "available"
+        ? "Selected password strategy is available"
+        : settings.passwordStrategy === "shared"
+          ? "Shared password automation needs native secure setup"
+          : "Selected password strategy is unavailable pending reviewed canary evidence";
+    $("#automation-capability").textContent = `${workday} · ${greenhouse} · ${accountFlow.emailOnlyCandidateProfileReady ? "Oracle candidate profiles supported" : "Oracle candidate profiles unavailable"} · ${strategyStatus}. Settings and recovery remain available here; no live execution control is exposed.`;
     const list = $("#automation-accounts"); list.replaceChildren();
     for (const account of projection.accounts) {
       const card = document.createElement("article"); card.className = "automation-account"; card.setAttribute("role", "listitem");

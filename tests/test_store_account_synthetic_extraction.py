@@ -4,6 +4,7 @@ import inspect
 import json
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from tests.support.store_case import STORE_MODULE, StoreTestCase
 from tests.support.store_domain_contract import (
@@ -98,6 +99,36 @@ class SyntheticAccountExtractionTests(StoreTestCase):
             )
         self.assertEqual(self.store.employer_accounts_path.read_bytes(), before)
         self.assertEqual(self.store.get_employer_account(account["realmRef"])["lifecycleState"], "discovered")
+
+    def test_manual_strategy_hands_off_without_invoking_credentials(self):
+        job, _acquired, account, packet = self._synthetic_account_fixture(
+            "success", "manual"
+        )
+        settings = self.store.get_automation_settings()
+        settings = self.store.update_automation_settings(
+            {"passwordStrategy": "manual"}, settings["revision"]
+        )
+        packet["expectedSettingsRevision"] = settings["revision"]
+        authority = STORE_MODULE.CREDENTIALS_MODULE.synthetic_test_authority()
+        provider = STORE_MODULE.CREDENTIALS_MODULE.synthetic_provider_for_tests(
+            authority
+        )
+        provider.provision_or_reuse_and_fill = mock.Mock(
+            side_effect=AssertionError("manual strategy cannot invoke credentials")
+        )
+
+        result = self.store.execute_synthetic_account(
+            packet, provider=provider,
+            observer=self._synthetic_account_observer, test_authority=authority,
+        )
+        self.assertEqual(result["reasonCode"], "manual_account_strategy")
+        self.assertTrue(result["attentionHandoff"])
+        provider.provision_or_reuse_and_fill.assert_not_called()
+        self.assertEqual(self.store.get_job(job["id"])["status"], "needs_info")
+        self.assertEqual(
+            self.store.get_employer_account(account["realmRef"])["lifecycleState"],
+            "discovered",
+        )
 
 
 if __name__ == "__main__":

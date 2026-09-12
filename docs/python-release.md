@@ -81,6 +81,7 @@ After the Python release, reconcile main into staging in a dedicated integration
 | Phase 1: task-spine answer-return synchronization | Test-only fix: wait for refreshed actions and focus together; controlled response-body regression and value-free stages. Audit migration oracle for the same race and port its behavioral check. Pending. |
 | Phase 2: setup guidance and browser-open fallback | Port user-facing handoff wording where applicable; validate the migration launcher independently. Pending. |
 | Workspace asset lifetime hardening | Adopted from owner investigation patch; reproduce package removal/startup failure in migration runtime. Interim only; companion separation remains required. Pending. |
+| Employer-account automation contract slice | Port canonical manual-strategy projection, version-compatible opaque slot derivation, honest Workday canary capability, redacted worker configuration, and Companion strategy wording. Implement native shared-password setup/rotation independently; never share the Python Store or Keychain namespace. Pending. |
 
 ### Independent Python companion
 

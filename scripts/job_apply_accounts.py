@@ -22,7 +22,10 @@ LIFECYCLE_STATES = {
     "discovered", "credential_provisioned", "signup_in_progress", "active",
     "verification_required", "reset_required", "failed_definitive", "ambiguous",
 }
-PASSWORD_STRATEGIES = {"unique_per_realm", "shared", "custom", "ask_each_time"}
+PASSWORD_STRATEGIES = {
+    "unique_per_realm", "shared", "manual", "custom", "ask_each_time",
+}
+LEGACY_MANUAL_STRATEGIES = {"custom", "ask_each_time"}
 _WORKDAY_JOBS = re.compile(
     r"^(?P<tenant>[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\.(?P<cell>wd[1-9][0-9]*)\.myworkdayjobs\.com$"
 )
@@ -241,10 +244,27 @@ def discover_account_flow_capability(platform: str, adapter_registry: tuple[Any,
         "productionSeamReady": False,
         "liveExecutionEnabled": False,
         "workdayPasswordAccountReady": False,
+        "workdayPasswordAccountAdapterReviewed": False,
+        "workdayCanaryPassed": False,
         "greenhouseAccountlessClassificationReady": False,
+        "strategyCapabilities": {
+            "unique_per_realm": {
+                "state": "unavailable", "reasonCode": "platform_unsupported",
+            },
+            "shared": {
+                "state": "unavailable", "reasonCode": "platform_unsupported",
+            },
+            "manual": {"state": "manual", "reasonCode": "owner_managed"},
+        },
         **capability,
         "discoveryMode": "side_effect_free",
     }
+
+
+def public_password_strategy(strategy: str) -> str:
+    """Collapse superseded human-managed values into the canonical manual mode."""
+
+    return "manual" if strategy in LEGACY_MANUAL_STRATEGIES else strategy
 
 
 def public_settings(record: dict[str, Any]) -> dict[str, Any]:
@@ -253,7 +273,7 @@ def public_settings(record: dict[str, Any]) -> dict[str, Any]:
     return {
         "enabled": record["enabled"],
         "automaticAccountCreation": record["automaticAccountCreation"],
-        "passwordStrategy": record["passwordStrategy"],
+        "passwordStrategy": public_password_strategy(record["passwordStrategy"]),
         "signupEmailConfigured": record["signupEmail"] is not None,
         "revision": record["revision"],
         "createdAt": record["createdAt"],

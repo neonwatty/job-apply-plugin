@@ -77,16 +77,24 @@ class AccountRegistryMixin:
                 return {**base, "decision": "create_required", "accountRevision": None}
             lifecycle = account["lifecycleState"]
             settings = self._load_automation_settings_document()["settings"]
+            strategy = _late("ACCOUNTS_MODULE").public_password_strategy(
+                settings["passwordStrategy"]
+            )
             if (
                 classified["flowKind"] == _late("ACCOUNTS_MODULE").FLOW_PASSWORD
                 and lifecycle == "discovered"
-                and settings["passwordStrategy"] != "unique_per_realm"
+                and strategy != "unique_per_realm"
             ):
+                reason = (
+                    "shared_credential_setup_required"
+                    if strategy == "shared"
+                    else "manual_account_strategy"
+                )
                 return {
                     **base,
                     "decision": "human_attention_required",
                     "accountRevision": account["revision"],
-                    "reasonCode": "password_strategy_requires_human",
+                    "reasonCode": reason,
                 }
             if lifecycle == "active":
                 decision = "reuse_active"

@@ -104,11 +104,13 @@ class SyntheticAccountMixin:
                 raise StoreError("effective signup email is required")
             if account["lifecycleState"] in _late("ACCOUNT_EXECUTOR_MODULE").TERMINAL_NO_RETRY:
                 raise StoreError("account lifecycle permanently requires human attention")
-            strategy = settings["passwordStrategy"]
-            if strategy in {"custom", "ask_each_time"}:
+            strategy = _late("ACCOUNTS_MODULE").public_password_strategy(
+                settings["passwordStrategy"]
+            )
+            if strategy == "manual":
                 handed_off = self._account_attention_handoff_locked(job, "password_strategy")
                 return {
-                    "authorized": False, "reasonCode": "password_strategy_requires_human",
+                    "authorized": False, "reasonCode": "manual_account_strategy",
                     "retryAllowed": False, "attentionHandoff": True,
                     "job": {"id": handed_off["id"], "status": handed_off["status"], "revision": handed_off["revision"]},
                 }

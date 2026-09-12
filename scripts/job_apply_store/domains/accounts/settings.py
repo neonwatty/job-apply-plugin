@@ -148,10 +148,14 @@ class AccountSettingsMixin:
     def update_automation_settings(
         self, patch: dict[str, Any], expected_revision: int, *, public: bool = False
     ) -> dict[str, Any]:
-        incoming = _late("_require_object")(patch, "automation settings patch")
+        incoming = dict(_late("_require_object")(patch, "automation settings patch"))
         allowed = {"enabled", "automaticAccountCreation", "signupEmail", "passwordStrategy"}
         if not incoming or set(incoming) - allowed:
             raise StoreError("automation settings patch contains unsupported fields")
+        if "passwordStrategy" in incoming:
+            incoming["passwordStrategy"] = _late(
+                "ACCOUNTS_MODULE"
+            ).public_password_strategy(incoming["passwordStrategy"])
         self.initialize()
         self._ensure_account_control_documents()
         with _late("exclusive_file_lock")(self.store_lock_path):
