@@ -21,7 +21,8 @@ function handoffOperation(job, session, at) {
         if (string(get(job, field)) !== null)
             set(event, field, get(job, field));
     const result = doc({ kind: 'handoff', operationId, jobId: id, sourceStatus: 'in_progress',
-        targetStatus: 'needs_info', expectedRevision: Number(int(get(job, 'revision'))), at, resultClaim: null });
+        targetStatus: 'needs_info', expectedRevision: null, at, resultClaim: null });
+    set(result, 'expectedRevision', get(job, 'revision'));
     set(result, 'historyEvent', event);
     return set(result, 'session', session);
 }
@@ -82,7 +83,8 @@ export class AccountOperationService {
                 const session = buildClaimSession(id, incoming, { now, attemptRevision: get(job, 'revision'), ats: get(job, 'ats'),
                     existing: tx.sessions.find(item => string(get(item, 'applicationId')) === id) ?? null, answers: tx.answers });
                 await tx.commitClaim(handoffOperation(job, session, now));
-                recoveredJob = fromJSON({ id, status: 'needs_info', revision: Number(int(get(job, 'revision')) + 1n) });
+                recoveredJob = doc({ id, status: 'needs_info', revision: null });
+                set(recoveredJob, 'revision', integer(int(get(job, 'revision')) + 1n));
             }
             else if (string(get(job, 'status')) !== 'needs_info')
                 throw new JobsError('account operation job cannot be reconciled');

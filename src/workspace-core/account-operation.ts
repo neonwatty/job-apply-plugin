@@ -32,7 +32,8 @@ function handoffOperation(job: Document, session: Document, at: string): Documen
     event: 'job-blocked', status: 'needs_info', answerKeys: [], at });
   for (const field of ['company', 'role', 'ats']) if (string(get(job, field)) !== null) set(event, field, get(job, field));
   const result = doc({ kind: 'handoff', operationId, jobId: id, sourceStatus: 'in_progress',
-    targetStatus: 'needs_info', expectedRevision: Number(int(get(job, 'revision'))), at, resultClaim: null });
+    targetStatus: 'needs_info', expectedRevision: null, at, resultClaim: null });
+  set(result, 'expectedRevision', get(job, 'revision'));
   set(result, 'historyEvent', event);
   return set(result, 'session', session);
 }
@@ -72,7 +73,7 @@ export class AccountOperationService {
         await tx.saveAccounts(validateAccountsDocument(accounts));
       }
       const job = activeJob(validateJobsDocument(tx.jobs), string(get(operation, 'jobId'))!);
-      let recoveredJob: Value = null;
+      let recoveredJob: Document | null = null;
       if (string(get(job, 'status')) === 'in_progress') {
         const coordinator = validateCoordinator(tx.coordinator), rawClaim = get(coordinator, 'claim');
         if (rawClaim === null) throw new JobsError('account operation recovery requires a live same-job claim');
@@ -88,7 +89,8 @@ export class AccountOperationService {
         const session = buildClaimSession(id, incoming, { now, attemptRevision: get(job, 'revision'), ats: get(job, 'ats'),
           existing: tx.sessions.find(item => string(get(item, 'applicationId')) === id) ?? null, answers: tx.answers });
         await tx.commitClaim(handoffOperation(job, session, now));
-        recoveredJob = fromJSON({ id, status: 'needs_info', revision: Number(int(get(job, 'revision'))! + 1n) });
+        recoveredJob = doc({ id, status: 'needs_info', revision: null });
+        set(recoveredJob, 'revision', integer(int(get(job, 'revision'))! + 1n));
       } else if (string(get(job, 'status')) !== 'needs_info') throw new JobsError('account operation job cannot be reconciled');
       await tx.clearOperation(string(get(operation, 'operationId'))!);
       const result = doc({ status: 'ambiguous', recovered: true, retryAllowed: false });

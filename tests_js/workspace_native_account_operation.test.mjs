@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
 import { cli, plain, read, setup, snapshot, write } from './workspace_native_claims_support.mjs';
 import { AccountOperationService } from '../runtime/workspace-core/account-operation.js';
 import { AccountsService } from '../runtime/workspace-core/accounts.js';
 import { jobsHttp } from '../runtime/workspace-core/jobs-http.js';
-import { text } from '../runtime/contracts/workspace/values.js';
+import { fromJSON, get, int, integer, object, parse, serialize, set, string, text } from '../runtime/contracts/workspace/values.js';
 
 const portal = 'https://example.wd1.myworkdayjobs.com/en-US/careers/job/42';
 
@@ -37,12 +37,21 @@ test('native account operation status and recovery fail stranded work closed', {
       await claims.select('job', 1n, true);
       const acquired = plain(await claims.acquire('job', text('Synthetic owner'), 2n));
       const account = plain(await new AccountsService(repository, () => clock.now).create(portal));
+      const exactRevision = 9007199254740993n;
+      const jobsDocument = object(parse(await readFile(join(root, 'jobs.json'), 'utf8')), 'jobs');
+      const job = object(get(object(get(jobsDocument, 'jobs'), 'job records'), 'job'), 'job');
+      set(job, 'revision', integer(exactRevision));
+      await writeFile(join(root, 'jobs.json'), serialize(jobsDocument), { mode: 0o600 });
       const operation = {
-        operationId: 'operation-recovery', jobId: 'job', jobRevision: acquired.job.revision,
+        operationId: 'operation-recovery', jobId: 'job', jobRevision: 1,
         claimId: acquired.claim.claimId, realmRef: account.realmRef, accountRevision: account.revision,
         settingsRevision: 1, stage: 'prepared', outcomeCode: 'observed_pending', startedAt: clock.now,
       };
-      await write(root, 'account-operation-journal.json', { schemaVersion: 1, operation });
+      const operationDocument = object(fromJSON(operation), 'account operation');
+      set(operationDocument, 'jobRevision', integer(exactRevision));
+      const journal = object(fromJSON({ schemaVersion: 1, operation: null }), 'account operation journal');
+      set(journal, 'operation', operationDocument);
+      await writeFile(operationPath, serialize(journal), { mode: 0o600 });
       const status = plain(await service.status());
       assert.deepEqual(status, { status: 'recovery_required', operation: {
         operationId: operation.operationId, jobId: 'job', realmRef: account.realmRef,
@@ -51,16 +60,21 @@ test('native account operation status and recovery fail stranded work closed', {
       assert.doesNotMatch(JSON.stringify(status), new RegExp(operation.claimId));
       assert.doesNotMatch(JSON.stringify(status), /jobRevision|accountRevision|settingsRevision/);
 
-      const recovered = plain(await service.recover());
+      const recoveredValue = await service.recover();
+      const recovered = plain(recoveredValue);
       assert.equal(recovered.status, 'ambiguous');
       assert.equal(recovered.recovered, true);
       assert.equal(recovered.retryAllowed, false);
       assert.equal(recovered.account.lifecycleState, 'ambiguous');
       assert.equal(recovered.account.revision, 2);
-      assert.deepEqual(recovered.job, { id: 'job', status: 'needs_info', revision: 4 });
+      assert.equal(int(get(object(get(object(recoveredValue, 'recovery'), 'job'), 'recovered job'), 'revision')), exactRevision + 1n);
+      assert.deepEqual(recovered.job, { id: 'job', status: 'needs_info', revision: Number(exactRevision + 1n) });
       assert.equal((await read(root, 'account-operation-journal.json')).operation, null);
       assert.equal((await read(root, 'coordinator.json')).claim, null);
-      assert.equal((await read(root, 'jobs.json')).jobs.job.status, 'needs_info');
+      const recoveredJobs = object(parse(await readFile(join(root, 'jobs.json'), 'utf8')), 'jobs');
+      const recoveredJob = object(get(object(get(recoveredJobs, 'jobs'), 'job records'), 'job'), 'job');
+      assert.equal(string(get(recoveredJob, 'status')), 'needs_info');
+      assert.equal(int(get(recoveredJob, 'revision')), exactRevision + 1n);
       const session = await read(root, 'sessions/job.json');
       assert.equal(session.step, 'account_automation_denied:ambiguous_recovery');
       assert.deepEqual(session.blockers, [{ type: 'browser_handoff', code: 'browser-state-uncertain' }]);
