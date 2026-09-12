@@ -36,6 +36,11 @@ WORKDAY_SWIFT_SOURCES = (
     "job_apply_workday_account_flow_helper.swift",
     "job_apply_workday_account_flow_main.swift",
 )
+SHARED_SETUP_SWIFT_SOURCES = (
+    "job_apply_credential_helper.swift",
+    "job_apply_shared_credential_setup.swift",
+    "job_apply_shared_credential_setup_main.swift",
+)
 WORKFLOW_TYPECHECK_SOURCES = {
     (
         "macos-credential-helper",
@@ -45,6 +50,10 @@ WORKFLOW_TYPECHECK_SOURCES = {
         "macos-account-flow-helper",
         "Verify reviewed Workday account boundary",
     ): WORKDAY_SWIFT_SOURCES,
+    (
+        "macos-credential-helper",
+        "Typecheck native shared credential setup",
+    ): SHARED_SETUP_SWIFT_SOURCES,
 }
 
 

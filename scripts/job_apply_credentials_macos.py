@@ -46,6 +46,7 @@ class MacOSSecurityFrameworkProvider(PORTABLE.CredentialProvider):
             "state": "available" if supported else "unsupported",
             "reasonCode": "native_compound_boundary" if supported else "platform_unsupported",
             "credentialOperationsReady": False,
+            "sharedCredentialSetupImplemented": supported,
             "syntheticOperationsReady": supported,
             "productionSeamReady": supported,
             "liveExecutionEnabled": False,

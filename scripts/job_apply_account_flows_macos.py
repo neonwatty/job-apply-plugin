@@ -40,7 +40,7 @@ class MacOSAccessibilityAdapter:
                 },
                 "shared": {
                     "state": "unavailable",
-                    "reasonCode": "native_secure_setup_required",
+                    "reasonCode": "store_version_binding_required",
                 },
                 "manual": {"state": "manual", "reasonCode": "owner_managed"},
             },

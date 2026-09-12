@@ -219,6 +219,9 @@ def discover_capability(platform: str, adapter_registry: tuple[Any, ...] = ()) -
     return {
         **capability,
         "credentialOperationsReady": False,
+        "sharedCredentialSetupImplemented": capability.get(
+            "sharedCredentialSetupImplemented", False
+        ),
         "syntheticOperationsReady": capability.get("syntheticOperationsReady", False),
         "discoveryMode": "side_effect_free",
     }

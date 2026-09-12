@@ -226,6 +226,8 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Typecheck isolated Security.framework helper
         run: xcrun swiftc -typecheck native/macos/job_apply_credential_helper.swift native/macos/job_apply_browser_bridge.swift native/macos/OracleExecutableIdentity.swift native/macos/NativeEmailOnlyBinding.swift native/macos/AccessibilityTree.swift native/macos/ReviewedAccountForm.swift native/macos/OracleBrowserIdentity.swift native/macos/MacOSAccessibilityAccountFlowHelper.swift native/macos/OracleAccountFlowFixtures.swift native/macos/job_apply_credential_helper_tests.swift native/macos/job_apply_credential_helper_main.swift
+      - name: Typecheck native shared credential setup
+        run: xcrun swiftc -typecheck native/macos/job_apply_credential_helper.swift native/macos/job_apply_shared_credential_setup.swift native/macos/job_apply_shared_credential_setup_main.swift
       - run: python3 -m unittest -v tests.test_macos_credential_helper tests.test_macos_account_flow_helper
       - run: npm run qa:resume-extraction-onboarding
 
