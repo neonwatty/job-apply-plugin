@@ -379,7 +379,7 @@
     },
     {
       "path": "source-catalog-native-trusted-fill.json",
-      "sha256": "ff53fc9f21766d42f14d79457d93eadf296a3666b6a92d2d184e0c0222b0ab51"
+      "sha256": "f03eaf5015a6563f61136157921acc907d4e7fa0f7570503e75f2f6c9ecd8e01"
     },
     {
       "path": "source-catalog-native-legacy-jobs.json",

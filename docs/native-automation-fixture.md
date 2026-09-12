@@ -94,6 +94,18 @@ claim to Needs Attention; a missing, expired, or replaced claim cannot hand off
 a newer owner. HTTP status and decisions omit private values, file identity,
 nonce, and claim credentials.
 
+`TrustedFillNativeService` is the protected effect boundary after evaluation.
+It refuses to consume authority unless an internal native provider is injected.
+The provider receives only an operation fingerprint, the exact observed form
+fingerprints, the approved non-final operation set, and the pre/post-consumption
+approval revisions. Private values and browser identity remain provider-owned.
+The receipt must echo the operation fingerprint and exact operation set, attest
+that no final, authentication, consent, or credential control was touched, and
+confirm that private values were cleared. A missing, stale, malformed, or
+authority-widening receipt cannot report success. Native ambiguity consumes the
+approval and hands the same live claim to Needs Attention. Claim replacement
+during the effect is left untouched.
+
 It returns a response or null for an unowned route. The composing HTTP boundary
 retains the existing safe request/storage error envelope and revision-conflict
 status mapping through `jobsHttp`. All mutation/detail responses use public projections. The Python
@@ -110,8 +122,10 @@ and `scripts/job_apply_trusted_fill.py`.
 
 Trusted-fill approval, evaluation, status, revocation, one-shot consumption,
 and denial handoff now share the native Store lock and coordinator journal.
-The remaining native account scope is the distinct email-only flow provider and
-any separately authorized real-browser evidence.
+The remaining native account scope is the distinct email-only flow provider,
+real provider composition for Trusted Fill, and any separately authorized
+real-browser evidence. The synthetic injected provider proves orchestration and
+receipt enforcement without claiming a live browser effect.
 
 Synthetic protected execution now binds job/claim/settings/account revisions
 and target URL fingerprint, writes `prepared` before invoking its injected
@@ -136,6 +150,10 @@ real claim handoff evidence, journal identity checks, and unavailable-job
 preservation. The synthetic-execution suite covers a successful non-final
 lifecycle, verified attention outcome, executor ambiguity, public-provider
 denial, privacy, and malformed loopback bindings.
+`tests_js/workspace_native_trusted_fill_boundary.test.mjs` covers a value-free
+operation packet, exact successful receipt, missing-provider no-op, effect
+ambiguity, stale and authority-widening receipts, and replacement-claim
+isolation. The existing reviewed Swift source set remains unchanged.
 
 Typecheck and owned runtime emission are required. The integration owner also
 owns source/runtime catalogs, test matrix, HTTP wiring, fixture marker/allowlist,
