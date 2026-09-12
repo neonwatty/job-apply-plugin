@@ -310,6 +310,32 @@
         <div class="button-row"><button id="account-operation-refresh" class="button secondary" type="button">Refresh operation status</button><button id="account-operation-recover" class="button danger" type="button" disabled>Record interrupted setup as unknown</button></div>
         <p id="account-operation-error" class="error hidden" role="alert"></p>
       </section>
+      <section class="automation-panel" aria-labelledby="application-mode-heading">
+        <div class="panel-heading"><div><p class="eyebrow">APPLICATION AUTHORITY</p><h2 id="application-mode-heading">Application automation mode</h2></div><p id="application-authority-revision">Revision —</p></div>
+        <p class="safety-note">Guided asks for granular confirmations. Fill to Review covers one exact job and worker. Campaign covers only the named jobs and workers. Every mode stops before Final Submit or Send.</p>
+        <div id="application-authority-status" class="notice" role="status" aria-live="polite">Guided · granular confirmations required.</div>
+        <form id="application-authority-form" class="automation-form">
+          <div class="form-grid">
+            <label>Mode <select name="mode"><option value="fill_to_review">Fill to Review</option><option value="campaign">Campaign</option></select></label>
+            <label>Expiry in minutes <input name="durationMinutes" type="number" min="1" max="1440" value="120" required></label>
+            <label class="wide">Selected job IDs (one per line) <textarea name="jobIds" rows="3" required></textarea></label>
+            <label class="wide">Selected worker IDs (one per line) <textarea name="workerIds" rows="3" required></textarea></label>
+          </div>
+          <fieldset><legend>Campaign-only sensitive current-use classes (optional)</legend>
+            <label><span><input name="sensitiveFieldClasses" value="demographic" type="checkbox"> Demographic</span></label>
+            <label><span><input name="sensitiveFieldClasses" value="disability" type="checkbox"> Disability</span></label>
+            <label><span><input name="sensitiveFieldClasses" value="veteran_status" type="checkbox"> Veteran status</span></label>
+            <label><span><input name="sensitiveFieldClasses" value="work_authorization" type="checkbox"> Work authorization</span></label>
+            <label><span><input name="sensitiveFieldClasses" value="criminal_history" type="checkbox"> Criminal history</span></label>
+            <label><span><input name="sensitiveFieldClasses" value="compensation" type="checkbox"> Compensation</span></label>
+            <label><span><input name="sensitiveFieldClasses" value="other_declared_sensitive" type="checkbox"> Other explicitly declared sensitive</span></label>
+          </fieldset>
+          <p class="safety-note">These choices grant current use only for an exact canonical sensitive answer and declared field class. They never infer an answer and never grant permission to remember it.</p>
+          <div class="button-row"><button class="button primary" type="submit">Approve bounded mode</button><button id="application-authority-guided" class="button secondary" type="button">Return to Guided</button></div>
+        </form>
+        <div id="application-authority-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>Authority changed elsewhere</h3><p>Nothing was retried. Refresh and review the current scope.</p></div>
+        <p id="application-authority-error" class="error hidden" role="alert"></p>
+      </section>
       <section class="automation-panel" aria-labelledby="trusted-fill-heading">
         <div class="panel-heading"><div><p class="eyebrow">GROUNDED TRUSTED FILL</p><h2 id="trusted-fill-heading">Advanced agent permissions</h2></div></div>
         <p class="safety-note">Review an agent-provided request for specific form fields. Approval alone does not run the browser, enter credentials, accept consent, or submit an application. Technical identifiers below bind approval to the exact job and form.</p>

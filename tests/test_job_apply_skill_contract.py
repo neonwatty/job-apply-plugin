@@ -30,6 +30,27 @@ class JobApplySkillContractTests(unittest.TestCase):
         self.assertIn("It is not reusable for another job", self.skill)
         self.assertIn("must not trigger duplicate confirmation", self.skill)
 
+    def test_three_application_modes_are_durable_and_review_bound(self):
+        for required in (
+            "**Guided** is the safe default",
+            "**Fill to Review** is one approval for one exact",
+            "**Campaign** applies the same review-bound authority",
+            "Later pages do not manufacture new consent",
+            "successful `awaiting_review` handoff",
+            "Returning to Guided explicitly revokes",
+        ):
+            self.assertIn(required, self.skill)
+
+    def test_mode_interrupts_and_sensitive_current_use_are_closed(self):
+        for required in (
+            "missing or uncertain data", "CAPTCHA", "MFA", "email verification",
+            "provider legal consent", "unsupported controls",
+            "unexpected destination", "ambiguity", "`final_action_manual`",
+            "A field class is never inferred", "does not set, replace, or imply",
+        ):
+            self.assertIn(required, self.skill)
+        self.assertIn("manual in every mode", self.skill)
+
     def test_only_material_scope_destination_or_purpose_change_reconfirms(self):
         self.assertIn(
             "A material change to the data scope, destination, or purpose invalidates the consumed consent",

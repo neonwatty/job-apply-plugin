@@ -55,7 +55,7 @@ local and CI receipts exist to calculate percentiles.
 Use the extracted module boundaries for bounded assignments: Store domain
 subtrees in `scripts/job_apply_store/domains/`, workspace server/domain modules
 in `scripts/job_apply_workspace/`, browser libraries/features in `workspace/`,
-and smoke helpers in `scripts/smoke/`. The Store CLI contract covers 98 commands.
+and smoke helpers in `scripts/smoke/`. The Store CLI contract covers 102 commands.
 Compatibility adapters preserve live replacement seams and root-local loading;
 changes there require facade, startup, and loader checks as well as domain tests.
 

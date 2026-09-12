@@ -93,6 +93,7 @@ class StoreWaveCCoordinatorIntegrationTests(unittest.TestCase):
             self.facade._accounts_settings_domain.AccountSettingsMixin,
             self.facade._accounts_synthetic_domain.SyntheticAccountMixin,
             self.facade._accounts_trusted_fill_domain.TrustedFillMixin,
+            self.facade._accounts_application_authority_domain.ApplicationAuthorityMixin,
             self.facade._startup_domain.StartupMixin,
             self.facade._base.StoreBase,
         )

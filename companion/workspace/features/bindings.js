@@ -56,6 +56,8 @@ export function installBindings(context) {
   const approveTrustedFill = (...args) => coordinators.approveTrustedFill(...args);
   const loadTrustedFillStatus = (...args) => coordinators.loadTrustedFillStatus(...args);
   const revokeTrustedFill = (...args) => coordinators.revokeTrustedFill(...args);
+  const setApplicationAuthority = (...args) => coordinators.setApplicationAuthority(...args);
+  const returnToGuided = (...args) => coordinators.returnToGuided(...args);
   const showWorkspace = (...args) => coordinators.showWorkspace(...args);
   const navigateWorkspace = (...args) => coordinators.navigateWorkspace(...args);
   const attentionButton = (...args) => coordinators.attentionButton(...args);
@@ -142,6 +144,8 @@ export function installBindings(context) {
   $("#trusted-fill-form").addEventListener("submit", approveTrustedFill);
   $("#trusted-fill-status-form").addEventListener("submit", loadTrustedFillStatus);
   $("#trusted-fill-revoke").addEventListener("click", revokeTrustedFill);
+  $("#application-authority-form").addEventListener("submit", setApplicationAuthority);
+  $("#application-authority-guided").addEventListener("click", returnToGuided);
   $("#overview-refresh").addEventListener("click", () => refreshOverview());
   $("#next-step-action").addEventListener("click", (event) => navigateWorkspace(event.currentTarget.dataset.workspace));
   for (const button of document.querySelectorAll(".overview-link")) button.addEventListener("click", () => navigateWorkspace(button.dataset.workspace));

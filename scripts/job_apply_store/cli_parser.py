@@ -321,4 +321,12 @@ def build_parser(runtime: dict[str, Any]) -> argparse.ArgumentParser:
     trusted_revoke = commands.add_parser("trusted-fill-revoke")
     trusted_revoke.add_argument("--id", required=True)
     trusted_revoke.add_argument("--expected-approval-revision", required=True, type=int)
+    authority_set = commands.add_parser("application-authority-set")
+    authority_set.add_argument("--input", required=True)
+    authority_set.add_argument("--expected-revision", required=True, type=int)
+    commands.add_parser("application-authority-status")
+    authority_evaluate = commands.add_parser("application-authority-evaluate")
+    authority_evaluate.add_argument("--input", required=True)
+    authority_revoke = commands.add_parser("application-authority-revoke")
+    authority_revoke.add_argument("--expected-revision", required=True, type=int)
     return parser

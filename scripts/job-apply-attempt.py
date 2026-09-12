@@ -114,7 +114,7 @@ def emit(value: dict[str, Any]) -> None:
 def public_acquisition(acquired: dict[str, Any]) -> dict[str, Any]:
     job = acquired["job"]
     resume = acquired["resume"]
-    return {
+    result = {
         "job": {key: job[key] for key in ("id", "revision", "url") if key in job},
         "resume": {
             key: resume[key]
@@ -122,6 +122,9 @@ def public_acquisition(acquired: dict[str, Any]) -> dict[str, Any]:
             if key in resume
         },
     }
+    if "applicationAuthority" in acquired:
+        result["applicationAuthority"] = acquired["applicationAuthority"]
+    return result
 
 
 def read_json_object(path: str) -> dict[str, Any]:
@@ -212,6 +215,9 @@ class AttemptBroker:
         self.job_id = request["id"]
         self._token = acquired.pop("token")
         acquired.pop("claim", None)
+        acquired["applicationAuthority"] = self.store.application_authority_status(
+            public=True
+        )
         self.expected_revision = acquired["job"]["revision"]
         self._thread = threading.Thread(target=self._heartbeat_loop, daemon=True)
         self._thread.start()

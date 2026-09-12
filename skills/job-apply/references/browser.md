@@ -27,6 +27,8 @@ Use the fallback only for the blocked control, then return to the visible review
 
 ### Post-readiness action-time consent
 
+First apply the effective mode from [application-modes.md](application-modes.md). The state transition below is Guided behavior. Fill to Review and Campaign replace repeated ordinary-field confirmation only within their exact durable Store scope; all interrupt conditions and the manual final-action boundary still apply.
+
 Action-time consent has a closed, one-use state transition:
 
 1. Before the exact application form is visibly ready, consent is `not_ready`. Earlier approval, a URL or job selection, consent from another application, and blanket future consent are invalid and cannot authorize entering data.
@@ -69,8 +71,10 @@ their action; do not direct them to add, edit, or repeat the answer in Companion
 
 An alternate entry method within the same form instance, application attempt,
 destination, and already-approved purpose does not require renewed fill consent.
-Opening or switching to another form instance is a new action surface and requires
-fresh consent before entering private data there. Keep every final action untouched
-throughout recovery.
+In Guided, opening or switching to another form instance is a new action surface and
+requires fresh consent before entering private data there. In Fill to Review or
+Campaign, an ordinary later page at the same destination remains covered after a
+fresh authority evaluation; an unexpected destination interrupts. Keep every final
+action untouched throughout recovery.
 
 ---

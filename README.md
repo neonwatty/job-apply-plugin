@@ -137,6 +137,16 @@ Once your profile is set up:
 
 4. Inspect the final review page and field summary. The assistant stops before final submission; only you may decide whether to complete it manually on the third-party site.
 
+In Companion Automation, choose **Guided** for granular confirmations,
+**Fill to Review** for one exact selected job and named worker, or **Campaign**
+for an explicitly bounded set of selected jobs and workers. Fill to Review and
+Campaign cover canonical non-sensitive profile facts, the selected managed
+resume, confirmed reusable answers, bounded rerender repairs, and clearly
+non-final navigation across ordinary pages at the same destination. Missing or
+uncertain data, protected verification or consent, unsupported controls,
+destination changes, ambiguity, and every final action still interrupt. Submit
+and Send remain manual in every mode.
+
 ### Searching for Jobs
 
 First run `$job-apply:job-preferences` to save your search preferences. Then use `$job-apply:job-search` to search LinkedIn, Hacker News, and Twitter/X and rank matching jobs:
@@ -272,7 +282,7 @@ Protect the directory like a resume. Do not attach its files to issues or share 
 ```bash
 chmod 700 ~/.job-apply
 chmod 700 ~/.job-apply/resume-files
-chmod 600 ~/.job-apply/profile.json ~/.job-apply/answers.json ~/.job-apply/jobs.json ~/.job-apply/resumes.json ~/.job-apply/applications.jsonl ~/.job-apply/coordinator.json ~/.job-apply/coordinator-journal.json
+chmod 600 ~/.job-apply/profile.json ~/.job-apply/answers.json ~/.job-apply/jobs.json ~/.job-apply/resumes.json ~/.job-apply/applications.jsonl ~/.job-apply/coordinator.json ~/.job-apply/coordinator-journal.json ~/.job-apply/application-authority.json
 # If extraction proposals have been created:
 chmod 600 ~/.job-apply/resume-extractions.json ~/.job-apply/resume-extraction-journal.json
 ```

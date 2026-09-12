@@ -37,6 +37,7 @@ export function installAutomation(context) {
     const workday = accountFlow.workdayPasswordAccountReady ? "Workday account setup supported; separate approval required" : "Workday account automation unavailable";
     const greenhouse = accountFlow.greenhouseAccountlessClassificationReady ? "ordinary Greenhouse applications are accountless" : "Greenhouse account status unresolved";
     $("#automation-capability").textContent = `${workday} · ${greenhouse} · ${accountFlow.emailOnlyCandidateProfileReady ? "Oracle candidate profiles supported" : "Oracle candidate profiles unavailable"}. Settings and recovery remain available here; no live execution control is exposed.`;
+    renderApplicationAuthority(projection.applicationAuthority);
     const list = $("#automation-accounts"); list.replaceChildren();
     for (const account of projection.accounts) {
       const card = document.createElement("article"); card.className = "automation-account"; card.setAttribute("role", "listitem");
@@ -68,6 +69,70 @@ export function installAutomation(context) {
     }
     if (!projection.accounts.length) {
       const empty = document.createElement("p"); empty.className = "empty-state compact-empty"; empty.textContent = "No employer accounts recorded yet."; list.append(empty);
+    }
+  }
+
+  function renderApplicationAuthority(authority) {
+    const previousId = automationState.applicationAuthority?.authorizationId;
+    automationState.applicationAuthority = authority;
+    const mode = String(authority?.mode || "guided").replaceAll("_", " ");
+    const scope = authority?.mode === "guided"
+      ? "granular confirmations required"
+      : `${authority.jobIds.length} selected job(s) · ${authority.workerIds.length} selected worker(s) · expires ${authority.expiresAt}`;
+    $("#application-authority-status").textContent = `${mode} · ${authority?.status || "active"} · ${scope}`;
+    $("#application-authority-revision").textContent = `Revision ${authority?.revision ?? 0}`;
+    $("#application-authority-guided").disabled = authority?.mode === "guided";
+    if (previousId !== authority?.authorizationId) {
+      const authorityForm = $("#application-authority-form");
+      const active = authority?.mode !== "guided";
+      if (active) authorityForm.elements.mode.value = authority.mode;
+      authorityForm.elements.jobIds.value = active ? authority.jobIds.join("\n") : "";
+      authorityForm.elements.workerIds.value = active ? authority.workerIds.join("\n") : "";
+      const selected = new Set(active ? authority.sensitiveFieldClasses : []);
+      for (const item of authorityForm.querySelectorAll('input[name="sensitiveFieldClasses"]')) {
+        item.checked = selected.has(item.value);
+      }
+    }
+  }
+
+  const lines = (value) => String(value || "").split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
+
+  async function setApplicationAuthority(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const current = automationState.applicationAuthority;
+    const authority = {
+      mode: form.elements.mode.value,
+      jobIds: lines(form.elements.jobIds.value),
+      workerIds: lines(form.elements.workerIds.value),
+      sensitiveFieldClasses: [...form.querySelectorAll('input[name="sensitiveFieldClasses"]:checked')].map((item) => item.value),
+      durationMinutes: Number(form.elements.durationMinutes.value),
+    };
+    try {
+      const updated = await api("/api/application-authority", {
+        method: "POST", body: JSON.stringify({ authority, expectedRevision: current?.revision ?? 0 }),
+      });
+      renderApplicationAuthority(updated);
+      $("#application-authority-error").classList.add("hidden");
+      $("#application-authority-conflict").classList.add("hidden");
+      toast(`${authority.mode === "campaign" ? "Campaign" : "Fill to Review"} authority saved`);
+    } catch (error) {
+      if (error.code === "revision_conflict") { $("#application-authority-conflict").classList.remove("hidden"); $("#application-authority-conflict").focus(); }
+      else { $("#application-authority-error").textContent = error.message; $("#application-authority-error").classList.remove("hidden"); }
+    }
+  }
+
+  async function returnToGuided() {
+    const current = automationState.applicationAuthority;
+    try {
+      renderApplicationAuthority(await api("/api/application-authority/revoke", {
+        method: "POST", body: JSON.stringify({ expectedRevision: current?.revision ?? 0 }),
+      }));
+      $("#application-authority-error").classList.add("hidden");
+      toast("Guided mode restored; broader current-use authority revoked");
+    } catch (error) {
+      if (error.code === "revision_conflict") { $("#application-authority-conflict").classList.remove("hidden"); $("#application-authority-conflict").focus(); }
+      else { $("#application-authority-error").textContent = error.message; $("#application-authority-error").classList.remove("hidden"); }
     }
   }
 
@@ -202,5 +267,5 @@ export function installAutomation(context) {
   }
 
 
-  Object.assign(coordinators, { renderAutomation, refreshAutomation, renderAccountOperation, refreshAccountOperation, recoverAccountOperation, saveAutomation, copyProfileEmailToAutomation, addEmployerRealm, renderTrustedFillStatus, approveTrustedFill, loadTrustedFillStatus, revokeTrustedFill });
+  Object.assign(coordinators, { renderAutomation, refreshAutomation, renderAccountOperation, refreshAccountOperation, recoverAccountOperation, saveAutomation, copyProfileEmailToAutomation, addEmployerRealm, renderTrustedFillStatus, approveTrustedFill, loadTrustedFillStatus, revokeTrustedFill, setApplicationAuthority, returnToGuided });
 }

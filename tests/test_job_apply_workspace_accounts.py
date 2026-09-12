@@ -2,6 +2,36 @@ from tests.support.workspace_case import *
 
 
 class WorkspaceServerTests(WorkspaceCase):
+    def test_application_authority_is_visible_revisioned_and_revocable(self):
+        resume_path = Path(self.temporary.name) / "authority.txt"
+        resume_path.write_text("Synthetic", encoding="utf-8")
+        self.server.store.replace_profile({"firstName": "Synthetic"}, 1, "user")
+        resume = self.server.store.create_resume({
+            "id": "authority-resume", "label": "Synthetic", "path": str(resume_path),
+        })
+        job = self.server.store.create_job({
+            "id": "authority-job", "url": "https://example.com/jobs/authority",
+            "role": "Engineer", "company": "Synthetic", "resumeId": resume["id"],
+        })
+        ready = self.server.store.transition_job(job["id"], "ready", job["revision"])
+        status, _headers, automation = self.request("GET", "/api/automation", origin=False)
+        self.assertEqual((status, automation["applicationAuthority"]["mode"]), (200, "guided"))
+        request = {
+            "authority": {"mode": "fill_to_review", "jobIds": [ready["id"]],
+                          "workerIds": ["workspace-worker"], "sensitiveFieldClasses": [],
+                          "durationMinutes": 60},
+            "expectedRevision": 0,
+        }
+        status, _headers, active = self.request("POST", "/api/application-authority", request)
+        self.assertEqual((status, active["mode"], active["revision"]), (200, "fill_to_review", 1))
+        self.assertNotIn(job["url"], json.dumps(active))
+        status, _headers, conflict = self.request("POST", "/api/application-authority", request)
+        self.assertEqual((status, conflict["error"]["code"]), (409, "revision_conflict"))
+        status, _headers, guided = self.request(
+            "POST", "/api/application-authority/revoke", {"expectedRevision": 1}
+        )
+        self.assertEqual((status, guided["mode"], guided["revision"]), (200, "guided", 2))
+
     def test_automation_api_is_authenticated_editable_revisioned_and_fail_closed(self):
         status, _headers, rejected = self.request("GET", "/api/automation", token=False, origin=False)
         self.assertEqual((status, rejected["error"]["code"]), (401, "token_rejected"))

@@ -69,10 +69,14 @@ class QueryMixin:
         if path == "/api/automation":
             self._store_call(lambda: {
                 "settings": store.get_automation_settings(companion=True),
+                "applicationAuthority": store.application_authority_status(public=True),
                 "capability": store.automation_capability(),
                 "accounts": store.list_employer_accounts(companion=True),
                 "profileRevision": store.inspect_profile()["revision"],
             })
+            return
+        if path == "/api/application-authority":
+            self._store_call(lambda: store.application_authority_status(public=True))
             return
         if path == "/api/fact-groups":
             self._store_call(lambda: {"groups": store.list_fact_groups()})
