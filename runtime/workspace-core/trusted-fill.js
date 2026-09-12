@@ -9,7 +9,7 @@ import { safeId, validateJobsDocument } from '../contracts/workspace/jobs.js';
 import { validateProfile } from '../contracts/workspace/profile.js';
 import { validateResumeReferences } from '../contracts/workspace/resume-reference.js';
 import { publicTrustedFillStatus, revokeTrustedFillApproval, trustedFillApproval, trustedFillDecision, trustedFillOperationList, trustedFillPolicyRevision, validateTrustedFillApproval, validateTrustedFillDocument } from '../contracts/workspace/trusted-fill.js';
-import { copy, fromJSON, get, int, integer, keys, object, set, string, text, JobsError } from '../contracts/workspace/values.js';
+import { copy, fromJSON, get, int, integer, keys, object, same, set, string, text, JobsError } from '../contracts/workspace/values.js';
 import { preflightJobRecord } from './job-preflight.js';
 const doc = (value) => object(fromJSON(value), 'trusted fill value');
 const fingerprintPattern = /^sha256:[0-9a-f]{64}$/;
@@ -289,6 +289,50 @@ export class TrustedFillService {
             set(decision, 'attentionHandoff', false);
             set(decision, 'consumedApprovalRevision', get(consumed, 'approvalRevision'));
             return decision;
+        });
+    }
+    nativeOutcome(id, consumedRevision, successful) {
+        safeId(id);
+        if (consumedRevision < 2n)
+            throw new JobsError('consumedApprovalRevision must identify consumed authority');
+        return this.repository.trustedFillTransaction(async (tx) => {
+            const now = this.now();
+            let job, claim;
+            try {
+                ({ job, claim } = live(tx, id, now));
+            }
+            catch (error) {
+                if (!(error instanceof TrustedFillClaimError))
+                    throw error;
+                return doc({ authorized: false, reasonCode: 'claim_missing_or_expired', retryAllowed: false, attentionHandoff: false });
+            }
+            const raw = get(object(get(validateTrustedFillDocument(tx.approvals), 'approvals'), 'approvals'), id);
+            if (raw === null)
+                return doc({ authorized: false, reasonCode: 'native_receipt_stale', retryAllowed: false, attentionHandoff: false });
+            const approval = validateTrustedFillApproval(raw);
+            if (string(get(approval, 'status')) !== 'revoked' || int(get(approval, 'approvalRevision')) !== consumedRevision
+                || string(get(approval, 'claimId')) !== string(get(claim, 'claimId'))) {
+                return doc({ authorized: false, reasonCode: 'native_receipt_stale', retryAllowed: false, attentionHandoff: false });
+            }
+            let state;
+            try {
+                state = await current(tx, job, claim, get(approval, 'answerBindings').map(item => string(get(object(item, 'binding'), 'answerRef'))));
+            }
+            catch (error) {
+                if (!(error instanceof TrustedFillCurrentError))
+                    throw error;
+                return this.denied(tx, job, error.reasonCode, now);
+            }
+            const bound = ['jobId', 'jobRevision', 'claimId', 'realmRef', 'urlFingerprint', 'resumeId', 'resumeRevision',
+                'resumeContentRevision', 'profileRevision', 'vitalFactRevision', 'answerBindings', 'automationSettingsRevision',
+                'employerAccountRevision', 'policyRevision'];
+            if (bound.some(field => !same(get(approval, field), get(state, field))))
+                return this.denied(tx, job, 'canonical_drift', now);
+            if (!successful)
+                return this.denied(tx, job, 'native_execution_ambiguous', now);
+            const result = doc({ authorized: true, reasonCode: 'native_fields_applied', retryAllowed: false,
+                attentionHandoff: false, consumedApprovalRevision: null, finalActionAuthorized: false });
+            return set(result, 'consumedApprovalRevision', integer(consumedRevision));
         });
     }
     async denied(tx, job, reason, now) {
