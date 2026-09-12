@@ -47,6 +47,29 @@
         "recovery": "unverified",
         "platform": "unverified"
       }
+    },
+    {
+      "id": "document:resume-files/.<managed>.<nonce>.quarantine",
+      "kind": "document",
+      "path": "resume-files/.<managed>.<nonce>.quarantine",
+      "artifact": "temporary",
+      "node": "RES",
+      "sources": [
+        "src/store/native-resume-files.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
     }
   ]
 }

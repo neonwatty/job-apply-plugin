@@ -143,7 +143,7 @@ test('native Trash listing and job lifecycle preserve Python contracts and persi
       assert.equal(success.status,200); assert.equal(JSON.parse(success.body).revision,2);
       const stale=await jobsHttp(state.jobs,state.repository,'POST','/api/jobs/job/restore','{"expectedRevision":1}');
       assert.equal(stale.status,409); assert.equal(JSON.parse(stale.body).error.code,'revision_conflict');
-      for(const path of ['/api/resumes/resume/trash']) {
+      for(const path of ['/api/resumes/resume/unknown']) {
         assert.equal((await jobsHttp(state.jobs,state.repository,'POST',path,'{"expectedRevision":2}')).status,501);
       }
     });

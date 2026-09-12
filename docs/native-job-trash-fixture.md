@@ -1,13 +1,13 @@
 # Native Trash and job recovery fixture
 
-The opt-in version 9 native fixture supports a unified Trash listing and reversible
+The opt-in version 10 native fixture supports a unified Trash listing and reversible
 job trash/restore and permanent deletion through its CLI and authenticated HTTP API. A trashed job is
 hidden from ordinary Jobs results. Restoring it makes it visible in Companion
 Jobs after Refresh or reload, retaining its saved fields and local status.
 
-This tranche adds API and CLI operations only. The native Companion has no Trash
-section or browser trash/restore buttons yet. Full Trash UI and
-resume/answer lifecycle operations remain separate integration work.
+The native Companion Trash section restores and permanently deletes jobs,
+resumes and answers. Each mutation uses the displayed revision and refreshes the
+canonical listing before enabling another action.
 
 ## Use a synthetic fixture
 

@@ -117,7 +117,7 @@ print(json.dumps(out))
       assert.equal((await jobsHttp(service, repository, 'GET', '/api/jobs/missing')).status, 404);
       assert.equal((await jobsHttp(service, repository, 'POST', '/api/jobs/one/transition', '{}')).status, 400);
       assert.equal((await jobsHttp(service, repository, 'GET', '/api/trash')).status, 200);
-      assert.equal((await jobsHttp(service, repository, 'POST', '/api/resumes/resume/delete', '{"expectedRevision":1}')).status, 501);
+      assert.equal((await jobsHttp(service, repository, 'POST', '/api/resumes/resume/unknown', '{"expectedRevision":1}')).status, 501);
     });
     await t.test('independent CLI writers serialize revisions without Python', async () => {
       const cli = resolve('runtime/cli/native-jobs.js');

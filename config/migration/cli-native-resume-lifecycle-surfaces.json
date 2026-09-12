@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:src/cli/native-jobs.ts:resume-trash",
+      "kind": "cli",
+      "command": "resume-trash",
+      "node": "RES",
+      "sources": ["src/cli/native-jobs.ts", "src/cli/native-resume-lifecycle.ts", "src/workspace-core/resume-lifecycle.ts", "src/store/native-jobs.ts"],
+      "effects": "unclassified",
+      "scenarios": {"valid":"unverified","invalid":"unverified","missing":"unverified","noop":"unverified","privacy":"unverified","conflict":"unverified","concurrency":"unverified","interruption":"unverified","recovery":"unverified","platform":"unverified"}
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:resume-restore",
+      "kind": "cli",
+      "command": "resume-restore",
+      "node": "RES",
+      "sources": ["src/cli/native-jobs.ts", "src/cli/native-resume-lifecycle.ts", "src/workspace-core/resume-lifecycle.ts", "src/store/native-jobs.ts"],
+      "effects": "unclassified",
+      "scenarios": {"valid":"unverified","invalid":"unverified","missing":"unverified","noop":"unverified","privacy":"unverified","conflict":"unverified","concurrency":"unverified","interruption":"unverified","recovery":"unverified","platform":"unverified"}
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:resume-delete",
+      "kind": "cli",
+      "command": "resume-delete",
+      "node": "RES",
+      "sources": ["src/cli/native-jobs.ts", "src/cli/native-resume-lifecycle.ts", "src/workspace-core/resume-lifecycle.ts", "src/store/native-jobs.ts", "src/store/native-resume-files.ts"],
+      "effects": "unclassified",
+      "scenarios": {"valid":"unverified","invalid":"unverified","missing":"unverified","noop":"unverified","privacy":"unverified","conflict":"unverified","concurrency":"unverified","interruption":"unverified","recovery":"unverified","platform":"unverified"}
+    }
+  ]
+}

@@ -6,7 +6,7 @@ export const compatibilityTrashCapabilities: TrashCapabilities = {
     job: { restore: true, delete: true }, resume: { restore: true, delete: true }, answer: { restore: true, delete: true }
 };
 export const nativeTrashCapabilities: TrashCapabilities = {
-    job: { restore: true, delete: true }, resume: { restore: false, delete: false }, answer: { restore: true, delete: true }
+    job: { restore: true, delete: true }, resume: { restore: true, delete: true }, answer: { restore: true, delete: true }
 };
 export interface TrashItem {
     type: TrashType;

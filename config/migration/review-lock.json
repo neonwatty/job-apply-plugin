@@ -138,6 +138,10 @@
       "sha256": "db44fabe54a6f0bfb360f02880cdc06fc2780f4f78c3c0a487492cb485344a06"
     },
     {
+      "path": "cli-native-resume-lifecycle-surfaces.json",
+      "sha256": "305db8a623ab4805570f0deeac2046f9572de5e41f441d2ac3eac91c8d965271"
+    },
+    {
       "path": "cli-native-resumes-surfaces.json",
       "sha256": "23b9fd1e5a29720b5b4143d59a9767dfb9ee98a00e09ef3962f9112c9cda4e5c"
     },
@@ -163,7 +167,7 @@
     },
     {
       "path": "document-native-resumes-surfaces.json",
-      "sha256": "ccdefde93534faa31fc3c45e772b83703914b11323f45d1d858dd86c127de42d"
+      "sha256": "79aff4dc348dfc30bf59d7fc47239e2b4a05c80881dade65185b17f3dcfa7375"
     },
     {
       "path": "http-asset-head-surfaces.json",
@@ -215,7 +219,7 @@
     },
     {
       "path": "http-write-resumes-surfaces.json",
-      "sha256": "62274f8bdaf20fabf79a3988d41d134a3459452d2ba7eea5215d7a8feb7f36a8"
+      "sha256": "30b56cbdd1021963acaab8b3ba512f9c31872f894dbcef9935a638770b31ce1d"
     },
     {
       "path": "http-write-surfaces.json",
@@ -235,7 +239,7 @@
     },
     {
       "path": "journal-native-resumes-surfaces.json",
-      "sha256": "85609a0155cb88c4335662b0ed827ebc4e09745840bce1c16f40897321c15ad4"
+      "sha256": "9afc2c76f4044f124a6664840c3c178b8e496a91bbde5cb1731045d7455830eb"
     },
     {
       "path": "nodes.json",
@@ -363,7 +367,7 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "544d544a43e69ff918009ce0ba1a1a1675d604606517e6b1e0ec9241a6c6f95e"
+      "sha256": "d55bf95dc463784de761295dfa29136a88981bf011675bc6dbefd7328fe2e3d5"
     },
     {
       "path": "source-catalog-native-legacy-jobs.json",
@@ -378,12 +382,16 @@
       "sha256": "a78ee13b41a59fbe409c647d88721f62bf986db60bcdd94bc71e938c88456488"
     },
     {
+      "path": "source-catalog-native-resume-lifecycle.json",
+      "sha256": "37a68abab20716253d945e3aced757a14c44dc20d27d54aa0053447dde9091aa"
+    },
+    {
       "path": "source-catalog-native-resumes.json",
-      "sha256": "29dd7f8508a7d203df336e2dad4c4b643daf4c4441f4cbee96d4ea0f5d15cc17"
+      "sha256": "52ae646a7b15a768e16a7adfe9335574e536d77ce2a8a2ae3ee28ba925f73dd2"
     },
     {
       "path": "source-catalog-native-task-cli.json",
-      "sha256": "df55a8733e48d55074f60d5546eb5103d5d3f01bd3711341a8311843c3db6ff2"
+      "sha256": "b593f1030030c0db4ab5dd1c802fb759157fbcb3e231d39bc781806af50bc117"
     },
     {
       "path": "source-catalog-native-task-intake.json",
@@ -391,7 +399,7 @@
     },
     {
       "path": "source-catalog-react-trash.json",
-      "sha256": "759aaa85f8de2674eed82fc65726ddf3aa1c8a78ac7a946071de57b7abf2fa69"
+      "sha256": "41758fb45d752f7b2e5e44f3f5ddba05146a5fe35a5f627790a9e1a0916cf49e"
     },
     {
       "path": "source-catalog-s01.json",

@@ -66,9 +66,10 @@ test('answer dot-segment keys preserve identity through browser URL normalizatio
     }
 });
 
-test('native adapter refuses unsupported actions before transport', async () => {
+test('adapter refuses capability-disabled actions before transport', async () => {
     let calls = 0;
-    const client = createTrashClient('synthetic', model.nativeTrashCapabilities, async () => { ++calls; return new Response('{}'); });
+    const limited = {...model.nativeTrashCapabilities, resume:{restore:false,delete:false}};
+    const client = createTrashClient('synthetic', limited, async () => { ++calls; return new Response('{}'); });
     const signal = new AbortController().signal;
     for (const type of ['job', 'resume', 'answer']) for (const action of ['restore', 'delete']) {
         if (type !== 'resume') continue;
@@ -77,6 +78,9 @@ test('native adapter refuses unsupported actions before transport', async () => 
     assert.equal(calls, 0);
     await client.mutate({ ...item, revision: 1n }, 'restore', signal);
     assert.equal(calls, 1);
+    const native = createTrashClient('synthetic', model.nativeTrashCapabilities, async () => { ++calls; return new Response('{}'); });
+    await native.mutate({ ...item, type:'resume', revision:1n }, 'restore', signal);
+    assert.equal(calls, 2);
 });
 
 test('errors preserve count guidance while suppressing private server messages and never retry', async () => {

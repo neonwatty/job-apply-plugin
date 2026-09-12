@@ -1,4 +1,5 @@
 import { answerLifecycleCommands, runAnswerLifecycleCommand } from './native-answer-lifecycle.js';
+import { resumeLifecycleCommands, runResumeLifecycleCommand } from './native-resume-lifecycle.js';
 import { trashCommands, runTrashCommand } from './native-trash.js';
 import { groupedApprovalCommands, runGroupedApprovalCommand } from './native-grouped-approvals.js';
 import { taskIntakeCommands, runTaskIntakeCommand } from './native-task-intake.js';
@@ -49,6 +50,7 @@ export async function runJobsCli(args, input) {
     }
     const fields = {
         ...answerLifecycleCommands,
+        ...resumeLifecycleCommands,
         ...trashCommands,
         ...groupedApprovalCommands,
         ...taskIntakeCommands,
@@ -98,6 +100,8 @@ export async function runJobsCli(args, input) {
     };
     if (Object.hasOwn(answerLifecycleCommands, command))
         return serialize(await runAnswerLifecycleCommand(command, repository, options));
+    if (Object.hasOwn(resumeLifecycleCommands, command))
+        return serialize(await runResumeLifecycleCommand(command, repository, options));
     if (Object.hasOwn(trashCommands, command))
         return serialize(await runTrashCommand(command, repository, options));
     if (Object.hasOwn(groupedApprovalCommands, command))
