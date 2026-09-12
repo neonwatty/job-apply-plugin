@@ -54,14 +54,20 @@ class StoreTests(StoreTestCase):
         )
         self.assertNotIn("private@example.invalid", json.dumps(result))
 
-    def test_workday_non_unique_strategies_route_to_human_attention(self):
-        for strategy in ("shared", "custom", "ask_each_time"):
+    def test_workday_unavailable_and_manual_strategies_route_to_typed_attention(self):
+        expected_reasons = {
+            "shared": "shared_credential_setup_required",
+            "manual": "manual_account_strategy",
+            "custom": "manual_account_strategy",
+            "ask_each_time": "manual_account_strategy",
+        }
+        for strategy, reason in expected_reasons.items():
             store, request, _account = self._prepared_workday_canary(
                 f"strategy-{strategy}", strategy=strategy
             )
             decision = store.employer_account_flow_decision(request["binding"]["jobId"])
             self.assertEqual(decision["decision"], "human_attention_required")
-            self.assertEqual(decision["reasonCode"], "password_strategy_requires_human")
+            self.assertEqual(decision["reasonCode"], reason)
 
     def test_live_workday_challenges_create_typed_durable_handoffs(self):
         outcomes = {
