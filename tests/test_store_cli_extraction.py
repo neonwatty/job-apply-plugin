@@ -39,13 +39,13 @@ class StoreCliExtractionTests(unittest.TestCase):
             spec.loader.exec_module(module)
             setattr(cls, name, module)
 
-    def test_normalized_bodies_match_pre_extraction_snapshot(self):
-        # Captured from immutable facade 6214176, before extraction.
+    def test_normalized_bodies_match_reviewed_extraction_snapshot(self):
+        # Updated when the reviewed shared-credential commands joined the split CLI.
         cases = (
             (self.cli_parser.build_parser,
-             "fa77e5a69d359ef0617100c4e2880da06f008f7bc3c5fec1ecbec95820cca021"),
+             "b48af7c54e488bef67630449096b29e1dd07cf16e09ddc9f7bea91f24c03ba8e"),
             (self.cli_dispatch.run,
-             "75cabcb9ecdb6059b34c70a68ef3d2faaddb9f617d71419cbe3c7753070f1799"),
+             "530b1783dd68bc007266b33f0ea8f8d94d2f90fc0842dcc2e183301fe7c6113b"),
         )
         for function, expected in cases:
             with self.subTest(function=function.__name__):
@@ -53,7 +53,7 @@ class StoreCliExtractionTests(unittest.TestCase):
                 body = ast.Module(body=tree.body[0].body, type_ignores=[])
                 self.assertEqual(canonical_ast_digest(body), expected)
 
-    def test_all_102_parser_contracts_remain_exact(self):
+    def test_all_105_parser_contracts_remain_exact(self):
         parser = self.cli_parser.build_parser(vars(self.facade))
         self.assertEqual(parser_receipt(parser), EXPECTED_RECEIPT)
 

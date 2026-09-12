@@ -29,6 +29,7 @@ METHODS = (
     "_load_automation_settings_document",
     "_load_employer_accounts_document",
     "_load_account_operation_journal",
+    "_validate_shared_credential_operation",
     "_ensure_account_control_documents",
     "get_automation_settings",
     "update_automation_settings",

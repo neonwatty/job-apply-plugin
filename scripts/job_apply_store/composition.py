@@ -112,6 +112,11 @@ _DOMAIN_IMPORTS = (
         "AccountRegistryMixin",
     ),
     (
+        "_accounts_shared_credentials_domain",
+        "domains.accounts.shared_credentials",
+        "SharedCredentialMixin",
+    ),
+    (
         "_accounts_settings_domain",
         "domains.accounts.settings",
         "AccountSettingsMixin",
@@ -140,6 +145,7 @@ _RUNTIME_BINDING_ORDER = (
     "_accounts_operations_domain",
     "_accounts_password_execution_domain",
     "_accounts_registry_domain",
+    "_accounts_shared_credentials_domain",
     "_accounts_settings_domain",
     "_accounts_synthetic_domain",
     "_accounts_trusted_fill_domain",

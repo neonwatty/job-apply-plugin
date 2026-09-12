@@ -324,10 +324,30 @@ silently change employer records. Only opaque reference/version/status metadata
 crosses the native process boundary.
 
 Shared Workday automation remains unavailable with
-`store_version_binding_required` until a later slice journals deliberate
-per-employer upgrades. No real portal, visible-browser, or local Keychain test
-was authorized for this slice. Forward-port the native setup receipt, explicit
-version creation, and create-only rotation behavior to TypeScript.
+`shared_native_execution_required`. No real portal, visible-browser, or local
+Keychain test was authorized for this slice. Forward-port the native setup
+receipt, explicit version creation, and create-only rotation behavior to
+TypeScript.
+
+### Store-journaled shared credential binding and upgrades
+
+The Store now binds a discovered Workday account to one owner-created shared
+version through `employer-account-shared-bind`. Active accounts remain pinned
+when new shared slots are created. A deliberate per-account change uses
+`employer-account-shared-upgrade-begin` before the external reset and
+`employer-account-shared-upgrade-complete` with one closed owner-observed
+outcome. Every mutation is revision-checked and owner-confirmed. Only `updated`
+advances the opaque reference/version; verification, CAPTCHA, MFA,
+reset-required, definitive failure, ambiguity, and interrupted-operation
+recovery preserve the source binding. All receipts are value-free.
+
+This slice does not perform or attest the third-party reset and does not enable
+live shared Workday execution. Capability now reports
+`shared_native_execution_required`. No real portal, visible-browser, or local
+owner credential slot was used; the existing isolated helper test created and
+removed only its fixed test namespace. Forward-port the union account-operation
+journal, explicit binding, typed upgrade outcomes, and pin-preserving recovery
+to TypeScript using a cloned Store.
 
 ### Review-bound application automation modes
 

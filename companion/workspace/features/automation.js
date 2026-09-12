@@ -181,7 +181,7 @@ export function installAutomation(context) {
     try {
       const result = await api("/api/account-operation/recover", { method: "POST", body: "{}" });
       renderAccountOperation({ status: "idle", operation: null }); await refreshAutomation({ quiet: true });
-      toast(result.recovered ? "Stranded account operation marked ambiguous" : "No stranded operation found");
+      toast(result.recovered ? "Stranded account operation reconciled" : "No stranded operation found");
     } catch (error) { $("#account-operation-error").textContent = error.message; $("#account-operation-error").classList.remove("hidden"); }
   }
 

@@ -269,6 +269,7 @@ class StoreWaveAIntegrationTests(unittest.TestCase):
                 "accounts.operations",
                 "accounts.password_execution",
                 "accounts.registry",
+                "accounts.shared_credentials",
                 "accounts.settings",
                 "accounts.synthetic",
                 "accounts.trusted_fill",

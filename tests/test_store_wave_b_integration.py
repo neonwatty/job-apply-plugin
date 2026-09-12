@@ -95,6 +95,7 @@ class StoreWaveBIntegrationTests(unittest.TestCase):
             self.facade._accounts_operations_domain.AccountOperationMixin,
             self.facade._accounts_password_execution_domain.PasswordExecutionMixin,
             self.facade._accounts_registry_domain.AccountRegistryMixin,
+            self.facade._accounts_shared_credentials_domain.SharedCredentialMixin,
             self.facade._accounts_settings_domain.AccountSettingsMixin,
             self.facade._accounts_synthetic_domain.SyntheticAccountMixin,
             self.facade._accounts_trusted_fill_domain.TrustedFillMixin,
