@@ -363,7 +363,9 @@
       "artifact": "json",
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/base.py"
+        "scripts/job_apply_store/base.py",
+        "src/contracts/workspace/account-operation.ts",
+        "src/store/native-jobs.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

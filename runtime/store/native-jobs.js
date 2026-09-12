@@ -1,4 +1,5 @@
 import { initialAutomationDocuments, automationTransaction as runAutomationTransaction } from './native-automation.js';
+import { accountOperation, emptyAccountOperationJournal, validateAccountOperationJournal } from '../contracts/workspace/account-operation.js';
 import { NativeClaimJournal, claimOperationKinds, validateClaimJournal } from './native-claim-journal.js';
 import { NativeClaimHistory } from './native-claim-history.js';
 import { validateCoordinator, requireJobUnclaimed } from '../contracts/workspace/claims.js';
@@ -23,8 +24,8 @@ import { validateProfile } from "../contracts/workspace/profile.js";
 import { validateGroups } from "../contracts/workspace/fact-groups.js";
 import { validateAnswers } from "../contracts/workspace/answers.js";
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 };
-const marker = '{"mode":"native-jobs-fixture","version":10}\n';
-const allowed = new Set(["automation-settings.json", "employer-accounts.json", ".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "answers.json", "resume-operation.json", "resume-files", "resume-extractions.json", "resume-extraction-requests.json", "resume-extraction-journal.json", "sessions", "applications.jsonl", "coordinator.json", "coordinator-journal.json"]);
+const marker = '{"mode":"native-jobs-fixture","version":11}\n';
+const allowed = new Set(["automation-settings.json", "employer-accounts.json", "account-operation-journal.json", ".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "answers.json", "resume-operation.json", "resume-files", "resume-extractions.json", "resume-extraction-requests.json", "resume-extraction-journal.json", "sessions", "applications.jsonl", "coordinator.json", "coordinator-journal.json"]);
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 };
 /** Creates a NEW synthetic root only. Never adopts or initializes an existing Store. */
@@ -59,6 +60,7 @@ export async function initializeJobsFixture(root) {
     for (const [name, document] of Object.entries(initialAutomationDocuments(now))) {
         await atomicWritePointJson(join(root, `${name}.json`), document, options);
     }
+    await atomicWritePointJson(join(root, 'account-operation-journal.json'), emptyAccountOperationJournal(), options);
     // The readiness marker is written last; partial initialization is never adopted.
     const handle = await open(join(root, ".native-jobs-fixture"), "wx", 0o600);
     try {
@@ -416,6 +418,25 @@ export class NativeJobsRepository {
             read: name => name === 'automation-settings' ? this.journal(name) : this.document(name),
             write: (name, document) => this.write(join(this.root, `${name}.json`), document, options),
         }, operation));
+    }
+    async accountOperationTransaction(operation) {
+        return this.transaction(async () => {
+            const jobs = validateJobsDocument(await this.document('jobs'));
+            const journal = validateAccountOperationJournal(await this.journal('account-operation-journal'));
+            const accounts = await this.document('employer-accounts');
+            return operation({ journal, accounts, jobs,
+                coordinator: validateCoordinator(await this.journal('coordinator')),
+                sessions: await this.answerSessions(), answers: validateAnswers(await this.document('answers')),
+                saveAccounts: document => this.write(join(this.root, 'employer-accounts.json'), document, options),
+                commitClaim: value => this.claimJournal().commit(value, jobs),
+                clearOperation: async (expected) => {
+                    const current = accountOperation(validateAccountOperationJournal(await this.journal('account-operation-journal')));
+                    if (current === null || string(get(current, 'operationId')) !== expected)
+                        throw new JobsError('account operation journal changed before completion');
+                    await this.write(join(this.root, 'account-operation-journal.json'), emptyAccountOperationJournal(), options);
+                },
+            });
+        });
     }
     async resumeSummaries() {
         // Reuse the lock and all root checks for projections too.

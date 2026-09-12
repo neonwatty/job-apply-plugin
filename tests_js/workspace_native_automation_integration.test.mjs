@@ -43,7 +43,7 @@ test('integrated native automation registry uses private fixture storage and ser
   let realm;
 
   await t.test('settings and account HTTP routes persist only their own documents and redact identities', async () => {
-    assert.deepEqual(JSON.parse(await readFile(join(root, '.native-jobs-fixture'), 'utf8')), { mode: 'native-jobs-fixture', version: 10 });
+    assert.deepEqual(JSON.parse(await readFile(join(root, '.native-jobs-fixture'), 'utf8')), { mode: 'native-jobs-fixture', version: 11 });
     for (const name of [settingsName, accountsName]) assert.equal((await stat(join(root, name))).mode & 0o777, 0o600);
     const initial = await snapshot(root);
     const updated = await call('PATCH', '/api/automation/settings', {
@@ -75,7 +75,9 @@ test('integrated native automation registry uses private fixture storage and ser
     assert.equal((await call('PATCH', '/api/automation/settings', { patch: {}, expectedRevision: true })).status, 400);
     assert.equal((await call('GET', '/api/employer-accounts/missing')).status, 404);
     assert.equal((await call('GET', '/api/automation')).status, 501);
-    for (const path of ['/api/trusted-fill/approve', '/api/account-operation/recover']) assert.equal((await call('POST', path, {})).status, 501);
+    assert.equal((await call('POST', '/api/trusted-fill/approve', {})).status, 501);
+    assert.deepEqual(JSON.parse((await call('GET', '/api/account-operation')).body), { status: 'idle', operation: null });
+    assert.deepEqual(JSON.parse((await call('POST', '/api/account-operation/recover', {})).body), { status: 'idle', recovered: false });
     assert.deepEqual(await snapshot(root), beforeRejected);
   });
 
@@ -143,16 +145,16 @@ test('integrated native automation registry uses private fixture storage and ser
     }
   });
 
-  await t.test('v9, missing new documents and unsupported recovery journals are rejected without adoption', async () => {
+  await t.test('v10, missing new documents and unsupported recovery journals are rejected without adoption', async () => {
     const markerPath = join(root, '.native-jobs-fixture');
     const marker = await readFile(markerPath);
-    await writeFile(markerPath, '{"mode":"native-jobs-fixture","version":9}\n');
+    await writeFile(markerPath, '{"mode":"native-jobs-fixture","version":10}\n');
     const old = await snapshot(root);
     await assert.rejects(settings.get(), /explicitly initialized synthetic fixture/);
     await assert.rejects(initializeJobsFixture(root), /EEXIST/);
     assert.deepEqual(await snapshot(root), old);
     await writeFile(markerPath, marker);
-    for (const name of [settingsName, accountsName]) {
+    for (const name of [settingsName, accountsName, 'account-operation-journal.json']) {
       const path = join(root, name), saved = join(parent, `missing-${name}`);
       await rename(path, saved);
       try {

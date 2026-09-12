@@ -1,4 +1,5 @@
 import { automationHttp } from './automation-http.js';
+import { accountOperationHttp } from './account-operation-http.js';
 import { resumeLifecycleHttp } from './resume-lifecycle-http.js';
 import { answerLifecycleHttp } from './answer-lifecycle-http.js';
 import { trashHttp } from './trash-http.js';
@@ -29,6 +30,8 @@ const envelope = (key: string, value: Value): Value => set(emptyObject(), key, v
 export async function jobsHttp(service: JobsService, repository: NativeJobsRepository,
   method: string, path: string, body = ""): Promise<ApiResult> {
   try {
+    const accountOperation = await accountOperationHttp(repository, method, path, body);
+    if (accountOperation) return accountOperation;
     const automation = await automationHttp(repository, method, path, body);
     if (automation) return automation;
     const resumeLifecycle = await resumeLifecycleHttp(repository, method, path, body);
