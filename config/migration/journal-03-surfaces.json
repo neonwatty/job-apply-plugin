@@ -9,7 +9,10 @@
       "value": null,
       "node": "JOUR",
       "sources": [
-        "scripts/job_apply_store/domains/accounts/settings.py"
+        "scripts/job_apply_store/domains/accounts/settings.py",
+        "src/contracts/workspace/account-operation.ts",
+        "src/workspace-core/account-operation.ts",
+        "src/store/native-jobs.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

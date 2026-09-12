@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:src/cli/native-jobs.ts:employer-account-operation-status",
+      "kind": "cli",
+      "command": "employer-account-operation-status",
+      "node": "ACC",
+      "sources": ["src/cli/native-jobs.ts", "src/cli/native-account-operation.ts", "src/workspace-core/account-operation.ts", "src/store/native-jobs.ts"],
+      "effects": "unclassified",
+      "scenarios": {"valid":"unverified","invalid":"unverified","missing":"unverified","noop":"unverified","privacy":"unverified","conflict":"unverified","concurrency":"unverified","interruption":"unverified","recovery":"unverified","platform":"unverified"}
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:employer-account-operation-recover",
+      "kind": "cli",
+      "command": "employer-account-operation-recover",
+      "node": "ACC",
+      "sources": ["src/cli/native-jobs.ts", "src/cli/native-account-operation.ts", "src/workspace-core/account-operation.ts", "src/store/native-jobs.ts"],
+      "effects": "unclassified",
+      "scenarios": {"valid":"unverified","invalid":"unverified","missing":"unverified","noop":"unverified","privacy":"unverified","conflict":"unverified","concurrency":"unverified","interruption":"unverified","recovery":"unverified","platform":"unverified"}
+    }
+  ]
+}

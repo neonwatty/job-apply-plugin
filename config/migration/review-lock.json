@@ -90,6 +90,10 @@
       "sha256": "adcbc8737ec21bf25b4e0ea251fb2c7b34e577486f778e79aee43810fa946c07"
     },
     {
+      "path": "cli-native-account-operation-surfaces.json",
+      "sha256": "06b37b69660c7d085457f8c3c1c89a6f4b666884e7122af1d04cc1e9b87b5d1f"
+    },
+    {
       "path": "cli-native-answer-lifecycle-surfaces.json",
       "sha256": "687fc1341cc0071e64d0c623843fff3c84d90754319d4c24f1efa70515b97316"
     },
@@ -159,7 +163,7 @@
     },
     {
       "path": "document-01-surfaces.json",
-      "sha256": "e40a1120beada72f4309c65d47891c119d2c207d1517ac0883584dc6640722f9"
+      "sha256": "ce12b934a4542a8cc46e5b095ec8887c2b8d93bb8993f6ec131e99436305a3d5"
     },
     {
       "path": "document-02-surfaces.json",
@@ -195,11 +199,11 @@
     },
     {
       "path": "http-read-surfaces.json",
-      "sha256": "361d916abc603b515fb3d6fd9a9283afc9d7e977e8e09200bc51fabb94573e8a"
+      "sha256": "420a387d530df24642d9bd323e4bf91dd5aba7a36f28a362dd2d84749ab58a7e"
     },
     {
       "path": "http-write-accounts-surfaces.json",
-      "sha256": "535990c198636250f0e58f67300ac315e0c3a7a3157c15b5291e1276b9cdee1c"
+      "sha256": "0738dac1610ed71d5db200b209e802e085bff0b20d2832cf3cd8d51efb47a02b"
     },
     {
       "path": "http-write-answers-02-surfaces.json",
@@ -235,7 +239,7 @@
     },
     {
       "path": "journal-03-surfaces.json",
-      "sha256": "20e3c3ab40814076290bb43fd37c91dec03884686abe372fbe0908b224b171da"
+      "sha256": "e8105e257b560f114fd5773cfe95a1a3760cf2930d45b7b65a6a190acc9d5e1a"
     },
     {
       "path": "journal-native-resumes-surfaces.json",
@@ -314,6 +318,10 @@
       "sha256": "0b6ee35143f1ad4f49568ed3d9e15f1cfacf869476a50a151b4fea3fc6f29f41"
     },
     {
+      "path": "source-catalog-native-account-operation.json",
+      "sha256": "3b55f21dfcbdc845555c273149d0d140caa3657f39f60ed963e6303aca4e0e3d"
+    },
+    {
       "path": "source-catalog-native-answer-cleanup.json",
       "sha256": "c819b8b9447817aa908b5a5626aa9d239b2cfecd46f4caf1cfebb931415129ee"
     },
@@ -367,7 +375,7 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "d55bf95dc463784de761295dfa29136a88981bf011675bc6dbefd7328fe2e3d5"
+      "sha256": "c93c364c6bade66dcd9b49a93ba0e84580505ae33aa8268e929de57aaea394cb"
     },
     {
       "path": "source-catalog-native-legacy-jobs.json",

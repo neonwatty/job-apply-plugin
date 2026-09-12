@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/cli/native-account-operation.js",
+      "sha256": "9d6287afcf822d7a68854196b8e138c47929b5478e8d88eeac8d1545f4958a92",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/account-operation.js",
+      "sha256": "a175f310935dbef3ca431f8da439bbce619243c0c43f5fbf91301c8eab6e8c70",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/account-operation-http.js",
+      "sha256": "32a2ef5b4c06c84b5320dc5d48046051437342bcfb876bdc8f137c5dad69f26b",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/account-operation.js",
+      "sha256": "4486068332bc442670ed85e619d83d6ee3d3e8f8152f8faee8adaaa5351a2768",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-account-operation.ts",
+      "sha256": "d1a1f8d9d5a963b14f559073244c9b8ffe99f68b66a4acfcc1f54780db616c28",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/account-operation.ts",
+      "sha256": "a0e30783e59a5eb34363b74e134df3eb39acae18e1ab27935332783c6ea59ae0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/account-operation-http.ts",
+      "sha256": "e38a96fd272ff83e2885caababe17bf9bd9f74c58c1cd13fb495fa93bfbdb254",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/account-operation.ts",
+      "sha256": "99134bd3e5b0087e580edae67c0abe174831b8beee6c5eb4c9121645323f839d",
+      "classification": "unreviewed"
+    }
+  ]
+}

@@ -1,12 +1,12 @@
 # Native automation and employer-account control plane
 
 This tranche supplies native settings, realm resolution, and employer-account
-registry services for explicit synthetic fixtures. It does not activate a Store
+registry services and stranded account-operation recovery for explicit synthetic fixtures. It does not activate a Store
 writer, initialize an existing Store, inspect a browser, call credentials, or
-run an account executor. New fixtures use version 10 and require both account
-documents. Existing version 9 roots are rejected rather than upgraded or adopted;
+run an account executor. New fixtures use version 11 and require both account
+documents plus `account-operation-journal.json`. Existing version 10 roots are rejected rather than upgraded or adopted;
 earlier fixture documents describe their historical version. Missing documents
-and unsupported account-operation or trusted-fill journals remain rejected.
+and unsupported trusted-fill journals remain rejected.
 
 ## Composition and persistence
 
@@ -41,6 +41,14 @@ Workday tenant host and cell, Oracle tenant host and career site. Unsupported
 hosts, ambiguous gateways, userinfo, fragments and credential query parameters
 remain unresolved with fixed reason codes. It performs no external lookup.
 
+`AccountOperationService` implements redacted operation status and explicit
+fail-closed recovery. Recovery marks the bound account ambiguous, hands a live
+same-job claim to `needs_info` with browser-state-uncertain evidence, and clears
+the matching operation journal only after durable account and coordinator work.
+An already `needs_info` job can finish clearing a prior partial recovery. No
+path infers account success, permits retry, invokes a provider, or performs a
+final application action.
+
 ## HTTP boundary
 
 `automationHttp(repository, method, path, body)` supports these Python routes:
@@ -50,6 +58,11 @@ remain unresolved with fixed reason codes. It performs no external lookup.
 - POST `/api/automation/settings/copy-profile-email`
 - POST `/api/employer-accounts`
 - GET/PATCH `/api/employer-accounts/{realmRef}`
+
+`accountOperationHttp(repository, method, path, body)` supports:
+
+- GET `/api/account-operation`
+- POST `/api/account-operation/recover`
 
 It returns a response or null for an unowned route. The composing HTTP boundary
 retains the existing safe request/storage error envelope and revision-conflict
@@ -83,12 +96,8 @@ records `signup_in_progress` before its provider call. Follow-on crash-point
 tests must cover these distinct windows. Work must use injected synthetic executors only, with
 separate credentials/account-flow providers; never a real account helper.
 
-Account-operation recovery marks a stranded account ambiguous, increments its
-revision when needed, requires an available job and live same-job claim for an
-in-progress job, performs an attention handoff or accepts an already needs-info
-job, then clears the matching journal. It never infers signup success and returns
-`retryAllowed: false`. The current tranche rejects those journals at the root
-boundary and exposes none of these unsupported routes.
+Account-operation status and recovery are now native. Synthetic operation
+execution remains deferred with the provider integration described above.
 
 ## Focused evidence and remaining integration gates
 
@@ -101,6 +110,9 @@ validation/public projections with the Python authorities. No credentials or
 live data are used. The integrated fixture suite exercises the real native
 repository and HTTP dispatcher, concurrent Python-free writers, private files,
 old-root/missing-document/journal rejection, and unrelated-document preservation.
+The account-operation suite covers idle transport parity, status redaction,
+real claim handoff evidence, journal identity checks, and unavailable-job
+preservation.
 
 Typecheck and owned runtime emission are required. The integration owner also
 owns source/runtime catalogs, test matrix, HTTP wiring, fixture marker/allowlist,
