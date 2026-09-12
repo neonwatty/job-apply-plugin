@@ -6,6 +6,7 @@ enum ProtectedCredentialError: Error {
     case invalidBinding
     case keychain(OSStatus)
     case secureInput
+    case slotAlreadyExists
 }
 
 struct ProtectedCredentialReceipt: Equatable {
@@ -13,6 +14,11 @@ struct ProtectedCredentialReceipt: Equatable {
     let credentialVersion: Int
     let reused: Bool
     let filled: Bool
+}
+
+struct SharedCredentialSetupReceipt: Equatable {
+    let credentialReference: String
+    let credentialVersion: Int
 }
 
 protocol NativeSecureInputBoundary {
@@ -24,32 +30,38 @@ protocol NativeSecureInputBoundary {
 final class MacOSProtectedCredentialHelper {
     private let servicePrefix = "com.openai.job-apply.accounts.v1."
 
-    private func accountName(strategy: String, realmRef: String) throws -> String {
+    private func accountName(strategy: String, realmRef: String, credentialVersion: Int = 1) throws -> String {
         guard realmRef.range(of: "^[0-9a-f]{64}$", options: .regularExpression) != nil else {
             throw ProtectedCredentialError.invalidBinding
         }
+        guard credentialVersion > 0 else { throw ProtectedCredentialError.invalidBinding }
         switch strategy {
-        case "unique_per_realm": return realmRef
-        case "shared": return "explicit-shared-v1"
+        case "unique_per_realm":
+            return credentialVersion == 1 ? realmRef : "\(realmRef):v\(credentialVersion)"
+        case "shared": return "explicit-shared-v\(credentialVersion)"
         default: throw ProtectedCredentialError.invalidBinding
         }
     }
 
-    static func credentialReference(strategy: String, realmRef: String) throws -> String {
+    static func credentialReference(
+        strategy: String, realmRef: String, credentialVersion: Int = 1
+    ) throws -> String {
         let binding: String
         guard realmRef.range(of: "^[0-9a-f]{64}$", options: .regularExpression) != nil else {
             throw ProtectedCredentialError.invalidBinding
         }
+        guard credentialVersion > 0 else { throw ProtectedCredentialError.invalidBinding }
         switch strategy {
-        case "unique_per_realm": binding = realmRef
-        case "shared": binding = "explicit-shared-v1"
+        case "unique_per_realm":
+            binding = credentialVersion == 1 ? realmRef : "\(realmRef):v\(credentialVersion)"
+        case "shared": binding = "explicit-shared-v\(credentialVersion)"
         default: throw ProtectedCredentialError.invalidBinding
         }
         let digest = SHA256.hash(data: Data(binding.utf8)).map { String(format: "%02x", $0) }.joined()
         return "credential_" + digest
     }
 
-    private func generatedSecret() throws -> Data {
+    func generatedSecret() throws -> Data {
         let alphabet = Array("ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789-._~".utf8)
         var random = Data(count: 32)
         let status = random.withUnsafeMutableBytes { buffer in
@@ -68,6 +80,36 @@ final class MacOSProtectedCredentialHelper {
         }
         random.resetBytes(in: 0..<random.count)
         return secret
+    }
+
+    func createSharedCredential(
+        credentialVersion: Int,
+        isolatedNamespace: String,
+        secret: inout Data
+    ) throws -> SharedCredentialSetupReceipt {
+        guard isolatedNamespace.range(of: "^[A-Za-z0-9_-]{8,80}$", options: .regularExpression) != nil,
+              credentialVersion > 0, !secret.isEmpty, secret.count <= 4096
+        else { throw ProtectedCredentialError.invalidBinding }
+        let realm = String(repeating: "0", count: 64)
+        let account = try accountName(
+            strategy: "shared", realmRef: realm, credentialVersion: credentialVersion
+        )
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: servicePrefix + isolatedNamespace,
+            kSecAttrAccount as String: account,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+            kSecValueData as String: secret,
+        ]
+        let status = SecItemAdd(query as CFDictionary, nil)
+        if status == errSecDuplicateItem { throw ProtectedCredentialError.slotAlreadyExists }
+        guard status == errSecSuccess else { throw ProtectedCredentialError.keychain(status) }
+        return SharedCredentialSetupReceipt(
+            credentialReference: try Self.credentialReference(
+                strategy: "shared", realmRef: realm, credentialVersion: credentialVersion
+            ),
+            credentialVersion: credentialVersion
+        )
     }
 
     func provisionOrReuseAndFill(

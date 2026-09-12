@@ -19,6 +19,11 @@ ORACLE_SWIFT_SOURCES = (
     "job_apply_credential_helper_tests.swift",
     "job_apply_credential_helper_main.swift",
 )
+SHARED_SETUP_SWIFT_SOURCES = (
+    "job_apply_credential_helper.swift",
+    "job_apply_shared_credential_setup.swift",
+    "job_apply_shared_credential_setup_main.swift",
+)
 
 
 class MacOSCredentialHelperTests(unittest.TestCase):
@@ -41,6 +46,41 @@ class MacOSCredentialHelperTests(unittest.TestCase):
         source = (ROOT / "native/macos/job_apply_credential_helper.swift").read_text(encoding="utf-8")
         self.assertIn("com.openai.job-apply.accounts.v1.", source)
         self.assertNotRegex(source, r"func\s+(get|reveal|copy|export)")
+
+    def test_shared_setup_is_native_value_free_and_create_only(self):
+        helper = (ROOT / "native/macos/job_apply_credential_helper.swift").read_text(encoding="utf-8")
+        setup = (ROOT / "native/macos/job_apply_shared_credential_setup.swift").read_text(encoding="utf-8")
+        main = (ROOT / "native/macos/job_apply_shared_credential_setup_main.swift").read_text(encoding="utf-8")
+        self.assertIn("NSSecureTextField", setup)
+        self.assertIn("unregisterDraggedTypes", setup)
+        self.assertIn("field.menu = NSMenu()", setup)
+        self.assertIn("SecItemAdd", helper)
+        self.assertIn("errSecDuplicateItem", helper)
+        self.assertIn("slotAlreadyExists", helper)
+        self.assertNotIn("SecItemUpdate", helper + setup + main)
+        create_only = helper.split("func createSharedCredential", 1)[1].split(
+            "func provisionOrReuseAndFill", 1
+        )[0]
+        for forbidden in ("SecItemCopyMatching", "SecItemUpdate", "SecItemDelete"):
+            self.assertNotIn(forbidden, create_only)
+        self.assertIn('case "rotate"', main)
+        self.assertIn("parsed >= 2", main)
+        self.assertIn('"status": "created"', main)
+        self.assertEqual(main.count('"credentialRef"'), 1)
+        self.assertEqual(main.count('"credentialVersion"'), 1)
+        for forbidden in (
+            "ProcessInfo.processInfo.environment", "readLine(", "standardInput", "URLSession",
+            "AppleScript", "stringForType", "setString", "writeObjects",
+        ):
+            self.assertNotIn(forbidden, setup + main)
+
+    @unittest.skipUnless(__import__("sys").platform.startswith("darwin"), "Swift AppKit required")
+    def test_shared_setup_reviewed_sources_typecheck_without_keychain_access(self):
+        result = subprocess.run([
+            "xcrun", "swiftc", "-typecheck",
+            *(str(ROOT / "native/macos" / source) for source in SHARED_SETUP_SWIFT_SOURCES),
+        ], capture_output=True, check=False)
+        self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
 
     @unittest.skipUnless(__import__("sys").platform.startswith("darwin"), "macOS Keychain required")
     def test_compiled_isolated_keychain_integration_is_silent_and_cleans_up(self):

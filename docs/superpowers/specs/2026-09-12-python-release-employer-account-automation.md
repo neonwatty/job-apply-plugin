@@ -97,6 +97,21 @@ references, account descriptors, and email values are not provisioning inputs.
 5. With fresh owner authorization only, run one bounded Workday canary and review
    its value-free evidence before changing the readiness gate.
 
+## Slice 2 implementation receipt
+
+The reviewed macOS shared-credential tool is a standalone native boundary. Setup
+creates version 1; rotation requires an explicit version of 2 or greater. Both
+paths use atomic Keychain creation and reject an existing slot rather than
+updating it. The owner may request native random generation or type into an
+AppKit secure field whose copy, cut, and paste key equivalents are disabled.
+
+The Python launcher passes only action, source mode, and version to the native
+process. Successful output contains only the opaque reference, positive version,
+and `created` status. Cancellation, an existing version, build failure, and every
+other failure are value-free and fail closed. This slice does not update employer
+records, claim a portal password reset, enable shared Workday automation, or run
+a native Keychain/visible-browser test.
+
 ## Migration follow-up
 
 The TypeScript lane must independently port the normalized strategy projection,

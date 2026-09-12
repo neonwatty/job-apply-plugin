@@ -8,8 +8,14 @@ enum IsolatedCredentialIntegrationMain {
         if arguments.count == 1 { return }
         switch arguments[1] {
         case "reference":
-            guard arguments.count == 5 else { throw ProtectedCredentialError.invalidBinding }
-            let actual = try MacOSProtectedCredentialHelper.credentialReference(strategy: arguments[2], realmRef: arguments[3])
+            guard arguments.count == 5 || arguments.count == 6 else {
+                throw ProtectedCredentialError.invalidBinding
+            }
+            let version = arguments.count == 6 ? Int(arguments[5]) : 1
+            guard let version, version > 0 else { throw ProtectedCredentialError.invalidBinding }
+            let actual = try MacOSProtectedCredentialHelper.credentialReference(
+                strategy: arguments[2], realmRef: arguments[3], credentialVersion: version
+            )
             guard actual == arguments[4] else { throw ProtectedCredentialError.invalidBinding }
         case "count":
             guard arguments.count == 4, let expected = Int(arguments[3]),

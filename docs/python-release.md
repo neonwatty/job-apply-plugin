@@ -312,3 +312,19 @@ timestamps. Both trash operations now use the same explicit clock, retaining ful
 record/tree equality and an exact deletedAt assertion. Runtime timestamp behavior
 is unchanged. Forward-port the Automation response-order guard and deterministic
 comparison-clock setup to the TypeScript lane where applicable.
+
+### Native shared credential setup and rotation
+
+The Python release now has a standalone macOS shared-password setup boundary.
+`scripts/job-apply-shared-credential.py setup --source generate|enter` creates
+the historical version-1 slot; `rotate --source generate|enter
+--credential-version N` requires `N >= 2` and creates a distinct slot. Atomic
+Keychain add rejects an existing slot, so rotation cannot overwrite version 1 or
+silently change employer records. Only opaque reference/version/status metadata
+crosses the native process boundary.
+
+Shared Workday automation remains unavailable with
+`store_version_binding_required` until a later slice journals deliberate
+per-employer upgrades. No real portal, visible-browser, or local Keychain test
+was authorized for this slice. Forward-port the native setup receipt, explicit
+version creation, and create-only rotation behavior to TypeScript.

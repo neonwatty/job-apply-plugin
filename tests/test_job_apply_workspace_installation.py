@@ -81,6 +81,13 @@ class CompanionInstallationTests(unittest.TestCase):
         plugin = self.root / 'plugin'
         built = self.command(ROOT / 'scripts/build-plugin.py', '--output', plugin)
         self.assertEqual(built.returncode, 0, built.stderr)
+        for relative in (
+            'scripts/job-apply-shared-credential.py',
+            'scripts/job_apply_shared_credentials_macos.py',
+            'native/macos/job_apply_shared_credential_setup.swift',
+            'native/macos/job_apply_shared_credential_setup_main.swift',
+        ):
+            self.assertTrue((plugin / relative).is_file(), relative)
         self.assertFalse((plugin / 'companion').exists())
         self.assertFalse((plugin / 'workspace').exists())
         self.assertFalse((plugin / 'scripts/job_apply_workspace').exists())

@@ -9,6 +9,10 @@ SPEC = importlib.util.spec_from_file_location("credentials_test", ROOT / "script
 CREDENTIALS = importlib.util.module_from_spec(SPEC); SPEC.loader.exec_module(CREDENTIALS)
 MAC_SPEC = importlib.util.spec_from_file_location("credentials_macos_test", ROOT / "scripts" / "job_apply_credentials_macos.py")
 MAC = importlib.util.module_from_spec(MAC_SPEC); MAC_SPEC.loader.exec_module(MAC)
+SHARED_SPEC = importlib.util.spec_from_file_location(
+    "shared_credentials_macos_test", ROOT / "scripts" / "job_apply_shared_credentials_macos.py"
+)
+SHARED = importlib.util.module_from_spec(SHARED_SPEC); SHARED_SPEC.loader.exec_module(SHARED)
 
 
 class CredentialProviderTests(unittest.TestCase):
@@ -73,7 +77,47 @@ class CredentialProviderTests(unittest.TestCase):
         mac = provider.capability("darwin")
         self.assertEqual((mac["state"], mac["syntheticOperationsReady"], mac["credentialOperationsReady"]), ("available", True, False))
         self.assertTrue(mac["productionSeamReady"])
+        self.assertTrue(mac["sharedCredentialSetupImplemented"])
+        self.assertFalse(provider.capability("linux")["sharedCredentialSetupImplemented"])
         self.assertFalse(mac["liveExecutionEnabled"])
         self.assertEqual(provider.capability("linux")["state"], "unsupported")
         with self.assertRaises(MAC.PORTABLE.CredentialProviderError):
             provider.provision_or_reuse_and_fill({})
+
+    def test_shared_setup_facade_carries_only_value_free_metadata(self):
+        calls = []
+
+        def bridge(request):
+            calls.append(request)
+            version = request["credentialVersion"]
+            return {
+                "credentialRef": CREDENTIALS.credential_reference("shared", "0" * 64, version),
+                "credentialVersion": version,
+                "status": "created",
+            }
+
+        setup = SHARED.MacOSSharedCredentialSetup(bridge)
+        first = setup.create("setup", "enter")
+        rotated = setup.create("rotate", "generate", 2)
+        self.assertEqual([item["credentialVersion"] for item in calls], [1, 2])
+        self.assertEqual({key for item in calls for key in item}, {
+            "action", "source", "credentialVersion",
+        })
+        self.assertNotEqual(first["credentialRef"], rotated["credentialRef"])
+        self.assertNotIn("password", repr((calls, first, rotated)).lower())
+        self.assertNotIn("secret", repr((calls, first, rotated)).lower())
+
+    def test_shared_rotation_rejects_overwrite_and_forged_receipts(self):
+        for action, source, version in (
+            ("setup", "enter", 2), ("rotate", "enter", 1),
+            ("rotate", "enter", True), ("rotate", "clipboard", 2),
+        ):
+            with self.subTest(action=action, source=source, version=version):
+                with self.assertRaises(SHARED.SharedCredentialSetupError):
+                    SHARED.MacOSSharedCredentialSetup(lambda _: {}).create(action, source, version)
+        with self.assertRaisesRegex(SHARED.SharedCredentialSetupError, "receipt"):
+            SHARED.MacOSSharedCredentialSetup(lambda _: {
+                "credentialRef": CREDENTIALS.credential_reference("shared", "0" * 64, 1),
+                "credentialVersion": 1,
+                "status": "replaced",
+            }).create("setup", "generate")

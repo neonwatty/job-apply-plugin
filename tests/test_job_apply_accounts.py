@@ -160,6 +160,8 @@ class AccountContractTests(unittest.TestCase):
         self.assertIsNone(linux["providerId"])
         self.assertIsNone(windows["providerId"])
         self.assertFalse(any(item["credentialOperationsReady"] for item in (mac, linux, windows)))
+        self.assertTrue(mac["sharedCredentialSetupImplemented"])
+        self.assertFalse(any(item["sharedCredentialSetupImplemented"] for item in (linux, windows)))
         self.assertTrue(all(item["discoveryMode"] == "side_effect_free" for item in (mac, linux, windows)))
 
     def test_account_flow_capability_does_not_claim_uncanaried_workday_support(self):
@@ -179,7 +181,7 @@ class AccountContractTests(unittest.TestCase):
                 },
                 "shared": {
                     "state": "unavailable",
-                    "reasonCode": "native_secure_setup_required",
+                    "reasonCode": "store_version_binding_required",
                 },
                 "manual": {"state": "manual", "reasonCode": "owner_managed"},
             },
