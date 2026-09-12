@@ -36,6 +36,7 @@ class StoreBase:
         self.employer_accounts_path = self.root / "employer-accounts.json"
         self.account_operation_journal_path = self.root / "account-operation-journal.json"
         self.trusted_fill_path = self.root / "trusted-fill.json"
+        self.application_authority_path = self.root / "application-authority.json"
         self.store_lock_path = self.root / ".store.lock"
         self.auto_submit_policy_path = self.root / "auto-submit"
         self.legacy_profile = (
@@ -75,6 +76,7 @@ class StoreBase:
             "employerAccounts": str(self.employer_accounts_path),
             "accountOperationJournal": str(self.account_operation_journal_path),
             "trustedFill": str(self.trusted_fill_path),
+            "applicationAuthority": str(self.application_authority_path),
             "autoSubmitPolicy": str(self.auto_submit_policy_path),
             "legacyProfile": str(self.legacy_profile),
         }

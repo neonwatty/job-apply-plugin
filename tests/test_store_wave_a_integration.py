@@ -272,6 +272,7 @@ class StoreWaveAIntegrationTests(unittest.TestCase):
                 "accounts.settings",
                 "accounts.synthetic",
                 "accounts.trusted_fill",
+                "accounts.application_authority",
                 "startup",
             },
         )

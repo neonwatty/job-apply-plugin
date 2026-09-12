@@ -126,6 +126,11 @@ _DOMAIN_IMPORTS = (
         "domains.accounts.trusted_fill",
         "TrustedFillMixin",
     ),
+    (
+        "_accounts_application_authority_domain",
+        "domains.accounts.application_authority",
+        "ApplicationAuthorityMixin",
+    ),
     ("_startup_domain", "domains.startup", "StartupMixin"),
 )
 
@@ -138,6 +143,7 @@ _RUNTIME_BINDING_ORDER = (
     "_accounts_settings_domain",
     "_accounts_synthetic_domain",
     "_accounts_trusted_fill_domain",
+    "_accounts_application_authority_domain",
     "_sessions_history_domain",
     "_sessions_readiness_domain",
     "_sessions_document_domain",

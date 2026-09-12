@@ -11,6 +11,29 @@ class AccountMutationMixin:
         self, method: str, path: str, parts: list[str], payload: dict[str, Any]
     ) -> bool:
         store = self.server.store
+        if method == "POST" and path == "/api/application-authority":
+            if set(payload) != {"authority", "expectedRevision"} or not isinstance(payload.get("authority"), dict):
+                self._error(HTTPStatus.BAD_REQUEST, "body must contain authority and expectedRevision")
+            else:
+                revision = payload.get("expectedRevision")
+                if not isinstance(revision, int) or isinstance(revision, bool) or revision < 0:
+                    self._error(HTTPStatus.BAD_REQUEST, "expectedRevision must be a non-negative integer")
+                else:
+                    self._store_call(lambda: store.set_application_authority(
+                        payload["authority"], revision, public=True
+                    ))
+            return True
+        if method == "POST" and path == "/api/application-authority/evaluate":
+            self._store_call(lambda: store.evaluate_application_authority(payload, public=True))
+            return True
+        if method == "POST" and path == "/api/application-authority/revoke":
+            if set(payload) != {"expectedRevision"}:
+                self._error(HTTPStatus.BAD_REQUEST, "body must contain expectedRevision")
+            else:
+                revision = self._expected_revision(payload)
+                if revision is not None:
+                    self._store_call(lambda: store.revoke_application_authority(revision, public=True))
+            return True
         if method == "POST" and path == "/api/automation/realm-resolve":
             if set(payload) != {"url"} or not isinstance(payload.get("url"), str):
                 self._error(

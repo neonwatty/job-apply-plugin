@@ -22,7 +22,7 @@ from tests.test_store_loader_isolation import copy_plugin
 METHOD_HASHES = {
     "initialize": "dda2486c7147e516aa70731cca1668c90c9d485171415967a8ae5e850b2e07c8",
     "validate_workspace_startup": "24856eb84e34c01920556c6b8b145cad30c4473180cc5c972e1b8bf45d268c1b",
-    "_validate_existing_documents": "aafa33fa538ce69c12c2f71d9b9ee55b833beb55fd51c470501537350bacd343",
+    "_validate_existing_documents": "e0c4860fbe32bb3769416c0678b37ad0ea286a613c1cec64c1330a982b874226",
     "_validate_existing_session_documents": "7023d3840a401211b20a700153d470753d7449fff671adeff3ad146bb86d7934",
 }
 

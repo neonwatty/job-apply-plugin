@@ -328,3 +328,24 @@ Shared Workday automation remains unavailable with
 per-employer upgrades. No real portal, visible-browser, or local Keychain test
 was authorized for this slice. Forward-port the native setup receipt, explicit
 version creation, and create-only rotation behavior to TypeScript.
+
+### Review-bound application automation modes
+
+The Python release lane now stores one value-free, revisioned application
+authority with Guided as the migration default. Fill to Review binds one Ready
+or In Progress job to one named worker; Campaign binds explicitly selected,
+bounded job and worker sets. Both cover canonical non-sensitive facts, the
+current managed resume, accepted confirmed answers, bounded rerender repair, and
+non-final same-destination navigation without per-page reapproval. Exact worker
+claim ownership, expiry, replacement, revocation, and Fill-to-Review consumption
+at `awaiting_review` remain Store-enforced. Sensitive use requires an explicitly
+selected field class and exact canonical answer reference, and never changes
+remember consent. All enumerated attention conditions and every final action
+fail closed.
+
+TypeScript migration follow-up: port the `application-authority.json` document,
+CLI and Companion API projections, optimistic concurrency, broker acquisition
+status, review-bound consumption, and evaluation contract as a read/write lane
+using a separate synthetic Store. Do not point a TypeScript writer at a Python
+release Store. Preserve Guided for missing documents and keep the legacy exact
+Trusted Fill and internal auto-submit policy compatibility surfaces isolated.

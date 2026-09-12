@@ -269,6 +269,8 @@ class CoordinatorProgressMixin:
                 ),
                 "resultClaim": None,
             })
+            if status == "awaiting_review":
+                self._complete_application_authority_locked(job_id)
             return {
                 "job": self._load_jobs_document()["jobs"][job_id],
                 "session": session,
