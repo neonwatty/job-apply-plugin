@@ -29,6 +29,7 @@ ALIASES = (
     "_accounts_operations_domain", "_accounts_password_execution_domain",
     "_accounts_registry_domain", "_accounts_settings_domain",
     "_accounts_synthetic_domain", "_accounts_trusted_fill_domain",
+    "_accounts_application_authority_domain",
     "_startup_domain",
 )
 
@@ -44,7 +45,8 @@ MIXINS = (
     "SessionReadinessMixin", "SessionDocumentMixin", "SessionLifecycleMixin",
     "EmailExecutionMixin", "EmailScopeMixin", "AccountOperationMixin",
     "PasswordExecutionMixin", "AccountRegistryMixin", "AccountSettingsMixin",
-    "SyntheticAccountMixin", "TrustedFillMixin", "StartupMixin",
+    "SyntheticAccountMixin", "TrustedFillMixin", "ApplicationAuthorityMixin",
+    "StartupMixin",
 )
 
 BOUND = (
@@ -52,6 +54,7 @@ BOUND = (
     "_accounts_operations_domain", "_accounts_password_execution_domain",
     "_accounts_registry_domain", "_accounts_settings_domain",
     "_accounts_synthetic_domain", "_accounts_trusted_fill_domain",
+    "_accounts_application_authority_domain",
     "_sessions_history_domain", "_sessions_readiness_domain",
     "_sessions_document_domain", "_sessions_lifecycle_domain",
     "_resumes_storage_domain", "_resumes_read_domain",

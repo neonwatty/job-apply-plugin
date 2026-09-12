@@ -61,6 +61,7 @@ IMPLEMENTATION_SUFFIXES = {
     ".domains.accounts.email_execution",
     ".domains.accounts.password_execution",
     ".domains.accounts.trusted_fill",
+    ".domains.accounts.application_authority",
     "",
     ".constants",
     ".errors",

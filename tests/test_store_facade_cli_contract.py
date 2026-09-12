@@ -11,6 +11,10 @@ from tests.support.store_facade_contract import (
     load_module,
     parser_receipt,
 )
+from tests.support.application_authority_cli_contract import (
+    receipts as authority_receipts,
+    trusted_fill_receipts,
+)
 
 
 def o(
@@ -348,13 +352,8 @@ COMMAND_RECEIPTS = [
     command("employer-account-execute-synthetic", [o("input", required=True)]),
     command("employer-account-operation-status", []),
     command("employer-account-operation-recover", []),
-    command("trusted-fill-approve", [o("input", required=True)]),
-    command("trusted-fill-status", [o("id", required=True)]),
-    command("trusted-fill-evaluate", [o("input", required=True)]),
-    command("trusted-fill-revoke", [
-        o("id", required=True),
-        o("expected-approval-revision", required=True, integer=True),
-    ]),
+    *trusted_fill_receipts(command, o),
+    *authority_receipts(command, o),
 ]
 
 
@@ -388,9 +387,9 @@ class StoreCliContractTests(unittest.TestCase):
     def setUpClass(cls):
         cls.module = load_module(name="store_cli_contract")
 
-    def test_all_98_commands_have_exact_structural_receipt(self):
+    def test_all_102_commands_have_exact_structural_receipt(self):
         receipt = parser_receipt(self.module.build_parser())
-        self.assertEqual(len(receipt["commands"]), 98)
+        self.assertEqual(len(receipt["commands"]), 102)
         self.assertEqual(receipt, EXPECTED_RECEIPT)
 
     def test_parser_and_dispatch_sets_and_order_match(self):

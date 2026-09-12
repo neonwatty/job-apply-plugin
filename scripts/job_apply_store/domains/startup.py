@@ -183,6 +183,8 @@ class StartupMixin:
             self._load_account_operation_journal()
         if self.trusted_fill_path.exists():
             self._load_trusted_fill_document()
+        if self.application_authority_path.exists():
+            self._load_application_authority_document()
         if self.resume_extractions_path.exists():
             self._load_extractions_document()
         if self.resume_extraction_requests_path.exists():

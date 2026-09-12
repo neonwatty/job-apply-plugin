@@ -325,4 +325,16 @@ def run(args: argparse.Namespace, runtime: dict[str, Any]) -> Any:
         return store.evaluate_trusted_fill(runtime['_read_input'](args.input))
     if command == "trusted-fill-revoke":
         return store.revoke_trusted_fill(args.id, args.expected_approval_revision)
+    if command == "application-authority-set":
+        return store.set_application_authority(
+            runtime['_read_input'](args.input), args.expected_revision, public=True
+        )
+    if command == "application-authority-status":
+        return store.application_authority_status(public=True)
+    if command == "application-authority-evaluate":
+        return store.evaluate_application_authority(
+            runtime['_read_input'](args.input), public=True
+        )
+    if command == "application-authority-revoke":
+        return store.revoke_application_authority(args.expected_revision, public=True)
     raise runtime['StoreError']("unsupported command")

@@ -273,6 +273,17 @@ def run(root: Path, smoke_root: Path) -> None:
     )
     if required_contract not in application_skill:
         raise SystemExit("hard manual-submit contract is missing")
+    for required_mode_contract in (
+        "**Guided** is the safe default",
+        "**Fill to Review** is one approval for one exact",
+        "**Campaign** applies the same review-bound authority",
+        "Later pages do not manufacture new consent",
+        "manual in every mode",
+    ):
+        if required_mode_contract not in application_skill:
+            raise SystemExit(
+                f"job-apply skill is missing application mode contract: {required_mode_contract}"
+            )
     for required_extraction_contract in (
         "resume-extraction-request-list --status requested",
         "resume-extraction-request-complete",

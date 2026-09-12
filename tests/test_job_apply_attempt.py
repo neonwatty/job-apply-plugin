@@ -121,6 +121,11 @@ class AttemptProtocolTests(unittest.TestCase):
         }
 
     def test_launcher_group_can_die_and_later_independent_clients_finish_attempt(self):
+        self.store.set_application_authority({
+            "mode": "fill_to_review", "jobIds": [self.job["id"]],
+            "workerIds": ["fresh-agent"], "sensitiveFieldClasses": [],
+            "durationMinutes": 30,
+        }, 0)
         command = self.command(
             "start", "--id", self.job["id"], "--owner", "fresh-agent",
             "--expected-revision", str(self.job["revision"]),
@@ -133,6 +138,9 @@ class AttemptProtocolTests(unittest.TestCase):
         assert launcher.stdout is not None
         acquired = json.loads(launcher.stdout.readline())
         self.assertTrue(acquired["ok"])
+        self.assertEqual(
+            acquired["attempt"]["applicationAuthority"]["mode"], "fill_to_review"
+        )
         launcher_group = os.getpgid(launcher.pid)
         os.killpg(launcher_group, signal.SIGKILL)
         launcher.wait(timeout=3)
@@ -153,6 +161,9 @@ class AttemptProtocolTests(unittest.TestCase):
         self.assertEqual(response, {"event": "handed_off", "ok": True, "status": "awaiting_review"})
         self.assertEqual(self.store.get_job(self.job["id"])["status"], "awaiting_review")
         self.assertIsNone(self.store.claim_status()["claim"])
+        self.assertEqual(
+            self.store.application_authority_status(public=True)["mode"], "guided"
+        )
 
     def test_awaiting_review_rejects_replay_or_stale_readiness_without_releasing_claim(self):
         self.start()
