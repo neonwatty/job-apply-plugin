@@ -22,6 +22,15 @@ _CANONICAL_RUNTIME = {
     "uuid": uuid,
 }
 _RUNTIME_PROVIDER = lambda: globals()
+ORCHESTRATION_ATTENTION_REASONS = {
+    "account_automation_disabled", "account_record_required",
+    "account_flow_not_implemented_linux",
+    "account_flow_not_implemented_windows", "account_flow_unresolved",
+    "account_lifecycle_requires_human", "email_only_account_flow_unavailable",
+    "fresh_owner_approval_required", "manual_account_strategy",
+    "platform_unsupported", "reviewed_canary_required",
+    "shared_native_execution_required", "signup_email_required",
+}
 
 
 def _bind_runtime(provider) -> None:
@@ -169,6 +178,18 @@ class AccountOperationMixin:
             "captcha_required": "captcha-required",
             "mfa_required": "mfa-required",
             "password_reset_required": "owner-input-required",
+            "account_automation_disabled": "owner-input-required",
+            "account_record_required": "account-creation-required",
+            "account_flow_not_implemented_linux": "unsupported-control",
+            "account_flow_not_implemented_windows": "unsupported-control",
+            "account_flow_unresolved": "unsupported-control",
+            "email_only_account_flow_unavailable": "unsupported-control",
+            "fresh_owner_approval_required": "account-creation-required",
+            "manual_account_strategy": "owner-input-required",
+            "platform_unsupported": "unsupported-control",
+            "reviewed_canary_required": "unsupported-control",
+            "shared_native_execution_required": "unsupported-control",
+            "signup_email_required": "owner-input-required",
         }.get(reason, "browser-state-uncertain")
         session = self._build_session(job["id"], {
             "status": "active", "step": f"account_automation_denied:{reason}",
@@ -193,3 +214,23 @@ class AccountOperationMixin:
             "resultClaim": None,
         })
         return self._load_jobs_document()["jobs"][job["id"]]
+
+    def handoff_application_account_flow(
+        self, job_id: str, token: str, reason: str
+    ) -> dict[str, Any]:
+        """Release an ordinary claim into one closed account-attention state."""
+
+        if reason not in ORCHESTRATION_ATTENTION_REASONS:
+            raise StoreError("application account-flow reason is unsupported")
+        self.initialize()
+        self._ensure_coordinator_files()
+        with _late("exclusive_file_lock")(self.store_lock_path):
+            self._require_claim_locked(job_id, token)
+            job = self._load_jobs_document()["jobs"].get(job_id)
+            if job is None or job.get("status") != "in_progress":
+                raise StoreError("application account-flow job is unavailable")
+            updated = self._account_attention_handoff_locked(job, reason)
+            return {
+                "id": updated["id"], "status": updated["status"],
+                "revision": updated["revision"],
+            }

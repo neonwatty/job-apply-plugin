@@ -280,7 +280,7 @@ export async function runOracle({ configurePage = async () => {} } = {}) {
     await page.getByText("Canonical store connected").waitFor();
 
     stage = "ux_intake";
-    const uxUrl = "https://ux-first.example.invalid/jobs/canonical";
+    const uxUrl = "https://boards.greenhouse.io/synthetic/jobs/12345";
     await page.locator("#nav-group-pipeline").click();
     await page.locator("#nav-jobs").click();
     await page.getByRole("button", { name: "New job" }).click();

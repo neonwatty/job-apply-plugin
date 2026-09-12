@@ -40,6 +40,56 @@ class AccountRegistryMixin:
     def resolve_account_realm(self, portal_url: str) -> dict[str, Any]:
         return _late("ACCOUNTS_MODULE").normalize_realm(portal_url)
 
+    def _employer_account_flow_decision_locked(
+        self, job: dict[str, Any]
+    ) -> dict[str, Any]:
+        classified = _late("ACCOUNTS_MODULE").classify_account_flow(job["url"])
+        if classified.get("status") != "classified":
+            return {
+                "jobId": job["id"], "decision": "human_attention_required",
+                "adapterId": None, "flowKind": None, "accountRevision": None,
+                "reasonCode": "account_flow_unresolved",
+            }
+        base = {
+            "jobId": job["id"], "adapterId": classified["adapterId"],
+            "flowKind": classified["flowKind"],
+        }
+        if classified["accountRequired"] is False:
+            return {**base, "decision": "account_not_required", "accountRevision": None}
+        account = self._load_employer_accounts_document()["accounts"].get(
+            classified["realmRef"]
+        )
+        if account is None:
+            return {**base, "decision": "create_required", "accountRevision": None}
+        lifecycle = account["lifecycleState"]
+        settings = self._load_automation_settings_document()["settings"]
+        strategy = _late("ACCOUNTS_MODULE").public_password_strategy(
+            settings["passwordStrategy"]
+        )
+        if (
+            classified["flowKind"] == _late("ACCOUNTS_MODULE").FLOW_PASSWORD
+            and lifecycle == "discovered" and strategy != "unique_per_realm"
+        ):
+            reason = (
+                "shared_native_execution_required"
+                if strategy == "shared" else "manual_account_strategy"
+            )
+            return {
+                **base, "decision": "human_attention_required",
+                "accountRevision": account["revision"], "reasonCode": reason,
+            }
+        if lifecycle == "active":
+            decision = "reuse_active"
+        elif lifecycle == "discovered":
+            decision = "create_required"
+        else:
+            return {
+                **base, "decision": "human_attention_required",
+                "accountRevision": account["revision"],
+                "reasonCode": "account_lifecycle_requires_human",
+            }
+        return {**base, "decision": decision, "accountRevision": account["revision"]}
+
     def employer_account_flow_decision(self, job_id: str) -> dict[str, Any]:
         """Return a value-free account decision for one canonical job."""
 
@@ -49,68 +99,80 @@ class AccountRegistryMixin:
             job = self._load_jobs_document()["jobs"].get(job_id)
             if job is None or job.get("deletedAt") is not None:
                 raise StoreError("employer account flow job is unavailable")
-            classified = _late("ACCOUNTS_MODULE").classify_account_flow(job["url"])
-            if classified.get("status") != "classified":
-                return {
-                    "jobId": job["id"],
-                    "decision": "human_attention_required",
-                    "adapterId": None,
-                    "flowKind": None,
-                    "accountRevision": None,
-                    "reasonCode": "account_flow_unresolved",
-                }
-            base = {
-                "jobId": job["id"],
-                "adapterId": classified["adapterId"],
-                "flowKind": classified["flowKind"],
-            }
-            if classified["accountRequired"] is False:
-                return {
-                    **base,
-                    "decision": "account_not_required",
-                    "accountRevision": None,
-                }
-            account = self._load_employer_accounts_document()["accounts"].get(
-                classified["realmRef"]
-            )
-            if account is None:
-                return {**base, "decision": "create_required", "accountRevision": None}
-            lifecycle = account["lifecycleState"]
-            settings = self._load_automation_settings_document()["settings"]
-            strategy = _late("ACCOUNTS_MODULE").public_password_strategy(
-                settings["passwordStrategy"]
-            )
-            if (
-                classified["flowKind"] == _late("ACCOUNTS_MODULE").FLOW_PASSWORD
-                and lifecycle == "discovered"
-                and strategy != "unique_per_realm"
-            ):
-                reason = (
-                    "shared_credential_setup_required"
-                    if strategy == "shared"
-                    else "manual_account_strategy"
+            return self._employer_account_flow_decision_locked(job)
+
+    def application_account_flow_plan(
+        self, job_id: str, platform: str
+    ) -> dict[str, Any]:
+        """Bind an ordinary attempt to one closed, value-free account action."""
+
+        capability = self.automation_capability(platform)["accountFlowAutomation"]
+        self.initialize()
+        self._ensure_account_control_documents()
+        with _late("exclusive_file_lock")(self.store_lock_path):
+            job = self._load_jobs_document()["jobs"].get(job_id)
+            if job is None or job.get("deletedAt") is not None:
+                raise StoreError("employer account flow job is unavailable")
+            decision = self._employer_account_flow_decision_locked(job)
+            action = "human_attention_required"
+            reason = decision.get("reasonCode", "account_flow_unresolved")
+            if decision["decision"] == "account_not_required":
+                action, reason = "proceed", "account_not_required"
+            elif decision["decision"] == "reuse_active":
+                if decision["adapterId"] == "workday":
+                    settings = self._load_automation_settings_document()["settings"]
+                    strategy = _late("ACCOUNTS_MODULE").public_password_strategy(
+                        settings["passwordStrategy"]
+                    )
+                    if capability["state"] != "available":
+                        reason = capability["reasonCode"]
+                    else:
+                        strategy_capability = capability["strategyCapabilities"][strategy]
+                        reason = (
+                            "manual_account_strategy"
+                            if strategy == "manual" else strategy_capability["reasonCode"]
+                        )
+                        if strategy_capability["state"] == "available":
+                            action, reason = "proceed", "active_account_available"
+                else:
+                    action, reason = "proceed", "active_account_available"
+            elif decision["decision"] == "create_required":
+                settings = self._load_automation_settings_document()["settings"]
+                strategy = _late("ACCOUNTS_MODULE").public_password_strategy(
+                    settings["passwordStrategy"]
                 )
-                return {
-                    **base,
-                    "decision": "human_attention_required",
-                    "accountRevision": account["revision"],
-                    "reasonCode": reason,
-                }
-            if lifecycle == "active":
-                decision = "reuse_active"
-            elif lifecycle == "discovered":
-                decision = "create_required"
-            else:
-                return {
-                    **base,
-                    "decision": "human_attention_required",
-                    "accountRevision": account["revision"],
-                    "reasonCode": "account_lifecycle_requires_human",
-                }
+                classified = _late("ACCOUNTS_MODULE").classify_account_flow(job["url"])
+                account = self._load_employer_accounts_document()["accounts"].get(
+                    classified.get("realmRef")
+                )
+                if not settings["enabled"] or not settings["automaticAccountCreation"]:
+                    reason = "account_automation_disabled"
+                elif settings["signupEmail"] is None and (
+                    account is None or account["signupEmailOverride"] is None
+                ):
+                    reason = "signup_email_required"
+                elif capability["state"] != "available":
+                    reason = capability["reasonCode"]
+                elif decision["adapterId"] == "workday":
+                    strategy_capability = capability["strategyCapabilities"][strategy]
+                    reason = (
+                        "manual_account_strategy"
+                        if strategy == "manual" else strategy_capability["reasonCode"]
+                    )
+                    if strategy_capability["state"] == "available":
+                        action, reason = "account_action_required", "fresh_owner_approval_required"
+                elif not capability.get("emailOnlyCandidateProfileReady", False):
+                    reason = "email_only_account_flow_unavailable"
+                else:
+                    action = "account_action_required"
+                    reason = (
+                        "account_record_required"
+                        if decision["accountRevision"] is None
+                        else "fresh_owner_approval_required"
+                    )
             return {
-                **base,
-                "decision": decision,
-                "accountRevision": account["revision"],
+                **decision, "action": action, "reasonCode": reason,
+                "finalActionAuthorized": False,
             }
 
     def list_employer_accounts(self, *, public: bool = False, companion: bool = False) -> list[dict[str, Any]]:

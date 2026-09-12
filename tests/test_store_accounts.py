@@ -216,7 +216,17 @@ class StoreTests(StoreTestCase):
         reuse = self.store.employer_account_flow_decision(workday["id"])
         self.assertEqual((reuse["decision"], reuse["accountRevision"]), ("reuse_active", 2))
 
-        serialized = json.dumps([create, accountless, attention, discovered, reuse])
+        settings = self.store.get_automation_settings()
+        self.store.update_automation_settings(
+            {"passwordStrategy": "manual"}, settings["revision"]
+        )
+        manual = self.store.application_account_flow_plan(workday["id"], "darwin")
+        self.assertEqual(
+            (manual["action"], manual["reasonCode"]),
+            ("human_attention_required", "manual_account_strategy"),
+        )
+
+        serialized = json.dumps([create, accountless, attention, discovered, reuse, manual])
         for forbidden in (
             "https://", "owner@", "signupEmail", "descriptor", "credentialRef", "providerId",
         ):

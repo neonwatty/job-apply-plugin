@@ -349,6 +349,25 @@ removed only its fixed test namespace. Forward-port the union account-operation
 journal, explicit binding, typed upgrade outcomes, and pin-preserving recovery
 to TypeScript using a cloned Store.
 
+### Ordinary account-flow orchestration
+
+The detached ordinary-attempt broker now obtains a closed `accountFlow` plan
+after exact claim acquisition and rechecks it before saving progress or handing
+off to final review. Reviewed Greenhouse application URLs proceed accountless.
+Oracle Recruiting reports `account_action_required` and immediately pauses into
+a typed, claim-releasing handoff until its separate account record and fresh
+approval are ready. Workday remains blocked by the reviewed canary or shared
+native-execution readiness gate.
+
+Unsupported capability, disabled settings, missing signup identity, manual
+strategy, uncertain lifecycle, and unresolved URLs atomically hand the job to
+Needs Attention and release its claim. Each broker operation rechecks the plan
+before it can make progress. Plans and terminal receipts are value-free and never
+authorize a final action. Synthetic tests cover each orchestration boundary; no
+real portal, visible browser, Keychain, or owner account was used. Forward-port
+the closed plan, per-operation recheck, and typed claim-release behavior to the
+TypeScript lane without sharing its live Store.
+
 ### Review-bound application automation modes
 
 The Python release lane now stores one value-free, revisioned application

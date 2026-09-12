@@ -38,7 +38,9 @@ class AttemptProtocolTests(unittest.TestCase):
         resume_path = self.root / "private-resume.txt"
         resume_path.write_text("private resume", encoding="utf-8")
         self.store.create_resume({"id": "resume", "label": "Resume", "path": str(resume_path)})
-        job = self.store.create_job({"id": "exact-job", "url": "https://example.invalid/exact"})
+        job = self.store.create_job({
+            "id": "exact-job", "url": "https://boards.greenhouse.io/acme/jobs/12345",
+        })
         self.job = self.store.transition_job(job["id"], "ready", job["revision"])
         self.input_counter = 0
 
