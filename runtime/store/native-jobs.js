@@ -424,10 +424,21 @@ export class NativeJobsRepository {
             const jobs = validateJobsDocument(await this.document('jobs'));
             const journal = validateAccountOperationJournal(await this.journal('account-operation-journal'));
             const accounts = await this.document('employer-accounts');
-            return operation({ journal, accounts, jobs,
+            const settings = await this.journal('automation-settings');
+            return operation({ journal, accounts, settings, jobs,
                 coordinator: validateCoordinator(await this.journal('coordinator')),
                 sessions: await this.answerSessions(), answers: validateAnswers(await this.document('answers')),
                 saveAccounts: document => this.write(join(this.root, 'employer-accounts.json'), document, options),
+                saveOperation: async (expected, value) => {
+                    const current = accountOperation(validateAccountOperationJournal(await this.journal('account-operation-journal')));
+                    const currentId = current === null ? null : string(get(current, 'operationId'));
+                    if (currentId !== expected)
+                        throw new JobsError('account operation journal changed before completion');
+                    const next = emptyAccountOperationJournal();
+                    if (value !== null)
+                        set(next, 'operation', value);
+                    await this.write(join(this.root, 'account-operation-journal.json'), validateAccountOperationJournal(next), options);
+                },
                 commitClaim: value => this.claimJournal().commit(value, jobs),
                 clearOperation: async (expected) => {
                     const current = accountOperation(validateAccountOperationJournal(await this.journal('account-operation-journal')));
