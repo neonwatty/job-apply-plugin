@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 
-STRATEGIES = {"unique_per_realm", "shared", "custom", "ask_each_time"}
+STRATEGIES = {"unique_per_realm", "shared", "manual", "custom", "ask_each_time"}
 OPAQUE_REF = re.compile(r"^credential_[0-9a-f]{64}$")
 
 
@@ -21,12 +21,20 @@ class CredentialProviderError(ValueError):
     """A redacted protected-provider failure."""
 
 
-def _binding(strategy: str, realm_ref: str) -> str:
+def _binding(strategy: str, realm_ref: str, credential_version: int = 1) -> str:
     if strategy not in {"unique_per_realm", "shared"}:
         raise CredentialProviderError("password strategy requires human attention")
     if not isinstance(realm_ref, str) or re.fullmatch(r"[0-9a-f]{64}", realm_ref) is None:
         raise CredentialProviderError("credential realm reference is invalid")
-    return realm_ref if strategy == "unique_per_realm" else "explicit-shared-v1"
+    if (
+        not isinstance(credential_version, int)
+        or isinstance(credential_version, bool)
+        or credential_version < 1
+    ):
+        raise CredentialProviderError("credential version is invalid")
+    if strategy == "unique_per_realm":
+        return realm_ref if credential_version == 1 else f"{realm_ref}:v{credential_version}"
+    return f"explicit-shared-v{credential_version}"
 
 
 def validate_protected_receipt(value: Any, provider_id: str) -> dict[str, Any]:
@@ -110,7 +118,10 @@ def synthetic_test_authority() -> object:
     return _SYNTHETIC_TEST_AUTHORITY
 
 
-def credential_reference(strategy: str, realm_ref: str) -> str:
+def credential_reference(
+    strategy: str, realm_ref: str, credential_version: int = 1
+) -> str:
     """Portable opaque slot derivation shared by every credential adapter."""
 
-    return "credential_" + hashlib.sha256(_binding(strategy, realm_ref).encode("ascii")).hexdigest()
+    binding = _binding(strategy, realm_ref, credential_version)
+    return "credential_" + hashlib.sha256(binding.encode("ascii")).hexdigest()

@@ -276,7 +276,7 @@
 
     <div id="automation-workspace" class="hidden">
       <section class="hero" aria-labelledby="automation-title">
-        <div><p class="eyebrow">Companion Automation</p><h2 id="automation-title">Automation settings</h2><p>Manage account preferences and review agent permissions. Workday account setup requires your separate approval each time. Ordinary Greenhouse applications need no account. These controls do not submit applications.</p></div>
+        <div><p class="eyebrow">Companion Automation</p><h2 id="automation-title">Automation settings</h2><p>Manage account preferences and review agent permissions. Workday account automation remains unavailable until its reviewed canary passes. Ordinary Greenhouse applications need no account. These controls do not submit applications.</p></div>
         <div class="hero-actions"><button id="automation-refresh" class="button secondary" type="button">Refresh</button></div>
       </section>
       <section class="automation-panel" aria-labelledby="automation-settings-title">
@@ -286,7 +286,7 @@
           <label><span><input name="enabled" type="checkbox"> Enable companion automation controls</span></label>
           <label><span><input name="automaticAccountCreation" type="checkbox"> Allow protected account preparation</span><small>Live Workday execution still requires a separate one-shot owner approval.</small></label>
           <label>Global signup email <input name="signupEmail" type="email" autocomplete="email" placeholder="Leave blank to keep the current setting"><small id="automation-email-status">Not configured</small></label>
-          <label>Password strategy <select name="passwordStrategy"><option value="unique_per_realm">Unique per employer</option><option value="shared">Shared credential version</option><option value="custom">Custom per employer</option><option value="ask_each_time">Ask each time</option></select></label>
+          <label>Password strategy <select name="passwordStrategy"><option value="unique_per_realm">Unique per employer</option><option value="shared">One shared password</option><option value="manual">Manual account setup</option></select><small>Passwords are never entered in the Companion. Shared password automation needs native secure setup before it can become available.</small></label>
           <div class="button-row"><button class="button primary" type="submit">Save settings</button><button id="automation-copy-profile-email" class="button secondary" type="button">Copy profile email once</button><button id="automation-clear-email" class="button secondary" type="button">Clear signup email</button></div>
           <p class="safety-note">Copying is an explicit one-time snapshot. Later profile edits do not change the signup email, and the copied value is never returned by this action.</p>
         </form>

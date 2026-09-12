@@ -26,11 +26,24 @@ class MacOSAccessibilityAdapter:
             "providerId": self.provider_id,
             "state": "available",
             "emailOnlyCandidateProfileReady": True,
-            "workdayPasswordAccountReady": True,
+            "workdayPasswordAccountAdapterReviewed": True,
+            "workdayPasswordAccountReady": False,
+            "workdayCanaryPassed": False,
             "greenhouseAccountlessClassificationReady": True,
             "productionSeamReady": True,
             "liveExecutionEnabled": False,
             "credentialOperationsReady": False,
+            "strategyCapabilities": {
+                "unique_per_realm": {
+                    "state": "unavailable",
+                    "reasonCode": "reviewed_canary_required",
+                },
+                "shared": {
+                    "state": "unavailable",
+                    "reasonCode": "native_secure_setup_required",
+                },
+                "manual": {"state": "manual", "reasonCode": "owner_managed"},
+            },
         }
 
 

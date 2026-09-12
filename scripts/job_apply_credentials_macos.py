@@ -34,8 +34,10 @@ class MacOSSecurityFrameworkProvider(PORTABLE.CredentialProvider):
         self._bridge = native_compound_bridge
 
     @staticmethod
-    def credential_reference(strategy: str, realm_ref: str) -> str:
-        return PORTABLE.credential_reference(strategy, realm_ref)
+    def credential_reference(
+        strategy: str, realm_ref: str, credential_version: int = 1
+    ) -> str:
+        return PORTABLE.credential_reference(strategy, realm_ref, credential_version)
 
     def capability(self, platform: str | None = None) -> dict[str, Any]:
         supported = (platform or sys.platform).lower().startswith("darwin")

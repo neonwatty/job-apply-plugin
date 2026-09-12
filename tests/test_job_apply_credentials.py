@@ -22,9 +22,34 @@ class CredentialProviderTests(unittest.TestCase):
             MAC.MacOSSecurityFrameworkProvider.credential_reference("shared", first),
             MAC.MacOSSecurityFrameworkProvider.credential_reference("shared", second),
         )
-        for strategy in ("custom", "ask_each_time"):
+        for strategy in ("manual", "custom", "ask_each_time"):
             with self.assertRaises(MAC.PORTABLE.CredentialProviderError):
                 MAC.MacOSSecurityFrameworkProvider.credential_reference(strategy, first)
+
+    def test_versioned_slots_preserve_v1_and_do_not_rotate_existing_accounts(self):
+        realm = "a" * 64
+        unique_v1 = CREDENTIALS.credential_reference("unique_per_realm", realm)
+        shared_v1 = CREDENTIALS.credential_reference("shared", realm)
+        self.assertEqual(
+            unique_v1,
+            CREDENTIALS.credential_reference("unique_per_realm", realm, 1),
+        )
+        self.assertEqual(shared_v1, CREDENTIALS.credential_reference("shared", realm, 1))
+        self.assertNotEqual(
+            unique_v1,
+            CREDENTIALS.credential_reference("unique_per_realm", realm, 2),
+        )
+        self.assertNotEqual(
+            shared_v1,
+            CREDENTIALS.credential_reference("shared", realm, 2),
+        )
+        self.assertEqual(
+            CREDENTIALS.credential_reference("shared", realm, 2),
+            CREDENTIALS.credential_reference("shared", "b" * 64, 2),
+        )
+        for version in (0, -1, True, "2"):
+            with self.assertRaises(CREDENTIALS.CredentialProviderError):
+                CREDENTIALS.credential_reference("shared", realm, version)
 
     def test_provider_contract_has_only_compound_write_operation(self):
         public = {name for name, _ in inspect.getmembers(CREDENTIALS.CredentialProvider, inspect.isfunction) if not name.startswith("_")}

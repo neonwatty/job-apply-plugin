@@ -17,6 +17,13 @@ MAC_SPEC = importlib.util.spec_from_file_location(
 MAC = importlib.util.module_from_spec(MAC_SPEC)
 assert MAC_SPEC.loader is not None
 MAC_SPEC.loader.exec_module(MAC)
+FLOW_MAC_SPEC = importlib.util.spec_from_file_location(
+    "job_apply_account_flows_macos_accounts_test",
+    ROOT / "scripts" / "job_apply_account_flows_macos.py",
+)
+FLOW_MAC = importlib.util.module_from_spec(FLOW_MAC_SPEC)
+assert FLOW_MAC_SPEC.loader is not None
+FLOW_MAC_SPEC.loader.exec_module(FLOW_MAC)
 
 
 class AccountContractTests(unittest.TestCase):
@@ -155,6 +162,29 @@ class AccountContractTests(unittest.TestCase):
         self.assertFalse(any(item["credentialOperationsReady"] for item in (mac, linux, windows)))
         self.assertTrue(all(item["discoveryMode"] == "side_effect_free" for item in (mac, linux, windows)))
 
+    def test_account_flow_capability_does_not_claim_uncanaried_workday_support(self):
+        with mock.patch("subprocess.run", side_effect=AssertionError("must not probe")):
+            capability = ACCOUNTS.discover_account_flow_capability(
+                "darwin", FLOW_MAC.ADAPTER_REGISTRY
+            )
+        self.assertTrue(capability["workdayPasswordAccountAdapterReviewed"])
+        self.assertFalse(capability["workdayPasswordAccountReady"])
+        self.assertFalse(capability["workdayCanaryPassed"])
+        self.assertEqual(
+            capability["strategyCapabilities"],
+            {
+                "unique_per_realm": {
+                    "state": "unavailable",
+                    "reasonCode": "reviewed_canary_required",
+                },
+                "shared": {
+                    "state": "unavailable",
+                    "reasonCode": "native_secure_setup_required",
+                },
+                "manual": {"state": "manual", "reasonCode": "owner_managed"},
+            },
+        )
+
     def test_public_projections_hide_identity_and_provider_handle_fields(self):
         settings = {
             "enabled": True, "automaticAccountCreation": True,
@@ -181,6 +211,19 @@ class AccountContractTests(unittest.TestCase):
         companion = ACCOUNTS.companion_account(account)
         self.assertNotIn("signupEmailOverride", companion)
         self.assertTrue(companion["signupEmailOverrideConfigured"])
+
+    def test_legacy_human_strategies_project_as_manual(self):
+        base = {
+            "enabled": True, "automaticAccountCreation": True,
+            "signupEmail": None, "revision": 2, "createdAt": "a", "updatedAt": "b",
+        }
+        for strategy in ("manual", "custom", "ask_each_time"):
+            self.assertEqual(
+                ACCOUNTS.public_settings({**base, "passwordStrategy": strategy})[
+                    "passwordStrategy"
+                ],
+                "manual",
+            )
 
 
 if __name__ == "__main__":

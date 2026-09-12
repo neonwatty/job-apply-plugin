@@ -44,6 +44,72 @@ class StoreTests(StoreTestCase):
             self.assertTrue(projection["signupEmailConfigured"])
             self.assertNotIn("owner@example.com", completed.stdout + completed.stderr)
 
+    def test_worker_automation_config_is_non_secret_and_capability_honest(self):
+        settings = self.store.get_automation_settings()
+        self.store.update_automation_settings(
+            {
+                "enabled": True,
+                "automaticAccountCreation": True,
+                "signupEmail": "private@example.invalid",
+                "passwordStrategy": "shared",
+            },
+            settings["revision"],
+        )
+        settings_completed = subprocess.run(
+            [
+                sys.executable, str(SCRIPT), "--root", str(self.root),
+                "automation-settings-get",
+            ],
+            check=True, capture_output=True, text=True,
+        )
+        capability_completed = subprocess.run(
+            [
+                sys.executable, str(SCRIPT), "--root", str(self.root),
+                "automation-capability", "--platform", "darwin",
+            ],
+            check=True, capture_output=True, text=True,
+        )
+        config = {
+            "settings": json.loads(settings_completed.stdout),
+            "capability": json.loads(capability_completed.stdout),
+        }
+        self.assertEqual(config["settings"]["passwordStrategy"], "shared")
+        self.assertEqual(
+            config["capability"]["accountFlowAutomation"]
+            ["strategyCapabilities"]["shared"]["state"],
+            "unavailable",
+        )
+        serialized = (
+            settings_completed.stdout + settings_completed.stderr
+            + capability_completed.stdout + capability_completed.stderr
+        )
+        for forbidden in (
+            "private@example.invalid", '"signupEmail"', "credentialRef",
+            "descriptor", "realmRef",
+        ):
+            self.assertNotIn(forbidden, serialized)
+
+    def test_manual_strategy_is_canonical_and_legacy_values_remain_readable(self):
+        initial = self.store.get_automation_settings()
+        updated = self.store.update_automation_settings(
+            {"passwordStrategy": "manual"}, initial["revision"]
+        )
+        self.assertEqual(updated["passwordStrategy"], "manual")
+        legacy_patch = {"passwordStrategy": "custom"}
+        normalized = self.store.update_automation_settings(
+            legacy_patch, updated["revision"]
+        )
+        self.assertEqual(normalized["passwordStrategy"], "manual")
+        self.assertEqual(legacy_patch, {"passwordStrategy": "custom"})
+        document = self.store._load_automation_settings_document()
+        for legacy in ("custom", "ask_each_time"):
+            document["settings"]["passwordStrategy"] = legacy
+            STORE_MODULE.atomic_write_json(self.store.automation_settings_path, document)
+            self.assertEqual(
+                self.store.get_automation_settings(public=True)["passwordStrategy"],
+                "manual",
+            )
+
     def test_employer_accounts_require_proven_realms_and_expose_redacted_projection(self):
         with self.assertRaisesRegex(STORE_MODULE.StoreError, "unresolved"):
             self.store.create_employer_account("https://jobs.example.com/acme/1")

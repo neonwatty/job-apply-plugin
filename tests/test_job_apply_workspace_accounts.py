@@ -42,7 +42,9 @@ class WorkspaceServerTests(WorkspaceCase):
         expected_macos = sys.platform.startswith("darwin")
         self.assertEqual(account_flow["productionSeamReady"], expected_macos)
         self.assertFalse(account_flow["liveExecutionEnabled"])
-        self.assertEqual(account_flow["workdayPasswordAccountReady"], expected_macos)
+        self.assertEqual(account_flow["workdayPasswordAccountAdapterReviewed"], expected_macos)
+        self.assertFalse(account_flow["workdayPasswordAccountReady"])
+        self.assertFalse(account_flow["workdayCanaryPassed"])
         self.assertEqual(account_flow["greenhouseAccountlessClassificationReady"], expected_macos)
         self.assertNotIn("signupEmail", projection["settings"])
 
