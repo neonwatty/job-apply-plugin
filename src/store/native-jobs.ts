@@ -31,25 +31,23 @@ import { validateExtractionRequests } from "../contracts/workspace/extraction-re
 import { validateExtractions } from "../contracts/workspace/extraction-proposals.js";
 import type { ExtractionTransaction } from "../workspace-core/extraction-context.js";
 import type { ResumeLifecycleRepository, ResumeLifecycleTransaction } from "../workspace-core/resume-lifecycle.js";
-
+import { validateTrustedFillDocument } from "../contracts/workspace/trusted-fill.js";
+import type { TrustedFillRepository, TrustedFillTransaction } from "../workspace-core/trusted-fill.js";
 import { validateProfile } from "../contracts/workspace/profile.js";
 import { validateGroups } from "../contracts/workspace/fact-groups.js";
 import { validateAnswers } from "../contracts/workspace/answers.js";
 import type { AnswerReferenceCounts } from "../workspace-core/answers.js";
-
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
-const marker = '{"mode":"native-jobs-fixture","version":11}\n';
-const allowed = new Set(["automation-settings.json", "employer-accounts.json", "account-operation-journal.json", ".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "answers.json", "resume-operation.json", "resume-files", "resume-extractions.json", "resume-extraction-requests.json", "resume-extraction-journal.json", "sessions", "applications.jsonl", "coordinator.json", "coordinator-journal.json"]);
+const marker = '{"mode":"native-jobs-fixture","version":12}\n';
+const allowed = new Set(["automation-settings.json", "employer-accounts.json", "account-operation-journal.json", "trusted-fill.json", ".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "answers.json", "resume-operation.json", "resume-files", "resume-extractions.json", "resume-extraction-requests.json", "resume-extraction-journal.json", "sessions", "applications.jsonl", "coordinator.json", "coordinator-journal.json"]);
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
-
 export interface ResumeTransaction {
   document: Document;
   files: NativeResumeFiles;
   save(document: Document): Promise<void>;
   saveJournal(operation: Value): Promise<void>;
 }
-
 /** Creates a NEW synthetic root only. Never adopts or initializes an existing Store. */
 export async function initializeJobsFixture(root: string): Promise<void> {
   if (!isAbsolute(root) || root !== resolve(root)) throw new JobsError("fixture root must be an absolute normalized path");
@@ -82,6 +80,8 @@ export async function initializeJobsFixture(root: string): Promise<void> {
     await atomicWritePointJson(join(root, `${name}.json`), document, options);
   }
   await atomicWritePointJson(join(root, 'account-operation-journal.json'), emptyAccountOperationJournal(), options);
+  await atomicWritePointJson(join(root, 'trusted-fill.json'), fromJSON({ schemaVersion: 1, approvals: {},
+    metadata: { createdAt: now, updatedAt: now } }), options);
   // The readiness marker is written last; partial initialization is never adopted.
   const handle = await open(join(root, ".native-jobs-fixture"), "wx", 0o600);
   try { await handle.writeFile(marker); await handle.sync(); } finally { await handle.close(); }
@@ -89,7 +89,7 @@ export async function initializeJobsFixture(root: string): Promise<void> {
   try { await directory.sync(); } finally { await directory.close(); }
 }
 
-export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepository {
+export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepository, TrustedFillRepository {
   constructor(readonly root: string, private readonly provider: PosixFlockProvider,
     private readonly write = atomicWritePointJson,
     private readonly checkpoint: (stage:string)=>Promise<void> = async () => {}) {}
@@ -465,6 +465,19 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
     });
   }
 
+  async trustedFillTransaction<T>(operation: (tx: TrustedFillTransaction) => Promise<T>): Promise<T> {
+    return this.transaction(async () => {
+      const jobs = validateJobsDocument(await this.document('jobs'));
+      return operation({ approvals: validateTrustedFillDocument(await this.document('trusted-fill')), jobs,
+        coordinator: validateCoordinator(await this.journal('coordinator')), profile: validateProfile(await this.document('profile')),
+        resumes: validateExtractionResumes(await this.document('resumes')), answers: validateAnswers(await this.document('answers')),
+        settings: await this.journal('automation-settings'), accounts: await this.document('employer-accounts'),
+        sessions: await this.answerSessions(), files: new NativeResumeFiles(this.root),
+        saveApprovals: document => this.write(join(this.root, 'trusted-fill.json'), validateTrustedFillDocument(document), options),
+        commitClaim: value => this.claimJournal().commit(value, jobs) });
+    });
+  }
+
   async resumeSummaries(): Promise<Value[]> {
     // Reuse the lock and all root checks for projections too.
     return this.transaction(async () => {
@@ -481,7 +494,6 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
     });
   }
 }
-
 export function fixtureError(error: unknown): string {
   return error instanceof JobsError ? error.message : "native fixture operation failed; inspect the Store before retrying";
 }

@@ -317,7 +317,10 @@
       "artifact": "json",
       "node": "ACC",
       "sources": [
-        "scripts/job_apply_store/base.py"
+        "scripts/job_apply_store/base.py",
+        "src/contracts/workspace/trusted-fill.ts",
+        "src/workspace-core/trusted-fill.ts",
+        "src/store/native-jobs.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

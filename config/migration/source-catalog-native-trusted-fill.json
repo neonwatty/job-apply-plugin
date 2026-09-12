@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/contracts/workspace/trusted-fill.js",
+      "sha256": "604ce3a1d7aad6287cd5a6d8c1eb3a6470af39ec19d1760023f5fe2cfeec9ec1",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/trusted-fill-http.js",
+      "sha256": "6964506e2f159b0edd49a32cff317d365ac0c21eb689dce51c97f84d164d976d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/trusted-fill.js",
+      "sha256": "b74c88108f005e7201fc794168cee0ed650556f9942526519911c587bb708eae",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/trusted-fill.ts",
+      "sha256": "a181386f050e03e252db5cb46aecc8b4b031f67369c7033ba2e96dda07f65d81",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/trusted-fill-http.ts",
+      "sha256": "1854724d2bf77bf0af8f11c57b9f9758cc7f94883f21645cd8376346120d8879",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/trusted-fill.ts",
+      "sha256": "874c2eeff0f207abe4c0c499ead52968ac857facbe1d67d495ba003b17ae95a1",
+      "classification": "unreviewed"
+    }
+  ]
+}
