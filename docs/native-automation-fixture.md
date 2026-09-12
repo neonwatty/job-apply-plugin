@@ -1,9 +1,10 @@
 # Native automation and employer-account control plane
 
 This tranche supplies native settings, realm resolution, and employer-account
-registry services and stranded account-operation recovery for explicit synthetic fixtures. It does not activate a Store
-writer, initialize an existing Store, inspect a browser, call credentials, or
-run an account executor. New fixtures use version 11 and require both account
+registry services, stranded account-operation recovery, and injected synthetic
+protected-account execution for explicit fixtures. It does not activate a Store
+writer, initialize an existing Store, inspect the owner's browser, or call the
+owner's credentials. New fixtures use version 11 and require both account
 documents plus `account-operation-journal.json`. Existing version 10 roots are rejected rather than upgraded or adopted;
 earlier fixture documents describe their historical version. Missing documents
 and unsupported trusted-fill journals remain rejected.
@@ -49,6 +50,16 @@ An already `needs_info` job can finish clearing a prior partial recovery. No
 path infers account success, permits retry, invokes a provider, or performs a
 final application action.
 
+`SyntheticAccountService` ports the protected synthetic execution contract. It
+accepts only an injected executor, an exact live job claim, exact job/settings/
+account revisions, a proven realm, and a loopback target bound by reviewed
+fingerprints. The journal is durably prepared before the injected effect and is
+advanced after each account stage. Executor failure burns the attempt as
+ambiguous and hands the job to Needs Attention; non-active observed outcomes do
+the same with their specific blocker. Public responses exclude the effective
+email and credential reference. The ordinary HTTP composition supplies no
+provider, so it rejects the synthetic route without mutation.
+
 ## HTTP boundary
 
 `automationHttp(repository, method, path, body)` supports these Python routes:
@@ -62,6 +73,7 @@ final application action.
 `accountOperationHttp(repository, method, path, body)` supports:
 
 - GET `/api/account-operation`
+- POST `/api/account-operation/execute-synthetic`
 - POST `/api/account-operation/recover`
 
 It returns a response or null for an unowned route. The composing HTTP boundary
@@ -87,17 +99,12 @@ coordinator journal, session and application history. It is not a read-only
 boolean permission check. These dependencies need a shared transaction boundary
 before approve/evaluate/revoke routes can be implemented.
 
-Synthetic execution binds job/claim/settings/account revisions and target URL
-fingerprint. The password-backed Python path writes `prepared` before invoking
-the executor; credential provisioning and portal observation can occur before
-the later journal stages are persisted. Each account-stage helper writes the
-account document before its corresponding journal update. The email-only path
-records `signup_in_progress` before its provider call. Follow-on crash-point
-tests must cover these distinct windows. Work must use injected synthetic executors only, with
-separate credentials/account-flow providers; never a real account helper.
-
-Account-operation status and recovery are now native. Synthetic operation
-execution remains deferred with the provider integration described above.
+Synthetic protected execution now binds job/claim/settings/account revisions
+and target URL fingerprint, writes `prepared` before invoking its injected
+executor, and preserves account-before-journal stage ordering. Credential
+provisioning and portal observation can therefore precede the later journal
+stages, and explicit recovery closes those crash windows without inferring
+success. The distinct email-only account-flow provider remains deferred.
 
 ## Focused evidence and remaining integration gates
 
@@ -112,7 +119,9 @@ repository and HTTP dispatcher, concurrent Python-free writers, private files,
 old-root/missing-document/journal rejection, and unrelated-document preservation.
 The account-operation suite covers idle transport parity, status redaction,
 real claim handoff evidence, journal identity checks, and unavailable-job
-preservation.
+preservation. The synthetic-execution suite covers a successful non-final
+lifecycle, verified attention outcome, executor ambiguity, public-provider
+denial, privacy, and malformed loopback bindings.
 
 Typecheck and owned runtime emission are required. The integration owner also
 owns source/runtime catalogs, test matrix, HTTP wiring, fixture marker/allowlist,

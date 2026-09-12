@@ -8,9 +8,10 @@ import { copy, fromJSON, get, int, integer, object, set, string, text, JobsError
 import type { Document, Value } from '../contracts/workspace/values.js';
 
 export interface AccountOperationTransaction {
-  journal: Document; accounts: Document; jobs: Document; coordinator: Document;
+  journal: Document; accounts: Document; settings: Document; jobs: Document; coordinator: Document;
   sessions: Document[]; answers: Document;
   saveAccounts(document: Document): Promise<void>;
+  saveOperation(expectedOperationId: string | null, operation: Document | null): Promise<void>;
   commitClaim(operation: Document): Promise<void>;
   clearOperation(expectedOperationId: string): Promise<void>;
 }
