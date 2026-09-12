@@ -15,6 +15,7 @@ from tests.support.application_authority_cli_contract import (
     receipts as authority_receipts,
     trusted_fill_receipts,
 )
+from tests.support.shared_credential_cli_contract import receipts as shared_credential_receipts
 
 
 def o(
@@ -349,6 +350,7 @@ COMMAND_RECEIPTS = [
         o("input", required=True),
         o("expected-revision", required=True, integer=True),
     ]),
+    *shared_credential_receipts(command, o),
     command("employer-account-execute-synthetic", [o("input", required=True)]),
     command("employer-account-operation-status", []),
     command("employer-account-operation-recover", []),
@@ -387,9 +389,9 @@ class StoreCliContractTests(unittest.TestCase):
     def setUpClass(cls):
         cls.module = load_module(name="store_cli_contract")
 
-    def test_all_102_commands_have_exact_structural_receipt(self):
+    def test_all_105_commands_have_exact_structural_receipt(self):
         receipt = parser_receipt(self.module.build_parser())
-        self.assertEqual(len(receipt["commands"]), 102)
+        self.assertEqual(len(receipt["commands"]), 105)
         self.assertEqual(receipt, EXPECTED_RECEIPT)
 
     def test_parser_and_dispatch_sets_and_order_match(self):

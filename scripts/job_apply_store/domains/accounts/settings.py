@@ -84,6 +84,11 @@ class AccountSettingsMixin:
         operation = document["operation"]
         if operation is None:
             return document
+        if isinstance(operation, dict) and operation.get("kind") in {
+            "shared_credential_binding", "shared_credential_upgrade",
+        }:
+            self._validate_shared_credential_operation(operation)
+            return document
         expected = {
             "operationId", "jobId", "jobRevision", "claimId", "realmRef",
             "accountRevision", "settingsRevision", "stage", "outcomeCode", "startedAt",
@@ -101,6 +106,50 @@ class AccountSettingsMixin:
         if operation["outcomeCode"] not in {*_late("ACCOUNT_EXECUTOR_MODULE").OUTCOMES, "observed_pending"}:
             raise StoreError("account operation journal outcome is invalid")
         return document
+
+    @staticmethod
+    def _validate_shared_credential_operation(operation: dict[str, Any]) -> None:
+        kind = operation["kind"]
+        common = {
+            "kind", "operationId", "realmRef", "accountRevision",
+            "targetCredentialVersion", "stage", "outcomeCode", "startedAt",
+        }
+        expected = (
+            common | {"sourceCredentialVersion"}
+            if kind == "shared_credential_upgrade" else common
+        )
+        if set(operation) != expected:
+            raise StoreError("shared credential operation journal is invalid")
+        for field in ("operationId", "realmRef", "stage", "outcomeCode", "startedAt"):
+            if not isinstance(operation[field], str) or not operation[field]:
+                raise StoreError("shared credential operation binding is invalid")
+        versions = [operation["accountRevision"], operation["targetCredentialVersion"]]
+        if kind == "shared_credential_upgrade":
+            versions.append(operation["sourceCredentialVersion"])
+        if any(
+            not isinstance(value, int) or isinstance(value, bool) or value < 1
+            for value in versions
+        ):
+            raise StoreError("shared credential operation version is invalid")
+        upgrade_outcomes = {
+            "updated", "email_verification_required", "captcha_required",
+            "mfa_required", "password_reset_required", "failed_definitive", "ambiguous",
+        }
+        binding_valid = (
+            kind == "shared_credential_binding"
+            and operation["stage"] == "binding_in_progress"
+            and operation["outcomeCode"] == "observed_pending"
+        )
+        upgrade_valid = (
+            kind == "shared_credential_upgrade"
+            and operation["targetCredentialVersion"] > operation["sourceCredentialVersion"]
+            and (
+                (operation["stage"] == "reset_in_progress" and operation["outcomeCode"] == "observed_pending")
+                or (operation["stage"] == "outcome_recorded" and operation["outcomeCode"] in upgrade_outcomes)
+            )
+        )
+        if not binding_valid and not upgrade_valid:
+            raise StoreError("shared credential operation stage is invalid")
 
     def _ensure_account_control_documents(self) -> None:
         with _late("exclusive_file_lock")(self.store_lock_path):

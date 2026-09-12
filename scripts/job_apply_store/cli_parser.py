@@ -308,6 +308,25 @@ def build_parser(runtime: dict[str, Any]) -> argparse.ArgumentParser:
     account_update.add_argument("--realm-ref", required=True)
     account_update.add_argument("--input", required=True)
     account_update.add_argument("--expected-revision", required=True, type=int)
+    shared_bind = commands.add_parser("employer-account-shared-bind")
+    shared_bind.add_argument("--realm-ref", required=True)
+    shared_bind.add_argument("--credential-version", required=True, type=int)
+    shared_bind.add_argument("--expected-revision", required=True, type=int)
+    shared_bind.add_argument("--owner-confirmed", action="store_true")
+    shared_begin = commands.add_parser("employer-account-shared-upgrade-begin")
+    shared_begin.add_argument("--realm-ref", required=True)
+    shared_begin.add_argument("--target-version", required=True, type=int)
+    shared_begin.add_argument("--expected-revision", required=True, type=int)
+    shared_begin.add_argument("--owner-confirmed", action="store_true")
+    shared_complete = commands.add_parser("employer-account-shared-upgrade-complete")
+    shared_complete.add_argument("--operation-id", required=True)
+    shared_complete.add_argument(
+        "--outcome", required=True, choices=[
+            "ambiguous", "captcha_required", "email_verification_required",
+            "failed_definitive", "mfa_required", "password_reset_required", "updated",
+        ],
+    )
+    shared_complete.add_argument("--owner-confirmed", action="store_true")
     account_execute = commands.add_parser("employer-account-execute-synthetic")
     account_execute.add_argument("--input", required=True)
     commands.add_parser("employer-account-operation-status")

@@ -112,6 +112,28 @@ other failure are value-free and fail closed. This slice does not update employe
 records, claim a portal password reset, enable shared Workday automation, or run
 a native Keychain/visible-browser test.
 
+## Slice 3 implementation receipt
+
+The canonical Store can now pin a discovered Workday account to one explicit
+owner-created shared credential version. The binding is revision-checked,
+owner-confirmed, and journaled before account metadata changes. It contains only
+the deterministic opaque reference and positive version; the Store never checks,
+reads, receives, or creates the Keychain value.
+
+An active account remains pinned when a later shared version is created. A
+separate owner-confirmed begin operation burns a value-free
+`reset_in_progress` journal entry for exactly one account, source version, and
+higher target version. Completion accepts one closed observed outcome. Only
+`updated` advances the opaque reference/version and retains `active`; CAPTCHA,
+MFA, email verification, reset-required, definitive failure, and ambiguity keep
+the source binding and move the lifecycle to the matching closed state. An
+interrupted upgrade recovers to `ambiguous` without changing the version.
+
+These Store commands do not operate a browser, reset a third-party password, or
+prove that a shared slot exists. Shared live Workday execution therefore remains
+unavailable with `shared_native_execution_required` until its separate native
+execution integration and canary are reviewed.
+
 ## Migration follow-up
 
 The TypeScript lane must independently port the normalized strategy projection,

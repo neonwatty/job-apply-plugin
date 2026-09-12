@@ -44,6 +44,13 @@ class AccountOperationMixin:
         operation = self._load_account_operation_journal()["operation"]
         if operation is None:
             return {"status": "idle", "operation": None}
+        if operation.get("kind") in {
+            "shared_credential_binding", "shared_credential_upgrade",
+        }:
+            return {
+                "status": "recovery_required",
+                "operation": self._public_shared_operation(operation),
+            }
         return {
             "status": "recovery_required",
             "operation": {
@@ -65,6 +72,10 @@ class AccountOperationMixin:
             operation = journal["operation"]
             if operation is None:
                 return {"status": "idle", "recovered": False}
+            if operation.get("kind") in {
+                "shared_credential_binding", "shared_credential_upgrade",
+            }:
+                return self._recover_shared_credential_operation_locked(operation)
             accounts = self._load_employer_accounts_document()
             account = accounts["accounts"].get(operation["realmRef"])
             if account is None:

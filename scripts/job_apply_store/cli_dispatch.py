@@ -311,6 +311,21 @@ def run(args: argparse.Namespace, runtime: dict[str, Any]) -> Any:
         return store.update_employer_account(
             args.realm_ref, runtime['_read_input'](args.input), args.expected_revision, public=True
         )
+    if command == "employer-account-shared-bind":
+        return store.bind_shared_credential_version(
+            args.realm_ref, args.credential_version, args.expected_revision,
+            owner_confirmed=args.owner_confirmed, public=True,
+        )
+    if command == "employer-account-shared-upgrade-begin":
+        return store.begin_shared_credential_upgrade(
+            args.realm_ref, args.target_version, args.expected_revision,
+            owner_confirmed=args.owner_confirmed,
+        )
+    if command == "employer-account-shared-upgrade-complete":
+        return store.complete_shared_credential_upgrade(
+            args.operation_id, args.outcome,
+            owner_confirmed=args.owner_confirmed, public=True,
+        )
     if command == "employer-account-execute-synthetic":
         return store.execute_synthetic_account(runtime['_read_input'](args.input))
     if command == "employer-account-operation-status":

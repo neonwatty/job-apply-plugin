@@ -13,8 +13,6 @@ import unittest
 from pathlib import Path
 
 from tests.support.store_facade_contract import ROOT, load_module, private_package_keys
-
-
 IGNORED_COPY_NAMES = {
     ".git", ".worktrees", ".superpowers", "node_modules", "__pycache__",
     ".pytest_cache",
@@ -54,6 +52,7 @@ IMPLEMENTATION_SUFFIXES = {
     ".domains.startup",
     ".domains.accounts",
     ".domains.accounts.settings",
+    ".domains.accounts.shared_credentials",
     ".domains.accounts.registry",
     ".domains.accounts.operations",
     ".domains.accounts.synthetic",
