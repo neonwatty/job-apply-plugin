@@ -46,7 +46,12 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/trusted-fill-http.ts",
+        "src/workspace-core/trusted-fill.ts",
+        "src/contracts/workspace/trusted-fill.ts",
+        "src/store/native-jobs.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -134,7 +139,12 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/trusted-fill-http.ts",
+        "src/workspace-core/trusted-fill.ts",
+        "src/contracts/workspace/trusted-fill.ts",
+        "src/store/native-jobs.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -162,7 +172,12 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/trusted-fill-http.ts",
+        "src/workspace-core/trusted-fill.ts",
+        "src/contracts/workspace/trusted-fill.ts",
+        "src/store/native-jobs.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

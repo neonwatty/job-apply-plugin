@@ -20,12 +20,13 @@ import { NativeResumeFiles } from "./native-resume-files.js";
 import { NativeExtractionJournal, closeRequestsForResumes, extractionJournalName, validateExtractionResumes } from "./native-extraction-journal.js";
 import { validateExtractionRequests } from "../contracts/workspace/extraction-requests.js";
 import { validateExtractions } from "../contracts/workspace/extraction-proposals.js";
+import { validateTrustedFillDocument } from "../contracts/workspace/trusted-fill.js";
 import { validateProfile } from "../contracts/workspace/profile.js";
 import { validateGroups } from "../contracts/workspace/fact-groups.js";
 import { validateAnswers } from "../contracts/workspace/answers.js";
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 };
-const marker = '{"mode":"native-jobs-fixture","version":11}\n';
-const allowed = new Set(["automation-settings.json", "employer-accounts.json", "account-operation-journal.json", ".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "answers.json", "resume-operation.json", "resume-files", "resume-extractions.json", "resume-extraction-requests.json", "resume-extraction-journal.json", "sessions", "applications.jsonl", "coordinator.json", "coordinator-journal.json"]);
+const marker = '{"mode":"native-jobs-fixture","version":12}\n';
+const allowed = new Set(["automation-settings.json", "employer-accounts.json", "account-operation-journal.json", "trusted-fill.json", ".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "answers.json", "resume-operation.json", "resume-files", "resume-extractions.json", "resume-extraction-requests.json", "resume-extraction-journal.json", "sessions", "applications.jsonl", "coordinator.json", "coordinator-journal.json"]);
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 };
 /** Creates a NEW synthetic root only. Never adopts or initializes an existing Store. */
@@ -61,6 +62,8 @@ export async function initializeJobsFixture(root) {
         await atomicWritePointJson(join(root, `${name}.json`), document, options);
     }
     await atomicWritePointJson(join(root, 'account-operation-journal.json'), emptyAccountOperationJournal(), options);
+    await atomicWritePointJson(join(root, 'trusted-fill.json'), fromJSON({ schemaVersion: 1, approvals: {},
+        metadata: { createdAt: now, updatedAt: now } }), options);
     // The readiness marker is written last; partial initialization is never adopted.
     const handle = await open(join(root, ".native-jobs-fixture"), "wx", 0o600);
     try {
@@ -447,6 +450,18 @@ export class NativeJobsRepository {
                     await this.write(join(this.root, 'account-operation-journal.json'), emptyAccountOperationJournal(), options);
                 },
             });
+        });
+    }
+    async trustedFillTransaction(operation) {
+        return this.transaction(async () => {
+            const jobs = validateJobsDocument(await this.document('jobs'));
+            return operation({ approvals: validateTrustedFillDocument(await this.document('trusted-fill')), jobs,
+                coordinator: validateCoordinator(await this.journal('coordinator')), profile: validateProfile(await this.document('profile')),
+                resumes: validateExtractionResumes(await this.document('resumes')), answers: validateAnswers(await this.document('answers')),
+                settings: await this.journal('automation-settings'), accounts: await this.document('employer-accounts'),
+                sessions: await this.answerSessions(), files: new NativeResumeFiles(this.root),
+                saveApprovals: document => this.write(join(this.root, 'trusted-fill.json'), validateTrustedFillDocument(document), options),
+                commitClaim: value => this.claimJournal().commit(value, jobs) });
         });
     }
     async resumeSummaries() {

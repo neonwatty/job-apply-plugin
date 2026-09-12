@@ -163,7 +163,7 @@
     },
     {
       "path": "document-01-surfaces.json",
-      "sha256": "ce12b934a4542a8cc46e5b095ec8887c2b8d93bb8993f6ec131e99436305a3d5"
+      "sha256": "f934c9156ce7357fcd1e71d512e45fa8dac3f44bc7c08751f2668501d5e2dfae"
     },
     {
       "path": "document-02-surfaces.json",
@@ -195,7 +195,7 @@
     },
     {
       "path": "http-read-detail-surfaces.json",
-      "sha256": "7f039ce87a6342f7bdb3945a86b8b83274ff5be7acdde7ab0fc766a22f794d04"
+      "sha256": "89fa3645a19b5021469a6a7e34082be49d2e15261a92112a8f3b179e78503fd1"
     },
     {
       "path": "http-read-surfaces.json",
@@ -203,7 +203,7 @@
     },
     {
       "path": "http-write-accounts-surfaces.json",
-      "sha256": "0bdf97d7f6f12a42a7408d3b9c554e5e9acab8e034db093416d92b56371fb1dc"
+      "sha256": "c3dde298634965f0bb9247912ba1296dc878635985c0f353307c8643d1d01933"
     },
     {
       "path": "http-write-answers-02-surfaces.json",
@@ -375,7 +375,11 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "72a818fce605381cb186086934d0683540c7e05933efdb1ca6d9e5376fc16771"
+      "sha256": "c97a4620714416fa9e5b7574f79cad08d9a2241c67e9d28f5cf9d0b17faa504f"
+    },
+    {
+      "path": "source-catalog-native-trusted-fill.json",
+      "sha256": "ff53fc9f21766d42f14d79457d93eadf296a3666b6a92d2d184e0c0222b0ab51"
     },
     {
       "path": "source-catalog-native-legacy-jobs.json",

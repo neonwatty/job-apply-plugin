@@ -1,5 +1,6 @@
 import { automationHttp } from './automation-http.js';
 import { accountOperationHttp } from './account-operation-http.js';
+import { trustedFillHttp } from './trusted-fill-http.js';
 import { resumeLifecycleHttp } from './resume-lifecycle-http.js';
 import { answerLifecycleHttp } from './answer-lifecycle-http.js';
 import { trashHttp } from './trash-http.js';
@@ -22,6 +23,9 @@ const envelope = (key, value) => set(emptyObject(), key, value);
 /** Transport-independent dispatch. Host/token/Origin/body bounds belong to the adapter. */
 export async function jobsHttp(service, repository, method, path, body = "") {
     try {
+        const trustedFill = await trustedFillHttp(repository, method, path, body);
+        if (trustedFill)
+            return trustedFill;
         const accountOperation = await accountOperationHttp(repository, method, path, body);
         if (accountOperation)
             return accountOperation;

@@ -4,10 +4,11 @@ This tranche supplies native settings, realm resolution, and employer-account
 registry services, stranded account-operation recovery, and injected synthetic
 protected-account execution for explicit fixtures. It does not activate a Store
 writer, initialize an existing Store, inspect the owner's browser, or call the
-owner's credentials. New fixtures use version 11 and require both account
-documents plus `account-operation-journal.json`. Existing version 10 roots are rejected rather than upgraded or adopted;
-earlier fixture documents describe their historical version. Missing documents
-and unsupported trusted-fill journals remain rejected.
+owner's credentials. New fixtures use version 12 and require the account
+documents, `account-operation-journal.json`, and `trusted-fill.json`. Existing
+version 11 roots are rejected rather than upgraded or adopted; earlier fixture
+documents describe their historical version. Missing documents and unsupported
+trusted-fill records remain rejected.
 
 ## Composition and persistence
 
@@ -76,6 +77,23 @@ provider, so it rejects the synthetic route without mutation.
 - POST `/api/account-operation/execute-synthetic`
 - POST `/api/account-operation/recover`
 
+`trustedFillHttp(repository, method, path, body)` supports:
+
+- POST `/api/trusted-fill/approve`
+- GET `/api/trusted-fill/{id}`
+- POST `/api/trusted-fill/evaluate`
+- POST `/api/trusted-fill/{id}/revoke`
+
+Approval binds the current live claim, job and URL, managed resume bytes,
+profile and accepted answers, settings, optional employer account, observed
+fingerprints, operation allowlist, policy revision, and expiry. A successful
+evaluation durably consumes the approval before returning its one-shot non-final
+authority. Replay, stale revisions, final actions, claim replacement, drift,
+and every human boundary deny without retry. Canonical denials hand the live
+claim to Needs Attention; a missing, expired, or replaced claim cannot hand off
+a newer owner. HTTP status and decisions omit private values, file identity,
+nonce, and claim credentials.
+
 It returns a response or null for an unowned route. The composing HTTP boundary
 retains the existing safe request/storage error envelope and revision-conflict
 status mapping through `jobsHttp`. All mutation/detail responses use public projections. The Python
@@ -90,14 +108,10 @@ Python authorities remain read-only:
 `scripts/job_apply_store/validation/accounts.py`, `scripts/job_apply_accounts.py`
 and `scripts/job_apply_trusted_fill.py`.
 
-Trusted-fill approval needs a live claimed in-progress job, proven realm,
-managed-resume identity/content revision and preflight observation, canonical
-profile revision, accepted answer bindings, settings/account revisions, policy
-revision, and time/expiry. Approval/revocation persists `trusted-fill.json` with
-approval revisions. Evaluation may perform an attention handoff through the
-coordinator journal, session and application history. It is not a read-only
-boolean permission check. These dependencies need a shared transaction boundary
-before approve/evaluate/revoke routes can be implemented.
+Trusted-fill approval, evaluation, status, revocation, one-shot consumption,
+and denial handoff now share the native Store lock and coordinator journal.
+The remaining native account scope is the distinct email-only flow provider and
+any separately authorized real-browser evidence.
 
 Synthetic protected execution now binds job/claim/settings/account revisions
 and target URL fingerprint, writes `prepared` before invoking its injected
