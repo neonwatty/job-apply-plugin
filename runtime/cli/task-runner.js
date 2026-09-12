@@ -11,7 +11,7 @@ function help(command) {
         + 'Usage: native-task --root ABSOLUTE_FIXTURE --native-lock ABSOLUTE_ADDON COMMAND [options]\n'
         + `Commands: ${commands}\n`
         + 'Use the Python task command options; --input reads a JSON object from a file.\n'
-        + 'Only explicitly initialized native version 9 fixtures are supported.\n';
+        + 'Only explicitly initialized native version 10 fixtures are supported.\n';
 }
 export async function runTask(args) {
     try {

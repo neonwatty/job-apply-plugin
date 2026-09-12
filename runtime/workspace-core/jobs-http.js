@@ -1,4 +1,5 @@
 import { automationHttp } from './automation-http.js';
+import { resumeLifecycleHttp } from './resume-lifecycle-http.js';
 import { answerLifecycleHttp } from './answer-lifecycle-http.js';
 import { trashHttp } from './trash-http.js';
 import { claimsHttp } from './claims-http.js';
@@ -23,6 +24,9 @@ export async function jobsHttp(service, repository, method, path, body = "") {
         const automation = await automationHttp(repository, method, path, body);
         if (automation)
             return automation;
+        const resumeLifecycle = await resumeLifecycleHttp(repository, method, path, body);
+        if (resumeLifecycle)
+            return resumeLifecycle;
         const answerLifecycle = await answerLifecycleHttp(repository, method, path, body);
         if (answerLifecycle)
             return answerLifecycle;

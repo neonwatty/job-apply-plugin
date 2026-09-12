@@ -207,8 +207,8 @@ export async function nativeJobsBrowser(buildRoot) {
     const taskCli = await taskCliBrowser(page, root, fixture, buildRoot);
     const jobTrash = await jobTrashBrowser(page, root, fixture, buildRoot);
     const reactTrash = await nativeReactTrashBrowser(page, root, fixture, buildRoot);
-    const unsupported = await fetch(startup.origin + '/api/resumes/fixture/delete', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Origin: startup.origin }, body: JSON.stringify({expectedRevision:1}) });
-    assert.equal(unsupported.status, 501);
+    const unsupported = await fetch(startup.origin + '/api/resumes/fixture/unknown', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Origin: startup.origin }, body: JSON.stringify({expectedRevision:1}) });
+    assert.equal(unsupported.status, 404);
     assert.deepEqual(pageErrors, []);
     return { reactTrash, jobTrash, taskCli, groupedApprovals, taskIntake, legacyJobs, upsert, transitions, projections, claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
   } finally {

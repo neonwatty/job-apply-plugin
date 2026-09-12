@@ -144,6 +144,10 @@ export class NativeJobsRepository {
     extractionJournal() {
         return new NativeExtractionJournal(() => this.journal(extractionJournalName), (name, document) => this.write(join(this.root, `${name}.json`), document, documentOptions));
     }
+    async saveResumeDocument(document) {
+        validateExtractionResumes(document);
+        await this.write(join(this.root, "resumes.json"), document, documentOptions);
+    }
     async saveResumes(document) {
         validateExtractionResumes(document);
         const requests = validateExtractionRequests(await this.document("resume-extraction-requests"));
@@ -151,7 +155,7 @@ export class NativeJobsRepository {
         if (closed)
             await this.extractionJournal().commit("resume-request-close", { requests: closed, resumes: document });
         else
-            await this.write(join(this.root, "resumes.json"), document, documentOptions);
+            await this.saveResumeDocument(document);
     }
     async recoverResumes() {
         // The extraction journal can contain the resume document intended by the file
@@ -263,6 +267,22 @@ export class NativeJobsRepository {
                     await this.saveResumes(value);
                 },
                 saveJournal: async (value) => this.saveJournal(value),
+            });
+        }, { provider: this.provider, pathProfile: "3.12", signal: AbortSignal.timeout(30_000) });
+    }
+    async resumeLifecycleTransaction(operation) {
+        await this.validateRoot();
+        return withExclusiveFileLock(join(this.root, ".store.lock"), async () => {
+            await this.validateRoot(true);
+            const files = new NativeResumeFiles(this.root, this.checkpoint);
+            const resumes = await this.recoverResumes();
+            validateResumeReferences(object(get(resumes, "resumes"), "resumes.resumes"));
+            const saveResumes = async (document, closeRequests) => closeRequests
+                ? this.saveResumes(document) : this.saveResumeDocument(document);
+            return operation({ resumes, files, saveResumes,
+                jobs: () => this.document("jobs"),
+                requests: () => this.document("resume-extraction-requests"),
+                deleteManaged: (record, previous, document) => files.delete(record, previous, document, value => this.saveJournal(value), value => this.saveResumeDocument(value), () => this.document("resumes")),
             });
         }, { provider: this.provider, pathProfile: "3.12", signal: AbortSignal.timeout(30_000) });
     }

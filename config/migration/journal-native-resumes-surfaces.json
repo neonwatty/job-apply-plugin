@@ -50,6 +50,31 @@
         "recovery": "unverified",
         "platform": "unverified"
       }
+    },
+    {
+      "id": "journal:resume-operation.json:operation.kind:delete",
+      "kind": "journal",
+      "path": "resume-operation.json",
+      "discriminator": "operation.kind",
+      "value": "delete",
+      "node": "RES",
+      "sources": [
+        "src/store/native-jobs.ts",
+        "src/store/native-resume-files.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
     }
   ]
 }

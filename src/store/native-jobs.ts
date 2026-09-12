@@ -28,6 +28,7 @@ import { NativeExtractionJournal, closeRequestsForResumes, extractionJournalName
 import { validateExtractionRequests } from "../contracts/workspace/extraction-requests.js";
 import { validateExtractions } from "../contracts/workspace/extraction-proposals.js";
 import type { ExtractionTransaction } from "../workspace-core/extraction-context.js";
+import type { ResumeLifecycleRepository, ResumeLifecycleTransaction } from "../workspace-core/resume-lifecycle.js";
 
 import { validateProfile } from "../contracts/workspace/profile.js";
 import { validateGroups } from "../contracts/workspace/fact-groups.js";
@@ -85,7 +86,7 @@ export async function initializeJobsFixture(root: string): Promise<void> {
   try { await directory.sync(); } finally { await directory.close(); }
 }
 
-export class NativeJobsRepository implements JobsRepository {
+export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepository {
   constructor(readonly root: string, private readonly provider: PosixFlockProvider,
     private readonly write = atomicWritePointJson,
     private readonly checkpoint: (stage:string)=>Promise<void> = async () => {}) {}
@@ -148,12 +149,17 @@ export class NativeJobsRepository implements JobsRepository {
       (name, document) => this.write(join(this.root, `${name}.json`), document, documentOptions));
   }
 
+  private async saveResumeDocument(document: Document): Promise<void> {
+    validateExtractionResumes(document);
+    await this.write(join(this.root, "resumes.json"), document, documentOptions);
+  }
+
   private async saveResumes(document: Document): Promise<void> {
     validateExtractionResumes(document);
     const requests = validateExtractionRequests(await this.document("resume-extraction-requests"));
     const closed = closeRequestsForResumes(requests, document);
     if (closed) await this.extractionJournal().commit("resume-request-close", { requests: closed, resumes: document });
-    else await this.write(join(this.root, "resumes.json"), document, documentOptions);
+    else await this.saveResumeDocument(document);
   }
 
   private async recoverResumes(): Promise<Document> {
@@ -268,6 +274,26 @@ export class NativeJobsRepository implements JobsRepository {
           await this.saveResumes(value);
         },
         saveJournal: async value => this.saveJournal(value),
+      });
+    }, { provider: this.provider, pathProfile: "3.12", signal: AbortSignal.timeout(30_000) });
+  }
+
+  async resumeLifecycleTransaction<T>(operation: (transaction: ResumeLifecycleTransaction) => Promise<T>): Promise<T> {
+    await this.validateRoot();
+    return withExclusiveFileLock(join(this.root, ".store.lock"), async () => {
+      await this.validateRoot(true);
+      const files = new NativeResumeFiles(this.root, this.checkpoint);
+      const resumes = await this.recoverResumes();
+      validateResumeReferences(object(get(resumes, "resumes"), "resumes.resumes"));
+      const saveResumes = async (document: Document, closeRequests: boolean) => closeRequests
+        ? this.saveResumes(document) : this.saveResumeDocument(document);
+      return operation({ resumes, files, saveResumes,
+        jobs: () => this.document("jobs"),
+        requests: () => this.document("resume-extraction-requests"),
+        deleteManaged: (record, previous, document) => files.delete(
+          record, previous, document, value => this.saveJournal(value),
+          value => this.saveResumeDocument(value),
+          () => this.document("resumes")),
       });
     }, { provider: this.provider, pathProfile: "3.12", signal: AbortSignal.timeout(30_000) });
   }

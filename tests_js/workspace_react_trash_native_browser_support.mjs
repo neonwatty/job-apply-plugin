@@ -11,6 +11,7 @@ export async function nativeReactTrashBrowser(page, root, fixture, buildRoot) {
     const execute = promisify(execFile);
     const suffix = randomUUID();
     const input = join(fixture.root, `react-trash-native-${suffix}.json`);
+    const resumeSource = join(fixture.root, `react-trash-native-${suffix}.txt`);
     async function cli(command, args = [], payload) {
         if (payload !== undefined) {
             await writeFile(input, JSON.stringify(payload), { mode: 0o600 });
@@ -64,8 +65,13 @@ export async function nativeReactTrashBrowser(page, root, fixture, buildRoot) {
             value: 'PRIVATE-NATIVE-TRASH-ANSWER'
         });
         assert.equal(answer.key, key);
+        await writeFile(resumeSource, 'PRIVATE-NATIVE-TRASH-RESUME', { mode: 0o600 });
+        const resume = await cli('resume-import', ['--path', resumeSource], {
+            id: `react-trash-resume-${suffix}`, label: `Native React Trash resume ${suffix}`
+        });
         const records = [
             { type: 'job', id: job.id, label: job.role, revision: job.revision },
+            { type: 'resume', id: resume.id, label: resume.label, revision: resume.revision },
             { type: 'answer', id: key, label: answer.question, revision: answer.revision }
         ];
         for (const dotKey of ['.', '..']) {
@@ -81,21 +87,12 @@ export async function nativeReactTrashBrowser(page, root, fixture, buildRoot) {
         await navigation.getByRole('button', { name: 'Trash', exact: true }).click();
         await idle();
         await reload();
-        await workspace.getByText('Some lifecycle actions are not available in this workspace. Only supported actions are enabled.', { exact: true }).waitFor();
         assert.doesNotMatch(await workspace.innerText(), /PRIVATE-NATIVE-TRASH/);
         const listing = await cli('trash-list');
         assert.equal(listing.items.find(item => item.type === 'answer' && item.id === key)?.label, answer.question);
         assert.doesNotMatch(JSON.stringify(listing), /PRIVATE-NATIVE-TRASH/);
 
-        // No unsupported resume mutation or direct fixture file edits are needed.
-        await filter.selectOption('resume');
-        const resumeCards = workspace.locator('.trash-card');
-        const existingResumeCount = await resumeCards.count();
-        for (let index = 0; index < existingResumeCount; index += 1) {
-            const buttons = resumeCards.nth(index).getByRole('button');
-            assert.equal(await buttons.nth(0).isDisabled(), true);
-            assert.equal(await buttons.nth(1).isDisabled(), true);
-        }
+        assert.doesNotMatch(await workspace.innerText(), /Some lifecycle actions are not available/);
         for (const record of records) {
             await filter.selectOption(record.type);
             await card(record).getByRole('button', { name: 'Restore', exact: true }).click();
@@ -151,16 +148,19 @@ export async function nativeReactTrashBrowser(page, root, fixture, buildRoot) {
             assert.equal(observedWrites.length, deletedCount + 1);
             assert.equal(observedWrites.at(-1).body, `{"expectedRevision":${record.revision}}`);
             assert.equal(await get(record), null);
+            if (record.type === 'resume') {
+                await assert.rejects(readFile(join(root, 'resume-files', `${record.id}.txt`)), { code: 'ENOENT' });
+            }
         }
         assert.deepEqual(await cli('trash-list'), before);
-        return { nativeJobRestoreDelete: true, nativeAnswerRestoreDelete: true,
-            exactUnicodeAnswerIdentity: true, dotSegmentAnswerIdentity: true, typedDeletionBothTypes: true,
+        return { nativeJobRestoreDelete: true, nativeResumeRestoreDelete: true, nativeAnswerRestoreDelete: true,
+            exactUnicodeAnswerIdentity: true, dotSegmentAnswerIdentity: true, typedDeletionAllTypes: true,
             staleRevisionRejectedWithoutRetry: true, canonicalRecordsDeleted: true,
             errorAndListPrivacy: true, unrelatedTrashPreserved: true,
-            resumeLimitationCopy: true, existingResumeCardsChecked: existingResumeCount,
             pythonAbsentFromCliPath: true };
     } finally {
         page.off('request', observe);
         await rm(input, { force: true });
+        await rm(resumeSource, { force: true });
     }
 }

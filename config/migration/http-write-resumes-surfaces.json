@@ -242,7 +242,12 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/cli/native-jobs-server.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/resume-lifecycle-http.ts",
+        "src/workspace-core/resume-lifecycle.ts",
+        "src/store/native-jobs.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -270,7 +275,12 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/cli/native-jobs-server.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/resume-lifecycle-http.ts",
+        "src/workspace-core/resume-lifecycle.ts",
+        "src/store/native-jobs.ts"
       ],
       "effects": "unclassified",
       "scenarios": {
@@ -298,7 +308,13 @@
         "apps/companion/proxy.ts",
         "apps/companion/server/config.ts",
         "apps/companion/server/forward.ts",
-        "apps/companion/server/routes.ts"
+        "apps/companion/server/routes.ts",
+        "src/cli/native-jobs-server.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/resume-lifecycle-http.ts",
+        "src/workspace-core/resume-lifecycle.ts",
+        "src/store/native-jobs.ts",
+        "src/store/native-resume-files.ts"
       ],
       "effects": "unclassified",
       "scenarios": {

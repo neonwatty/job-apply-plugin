@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "sources": [
     { "path": "runtime/contracts/workspace/resume-content.js", "sha256": "6e1aeb9b02c7a3ecfc904e6ececb7cd74ba01b80003cc3e788c8076a4755be18", "classification": "unreviewed" },
-    { "path": "runtime/store/native-resume-files.js", "sha256": "1bb45c99fb1981c921e0dcd1250dca7d8c946308cd46fa59b54f3d9849b3136d", "classification": "unreviewed" },
+    { "path": "runtime/store/native-resume-files.js", "sha256": "4cb365a34fe8b42fb759a39dddd6ff8ff42a95b84c8b54fd1694580ea5e218c5", "classification": "unreviewed" },
     { "path": "runtime/workspace-core/resumes-http.js", "sha256": "bdbb6b958bab5e7ed03818a98d2a7a7c2170c480eccb1aa4dd58b90fc81de287", "classification": "unreviewed" },
     { "path": "runtime/workspace-core/resumes.js", "sha256": "393a21b96618bed15b8317df5442cb403353f489c6d2acdd0360a3cd1724c623", "classification": "unreviewed" },
     { "path": "src/contracts/workspace/resume-content.ts", "sha256": "6578551f4655b6e9fd9db3b7f9aeecc3ddaee67d6f9270742a67e32eb15be2f9", "classification": "unreviewed" },
-    { "path": "src/store/native-resume-files.ts", "sha256": "56c43f6de09e97e20d329d671ab6cd01c5b72b56c6ac979dbc02fb5ac2cf0769", "classification": "unreviewed" },
+    { "path": "src/store/native-resume-files.ts", "sha256": "b2009c9d39e7ca2724a5adecb5d8e9d1e404a369b39dbf567646004485570b21", "classification": "unreviewed" },
     { "path": "src/workspace-core/resumes-http.ts", "sha256": "bf29e88b477f5b0cee81154e4f9ddb7b85c186700ea519c024e843f16d9ae15f", "classification": "unreviewed" },
     { "path": "src/workspace-core/resumes.ts", "sha256": "246072b9292684976f461a0fe4b31297f955b6b2dece93dc2ef63b0988747903", "classification": "unreviewed" }
   ]

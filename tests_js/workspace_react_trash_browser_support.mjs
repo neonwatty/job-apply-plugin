@@ -137,7 +137,7 @@ export async function reactTrashBrowser(page, { origin, headers }) {
         await page.setViewportSize({ width, height: 844 });
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
     }
-    // Capability and failed-first-load UI checks use only intercepted synthetic projections.
+    // Native capability and failed-first-load UI checks use only intercepted synthetic projections.
     await page.route('**/api/boot', route => route.fulfill({ status: 200, contentType: 'application/json', body: '{"status":"ready","mode":"native-jobs-fixture"}' }));
     let firstLoad = true;
     await page.route('**/api/trash', route => {
@@ -155,13 +155,14 @@ export async function reactTrashBrowser(page, { origin, headers }) {
     await reload();
     for (const fixture of fixtures) {
         const actions = card(fixture).getByRole('button');
-        assert.equal(await actions.nth(0).isDisabled(), fixture.type === 'resume');
-        assert.equal(await actions.nth(1).isDisabled(), fixture.type === 'resume');
+        assert.equal(await actions.nth(0).isDisabled(), false);
+        assert.equal(await actions.nth(1).isDisabled(), false);
     }
     await page.setViewportSize({ width: 390, height: 844 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
     await page.unroute('**/api/boot');
     await page.unroute('**/api/trash');
     return { compatibilityRestoreAndDeleteAllTypes: true, exactTypedConfirmation: true, conflictNoRetry: true,
-        referencePrivacy: true, savedButRefreshFailed: true, keyboardFocus: true, nativeUnsupportedActionsDisabled: true, failedLoadNotEmpty: true, errorAfterCommitReconciled: true, layouts: [390, 1280] };
+        referencePrivacy: true, savedButRefreshFailed: true, keyboardFocus: true, nativeAllActionsEnabled: true,
+        failedLoadNotEmpty: true, errorAfterCommitReconciled: true, layouts: [390, 1280] };
 }

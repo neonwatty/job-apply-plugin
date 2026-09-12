@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    { "path": "runtime/cli/native-resume-lifecycle.js", "sha256": "2fe7976b3bf1b900faa56596bce004e03e9a8bf36a346098e3619b66cb27e03f", "classification": "unreviewed" },
+    { "path": "runtime/workspace-core/resume-lifecycle-http.js", "sha256": "2df397de9f579d13ca839f10f82530af87a56e49c14b25b3fa8c518665f86b3c", "classification": "unreviewed" },
+    { "path": "runtime/workspace-core/resume-lifecycle.js", "sha256": "9915e9b61126cb45f52c96c40ec5dfe3c19642d4b142da5440645c297d4d751d", "classification": "unreviewed" },
+    { "path": "src/cli/native-resume-lifecycle.ts", "sha256": "331a22c2c794b40042d5da182ad9085114dac92bb8f1b8879abb2465402b9a92", "classification": "unreviewed" },
+    { "path": "src/workspace-core/resume-lifecycle-http.ts", "sha256": "1fd9ec3c62d0fb409ee554f35cfc73a6228bda04fe0dd11e5dc852c6fef229f7", "classification": "unreviewed" },
+    { "path": "src/workspace-core/resume-lifecycle.ts", "sha256": "8e652da3ec3c2d54d84500ab9e03aadf37f754188807829305741da0f8c6ace9", "classification": "unreviewed" }
+  ]
+}

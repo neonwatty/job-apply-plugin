@@ -18,11 +18,10 @@ and styles with its existing navigation guard. `onMutation` is optional because 
 
 ## Capabilities and recovery
 
-Compatibility mode supports restore and permanent deletion for jobs, resumes
-and answers. `nativeTrashCapabilities` enables job and answer restore/permanent deletion.
-Resume lifecycle actions remain unavailable in native fixture mode.
-Unsupported actions are disabled in the UI and independently rejected by the
-adapter before transport.
+Compatibility and native fixture modes support restore and permanent deletion
+for jobs, resumes and answers. `nativeTrashCapabilities` enables all three record
+types. Unsupported actions in any future capability profile remain disabled in
+the UI and are independently rejected by the adapter before transport.
 
 Restore uses a confirmation dialog. Permanent deletion requires the exact legacy
 phrase `DELETE JOB`, `DELETE RESUME`, or `DELETE ANSWER`. A resume deletion
@@ -51,7 +50,7 @@ wiring applied. It creates synthetic jobs, a managed resume and an answer using
 the API; restores and permanently deletes all three through the UI; verifies
 stale-revision rejection, typed confirmation, keyboard focus, advisory reference
 errors, saved-mutation/failed-refresh recovery, redaction and 390px/desktop
-layout. It also verifies native capability limits, failed-load versus empty state,
+layout. It also verifies native capability enablement, failed-load versus empty state,
 and an error returned after a real restore commits. Reference and refresh-error envelopes are injected in the isolated page;
 ordinary lifecycle and revision-conflict requests use the real Python backend.
 The caller owns browser/service/Store cleanup. Do not run against live data.
