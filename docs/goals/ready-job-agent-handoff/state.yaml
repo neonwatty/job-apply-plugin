@@ -1,0 +1,536 @@
+# GoalBuddy v2 state.yaml
+# Initial live-board seed. The full task sequence is populated after the board starts.
+
+version: 2
+
+goal:
+  title: "Ready Job Agent Handoff"
+  slug: "ready-job-agent-handoff"
+  kind: existing_plan
+  tranche: "Deliver the complete ready-job-to-visible-browser-agent handoff without starting the companion UX."
+  status: done
+  oracle:
+    signal: "A tested end-to-end lifecycle moves one canonical job through ready to in_progress to needs_info or awaiting_review under one exclusive recoverable claim, using durable assigned data and preserving the manual final-action boundary."
+    cadence: "after each Worker package and at final audit"
+    final_proof: "Integration receipt plus focused and full-suite verification mapped to every lifecycle, concurrency, privacy, compatibility, and manual-submit constraint."
+  intake:
+    original_request: "Continue with the Ready Job Agent Handoff slice after canonical job ingestion was merged."
+    interpreted_outcome: "Make ready jobs actionable by the current application agent through one shared durable and concurrency-safe workflow."
+    input_shape: existing_plan
+    audience: "Job Apply users coordinating with Codex or Claude Code agents"
+    authority: approved
+    proof_type: test
+    completion_proof: "The real application skill and helper pass an isolated ready-job lifecycle walkthrough and all regression suites."
+    likely_misfire: "Add disconnected claim helpers or a second agent-state model without wiring the application skill to the canonical job lifecycle."
+    blind_spots_considered:
+      - "Stale or crashed application agents"
+      - "Concurrent CLI and future UX clients"
+      - "Assigned versus default resume selection"
+      - "Sensitive-answer consent and value-free pending metadata"
+      - "Direct-URL backward compatibility"
+      - "Partial failure between claim, transition, session, and history writes"
+    existing_plan_facts:
+      - "Canonical job ingestion is merged into staging."
+      - "Durable storage and CLI integration precede the companion UX."
+      - "Ready Job Agent Handoff is the next agreed slice."
+      - "The job record remains the only durable application status."
+
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+  planning_is_not_completion: true
+  queued_required_worker_blocks_completion: true
+  continuous_until_full_outcome: true
+  missing_input_or_credentials_do_not_stop_goal: true
+  exact_human_approval_can_terminal_wait: true
+  preserve_and_validate_existing_plan: true
+  intake_misfire_must_be_audited: true
+  goal_pressure_requires_oracle: true
+  no_completion_on_weak_proof: true
+  slice_policy:
+    max_consecutive_tiny_tasks: 2
+    prefer_vertical_slices: true
+    judge_picks_largest_safe_slice: true
+    worker_completes_whole_slice: true
+
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+
+visual_board:
+  selected: local
+  local:
+    status: live
+    url: "http://goalbuddy.localhost:41737/ready-job-agent-handoff/"
+    command: "node /Users/neonwatty/.codex/plugins/cache/goalbuddy/goalbuddy/0.4.3/skills/goal-prep/surfaces/local-goal-board/scripts/local-goal-board.mjs --goal docs/goals/ready-job-agent-handoff"
+
+active_task: null
+
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: done
+    reasoning_hint: low
+    objective: "Map the merged durable job lifecycle and the current application skill seams required for the ready-job handoff."
+    inputs:
+      - "docs/superpowers/specs/2026-08-24-shared-job-workspace-design.md"
+      - "scripts/job-apply-store.py"
+      - "skills/job-apply/SKILL.md"
+      - "skills/answer-memory/SKILL.md"
+      - "tests/test_job_apply_store.py"
+      - "tests/test_answer_memory_integration.py"
+    constraints:
+      - "Read-only."
+      - "Do not edit implementation files."
+      - "Distinguish existing behavior from missing contract and wiring."
+    expected_output:
+      - "Lifecycle and data-flow map"
+      - "Exact missing seams"
+      - "Relevant files and verification commands"
+      - "Risks and candidate vertical slice boundaries"
+    receipt:
+      result: done
+      summary: "Canonical jobs, resumes, readiness preflight, optimistic revisions, guarded transitions, value-free sessions/history, and manual applied confirmation already exist. The ready-job handoff does not: there is no runtime claim, heartbeat/recovery, atomic claim-plus-in_progress operation, or transition-plus-history consistency. The job-apply skill still requires a supplied URL and independently writes sessions/history, so it never lists/selects ready jobs, loads the durable assigned/default resume, or drives canonical status through needs_info/awaiting_review. A safe vertical slice should add one recoverable global claim/coordinator operation, wire the real skill while preserving direct-URL behavior, and prove concurrency, stale recovery, privacy, and manual final action end to end."
+      evidence:
+        - file: scripts/job-apply-store.py
+          lines: "35-84,1361-1432,1833-1891"
+          detail: "Defines the complete status graph, ready-job filtering via job-list, readiness preflight, optimistic revisions, and guarded transitions including explicit confirmation for applied."
+        - file: scripts/job-apply-store.py
+          lines: "1833-1891,2212-2415"
+          detail: "job-transition writes only jobs.json; history append and session save are separate operations. No atomic lifecycle coordinator spans job, history, and session state."
+        - file: scripts/job-apply-store.py
+          lines: 2458-2593
+          detail: "CLI exposes job/resume/history/session commands but no claim, heartbeat, release, stale recovery, pending-question, or ready-job acquisition command."
+        - file: skills/job-apply/SKILL.md
+          lines: "8-61,93-116"
+          detail: "Startup asks for a supplied URL; Phase 2 opens that URL and uses profile/session/answer/history operations, but does not list ready jobs or acquire ownership."
+        - file: skills/job-apply/SKILL.md
+          lines: 99-116
+          detail: "The application workflow saves progress and appends reviewed history but never transitions the canonical job to in_progress, needs_info, or awaiting_review."
+        - file: skills/job-apply/SKILL.md
+          lines: "35-61,105-116"
+          detail: "Resume upload uses the profile resume path; no durable assigned resumeId/default resume lookup is specified."
+        - file: skills/answer-memory/SKILL.md
+          lines: 236-278
+          detail: "Documents canonical job and session commands, preflight, revision checks, applied confirmation, and value-free progress, but no ownership/coordinator contract."
+        - file: tests/test_job_apply_store.py
+          lines: "792-849,1036-1215"
+          detail: "Covers status flow, readiness failure, explicit applied confirmation, value-free history/session, and replay ordering; it does not cover ready-job claims or atomic job/history/session lifecycle."
+        - file: tests/test_answer_memory_integration.py
+          lines: 47-209
+          detail: "Integration tests cover legacy profile/answers/session/history, skill text boundaries, and isolated replay, but not one canonical ready job consumed by the real skill contract."
+        - command: "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store test_answer_memory_integration"
+          detail: "Baseline verification passed: 50 tests, 0 failures."
+      facts:
+        - kind: existing
+          detail: "jobs.json is the sole durable application-status model; jobs begin saved and support needs_info, ready, in_progress, awaiting_review, applied, and closed."
+        - kind: existing
+          detail: "job-list --status ready provides deterministic priority-first selection data, and job-preflight resolves assigned resumeId or the active default without mutating observations."
+        - kind: existing
+          detail: "Job and resume mutations use a global store lock plus optimistic revisions; ready fails without profile/resume, and applied requires --user-confirmed."
+        - kind: existing
+          detail: "Session pendingFields allow only question, state, answerKey, and sensitive; history/session schemas reject arbitrary values."
+        - kind: missing
+          detail: "No exclusive recoverable runtime claim exists: no durable owner token, lease/heartbeat, release, expiry, or stale takeover semantics."
+        - kind: missing
+          detail: "No single helper operation atomically acquires the claim and moves ready to in_progress, or couples later status transitions with required lifecycle history."
+        - kind: missing
+          detail: "The real job-apply skill lacks ready-job discovery/selection, claim lifecycle, durable assigned/default resume loading, canonical job identity for sessions/history, and needs_info/awaiting_review transitions."
+        - kind: candidate_vertical_slice
+          detail: "Add claim/coordinator storage plus CLI; wire job-apply startup to accept either direct URL or selected ready job; load job/profile/resume/answers; persist value-free pending/session data; transition to needs_info or awaiting_review; release claim; retain manual submit prohibition."
+        - kind: verification
+          detail: "Focused verification should include both named unittest modules; completion should also run unittest discovery, scripts/smoke-plugin.sh, and git diff --check as already specified by the board."
+      contradictions:
+        - detail: "The design requires status and required lifecycle history to remain consistent through one atomic helper operation, while current job-transition never appends history and history-append is independent."
+        - detail: "The design says ready selection atomically acquires one global claim and transitions to in_progress, while the helper has neither claim state nor a combined operation."
+        - detail: "The design says the agent loads the assigned resume, while the current job-apply skill treats profile.resumePath as required input and does not consult job.resumeId/default resume records."
+        - detail: "The tranche requires preserving direct-URL compatibility, but simply replacing the current URL-first startup with ready-job selection would regress existing behavior."
+      ambiguity_requiring_judge:
+        - detail: "Define exact claim persistence schema, lease duration, heartbeat cadence, owner/token visibility, stale threshold, and whether release is idempotent."
+        - detail: "Choose recoverability semantics after partial failure: transactional multi-file strategy, journal/reconciliation protocol, or a consolidated coordinator record, while keeping job status authoritative."
+        - detail: "Specify whether needs_info should retain or release the claim immediately and how resumption returns that job to in_progress without allowing concurrent work."
+        - detail: "Map canonical transitions to required history events and session states, especially ready→in_progress, in_progress→needs_info, and in_progress→awaiting_review."
+      commands:
+        - "git rev-parse --show-toplevel && rg --files \"$(git rev-parse --show-toplevel)\" -g 'AGENTS.md' -g 'AGENTS.override.md' && buffer context"
+        - "sed -n '1,240p' docs/goals/ready-job-agent-handoff/state.yaml; sed -n '1,280p' docs/superpowers/specs/2026-08-24-shared-job-workspace-design.md"
+        - "sed -n '280,620p' docs/superpowers/specs/2026-08-24-shared-job-workspace-design.md; rg -n \"^(def |class )|add_parser|job|claim|transition|ready|session|history|pending|resume\" scripts/job-apply-store.py"
+        - "sed -n '1,100p' scripts/job-apply-store.py; sed -n '1360,1440p' scripts/job-apply-store.py; sed -n '1740,1950p' scripts/job-apply-store.py; sed -n '1,300p' skills/job-apply/SKILL.md"
+        - "sed -n '1,320p' skills/answer-memory/SKILL.md; rg -n \"job|ready|claim|transition|preflight|resume|session|history|pending|value|helper\" skills/answer-memory/SKILL.md skills/answer-memory/references/storage-contract.md"
+        - "rg -n \"^    def test_|job|ready|transition|preflight|resume|history|session|pending|claim|concurr|stale|manual|submit|direct\" tests/test_job_apply_store.py tests/test_answer_memory_integration.py"
+        - "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store test_answer_memory_integration"
+      note_needed: false
+  - id: T002
+    type: judge
+    assignee: Judge
+    status: done
+    reasoning_hint: high
+    objective: "Validate the Ready Job Agent Handoff contract and specify the largest safe vertical Worker package that proves the goal oracle."
+    inputs:
+      - "T001 receipt"
+      - "docs/goals/ready-job-agent-handoff/goal.md"
+      - "docs/superpowers/specs/2026-08-24-shared-job-workspace-design.md"
+    constraints:
+      - "Read-only; do not implement."
+      - "Keep canonical job status as the sole durable workflow status."
+      - "Reject a storage-only package that leaves the real job-apply skill disconnected."
+      - "Preserve direct-URL compatibility and the manual final-action boundary."
+      - "Select the largest safe useful vertical slice with exact allowed files, verification, and stop conditions."
+    expected_output:
+      - "Contract decision and lifecycle invariants"
+      - "Exact Worker objective"
+      - "Exact allowed_files"
+      - "Focused and full verify commands"
+      - "Stop conditions and deferred scope"
+    receipt:
+      result: done
+      decision: approved
+      full_outcome_complete: false
+      rationale: "Approve one vertical package spanning recoverable global ownership, atomic canonical lifecycle operations, and real Job Apply skill wiring. Storage-only work would fail the oracle. Use a 300-second lease with 60-second heartbeats, explicit same-job stale recovery, journaled idempotent roll-forward, assigned-resume precedence, value-free progress, and atomic needs_info or awaiting_review handoff plus claim release. Preserve unchanged direct-URL behavior and the human-only final action."
+      evidence:
+        - "T001 proves canonical jobs, readiness, revisions, sessions, history, and manual applied confirmation exist, while claims, atomic coordination, assigned-resume skill wiring, and ready-job consumption are missing."
+        - "goal.md requires ready -> in_progress -> needs_info or awaiting_review under one exclusive recoverable claim with value-free metadata and no final action."
+        - "The shared-workspace design makes canonical job status authoritative and requires status plus lifecycle history consistency through one atomic helper operation."
+        - "Claim schema: one version-1 runtime coordinator record containing at most one active {claimId, jobId, ownerLabel, tokenHash, acquiredAt, heartbeatAt, expiresAt}; expose no token hash and store no workflow status."
+        - "Acquisition must re-run preflight under the store lock, resolve assigned resume before active default, atomically create the claim, transition ready -> in_progress, and append an idempotent job-started event."
+        - "Expired claims require explicit same-job recovery while the job remains in_progress; recovery rotates the token, preserves session/status, records an idempotent claim-recovered event, and uses injectable time."
+        - "Blocked and review operations must atomically save value-free session metadata, append job-blocked or reviewed history, transition status, and release the claim. needs_info resumes only through readiness and fresh acquisition."
+        - "The real skill must support ready-job selection and claim-aware progress while retaining direct-URL mode and stopping before Submit, Send, Apply, or equivalent."
+      worker_package:
+        objective: "Implement and document one complete Ready Job Agent Handoff vertical slice: a versioned global recoverable claim and journaled coordinator operations; atomic ready acquisition and terminal needs_info/awaiting_review handoffs; claim-gated value-free progress; assigned/default resume resolution; explicit stale recovery; and real Job Apply skill consumption of selected ready jobs while preserving direct-URL behavior and the manual final-action boundary."
+        allowed_files:
+          - scripts/job-apply-store.py
+          - skills/job-apply/SKILL.md
+          - skills/answer-memory/SKILL.md
+          - skills/answer-memory/references/storage-contract.md
+          - tests/test_job_apply_store.py
+          - tests/test_answer_memory_integration.py
+          - README.md
+          - scripts/smoke-plugin.sh
+        verify:
+          - "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store"
+          - "PYTHONPATH=tests python3 -m unittest -v test_answer_memory_integration"
+          - "python3 -m unittest discover -s tests -v"
+          - "bash scripts/smoke-plugin.sh"
+          - "git diff --check"
+        stop_if:
+          - "Crash-recoverable coordination requires an external service, second authoritative job-status field, or non-value-free recovery data."
+          - "The status graph cannot support needs_info -> ready preflight resumption without an owner decision."
+          - "Implementation would silently steal or clear a live claim."
+          - "Claim, journal, history, or session data would contain answer values, resume contents, credentials, CAPTCHA/MFA data, or browser state."
+          - "Implementation would regress direct-URL mode, optimistic revisions, human precedence, or the manual final-action boundary."
+          - "Implementation requires files outside allowed_files."
+          - "Focused verification fails twice for the same unresolved contract reason."
+        deferred_scope:
+          - "Companion UX and local server"
+          - "Markdown queue migration"
+          - "Answer merging"
+          - "Resume extraction proposal UI"
+          - "Multiple concurrent application agents"
+          - "Automatic submission or inferred applied status"
+      subgoal_contract: null
+      parallel_safety: null
+      blocked_tasks: []
+      missing_evidence:
+        - "Worker implementation receipt."
+        - "Claim concurrency, expiry, recovery, reconciliation, privacy, resume precedence, direct-URL, and manual-boundary tests."
+        - "Focused, full-suite, smoke, and diff verification."
+        - "Final Judge oracle audit."
+      required_board_updates:
+        - "Persist this receipt on T002 and mark T002 done."
+        - "Apply worker_package to T003 and activate T003 as the sole write task."
+        - "Keep T999 queued until implementation and verification evidence exist."
+  - id: T003
+    type: worker
+    assignee: Worker
+    status: done
+    reasoning_hint: medium
+    objective: "Implement and document one complete Ready Job Agent Handoff vertical slice: a versioned global recoverable claim and journaled coordinator operations; atomic ready acquisition and terminal needs_info/awaiting_review handoffs; claim-gated value-free progress; assigned/default resume resolution; explicit stale recovery; and real Job Apply skill consumption of selected ready jobs while preserving direct-URL behavior and the manual final-action boundary."
+    allowed_files:
+      - "scripts/job-apply-store.py"
+      - "skills/job-apply/SKILL.md"
+      - "skills/answer-memory/SKILL.md"
+      - "skills/answer-memory/references/storage-contract.md"
+      - "tests/test_job_apply_store.py"
+      - "tests/test_answer_memory_integration.py"
+      - "README.md"
+      - "scripts/smoke-plugin.sh"
+    verify:
+      - "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store"
+      - "PYTHONPATH=tests python3 -m unittest -v test_answer_memory_integration"
+      - "python3 -m unittest discover -s tests -v"
+      - "bash scripts/smoke-plugin.sh"
+      - "git diff --check"
+    stop_if:
+      - "Crash-recoverable coordination requires an external service, second authoritative job-status field, or non-value-free recovery data."
+      - "The status graph cannot support needs_info -> ready preflight resumption without an owner decision."
+      - "Implementation would silently steal or clear a live claim."
+      - "Claim, journal, history, or session data would contain answer values, resume contents, credentials, CAPTCHA/MFA data, or browser state."
+      - "Implementation would regress direct-URL mode, optimistic revisions, human precedence, or the manual final-action boundary."
+      - "Implementation requires files outside allowed_files."
+      - "Focused verification fails twice for the same unresolved contract reason."
+    constraints:
+      - "Defer companion UX and local server."
+      - "Defer Markdown queue migration, answer merging, and resume extraction proposal UI."
+      - "Defer multiple concurrent agents, automatic submission, and inferred applied status."
+    expected_output:
+      - "Working helper and skill lifecycle"
+      - "Concurrency and stale-recovery tests"
+      - "Value-free pending/progress evidence"
+      - "Direct-URL compatibility evidence"
+      - "Focused and full verification receipt"
+    receipt:
+      result: done
+      changed_files:
+        - README.md
+        - scripts/job-apply-store.py
+        - skills/answer-memory/SKILL.md
+        - skills/answer-memory/references/storage-contract.md
+        - skills/job-apply/SKILL.md
+        - tests/test_answer_memory_integration.py
+        - tests/test_job_apply_store.py
+      commands:
+        - cmd: "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store"
+          status: pass
+        - cmd: "PYTHONPATH=tests python3 -m unittest -v test_answer_memory_integration"
+          status: pass
+        - cmd: "python3 -m unittest discover -s tests -v"
+          status: pass
+        - cmd: "bash scripts/smoke-plugin.sh"
+          status: pass
+        - cmd: "git diff --check"
+          status: pass
+      summary: "Implemented the full ready-job vertical slice: lazy versioned global claim storage, 300-second leases and heartbeats, explicit same-job stale recovery, hashed token persistence, journaled idempotent roll-forward, atomic acquisition and needs_info/awaiting_review handoffs, claim-gated value-free progress, and assigned-resume precedence. Wired the real Job Apply skill while preserving direct-URL artifact shape and the manual final-action boundary. Added concurrency, privacy, recovery, reconciliation, resume precedence, CLI lifecycle, and compatibility coverage. All focused tests, 341 discovered tests, plugin smoke checks, and diff checks pass. Deviations: none."
+      remaining_blockers: []
+      verification_attempts: 2
+      stopped_because: null
+  - id: T999
+    type: judge
+    assignee: Judge
+    status: done
+    reasoning_hint: high
+    objective: "Audit the implemented Ready Job Agent Handoff against the full owner outcome and goal oracle."
+    inputs:
+      - "All completed task receipts"
+      - "Current implementation diff"
+      - "Focused and full verification results"
+      - "docs/goals/ready-job-agent-handoff/goal.md"
+    constraints:
+      - "Read-only; do not implement."
+      - "Reject completion if the real job-apply skill cannot consume a ready job end to end."
+      - "Reject completion if claim and status updates can diverge or concurrency/stale recovery are not proved."
+      - "Reject completion if pending metadata contains answer values or final-action policy is weakened."
+      - "Reject completion if required Worker work remains queued, active, or unverified."
+    expected_output:
+      - "complete | not_complete"
+      - "full_outcome_complete: true | false"
+      - "Oracle-to-evidence mapping"
+      - "Missing evidence or exact next task"
+    receipt:
+      result: done
+      decision: not_complete
+      full_outcome_complete: false
+      rationale: "The happy-path vertical slice works and all 341 tests pass, but canonical status and claim state can still diverge. After acquisition, generic job-transition can move in_progress directly to needs_info, awaiting_review, or closed without session/history coordination or claim release; heartbeat then renews that claim without checking job status. A direct audit reproduced awaiting_review with a live claim, only job-started history, and no session. Acquisition and handoff also omit caller-supplied expected revisions, so stale selections and agent state do not fail optimistically. These violate atomicity, recoverability, concurrency, and revision non-negotiables."
+      evidence:
+        - requirement: "Real skill consumes ready jobs"
+          result: proven
+          detail: "skills/job-apply/SKILL.md specifies ready selection, acquisition, resolved resume use, claim progress, terminal handoff, and direct-URL preservation; integration tests prove the CLI happy path."
+        - requirement: "Exclusive recoverable claim"
+          result: partially_proven
+          detail: "Concurrent acquisition and same-job expiry recovery pass, but generic status mutation can strand a live or expired claim on a non-in_progress job."
+        - requirement: "Atomic canonical lifecycle"
+          result: contradicted
+          detail: "Generic transitions out of in_progress remain possible without coordinator history, session, or claim release."
+        - requirement: "Claim/status coherence"
+          result: contradicted
+          detail: "Heartbeat renews a matching token without verifying canonical job status remains in_progress."
+        - requirement: "Authoritative optimistic revisions"
+          result: contradicted
+          detail: "Acquisition and handoff accept no expected revision and silently use the latest stored revision."
+        - requirement: "Crash recovery"
+          result: partially_proven
+          detail: "Acquisition roll-forward is tested, but handoff failures across job, session, history, claim, and journal-clear boundaries are not."
+        - requirement: "Value-free metadata and manual final action"
+          result: proven
+          detail: "Validators reject pending values and the skill forbids final-action activation."
+        - requirement: "Assigned/default resume and compatibility"
+          result: partially_proven
+          detail: "Assigned precedence is tested; default resolution and direct-URL behavior lack complete behavioral proof."
+        - command: "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store"
+          result: pass
+          detail: "51 tests passed."
+        - command: "PYTHONPATH=tests python3 -m unittest -v test_answer_memory_integration"
+          result: pass
+          detail: "5 tests passed."
+        - command: "python3 -m unittest discover -s tests -v"
+          result: pass
+          detail: "341 tests passed."
+        - command: "bash scripts/smoke-plugin.sh && git diff --check"
+          result: pass
+          detail: "Plugin smoke and diff validation passed."
+        - command: "isolated coordinator divergence audit"
+          result: fail
+          detail: "Acquired a ready job, used generic transition to awaiting_review, then successfully heartbeated; observed awaiting_review, a live claim, only job-started history, and no session."
+      subgoal_contract: null
+      parallel_safety: null
+      blocked_tasks: []
+      missing_evidence:
+        - "Guard generic transitions, trash, and deletion for claimed in_progress jobs."
+        - "Verify canonical in_progress status on heartbeat and every claim-gated mutation."
+        - "Require caller-supplied expected revisions on acquisition and terminal handoff."
+        - "Add divergence, lease-boundary, stale-revision, default-resume, failure-boundary, and direct-URL tests."
+        - "Re-run complete verification and final audit."
+      required_board_updates:
+        - "Persist this receipt and keep goal active."
+        - "Activate bounded remediation Worker T004."
+        - "Queue final re-audit T998."
+  - id: T004
+    type: worker
+    assignee: Worker
+    status: done
+    reasoning_hint: medium
+    objective: "Close every claim/status divergence path, enforce caller-supplied optimistic revisions on acquisition and terminal handoff, and add deterministic failure-boundary and direct-URL compatibility regressions required by the first final audit."
+    allowed_files:
+      - "scripts/job-apply-store.py"
+      - "skills/job-apply/SKILL.md"
+      - "skills/answer-memory/SKILL.md"
+      - "skills/answer-memory/references/storage-contract.md"
+      - "tests/test_job_apply_store.py"
+      - "tests/test_answer_memory_integration.py"
+      - "README.md"
+      - "scripts/smoke-plugin.sh"
+    verify:
+      - "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store"
+      - "PYTHONPATH=tests python3 -m unittest -v test_answer_memory_integration"
+      - "python3 -m unittest discover -s tests -v"
+      - "bash scripts/smoke-plugin.sh"
+      - "git diff --check"
+    stop_if:
+      - "A required guard cannot be implemented without a second authoritative status model or weakening recoverability."
+      - "Expected-revision enforcement cannot preserve both canonical ready-job mode and direct-URL compatibility."
+      - "Implementation requires files outside allowed_files."
+      - "Focused verification fails twice for the same unresolved contract reason."
+    expected_output:
+      - "Generic transition/trash/delete guards for claimed jobs"
+      - "Status validation on heartbeat and every claim-gated mutation"
+      - "Expected revision enforcement on acquire and handoff"
+      - "Failure-boundary, default-resume, lease-boundary, and direct-URL regressions"
+      - "Focused and full verification receipt"
+    receipt:
+      result: done
+      changed_files:
+        - scripts/job-apply-store.py
+        - skills/job-apply/SKILL.md
+        - skills/answer-memory/SKILL.md
+        - skills/answer-memory/references/storage-contract.md
+        - tests/test_job_apply_store.py
+        - tests/test_answer_memory_integration.py
+      commands:
+        - cmd: "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store"
+          status: pass
+        - cmd: "PYTHONPATH=tests python3 -m unittest -v test_answer_memory_integration"
+          status: pass
+        - cmd: "python3 -m unittest discover -s tests -v"
+          status: pass
+        - cmd: "bash scripts/smoke-plugin.sh"
+          status: pass
+        - cmd: "git diff --check"
+          status: pass
+      summary: "Closed every first-audit finding. Claimed jobs now reject generic transition, trash, and deletion; heartbeat, progress, handoff, and recovery require canonical in_progress status. Acquisition and terminal handoff require caller-supplied expected revisions, with updated skill and storage documentation. Added deterministic coverage for divergence, exact lease expiry, stale revisions, default-resume resolution, all acquisition and handoff failure boundaries, and behavioral direct-URL compatibility without coordinator artifacts. Focused suites pass with 55 storage and 5 integration tests; all 345 discovered tests, plugin smoke checks, and diff validation pass. Deviations: none."
+      remaining_blockers: []
+      verification_attempts: 1
+      stopped_because: null
+  - id: T998
+    type: judge
+    assignee: Judge
+    status: done
+    reasoning_hint: high
+    objective: "Re-audit the remediated Ready Job Agent Handoff against every goal oracle and first-audit finding."
+    inputs:
+      - "T999 receipt"
+      - "T004 receipt"
+      - "Current implementation diff"
+      - "Fresh focused and full verification"
+    constraints:
+      - "Read-only; do not implement."
+      - "Reproduce or falsify every previously identified divergence path."
+      - "Require authoritative expected-revision, recovery-boundary, direct-URL, privacy, and manual-submit proof."
+    expected_output:
+      - "complete | not_complete"
+      - "full_outcome_complete: true | false"
+      - "First-audit finding disposition"
+      - "Oracle-to-evidence mapping"
+    receipt:
+      result: done
+      decision: complete
+      full_outcome_complete: true
+      rationale: "The remediation closes every first-audit finding and proves the full oracle. Independent reproduction confirms generic transition, trash, and delete cannot diverge claimed jobs; heartbeat and all claim operations reject status mismatch; stale acquisition and handoff revisions fail without mutation; exact expiry and same-job recovery work; default resume and direct-URL compatibility hold. Journal tests cover every acquisition and handoff write boundary. The real skill uses ready selection, assigned/default data, value-free progress, atomic terminal handoff, and manual final review. All 345 tests, smoke checks, and diff validation pass."
+      evidence:
+        - requirement: "Canonical status remains sole workflow state"
+          result: proven
+          detail: "coordinator.json stores only runtime ownership; jobs.json remains authoritative. Generic transition, trash, and delete reject any claimed job."
+        - requirement: "First-audit divergence paths"
+          result: resolved
+          detail: "Independent audit confirmed transition, trash, and delete are rejected; tampered non-in_progress status causes heartbeat rejection; focused tests cover the same paths."
+        - requirement: "Exclusive recoverable ownership"
+          result: proven
+          detail: "Concurrent acquisition has one winner; the lease expires exactly at expiresAt; live claims cannot be stolen; explicit same-job recovery rotates the token and preserves status/session."
+        - requirement: "Optimistic revisions"
+          result: proven
+          detail: "Acquisition and terminal handoff require caller expected revisions; stale operations fail without releasing the claim or advancing status."
+        - requirement: "Atomic lifecycle and crash recovery"
+          result: proven
+          detail: "Journaled idempotent roll-forward couples acquisition and terminal handoffs; deterministic tests cover every acquisition and handoff write boundary."
+        - requirement: "Ready-job skill integration"
+          result: proven
+          detail: "The real skill lists ready jobs, obtains selection, acquires with revision, uses canonical URL and assigned/default resume, heartbeats, saves progress, and reaches needs_info or awaiting_review."
+        - requirement: "Assigned/default durable data"
+          result: proven
+          detail: "Assigned precedence and active-default fallback pass focused tests and independent audit; readiness revalidates current data under lock."
+        - requirement: "Privacy and consent"
+          result: proven
+          detail: "Claim persistence stores only token hashes; value-bearing metadata is rejected; sensitive-use and remember-consent tests remain green."
+        - requirement: "Direct-URL version-1 compatibility"
+          result: proven
+          detail: "Clean-room direct-URL lifecycle creates no coordinator artifacts; skill avoids implicit canonical job or claim creation."
+        - requirement: "Manual final-action boundary"
+          result: proven
+          detail: "Ready mode stops at awaiting_review and releases ownership without final activation; applied still requires explicit user confirmation."
+        - command: "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store"
+          result: pass
+          detail: "55 tests passed."
+        - command: "PYTHONPATH=tests python3 -m unittest -v test_answer_memory_integration"
+          result: pass
+          detail: "5 tests passed."
+        - command: "python3 -m unittest discover -s tests -v"
+          result: pass
+          detail: "345 tests passed."
+        - command: "bash scripts/smoke-plugin.sh && git diff --check"
+          result: pass
+          detail: "Plugin smoke and diff validation passed."
+        - scope: "Worker package"
+          result: proven
+          detail: "All changes remain within approved files; deferred scope was not introduced."
+      subgoal_contract: null
+      parallel_safety: null
+      blocked_tasks: []
+      missing_evidence: []
+      required_board_updates:
+        - "Persist this receipt and mark T998 done."
+        - "Mark the goal complete with full_outcome_complete: true."
+        - "Run the GoalBuddy stop checker and record the final clean verification state."
+checks:
+  dirty_fingerprint: "910564214ef919fcc4a6235385c6157c63639a4c43f1efa4e706392a4b9db1db"
+  last_verification:
+    result: pass
+    task: T998
+    commands:
+      - "PYTHONPATH=tests python3 -m unittest -v test_job_apply_store (55 passed)"
+      - "PYTHONPATH=tests python3 -m unittest -v test_answer_memory_integration (5 passed)"
+      - "python3 -m unittest discover -s tests -v (345 passed)"
+      - "bash scripts/smoke-plugin.sh"
+      - "git diff --check"

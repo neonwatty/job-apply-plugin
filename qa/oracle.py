@@ -2,24 +2,50 @@
 
 from __future__ import annotations
 
-import io
-import json
 import os
 from pathlib import Path
-import re
 import stat
 from typing import Any
 
 from qa.contracts import validate_fixture
+from qa.oracle_history import (
+    HISTORY_EVENTS,
+    HISTORY_KEYS,
+    _history_results as _history_results_leaf,
+    _validate_history_event,
+)
+from qa.oracle_io import (
+    APPLICATION_ID,
+    MAX_ARTIFACT_BYTES,
+    MAX_JSON_DEPTH,
+    MAX_JSON_NODES,
+    OracleError,
+    _has_forbidden_value_key,
+    _inspect_json_tree,
+    _json_tree_has_forbidden_value_key,
+    _parse_json,
+    _read_regular_file,
+    _valid_application_id,
+    _validate_string_fields,
+)
+from qa.oracle_session import (
+    ANSWER_STATES,
+    PENDING_KEYS,
+    REPLAY_SESSION_EXTENSION_KEYS,
+    SESSION_KEYS,
+    SESSION_STATUSES,
+    _session_results as _session_results_leaf,
+    _validate_session,
+)
+from scripts.job_apply_form_readiness import (
+    FormReadinessError,
+    evaluate_readiness,
+)
 
 
 MAX_EVENTS = 10_000
-MAX_ARTIFACT_BYTES = 1024 * 1024
 MAX_HISTORY_LINES = 10_000
 MAX_SESSION_ENTRIES = 256
-MAX_JSON_DEPTH = 64
-MAX_JSON_NODES = 100_000
-
 _DESCRIPTOR_TRAVERSAL_AVAILABLE = (
     hasattr(os, "O_DIRECTORY")
     and hasattr(os, "O_NOFOLLOW")
@@ -36,150 +62,40 @@ EVENT_TYPES = {
     "advanced",
     "reviewed",
 }
-HISTORY_EVENTS = {
-    "started",
-    "progressed",
-    "reviewed",
-    "completed",
-    "abandoned",
-    "failed",
-}
-HISTORY_KEYS = {
-    "schemaVersion",
-    "eventId",
-    "applicationId",
-    "event",
-    "company",
-    "role",
-    "ats",
-    "status",
-    "answerKeys",
-    "at",
-}
-SESSION_KEYS = {
-    "schemaVersion",
-    "applicationId",
-    "status",
-    "ats",
-    "company",
-    "role",
-    "url",
-    "step",
-    "answerKeys",
-    "pendingFields",
-    "createdAt",
-    "updatedAt",
-}
-PENDING_KEYS = {"question", "state", "answerKey", "sensitive"}
-SESSION_STATUSES = {"active", "review", "completed", "abandoned"}
-ANSWER_STATES = {"confirmed", "inferred", "missing", "sensitive"}
-APPLICATION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 
 
-class OracleError(ValueError):
-    """An invalid untrusted oracle input with a stable, value-free diagnostic."""
+def evaluate_form_readiness(
+    fixture: dict[str, Any],
+    observation: dict[str, Any],
+    *,
+    expected_observation_revision: int,
+) -> dict[str, Any]:
+    """Evaluate the repository replay contract with a closed diagnostic."""
 
-
-def _has_forbidden_value_key(key: str) -> bool:
-    lowered = key.lower()
-    return lowered == "value" or lowered.endswith("value")
-
-
-def _json_tree_has_forbidden_value_key(value: Any, diagnostic: str) -> bool:
-    stack = [(value, 0)]
-    nodes = 0
-    forbidden = False
-    while stack:
-        current, depth = stack.pop()
-        nodes += 1
-        if depth > MAX_JSON_DEPTH or nodes > MAX_JSON_NODES:
-            raise OracleError(diagnostic)
-        if isinstance(current, dict):
-            for key, child in current.items():
-                if not isinstance(key, str):
-                    raise OracleError(diagnostic)
-                forbidden = forbidden or _has_forbidden_value_key(key)
-                stack.append((child, depth + 1))
-        elif isinstance(current, list):
-            stack.extend((child, depth + 1) for child in current)
-    return forbidden
-
-
-def _inspect_json_tree(value: Any, diagnostic: str) -> None:
-    if _json_tree_has_forbidden_value_key(value, diagnostic):
-        raise OracleError(diagnostic)
-
-
-def _validate_string_fields(value: dict[str, Any], fields: set[str]) -> bool:
-    return all(
-        field not in value
-        or value[field] is None
-        or isinstance(value[field], str)
-        for field in fields
-    )
-
-
-def _valid_application_id(value: Any) -> bool:
-    return (
-        isinstance(value, str)
-        and APPLICATION_ID.fullmatch(value) is not None
-        and ".." not in value
-    )
-
-
-def _read_regular_file(
-    directory_descriptor: int,
-    name: str,
-    diagnostic: str,
-    expected_identity: os.stat_result | None = None,
-) -> bytes:
-    descriptor = None
     try:
-        descriptor = os.open(
-            name,
-            os.O_RDONLY | os.O_NOFOLLOW,
-            dir_fd=directory_descriptor,
+        return evaluate_readiness(
+            fixture,
+            observation,
+            expected_observation_revision=expected_observation_revision,
         )
-        try:
-            opened_stat = os.fstat(descriptor)
-            if (
-                not stat.S_ISREG(opened_stat.st_mode)
-                or opened_stat.st_size > MAX_ARTIFACT_BYTES
-                or (
-                    expected_identity is not None
-                    and (expected_identity.st_dev, expected_identity.st_ino)
-                    != (opened_stat.st_dev, opened_stat.st_ino)
-                )
-            ):
-                raise OracleError(diagnostic)
-            chunks: list[bytes] = []
-            remaining = MAX_ARTIFACT_BYTES + 1
-            while remaining:
-                chunk = os.read(descriptor, min(64 * 1024, remaining))
-                if not chunk:
-                    break
-                chunks.append(chunk)
-                remaining -= len(chunk)
-            data = b"".join(chunks)
-            if len(data) > MAX_ARTIFACT_BYTES:
-                raise OracleError(diagnostic)
-            return data
-        finally:
-            os.close(descriptor)
-            descriptor = None
-    except OracleError:
-        raise
-    except (OSError, ValueError):
-        if descriptor is not None:
-            os.close(descriptor)
-        raise OracleError(diagnostic) from None
+    except (FormReadinessError, TypeError, ValueError):
+        raise OracleError("invalid form readiness evidence") from None
 
 
-def _parse_json(data: bytes, diagnostic: str) -> Any:
-    try:
-        return json.loads(data.decode("utf-8"))
-    except (UnicodeError, json.JSONDecodeError, RecursionError):
-        raise OracleError(diagnostic) from None
+def _history_results(root_descriptor: int) -> tuple[bool, bool, str | None, set[str]]:
+    return _history_results_leaf(
+        root_descriptor, max_history_lines=MAX_HISTORY_LINES
+    )
+
+
+def _session_results(
+    root_descriptor: int, reviewed_application_ids: set[str]
+) -> tuple[bool, bool, bool]:
+    return _session_results_leaf(
+        root_descriptor,
+        reviewed_application_ids,
+        max_session_entries=MAX_SESSION_ENTRIES,
+    )
 
 
 def _validate_events(
@@ -259,214 +175,6 @@ def _validate_events(
         final_action,
         all(upload_filename_matches.get(control_id) is True for control_id in uploaded),
     )
-
-
-def _validate_history_event(value: Any) -> dict[str, Any]:
-    _inspect_json_tree(value, "invalid history artifact")
-    if not isinstance(value, dict) or set(value) - HISTORY_KEYS:
-        raise OracleError("invalid history artifact")
-    if (
-        value.get("schemaVersion") != 1
-        or isinstance(value.get("schemaVersion"), bool)
-        or not _valid_application_id(value.get("applicationId"))
-        or value.get("event") not in HISTORY_EVENTS
-        or not _validate_string_fields(
-            value, {"eventId", "company", "role", "ats", "status", "at"}
-        )
-    ):
-        raise OracleError("invalid history artifact")
-    answer_keys = value.get("answerKeys", [])
-    if not isinstance(answer_keys, list) or not all(
-        isinstance(item, str) for item in answer_keys
-    ):
-        raise OracleError("invalid history artifact")
-    return value
-
-
-def _history_results(
-    root_descriptor: int,
-) -> tuple[bool, bool, str | None, set[str]]:
-    try:
-        data = _read_regular_file(
-            root_descriptor,
-            "applications.jsonl",
-            "invalid history artifact",
-        )
-    except OracleError as error:
-        try:
-            os.stat(
-                "applications.jsonl",
-                dir_fd=root_descriptor,
-                follow_symlinks=False,
-            )
-        except FileNotFoundError:
-            return False, True, "history-missing", set()
-        except OSError:
-            pass
-        raise error
-    except OSError:
-        raise OracleError("invalid history artifact") from None
-    lines: list[str] = []
-    for physical_line_count, raw_line in enumerate(io.BytesIO(data), 1):
-        if physical_line_count > MAX_HISTORY_LINES:
-            raise OracleError("invalid history artifact")
-        try:
-            line = raw_line.decode("utf-8")
-        except UnicodeError:
-            raise OracleError("invalid history artifact") from None
-        if line.strip():
-            lines.append(line)
-    if not lines:
-        return False, True, "history-lifecycle-incomplete", set()
-
-    history: list[dict[str, Any]] = []
-    for line in lines:
-        try:
-            value = json.loads(line)
-        except (json.JSONDecodeError, RecursionError):
-            raise OracleError("invalid history artifact") from None
-        history.append(_validate_history_event(value))
-
-    started_at: dict[str, int] = {}
-    lifecycle = False
-    reviewed_ids: set[str] = set()
-    completed = False
-    for index, event in enumerate(history):
-        application_id = event["applicationId"]
-        if event["event"] == "started" and application_id not in started_at:
-            started_at[application_id] = index
-        elif event["event"] == "reviewed" and application_id in started_at:
-            if started_at[application_id] < index:
-                lifecycle = True
-                reviewed_ids.add(application_id)
-        if event["event"] == "completed":
-            completed = True
-    category = None if lifecycle else "history-lifecycle-incomplete"
-    return lifecycle, not completed, category, reviewed_ids
-
-
-def _validate_session(value: Any, expected_id: str) -> None:
-    _inspect_json_tree(value, "invalid session artifact")
-    if not isinstance(value, dict) or set(value) - SESSION_KEYS:
-        raise OracleError("invalid session artifact")
-    if (
-        value.get("schemaVersion") != 1
-        or isinstance(value.get("schemaVersion"), bool)
-        or not _valid_application_id(value.get("applicationId"))
-        or value["applicationId"] != expected_id
-        or value.get("status") not in SESSION_STATUSES
-        or not _validate_string_fields(
-            value,
-            {
-                "applicationId",
-                "status",
-                "ats",
-                "company",
-                "role",
-                "url",
-                "step",
-                "createdAt",
-                "updatedAt",
-            },
-        )
-    ):
-        raise OracleError("invalid session artifact")
-    answer_keys = value.get("answerKeys", [])
-    if not isinstance(answer_keys, list) or not all(
-        isinstance(item, str) for item in answer_keys
-    ):
-        raise OracleError("invalid session artifact")
-    pending_fields = value.get("pendingFields", [])
-    if not isinstance(pending_fields, list):
-        raise OracleError("invalid session artifact")
-    for pending in pending_fields:
-        if not isinstance(pending, dict) or set(pending) - PENDING_KEYS:
-            raise OracleError("invalid session artifact")
-        if not _validate_string_fields(pending, {"question", "state", "answerKey"}):
-            raise OracleError("invalid session artifact")
-        if "state" in pending and pending["state"] not in ANSWER_STATES:
-            raise OracleError("invalid session artifact")
-        if "sensitive" in pending and not isinstance(pending["sensitive"], bool):
-            raise OracleError("invalid session artifact")
-
-
-def _session_results(
-    root_descriptor: int, reviewed_application_ids: set[str]
-) -> tuple[bool, bool, bool]:
-    sessions_descriptor = None
-    try:
-        sessions_descriptor = os.open(
-            "sessions",
-            os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
-            dir_fd=root_descriptor,
-        )
-        directory_stat = os.fstat(sessions_descriptor)
-    except FileNotFoundError:
-        return False, True, False
-    except OSError:
-        if sessions_descriptor is not None:
-            os.close(sessions_descriptor)
-        raise OracleError("invalid session artifacts") from None
-    try:
-        if not stat.S_ISDIR(directory_stat.st_mode):
-            raise OracleError("invalid session artifacts")
-        names: list[str] = []
-        with os.scandir(sessions_descriptor) as entries:
-            for entry_count, entry in enumerate(entries, 1):
-                if entry_count > MAX_SESSION_ENTRIES:
-                    raise OracleError("invalid session artifacts")
-                names.append(entry.name)
-    except OracleError:
-        os.close(sessions_descriptor)
-        raise
-    except OSError:
-        os.close(sessions_descriptor)
-        raise OracleError("invalid session artifacts") from None
-
-    correlated_value_free_session = False
-    session_value_free = True
-    json_found = False
-    try:
-        for name in sorted(names):
-            try:
-                entry_identity = os.stat(
-                    name,
-                    dir_fd=sessions_descriptor,
-                    follow_symlinks=False,
-                )
-            except OSError:
-                raise OracleError("invalid session artifact") from None
-            if not stat.S_ISREG(entry_identity.st_mode):
-                raise OracleError("invalid session artifact")
-            path = Path(name)
-            if path.suffix != ".json":
-                continue
-            json_found = True
-            expected_id = path.stem
-            if not _valid_application_id(expected_id):
-                raise OracleError("invalid session artifact")
-            value = _parse_json(
-                _read_regular_file(
-                    sessions_descriptor,
-                    name,
-                    "invalid session artifact",
-                    entry_identity,
-                ),
-                "invalid session artifact",
-            )
-            if _json_tree_has_forbidden_value_key(
-                value, "invalid session artifact"
-            ):
-                session_value_free = False
-                continue
-            _validate_session(value, expected_id)
-            if expected_id in reviewed_application_ids:
-                correlated_value_free_session = True
-    finally:
-        os.close(sessions_descriptor)
-    if not json_found:
-        return False, True, False
-    return correlated_value_free_session, session_value_free, True
 
 
 def evaluate_run(

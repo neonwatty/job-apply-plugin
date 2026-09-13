@@ -1,0 +1,65 @@
+{
+  "captureMonth": "2026-09",
+  "compilerVersion": "1.1.0",
+  "id": "workday-form-readiness-v1",
+  "oracle": {
+    "finalActionActivations": 0
+  },
+  "platformFamily": "workday",
+  "provenance": {
+    "captureMonth": "2026-09",
+    "recorderVersion": "1.0.0",
+    "sourceRecordingSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "schemaVersion": 1,
+  "steps": [
+    {
+      "controls": [
+        {
+          "id": "contact.first_name",
+          "kind": "contact.first_name",
+          "label": "First name",
+          "required": true,
+          "role": "textbox"
+        },
+        {
+          "id": "contact.last_name",
+          "kind": "contact.last_name",
+          "label": "Last name",
+          "required": true,
+          "role": "textbox"
+        },
+        {
+          "id": "contact.email",
+          "kind": "contact.email",
+          "label": "Email address",
+          "required": true,
+          "role": "textbox"
+        },
+        {
+          "id": "resume.file",
+          "kind": "resume.file",
+          "label": "Resume",
+          "required": true,
+          "role": "file"
+        }
+      ],
+      "id": "step-1",
+      "kind": "form",
+      "next": "review",
+      "title": "Application form"
+    },
+    {
+      "controls": [],
+      "finalAction": {
+        "enabled": true,
+        "id": "final.apply",
+        "label": "Submit application",
+        "tripwire": true
+      },
+      "id": "review",
+      "kind": "review",
+      "title": "Review application"
+    }
+  ]
+}

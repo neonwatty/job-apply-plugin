@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Overview · Job Apply Workspace</title>
+  <script src="/lib/theme.js"></script>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#workspace-content">Skip to workspace</a>
+  <header class="topbar">
+    <div class="product-context">
+      <p class="eyebrow">LOCAL COMPANION</p>
+      <h1><a id="brand-home" class="brand-link" href="/" aria-label="Job Apply home">Job Apply</a></h1>
+      <p id="workspace-trust-context" class="trust-context">Your canonical data stays local. You direct changes and submissions; agents assist from the same record.</p>
+    </div>
+    <button id="workspace-menu-toggle" type="button" aria-expanded="false" aria-controls="workspace-navigation">Menu <span aria-hidden="true">☰</span></button>
+    <nav id="workspace-navigation" class="workspace-nav" aria-label="Workspace sections" aria-describedby="workspace-trust-context">
+      <div class="nav-group" role="group" aria-labelledby="nav-group-pipeline">
+        <button id="nav-group-pipeline" class="nav-group-label" type="button" aria-expanded="false" aria-controls="nav-links-pipeline">Pipeline <span aria-hidden="true">⌄</span></button>
+        <div id="nav-links-pipeline" class="nav-group-links" hidden>
+          <button id="nav-overview" class="nav-link active" type="button" aria-current="page">Overview</button>
+          <button id="nav-jobs" class="nav-link" type="button">Jobs</button>
+          <button id="nav-attention" class="nav-link" type="button">Needs Attention <span id="attention-nav-count" aria-label="attention count">0</span></button>
+        </div>
+      </div>
+      <div class="nav-group" role="group" aria-labelledby="nav-group-application-data">
+        <button id="nav-group-application-data" class="nav-group-label" type="button" aria-expanded="false" aria-controls="nav-links-application-data">Application Data <span aria-hidden="true">⌄</span></button>
+        <div id="nav-links-application-data" class="nav-group-links" hidden>
+          <button id="nav-facts" class="nav-link" type="button">Facts</button>
+          <button id="nav-resumes" class="nav-link" type="button">Resumes</button>
+          <button id="nav-answers" class="nav-link" type="button">Answers</button>
+        </div>
+      </div>
+      <div class="nav-group" role="group" aria-labelledby="nav-group-controls">
+        <button id="nav-group-controls" class="nav-group-label" type="button" aria-expanded="false" aria-controls="nav-links-controls">Controls <span aria-hidden="true">⌄</span></button>
+        <div id="nav-links-controls" class="nav-group-links" hidden>
+          <button id="nav-automation" class="nav-link" type="button">Automation</button>
+          <button id="nav-trash" class="nav-link" type="button">Trash <span id="trash-nav-count" aria-label="trashed records">0</span></button>
+        </div>
+      </div>
+    </nav>
+    <button id="color-theme" class="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><g class="theme-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></g><path class="theme-moon" d="M20 15.2A8.5 8.5 0 0 1 8.8 4 8.5 8.5 0 1 0 20 15.2Z"/></svg>
+    </button>
+    <div class="connection" aria-live="polite">
+      <span id="connection-dot" class="dot"></span>
+      <span id="connection-label">Connecting…</span>
+    </div>
+  </header>
+
+  <main id="workspace-content">
+    <div id="overview-workspace">
+      <section class="hero overview-hero" aria-labelledby="overview-title">
+        <div><p class="eyebrow">PRIVATE OWNER WORKSPACE</p><h2 id="overview-title">Overview</h2><p>Start with a resume, review your application facts, then prepare a job. Your progress stays on this computer. Only you can submit an application.</p></div>
+        <div class="hero-actions"><button id="overview-refresh" class="button secondary" type="button">Refresh</button></div>
+      </section>
+      <div id="boot-recovery" class="recovery-panel hidden" role="alert" tabindex="-1">
+        <p class="eyebrow">STORE RECOVERY</p><h2 id="boot-recovery-title">Your data is unavailable, so this workspace is read-only.</h2>
+        <p id="boot-recovery-summary"></p><p id="boot-recovery-guidance"></p>
+        <p>No canonical values or filesystem paths were exposed to this browser. Nothing was automatically repaired, downgraded, or overwritten. Stop this workspace before restoring a known-good backup.</p>
+      </div>
+      <p id="overview-unavailable" class="error overview-unavailable hidden" role="alert">Overview is unavailable. Setup and next-step guidance are hidden until a refresh succeeds.</p>
+      <section id="overview-ready" class="overview-grid hidden" aria-labelledby="next-step-heading">
+        <article class="next-step-card">
+          <p class="eyebrow">NEXT STEP</p><h2 id="next-step-heading">Loading…</h2><p id="next-step-copy"></p>
+          <button id="next-step-action" class="button primary" type="button">Open workspace</button>
+        </article>
+        <article class="setup-card" aria-labelledby="setup-heading">
+          <p class="eyebrow">SETUP</p><h2 id="setup-heading">Local foundation</h2>
+          <ul class="setup-checklist"><li id="setup-resume">Resume</li><li id="setup-facts">Reviewed facts</li></ul>
+          <p id="overview-counts" class="overview-counts"></p>
+        </article>
+        <div id="readiness-home" class="readiness-card">
+      <section id="profile-readiness" class="profile-readiness" aria-labelledby="profile-readiness-title" tabindex="-1">
+        <div class="readiness-heading"><div><p class="eyebrow">ADVISORY CHECK</p><h2 id="profile-readiness-title">Profile readiness</h2></div><p>Individual jobs may still require additional information.</p></div>
+        <div id="profile-readiness-sections" class="readiness-sections" aria-live="polite"></div>
+      </section>
+        </div>
+        <article class="handoff-card" aria-labelledby="handoff-heading">
+          <p class="eyebrow">READY-JOB HANDOFF</p><h2 id="handoff-heading">Start an application agent</h2>
+          <p>When a job is Ready, copy the command for your host and paste it into a Codex task or Claude Code session. Copying does not start an agent.</p>
+          <div class="invocation"><span>Codex</span><code>$job-apply:job-apply</code><button class="button secondary copy-invocation" data-copy="$job-apply:job-apply" type="button">Copy Codex invocation</button></div>
+          <div class="invocation"><span>Claude Code</span><code>/job-apply:job-apply</code><button class="button secondary copy-invocation" data-copy="/job-apply:job-apply" type="button">Copy Claude Code invocation</button></div>
+          <label class="clipboard-fallback hidden" role="alert">Clipboard unavailable. Select and copy this invocation manually. <input class="clipboard-fallback-value" readonly aria-label="Invocation to copy"></label>
+          <p class="safety-note">The agent stops for final review. Only you may submit on the third-party site.</p>
+        </article>
+        <article class="recovery-card" aria-labelledby="recovery-heading">
+          <p class="eyebrow">RESTART &amp; RECOVERY</p><h2 id="recovery-heading">Your progress survives a restart</h2>
+          <p>Restart the launcher to reconnect. Stale revision conflicts preserve your draft and require review; interrupted attempts appear in Needs Attention; Trash restores individual records.</p>
+          <div class="button-row"><button class="button secondary overview-link" data-workspace="attention" type="button">Open Needs Attention</button><button class="button secondary overview-link" data-workspace="trash" type="button">Open Trash</button></div>
+        </article>
+      </section>
+      <p id="overview-live" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></p>
+    </div>
+
+    <div id="jobs-workspace" class="hidden">
+    <section class="hero" aria-labelledby="workspace-title">
+      <div>
+        <p class="eyebrow">Jobs Workspace</p>
+        <h2 id="workspace-title">Jobs</h2>
+        <p>Save opportunities, prepare applications, and track your progress.</p>
+      </div>
+      <div class="hero-actions">
+        <button id="refresh" class="button secondary" type="button">Refresh</button>
+        <button id="bulk-open" class="button secondary" type="button">Paste URLs</button>
+        <button id="new-job" class="button primary" type="button">New job</button>
+      </div>
+    </section>
+
+    <section class="metrics" aria-label="Job summary">
+      <div><strong id="metric-active">0</strong><span>Active jobs</span></div>
+      <div><strong id="metric-ready">0</strong><span>Ready for agent</span></div>
+      <div><strong id="metric-needs">0</strong><span>Need information</span></div>
+    </section>
+
+    <section id="jobs" class="jobs-panel" aria-labelledby="jobs-heading">
+      <div class="panel-heading">
+        <div><p class="eyebrow">PIPELINE</p><h2 id="jobs-heading">Jobs</h2></div>
+        <div class="filters">
+          <label>Search <input id="search" type="search" placeholder="Role, company, location"></label>
+          <label>Status
+            <select id="status-filter">
+              <option value="">All active</option><option value="saved">Saved</option>
+              <option value="needs_info">Needs info</option><option value="ready">Ready</option>
+              <option value="in_progress">In progress</option><option value="awaiting_review">Awaiting review</option>
+              <option value="applied">Applied</option><option value="closed">Closed</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <p id="sync-notice" class="notice hidden" role="status"></p>
+      <div id="loading" class="empty-state"><span class="spinner" aria-hidden="true"></span><p>Loading your canonical job queue…</p></div>
+      <div id="empty" class="empty-state hidden">
+        <span class="empty-icon" aria-hidden="true">◎</span><h3>No jobs here yet</h3>
+        <p>Capture one opportunity or paste a list of URLs to start your local pipeline.</p>
+        <button id="jobs-clear-filters" class="button secondary hidden" type="button">Clear filters</button>
+        <button id="empty-create" class="button primary" type="button">Capture a job</button>
+      </div>
+      <div id="job-list" class="job-list hidden" role="list"></div>
+    </section>
+    </div>
+
+    <div id="attention-workspace" class="hidden">
+      <section class="hero" aria-labelledby="attention-title">
+        <div><p class="eyebrow">Needs Attention</p><h2 id="attention-title">Needs attention</h2><p>Review what needs your input and continue when you’re ready.</p></div>
+        <div class="hero-actions"><button id="attention-refresh" class="button secondary" type="button">Refresh</button></div>
+      </section>
+      <section class="attention-panel" aria-labelledby="attention-list-heading">
+        <div class="panel-heading"><div><p class="eyebrow">CANONICAL QUEUE</p><h2 id="attention-list-heading">Jobs requiring action</h2></div><p id="attention-count">0 jobs</p></div>
+        <p id="attention-live" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></p>
+        <div id="attention-loading" class="empty-state"><span class="spinner" aria-hidden="true"></span><p>Loading the canonical attention queue…</p></div>
+        <div id="attention-empty" class="empty-state hidden"><span class="empty-icon" aria-hidden="true">✓</span><h3>Nothing needs your attention</h3><p>Agent-owned and ordinary pipeline work stay out of this queue.</p></div>
+        <div id="attention-unavailable" class="error hidden" role="alert"><strong>Attention data is unavailable.</strong> Stale rows cannot be opened until a refresh succeeds.</div>
+        <div id="attention-list" class="attention-list hidden" role="list" aria-busy="true"></div>
+      </section>
+    </div>
+
+    <div id="facts-workspace" class="hidden">
+      <section class="hero" aria-labelledby="facts-title">
+        <div><p class="eyebrow">Facts Workspace</p><h2 id="facts-title">All facts</h2><p>Keep the details your agent uses accurate and up to date. <button id="view-readiness" class="text-button" type="button">View readiness</button></p></div>
+      </section>
+      <section class="facts-organizer" aria-labelledby="facts-organizer-title">
+        <div class="facts-organizer-heading"><div><p class="eyebrow">FACT SECTIONS</p><h2 id="facts-organizer-title">Choose a section to edit</h2><p>Switch between contact details, work history, education and skills below. Your unsaved edits stay when you switch tabs.</p></div><div class="button-row"><button id="fact-group-edit" class="button secondary hidden" type="button">Edit group</button><button id="fact-group-new" class="button primary" type="button">New group</button></div></div>
+        <div id="fact-group-nav" class="fact-group-nav" role="tablist" aria-label="Fact views">
+          <button class="fact-group-chip active" type="button" data-fact-view="all" id="fact-tab-all" role="tab" aria-controls="facts-content" aria-selected="true" tabindex="0">All facts</button>
+          <button class="fact-group-chip" type="button" data-fact-view="identity" id="fact-tab-identity" role="tab" aria-controls="facts-content" aria-selected="false" tabindex="-1">Identity &amp; contact</button>
+          <button class="fact-group-chip" type="button" data-fact-view="location" id="fact-tab-location" role="tab" aria-controls="facts-content" aria-selected="false" tabindex="-1">Location</button>
+          <button class="fact-group-chip" type="button" data-fact-view="links" id="fact-tab-links" role="tab" aria-controls="facts-content" aria-selected="false" tabindex="-1">Professional links</button>
+          <button class="fact-group-chip" type="button" data-fact-view="experience" id="fact-tab-experience" role="tab" aria-controls="facts-content" aria-selected="false" tabindex="-1">Work history</button>
+          <button class="fact-group-chip" type="button" data-fact-view="education" id="fact-tab-education" role="tab" aria-controls="facts-content" aria-selected="false" tabindex="-1">Education</button>
+          <button class="fact-group-chip" type="button" data-fact-view="skills" id="fact-tab-skills" role="tab" aria-controls="facts-content" aria-selected="false" tabindex="-1">Skills</button>
+          <button class="fact-group-chip" type="button" data-fact-view="preferences" id="fact-tab-preferences" role="tab" aria-controls="facts-content" aria-selected="false" tabindex="-1">Search preferences</button>
+          <button class="fact-group-chip" type="button" data-fact-view="additional" id="fact-tab-additional" role="tab" aria-controls="facts-content" aria-selected="false" tabindex="-1">Additional facts</button>
+          <span id="custom-fact-groups" class="custom-fact-groups"></span>
+        </div>
+        <p id="fact-view-status" class="visually-hidden" role="status" aria-live="polite">Showing all facts.</p>
+      </section>
+      <section id="facts-content" class="facts-panel" role="tabpanel" aria-labelledby="facts-form-title" tabindex="0">
+        <div class="panel-heading"><div><p class="eyebrow">CANONICAL PROFILE</p><h2 id="facts-form-title">Applicant facts</h2></div><p id="facts-revision">Revision —</p></div>
+        <div id="fact-view-empty" class="empty-state compact-empty hidden"><span class="empty-icon" aria-hidden="true">◇</span><h3>No matching facts yet</h3><p>This saved view still exists. Edit the group to add current canonical fact paths.</p></div>
+        <form id="facts-form">
+          <fieldset data-fact-section="identity"><legend>Identity and contact</legend><div class="form-grid">
+            <label>First name <input data-path="/firstName" autocomplete="given-name"><small data-provenance="/firstName"></small></label>
+            <label>Last name <input data-path="/lastName" autocomplete="family-name"><small data-provenance="/lastName"></small></label>
+            <label>Email <input data-path="/email" type="email" autocomplete="email"><small data-provenance="/email"></small></label>
+            <label>Phone <input data-path="/phone" type="tel" autocomplete="tel"><small data-provenance="/phone"></small></label>
+          </div></fieldset>
+          <fieldset data-fact-section="location"><legend>Location</legend><div class="form-grid">
+            <label>City <input data-path="/location/city" autocomplete="address-level2"><small data-provenance="/location/city"></small></label>
+            <label>State or region <input data-path="/location/state" autocomplete="address-level1"><small data-provenance="/location/state"></small></label>
+            <label>Country <input data-path="/location/country" autocomplete="country-name"><small data-provenance="/location/country"></small></label>
+            <label>Postal code <input data-path="/location/zip" autocomplete="postal-code"><small data-provenance="/location/zip"></small></label>
+          </div></fieldset>
+          <fieldset data-fact-section="links"><legend>Professional links</legend><div class="form-grid">
+            <label>LinkedIn URL <input data-path="/linkedInUrl" type="url"><small data-provenance="/linkedInUrl"></small></label>
+            <label>Portfolio URL <input data-path="/portfolioUrl" type="url"><small data-provenance="/portfolioUrl"></small></label>
+            <label>GitHub URL <input data-path="/githubUrl" type="url"><small data-provenance="/githubUrl"></small></label>
+          </div></fieldset>
+          <fieldset data-fact-section="experience"><legend>Work history</legend><div class="form-grid">
+            <section class="repeater wide" aria-labelledby="work-history-heading"><div class="repeater-heading"><h3 id="work-history-heading">Work history</h3><button id="add-work" class="button secondary" type="button">Add position</button></div><div id="work-history" data-path="/workHistory" data-repeater="work" data-atomic></div><small data-provenance="/workHistory"></small></section>
+          </div></fieldset>
+          <fieldset data-fact-section="education"><legend>Education</legend><div class="form-grid">
+            <section class="repeater wide" aria-labelledby="education-heading"><div class="repeater-heading"><h3 id="education-heading">Education</h3><button id="add-education" class="button secondary" type="button">Add education</button></div><div id="education-list" data-path="/education" data-repeater="education" data-atomic></div><small data-provenance="/education"></small></section>
+          </div></fieldset>
+          <fieldset data-fact-section="skills"><legend>Skills</legend><div class="form-grid">
+            <label class="wide">Skills (one per line) <textarea data-path="/skills" data-lines data-atomic rows="4"></textarea><small data-provenance="/skills"></small></label>
+          </div></fieldset>
+          <fieldset data-fact-section="preferences"><legend>Search preferences</legend><div class="form-grid">
+            <label class="wide">Target titles (one per line) <textarea data-path="/preferences/targetTitles" data-lines data-atomic rows="3"></textarea><small data-provenance="/preferences/targetTitles"></small></label>
+            <label>Minimum base salary <input data-path="/preferences/minBaseSalary" type="text" inputmode="numeric"><small data-provenance="/preferences/minBaseSalary"></small></label>
+            <label>Remote preference <input data-path="/preferences/remotePreference"><small data-provenance="/preferences/remotePreference"></small></label>
+            <label class="wide">Exclude patterns (one per line) <textarea data-path="/preferences/excludePatterns" data-lines data-atomic rows="3"></textarea><small data-provenance="/preferences/excludePatterns"></small></label>
+            <label>Default time range <input data-path="/preferences/defaultTimeRange"><small data-provenance="/preferences/defaultTimeRange"></small></label>
+          </div></fieldset>
+          <fieldset data-fact-section="additional"><legend>Additional facts</legend><p>Existing forward-compatible facts can be edited as JSON or explicitly deleted.</p><div id="additional-facts"></div></fieldset>
+        </form>
+        <div id="facts-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>Some facts changed elsewhere</h3><p>Choose whether conflicting fields keep the latest canonical value or replace it with your draft. Structured values are never reapplied automatically.</p><ul id="facts-conflict-list"></ul><div class="button-row"><button id="facts-use-latest" class="button secondary" type="button">Use latest for conflicts</button><button id="facts-use-mine" class="button primary" type="button">Use my values for conflicts</button></div></div>
+        <p id="facts-error" class="error hidden" role="alert"></p>
+      </section>
+      <div class="facts-save-bar" aria-label="Save facts">
+        <div><p id="facts-status" class="notice" role="status">Open Facts to load the canonical profile.</p><small>Saves edits across all fact tabs. Ctrl/Cmd+S</small></div>
+        <div class="button-row"><button id="facts-refresh" class="button secondary" type="button">Refresh</button><button id="facts-save" class="button primary" type="button" aria-keyshortcuts="Control+s Meta+s">Save changes</button></div>
+      </div>
+    </div>
+
+    <div id="resumes-workspace" class="hidden">
+      <section class="hero" aria-labelledby="resumes-title">
+        <div><p class="eyebrow">Resumes Workspace</p><h2 id="resumes-title">Resumes</h2><p>Your resumes, ready to review and use with your agent.</p></div>
+        <div class="hero-actions"><button id="resumes-refresh" class="button secondary" type="button">Refresh</button></div>
+      </section>
+      <section class="resumes-panel" aria-labelledby="resume-library-heading">
+        <div class="panel-heading"><div><p class="eyebrow">CANONICAL LIBRARY</p><h2 id="resume-library-heading">Resumes</h2></div><div class="segmented" role="group" aria-label="Resume library view"><button id="resumes-active" class="button secondary active" type="button">Active</button><button id="resumes-trash" class="button secondary" type="button">Trash</button></div></div>
+        <form id="resume-import" class="resume-import">
+          <fieldset><legend>Import a managed resume</legend><div class="form-grid"><label>Label <input name="label" required></label><label>Tags (comma separated) <input name="tags"></label><label class="wide">PDF, DOCX, or UTF-8 TXT (10 MiB maximum) <input name="file" type="file" accept=".pdf,.docx,.txt" required></label></div><button class="button primary" type="submit">Import resume</button></fieldset>
+        </form>
+        <p id="resumes-status" class="notice" role="status">Open Resumes to load the canonical library.</p>
+        <div id="resumes-loading" class="empty-state hidden"><span class="spinner" aria-hidden="true"></span><p>Loading resumes…</p></div>
+        <div id="resumes-empty" class="empty-state hidden"><h3>No resumes in this view</h3><p>Import a file or switch between Active and Trash.</p></div>
+        <div id="resume-list" class="resume-list" role="list"></div>
+        <p id="resumes-error" class="error hidden" role="alert"></p>
+      </section>
+    </div>
+
+    <div id="answers-workspace" class="hidden">
+      <section class="hero" aria-labelledby="answers-title">
+        <div><p class="eyebrow">Answers Workspace</p><h2 id="answers-title">Answers</h2><p>Review saved answers and questions from your agent. Sensitive answers stay hidden.</p></div>
+        <div class="hero-actions"><button id="answers-cleanup" class="button secondary" type="button">Preview cleanup</button><button id="answers-refresh" class="button secondary" type="button">Refresh</button><button id="answer-new" class="button primary" type="button">New answer</button></div>
+      </section>
+      <section class="answers-panel" aria-labelledby="answer-library-heading">
+        <div class="panel-heading"><div><p class="eyebrow">CANONICAL LIBRARY</p><h2 id="answer-library-heading">Answers</h2></div><div class="filters"><label>Search <input id="answer-search" type="search" placeholder="Question or alias"></label><label>View <select id="answer-view"><option value="accepted">Library</option><option value="pending">Observed inbox</option><option value="declined">Declined</option><option value="trash">Trash</option></select></label><label>State <select id="answer-state-filter"><option value="">All states</option><option value="confirmed">Confirmed</option><option value="inferred">Inferred</option><option value="missing">Missing</option><option value="sensitive">Sensitive</option></select></label></div></div>
+        <p id="answers-status" class="notice" role="status" aria-live="polite">Open Answers to load the canonical library.</p>
+        <div id="answers-empty" class="empty-state hidden"><h3>No answers in this view</h3><p>Create an answer or wait for an agent to observe a question.</p><button id="answers-clear-filters" class="button secondary hidden" type="button">Clear filters</button></div>
+        <div id="answer-list" class="answer-list" role="list"></div>
+        <div class="button-row pagination"><button id="answers-previous" class="button secondary" type="button">Previous</button><button id="answers-next" class="button secondary" type="button">Next</button></div>
+        <p id="answers-error" class="error hidden" role="alert"></p>
+      </section>
+    </div>
+
+    <div id="trash-workspace" class="hidden">
+      <section class="hero" aria-labelledby="trash-title">
+        <div><p class="eyebrow">Unified recovery</p><h2 id="trash-title">Trash</h2><p>Restore deleted items or remove them permanently. Your application history is preserved.</p></div>
+        <div class="hero-actions"><button id="trash-refresh" class="button secondary" type="button">Refresh</button></div>
+      </section>
+      <section class="trash-panel" aria-labelledby="trash-list-heading">
+        <div class="panel-heading"><div><p class="eyebrow">RECOVERABLE RECORDS</p><h2 id="trash-list-heading">Jobs, resumes, and answers</h2></div><label>Type <select id="trash-type-filter"><option value="">All types</option><option value="job">Jobs</option><option value="resume">Resumes</option><option value="answer">Answers</option></select></label></div>
+        <div id="trash-counts" class="trash-counts" aria-live="polite"></div>
+        <p id="trash-status" class="notice" role="status">Open Trash to load canonical records.</p>
+        <div id="trash-empty" class="empty-state hidden"><h3>Trash is empty</h3><p>Records moved to trash remain recoverable until you explicitly delete them.</p></div>
+        <div id="trash-list" class="trash-list" role="list"></div>
+        <p id="trash-error" class="error hidden" role="alert"></p>
+      </section>
+    </div>
+
+    <div id="automation-workspace" class="hidden">
+      <section class="hero" aria-labelledby="automation-title">
+        <div><p class="eyebrow">Companion Automation</p><h2 id="automation-title">Automation settings</h2><p>Manage account preferences and review agent permissions. Workday account automation remains unavailable until its reviewed canary passes. Ordinary Greenhouse applications need no account. These controls do not submit applications.</p></div>
+        <div class="hero-actions"><button id="automation-refresh" class="button secondary" type="button">Refresh</button></div>
+      </section>
+      <section class="automation-panel" aria-labelledby="automation-settings-title">
+        <div class="panel-heading"><div><p class="eyebrow">CONTROL PLANE</p><h2 id="automation-settings-title">Automation settings</h2></div><p id="automation-revision">Revision —</p></div>
+        <p id="automation-capability" class="notice" role="status">Open Automation to check local capability.</p>
+        <form id="automation-form" class="automation-form">
+          <label><span><input name="enabled" type="checkbox"> Enable companion automation controls</span></label>
+          <label><span><input name="automaticAccountCreation" type="checkbox"> Allow protected account preparation</span><small>Live Workday execution still requires a separate one-shot owner approval.</small></label>
+          <label>Global signup email <input name="signupEmail" type="email" autocomplete="email" placeholder="Leave blank to keep the current setting"><small id="automation-email-status">Not configured</small></label>
+          <label>Password strategy <select name="passwordStrategy"><option value="unique_per_realm">Unique per employer</option><option value="shared">One shared password</option><option value="manual">Manual account setup</option></select><small>Passwords are never entered in the Companion. Shared password automation needs native secure setup before it can become available.</small></label>
+          <div class="button-row"><button class="button primary" type="submit">Save settings</button><button id="automation-copy-profile-email" class="button secondary" type="button">Copy profile email once</button><button id="automation-clear-email" class="button secondary" type="button">Clear signup email</button></div>
+          <p class="safety-note">Copying is an explicit one-time snapshot. Later profile edits do not change the signup email, and the copied value is never returned by this action.</p>
+        </form>
+        <div id="automation-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>Settings changed elsewhere</h3><p>Nothing was retried. Refresh and review the latest revision.</p></div>
+        <p id="automation-error" class="error hidden" role="alert"></p>
+      </section>
+      <section class="automation-panel" aria-labelledby="realm-heading">
+        <div class="panel-heading"><div><p class="eyebrow">EMPLOYER ACCOUNTS</p><h2 id="realm-heading">Employer accounts</h2></div></div>
+        <form id="realm-form" class="automation-form">
+          <label>Exact employer portal URL <input name="url" type="url" required placeholder="https://tenant.wd5.myworkdayjobs.com/… or an Oracle Recruiting job URL"></label>
+          <label>Optional signup email override <input name="signupEmailOverride" type="email" autocomplete="email"></label>
+          <button class="button primary" type="submit">Add employer portal</button>
+        </form>
+        <p class="safety-note">Unknown hosts and unproven tenant paths are rejected. Employer names and ATS families are never used as a fallback.</p>
+        <div id="automation-accounts" class="automation-accounts" role="list"></div>
+      </section>
+      <section class="automation-panel" aria-labelledby="account-operation-heading">
+        <div class="panel-heading"><div><p class="eyebrow">PROTECTED OPERATION</p><h2 id="account-operation-heading">Account operation recovery</h2></div></div>
+        <p class="safety-note">If account setup was interrupted, record its outcome as unknown. This prevents another setup attempt or credential change; it does not assume the account was created.</p>
+        <div id="account-operation-status" class="notice" role="status" aria-live="polite">No operation status loaded.</div>
+        <div class="button-row"><button id="account-operation-refresh" class="button secondary" type="button">Refresh operation status</button><button id="account-operation-recover" class="button danger" type="button" disabled>Record interrupted setup as unknown</button></div>
+        <p id="account-operation-error" class="error hidden" role="alert"></p>
+      </section>
+      <section class="automation-panel" aria-labelledby="application-mode-heading">
+        <div class="panel-heading"><div><p class="eyebrow">APPLICATION AUTHORITY</p><h2 id="application-mode-heading">Application automation mode</h2></div><p id="application-authority-revision">Revision —</p></div>
+        <p class="safety-note">Guided asks for granular confirmations. Fill to Review covers one exact job and worker. Campaign covers only the named jobs and workers. Every mode stops before Final Submit or Send.</p>
+        <div id="application-authority-status" class="notice" role="status" aria-live="polite">Guided · granular confirmations required.</div>
+        <form id="application-authority-form" class="automation-form">
+          <div class="form-grid">
+            <label>Mode <select name="mode"><option value="fill_to_review">Fill to Review</option><option value="campaign">Campaign</option></select></label>
+            <label>Expiry in minutes <input name="durationMinutes" type="number" min="1" max="1440" value="120" required></label>
+            <label class="wide">Selected job IDs (one per line) <textarea name="jobIds" rows="3" required></textarea></label>
+            <label class="wide">Selected worker IDs (one per line) <textarea name="workerIds" rows="3" required></textarea></label>
+          </div>
+          <fieldset><legend>Campaign-only sensitive current-use classes (optional)</legend>
+            <label><span><input name="sensitiveFieldClasses" value="demographic" type="checkbox"> Demographic</span></label>
+            <label><span><input name="sensitiveFieldClasses" value="disability" type="checkbox"> Disability</span></label>
+            <label><span><input name="sensitiveFieldClasses" value="veteran_status" type="checkbox"> Veteran status</span></label>
+            <label><span><input name="sensitiveFieldClasses" value="work_authorization" type="checkbox"> Work authorization</span></label>
+            <label><span><input name="sensitiveFieldClasses" value="criminal_history" type="checkbox"> Criminal history</span></label>
+            <label><span><input name="sensitiveFieldClasses" value="compensation" type="checkbox"> Compensation</span></label>
+            <label><span><input name="sensitiveFieldClasses" value="other_declared_sensitive" type="checkbox"> Other explicitly declared sensitive</span></label>
+          </fieldset>
+          <p class="safety-note">These choices grant current use only for an exact canonical sensitive answer and declared field class. They never infer an answer and never grant permission to remember it.</p>
+          <div class="button-row"><button class="button primary" type="submit">Approve bounded mode</button><button id="application-authority-guided" class="button secondary" type="button">Return to Guided</button></div>
+        </form>
+        <div id="application-authority-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>Authority changed elsewhere</h3><p>Nothing was retried. Refresh and review the current scope.</p></div>
+        <p id="application-authority-error" class="error hidden" role="alert"></p>
+      </section>
+      <section class="automation-panel" aria-labelledby="trusted-fill-heading">
+        <div class="panel-heading"><div><p class="eyebrow">GROUNDED TRUSTED FILL</p><h2 id="trusted-fill-heading">Advanced agent permissions</h2></div></div>
+        <p class="safety-note">Review an agent-provided request for specific form fields. Approval alone does not run the browser, enter credentials, accept consent, or submit an application. Technical identifiers below bind approval to the exact job and form.</p>
+        <details class="advanced-permissions"><summary>Review agent-provided permission details</summary>
+        <form id="trusted-fill-form" class="automation-form">
+          <div class="form-grid">
+            <label>Claimed job ID <input name="jobId" required></label>
+            <label>Expected job revision <input name="expectedJobRevision" type="number" min="1" required></label>
+            <label class="wide">Portal realm reference <input name="realmRef" pattern="[0-9a-f]{64}" required></label>
+            <label class="wide">Accepted answer references (one per line) <textarea name="answerRefs" rows="3"></textarea></label>
+            <label class="wide">Observed question fingerprint <input name="observedQuestionFingerprint" pattern="sha256:[0-9a-f]{64}" required></label>
+            <label class="wide">Observed control fingerprint <input name="observedControlFingerprint" pattern="sha256:[0-9a-f]{64}" required></label>
+            <label class="wide">Form fingerprint <input name="formFingerprint" pattern="sha256:[0-9a-f]{64}" required></label>
+            <label>Duration in minutes <input name="durationMinutes" type="number" min="1" max="60" value="30" required></label>
+          </div>
+          <fieldset><legend>Allowed non-final operations</legend><label><span><input name="allowedOperations" value="fill_text" type="checkbox"> Fill text</span></label><label><span><input name="allowedOperations" value="select_option" type="checkbox"> Select option</span></label><label><span><input name="allowedOperations" value="toggle_non_consent" type="checkbox"> Toggle a non-consent field</span></label><label><span><input name="allowedOperations" value="upload_approved_resume" type="checkbox"> Upload the approved resume</span></label></fieldset>
+          <button class="button primary" type="submit">Approve these field permissions</button>
+        </form>
+        <form id="trusted-fill-status-form" class="automation-form">
+          <label>Job ID for status or revocation <input name="jobId" required></label>
+          <div class="button-row"><button class="button secondary" type="submit">Check approval status</button><button id="trusted-fill-revoke" class="button secondary" type="button" disabled>Revoke approval</button></div>
+        </form>
+        </details>
+        <div id="trusted-fill-status" class="notice" role="status" aria-live="polite">No approval loaded.</div>
+        <div id="trusted-fill-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>Approval changed elsewhere</h3><p>Nothing was retried. Refresh its exact status before another action.</p></div>
+        <p id="trusted-fill-error" class="error hidden" role="alert"></p>
+      </section>
+    </div>
+  </main>
+
+  <dialog id="readiness-dialog" aria-labelledby="profile-readiness-title">
+    <div class="readiness-drawer-toolbar"><button id="close-readiness" class="icon-button" type="button" aria-label="Close profile readiness">×</button></div>
+    <div id="readiness-drawer-content"></div>
+  </dialog>
+
+  <dialog id="trash-delete-dialog" aria-labelledby="trash-delete-title">
+    <form id="trash-delete-form" class="dialog-shell compact">
+      <div class="dialog-heading"><div><p class="eyebrow">PERMANENT INDIVIDUAL DELETION</p><h2 id="trash-delete-title">Confirm permanent deletion</h2></div><button class="icon-button" type="button" data-close="trash-delete-dialog" aria-label="Close permanent deletion confirmation">×</button></div>
+      <p id="trash-delete-identity"></p>
+      <p id="trash-delete-impact"></p>
+      <label>Type <strong id="trash-delete-phrase"></strong> to continue <input id="trash-delete-input" name="confirmation" autocomplete="off" required></label>
+      <div id="trash-delete-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>This record changed elsewhere</h3><p>Nothing was deleted and the request was not retried. Refresh Trash and review the latest record.</p><button id="trash-conflict-refresh" class="button secondary" type="button">Refresh Trash</button></div>
+      <p id="trash-delete-error" class="error hidden" role="alert"></p>
+      <div class="dialog-footer"><button class="button secondary" type="button" data-close="trash-delete-dialog">Cancel</button><button id="trash-delete-confirm" class="button danger" type="submit">Delete permanently</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="answer-dialog" aria-labelledby="answer-dialog-title">
+    <form id="answer-form" class="dialog-shell">
+      <div class="dialog-heading"><div><p id="answer-kicker" class="eyebrow">CANONICAL RECORD</p><h2 id="answer-dialog-title">Answer details</h2></div><button class="icon-button" type="button" data-close="answer-dialog" aria-label="Close answer details">×</button></div>
+      <div id="answer-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>This answer changed elsewhere</h3><p>Your unsaved form remains visible. Refresh the canonical revision, review your values, and save again.</p><button id="answer-conflict-refresh" class="button secondary" type="button">Refresh canonical revision</button></div>
+      <div class="form-grid">
+        <label class="wide">Question <input name="question" required autocomplete="off"></label>
+        <label class="wide">Aliases (one per line) <textarea name="aliases" rows="3"></textarea></label>
+        <label>State <select name="state"><option value="confirmed">Confirmed</option><option value="inferred">Inferred</option><option value="missing">Missing</option><option value="sensitive">Sensitive</option></select></label>
+        <label>Sensitivity <select name="sensitivity"><option value="none">None</option><option value="personal">Personal</option><option value="high">High</option></select></label>
+        <label class="wide">Scope (JSON object) <textarea name="scope" rows="3">{}</textarea></label>
+        <label class="wide">Value <textarea name="value" rows="4"></textarea></label>
+        <label id="remember-sensitive-label" class="wide hidden"><span><input name="rememberSensitive" type="checkbox"> I freshly consent to retaining this sensitive value in the local canonical store.</span></label>
+      </div>
+      <p id="answer-reference-counts"></p><p id="answer-error" class="error hidden" role="alert"></p>
+      <div class="dialog-footer"><div class="button-row"><button id="answer-reveal" class="button secondary hidden" type="button">Reveal sensitive value</button><button id="answer-merge" class="button secondary hidden" type="button">Merge duplicate…</button><button id="answer-accept" class="button secondary hidden" type="button">Accept</button><button id="answer-decline" class="button danger hidden" type="button">Decline</button><button id="answer-trash" class="button danger hidden" type="button">Move to trash</button><button id="answer-restore" class="button secondary hidden" type="button">Restore</button><button id="answer-delete" class="button danger hidden" type="button">Delete permanently</button></div><button id="answer-save" class="button primary" type="submit">Save answer</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="answer-merge-dialog" aria-labelledby="answer-merge-title">
+    <form id="answer-merge-form" class="dialog-shell">
+      <div class="dialog-heading"><div><p class="eyebrow">REDIRECT DUPLICATE</p><h2 id="answer-merge-title">Choose the accepted winner</h2></div><button class="icon-button" type="button" data-close="answer-merge-dialog" aria-label="Close answer merge">×</button></div>
+      <p id="answer-merge-source"></p>
+      <p>Only redacted metadata is shown. The selected winner keeps its value, consent, provenance, and exact scope; the duplicate becomes an immutable redirect.</p>
+      <label>Accepted winner <select id="answer-merge-winner" name="winnerKey" required></select></label>
+      <p id="answer-merge-error" class="error hidden" role="alert"></p>
+      <div class="dialog-footer"><button class="button secondary" type="button" data-close="answer-merge-dialog">Cancel</button><button id="answer-merge-confirm" class="button danger" type="submit">Merge into selected winner</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="answer-cleanup-dialog" aria-labelledby="answer-cleanup-title">
+    <form id="answer-cleanup-form" class="dialog-shell">
+      <div class="dialog-heading"><div><p class="eyebrow">EXPLICIT CLEANUP</p><h2 id="answer-cleanup-title">Review semantic duplicate proposals</h2></div><button class="icon-button" type="button" data-close="answer-cleanup-dialog" aria-label="Close cleanup preview">×</button></div>
+      <p>Previewing never changes the answer library. Approve one exact revision-bound proposal at a time.</p>
+      <div id="answer-cleanup-proposals"></div>
+      <p id="answer-cleanup-error" class="error hidden" role="alert"></p>
+      <div class="dialog-footer"><button class="button secondary" type="button" data-close="answer-cleanup-dialog">Cancel</button><button id="answer-cleanup-confirm" class="button danger" type="submit">Approve selected cleanup</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="job-dialog" aria-labelledby="job-dialog-title">
+    <form id="job-form" class="dialog-shell">
+      <div class="dialog-heading">
+        <div><p class="eyebrow" id="dialog-kicker">CANONICAL RECORD</p><h2 id="job-dialog-title">Job details</h2></div>
+        <button class="icon-button" type="button" data-close="job-dialog" aria-label="Close job details">×</button>
+      </div>
+      <div id="conflict" class="conflict hidden" role="alert" tabindex="-1">
+        <h3>This job changed elsewhere</h3>
+        <p>Your draft is safe. Review every latest canonical value, then load it or reapply only the fields you edited.</p>
+        <div id="conflict-latest" class="conflict-values"></div>
+        <div class="button-row">
+          <button id="reload-latest" class="button secondary" type="button">Load canonical values</button>
+          <button id="rebase-draft" class="button primary" type="button">Reapply my draft</button>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label class="wide">Job URL <input name="url" type="url" required placeholder="https://company.example/jobs/123"></label>
+        <label>Role <input name="role" autocomplete="off"></label>
+        <label>Company <input name="company" autocomplete="organization"></label>
+        <label>Location <input name="location" autocomplete="off"></label>
+        <label>Workplace
+          <select name="workplaceType"><option value="">Not set</option><option>remote</option><option>hybrid</option><option>onsite</option></select>
+        </label>
+        <label>Employment
+          <select name="employmentType"><option value="">Not set</option><option>full_time</option><option>part_time</option><option>contract</option><option>temporary</option><option>internship</option></select>
+        </label>
+        <label>Priority <input name="priority" type="number" min="0" max="5" value="0"></label>
+        <label>Resume <select name="resumeId"><option value="">Use default resume</option></select></label>
+        <label>Compensation <input name="compensation" autocomplete="off"></label>
+        <label class="wide">Notes <textarea name="notes" rows="3"></textarea></label>
+        <label class="wide">Description <textarea name="description" rows="5"></textarea></label>
+      </div>
+      <section id="application-activity" class="application-activity hidden" aria-labelledby="application-activity-heading" tabindex="-1">
+        <div class="activity-heading">
+          <div>
+            <p class="eyebrow">DURABLE APPLICATION RECORD</p>
+            <h3 id="application-activity-heading">Application activity</h3>
+          </div>
+          <span id="activity-current-status" class="status">Saved</span>
+        </div>
+        <p id="activity-live" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></p>
+        <p id="activity-summary" class="activity-summary"></p>
+        <p id="activity-claim" class="activity-claim"></p>
+        <p id="activity-recovery" class="notice hidden"></p>
+        <div id="activity-progress" class="activity-progress hidden">
+          <h4>Resumable progress</h4>
+          <dl id="activity-progress-details"></dl>
+          <div id="activity-pending-wrap" class="hidden">
+            <h4>Pending information</h4>
+            <ul id="activity-pending"></ul>
+          </div>
+          <section id="activity-attention-contract" class="attention-contract hidden" aria-labelledby="activity-attention-contract-heading">
+            <h4 id="activity-attention-contract-heading">Human attention contract</h4>
+            <p id="activity-readiness"></p>
+            <p id="activity-browser-handoff"></p>
+            <ul id="activity-blockers"></ul>
+            <div id="activity-grouped-approval" class="hidden">
+              <p>Review each field independently. Current use, remembering, and reuse policy remain separate decisions.</p>
+              <div id="activity-approval-fields"></div>
+              <div class="button-row"><button id="activity-approval-preview" class="button secondary" type="button">Preview grouped approval</button><button id="activity-approval-confirm" class="button accent hidden" type="button">Approve exact preview</button></div>
+              <p id="activity-approval-summary" role="status"></p>
+            </div>
+          </section>
+        </div>
+        <div class="activity-history">
+          <h4>Read-only history</h4>
+          <p id="activity-history-empty" class="activity-empty">No agent activity has been recorded for this job.</p>
+          <ol id="activity-history-list"></ol>
+        </div>
+      </section>
+      <section id="preflight-panel" class="preflight hidden" aria-labelledby="preflight-heading">
+        <h3 id="preflight-heading">Ready check</h3><div id="preflight-results" role="status" aria-live="polite"></div>
+      </section>
+      <section id="ready-handoff" class="handoff-card compact-handoff hidden" aria-labelledby="ready-handoff-heading">
+        <p class="eyebrow">READY FOR AN AGENT</p><h3 id="ready-handoff-heading">Continue outside this workspace</h3>
+        <p>Copy the invocation for your host. No command runs here, and only you may submit.</p>
+        <div class="button-row"><button class="button secondary copy-invocation" data-copy="$job-apply:job-apply" type="button">Copy Codex invocation</button><button class="button secondary copy-invocation" data-copy="/job-apply:job-apply" type="button">Copy Claude Code invocation</button></div>
+        <label class="clipboard-fallback hidden" role="alert">Clipboard unavailable. Select and copy this invocation manually. <input class="clipboard-fallback-value" readonly aria-label="Invocation to copy"></label>
+      </section>
+      <p id="form-error" class="error hidden" role="alert"></p>
+      <div class="dialog-footer job-footer">
+        <p id="ready-check-status" role="status" aria-live="polite"></p>
+        <div class="danger-zone"><button id="trash-job" class="button danger hidden" type="button">Move to trash</button></div>
+        <div class="button-row">
+          <button id="preflight-job" class="button secondary hidden" type="button">Run ready check</button>
+          <button id="mark-ready" class="button accent hidden" type="button">Mark ready</button>
+          <button id="save-job" class="button primary" type="submit">Save job</button>
+        </div>
+      </div>
+      <section id="status-actions" class="status-actions hidden" aria-label="Status actions">
+        <h3>Controlled status</h3><p>Status updates never submit or activate an application on a third-party site.</p>
+        <div id="status-buttons" class="button-row"></div>
+      </section>
+    </form>
+  </dialog>
+
+  <dialog id="bulk-dialog" aria-labelledby="bulk-title">
+    <form id="bulk-form" class="dialog-shell compact">
+      <div class="dialog-heading"><div><p class="eyebrow">QUICK CAPTURE</p><h2 id="bulk-title">Paste job URLs</h2></div><button class="icon-button" type="button" data-close="bulk-dialog" aria-label="Close bulk capture">×</button></div>
+      <p>One URL per line. Valid jobs are saved even if another line is a duplicate or invalid.</p>
+      <label>Job URLs <textarea name="urls" rows="9" required placeholder="https://example.com/jobs/one&#10;https://example.com/jobs/two"></textarea></label>
+      <div id="bulk-results" class="bulk-results" aria-live="polite"></div>
+      <div class="dialog-footer"><span></span><button class="button primary" type="submit">Capture jobs</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="resume-dialog" aria-labelledby="resume-dialog-title">
+    <form id="resume-form" class="dialog-shell">
+      <div class="dialog-heading"><div><p class="eyebrow">CANONICAL RESUME</p><h2 id="resume-dialog-title">Resume details</h2></div><button class="icon-button" type="button" data-close="resume-dialog" aria-label="Close resume details">×</button></div>
+      <p id="resume-assignment"></p><p id="resume-proposal-status"></p>
+      <section class="resume-extraction" aria-labelledby="resume-extraction-heading"><h3 id="resume-extraction-heading">Fact extraction</h3><p id="resume-extraction-status" class="extraction-status" role="status"></p><div class="button-row"><button id="resume-extraction-action" class="button primary" type="button"></button><button id="resume-handoff-copy" class="button secondary hidden" type="button">Copy agent handoff</button></div><label id="resume-handoff-fallback" class="clipboard-fallback hidden" role="alert">Clipboard unavailable. Select and copy this handoff manually. <input readonly aria-label="Extraction request handoff to copy"></label></section>
+      <fieldset><legend>Metadata</legend><div class="form-grid"><label>Label <input name="label" required></label><label>Tags (comma separated) <input name="tags"></label></div><button class="button primary" type="submit">Save metadata</button></fieldset>
+      <fieldset>
+        <legend>Current document</legend>
+        <p>View the saved document without selecting a replacement.</p>
+        <button id="resume-content" class="button secondary" type="button">Preview or download</button>
+      </fieldset>
+      <fieldset>
+        <legend>Replace document</legend>
+        <p>Choose a file only when you want to change the saved document.</p>
+        <label>Replacement file <input name="file" type="file" accept=".pdf,.docx,.txt"></label>
+        <div class="button-row"><button id="resume-replace" class="button secondary" type="button">Replace file</button><button id="resume-adopt" class="button secondary hidden" type="button">Adopt into managed storage</button></div>
+      </fieldset>
+      <section aria-labelledby="proposal-heading"><h3 id="proposal-heading">Extraction reviews</h3><div id="resume-proposals"></div></section>
+      <div id="resume-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>This resume changed elsewhere</h3><p>Your metadata and selected file remain in place. Refresh the canonical record, review your draft, then reapply it explicitly.</p><button id="resume-conflict-refresh" class="button secondary" type="button">Refresh canonical revision</button></div>
+      <p id="resume-error" class="error hidden" role="alert"></p>
+      <div class="dialog-footer"><div class="button-row"><button id="resume-default" class="button secondary" type="button">Make default</button><button id="resume-trash-action" class="button danger" type="button">Move to trash</button><button id="resume-restore" class="button secondary hidden" type="button">Restore</button><button id="resume-delete" class="button danger hidden" type="button">Delete permanently</button></div></div>
+    </form>
+  </dialog>
+
+  <dialog id="proposal-dialog" aria-labelledby="proposal-title">
+    <form id="proposal-form" class="dialog-shell"><div class="dialog-heading"><div><p class="eyebrow">EXTRACTION REVIEW</p><h2 id="proposal-title">Review proposed facts</h2></div><button class="icon-button" type="button" data-close="proposal-dialog" aria-label="Close extraction review">×</button></div><p>Choose only the paths you want to decide now. Unselected paths stay pending.</p><div class="button-row"><button id="proposal-keep-all" class="button secondary" type="button">Keep all current</button></div><div id="proposal-rows"></div><div id="proposal-stale-actions" class="hidden"><button id="proposal-request-fresh" class="button secondary" type="button">Request fresh extraction</button></div><p id="proposal-error" class="error hidden" role="alert"></p><div class="dialog-footer"><span></span><button id="proposal-submit" class="button primary" type="submit">Apply selected decisions</button></div></form>
+  </dialog>
+
+  <dialog id="replacement-confirm-dialog" aria-labelledby="replacement-confirm-title">
+    <form id="replacement-confirm-form" class="dialog-shell compact"><div class="dialog-heading"><div><p class="eyebrow">STRUCTURED REPLACEMENT</p><h2 id="replacement-confirm-title">Confirm whole-collection replacement</h2></div><button class="icon-button" type="button" data-close="replacement-confirm-dialog" aria-label="Close structured replacement confirmation">×</button></div><p id="replacement-confirm-copy">Using the extracted value will replace the current structured collection. Review this scope before continuing.</p><div class="dialog-footer"><button class="button secondary" type="button" data-close="replacement-confirm-dialog">Go back</button><button id="replacement-confirm-submit" class="button danger" type="submit">Confirm and apply decisions</button></div></form>
+  </dialog>
+
+  <dialog id="fact-group-dialog" aria-labelledby="fact-group-dialog-title">
+    <form id="fact-group-form" class="dialog-shell compact">
+      <div class="dialog-heading"><div><p class="eyebrow">SAVED FACT VIEW</p><h2 id="fact-group-dialog-title">Create fact group</h2></div><button class="icon-button" type="button" data-close="fact-group-dialog" aria-label="Close fact group editor">×</button></div>
+      <p>Choose canonical fact paths to show together. This changes organization only; facts are never moved or deleted.</p>
+      <div class="form-grid"><label>Group name <input name="label" maxlength="80" required></label><label>Display order <input name="order" type="number" min="0" max="1000000" step="1" required></label></div>
+      <fieldset class="fact-path-picker"><legend>Facts in this group</legend><div id="fact-group-paths"></div></fieldset>
+      <div id="fact-group-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>This group changed elsewhere</h3><p>Your choices remain visible. Close the editor, reopen the latest group, and apply them again.</p></div>
+      <p id="fact-group-error" class="error hidden" role="alert"></p>
+      <div class="dialog-footer"><button id="fact-group-delete" class="button danger hidden" type="button">Remove group</button><div class="button-row"><button class="button secondary" type="button" data-close="fact-group-dialog">Cancel</button><button id="fact-group-save" class="button primary" type="submit">Save group</button></div></div>
+    </form>
+  </dialog>
+
+  <dialog id="pdf-preview-dialog" aria-labelledby="pdf-preview-title">
+    <div class="dialog-shell pdf-shell">
+      <div class="dialog-heading"><h2 id="pdf-preview-title">PDF preview</h2><button class="icon-button" type="button" data-close="pdf-preview-dialog" aria-label="Close PDF preview" autofocus>×</button></div>
+      <p id="pdf-loading" role="status">Loading PDF…</p>
+      <p id="pdf-error" class="error" role="alert" hidden></p>
+      <iframe id="pdf-frame" title="Resume PDF document" hidden></iframe>
+      <div id="pdf-fallback" hidden><p id="pdf-fallback-copy"></p><a id="pdf-download" class="button secondary">Download PDF</a></div>
+    </div>
+  </dialog>
+  <dialog id="preview-dialog" aria-labelledby="preview-title"><div class="dialog-shell"><div class="dialog-heading"><h2 id="preview-title">Text resume preview</h2><button class="icon-button" type="button" data-close="preview-dialog" aria-label="Close preview">×</button></div><pre id="resume-preview" class="resume-preview"></pre></div></dialog>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
