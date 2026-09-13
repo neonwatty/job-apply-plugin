@@ -1,0 +1,58 @@
+{
+  "captureMonth": "2026-09",
+  "compilerVersion": "1.1.0",
+  "id": "rippling-form-readiness-v1",
+  "oracle": {
+    "finalActionActivations": 0
+  },
+  "platformFamily": "rippling",
+  "provenance": {
+    "captureMonth": "2026-09",
+    "recorderVersion": "1.0.0",
+    "sourceRecordingSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "schemaVersion": 1,
+  "steps": [
+    {
+      "controls": [
+        {
+          "id": "contact.full_name",
+          "kind": "contact.full_name",
+          "label": "Full name",
+          "required": true,
+          "role": "textbox"
+        },
+        {
+          "id": "contact.email",
+          "kind": "contact.email",
+          "label": "Email address",
+          "required": true,
+          "role": "textbox"
+        },
+        {
+          "id": "resume.file",
+          "kind": "resume.file",
+          "label": "Resume",
+          "required": true,
+          "role": "file"
+        }
+      ],
+      "id": "step-1",
+      "kind": "form",
+      "next": "review",
+      "title": "Application form"
+    },
+    {
+      "controls": [],
+      "finalAction": {
+        "enabled": true,
+        "id": "final.apply",
+        "label": "Submit application",
+        "tripwire": true
+      },
+      "id": "review",
+      "kind": "review",
+      "title": "Review application"
+    }
+  ]
+}

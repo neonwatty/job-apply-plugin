@@ -1,0 +1,58 @@
+import Foundation
+import Darwin
+
+@main
+enum WorkdayAccountFlowMain {
+    static func main() throws {
+        let arguments = CommandLine.arguments
+        guard arguments.count > 1 else { return }
+        switch arguments[1] {
+        case "workday-prepare":
+            guard arguments.count == 6, let browserPID = Int32(arguments[2])
+            else { throw ProtectedCredentialError.invalidBinding }
+            let result: [String: Any]
+            do {
+                result = try MacOSWorkdayAccountFlowHelper().prepare(
+                    browserProcessIdentifier: browserPID, portalURL: arguments[3],
+                    realmReference: arguments[4], realmDescriptor: arguments[5]
+                )
+            } catch WorkdayAccountFlowError.invalidBinding {
+                Darwin.exit(40)
+            } catch WorkdayAccountFlowError.browserBinding {
+                Darwin.exit(41)
+            } catch WorkdayAccountFlowError.pageBinding {
+                Darwin.exit(42)
+            } catch WorkdayAccountFlowError.controlBinding {
+                Darwin.exit(43)
+            } catch {
+                Darwin.exit(44)
+            }
+            let data = try JSONSerialization.data(withJSONObject: result, options: [.sortedKeys])
+            FileHandle.standardOutput.write(data)
+            FileHandle.standardOutput.write(Data([0x0a]))
+        case "workday-account":
+            guard arguments.count == 15, let browserPID = Int32(arguments[2]),
+                  let privateDescriptor = Int32(arguments[14]), privateDescriptor > STDERR_FILENO
+            else { throw ProtectedCredentialError.invalidBinding }
+            let binding = NativeWorkdayBinding(
+                browserProcessIdentifier: browserPID, portalURL: arguments[3],
+                realmReference: arguments[4], realmDescriptor: arguments[5],
+                accountFormFingerprint: arguments[6], emailControlFingerprint: arguments[7],
+                passwordControlFingerprint: arguments[8],
+                passwordConfirmationControlFingerprint: arguments[9],
+                privacyControlFingerprint: arguments[10], createAccountControlFingerprint: arguments[11],
+                accountCreationControlsFingerprint: arguments[12], nativeAttestationSocketPath: arguments[13]
+            )
+            do {
+                try MacOSWorkdayAccountFlowHelper().execute(binding, privateEmailDescriptor: privateDescriptor)
+            } catch {
+                Darwin.exit(50)
+            }
+        case "workday-account-adversarial-fixtures":
+            guard arguments.count == 2, workdayAccountAdversarialFixturesPass()
+            else { throw ProtectedCredentialError.invalidBinding }
+        default:
+            throw ProtectedCredentialError.invalidBinding
+        }
+    }
+}

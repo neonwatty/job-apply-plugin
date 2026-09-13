@@ -1,0 +1,9 @@
+:root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #102019; color: #f7f2df; }
+main { width: min(42rem, calc(100% - 2rem)); padding: 2rem; border: 2px solid #d6b765; border-radius: 1rem; background: #172a22; }
+.kicker { letter-spacing: .15em; color: #e7c96f; }
+section { margin: 1.5rem 0; padding: 1rem; border: 1px solid #8fa99c; }
+output { display: block; padding: .75rem; background: #0b1612; }
+button { min-height: 44px; padding: .7rem 1rem; font: inherit; }
+button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }

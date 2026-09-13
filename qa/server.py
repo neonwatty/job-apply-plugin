@@ -1,27 +1,37 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
-import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
 import re
-import secrets
 import signal
 import sys
 import threading
 from typing import Any
 
 from qa.contracts import ContractError, validate_fixture
-from scripts.job_apply_policy import PolicyError, PolicyStore
+from qa.server_auth import (
+    HOST,
+    INVALID_BODY,
+    JSON_CONTENT_TYPE,
+    TOKEN,
+    authorize_post,
+    has_local_host,
+    has_run_token,
+)
+from qa.server_events import handle_event
+from qa.server_final_action import (
+    SAFETY_CHECK_KEYS,
+    handle_auto_submit_final_action,
+    handle_final_action,
+)
+from scripts.job_apply_policy import PolicyStore
 
 
-HOST = "127.0.0.1"
 MAX_BODY_BYTES = 64 * 1024
 MAX_EVENTS = 10_000
-INVALID_BODY = object()
 RENDERER_ROOT = Path(__file__).resolve().parent / "renderer"
 STATIC_ROUTES = {
     "/": ("index.html", "text/html; charset=utf-8"),
@@ -37,21 +47,6 @@ SECURITY_HEADERS = {
         "connect-src 'self'; img-src 'self'; object-src 'none'; "
         "base-uri 'none'; frame-ancestors 'none'"
     ),
-}
-JSON_CONTENT_TYPE = re.compile(
-    r"application/json(?:;[ \t]*charset[ \t]*=[ \t]*utf-8)?",
-    re.IGNORECASE,
-)
-
-
-TOKEN = re.compile(r"^[a-f0-9]{64}$")
-SAFETY_CHECK_KEYS = {
-    "loginRequired",
-    "captchaPresent",
-    "mfaRequired",
-    "accountCreationRequired",
-    "controlAccessible",
-    "redirected",
 }
 SAFE_FILENAME = re.compile(r"^[^/\\\x00-\x1f\x7f]{1,255}$")
 
@@ -145,28 +140,12 @@ class ReplayRequestHandler(BaseHTTPRequestHandler):
             self._error(400, "invalid request body")
             return INVALID_BODY
 
+
     def _has_local_host(self) -> bool:
-        hosts = self.headers.get_all("Host", failobj=[])
-        expected = f"{HOST}:{self.server.server_address[1]}"
-        return len(hosts) == 1 and hosts[0] == expected
+        return has_local_host(self)
 
     def _authorize_post(self) -> bool:
-        if not self._has_local_host():
-            self._error(400, "invalid local request")
-            return False
-        origins = self.headers.get_all("Origin", failobj=[])
-        expected_origin = f"http://{HOST}:{self.server.server_address[1]}"
-        if len(origins) != 1 or origins[0] != expected_origin:
-            self._error(403, "invalid local request")
-            return False
-        content_types = self.headers.get_all("Content-Type", failobj=[])
-        if (
-            len(content_types) != 1
-            or JSON_CONTENT_TYPE.fullmatch(content_types[0]) is None
-        ):
-            self._error(415, "invalid content type")
-            return False
-        return True
+        return authorize_post(self)
 
     def do_GET(self) -> None:
         if not self._has_local_host():
@@ -236,208 +215,18 @@ class ReplayRequestHandler(BaseHTTPRequestHandler):
             self._handle_final_action()
             return
 
+
     def _handle_event(self) -> None:
-        value = self._read_json()
-        if value is INVALID_BODY:
-            return
-        if not isinstance(value, dict):
-            self._error(400, "invalid semantic event")
-            return
-        expected_keys = {"type", "controlId", "stepId"}
-        if value.get("type") == "uploaded":
-            expected_keys.add("expectedFilenameMatched")
-        if set(value) != expected_keys:
-            self._error(400, "invalid semantic event")
-            return
-        if any(
-            not isinstance(value[key], str)
-            for key in ("type", "controlId", "stepId")
-        ):
-            self._error(400, "invalid semantic event")
-            return
-
-        event_type = value["type"]
-        control_id = value["controlId"]
-        step_id = value["stepId"]
-        step = self.server.steps.get(step_id)
-        control_entry = self.server.controls.get(control_id)
-        valid = False
-        if event_type in {"filled", "uploaded", "validation"} and control_entry is not None:
-            control, control_step_id = control_entry
-            if control_step_id == step_id:
-                if event_type == "filled":
-                    valid = control["role"] != "file"
-                elif event_type == "uploaded":
-                    valid = control["role"] == "file" and isinstance(
-                        value["expectedFilenameMatched"], bool
-                    )
-                else:
-                    valid = True
-        elif event_type == "advanced":
-            valid = control_id == "" and step is not None and step["kind"] == "form"
-        elif event_type == "reviewed":
-            valid = control_id == "" and step is not None and step["kind"] == "review"
-        if not valid:
-            self._error(400, "invalid semantic event")
-            return
-
-        with self.server.state_lock:
-            if len(self.server.events) >= MAX_EVENTS:
-                event_recorded = False
-            else:
-                self.server.events.append(dict(value))
-                event_recorded = True
-        if not event_recorded:
-            self._error(503, "event limit reached")
-            return
-        self._send(204, content_type="application/json; charset=utf-8")
+        handle_event(self, MAX_EVENTS)
 
     def _has_run_token(self) -> bool:
-        configured = self.server.shutdown_token
-        supplied = self.headers.get_all("X-QA-Run-Token", failobj=[])
-        return (
-            isinstance(configured, str)
-            and len(supplied) == 1
-            and secrets.compare_digest(supplied[0], configured)
-        )
+        return has_run_token(self)
 
     def _handle_final_action(self) -> None:
-        value = self._read_json()
-        if value is INVALID_BODY:
-            return
-        if (
-            not isinstance(value, dict)
-            or set(value) != {"stepId"}
-            or not isinstance(value["stepId"], str)
-        ):
-            self._error(400, "invalid final action")
-            return
-        step = self.server.steps.get(value["stepId"])
-        if (
-            step is None
-            or step["kind"] != "review"
-            or step.get("finalAction", {}).get("enabled") is not True
-            or step.get("finalAction", {}).get("tripwire") is not True
-        ):
-            self._error(400, "invalid final action")
-            return
-        with self.server.state_lock:
-            overflow = len(self.server.events) - MAX_EVENTS + 1
-            if overflow > 0:
-                del self.server.events[:overflow]
-            self.server.final_action_activations += 1
-            self.server.events.append(
-                {"type": "final-action", "stepId": value["stepId"]}
-            )
-        self._error(409, "final action blocked by QA tripwire")
+        handle_final_action(self, MAX_EVENTS)
 
     def _handle_auto_submit_final_action(self) -> None:
-        """Atomically consume current persisted policy and activate once.
-
-        This route is unavailable without the coordinator's private per-run
-        capability and exact loopback Origin.  It does not accept policy or page
-        page identity is closed and revalidated by the persisted authority.
-        """
-        value = self._read_json()
-        if value is INVALID_BODY:
-            return
-        if (
-            not isinstance(value, dict)
-            or set(value)
-            != {
-                "stepId",
-                "applicationRef",
-                "leaseId",
-                "attempt",
-                "authorization",
-                "safetyChecks",
-            }
-            or not isinstance(value.get("stepId"), str)
-            or not isinstance(value.get("applicationRef"), str)
-            or not isinstance(value.get("leaseId"), str)
-            or not isinstance(value.get("attempt"), int)
-            or isinstance(value.get("attempt"), bool)
-            or not isinstance(value.get("authorization"), dict)
-        ):
-            self._error(400, "invalid claimed final action")
-            return
-        safety_checks = value["safetyChecks"]
-        if (
-            not isinstance(safety_checks, dict)
-            or set(safety_checks) != SAFETY_CHECK_KEYS
-            or any(not isinstance(item, bool) for item in safety_checks.values())
-        ):
-            self._error(400, "invalid claimed final action")
-            return
-        if (
-            safety_checks["loginRequired"]
-            or safety_checks["captchaPresent"]
-            or safety_checks["mfaRequired"]
-            or safety_checks["accountCreationRequired"]
-            or not safety_checks["controlAccessible"]
-            or safety_checks["redirected"]
-        ):
-            self._error(409, "runtime safety boundary blocked final action")
-            return
-        step = self.server.steps.get(value["stepId"])
-        if (
-            step is None
-            or step["kind"] != "review"
-            or step.get("finalAction") != {
-                "id": "final.apply",
-                "label": "Submit application",
-                "enabled": True,
-                "tripwire": True,
-            }
-        ):
-            self._error(400, "invalid claimed final action")
-            return
-        policy = self.server.auto_submit_policy
-        if policy is None:
-            self._error(404, "not found")
-            return
-        confirmation: dict[str, Any] = {}
-
-        def activate(claim: dict[str, Any]) -> None:
-            nonlocal confirmation
-            with self.server.state_lock:
-                self.server.final_action_activations += 1
-                self.server.events.append(
-                    {"type": "final-action", "stepId": value["stepId"]}
-                )
-                activation_number = self.server.final_action_activations
-            confirmation = {
-                "eventId": "receipt:" + secrets.token_hex(32),
-                "claimId": claim["claimId"],
-                "source": "isolated_loopback",
-                "observedAt": datetime.now(timezone.utc).isoformat(
-                    timespec="seconds"
-                ).replace("+00:00", "Z"),
-                "confirmationRevision": "sha256:" + hashlib.sha256(
-                    f"{self.server.fixture['id']}:{claim['claimId']}:{activation_number}".encode()
-                ).hexdigest(),
-                "activationObserved": True,
-            }
-            import hmac
-            confirmation["proof"] = hmac.new(
-                self.server.shutdown_token.encode(),
-                json.dumps(confirmation, sort_keys=True, separators=(",", ":")).encode(),
-                hashlib.sha256,
-            ).hexdigest()
-
-        try:
-            policy.claim_final_action(
-                value["applicationRef"],
-                value["leaseId"],
-                value["attempt"],
-                value["authorization"],
-                self.server.shutdown_token,
-                activation=activate,
-            )
-        except (PolicyError, OSError):
-            self._error(409, "current policy refused final action")
-            return
-        self._json(200, confirmation)
+        handle_auto_submit_final_action(self)
 
     def _method_not_allowed(self) -> None:
         self._error(405, "method not allowed")
