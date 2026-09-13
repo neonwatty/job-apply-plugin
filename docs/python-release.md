@@ -82,6 +82,7 @@ After the Python release, reconcile main into staging in a dedicated integration
 | Phase 2: setup guidance and browser-open fallback | Port user-facing handoff wording where applicable; validate the migration launcher independently. Pending. |
 | Workspace asset lifetime hardening | Adopted from owner investigation patch; reproduce package removal/startup failure in migration runtime. Interim only; companion separation remains required. Pending. |
 | Employer-account automation contract slice | Port canonical manual-strategy projection, version-compatible opaque slot derivation, honest Workday canary capability, redacted worker configuration, and Companion strategy wording. Implement native shared-password setup/rotation independently; never share the Python Store or Keychain namespace. Pending. |
+| Workday preparation failure stages | Preserve the four fixed, value-free native preparation stages when the Workday helper is ported; keep unknown exits and all stderr generic. No effect or readiness contract changes. Pending. |
 
 ### Independent Python companion
 
@@ -394,6 +395,14 @@ password, password confirmation, privacy checkbox, and Create Account control.
 All other query data, paths, controls, and actions still fail closed. The failed
 approval was consumed once and was not retried; a fresh owner approval remains
 required for the next preparation.
+
+The first repaired preparation still failed closed, but its native exit was
+collapsed into one generic adapter error. Preparation now maps only four fixed,
+value-free native stages (request, browser, page, or control binding) into the
+failure receipt. Any stderr output, unknown exit, oversized output, or malformed
+receipt remains generic and closed. This changes no browser behavior, approval
+scope, effect authority, retry rule, or readiness claim; another live read still
+requires a fresh owner approval.
 
 ### Review-bound application automation modes
 

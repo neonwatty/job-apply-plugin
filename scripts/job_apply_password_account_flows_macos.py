@@ -96,6 +96,9 @@ class NativeMacOSWorkdayAccountProvider:
                                     exact["portalUrl"], exact["realmRef"], exact["realmDescriptor"]],
                                    stdin=subprocess.DEVNULL, capture_output=True, timeout=10, check=False)
         if completed.returncode or completed.stderr or len(completed.stdout) > 4096:
+            stages = {40: "request binding", 41: "browser binding", 42: "page binding", 43: "control binding"}
+            if not completed.stderr and completed.returncode in stages:
+                raise ValueError(f"native Workday preparation failed closed at {stages[completed.returncode]}")
             raise ValueError("native Workday preparation failed closed")
         try:
             return CONTRACT.validate_password_preparation_receipt(json.loads(completed.stdout), self.provider_id)
