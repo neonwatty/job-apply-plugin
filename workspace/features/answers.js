@@ -114,8 +114,10 @@ export function installAnswers(context) {
     const selected = answerState.selected;
     const requestedKey = selected?.key ?? null;
     const dialogGeneration = answerState.dialogGeneration;
+    let submittedDraft = null;
     try {
       const answer = answerFormPayload(Boolean(selected));
+      submittedDraft = answer;
       if (selected && !Object.keys(answer).length) throw new Error("Change at least one field before saving.");
       const rememberSensitive = $("#answer-form").elements.rememberSensitive.checked;
       setAnswerBusy(true);
@@ -128,7 +130,7 @@ export function installAnswers(context) {
       await refreshAnswers({ reset: true });
       if (currentDialog && !pendingReturn) (document.querySelector(`.answer-card[data-key="${CSS.escape(result.key)}"]`) || $("#answer-new")).focus();
       toast(`Answer ${selected ? "updated" : "created"}`); return result;
-    } catch (error) { if (!canApplyAnswerDialogMutation(answerState.selected, requestedKey, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) { toast(error.message); return; } if (error.status === 409) { $("#answer-conflict").classList.remove("hidden"); $("#answer-conflict").focus(); } else answerError(error.message, true); }
+    } catch (error) { if (!canApplyAnswerDialogMutation(answerState.selected, requestedKey, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) { toast(error.message); return; } if (error.status === 409) { const form = $("#answer-form"); for (const [name, value] of Object.entries(submittedDraft || {})) { const control = form.elements[name]; if (!control) continue; control.value = name === "aliases" ? value.join("\n") : name === "scope" ? JSON.stringify(value, null, 2) : value ?? ""; } $("#answer-conflict").classList.remove("hidden"); $("#answer-conflict").focus(); } else answerError(error.message, true); }
     finally { if (canApplyAnswerDialogMutation(answerState.selected, requestedKey, dialogGeneration, answerState.dialogGeneration, $("#answer-dialog").open)) setAnswerBusy(false); }
   }
 
