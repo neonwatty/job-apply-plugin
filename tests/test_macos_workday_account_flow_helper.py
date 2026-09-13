@@ -19,6 +19,15 @@ SPEC.loader.exec_module(MACOS)
 
 @unittest.skipUnless(__import__("sys").platform.startswith("darwin"), "macOS Swift toolchain required")
 class MacOSWorkdayAccountFlowTests(unittest.TestCase):
+    def preparation_request(self):
+        return {
+            "jobId": "job", "jobRevision": 2,
+            "realmRef": hashlib.sha256(b"workday:v1:wd5:acme").hexdigest(),
+            "realmDescriptor": "workday:v1:wd5:acme",
+            "accountRevision": 1, "settingsRevision": 3,
+            "portalUrl": "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/Phoenix/Engineer_R1/apply/autofillWithResume",
+        }
+
     def test_reviewed_provider_compiles_and_adversarial_fixtures_are_silent(self):
         with tempfile.TemporaryDirectory() as directory:
             provider = MACOS.NativeMacOSWorkdayAccountProvider.from_reviewed_sources(
@@ -43,13 +52,7 @@ class MacOSWorkdayAccountFlowTests(unittest.TestCase):
             provider = MACOS.NativeMacOSWorkdayAccountProvider.from_reviewed_sources(
                 4242, build_directory=directory
             )
-            request = {
-                "jobId": "job", "jobRevision": 2,
-                "realmRef": hashlib.sha256(b"workday:v1:wd5:acme").hexdigest(),
-                "realmDescriptor": "workday:v1:wd5:acme",
-                "accountRevision": 1, "settingsRevision": 3,
-                "portalUrl": "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/Phoenix/Engineer_R1/apply/autofillWithResume",
-            }
+            request = self.preparation_request()
             observed = {}
 
             def run(arguments, **kwargs):
@@ -75,6 +78,20 @@ class MacOSWorkdayAccountFlowTests(unittest.TestCase):
             self.assertNotIn("owner@", arguments)
             self.assertNotIn("password", arguments.lower())
             self.assertIn("workday-prepare", arguments)
+
+    def test_preparation_surfaces_only_reviewed_value_free_failure_stages(self):
+        provider = object.__new__(MACOS.NativeMacOSWorkdayAccountProvider)
+        provider.binary = "/reviewed/helper"; provider.browser_process_identifier = 4242
+        for returncode, stage in ((40, "request"), (41, "browser"), (42, "page"), (43, "control")):
+            with self.subTest(stage=stage), \
+                 mock.patch.object(provider, "_verified_binary", return_value=provider.binary), \
+                 mock.patch.object(MACOS.subprocess, "run", return_value=subprocess.CompletedProcess([], returncode, b"", b"")):
+                with self.assertRaisesRegex(ValueError, f"failed closed at {stage} binding"):
+                    provider.prepare(self.preparation_request())
+        with mock.patch.object(provider, "_verified_binary", return_value=provider.binary), \
+             mock.patch.object(MACOS.subprocess, "run", return_value=subprocess.CompletedProcess([], 42, b"", b"unexpected")):
+            with self.assertRaisesRegex(ValueError, "^native Workday preparation failed closed$"):
+                provider.prepare(self.preparation_request())
 
     def test_execution_keeps_private_identity_out_of_process_arguments(self):
         descriptor = "workday:v1:wd5:acme"
