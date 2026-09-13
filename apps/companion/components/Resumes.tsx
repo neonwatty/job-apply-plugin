@@ -117,39 +117,53 @@ export function Resumes({ client, dirtyChanged }: { client: Client; dirtyChanged
             await mutate(signal => client.replaceResume(base.id, base.revision, file, base.storageKind !== 'managed', signal),
                 base.storageKind === 'managed' ? 'Resume file replaced' : 'Resume adopted');
     }
-    return <section>
-        <header><div><p className="eyebrow">Your documents</p><h1>Resumes</h1></div><div>
-            <button disabled={busy} onClick={() => void refresh()}>Refresh</button>{' '}
+    const managed = records.filter(record => record.storageKind === 'managed').length;
+    const defaultResume = records.find(record => record.default);
+    return <section className="resumes-workspace" aria-labelledby="resumes-workspace-title">
+        <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Resumes workspace</p><h1 id="resumes-workspace-title">Your private resume library.</h1><p>Managed files stay in the canonical local store and remain available to Job Apply agents and the CLI.</p></div><div className="workspace-hero-actions">
+            <button className="secondary" disabled={busy} onClick={() => void refresh()}>Refresh</button>
             <button className="primary" disabled={busy} onClick={() => open(null)}>Import resume</button>
         </div></header>
-        <p role="status">{loading ? 'Loading resumes…' : notice}</p>
-        {error && <p role="alert" className="error">{error}</p>}
-        <div className="job-list">
-            {records.map(record => <button className="job-card" key={record.id} disabled={busy} onClick={() => open(record)}>
-                <strong>{record.label}{record.default ? ' · Default' : ''}</strong>
-                <span>{record.mediaType ?? 'External file'} · {record.tags.join(', ') || 'No tags'}</span>
-                <small>revision {record.revision}</small>
-            </button>)}
+        <div className="resume-metrics" aria-label="Resume library summary">
+            <div><strong>{records.length}</strong><span>Active resumes</span></div>
+            <div><strong>{managed}</strong><span>Managed locally</span></div>
+            <div><strong>{defaultResume?.label ?? 'None'}</strong><span>Application default</span></div>
         </div>
-        {!loading && !error && !records.length && <p>No resumes yet. Import one to use it with applications.</p>}
-        {editor && <div className="editor-panel">
-            <h2>{editor.base ? editor.base.label : 'Import resume'}</h2>
-            {editor.missing && <p role="alert">This resume is no longer available. Your draft is preserved; saving is disabled.</p>}
-            {editor.latest && <div role="alert">
+        <div className="workspace-panel resumes-panel" aria-labelledby="resume-library-heading">
+            <div className="workspace-panel-heading"><div><p className="eyebrow">Canonical library</p><h2 id="resume-library-heading">Resumes</h2></div><strong className="resume-count">{records.length} {records.length === 1 ? 'document' : 'documents'}</strong></div>
+            <p className="workspace-status" role="status">{loading ? 'Loading resumes…' : notice}</p>
+            {!editor && error && <p role="alert" className="error">{error}</p>}
+            <div className="resume-list" role="list">
+                {records.map(record => <button className="resume-card" key={record.id} disabled={busy} onClick={() => open(record)}>
+                    <span className="resume-card-heading"><span className="resume-file-mark" aria-hidden="true">DOC</span><strong>{record.label}{record.default ? ' · Default' : ''}</strong>{record.default && <span className="status-pill resume-default" aria-hidden="true">Default</span>}</span>
+                    <span className="resume-card-meta"><span>{record.mediaType ?? 'External file'}</span><span>{record.storageKind === 'managed' ? 'Managed locally' : 'External file'}</span></span>
+                    <span className="resume-tags">{record.tags.length ? record.tags.map(tag => <small key={tag}>{tag}</small>) : <small>No tags</small>}</span>
+                    <span className="resume-card-action">Open resume <span aria-hidden="true">→</span></span>
+                    <span className="visually-hidden">revision {record.revision}</span>
+                </button>)}
+            </div>
+            {!loading && !error && !records.length && <div className="workspace-empty resume-empty"><span className="resume-empty-mark" aria-hidden="true">DOC</span><strong>No resumes yet.</strong><span>Import one to use it with applications.</span><button className="text-action" type="button" onClick={() => open(null)}>Import your first resume</button></div>}
+        </div>
+        {editor && <section className="workspace-panel resume-editor-panel" aria-labelledby="resume-editor-title">
+            <div className="workspace-panel-heading"><div><p className="eyebrow">Canonical resume</p><h2 id="resume-editor-title">{editor.base ? editor.base.label : 'Import resume'}</h2></div>{editor.base && <span className="facts-revision">Revision {editor.base.revision}</span>}</div>
+            <p className="resume-editor-intro">{editor.base ? 'Update the document label and tags, or choose a file to replace the managed copy.' : 'Add a PDF, DOCX, or UTF-8 text resume to the canonical local library.'}</p>
+            {error && <p role="alert" className="error">{error}</p>}
+            {editor.missing && <p className="notice" role="alert">This resume is no longer available. Your draft is preserved; saving is disabled.</p>}
+            {editor.latest && <div className="notice resume-conflict" role="alert">
                 <p>This resume changed elsewhere. Your draft is preserved.</p>
                 <button disabled={busy} onClick={reapply}>Reapply my draft</button>{' '}
                 <button disabled={busy} onClick={() => open(editor.latest)}>Use latest resume</button>
             </div>}
-            <label>Label<input value={editor.label} onChange={event => setEditor({ ...editor, label: event.target.value })} disabled={busy} /></label>
+            <div className="resume-editor-fields"><label>Label<input value={editor.label} onChange={event => setEditor({ ...editor, label: event.target.value })} disabled={busy} /></label>
             <label>Tags, separated by commas<input value={editor.tagText} onChange={event => setEditor({ ...editor, tagText: event.target.value })} disabled={busy} /></label>
-            <label>{editor.base?.storageKind === 'managed' ? 'Replacement file' : editor.base ? 'File to adopt' : 'Resume file'}
+            <label className="resume-file-field">{editor.base?.storageKind === 'managed' ? 'Replacement file' : editor.base ? 'File to adopt' : 'Resume file'}
                 <input ref={fileInput} type="file" accept={accept} onChange={event => setEditor({ ...editor, file: event.target.files?.[0] ?? null })} disabled={busy} />
-            </label>
-            <div><button disabled={busy} onClick={close}>Cancel</button>{' '}
+            </label></div>
+            <div className="resume-editor-actions"><button className="secondary" disabled={busy} onClick={close}>Cancel</button>
                 <button className="primary" disabled={busy || loading || Boolean(editor.latest) || editor.missing || !dirty && Boolean(editor.base)} onClick={() => void save()}>Save</button>{' '}
-                {editor.base && !editor.base.default && <button disabled={busy || loading || dirty || Boolean(editor.latest) || editor.missing}
+                {editor.base && !editor.base.default && <button className="secondary" disabled={busy || loading || dirty || Boolean(editor.latest) || editor.missing}
                     onClick={() => void mutate(signal => client.setDefaultResume(editor.base!.id, editor.base!.revision, signal), 'Default resume changed')}>Make default</button>}
             </div>
-        </div>}
+        </section>}
     </section>;
 }
