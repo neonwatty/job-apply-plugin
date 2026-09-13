@@ -336,6 +336,8 @@ class PasswordExecutionMixin:
                 "accountFormFingerprint": request["accountFormFingerprint"],
                 "emailControlFingerprint": request["emailControlFingerprint"],
                 "passwordControlFingerprint": request["passwordControlFingerprint"],
+                "passwordConfirmationControlFingerprint": request["passwordConfirmationControlFingerprint"],
+                "privacyControlFingerprint": request["privacyControlFingerprint"],
                 "createAccountControlFingerprint": request["createAccountControlFingerprint"],
                 "accountCreationControlsFingerprint": binding["accountCreationControlsFingerprint"],
             }

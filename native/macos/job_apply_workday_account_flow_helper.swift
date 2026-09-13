@@ -18,6 +18,8 @@ struct NativeWorkdayBinding {
     let accountFormFingerprint: String
     let emailControlFingerprint: String
     let passwordControlFingerprint: String
+    let passwordConfirmationControlFingerprint: String
+    let privacyControlFingerprint: String
     let createAccountControlFingerprint: String
     let accountCreationControlsFingerprint: String
     let nativeAttestationSocketPath: String
@@ -37,10 +39,15 @@ struct NativeWorkdayBinding {
               components.user == nil, components.password == nil, components.port == nil || components.port == 443,
               components.query == nil, components.fragment == nil,
               components.host == "\(parts[3]).\(parts[2]).myworkdayjobs.com",
+              components.path.range(
+                of: "^/(?:[a-z]{2}-[A-Z]{2}/)?[A-Za-z0-9_]+/job/[A-Za-z0-9._~-]+/[A-Za-z0-9._~-]+/apply/autofillWithResume/?$",
+                options: .regularExpression
+              ) != nil,
               nativeAttestationSocketPath.hasPrefix("/"), nativeAttestationSocketPath.utf8.count <= 103
         else { throw WorkdayAccountFlowError.invalidBinding }
         let fingerprints = [accountFormFingerprint, emailControlFingerprint,
-                            passwordControlFingerprint, createAccountControlFingerprint]
+                            passwordControlFingerprint, passwordConfirmationControlFingerprint,
+                            privacyControlFingerprint, createAccountControlFingerprint]
         guard fingerprints.allSatisfy({ $0.range(of: "^sha256:[0-9a-f]{64}$", options: .regularExpression) != nil }),
               accountCreationControlsFingerprint == Self.fingerprint(fingerprints.joined(separator: ":"))
         else { throw WorkdayAccountFlowError.invalidBinding }
@@ -48,12 +55,16 @@ struct NativeWorkdayBinding {
 }
 
 struct WorkdayReviewedControlShape {
-    let emailCount: Int, secureCount: Int, createCount: Int
-    let textCount: Int, enabledButtonCount: Int
+    let emailCount: Int, passwordCount: Int, confirmationCount: Int
+    let privacyCount: Int, createCount: Int, textCount: Int, enabledButtonCount: Int
+    let privacyLinkCount: Int, signInLinkCount: Int, forgotPasswordLinkCount: Int
     let unknownRequiredOrActionable: Bool
     var isExact: Bool {
-        emailCount == 1 && secureCount == 1 && createCount == 1 && textCount == 1
-            && enabledButtonCount == 1 && !unknownRequiredOrActionable
+        emailCount == 1 && passwordCount == 1 && confirmationCount == 1
+            && privacyCount == 1 && createCount == 1 && textCount == 1
+            && enabledButtonCount == 1 && privacyLinkCount == 1
+            && signInLinkCount == 1 && forgotPasswordLinkCount == 1
+            && !unknownRequiredOrActionable
     }
 }
 
@@ -73,12 +84,18 @@ func workdayClassifyOutcome(_ normalizedText: String, secureControls: Int) -> St
 /// Silent, in-memory proof of the closed predicates. It performs no AX or
 /// Security.framework operation and deliberately has no effect representation.
 func workdayAccountAdversarialFixturesPass() -> Bool {
-    let exact = WorkdayReviewedControlShape(emailCount: 1, secureCount: 1, createCount: 1,
-        textCount: 1, enabledButtonCount: 1, unknownRequiredOrActionable: false)
-    let wrongSecure = WorkdayReviewedControlShape(emailCount: 1, secureCount: 0, createCount: 1,
-        textCount: 2, enabledButtonCount: 1, unknownRequiredOrActionable: false)
-    let extraAction = WorkdayReviewedControlShape(emailCount: 1, secureCount: 1, createCount: 1,
-        textCount: 1, enabledButtonCount: 2, unknownRequiredOrActionable: true)
+    let exact = WorkdayReviewedControlShape(emailCount: 1, passwordCount: 1, confirmationCount: 1,
+        privacyCount: 1, createCount: 1, textCount: 1, enabledButtonCount: 1,
+        privacyLinkCount: 1, signInLinkCount: 1, forgotPasswordLinkCount: 1,
+        unknownRequiredOrActionable: false)
+    let wrongSecure = WorkdayReviewedControlShape(emailCount: 1, passwordCount: 1, confirmationCount: 0,
+        privacyCount: 1, createCount: 1, textCount: 1, enabledButtonCount: 1,
+        privacyLinkCount: 1, signInLinkCount: 1, forgotPasswordLinkCount: 1,
+        unknownRequiredOrActionable: false)
+    let extraAction = WorkdayReviewedControlShape(emailCount: 1, passwordCount: 1, confirmationCount: 1,
+        privacyCount: 1, createCount: 1, textCount: 1, enabledButtonCount: 2,
+        privacyLinkCount: 1, signInLinkCount: 1, forgotPasswordLinkCount: 1,
+        unknownRequiredOrActionable: true)
     let labels = [
         ("candidate home my applications", 0, "active"),
         ("verify your email", 0, "email_verification_required"),
@@ -92,12 +109,13 @@ func workdayAccountAdversarialFixturesPass() -> Bool {
     let realm = NativeWorkdayBinding.fingerprint(descriptor).replacingOccurrences(of: "sha256:", with: "")
     let placeholder = NativeWorkdayBinding.fingerprint("placeholder")
     let binding = NativeWorkdayBinding(browserProcessIdentifier: 2,
-        portalURL: "https://acme.wd5.myworkdayjobs.com/jobs/1", realmReference: realm,
+        portalURL: "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/Phoenix/Engineer_R1/apply/autofillWithResume", realmReference: realm,
         realmDescriptor: descriptor, accountFormFingerprint: placeholder,
         emailControlFingerprint: placeholder, passwordControlFingerprint: placeholder,
+        passwordConfirmationControlFingerprint: placeholder, privacyControlFingerprint: placeholder,
         createAccountControlFingerprint: placeholder,
         accountCreationControlsFingerprint: NativeWorkdayBinding.fingerprint(
-            [placeholder, placeholder, placeholder, placeholder].joined(separator: ":")),
+            Array(repeating: placeholder, count: 6).joined(separator: ":")),
         nativeAttestationSocketPath: "/tmp/job-apply-workday-fixture")
     let queryRejected: Bool
     do {
@@ -105,12 +123,22 @@ func workdayAccountAdversarialFixturesPass() -> Bool {
             portalURL: binding.portalURL + "?secret=x", realmReference: binding.realmReference,
             realmDescriptor: binding.realmDescriptor, accountFormFingerprint: binding.accountFormFingerprint,
             emailControlFingerprint: binding.emailControlFingerprint, passwordControlFingerprint: binding.passwordControlFingerprint,
+            passwordConfirmationControlFingerprint: binding.passwordConfirmationControlFingerprint,
+            privacyControlFingerprint: binding.privacyControlFingerprint,
             createAccountControlFingerprint: binding.createAccountControlFingerprint,
             accountCreationControlsFingerprint: binding.accountCreationControlsFingerprint,
             nativeAttestationSocketPath: binding.nativeAttestationSocketPath)
         try invalid.validate(); queryRejected = false
     } catch { queryRejected = true }
-    return (try? binding.validate()) != nil && queryRejected && exact.isExact
+    let inspector = WorkdayAccessibilityInspector(binding)
+    let referralsAccepted = inspector.observedPageMatches(
+        binding.portalURL + "?source=LinkedIn"
+    ) && inspector.observedPageMatches(binding.portalURL + "?source=Indeed")
+    let otherQueriesRejected = !inspector.observedPageMatches(
+        binding.portalURL + "?token=secret"
+    ) && !inspector.observedPageMatches(binding.portalURL + "?source=Other")
+    return (try? binding.validate()) != nil && queryRejected && referralsAccepted
+        && otherQueriesRejected && exact.isExact
         && !wrongSecure.isExact && !extraAction.isExact
         && labels.allSatisfy { workdayClassifyOutcome($0.0, secureControls: $0.1) == $0.2 }
         && (try? MacOSProtectedCredentialHelper.credentialReference(
@@ -186,18 +214,32 @@ final class WorkdayAccessibilityInspector {
         return true
     }
 
+    fileprivate func observedPageMatches(_ value: String) -> Bool {
+        guard var components = URLComponents(string: value) else { return false }
+        if let items = components.queryItems {
+            guard items.count == 1, items[0].name == "source",
+                  ["LinkedIn", "Indeed"].contains(items[0].value ?? "")
+            else { return false }
+            components.query = nil
+        }
+        return components.fragment == nil && components.string == binding.portalURL
+    }
+
     private func exactPage() throws -> AXUIElement {
         guard kill(binding.browserProcessIdentifier, 0) == 0, AXIsProcessTrusted(), signedBrowser()
         else { throw WorkdayAccountFlowError.browserBinding }
         let pages = elements(AXUIElementCreateApplication(binding.browserProcessIdentifier)).filter {
             string($0, kAXRoleAttribute as CFString) == "AXWebArea"
-                && string($0, kAXURLAttribute as CFString) == binding.portalURL
+                && observedPageMatches(string($0, kAXURLAttribute as CFString) ?? "")
         }
         guard pages.count == 1 else { throw WorkdayAccountFlowError.pageBinding }
         return pages[0]
     }
 
-    struct Controls { let form: AXUIElement, email: AXUIElement, password: AXUIElement, create: AXUIElement }
+    struct Controls {
+        let form: AXUIElement, email: AXUIElement, password: AXUIElement
+        let confirmation: AXUIElement, privacy: AXUIElement, create: AXUIElement
+    }
 
     func exactControls() throws -> Controls {
         let page = try exactPage()
@@ -208,6 +250,18 @@ final class WorkdayAccessibilityInspector {
             let all = elements(form)
             let emails = all.filter { string($0, kAXRoleAttribute as CFString) == (kAXTextFieldRole as String) && searchable($0).contains("email") }
             let secure = all.filter { string($0, kAXSubroleAttribute as CFString) == (kAXSecureTextFieldSubrole as String) }
+            let passwords = secure.filter { !searchable($0).contains("verify") }
+            let confirmations = secure.filter { searchable($0).contains("verify") }
+            let privacy = all.filter {
+                string($0, kAXRoleAttribute as CFString) == (kAXCheckBoxRole as String)
+                    && searchable($0).contains("privacy")
+            }
+            let links = all.filter {
+                string($0, kAXRoleAttribute as CFString) == "AXLink"
+            }
+            let privacyLinks = links.filter { searchable($0).contains("privacy notice") }
+            let signInLinks = links.filter { searchable($0).contains("sign in") }
+            let forgotPasswordLinks = links.filter { searchable($0).contains("forgot") }
             let create = all.filter {
                 let label = searchable($0)
                 return string($0, kAXRoleAttribute as CFString) == (kAXButtonRole as String)
@@ -216,14 +270,22 @@ final class WorkdayAccessibilityInspector {
             }
             let text = all.filter { string($0, kAXRoleAttribute as CFString) == (kAXTextFieldRole as String) }
             let buttons = all.filter { string($0, kAXRoleAttribute as CFString) == (kAXButtonRole as String) && string($0, kAXEnabledAttribute as CFString) != "0" }
-            let reviewed = Set([emails.first, secure.first, create.first].compactMap { $0 }.map(CFHash))
+            let reviewed = Set([
+                emails.first, passwords.first, confirmations.first, privacy.first, create.first,
+            ].compactMap { $0 }.map(CFHash) +
+                (privacyLinks + signInLinks + forgotPasswordLinks).map(CFHash))
             let unknown = all.contains { !reviewed.contains(CFHash($0)) &&
                 (string($0, "AXRequired" as CFString) == "1" || (string($0, kAXEnabledAttribute as CFString) != "0" && !actions($0).isEmpty)) }
-            let shape = WorkdayReviewedControlShape(emailCount: emails.count, secureCount: secure.count,
-                createCount: create.count, textCount: text.count, enabledButtonCount: buttons.count,
+            let shape = WorkdayReviewedControlShape(emailCount: emails.count,
+                passwordCount: passwords.count, confirmationCount: confirmations.count,
+                privacyCount: privacy.count, createCount: create.count,
+                textCount: text.count, enabledButtonCount: buttons.count,
+                privacyLinkCount: privacyLinks.count, signInLinkCount: signInLinks.count,
+                forgotPasswordLinkCount: forgotPasswordLinks.count,
                 unknownRequiredOrActionable: unknown)
             guard shape.isExact else { return nil }
-            return (Controls(form: form, email: emails[0], password: secure[0], create: create[0]), all.count)
+            return (Controls(form: form, email: emails[0], password: passwords[0],
+                confirmation: confirmations[0], privacy: privacy[0], create: create[0]), all.count)
         }
         guard let minimum = candidates.map(\.1).min() else { throw WorkdayAccountFlowError.controlBinding }
         let narrowest = candidates.filter { $0.1 == minimum }
@@ -234,10 +296,12 @@ final class WorkdayAccessibilityInspector {
     func prepare() throws -> [String: Any] {
         let controls = try exactControls()
         let values = [fingerprint(controls.form), fingerprint(controls.email),
-                      fingerprint(controls.password), fingerprint(controls.create)]
+                      fingerprint(controls.password), fingerprint(controls.confirmation),
+                      fingerprint(controls.privacy), fingerprint(controls.create)]
         return ["providerId": "macos-workday-account", "accountFormFingerprint": values[0],
             "emailControlFingerprint": values[1], "passwordControlFingerprint": values[2],
-            "createAccountControlFingerprint": values[3],
+            "passwordConfirmationControlFingerprint": values[3],
+            "privacyControlFingerprint": values[4], "createAccountControlFingerprint": values[5],
             "accountCreationControlsFingerprint": NativeWorkdayBinding.fingerprint(values.joined(separator: ":")),
             "readOnly": true, "effectCount": 0]
     }
@@ -259,9 +323,13 @@ private final class WorkdayAccessibilityAccountBoundary: NativeSecureInputBounda
         guard inspector.fingerprint(controls.form) == binding.accountFormFingerprint,
               inspector.fingerprint(controls.email) == binding.emailControlFingerprint,
               inspector.fingerprint(controls.password) == binding.passwordControlFingerprint,
+              inspector.fingerprint(controls.confirmation) == binding.passwordConfirmationControlFingerprint,
+              inspector.fingerprint(controls.privacy) == binding.privacyControlFingerprint,
               inspector.fingerprint(controls.create) == binding.createAccountControlFingerprint,
               inspector.string(controls.email, kAXValueAttribute as CFString) == "",
               inspector.string(controls.password, kAXValueAttribute as CFString) == "",
+              inspector.string(controls.confirmation, kAXValueAttribute as CFString) == "",
+              inspector.string(controls.privacy, kAXValueAttribute as CFString) == "0",
               inspector.string(controls.create, kAXEnabledAttribute as CFString) != "0"
         else { throw WorkdayAccountFlowError.controlBinding }
         var completed = false
@@ -269,6 +337,10 @@ private final class WorkdayAccessibilityAccountBoundary: NativeSecureInputBounda
             if !completed {
                 _ = AXUIElementSetAttributeValue(controls.email, kAXValueAttribute as CFString, "" as CFString)
                 _ = AXUIElementSetAttributeValue(controls.password, kAXValueAttribute as CFString, "" as CFString)
+                _ = AXUIElementSetAttributeValue(controls.confirmation, kAXValueAttribute as CFString, "" as CFString)
+                if inspector.string(controls.privacy, kAXValueAttribute as CFString) != "0" {
+                    _ = AXUIElementPerformAction(controls.privacy, kAXPressAction as CFString)
+                }
             }
         }
         guard AXUIElementSetAttributeValue(controls.email, kAXValueAttribute as CFString, email as CFString) == .success,
@@ -276,7 +348,11 @@ private final class WorkdayAccessibilityAccountBoundary: NativeSecureInputBounda
         else { throw WorkdayAccountFlowError.emailEffect }
         let password = String(decoding: generatedBytes.bindMemory(to: UInt8.self), as: UTF8.self)
         guard AXUIElementSetAttributeValue(controls.password, kAXValueAttribute as CFString, password as CFString) == .success,
-              !(inspector.string(controls.password, kAXValueAttribute as CFString) ?? "").isEmpty
+              AXUIElementSetAttributeValue(controls.confirmation, kAXValueAttribute as CFString, password as CFString) == .success,
+              !(inspector.string(controls.password, kAXValueAttribute as CFString) ?? "").isEmpty,
+              !(inspector.string(controls.confirmation, kAXValueAttribute as CFString) ?? "").isEmpty,
+              AXUIElementPerformAction(controls.privacy, kAXPressAction as CFString) == .success,
+              inspector.string(controls.privacy, kAXValueAttribute as CFString) != "0"
         else { throw WorkdayAccountFlowError.passwordEffect }
         guard AXUIElementPerformAction(controls.create, kAXPressAction as CFString) == .success
         else { throw WorkdayAccountFlowError.createEffect }
@@ -294,7 +370,10 @@ private final class WorkdayAccessibilityAccountBoundary: NativeSecureInputBounda
             let pageElements = inspector.elements(pages[0])
             let emailPresent = pageElements.contains { inspector.fingerprint($0) == binding.emailControlFingerprint }
             let passwordPresent = pageElements.contains { inspector.fingerprint($0) == binding.passwordControlFingerprint }
-            guard !emailPresent && !passwordPresent else { continue }
+            let confirmationPresent = pageElements.contains {
+                inspector.fingerprint($0) == binding.passwordConfirmationControlFingerprint
+            }
+            guard !emailPresent && !passwordPresent && !confirmationPresent else { continue }
             let text = pageElements.map(inspector.searchable).joined(separator: " ")
             let secure = pageElements.filter {
                 inspector.string($0, kAXSubroleAttribute as CFString) == (kAXSecureTextFieldSubrole as String)
@@ -314,9 +393,11 @@ struct MacOSWorkdayAccountFlowHelper {
         let binding = NativeWorkdayBinding(browserProcessIdentifier: browserProcessIdentifier,
             portalURL: portalURL, realmReference: realmReference, realmDescriptor: realmDescriptor,
             accountFormFingerprint: placeholder, emailControlFingerprint: placeholder,
-            passwordControlFingerprint: placeholder, createAccountControlFingerprint: placeholder,
+            passwordControlFingerprint: placeholder,
+            passwordConfirmationControlFingerprint: placeholder,
+            privacyControlFingerprint: placeholder, createAccountControlFingerprint: placeholder,
             accountCreationControlsFingerprint: NativeWorkdayBinding.fingerprint(
-                [placeholder, placeholder, placeholder, placeholder].joined(separator: ":")),
+                Array(repeating: placeholder, count: 6).joined(separator: ":")),
             nativeAttestationSocketPath: "/tmp/job-apply-workday-prepare")
         try binding.validate()
         return try WorkdayAccessibilityInspector(binding).prepare()

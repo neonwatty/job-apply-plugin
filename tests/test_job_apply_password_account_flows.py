@@ -21,6 +21,7 @@ def fp(character):
 class PasswordAccountFlowTests(unittest.TestCase):
     def setUp(self):
         self.url = "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/Phoenix/Engineer_R1"
+        self.url += "/apply/autofillWithResume"
         self.descriptor = "workday:v1:wd5:acme"
         self.realm = hashlib.sha256(self.descriptor.encode()).hexdigest()
         self.preparation = {
@@ -33,7 +34,9 @@ class PasswordAccountFlowTests(unittest.TestCase):
             "accountFormFingerprint": fp("a"),
             "emailControlFingerprint": fp("b"),
             "passwordControlFingerprint": fp("c"),
-            "createAccountControlFingerprint": fp("d"),
+            "passwordConfirmationControlFingerprint": fp("d"),
+            "privacyControlFingerprint": fp("e"),
+            "createAccountControlFingerprint": fp("f"),
         }
         self.aggregate = "sha256:" + hashlib.sha256(
             ":".join(self.controls.values()).encode()
@@ -71,6 +74,7 @@ class PasswordAccountFlowTests(unittest.TestCase):
         invalid_preparations = (
             {**self.preparation, "portalUrl": self.url + "?token=secret"},
             {**self.preparation, "portalUrl": "http://acme.wd5.myworkdayjobs.com/jobs/1"},
+            {**self.preparation, "portalUrl": "https://acme.wd5.myworkdayjobs.com/jobs/1"},
             {**self.preparation, "realmRef": "f" * 64},
             {**self.preparation, "realmDescriptor": "workday:v1:wd5:other"},
             {**self.preparation, "extra": True},

@@ -145,7 +145,7 @@ class StoreTestCase(unittest.TestCase):
         resume = store.create_resume({
             "id": f"workday-{suffix}", "label": "Synthetic", "path": str(resume_path),
         })
-        url = f"https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/Phoenix/Engineer_{suffix}"
+        url = f"https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/Phoenix/Engineer_{suffix}/apply/autofillWithResume"
         job = store.create_job({
             "id": f"workday-job-{suffix}", "url": url, "role": "Synthetic",
             "company": "Synthetic", "resumeId": resume["id"],
@@ -163,7 +163,9 @@ class StoreTestCase(unittest.TestCase):
             "accountFormFingerprint": "sha256:" + "1" * 64,
             "emailControlFingerprint": "sha256:" + "2" * 64,
             "passwordControlFingerprint": "sha256:" + "3" * 64,
-            "createAccountControlFingerprint": "sha256:" + "4" * 64,
+            "passwordConfirmationControlFingerprint": "sha256:" + "4" * 64,
+            "privacyControlFingerprint": "sha256:" + "5" * 64,
+            "createAccountControlFingerprint": "sha256:" + "6" * 64,
         }
         aggregate = "sha256:" + hashlib.sha256(
             ":".join(controls.values()).encode()

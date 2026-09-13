@@ -48,7 +48,7 @@ class MacOSWorkdayAccountFlowTests(unittest.TestCase):
                 "realmRef": hashlib.sha256(b"workday:v1:wd5:acme").hexdigest(),
                 "realmDescriptor": "workday:v1:wd5:acme",
                 "accountRevision": 1, "settingsRevision": 3,
-                "portalUrl": "https://acme.wd5.myworkdayjobs.com/jobs/1",
+                "portalUrl": "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/Phoenix/Engineer_R1/apply/autofillWithResume",
             }
             observed = {}
 
@@ -59,8 +59,10 @@ class MacOSWorkdayAccountFlowTests(unittest.TestCase):
                     stdout=(b'{"accountFormFingerprint":"sha256:' + b'1' * 64
                             + b'","emailControlFingerprint":"sha256:' + b'2' * 64
                             + b'","passwordControlFingerprint":"sha256:' + b'3' * 64
-                            + b'","createAccountControlFingerprint":"sha256:' + b'4' * 64
-                            + b'","accountCreationControlsFingerprint":"sha256:' + b'5' * 64
+                            + b'","passwordConfirmationControlFingerprint":"sha256:' + b'4' * 64
+                            + b'","privacyControlFingerprint":"sha256:' + b'5' * 64
+                            + b'","createAccountControlFingerprint":"sha256:' + b'6' * 64
+                            + b'","accountCreationControlsFingerprint":"sha256:' + b'7' * 64
                             + b'","readOnly":true,"effectCount":0,"providerId":"macos-workday-account"}\n'),
                     stderr=b"",
                 )
@@ -80,14 +82,16 @@ class MacOSWorkdayAccountFlowTests(unittest.TestCase):
             "accountFormFingerprint": "sha256:" + "1" * 64,
             "emailControlFingerprint": "sha256:" + "2" * 64,
             "passwordControlFingerprint": "sha256:" + "3" * 64,
-            "createAccountControlFingerprint": "sha256:" + "4" * 64,
+            "passwordConfirmationControlFingerprint": "sha256:" + "4" * 64,
+            "privacyControlFingerprint": "sha256:" + "5" * 64,
+            "createAccountControlFingerprint": "sha256:" + "6" * 64,
         }
         aggregate = "sha256:" + hashlib.sha256(":".join(controls.values()).encode()).hexdigest()
         request = {
             "jobId": "job", "jobRevision": 2,
             "realmRef": hashlib.sha256(descriptor.encode()).hexdigest(),
             "realmDescriptor": descriptor, "accountRevision": 1, "settingsRevision": 3,
-            "portalUrl": "https://acme.wd5.myworkdayjobs.com/jobs/1",
+            "portalUrl": "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/Phoenix/Engineer_R1/apply/autofillWithResume",
             "expectedClaimId": "claim", "strategy": "unique_per_realm",
             **controls, "accountCreationControlsFingerprint": aggregate,
         }

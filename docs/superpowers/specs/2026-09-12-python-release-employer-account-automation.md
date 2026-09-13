@@ -170,6 +170,14 @@ approval before invoking the digest-pinned native helper. Synthetic tests prove
 the ordering, closed constructor, query rejection, and value-free result. This
 repair does not claim a successful canary or change the readiness gate.
 
+The live Zillow handoff established that Workday opens its Create Account step
+in a separate `/apply/autofillWithResume` tab. Landing-page and provider-choice
+navigation remain owner-only. The stable portal binding is that query-free
+account path; native attestation may normalize only one observed referral pair,
+`source=LinkedIn` or `source=Indeed`, before exact comparison. The reviewed
+password control set includes password confirmation and the exact applicant-
+privacy checkbox in addition to form, email, password, and Create Account.
+
 ## Migration follow-up
 
 The TypeScript lane must independently port the normalized strategy projection,

@@ -133,7 +133,8 @@ class NativeMacOSWorkdayAccountProvider:
         try:
             child = subprocess.Popen([binary, "workday-account", str(self.browser_process_identifier), exact["portalUrl"],
                 exact["realmRef"], exact["realmDescriptor"], exact["accountFormFingerprint"], exact["emailControlFingerprint"],
-                exact["passwordControlFingerprint"], exact["createAccountControlFingerprint"],
+                exact["passwordControlFingerprint"], exact["passwordConfirmationControlFingerprint"],
+                exact["privacyControlFingerprint"], exact["createAccountControlFingerprint"],
                 exact["accountCreationControlsFingerprint"], socket_path, str(read_descriptor)],
                 pass_fds=(read_descriptor,), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             os.close(read_descriptor); read_descriptor = -1

@@ -8,6 +8,7 @@ import importlib.util
 import re
 from pathlib import Path
 from typing import Any, Callable, Protocol
+from urllib.parse import urlsplit
 
 
 FINGERPRINT = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -19,7 +20,8 @@ PREPARATION_FIELDS = {
 }
 CONTROL_FIELDS = {
     "accountFormFingerprint", "emailControlFingerprint",
-    "passwordControlFingerprint", "createAccountControlFingerprint",
+    "passwordControlFingerprint", "passwordConfirmationControlFingerprint",
+    "privacyControlFingerprint", "createAccountControlFingerprint",
 }
 PREPARATION_RECEIPT_FIELDS = {
     "providerId", *CONTROL_FIELDS, "accountCreationControlsFingerprint",
@@ -77,7 +79,8 @@ def _positive(value: Any) -> bool:
 def _aggregate_controls(value: dict[str, Any]) -> str:
     ordered = ":".join(value[field] for field in (
         "accountFormFingerprint", "emailControlFingerprint",
-        "passwordControlFingerprint", "createAccountControlFingerprint",
+        "passwordControlFingerprint", "passwordConfirmationControlFingerprint",
+        "privacyControlFingerprint", "createAccountControlFingerprint",
     ))
     return "sha256:" + hashlib.sha256(ordered.encode("ascii")).hexdigest()
 
@@ -107,8 +110,21 @@ def validate_password_preparation_request(value: Any) -> dict[str, Any]:
     ):
         raise PasswordAccountFlowError("password preparation requires an exact Workday realm")
     # The live seam is deliberately narrower than general realm resolution:
-    # approval binds one query-free portal string.
-    if "?" in value["portalUrl"] or "#" in value["portalUrl"]:
+    # approval binds one query-free Workday account-creation page. The owner
+    # traverses the job landing and application-choice pages manually.
+    try:
+        path = urlsplit(value["portalUrl"]).path
+    except (TypeError, ValueError):
+        path = ""
+    if (
+        "?" in value["portalUrl"]
+        or "#" in value["portalUrl"]
+        or re.fullmatch(
+            r"/(?:[a-z]{2}-[A-Z]{2}/)?[A-Za-z0-9_]+/job/"
+            r"[A-Za-z0-9._~-]+/[A-Za-z0-9._~-]+/apply/autofillWithResume/?",
+            path,
+        ) is None
+    ):
         raise PasswordAccountFlowError("password preparation portal binding is invalid")
     return dict(value)
 

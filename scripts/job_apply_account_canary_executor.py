@@ -25,6 +25,8 @@ REVIEWED_NATIVE_ACCOUNT_CREATION_EFFECTS = frozenset({
     "fill_email_from_settings",
     "focus_password_control",
     "fill_password_from_keychain",
+    "fill_password_confirmation_from_keychain",
+    "activate_exact_applicant_privacy_notice",
     "activate_create_account_control",
     "observe_account_creation_outcome",
 })
@@ -78,13 +80,19 @@ def validate_live_request(value: Any) -> dict[str, Any]:
         "accountFormFingerprint", "emailControlFingerprint",
     }
     password_fields = common | {
+        "passwordControlFingerprint", "passwordConfirmationControlFingerprint",
+        "privacyControlFingerprint", "createAccountControlFingerprint",
+    }
+    legacy_password_fields = common | {
         "passwordControlFingerprint", "createAccountControlFingerprint",
     }
     email_only_fields = common | {
         "termsControlFingerprint", "termsDocumentFingerprint", "nextControlFingerprint",
         "passwordControlFingerprint", "createAccountControlFingerprint",
     }
-    if not isinstance(value, dict) or set(value) not in (password_fields, email_only_fields):
+    if not isinstance(value, dict) or set(value) not in (
+        password_fields, legacy_password_fields, email_only_fields,
+    ):
         raise LiveCanaryExecutorError("live canary request is invalid")
     if not isinstance(value["capabilityRef"], str) or re.fullmatch(r"canary_[0-9a-f]{64}", value["capabilityRef"]) is None:
         raise LiveCanaryExecutorError("live canary capability is invalid")
@@ -106,7 +114,7 @@ def validate_live_request(value: Any) -> dict[str, Any]:
     binding = value["binding"]
     if not isinstance(binding, dict):
         raise LiveCanaryExecutorError("live canary binding is invalid")
-    for field in set(value) - {"capabilityRef", "binding", "portalName", "portalUrl", "passwordControlFingerprint", "createAccountControlFingerprint"}:
+    for field in set(value) - {"capabilityRef", "binding", "portalName", "portalUrl", "passwordControlFingerprint", "passwordConfirmationControlFingerprint", "privacyControlFingerprint", "createAccountControlFingerprint"}:
         if not isinstance(value[field], str) or FINGERPRINT.fullmatch(value[field]) is None:
             raise LiveCanaryExecutorError("live canary control binding is invalid")
     if set(value) == email_only_fields:
@@ -139,6 +147,13 @@ def validate_live_request(value: Any) -> dict[str, Any]:
             raise LiveCanaryExecutorError("email-only canary portal binding is invalid")
         if binding.get("portalNameFingerprint") != _fingerprint(value["portalName"]):
             raise LiveCanaryExecutorError("email-only canary portal name binding is invalid")
+    elif set(value) == password_fields:
+        for field in (
+            "passwordControlFingerprint", "passwordConfirmationControlFingerprint",
+            "privacyControlFingerprint", "createAccountControlFingerprint",
+        ):
+            if not isinstance(value[field], str) or FINGERPRINT.fullmatch(value[field]) is None:
+                raise LiveCanaryExecutorError("live canary control binding is invalid")
     else:
         for field in ("passwordControlFingerprint", "createAccountControlFingerprint"):
             if not isinstance(value[field], str) or FINGERPRINT.fullmatch(value[field]) is None:
@@ -184,7 +199,8 @@ def validate_live_password_request(value: Any) -> dict[str, Any]:
         raise LiveCanaryExecutorError("password canary realm binding is invalid")
     component_fields = (
         "accountFormFingerprint", "emailControlFingerprint",
-        "passwordControlFingerprint", "createAccountControlFingerprint",
+        "passwordControlFingerprint", "passwordConfirmationControlFingerprint",
+        "privacyControlFingerprint", "createAccountControlFingerprint",
     )
     aggregate = _fingerprint(":".join(exact[field] for field in component_fields))
     if aggregate != binding.get("accountCreationControlsFingerprint"):
