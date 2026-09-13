@@ -17,6 +17,7 @@ def load(name):
 CANARY = load("job_apply_account_canary")
 EXECUTOR = load("job_apply_account_canary_executor")
 ORACLE_SESSION = load("job_apply_oracle_canary")
+WORKDAY_SESSION = load("job_apply_workday_canary")
 
 
 class LiveCanaryExecutorTests(unittest.TestCase):
@@ -325,6 +326,64 @@ class LiveCanaryExecutorTests(unittest.TestCase):
         )
         source = (ROOT / "scripts/job_apply_oracle_canary.py").read_text(encoding="utf-8")
         self.assertIn("NativeMacOSAccessibilityProvider.from_reviewed_sources", source)
+        self.assertNotIn("binary=", source)
+        self.assertNotIn("provider=", source)
+
+    def test_workday_read_only_preparation_burns_exact_approval_before_provider(self):
+        url = "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/Phoenix/Engineer_R1"
+        name = "Acme Workday"
+        realm = EXECUTOR.ACCOUNTS.normalize_realm(url)
+        stable = CANARY._without_claim({
+            **self.binding(url, name),
+            "flowKind": "password_candidate_account", "realmRef": realm["realmRef"],
+            "accountFormFingerprint": "sha256:" + "1" * 64,
+            "emailControlFingerprint": "sha256:" + "2" * 64,
+            "passwordControlFingerprint": "sha256:" + "3" * 64,
+            "createAccountControlFingerprint": "sha256:" + "4" * 64,
+        })
+        scope = CANARY.preparation_scope(stable)
+        with tempfile.TemporaryDirectory() as directory:
+            ledger = CANARY.DurableT007ApprovalLedger(Path(directory) / "private-ledger.json")
+            approval = "preparation_" + "8" * 64
+            ledger.record_preparation_approval(approval, scope)
+            authority = CANARY.OneAttemptCanaryAuthority(ledger)
+            sequence = []
+
+            class Store:
+                def revalidate_live_password_preparation_scope(
+                    inner, exact, portal_url, portal_name, descriptor,
+                ):
+                    self.assertEqual(exact, scope)
+                    self.assertEqual((portal_url, portal_name, descriptor), (url, name, realm["descriptor"]))
+                    sequence.append("store")
+
+            class Provider:
+                def prepare(inner, request):
+                    with self.assertRaises(CANARY.CanaryAuthorityError):
+                        authority.authorize_preparation(scope, approval)
+                    self.assertEqual(request["portalUrl"], url)
+                    sequence.append("provider")
+                    return {"prepared": True}
+
+            session = WORKDAY_SESSION.PrivateWorkdayCanarySession(
+                Provider(), object(), authority, Store()
+            )
+            result = session.prepare(
+                url, scope["realmRef"], realm["descriptor"], portal_name=name,
+                preparation_scope=scope, preparation_approval_ref=approval,
+            )
+            self.assertEqual(result, {"prepared": True})
+            self.assertEqual(sequence, ["store", "provider"])
+
+    def test_private_workday_session_has_no_helper_or_provider_override(self):
+        import inspect
+        signature = inspect.signature(WORKDAY_SESSION.create_private_workday_canary_session)
+        self.assertEqual(
+            set(signature.parameters),
+            {"authority", "store", "browser_process_identifier", "build_directory"},
+        )
+        source = (ROOT / "scripts/job_apply_workday_canary.py").read_text(encoding="utf-8")
+        self.assertIn("NativeMacOSWorkdayAccountProvider.from_reviewed_sources", source)
         self.assertNotIn("binary=", source)
         self.assertNotIn("provider=", source)
 

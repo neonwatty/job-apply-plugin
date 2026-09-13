@@ -3,6 +3,22 @@ from tests.support.store_case import *
 
 class StoreTests(StoreTestCase):
 
+    def test_live_workday_preparation_revalidates_exact_canonical_scope(self):
+        store, request, _account = self._prepared_workday_canary("preparation")
+        authority_module = STORE_MODULE.CANARY_EXECUTOR_MODULE.CANARY
+        scope = authority_module.preparation_scope(request["binding"])
+        realm = store.resolve_account_realm(request["portalUrl"])
+        result = store.revalidate_live_password_preparation_scope(
+            scope, request["portalUrl"], request["portalName"], realm["descriptor"],
+        )
+        self.assertTrue(result["valid"])
+        self.assertFalse(result["finalActionAuthorized"])
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "portal binding drifted"):
+            store.revalidate_live_password_preparation_scope(
+                scope, request["portalUrl"] + "?source=tracking",
+                request["portalName"], realm["descriptor"],
+            )
+
     def test_live_workday_account_uses_private_email_and_reuses_active_realm(self):
         store, request, account = self._prepared_workday_canary("success")
         authority_module = STORE_MODULE.CANARY_EXECUTOR_MODULE.CANARY
