@@ -149,38 +149,64 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
     const allJobs = data?.jobs ?? [];
     const visible = new Set(filterJobs(allJobs, query, status));
     const jobs = allJobs.filter(job => visible.has(job));
-    return <section>
-        <header>
-            <div><p className="eyebrow">Your pipeline</p><h1>Jobs</h1></div>
-            <div>
+    const readyJobs = allJobs.filter(job => job.status === 'ready').length;
+    const attentionJobs = allJobs.filter(job => job.status === 'needs_info').length;
+    return <section className="jobs-workspace" aria-labelledby="jobs-workspace-title">
+        <header className="workspace-hero">
+            <div className="workspace-hero-copy">
+                <p className="eyebrow">Jobs workspace</p>
+                <h1 id="jobs-workspace-title">Keep every opportunity moving.</h1>
+                <p>Save opportunities, prepare applications, and track progress in your canonical local queue.</p>
+            </div>
+            <div className="workspace-hero-actions">
                 <button disabled={busy || transitionBusy} onClick={() => void refresh()}>Refresh</button>{' '}
                 <button className="primary" data-job-create disabled={busy || transitionBusy || claimsActive} onClick={() => open(null)}>New job</button>
             </div>
         </header>
-        <p role="status">{loading ? (data ? 'Refreshing jobs…' : 'Loading jobs…') : notice}</p>
-        {loadError && <p role="alert" className="error">
-            {data ? 'Showing previously loaded jobs. ' : 'Jobs could not be loaded. '}{loadError}{' '}
-            <button disabled={busy || transitionBusy} onClick={() => void refresh()}>Retry loading jobs</button>
-        </p>}
-        {!editor && error && <p role="alert" className="error">{error}</p>}
-        <div className="filters">
-            <label>Search jobs<input value={query} onChange={e => setQuery(e.target.value)} /></label>
-            <label>Status<select value={status} onChange={e => setStatus(e.target.value)}>
-                <option value="">All statuses</option>
-                {['saved', 'needs_info', 'ready', 'in_progress', 'awaiting_review', 'applied', 'closed'].map(value =>
-                    <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>)}
-            </select></label>
+        <div className="pipeline-metrics" aria-label="Pipeline summary">
+            <div><strong>{allJobs.length}</strong><span>Active jobs</span></div>
+            <div><strong>{readyJobs}</strong><span>Ready for agent</span></div>
+            <div><strong>{attentionJobs}</strong><span>Need information</span></div>
         </div>
-        <div className="job-list">
-            {jobs.map(job => <button className="job-card" disabled={busy || transitionBusy || claimsActive} key={job.id} onClick={() => open(job)}>
-                <strong>{String(job.role || job.url)}</strong>
-                <span>{String(job.company || '')} · {String(job.location || '')}</span>
-                <small>{job.status.replaceAll('_', ' ')} · revision {job.revision}</small>
-            </button>)}
+        <div className="workspace-panel jobs-panel">
+            <div className="workspace-panel-heading">
+                <div><p className="eyebrow">Pipeline</p><h2>Jobs</h2></div>
+                <div className="filters">
+                    <label>Search jobs<input value={query} onChange={e => setQuery(e.target.value)} /></label>
+                    <label>Status<select value={status} onChange={e => setStatus(e.target.value)}>
+                        <option value="">All statuses</option>
+                        {['saved', 'needs_info', 'ready', 'in_progress', 'awaiting_review', 'applied', 'closed'].map(value =>
+                            <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>)}
+                    </select></label>
+                </div>
+            </div>
+            <p className="workspace-status" role="status">{loading ? (data ? 'Refreshing jobs…' : 'Loading jobs…') : notice}</p>
+            {loadError && <p role="alert" className="error">
+                {data ? 'Showing previously loaded jobs. ' : 'Jobs could not be loaded. '}{loadError}{' '}
+                <button disabled={busy || transitionBusy} onClick={() => void refresh()}>Retry loading jobs</button>
+            </p>}
+            {!editor && error && <p role="alert" className="error">{error}</p>}
+            <div className="job-list">
+                {jobs.map(job => {
+                    const role = String(job.role || job.url);
+                    const company = String(job.company || 'Company not set');
+                    const location = String(job.location || job.workplaceType || 'Location not set');
+                    const priority = typeof job.priority === 'number' && Number.isFinite(job.priority) ? Math.max(0, Math.min(5, Math.round(job.priority))) : 0;
+                    return <button className="job-card" aria-label={`${role}, ${company}`} disabled={busy || transitionBusy || claimsActive} key={job.id} onClick={() => open(job)}>
+                        <span className="company-mark" aria-hidden="true">{company.trim().charAt(0).toUpperCase() || '?'}</span>
+                        <span className="job-identity"><strong>{role}</strong><span>{company}</span></span>
+                        <span className="job-location">{location}</span>
+                        <span className="job-priority" aria-label={`Priority ${priority} of 5`}>{priority ? `${'★'.repeat(priority)}${'☆'.repeat(5-priority)}` : 'Priority —'}</span>
+                        <span className={`status-pill status-${job.status}`}>{job.status.replaceAll('_', ' ')}</span>
+                        <span className="visually-hidden">revision {job.revision}</span>
+                    </button>;
+                })}
+            </div>
+            {data && !loading && !loadError && !jobs.length && <div className="workspace-empty">
+                {allJobs.length ? <><strong>No jobs match these filters.</strong><button className="text-action" onClick={() => { setQuery(''); setStatus(''); }}>Clear filters</button></>
+                    : <><strong>No jobs yet. Capture a job to get started.</strong><span>Your saved opportunities will appear here.</span><button className="text-action" onClick={() => open(null)}>Create your first job</button></>}
+            </div>}
         </div>
-        {data && !loading && !loadError && !jobs.length && (allJobs.length
-            ? <p>No jobs match these filters. <button onClick={() => { setQuery(''); setStatus(''); }}>Clear filters</button></p>
-            : <p>No jobs yet. Capture a job to get started.</p>)}
         {claimsEnabled && <Claims client={client} jobs={allJobs} disabled={busy || transitionBusy || loading || Boolean(editor?.dirty.size)}
             activityChanged={setClaimsActive} navigationChanged={setClaimsDirty} changed={() => { void refresh(); }} />}
         {editor && <JobEditor editor={editor} resumes={data?.resumes ?? []} busy={busy || transitionBusy || claimsActive} error={error}
