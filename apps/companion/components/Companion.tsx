@@ -77,38 +77,52 @@ export default function Companion() {
     const nativeFixture=boot?.status==='ready'&&boot.mode==='native-jobs-fixture';
     const trashCapabilities=nativeFixture?nativeTrashCapabilities:compatibilityTrashCapabilities;
     const trashClient=useMemo(() => createTrashClient(token,trashCapabilities),[token,trashCapabilities]);
-    return <main className="companion">
-        <div className="topbar">
-            <div>
-                <p className="eyebrow">Job Apply
-                </p>
-                <strong>Companion
-                </strong>
+    const connection=boot?.status==='ready'? 'Canonical store connected':boot?.status==='degraded'? 'Recovery needed':error?'Connection unavailable':'Connecting…';
+    const navButton=(workspace:WorkspaceTab,label:string) => <button className="nav-link" aria-current={tab===workspace?'page':undefined} onClick={() => navigate(workspace)}>{label}</button>;
+    return <>
+        <a className="skip-link" href="#workspace-content">Skip to workspace</a>
+        <header className="topbar">
+            <div className="product-context">
+                <p className="eyebrow">Local companion</p>
+                <h1>Job Apply</h1>
+                <p id="workspace-trust-context" className="trust-context">Your canonical data stays local. You direct changes and submissions; agents assist from the same record.</p>
             </div>
-            <span role="status">
-                {boot?.status==='ready'? 'Canonical store connected':boot?.status==='degraded'? 'Recovery needed':error?'Connection unavailable':'Connecting…'}
-            </span>
-        </div>
-        <nav aria-label="Workspace sections">
-            <button aria-current={tab==='overview'? 'page':undefined} onClick={() => navigate('overview')}>Overview
-            </button>
-            {nativeFixture&&<button aria-current={tab==='attention'?'page':undefined} onClick={() => navigate('attention')}>Needs Attention</button>}
-            <button aria-current={tab==='jobs'? 'page':undefined} onClick={() => navigate('jobs')}>Jobs
-            </button>
-            <button aria-current={tab==='facts'?'page':undefined} onClick={()=>navigate('facts')}>Facts</button>
-            <button aria-current={tab==='resumes'?'page':undefined} onClick={()=>navigate('resumes')}>Resumes</button>
-            {nativeFixture&&<button aria-current={tab==='extractions'?'page':undefined} onClick={()=>navigate('extractions')}>Resume extraction</button>}
-            {nativeFixture&&<button aria-current={tab==='answers'?'page':undefined} onClick={()=>navigate('answers')}>Answers</button>}
-            {token&&!nativeFixture&&<a href={legacyHref} onClick={event => {
-                if(dirty&&!confirm('Discard unsaved changes?'))
-                    event.preventDefault();
-            }}>Open full workspace
-            </a>}
-            <button aria-current={tab==='trash'?'page':undefined} onClick={() => navigate('trash')}>Trash</button>
-        </nav>
-        <p className="trust">Your canonical data stays local. You direct changes and submissions; agents assist from the same record.
-        </p>
-        {nativeFixture&&<p role="status">Synthetic native workspace. Manage jobs, facts, resumes, extraction reviews and remembered answers; review your next step, attention items and application activity.</p>}
+            <div className={`connection ${boot?.status==='ready'?'online':''}`} role="status">
+                <span className="connection-dot" aria-hidden="true" />
+                <span>{connection}</span>
+            </div>
+            <p id="workspace-nav-overflow-hint" className="nav-overflow-hint">Scroll horizontally to explore all navigation groups <span aria-hidden="true">→</span></p>
+            <nav className="workspace-nav" aria-label="Workspace sections" aria-describedby="workspace-trust-context workspace-nav-overflow-hint">
+                <div className="nav-group" role="group" aria-labelledby="nav-group-pipeline">
+                    <span id="nav-group-pipeline" className="nav-group-label">Pipeline</span>
+                    <div className="nav-group-links">
+                        {navButton('overview','Overview')}
+                        {navButton('jobs','Jobs')}
+                        {nativeFixture&&navButton('attention','Needs Attention')}
+                    </div>
+                </div>
+                <div className="nav-group" role="group" aria-labelledby="nav-group-data">
+                    <span id="nav-group-data" className="nav-group-label">Application data</span>
+                    <div className="nav-group-links">
+                        {navButton('facts','Facts')}
+                        {navButton('resumes','Resumes')}
+                        {nativeFixture&&navButton('answers','Answers')}
+                        {nativeFixture&&navButton('extractions','Resume extraction')}
+                    </div>
+                </div>
+                <div className="nav-group" role="group" aria-labelledby="nav-group-controls">
+                    <span id="nav-group-controls" className="nav-group-label">Controls</span>
+                    <div className="nav-group-links">
+                        {token&&!nativeFixture&&<a className="nav-link" href={legacyHref} onClick={event => {
+                            if(dirty&&!confirm('Discard unsaved changes?')) event.preventDefault();
+                        }}>Open full workspace</a>}
+                        {navButton('trash','Trash')}
+                    </div>
+                </div>
+            </nav>
+        </header>
+        <main id="workspace-content" className="companion">
+        {nativeFixture&&<p className="fixture-notice" role="status">Synthetic native workspace · Jobs, facts, resumes, extraction reviews, remembered answers, and application activity use isolated canonical data.</p>}
         {error&&<p role="alert" className="error">
             {error}{' '}
             {token&&<button onClick={() => setAttempt(value => value+1)}>Retry connection</button>}
@@ -126,5 +140,6 @@ export default function Companion() {
             openWorkspace={nativeFixture ? navigate : undefined}
             legacyHref={legacyHref} />:tab==='attention'?<NeedsAttention client={client} openJob={id => { setRequestedJob(id); navigate('jobs'); }}/>:tab==='facts'?<Facts client={client} dirtyChanged={dirtyChanged}/>:tab==='resumes'?<Resumes client={client} dirtyChanged={dirtyChanged}/>:tab==='extractions'?<Extractions client={client} dirtyChanged={dirtyChanged}/>:tab==='answers'?<Answers client={client} dirtyChanged={dirtyChanged}/>:<Jobs client={client} dirtyChanged={dirtyChanged} claimsEnabled={nativeFixture} requestedJobId={requestedJob} jobOpened={jobOpened} openAnswers={() => navigate('answers')} />):!error&&<p>Loading workspace…
             </p>}
-    </main>;
+        </main>
+    </>;
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 export async function projectionsBrowser(page, {jobId, markReady}) {
   const navigation = page.getByRole('navigation', {name:'Workspace sections'});
   await navigation.getByRole('button', {name:'Overview',exact:true}).click();
-  await page.getByRole('heading', {name:'Your next step',exact:true}).waitFor();
+  await page.getByRole('heading', {name:'Know what to do next.',exact:true}).waitFor();
   await page.getByRole('button', {name:'Open Needs Attention',exact:true}).waitFor();
   assert.equal(await page.getByRole('link', {name:'Edit Facts',exact:true}).count(),0);
   await page.getByRole('button', {name:'Manage Resumes',exact:true}).click();

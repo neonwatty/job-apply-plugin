@@ -10,7 +10,7 @@ async function capture(page, name) {
 }
 
 export async function nextSetupAndLoading(page, url) {
-  await page.getByRole('heading', { name: 'Application setup', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Local foundation', exact: true }).waitFor();
   await capture(page, 'overview-desktop.png');
   for (const [label, section] of [['Edit Facts', 'facts'], ['Manage Resumes', 'resumes']]) {
     const link = page.getByRole('link', { name: label, exact: true });

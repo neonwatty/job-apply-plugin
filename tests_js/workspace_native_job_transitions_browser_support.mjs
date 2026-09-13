@@ -131,7 +131,7 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, prepareInter
     page.on('dialog', dismiss);
     try {
       await navigation.getByRole('button', { name: 'Overview', exact: true }).click();
-      await page.getByRole('heading', { name: 'Your next step', exact: true }).waitFor();
+      await page.getByRole('heading', { name: 'Know what to do next.', exact: true }).waitFor();
       assert.equal(navigationPrompts, 0);
     } finally { page.off('dialog', dismiss); }
     assert.equal((await readJob()).status, 'saved');
