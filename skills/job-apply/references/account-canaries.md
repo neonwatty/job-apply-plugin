@@ -23,6 +23,11 @@ After the owner has created a shared slot, `employer-account-shared-bind` can pi
 The private real-account canary remains disabled by default and is not exposed through Store CLI, HTTP, activity, or model-visible browser tools.
 
 Workday is the first reviewed password-account adapter, but it is not a supported live flow until a bounded owner-approved canary passes review. It uses the tenant/cell realm and the canonical global signup email or exact per-realm override. `unique_per_realm` means one versioned Keychain slot per employer realm. `shared` remains unavailable until its native execution integration is reviewed; Store binding alone does not enable it. `manual` is the canonical owner-managed strategy; legacy `custom` and `ask_each_time` records are displayed and handled as manual. Greenhouse's reviewed ordinary job application URLs are classified as accountless. Other Greenhouse pages and unrecognized ATS pages fail closed. A real Workday attempt still requires fresh, sequential, one-shot owner approval and is never part of an ordinary application run.
+The ordinary application broker exposes only the resulting value-free plan. It
+permits reviewed accountless flows, blocks progress while a separate account
+action is required, and releases the claim to a typed Needs Attention handoff
+when capability or policy is unsupported. It never invokes these privileged
+account executors itself.
 Read-only preparation and final T007 execution use separate domain-separated, hash-only, one-shot durable approvals over exact stable canonical scope.
 Preparation consumes its exact approval before the single page read.
 No identity read, field fill, consent change, navigation advance, account creation, or final action is authorized by preparation.

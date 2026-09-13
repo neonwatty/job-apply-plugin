@@ -4,6 +4,14 @@ Read [browser.md](browser.md) before any browser work and [intake.md](intake.md)
 
 ### Phase 2: Application Filling
 
+The successful `start` or `restart-review` response includes a closed,
+value-free `accountFlow` plan. Open the browser only when its action is
+`proceed`. `account_action_required` means the separate account-internals flow
+and fresh approval are still required, so acquisition returns the terminal
+`account_attention` response. The Store has moved the job to Needs Attention and
+released the claim; stop and follow the typed handoff. Recheck failures during
+progress use the same terminal behavior.
+
 1. **Initialize and load storage** through the bundled `answer-memory` skill; use `profile-get`, then inspect `job-apply-task.py ... activity --id <job-id>` for resumable work on the exact selected canonical job. For every ordinary application, use the acquired canonical job ID as the application/session ID and the managed resume returned by the private helper. If no suitable managed resume exists, ask the user for a source file, import it with `resume-import`, then return to exact-revision task selection. Never use `profile.resumePath`, a URL-derived session ID, or a user source path for upload. The authenticated loopback QA replay remains the only synthetic coordinator exception.
 2. **Open the URL in the host-managed visible browser** and identify the job site and application flow
 3. **Pause for user-only steps** if login, password, CAPTCHA, MFA, consent, or account creation appears

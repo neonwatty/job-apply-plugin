@@ -18,7 +18,7 @@ from tests.support.store_domain_contract import (
 METHODS = (
     "account_operation_status", "recover_account_operation",
     "_clear_account_operation_locked", "_write_account_stage_locked",
-    "_account_attention_handoff_locked",
+    "_account_attention_handoff_locked", "handoff_application_account_flow",
 )
 
 

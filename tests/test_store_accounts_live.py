@@ -56,7 +56,7 @@ class StoreTests(StoreTestCase):
 
     def test_workday_unavailable_and_manual_strategies_route_to_typed_attention(self):
         expected_reasons = {
-            "shared": "shared_credential_setup_required",
+            "shared": "shared_native_execution_required",
             "manual": "manual_account_strategy",
             "custom": "manual_account_strategy",
             "ask_each_time": "manual_account_strategy",

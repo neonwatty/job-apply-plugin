@@ -124,6 +124,8 @@ def public_acquisition(acquired: dict[str, Any]) -> dict[str, Any]:
     }
     if "applicationAuthority" in acquired:
         result["applicationAuthority"] = acquired["applicationAuthority"]
+    if "accountFlow" in acquired:
+        result["accountFlow"] = acquired["accountFlow"]
     return result
 
 
@@ -218,10 +220,37 @@ class AttemptBroker:
         acquired["applicationAuthority"] = self.store.application_authority_status(
             public=True
         )
+        acquired["accountFlow"] = self.store.application_account_flow_plan(
+            self.job_id, sys.platform
+        )
         self.expected_revision = acquired["job"]["revision"]
+        if acquired["accountFlow"]["action"] != "proceed":
+            job = self.store.handoff_application_account_flow(
+                self.job_id, self._token, acquired["accountFlow"]["reasonCode"]
+            )
+            self._token = None
+            return {
+                "ok": True, "event": "account_attention",
+                "accountFlow": acquired["accountFlow"], "job": job,
+            }
         self._thread = threading.Thread(target=self._heartbeat_loop, daemon=True)
         self._thread.start()
         return {"ok": True, "event": "acquired", "attempt": public_acquisition(acquired)}
+
+    def _account_flow_gate(self) -> tuple[dict[str, Any], bool] | None:
+        if self.job_id is None or self._token is None:
+            raise ValueError("attempt is not active")
+        plan = self.store.application_account_flow_plan(self.job_id, sys.platform)
+        if plan["action"] == "proceed":
+            return None
+        job = self.store.handoff_application_account_flow(
+            self.job_id, self._token, plan["reasonCode"]
+        )
+        self._token = None
+        return {
+            "ok": True, "event": "account_attention",
+            "accountFlow": plan, "job": job,
+        }, True
 
     def _heartbeat(self) -> None:
         if self._token is None or self.job_id is None or self._stop.is_set():
@@ -251,6 +280,9 @@ class AttemptBroker:
         if command == "progress":
             if set(request) != {"command", "session"} or not isinstance(request["session"], dict):
                 raise ValueError("invalid request")
+            gate = self._account_flow_gate()
+            if gate is not None:
+                return gate
             self.store.save_claim_progress(self.job_id, self._token, request["session"])
             return {"ok": True, "event": "progress_saved"}, False
         if command == "handoff":
@@ -259,6 +291,10 @@ class AttemptBroker:
             status = request["status"]
             if status not in {"needs_info", "awaiting_review"} or not isinstance(request["session"], dict):
                 raise ValueError("invalid request")
+            if status == "awaiting_review":
+                gate = self._account_flow_gate()
+                if gate is not None:
+                    return gate
             self.store.handoff_claimed_job(
                 self.job_id, self._token, status, request["session"], self.expected_revision,
             )
@@ -351,8 +387,8 @@ def run_broker(root: Path) -> int:
                     request = receive_request(connection)
                     if not acquired:
                         response = broker.acquire(request)
-                        acquired = True
-                        complete = False
+                        acquired = broker._token is not None
+                        complete = not acquired
                     else:
                         response, complete = broker.dispatch(request)
                 except Exception:

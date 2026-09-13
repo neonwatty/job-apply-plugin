@@ -19,7 +19,8 @@ from tests.support.store_facade_contract import ROOT
 
 
 METHODS = (
-    "resolve_account_realm", "employer_account_flow_decision",
+    "resolve_account_realm", "_employer_account_flow_decision_locked",
+    "employer_account_flow_decision", "application_account_flow_plan",
     "list_employer_accounts", "get_employer_account",
     "create_employer_account", "update_employer_account",
 )

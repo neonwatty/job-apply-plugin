@@ -134,6 +134,26 @@ prove that a shared slot exists. Shared live Workday execution therefore remains
 unavailable with `shared_native_execution_required` until its separate native
 execution integration and canary are reviewed.
 
+## Slice 4 implementation receipt
+
+The ordinary application broker now binds every acquired claim to a closed,
+value-free account-flow plan and re-evaluates that plan before progress or final
+review handoff. Reviewed Greenhouse application URLs proceed without an account.
+Oracle Recruiting returns `account_action_required` and immediately pauses into
+a typed, claim-releasing handoff until the separate account record and fresh
+approval path is complete. Workday stays fail-closed behind its reviewed-canary
+or shared-native readiness reason.
+
+Unsupported platforms, disabled configuration, missing signup identity, manual
+strategy, lifecycle uncertainty, and unresolved URLs atomically move the claimed
+job to `needs_info`, record a typed browser handoff, and release the claim. A plan
+that drifts after acquisition is handled by the same gate. Public plans and
+terminal receipts contain no URL, identity, realm descriptor, credential
+reference, claim bearer, or final-action authority. Synthetic and adversarial
+tests cover accountless passage, action gating, typed release, and a secret-bearing
+unknown URL. No live portal, visible browser, Keychain, or canary
+was used.
+
 ## Migration follow-up
 
 The TypeScript lane must independently port the normalized strategy projection,
