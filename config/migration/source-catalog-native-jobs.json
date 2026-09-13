@@ -43,7 +43,7 @@
     },
     {
       "path": "runtime/workspace-core/jobs-http.js",
-      "sha256": "e6e9b0c98372e6a20dbcfe6a855033fc31fc359d3d56d83b2e216230d34eadf8",
+      "sha256": "b8a42b176fab6594bbf522e553180a0f99c7aba8e54443ea0478e0ba7b53e5c4",
       "classification": "unreviewed"
     },
     {
@@ -93,7 +93,7 @@
     },
     {
       "path": "src/workspace-core/jobs-http.ts",
-      "sha256": "c69c5944494e70d230e6eaaa855c9b81ef01f96b4c05d8553be626e58f94ede2",
+      "sha256": "1a1855cd622c6e0fe5f0f15d8c9a46aa437ae4cf7a1296b4fe14407d3b699933",
       "classification": "unreviewed"
     },
     {

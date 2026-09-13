@@ -1,13 +1,15 @@
 import { exact } from '../contracts/workspace/automation.js';
 import { get, int, object, parse, serialize, JobsError } from '../contracts/workspace/values.js';
 import { TrustedFillService } from './trusted-fill.js';
-export async function trustedFillHttp(repository, method, path, body) {
-    const service = new TrustedFillService(repository);
+import { TrustedFillNativeService } from './trusted-fill-native.js';
+export async function trustedFillHttp(repository, method, path, body, dependencies = {}) {
+    const service = new TrustedFillService(repository, dependencies.now);
     if (method === 'POST' && path === '/api/trusted-fill/approve') {
         return { status: 200, body: serialize(await service.approve(parse(body))) };
     }
     if (method === 'POST' && path === '/api/trusted-fill/evaluate') {
-        return { status: 200, body: serialize(await service.evaluate(parse(body))) };
+        const native = new TrustedFillNativeService(repository, dependencies.executor, dependencies.now);
+        return { status: 200, body: serialize(await native.execute(parse(body))) };
     }
     const match = /^\/api\/trusted-fill\/([^/]+?)(\/revoke)?$/.exec(path);
     if (!match)

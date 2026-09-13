@@ -20,8 +20,12 @@ import { ResumeService } from "./resumes.js";
 import { resumesHttp } from "./resumes-http.js";
 import { answerHttp } from "./answers-http.js";
 import { extractionHttp } from "./extractions-http.js";
+import type { TrustedFillHttpDependencies } from './trusted-fill-http.js';
 
 export type ApiResult = { status: number; body: string | Buffer; contentType?: string; disposition?: string };
+export interface JobsHttpDependencies {
+  trustedFill?: TrustedFillHttpDependencies;
+}
 const response = (value: Value, status = 200): ApiResult => ({ status, body: serialize(value) });
 export const apiError = (status: number, code: string, message: string): ApiResult =>
   response(fromJSON({ error: { code, message } }), status);
@@ -29,9 +33,9 @@ const envelope = (key: string, value: Value): Value => set(emptyObject(), key, v
 
 /** Transport-independent dispatch. Host/token/Origin/body bounds belong to the adapter. */
 export async function jobsHttp(service: JobsService, repository: NativeJobsRepository,
-  method: string, path: string, body = ""): Promise<ApiResult> {
+  method: string, path: string, body = "", dependencies: JobsHttpDependencies = {}): Promise<ApiResult> {
   try {
-    const trustedFill = await trustedFillHttp(repository, method, path, body);
+    const trustedFill = await trustedFillHttp(repository, method, path, body, dependencies.trustedFill);
     if (trustedFill) return trustedFill;
     const accountOperation = await accountOperationHttp(repository, method, path, body);
     if (accountOperation) return accountOperation;

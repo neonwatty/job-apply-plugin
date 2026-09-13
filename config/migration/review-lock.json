@@ -375,11 +375,11 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "c97a4620714416fa9e5b7574f79cad08d9a2241c67e9d28f5cf9d0b17faa504f"
+      "sha256": "d2189e00bd08bf0e70f8ec5cb3b5c12308eddd853ae567a7ddde140b209b94d9"
     },
     {
       "path": "source-catalog-native-trusted-fill.json",
-      "sha256": "f03eaf5015a6563f61136157921acc907d4e7fa0f7570503e75f2f6c9ecd8e01"
+      "sha256": "6addfc1a8175c208ec274b47db077e9b440e27e1265ac0e9a1a3f2d4634a97d8"
     },
     {
       "path": "source-catalog-native-legacy-jobs.json",

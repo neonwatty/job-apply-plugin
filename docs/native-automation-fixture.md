@@ -77,7 +77,7 @@ provider, so it rejects the synthetic route without mutation.
 - POST `/api/account-operation/execute-synthetic`
 - POST `/api/account-operation/recover`
 
-`trustedFillHttp(repository, method, path, body)` supports:
+`trustedFillHttp(repository, method, path, body, dependencies)` supports:
 
 - POST `/api/trusted-fill/approve`
 - GET `/api/trusted-fill/{id}`
@@ -96,6 +96,9 @@ nonce, and claim credentials.
 
 `TrustedFillNativeService` is the protected effect boundary after evaluation.
 It refuses to consume authority unless an internal native provider is injected.
+The HTTP dispatcher now routes evaluation through that boundary and accepts the
+provider only as an internal dependency. The ordinary server supplies no
+provider, so evaluation rejects before consuming an approval or mutating Store.
 The provider receives only an operation fingerprint, the exact observed form
 fingerprints, the approved non-final operation set, and the pre/post-consumption
 approval revisions. Private values and browser identity remain provider-owned.
@@ -153,7 +156,10 @@ denial, privacy, and malformed loopback bindings.
 `tests_js/workspace_native_trusted_fill_boundary.test.mjs` covers a value-free
 operation packet, exact successful receipt, missing-provider no-op, effect
 ambiguity, stale and authority-widening receipts, and replacement-claim
-isolation. The existing reviewed Swift source set remains unchanged.
+isolation. `tests_js/workspace_native_trusted_fill_composition.test.mjs` covers
+the dispatcher-to-boundary composition, exact value-free provider packet,
+non-final receipt, one-shot consumption, and unconfigured-server no-op. The
+existing reviewed Swift source set remains unchanged.
 
 Typecheck and owned runtime emission are required. The integration owner also
 owns source/runtime catalogs, test matrix, HTTP wiring, fixture marker/allowlist,

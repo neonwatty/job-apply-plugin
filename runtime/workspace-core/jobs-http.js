@@ -21,9 +21,9 @@ const response = (value, status = 200) => ({ status, body: serialize(value) });
 export const apiError = (status, code, message) => response(fromJSON({ error: { code, message } }), status);
 const envelope = (key, value) => set(emptyObject(), key, value);
 /** Transport-independent dispatch. Host/token/Origin/body bounds belong to the adapter. */
-export async function jobsHttp(service, repository, method, path, body = "") {
+export async function jobsHttp(service, repository, method, path, body = "", dependencies = {}) {
     try {
-        const trustedFill = await trustedFillHttp(repository, method, path, body);
+        const trustedFill = await trustedFillHttp(repository, method, path, body, dependencies.trustedFill);
         if (trustedFill)
             return trustedFill;
         const accountOperation = await accountOperationHttp(repository, method, path, body);
