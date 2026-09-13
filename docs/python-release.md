@@ -383,6 +383,18 @@ This is a pre-canary repair only. `workdayCanaryPassed` remains false and the
 readiness gate must not change until a fresh owner-approved preparation and
 separately approved T007 execution produce reviewed value-free evidence.
 
+The first live read-only attempt then exposed the real Workday handoff shape:
+the owner-selected Resume route opens a separate Create Account tab at the
+query-free `/apply/autofillWithResume` path plus one referral query, with two
+secure password controls and an applicant-privacy checkbox. The bounded repair
+keeps landing-page and provider-choice navigation human-only, binds the Store
+and approval to the query-free account path, permits native comparison to drop
+only `source=LinkedIn` or `source=Indeed`, and fingerprints the form, email,
+password, password confirmation, privacy checkbox, and Create Account control.
+All other query data, paths, controls, and actions still fail closed. The failed
+approval was consumed once and was not retried; a fresh owner approval remains
+required for the next preparation.
+
 ### Review-bound application automation modes
 
 The Python release lane now stores one value-free, revisioned application

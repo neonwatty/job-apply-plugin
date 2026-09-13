@@ -76,6 +76,8 @@ class LiveCanaryExecutorTests(unittest.TestCase):
         self.assertEqual(EXECUTOR.REVIEWED_NATIVE_ACCOUNT_CREATION_EFFECTS, {
             "focus_email_control", "fill_email_from_settings",
             "focus_password_control", "fill_password_from_keychain",
+            "fill_password_confirmation_from_keychain",
+            "activate_exact_applicant_privacy_notice",
             "activate_create_account_control", "observe_account_creation_outcome",
         })
         vocabulary = " ".join(EXECUTOR.REVIEWED_NATIVE_ACCOUNT_CREATION_EFFECTS)
@@ -83,13 +85,15 @@ class LiveCanaryExecutorTests(unittest.TestCase):
             self.assertNotIn(forbidden, vocabulary)
 
     def test_workday_request_is_exact_and_delegates_only_to_password_store_boundary(self):
-        url = "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/Phoenix/Engineer_R1"
+        url = "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/Phoenix/Engineer_R1/apply/autofillWithResume"
         name = "Acme Workday"
         controls = {
             "accountFormFingerprint": "sha256:" + "1" * 64,
             "emailControlFingerprint": "sha256:" + "2" * 64,
             "passwordControlFingerprint": "sha256:" + "3" * 64,
-            "createAccountControlFingerprint": "sha256:" + "4" * 64,
+            "passwordConfirmationControlFingerprint": "sha256:" + "4" * 64,
+            "privacyControlFingerprint": "sha256:" + "5" * 64,
+            "createAccountControlFingerprint": "sha256:" + "6" * 64,
         }
         aggregate = "sha256:" + hashlib.sha256(
             ":".join(controls.values()).encode()
@@ -330,16 +334,24 @@ class LiveCanaryExecutorTests(unittest.TestCase):
         self.assertNotIn("provider=", source)
 
     def test_workday_read_only_preparation_burns_exact_approval_before_provider(self):
-        url = "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/Phoenix/Engineer_R1"
+        url = "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/Phoenix/Engineer_R1/apply/autofillWithResume"
         name = "Acme Workday"
         realm = EXECUTOR.ACCOUNTS.normalize_realm(url)
-        stable = CANARY._without_claim({
-            **self.binding(url, name),
-            "flowKind": "password_candidate_account", "realmRef": realm["realmRef"],
+        controls = {
             "accountFormFingerprint": "sha256:" + "1" * 64,
             "emailControlFingerprint": "sha256:" + "2" * 64,
             "passwordControlFingerprint": "sha256:" + "3" * 64,
-            "createAccountControlFingerprint": "sha256:" + "4" * 64,
+            "passwordConfirmationControlFingerprint": "sha256:" + "4" * 64,
+            "privacyControlFingerprint": "sha256:" + "5" * 64,
+            "createAccountControlFingerprint": "sha256:" + "6" * 64,
+        }
+        aggregate = "sha256:" + hashlib.sha256(
+            ":".join(controls.values()).encode()
+        ).hexdigest()
+        stable = CANARY._without_claim({
+            **self.binding(url, name),
+            "flowKind": "password_candidate_account", "realmRef": realm["realmRef"],
+            "accountCreationControlsFingerprint": aggregate, **controls,
         })
         scope = CANARY.preparation_scope(stable)
         with tempfile.TemporaryDirectory() as directory:

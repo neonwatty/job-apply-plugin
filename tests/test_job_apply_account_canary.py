@@ -48,7 +48,9 @@ class AccountCanaryAuthorityTests(unittest.TestCase):
             "accountFormFingerprint": "sha256:" + "1" * 64,
             "emailControlFingerprint": "sha256:" + "2" * 64,
             "passwordControlFingerprint": "sha256:" + "3" * 64,
-            "createAccountControlFingerprint": "sha256:" + "4" * 64,
+            "passwordConfirmationControlFingerprint": "sha256:" + "4" * 64,
+            "privacyControlFingerprint": "sha256:" + "5" * 64,
+            "createAccountControlFingerprint": "sha256:" + "6" * 64,
         }
         aggregate = "sha256:" + hashlib.sha256(
             ":".join(controls.values()).encode()

@@ -72,7 +72,8 @@ def validate_binding(value: Any) -> dict[str, Any]:
     }
     password_component_fields = {
         "accountFormFingerprint", "emailControlFingerprint",
-        "passwordControlFingerprint", "createAccountControlFingerprint",
+        "passwordControlFingerprint", "passwordConfirmationControlFingerprint",
+        "privacyControlFingerprint", "createAccountControlFingerprint",
     }
     password_fields = legacy_fields | {"flowKind", *password_component_fields}
     if not isinstance(value, dict) or set(value) not in (
@@ -108,7 +109,8 @@ def validate_binding(value: Any) -> dict[str, Any]:
                 raise CanaryAuthorityError("canary component binding is invalid")
         components = ":".join(value[field] for field in (
             "accountFormFingerprint", "emailControlFingerprint",
-            "passwordControlFingerprint", "createAccountControlFingerprint",
+            "passwordControlFingerprint", "passwordConfirmationControlFingerprint",
+            "privacyControlFingerprint", "createAccountControlFingerprint",
         ))
         aggregate = "sha256:" + hashlib.sha256(components.encode("utf-8")).hexdigest()
         if aggregate != value["accountCreationControlsFingerprint"]:

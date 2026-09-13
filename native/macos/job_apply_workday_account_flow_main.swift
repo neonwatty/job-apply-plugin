@@ -18,15 +18,17 @@ enum WorkdayAccountFlowMain {
             FileHandle.standardOutput.write(data)
             FileHandle.standardOutput.write(Data([0x0a]))
         case "workday-account":
-            guard arguments.count == 13, let browserPID = Int32(arguments[2]),
-                  let privateDescriptor = Int32(arguments[12]), privateDescriptor > STDERR_FILENO
+            guard arguments.count == 15, let browserPID = Int32(arguments[2]),
+                  let privateDescriptor = Int32(arguments[14]), privateDescriptor > STDERR_FILENO
             else { throw ProtectedCredentialError.invalidBinding }
             let binding = NativeWorkdayBinding(
                 browserProcessIdentifier: browserPID, portalURL: arguments[3],
                 realmReference: arguments[4], realmDescriptor: arguments[5],
                 accountFormFingerprint: arguments[6], emailControlFingerprint: arguments[7],
-                passwordControlFingerprint: arguments[8], createAccountControlFingerprint: arguments[9],
-                accountCreationControlsFingerprint: arguments[10], nativeAttestationSocketPath: arguments[11]
+                passwordControlFingerprint: arguments[8],
+                passwordConfirmationControlFingerprint: arguments[9],
+                privacyControlFingerprint: arguments[10], createAccountControlFingerprint: arguments[11],
+                accountCreationControlsFingerprint: arguments[12], nativeAttestationSocketPath: arguments[13]
             )
             do {
                 try MacOSWorkdayAccountFlowHelper().execute(binding, privateEmailDescriptor: privateDescriptor)
