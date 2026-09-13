@@ -52,6 +52,74 @@ _CANONICAL = {
 class PasswordExecutionMixin:
     """Plain mixin; persistent state belongs to StoreBase."""
 
+    def revalidate_live_password_preparation_scope(
+        self, scope: dict[str, Any], portal_url: str, portal_name: str,
+        realm_descriptor: str,
+    ) -> dict[str, Any]:
+        """Recheck stable canonical scope before any read-only page access."""
+        try:
+            exact = _late('CANARY_EXECUTOR_MODULE').CANARY.validate_preparation_scope(scope)
+        except _late('CANARY_EXECUTOR_MODULE').CANARY.CanaryAuthorityError as error:
+            raise StoreError(str(error)) from None
+        try:
+            portal = urlsplit(portal_url)
+            port = portal.port
+        except (TypeError, ValueError):
+            raise StoreError("live password preparation portal binding drifted") from None
+        if (
+            exact.get("flowKind") != _late('ACCOUNTS_MODULE').FLOW_PASSWORD
+            or not isinstance(portal_url, str) or not isinstance(portal_name, str)
+            or portal.scheme != "https" or not portal.hostname
+            or portal.username is not None or portal.password is not None
+            or portal.query or portal.fragment or not portal.path.startswith("/")
+            or (port is not None and port != 443)
+            or self._trusted_fill_fingerprint(portal_url) != exact["portalFingerprint"]
+            or self._trusted_fill_fingerprint(portal_name) != exact["portalNameFingerprint"]
+        ):
+            raise StoreError("live password preparation portal binding drifted")
+        self.initialize()
+        self._ensure_account_control_documents()
+        self._ensure_coordinator_files()
+        with _late('exclusive_file_lock')(self.store_lock_path):
+            job = self._load_jobs_document()["jobs"].get(exact["jobId"])
+            if (
+                job is None or job.get("deletedAt") is not None
+                or job["url"] != portal_url
+                or not (
+                    (job["status"] == "in_progress" and job["revision"] == exact["jobRevision"])
+                    or (job["status"] == "ready" and job["revision"] + 1 == exact["jobRevision"])
+                )
+            ):
+                raise StoreError("live password preparation job binding drifted")
+            realm = _late('ACCOUNTS_MODULE').normalize_realm(job["url"])
+            settings = self._load_automation_settings_document()["settings"]
+            account = self._load_employer_accounts_document()["accounts"].get(exact["realmRef"])
+            if (
+                realm.get("status") != "resolved" or realm.get("adapterId") != "workday"
+                or realm.get("flowKind") != _late('ACCOUNTS_MODULE').FLOW_PASSWORD
+                or realm.get("realmRef") != exact["realmRef"]
+                or realm.get("descriptor") != realm_descriptor or account is None
+                or account.get("descriptor") != realm.get("descriptor")
+                or account.get("revision") != exact["accountRevision"]
+                or settings.get("revision") != exact["settingsRevision"]
+                or account.get("lifecycleState") != "discovered"
+                or account.get("flowKind") != _late('ACCOUNTS_MODULE').FLOW_PASSWORD
+                or account.get("credentialRequired") is not True
+                or account.get("providerId") is not None
+                or account.get("credentialRef") is not None
+                or account.get("credentialVersion") is not None
+                or not settings.get("enabled") or not settings.get("automaticAccountCreation")
+                or settings.get("passwordStrategy") != "unique_per_realm"
+                or (account.get("signupEmailOverride") is None and settings.get("signupEmail") is None)
+            ):
+                raise StoreError("live password preparation canonical binding drifted")
+            if self._load_account_operation_journal()["operation"] is not None:
+                raise StoreError("account operation requires explicit recovery")
+            return {
+                "valid": True, "jobId": job["id"],
+                "jobRevision": exact["jobRevision"], "finalActionAuthorized": False,
+            }
+
     def _validate_live_password_stable_locked(
         self, request: dict[str, Any]
     ) -> dict[str, Any]:

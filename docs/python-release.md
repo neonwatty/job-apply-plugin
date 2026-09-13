@@ -368,6 +368,21 @@ real portal, visible browser, Keychain, or owner account was used. Forward-port
 the closed plan, per-operation recheck, and typed claim-release behavior to the
 TypeScript lane without sharing its live Store.
 
+### Workday canary preparation boundary
+
+The first bounded canary preflight identified a missing private connection
+between the Store-validated Workday scope and the reviewed native preparation
+helper. No approval was consumed and no live browser, Keychain, or account
+effect occurred. The Python lane now provides an exact-source-only private
+Workday session and a Store revalidation boundary for the query-free portal,
+portal-name fingerprint, current job/account/settings revisions, discovered
+account state, unique-per-realm strategy, and idle operation journal. The
+one-shot read-only approval is burned before the native helper is invoked.
+
+This is a pre-canary repair only. `workdayCanaryPassed` remains false and the
+readiness gate must not change until a fresh owner-approved preparation and
+separately approved T007 execution produce reviewed value-free evidence.
+
 ### Review-bound application automation modes
 
 The Python release lane now stores one value-free, revisioned application

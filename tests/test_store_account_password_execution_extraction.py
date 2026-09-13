@@ -18,6 +18,7 @@ from tests.test_store_loader_isolation import copy_plugin
 
 
 METHOD_HASHES = {
+    "revalidate_live_password_preparation_scope": "9c7a65e1327081d7a4e1357d83f582c4d966918c466489f162f20ccd53f7543d",
     "_validate_live_password_stable_locked": "070d778f2a8e231e8e47e02fe5f9b4c8a09cdf6e44ac30de66d902a6238461cc",
     "revalidate_live_password_stable_scope": "02aa47a425ab147ca21322793a59dc115e877a673801e8f13256ba7cf3d8cf31",
     "acquire_or_recover_live_password_claim": "a9d01edd8f328d86037d8fafcbd2a2b4e73492c37ceb249c6b686de2a614f67a",

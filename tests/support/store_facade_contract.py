@@ -176,6 +176,7 @@ PUBLIC_STORE_SIGNATURES = {
     "acquire_or_recover_live_email_only_claim": "(self, incoming: 'dict[str, Any]', *, owner_label: 'str') -> 'dict[str, Any]'",
     "prepare_live_email_only_account_execution": "(self, incoming: 'dict[str, Any]', binding: 'dict[str, Any]') -> 'dict[str, Any]'",
     "execute_live_email_only_account": "(self, incoming: 'dict[str, Any]', *, authority: 'Any', provider: 'Any', now: 'datetime') -> 'dict[str, Any]'",
+    "revalidate_live_password_preparation_scope": "(self, scope: 'dict[str, Any]', portal_url: 'str', portal_name: 'str', realm_descriptor: 'str') -> 'dict[str, Any]'",
     "revalidate_live_password_stable_scope": "(self, incoming: 'dict[str, Any]') -> 'dict[str, Any]'",
     "acquire_or_recover_live_password_claim": "(self, incoming: 'dict[str, Any]', *, owner_label: 'str') -> 'dict[str, Any]'",
     "prepare_live_password_account_execution": "(self, incoming: 'dict[str, Any]', binding: 'dict[str, Any]') -> 'dict[str, Any]'",

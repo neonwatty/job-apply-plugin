@@ -154,6 +154,22 @@ tests cover accountless passage, action gating, typed release, and a secret-bear
 unknown URL. No live portal, visible browser, Keychain, or canary
 was used.
 
+## Slice 5 pre-canary repair
+
+The first owner-approved Workday preparation preflight found that the reviewed
+native preparation helper and Store-owned execution seam had no private
+production session joining them. The approval was not recorded or consumed and
+the visible browser, Keychain, and real account remained untouched.
+
+The private Workday session now mirrors the reviewed Oracle construction
+boundary: it accepts no helper path or provider override, revalidates the exact
+query-free portal, named portal fingerprint, canonical job/account/settings
+revisions, discovered lifecycle, unique-per-realm strategy, and empty operation
+journal through the Store, then burns the domain-separated one-shot preparation
+approval before invoking the digest-pinned native helper. Synthetic tests prove
+the ordering, closed constructor, query rejection, and value-free result. This
+repair does not claim a successful canary or change the readiness gate.
+
 ## Migration follow-up
 
 The TypeScript lane must independently port the normalized strategy projection,
