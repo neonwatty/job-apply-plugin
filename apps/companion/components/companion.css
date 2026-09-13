@@ -312,11 +312,48 @@ footer { display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.5rem }
 .notice dl { max-height:180px;overflow:auto }
 .notice dl>div { display:grid;grid-template-columns:140px 1fr;gap:.5rem }
 .notice dd { margin:0;overflow-wrap:anywhere }
-.fact-card { margin-block:1rem;padding:1rem;border:1px solid var(--line);border-radius:12px;background:var(--panel) }
+.facts-workspace>.workspace-hero { padding-bottom:1.25rem }
+.facts-workspace>.workspace-status { margin:.2rem 0 1rem }
+.facts-conflict { display:flex;flex-wrap:wrap;align-items:center;gap:.65rem }
+.facts-conflict p { flex:1 1 100%;margin:0 }
+.facts-organizer {
+  margin-bottom:1rem;
+  padding:clamp(1.1rem,3vw,1.6rem)!important;
+  border:1px solid #c9ddd3;
+  border-radius:18px;
+  background:#edf6f0
+}
+.facts-organizer-heading { display:flex;justify-content:space-between;align-items:end;gap:1.5rem }
+.facts-organizer-heading h2 { margin:.2rem 0 .35rem;font:500 clamp(1.4rem,3vw,2rem) Georgia,serif }
+.facts-organizer-heading p:not(.eyebrow),.fact-group-editor>fieldset>p { margin:.2rem 0;color:var(--muted);line-height:1.5 }
+.fact-group-list { list-style:none;display:grid;gap:.6rem;margin:1rem 0 0;padding:0 }
+.fact-group-list li { display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.8rem 1rem;border:1px solid #c9ddd3;border-radius:12px;background:rgba(255,254,249,.78) }
+.fact-group-list li>div:first-child { display:grid;gap:.2rem;min-width:0 }
+.fact-group-list span { overflow-wrap:anywhere;color:var(--muted);font-size:.78rem }
+.facts-groups-empty { margin:1rem 0 0;color:var(--muted) }
+.fact-group-editor { margin-top:1rem;padding-top:1rem;border-top:1px solid #c9ddd3 }
+.fact-group-editor legend { font:600 1.05rem Georgia,serif }
+.fact-group-fields { display:grid;grid-template-columns:minmax(180px,.65fr) minmax(260px,1.35fr);gap:1rem;margin:1rem 0 }
+.fact-group-fields textarea { min-height:82px }
+.facts-panel { margin-top:0 }
+.facts-revision { margin:0 0 .35rem;color:var(--muted);font-size:.8rem;font-weight:750;white-space:nowrap }
+.facts-filter { display:flex;align-items:end;gap:1rem;margin:1.25rem 0 }
+.facts-filter label { flex:1 }
+.facts-filter span { padding-bottom:.75rem;color:var(--muted);font-size:.78rem;font-weight:750;white-space:nowrap }
+.facts-list { display:grid;gap:.85rem }
+.fact-card { margin:0;padding:1rem;border:1px solid var(--line);border-radius:12px;background:#fafaf6 }
 .fact-entry { margin-block:.6rem;padding-inline-start:.5rem;border-inline-start:2px solid var(--line) }
 .fact-card fieldset { min-width:0;margin-block:.5rem }
 .fact-card pre { white-space:pre-wrap;overflow-wrap:anywhere }
 .fact-card input,.fact-card select,section[aria-label="Fact groups"] textarea { max-width:100% }
+.fact-card details { margin:.75rem 0;color:var(--muted);font-size:.78rem }
+.fact-add-panel { margin-top:1.25rem;padding:1.2rem;border:1px dashed #aebbb2;border-radius:14px;background:#f7f8f3 }
+.fact-add-panel legend { padding:0 .4rem;font:600 1.15rem Georgia,serif }
+.fact-add-panel>p { margin:.1rem 0 1rem;color:var(--muted);font-size:.84rem }
+.fact-add-grid { display:grid;grid-template-columns:minmax(180px,1fr) minmax(160px,.75fr) auto;align-items:end;gap:.8rem }
+.facts-actions { display:flex;justify-content:flex-end;gap:.65rem;margin-top:1.25rem }
+.facts-empty { min-height:160px;padding-block:2rem }
+.facts-empty p { margin:0 }
 @media(max-width:1100px) {
   .workspace-nav { overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin;scroll-snap-type:inline proximity;padding:0 .45rem .35rem }
   .nav-group { flex:0 0 auto }
@@ -347,6 +384,11 @@ footer { display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.5rem }
   .attention-card { gap:.8rem }
   .form-grid { grid-template-columns:1fr }
   .notice dl>div { grid-template-columns:1fr }
+  .facts-organizer-heading,.fact-group-list li { align-items:stretch;flex-direction:column }
+  .fact-group-fields,.fact-add-grid { grid-template-columns:1fr }
+  .facts-filter { align-items:stretch;flex-direction:column }
+  .facts-filter span { padding-bottom:0 }
+  .facts-actions { justify-content:stretch;flex-direction:column }
 }
 @media(prefers-reduced-motion:reduce) {
   *,*::before,*::after { scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important }

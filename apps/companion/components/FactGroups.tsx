@@ -40,19 +40,19 @@ export function FactGroups({client,dirtyChanged}:{client:Client;dirtyChanged:(di
     } catch(error){if(alive.current)setError(`${error instanceof Error?error.message:'Group save failed'}. Your draft is retained. Refresh groups before retrying a conflict.`);}
     finally{if(alive.current)setBusy(false);}
   }
-  return <section aria-label="Fact groups"><h2>Fact groups</h2><p>Organize facts using their paths, for example /email or /preferences/remote.</p>
+  return <section className="facts-organizer" aria-label="Fact groups"><div className="facts-organizer-heading"><div><p className="eyebrow">Saved views</p><h2>Focus the facts you need</h2><p>Custom groups organize canonical paths without moving or copying the facts themselves.</p></div><button className="secondary" type="button" disabled={busy} onClick={()=>void refresh()}>Refresh groups</button></div>
     {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
-    <button type="button" disabled={busy} onClick={()=>void refresh()}>Refresh groups</button>
-    {groups===null?<p>Loading groups…</p>:!groups.length?<p>No fact groups yet.</p>:<ul>{groups.map(group=><li key={group.id}>
-      <strong>{group.label}</strong> — {group.paths.join(', ')}{' '}
-      <button type="button" disabled={busy} onClick={()=>{if(dirty&&!confirm('Discard unsaved group changes?'))return;setEdit(group);setLabel(group.label);setPaths(group.paths.join('\n'));}}>Edit {group.label}</button>{' '}
-      <button type="button" disabled={busy||dirty} onClick={()=>{if(confirm(`Delete group ${group.label}? The facts will be retained.`))void mutate(group);}}>Delete {group.label}</button>
+    {groups===null?<p className="workspace-status">Loading groups…</p>:!groups.length?<p className="facts-groups-empty">No fact groups yet. Create one for the facts you review together.</p>:<ul className="fact-group-list">{groups.map(group=><li key={group.id}>
+      <div><strong>{group.label}</strong><span>{group.paths.join(', ')}</span></div>
+      <div className="button-row"><button className="secondary" type="button" disabled={busy} onClick={()=>{if(dirty&&!confirm('Discard unsaved group changes?'))return;setEdit(group);setLabel(group.label);setPaths(group.paths.join('\n'));}}>Edit {group.label}</button>
+      <button className="text-action" type="button" disabled={busy||dirty} onClick={()=>{if(confirm(`Delete group ${group.label}? The facts will be retained.`))void mutate(group);}}>Delete {group.label}</button></div>
     </li>)}</ul>}
-    <form onSubmit={event=>{event.preventDefault();void mutate();}}><fieldset disabled={busy}>
+    <form className="fact-group-editor" onSubmit={event=>{event.preventDefault();void mutate();}}><fieldset disabled={busy}>
       <legend>{edit?'Edit group':'New group'}</legend>
-      <label>Group label<input required maxLength={80} value={label} onChange={event=>setLabel(event.target.value)}/></label>
-      <label>Fact paths, one per line<textarea required value={paths} onChange={event=>setPaths(event.target.value)}/></label>
-      <button type="submit">Save group</button><button type="button" onClick={reset}>Cancel group changes</button>
+      <p>Organize facts using their paths, for example /email or /preferences/remote.</p>
+      <div className="fact-group-fields"><label>Group label<input required maxLength={80} value={label} onChange={event=>setLabel(event.target.value)}/></label>
+      <label>Fact paths, one per line<textarea required value={paths} onChange={event=>setPaths(event.target.value)}/></label></div>
+      <div className="button-row"><button className="primary" type="submit">Save group</button><button className="secondary" type="button" onClick={reset}>Cancel group changes</button></div>
       {edit&&groups?.some(group=>group.id===edit.id&&group.revision!==edit.revision)&&<button type="button" onClick={()=>{const latest=groups.find(group=>group.id===edit.id);if(latest){if(label===edit.label)setLabel(latest.label);if(paths===edit.paths.join('\n'))setPaths(latest.paths.join('\n'));setEdit(latest);}}}>Reapply group draft</button>}
       {edit&&groups&&!groups.some(group=>group.id===edit.id)&&<p role="alert">This group was deleted. Cancel these changes or save it as a new group.</p>}
       {edit&&groups&&!groups.some(group=>group.id===edit.id)&&<button type="button" onClick={()=>setEdit(null)}>Keep draft as new group</button>}
