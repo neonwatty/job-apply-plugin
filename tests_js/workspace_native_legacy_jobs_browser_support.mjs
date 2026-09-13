@@ -72,7 +72,7 @@ export async function legacyJobsBrowser(page, { legacy, writeReport, readDocumen
   assert.equal(conflict.committed, false);
   assert.equal(await readDocument(), humanUrlBytes, 'human-owned URL conflicts leave Jobs unchanged');
   await navigation.getByRole('button', { name: 'Overview', exact: true }).click();
-  await page.getByRole('heading', { name: 'Your next step', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Know what to do next.', exact: true }).waitFor();
   return { discoveryReadOnly: true, previewReadOnly: true, cliCommitVisible: true,
     humanProvenancePreserved: true, sourceLocatorRefreshed: true, humanUrlConflict: true, staleTokenRejected: true };
 }

@@ -58,7 +58,7 @@ export async function jobUpsertBrowser(page, { upsert, readDocument }) {
     assert.equal(updated.revision, humanRecord.revision + 1);
 
     await navigation.getByRole('button', { name: 'Overview', exact: true }).click();
-    await page.getByRole('heading', { name: 'Your next step', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Know what to do next.', exact: true }).waitFor();
     await page.reload();
     await navigation.getByRole('button', { name: 'Jobs', exact: true }).click();
     await page.locator('[data-job-create]:enabled').waitFor();
@@ -69,7 +69,7 @@ export async function jobUpsertBrowser(page, { upsert, readDocument }) {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await modal.getByRole('button', { name: 'Close job details', exact: true }).click();
     await navigation.getByRole('button', { name: 'Overview', exact: true }).click();
-    await page.getByRole('heading', { name: 'Your next step', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Know what to do next.', exact: true }).waitFor();
     assert.equal(navigationPrompts, 0, 'acknowledged CLI/browser writes leave no false unsaved draft');
     return { previewReadOnly: true, cliCommitVisible: true, humanProvenancePreserved: true,
       agentFillsNewField: true, previewCommitAgreement: true, reload: true, cleanNavigation: true, narrowViewport: true };
