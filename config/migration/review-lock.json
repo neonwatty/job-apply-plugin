@@ -191,7 +191,7 @@
     },
     {
       "path": "http-g02-next-surfaces.json",
-      "sha256": "db3834520f0400a2ceb19b0192cdccbe04c8f4aca3a9e950ba51b0093da908d0"
+      "sha256": "9b35cf9a896081a0d0a365cc3551b5a3003bde822913ca215694c3ce2f860f16"
     },
     {
       "path": "http-native-claims-surfaces.json",
@@ -315,7 +315,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "bc06e25280d9d8d5b49575e2d43359c1a8f464edb5d4977385df34df6427954f"
+      "sha256": "ca3a16c3d1bada7f6f63f7641961db35ad6416aebd856ad9eb961f65e7a62bb2"
     },
     {
       "path": "source-catalog-m01.json",
@@ -395,7 +395,7 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "a0ac51ec89bbf21077892c19985ad861930d06b40facbb4ccdd3340cd0ec98b2"
+      "sha256": "5089f7835ee9f067c8e61e99489530c7b550fc0fe3325b1d79521ac3c3fcbbef"
     },
     {
       "path": "source-catalog-native-legacy-jobs.json",

@@ -68,7 +68,7 @@ export async function jobsHttp(service, repository, method, path, body = "", dep
         if (method === "GET") {
             if (path === "/api/boot") {
                 await service.list();
-                return response(fromJSON({ status: "ready", mode: "native-jobs-fixture" }));
+                return response(fromJSON({ status: "ready", mode: dependencies.storeMode ?? "native-jobs-fixture" }));
             }
             if (path === "/api/jobs")
                 return response(envelope("jobs", await service.list()));
@@ -102,7 +102,7 @@ export async function jobsHttp(service, repository, method, path, body = "", dep
                 return apiError(400, "request_error", "expectedRevision must be a positive integer");
             return response(await service.update(decodeURIComponent(match[1]), get(payload, "patch"), revision));
         }
-        return apiError(501, "unsupported_native_workflow", "This workflow is not supported by the synthetic native workspace.");
+        return apiError(501, "unsupported_native_workflow", "This workflow is not supported by the native workspace.");
     }
     catch (error) {
         if (error instanceof JobsError) {

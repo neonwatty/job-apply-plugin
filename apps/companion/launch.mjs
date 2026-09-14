@@ -1,28 +1,14 @@
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
 import { existsSync } from "node:fs";
-import { resolve, dirname, join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { once } from "node:events";
+import { parseWriterOptions, resolveWriterRoute } from "./writer-route.mjs";
 
 const require = createRequire(import.meta.url);
 const app = dirname(fileURLToPath(import.meta.url));
-const options = { root: undefined, pluginRoot: resolve(app, "../.."), port: 0, dev: false, nativeLock: undefined };
-const args = process.argv.slice(2);
-while (args.length) {
-  const key = args.shift();
-  if (key === "--dev") options.dev = true;
-  else if (["--root", "--plugin-root", "--port", "--native-jobs-fixture"].includes(key)) {
-    const value = args.shift();
-    if (!value || value.startsWith("--")) throw new Error("Missing launcher option value");
-    if (key === "--root") options.root = resolve(value);
-    if (key === "--plugin-root") options.pluginRoot = resolve(value);
-    if (key === "--port") options.port = Number(value);
-    if (key === "--native-jobs-fixture") options.nativeLock = resolve(value);
-  } else throw new Error("Unknown launcher option");
-}
-if (!Number.isInteger(options.port) || options.port < 0 || options.port > 65535) throw new Error("Invalid port");
 const children = new Set();
 let stopping = false;
 function stopChild(child, signal) {
@@ -59,7 +45,7 @@ async function choosePort(port) {
   await new Promise((done, reject) => socket.close(error => error ? reject(error) : done()));
   return address.port;
 }
-async function pythonBoot(child) {
+async function upstreamBoot(child) {
   return new Promise((done, reject) => {
     let text = "";
     const timer = setTimeout(() => finish(new Error("Workspace startup timed out")), 30000);
@@ -86,17 +72,12 @@ async function pythonBoot(child) {
 }
 for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => void shutdown(0));
 try {
+  const options = parseWriterOptions(process.argv.slice(2), app);
+  const route = await resolveWriterRoute(options);
   const port = await choosePort(options.port), origin = `http://127.0.0.1:${port}`;
-  if (options.nativeLock && !options.root) throw new Error("Native Jobs requires an explicit synthetic root");
-  const script = join(options.pluginRoot, options.nativeLock
-    ? "runtime/cli/native-jobs-server.js" : "scripts/job-apply-workspace.py");
-  if (!existsSync(script)) throw new Error("Workspace runtime is unavailable");
-  const argv = options.nativeLock
-    ? [script, "--root", options.root, "--native-lock", options.nativeLock]
-    : [script, "--no-open", "--json", ...(options.root ? ["--root", options.root] : [])];
-  const python = owned(options.nativeLock ? process.execPath : "python3", argv);
-  const { upstream, token } = await pythonBoot(python);
-  python.stdout.on("data", () => {});
+  const writer = owned(route.command, route.argv);
+  const { upstream, token } = await upstreamBoot(writer);
+  writer.stdout.on("data", () => {});
   const standalone = join(app, ".next/standalone/apps/companion/server.js");
   if (!options.dev && !existsSync(standalone)) throw new Error("Build the Companion before starting it");
   const command = options.dev ? [require.resolve("next/dist/bin/next"), "dev", "--hostname", "127.0.0.1", "--port", String(port)] : [standalone];

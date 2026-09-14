@@ -181,10 +181,11 @@
     {
       "id": "cli:companion:launch",
       "kind": "cli",
-      "command": "companion:start [--root ROOT] [--port PORT] [--plugin-root PATH] [--dev]",
+      "command": "companion:start [--writer python|native-fixture|native-clone] [--root ROOT] [--native-lock PATH] [--port PORT] [--plugin-root PATH] [--dev]",
       "node": "UIF",
       "sources": [
         "apps/companion/launch.mjs",
+        "apps/companion/writer-route.mjs",
         "apps/companion/package-standalone.mjs",
         "scripts/job-apply-workspace.py",
         "package.json",

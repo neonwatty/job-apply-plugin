@@ -30,7 +30,7 @@ export async function nativeJobsBrowser(buildRoot) {
     const root = join(await realpath(fixture.root), 'jobs');
     await initializeJobsFixture(root);
     child = spawn(process.execPath, ['apps/companion/launch.mjs', '--root', root,
-      '--native-jobs-fixture', fixture.receipt.artifact], {
+      '--writer', 'native-fixture', '--native-lock', fixture.receipt.artifact], {
       cwd: buildRoot, env: { ...process.env, PATH: '' }, stdio: ['ignore', 'pipe', 'pipe'],
     });
     let errors = '';
