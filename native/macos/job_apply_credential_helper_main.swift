@@ -147,6 +147,69 @@ enum IsolatedCredentialIntegrationMain {
             } catch AccountFlowHelperError.activationBinding {
                 Darwin.exit(37)
             }
+        case "oracle-email-only-inherited":
+            guard arguments.count == 18,
+                  let browserPID = Int32(arguments[2]),
+                  let jobRevision = Int(arguments[12]),
+                  let accountRevision = Int(arguments[13]),
+                  let settingsRevision = Int(arguments[14]),
+                  let attestationDescriptor = Int32(arguments[16]),
+                  let privateDescriptor = Int32(arguments[17]),
+                  attestationDescriptor > STDERR_FILENO,
+                  privateDescriptor > STDERR_FILENO,
+                  attestationDescriptor != privateDescriptor
+            else { throw ProtectedCredentialError.invalidBinding }
+            let binding = NativeEmailOnlyBinding(
+                browserProcessIdentifier: browserPID,
+                portalURL: arguments[3], realmReference: arguments[4], realmDescriptor: arguments[5],
+                accountFormFingerprint: arguments[6], emailControlFingerprint: arguments[7],
+                termsControlFingerprint: arguments[8], termsDocumentFingerprint: arguments[9],
+                nextControlFingerprint: arguments[10], accountCreationControlsFingerprint: arguments[11],
+                passwordControlFingerprint: nil, createAccountControlFingerprint: nil,
+                jobRevision: jobRevision, accountRevision: accountRevision,
+                settingsRevision: settingsRevision, operationFingerprint: arguments[15],
+                nativeAttestationSocketPath: "/dev/fd/\(attestationDescriptor)"
+            )
+            do {
+                try MacOSAccessibilityAccountFlowHelper().execute(
+                    binding, privateEmailDescriptor: privateDescriptor,
+                    attestationDescriptor: attestationDescriptor
+                )
+            } catch AccountFlowHelperError.invalidBinding {
+                Darwin.exit(21)
+            } catch AccountFlowHelperError.privateChannel {
+                Darwin.exit(22)
+            } catch AccountFlowHelperError.effectFailed {
+                Darwin.exit(23)
+            } catch AccountFlowHelperError.emailEffect {
+                Darwin.exit(24)
+            } catch AccountFlowHelperError.termsEffect {
+                Darwin.exit(25)
+            } catch AccountFlowHelperError.nextEffect {
+                Darwin.exit(26)
+            } catch AccountFlowHelperError.clearingEffect {
+                Darwin.exit(27)
+            } catch AccountFlowHelperError.requestBinding {
+                Darwin.exit(28)
+            } catch AccountFlowHelperError.browserBinding {
+                Darwin.exit(29)
+            } catch AccountFlowHelperError.pageBinding {
+                Darwin.exit(30)
+            } catch AccountFlowHelperError.controlBinding {
+                Darwin.exit(31)
+            } catch AccountFlowHelperError.stateBinding {
+                Darwin.exit(32)
+            } catch AccountFlowHelperError.causalBinding {
+                Darwin.exit(33)
+            } catch AccountFlowHelperError.browserProcessBinding {
+                Darwin.exit(34)
+            } catch AccountFlowHelperError.browserIdentityBinding(let substage) {
+                Darwin.exit(Int32(substage.rawValue))
+            } catch AccountFlowHelperError.accessibilityBinding {
+                Darwin.exit(36)
+            } catch AccountFlowHelperError.activationBinding {
+                Darwin.exit(37)
+            }
         case "oracle-email-only-prepare":
             guard arguments.count == 6, let browserPID = Int32(arguments[2])
             else { throw ProtectedCredentialError.invalidBinding }

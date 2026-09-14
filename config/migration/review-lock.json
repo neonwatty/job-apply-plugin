@@ -283,7 +283,7 @@
     },
     {
       "path": "source-catalog-01.json",
-      "sha256": "9abb9b900eec095e124773f96c0a3c3e3d0dda536234cc519268effdb9a41405"
+      "sha256": "09cc812949cb47b237e804f83e491728a52dae0d03496c203ab41c623d59364e"
     },
     {
       "path": "source-catalog-02.json",
@@ -392,6 +392,10 @@
     {
       "path": "source-catalog-native-legacy-jobs.json",
       "sha256": "3e0066d9196b88f93260f2368cac0c08d11f8496969c8b020db2174798839786"
+    },
+    {
+      "path": "source-catalog-native-macos-email-adapter.json",
+      "sha256": "934868e01a901d78277723c871b6f85d4ecd9c7e1c3f3e4c1ffd39af10715972"
     },
     {
       "path": "source-catalog-native-pending-answers.json",

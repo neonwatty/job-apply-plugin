@@ -23,7 +23,7 @@
     },
     {
       "path": "native/macos/MacOSAccessibilityAccountFlowHelper.swift",
-      "sha256": "9bbac7b21969286987ee41613c5b45a0872e360ca35cccd3af40efe7b91af5a0",
+      "sha256": "2fd642ae1a5c89da2c6949f5ead786ce2304c5c462827b6cb664715ba2faa9ed",
       "classification": "unreviewed"
     },
     {
@@ -63,7 +63,7 @@
     },
     {
       "path": "native/macos/job_apply_credential_helper_main.swift",
-      "sha256": "e52d79f3a54498cb7fc918c9f218b3887501807f2d0d1b42090290f165739865",
+      "sha256": "840658316f95cd0629b28731dabdd3b9e90ea617da3986d6a0e9879e14f8c59b",
       "classification": "unreviewed"
     },
     {
