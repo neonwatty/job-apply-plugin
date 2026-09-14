@@ -163,9 +163,10 @@ export function installJobs(context) {
     const values = currentValues();
     state.draft = Object.fromEntries([...state.dirtyFields].map((field) => [field, values[field]]));
     const holder = $("#conflict-latest"); holder.replaceChildren();
-    $("#reload-latest").disabled = false; $("#rebase-draft").disabled = false;
+    $("#reload-latest").disabled = true; $("#rebase-draft").disabled = true;
     try {
       state.latest = await api(`/api/jobs/${encodeURIComponent(state.selected.id)}`);
+      $("#reload-latest").disabled = false; $("#rebase-draft").disabled = false;
       syncReadyHandoff();
     } catch (error) {
       state.latest = null;
