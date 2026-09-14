@@ -161,49 +161,57 @@ export function Extractions({ client, dirtyChanged }: { client: ExtractionClient
   }
   const staleReasons = base ? get(base, 'staleReasons') : null;
   const stale = Array.isArray(staleReasons) && staleReasons.length > 0;
-  return <section>
-    <h1>Resume extraction</h1>
-    <p>Request an agent to extract facts from a managed resume, then review any conflicts with your current facts.</p>
-    <button disabled={busy || loading} onClick={() => { setError(''); void refreshLists(); }}>Refresh extraction status</button>
-    {loading && <p role="status">Loading extraction status…</p>}
-    {error && <p role="alert">{error}</p>}
-    {notice && <p role="status">{notice}</p>}
-    <form onSubmit={event => { event.preventDefault(); if (selectedResume) void mutateRequest(selectedResume); }}>
-      <label>Resume to extract<select value={resumeId} disabled={busy || loading} onChange={event => setResumeId(event.target.value)}>
-        <option value="">Choose a managed resume</option>{managed.map(item => <option key={string(get(item, 'id'))!} value={string(get(item, 'id'))!}>{string(get(item, 'label')) || 'Untitled resume'}</option>)}
-      </select></label>
-      <button disabled={busy || loading || !selectedResume || requests.some(item => string(get(item, 'resumeId')) === resumeId && string(get(item, 'status')) === 'requested')}>Request extraction</button>
-    </form>
-    {loaded && !managed.length && <p>Import or adopt a resume in Resumes before requesting extraction.</p>}
-    <h2>Extraction requests</h2>
-    {loaded && !requests.length && <p>No extraction requests yet.</p>}
-    <ul>{requests.map(item => {
+  const activeRequests = requests.filter(item => string(get(item, 'status')) === 'requested').length;
+  const pendingProposals = proposals.filter(item => string(get(item, 'status')) === 'pending').length;
+  return <section className="extractions-workspace" aria-labelledby="extractions-workspace-title">
+    <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Resume intelligence</p><h1 id="extractions-workspace-title">Resume extraction</h1><p>Request an agent to extract facts from a managed resume, then review any conflicts with your current canonical profile.</p></div><div className="workspace-hero-actions"><button className="secondary" disabled={busy || loading} onClick={() => { setError(''); void refreshLists(); }}>Refresh extraction status</button></div></header>
+    <div className="extraction-metrics" aria-label="Extraction summary">
+      <div><strong>{managed.length}</strong><span>Managed resumes</span></div><div><strong>{activeRequests}</strong><span>Active requests</span></div><div><strong>{pendingProposals}</strong><span>Proposals to review</span></div>
+    </div>
+    <section className="workspace-panel extraction-request-panel" aria-labelledby="extraction-request-heading">
+      <div className="workspace-panel-heading"><div><p className="eyebrow">Start extraction</p><h2 id="extraction-request-heading">Request facts from a resume</h2></div><span className="extraction-step">Step 1 of 3</span></div>
+      <p className="workspace-status" role="status">{loading ? 'Loading extraction status…' : notice || 'Choose a managed resume to prepare an extraction request.'}</p>
+      {error && <p className="error" role="alert">{error}</p>}
+      <form className="extraction-request-form" onSubmit={event => { event.preventDefault(); if (selectedResume) void mutateRequest(selectedResume); }}>
+        <label>Resume to extract<select value={resumeId} disabled={busy || loading} onChange={event => setResumeId(event.target.value)}>
+          <option value="">Choose a managed resume</option>{managed.map(item => <option key={string(get(item, 'id'))!} value={string(get(item, 'id'))!}>{string(get(item, 'label')) || 'Untitled resume'}</option>)}
+        </select></label>
+        <button className="primary" disabled={busy || loading || !selectedResume || requests.some(item => string(get(item, 'resumeId')) === resumeId && string(get(item, 'status')) === 'requested')}>Request extraction</button>
+      </form>
+      {loaded && !managed.length && <div className="workspace-empty extraction-empty"><strong>No managed resumes are available.</strong><span>Import or adopt a resume in Resumes before requesting extraction.</span></div>}
+    </section>
+    <div className="extraction-queues">
+    <section className="workspace-panel extraction-queue-panel" aria-labelledby="extraction-requests-heading"><div className="extraction-panel-heading"><div><p className="eyebrow">Agent work</p><h2 id="extraction-requests-heading">Extraction requests</h2></div><span>Step 2 of 3</span></div>
+    {loaded && !requests.length && <div className="workspace-empty extraction-empty"><strong>No extraction requests yet.</strong><span>New requests will appear here while an agent processes them.</span></div>}
+    <ul className="extraction-list">{requests.map(item => {
       const id = string(get(item, 'requestId'))!, status = string(get(item, 'status'));
       const resume = resumes.find(value => string(get(value, 'id')) === string(get(item, 'resumeId')));
       return <li key={id}>
-        <p>{resume ? string(get(resume, 'label')) || 'Untitled resume' : 'Unavailable resume'} — {status}</p>
+        <div className="extraction-item-heading"><strong>{resume ? string(get(resume, 'label')) || 'Untitled resume' : 'Unavailable resume'}</strong><span className={`status-pill status-${status}`}>{status}</span></div>
         {string(get(item, 'failureReason')) && <p>{reasonMessage(string(get(item, 'failureReason'))!)}</p>}
-        {status === 'requested' && <button disabled={busy || loading} onClick={() => void mutateRequest(resume ?? item, item, 'cancel')}>Cancel extraction</button>}
-        {(status === 'failed' || status === 'stale') && <button disabled={busy || loading || !resume || string(get(resume, 'storageKind')) !== 'managed' || get(resume, 'deletedAt') !== null} onClick={() => { if (resume) void mutateRequest(resume, item, 'retry'); }}>Retry extraction</button>}
-        {string(get(item, 'proposalId')) && <button disabled={busy} onClick={() => void selectProposal(string(get(item, 'proposalId'))!)}>Review extraction result</button>}
+        <div className="button-row">{status === 'requested' && <button className="secondary" disabled={busy || loading} onClick={() => void mutateRequest(resume ?? item, item, 'cancel')}>Cancel extraction</button>}
+        {(status === 'failed' || status === 'stale') && <button className="secondary" disabled={busy || loading || !resume || string(get(resume, 'storageKind')) !== 'managed' || get(resume, 'deletedAt') !== null} onClick={() => { if (resume) void mutateRequest(resume, item, 'retry'); }}>Retry extraction</button>}
+        {string(get(item, 'proposalId')) && <button className="primary" disabled={busy} onClick={() => void selectProposal(string(get(item, 'proposalId'))!)}>Review extraction result</button>}</div>
       </li>;
     })}</ul>
-    <h2>Extracted proposals</h2>
-    {loaded && !proposals.length && <p>No extracted proposals yet.</p>}
-    <ul>{proposals.map(item => {
+    </section>
+    <section className="workspace-panel extraction-queue-panel" aria-labelledby="extracted-proposals-heading"><div className="extraction-panel-heading"><div><p className="eyebrow">Review queue</p><h2 id="extracted-proposals-heading">Extracted proposals</h2></div><span>Step 3 of 3</span></div>
+    {loaded && !proposals.length && <div className="workspace-empty extraction-empty"><strong>No extracted proposals yet.</strong><span>Completed agent requests will create reviewable proposals here.</span></div>}
+    <ul className="extraction-list proposal-list">{proposals.map(item => {
       const id = string(get(item, 'id'))!;
       const resume = resumes.find(value => string(get(value, 'id')) === string(get(item, 'resumeId')));
-      return <li key={id}><button disabled={busy} onClick={() => void selectProposal(id)}>
-        {resume ? string(get(resume, 'label')) || 'Untitled resume' : 'Unavailable resume'} — {string(get(item, 'status'))} — {serialize(get(item, 'pendingCount'))} decisions remaining
+      return <li key={id}><button className="extraction-proposal-button" disabled={busy} onClick={() => void selectProposal(id)}>
+        <span><strong>{resume ? string(get(resume, 'label')) || 'Untitled resume' : 'Unavailable resume'}</strong><small>{string(get(item, 'status'))}</small></span><span>{serialize(get(item, 'pendingCount'))} decisions remaining</span><b aria-hidden="true">→</b>
       </button></li>;
     })}</ul>
-    <h2 ref={heading} tabIndex={-1}>Proposal review</h2>
-    {base && <div>
-      <p>Status: {string(get(base, 'status'))}. {pendingPaths(base).length} decisions remaining.</p>
-      <p>{serialize(get(base, 'autoFilledCount'))} missing facts were filled automatically. Review existing conflicts below.</p>
-      <button disabled={busy} onClick={() => void selectProposal(string(get(base, 'id'))!, true)}>Refresh selected proposal</button>
-      {stale && <p role="alert">{staleReasons.map(value => reasonMessage(string(value) ?? '')).join(' ')} Request a new extraction before reviewing it.</p>}
-      {latest && <aside role="alert">
+    </section></div>
+    <section className="workspace-panel proposal-review-panel" aria-labelledby="proposal-review-heading"><div className="workspace-panel-heading"><div><p className="eyebrow">Extraction review</p><h2 id="proposal-review-heading" ref={heading} tabIndex={-1}>Proposal review</h2></div>{base && <span className="extraction-step">{pendingPaths(base).length} decisions remaining</span>}</div>
+    {base ? <div className="proposal-review-body">
+      <div className="proposal-summary-native"><div><small>Status</small><strong>{string(get(base, 'status'))}</strong></div><div><small>Auto-filled</small><strong>{serialize(get(base, 'autoFilledCount'))} missing facts</strong></div></div>
+      <p>Review existing conflicts below. Unselected paths remain pending.</p>
+      <button className="secondary" disabled={busy} onClick={() => void selectProposal(string(get(base, 'id'))!, true)}>Refresh selected proposal</button>
+      {stale && <p className="error" role="alert">{staleReasons.map(value => reasonMessage(string(value) ?? '')).join(' ')} Request a new extraction before reviewing it.</p>}
+      {latest && <aside className="notice" role="alert">
         <p>Your decisions are retained. Reapply them to display the latest comparisons, then review each choice and confirm any replacements again.</p>
         <button disabled={busy} onClick={() => {
           setChoices(reapplyChoices(choices, latest));
@@ -214,7 +222,7 @@ export function Extractions({ client, dirtyChanged }: { client: ExtractionClient
         }}>Reapply my decisions</button>
         <button disabled={busy} onClick={() => { if (confirm('Discard your unsaved review decisions?')) loadProposal(latest); }}>Load saved proposal</button>
       </aside>}
-      {string(get(base, 'status')) === 'completed' && <p>This proposal is complete. No further review is needed.</p>}
+      {string(get(base, 'status')) === 'completed' && <p className="notice">This proposal is complete. No further review is needed.</p>}
       {string(get(base, 'status')) === 'superseded' && <p>A newer extraction replaced this proposal. Open the latest proposal to continue.</p>}
       {pendingPaths(base).length > 0 && <form onSubmit={event => { event.preventDefault(); void saveReview(); }}>
         <ExtractionReview proposal={base} choices={choices} confirmed={confirmed} disabled={busy || Boolean(latest) || stale || string(get(base, 'status')) !== 'pending'} change={(pointer, decision) => {
@@ -226,8 +234,9 @@ export function Extractions({ client, dirtyChanged }: { client: ExtractionClient
           });
           setConfirmed(previous => previous.filter(item => item !== pointer));
         }} confirmReplacement={(pointer, checked) => setConfirmed(previous => checked ? [...previous.filter(item => item !== pointer), pointer] : previous.filter(item => item !== pointer))} />
-        <button disabled={busy || Boolean(latest) || stale || !dirty || string(get(base, 'status')) !== 'pending'}>Save review decisions</button>
+        <div className="proposal-review-actions"><button className="primary" disabled={busy || Boolean(latest) || stale || !dirty || string(get(base, 'status')) !== 'pending'}>Save review decisions</button></div>
       </form>}
-    </div>}
+    </div> : <div className="workspace-empty proposal-review-empty"><strong>Select an extraction result to review.</strong><span>Current facts stay unchanged until you explicitly save review decisions.</span></div>}
+    </section>
   </section>;
 }

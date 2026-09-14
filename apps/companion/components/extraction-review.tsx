@@ -17,17 +17,17 @@ export function ExtractionReview({ proposal, choices, confirmed, disabled, chang
   confirmReplacement: (pointer: string, checked: boolean) => void;
 }) {
   const current = object(get(proposal, 'currentValues'), 'current values');
-  return <fieldset disabled={disabled}><legend>Review extracted facts</legend>
+  return <fieldset className="extraction-review" disabled={disabled}><legend>Review extracted facts</legend>
     {pendingPaths(proposal).map(pointer => {
       const existing = object(get(current, pointer), 'current fact');
       const scope = replacementScope(proposal, pointer);
-      return <fieldset key={pointer} style={{ minWidth: 0 }}><legend style={{ overflowWrap: 'anywhere' }}>{pointer}</legend>
-        <p>Current fact</p>{get(existing, 'exists') === true ? <ValueDisplay value={get(existing, 'value')} /> : <p>Not set</p>}
-        <p>Extracted fact</p><ValueDisplay value={candidateValue(proposal, pointer)} />
+      return <fieldset className="extraction-decision" key={pointer}><legend>{pointer}</legend>
+        <div className="extraction-comparison"><div><small>Current fact</small>{get(existing, 'exists') === true ? <ValueDisplay value={get(existing, 'value')} /> : <p>Not set</p>}</div>
+        <div><small>Extracted fact</small><ValueDisplay value={candidateValue(proposal, pointer)} /></div></div>
         <label>Decision for {pointer}<select aria-label={`Decision for ${pointer}`} value={choices[pointer] ?? ''} onChange={event => change(pointer, event.target.value as Decision | '')}>
           <option value="">Choose a decision</option><option value="keep_current">Keep current</option><option value="use_extracted">Use extracted</option>
         </select></label>
-        {scope && choices[pointer] === 'use_extracted' && <div>
+        {scope && choices[pointer] === 'use_extracted' && <div className="replacement-confirmation">
           <p>This replaces the existing value at {string(get(scope, 'path'))}:</p><ValueDisplay value={get(scope, 'value')} />
           <label><input type="checkbox" aria-label={`I confirm replacing ${string(get(scope, 'path'))} for ${pointer}.`} checked={confirmed.includes(pointer)} onChange={event => confirmReplacement(pointer, event.target.checked)} />
             I confirm replacing {string(get(scope, 'path'))} for {pointer}.</label>

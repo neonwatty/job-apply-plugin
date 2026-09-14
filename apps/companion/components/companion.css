@@ -414,6 +414,48 @@ footer { display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.5rem }
 .answer-support-list p { color:var(--muted);font-size:.8rem;line-height:1.45 }
 .pending-question-list { list-style:none;display:grid;gap:.65rem;margin:.6rem 0 0;padding:0 }
 .pending-question-list>li { padding-top:.65rem;border-top:1px solid var(--line) }
+.extraction-metrics { display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem }
+.extraction-metrics>div { display:grid;gap:.25rem;min-height:104px;padding:1.2rem 1.35rem;border:1px solid rgba(23,34,29,.08);border-radius:16px;background:rgba(255,254,249,.82) }
+.extraction-metrics strong { font:500 2rem Georgia,serif }
+.extraction-metrics span { align-self:end;color:var(--muted);font-size:.8rem;font-weight:750 }
+.extraction-step { padding-bottom:.35rem;color:var(--muted);font-size:.78rem;font-weight:800;white-space:nowrap }
+.extraction-request-form { display:grid;grid-template-columns:minmax(240px,1fr) auto;align-items:end;gap:.75rem;margin-top:.8rem }
+.extraction-empty { min-height:170px }
+.extraction-queues { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1rem;margin-top:1rem }
+.extraction-queue-panel { padding:clamp(1.1rem,3vw,1.5rem) }
+.extraction-panel-heading { display:flex;justify-content:space-between;align-items:end;gap:1rem;padding-bottom:.9rem;border-bottom:1px solid var(--line) }
+.extraction-panel-heading h2 { margin:.2rem 0 0;font:500 clamp(1.35rem,2.5vw,1.9rem) Georgia,serif }
+.extraction-panel-heading>span { color:var(--muted);font-size:.74rem;font-weight:800;white-space:nowrap }
+.extraction-list { list-style:none;display:grid;gap:.7rem;margin:1rem 0 0;padding:0 }
+.extraction-list>li { min-width:0;padding:1rem;border:1px solid var(--line);border-radius:11px;background:#f8faf6;overflow-wrap:anywhere }
+.extraction-list p { color:var(--muted);font-size:.82rem;line-height:1.5 }
+.extraction-item-heading { display:flex;justify-content:space-between;align-items:center;gap:.7rem;margin-bottom:.75rem }
+.extraction-item-heading strong { font:600 1.05rem Georgia,serif }
+.extraction-proposal-button { display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:.75rem;width:100%;border:0;border-radius:8px;padding:.3rem;background:transparent;text-align:left }
+.extraction-proposal-button:hover:not(:disabled) { transform:none }
+.extraction-proposal-button>span:first-child { display:grid;gap:.25rem;min-width:0 }
+.extraction-proposal-button strong { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 1rem Georgia,serif }
+.extraction-proposal-button small,.extraction-proposal-button>span:nth-child(2) { color:var(--muted);font-size:.72rem;font-weight:750 }
+.extraction-proposal-button b { color:var(--green) }
+.proposal-review-panel { margin-top:1rem;overflow-wrap:anywhere }
+.proposal-review-body>p { color:var(--muted);line-height:1.55 }
+.proposal-summary-native { display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin:1rem 0 }
+.proposal-summary-native>div { display:grid;gap:.25rem;padding:1rem;border:1px solid var(--line);border-radius:11px;background:#f8faf6 }
+.proposal-summary-native small { color:var(--muted);font-size:.7rem;font-weight:800;text-transform:uppercase }
+.proposal-review-empty { min-height:190px }
+.extraction-review { display:grid;gap:1rem;min-width:0;margin-top:1rem }
+.extraction-review>legend { padding:.2rem .4rem;font:600 1.2rem Georgia,serif }
+.extraction-decision { display:grid;gap:.85rem;min-width:0;padding:1rem;border:1px solid var(--line);border-radius:13px;background:#fafaf6 }
+.extraction-decision>legend { max-width:100%;padding:0 .4rem;color:var(--green);font-weight:800;overflow-wrap:anywhere }
+.extraction-comparison { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.75rem }
+.extraction-comparison>div { min-width:0;padding:.8rem;border:1px solid var(--line);border-radius:9px;background:white;overflow-wrap:anywhere }
+.extraction-comparison small { display:block;margin-bottom:.55rem;color:var(--muted);font-size:.68rem;font-weight:850;text-transform:uppercase }
+.extraction-comparison dl { margin:.3rem 0 }
+.extraction-comparison dd { margin-left:1rem }
+.replacement-confirmation { padding:1rem;border:1px solid #e2bb70;border-radius:10px;background:#fff8ea;overflow-wrap:anywhere }
+.replacement-confirmation label { display:flex;align-items:flex-start;gap:.65rem;line-height:1.45 }
+.replacement-confirmation input { flex:0 0 auto;width:auto;margin-top:.15rem }
+.proposal-review-actions { display:flex;justify-content:flex-end;margin-top:1rem }
 @media(max-width:1100px) {
   .workspace-nav { overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin;scroll-snap-type:inline proximity;padding:0 .45rem .35rem }
   .nav-group { flex:0 0 auto }
@@ -437,6 +479,8 @@ footer { display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.5rem }
   .pipeline-metrics>div { min-height:auto }
   .resume-metrics { grid-template-columns:1fr }
   .resume-metrics>div { min-height:auto }
+  .extraction-metrics { grid-template-columns:1fr }
+  .extraction-metrics>div { min-height:auto }
   .workspace-panel-heading,.attention-controls { align-items:stretch;flex-direction:column }
   .workspace-panel-heading .filters,.attention-controls label { width:100%;min-width:0 }
   .answer-filters { grid-template-columns:1fr;width:100% }
@@ -460,6 +504,12 @@ footer { display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.5rem }
   .answer-editor-actions { justify-content:stretch;flex-direction:column }
   .answer-support-grid { grid-template-columns:1fr }
   .answer-support-heading { align-items:stretch;flex-direction:column }
+  .extraction-request-form,.extraction-queues,.proposal-summary-native,.extraction-comparison { grid-template-columns:1fr }
+  .extraction-panel-heading,.extraction-item-heading { align-items:stretch;flex-direction:column }
+  .extraction-proposal-button { grid-template-columns:minmax(0,1fr) auto }
+  .extraction-proposal-button>span:nth-child(2) { grid-column:1/-1 }
+  .proposal-review-actions { justify-content:stretch }
+  .proposal-review-actions button { width:100% }
 }
 @media(prefers-reduced-motion:reduce) {
   *,*::before,*::after { scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important }
