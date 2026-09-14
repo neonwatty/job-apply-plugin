@@ -79,24 +79,23 @@ export function PendingAnswers({ client, revision, disabled, onBusyChanged, onRe
     }
   }
   const jobs = result?.client === client && result.revision === revision ? result.jobs : null;
-  return <section aria-label="Pending questions">
-    <h2>Pending questions</h2>
+  return <section className="answer-support-panel" aria-label="Pending questions">
+    <div className="answer-support-heading"><div><p className="eyebrow">Application inbox</p><h2>Pending questions</h2></div><button className="secondary" type="button" disabled={loading || resolving} onClick={() => void refresh()}>Refresh pending questions</button></div>
     <p>Recheck saved answers for applications waiting for information. Each resolution needs your confirmation.</p>
     <p>Sensitive questions need separate confirmation and cannot be handled by this recheck.</p>
-    <button type="button" disabled={loading || resolving} onClick={() => void refresh()}>Refresh pending questions</button>
     {loading && <p role="status">Loading pending questions…</p>}
     {resolving && <p role="status">Rechecking the saved answer…</p>}
     {disabled && <p>Save or discard your answer edits before resolving a question.</p>}
     {error && <p role="alert">{error}</p>}
     {jobs !== null && <>
       {!jobs.some(job => job.pendingInformation.length > 0) && <p role="status">No pending questions found.</p>}
-      <ul>{jobs.map(job => <li key={job.id} style={{ overflowWrap: 'anywhere' }}>
+      <ul className="answer-support-list">{jobs.map(job => <li key={job.id}>
         <h3>{job.role} · {job.company}</h3>
-        <ul>{job.pendingInformation.map((field, index) => <li key={`${field.reference}-${index}`}>
+        <ul className="pending-question-list">{job.pendingInformation.map((field, index) => <li key={`${field.reference}-${index}`}>
           <p>{field.question || 'Information requested'}</p>
           {!field.resolutionEligible && <p>This question needs further review before it can be resolved.</p>}
-          {field.answerKey && <button type="button" disabled={disabled || resolving} onClick={() => onOpenAnswer(field.answerKey!)}>Open saved answer</button>}
-          <button type="button" disabled={disabled || resolving || !field.resolutionEligible} onClick={() => void resolve(job, field)}>Resolve question</button>
+          <div className="button-row">{field.answerKey && <button className="secondary" type="button" disabled={disabled || resolving} onClick={() => onOpenAnswer(field.answerKey!)}>Open saved answer</button>}
+          <button className="secondary" type="button" disabled={disabled || resolving || !field.resolutionEligible} onClick={() => void resolve(job, field)}>Resolve question</button></div>
         </li>)}</ul>
       </li>)}</ul>
     </>}
