@@ -25,6 +25,7 @@ import type { TrustedFillHttpDependencies } from './trusted-fill-http.js';
 export type ApiResult = { status: number; body: string | Buffer; contentType?: string; disposition?: string };
 export interface JobsHttpDependencies {
   trustedFill?: TrustedFillHttpDependencies;
+  storeMode?: 'native-jobs-fixture' | 'native-store-clone';
 }
 const response = (value: Value, status = 200): ApiResult => ({ status, body: serialize(value) });
 export const apiError = (status: number, code: string, message: string): ApiResult =>
@@ -66,7 +67,7 @@ export async function jobsHttp(service: JobsService, repository: NativeJobsRepos
     if (method === "GET") {
       if (path === "/api/boot") {
         await service.list();
-        return response(fromJSON({ status: "ready", mode: "native-jobs-fixture" }));
+        return response(fromJSON({ status: "ready", mode: dependencies.storeMode ?? "native-jobs-fixture" }));
       }
       if (path === "/api/jobs") return response(envelope("jobs", await service.list()));
       if (path === "/api/state") {
@@ -98,7 +99,7 @@ export async function jobsHttp(service: JobsService, repository: NativeJobsRepos
       if (revision === null || revision < 1n) return apiError(400, "request_error", "expectedRevision must be a positive integer");
       return response(await service.update(decodeURIComponent(match[1]!), get(payload, "patch"), revision));
     }
-    return apiError(501, "unsupported_native_workflow", "This workflow is not supported by the synthetic native workspace.");
+    return apiError(501, "unsupported_native_workflow", "This workflow is not supported by the native workspace.");
   } catch (error) {
     if (error instanceof JobsError) {
       return error.message.includes("revision conflict") ? apiError(409, "revision_conflict", error.message)

@@ -13,7 +13,7 @@
     },
     {
       "path": "apps/companion/components/Companion.tsx",
-      "sha256": "3412b9e641d0014f813ec1d957cbb774da39adfa2971972ee8d7549dbc5b96b0",
+      "sha256": "fe4b4992780459377094d0a6309b2b6d3a0c041d650fcb14be2e95bdaaf1aa91",
       "classification": "unreviewed"
     },
     {
@@ -48,7 +48,7 @@
     },
     {
       "path": "apps/companion/components/contracts.ts",
-      "sha256": "60f7bc222c5c34bc861666edef1991ee9713f97b8bdfbda6abec9c941c2f8529",
+      "sha256": "a92ac8e76995c6e3c07ffb2231ed5a70c5a4e9d1f391df544da22fb0b868fa26",
       "classification": "unreviewed"
     },
     {
@@ -58,7 +58,7 @@
     },
     {
       "path": "apps/companion/launch.mjs",
-      "sha256": "54d936ab8d67cad6317283ff1a6184617cbe838b2dd28548137c8d0aa10e46f2",
+      "sha256": "0824ae5d6bf9cd213751c0c23c352893fb223fae04797d6226a789fb28502b0b",
       "classification": "unreviewed"
     },
     {
@@ -104,6 +104,11 @@
     {
       "path": "apps/companion/server/routes.ts",
       "sha256": "99437370e892cad4eaffa71385981dd5ebc9a01048455a9ce0cc91070060e3d3",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/writer-route.mjs",
+      "sha256": "defba79d0402da250b80bf2d83749d764d5a7e58252a8ea532014b23d6a589d6",
       "classification": "unreviewed"
     }
   ]

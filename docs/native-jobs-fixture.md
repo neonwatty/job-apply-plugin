@@ -37,7 +37,7 @@ existing directories; it does not migrate, copy or repair a Store.
 
 ```sh
 node runtime/cli/native-jobs.js fixture-init --root /private/tmp/new-native-jobs
-node apps/companion/launch.mjs --root /private/tmp/new-native-jobs --native-jobs-fixture /absolute/flock.node
+node apps/companion/launch.mjs --writer native-fixture --root /private/tmp/new-native-jobs --native-lock /absolute/flock.node
 ```
 
 Open the authenticated URL printed by the launcher. The native view opens Jobs

@@ -37,7 +37,7 @@ export type WorkspaceState = {
 };
 export type Boot = {
     status: 'ready';
-    mode?: 'native-jobs-fixture';
+    mode?: 'native-jobs-fixture' | 'native-store-clone';
 } | {
     status: 'degraded';
     summary: string;
@@ -97,7 +97,8 @@ export function boot(value: unknown): Boot {
     if (value.status === 'ready')
         return {
             status: 'ready',
-            ...(value.mode === 'native-jobs-fixture' ? { mode: 'native-jobs-fixture' as const } : {})
+            ...(value.mode === 'native-jobs-fixture' || value.mode === 'native-store-clone'
+                ? { mode: value.mode as 'native-jobs-fixture' | 'native-store-clone' } : {})
         };
     if (value.status === 'degraded' && typeof value.summary === 'string' && typeof value.guidance === 'string')
         return {

@@ -14,6 +14,6 @@ and must remain byte-for-byte unchanged after every mutation and restart.
 
 This closes the disposable-clone assembly proof for those three entry points.
 It does not change the default Store path, the shipped skill commands, the
-Companion launcher, or production activation. The next routing package must
-retain an explicit rollback path and must not allow Python and TypeScript to
-write the same Store.
+default Companion route, or production activation. The Companion now has
+[controlled writer routing and rollback](controlled-writer-routing.md) for a
+future staged activation while retaining Python as the default.

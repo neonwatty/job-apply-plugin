@@ -26,10 +26,12 @@ source untouched. Its ownership and exclusion rules are documented in
 task CLI, and workspace server now have a
 [writer-switch rehearsal](native-canonical-writer-rehearsal.md) that compares
 their public envelopes and durable restart behavior on independent clones.
-Python and TypeScript still remain separate writers. The next routing package
-must preserve that separation and an explicit rollback path; only after its
-staging validation should shipped skills or the Companion launcher be changed
-to Node.
+Python and TypeScript still remain separate writers. The Companion now provides
+[controlled writer routing and rollback](controlled-writer-routing.md): Python
+remains the default, native operation requires an explicitly owned fixture or
+clone, and rollback returns to the untouched canonical source rather than
+reassigning the clone to Python. Only after staging validation should shipped
+skills or the default Companion route be changed to Node.
 
 Repository tests, reference oracles, source generators, and development checks
 may continue using Python during this phase. Their later removal belongs to the

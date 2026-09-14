@@ -8,9 +8,11 @@ import { join } from 'node:path';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
 import { prepareCanonicalStoreClone } from '../runtime/store/native-store-clone.js';
 import { loadPosixFlockProvider } from '../runtime/store/posix-flock.js';
+import { parseWriterOptions, resolveWriterRoute } from '../apps/companion/writer-route.mjs';
 
 const execute = promisify(execFile), fixed = '2026-09-14T12:00:00Z';
 const repositoryRoot = new URL('../', import.meta.url).pathname;
+const companionRoot = join(repositoryRoot, 'apps/companion');
 const python = `
 import sys,importlib.util
 from pathlib import Path
@@ -88,6 +90,28 @@ test('canonical clone rehearses Store CLI, task CLI, HTTP mutation and server re
   const nativeRoot = join(root, 'native-writer'), pythonRoot = join(root, 'python-writer');
   await prepareCanonicalStoreClone(source, nativeRoot, provider, fixed);
   await prepareCanonicalStoreClone(source, pythonRoot, provider, fixed);
+  const pythonRoute = await resolveWriterRoute(parseWriterOptions([
+    '--writer', 'python', '--root', source,
+  ], companionRoot));
+  assert.equal(pythonRoute.writer, 'python');
+  assert.deepEqual(pythonRoute.argv.slice(-2), ['--root', source]);
+  const nativeRoute = await resolveWriterRoute(parseWriterOptions([
+    '--writer', 'native-clone', '--root', nativeRoot, '--native-lock', fixture.receipt.artifact,
+  ], companionRoot));
+  assert.equal(nativeRoute.writer, 'native-clone');
+  assert.deepEqual(nativeRoute.argv.slice(-4), ['--root', nativeRoot, '--native-lock', fixture.receipt.artifact]);
+  await assert.rejects(resolveWriterRoute(parseWriterOptions([
+    '--writer', 'python', '--root', nativeRoot,
+  ], companionRoot)), /Python writer cannot use a native-owned Store/);
+  await assert.rejects(resolveWriterRoute(parseWriterOptions([
+    '--writer', 'native-clone', '--root', source, '--native-lock', fixture.receipt.artifact,
+  ], companionRoot)), /Native clone writer ownership is missing/);
+  const blockedLauncher = await invoke(process.execPath, [
+    'apps/companion/launch.mjs', '--writer', 'python', '--root', nativeRoot,
+  ], { env: { ...process.env, PATH: '' } });
+  assert.equal(blockedLauncher.code, 1);
+  assert.equal(blockedLauncher.stdout, '');
+  assert.equal(blockedLauncher.stderr, 'Python writer cannot use a native-owned Store\n');
 
   const nativeJobs = [process.execPath, ['runtime/cli/native-jobs.js', '--root', nativeRoot,
     '--native-lock', fixture.receipt.artifact, 'job-list'], { env: { PATH: '' } }];
@@ -107,6 +131,9 @@ test('canonical clone rehearses Store CLI, task CLI, HTTP mutation and server re
   let nativeServer = await start(process.execPath, nativeArgs, { env: { PATH: '' } });
   let pythonServer = await start('python3', pythonArgs);
   t.after(async () => { await Promise.all([stop(nativeServer), stop(pythonServer)]); });
+  assert.deepEqual(await request(nativeServer, 'GET', '/api/boot'), {
+    status: 200, body: { status: 'ready', mode: 'native-store-clone' },
+  });
   for (const [method, path, body] of [
     ['GET', '/api/jobs'], ['GET', '/api/jobs/canonical-job'],
     ['POST', '/api/jobs', JSON.stringify({ job: { id: 'server-job', url: 'https://example.invalid/server', role: 'Server Engineer' } })],
@@ -128,4 +155,15 @@ test('canonical clone rehearses Store CLI, task CLI, HTTP mutation and server re
   assert.deepEqual(normalize(nativeRestarted), normalize(pythonRestarted));
   assert.deepEqual(normalize(nativeRestarted), normalize(beforeRestart));
   assert.deepEqual(await snapshot(source), original);
+});
+
+test('Companion writer selection defaults to Python and rejects ambiguous overrides', () => {
+  assert.equal(parseWriterOptions([], companionRoot).writer, 'python');
+  assert.equal(parseWriterOptions(['--native-jobs-fixture', '/tmp/lock'], companionRoot).writer, 'native-fixture');
+  for (const args of [
+    ['--writer', 'unknown'],
+    ['--writer', 'python', '--writer', 'native-clone'],
+    ['--writer', 'native-fixture', '--native-jobs-fixture', '/tmp/lock'],
+    ['--native-lock', '/tmp/one', '--native-jobs-fixture', '/tmp/two'],
+  ]) assert.throws(() => parseWriterOptions(args, companionRoot));
 });

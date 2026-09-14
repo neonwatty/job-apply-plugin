@@ -3,7 +3,7 @@
   "sources": [
     {
       "path": "runtime/cli/native-jobs-server.js",
-      "sha256": "f596d608828a172ad1fb135aa50dce4f5634ce487235f5e0d9fdfc6b1acabd7a",
+      "sha256": "e40f30d489306d7cc8ffca6aee3f1096bb63c0164dc055e2bdf183f291641db6",
       "classification": "unreviewed"
     },
     {
@@ -43,7 +43,7 @@
     },
     {
       "path": "runtime/workspace-core/jobs-http.js",
-      "sha256": "b8a42b176fab6594bbf522e553180a0f99c7aba8e54443ea0478e0ba7b53e5c4",
+      "sha256": "2eefc56e64623eb6591a5344b66f017a4eec1fd37c476b21dda46ff85a60637a",
       "classification": "unreviewed"
     },
     {
@@ -53,7 +53,7 @@
     },
     {
       "path": "src/cli/native-jobs-server.ts",
-      "sha256": "bdc2c9956f5deef0affadfa3fc89e00015bd69e0a25b4cc9d137bef8d446454b",
+      "sha256": "c11bc75cb9e997e9a7fffb59ab5832be60e0a853bcc6db065af15c616b2cfd57",
       "classification": "unreviewed"
     },
     {
@@ -93,7 +93,7 @@
     },
     {
       "path": "src/workspace-core/jobs-http.ts",
-      "sha256": "1a1855cd622c6e0fe5f0f15d8c9a46aa437ae4cf7a1296b4fe14407d3b699933",
+      "sha256": "0d6b4e93a21d7b691b429755f6aa9e9333560e936007d8da506f3f05a7ab2465",
       "classification": "unreviewed"
     },
     {

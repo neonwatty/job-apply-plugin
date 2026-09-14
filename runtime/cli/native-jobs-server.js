@@ -1,5 +1,7 @@
 import { createServer } from "node:http";
 import { randomBytes, timingSafeEqual } from "node:crypto";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { JobsService } from "../workspace-core/jobs.js";
 import { jobsHttp, apiError } from "../workspace-core/jobs-http.js";
 import { NativeJobsRepository } from "../store/native-jobs.js";
@@ -13,6 +15,7 @@ if (args.length !== 4 || args[0] !== "--root" || args[2] !== "--native-lock") {
 const repository = new NativeJobsRepository(args[1], loadPosixFlockProvider(args[3]));
 const service = new JobsService(repository);
 await service.list();
+const storeMode = existsSync(join(args[1], '.native-store-clone')) ? 'native-store-clone' : 'native-jobs-fixture';
 const token = randomBytes(32).toString("base64url");
 let origin = "";
 const server = createServer(async (request, response) => {
@@ -70,10 +73,10 @@ const server = createServer(async (request, response) => {
                 return fail(400, "request_error", "body must be UTF-8 JSON");
             }
         }
-        send(await jobsHttp(service, repository, request.method, path, body));
+        send(await jobsHttp(service, repository, request.method, path, body, { storeMode }));
     }
     catch {
-        fail(503, "store_unavailable", "native fixture service is unavailable");
+        fail(503, "store_unavailable", "native Store service is unavailable");
     }
 });
 server.requestTimeout = 30_000;
