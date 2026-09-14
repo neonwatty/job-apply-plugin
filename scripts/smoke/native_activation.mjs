@@ -15,6 +15,7 @@ const smokeRoot = await realpath(resolve(smokeArgument));
 const { resolvePackagedNativeLock } = await import(pathToFileURL(join(installed, 'runtime/package/native-lock-artifact.js')));
 const { loadPosixFlockProvider } = await import(pathToFileURL(join(installed, 'runtime/store/posix-flock.js')));
 const { prepareCanonicalStoreClone } = await import(pathToFileURL(join(installed, 'runtime/store/native-store-clone.js')));
+const { activateNativeWriter, rollbackNativeWriter } = await import(pathToFileURL(join(installed, 'runtime/store/native-writer-switch.js')));
 const { parseWriterOptions, resolveWriterRoute } = await import(pathToFileURL(join(installed, 'apps/companion/writer-route.mjs')));
 
 async function fileSnapshot(root) {
@@ -68,7 +69,7 @@ async function request(running, method, path, value) {
 }
 
 const work = await mkdtemp(join(smokeRoot, 'installed-native-'));
-const source = join(work, 'canonical-source'), clone = join(work, 'native-clone');
+const source = join(work, 'canonical-source'), clone = `${source}.native-candidate`;
 const input = join(work, 'canonical-job.json');
 await writeFile(input, JSON.stringify({ id: 'canonical-job', url: 'https://example.invalid/canonical', role: 'Canonical Engineer' }));
 await execute('python3', [join(installed, 'scripts/job-apply-store.py'), '--root', source, 'job-create', '--input', input], {
@@ -76,11 +77,13 @@ await execute('python3', [join(installed, 'scripts/job-apply-store.py'), '--root
 });
 const canonical = await fileSnapshot(source);
 const addon = await resolvePackagedNativeLock(installed);
-await prepareCanonicalStoreClone(source, clone, loadPosixFlockProvider(addon), '2026-09-14T12:00:00Z');
+const provider = loadPosixFlockProvider(addon);
+await prepareCanonicalStoreClone(source, clone, provider, '2026-09-14T12:00:00Z');
+await activateNativeWriter(source, clone, { provider });
 
 const app = join(installed, 'apps/companion');
 const nativeRoute = await resolveWriterRoute(parseWriterOptions([
-  '--plugin-root', installed, '--writer', 'native-clone', '--root', clone,
+  '--plugin-root', installed, '--writer', 'native-clone', '--root', source,
 ], app));
 if (nativeRoute.argv.at(-1) !== addon) throw new Error('installed native route did not select its packaged lock');
 const native = await start(nativeRoute);
@@ -92,6 +95,8 @@ try {
   });
   if (created.status !== 200 || created.body.id !== 'native-only-job') throw new Error('installed native clone mutation failed');
 } finally { await stop(native); }
+
+await rollbackNativeWriter(source, { provider });
 
 const pythonRoute = await resolveWriterRoute(parseWriterOptions([
   '--plugin-root', installed, '--writer', 'python', '--root', source,
@@ -107,4 +112,16 @@ try {
 if (JSON.stringify(await fileSnapshot(source)) !== JSON.stringify(canonical)) {
   throw new Error('installed native activation changed canonical Store bytes');
 }
-process.stdout.write('Installed native activation and Python rollback rehearsal passed\n');
+
+const retainedRoute = await resolveWriterRoute(parseWriterOptions([
+  '--plugin-root', installed, '--writer', 'native-clone', '--root', `${source}.native-retained`,
+], app));
+const retained = await start(retainedRoute);
+try {
+  const jobs = await request(retained, 'GET', '/api/jobs');
+  const ids = jobs.body.jobs?.map(job => job.id) ?? jobs.body.map?.(job => job.id) ?? [];
+  if (jobs.status !== 200 || !ids.includes('canonical-job') || !ids.includes('native-only-job')) {
+    throw new Error('installed native rollback did not retain post-write state');
+  }
+} finally { await stop(retained); }
+process.stdout.write('Installed native switch and post-write Python rollback rehearsal passed\n');

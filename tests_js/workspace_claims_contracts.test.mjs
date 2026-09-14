@@ -19,7 +19,7 @@ function invoke(item) {
 }
 test('claim contracts match original Python validation, tokens, expiry and error ordering', () => {
   const inputs = cases();
-  const oracle = JSON.parse(execFileSync('python3',['tools/contracts/claims/reference.py'],{
+  const oracle = JSON.parse(execFileSync('python3.12',['tools/contracts/claims/reference.py'],{
     input:JSON.stringify(inputs),encoding:'utf8',maxBuffer:1024*1024,
   }));
   const result = inputs.map(item => {

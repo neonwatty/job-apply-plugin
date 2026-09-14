@@ -448,6 +448,26 @@ test('S05 path support registration preserves the exact prior matrix', t => {
     include: ['tests_js/typed_json_points_profiles.test.mjs'],
     platforms: ['darwin'], tiers: ['full', 'platform']
   }]);
+  const closurePath = 'tests_js/migration_python_runtime_closure.test.mjs';
+  const runner = matrix.suites.find(suite => suite.id === 'node-runner-fast');
+  assert.equal(runner.include.filter(path => path === closurePath).length, 1);
+  runner.include = runner.include.filter(path => path !== closurePath);
+  const cloneIndex = matrix.suites.findIndex(suite => suite.id === 'native-canonical-store-clone');
+  assert.ok(cloneIndex >= 0);
+  assert.deepEqual(matrix.suites.splice(cloneIndex, 1), [{
+    id: 'native-canonical-store-clone', kind: 'node-test',
+    include: ['tests_js/native_canonical_store_clone.test.mjs',
+      'tests_js/native_canonical_writer_rehearsal.test.mjs',
+      'tests_js/native_writer_switch_rehearsal.test.mjs'],
+    platforms: ['darwin', 'linux'], tiers: ['full', 'platform']
+  }]);
+  const canaryIndex = matrix.suites.findIndex(suite => suite.id === 'native-email-canary-composition');
+  assert.ok(canaryIndex >= 0);
+  assert.deepEqual(matrix.suites.splice(canaryIndex, 1), [{
+    id: 'native-email-canary-composition', kind: 'node-test',
+    include: ['tests_js/native_email_canary_composition.test.mjs'],
+    platforms: ['darwin', 'linux'], tiers: ['full', 'platform']
+  }]);
   const workspace = matrix.suites.find(suite => suite.id === 'node-workspace-other');
   assert.deepEqual(workspace.exclude, ['tests_js/typed_json_points_profiles.test.mjs']);
   delete workspace.exclude;

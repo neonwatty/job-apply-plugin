@@ -44,7 +44,7 @@ export async function setup(fixture,name) {
   return {base,home,root,pythonRoot,repository,service};
 }
 export function oracle(fixture,op,selected=[],token) {
-  return JSON.parse(execFileSync('python3',['tools/contracts/legacy-jobs/reference.py'],{
+  return JSON.parse(execFileSync('python3.12',['tools/contracts/legacy-jobs/reference.py'],{
     input:JSON.stringify({root:fixture.pythonRoot,home:fixture.home,now,op,selected,token}),encoding:'utf8',maxBuffer:1024*1024,
   }));
 }

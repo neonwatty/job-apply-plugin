@@ -11,7 +11,7 @@ const candidate=(key,question,extra={})=>({answerKey:key,question,aliases:[],sco
 const packet=(question,candidates,extra={})=>({question,candidates,scope:{region:'alpha'},fieldClass:'authorization',sensitivity:'high',...extra});
 const nativeRank=input=>rankCandidates({question:fromJSON(input.question),scope:fromJSON(input.scope),fieldClass:fromJSON(input.fieldClass),sensitivity:fromJSON(input.sensitivity),candidates:fromJSON(input.candidates),...(Object.hasOwn(input,'limit')?{limit:fromJSON(input.limit)}:{})}).map(plain);
 function python(operation,items){
- const run=spawnSync('python3',['-c',String.raw`
+ const run=spawnSync('python3.12',['-c',String.raw`
 import sys,json,importlib.util
 spec=importlib.util.spec_from_file_location('match_oracle','scripts/job_apply_answer_match.py')
 m=importlib.util.module_from_spec(spec);sys.modules[spec.name]=m;spec.loader.exec_module(m)
