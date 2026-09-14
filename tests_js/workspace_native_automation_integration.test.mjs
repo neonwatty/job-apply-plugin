@@ -74,7 +74,15 @@ test('integrated native automation registry uses private fixture storage and ser
     assert.equal((await call('PATCH', `/api/employer-accounts/${realm}`, { patch: { signupEmailOverride: null }, expectedRevision: 1 })).status, 409);
     assert.equal((await call('PATCH', '/api/automation/settings', { patch: {}, expectedRevision: true })).status, 400);
     assert.equal((await call('GET', '/api/employer-accounts/missing')).status, 404);
-    assert.equal((await call('GET', '/api/automation')).status, 501);
+    const projection = await call('GET', '/api/automation');
+    assert.equal(projection.status, 200);
+    const publicProjection = JSON.parse(projection.body);
+    assert.equal(publicProjection.settings.revision, 2);
+    assert.equal(publicProjection.accounts[0].realmRef, realm);
+    assert.equal(publicProjection.profileRevision, 1);
+    assert.equal(publicProjection.capability.reasonCode, 'native_provider_not_composed');
+    assert.equal(publicProjection.capability.accountFlowAutomation.liveExecutionEnabled, false);
+    assert.doesNotMatch(projection.body, /private-settings@example|private-account@example|"credentialRef":|"descriptor":/);
     assert.equal((await call('POST', '/api/trusted-fill/approve', {})).status, 400);
     assert.deepEqual(JSON.parse((await call('GET', '/api/account-operation')).body), { status: 'idle', operation: null });
     assert.deepEqual(JSON.parse((await call('POST', '/api/account-operation/recover', {})).body), { status: 'idle', recovered: false });

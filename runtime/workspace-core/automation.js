@@ -1,7 +1,36 @@
 import { validateProfile } from '../contracts/workspace/profile.js';
-import { copy, fromJSON, get, has, int, integer, object, parse, serialize, set, text, JobsError } from '../contracts/workspace/values.js';
+import { copy, fromJSON, get, has, int, integer, object, parse, serialize, set, string, text, JobsError } from '../contracts/workspace/values.js';
 import { optionalEmail, publicSettings, settingsPatch, validateSettings, validateSettingsDocument } from '../contracts/workspace/automation.js';
+import { publicAccount, validateAccountsDocument } from '../contracts/workspace/accounts.js';
 export const cloneDocument = (document) => object(parse(serialize(document)), 'document');
+export const nativeAutomationCapability = () => fromJSON({
+    providerId: null, state: 'unsupported', reasonCode: 'native_provider_not_composed',
+    credentialOperationsReady: false, syntheticOperationsReady: false, discoveryMode: 'side_effect_free',
+    accountFlowAutomation: {
+        providerId: null, state: 'unsupported', reasonCode: 'native_account_flow_not_composed',
+        productionSeamReady: false, liveExecutionEnabled: false, emailOnlyCandidateProfileReady: false,
+        workdayPasswordAccountReady: false, greenhouseAccountlessClassificationReady: false,
+        discoveryMode: 'side_effect_free',
+    },
+});
+export function automationProjection(repository) {
+    return repository.automationTransaction(async (tx) => {
+        const settings = object(get(validateSettingsDocument(await tx.loadSettings()), 'settings'), 'automation settings');
+        const accounts = object(get(validateAccountsDocument(await tx.loadAccounts()), 'accounts'), 'employer accounts');
+        const profile = validateProfile(await tx.loadProfile());
+        const metadata = object(get(profile, 'metadata'), 'profile metadata');
+        const revision = has(metadata, 'revision') ? int(get(metadata, 'revision')) : 1n;
+        if (revision === null || revision < 1n)
+            throw new JobsError('profile revision is invalid');
+        const publicAccounts = [...accounts.entries()].sort(([left], [right]) => string(left) < string(right) ? -1 : 1)
+            .map(([, account]) => publicAccount(object(account, 'employer account')));
+        const projection = object(fromJSON({}), 'automation projection');
+        set(projection, 'settings', cloneDocument(publicSettings(settings)));
+        set(projection, 'capability', nativeAutomationCapability());
+        set(projection, 'accounts', publicAccounts);
+        return set(projection, 'profileRevision', integer(revision));
+    });
+}
 export class AutomationService {
     repository;
     now;

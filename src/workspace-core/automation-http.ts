@@ -2,7 +2,7 @@ import { PythonObject } from '../contracts/python-object.js';
 import { exact } from '../contracts/workspace/automation.js';
 import { get, has, int, keys, object, parse, serialize, string, JobsError } from '../contracts/workspace/values.js';
 import type { Value } from '../contracts/workspace/values.js';
-import { AutomationService } from './automation.js';
+import { AutomationService, automationProjection } from './automation.js';
 import type { AutomationRepository } from './automation.js';
 import { AccountsService } from './accounts.js';
 
@@ -16,6 +16,7 @@ function revision(value: Value, label = 'expectedRevision'): bigint {
 export async function automationHttp(repository: AutomationRepository, method: string, path: string, body: string): Promise<{status: number; body: string} | null> {
   const settings = new AutomationService(repository), accounts = new AccountsService(repository);
   const updateAccount = /^\/api\/employer-accounts\/([^/]+)$/.exec(path);
+  if (method === 'GET' && path === '/api/automation') return response(await automationProjection(repository));
   if (method === 'GET' && updateAccount) {
     const account = await accounts.get(decodeURIComponent(updateAccount[1]!), true);
     if (account === null) throw new JobsError('employer account does not exist');

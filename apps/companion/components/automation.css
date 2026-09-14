@@ -1,0 +1,43 @@
+.automation-workspace { min-width:0 }
+.automation-metrics { display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem }
+.automation-metrics>div { display:grid;gap:.25rem;min-height:104px;padding:1.2rem 1.35rem;border:1px solid rgba(23,34,29,.08);border-radius:16px;background:rgba(255,254,249,.82) }
+.automation-metrics strong { font:500 2rem Georgia,serif }
+.automation-metrics span { align-self:end;color:var(--muted);font-size:.8rem;font-weight:750 }
+.automation-grid { display:grid;grid-template-columns:1fr 1fr;gap:1rem }
+.automation-settings-panel,.trusted-fill-panel { grid-column:1/-1 }
+.automation-capability { margin:1rem 0;padding:1rem;border-radius:12px;background:var(--mint);color:var(--green);font-size:.85rem;font-weight:700;line-height:1.55 }
+.automation-form,.automation-form fieldset { display:grid;gap:1rem;min-width:0;margin:1rem 0 0;padding:0;border:0 }
+.automation-form label,.trusted-status-form label { display:grid;gap:.4rem;min-width:0;color:var(--muted);font-size:.8rem;font-weight:800 }
+.automation-form input,.automation-form select,.automation-form textarea,.trusted-status-form input { width:100%;min-width:0;min-height:44px;border:1px solid #aeb8b0;border-radius:9px;padding:.7rem .8rem;background:white;color:var(--ink) }
+.automation-form textarea { resize:vertical }
+.automation-form small { color:var(--muted);font-weight:600;line-height:1.4 }
+.check-row { grid-template-columns:auto minmax(0,1fr)!important;align-items:start;padding:.85rem;border:1px solid var(--line);border-radius:12px;background:#fafaf6 }
+.check-row input { width:1.1rem;min-height:1.1rem;margin:.15rem 0 0;padding:0 }
+.check-row span { display:grid;gap:.25rem }
+.check-row strong { color:var(--ink);font-size:.9rem }
+.automation-safety { color:var(--muted);font-size:.84rem;line-height:1.55 }
+.automation-accounts { display:grid;gap:.75rem;margin-top:1rem }
+.automation-account { min-width:0;padding:1rem;border:1px solid var(--line);border-radius:14px;background:#fafaf6 }
+.automation-account-heading { display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:.75rem }
+.automation-account-heading h3 { margin:.15rem 0 0;overflow-wrap:anywhere;font:600 1.08rem Georgia,serif }
+.automation-realm-mark { display:grid;place-items:center;width:40px;height:40px;border-radius:11px;background:var(--mint);color:var(--green);font-weight:850 }
+.automation-state { padding:.35rem .6rem;border-radius:999px;background:#eef0eb;color:#405047;font-size:.68rem;font-weight:850;text-transform:capitalize;white-space:nowrap }
+.automation-account>p { color:var(--muted);font-size:.8rem;line-height:1.45 }
+.realm-override-form { padding-top:.8rem;border-top:1px solid var(--line) }
+.trusted-fill-panel { border-top:4px solid var(--green) }
+.automation-form-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem }
+.automation-form-grid .wide { grid-column:1/-1 }
+.trusted-operations { grid-template-columns:repeat(2,minmax(0,1fr));padding:1rem!important;border:1px solid var(--line)!important;border-radius:12px!important }
+.trusted-operations legend { padding:0 .35rem;color:var(--ink);font-weight:800 }
+.trusted-operations label { display:flex;align-items:center;gap:.45rem }
+.trusted-operations input { width:auto;min-height:auto }
+.trusted-status-form { display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:1rem;margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--line) }
+@media(max-width:760px) {
+  .automation-metrics,.automation-grid,.automation-form-grid { grid-template-columns:1fr }
+  .automation-metrics>div { min-height:auto }
+  .automation-settings-panel,.trusted-fill-panel,.automation-form-grid .wide { grid-column:auto }
+  .automation-account-heading { grid-template-columns:40px minmax(0,1fr) }
+  .automation-state { grid-column:2;justify-self:start }
+  .trusted-operations { grid-template-columns:1fr }
+  .trusted-status-form { grid-template-columns:1fr;align-items:stretch }
+}

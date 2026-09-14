@@ -124,6 +124,9 @@ test('HTTP accepts only Python routes and exact revision payloads; public mutati
   const realm = JSON.parse(created.body).realmRef;
   assert.equal((await call('GET',`/api/employer-accounts/${realm}`,{})).body,created.body);
   await assert.rejects(call('GET','/api/employer-accounts/missing',{}),/does not exist/);
-  for (const path of ['/api/automation/settings','/api/employer-accounts','/api/automation']) assert.equal(await call('GET',path,{}),null);
+  const projection = await call('GET','/api/automation',{});
+  assert.equal(JSON.parse(projection.body).capability.reasonCode,'native_provider_not_composed');
+  assert.doesNotMatch(projection.body,/secret@example|private@example|"descriptor":|"credentialRef":/);
+  for (const path of ['/api/automation/settings','/api/employer-accounts']) assert.equal(await call('GET',path,{}),null);
   for (const path of ['/api/trusted-fill/approve','/api/account-operation/recover','/api/account-operation/execute-synthetic']) assert.equal(await call('POST',path,{}),null);
 });
