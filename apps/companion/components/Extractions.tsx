@@ -22,7 +22,7 @@ const reasonMessages = new Map([
 ]);
 const reasonMessage = (code: string): string => reasonMessages.get(code) ?? 'The extraction is no longer available for review.';
 
-export function Extractions({ client, dirtyChanged }: { client: ExtractionClient; dirtyChanged: (dirty: boolean) => void }) {
+export function Extractions({ client, dirtyChanged, openResumes }: { client: ExtractionClient; dirtyChanged: (dirty: boolean) => void; openResumes?:()=>void }) {
   const [resumes, setResumes] = useState<Document[]>([]);
   const [requests, setRequests] = useState<Document[]>([]);
   const [proposals, setProposals] = useState<Document[]>([]);
@@ -164,7 +164,7 @@ export function Extractions({ client, dirtyChanged }: { client: ExtractionClient
   const activeRequests = requests.filter(item => string(get(item, 'status')) === 'requested').length;
   const pendingProposals = proposals.filter(item => string(get(item, 'status')) === 'pending').length;
   return <section className="extractions-workspace" aria-labelledby="extractions-workspace-title">
-    <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Resume intelligence</p><h1 id="extractions-workspace-title">Resume extraction</h1><p>Request an agent to extract facts from a managed resume, then review any conflicts with your current canonical profile.</p></div><div className="workspace-hero-actions"><button className="secondary" disabled={busy || loading} onClick={() => { setError(''); void refreshLists(); }}>Refresh extraction status</button></div></header>
+    <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Resumes · Resume intelligence</p><h1 id="extractions-workspace-title">Resume extraction</h1><p>Request an agent to extract facts from a managed resume, then review any conflicts with your current canonical profile.</p></div><div className="workspace-hero-actions">{openResumes&&<button className="secondary" disabled={busy} onClick={openResumes}>Back to resumes</button>}<button className="secondary" disabled={busy || loading} onClick={() => { setError(''); void refreshLists(); }}>Refresh extraction status</button></div></header>
     <div className="extraction-metrics" aria-label="Extraction summary">
       <div><strong>{managed.length}</strong><span>Managed resumes</span></div><div><strong>{activeRequests}</strong><span>Active requests</span></div><div><strong>{pendingProposals}</strong><span>Proposals to review</span></div>
     </div>

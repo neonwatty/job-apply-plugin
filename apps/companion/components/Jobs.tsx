@@ -8,12 +8,13 @@ import { Claims } from './Claims';
 import { JobActivity } from './JobActivity';
 import { JobTransitions } from './JobTransitions';
 
-export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJobId, jobOpened, openAnswers }: {
+export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJobId, jobOpened, openAnswers, workspaceChanged }: {
     client: Client;
     claimsEnabled?: boolean;
     requestedJobId?: string | null;
     jobOpened?: () => void;
     openAnswers?: () => void;
+    workspaceChanged?: () => void | Promise<void>;
     dirtyChanged: (dirty: boolean) => void;
 }) {
     const [data, setData] = useState<WorkspaceState | null>(null);
@@ -117,6 +118,7 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
                     : [saved, ...(previous?.jobs ?? [])] }));
             setEditor(null);
             setNotice('Job saved to the canonical store');
+            void workspaceChanged?.();
             void refresh();
         } catch (error) {
             if (!alive.current || version !== generation.current) return;
@@ -208,7 +210,7 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
             </div>}
         </div>
         {claimsEnabled && <Claims client={client} jobs={allJobs} disabled={busy || transitionBusy || loading || Boolean(editor?.dirty.size)}
-            activityChanged={setClaimsActive} navigationChanged={setClaimsDirty} changed={() => { void refresh(); }} />}
+            activityChanged={setClaimsActive} navigationChanged={setClaimsDirty} changed={() => { void workspaceChanged?.(); void refresh(); }} />}
         {editor && <JobEditor editor={editor} resumes={data?.resumes ?? []} busy={busy || transitionBusy || claimsActive} error={error}
             change={(fields: Partial<JobFields>) => setEditor(current => current ? edit(current, fields) : current)}
             close={close} save={() => void save()}
@@ -234,6 +236,7 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
                     refreshRequest.current?.abort(); listGeneration.current++;
                     setData(current => current ? {...current,jobs:current.jobs.map(item=>item.id===job.id?job:item)} : current);
                     setEditor(openEditor(job)); setError('');
+                    void workspaceChanged?.();
                     void refresh();
                 }} />}
             {claimsEnabled && editor.selected && <JobActivity client={client} jobId={editor.selected.id}

@@ -19,7 +19,7 @@ const isDirty = (editor: Editor | null) => Boolean(editor && (
     editor.label !== (editor.base?.label ?? '') || editor.tagText !== (editor.base?.tags.join(', ') ?? '') || editor.file
 ));
 
-export function Resumes({ client, dirtyChanged }: { client: Client; dirtyChanged: (dirty: boolean) => void }) {
+export function Resumes({ client, dirtyChanged, openExtractions }: { client: Client; dirtyChanged: (dirty: boolean) => void; openExtractions?:()=>void }) {
     const [records, setRecords] = useState<ResumeRecord[]>([]), [editor, setEditor] = useState<Editor | null>(null);
     const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false);
     const [error, setError] = useState(''), [notice, setNotice] = useState('');
@@ -122,6 +122,7 @@ export function Resumes({ client, dirtyChanged }: { client: Client; dirtyChanged
     return <section className="resumes-workspace" aria-labelledby="resumes-workspace-title">
         <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Resumes workspace</p><h1 id="resumes-workspace-title">Your private resume library.</h1><p>Managed files stay in the canonical local store and remain available to Job Apply agents and the CLI.</p></div><div className="workspace-hero-actions">
             <button className="secondary" disabled={busy} onClick={() => void refresh()}>Refresh</button>
+            {openExtractions&&<button className="secondary" disabled={busy} onClick={openExtractions}>Resume extraction</button>}
             <button className="primary" disabled={busy} onClick={() => open(null)}>Import resume</button>
         </div></header>
         <div className="resume-metrics" aria-label="Resume library summary">
@@ -133,15 +134,15 @@ export function Resumes({ client, dirtyChanged }: { client: Client; dirtyChanged
             <div className="workspace-panel-heading"><div><p className="eyebrow">Canonical library</p><h2 id="resume-library-heading">Resumes</h2></div><strong className="resume-count">{records.length} {records.length === 1 ? 'document' : 'documents'}</strong></div>
             <p className="workspace-status" role="status">{loading ? 'Loading resumes…' : notice}</p>
             {!editor && error && <p role="alert" className="error">{error}</p>}
-            <div className="resume-list" role="list">
-                {records.map(record => <button className="resume-card" key={record.id} disabled={busy} onClick={() => open(record)}>
+            <ul className="resume-list">
+                {records.map(record => <li key={record.id}><button className="resume-card" disabled={busy} onClick={() => open(record)}>
                     <span className="resume-card-heading"><span className="resume-file-mark" aria-hidden="true">DOC</span><strong>{record.label}{record.default ? ' · Default' : ''}</strong>{record.default && <span className="status-pill resume-default" aria-hidden="true">Default</span>}</span>
                     <span className="resume-card-meta"><span>{record.mediaType ?? 'External file'}</span><span>{record.storageKind === 'managed' ? 'Managed locally' : 'External file'}</span></span>
                     <span className="resume-tags">{record.tags.length ? record.tags.map(tag => <small key={tag}>{tag}</small>) : <small>No tags</small>}</span>
                     <span className="resume-card-action">Open resume <span aria-hidden="true">→</span></span>
                     <span className="visually-hidden">revision {record.revision}</span>
-                </button>)}
-            </div>
+                </button></li>)}
+            </ul>
             {!loading && !error && !records.length && <div className="workspace-empty resume-empty"><span className="resume-empty-mark" aria-hidden="true">DOC</span><strong>No resumes yet.</strong><span>Import one to use it with applications.</span><button className="text-action" type="button" onClick={() => open(null)}>Import your first resume</button></div>}
         </div>
         {editor && <section className="workspace-panel resume-editor-panel" aria-labelledby="resume-editor-title">

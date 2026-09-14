@@ -25,7 +25,7 @@ export function AutomationRealm({ account, client, disabled, changed, dirtyChang
       } else setError(failure instanceof Error?failure.message:'Unable to save realm override.');
     } finally { setBusy(false); }
   }
-  return <article className="automation-account">
+  return <article className="automation-account" role="listitem">
     <div className="automation-account-heading"><span className="automation-realm-mark" aria-hidden="true">{account.adapterId==='workday'?'W':'O'}</span>
       <div><p className="eyebrow">{label}</p><h3>{account.realmRef.slice(0,12)}…</h3></div><span className="automation-state">{account.lifecycleState.replaceAll('_',' ')}</span></div>
     <p>Revision {account.revision} · {account.signupEmailOverrideConfigured?'Email override configured':'Global email setting'} · {account.flowKind.replaceAll('_',' ')}</p>

@@ -1,5 +1,5 @@
 'use client';
-import { useCallback,useEffect,useMemo,useState } from 'react';
+import { useCallback,useEffect,useMemo,useRef,useState } from 'react';
 import { createClient,sessionToken,type Client } from './client';
 import type { Boot } from './contracts';
 import { Overview } from './Overview';
@@ -26,6 +26,9 @@ export default function Companion() {
     const [requestedJob,setRequestedJob]=useState<string|null>(null);
     const [dirty,setDirty]=useState(false);
     const [attempt,setAttempt]=useState(0);
+    const [shellCounts,setShellCounts]=useState<{attention?:number;trash?:number}>({});
+    const content=useRef<HTMLElement|null>(null);
+    const focusAfterNavigation=useRef(false);
     useEffect(() => {
         let active=true;
         const controller=new AbortController();
@@ -65,12 +68,19 @@ export default function Companion() {
     },[dirty]);
     const dirtyChanged=useCallback((value: boolean) => setDirty(value),[]);
     const jobOpened=useCallback(() => setRequestedJob(null),[]);
+    const trashCountChanged=useCallback((trash:number)=>setShellCounts(current=>current.trash===trash?current:{...current,trash}),[]);
+    useEffect(()=>{
+        if(!focusAfterNavigation.current)return;
+        focusAfterNavigation.current=false;
+        requestAnimationFrame(()=>content.current?.focus());
+    },[tab]);
     function navigate(next: WorkspaceTab) {
         if(next===tab)
             return;
         if(dirty&&!confirm('Discard unsaved changes?'))
             return;
         setDirty(false);
+        focusAfterNavigation.current=true;
         setTab(next);
     }
     const legacyHref=`/legacy/#${new URLSearchParams({
@@ -79,8 +89,17 @@ export default function Companion() {
     const nativeFixture=boot?.status==='ready'&&boot.mode==='native-jobs-fixture';
     const trashCapabilities=nativeFixture?nativeTrashCapabilities:compatibilityTrashCapabilities;
     const trashClient=useMemo(() => createTrashClient(token,trashCapabilities),[token,trashCapabilities]);
+    const refreshShellCounts=useCallback(async() => {
+        if(!client||!nativeFixture)return;
+        try {
+            const overview=await client.overview();
+            setShellCounts(current=>current.attention===overview.counts.attentionJobs?current:{...current,attention:overview.counts.attentionJobs});
+        } catch { /* A failed summary read must not replace the last known counts. */ }
+    },[client,nativeFixture]);
+    useEffect(()=>{void refreshShellCounts();},[refreshShellCounts,tab]);
+    useEffect(()=>{document.title=`${tab==='attention'?'Needs Attention':tab==='extractions'?'Resume extraction':tab[0]!.toUpperCase()+tab.slice(1)} · Job Apply Workspace`;},[tab]);
     const connection=boot?.status==='ready'? 'Canonical store connected':boot?.status==='degraded'? 'Recovery needed':error?'Connection unavailable':'Connecting…';
-    const navButton=(workspace:WorkspaceTab,label:string) => <button className="nav-link" aria-current={tab===workspace?'page':undefined} onClick={() => navigate(workspace)}>{label}</button>;
+    const navButton=(workspace:WorkspaceTab,label:string,count?:number,active=tab===workspace) => <button className="nav-link" aria-label={label} aria-current={active?'page':undefined} onClick={() => navigate(workspace)}>{label}{count!==undefined&&<span className="nav-count" aria-hidden="true">{count}</span>}</button>;
     return <>
         <a className="skip-link" href="#workspace-content">Skip to workspace</a>
         <header className="topbar">
@@ -100,16 +119,15 @@ export default function Companion() {
                     <div className="nav-group-links">
                         {navButton('overview','Overview')}
                         {navButton('jobs','Jobs')}
-                        {nativeFixture&&navButton('attention','Needs Attention')}
+                        {nativeFixture&&navButton('attention','Needs Attention',shellCounts?.attention)}
                     </div>
                 </div>
                 <div className="nav-group" role="group" aria-labelledby="nav-group-data">
                     <span id="nav-group-data" className="nav-group-label">Application data</span>
                     <div className="nav-group-links">
                         {navButton('facts','Facts')}
-                        {navButton('resumes','Resumes')}
+                        {navButton('resumes','Resumes',undefined,tab==='resumes'||tab==='extractions')}
                         {nativeFixture&&navButton('answers','Answers')}
-                        {nativeFixture&&navButton('extractions','Resume extraction')}
                     </div>
                 </div>
                 <div className="nav-group" role="group" aria-labelledby="nav-group-controls">
@@ -119,12 +137,13 @@ export default function Companion() {
                             if(dirty&&!confirm('Discard unsaved changes?')) event.preventDefault();
                         }}>Open full workspace</a>}
                         {nativeFixture&&navButton('automation','Automation')}
-                        {navButton('trash','Trash')}
+                        {navButton('trash','Trash',nativeFixture?shellCounts?.trash:undefined)}
                     </div>
                 </div>
             </nav>
         </header>
-        <main id="workspace-content" className="companion">
+        <main id="workspace-content" className="companion" ref={content} tabIndex={-1}>
+        {nativeFixture&&(shellCounts.attention!==undefined||shellCounts.trash!==undefined)&&<p className="visually-hidden" role="status" aria-live="polite">{shellCounts.attention!==undefined&&`${shellCounts.attention} jobs need attention.`} {shellCounts.trash!==undefined&&`${shellCounts.trash} records are in Trash.`}</p>}
         {nativeFixture&&<p className="fixture-notice" role="status">Synthetic native workspace · Jobs, facts, resumes, extraction reviews, remembered answers, and application activity use isolated canonical data.</p>}
         {error&&<p role="alert" className="error">
             {error}{' '}
@@ -137,11 +156,11 @@ export default function Companion() {
             <p>
                 {boot.guidance}
             </p>
-        </section>:boot?.status==='ready'&&client? (tab==='trash'?<Trash client={trashClient} capabilities={trashCapabilities} dirtyChanged={dirtyChanged}/>:tab==='automation'?<Automation client={client} dirtyChanged={dirtyChanged}/>:tab==='overview'? <Overview
+        </section>:boot?.status==='ready'&&client? (tab==='trash'?<Trash client={trashClient} capabilities={trashCapabilities} dirtyChanged={dirtyChanged} onMutation={refreshShellCounts} countChanged={trashCountChanged}/>:tab==='automation'?<Automation client={client} dirtyChanged={dirtyChanged}/>:tab==='overview'? <Overview
             client={client}
             openJobs={() => navigate('jobs')}
             openWorkspace={nativeFixture ? navigate : undefined}
-            legacyHref={legacyHref} />:tab==='attention'?<NeedsAttention client={client} openJob={id => { setRequestedJob(id); navigate('jobs'); }}/>:tab==='facts'?<Facts client={client} dirtyChanged={dirtyChanged}/>:tab==='resumes'?<Resumes client={client} dirtyChanged={dirtyChanged}/>:tab==='extractions'?<Extractions client={client} dirtyChanged={dirtyChanged}/>:tab==='answers'?<Answers client={client} dirtyChanged={dirtyChanged}/>:<Jobs client={client} dirtyChanged={dirtyChanged} claimsEnabled={nativeFixture} requestedJobId={requestedJob} jobOpened={jobOpened} openAnswers={() => navigate('answers')} />):!error&&<p>Loading workspace…
+            legacyHref={legacyHref} />:tab==='attention'?<NeedsAttention client={client} openJob={id => { setRequestedJob(id); navigate('jobs'); }}/>:tab==='facts'?<Facts client={client} dirtyChanged={dirtyChanged}/>:tab==='resumes'?<Resumes client={client} dirtyChanged={dirtyChanged} openExtractions={()=>navigate('extractions')}/>:tab==='extractions'?<Extractions client={client} dirtyChanged={dirtyChanged} openResumes={()=>navigate('resumes')}/>:tab==='answers'?<Answers client={client} dirtyChanged={dirtyChanged}/>:<Jobs client={client} dirtyChanged={dirtyChanged} claimsEnabled={nativeFixture} requestedJobId={requestedJob} jobOpened={jobOpened} openAnswers={() => navigate('answers')} workspaceChanged={refreshShellCounts} />):!error&&<p>Loading workspace…
             </p>}
         </main>
     </>;

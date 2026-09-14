@@ -8,8 +8,9 @@ export interface TrashProps {
     capabilities: TrashCapabilities;
     dirtyChanged(value: boolean): void;
     onMutation?(): void | Promise<void>;
+    countChanged?(total:number):void;
 }
-export function Trash({ client, capabilities, dirtyChanged, onMutation }: TrashProps) {
+export function Trash({ client, capabilities, dirtyChanged, onMutation, countChanged }: TrashProps) {
     const [snapshot, setSnapshot] = useState<TrashSnapshot | null>(null);
     const [filter, setFilter] = useState<TrashType | ''>('');
     const [selection, setSelection] = useState<{ item: TrashItem; action: TrashAction } | null>(null);
@@ -39,6 +40,7 @@ export function Trash({ client, capabilities, dirtyChanged, onMutation }: TrashP
             const value = await client.list(abort.signal);
             if (!mounted.current || request !== generation.current) return false;
             setSnapshot(value);
+            countChanged?.(value.total);
             setStale(false);
             setError('');
             return true;
@@ -49,7 +51,7 @@ export function Trash({ client, capabilities, dirtyChanged, onMutation }: TrashP
         } finally {
             if (mounted.current && request === generation.current) setLoading(false);
         }
-    }, [client]);
+    }, [client,countChanged]);
     useEffect(() => {
         mounted.current = true;
         setSnapshot(null);
