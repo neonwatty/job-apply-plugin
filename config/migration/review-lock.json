@@ -395,7 +395,7 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "d2189e00bd08bf0e70f8ec5cb3b5c12308eddd853ae567a7ddde140b209b94d9"
+      "sha256": "3c2531a9e9a99b0e19c2e150a9de736a577814f4f35206608ee3ed0393cd9c4a"
     },
     {
       "path": "source-catalog-native-legacy-jobs.json",
@@ -420,6 +420,10 @@
     {
       "path": "source-catalog-native-resumes.json",
       "sha256": "52ae646a7b15a768e16a7adfe9335574e536d77ce2a8a2ae3ee28ba925f73dd2"
+    },
+    {
+      "path": "source-catalog-native-store-clone.json",
+      "sha256": "8decacdc8df514f63892573a71627b514d97dfef4fdd4390e14e6ac55da97a9c"
     },
     {
       "path": "source-catalog-native-task-cli.json",

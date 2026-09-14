@@ -19,13 +19,15 @@ runtime replacement while it requires `.native-jobs-fixture`, an explicit native
 lock addon, or a disposable Store clone. The closure manifest therefore cannot
 claim an entrypoint removed or replaced.
 
-The next assembly package should make the existing TypeScript Store, task CLI,
-and workspace server open an exact canonical Store clone without the synthetic
-fixture marker. It must preserve the native lock owner, schema/version checks,
-startup recovery, durable bytes, and public CLI/HTTP envelopes. Python and
-TypeScript must remain separate writers until the writer-switch rehearsal passes.
-Only after that package is accepted should shipped skills or the Companion
-launcher be changed to Node.
+The canonical clone package now gives the existing TypeScript repository a
+private, disposable copy of supported Python Store state while leaving the
+source untouched. Its ownership and exclusion rules are documented in
+[native canonical Store clone](native-canonical-store-clone.md). The Store,
+task CLI, and workspace server still need a writer-switch rehearsal on that
+clone to validate startup recovery and public CLI/HTTP envelopes. Python and
+TypeScript must remain separate writers until that rehearsal passes. Only after
+that package is accepted should shipped skills or the Companion launcher be
+changed to Node.
 
 Repository tests, reference oracles, source generators, and development checks
 may continue using Python during this phase. Their later removal belongs to the
