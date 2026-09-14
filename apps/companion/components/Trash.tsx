@@ -97,37 +97,48 @@ export function Trash({ client, capabilities, dirtyChanged, onMutation }: TrashP
     const items = snapshot?.items.filter(item => !filter || item.type === filter) ?? [];
     const limited = (['job', 'resume', 'answer'] as const).some(type => !capabilities[type].restore || !capabilities[type].delete);
     return <section className="trash-workspace" aria-labelledby="trash-title" aria-busy={loading || busy}>
-        <div className="trash-heading">
-            <h1 id="trash-title">Trash</h1>
-            <button id="trash-refresh" disabled={loading || busy || selection !== null} onClick={() => { void refresh(); }}>Refresh Trash</button>
-        </div>
-        <p>Restore individual records or review them for permanent deletion.</p>
-        {limited && <p>Some lifecycle actions are not available in this workspace. Only supported actions are enabled.</p>}
-        <label>Record type <select value={filter} disabled={busy || selection !== null} onChange={event => setFilter(event.target.value as TrashType | '')}>
-            <option value="">All types</option><option value="job">Jobs</option><option value="resume">Resumes</option><option value="answer">Answers</option>
-        </select></label>
-        {notice && <p role="status">{notice}</p>}
-        {error && <p role="alert" className="error">{error}</p>}
-        {loading && <p role="status">Loading Trash…</p>}
-        {snapshot && <>
-            <p>{snapshot.counts.job} jobs · {snapshot.counts.resume} resumes · {snapshot.counts.answer} answers{stale ? ' (outdated)' : ''}</p>
-            {!stale && <p role="status">{items.length ? `${items.length} trashed records in this view.` : filter ? 'No trashed records of this type.' : 'Trash is empty.'}</p>}
-            <ul className="trash-list" aria-label="Trashed records">
-                {items.map(item => <li key={JSON.stringify([item.type, item.id])}>
-                    <article className="trash-card">
-                        <div><p className="eyebrow">{item.type}</p><h2>{item.label}</h2>
-                            <p>{referenceText(item.blockerCounts)}. Checked again when you act.</p></div>
-                        <div className="trash-actions">
-                            {(['restore', 'delete'] as const).map(action => <button key={action}
-                                disabled={stale || loading || busy || selection !== null || !capabilities[item.type][action]}
-                                onClick={event => { opener.current = event.currentTarget; setSelection({ item, action }); }}>
-                                {action === 'restore' ? 'Restore' : 'Delete permanently…'}{!capabilities[item.type][action] ? ' (unavailable)' : ''}
-                            </button>)}
-                        </div>
-                    </article>
-                </li>)}
-            </ul>
-        </>}
+        <header className="workspace-hero">
+            <div className="workspace-hero-copy"><p className="eyebrow">Unified recovery</p><h1 id="trash-title">Trash</h1>
+                <p>Restore or permanently delete one canonical record at a time. Application history and audit evidence are never deleted here.</p></div>
+            <div className="workspace-hero-actions"><button id="trash-refresh" className="secondary" disabled={loading || busy || selection !== null} onClick={() => { void refresh(); }}>Refresh Trash</button></div>
+        </header>
+        {limited && <p className="notice">Some lifecycle actions are not available in this workspace. Only supported actions are enabled.</p>}
+        {snapshot && <div className="trash-metrics" aria-label="Trash totals">
+            <div><strong>{snapshot.counts.job}</strong><span>Jobs</span></div>
+            <div><strong>{snapshot.counts.resume}</strong><span>Resumes</span></div>
+            <div><strong>{snapshot.counts.answer}</strong><span>Answers</span></div>
+        </div>}
+        <section className="workspace-panel trash-panel" aria-labelledby="trash-list-heading">
+            <div className="workspace-panel-heading"><div><p className="eyebrow">Recoverable records</p><h2 id="trash-list-heading">Jobs, resumes, and answers</h2></div>
+                <label className="trash-filter">Record type<select value={filter} disabled={busy || selection !== null} onChange={event => setFilter(event.target.value as TrashType | '')}>
+                    <option value="">All types</option><option value="job">Jobs</option><option value="resume">Resumes</option><option value="answer">Answers</option>
+                </select></label>
+            </div>
+            {notice && <p className="workspace-status trash-notice" role="status">{notice}</p>}
+            {error && <p role="alert" className="error">{error}</p>}
+            {loading && <p className="workspace-status" role="status">Loading Trash…</p>}
+            {snapshot && <>
+                <p className="trash-count-summary">{snapshot.counts.job} jobs · {snapshot.counts.resume} resumes · {snapshot.counts.answer} answers{stale ? ' (outdated)' : ''}</p>
+                {!stale && <p className="workspace-status" role="status">{items.length ? `${items.length} trashed records in this view.` : filter ? 'No trashed records of this type.' : 'Trash is empty.'}</p>}
+                {!stale && !items.length && <div className="workspace-empty trash-empty"><span className="trash-empty-mark" aria-hidden="true">↺</span><strong>{filter ? 'No records of this type' : 'Trash is empty'}</strong><span>{filter ? 'Choose another record type to review the rest of Trash.' : 'Records moved to Trash remain recoverable until you explicitly delete them.'}</span></div>}
+                <ul className="trash-list" aria-label="Trashed records">
+                    {items.map(item => <li key={JSON.stringify([item.type, item.id])}>
+                        <article className="trash-card">
+                            <span className={`trash-type-mark trash-type-${item.type}`} aria-hidden="true">{item.type.slice(0, 1).toUpperCase()}</span>
+                            <div className="trash-card-copy"><p className="eyebrow">{item.type}</p><h3>{item.label}</h3>
+                                <p>{referenceText(item.blockerCounts)}. Checked again when you act.</p></div>
+                            <div className="trash-actions">
+                                {(['restore', 'delete'] as const).map(action => <button className={action === 'delete' ? 'trash-delete' : 'secondary'} key={action}
+                                    disabled={stale || loading || busy || selection !== null || !capabilities[item.type][action]}
+                                    onClick={event => { opener.current = event.currentTarget; setSelection({ item, action }); }}>
+                                    {action === 'restore' ? 'Restore' : 'Delete permanently…'}{!capabilities[item.type][action] ? ' (unavailable)' : ''}
+                                </button>)}
+                            </div>
+                        </article>
+                    </li>)}
+                </ul>
+            </>}
+        </section>
         {selection && <TrashConfirmation opener={opener.current} item={selection.item} action={selection.action} busy={busy} confirm={() => { void submit(); }} cancel={() => { if (!mutation.current) setSelection(null); }} />}
     </section>;
 }

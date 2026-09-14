@@ -23,8 +23,9 @@ export function TrashConfirmation({ item, action, busy, confirm, cancel, opener 
     return <dialog ref={dialog} className="trash-confirmation" aria-labelledby={title} aria-describedby={description}
         onCancel={event => { event.preventDefault(); if (!busy) cancel(); }}>
         <form onSubmit={event => { event.preventDefault(); if (!busy && (action === 'restore' || phrase === deletePhrase(item.type))) confirm(); }}>
+            <p className="eyebrow">{action === 'delete' ? 'Permanent action' : 'Return to library'}</p>
             <h2 id={title}>{action === 'delete' ? 'Confirm permanent deletion' : 'Restore record?'}</h2>
-            <p>{item.type}: {item.label}</p>
+            <p className="trash-confirmation-record"><span>{item.type}</span><strong>{item.label}</strong></p>
             <div id={description}>
                 {action === 'delete' ? <p>This permanently deletes the selected canonical record{item.type === 'resume' ? ' and its managed resume file' : ''}.
                     It does not cascade or erase application history, sessions, or audit evidence.</p> :
@@ -35,8 +36,8 @@ export function TrashConfirmation({ item, action, busy, confirm, cancel, opener 
                 <input ref={input} value={phrase} onChange={event => setPhrase(event.target.value)} autoComplete="off" spellCheck={false} disabled={busy} />
             </label>}
             <div className="trash-actions">
-                <button ref={cancelButton} type="button" onClick={cancel} disabled={busy}>Cancel</button>
-                <button type="submit" disabled={busy || (action === 'delete' && phrase !== deletePhrase(item.type))}>
+                <button className="secondary" ref={cancelButton} type="button" onClick={cancel} disabled={busy}>Cancel</button>
+                <button className={action === 'delete' ? 'trash-delete-confirm' : 'primary'} type="submit" disabled={busy || (action === 'delete' && phrase !== deletePhrase(item.type))}>
                     {busy ? 'Saving…' : action === 'delete' ? 'Delete permanently' : 'Restore'}
                 </button>
             </div>
