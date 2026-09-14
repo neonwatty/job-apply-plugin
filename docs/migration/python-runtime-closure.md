@@ -22,12 +22,14 @@ claim an entrypoint removed or replaced.
 The canonical clone package now gives the existing TypeScript repository a
 private, disposable copy of supported Python Store state while leaving the
 source untouched. Its ownership and exclusion rules are documented in
-[native canonical Store clone](native-canonical-store-clone.md). The Store,
-task CLI, and workspace server still need a writer-switch rehearsal on that
-clone to validate startup recovery and public CLI/HTTP envelopes. Python and
-TypeScript must remain separate writers until that rehearsal passes. Only after
-that package is accepted should shipped skills or the Companion launcher be
-changed to Node.
+[native canonical Store clone](native-canonical-store-clone.md). The Store CLI,
+task CLI, and workspace server now have a
+[writer-switch rehearsal](native-canonical-writer-rehearsal.md) that compares
+their public envelopes and durable restart behavior on independent clones.
+Python and TypeScript still remain separate writers. The next routing package
+must preserve that separation and an explicit rollback path; only after its
+staging validation should shipped skills or the Companion launcher be changed
+to Node.
 
 Repository tests, reference oracles, source generators, and development checks
 may continue using Python during this phase. Their later removal belongs to the

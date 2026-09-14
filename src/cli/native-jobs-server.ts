@@ -10,7 +10,7 @@ const maxUpload = 4 * Math.ceil(10 * 1024 * 1024 / 3) + maxBody;
 
 const args = process.argv.slice(2);
 if (args.length !== 4 || args[0] !== "--root" || args[2] !== "--native-lock") {
-  throw new Error("usage: native-jobs-server --root /synthetic/root --native-lock /artifact.node");
+  throw new Error("usage: native-jobs-server --root /prepared/store --native-lock /artifact.node");
 }
 const repository = new NativeJobsRepository(args[1]!, loadPosixFlockProvider(args[3]!));
 const service = new JobsService(repository);
