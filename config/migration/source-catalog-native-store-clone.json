@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/store/native-store-clone.js",
+      "sha256": "333d953c2d03c03a17edc871f8d47f5e16236ca51faf36edfb1de133a0b1f685",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/native-store-layout.js",
+      "sha256": "80d3c0ff81c03285d519066e6e080ba61d374ec914024b72cce18741d1a45702",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/native-store-clone.ts",
+      "sha256": "5bb03abc7361d96c874109247db24cb9daf2dafc97e798886e3a571d3b3005de",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/native-store-layout.ts",
+      "sha256": "262a1e0fd8009350ec353801f7371c24fddbd5dcd1cc9c361e47237dfe954d83",
+      "classification": "unreviewed"
+    }
+  ]
+}

@@ -24,9 +24,8 @@ import { validateTrustedFillDocument } from "../contracts/workspace/trusted-fill
 import { validateProfile } from "../contracts/workspace/profile.js";
 import { validateGroups } from "../contracts/workspace/fact-groups.js";
 import { validateAnswers } from "../contracts/workspace/answers.js";
+import { nativeFixtureMarker, nativeFixtureMarkerName, nativeCloneMarkerName, nativeStoreAllowedEntries, nativeStoreRequiredEntries, validateNativeStoreMarker } from './native-store-layout.js';
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 };
-const marker = '{"mode":"native-jobs-fixture","version":12}\n';
-const allowed = new Set(["automation-settings.json", "employer-accounts.json", "account-operation-journal.json", "trusted-fill.json", ".native-jobs-fixture", ".store.lock", "jobs.json", "profile.json", "resumes.json", "fact-groups.json", "answers.json", "resume-operation.json", "resume-files", "resume-extractions.json", "resume-extraction-requests.json", "resume-extraction-journal.json", "sessions", "applications.jsonl", "coordinator.json", "coordinator-journal.json"]);
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 };
 /** Creates a NEW synthetic root only. Never adopts or initializes an existing Store. */
@@ -65,9 +64,9 @@ export async function initializeJobsFixture(root) {
     await atomicWritePointJson(join(root, 'trusted-fill.json'), fromJSON({ schemaVersion: 1, approvals: {},
         metadata: { createdAt: now, updatedAt: now } }), options);
     // The readiness marker is written last; partial initialization is never adopted.
-    const handle = await open(join(root, ".native-jobs-fixture"), "wx", 0o600);
+    const handle = await open(join(root, nativeFixtureMarkerName), "wx", 0o600);
     try {
-        await handle.writeFile(marker);
+        await handle.writeFile(nativeFixtureMarker);
         await handle.sync();
     }
     finally {
@@ -116,12 +115,13 @@ export class NativeJobsRepository {
             throw new JobsError("native fixture root must be private and owned");
         }
         const entries = await readdir(this.root);
-        if (locked && entries.some(name => !allowed.has(name)) || [...allowed].some(name => !(allowMissingJobs && name === "jobs.json") && !entries.includes(name))) {
+        const markers = [nativeFixtureMarkerName, nativeCloneMarkerName].filter(name => entries.includes(name));
+        if (locked && entries.some(name => !nativeStoreAllowedEntries.has(name))
+            || nativeStoreRequiredEntries.some(name => !(allowMissingJobs && name === "jobs.json") && !entries.includes(name))
+            || markers.length !== 1) {
             throw new JobsError("native Jobs cannot open unsupported state or recovery journals");
         }
-        if ((await this.read(".native-jobs-fixture")).toString("utf8") !== marker) {
-            throw new JobsError("native Jobs requires an explicitly initialized synthetic fixture");
-        }
+        validateNativeStoreMarker(markers[0], await this.read(markers[0]));
         await this.read(".store.lock");
     }
     async document(name) {
