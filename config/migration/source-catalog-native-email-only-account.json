@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/contracts/workspace/email-only-account.js",
+      "sha256": "6478a1ff82c42229ba91048a12cb83c4ac61be18baaf078699991b85249ae971",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/email-only-account.js",
+      "sha256": "914a45f9c8cad39e9c6dd7e7f1a5fc888a4e8bea4f79992b732320e0a19d8193",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/email-only-account.ts",
+      "sha256": "5f461b95eabe5dcd429a0e78778a8cd8997637c2f710b7d708e4b21093a03c23",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/email-only-account.ts",
+      "sha256": "91a7cf78494ba4f3bb09d0e04a0f90307b9dd9bc9232f87708287447f82195ca",
+      "classification": "unreviewed"
+    }
+  ]
+}

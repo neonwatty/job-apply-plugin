@@ -127,17 +127,26 @@ and `scripts/job_apply_trusted_fill.py`.
 
 Trusted-fill approval, evaluation, status, revocation, one-shot consumption,
 and denial handoff now share the native Store lock and coordinator journal.
-The remaining native account scope is the distinct email-only flow provider,
+The native email-only transaction now validates exact Oracle realm, job, claim,
+settings, account, portal, and control bindings before writing a durable attempt.
+It advances the credential-free account to `signup_in_progress` before invoking
+an injected test provider, accepts only the closed non-final attestation shape,
+and persists either the observed lifecycle or an ambiguous Needs Attention
+handoff. Concurrent attempts serialize under the Store lock and can invoke the
+provider only once. The ordinary server does not expose or compose this provider.
+
+The remaining native account scope is the live macOS email-only provider adapter,
 real provider composition for Trusted Fill, and any separately authorized
-real-browser evidence. The synthetic injected provider proves orchestration and
-receipt enforcement without claiming a live browser effect.
+real-browser evidence. The injected providers prove orchestration and receipt
+enforcement without claiming a live browser effect.
 
 Synthetic protected execution now binds job/claim/settings/account revisions
 and target URL fingerprint, writes `prepared` before invoking its injected
 executor, and preserves account-before-journal stage ordering. Credential
 provisioning and portal observation can therefore precede the later journal
 stages, and explicit recovery closes those crash windows without inferring
-success. The distinct email-only account-flow provider remains deferred.
+success. The live email-only account-flow provider remains deferred; the
+credential-free Store transaction and injected provider boundary are implemented.
 
 ## Focused evidence and remaining integration gates
 
@@ -162,6 +171,12 @@ isolation. `tests_js/workspace_native_trusted_fill_composition.test.mjs` covers
 the dispatcher-to-boundary composition, exact value-free provider packet,
 non-final receipt, one-shot consumption, and unconfigured-server no-op. The
 existing reviewed Swift source set remains unchanged.
+
+`tests_js/workspace_native_email_only_account.test.mjs` covers exact Oracle
+binding, private-email isolation, durable pre-effect burn, active and verification
+outcomes, provider failure, attestation widening, concurrent invocation, public
+redaction, and mutation-free pre-effect rejection. It uses only a loopback target
+and a synthetic provider; no browser or owner account is accessed.
 
 Typecheck and owned runtime emission are required. The integration owner also
 owns source/runtime catalogs, test matrix, HTTP wiring, fixture marker/allowlist,

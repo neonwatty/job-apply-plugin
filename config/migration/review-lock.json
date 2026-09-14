@@ -358,6 +358,10 @@
       "sha256": "4e6cf635ff0237706cdfa8b0a8cc01210382ca8df322e77b817c6619cc38e2af"
     },
     {
+      "path": "source-catalog-native-email-only-account.json",
+      "sha256": "cc016593a9a762e694f07281dc46255c79282d70b78daf69124bdf8801b56383"
+    },
+    {
       "path": "source-catalog-native-extractions.json",
       "sha256": "bced77cb9a14413abca03cc4e27b4154a81975e788e29a7c764dabb187a6ac50"
     },
