@@ -13,7 +13,7 @@
     },
     {
       "path": "apps/companion/components/Companion.tsx",
-      "sha256": "bae6af141eabfd0e0a5a6ee12d9e7ad68d4baf6e1f95710b8c9796ef42a61a43",
+      "sha256": "3412b9e641d0014f813ec1d957cbb774da39adfa2971972ee8d7549dbc5b96b0",
       "classification": "unreviewed"
     },
     {
@@ -23,27 +23,27 @@
     },
     {
       "path": "apps/companion/components/Jobs.tsx",
-      "sha256": "3cccc86444ca50ee2c2a1fe698e0c8512fc3132047f7f53ae34f7818855729ce",
+      "sha256": "622f7d8171561551f50fe65c2e13faaa5cf5b9520920298fb95e119c332dabb2",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/Overview.tsx",
-      "sha256": "51d79ba7627dbe46c12dfb9fd312797c11b83ab70435e9824c4136f1299b3d45",
+      "sha256": "05d6dd0e60b7dd3fb697a597b54858346e6173f0d7613618eeeeddc91d192c88",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/Resumes.tsx",
-      "sha256": "2db9aa0f85931033ef5271a2100f1c46fc25634f2110511c7bdaebde219576dc",
+      "sha256": "f2058033f91816bced01221f8bb9b7f15abf028044398c670b1a9666da54b7e5",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/client.ts",
-      "sha256": "b767b874663a38e0297ddae0183f7b155bd3a94da6f49593e1513ea419920730",
+      "sha256": "06fc037eed43a6a3817ca053a920fdf2d504e03e50a95f799624fe14b77896f9",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/companion.css",
-      "sha256": "c175be9068be42d47b46036dc3805f344ebaf875a736853739946774fed6c492",
+      "sha256": "0bbf1a1c657a4a980cbc45446dad4872213fe60b3b62ea3c458bcb8bcdb82516",
       "classification": "unreviewed"
     },
     {

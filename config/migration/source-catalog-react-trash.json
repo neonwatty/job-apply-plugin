@@ -3,12 +3,12 @@
   "sources": [
     {
       "path": "apps/companion/components/Trash.tsx",
-      "sha256": "38b9e7561f173503d3eb893dd8edcbdbeaae74e45d2855df32c3e8e074a6b956",
+      "sha256": "03d6bcd0e4def75140fd2396b4dfea5d46fd9bd0d9bad877d60e1c5b95e04444",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/TrashConfirmation.tsx",
-      "sha256": "a58cd6ee74e9240773268369978c8b0eb8e705a643bf5099feaa7aa5325f4f66",
+      "sha256": "ada6c5329e0d0dc455d3f52e41b9b248e2bc5e4155c49b975bf324abd70402fa",
       "classification": "unreviewed"
     },
     {
@@ -23,7 +23,7 @@
     },
     {
       "path": "apps/companion/components/trash.css",
-      "sha256": "d5a5a1f7fd209defa3c7772c699c8ebc3c4a11154320f901285eb4a006718fd3",
+      "sha256": "753be5716cf779be6d06f52a8a7fa160800fa73379746ffd86104d3836024d3a",
       "classification": "unreviewed"
     }
   ]

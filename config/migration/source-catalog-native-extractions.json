@@ -3,7 +3,7 @@
   "sources": [
     {
       "path": "apps/companion/components/Extractions.tsx",
-      "sha256": "d74c6c609e97829ce7799c1e68f7aefc941f9b9e81fef55f3df5b923a1bd37c3",
+      "sha256": "754269101b1aa5dbb3f2c8c54373f137149ca7d5f5dbf0672f7d85f426a71b53",
       "classification": "unreviewed"
     },
     {
@@ -13,7 +13,7 @@
     },
     {
       "path": "apps/companion/components/extraction-review.tsx",
-      "sha256": "720a6bed5b9b4b5cefe8fb18ec77a0af559282f97317ea18a7bfec0c579511fc",
+      "sha256": "99c0c8b68a0bb76bf5e0dd0e216bae5e2d42e1fe4ef0e931d3c2d2cd9412d2e7",
       "classification": "unreviewed"
     },
     {
