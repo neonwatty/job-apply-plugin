@@ -7,11 +7,11 @@ import { runTaskCommand } from './task-command.js';
 import { classifyTaskError, parseTaskArgs, TaskHelp, TaskRequestError } from './task-protocol.js';
 const commands = 'snapshot, activity, intake, select, resolve-pending-answer, semantic-lookup, cleanup-preview, cleanup-approve, approval-preview, approval-approve';
 function help(command) {
-    return `Native synthetic-fixture task CLI${command ? `: ${command}` : ''}\n`
-        + 'Usage: native-task --root ABSOLUTE_FIXTURE --native-lock ABSOLUTE_ADDON COMMAND [options]\n'
+    return `Native prepared-Store task CLI${command ? `: ${command}` : ''}\n`
+        + 'Usage: native-task --root ABSOLUTE_STORE --native-lock ABSOLUTE_ADDON COMMAND [options]\n'
         + `Commands: ${commands}\n`
         + 'Use the Python task command options; --input reads a JSON object from a file.\n'
-        + 'Only explicitly initialized native version 10 fixtures are supported.\n';
+        + 'Only explicitly initialized fixtures or prepared canonical clones are supported.\n';
 }
 export async function runTask(args) {
     try {
