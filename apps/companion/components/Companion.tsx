@@ -9,12 +9,14 @@ import { Resumes } from './Resumes';
 import { Answers } from './Answers';
 import { Extractions } from './Extractions';
 import { NeedsAttention } from './NeedsAttention';
+import { Automation } from './Automation';
 import './companion.css';
+import './automation.css';
 import './trash.css';
 import { Trash } from './Trash';
 import { createTrashClient } from './trash-client';
 import { compatibilityTrashCapabilities, nativeTrashCapabilities } from './trash-model';
-type WorkspaceTab = 'overview'|'jobs'|'facts'|'resumes'|'answers'|'extractions'|'attention'|'trash';
+type WorkspaceTab = 'overview'|'jobs'|'facts'|'resumes'|'answers'|'extractions'|'attention'|'automation'|'trash';
 export default function Companion() {
     const [client,setClient]=useState<Client|null>(null);
     const [boot,setBoot]=useState<Boot|null>(null);
@@ -116,6 +118,7 @@ export default function Companion() {
                         {token&&!nativeFixture&&<a className="nav-link" href={legacyHref} onClick={event => {
                             if(dirty&&!confirm('Discard unsaved changes?')) event.preventDefault();
                         }}>Open full workspace</a>}
+                        {nativeFixture&&navButton('automation','Automation')}
                         {navButton('trash','Trash')}
                     </div>
                 </div>
@@ -134,7 +137,7 @@ export default function Companion() {
             <p>
                 {boot.guidance}
             </p>
-        </section>:boot?.status==='ready'&&client? (tab==='trash'?<Trash client={trashClient} capabilities={trashCapabilities} dirtyChanged={dirtyChanged}/>:tab==='overview'? <Overview
+        </section>:boot?.status==='ready'&&client? (tab==='trash'?<Trash client={trashClient} capabilities={trashCapabilities} dirtyChanged={dirtyChanged}/>:tab==='automation'?<Automation client={client} dirtyChanged={dirtyChanged}/>:tab==='overview'? <Overview
             client={client}
             openJobs={() => navigate('jobs')}
             openWorkspace={nativeFixture ? navigate : undefined}

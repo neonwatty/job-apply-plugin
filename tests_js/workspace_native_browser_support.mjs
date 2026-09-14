@@ -12,6 +12,7 @@ import { nativeFactsBrowser } from './workspace_native_facts_browser_support.mjs
 import { resumeDraftBrowser } from './workspace_native_resumes_browser_support.mjs';
 import { nativeAnswersBrowser } from './workspace_native_answers_browser_support.mjs';
 import { nativeExtractionsBrowser } from './workspace_native_extractions_browser_support.mjs';
+import { nativeAutomationBrowser } from './workspace_native_automation_browser_support.mjs';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import { spawn, execFile } from 'node:child_process';
@@ -125,6 +126,7 @@ export async function nativeJobsBrowser(buildRoot) {
     await resumeDraftBrowser(page, root, fixture, buildRoot, browserResume.id);
     const answers = await nativeAnswersBrowser(page, root, fixture, buildRoot);
     const extractions = await nativeExtractionsBrowser(page, root, fixture, buildRoot);
+    const automation = await nativeAutomationBrowser(page, root);
     await page.getByRole('button',{name:'Jobs',exact:true}).click();
     await page.setViewportSize({width:390,height:844});
     await claimsBrowser(page,{jobId:job.id,expireClaim:async id => {
@@ -210,7 +212,7 @@ export async function nativeJobsBrowser(buildRoot) {
     const unsupported = await fetch(startup.origin + '/api/resumes/fixture/unknown', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Origin: startup.origin }, body: JSON.stringify({expectedRevision:1}) });
     assert.equal(unsupported.status, 404);
     assert.deepEqual(pageErrors, []);
-    return { reactTrash, jobTrash, taskCli, groupedApprovals, taskIntake, legacyJobs, upsert, transitions, projections, claims:true, facts, answers, extractions, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
+    return { reactTrash, jobTrash, taskCli, groupedApprovals, taskIntake, legacyJobs, upsert, transitions, projections, claims:true, facts, answers, extractions, automation, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
   } finally {
     releaseInitialClaim?.();
     if (browser) await browser.close();

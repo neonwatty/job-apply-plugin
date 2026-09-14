@@ -111,10 +111,12 @@ during the effect is left untouched.
 
 It returns a response or null for an unowned route. The composing HTTP boundary
 retains the existing safe request/storage error envelope and revision-conflict
-status mapping through `jobsHttp`. All mutation/detail responses use public projections. The Python
-GET `/api/automation` aggregate also includes provider capability discovery;
-that endpoint is deferred until its truthful native capability contract is
-integrated. There are no invented settings-list or account-list GET endpoints.
+status mapping through `jobsHttp`. All mutation/detail responses use public projections.
+GET `/api/automation` returns the redacted settings and account registry with the
+profile revision and a side-effect-free native capability projection. The
+projection truthfully reports that no native credential or account-flow provider
+is composed and that live execution remains disabled. There are no invented
+settings-list or account-list GET endpoints.
 
 ## Follow-on dependency map
 

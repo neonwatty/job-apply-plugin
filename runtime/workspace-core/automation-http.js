@@ -1,7 +1,7 @@
 import { PythonObject } from '../contracts/python-object.js';
 import { exact } from '../contracts/workspace/automation.js';
 import { get, has, int, keys, object, parse, serialize, string, JobsError } from '../contracts/workspace/values.js';
-import { AutomationService } from './automation.js';
+import { AutomationService, automationProjection } from './automation.js';
 import { AccountsService } from './accounts.js';
 const response = (value) => ({ status: 200, body: serialize(value) });
 function revision(value, label = 'expectedRevision') {
@@ -14,6 +14,8 @@ function revision(value, label = 'expectedRevision') {
 export async function automationHttp(repository, method, path, body) {
     const settings = new AutomationService(repository), accounts = new AccountsService(repository);
     const updateAccount = /^\/api\/employer-accounts\/([^/]+)$/.exec(path);
+    if (method === 'GET' && path === '/api/automation')
+        return response(await automationProjection(repository));
     if (method === 'GET' && updateAccount) {
         const account = await accounts.get(decodeURIComponent(updateAccount[1]), true);
         if (account === null)

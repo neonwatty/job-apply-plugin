@@ -7,7 +7,7 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
     client: Client;
     openJobs: () => void;
     legacyHref: string;
-    openWorkspace?: (workspace: 'facts' | 'resumes' | 'attention' | 'answers' | 'trash') => void;
+    openWorkspace?: (workspace: 'facts' | 'resumes' | 'attention' | 'answers' | 'automation' | 'trash') => void;
 }) {
     const [data, setData] = useState<OverviewData | null>(null);
     const [error, setError] = useState('');
@@ -51,7 +51,7 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
         ? guidance[0] : 'Review the workspace';
     const guidanceCopy = Array.isArray(guidance) && typeof guidance[1] === 'string'
         ? guidance[1] : 'Refresh the canonical Store and choose a workspace section.';
-    const nativeDestinations = ['facts','resumes','attention','answers','trash'];
+    const nativeDestinations = ['facts','resumes','attention','answers','automation','trash'];
     async function copyInvocation(value:string,label:string) {
         try {
             await navigator.clipboard.writeText(value);
@@ -64,7 +64,7 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
     }
     const action = target === 'jobs' ? <button className="button primary" onClick={openJobs}>Open Jobs</button>
         : openWorkspace && nativeDestinations.includes(target)
-            ? <button className="button primary" onClick={() => openWorkspace(target as 'facts'|'resumes'|'attention'|'answers'|'trash')}>Open {destinations[target]}</button>
+            ? <button className="button primary" onClick={() => openWorkspace(target as 'facts'|'resumes'|'attention'|'answers'|'automation'|'trash')}>Open {destinations[target]}</button>
             : <a className="button primary" href={link(destination)}>Open {destinations[destination]}</a>;
     return <div className="overview-workspace">
         <section className="overview-hero">
