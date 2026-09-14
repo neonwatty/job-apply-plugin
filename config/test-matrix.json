@@ -226,6 +226,13 @@
       "tiers": ["full", "platform"]
     },
     {
+      "id": "native-email-canary-composition",
+      "kind": "node-test",
+      "include": ["tests_js/native_email_canary_composition.test.mjs"],
+      "platforms": ["darwin", "linux"],
+      "tiers": ["full", "platform"]
+    },
+    {
       "id": "release-package",
       "kind": "command",
       "command": ["bash", "scripts/smoke-plugin.sh"],

@@ -358,8 +358,12 @@
       "sha256": "4e6cf635ff0237706cdfa8b0a8cc01210382ca8df322e77b817c6619cc38e2af"
     },
     {
+      "path": "source-catalog-native-email-canary-composition.json",
+      "sha256": "83fbfe96c7f96dfcddedcdf87874c540f9711069b9075052b3ae54a7a1e68fe8"
+    },
+    {
       "path": "source-catalog-native-email-only-account.json",
-      "sha256": "cc016593a9a762e694f07281dc46255c79282d70b78daf69124bdf8801b56383"
+      "sha256": "ef4a6d9e3285321fd4dd5b08dce3c1a58f10f87a844ea971095c0c672fa1a558"
     },
     {
       "path": "source-catalog-native-extractions.json",
