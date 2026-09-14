@@ -3,7 +3,7 @@
   "sources": [
     {
       "path": "scripts/smoke-plugin.sh",
-      "sha256": "1258a20ab23ce3a9358c34fa73f74377725c8a5bcab85defa4a8e9ed1a1d5416",
+      "sha256": "ebebb3f203b907b416888f67667c71df167ac14960deff75401015f539b241e7",
       "classification": "unreviewed"
     },
     {
@@ -18,7 +18,7 @@
     },
     {
       "path": "scripts/smoke/plugin_install_verify.py",
-      "sha256": "ef38f26e79a4318422c1ab15ddb13c4b370158fa309dfb7e16ee12f7958e692f",
+      "sha256": "664947f8c0e9bade410cd84c4a14329d31d98d5828286f67389020a40d6c724b",
       "classification": "unreviewed"
     },
     {

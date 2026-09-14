@@ -54,6 +54,8 @@ tar --exclude='./.git' \
   --exclude='./test_resumes' \
   -cf - -C "$REPO_ROOT" . \
   | tar -xf - -C "$SMOKE_FIXTURE_DIR"
+echo "Packaging native lock provider for this host"
+node "$REPO_ROOT/scripts/smoke/package_native_lock.mjs" --package-root "$SMOKE_FIXTURE_DIR"
 python3 "$REPO_ROOT/scripts/smoke/fixture_build.py" verify "$SMOKE_FIXTURE_DIR"
 
 echo "Creating isolated prior-version Codex upgrade fixture"
@@ -107,6 +109,9 @@ CODEX_HOME="$SMOKE_CODEX_HOME" codex plugin add job-apply@neonwatty-plugins \
 CODEX_HOME="$SMOKE_CODEX_HOME" codex plugin list --json \
   > "$SMOKE_TEMP_ROOT/codex-plugin-list.json"
 python3 "$REPO_ROOT/scripts/smoke/plugin_install_verify.py" codex \
-  "$SMOKE_TEMP_ROOT/codex-plugin-list.json" "$SMOKE_CODEX_HOME" "$SMOKE_FIXTURE_DIR"
+  "$SMOKE_TEMP_ROOT/codex-plugin-list.json" "$SMOKE_CODEX_HOME" "$SMOKE_FIXTURE_DIR" \
+  --installed-root-output "$SMOKE_TEMP_ROOT/codex-installed-root.txt"
+node "$REPO_ROOT/scripts/smoke/native_activation.mjs" \
+  "$(cat "$SMOKE_TEMP_ROOT/codex-installed-root.txt")" "$SMOKE_TEMP_ROOT"
 
 echo "Plugin smoke checks passed"
