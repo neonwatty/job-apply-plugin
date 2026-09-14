@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "status": "migration-open",
+  "entrypoints": [
+    {
+      "path": "scripts/job-apply-store.py",
+      "role": "ordinary",
+      "state": "typescript-fixture-only",
+      "replacement": "runtime/cli/native-jobs.js"
+    },
+    {
+      "path": "scripts/job-apply-task.py",
+      "role": "ordinary",
+      "state": "typescript-fixture-only",
+      "replacement": "runtime/cli/native-task.js"
+    },
+    {
+      "path": "scripts/job-apply-attempt.py",
+      "role": "ordinary",
+      "state": "python-required",
+      "replacement": null
+    },
+    {
+      "path": "scripts/job-apply-workspace.py",
+      "role": "ordinary",
+      "state": "typescript-fixture-only",
+      "replacement": "runtime/cli/native-jobs-server.js"
+    },
+    {
+      "path": "scripts/job_apply_policy.py",
+      "role": "policy",
+      "state": "python-required",
+      "replacement": null
+    },
+    {
+      "path": "scripts/job_apply_trusted_fill.py",
+      "role": "policy",
+      "state": "typescript-fixture-only",
+      "replacement": "runtime/workspace-core/trusted-fill.js"
+    },
+    {
+      "path": "scripts/job_apply_form_readiness.py",
+      "role": "contract-helper",
+      "state": "typescript-fixture-only",
+      "replacement": "runtime/contracts/workspace/claim-session-readiness.js"
+    },
+    {
+      "path": "scripts/qa-replay.py",
+      "role": "qa",
+      "state": "python-required",
+      "replacement": null
+    }
+  ],
+  "packagedPythonTrees": [
+    "scripts/job_apply_store",
+    "scripts/job_apply_workspace"
+  ]
+}

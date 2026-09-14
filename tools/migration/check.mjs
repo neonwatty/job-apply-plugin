@@ -13,6 +13,7 @@ import { loadMatrix, suiteFiles } from '../test-runner/matrix.mjs';
 import { loadTaskEvidence } from './load-task-evidence.mjs';
 import { loadPrerequisites } from './load-prerequisites.mjs';
 import { auditHistoricalBoundary } from './historical-boundary.mjs';
+import { checkPythonRuntimeClosure } from './python-runtime-closure.mjs';
 
 export const SCENARIOS = ['valid', 'invalid', 'missing', 'noop', 'privacy', 'conflict',
   'concurrency', 'interruption', 'recovery', 'platform'];
@@ -183,6 +184,8 @@ export async function checkInventory(root, options = {}) {
   }
   let taskEvidence = { currentAcceptance: 'open', acceptedTasks: new Set(), acceptedPackages: new Set() };
   const errors = validateInventory({ nodes: nodesFile.nodes, sources, surfaces }, actual, options);
+  const pythonRuntime = await checkPythonRuntimeClosure(root);
+  if (pythonRuntime) errors.push(...pythonRuntime.errors);
   const servingMap = detectServingMap(new Map([...browserFiles, ...servingFiles]));
   if (servingMap) for (const path of HYBRID_RUNTIME_PATHS) {
     if (!servingFiles.has(path)) throw new Error(`Missing browser export source: ${path}`);
@@ -248,7 +251,10 @@ export async function checkInventory(root, options = {}) {
     acceptance: 'open', ...(historicalAudit ? { historicalAudit } : {}), taskEvidence: { currentAcceptance: taskEvidence.currentAcceptance,
       acceptedTasks: [...taskEvidence.acceptedTasks].sort(), acceptedPackages: [...taskEvidence.acceptedPackages].sort(), retiredTasks: [...(taskEvidence.retiredTasks ?? [])].sort() }, nodes: nodesFile.nodes.length, sources: sources.length,
     surfaces: surfaces.length, requirements: requirements.length, packages: packages.length,
-    unmappedRequirementCells: missingRequirementCoverage(surfaces.map((item) => item.id), requirements).length, errors };
+    unmappedRequirementCells: missingRequirementCoverage(surfaces.map((item) => item.id), requirements).length,
+    ...(pythonRuntime ? { pythonRuntime: { status: pythonRuntime.status,
+      entrypoints: pythonRuntime.pythonRuntimeEntrypoints, pythonRequired: pythonRuntime.pythonRequired,
+      fixtureOnlyReplacements: pythonRuntime.fixtureOnlyReplacements } } : {}), errors };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
