@@ -79,10 +79,9 @@ export function AnswerCleanup({ client, revision, disabled = false, onMerged, on
   }
 
   const pairs = result?.revision === revision && result.client === client ? result.preview.pairs : null;
-  return <section aria-label="Cleanup preview">
-    <h2>Cleanup preview</h2>
+  return <section className="answer-support-panel" aria-label="Cleanup preview">
+    <div className="answer-support-heading"><div><p className="eyebrow">Library hygiene</p><h2>Cleanup preview</h2></div><button className="secondary" type="button" disabled={loading || approving} onClick={() => void preview()}>Preview cleanup</button></div>
     <p>Find possible duplicate answers. Previewing changes nothing. Review and approve each merge separately.</p>
-    <button type="button" disabled={loading || approving} onClick={() => void preview()}>Preview cleanup</button>
     {loading && <p role="status">Checking for possible duplicates…</p>}
     {approving && <p role="status">Merging the selected answers…</p>}
     {success && <p role="status">{success}</p>}
@@ -90,11 +89,11 @@ export function AnswerCleanup({ client, revision, disabled = false, onMerged, on
     {error && <p role="alert">{error}</p>}
     {pairs !== null && <>
       <p role="status">{pairs.length ? `${pairs.length} possible duplicate ${pairs.length === 1 ? 'pair' : 'pairs'}. No answers changed.` : 'No clear duplicates found.'}</p>
-      <ul>{pairs.map((pair, index) => <li key={index} style={{ overflowWrap: 'anywhere' }}>
+      <ul className="answer-support-list">{pairs.map((pair, index) => <li key={index}>
         <p><strong>Accepted answer:</strong> <span>{pair.winnerQuestion}</span></p>
         <p><strong>Possible duplicate:</strong> <span>{pair.duplicateQuestion}</span></p>
         <p>{cleanupExplanation(pair)}</p>
-        <button type="button" disabled={disabled || approving || loading} onClick={() => void approve(pair)}>Approve merge</button>
+        <button className="secondary" type="button" disabled={disabled || approving || loading} onClick={() => void approve(pair)}>Approve merge</button>
       </li>)}</ul>
     </>}
   </section>;
