@@ -8,8 +8,8 @@ export const HISTORICAL_BASE = 'ab6964edb5b3e45d5c6c9578947acb3468dee42b';
 export function historicalRecord(path) {
   if (path.startsWith('docs/migration/evidence/')) return true;
   if (!path.startsWith('config/migration/')) return false;
-  // Only source/surface inventories and their digest lock describe current code.
-  return !/^config\/migration\/(?:source-catalog-[^/]+\.json|[^/]+-surfaces\.json|review-lock\.json)$/.test(path);
+  // Only source/surface/runtime inventories and their digest lock describe current code.
+  return !/^config\/migration\/(?:source-catalog-[^/]+\.json|[^/]+-surfaces\.json|python-runtime-closure\.json|review-lock\.json)$/.test(path);
 }
 
 export async function auditHistoricalBoundary(root, audit, base = HISTORICAL_BASE) {

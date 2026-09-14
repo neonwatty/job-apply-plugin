@@ -266,6 +266,10 @@
       "sha256": "9273e0009003842e9a5d11023c2de34a1fe6576143332928d2031befbe0ab1e9"
     },
     {
+      "path": "python-runtime-closure.json",
+      "sha256": "6c92e89af1d75cc19502c76c8dc876056bc99d9730366f7821da62a3a6e11d6c"
+    },
+    {
       "path": "requirements-trash-01.json",
       "sha256": "bbc212556338c323e049109befdfc3bf2c4049f313cb0189935b727e475c5012"
     },

@@ -30,7 +30,8 @@ test('historical boundary preserves all evidence and permits only current invent
   for (const path of ['docs/migration/evidence/a/log.txt', 'config/migration/task-receipts.json',
     'config/migration/new-acceptance.json', 'config/migration/packages.json']) assert.equal(historicalRecord(path), true);
   for (const path of ['src/product.ts', 'config/migration/source-catalog-next.json',
-    'config/migration/http-next-surfaces.json', 'config/migration/review-lock.json']) assert.equal(historicalRecord(path), false);
+    'config/migration/http-next-surfaces.json', 'config/migration/python-runtime-closure.json',
+    'config/migration/review-lock.json']) assert.equal(historicalRecord(path), false);
 });
 
 test('historical audit uses original source every time and grants no current acceptance', async () => fixture(async ({ root, git, base }) => {
