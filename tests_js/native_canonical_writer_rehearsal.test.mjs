@@ -3,12 +3,14 @@ import test from 'node:test';
 import { execFile, spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { promisify } from 'node:util';
-import { readFile, readdir, realpath, stat, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, mkdir, readFile, readdir, realpath, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
 import { prepareCanonicalStoreClone } from '../runtime/store/native-store-clone.js';
 import { loadPosixFlockProvider } from '../runtime/store/posix-flock.js';
 import { parseWriterOptions, resolveWriterRoute } from '../apps/companion/writer-route.mjs';
+import { packageNativeLock } from '../scripts/smoke/package_native_lock.mjs';
 
 const execute = promisify(execFile), fixed = '2026-09-14T12:00:00Z';
 const repositoryRoot = new URL('../', import.meta.url).pathname;
@@ -166,4 +168,53 @@ test('Companion writer selection defaults to Python and rejects ambiguous overri
     ['--writer', 'native-fixture', '--native-jobs-fixture', '/tmp/lock'],
     ['--native-lock', '/tmp/one', '--native-jobs-fixture', '/tmp/two'],
   ]) assert.throws(() => parseWriterOptions(args, companionRoot));
+});
+
+async function assembledPackageRoot() {
+  const root = await mkdtemp(join(tmpdir(), 'job-apply-package-lock-'));
+  await mkdir(join(root, 'native/posix'), { recursive: true });
+  await cp(join(repositoryRoot, 'native/posix/flock.c'), join(root, 'native/posix/flock.c'));
+  return realpath(root);
+}
+
+test('package assembly emits a verified loadable host lock without runtime compilation', async t => {
+  if (!['darwin', 'linux'].includes(process.platform)) { t.skip('POSIX package host required'); return; }
+  const root = await assembledPackageRoot();
+  try {
+    const { resolvePackagedNativeLock } = await import('../runtime/package/native-lock-artifact.js');
+    const receipt = await packageNativeLock(root), artifact = await resolvePackagedNativeLock(root);
+    assert.equal(artifact, join(receipt.directory, 'flock.node'));
+    assert.deepEqual(Object.keys(loadPosixFlockProvider(artifact)).sort(), ['tryLock', 'unlock']);
+    await assert.rejects(packageNativeLock(root), /already contains/);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test('packaged lock rejects changed source, artifact, and receipt identity', async t => {
+  if (!['darwin', 'linux'].includes(process.platform)) { t.skip('POSIX package host required'); return; }
+  const { resolvePackagedNativeLock } = await import('../runtime/package/native-lock-artifact.js');
+  for (const changed of ['source', 'artifact', 'receipt']) {
+    const root = await assembledPackageRoot();
+    try {
+      const packaged = await packageNativeLock(root);
+      if (changed === 'source') await writeFile(join(root, 'native/posix/flock.c'), 'changed');
+      if (changed === 'artifact') await writeFile(join(packaged.directory, 'flock.node'), 'changed');
+      if (changed === 'receipt') {
+        const path = join(packaged.directory, 'receipt.json');
+        const receipt = JSON.parse(await readFile(path, 'utf8'));
+        receipt.arch = `${receipt.arch}-changed`; await writeFile(path, JSON.stringify(receipt) + '\n');
+      }
+      await assert.rejects(resolvePackagedNativeLock(root), /does not match/);
+    } finally { await rm(root, { recursive: true, force: true }); }
+  }
+});
+
+test('package assembly removes partial output when package source differs', async t => {
+  if (!['darwin', 'linux'].includes(process.platform)) { t.skip('POSIX package host required'); return; }
+  const root = await assembledPackageRoot();
+  try {
+    await writeFile(join(root, 'native/posix/flock.c'), 'changed');
+    await assert.rejects(packageNativeLock(root), /differs/);
+    const output = join(root, 'native/packaged-lock', `${process.platform}-${process.arch}-napi8`);
+    await assert.rejects(readFile(join(output, 'flock.node')));
+  } finally { await rm(root, { recursive: true, force: true }); }
 });

@@ -303,7 +303,7 @@
     },
     {
       "path": "source-catalog-05.json",
-      "sha256": "cd293a191d34b3c38a576970389553668430f5b87e686a3e38dcc55a6a1ad7f6"
+      "sha256": "765c756ff748397eb1fce8ad47e486b4e4a17fc6332b67f2cf84b9b276b3e998"
     },
     {
       "path": "source-catalog-06.json",
@@ -315,7 +315,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "ca3a16c3d1bada7f6f63f7641961db35ad6416aebd856ad9eb961f65e7a62bb2"
+      "sha256": "6efcbd4eab6b94cdecf4538e4c2e5e38de18546c96dcf2b7f3c465f134756454"
     },
     {
       "path": "source-catalog-m01.json",
@@ -400,6 +400,10 @@
     {
       "path": "source-catalog-native-legacy-jobs.json",
       "sha256": "3e0066d9196b88f93260f2368cac0c08d11f8496969c8b020db2174798839786"
+    },
+    {
+      "path": "source-catalog-native-lock-package.json",
+      "sha256": "f2c4e0eedbe6a8831a5f9ec34d6c6488cc8acf92b6529f7eabc13b35f477664b"
     },
     {
       "path": "source-catalog-native-macos-email-adapter.json",

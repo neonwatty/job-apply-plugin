@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """Verify isolated Claude and Codex plugin installations."""
 
+from __future__ import annotations
+
 import argparse
 import json
+import os
+import stat
 from pathlib import Path
 
 from artifacts import assert_critical_bytes
@@ -17,6 +21,26 @@ EXPECTED_SKILLS = {
 }
 
 
+def packaged_lock_files(root: Path) -> dict[str, bytes]:
+    tree = root.resolve(strict=True) / "native" / "packaged-lock"
+    metadata = tree.lstat()
+    if not stat.S_ISDIR(metadata.st_mode) or stat.S_ISLNK(metadata.st_mode):
+        raise SystemExit("packaged native lock tree is invalid")
+    files = {}
+    for directory, names, filenames in os.walk(tree, followlinks=False):
+        current = Path(directory)
+        for name in names:
+            if (current / name).is_symlink():
+                raise SystemExit("packaged native lock tree contains a symlink")
+        for name in filenames:
+            path = current / name
+            info = path.lstat()
+            if not stat.S_ISREG(info.st_mode) or stat.S_ISLNK(info.st_mode):
+                raise SystemExit("packaged native lock tree contains a non-regular file")
+            files[path.relative_to(tree).as_posix()] = path.read_bytes()
+    return files
+
+
 def verify_claude(plugin_list: Path) -> None:
     plugins = json.loads(plugin_list.resolve(strict=True).read_text(encoding="utf-8"))
     if "job-apply@neonwatty-plugins" not in json.dumps(plugins):
@@ -24,7 +48,9 @@ def verify_claude(plugin_list: Path) -> None:
     print("Isolated Claude Code marketplace install passed")
 
 
-def verify_codex(plugin_list: Path, codex_home: Path, source: Path) -> None:
+def verify_codex(
+    plugin_list: Path, codex_home: Path, source: Path, installed_root_output: Path | None
+) -> None:
     plugins = json.loads(plugin_list.resolve(strict=True).read_text(encoding="utf-8"))
     installed = plugins.get("installed", [])
     match = next(
@@ -61,6 +87,10 @@ def verify_codex(plugin_list: Path, codex_home: Path, source: Path) -> None:
             f"got {sorted(installed_skills)}"
         )
     assert_critical_bytes(versions[0], source, label="installed Codex")
+    if packaged_lock_files(versions[0]) != packaged_lock_files(source):
+        raise SystemExit("installed Codex packaged native lock bytes differ")
+    if installed_root_output is not None:
+        installed_root_output.write_text(str(versions[0].resolve(strict=True)) + "\n", encoding="utf-8")
     print("Isolated Codex marketplace install and critical-byte parity passed")
 
 
@@ -73,11 +103,12 @@ def main() -> None:
     codex.add_argument("plugin_list", type=Path)
     codex.add_argument("codex_home", type=Path)
     codex.add_argument("source", type=Path)
+    codex.add_argument("--installed-root-output", type=Path)
     args = parser.parse_args()
     if args.action == "claude":
         verify_claude(args.plugin_list)
     else:
-        verify_codex(args.plugin_list, args.codex_home, args.source)
+        verify_codex(args.plugin_list, args.codex_home, args.source, args.installed_root_output)
 
 
 if __name__ == "__main__":

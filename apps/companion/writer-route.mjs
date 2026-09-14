@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { lstat, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { validateNativeStoreMarker } from "../../runtime/store/native-store-layout.js";
+import { resolvePackagedNativeLock } from "../../runtime/package/native-lock-artifact.js";
 
 const writers = new Set(["python", "native-fixture", "native-clone"]);
 const valueOptions = new Set([
@@ -68,11 +69,12 @@ export async function resolveWriterRoute(options) {
     return { writer: "python", command: "python3",
       argv: [script, "--no-open", "--json", ...(options.root ? ["--root", options.root] : [])] };
   }
-  if (!options.root || !options.nativeLock) throw new Error("Native writer requires an explicit root and lock provider");
+  if (!options.root) throw new Error("Native writer requires an explicit root");
   const expected = options.writer === "native-clone" ? "clone" : "fixture";
   if (ownership !== expected) throw new Error(`Native ${expected} writer ownership is missing`);
+  const nativeLock = options.nativeLock ?? await resolvePackagedNativeLock(options.pluginRoot);
   const script = join(options.pluginRoot, "runtime/cli/native-jobs-server.js");
-  if (!existsSync(script) || !existsSync(options.nativeLock)) throw new Error("Workspace runtime is unavailable");
+  if (!existsSync(script) || !existsSync(nativeLock)) throw new Error("Workspace runtime is unavailable");
   return { writer: options.writer, command: process.execPath,
-    argv: [script, "--root", options.root, "--native-lock", options.nativeLock] };
+    argv: [script, "--root", options.root, "--native-lock", nativeLock] };
 }

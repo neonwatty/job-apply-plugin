@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/package/native-lock-artifact.js",
+      "sha256": "784924390cd53831b0fd97d35f0fa46c59b3d44eba2b36dc134aa68892539412",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/smoke/native_activation.mjs",
+      "sha256": "bed36f15e5c0d41b13868782225a642dfb75d0f367cb3155032c3991bb4ecda4",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "scripts/smoke/package_native_lock.mjs",
+      "sha256": "998f6f5dbef45908235f295e8fc8edd299551b4325d57b0db9700a883338ba7c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/package/native-lock-artifact.ts",
+      "sha256": "f902eab220cb3105c4a5449baa78d88c01ea405bbff643798f48dd58c418ac03",
+      "classification": "unreviewed"
+    }
+  ]
+}
