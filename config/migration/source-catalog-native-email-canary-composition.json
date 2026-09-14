@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/contracts/workspace/account-canary.js",
+      "sha256": "1959bb8f8125be4ccc7e7b9e44a555acbd1b51056f5de04fe9bf61aae8397d4e",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/native/macos/canary-authority.js",
+      "sha256": "5ed99c489d08a936f73e937a071fbb0626e404e0c5426f0cbaaee4e56f7866d3",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/native/macos/oracle-canary-session.js",
+      "sha256": "755617667f8bf089da77d24512fbcfcafaad6ddbb16af91eb2910039a59ca9d7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/account-canary.ts",
+      "sha256": "a5a155ba6c0a658100585d80133d8ada58cbc096753c2a5bfea7e505fc50ed9a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/native/macos/canary-authority.ts",
+      "sha256": "acb0c81c26dec4f3f0b383ea89162f011288e90b8cb6f5484a1f57c6f4dda2ec",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/native/macos/oracle-canary-session.ts",
+      "sha256": "baee20e95067517337efb18cb2ba772a5c8ef90e401490f45995734a74a0b558",
+      "classification": "unreviewed"
+    }
+  ]
+}

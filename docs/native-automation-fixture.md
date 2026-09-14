@@ -144,12 +144,22 @@ would otherwise require Node to expose macOS peer-credential APIs. Native tests
 exercise the exact build, substitution denial, malformed attestation and process
 loss without opening a browser.
 
-The adapter is not composed into the ordinary server, and the public transaction
-continues to admit only its synthetic provider. Remaining native account scope is
-the separately gated live-provider composition, real provider composition for
-Trusted Fill, and any separately authorized real-browser evidence. The native
-channel tests prove orchestration and receipt enforcement without claiming a live
-browser effect.
+The adapter now has a private, process-internal live composition. Its distinct
+HTTPS request contract binds the exact claim, Store revisions, Oracle realm,
+portal name and URL, and prepared controls. A separate private T007 ledger stores
+only hashes, atomically consumes final approval when issuing a short-lived
+capability, and durably burns that capability before checking drift or expiry.
+The Store writes the account-operation journal before this authority burn and
+advances the account to `signup_in_progress` before invoking the reviewed macOS
+adapter. The production session factory builds only the checked-in reviewed Swift
+sources and accepts no provider or helper override.
+
+This composition is not reachable from the ordinary server or CLI, and the public
+transaction continues to admit only its synthetic provider. No automation
+capability flag is enabled. Remaining native account scope is real provider
+composition for Trusted Fill and any separately authorized real-browser evidence.
+The native channel and composition tests prove orchestration and receipt
+enforcement without claiming a live browser effect.
 
 Synthetic protected execution now binds job/claim/settings/account revisions
 and target URL fingerprint, writes `prepared` before invoking its injected

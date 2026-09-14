@@ -8,7 +8,7 @@
     },
     {
       "path": "runtime/workspace-core/email-only-account.js",
-      "sha256": "914a45f9c8cad39e9c6dd7e7f1a5fc888a4e8bea4f79992b732320e0a19d8193",
+      "sha256": "d082bd5c43d326800a7189bb6504a171f6bfcb2904cbd2095c8efac31d6168f2",
       "classification": "unreviewed"
     },
     {
@@ -18,7 +18,7 @@
     },
     {
       "path": "src/workspace-core/email-only-account.ts",
-      "sha256": "91a7cf78494ba4f3bb09d0e04a0f90307b9dd9bc9232f87708287447f82195ca",
+      "sha256": "7de8dd9790205f8a99c24a3c418cb29b23a787b5ff4be6ec4131f7090d0711af",
       "classification": "unreviewed"
     }
   ]

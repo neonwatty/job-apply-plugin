@@ -6,6 +6,7 @@ import { validateSettingsDocument } from '../contracts/workspace/automation.js';
 import { buildClaimSession } from '../contracts/workspace/claim-session.js';
 import { claimExpired, validateCoordinator } from '../contracts/workspace/claims.js';
 import { validateEmailOnlyAccountRequest, validateEmailOnlyAccountResult } from '../contracts/workspace/email-only-account.js';
+import { privateCanaryDigest, validateLiveEmailCanaryRequest } from '../contracts/workspace/account-canary.js';
 import { safeId, validateJobsDocument } from '../contracts/workspace/jobs.js';
 import { copy, fromJSON, get, int, integer, object, set, string, text, JobsError } from '../contracts/workspace/values.js';
 import type { Document, Value } from '../contracts/workspace/values.js';
@@ -14,6 +15,10 @@ import type { AccountOperationRepository, AccountOperationTransaction } from './
 export interface EmailOnlyAccountExecutor {
   readonly providerId: string;
   execute(request: Document, privateEmail: () => string): Promise<Value>;
+}
+
+export interface EmailOnlyCanaryAuthority {
+  attempt(capabilityRef: string, binding: Document, now: Date): Promise<void>;
 }
 
 const doc = (value: unknown): Document => object(fromJSON(value), 'email-only account value');
@@ -86,10 +91,19 @@ export class EmailOnlyAccountService {
     if (!this.executor || this.executor.providerId !== 'synthetic-email-only') {
       throw new JobsError('synthetic email-only provider is test-only');
     }
-    const executor = this.executor;
-    return this.repository.accountOperationTransaction(async tx => {
+    return executeEmailOnly(this.repository, request, this.executor, this.now);
+  }
+}
+
+async function executeEmailOnly(repository: AccountOperationRepository, request: Document,
+  executor: EmailOnlyAccountExecutor, nowValue: () => string,
+  authorize?: (operation: Document, now: string) => Promise<Document>, exactPortal = false): Promise<Value> {
+    return repository.accountOperationTransaction(async tx => {
       if (accountOperation(tx.journal) !== null) throw new JobsError('account operation requires explicit recovery');
-      const now = this.now(), job = liveJob(tx, request, now), realm = resolveAccountRealm(string(get(job, 'url')));
+      const now = nowValue(), job = liveJob(tx, request, now), realm = resolveAccountRealm(string(get(job, 'url')));
+      if (exactPortal && string(get(job, 'url')) !== string(get(request, 'portalUrl'))) {
+        throw new JobsError('live email-only portal URL drifted');
+      }
       if (realm.status !== 'resolved' || realm.adapterId !== 'oracle-recruiting' || realm.flowKind !== emailFlow
         || realm.realmRef !== string(get(request, 'realmRef')) || realm.descriptor !== string(get(request, 'realmDescriptor'))) {
         throw new JobsError('email-only execution realm binding mismatch');
@@ -115,6 +129,7 @@ export class EmailOnlyAccountService {
       set(operation, 'accountRevision', get(account, 'revision'));
       set(operation, 'settingsRevision', get(settings, 'revision'));
       await tx.saveOperation(null, operation);
+      if (authorize) request = await authorize(operation, now);
       ({ account, operation } = await writeStage(tx, account, operation, 'signup_in_progress', 'signup_in_progress', now));
       let result: Document;
       try {
@@ -140,5 +155,23 @@ export class EmailOnlyAccountService {
       await tx.clearOperation(string(get(operation, 'operationId'))!);
       return response;
     });
+}
+
+export class LiveEmailOnlyAccountService {
+  constructor(private readonly repository: AccountOperationRepository, private readonly executor: EmailOnlyAccountExecutor,
+    private readonly authority: EmailOnlyCanaryAuthority,
+    private readonly now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')) {
+    if (executor.providerId !== 'macos-accessibility') throw new JobsError('live account canary native boundary is unavailable');
+  }
+
+  execute(value: Value): Promise<Value> {
+    const exact = validateLiveEmailCanaryRequest(value);
+    return executeEmailOnly(this.repository, exact.packet, this.executor, this.now, async (operation, now) => {
+      await this.authority.attempt(exact.capabilityRef, exact.binding, new Date(now));
+      const packet = copy(exact.packet);
+      const operationId = string(get(operation, 'operationId'))!;
+      set(packet, 'operationFingerprint', text(privateCanaryDigest(operationId)));
+      return packet;
+    }, true);
   }
 }
