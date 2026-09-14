@@ -135,10 +135,21 @@ and persists either the observed lifecycle or an ambiguous Needs Attention
 handoff. Concurrent attempts serialize under the Store lock and can invoke the
 provider only once. The ordinary server does not expose or compose this provider.
 
-The remaining native account scope is the live macOS email-only provider adapter,
-real provider composition for Trusted Fill, and any separately authorized
-real-browser evidence. The injected providers prove orchestration and receipt
-enforcement without claiming a live browser effect.
+The retained Swift email-only boundary now has a TypeScript macOS adapter. It
+compiles only the reviewed source list, pins the helper's digest/device/inode and
+code signature, revalidates that identity before each execution, and carries the
+private email plus the bounded value-free attestation over separate inherited
+descriptors. The inherited attestation endpoint removes the pathname race that
+would otherwise require Node to expose macOS peer-credential APIs. Native tests
+exercise the exact build, substitution denial, malformed attestation and process
+loss without opening a browser.
+
+The adapter is not composed into the ordinary server, and the public transaction
+continues to admit only its synthetic provider. Remaining native account scope is
+the separately gated live-provider composition, real provider composition for
+Trusted Fill, and any separately authorized real-browser evidence. The native
+channel tests prove orchestration and receipt enforcement without claiming a live
+browser effect.
 
 Synthetic protected execution now binds job/claim/settings/account revisions
 and target URL fingerprint, writes `prepared` before invoking its injected

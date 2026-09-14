@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/native/macos/account-flow-adapter.js",
+      "sha256": "261d73e4e44fc8353f16d29fa33174774e8f787b9fcff9f7a3653d121cbff638",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/native/macos/build.js",
+      "sha256": "5d6a16cf993b417fdbd78b24f67a2d6b65e4779113cd984d239f651ff80db128",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/native/macos/identity.js",
+      "sha256": "d2a02cbcf25b104102ff812aa7da4d580db102ec7ab1a6cd0352b30cb5d94396",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/native/macos/account-flow-adapter.ts",
+      "sha256": "a689640264b4eb1278e84d34f6358c593c411bd4c541f911eac3cd570790d49d",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/native/macos/build.ts",
+      "sha256": "e393c12ca7cb61f724628bfccf7489a7dded69fe643fdad37454f13d27b0fd3f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/native/macos/identity.ts",
+      "sha256": "f758e3111165f85f6393bc3c2dab3d71f55f769d69bb9a947a3a2aff32f860db",
+      "classification": "unreviewed"
+    }
+  ]
+}

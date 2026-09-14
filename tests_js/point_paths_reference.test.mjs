@@ -432,6 +432,13 @@ test('S05 path support registration preserves the exact prior matrix', t => {
     command: ['npm', 'run', 'companion:typecheck'], tiers: ['fast', 'full'] });
   assert.deepEqual(matrix.ownership.shift(), { paths: ['apps/companion/**'],
     suites: ['companion-typescript-check', 'node-workspace-other', 'migration-inventory', 'source-size'] });
+  const macosAdapterIndex = matrix.suites.findIndex(suite => suite.id === 'macos-native-typescript-adapter');
+  assert.ok(macosAdapterIndex >= 0);
+  assert.deepEqual(matrix.suites.splice(macosAdapterIndex, 1), [{
+    id: 'macos-native-typescript-adapter', kind: 'node-test',
+    include: ['tests_js/native_macos_email_account_adapter.test.mjs'],
+    platforms: ['darwin'], tiers: ['full', 'platform']
+  }]);
   // Validate the exact portable/native split before removing only those
   // reviewed additions from the historical matrix comparison.
   const nativeIndex = matrix.suites.findIndex(suite => suite.id === 'native-frozen-reference-profiles');

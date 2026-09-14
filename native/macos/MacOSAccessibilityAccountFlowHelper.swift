@@ -46,7 +46,8 @@ func oracleCausalSuccessorDecision(
 struct MacOSAccessibilityAccountFlowHelper {
     static let providerIdentifier = "macos-accessibility"
 
-    func execute(_ binding: NativeEmailOnlyBinding, privateEmailDescriptor: Int32) throws {
+    func execute(_ binding: NativeEmailOnlyBinding, privateEmailDescriptor: Int32,
+                 attestationDescriptor: Int32? = nil) throws {
         do {
             try binding.validate()
         } catch {
@@ -68,7 +69,9 @@ struct MacOSAccessibilityAccountFlowHelper {
               let email = String(data: emailBytes, encoding: .utf8),
               email.contains("@"), !email.contains("\n"), !email.contains("\r")
         else { throw AccountFlowHelperError.privateChannel }
-        try OracleEmailOnlyEffect(binding: binding).perform(email: email)
+        try OracleEmailOnlyEffect(
+            binding: binding, inheritedAttestationDescriptor: attestationDescriptor
+        ).perform(email: email)
     }
 
     func prepare(browserProcessIdentifier: pid_t, portalURL: String,
@@ -93,7 +96,22 @@ struct MacOSAccessibilityAccountFlowHelper {
 }
 
 private final class OracleEmailOnlyEffect: OracleAccessibilityTree {
+    private let inheritedAttestationDescriptor: Int32?
+
+    init(binding: NativeEmailOnlyBinding, inheritedAttestationDescriptor: Int32? = nil) {
+        self.inheritedAttestationDescriptor = inheritedAttestationDescriptor
+        super.init(binding: binding)
+    }
+
     private func connectedChannel() throws -> Int32 {
+        if let inheritedAttestationDescriptor {
+            guard inheritedAttestationDescriptor > STDERR_FILENO else {
+                throw AccountFlowHelperError.effectFailed
+            }
+            let duplicate = Darwin.dup(inheritedAttestationDescriptor)
+            guard duplicate >= 0 else { throw AccountFlowHelperError.effectFailed }
+            return duplicate
+        }
         let bytes = Array(binding.nativeAttestationSocketPath.utf8CString)
         guard bytes.count <= 104 else { throw AccountFlowHelperError.invalidBinding }
         let descriptor = Darwin.socket(AF_UNIX, SOCK_STREAM, 0)
