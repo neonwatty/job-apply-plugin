@@ -134,7 +134,10 @@ button:disabled { cursor:wait;opacity:.58 }
   font-weight:750
 }
 .nav-link[aria-current=page] { background:var(--green);color:white }
+.nav-count { display:inline-grid;place-items:center;min-width:1.35rem;height:1.35rem;margin-left:.4rem;border-radius:999px;padding:0 .3rem;background:#e4ece7;color:var(--green);font-size:.66rem;font-weight:900 }
+.nav-link[aria-current=page] .nav-count { background:rgba(255,255,255,.2);color:white }
 .companion { width:min(1180px,92vw);margin:0 auto 5rem }
+.companion:focus { outline:none }
 .fixture-notice {
   margin:1rem 0 0;
   padding:.65rem .85rem;
@@ -359,8 +362,9 @@ footer { display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.5rem }
 .resume-metrics strong { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:500 1.8rem Georgia,serif }
 .resume-metrics span { align-self:end;color:var(--muted);font-size:.8rem;font-weight:750 }
 .resume-count { padding-bottom:.35rem;color:var(--muted);font-size:.8rem;white-space:nowrap }
-.resume-list { display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:1rem;margin-top:.3rem }
-.resume-card { display:grid;align-content:start;gap:.9rem;min-height:220px;border:1px solid var(--line);border-radius:15px;padding:1.15rem;background:#f8faf6;text-align:left }
+.resume-list { list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:1rem;margin-top:.3rem;padding:0 }
+.resume-list>li { min-width:0 }
+.resume-card { display:grid;align-content:start;gap:.9rem;width:100%;min-height:220px;border:1px solid var(--line);border-radius:15px;padding:1.15rem;background:#f8faf6;text-align:left }
 .resume-card:hover:not(:disabled) { border-color:#8bb8a1;background:#f1f8f3 }
 .resume-card-heading { display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:.7rem }
 .resume-card-heading strong { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 1.1rem Georgia,serif }

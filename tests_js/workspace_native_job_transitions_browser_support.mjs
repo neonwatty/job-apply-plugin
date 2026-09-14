@@ -101,6 +101,9 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, prepareInter
   await open();
   await status.getByText(/After an active claim is released/).waitFor();
   await change('Mark needs info', 'needs_info');
+  const attentionCount = (await api('/api/overview')).counts.attentionJobs;
+  await navigation.getByRole('button', { name: 'Needs Attention', exact: true }).locator('.nav-count')
+    .getByText(String(attentionCount), { exact: true }).waitFor();
 
   // Hold a write, then hold only its background refresh: write guards must end at acknowledgement.
   let releasePost, postSeen, releaseGet, getSeen;

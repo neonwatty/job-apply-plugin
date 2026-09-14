@@ -22,6 +22,7 @@ export async function nativeAutomationBrowser(page, root) {
   await workspace.getByLabel('Optional signup email override',{exact:true}).fill(privateEmail);
   await workspace.getByRole('button',{name:'Add resolved realm',exact:true}).click();
   await workspace.getByRole('form',{name:/Edit signup email override for Workday realm/}).waitFor();
+  assert.equal(await workspace.getByRole('listitem').count(),1);
   assert.doesNotMatch(await workspace.innerText(),new RegExp(privateEmail));
   const accounts=JSON.parse(await readFile(join(root,'employer-accounts.json'),'utf8')).accounts;
   assert.equal(Object.values(accounts)[0].signupEmailOverride,privateEmail);

@@ -16,7 +16,18 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   const resume = Object.values((await document('resumes')).resumes)[0];
   let profile = await document('profile');
   await cli('profile-patch', ['--source', 'user', '--expected-revision', String(profile.metadata.revision)], { employer: ['Existing employer'] });
+  assert.equal(await page.locator('nav').getByRole('button', { name: 'Resume extraction', exact: true }).count(), 0);
+  await page.locator('nav .nav-count').first().waitFor();
+  assert.ok(await page.locator('nav .nav-count').count() >= 1);
+  await page.getByRole('button', { name: 'Resumes', exact: true }).click();
+  assert.equal(await page.locator('.resume-list').evaluate(node => node.tagName), 'UL');
+  assert.equal(await page.locator('.resume-list>li').count(), await page.locator('.resume-card').count());
   await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
+  await page.getByRole('heading', { name: 'Resume extraction', exact: true }).waitFor();
+  assert.equal(await page.title(), 'Resume extraction · Job Apply Workspace');
+  await page.waitForFunction(() => document.activeElement?.id === 'workspace-content');
+  assert.equal(await page.locator('#workspace-content').evaluate(node => node === document.activeElement), true);
+  assert.equal(await page.locator('nav').getByRole('button', { name: 'Resumes', exact: true }).getAttribute('aria-current'), 'page');
   await page.getByLabel('Resume to extract').selectOption(resume.id);
   // With no review choices, an unacknowledged request write still needs navigation protection.
   let releaseWrite, writeStarted;
@@ -91,6 +102,7 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
     releaseDetail();
     await page.unroute(detailPath);
   }
+  await page.getByRole('button', { name: 'Resumes', exact: true }).click();
   await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
   await page.getByRole('button', { name: 'Review extraction result', exact: true }).click();
   await page.getByText('This proposal is complete. No further review is needed.', { exact: true }).waitFor();
