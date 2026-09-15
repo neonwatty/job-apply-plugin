@@ -20,6 +20,7 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   await page.locator('nav .nav-count').first().waitFor();
   assert.ok(await page.locator('nav .nav-count').count() >= 1);
   await page.getByRole('button', { name: 'Resumes', exact: true }).click();
+  await page.locator('.resume-card').first().waitFor();
   assert.equal(await page.locator('.resume-list').evaluate(node => node.tagName), 'UL');
   assert.equal(await page.locator('.resume-list>li').count(), await page.locator('.resume-card').count());
   await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();

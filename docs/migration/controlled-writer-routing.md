@@ -15,10 +15,20 @@ route is rejected when its expected marker is missing, invalid, or conflicts
 with another marker. This prevents a launcher restart from silently assigning
 the other runtime to the same writable directory.
 
-The installed-package rehearsal starts native operation with `--writer
-native-clone` and the clone root, allowing the launcher to select the packaged
-provider. It creates data only in that clone, stops the native server, and then
-starts `--writer python` against the unchanged canonical source root. The clone
-is retained for diagnosis and is never passed to Python; the canonical source
-is never passed to the native writer. Shipped skills and the default Companion
-command continue to select Python until a later activation change.
+The installed-package rehearsal prepares a native candidate, switches the stable
+Store path to it, and starts `--writer native-clone` with the packaged provider.
+It creates data only in that clone, stops the native server, rolls the stable path
+back to the unchanged Python directory, and starts `--writer python`. The native
+directory is retained for diagnosis and is never passed to Python. Shipped skills
+and the default Companion command continue to select Python until a later
+activation change.
+
+The disposable switch rehearsal gives the canonical Store one stable path. With
+the owned writer stopped, it verifies that the prepared clone still matches the
+Python source digest, retains the Python directory under a deterministic rollback
+name, and selects the clone with same-parent renames. Rollback retains the
+post-write native directory for diagnosis and restores the exact Python directory
+at the stable path. Recovery recognizes each unambiguous interruption state and
+fails closed on any extra or conflicting directory. The switch lock serializes
+rehearsal controllers; the controller remains responsible for stopping its owned
+writer before switching. Installed defaults and live Stores are unchanged.

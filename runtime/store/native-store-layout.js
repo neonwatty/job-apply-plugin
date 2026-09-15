@@ -14,11 +14,7 @@ export const nativeStoreRequiredEntries = [
 export const nativeStoreAllowedEntries = new Set([
     ...nativeStoreRequiredEntries, nativeFixtureMarkerName, nativeCloneMarkerName,
 ]);
-export function validateNativeStoreMarker(name, bytes) {
-    if (name === nativeFixtureMarkerName && bytes.toString('utf8') === nativeFixtureMarker)
-        return 'fixture';
-    if (name !== nativeCloneMarkerName)
-        throw new JobsError('native Store ownership marker is invalid');
+export function nativeCloneSourceTree(bytes) {
     let marker;
     try {
         marker = object(parsePythonPointJsonBytes(bytes, { diagnosticProfile: '3.12', intMaxStrDigits: 4300 }), 'clone marker');
@@ -26,10 +22,21 @@ export function validateNativeStoreMarker(name, bytes) {
     catch {
         throw new JobsError('native Store clone marker is invalid');
     }
+    const sourceTree = string(get(marker, 'sourceTree'));
     if (marker.size !== 3 || string(get(marker, 'mode')) !== 'canonical-store-clone'
-        || int(get(marker, 'version')) !== 1n
-        || !/^sha256:[0-9a-f]{64}$/.test(string(get(marker, 'sourceTree')) ?? '')) {
+        || int(get(marker, 'version')) !== 1n || !/^sha256:[0-9a-f]{64}$/.test(sourceTree ?? '')) {
         throw new JobsError('native Store clone marker is invalid');
     }
+    return sourceTree;
+}
+export function validateNativeStoreMarker(name, bytes) {
+    if (name === nativeFixtureMarkerName) {
+        if (bytes.toString('utf8') === nativeFixtureMarker)
+            return 'fixture';
+        throw new JobsError('native Store is not an explicitly initialized synthetic fixture');
+    }
+    if (name !== nativeCloneMarkerName)
+        throw new JobsError('native Store ownership marker is invalid');
+    nativeCloneSourceTree(bytes);
     return 'clone';
 }

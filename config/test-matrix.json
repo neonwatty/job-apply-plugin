@@ -200,7 +200,7 @@
     {
       "id": "native-canonical-store-clone",
       "kind": "node-test",
-      "include": ["tests_js/native_canonical_store_clone.test.mjs", "tests_js/native_canonical_writer_rehearsal.test.mjs"],
+      "include": ["tests_js/native_canonical_store_clone.test.mjs", "tests_js/native_canonical_writer_rehearsal.test.mjs", "tests_js/native_writer_switch_rehearsal.test.mjs"],
       "platforms": ["darwin", "linux"],
       "tiers": ["full", "platform"]
     },

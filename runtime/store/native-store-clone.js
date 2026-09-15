@@ -92,6 +92,42 @@ async function missingDocuments(target, names, now) {
             names.add(name);
         }
 }
+/** Computes the clone marker digest. The caller must hold the Store lock. */
+export async function canonicalStoreSourceTreeLocked(source) {
+    const entries = new Set(await readdir(source));
+    if (coreFiles.some(name => !entries.has(name)) || [...entries].some(name => !sourceFiles.has(name))) {
+        throw new JobsError('canonical clone source contains unsupported or incomplete state');
+    }
+    for (const name of directories)
+        await privateDirectory(join(source, name), `canonical ${name}`);
+    const digest = createHash('sha256');
+    for (const name of [...entries].sort()) {
+        if (name === '.store.lock')
+            continue;
+        if (directories.has(name)) {
+            digest.update(`directory:${name.length}:${name}:`);
+            for (const child of (await readdir(join(source, name))).sort()) {
+                if (!/^[A-Za-z0-9._-]{1,200}$/.test(child) || child === '.' || child === '..') {
+                    throw new JobsError('canonical clone directory entry is unsupported');
+                }
+                const bytes = await privateBytes(join(source, name, child), 10 * 1024 * 1024);
+                digest.update(`${child.length}:${child}:${bytes.length}:`).update(bytes);
+            }
+        }
+        else {
+            const bytes = await privateBytes(join(source, name));
+            digest.update(`${name.length}:${name}:${bytes.length}:`).update(bytes);
+        }
+    }
+    return `sha256:${digest.digest('hex')}`;
+}
+/** Computes the clone marker digest while holding the canonical Store lock. */
+export async function canonicalStoreSourceTree(source, provider, signal = AbortSignal.timeout(30_000)) {
+    await privateDirectory(source, 'canonical clone source');
+    return withExclusiveFileLock(join(source, '.store.lock'), async () => canonicalStoreSourceTreeLocked(source), {
+        provider, pathProfile: '3.12', signal,
+    });
+}
 /** Copies an existing canonical Store into a new native-owned migration target. */
 export async function prepareCanonicalStoreClone(source, target, provider, now = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')) {
     if (![source, target].every(path => isAbsolute(path) && path === resolve(path)) || source === target

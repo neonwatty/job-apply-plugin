@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/store/native-writer-switch.js",
+      "sha256": "f54a05725f84249698ee7b35ace3028d7f231475c10790991afef996db89bb9f",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/native-writer-switch.ts",
+      "sha256": "e7766018cda4b753a405287e8f817c70d637f3809be51b63afa4f256750629e4",
+      "classification": "unreviewed"
+    }
+  ]
+}
