@@ -1,13 +1,11 @@
 # Local testing during the TypeScript migration
 
-Verified on 2026-09-06 against staging commit
-`2ca9d6e2c47948df57e7649a2211d4ec523bb364` and the live staging ruleset:
-automatic **Validate Plugin** runs and required status checks are disabled for
-staging. Manual dispatch remains available. Main validation and nightly tests
-remain enabled. **Release Validation still runs on staging pushes and includes
-Python package checks**; run `34035182132` passed for that staging commit.
-This is a limited staging exception, not a freeze of every Python CI job.
-This change does not modify workflows or branch protection.
+Staging commit `2ca9d6e2c47948df57e7649a2211d4ec523bb364`
+recorded the temporary exception on 2026-09-06. As of 2026-09-15, automatic
+**Validate Plugin** runs are restored for pull requests targeting and pushes to
+`staging`; the aggregate `PR gate` is the required status check. Manual dispatch
+remains available. Main validation and nightly tests remain enabled. **Release
+Validation still runs on staging pushes and includes Python package checks.**
 
 ## Tiered checks
 
@@ -16,7 +14,7 @@ This change does not modify workflows or branch protection.
 | Commit | Whitespace, seven fast matrix suites (including TypeScript and source size), emitted-runtime parity, local Markdown file links — nine checks | Failures block the commit; no browser/package suite starts |
 | Push, known narrow change | Commit-level checks plus explicitly mapped focused contracts | Unknown paths, deleted focused modules, broad tooling/dependency changes and tags require deep evidence |
 | Deep validation | Fast checks plus all affected heavier suites; global/unknown changes and tags include full, release and native-platform suites | Explicit command, run once per outgoing commit/base/environment; successful local evidence can be reused for 24 hours |
-| Migration wave / production cutover | Integrated behavior, browser, packaging, applicable native hosts, supported Python reference version and rollback gates from the migration plan | Local hooks cannot substitute for missing platform/reference evidence; restore staging CI before cutover |
+| Migration wave / production cutover | Integrated behavior, browser, packaging, applicable native hosts, supported Python reference version and rollback gates from the migration plan | Local hooks cannot substitute for hosted platform/reference evidence; the restored staging gate must pass on the exact candidate |
 
 Fast checks include a small Python contract/policy suite while Python remains the
 behavioral reference. Each quick suite has a two-minute ceiling, with at most two

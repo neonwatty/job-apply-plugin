@@ -1,28 +1,25 @@
-# Temporary staging CI exception
+# Restored staging CI gate
 
-Approved by the repository owner on 2026-09-06 to unblock the TypeScript
-migration. PR49 may merge without a successful final CI run. This is an explicit
-exception, not evidence that the full suite passes or that the original
-browser-to-CLI issue is resolved.
+The temporary exception approved on 2026-09-06 ended on 2026-09-15. It allowed
+PR49 to merge without a successful final CI run and did not count as evidence
+that the full suite passed or that the original browser-to-CLI issue was resolved.
 
-Validate Plugin runs automatically only for main pushes and PRs targeting main.
-Staging validation is manual through workflow_dispatch; all validation jobs
-remain available. Manual runs use HEAD~1 as the base-relative policy reference.
-Nightly and release workflows are unchanged.
+Validate Plugin now runs automatically for pushes to and pull requests targeting
+both `main` and `staging`. Manual `workflow_dispatch` remains available and uses
+`HEAD~1` as the base-relative policy reference. Nightly and release workflows
+are unchanged.
 
-The staging-protection ruleset temporarily has no required status checks.
-Its PR requirement, deletion protection and force-push protection remain active.
-Main rules and bypass permissions are unchanged. Previously required staging
-contexts were validate, windows-store-workspace, macos-credential-helper and
-macos-account-flow-helper. The validate context was already retired and must
-not be restored as a requirement without restoring the job.
+The staging-protection ruleset requires the current aggregate `PR gate` context
+and an up-to-date branch. Its PR requirement, deletion protection and force-push
+protection remain active. Main rules and bypass permissions are unchanged. The
+retired `validate` context remains retired; the aggregate gate requires every
+current Linux, Windows, macOS, browser and package job.
 
 During migration, each implementation must pass local test:fast, relevant
 focused tests, check:size, and relevant TypeScript build/type checks before
 integration. Record failures and platform gaps explicitly; never count skipped
 or unrun checks as passing. Python remains the only live Store writer.
 
-Before production cutover, restore automatic staging triggers and required
-checks using the current PR gate and verified platform contexts. Run complete
-validation on the integrated branch before release. Restoration is an explicit
-integration-owner task, not an automatic claim that migration is complete.
+Before production cutover, run complete validation on the integrated candidate.
+Restoring this gate does not by itself claim that migration or cutover acceptance
+is complete.

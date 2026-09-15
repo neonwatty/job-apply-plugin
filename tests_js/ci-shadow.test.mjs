@@ -54,6 +54,11 @@ test("gate CLI configuration fails closed when missing or empty", () => {
   assert.throws(() => gateMain({ CI_RESULTS_JSON: "{}", CI_SELECTED_JOBS: "[]" }), /must not be empty/);
 });
 
+test("Windows validation budget covers the complete protected Store and workspace suites", () => {
+  const workflow = fs.readFileSync(path.join(ROOT, ".github/workflows/validate.yml"), "utf8");
+  assert.match(workflow, /windows-store-workspace:\n[\s\S]*?timeout-minutes: 30\n[\s\S]*?macos-credential-helper:/);
+});
+
 test("validation workflow preserves contexts, replaces stale modules, and keeps shadow full execution", () => {
   const workflow = fs.readFileSync(path.join(ROOT, ".github/workflows/validate.yml"), "utf8");
   for (const id of ["python-shards:", "browser-shards:", "package-contract:", "windows-store-workspace:", "macos-credential-helper:", "macos-account-flow-helper:"]) {
@@ -72,10 +77,9 @@ test("validation workflow preserves contexts, replaces stale modules, and keeps 
   assert.match(workflow, /Shadow only: full deterministic shards still execute/);
   assert.match(workflow, /permissions:\n  contents: read/);
   assert.match(workflow, /cancel-in-progress: true/);
-  assert.match(workflow, /push:\n    branches: \[main\]/);
-  assert.match(workflow, /pull_request:\n    branches: \[main\]/);
+  assert.match(workflow, /push:\n    branches: \[main, staging\]/);
+  assert.match(workflow, /pull_request:\n    branches: \[main, staging\]/);
   assert.match(workflow, /workflow_dispatch:/);
-  assert.doesNotMatch(workflow, /branches:.*staging/);
   assert.match(workflow, /policy:[\s\S]*?actions\/checkout@v4\n        with:\n          fetch-depth: 0[\s\S]*?python-shards:/);
   assert.doesNotMatch(workflow, /owner-approved-visible-browser-tests/);
   const nightly = fs.readFileSync(path.join(ROOT, ".github/workflows/nightly.yml"), "utf8");
