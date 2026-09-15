@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import errno
-import fcntl
 import hashlib
 import importlib.util
 import json
@@ -20,6 +19,11 @@ import threading
 import time
 from pathlib import Path
 from typing import Any
+
+try:
+    import fcntl
+except ModuleNotFoundError:  # Windows can import the client without owning a POSIX broker.
+    fcntl = None  # type: ignore[assignment]
 
 HEARTBEAT_SECONDS = 60.0
 STARTUP_SECONDS = 10.0
@@ -302,6 +306,8 @@ def bind_listener(path: Path) -> socket.socket:
 
 
 def acquire_broker_lock(path: Path) -> int:
+    if fcntl is None:
+        raise RuntimeError("attempt ownership unavailable")
     lock_path = Path(str(path) + ".lock")
     descriptor = os.open(lock_path, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
     try:
