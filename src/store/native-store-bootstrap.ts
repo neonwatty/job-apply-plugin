@@ -16,7 +16,7 @@ import { validateGroups } from '../contracts/workspace/fact-groups.js';
 import { validateJobsDocument } from '../contracts/workspace/jobs.js';
 import { validateProfile } from '../contracts/workspace/profile.js';
 import { validateTrustedFillDocument } from '../contracts/workspace/trusted-fill.js';
-import { fromJSON, get, object, set, string, JobsError } from '../contracts/workspace/values.js';
+import { fromJSON, get, has, int, object, set, string, JobsError } from '../contracts/workspace/values.js';
 import type { Document, Value } from '../contracts/workspace/values.js';
 import { validateAccountOperationJournal } from '../contracts/workspace/account-operation.js';
 import { NativeAnswerJournal, validateAnswerJournal } from './native-answer-journal.js';
@@ -53,6 +53,12 @@ type Identity = { dev: number; ino: number };
 type BootstrapOptions = { clock?: () => string; boundary?: (stage: string) => Promise<void>;
   locked?: <T>(operation: () => Promise<T>) => Promise<T> };
 type Validator = (document: Document) => unknown;
+function validateResumeOperation(document: Document): Document {
+  if (document.size !== 2 || int(get(document, 'schemaVersion')) !== 1n || !has(document, 'operation')) {
+    throw new JobsError('resume recovery schema version is unsupported');
+  }
+  return document;
+}
 const documentValidators: Record<string, Validator> = {
   'profile.json': validateProfile, 'fact-groups.json': validateGroups, 'answers.json': validateAnswers,
   'jobs.json': validateJobsDocument, 'resumes.json': validateExtractionResumes,
@@ -60,7 +66,8 @@ const documentValidators: Record<string, Validator> = {
   'account-operation-journal.json': value => validateAccountOperationJournal(value),
   'trusted-fill.json': validateTrustedFillDocument, 'resume-extractions.json': validateExtractions,
   'resume-extraction-requests.json': validateExtractionRequests,
-  'resume-extraction-journal.json': validateExtractionJournal, 'coordinator.json': validateCoordinator,
+  'resume-extraction-journal.json': validateExtractionJournal, 'resume-operation.json': validateResumeOperation,
+  'coordinator.json': validateCoordinator,
 };
 
 function identity(metadata: Stats): Identity {
@@ -225,8 +232,7 @@ export class NativeStoreBootstrap {
       : validateExtractionResumes(document(resumeBytes, 'resumes'));
     const journalBytes = await readPrivateFile(join(this.root, 'resume-operation.json'), 'resume-operation.json');
     if (journalBytes !== null) {
-      const journal = document(journalBytes, 'resume recovery journal');
-      if (journal.size !== 2 || get(journal, 'schemaVersion') === null) throw new JobsError('invalid resume recovery journal');
+      const journal = validateResumeOperation(document(journalBytes, 'resume recovery journal'));
       const operation = get(journal, 'operation');
       await new NativeResumeFiles(this.root).recover(operation === null ? null : object(operation, 'resume recovery operation'), resumes,
         async value => { resumes = validateExtractionResumes(value); await this.writeDocument('resumes', resumes); },

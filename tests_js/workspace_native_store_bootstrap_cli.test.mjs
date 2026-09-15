@@ -169,6 +169,25 @@ test('init restores referenced managed resume bytes from a Python quarantine', a
   await assert.rejects(lstat(orphan), { code: 'ENOENT' });
 });
 
+test('unsupported resume operation schema blocks initialization before recovery writes', async t => {
+  const { root, legacy } = await fixture(t);
+  const service = new NativeStoreBootstrap(root, legacy);
+  await service.initialize();
+  const journal = '{"schemaVersion":999,"operation":null}\n';
+  const journalPath = join(root, 'resume-operation.json');
+  await writeFile(journalPath, journal, { mode: 0o600 });
+  const entries = await readdir(root);
+  await assert.rejects(service.initialize(), /resume recovery schema version is unsupported/);
+  assert.deepEqual(await readdir(root), entries);
+  assert.equal(await readFile(journalPath, 'utf8'), journal);
+
+  const orphan = join(root, 'resume-files', 'orphan.txt');
+  await writeFile(orphan, 'must remain', { mode: 0o600 });
+  await assert.rejects(service.initialize(), /resume recovery schema version is unsupported/);
+  assert.equal(await readFile(orphan, 'utf8'), 'must remain');
+  assert.equal(await readFile(journalPath, 'utf8'), journal);
+});
+
 test('preflight rejects corrupt or unsafe existing state before writing', async t => {
   await t.test('corrupt JSON leaves a partial root byte-for-byte unchanged', async t => {
     const { root, legacy } = await fixture(t);
