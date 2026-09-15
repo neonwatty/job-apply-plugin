@@ -1,0 +1,266 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "cli:src/cli/native-jobs.ts:automation-settings-get",
+      "kind": "cli",
+      "command": "automation-settings-get",
+      "node": "ACC",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-automation-commands.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/store/native-automation.ts",
+        "src/workspace-core/automation.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:automation-settings-update",
+      "kind": "cli",
+      "command": "automation-settings-update",
+      "node": "ACC",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-automation-commands.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/store/native-automation.ts",
+        "src/workspace-core/automation.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:automation-settings-copy-profile-email",
+      "kind": "cli",
+      "command": "automation-settings-copy-profile-email",
+      "node": "ACC",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-automation-commands.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/store/native-automation.ts",
+        "src/workspace-core/automation.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:automation-capability",
+      "kind": "cli",
+      "command": "automation-capability",
+      "node": "ACC",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-automation-commands.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/store/native-automation.ts",
+        "src/workspace-core/automation.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:account-realm-resolve",
+      "kind": "cli",
+      "command": "account-realm-resolve",
+      "node": "ACC",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-automation-commands.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/store/native-automation.ts",
+        "src/workspace-core/accounts.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:employer-account-list",
+      "kind": "cli",
+      "command": "employer-account-list",
+      "node": "ACC",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-automation-commands.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/store/native-automation.ts",
+        "src/workspace-core/accounts.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:employer-account-get",
+      "kind": "cli",
+      "command": "employer-account-get",
+      "node": "ACC",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-automation-commands.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/store/native-automation.ts",
+        "src/workspace-core/accounts.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:employer-account-create",
+      "kind": "cli",
+      "command": "employer-account-create",
+      "node": "ACC",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-automation-commands.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/store/native-automation.ts",
+        "src/workspace-core/accounts.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:employer-account-update",
+      "kind": "cli",
+      "command": "employer-account-update",
+      "node": "ACC",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-automation-commands.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/store/native-automation.ts",
+        "src/workspace-core/accounts.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:employer-account-execute-synthetic",
+      "kind": "cli",
+      "command": "employer-account-execute-synthetic",
+      "node": "ACC",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-automation-commands.ts",
+        "src/store/native-store-state-repository.ts",
+        "src/store/native-automation.ts",
+        "src/workspace-core/synthetic-account.ts",
+        "src/workspace-core/account-operation.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

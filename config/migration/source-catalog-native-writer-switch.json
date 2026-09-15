@@ -3,7 +3,7 @@
   "sources": [
     {
       "path": "runtime/store/native-writer-switch.js",
-      "sha256": "d36cc360f79f7d5518a5873edf0736886cdff7d543f43d4430a45512f720040e",
+      "sha256": "42df79d0934c4beae3b7a8ec66861994637d42ac763653165b9fc0789d6d58d3",
       "classification": "unreviewed"
     },
     {
@@ -13,7 +13,7 @@
     },
     {
       "path": "src/store/native-writer-switch.ts",
-      "sha256": "d95714be52e7e82a2ebb037f3f7a24a97f8cdf309c1a5c3c845ea66e7cbbdeb0",
+      "sha256": "96824e8ec8c2662dd3edfab9e7e5369ac7b35612cf7773ee16bfcb4a5aaa9b91",
       "classification": "unreviewed"
     },
     {
