@@ -162,8 +162,11 @@ export async function runSupervisor(options, { signal } = {}) {
     controller = new ProcessOwnedWriterController({ active: root, provider, createSpec: launchSpec(options, root, nativeLock) });
     const prepared = await controller.prepare(() => prepareNativeDefault(root, provider, { signal, allowFailedActivation: options.rollback }));
     if (options.rollback) {
-      if (prepared.mode !== 'native') throw new Error('native rollback state is unavailable');
-      await assertNoLiveDetachedAttempt(root); await controller.rollbackQuiescent({ signal });
+      if (prepared.mode === 'native') {
+        await assertNoLiveDetachedAttempt(root); await controller.rollbackQuiescent({ signal });
+      } else if (prepared.mode === 'python' && prepared.durablePythonRollback) {
+        await controller.start('python', signal);
+      } else throw new Error('native rollback state is unavailable');
       await unlink(failedActivationMarker(root)).catch(error => { if (error?.code !== 'ENOENT') throw error; });
     } else {
       await controller.start(prepared.mode, signal);
