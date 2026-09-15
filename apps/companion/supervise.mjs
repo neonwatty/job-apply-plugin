@@ -107,8 +107,11 @@ export async function prepareNativeDefault(root, provider, options = {}) {
   await validateSupervisorRoot(root);
   await assertNoLiveDetachedAttempt(root);
   const candidate = `${root}.native-candidate`, retained = `${root}.native-retained`, rollback = `${root}.python-rollback`;
+  if (await existing(failedActivationMarker(root)) && !options.allowFailedActivation) {
+    throw new Error('native activation previously failed; run Companion with --rollback before retrying');
+  }
   if (await Promise.all([existing(candidate), existing(retained), existing(rollback)]).then(values => values.some(Boolean))) {
-    const mode = await recoverNativeWriterSwitch(root, { provider });
+    const mode = await recoverNativeWriterSwitch(root, { provider, signal: options.signal });
     return { mode, candidate, durablePythonRollback: mode === 'python' && await existing(retained) };
   }
   await mkdir(root, { recursive: true, mode: 0o700 }); await chmod(root, 0o700);
@@ -121,16 +124,13 @@ export async function prepareNativeDefault(root, provider, options = {}) {
     }),
   });
   await bootstrap.initialize(); await assertNoLiveDetachedAttempt(root); options.signal?.throwIfAborted();
-  if (await existing(failedActivationMarker(root)) && !options.allowFailedActivation) {
-    throw new Error('native activation previously failed; run Companion with --rollback before retrying');
-  }
   const marker = await existing(join(root, '.native-store-clone'));
   if (marker) {
-    const mode = await recoverNativeWriterSwitch(root, { provider });
+    const mode = await recoverNativeWriterSwitch(root, { provider, signal: options.signal });
     return { mode, candidate };
   }
   if (await existing(candidate)) {
-    const mode = await recoverNativeWriterSwitch(root, { provider });
+    const mode = await recoverNativeWriterSwitch(root, { provider, signal: options.signal });
     if (mode !== 'python') throw new Error('writer switch state is invalid');
     return { mode, candidate };
   }

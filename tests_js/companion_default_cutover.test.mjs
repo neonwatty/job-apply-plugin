@@ -50,6 +50,15 @@ test('completed rollback remains a durable Python restart without a new native a
   await assert.rejects(stat(restarted.candidate), { code: 'ENOENT' });
 });
 
+test('failed native activation marker blocks native recovery until explicit rollback', { timeout: 60_000 }, async t => {
+  const fixture = await nativeFixture(); t.after(() => fixture.cleanup());
+  const root = join(await realpath(fixture.root), 'failed-native-marker'), provider = loadPosixFlockProvider(fixture.receipt.artifact);
+  const prepared = await prepareNativeDefault(root, provider); await activateNativeWriter(root, prepared.candidate, { provider });
+  await writeFile(`${root}.native-activation-failed`, 'rollback required\n', { mode: 0o600 });
+  await assert.rejects(prepareNativeDefault(root, provider), /run Companion with --rollback/);
+  assert.equal((await prepareNativeDefault(root, provider, { allowFailedActivation: true })).mode, 'native');
+});
+
 test('rollback interruption recovers original Python jobs before bootstrap', { timeout: 60_000 }, async t => {
   const fixture = await nativeFixture(); t.after(() => fixture.cleanup());
   const root = join(await realpath(fixture.root), 'rollback-interruption'), provider = loadPosixFlockProvider(fixture.receipt.artifact);
