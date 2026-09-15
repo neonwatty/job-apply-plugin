@@ -16,6 +16,7 @@ import { extractionCommands, runExtractionCommand } from "./native-extractions.j
 import { nativeAutomationCommandNames, runNativeAutomationCommand } from './native-automation-commands.js';
 import { nativeStoreStateCommandNames, runNativeStoreStateCommand } from './native-store-state.js';
 import { nativeStoreBootstrapCommands, runNativeStoreBootstrapCommand } from './native-store-bootstrap.js';
+import { nativeAuthorityCommands, runNativeAuthorityCommand } from './native-authority.js';
 import { readFile } from "node:fs/promises";
 import { realpathSync } from "node:fs";
 import { basename } from "node:path";
@@ -49,6 +50,7 @@ export const nativeJobsCommandFamilies: Array<{ owner: string; fields: Record<st
   { owner: 'extractions', fields: extractionCommands },
   { owner: 'automation', fields: Object.fromEntries([...nativeAutomationCommandNames].map(name => [name, []])) },
   { owner: 'store-state', fields: Object.fromEntries([...nativeStoreStateCommandNames].map(name => [name, []])) },
+  { owner: 'authority', fields: nativeAuthorityCommands },
   { owner: 'store-bootstrap', fields: nativeStoreBootstrapCommands }, { owner: 'direct', fields: directCommandFields },
 ];
 export const nativeJobsCommandFields: Record<string, string[]> = {};
@@ -78,7 +80,8 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
     }
   }
   const allowed = nativeJobsCommandFields[command ?? ""];
-  const delegated = nativeAutomationCommandNames.has(command ?? '') || nativeStoreStateCommandNames.has(command ?? '');
+  const delegated = nativeAutomationCommandNames.has(command ?? '') || nativeStoreStateCommandNames.has(command ?? '')
+    || Object.hasOwn(nativeAuthorityCommands, command ?? '');
   if (!allowed || !delegated && [...options.keys()].some(key => !["--root", "--native-lock", "--legacy-profile", ...allowed].includes(key))) {
     throw new JobsError("unsupported native Jobs command or option");
   }
@@ -120,6 +123,9 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
     return serialize((await runNativeStoreStateCommand(command!, leafArgs, {
       repository, readInput, readResumePath: path => new NativeResumeFiles(root).readPath(path),
     }))!);
+  }
+  if (Object.hasOwn(nativeAuthorityCommands, command!)) {
+    return serialize((await runNativeAuthorityCommand(command!, leafArgs, { repository, readInput }))!);
   }
   if (Object.hasOwn(accountOperationCommands, command!)) return serialize(await runAccountOperationCommand(command!, repository));
   if (Object.hasOwn(answerLifecycleCommands, command!)) return serialize(await runAnswerLifecycleCommand(command!, repository, options));

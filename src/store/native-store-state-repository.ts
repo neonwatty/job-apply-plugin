@@ -12,6 +12,7 @@ import { validateProfile } from '../contracts/workspace/profile.js';
 import { fromJSON, get, integer, object, string, JobsError } from '../contracts/workspace/values.js';
 import type { Document, Value } from '../contracts/workspace/values.js';
 import type { PreparednessSnapshot } from '../workspace-core/profile-preparedness.js';
+import type { ReplayTransitionTransaction } from '../workspace-core/replay-transition.js';
 import type { HistoryTransaction } from '../workspace-core/store-history.js';
 import type { SessionTransaction } from '../workspace-core/store-sessions.js';
 import { NativeClaimHistory } from './native-claim-history.js';
@@ -89,6 +90,19 @@ export async function runSessionTransaction<T>(storage: NativeStoreStateStorage,
     recomputeReadiness: async (input, attemptRevision, ats = null) =>
       recomputeClaimReadiness(input, integer(attemptRevision), ats === null ? null : fromJSON(ats)),
   });
+}
+
+export function runReplayTransitionTransaction<T>(storage: NativeStoreStateStorage,
+  operation: (transaction: ReplayTransitionTransaction) => Promise<T>): Promise<T> {
+  const history = new NativeClaimHistory(storage.root);
+  return runSessionTransaction(storage, session => operation({
+    history: () => history.read(), appendHistory: event => history.append(event),
+    loadSession: async id => {
+      const value = await session.load(id);
+      return value === null ? null : object(value, 'session');
+    },
+    saveSession: (id, document) => session.save(id, document), answers: () => session.answers(),
+  }));
 }
 
 export async function preparednessSnapshot(storage: NativeStoreStateStorage): Promise<PreparednessSnapshot> {

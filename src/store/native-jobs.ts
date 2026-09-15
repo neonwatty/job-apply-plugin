@@ -36,12 +36,13 @@ import type { TrustedFillRepository, TrustedFillTransaction } from "../workspace
 import type { HistoryRepository, HistoryTransaction } from "../workspace-core/store-history.js";
 import type { SessionRepository, SessionTransaction } from "../workspace-core/store-sessions.js";
 import type { PreparednessRepository, PreparednessSnapshot } from "../workspace-core/profile-preparedness.js";
+import type { ReplayTransitionRepository, ReplayTransitionTransaction } from '../workspace-core/replay-transition.js';
 import { validateProfile } from "../contracts/workspace/profile.js";
 import { validateGroups } from "../contracts/workspace/fact-groups.js";
 import { validateAnswers } from "../contracts/workspace/answers.js";
 import type { AnswerReferenceCounts } from "../workspace-core/answers.js";
 import { ResumeService } from '../workspace-core/resumes.js';
-import { preparednessSnapshot, runHistoryTransaction, runSessionTransaction, stateStorage } from './native-store-state-repository.js';
+import { preparednessSnapshot, runHistoryTransaction, runReplayTransitionTransaction, runSessionTransaction, stateStorage } from './native-store-state-repository.js';
 import { nativeFixtureMarkerName, nativeCloneMarkerName, nativeStoreAllowedEntries, nativeStoreRequiredEntries, validateNativeStoreMetadata } from './native-store-layout.js';
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
 const journalName = "resume-operation";
@@ -55,7 +56,7 @@ export interface ResumeTransaction {
 export { initializeJobsFixture } from './native-jobs-fixture.js';
 
 export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepository, TrustedFillRepository,
-  HistoryRepository, SessionRepository, PreparednessRepository {
+  HistoryRepository, SessionRepository, PreparednessRepository, ReplayTransitionRepository {
   constructor(readonly root: string, private readonly provider: PosixFlockProvider,
     private readonly write = atomicWritePointJson,
     private readonly checkpoint: (stage:string)=>Promise<void> = async () => {}) {}
@@ -469,6 +470,10 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
       stateStorage(this.root, name => this.read(name), name => this.document(name), this.write)));
   }
 
+  async replayTransitionTransaction<T>(operation: (transaction: ReplayTransitionTransaction) => Promise<T>): Promise<T> {
+    return this.stateTransaction(() => runReplayTransitionTransaction(
+      stateStorage(this.root, name => this.read(name), name => this.document(name), this.write), operation));
+  }
   async resumeImport(metadata: Value, filename: string, content: Buffer, preserveFilename: boolean): Promise<Document> {
     return new ResumeService(this).import(metadata, filename, content, preserveFilename);
   }

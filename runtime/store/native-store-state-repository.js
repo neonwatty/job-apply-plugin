@@ -87,6 +87,17 @@ export async function runSessionTransaction(storage, operation) {
         recomputeReadiness: async (input, attemptRevision, ats = null) => recomputeClaimReadiness(input, integer(attemptRevision), ats === null ? null : fromJSON(ats)),
     });
 }
+export function runReplayTransitionTransaction(storage, operation) {
+    const history = new NativeClaimHistory(storage.root);
+    return runSessionTransaction(storage, session => operation({
+        history: () => history.read(), appendHistory: event => history.append(event),
+        loadSession: async (id) => {
+            const value = await session.load(id);
+            return value === null ? null : object(value, 'session');
+        },
+        saveSession: (id, document) => session.save(id, document), answers: () => session.answers(),
+    }));
+}
 export async function preparednessSnapshot(storage) {
     const profile = validateProfile(await storage.document('profile'));
     const resumesDocument = validateExtractionResumes(await storage.document('resumes'));

@@ -25,7 +25,7 @@ import { validateProfile } from "../contracts/workspace/profile.js";
 import { validateGroups } from "../contracts/workspace/fact-groups.js";
 import { validateAnswers } from "../contracts/workspace/answers.js";
 import { ResumeService } from '../workspace-core/resumes.js';
-import { preparednessSnapshot, runHistoryTransaction, runSessionTransaction, stateStorage } from './native-store-state-repository.js';
+import { preparednessSnapshot, runHistoryTransaction, runReplayTransitionTransaction, runSessionTransaction, stateStorage } from './native-store-state-repository.js';
 import { nativeFixtureMarkerName, nativeCloneMarkerName, nativeStoreAllowedEntries, nativeStoreRequiredEntries, validateNativeStoreMetadata } from './native-store-layout.js';
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 };
 const journalName = "resume-operation";
@@ -431,6 +431,9 @@ export class NativeJobsRepository {
     }
     async preparednessSnapshot() {
         return this.stateTransaction(() => preparednessSnapshot(stateStorage(this.root, name => this.read(name), name => this.document(name), this.write)));
+    }
+    async replayTransitionTransaction(operation) {
+        return this.stateTransaction(() => runReplayTransitionTransaction(stateStorage(this.root, name => this.read(name), name => this.document(name), this.write), operation));
     }
     async resumeImport(metadata, filename, content, preserveFilename) {
         return new ResumeService(this).import(metadata, filename, content, preserveFilename);

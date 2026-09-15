@@ -24,6 +24,10 @@ test('production native CLI composes Store state and account automation commands
   assert.equal(saved.applicationId, 'standalone');
   assert.equal((await cli('session-load', ['--id', 'standalone'])).step, 'standalone');
   assert.equal((await cli('profile-preparedness-get')).essentialSetup.length, 4);
+  assert.equal((await cli('replay-transition', [
+    '--id', 'replay-job', '--transition', 'started', '--ats', 'greenhouse',
+  ])).changed, true);
+  assert.equal((await cli('session-load', ['--id', 'replay-job'])).ats, 'greenhouse');
 });
 
 test('production native CLI exposes bootstrap paths without mutation and locks init', async t => {
