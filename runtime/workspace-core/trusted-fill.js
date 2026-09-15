@@ -162,7 +162,7 @@ export class TrustedFillService {
         this.repository = repository;
         this.now = now;
     }
-    approve(value) {
+    approve(value, presentation = {}) {
         const packet = exactFields(value, ['jobId', 'expectedJobRevision', 'realmRef', 'answerRefs', 'observedQuestionFingerprint',
             'observedControlFingerprint', 'formFingerprint', 'allowedOperations', 'durationMinutes'], 'trusted fill approval request');
         const id = safeId(string(get(packet, 'jobId'))), expectedJobRevision = positive(get(packet, 'expectedJobRevision'), 'expectedJobRevision');
@@ -210,17 +210,17 @@ export class TrustedFillService {
             set(records, id, approval);
             set(object(get(document, 'metadata'), 'metadata'), 'updatedAt', text(now));
             await tx.saveApprovals(validateTrustedFillDocument(document));
-            return publicTrustedFillStatus(approval, now);
+            return presentation.public === false ? copy(approval) : publicTrustedFillStatus(approval, now);
         });
     }
-    status(id) {
+    status(id, presentation = {}) {
         safeId(id);
         return this.repository.trustedFillTransaction(async (tx) => {
             const raw = get(object(get(validateTrustedFillDocument(tx.approvals), 'approvals'), 'approvals'), id);
-            return publicTrustedFillStatus(raw, this.now());
+            return presentation.public === false ? raw === null ? null : copy(validateTrustedFillApproval(raw)) : publicTrustedFillStatus(raw, this.now());
         });
     }
-    revoke(id, expectedRevision) {
+    revoke(id, expectedRevision, presentation = {}) {
         safeId(id);
         if (expectedRevision < 1n)
             throw new JobsError('expectedApprovalRevision must be a positive integer');
@@ -235,10 +235,10 @@ export class TrustedFillService {
             set(records, id, updated);
             set(object(get(document, 'metadata'), 'metadata'), 'updatedAt', text(now));
             await tx.saveApprovals(validateTrustedFillDocument(document));
-            return publicTrustedFillStatus(updated, now);
+            return presentation.public === false ? copy(updated) : publicTrustedFillStatus(updated, now);
         });
     }
-    evaluate(value) {
+    evaluate(value, presentation = {}) {
         const fields = ['jobId', 'expectedApprovalRevision', 'observedQuestionFingerprint', 'observedControlFingerprint', 'formFingerprint',
             'fieldOperations', 'authenticationRequired', 'consentRequired', 'credentialFieldsPresent', 'finalControlsPresent', 'unseenQuestions', 'unseenControls'];
         const observed = exactFields(value, fields, 'trusted fill evaluation'), id = safeId(string(get(observed, 'jobId')));
@@ -279,6 +279,10 @@ export class TrustedFillService {
             const decision = trustedFillDecision(approval, state, observed, now);
             if (get(decision, 'authorized') !== true)
                 return this.denied(tx, job, string(get(decision, 'reasonCode')), now);
+            if (presentation.consume === false) {
+                set(decision, 'attentionHandoff', false);
+                return decision;
+            }
             // Evaluation is the one-shot receipt. Persist consumption before returning authority.
             const consumed = revokeTrustedFillApproval(approval, expected, now), next = copy(document);
             const records = copy(object(get(next, 'approvals'), 'approvals'));

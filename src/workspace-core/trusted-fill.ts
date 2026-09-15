@@ -24,6 +24,7 @@ export interface TrustedFillTransaction {
 export interface TrustedFillRepository {
   trustedFillTransaction<T>(operation: (transaction: TrustedFillTransaction) => Promise<T>): Promise<T>;
 }
+export interface TrustedFillPresentation { public?: boolean; consume?: boolean; }
 const doc = (value: unknown): Document => object(fromJSON(value), 'trusted fill value');
 const fingerprintPattern = /^sha256:[0-9a-f]{64}$/;
 const referencePattern = /^[a-z][a-z0-9._-]{0,127}$/;
@@ -144,7 +145,7 @@ export class TrustedFillService {
   constructor(private readonly repository: TrustedFillRepository,
     private readonly now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')) {}
 
-  approve(value: Value): Promise<Value> {
+  approve(value: Value, presentation: TrustedFillPresentation = {}): Promise<Value> {
     const packet = exactFields(value, ['jobId', 'expectedJobRevision', 'realmRef', 'answerRefs', 'observedQuestionFingerprint',
       'observedControlFingerprint', 'formFingerprint', 'allowedOperations', 'durationMinutes'], 'trusted fill approval request');
     const id = safeId(string(get(packet, 'jobId'))), expectedJobRevision = positive(get(packet, 'expectedJobRevision'), 'expectedJobRevision');
@@ -180,19 +181,19 @@ export class TrustedFillService {
       const approval = trustedFillApproval(state, duration, revision, now);
       set(records, id, approval); set(object(get(document, 'metadata'), 'metadata'), 'updatedAt', text(now));
       await tx.saveApprovals(validateTrustedFillDocument(document));
-      return publicTrustedFillStatus(approval, now);
+      return presentation.public === false ? copy(approval) : publicTrustedFillStatus(approval, now);
     });
   }
 
-  status(id: string): Promise<Value> {
+  status(id: string, presentation: TrustedFillPresentation = {}): Promise<Value> {
     safeId(id);
     return this.repository.trustedFillTransaction(async tx => {
       const raw = get(object(get(validateTrustedFillDocument(tx.approvals), 'approvals'), 'approvals'), id);
-      return publicTrustedFillStatus(raw, this.now());
+      return presentation.public === false ? raw === null ? null : copy(validateTrustedFillApproval(raw)) : publicTrustedFillStatus(raw, this.now());
     });
   }
 
-  revoke(id: string, expectedRevision: bigint): Promise<Value> {
+  revoke(id: string, expectedRevision: bigint, presentation: TrustedFillPresentation = {}): Promise<Value> {
     safeId(id); if (expectedRevision < 1n) throw new JobsError('expectedApprovalRevision must be a positive integer');
     return this.repository.trustedFillTransaction(async tx => {
       const document = copy(validateTrustedFillDocument(tx.approvals));
@@ -201,11 +202,11 @@ export class TrustedFillService {
       const now = this.now(), updated = revokeTrustedFillApproval(raw, expectedRevision, now);
       set(records, id, updated); set(object(get(document, 'metadata'), 'metadata'), 'updatedAt', text(now));
       await tx.saveApprovals(validateTrustedFillDocument(document));
-      return publicTrustedFillStatus(updated, now);
+      return presentation.public === false ? copy(updated) : publicTrustedFillStatus(updated, now);
     });
   }
 
-  evaluate(value: Value): Promise<Value> {
+  evaluate(value: Value, presentation: TrustedFillPresentation = {}): Promise<Value> {
     const fields = ['jobId', 'expectedApprovalRevision', 'observedQuestionFingerprint', 'observedControlFingerprint', 'formFingerprint',
       'fieldOperations', 'authenticationRequired', 'consentRequired', 'credentialFieldsPresent', 'finalControlsPresent', 'unseenQuestions', 'unseenControls'];
     const observed = exactFields(value, fields, 'trusted fill evaluation'), id = safeId(string(get(observed, 'jobId')));
@@ -233,6 +234,10 @@ export class TrustedFillService {
       }
       const decision = trustedFillDecision(approval, state, observed, now);
       if (get(decision, 'authorized') !== true) return this.denied(tx, job, string(get(decision, 'reasonCode'))!, now);
+      if (presentation.consume === false) {
+        set(decision, 'attentionHandoff', false);
+        return decision;
+      }
       // Evaluation is the one-shot receipt. Persist consumption before returning authority.
       const consumed = revokeTrustedFillApproval(approval, expected, now), next = copy(document);
       const records = copy(object(get(next, 'approvals'), 'approvals')); set(next, 'approvals', records); set(records, id, consumed);

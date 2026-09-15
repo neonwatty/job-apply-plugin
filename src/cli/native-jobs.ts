@@ -13,6 +13,10 @@ import { pendingAnswerCommands, runPendingAnswerCommand } from './native-pending
 import { profileCommands, runProfileCommand } from "./native-profile.js";
 import { answerCommands, runAnswerCommand } from "./native-answers.js";
 import { extractionCommands, runExtractionCommand } from "./native-extractions.js";
+import { nativeAutomationCommandNames, runNativeAutomationCommand } from './native-automation-commands.js';
+import { nativeStoreStateCommandNames, runNativeStoreStateCommand } from './native-store-state.js';
+import { nativeStoreBootstrapCommands, runNativeStoreBootstrapCommand } from './native-store-bootstrap.js';
+import { nativeAuthorityCommands, runNativeAuthorityCommand } from './native-authority.js';
 import { readFile } from "node:fs/promises";
 import { realpathSync } from "node:fs";
 import { basename } from "node:path";
@@ -23,6 +27,37 @@ import { loadPosixFlockProvider } from "../store/posix-flock.js";
 import { parse, serialize, JobsError } from "../contracts/workspace/values.js";
 import { ResumeService } from "../workspace-core/resumes.js";
 import { NativeResumeFiles } from "../store/native-resume-files.js";
+import { createNativeStoreBootstrap } from '../store/native-store-bootstrap.js';
+import { withStoreBootstrapLock } from './native-store-bootstrap-lock.js';
+
+const directCommandFields: Record<string, string[]> = {
+  'fixture-init': [], 'job-create': ['--input', '--origin'], 'job-get': ['--id', '--include-trashed'],
+  'job-list': ['--status', '--include-trashed', '--trashed-only'],
+  'job-update': ['--id', '--input', '--expected-revision', '--origin'],
+  'resume-import': ['--input', '--path'], 'resume-get': ['--id', '--include-trashed'],
+  'resume-list': ['--include-trashed', '--trashed-only'], 'resume-update': ['--id', '--input', '--expected-revision'],
+  'resume-replace': ['--id', '--path', '--expected-revision'], 'resume-adopt': ['--id', '--path', '--expected-revision'],
+  'resume-set-default': ['--id', '--expected-revision'], 'resume-resolve': ['--id'], 'resume-check': ['--id'],
+};
+export const nativeJobsCommandFamilies: Array<{ owner: string; fields: Record<string, string[]> }> = [
+  { owner: 'account-operation', fields: accountOperationCommands }, { owner: 'answer-lifecycle', fields: answerLifecycleCommands },
+  { owner: 'resume-lifecycle', fields: resumeLifecycleCommands }, { owner: 'trash', fields: trashCommands },
+  { owner: 'grouped-approvals', fields: groupedApprovalCommands }, { owner: 'task-intake', fields: taskIntakeCommands },
+  { owner: 'legacy-jobs', fields: legacyJobCommands }, { owner: 'job-upsert', fields: jobUpsertCommands },
+  { owner: 'job-transition', fields: jobTransitionCommands }, { owner: 'projections', fields: projectionCommands },
+  { owner: 'claims', fields: claimCommands }, { owner: 'pending-answers', fields: pendingAnswerCommands },
+  { owner: 'profile', fields: profileCommands }, { owner: 'answers', fields: answerCommands },
+  { owner: 'extractions', fields: extractionCommands },
+  { owner: 'automation', fields: Object.fromEntries([...nativeAutomationCommandNames].map(name => [name, []])) },
+  { owner: 'store-state', fields: Object.fromEntries([...nativeStoreStateCommandNames].map(name => [name, []])) },
+  { owner: 'authority', fields: nativeAuthorityCommands },
+  { owner: 'store-bootstrap', fields: nativeStoreBootstrapCommands }, { owner: 'direct', fields: directCommandFields },
+];
+export const nativeJobsCommandFields: Record<string, string[]> = {};
+for (const family of nativeJobsCommandFamilies) for (const [command, fields] of Object.entries(family.fields)) {
+  if (Object.hasOwn(nativeJobsCommandFields, command)) throw new Error(`duplicate native Jobs command owner: ${command}`);
+  nativeJobsCommandFields[command] = fields;
+}
 
 export async function runJobsCli(args: string[], input: (limit?: number) => Promise<string>): Promise<string> {
   const options = new Map<string, string>();
@@ -44,32 +79,10 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
       }
     }
   }
-  const fields: Record<string, string[]> = {
-    ...accountOperationCommands,
-    ...answerLifecycleCommands,
-    ...resumeLifecycleCommands,
-    ...trashCommands,
-    ...groupedApprovalCommands,
-    ...taskIntakeCommands,
-    ...legacyJobCommands,
-    ...jobUpsertCommands,
-    ...jobTransitionCommands,
-    ...projectionCommands,
-    ...claimCommands,
-    ...pendingAnswerCommands,
-    ...profileCommands,
-    ...answerCommands,
-    ...extractionCommands,
-    "fixture-init": [], "job-create": ["--input", "--origin"], "job-get": ["--id", "--include-trashed"],
-    "job-list": ["--status", "--include-trashed", "--trashed-only"],
-    "job-update": ["--id", "--input", "--expected-revision", "--origin"],
-    "resume-import": ["--input", "--path"], "resume-get": ["--id", "--include-trashed"],
-    "resume-list": ["--include-trashed", "--trashed-only"], "resume-update": ["--id", "--input", "--expected-revision"],
-    "resume-replace": ["--id", "--path", "--expected-revision"], "resume-adopt": ["--id", "--path", "--expected-revision"],
-    "resume-set-default": ["--id", "--expected-revision"], "resume-resolve": ["--id"], "resume-check": ["--id"],
-  };
-  const allowed = fields[command ?? ""];
-  if (!allowed || [...options.keys()].some(key => !["--root", "--native-lock", ...allowed].includes(key))) {
+  const allowed = nativeJobsCommandFields[command ?? ""];
+  const delegated = nativeAutomationCommandNames.has(command ?? '') || nativeStoreStateCommandNames.has(command ?? '')
+    || Object.hasOwn(nativeAuthorityCommands, command ?? '');
+  if (!allowed || !delegated && [...options.keys()].some(key => !["--root", "--native-lock", "--legacy-profile", ...allowed].includes(key))) {
     throw new JobsError("unsupported native Jobs command or option");
   }
   const required = (key: string): string => {
@@ -78,6 +91,15 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
     return value;
   };
   const root = required("--root");
+  if (Object.hasOwn(nativeStoreBootstrapCommands, command!)) {
+    if ([...options.keys()].some(key => !['--root', '--native-lock', '--legacy-profile'].includes(key))) {
+      throw new JobsError('unsupported native Store bootstrap command or option');
+    }
+    const provider = command === 'init' ? loadPosixFlockProvider(required('--native-lock')) : undefined;
+    const service = createNativeStoreBootstrap(root, options.get('--legacy-profile'), process.env, undefined,
+      provider ? { locked: operation => withStoreBootstrapLock(root, provider, operation) } : {});
+    return serialize(await runNativeStoreBootstrapCommand(command!, service));
+  }
   if (command === "fixture-init") { await initializeJobsFixture(root); return '{"initialized":true}'; }
   const repository = new NativeJobsRepository(root, loadPosixFlockProvider(required("--native-lock")));
   const service = new JobsService(repository);
@@ -91,6 +113,20 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
       : ["resume-proposal-create", "resume-extraction-request-complete"].includes(command!) ? 2 * 1024 * 1024 : 65536;
     return parse(file === "-" ? await input(limit) : await readFile(file, "utf8"));
   };
+  const leafArgs = [...options.entries()].filter(([key]) => !['--root', '--native-lock', '--legacy-profile'].includes(key))
+    .flatMap(([key, value]) => value === 'true' ? [key] : [key, value]);
+  const readInput = async (path: string) => parse(path === '-' ? await input(Infinity) : await readFile(path, 'utf8'));
+  if (nativeAutomationCommandNames.has(command!)) {
+    return serialize((await runNativeAutomationCommand(command!, leafArgs, { repository, readInput }))!);
+  }
+  if (nativeStoreStateCommandNames.has(command!)) {
+    return serialize((await runNativeStoreStateCommand(command!, leafArgs, {
+      repository, readInput, readResumePath: path => new NativeResumeFiles(root).readPath(path),
+    }))!);
+  }
+  if (Object.hasOwn(nativeAuthorityCommands, command!)) {
+    return serialize((await runNativeAuthorityCommand(command!, leafArgs, { repository, readInput }))!);
+  }
   if (Object.hasOwn(accountOperationCommands, command!)) return serialize(await runAccountOperationCommand(command!, repository));
   if (Object.hasOwn(answerLifecycleCommands, command!)) return serialize(await runAnswerLifecycleCommand(command!, repository, options));
   if (Object.hasOwn(resumeLifecycleCommands, command!)) return serialize(await runResumeLifecycleCommand(command!, repository, options));

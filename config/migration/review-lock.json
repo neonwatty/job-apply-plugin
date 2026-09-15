@@ -106,6 +106,14 @@
       "sha256": "bbb71b096d75f3cb7f33cf946859f0163b66d431c2b5c5c3597ddd69a9df88c9"
     },
     {
+      "path": "cli-native-authority-surfaces.json",
+      "sha256": "bc83cc7784b335e3ae86436467c0c78933f8ec24ca0e690ad55aed9d200dfeff"
+    },
+    {
+      "path": "cli-native-automation-surfaces.json",
+      "sha256": "afc02c1e5488c3317ddc4f57668c3d3718aa398bc3d3f2ebf27f6ab430c22f80"
+    },
+    {
       "path": "cli-native-claims-surfaces.json",
       "sha256": "f63132d680ba790131f9b9e4e2fc81ad0b1abdf8ee161bfdb804943ac398f8c9"
     },
@@ -152,6 +160,10 @@
     {
       "path": "cli-native-resumes-surfaces.json",
       "sha256": "23b9fd1e5a29720b5b4143d59a9767dfb9ee98a00e09ef3962f9112c9cda4e5c"
+    },
+    {
+      "path": "cli-native-store-state-surfaces.json",
+      "sha256": "67d2d4040b46d4104db050cbbd62f3cbc42f35ae6c98efa8c4fb05523a8eb902"
     },
     {
       "path": "cli-native-task-intake-surfaces.json",
@@ -362,6 +374,10 @@
       "sha256": "4e6cf635ff0237706cdfa8b0a8cc01210382ca8df322e77b817c6619cc38e2af"
     },
     {
+      "path": "source-catalog-native-default-cutover.json",
+      "sha256": "d07b92cb19e169bb2be746fd8b37578c3f9add26ef4b81cb2608dc928793d350"
+    },
+    {
       "path": "source-catalog-native-email-canary-composition.json",
       "sha256": "83fbfe96c7f96dfcddedcdf87874c540f9711069b9075052b3ae54a7a1e68fe8"
     },
@@ -395,7 +411,7 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "5089f7835ee9f067c8e61e99489530c7b550fc0fe3325b1d79521ac3c3fcbbef"
+      "sha256": "e6b2f8b4caea0548d7e8b582c79849b3cb482ed060e5529d5568e2b0ddd0cabd"
     },
     {
       "path": "source-catalog-native-legacy-jobs.json",
@@ -427,7 +443,7 @@
     },
     {
       "path": "source-catalog-native-store-clone.json",
-      "sha256": "412febe76f4bb35b0a026501c8511a4e70077bbbed0f9f499c53d19abfc913cb"
+      "sha256": "f8ba588e9492aef3875e612be9af8e7323842216fd491efe7a2dcbc63cb23d8b"
     },
     {
       "path": "source-catalog-native-task-cli.json",
@@ -439,11 +455,11 @@
     },
     {
       "path": "source-catalog-native-trusted-fill.json",
-      "sha256": "6addfc1a8175c208ec274b47db077e9b440e27e1265ac0e9a1a3f2d4634a97d8"
+      "sha256": "0bb00c70b761c9e3a5a5ebeadd7b5def6b490286ca6a1182238a73125798d41e"
     },
     {
       "path": "source-catalog-native-writer-switch.json",
-      "sha256": "711e4006424a1c173fc73dc9b46530f7fa44a8d8d4ebb5281008fe8d0c97f39e"
+      "sha256": "e0cf7c4e2a818b234ece839ad55f69d3797e76ebfc3e3086f844edbee85b5fc1"
     },
     {
       "path": "source-catalog-react-trash.json",

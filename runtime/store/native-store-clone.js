@@ -8,8 +8,9 @@ import { JobsError } from '../contracts/workspace/values.js';
 import { initialAutomationDocuments } from './native-automation.js';
 import { withExclusiveFileLock } from './exclusive-file-lock.js';
 import { atomicWritePointJson } from './point-persistence.js';
-import { nativeCloneMarkerName, nativeStoreRequiredEntries } from './native-store-layout.js';
-const sourceFiles = new Set(nativeStoreRequiredEntries.filter(name => name !== 'resume-operation.json'));
+import { nativeCloneMarkerName, nativePolicyTreeName, nativeStoreRequiredEntries } from './native-store-layout.js';
+import { copyNativePolicyTree, updateNativePolicyDigest, withNativePolicyTree } from './native-policy-tree.js';
+const sourceFiles = new Set([...nativeStoreRequiredEntries.filter(name => name !== 'resume-operation.json'), nativePolicyTreeName]);
 const coreFiles = ['.store.lock', 'jobs.json', 'profile.json', 'resumes.json', 'fact-groups.json',
     'answers.json', 'applications.jsonl', 'resume-files', 'sessions'];
 const directories = new Set(['resume-files', 'sessions']);
@@ -92,12 +93,12 @@ async function missingDocuments(target, names, now) {
             names.add(name);
         }
 }
-async function storeTreeLocked(source, entries, candidate = false) {
+async function storeTreeLocked(source, entries, provider, candidate = false, signal = AbortSignal.timeout(30_000), policy) {
     for (const name of directories)
         await privateDirectory(join(source, name), `canonical ${name}`);
     const digest = createHash('sha256');
     for (const name of [...entries].sort()) {
-        if (name === '.store.lock' || (candidate && name === nativeCloneMarkerName))
+        if (name === '.store.lock' || name === nativePolicyTreeName || (candidate && name === nativeCloneMarkerName))
             continue;
         if (directories.has(name)) {
             digest.update(`directory:${name.length}:${name}:`);
@@ -114,29 +115,34 @@ async function storeTreeLocked(source, entries, candidate = false) {
             digest.update(`${name.length}:${name}:${bytes.length}:`).update(bytes);
         }
     }
+    if (policy === undefined) {
+        await withNativePolicyTree(source, provider, async (snapshot) => { updateNativePolicyDigest(digest, snapshot); }, signal);
+    }
+    else
+        updateNativePolicyDigest(digest, policy);
     return `sha256:${digest.digest('hex')}`;
 }
 /** Computes the source digest. The caller must hold the source Store lock. */
-export async function canonicalStoreSourceTreeLocked(source) {
+export async function canonicalStoreSourceTreeLocked(source, provider, signal = AbortSignal.timeout(30_000), policy) {
     const entries = new Set(await readdir(source));
     if (coreFiles.some(name => !entries.has(name)) || [...entries].some(name => !sourceFiles.has(name))) {
         throw new JobsError('canonical clone source contains unsupported or incomplete state');
     }
-    return storeTreeLocked(source, entries);
+    return storeTreeLocked(source, entries, provider, false, signal, policy);
 }
 /** Computes the prepared candidate digest. The caller must hold the candidate Store lock. */
-export async function canonicalStoreCandidateTreeLocked(root) {
+export async function canonicalStoreCandidateTreeLocked(root, provider, signal = AbortSignal.timeout(30_000), policy) {
     const entries = new Set(await readdir(root));
-    const allowed = new Set([...nativeStoreRequiredEntries, nativeCloneMarkerName]);
+    const allowed = new Set([...nativeStoreRequiredEntries, nativeCloneMarkerName, nativePolicyTreeName]);
     if (nativeStoreRequiredEntries.some(name => !entries.has(name)) || [...entries].some(name => !allowed.has(name))) {
         throw new JobsError('canonical clone candidate contains unsupported or incomplete state');
     }
-    return storeTreeLocked(root, entries, true);
+    return storeTreeLocked(root, entries, provider, true, signal, policy);
 }
 /** Computes the clone marker digest while holding the canonical Store lock. */
 export async function canonicalStoreSourceTree(source, provider, signal = AbortSignal.timeout(30_000)) {
     await privateDirectory(source, 'canonical clone source');
-    return withExclusiveFileLock(join(source, '.store.lock'), async () => canonicalStoreSourceTreeLocked(source), {
+    return withExclusiveFileLock(join(source, '.store.lock'), async () => canonicalStoreSourceTreeLocked(source, provider, signal), {
         provider, pathProfile: '3.12', signal,
     });
 }
@@ -163,6 +169,8 @@ export async function prepareCanonicalStoreClone(source, target, provider, now =
             for (const name of [...entries].sort()) {
                 if (name === '.store.lock')
                     continue;
+                if (name === nativePolicyTreeName)
+                    continue;
                 if (directories.has(name)) {
                     digest.update(`directory:${name.length}:${name}:`);
                     await copyDirectory(join(source, name), join(target, name), digest);
@@ -174,6 +182,12 @@ export async function prepareCanonicalStoreClone(source, target, provider, now =
                 }
                 copied.add(name);
             }
+            await withNativePolicyTree(source, provider, async (policy) => {
+                updateNativePolicyDigest(digest, policy);
+                await copyNativePolicyTree(target, policy);
+                if (policy)
+                    copied.add(nativePolicyTreeName);
+            });
             await writePrivate(join(target, '.store.lock'), Buffer.alloc(0));
             copied.add('.store.lock');
             await missingDocuments(target, copied, now);
@@ -181,7 +195,7 @@ export async function prepareCanonicalStoreClone(source, target, provider, now =
                 throw new JobsError('canonical clone target is incomplete');
             const sourceTree = `sha256:${digest.digest('hex')}`;
             await withExclusiveFileLock(join(target, '.store.lock'), async () => {
-                const candidateTree = await canonicalStoreCandidateTreeLocked(target);
+                const candidateTree = await canonicalStoreCandidateTreeLocked(target, provider);
                 const marker = Buffer.from(JSON.stringify({ mode: 'canonical-store-clone', version: 2,
                     sourceTree, candidateTree }) + '\n');
                 await writePrivate(join(target, nativeCloneMarkerName), marker);
