@@ -29,6 +29,23 @@ import { NativeResumeFiles } from "../store/native-resume-files.js";
 import { createNativeStoreBootstrap } from '../store/native-store-bootstrap.js';
 import { withExclusiveFileLock } from '../store/exclusive-file-lock.js';
 
+export const nativeJobsCommandFields: Record<string, string[]> = {
+  ...accountOperationCommands, ...answerLifecycleCommands, ...resumeLifecycleCommands, ...trashCommands,
+  ...groupedApprovalCommands, ...taskIntakeCommands, ...legacyJobCommands, ...jobUpsertCommands,
+  ...jobTransitionCommands, ...projectionCommands, ...claimCommands, ...pendingAnswerCommands,
+  ...profileCommands, ...answerCommands, ...extractionCommands,
+  ...Object.fromEntries([...nativeAutomationCommandNames].map(name => [name, []])),
+  ...Object.fromEntries([...nativeStoreStateCommandNames].map(name => [name, []])),
+  ...nativeStoreBootstrapCommands,
+  'fixture-init': [], 'job-create': ['--input', '--origin'], 'job-get': ['--id', '--include-trashed'],
+  'job-list': ['--status', '--include-trashed', '--trashed-only'],
+  'job-update': ['--id', '--input', '--expected-revision', '--origin'],
+  'resume-import': ['--input', '--path'], 'resume-get': ['--id', '--include-trashed'],
+  'resume-list': ['--include-trashed', '--trashed-only'], 'resume-update': ['--id', '--input', '--expected-revision'],
+  'resume-replace': ['--id', '--path', '--expected-revision'], 'resume-adopt': ['--id', '--path', '--expected-revision'],
+  'resume-set-default': ['--id', '--expected-revision'], 'resume-resolve': ['--id'], 'resume-check': ['--id'],
+};
+
 export async function runJobsCli(args: string[], input: (limit?: number) => Promise<string>): Promise<string> {
   const options = new Map<string, string>();
   let command: string | undefined;
@@ -49,34 +66,7 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
       }
     }
   }
-  const fields: Record<string, string[]> = {
-    ...accountOperationCommands,
-    ...answerLifecycleCommands,
-    ...resumeLifecycleCommands,
-    ...trashCommands,
-    ...groupedApprovalCommands,
-    ...taskIntakeCommands,
-    ...legacyJobCommands,
-    ...jobUpsertCommands,
-    ...jobTransitionCommands,
-    ...projectionCommands,
-    ...claimCommands,
-    ...pendingAnswerCommands,
-    ...profileCommands,
-    ...answerCommands,
-    ...extractionCommands,
-    ...Object.fromEntries([...nativeAutomationCommandNames].map(name => [name, []])),
-    ...Object.fromEntries([...nativeStoreStateCommandNames].map(name => [name, []])),
-    ...nativeStoreBootstrapCommands,
-    "fixture-init": [], "job-create": ["--input", "--origin"], "job-get": ["--id", "--include-trashed"],
-    "job-list": ["--status", "--include-trashed", "--trashed-only"],
-    "job-update": ["--id", "--input", "--expected-revision", "--origin"],
-    "resume-import": ["--input", "--path"], "resume-get": ["--id", "--include-trashed"],
-    "resume-list": ["--include-trashed", "--trashed-only"], "resume-update": ["--id", "--input", "--expected-revision"],
-    "resume-replace": ["--id", "--path", "--expected-revision"], "resume-adopt": ["--id", "--path", "--expected-revision"],
-    "resume-set-default": ["--id", "--expected-revision"], "resume-resolve": ["--id"], "resume-check": ["--id"],
-  };
-  const allowed = fields[command ?? ""];
+  const allowed = nativeJobsCommandFields[command ?? ""];
   const delegated = nativeAutomationCommandNames.has(command ?? '') || nativeStoreStateCommandNames.has(command ?? '');
   if (!allowed || !delegated && [...options.keys()].some(key => !["--root", "--native-lock", "--legacy-profile", ...allowed].includes(key))) {
     throw new JobsError("unsupported native Jobs command or option");
