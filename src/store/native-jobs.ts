@@ -312,7 +312,7 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
     if (!stat.isDirectory() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0 || stat.uid !== process.getuid?.()) throw new JobsError("native sessions directory must be private and owned");
     const sessions: Document[] = [];
     for (const name of (await readdir(directory)).sort()) {
-      if (!name.endsWith('.json')) throw new JobsError("native sessions contains unsupported state");
+      if (!name.endsWith('.json')) continue;
       const id = safeId(name.slice(0, -5));
       const session = validateAnswerSession(parsePythonPointJsonBytes(await this.read(`sessions/${name}`), { diagnosticProfile: "3.12", intMaxStrDigits: 4300 }));
       if (string(get(session, "applicationId")) !== id) throw new JobsError("session identity does not match its file");
@@ -449,6 +449,7 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
     await this.validateRoot();
     return withExclusiveFileLock(join(this.root, '.store.lock'), async () => {
       await this.validateRoot(true);
+      await this.recoverResumes();
       return operation();
     }, { provider: this.provider, pathProfile: '3.12', signal: AbortSignal.timeout(30_000) });
   }

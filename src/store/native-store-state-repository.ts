@@ -16,7 +16,7 @@ import type { HistoryTransaction } from '../workspace-core/store-history.js';
 import type { SessionTransaction } from '../workspace-core/store-sessions.js';
 import { NativeClaimHistory } from './native-claim-history.js';
 import { validateExtractionResumes } from './native-extraction-journal.js';
-import { NativeResumeFiles } from './native-resume-files.js';
+import { NativeResumeFiles, syncDirectory } from './native-resume-files.js';
 import { atomicWritePointJson } from './point-persistence.js';
 
 const pointOptions = { pathProfile: '3.12', intMaxStrDigits: 4300 } as const;
@@ -75,7 +75,7 @@ export async function runSessionTransaction<T>(storage: NativeStoreStateStorage,
       await storage.write(join(directory, `${safeId(id)}.json`), document);
     },
     delete: async id => {
-      try { await unlink(join(directory, `${safeId(id)}.json`)); return true; }
+      try { await unlink(join(directory, `${safeId(id)}.json`)); await syncDirectory(directory); return true; }
       catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false; throw error; }
     },
     canonicalJob: async id => {

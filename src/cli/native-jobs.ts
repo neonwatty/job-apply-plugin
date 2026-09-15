@@ -18,7 +18,7 @@ import { nativeStoreStateCommandNames, runNativeStoreStateCommand } from './nati
 import { nativeStoreBootstrapCommands, runNativeStoreBootstrapCommand } from './native-store-bootstrap.js';
 import { readFile } from "node:fs/promises";
 import { realpathSync } from "node:fs";
-import { basename, join } from "node:path";
+import { basename } from "node:path";
 import { pathToFileURL } from "node:url";
 import { JobsService } from "../workspace-core/jobs.js";
 import { NativeJobsRepository, initializeJobsFixture, fixtureError } from "../store/native-jobs.js";
@@ -27,7 +27,7 @@ import { parse, serialize, JobsError } from "../contracts/workspace/values.js";
 import { ResumeService } from "../workspace-core/resumes.js";
 import { NativeResumeFiles } from "../store/native-resume-files.js";
 import { createNativeStoreBootstrap } from '../store/native-store-bootstrap.js';
-import { withExclusiveFileLock } from '../store/exclusive-file-lock.js';
+import { withStoreBootstrapLock } from './native-store-bootstrap-lock.js';
 
 const directCommandFields: Record<string, string[]> = {
   'fixture-init': [], 'job-create': ['--input', '--origin'], 'job-get': ['--id', '--include-trashed'],
@@ -94,8 +94,7 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
     }
     const provider = command === 'init' ? loadPosixFlockProvider(required('--native-lock')) : undefined;
     const service = createNativeStoreBootstrap(root, options.get('--legacy-profile'), process.env, undefined,
-      provider ? { locked: operation => withExclusiveFileLock(join(root, '.store.lock'), operation,
-        { provider, pathProfile: '3.12', signal: AbortSignal.timeout(30_000) }) } : {});
+      provider ? { locked: operation => withStoreBootstrapLock(root, provider, operation) } : {});
     return serialize(await runNativeStoreBootstrapCommand(command!, service));
   }
   if (command === "fixture-init") { await initializeJobsFixture(root); return '{"initialized":true}'; }

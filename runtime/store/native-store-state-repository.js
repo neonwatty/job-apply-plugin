@@ -12,7 +12,7 @@ import { validateProfile } from '../contracts/workspace/profile.js';
 import { fromJSON, get, integer, object, string, JobsError } from '../contracts/workspace/values.js';
 import { NativeClaimHistory } from './native-claim-history.js';
 import { validateExtractionResumes } from './native-extraction-journal.js';
-import { NativeResumeFiles } from './native-resume-files.js';
+import { NativeResumeFiles, syncDirectory } from './native-resume-files.js';
 import { atomicWritePointJson } from './point-persistence.js';
 const pointOptions = { pathProfile: '3.12', intMaxStrDigits: 4300 };
 export async function runHistoryTransaction(storage, operation) {
@@ -66,6 +66,7 @@ export async function runSessionTransaction(storage, operation) {
         delete: async (id) => {
             try {
                 await unlink(join(directory, `${safeId(id)}.json`));
+                await syncDirectory(directory);
                 return true;
             }
             catch (error) {
