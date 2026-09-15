@@ -18,4 +18,4 @@ The installed smoke activates only a disposable canonical clone. It launches the
 
 ## Deferred work
 
-The ordinary Companion default and shipped Store/task/workspace skill commands do not change in this package. Native default activation requires a process-owned quiescence controller plus closure of the Python-only attempt broker and final-action policy and the missing native Store command surface. Python-free final artifact, clean-host host matrix, publication, and live-data activation remain later gates.
+The ordinary Companion default and shipped Store/task/workspace skill commands do not change in this package. The installed rehearsal now has a [process-owned quiescence controller](process-owned-writer-quiescence.md) for its disposable clone. Native default activation still requires closure of the Python-only attempt broker and final-action policy and the missing native Store command surface. Python-free final artifact, clean-host host matrix, publication, and live-data activation remain later gates.

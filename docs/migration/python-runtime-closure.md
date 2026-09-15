@@ -35,10 +35,11 @@ now exercises the installed production Next launcher on explicit disposable
 clones: HTML/API startup and native writes persist across restart with Python
 unavailable on `PATH`. Python initialization and rollback are separately bounded
 checks, and rollback preserves both exact canonical bytes and retained native
-post-write state. This evidence does not close ordinary product routing. Before
-changing shipped skills or the default Companion route to Node, process-owned
-quiescence and the remaining attempt, final-action policy, and native Store
-command surfaces must close and pass staging validation.
+post-write state. The installed rehearsal now owns and proves quiescence of the
+complete Python or native Companion process group before either Store move. This
+evidence does not close ordinary product routing. Before changing shipped skills
+or the default Companion route to Node, the remaining attempt, final-action
+policy, and native Store command surfaces must close and pass staging validation.
 
 Repository tests, reference oracles, source generators, and development checks
 may continue using Python during this phase. Their later removal belongs to the

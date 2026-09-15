@@ -34,12 +34,16 @@ default continue to select Python. Native default activation requires
 process-owned quiescence plus closure of the attempt broker, final-action policy,
 and missing native Store commands.
 
-The disposable switch rehearsal gives the canonical Store one stable path. With
-the owned writer stopped, it verifies that the prepared clone still matches the
+The disposable switch rehearsal gives the canonical Store one stable path. Its
+[process-owned quiescence controller](process-owned-writer-quiescence.md) starts
+the selected writer while holding a Store-lifetime ownership lease. It proves
+that the complete owned process group is gone before the first rename. It then
+verifies that the prepared clone still matches the
 Python source digest, retains the Python directory under a deterministic rollback
 name, and selects the clone with same-parent renames. Rollback retains the
 post-write native directory for diagnosis and restores the exact Python directory
 at the stable path. Recovery recognizes each unambiguous interruption state and
 fails closed on any extra or conflicting directory. The switch lock serializes
-rehearsal controllers; the controller remains responsible for stopping its owned
-writer before switching. Installed defaults and live Stores are unchanged.
+rehearsal controllers. Failed switching or replacement startup recovers an
+unambiguous Store state and restarts the matching writer before returning the
+failure. Installed defaults and live Stores are unchanged.
