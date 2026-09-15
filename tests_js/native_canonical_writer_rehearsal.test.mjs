@@ -113,7 +113,7 @@ test('canonical clone rehearses Store CLI, task CLI, HTTP mutation and server re
   ], { env: { ...process.env, PATH: '' } });
   assert.equal(blockedLauncher.code, 1);
   assert.equal(blockedLauncher.stdout, '');
-  assert.equal(blockedLauncher.stderr, 'Python writer cannot use a native-owned Store\n');
+  assert.match(blockedLauncher.stderr, /writer routes require a process-owned supervisor/);
 
   const nativeJobs = [process.execPath, ['runtime/cli/native-jobs.js', '--root', nativeRoot,
     '--native-lock', fixture.receipt.artifact, 'job-list'], { env: { PATH: '' } }];

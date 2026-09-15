@@ -15,24 +15,26 @@ import { nativeExtractionsBrowser } from './workspace_native_extractions_browser
 import { nativeAutomationBrowser } from './workspace_native_automation_browser_support.mjs';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
-import { spawn, execFile } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { realpath, readFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
 import { initializeJobsFixture } from '../runtime/store/native-jobs.js';
+import { spawnOwnedCompanion } from './workspace_next_process_support.mjs';
 const execute = promisify(execFile);
 
 export async function nativeJobsBrowser(buildRoot) {
   const fixture = await nativeFixture();
-  let child, browser, releaseInitialClaim;
+  let child, launcher, browser, releaseInitialClaim;
   try {
     const root = join(await realpath(fixture.root), 'jobs');
     await initializeJobsFixture(root);
-    child = spawn(process.execPath, ['apps/companion/launch.mjs', '--root', root,
-      '--writer', 'native-fixture', '--native-lock', fixture.receipt.artifact], {
-      cwd: buildRoot, env: { ...process.env, PATH: '' }, stdio: ['ignore', 'pipe', 'pipe'],
+    launcher = await spawnOwnedCompanion(buildRoot, root,
+      ['--writer', 'native-fixture', '--native-lock', fixture.receipt.artifact], {
+        env: { PATH: '' }, leaseArtifact: fixture.receipt.artifact,
     });
+    child = launcher.child;
     let errors = '';
     child.stderr.on('data', bytes => { errors += bytes; });
     const startup = await new Promise((resolve, reject) => {
@@ -216,13 +218,7 @@ export async function nativeJobsBrowser(buildRoot) {
   } finally {
     releaseInitialClaim?.();
     if (browser) await browser.close();
-    if (child && child.exitCode === null && child.signalCode === null) {
-      await new Promise((resolve, reject) => {
-        const timer = setTimeout(() => { child.kill('SIGKILL'); reject(Error('Native launcher cleanup timed out')); }, 6000);
-        child.once('exit', () => { clearTimeout(timer); resolve(); });
-        child.kill('SIGTERM');
-      });
-    }
+    await launcher?.stop();
     await fixture.cleanup();
   }
 }

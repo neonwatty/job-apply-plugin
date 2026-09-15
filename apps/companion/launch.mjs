@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
-import { existsSync } from "node:fs";
+import { createReadStream, existsSync, fstatSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
@@ -11,7 +11,11 @@ const require = createRequire(import.meta.url);
 const app = dirname(fileURLToPath(import.meta.url));
 const children = new Set();
 const externalProcessOwner = process.env.COMPANION_PROCESS_OWNER === "process-group-v1";
+const explicitWriter = process.argv.includes('--writer') || process.argv.includes('--native-jobs-fixture');
+if (explicitWriter && !externalProcessOwner) throw new Error('Companion writer routes require a process-owned supervisor');
+if (externalProcessOwner && !fstatSync(3).isFile()) throw new Error('Companion process owner lease is unavailable');
 let stopping = false;
+let ownerChannel;
 function stopChild(child, signal) {
   if (!Number.isSafeInteger(child.pid) || child.pid <= 0) return;
   try {
@@ -22,6 +26,7 @@ function stopChild(child, signal) {
 async function shutdown(code) {
   if (stopping) return;
   stopping = true;
+  ownerChannel?.destroy();
   for (const child of children) stopChild(child, "SIGTERM");
   await Promise.race([
     Promise.all([...children].map(child => child.exitCode !== null || child.signalCode !== null
@@ -77,7 +82,12 @@ async function upstreamBoot(child) {
     child.stdout.on("data", onData); child.once("exit", onExit); child.once("error", onExit);
   });
 }
+async function launchInner() {
 for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => void shutdown(0));
+if (externalProcessOwner) {
+  ownerChannel = createReadStream(null, { fd: 4, autoClose: false });
+  ownerChannel.once('end', () => { void shutdown(1); }); ownerChannel.once('error', () => { void shutdown(1); }); ownerChannel.resume();
+}
 try {
   const options = parseWriterOptions(process.argv.slice(2), app);
   const route = await resolveWriterRoute(options);
@@ -106,3 +116,10 @@ try {
   console.error(error instanceof Error ? error.message : "Companion startup failed");
   await shutdown(1);
 }
+}
+async function launchSupervisor() {
+  const { superviseMain } = await import('./supervise.mjs');
+  await superviseMain(process.argv.slice(2), app);
+}
+if (!externalProcessOwner && !explicitWriter) await launchSupervisor();
+else await launchInner();

@@ -58,7 +58,7 @@
     },
     {
       "path": "apps/companion/launch.mjs",
-      "sha256": "d171613ef6649cba78fa9f1775da6add3ba6c23e5ed830d703bc0c4ef0cfe639",
+      "sha256": "ee9eb73626288c81cfdb6d45e8c76372eacf10393503a484efefcd2e7c7207f5",
       "classification": "unreviewed"
     },
     {
@@ -104,6 +104,11 @@
     {
       "path": "apps/companion/server/routes.ts",
       "sha256": "99437370e892cad4eaffa71385981dd5ebc9a01048455a9ce0cc91070060e3d3",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/supervise.mjs",
+      "sha256": "4b587f68422940fa32b7dcf2e740d8b1a649768cc123a5faa4822b871fa41821",
       "classification": "unreviewed"
     },
     {
