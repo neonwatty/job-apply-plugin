@@ -207,7 +207,7 @@
     {
       "id": "native-default-cutover",
       "kind": "node-test",
-      "include": ["tests_js/final_action_policy_cli.test.mjs", "tests_js/final_action_policy_concurrency.test.mjs", "tests_js/final_action_policy_reference.test.mjs", "tests_js/native_attempt_lifecycle.test.mjs", "tests_js/native_attempt_protocol.test.mjs", "tests_js/native_command_inventory.test.mjs", "tests_js/native_policy_store_clone.test.mjs", "tests_js/native_writer_switch_policy_tamper.test.mjs"],
+      "include": ["tests_js/companion_default_cutover.test.mjs", "tests_js/final_action_policy_cli.test.mjs", "tests_js/final_action_policy_concurrency.test.mjs", "tests_js/final_action_policy_reference.test.mjs", "tests_js/native_attempt_lifecycle.test.mjs", "tests_js/native_attempt_protocol.test.mjs", "tests_js/native_command_inventory.test.mjs", "tests_js/native_policy_store_clone.test.mjs", "tests_js/native_writer_switch_policy_tamper.test.mjs"],
       "platforms": ["darwin", "linux"],
       "tiers": ["full", "platform"]
     },
