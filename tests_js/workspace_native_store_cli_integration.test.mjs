@@ -28,6 +28,12 @@ test('production native CLI composes Store state and account automation commands
     '--id', 'replay-job', '--transition', 'started', '--ats', 'greenhouse',
   ])).changed, true);
   assert.equal((await cli('session-load', ['--id', 'replay-job'])).ats, 'greenhouse');
+  stdin = { id: 'canonical-job', url: 'https://example.invalid/canonical', role: 'Engineer', company: 'Example' };
+  await cli('job-create', ['--input', '-']);
+  await assert.rejects(cli('replay-transition', [
+    '--id', 'canonical-job', '--transition', 'started', '--ats', 'greenhouse',
+  ]), /canonical job sessions require a coordinator operation/);
+  assert.equal((await cli('history-list')).some(item => item.applicationId === 'canonical-job'), false);
 });
 
 test('production native CLI exposes bootstrap paths without mutation and locks init', async t => {

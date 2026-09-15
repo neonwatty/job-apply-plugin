@@ -89,14 +89,23 @@ export async function runSessionTransaction(storage, operation) {
 }
 export function runReplayTransitionTransaction(storage, operation) {
     const history = new NativeClaimHistory(storage.root);
-    return runSessionTransaction(storage, session => operation({
-        history: () => history.read(), appendHistory: event => history.append(event),
-        loadSession: async (id) => {
-            const value = await session.load(id);
-            return value === null ? null : object(value, 'session');
-        },
-        saveSession: (id, document) => session.save(id, document), answers: () => session.answers(),
-    }));
+    return runSessionTransaction(storage, session => {
+        const requireStandalone = async (id) => {
+            const job = await session.canonicalJob(id);
+            if (job !== null && job.deletedAt === null)
+                throw new JobsError('canonical job sessions require a coordinator operation');
+        };
+        return operation({
+            history: () => history.read(), appendHistory: event => history.append(event),
+            loadSession: async (id) => {
+                await requireStandalone(id);
+                const value = await session.load(id);
+                return value === null ? null : object(value, 'session');
+            },
+            saveSession: async (id, document) => { await requireStandalone(id); await session.save(id, document); },
+            answers: () => session.answers(),
+        });
+    });
 }
 export async function preparednessSnapshot(storage) {
     const profile = validateProfile(await storage.document('profile'));
