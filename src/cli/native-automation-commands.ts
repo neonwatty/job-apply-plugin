@@ -1,9 +1,10 @@
 import { AccountsService } from '../workspace-core/accounts.js';
-import { AutomationService } from '../workspace-core/automation.js';
+import { AutomationService, nativeAutomationCapability } from '../workspace-core/automation.js';
 import type { AutomationRepository } from '../workspace-core/automation.js';
 import { SyntheticAccountService } from '../workspace-core/synthetic-account.js';
 import type { SyntheticAccountExecutor } from '../workspace-core/synthetic-account.js';
 import type { AccountOperationRepository } from '../workspace-core/account-operation.js';
+import { parseTaskRevision } from './task-protocol.js';
 import { fromJSON, get, keys, object, JobsError } from '../contracts/workspace/values.js';
 import type { Document, Value } from '../contracts/workspace/values.js';
 
@@ -42,6 +43,11 @@ const commandOptions: Record<string, { allowed: string[]; required: string[] }> 
   'employer-account-execute-synthetic': { allowed: ['--input'], required: ['--input'] },
 };
 
+function expectedRevision(value: string): bigint {
+  try { return parseTaskRevision(value); }
+  catch { throw new JobsError('expected revision must be a positive integer'); }
+}
+
 function optionsFor(command: string, args: string[]): Map<string, string> {
   const specification = commandOptions[command]!;
   const options = new Map<string, string>();
@@ -62,9 +68,7 @@ function optionsFor(command: string, args: string[]): Map<string, string> {
   }
   for (const key of ['--expected-revision', '--expected-profile-revision', '--expected-settings-revision']) {
     const value = options.get(key);
-    if (value !== undefined && !/^[+-]?[0-9]+$/.test(value)) {
-      throw new JobsError('expected revision must be a positive integer');
-    }
+    if (value !== undefined) options.set(key, expectedRevision(value).toString());
   }
   return options;
 }
@@ -75,36 +79,6 @@ function inputObject(value: Value): Document {
     if (error instanceof JobsError) throw new JobsError('input must be a JSON object');
     throw error;
   }
-}
-
-function automationCapability(platform: string): Value {
-  if (platform === 'darwin') return fromJSON({
-    providerId: 'macos-keychain', state: 'available', reasonCode: 'native_compound_boundary',
-    credentialOperationsReady: false, syntheticOperationsReady: true,
-    productionSeamReady: true, liveExecutionEnabled: false, discoveryMode: 'side_effect_free',
-    accountFlowAutomation: {
-      productionSeamReady: true, liveExecutionEnabled: false,
-      workdayPasswordAccountReady: true, greenhouseAccountlessClassificationReady: true,
-      providerId: 'macos-accessibility', state: 'available', emailOnlyCandidateProfileReady: true,
-      credentialOperationsReady: false, discoveryMode: 'side_effect_free',
-    },
-  });
-  const windows = platform === 'win32';
-  const unsupported = platform !== 'linux' && !windows;
-  return fromJSON({
-    providerId: null, state: 'unsupported',
-    reasonCode: unsupported ? 'platform_unsupported'
-      : windows ? 'provider_not_implemented_windows' : 'provider_not_implemented_linux',
-    credentialOperationsReady: false, syntheticOperationsReady: false, discoveryMode: 'side_effect_free',
-    accountFlowAutomation: {
-      productionSeamReady: false, liveExecutionEnabled: false,
-      workdayPasswordAccountReady: false, greenhouseAccountlessClassificationReady: false,
-      providerId: null, state: 'unsupported',
-      reasonCode: unsupported ? 'platform_unsupported'
-        : windows ? 'account_flow_not_implemented_windows' : 'account_flow_not_implemented_linux',
-      discoveryMode: 'side_effect_free',
-    },
-  });
 }
 
 export async function runNativeAutomationCommand(command: string, args: string[],
@@ -131,7 +105,7 @@ export async function runNativeAutomationCommand(command: string, args: string[]
       return automation.update(await payload(), revision('--expected-revision'), true);
     case 'automation-settings-copy-profile-email':
       return automation.copyProfileEmail(revision('--expected-profile-revision'), revision('--expected-settings-revision'), true);
-    case 'automation-capability': return automationCapability(options.get('--platform') ?? process.platform);
+    case 'automation-capability': return nativeAutomationCapability();
     case 'account-realm-resolve': return accounts.resolve(required('--url'));
     case 'employer-account-list': return accounts.list(true);
     case 'employer-account-get': return accounts.get(required('--realm-ref'), true);

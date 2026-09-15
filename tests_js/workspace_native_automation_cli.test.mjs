@@ -3,6 +3,7 @@ import test from 'node:test';
 import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parse } from '../runtime/contracts/workspace/values.js';
+import { nativeAutomationCapability } from '../runtime/workspace-core/automation.js';
 import { fingerprint, operationFingerprint, syntheticProofs } from '../runtime/contracts/workspace/synthetic-account.js';
 import { nativeAutomationCommandNames, runNativeAutomationCommand } from '../runtime/cli/native-automation-commands.js';
 import { documents, fixture, normalized, plain, portal, python, pythonRaw } from './workspace_native_automation_cli_support.mjs';
@@ -92,6 +93,7 @@ test('the leaf owns a closed argument grammar and rejects malformed calls before
     ['automation-settings-update', ['--input'], /missing CLI option value/],
     ['automation-settings-update', ['--input', '-', '--input', 'again', '--expected-revision', '1'], /duplicate CLI option/],
     ['automation-settings-update', ['--input', '-', '--expected-revision', '1.5'], /positive integer/],
+    ['automation-settings-update', ['--input', '-', '--expected-revision', '1__0'], /positive integer/],
     ['automation-capability', ['--platform', 'freebsd'], /platform must be darwin, linux, or win32/],
     ['employer-account-create', [], /required option: --url/],
   ]) await assert.rejects(runNativeAutomationCommand(command, args, context), pattern);
@@ -106,8 +108,10 @@ test('native capability is side-effect free and synthetic execution remains expl
   };
   for (const args of [[], ['--platform', 'darwin'], ['--platform', 'linux'], ['--platform', 'win32']]) {
     const result = await state.native('automation-capability', args);
-    assert.deepEqual(result, python(state.pythonRoot, 'automation-capability', args));
+    assert.deepEqual(result, { value: plain(nativeAutomationCapability()) });
     assert.doesNotMatch(JSON.stringify(result), /private|credential_/);
+    assert.deepEqual(result.value.providerId, null);
+    assert.equal(result.value.reasonCode, 'native_provider_not_composed');
   }
 
   const realm = 'a'.repeat(64), control = fingerprint('native-secure-control:v1');
@@ -139,6 +143,17 @@ test('native capability is side-effect free and synthetic execution remains expl
 });
 
 test('signed and stale revision arguments preserve Python domain behavior', async t => {
+  for (const revision of ['0_1', ' 1 ', '١']) {
+    await t.test(`CPython 3.12 integer spelling ${JSON.stringify(revision)}`, async t => {
+      const state = await fixture(t);
+      const args = ['--input', '-', '--expected-revision', revision];
+      const input = { enabled: true };
+      const expected = python(state.pythonRoot, 'automation-settings-update', args, input);
+      assert.equal(expected.value.revision, 2);
+      assert.deepEqual(normalized(await state.native('automation-settings-update', args, input)), normalized(expected));
+    });
+  }
+
   await t.test('automation settings update', async t => {
     const state = await fixture(t);
     const args = revision => ['--input', '-', '--expected-revision', revision];

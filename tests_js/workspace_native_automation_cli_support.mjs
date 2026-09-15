@@ -25,7 +25,7 @@ export function python(root, command, args = [], input) {
 }
 
 export function pythonRaw(root, command, args = [], input) {
-  const result = spawnSync('python3', [script, '--root', root, command, ...args], {
+  const result = spawnSync('python3.12', [script, '--root', root, command, ...args], {
     encoding: 'utf8', input,
   });
   if (result.status === 0) return { value: JSON.parse(result.stdout) };
