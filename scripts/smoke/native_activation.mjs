@@ -31,29 +31,39 @@ async function fileSnapshot(root) {
   return rows;
 }
 
-async function start(route) {
-  const child = spawn(route.command, route.argv, { cwd: installed, stdio: ['ignore', 'pipe', 'pipe'] });
+async function start(route, env = process.env, timeout = 15000) {
+  const child = spawn(route.command, route.argv, { cwd: installed, env, stdio: ['ignore', 'pipe', 'pipe'] });
   let stdout = '', stderr = '';
   child.stderr.on('data', bytes => { stderr += bytes; });
-  const startup = await new Promise((done, reject) => {
-    const timer = setTimeout(() => reject(new Error(`installed writer startup timed out: ${stderr}`)), 15000);
-    const failed = () => { clearTimeout(timer); reject(new Error(`installed writer startup failed: ${stderr}`)); };
-    child.once('error', failed); child.once('exit', failed);
-    child.stdout.on('data', bytes => {
-      stdout += bytes;
-      if (!stdout.includes('\n')) return;
-      clearTimeout(timer);
-      try { done(JSON.parse(stdout.split('\n')[0])); } catch { failed(); }
+  try {
+    const startup = await new Promise((done, reject) => {
+      const timer = setTimeout(() => finish(new Error(`installed writer startup timed out: ${stderr}`)), timeout);
+      function finish(error, value) {
+        clearTimeout(timer);
+        child.off('error', failed); child.off('exit', failed); child.stdout.off('data', onData);
+        if (error) reject(error); else done(value);
+      }
+      function failed() { finish(new Error(`installed writer startup failed: ${stderr}`)); }
+      function onData(bytes) {
+        stdout += bytes;
+        if (stdout.length > 16384) return failed();
+        if (!stdout.includes('\n')) return;
+        try { finish(null, JSON.parse(stdout.split('\n')[0])); } catch { failed(); }
+      }
+      child.once('error', failed); child.once('exit', failed); child.stdout.on('data', onData);
     });
-  });
-  return { child, startup };
+    return { child, startup };
+  } catch (error) {
+    await stop({ child });
+    throw error;
+  }
 }
 
 async function stop(running) {
-  if (running.child.exitCode !== null || running.child.signalCode !== null) return;
+  if (!running.child.pid || running.child.exitCode !== null || running.child.signalCode !== null) return;
   const exited = once(running.child, 'exit');
   running.child.kill('SIGTERM');
-  const timer = setTimeout(() => running.child.kill('SIGKILL'), 3000);
+  const timer = setTimeout(() => running.child.kill('SIGKILL'), 5000);
   try { await exited; } finally { clearTimeout(timer); }
 }
 
@@ -65,11 +75,21 @@ async function request(running, method, path, value) {
     Authorization: `Bearer ${token}`,
     ...(body === undefined ? {} : { Origin: origin, 'Content-Type': 'application/json' }),
   }, signal: AbortSignal.timeout(5000) });
-  return { status: response.status, body: await response.json() };
+  const contentType = response.headers.get('content-type') ?? '';
+  return { status: response.status, contentType,
+    body: contentType.includes('application/json') ? await response.json() : await response.text() };
 }
 
 const work = await mkdtemp(join(smokeRoot, 'installed-native-'));
 const source = join(work, 'canonical-source'), clone = `${source}.native-candidate`;
+const emptyPath = await mkdtemp(join(work, 'empty-path-'));
+const nativeEnv = { ...process.env, PATH: emptyPath };
+for (const command of ['python', 'python3']) {
+  try {
+    await execute(command, ['--version'], { env: nativeEnv, timeout: 5000 });
+    throw new Error('Python is unexpectedly available on the native phase PATH');
+  } catch (error) { if (error.code !== 'ENOENT') throw error; }
+}
 const input = join(work, 'canonical-job.json');
 await writeFile(input, JSON.stringify({ id: 'canonical-job', url: 'https://example.invalid/canonical', role: 'Canonical Engineer' }));
 await execute('python3', [join(installed, 'scripts/job-apply-store.py'), '--root', source, 'job-create', '--input', input], {
@@ -86,15 +106,40 @@ const nativeRoute = await resolveWriterRoute(parseWriterOptions([
   '--plugin-root', installed, '--writer', 'native-clone', '--root', source,
 ], app));
 if (nativeRoute.argv.at(-1) !== addon) throw new Error('installed native route did not select its packaged lock');
-const native = await start(nativeRoute);
-try {
-  const boot = await request(native, 'GET', '/api/boot');
+async function startCompanion(root) {
+  return start({ command: process.execPath, argv: [join(app, 'launch.mjs'),
+    '--plugin-root', installed, '--writer', 'native-clone', '--root', root,
+  ] }, nativeEnv, 100000);
+}
+async function checkCompanion(running) {
+  const page = await request(running, 'GET', '/');
+  if (page.status !== 200 || !page.contentType.includes('text/html') || !/<html[\s>]/i.test(page.body)) {
+    throw new Error('installed Companion did not serve HTML from its Next origin');
+  }
+  const boot = await request(running, 'GET', '/api/boot');
   if (boot.status !== 200 || boot.body.mode !== 'native-store-clone') throw new Error('installed native clone did not activate');
+}
+async function checkNativeJobs(running, failure) {
+  const jobs = await request(running, 'GET', '/api/jobs');
+  const ids = jobs.body.jobs?.map(job => job.id) ?? jobs.body.map?.(job => job.id) ?? [];
+  if (jobs.status !== 200 || !ids.includes('canonical-job') || !ids.includes('native-only-job')) {
+    throw new Error(failure);
+  }
+}
+const native = await startCompanion(source);
+try {
+  await checkCompanion(native);
   const created = await request(native, 'POST', '/api/jobs', {
     job: { id: 'native-only-job', url: 'https://example.invalid/native', role: 'Native Engineer' },
   });
   if (created.status !== 200 || created.body.id !== 'native-only-job') throw new Error('installed native clone mutation failed');
 } finally { await stop(native); }
+
+const restarted = await startCompanion(source);
+try {
+  await checkCompanion(restarted);
+  await checkNativeJobs(restarted, 'installed native mutation did not persist across Companion restart');
+} finally { await stop(restarted); }
 
 await rollbackNativeWriter(source, { provider });
 
@@ -113,15 +158,9 @@ if (JSON.stringify(await fileSnapshot(source)) !== JSON.stringify(canonical)) {
   throw new Error('installed native activation changed canonical Store bytes');
 }
 
-const retainedRoute = await resolveWriterRoute(parseWriterOptions([
-  '--plugin-root', installed, '--writer', 'native-clone', '--root', `${source}.native-retained`,
-], app));
-const retained = await start(retainedRoute);
+const retained = await startCompanion(`${source}.native-retained`);
 try {
-  const jobs = await request(retained, 'GET', '/api/jobs');
-  const ids = jobs.body.jobs?.map(job => job.id) ?? jobs.body.map?.(job => job.id) ?? [];
-  if (jobs.status !== 200 || !ids.includes('canonical-job') || !ids.includes('native-only-job')) {
-    throw new Error('installed native rollback did not retain post-write state');
-  }
+  await checkCompanion(retained);
+  await checkNativeJobs(retained, 'installed native rollback did not retain post-write state');
 } finally { await stop(retained); }
-process.stdout.write('Installed native switch and post-write Python rollback rehearsal passed\n');
+process.stdout.write('Installed Companion HTML, native mutation/restart without Python, and post-write Python rollback rehearsal passed\n');

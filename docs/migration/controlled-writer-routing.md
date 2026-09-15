@@ -15,13 +15,24 @@ route is rejected when its expected marker is missing, invalid, or conflicts
 with another marker. This prevents a launcher restart from silently assigning
 the other runtime to the same writable directory.
 
-The installed-package rehearsal prepares a native candidate, switches the stable
-Store path to it, and starts `--writer native-clone` with the packaged provider.
-It creates data only in that clone, stops the native server, rolls the stable path
-back to the unchanged Python directory, and starts `--writer python`. The native
-directory is retained for diagnosis and is never passed to Python. Shipped skills
-and the default Companion command continue to select Python until a later
-activation change.
+The installed-package rehearsal prepares a disposable native candidate and
+switches the stable Store path to it. It starts the actual installed
+`apps/companion/launch.mjs --writer native-clone` with the packaged provider,
+using a private empty `PATH` that cannot resolve `python` or `python3`. The smoke
+requires HTML from the Next origin and native `/api/boot`, creates a synthetic
+job, stops the Companion, and checks the job survives a fresh Companion launch.
+It then stops the Companion before rolling the stable path back to the unchanged
+Python directory. A separately bounded `--writer python` server check uses the
+normal environment and confirms the canonical job survives without the native
+job; a file digest snapshot confirms exact original Store bytes. The retained
+native directory is reopened through the installed Companion with the same empty
+`PATH`, proving its post-write state remains available.
+
+This closes the [installed native Companion candidate](installed-native-companion-candidate.md)
+only for explicit disposable clones. Shipped skills and the ordinary Companion
+default continue to select Python. Native default activation requires
+process-owned quiescence plus closure of the attempt broker, final-action policy,
+and missing native Store commands.
 
 The disposable switch rehearsal gives the canonical Store one stable path. With
 the owned writer stopped, it verifies that the prepared clone still matches the

@@ -14,7 +14,7 @@ The isolated marketplace fixture builds the production Next.js standalone Compan
 
 ## Installed rehearsal
 
-The installed smoke activates only a disposable canonical clone. It launches the actual installed `apps/companion/launch.mjs` with the explicit `native-clone` writer while Python is unavailable through `PATH`, verifies the HTML and native boot route, performs a native mutation, stops and restarts the installed Companion, and verifies the mutation persists. It then performs the separately bounded Python rollback rehearsal, confirms exact original Store bytes, and confirms the retained native Store contains the post-activation mutation.
+The installed smoke activates only a disposable canonical clone. It launches the actual installed `apps/companion/launch.mjs` with the explicit `native-clone` writer with `PATH` set to a private empty directory, after confirming both `python` and `python3` fail to resolve, verifies the HTML and native boot route, performs a native mutation, stops and restarts the installed Companion, and verifies the mutation persists. It then performs the separately bounded Python rollback rehearsal, confirms exact original Store bytes, and reopens the retained native Store through the same installed launcher and empty `PATH` to confirm it contains the post-activation mutation. Native launcher startup and shutdown are bounded; the Python rollback server has its own shorter startup bound and normal environment. No native launch uses a development server or a raw upstream shortcut.
 
 ## Deferred work
 

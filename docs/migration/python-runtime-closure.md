@@ -30,8 +30,15 @@ Python and TypeScript still remain separate writers. The Companion now provides
 [controlled writer routing and rollback](controlled-writer-routing.md): Python
 remains the default, native operation requires an explicitly owned fixture or
 clone, and rollback returns to the untouched canonical source rather than
-reassigning the clone to Python. Only after staging validation should shipped
-skills or the default Companion route be changed to Node.
+reassigning the clone to Python. The [installed native Companion candidate](installed-native-companion-candidate.md)
+now exercises the installed production Next launcher on explicit disposable
+clones: HTML/API startup and native writes persist across restart with Python
+unavailable on `PATH`. Python initialization and rollback are separately bounded
+checks, and rollback preserves both exact canonical bytes and retained native
+post-write state. This evidence does not close ordinary product routing. Before
+changing shipped skills or the default Companion route to Node, process-owned
+quiescence and the remaining attempt, final-action policy, and native Store
+command surfaces must close and pass staging validation.
 
 Repository tests, reference oracles, source generators, and development checks
 may continue using Python during this phase. Their later removal belongs to the

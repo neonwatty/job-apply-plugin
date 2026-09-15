@@ -403,7 +403,7 @@
     },
     {
       "path": "source-catalog-native-lock-package.json",
-      "sha256": "343382157542c5a19fc34c6fb27560ab5dd81acf7b6a65275c940a99f77e530b"
+      "sha256": "e6eb760e393446beb9306dc35b40aa6d92c2fab17125393e8a1b165e181004f8"
     },
     {
       "path": "source-catalog-native-macos-email-adapter.json",
