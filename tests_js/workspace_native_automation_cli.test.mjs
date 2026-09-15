@@ -1,0 +1,140 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { readFile, stat } from 'node:fs/promises';
+import { join } from 'node:path';
+import { nativeAutomationCapability } from '../runtime/workspace-core/automation.js';
+import { fingerprint, operationFingerprint, syntheticProofs } from '../runtime/contracts/workspace/synthetic-account.js';
+import { nativeAutomationCommandNames, runNativeAutomationCommand } from '../runtime/cli/native-automation-commands.js';
+import { documents, fixture, normalized, plain, portal, python } from './workspace_native_automation_cli_support.mjs';
+
+const commands = [
+  'automation-settings-get', 'automation-settings-update',
+  'automation-settings-copy-profile-email', 'automation-capability',
+  'account-realm-resolve', 'employer-account-list', 'employer-account-get',
+  'employer-account-create', 'employer-account-update',
+  'employer-account-execute-synthetic',
+];
+
+test('native account and automation command leaf matches Python public envelopes and durable revisions', async t => {
+  const state = await fixture(t);
+  const compare = async (command, args = [], input) => {
+    const expected = python(state.pythonRoot, command, args, input);
+    const actual = await state.native(command, args, input);
+    assert.deepEqual(normalized(actual), normalized(expected), `${command} ${args.join(' ')}`);
+    assert.doesNotMatch(JSON.stringify(actual), /profile-private|settings-private|account-private/);
+    return actual.value;
+  };
+
+  await compare('automation-settings-get');
+  await compare('automation-settings-update', ['--input', '-', '--expected-revision', '1'], {
+    enabled: true, automaticAccountCreation: true,
+    signupEmail: 'settings-private@example.invalid', passwordStrategy: 'unique_per_realm',
+  });
+  await compare('automation-settings-copy-profile-email', [
+    '--expected-profile-revision', '1', '--expected-settings-revision', '2',
+  ]);
+  await compare('automation-settings-update', ['--input', '-', '--expected-revision', '3'], { enabled: true });
+  const realm = await compare('account-realm-resolve', ['--url', portal]);
+  const created = await compare('employer-account-create', ['--url', portal, '--input', '-'], {
+    signupEmailOverride: 'account-private@example.invalid',
+  });
+  assert.equal(Object.hasOwn(created, 'descriptor'), false);
+  assert.equal(Object.hasOwn(created, 'signupEmailOverride'), false);
+  await compare('employer-account-list');
+  await compare('employer-account-get', ['--realm-ref', realm.realmRef]);
+  await compare('employer-account-update', [
+    '--realm-ref', realm.realmRef, '--input', '-', '--expected-revision', '1',
+  ], { signupEmailOverride: null });
+  await compare('employer-account-update', [
+    '--realm-ref', realm.realmRef, '--input', '-', '--expected-revision', '2',
+  ], { signupEmailOverride: null });
+  await compare('employer-account-get', ['--realm-ref', 'missing']);
+
+  for (const [command, args, input] of [
+    ['automation-settings-update', ['--input', '-', '--expected-revision', '4'], []],
+    ['automation-settings-update', ['--input', '-', '--expected-revision', '4'], {}],
+    ['automation-settings-update', ['--input', '-', '--expected-revision', '1'], { enabled: false }],
+    ['employer-account-create', ['--url', 'https://jobs.example.invalid/42', '--input', '-'], {}],
+    ['employer-account-create', ['--url', portal, '--input', '-'], { unknown: true }],
+    ['employer-account-create', ['--url', portal, '--input', '-'], {}],
+    ['employer-account-update', ['--realm-ref', realm.realmRef, '--input', '-', '--expected-revision', '1'], { signupEmailOverride: null }],
+    ['employer-account-update', ['--realm-ref', realm.realmRef, '--input', '-', '--expected-revision', '3'], { providerId: 'secret' }],
+  ]) await compare(command, args, input);
+
+  const persisted = await documents(state);
+  assert.deepEqual(normalized(persisted.nativeSettings), normalized(persisted.pythonSettings));
+  assert.deepEqual(normalized(persisted.nativeAccounts), normalized(persisted.pythonAccounts));
+  assert.equal(persisted.nativeSettings.settings.revision, 4);
+  assert.equal(persisted.nativeAccounts.accounts[realm.realmRef].revision, 3);
+  for (const root of [state.nativeRoot, state.pythonRoot]) {
+    assert.equal((await stat(root)).mode & 0o777, 0o700);
+    for (const name of ['automation-settings.json', 'employer-accounts.json']) {
+      assert.equal((await stat(join(root, name))).mode & 0o777, 0o600);
+    }
+  }
+});
+
+test('the leaf owns a closed argument grammar and rejects malformed calls before transactions', async () => {
+  assert.deepEqual([...nativeAutomationCommandNames], commands);
+  let transactions = 0;
+  const context = {
+    repository: {
+      automationTransaction: async () => { transactions += 1; throw new Error('transaction entered'); },
+      accountOperationTransaction: async () => { transactions += 1; throw new Error('transaction entered'); },
+    },
+    readInput: async () => { throw new Error('input read'); },
+  };
+  assert.equal(await runNativeAutomationCommand('job-list', [], context), null);
+  for (const [command, args, pattern] of [
+    ['automation-settings-get', ['extra'], /unexpected CLI argument/],
+    ['automation-settings-get', ['--unknown', 'x'], /unsupported native account automation command or option/],
+    ['automation-settings-update', ['--input', '-'], /required option: --expected-revision/],
+    ['automation-settings-update', ['--input'], /missing CLI option value/],
+    ['automation-settings-update', ['--input', '-', '--input', 'again', '--expected-revision', '1'], /duplicate CLI option/],
+    ['automation-settings-update', ['--input', '-', '--expected-revision', '1.5'], /positive integer/],
+    ['automation-capability', ['--platform', 'freebsd'], /platform must be darwin, linux, or win32/],
+    ['employer-account-create', [], /required option: --url/],
+    ['employer-account-update', ['--realm-ref', 'x', '--input', '-', '--expected-revision', '0'], /positive integer/],
+  ]) await assert.rejects(runNativeAutomationCommand(command, args, context), pattern);
+  assert.equal(transactions, 0);
+});
+
+test('native capability is side-effect free and synthetic execution remains explicitly injected', async t => {
+  const state = await fixture(t);
+  const before = {
+    settings: await readFile(join(state.nativeRoot, 'automation-settings.json'), 'utf8'),
+    accounts: await readFile(join(state.nativeRoot, 'employer-accounts.json'), 'utf8'),
+  };
+  for (const args of [[], ['--platform', 'darwin'], ['--platform', 'linux'], ['--platform', 'win32']]) {
+    const result = await state.native('automation-capability', args);
+    assert.deepEqual(result, { value: plain(nativeAutomationCapability()) });
+  }
+
+  const realm = 'a'.repeat(64), control = fingerprint('native-secure-control:v1');
+  const base = 'http://127.0.0.1:43123/synthetic-account';
+  const operation = operationFingerprint(base, realm, control);
+  const target = `${base}?operation=${operation.slice(7)}`;
+  const packet = {
+    jobId: 'job', expectedJobRevision: 1, expectedClaimId: 'claim', realmRef: realm,
+    realmDescriptor: 'descriptor', expectedSettingsRevision: 1, expectedAccountRevision: 1,
+    syntheticTargetUrl: target, syntheticTargetFingerprint: fingerprint(target),
+    ...plain(syntheticProofs(target)),
+  };
+  const denied = await state.native('employer-account-execute-synthetic', ['--input', '-'], packet);
+  assert.deepEqual(denied, { error: 'native protected provider injection is required' });
+  assert.deepEqual(denied, python(state.pythonRoot, 'employer-account-execute-synthetic', ['--input', '-'], packet));
+  const liveProvider = { providerId: 'macos-keychain', execute: async () => { throw new Error('must not execute'); } };
+  assert.deepEqual(await state.native('employer-account-execute-synthetic', ['--input', '-'], packet,
+    { syntheticExecutor: liveProvider }), { error: 'synthetic provider is test-only' });
+  let syntheticCalled = false;
+  const syntheticProvider = { providerId: 'synthetic-protected', execute: async () => {
+    syntheticCalled = true;
+    throw new Error('must not execute without a live claim');
+  } };
+  assert.deepEqual(await state.native('employer-account-execute-synthetic', ['--input', '-'], packet,
+    { syntheticExecutor: syntheticProvider }), { error: 'account execution requires the exact live claimed job' });
+  assert.equal(syntheticCalled, false);
+  assert.equal(await readFile(join(state.nativeRoot, 'automation-settings.json'), 'utf8'), before.settings);
+  assert.equal(await readFile(join(state.nativeRoot, 'employer-accounts.json'), 'utf8'), before.accounts);
+  assert.doesNotMatch(JSON.stringify(plain(nativeAutomationCapability())), /private|credential_/);
+});
