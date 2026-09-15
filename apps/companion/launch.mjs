@@ -10,10 +10,14 @@ import { parseWriterOptions, resolveWriterRoute } from "./writer-route.mjs";
 const require = createRequire(import.meta.url);
 const app = dirname(fileURLToPath(import.meta.url));
 const children = new Set();
+const externalProcessOwner = process.env.COMPANION_PROCESS_OWNER === "process-group-v1";
 let stopping = false;
 function stopChild(child, signal) {
   if (!Number.isSafeInteger(child.pid) || child.pid <= 0) return;
-  try { process.kill(-child.pid, signal); } catch (error) { if (error.code !== "ESRCH") throw error; }
+  try {
+    if (externalProcessOwner) child.kill(signal);
+    else process.kill(-child.pid, signal);
+  } catch (error) { if (error.code !== "ESRCH") throw error; }
 }
 async function shutdown(code) {
   if (stopping) return;
@@ -29,7 +33,10 @@ async function shutdown(code) {
 }
 function owned(command, argv, env = process.env) {
   if (stopping) throw new Error("Companion startup cancelled");
-  const child = spawn(command, argv, { cwd: app, env, detached: true, stdio: ["ignore", "pipe", "pipe"] });
+  const child = spawn(command, argv, {
+    cwd: app, env, detached: !externalProcessOwner,
+    stdio: ["ignore", "pipe", "pipe", externalProcessOwner ? 3 : "ignore"],
+  });
   children.add(child);
   child.on("error", () => { console.error("Companion child failed to start"); void shutdown(1); });
   child.on("exit", () => { if (!stopping) { console.error("Companion service stopped"); void shutdown(1); } });

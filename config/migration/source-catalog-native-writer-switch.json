@@ -7,8 +7,18 @@
       "classification": "unreviewed"
     },
     {
+      "path": "runtime/store/process-owned-writer.js",
+      "sha256": "69246408b86e71508eda52242cd80b138a3744cb6b98685b8ebe307cdbbc7168",
+      "classification": "unreviewed"
+    },
+    {
       "path": "src/store/native-writer-switch.ts",
       "sha256": "d95714be52e7e82a2ebb037f3f7a24a97f8cdf309c1a5c3c845ea66e7cbbdeb0",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/process-owned-writer.ts",
+      "sha256": "59894a455eca91efe35c8fe39fca7c1240784745bcfef2db0bb123484968dc61",
       "classification": "unreviewed"
     }
   ]

@@ -315,7 +315,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "6efcbd4eab6b94cdecf4538e4c2e5e38de18546c96dcf2b7f3c465f134756454"
+      "sha256": "c8a1cb83b5da23702c0a45d945c8449f6028d45de6beb44a6bc4fa84bfb95e86"
     },
     {
       "path": "source-catalog-m01.json",
@@ -403,7 +403,7 @@
     },
     {
       "path": "source-catalog-native-lock-package.json",
-      "sha256": "e6eb760e393446beb9306dc35b40aa6d92c2fab17125393e8a1b165e181004f8"
+      "sha256": "b61cc526a41bcef3efc04a956c3eef6123c4fadc271b7cf3301845e134e9f4bb"
     },
     {
       "path": "source-catalog-native-macos-email-adapter.json",
@@ -443,7 +443,7 @@
     },
     {
       "path": "source-catalog-native-writer-switch.json",
-      "sha256": "34bcb87aad36ccaa0df12e428b38f3622d6ed5121ae1cb6b1c53721dd313d207"
+      "sha256": "711e4006424a1c173fc73dc9b46530f7fa44a8d8d4ebb5281008fe8d0c97f39e"
     },
     {
       "path": "source-catalog-react-trash.json",
