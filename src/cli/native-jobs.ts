@@ -13,9 +13,12 @@ import { pendingAnswerCommands, runPendingAnswerCommand } from './native-pending
 import { profileCommands, runProfileCommand } from "./native-profile.js";
 import { answerCommands, runAnswerCommand } from "./native-answers.js";
 import { extractionCommands, runExtractionCommand } from "./native-extractions.js";
+import { nativeAutomationCommandNames, runNativeAutomationCommand } from './native-automation-commands.js';
+import { nativeStoreStateCommandNames, runNativeStoreStateCommand } from './native-store-state.js';
+import { nativeStoreBootstrapCommands, runNativeStoreBootstrapCommand } from './native-store-bootstrap.js';
 import { readFile } from "node:fs/promises";
 import { realpathSync } from "node:fs";
-import { basename } from "node:path";
+import { basename, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { JobsService } from "../workspace-core/jobs.js";
 import { NativeJobsRepository, initializeJobsFixture, fixtureError } from "../store/native-jobs.js";
@@ -23,6 +26,8 @@ import { loadPosixFlockProvider } from "../store/posix-flock.js";
 import { parse, serialize, JobsError } from "../contracts/workspace/values.js";
 import { ResumeService } from "../workspace-core/resumes.js";
 import { NativeResumeFiles } from "../store/native-resume-files.js";
+import { createNativeStoreBootstrap } from '../store/native-store-bootstrap.js';
+import { withExclusiveFileLock } from '../store/exclusive-file-lock.js';
 
 export async function runJobsCli(args: string[], input: (limit?: number) => Promise<string>): Promise<string> {
   const options = new Map<string, string>();
@@ -60,6 +65,9 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
     ...profileCommands,
     ...answerCommands,
     ...extractionCommands,
+    ...Object.fromEntries([...nativeAutomationCommandNames].map(name => [name, []])),
+    ...Object.fromEntries([...nativeStoreStateCommandNames].map(name => [name, []])),
+    ...nativeStoreBootstrapCommands,
     "fixture-init": [], "job-create": ["--input", "--origin"], "job-get": ["--id", "--include-trashed"],
     "job-list": ["--status", "--include-trashed", "--trashed-only"],
     "job-update": ["--id", "--input", "--expected-revision", "--origin"],
@@ -69,7 +77,8 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
     "resume-set-default": ["--id", "--expected-revision"], "resume-resolve": ["--id"], "resume-check": ["--id"],
   };
   const allowed = fields[command ?? ""];
-  if (!allowed || [...options.keys()].some(key => !["--root", "--native-lock", ...allowed].includes(key))) {
+  const delegated = nativeAutomationCommandNames.has(command ?? '') || nativeStoreStateCommandNames.has(command ?? '');
+  if (!allowed || !delegated && [...options.keys()].some(key => !["--root", "--native-lock", "--legacy-profile", ...allowed].includes(key))) {
     throw new JobsError("unsupported native Jobs command or option");
   }
   const required = (key: string): string => {
@@ -78,6 +87,16 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
     return value;
   };
   const root = required("--root");
+  if (Object.hasOwn(nativeStoreBootstrapCommands, command!)) {
+    if ([...options.keys()].some(key => !['--root', '--native-lock', '--legacy-profile'].includes(key))) {
+      throw new JobsError('unsupported native Store bootstrap command or option');
+    }
+    const provider = command === 'init' ? loadPosixFlockProvider(required('--native-lock')) : undefined;
+    const service = createNativeStoreBootstrap(root, options.get('--legacy-profile'), process.env, undefined,
+      provider ? { locked: operation => withExclusiveFileLock(join(root, '.store.lock'), operation,
+        { provider, pathProfile: '3.12', signal: AbortSignal.timeout(30_000) }) } : {});
+    return serialize(await runNativeStoreBootstrapCommand(command!, service));
+  }
   if (command === "fixture-init") { await initializeJobsFixture(root); return '{"initialized":true}'; }
   const repository = new NativeJobsRepository(root, loadPosixFlockProvider(required("--native-lock")));
   const service = new JobsService(repository);
@@ -91,6 +110,17 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
       : ["resume-proposal-create", "resume-extraction-request-complete"].includes(command!) ? 2 * 1024 * 1024 : 65536;
     return parse(file === "-" ? await input(limit) : await readFile(file, "utf8"));
   };
+  const leafArgs = [...options.entries()].filter(([key]) => !['--root', '--native-lock', '--legacy-profile'].includes(key))
+    .flatMap(([key, value]) => value === 'true' ? [key] : [key, value]);
+  const readInput = async (path: string) => parse(path === '-' ? await input(Infinity) : await readFile(path, 'utf8'));
+  if (nativeAutomationCommandNames.has(command!)) {
+    return serialize((await runNativeAutomationCommand(command!, leafArgs, { repository, readInput }))!);
+  }
+  if (nativeStoreStateCommandNames.has(command!)) {
+    return serialize((await runNativeStoreStateCommand(command!, leafArgs, {
+      repository, readInput, readResumePath: path => new NativeResumeFiles(root).readPath(path),
+    }))!);
+  }
   if (Object.hasOwn(accountOperationCommands, command!)) return serialize(await runAccountOperationCommand(command!, repository));
   if (Object.hasOwn(answerLifecycleCommands, command!)) return serialize(await runAnswerLifecycleCommand(command!, repository, options));
   if (Object.hasOwn(resumeLifecycleCommands, command!)) return serialize(await runResumeLifecycleCommand(command!, repository, options));

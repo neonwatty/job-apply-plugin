@@ -1,4 +1,4 @@
-import { initialAutomationDocuments, automationTransaction as runAutomationTransaction } from './native-automation.js';
+import { automationTransaction as runAutomationTransaction } from './native-automation.js';
 import { accountOperation, emptyAccountOperationJournal, validateAccountOperationJournal } from '../contracts/workspace/account-operation.js';
 import type { AccountOperationTransaction } from '../workspace-core/account-operation.js';
 import type { AutomationTransaction } from '../workspace-core/automation.js';
@@ -8,7 +8,7 @@ import { NativeClaimHistory } from './native-claim-history.js';
 import { validateCoordinator, requireJobUnclaimed } from '../contracts/workspace/claims.js';
 import type { ClaimTransaction } from '../workspace-core/claims.js';
 import { constants } from "node:fs";
-import { chmod, lstat, mkdir, open, readdir, realpath } from "node:fs/promises";
+import { lstat, open, readdir, realpath } from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
 import { parsePythonPointJsonBytes } from "../contracts/raw-json/point-parser.js";
 import { validateJobsDocument, safeId } from "../contracts/workspace/jobs.js";
@@ -33,11 +33,16 @@ import type { ExtractionTransaction } from "../workspace-core/extraction-context
 import type { ResumeLifecycleRepository, ResumeLifecycleTransaction } from "../workspace-core/resume-lifecycle.js";
 import { validateTrustedFillDocument } from "../contracts/workspace/trusted-fill.js";
 import type { TrustedFillRepository, TrustedFillTransaction } from "../workspace-core/trusted-fill.js";
+import type { HistoryRepository, HistoryTransaction } from "../workspace-core/store-history.js";
+import type { SessionRepository, SessionTransaction } from "../workspace-core/store-sessions.js";
+import type { PreparednessRepository, PreparednessSnapshot } from "../workspace-core/profile-preparedness.js";
 import { validateProfile } from "../contracts/workspace/profile.js";
 import { validateGroups } from "../contracts/workspace/fact-groups.js";
 import { validateAnswers } from "../contracts/workspace/answers.js";
 import type { AnswerReferenceCounts } from "../workspace-core/answers.js";
-import { nativeFixtureMarker, nativeFixtureMarkerName, nativeCloneMarkerName, nativeStoreAllowedEntries, nativeStoreRequiredEntries, validateNativeStoreMetadata } from './native-store-layout.js';
+import { ResumeService } from '../workspace-core/resumes.js';
+import { preparednessSnapshot, runHistoryTransaction, runSessionTransaction, stateStorage } from './native-store-state-repository.js';
+import { nativeFixtureMarkerName, nativeCloneMarkerName, nativeStoreAllowedEntries, nativeStoreRequiredEntries, validateNativeStoreMetadata } from './native-store-layout.js';
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
@@ -47,48 +52,10 @@ export interface ResumeTransaction {
   save(document: Document): Promise<void>;
   saveJournal(operation: Value): Promise<void>;
 }
-/** Creates a NEW synthetic root only. Never adopts or initializes an existing Store. */
-export async function initializeJobsFixture(root: string): Promise<void> {
-  if (!isAbsolute(root) || root !== resolve(root)) throw new JobsError("fixture root must be an absolute normalized path");
-  await mkdir(root, { mode: 0o700 });
-  const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
-  for (const name of ["jobs", "profile", "resumes", "fact-groups", "answers"]) {
-    const payload = name === "fact-groups" ? { schemaVersion: 1, groups: {}, metadata: { createdAt: now, updatedAt: now } }
-      : name === "answers" ? { schemaVersion: 1, answers: {}, redirects: {}, metadata: { updatedAt: now } }
-      : name === "profile" ? { schemaVersion: 1, profile: {}, metadata: { createdAt: now, updatedAt: now, revision: 1, factProvenance: {} } }
-      : { schemaVersion: 1, [name]: {}, metadata: { updatedAt: now } };
-    await atomicWritePointJson(join(root, `${name}.json`), fromJSON(payload), options);
-  }
-  await atomicWritePointJson(join(root, `${journalName}.json`), fromJSON({ schemaVersion: 1, operation: null }), options);
-  for (const [name, key] of [["resume-extractions", "proposals"], ["resume-extraction-requests", "requests"]]) {
-    await atomicWritePointJson(join(root, `${name}.json`), fromJSON({ schemaVersion: 1, [key!]: {},
-      metadata: { createdAt: now, updatedAt: now } }), options);
-  }
-  await atomicWritePointJson(join(root, `${extractionJournalName}.json`), fromJSON({ schemaVersion: 1, operation: null }), options);
-  await mkdir(join(root, "resume-files"), { mode: 0o700 });
-  await chmod(join(root, "resume-files"), 0o700);
-  await mkdir(join(root, "sessions"), { mode: 0o700 });
-  await atomicWritePointJson(join(root, "coordinator.json"), fromJSON({ schemaVersion: 1, claim: null }), options);
-  await atomicWritePointJson(join(root, "coordinator-journal.json"), fromJSON({ schemaVersion: 1, operation: null }), options);
-  const history = await open(join(root, "applications.jsonl"), "wx", 0o600);
-  await history.sync();
-  await history.close();
-  const lock = await open(join(root, ".store.lock"), "wx", 0o600);
-  await lock.close();
-  for (const [name, document] of Object.entries(initialAutomationDocuments(now))) {
-    await atomicWritePointJson(join(root, `${name}.json`), document, options);
-  }
-  await atomicWritePointJson(join(root, 'account-operation-journal.json'), emptyAccountOperationJournal(), options);
-  await atomicWritePointJson(join(root, 'trusted-fill.json'), fromJSON({ schemaVersion: 1, approvals: {},
-    metadata: { createdAt: now, updatedAt: now } }), options);
-  // The readiness marker is written last; partial initialization is never adopted.
-  const handle = await open(join(root, nativeFixtureMarkerName), "wx", 0o600);
-  try { await handle.writeFile(nativeFixtureMarker); await handle.sync(); } finally { await handle.close(); }
-  const directory = await open(root, constants.O_RDONLY);
-  try { await directory.sync(); } finally { await directory.close(); }
-}
+export { initializeJobsFixture } from './native-jobs-fixture.js';
 
-export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepository, TrustedFillRepository {
+export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepository, TrustedFillRepository,
+  HistoryRepository, SessionRepository, PreparednessRepository {
   constructor(readonly root: string, private readonly provider: PosixFlockProvider,
     private readonly write = atomicWritePointJson,
     private readonly checkpoint: (stage:string)=>Promise<void> = async () => {}) {}
@@ -476,6 +443,33 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
         saveApprovals: document => this.write(join(this.root, 'trusted-fill.json'), validateTrustedFillDocument(document), options),
         commitClaim: value => this.claimJournal().commit(value, jobs) });
     });
+  }
+
+  private async stateTransaction<T>(operation: () => Promise<T>): Promise<T> {
+    await this.validateRoot();
+    return withExclusiveFileLock(join(this.root, '.store.lock'), async () => {
+      await this.validateRoot(true);
+      return operation();
+    }, { provider: this.provider, pathProfile: '3.12', signal: AbortSignal.timeout(30_000) });
+  }
+
+  async historyTransaction<T>(operation: (transaction: HistoryTransaction) => Promise<T>): Promise<T> {
+    return this.stateTransaction(() => runHistoryTransaction(
+      stateStorage(this.root, name => this.read(name), name => this.document(name), this.write), operation));
+  }
+
+  async sessionTransaction<T>(operation: (transaction: SessionTransaction) => Promise<T>): Promise<T> {
+    return this.stateTransaction(() => runSessionTransaction(
+      stateStorage(this.root, name => this.read(name), name => this.document(name), this.write), operation));
+  }
+
+  async preparednessSnapshot(): Promise<PreparednessSnapshot> {
+    return this.stateTransaction(() => preparednessSnapshot(
+      stateStorage(this.root, name => this.read(name), name => this.document(name), this.write)));
+  }
+
+  async resumeImport(metadata: Value, filename: string, content: Buffer, preserveFilename: boolean): Promise<Document> {
+    return new ResumeService(this).import(metadata, filename, content, preserveFilename);
   }
 
   async resumeSummaries(): Promise<Value[]> {
