@@ -90,6 +90,7 @@ export class SessionService {
                 throw new JobsError('canonical job sessions require a coordinator operation');
             const stored = await transaction.load(id), existing = stored === null ? null : projectSession(stored, id);
             const answers = await transaction.answers(), timestamp = this.now();
+            const atsPresent = has(incoming, 'ats') || existing !== null && has(existing, 'ats');
             const ats = has(incoming, 'ats') ? get(incoming, 'ats')
                 : existing !== null && has(existing, 'ats') ? get(existing, 'ats') : null;
             const pending = buildClaimPending(incoming, existing, ats, answers);
@@ -146,7 +147,7 @@ export class SessionService {
             for (const key of ['status', 'step'])
                 if (has(incoming, key))
                     set(result, key, clone(get(incoming, key)));
-            if (ats !== null)
+            if (atsPresent)
                 set(result, 'ats', clone(ats));
             set(result, 'status', status);
             set(result, 'answerKeys', clone(answerKeys));

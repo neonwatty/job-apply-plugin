@@ -55,6 +55,19 @@ function pythonSessionResult(input) {
   } finally { rmSync(root, { recursive: true, force: true }); }
 }
 
+function pythonSessionSequence(inputs) {
+  const root = mkdtempSync(join(tmpdir(), 'session-python-'));
+  try {
+    return inputs.map(input => {
+      const result = spawnSync('python3.12', ['scripts/job-apply-store.py', 'session-save', '--id', 'oracle', '--input', '-'], {
+        cwd: process.cwd(), env: { ...process.env, JOB_APPLY_STORE_DIR: root }, input: JSON.stringify(input), encoding: 'utf8',
+      });
+      assert.equal(result.status, 0, result.stderr);
+      return JSON.parse(result.stdout);
+    });
+  } finally { rmSync(root, { recursive: true, force: true }); }
+}
+
 test('standalone sessions are value-free, stable, ordered, and terminally deletable', async () => {
   const repository = new SessionRepository();
   const service = new SessionService(repository, () => '2026-09-15T12:00:00Z', () => 'pending_fixed');
@@ -165,6 +178,27 @@ test('blockers are canonically deduplicated before persistence', async () => {
   const actual = plain(await new SessionService(new SessionRepository(), () => expected.value.createdAt)
     .save('oracle', value({ blockers: [blocker, blocker] })));
   assert.deepEqual(actual.blockers, expected.value.blockers);
+});
+
+test('explicit and inherited null ATS remain present like CPython 3.12', async () => {
+  const expected = pythonSessionSequence([{ ats: 'greenhouse' }, { ats: null }, { status: 'active' }]);
+  assert.equal(expected[0].ats, 'greenhouse');
+  for (const item of expected.slice(1)) {
+    assert.equal(Object.hasOwn(item, 'ats'), true);
+    assert.equal(item.ats, null);
+  }
+  const repository = new SessionRepository(), service = new SessionService(repository, () => '2026-09-15T12:00:00Z');
+  const actual = [];
+  for (const input of [{ ats: 'greenhouse' }, { ats: null }, { status: 'active' }]) {
+    actual.push(plain(await service.save('oracle', value(input))));
+  }
+  assert.equal(actual[0].ats, 'greenhouse');
+  for (const item of actual.slice(1)) {
+    assert.equal(Object.hasOwn(item, 'ats'), true);
+    assert.equal(item.ats, null);
+  }
+  assert.equal(Object.hasOwn(plain(await service.load('oracle')), 'ats'), true);
+  assert.equal(Object.hasOwn(plain(await service.list())[0], 'ats'), true);
 });
 
 test('legacy pending fields project stable opaque references without rewriting stored bytes', async () => {

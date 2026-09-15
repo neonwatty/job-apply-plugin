@@ -97,6 +97,7 @@ export class SessionService {
       if (!jobAllowsMutation(await transaction.canonicalJob(id))) throw new JobsError('canonical job sessions require a coordinator operation');
       const stored = await transaction.load(id), existing = stored === null ? null : projectSession(stored, id);
       const answers = await transaction.answers(), timestamp = this.now();
+      const atsPresent = has(incoming, 'ats') || existing !== null && has(existing, 'ats');
       const ats = has(incoming, 'ats') ? get(incoming, 'ats')
         : existing !== null && has(existing, 'ats') ? get(existing, 'ats') : null;
       const pending = buildClaimPending(incoming, existing, ats, answers);
@@ -144,7 +145,7 @@ export class SessionService {
         pendingFields: [], attemptRevision: null, readiness: null, blockers: [], approvals: [],
         browserHandoff: null, createdAt: timestamp, updatedAt: timestamp }), 'session');
       for (const key of ['status', 'step']) if (has(incoming, key)) set(result, key, clone(get(incoming, key)));
-      if (ats !== null) set(result, 'ats', clone(ats));
+      if (atsPresent) set(result, 'ats', clone(ats));
       set(result, 'status', status); set(result, 'answerKeys', clone(answerKeys)); set(result, 'pendingFields', pending);
       set(result, 'attemptRevision', attempt); set(result, 'readiness', readiness); set(result, 'blockers', unique);
       set(result, 'browserHandoff', handoff);
