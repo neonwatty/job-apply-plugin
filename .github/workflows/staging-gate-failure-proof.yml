@@ -1,0 +1,13 @@
+name: Staging gate failure proof
+
+on:
+  pull_request:
+    branches: [staging]
+
+jobs:
+  pr-gate:
+    name: PR gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Emit intentional failure
+        run: exit 1
