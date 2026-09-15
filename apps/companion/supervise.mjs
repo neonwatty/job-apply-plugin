@@ -39,6 +39,17 @@ export function resolveSupervisorRoot(options, environment = process.env, home =
 async function existing(path) { return lstat(path).then(() => true).catch(error => {
   if (error?.code === 'ENOENT') return false; throw error;
 }); }
+async function validateSupervisorRoot(root) {
+  const parent = dirname(root);
+  const [canonicalParent, parentInfo, rootInfo, canonicalRoot] = await Promise.all([
+    realpath(parent).catch(() => null), lstat(parent).catch(() => null),
+    lstat(root).catch(error => error?.code === 'ENOENT' ? null : Promise.reject(error)), realpath(root).catch(() => null),
+  ]);
+  if (!isAbsolute(root) || root !== resolve(root) || canonicalParent !== parent || !parentInfo?.isDirectory()
+    || parentInfo.isSymbolicLink() || parentInfo.uid !== process.getuid?.() || parentInfo.mode & 0o077
+    || (rootInfo && (!rootInfo.isDirectory() || rootInfo.isSymbolicLink() || canonicalRoot !== root
+      || rootInfo.uid !== process.getuid?.() || rootInfo.mode & 0o077))) throw new Error('Companion Store root is invalid');
+}
 export async function assertNoLiveDetachedAttempt(root) {
   const path = join(root, '.job-apply-attempt.pid');
   let handle;
@@ -93,10 +104,13 @@ export async function acquireAttemptExclusion(root, provider) {
   } catch (error) { if (locked) provider.unlock(handle.fd); await handle.close(); throw error; }
 }
 export async function prepareNativeDefault(root, provider, options = {}) {
-  if (!isAbsolute(root) || root !== resolve(root) || await realpath(dirname(root)).catch(() => null) !== dirname(root)) {
-    throw new Error('Companion Store root is invalid');
-  }
+  await validateSupervisorRoot(root);
   await assertNoLiveDetachedAttempt(root);
+  const candidate = `${root}.native-candidate`, retained = `${root}.native-retained`, rollback = `${root}.python-rollback`;
+  if (await Promise.all([existing(candidate), existing(retained), existing(rollback)]).then(values => values.some(Boolean))) {
+    const mode = await recoverNativeWriterSwitch(root, { provider });
+    return { mode, candidate, durablePythonRollback: mode === 'python' && await existing(retained) };
+  }
   await mkdir(root, { recursive: true, mode: 0o700 }); await chmod(root, 0o700);
   const bootstrap = createNativeStoreBootstrap(root, undefined, process.env, undefined, {
     ...(options.now ? { clock: options.now } : {}),
@@ -107,7 +121,6 @@ export async function prepareNativeDefault(root, provider, options = {}) {
     }),
   });
   await bootstrap.initialize(); await assertNoLiveDetachedAttempt(root); options.signal?.throwIfAborted();
-  const candidate = `${root}.native-candidate`;
   if (await existing(failedActivationMarker(root)) && !options.allowFailedActivation) {
     throw new Error('native activation previously failed; run Companion with --rollback before retrying');
   }
@@ -141,11 +154,11 @@ function launchSpec(options, root, nativeLock) {
 export async function runSupervisor(options, { signal } = {}) {
   const root = resolveSupervisorRoot(options), nativeLock = options.nativeLock ?? await resolvePackagedNativeLock(options.pluginRoot);
   signal?.throwIfAborted();
+  await validateSupervisorRoot(root);
   const provider = loadPosixFlockProvider(nativeLock);
   const exclusion = await acquireAttemptExclusion(root, provider);
   let controller;
   try {
-    await mkdir(root, { recursive: true, mode: 0o700 }); await chmod(root, 0o700);
     controller = new ProcessOwnedWriterController({ active: root, provider, createSpec: launchSpec(options, root, nativeLock) });
     const prepared = await controller.prepare(() => prepareNativeDefault(root, provider, { signal, allowFailedActivation: options.rollback }));
     if (options.rollback) {
@@ -154,7 +167,7 @@ export async function runSupervisor(options, { signal } = {}) {
       await unlink(failedActivationMarker(root)).catch(error => { if (error?.code !== 'ENOENT') throw error; });
     } else {
       await controller.start(prepared.mode, signal);
-      if (prepared.mode === 'python') {
+      if (prepared.mode === 'python' && !prepared.durablePythonRollback) {
         await assertNoLiveDetachedAttempt(root);
         try { await controller.activate({ signal }); }
         catch (error) {

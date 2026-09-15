@@ -72,8 +72,8 @@ class WriterOwnershipLease {
         if (!isAbsolute(active) || active !== resolve(active) || canonicalParent !== parent
             || !parentMetadata?.isDirectory() || parentMetadata.isSymbolicLink()
             || parentMetadata.uid !== process.getuid?.() || parentMetadata.mode & 0o077
-            || canonicalActive !== active || !activeMetadata?.isDirectory() || activeMetadata.isSymbolicLink()
-            || activeMetadata.uid !== process.getuid?.() || activeMetadata.mode & 0o077) {
+            || (activeMetadata && (canonicalActive !== active || !activeMetadata.isDirectory() || activeMetadata.isSymbolicLink()
+                || activeMetadata.uid !== process.getuid?.() || activeMetadata.mode & 0o077))) {
             throw new Error('writer ownership Store is invalid');
         }
         const handle = await open(join(parent, `.${basename(active)}.writer-owner.lock`), constants.O_RDWR | constants.O_CREAT, 0o600);

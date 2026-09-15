@@ -3,11 +3,11 @@ import test from 'node:test';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { constants } from 'node:fs';
-import { mkdir, open, readFile, realpath, stat, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, open, readFile, realpath, stat, symlink, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
-import { activateNativeWriter } from '../runtime/store/native-writer-switch.js';
+import { activateNativeWriter, rollbackNativeWriter } from '../runtime/store/native-writer-switch.js';
 import { loadPosixFlockProvider } from '../runtime/store/posix-flock.js';
 import { acquireAttemptExclusion, assertNoLiveDetachedAttempt, parseSupervisorOptions, prepareNativeDefault, resolveSupervisorRoot, runSupervisor } from '../apps/companion/supervise.mjs';
 import { attemptSocketPath } from '../runtime/cli/attempt-protocol.js';
@@ -38,6 +38,35 @@ test('Companion prepares empty and initialized Stores for native activation, the
     assert.equal(restarted.mode, 'native');
     assert.equal(await readFile(join(root, '.native-store-clone'), 'utf8').then(Boolean), true);
   }
+});
+
+test('completed rollback remains a durable Python restart without a new native activation', { timeout: 60_000 }, async t => {
+  const fixture = await nativeFixture(); t.after(() => fixture.cleanup());
+  const root = join(await realpath(fixture.root), 'durable-rollback'), provider = loadPosixFlockProvider(fixture.receipt.artifact);
+  const prepared = await prepareNativeDefault(root, provider);
+  await activateNativeWriter(root, prepared.candidate, { provider }); await rollbackNativeWriter(root, { provider });
+  const restarted = await prepareNativeDefault(root, provider);
+  assert.equal(restarted.mode, 'python'); assert.equal(restarted.durablePythonRollback, true);
+  await assert.rejects(stat(restarted.candidate), { code: 'ENOENT' });
+});
+
+test('rollback interruption recovers original Python jobs before bootstrap', { timeout: 60_000 }, async t => {
+  const fixture = await nativeFixture(); t.after(() => fixture.cleanup());
+  const root = join(await realpath(fixture.root), 'rollback-interruption'), provider = loadPosixFlockProvider(fixture.receipt.artifact);
+  const prepared = await prepareNativeDefault(root, provider), before = await readFile(join(root, 'jobs.json'));
+  await activateNativeWriter(root, prepared.candidate, { provider });
+  await assert.rejects(rollbackNativeWriter(root, { provider, boundary: point => { if (point === 'after-native-rename') throw new Error('interrupted'); } }), /interrupted/);
+  const recovered = await prepareNativeDefault(root, provider);
+  assert.equal(recovered.durablePythonRollback, true); assert.deepEqual(await readFile(join(root, 'jobs.json')), before);
+});
+
+test('symlink Store root is rejected before its target is changed', { timeout: 60_000 }, async t => {
+  const fixture = await nativeFixture(); t.after(() => fixture.cleanup());
+  const parent = await realpath(fixture.root), target = join(parent, 'root-target'), root = join(parent, 'root-link');
+  await mkdir(target, { mode: 0o700 }); await writeFile(join(target, 'sentinel'), 'unchanged\n', { mode: 0o600 }); await chmod(target, 0o750);
+  const before = await stat(target); await symlink(target, root);
+  await assert.rejects(prepareNativeDefault(root, loadPosixFlockProvider(fixture.receipt.artifact)), /Store root is invalid/);
+  assert.equal((await stat(target)).mode & 0o777, before.mode & 0o777); assert.equal(await readFile(join(target, 'sentinel'), 'utf8'), 'unchanged\n');
 });
 
 test('Companion refuses a live detached attempt before activation or rollback', { timeout: 60_000 }, async t => {
