@@ -5,6 +5,7 @@ import { JobsError } from '../contracts/workspace/values.js';
 import { withExclusiveFileLock } from './exclusive-file-lock.js';
 import { canonicalStoreCandidateTreeLocked, canonicalStoreSourceTreeLocked } from './native-store-clone.js';
 import { nativeCloneMarkerName, nativeCloneTrees, nativeFixtureMarkerName, validateNativeStoreMarker } from './native-store-layout.js';
+import { withNativePolicyTree } from './native-policy-tree.js';
 import type { PosixFlockProvider } from './posix-flock.js';
 
 export type NativeWriterSwitchBoundary =
@@ -80,18 +81,25 @@ export async function activateNativeWriter(active: string, candidate: string,
     return withExclusiveFileLock(join(value.active, '.store.lock'), async () =>
       withExclusiveFileLock(join(value.candidate, '.store.lock'), async () => {
         const expected = nativeCloneTrees(await readFile(join(value.candidate, nativeCloneMarkerName)));
-        const sourceTree = await canonicalStoreSourceTreeLocked(value.active, options.provider, options.signal);
-        const candidateTree = await canonicalStoreCandidateTreeLocked(value.candidate, options.provider, options.signal);
-        if (sourceTree !== expected.sourceTree) throw new JobsError('native candidate does not match the active Python Store');
-        if (candidateTree !== expected.candidateTree) throw new JobsError('native candidate content changed after preparation');
-        await boundary('before-source-rename');
-        await rename(value.active, value.pythonRollback);
-        await syncDirectory(dirname(active));
-        await boundary('after-source-rename');
-        await rename(value.candidate, value.active);
-        await syncDirectory(dirname(active));
-        await boundary('after-candidate-rename');
-        return value;
+        return withNativePolicyTree(value.active, options.provider, async sourcePolicy =>
+          withNativePolicyTree(value.candidate, options.provider, async candidatePolicy => {
+            const sourceTree = await canonicalStoreSourceTreeLocked(
+              value.active, options.provider, options.signal, sourcePolicy,
+            );
+            const candidateTree = await canonicalStoreCandidateTreeLocked(
+              value.candidate, options.provider, options.signal, candidatePolicy,
+            );
+            if (sourceTree !== expected.sourceTree) throw new JobsError('native candidate does not match the active Python Store');
+            if (candidateTree !== expected.candidateTree) throw new JobsError('native candidate content changed after preparation');
+            await boundary('before-source-rename');
+            await rename(value.active, value.pythonRollback);
+            await syncDirectory(dirname(active));
+            await boundary('after-source-rename');
+            await rename(value.candidate, value.active);
+            await syncDirectory(dirname(active));
+            await boundary('after-candidate-rename');
+            return value;
+          }, options.signal), options.signal);
       }, { provider: options.provider, pathProfile: '3.12', signal: options.signal ?? AbortSignal.timeout(30_000) }),
     { provider: options.provider, pathProfile: '3.12', signal: options.signal ?? AbortSignal.timeout(30_000) });
   });
@@ -107,14 +115,17 @@ export async function rollbackNativeWriter(active: string, options: NativeWriter
     }
     return withExclusiveFileLock(join(value.active, '.store.lock'), async () =>
       withExclusiveFileLock(join(value.pythonRollback, '.store.lock'), async () => {
-        await boundary('before-native-rename');
-        await rename(value.active, value.nativeRetained);
-        await syncDirectory(dirname(active));
-        await boundary('after-native-rename');
-        await rename(value.pythonRollback, value.active);
-        await syncDirectory(dirname(active));
-        await boundary('after-python-rename');
-        return value;
+        return withNativePolicyTree(value.active, options.provider, async () =>
+          withNativePolicyTree(value.pythonRollback, options.provider, async () => {
+            await boundary('before-native-rename');
+            await rename(value.active, value.nativeRetained);
+            await syncDirectory(dirname(active));
+            await boundary('after-native-rename');
+            await rename(value.pythonRollback, value.active);
+            await syncDirectory(dirname(active));
+            await boundary('after-python-rename');
+            return value;
+          }, options.signal), options.signal);
       }, { provider: options.provider, pathProfile: '3.12', signal: options.signal ?? AbortSignal.timeout(30_000) }),
     { provider: options.provider, pathProfile: '3.12', signal: options.signal ?? AbortSignal.timeout(30_000) });
   });

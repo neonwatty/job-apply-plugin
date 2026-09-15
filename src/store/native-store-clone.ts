@@ -11,6 +11,7 @@ import type { PosixFlockProvider } from './posix-flock.js';
 import { atomicWritePointJson } from './point-persistence.js';
 import { nativeCloneMarkerName, nativePolicyTreeName, nativeStoreRequiredEntries } from './native-store-layout.js';
 import { copyNativePolicyTree, updateNativePolicyDigest, withNativePolicyTree } from './native-policy-tree.js';
+import type { NativePolicyTreeEntry } from './native-policy-tree.js';
 
 const sourceFiles = new Set<string>([...nativeStoreRequiredEntries.filter(name => name !== 'resume-operation.json'), nativePolicyTreeName]);
 const coreFiles = ['.store.lock', 'jobs.json', 'profile.json', 'resumes.json', 'fact-groups.json',
@@ -81,7 +82,8 @@ async function missingDocuments(target: string, names: Set<string>, now: string)
 }
 
 async function storeTreeLocked(source: string, entries: Set<string>, provider: PosixFlockProvider,
-  candidate = false, signal = AbortSignal.timeout(30_000)): Promise<string> {
+  candidate = false, signal = AbortSignal.timeout(30_000),
+  policy?: NativePolicyTreeEntry[] | null): Promise<string> {
   for (const name of directories) await privateDirectory(join(source, name), `canonical ${name}`);
   const digest = createHash('sha256');
   for (const name of [...entries].sort()) {
@@ -100,29 +102,31 @@ async function storeTreeLocked(source: string, entries: Set<string>, provider: P
       digest.update(`${name.length}:${name}:${bytes.length}:`).update(bytes);
     }
   }
-  await withNativePolicyTree(source, provider, async policy => { updateNativePolicyDigest(digest, policy); }, signal);
+  if (policy === undefined) {
+    await withNativePolicyTree(source, provider, async snapshot => { updateNativePolicyDigest(digest, snapshot); }, signal);
+  } else updateNativePolicyDigest(digest, policy);
   return `sha256:${digest.digest('hex')}`;
 }
 
 /** Computes the source digest. The caller must hold the source Store lock. */
 export async function canonicalStoreSourceTreeLocked(source: string, provider: PosixFlockProvider,
-  signal = AbortSignal.timeout(30_000)): Promise<string> {
+  signal = AbortSignal.timeout(30_000), policy?: NativePolicyTreeEntry[] | null): Promise<string> {
   const entries = new Set(await readdir(source));
   if (coreFiles.some(name => !entries.has(name)) || [...entries].some(name => !sourceFiles.has(name))) {
     throw new JobsError('canonical clone source contains unsupported or incomplete state');
   }
-  return storeTreeLocked(source, entries, provider, false, signal);
+  return storeTreeLocked(source, entries, provider, false, signal, policy);
 }
 
 /** Computes the prepared candidate digest. The caller must hold the candidate Store lock. */
 export async function canonicalStoreCandidateTreeLocked(root: string, provider: PosixFlockProvider,
-  signal = AbortSignal.timeout(30_000)): Promise<string> {
+  signal = AbortSignal.timeout(30_000), policy?: NativePolicyTreeEntry[] | null): Promise<string> {
   const entries = new Set(await readdir(root));
   const allowed = new Set<string>([...nativeStoreRequiredEntries, nativeCloneMarkerName, nativePolicyTreeName]);
   if (nativeStoreRequiredEntries.some(name => !entries.has(name)) || [...entries].some(name => !allowed.has(name))) {
     throw new JobsError('canonical clone candidate contains unsupported or incomplete state');
   }
-  return storeTreeLocked(root, entries, provider, true, signal);
+  return storeTreeLocked(root, entries, provider, true, signal, policy);
 }
 
 /** Computes the clone marker digest while holding the canonical Store lock. */

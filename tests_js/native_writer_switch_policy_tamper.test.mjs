@@ -8,7 +8,7 @@ import { nativeFixture } from './exclusive_file_lock_support.mjs';
 import { campaignInput, deterministicOptions, now } from './final_action_policy_support.mjs';
 import { FinalActionPolicyService } from '../runtime/final-action-policy/service.js';
 import { prepareCanonicalStoreClone } from '../runtime/store/native-store-clone.js';
-import { activateNativeWriter } from '../runtime/store/native-writer-switch.js';
+import { activateNativeWriter, rollbackNativeWriter } from '../runtime/store/native-writer-switch.js';
 import { withExclusiveFileLock } from '../runtime/store/exclusive-file-lock.js';
 import { loadPosixFlockProvider } from '../runtime/store/posix-flock.js';
 
@@ -76,4 +76,38 @@ test('writer switch waits for a policy mutation and detects its committed bytes'
   release(); await mutation;
   await assert.rejects(activation, /does not match/);
   await assertUnmoved(active, candidate, before);
+});
+
+for (const selected of ['source', 'candidate']) {
+  test(`activation holds the ${selected} policy lock through directory movement`, { timeout: 60000 }, async t => {
+    const { active, candidate, provider } = await setup(t);
+    const root = selected === 'source' ? active : candidate;
+    const path = join(root, 'auto-submit/campaign.json');
+    let attempted = false;
+    await activateNativeWriter(active, candidate, { provider, boundary: async point => {
+      if (point !== 'before-source-rename') return;
+      attempted = true;
+      await assert.rejects(withExclusiveFileLock(join(root, 'auto-submit/.lock'), async () => {
+        await writeFile(path, Buffer.concat([await readFile(path), Buffer.from(' ')]), { mode: 0o600 });
+      }, { provider, pathProfile: '3.12', signal: AbortSignal.timeout(50) }),
+      error => error?.name === 'AbortError' || error?.name === 'TimeoutError');
+    } });
+    assert.equal(attempted, true);
+  });
+}
+
+test('rollback holds both policy locks until retained and Python roots are in place', { timeout: 60000 }, async t => {
+  const { active, candidate, provider } = await setup(t);
+  await activateNativeWriter(active, candidate, { provider });
+  let attempted = 0;
+  await rollbackNativeWriter(active, { provider, boundary: async point => {
+    if (point !== 'before-native-rename') return;
+    for (const root of [active, `${active}.python-rollback`]) {
+      attempted += 1;
+      await assert.rejects(withExclusiveFileLock(join(root, 'auto-submit/.lock'), async () => {}, {
+        provider, pathProfile: '3.12', signal: AbortSignal.timeout(50),
+      }), error => error?.name === 'AbortError' || error?.name === 'TimeoutError');
+    }
+  } });
+  assert.equal(attempted, 2);
 });
