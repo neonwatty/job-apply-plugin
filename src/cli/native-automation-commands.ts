@@ -56,7 +56,7 @@ function optionsFor(command: string, args: string[]): Map<string, string> {
     if (!key.startsWith('--')) throw new JobsError('unexpected CLI argument');
     if (options.has(key)) throw new JobsError('duplicate CLI option');
     const value = args[++index];
-    if (!value || value.startsWith('--')) throw new JobsError('missing CLI option value');
+    if (value === undefined || value.startsWith('--')) throw new JobsError('missing CLI option value');
     options.set(key, value);
   }
   if ([...options.keys()].some(key => !specification.allowed.includes(key))) {

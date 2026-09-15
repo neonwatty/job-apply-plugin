@@ -46,7 +46,7 @@ function optionsFor(command, args) {
         if (options.has(key))
             throw new JobsError('duplicate CLI option');
         const value = args[++index];
-        if (!value || value.startsWith('--'))
+        if (value === undefined || value.startsWith('--'))
             throw new JobsError('missing CLI option value');
         options.set(key, value);
     }

@@ -50,6 +50,8 @@ test('native account and automation command leaf matches Python public envelopes
     '--realm-ref', realm.realmRef, '--input', '-', '--expected-revision', '2',
   ], { signupEmailOverride: null });
   await compare('employer-account-get', ['--realm-ref', 'missing']);
+  await compare('account-realm-resolve', ['--url', '']);
+  await compare('employer-account-get', ['--realm-ref', '']);
 
   for (const [command, args, input] of [
     ['automation-settings-update', ['--input', '-', '--expected-revision', '4'], []],
