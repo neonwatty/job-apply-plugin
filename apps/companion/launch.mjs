@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
-import { existsSync } from "node:fs";
+import { existsSync, fstatSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
@@ -11,6 +11,8 @@ const require = createRequire(import.meta.url);
 const app = dirname(fileURLToPath(import.meta.url));
 const children = new Set();
 const externalProcessOwner = process.env.COMPANION_PROCESS_OWNER === "process-group-v1";
+const explicitWriter = process.argv.includes('--writer') || process.argv.includes('--native-jobs-fixture');
+if (externalProcessOwner && !fstatSync(3).isFile()) throw new Error('Companion process owner lease is unavailable');
 let stopping = false;
 function stopChild(child, signal) {
   if (!Number.isSafeInteger(child.pid) || child.pid <= 0) return;
@@ -77,6 +79,7 @@ async function upstreamBoot(child) {
     child.stdout.on("data", onData); child.once("exit", onExit); child.once("error", onExit);
   });
 }
+async function launchInner() {
 for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => void shutdown(0));
 try {
   const options = parseWriterOptions(process.argv.slice(2), app);
@@ -106,3 +109,12 @@ try {
   console.error(error instanceof Error ? error.message : "Companion startup failed");
   await shutdown(1);
 }
+}
+async function launchSupervisor() {
+  const supervisor = spawn(process.execPath, [join(app, 'supervise.mjs'), ...process.argv.slice(2)], {
+    cwd: app, env: process.env, stdio: 'inherit', detached: false,
+  });
+  await once(supervisor, 'exit'); process.exitCode = supervisor.exitCode ?? 1;
+}
+if (!externalProcessOwner && !explicitWriter) await launchSupervisor();
+else await launchInner();

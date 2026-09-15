@@ -283,6 +283,19 @@ export class ProcessOwnedWriterController {
             }
         });
     }
+    /** Reserve the Store lifetime lease before preflight or clone preparation. */
+    async prepare(operation) {
+        return this.#exclusive(async () => {
+            await this.#acquireOwnership();
+            try {
+                return await operation();
+            }
+            catch (error) {
+                await this.#releaseOwnership();
+                throw error;
+            }
+        });
+    }
     async restart() {
         return this.#exclusive(async () => {
             const mode = await this.#quiesce();
