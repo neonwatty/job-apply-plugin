@@ -10,7 +10,8 @@ FILES = sorted(['.codex-plugin/plugin.json', 'scripts/job-apply-store.py',
                 'scripts/job-apply-task.py', 'scripts/job-apply-attempt.py',
                 'scripts/job-apply-workspace.py', 'skills/answer-memory/SKILL.md',
                 'skills/job-apply/SKILL.md', 'runtime/data.bin'])
-TREES = ['runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace']
+TREES = ['runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace',
+         'apps/companion', 'native']
 FOCUS = 'runtime/data.bin'
 ATIME = 1600000000123456789
 MTIME = 1700000000987654321
