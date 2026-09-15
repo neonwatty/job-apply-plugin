@@ -1,36 +1,27 @@
-import { createHash, randomBytes } from 'node:crypto';
-import { safeId } from '../contracts/workspace/jobs.js';
+import { createHash } from 'node:crypto';
+import { fallback } from '../contracts/workspace/answers.js';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
 import { casefold } from '../contracts/workspace/casefold.js';
-import { copy, fromJSON, get, has, int, keys, object, set, string, text, JobsError } from '../contracts/workspace/values.js';
-const statuses = new Set(['active', 'review', 'completed', 'abandoned']);
-const inputFields = new Set([
-    'applicationId', 'status', 'ats', 'company', 'role', 'url', 'step', 'answerKeys', 'pendingFields',
-    'createdAt', 'updatedAt', 'attemptRevision', 'readinessInput', 'blockers', 'browserHandoff',
-]);
-const legacyPendingFields = new Set(['question', 'state', 'answerKey', 'sensitive']);
-const modernFields = new Set([...legacyPendingFields, 'reference', 'fieldClass', 'scopeFingerprint',
-    'matchConfidence', 'matchReasonCodes', 'matchAnswerRevision', 'questionFingerprint']);
-const agentBlockers = {
+import { fields, requireCondition as check } from '../contracts/workspace/answer-session-fields.js';
+import { safeAnswerSessionId, validateAnswerSession } from '../contracts/workspace/answer-session-validation.js';
+import { buildClaimPending, claimSessionObject, currentClaimApprovals } from '../contracts/workspace/claim-session-pending.js';
+import { copy, fromJSON, get, has, int, object, parse, same, serialize, set, string, text, truth, JobsError } from '../contracts/workspace/values.js';
+const inputFields = ['applicationId', 'status', 'ats', 'company', 'role', 'url', 'step', 'answerKeys',
+    'pendingFields', 'createdAt', 'updatedAt', 'attemptRevision', 'readinessInput', 'blockers', 'browserHandoff'];
+const legacyPendingFields = ['question', 'state', 'answerKey', 'sensitive'];
+const agentTypes = {
     'login-required': 'browser_handoff', 'captcha-required': 'browser_handoff',
     'mfa-required': 'browser_handoff', 'email-verification-required': 'browser_handoff',
     'account-creation-required': 'browser_handoff', 'unsupported-control': 'browser_handoff',
     'browser-state-uncertain': 'browser_handoff', 'consent-required': 'owner_review',
     'owner-input-required': 'information',
 };
-const handoffReasons = new Set([...Object.keys(agentBlockers), 'none', 'owner-upload-required',
-    'final-review-required', 'external-upload-capability-unavailable']);
+const clone = (value) => parse(serialize(value));
 const hash = (value) => createHash('sha256').update(value).digest('hex');
-const canonical = (value) => canonicalJson(value);
-function stringArray(value, error) {
-    if (!Array.isArray(value) || value.some(item => string(item) === null))
-        throw new JobsError(error);
-    return value.map(item => string(item));
-}
 function jobAllowsMutation(job, deleting = false) {
     return job === null || job.deletedAt !== null || deleting && ['applied', 'closed'].includes(job.status);
 }
-function readinessBlockerType(code) {
+function blockerType(code) {
     if (code.includes('upload'))
         return 'upload';
     if (code.includes('validation'))
@@ -41,95 +32,78 @@ function readinessBlockerType(code) {
         return 'browser_handoff';
     return 'readiness';
 }
-function pendingReference(applicationId, value) {
-    return `pending_${hash(JSON.stringify({ applicationId, pendingField: JSON.parse(canonical(value)) })).slice(0, 32)}`;
+function legacyReference(applicationId, field) {
+    return `pending_${hash(canonicalJson(fromJSON({ applicationId, pendingField: JSON.parse(serialize(field)) }))).slice(0, 32)}`;
 }
-function projectPending(applicationId, raw, reference, legacy, ats) {
-    const field = object(raw, 'pending field');
-    const allowed = legacy ? legacyPendingFields : modernFields;
-    if (keys(field).some(key => !allowed.has(key)))
-        throw new JobsError('pending field contains unsupported fields');
-    const result = copy(field), question = string(get(result, 'question'));
-    if (has(result, 'question'))
-        result.delete(text('question'));
-    if (question?.trim())
-        set(result, 'questionFingerprint', text(hash(casefold(question.trim().replace(/\s+/g, ' ')))));
-    if (!has(result, 'scopeFingerprint') && ats) {
-        set(result, 'scopeFingerprint', text(hash(canonical(fromJSON({ ats })))));
+function legacyPending(applicationId, value, ats) {
+    const field = claimSessionObject(value, 'pending field');
+    check(fields(field, legacyPendingFields), 'pending field reference is invalid');
+    const result = object(clone(field), 'pending field'), question = string(get(result, 'question'));
+    result.delete(text('question'));
+    if (question !== null && question.trim()) {
+        const normalized = casefold(question.trim().replace(/\s+/gu, ' '));
+        set(result, 'questionFingerprint', text(hash(normalized)));
     }
-    if (!has(result, 'reference'))
-        set(result, 'reference', text(legacy ? pendingReference(applicationId, raw) : reference()));
-    const opaque = string(get(result, 'reference'));
-    if (!opaque || !/^pending_[A-Za-z0-9_-]{1,128}$/.test(opaque))
-        throw new JobsError('pending field reference is invalid');
-    return result;
+    if (string(ats))
+        set(result, 'scopeFingerprint', text(hash(canonicalJson(object(fromJSON({ ats: string(ats) }), 'scope')))));
+    return set(result, 'reference', text(legacyReference(applicationId, field)));
 }
-function projectSession(value, expectedId, ats, reference = () => `pending_${randomBytes(16).toString('hex')}`) {
-    const source = object(value, 'session'), id = safeId(string(get(source, 'applicationId')));
-    if (id !== expectedId)
-        throw new JobsError('session application id does not match path');
-    const pending = get(source, 'pendingFields');
-    if (!Array.isArray(pending))
-        throw new JobsError('session pendingFields must be a list');
-    const legacy = pending.some(item => !has(object(item, 'pending field'), 'reference'));
-    if (legacy && pending.some(item => has(object(item, 'pending field'), 'reference'))) {
-        throw new JobsError('legacy and modern pending fields cannot be mixed');
+function projectSession(value, expectedId, expectedAts) {
+    const source = object(value, 'session'), raw = fallback(source, 'pendingFields', []);
+    check(Array.isArray(raw), 'session pendingFields must be a list');
+    const pending = raw, legacy = pending.some(item => !has(object(item, 'pending field'), 'reference'));
+    if (!legacy) {
+        const validated = validateAnswerSession(source);
+        check(string(get(validated, 'applicationId')) === expectedId, 'session application id does not match path');
+        return validated;
     }
-    const result = copy(source);
+    check(!pending.some(item => has(object(item, 'pending field'), 'reference')), 'legacy and modern pending fields cannot be mixed');
+    const id = safeAnswerSessionId(get(source, 'applicationId'));
+    check(id === expectedId, 'session application id does not match path');
+    const result = copy(source), ats = expectedAts === undefined ? get(result, 'ats')
+        : expectedAts === null ? null : text(expectedAts);
+    if (expectedAts !== undefined)
+        set(result, 'ats', ats);
     for (const key of ['company', 'role', 'url'])
         result.delete(text(key));
-    if (ats !== undefined)
-        set(result, 'ats', ats === null ? null : text(ats));
-    set(result, 'pendingFields', pending.map(item => projectPending(id, item, reference, legacy, string(get(result, 'ats')))));
-    return result;
+    set(result, 'pendingFields', pending.map(item => legacyPending(id, item, ats)));
+    return validateAnswerSession(result);
 }
 export class SessionService {
     repository;
     now;
-    reference;
-    constructor(repository, now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'), reference = () => `pending_${randomBytes(16).toString('hex')}`) {
+    constructor(repository, now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')) {
         this.repository = repository;
         this.now = now;
-        this.reference = reference;
     }
     save(id, value) {
-        id = safeId(id);
-        const input = object(value, 'session input');
-        if (keys(input).some(key => !inputFields.has(key)))
-            throw new JobsError('session contains unsupported fields');
-        if (has(input, 'applicationId') && string(get(input, 'applicationId')) !== id)
-            throw new JobsError('session application id does not match path');
-        const status = has(input, 'status') ? string(get(input, 'status')) : 'active';
-        if (!statuses.has(status))
-            throw new JobsError('session status is unsupported');
-        const answers = has(input, 'answerKeys') ? stringArray(get(input, 'answerKeys'), 'session answerKeys must be strings') : [];
-        const pending = has(input, 'pendingFields') ? get(input, 'pendingFields') : [];
-        if (!Array.isArray(pending))
-            throw new JobsError('session pendingFields must be a list');
+        id = safeAnswerSessionId(text(id));
+        const incoming = object(value, 'session input');
+        check(fields(incoming, inputFields), 'session contains unsupported fields');
+        check(!has(incoming, 'applicationId') || string(get(incoming, 'applicationId')) === id, 'session application id does not match path');
+        const status = fallback(incoming, 'status', text('active'));
+        check(['active', 'review', 'completed', 'abandoned'].includes(string(status) ?? ''), 'session status is unsupported');
+        const answerKeys = fallback(incoming, 'answerKeys', []);
+        check(Array.isArray(answerKeys) && answerKeys.every(item => string(item) !== null), 'session answerKeys must be strings');
         return this.repository.sessionTransaction(async (transaction) => {
-            const job = await transaction.canonicalJob(id);
-            if (!jobAllowsMutation(job))
+            if (!jobAllowsMutation(await transaction.canonicalJob(id)))
                 throw new JobsError('canonical job sessions require a coordinator operation');
-            const existing = await transaction.load(id), timestamp = this.now();
-            const existingDocument = existing === null ? null : object(existing, 'session');
-            const result = object(fromJSON({ schemaVersion: 1, applicationId: id, status, answerKeys: answers,
-                pendingFields: [], attemptRevision: null, readiness: null, blockers: [], approvals: [],
-                browserHandoff: status === 'review'
-                    ? { state: 'ready_for_owner', reasonCode: 'final-review-required', revision: 1 }
-                    : { state: 'not_required', reasonCode: 'none', revision: 1 },
-                createdAt: timestamp, updatedAt: timestamp }), 'session');
-            for (const [key, item] of input.entries())
-                if (!['applicationId', 'company', 'role', 'url', 'answerKeys', 'pendingFields',
-                    'createdAt', 'updatedAt', 'readinessInput', 'blockers', 'browserHandoff'].includes(string(key)))
-                    result.set(key, item);
-            if (existingDocument !== null) {
-                set(result, 'createdAt', get(existingDocument, 'createdAt'));
-                if (!has(input, 'ats') && has(existingDocument, 'ats'))
-                    set(result, 'ats', get(existingDocument, 'ats'));
+            const stored = await transaction.load(id), existing = stored === null ? null : projectSession(stored, id);
+            const answers = await transaction.answers(), timestamp = this.now();
+            const ats = has(incoming, 'ats') ? get(incoming, 'ats')
+                : existing !== null && has(existing, 'ats') ? get(existing, 'ats') : null;
+            const pending = buildClaimPending(incoming, existing, ats, answers);
+            const attempt = fallback(incoming, 'attemptRevision', null);
+            let readiness = null;
+            if (has(incoming, 'readinessInput')) {
+                const revision = int(attempt);
+                if (revision === null)
+                    throw new JobsError('readiness requires a current attempt revision');
+                readiness = await transaction.recomputeReadiness(get(incoming, 'readinessInput'), revision, string(ats));
             }
-            const projected = pending.map(item => projectPending(id, item, this.reference, false, string(get(result, 'ats'))));
-            set(result, 'pendingFields', projected);
-            const blockers = projected.map(field => {
+            else if (existing !== null && same(get(existing, 'attemptRevision'), attempt))
+                readiness = clone(get(existing, 'readiness'));
+            const blockers = pending.map(field => {
                 const sensitive = get(field, 'sensitive') === true || string(get(field, 'state')) === 'sensitive';
                 const blocker = object(fromJSON({ type: 'information', code: sensitive ? 'sensitive-answer-required' : 'answer-required',
                     reference: string(get(field, 'reference')), sensitivity: sensitive ? 'high' : 'none' }), 'session blocker');
@@ -137,89 +111,81 @@ export class SessionService {
                     set(blocker, 'fieldClass', get(field, 'fieldClass'));
                 return blocker;
             });
-            let readiness = null;
-            if (has(input, 'readinessInput')) {
-                const attempt = int(get(result, 'attemptRevision'));
-                if (attempt === null || attempt < 1n)
-                    throw new JobsError('readiness requires a current attempt revision');
-                readiness = await transaction.recomputeReadiness(get(input, 'readinessInput'), attempt, string(get(result, 'ats')));
-                const record = object(readiness, 'session readiness'), codes = get(record, 'blockerCodes');
-                if (!Array.isArray(codes) || codes.some(code => string(code) === null))
-                    throw new JobsError('session readiness is invalid');
-                for (const code of codes.map(code => string(code)))
-                    blockers.push(object(fromJSON({ type: readinessBlockerType(code), code }), 'session blocker'));
-                const fallback = string(get(record, 'fallbackCode'));
-                if (fallback !== null)
-                    blockers.push(object(fromJSON({ type: 'browser_handoff', code: fallback }), 'session blocker'));
+            if (readiness !== null) {
+                const report = object(readiness, 'session readiness'), codes = get(report, 'blockerCodes');
+                check(Array.isArray(codes), 'session readiness blockers are invalid');
+                for (const item of codes)
+                    blockers.push(object(fromJSON({ type: blockerType(string(item)), code: string(item) }), 'session blocker'));
+                if (get(report, 'fallbackCode') !== null)
+                    blockers.push(object(fromJSON({ type: 'browser_handoff', code: string(get(report, 'fallbackCode')) }), 'session blocker'));
             }
-            else if (existingDocument !== null && int(get(existingDocument, 'attemptRevision')) === int(get(result, 'attemptRevision'))) {
-                readiness = get(existingDocument, 'readiness');
+            const supplied = fallback(incoming, 'blockers', []);
+            check(Array.isArray(supplied), 'session blockers must be a list');
+            for (const item of supplied) {
+                const blocker = claimSessionObject(item, 'session blocker');
+                check(fields(blocker, ['type', 'code'], true), 'agent blockers must contain only closed type and code');
+                const code = string(get(blocker, 'code'));
+                check(code !== null && agentTypes[code] === string(get(blocker, 'type')), 'session blocker is invalid');
+                blockers.push(object(clone(blocker), 'session blocker'));
             }
+            const unique = [...new Map(blockers.map(item => [canonicalJson(item), item])).values()];
+            const browser = unique.find(item => string(get(item, 'type')) === 'browser_handoff');
+            let handoff = get(incoming, 'browserHandoff');
+            if (handoff === null) {
+                const fallbackCode = readiness === null ? null : get(object(readiness, 'session readiness'), 'fallbackCode');
+                const reason = fallbackCode !== null ? string(fallbackCode) : browser ? string(get(browser, 'code')) : null;
+                handoff = fromJSON({ state: reason !== null ? 'required' : string(status) === 'review' ? 'ready_for_owner' : 'not_required',
+                    reasonCode: reason ?? (string(status) === 'review' ? 'final-review-required' : 'none'), revision: 1 });
+            }
+            else
+                handoff = clone(handoff);
+            check(browser === undefined || string(get(object(handoff, 'browser handoff'), 'state')) === 'required', 'browser handoff contradicts browser blockers');
+            const result = object(fromJSON({ schemaVersion: 1, applicationId: id, status: string(status), answerKeys: [],
+                pendingFields: [], attemptRevision: null, readiness: null, blockers: [], approvals: [],
+                browserHandoff: null, createdAt: timestamp, updatedAt: timestamp }), 'session');
+            for (const key of ['status', 'step'])
+                if (has(incoming, key))
+                    set(result, key, clone(get(incoming, key)));
+            if (ats !== null)
+                set(result, 'ats', clone(ats));
+            set(result, 'status', status);
+            set(result, 'answerKeys', clone(answerKeys));
+            set(result, 'pendingFields', pending);
+            set(result, 'attemptRevision', attempt);
             set(result, 'readiness', readiness);
-            const supplied = has(input, 'blockers') ? get(input, 'blockers') : [];
-            if (!Array.isArray(supplied))
-                throw new JobsError('session blockers must be a list');
-            for (const raw of supplied) {
-                const blocker = object(raw, 'session blocker');
-                if (blocker.size !== 2 || keys(blocker).some(key => !['type', 'code'].includes(key))) {
-                    throw new JobsError('agent blockers must contain only closed type and code');
-                }
-                const code = string(get(blocker, 'code')), type = string(get(blocker, 'type'));
-                if (code === null || agentBlockers[code] !== type)
-                    throw new JobsError('session blocker is invalid');
-                blockers.push(copy(blocker));
-            }
-            set(result, 'blockers', blockers);
-            let handoff;
-            if (has(input, 'browserHandoff')) {
-                handoff = copy(object(get(input, 'browserHandoff'), 'browser handoff'));
-                if (handoff.size !== 3 || keys(handoff).some(key => !['state', 'reasonCode', 'revision'].includes(key))) {
-                    throw new JobsError('browser handoff contains unsupported fields');
-                }
-                if (!['not_required', 'required', 'ready_for_owner', 'complete'].includes(string(get(handoff, 'state')) ?? '')
-                    || !handoffReasons.has(string(get(handoff, 'reasonCode')) ?? '') || (int(get(handoff, 'revision')) ?? 0n) < 1n) {
-                    throw new JobsError('browser handoff is invalid');
-                }
-            }
-            else {
-                const fallback = readiness === null ? null : string(get(object(readiness, 'session readiness'), 'fallbackCode'));
-                const browser = blockers.find(blocker => string(get(blocker, 'type')) === 'browser_handoff');
-                handoff = object(fromJSON(fallback !== null
-                    ? { state: 'required', reasonCode: fallback, revision: 1 }
-                    : browser ? { state: 'required', reasonCode: string(get(browser, 'code')), revision: 1 }
-                        : status === 'review' ? { state: 'ready_for_owner', reasonCode: 'final-review-required', revision: 1 }
-                            : { state: 'not_required', reasonCode: 'none', revision: 1 }), 'browser handoff');
-            }
-            if (blockers.some(blocker => string(get(blocker, 'type')) === 'browser_handoff')
-                && string(get(handoff, 'state')) !== 'required')
-                throw new JobsError('browser handoff contradicts browser blockers');
+            set(result, 'blockers', unique);
             set(result, 'browserHandoff', handoff);
+            set(result, 'approvals', currentClaimApprovals(existing, pending, answers, attempt));
+            const created = get(incoming, 'createdAt');
+            if (truth(created))
+                set(result, 'createdAt', created);
+            else if (existing !== null && truth(get(existing, 'createdAt')))
+                set(result, 'createdAt', get(existing, 'createdAt'));
+            validateAnswerSession(result);
             await transaction.save(id, result);
             return copy(result);
         });
     }
     load(id) {
-        id = safeId(id);
+        id = safeAnswerSessionId(text(id));
         return this.repository.sessionTransaction(async (transaction) => {
             const raw = await transaction.load(id);
             if (raw === null)
                 throw new JobsError('session does not exist');
-            const job = await transaction.canonicalJob(id);
-            return projectSession(raw, id, job?.ats, this.reference);
+            return projectSession(raw, id, (await transaction.canonicalJob(id))?.ats);
         });
     }
     list() {
         return this.repository.sessionTransaction(async (transaction) => {
             const records = await transaction.list(), result = [];
             for (const [id, raw] of records.sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) {
-                const job = await transaction.canonicalJob(id);
-                result.push(projectSession(raw, id, job?.ats, this.reference));
+                result.push(projectSession(raw, id, (await transaction.canonicalJob(id))?.ats));
             }
             return result;
         });
     }
     delete(id) {
-        id = safeId(id);
+        id = safeAnswerSessionId(text(id));
         return this.repository.sessionTransaction(async (transaction) => {
             if (!jobAllowsMutation(await transaction.canonicalJob(id), true))
                 throw new JobsError('canonical job sessions require a coordinator operation');

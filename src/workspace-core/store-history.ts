@@ -62,7 +62,7 @@ export class HistoryService {
     const event = object(fromJSON({ schemaVersion: 1, eventId: this.id(), at: this.now() }), 'history event');
     for (const [key, item] of incoming.entries()) event.set(key, item);
     if (!has(event, 'answerKeys')) set(event, 'answerKeys', []);
-    if (!string(get(event, 'at'))) set(event, 'at', text(this.now()));
+    if (!has(incoming, 'at')) set(event, 'at', text(this.now()));
     validateHistoryRecord(event, true);
     const references = answerKeys(event);
     return this.repository.historyTransaction(async transaction => {

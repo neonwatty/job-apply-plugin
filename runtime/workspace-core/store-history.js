@@ -61,7 +61,7 @@ export class HistoryService {
             event.set(key, item);
         if (!has(event, 'answerKeys'))
             set(event, 'answerKeys', []);
-        if (!string(get(event, 'at')))
+        if (!has(incoming, 'at'))
             set(event, 'at', text(this.now()));
         validateHistoryRecord(event, true);
         const references = answerKeys(event);

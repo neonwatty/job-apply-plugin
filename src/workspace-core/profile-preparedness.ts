@@ -22,7 +22,8 @@ function meaningful(value: Value): boolean {
 function userProtects(provenance: Document, path: string): boolean {
   for (const [key, value] of provenance.entries()) {
     const pointer = string(key)!;
-    if ((path === pointer || path.startsWith(`${pointer}/`)) && string(get(object(value, 'provenance'), 'source')) === 'user') return true;
+    if ((path === pointer || path.startsWith(`${pointer}/`) || pointer.startsWith(`${path}/`))
+      && string(get(object(value, 'provenance'), 'source')) === 'user') return true;
   }
   return false;
 }

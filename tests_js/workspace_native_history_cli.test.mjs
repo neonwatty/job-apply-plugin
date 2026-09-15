@@ -35,6 +35,18 @@ function python(command, input) {
   } finally { rmSync(root, { recursive: true, force: true }); }
 }
 
+function pythonFailure(command, input) {
+  const root = mkdtempSync(join(tmpdir(), 'history-python-'));
+  try {
+    const result = spawnSync('python3.12', ['scripts/job-apply-store.py', ...command], {
+      cwd: process.cwd(), env: { ...process.env, JOB_APPLY_STORE_DIR: root },
+      input: JSON.stringify(input), encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0);
+    return result.stderr;
+  } finally { rmSync(root, { recursive: true, force: true }); }
+}
+
 test('history append creates the closed value-free event and resolves answer keys', async () => {
   const repository = new HistoryRepository();
   const service = new HistoryService(repository, () => '2026-09-15T12:00:00Z', () => 'event-id');
@@ -64,6 +76,14 @@ test('history append shape matches the CPython 3.12 oracle', async () => {
   const expected = python(['history-append', '--input', '-'], input);
   const actual = plain(await new HistoryService(new HistoryRepository(), () => expected.at, () => expected.eventId).append(value(input)));
   assert.deepEqual(actual, expected);
+});
+
+test('explicit invalid history timestamps are rejected like CPython 3.12', async () => {
+  for (const at of [123, false, [], null, '']) {
+    const input = { applicationId: 'job-1', event: 'reviewed', at };
+    assert.match(pythonFailure(['history-append', '--input', '-'], input), /timestamp is invalid/);
+    await assert.rejects(new HistoryService(new HistoryRepository()).append(value(input)), /timestamp is invalid/);
+  }
 });
 
 test('CLI exposes the closed state command set and normalizes input failures', async () => {

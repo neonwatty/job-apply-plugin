@@ -27,6 +27,16 @@ test('preparedness returns ordered value-free setup, coverage, and review health
   assert.doesNotMatch(JSON.stringify(result), /private@example|secret-digest|Private skill/);
 });
 
+test('preparedness protects both ancestors and descendants of human provenance', async () => {
+  const repository = { preparednessSnapshot: async () => ({
+    profile: value({}), provenance: value({ '/workHistory/0/company': { source: 'user', updatedAt: 'x' } }),
+    resumes: [], observeResume: async () => ({ exists: false, digest: null }), requests: [],
+    proposals: [{ status: 'pending', resumeId: 'resume', id: 'proposal', pendingPaths: ['/workHistory'] }],
+  }) };
+  const result = plain(await new PreparednessService(repository).get());
+  assert.ok(result.reviewHealth.some(item => item.reasonCode === 'human_protected_facts_retained'));
+});
+
 test('resume-create preserves the source filename and removes the embedded path before import', async () => {
   let imported;
   const repository = {
