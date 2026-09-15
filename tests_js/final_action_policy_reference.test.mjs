@@ -216,3 +216,41 @@ test('ASCII receipt projection preserves accepted surrogate timestamp separators
   assert.deepEqual(JSON.parse(line), receipt);
   assert.equal(line.split('\n').length, 2);
 });
+
+test('CPython empty-fraction clocks remain usable in persisted campaigns', async t => {
+  const timestamps = ['2026-08-14T16.Z', '2026-08-14T16,Z', '2026-08-14T16:00.Z',
+    '2026-08-14T1600,Z', '2026-08-14T16:00:00.Z', '2026-08-14T160000,Z',
+    '2026-08-14T16..Z', '2026-08-14T16:00:00+01.', '2026-08-14T16:00:00+01:00.',
+    '2026-08-14T16:00:00+01:00:00.'];
+  const expectedTimes = oracle(timestamps.map(value => ({ op: 'time', value }))).results;
+  const actualTimes = timestamps.map(value => {
+    try { return { ok: model.parseTime(value) }; } catch (error) { return { error: error.message }; }
+  });
+  assert.deepEqual(actualTimes, expectedTimes);
+  const fixture = await nativeFixture();
+  t.after(fixture.cleanup);
+  const provider = loadPosixFlockProvider(fixture.receipt.artifact);
+  const directory = await mkdtemp(join(tmpdir(), 'policy-empty-fraction-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const campaign = oracle([{ now, op: 'activate', value: campaignInput }]).results[0].ok;
+  const scenario = [
+    { now, op: 'activate', value: campaignInput },
+    { now, op: 'write', path: 'auto-submit/campaign.json', value: JSON.stringify({ ...campaign, createdAt: '2026-08-14T16.Z' }) },
+    { now, op: 'status' }, { now, op: 'authorize', value: authorization },
+  ];
+  const expected = oracle(scenario);
+  const actual = await nativeCases(serviceModule.FinalActionPolicyService, directory, provider, scenario);
+  assert.deepEqual(actual.results, expected.results);
+  assert.equal(actual.results[2].ok.mode, 'auto_submit');
+  assert.equal(actual.results[3].ok.mode, 'auto_submit');
+  assert.deepEqual(actual.tree.entries, expected.tree.entries);
+});
+
+test('IPvFuture introducer is lowercase while hexadecimal version letters keep both cases', () => {
+  for (const origin of ['https://[VF.abc]', 'https://[Vf.abc]', 'https://[vF.abc]', 'https://[vf.abc]']) {
+    const value = { ...rule, origin };
+    const expected = oracle([{ op: 'rule', value }]).results[0];
+    if (Object.hasOwn(expected, 'error')) assert.throws(() => model.parseRule(value), origin);
+    else assert.deepEqual(model.parseRule(value), expected.ok);
+  }
+});

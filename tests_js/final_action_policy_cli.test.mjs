@@ -85,3 +85,22 @@ test('raw JSON decimal and boolean authority integers are denied without normali
     assert.equal(result.stdout, '');
   }
 });
+
+test('packaged activation rejects uppercase IPvFuture introducers without persisting campaigns', async t => {
+  const { fixture, run } = await packaged(t);
+  for (const [index, introducer] of ['VF', 'Vf', 'vF', 'vf'].entries()) {
+    const store = join(fixture.root, `ipvfuture-${index}`);
+    const input = { ...campaignInput, applicationRules: [{ ...campaignInput.applicationRules[0], origin: `https://[${introducer}.abc]` }] };
+    const result = run(['--root', store, 'activate', '--input', '-'], input);
+    if (introducer.startsWith('V')) {
+      assert.equal(result.status, 2, introducer);
+      assert.equal(result.stdout, '');
+      assert.equal(success(run(['--root', store, 'status'])).reason, 'policy_unavailable');
+      await assert.rejects(readFile(join(store, 'auto-submit/campaign.json')), { code: 'ENOENT' });
+    } else {
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(JSON.parse(result.stdout).applicationRules[0].origin, input.applicationRules[0].origin);
+      assert.equal(success(run(['--root', store, 'status'])).mode, 'auto_submit');
+    }
+  }
+});

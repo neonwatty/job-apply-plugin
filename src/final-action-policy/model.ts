@@ -154,9 +154,10 @@ function calendarDate(value: string): Date {
   }
   return date;
 }
-function timeComponents(value: string): { seconds: number; microseconds: number; validClock: boolean } {
-  const match = /^(\d{2})(?:(:?)(\d{2})(?:\2(\d{2}))?)?(?:[.,](\d+))?$/.exec(value);
-  check(match, 'timestamp is invalid');
+function timeComponents(value: string, allowEmptyFraction = false): { seconds: number; microseconds: number; validClock: boolean } {
+  const match = /^(\d{2})(?:(:?)(\d{2})(?:\2(\d{2}))?)?(?:[.,](\d*))?$/.exec(value);
+  // CPython permits a bare fraction separator before the zone, but not inside it.
+  check(match && (match[5] !== '' || allowEmptyFraction), 'timestamp is invalid');
   const hours = Number(match[1]), minutes = Number(match[3] ?? 0), seconds = Number(match[4] ?? 0);
   return { seconds: hours * 3600 + minutes * 60 + seconds,
     microseconds: Number((match[5] ?? '').slice(0, 6).padEnd(6, '0')),
@@ -172,7 +173,7 @@ export function parseTime(value: unknown): number {
   const time = expanded.slice(separator + separatorWidth);
   const zone = /^(.+?)([+-])(.+)$/.exec(time);
   check(zone, 'timestamp is invalid');
-  const clock = timeComponents(zone[1]!);
+  const clock = timeComponents(zone[1]!, true);
   check(clock.validClock, 'timestamp is invalid');
   const offset = timeComponents(zone[3]!);
   // CPython recognizes a zero HH/MM/SS offset as UTC even with a fractional suffix.
@@ -193,7 +194,7 @@ export function origin(value: unknown): string {
   check(!/[/?#@:]/.test(normalized), 'origin must be an exact HTTP(S) origin');
   if (host.includes('[') || host.includes(']')) {
     const bracket = /^\[([^\]]+)\](?::.*)?$/.exec(host);
-    check(bracket && (isIP(bracket[1]!) === 6 || /^v[0-9a-f]+\..+$/i.test(bracket[1]!)), 'origin must be an exact HTTP(S) origin');
+    check(bracket && (isIP(bracket[1]!) === 6 || /^v[0-9a-fA-F]+\..+$/.test(bracket[1]!)), 'origin must be an exact HTTP(S) origin');
   } else check(host.split(':')[0]!.length > 0, 'origin must be an exact HTTP(S) origin');
   return value;
 }
