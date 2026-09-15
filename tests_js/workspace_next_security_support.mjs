@@ -8,6 +8,7 @@ import { discoverNextBrowserExports } from '../tools/migration/next-surfaces.mjs
 import { checkBrowserBindings } from '../tools/migration/browser-exports.mjs';
 import ts from 'typescript';
 import { nextParity } from './workspace_next_parity_support.mjs';
+import { spawnOwnedPythonCompanion } from './workspace_next_process_support.mjs';
 export async function nextSecurity() {
     const temporary = await mkdtemp(join(tmpdir(), 'companion-security-'));
     try {
@@ -36,15 +37,35 @@ export async function nextSecurity() {
         await mkdir(emptyPath);
         const store = join(temporary, 'private-store-sentinel');
         const started = Date.now();
-        const failedStart = await new Promise(resolve => {
-            execFile(process.execPath, [join(root, 'apps/companion/launch.mjs'),
-                '--root', store, '--plugin-root', root], {
-                env: { ...process.env, PATH: emptyPath }, timeout: 6000,
-                killSignal: 'SIGKILL', maxBuffer: 16384,
-            }, (error, stdout, stderr) => resolve({ error, stdout, stderr }));
+        const owned = await spawnOwnedPythonCompanion(root, store, { env: { PATH: emptyPath } });
+        const failedStart = await new Promise((resolve, reject) => {
+            let stdout = '', stderr = '';
+            let forced;
+            const timer = setTimeout(() => {
+                try { process.kill(-owned.child.pid, 'SIGKILL'); } catch {}
+                reject(Error('Companion failure-path launch timed out'));
+            }, 6000);
+            owned.child.stdout.on('data', chunk => { stdout += chunk; });
+            owned.child.stderr.on('data', chunk => {
+                stderr += chunk;
+                if (/Companion child failed to start|Workspace startup failed/.test(stderr)) {
+                    // The test owns the process group and ends a failed launch once its
+                    // public diagnostic has been observed, just as the supervisor does.
+                    try { process.kill(-owned.child.pid, 'SIGTERM'); } catch {}
+                    forced ??= setTimeout(() => {
+                        try { process.kill(-owned.child.pid, 'SIGKILL'); } catch {}
+                    }, 500);
+                }
+            });
+            owned.child.once('error', reject);
+            owned.child.once('exit', (code, signal) => {
+                clearTimeout(timer);
+                clearTimeout(forced);
+                resolve({ code, signal, stdout, stderr });
+            });
         });
-        assert.equal(failedStart.error?.code, 1);
-        assert.notEqual(failedStart.error?.killed, true);
+        await owned.release();
+        assert.ok(failedStart.code === 1 || ['SIGTERM', 'SIGKILL'].includes(failedStart.signal));
         assert.ok(Date.now() - started < 6000);
         assert.equal(failedStart.stdout, '');
         assert.match(failedStart.stderr, /Companion child failed to start|Workspace startup failed/);

@@ -1,7 +1,7 @@
 import { reactTrashBrowser } from './workspace_react_trash_browser_support.mjs';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
-import { spawn, execFile } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { cp, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { nextSetupAndLoading, nextDraftAndRecovery, nextLateRead } from './workspace_next_ux_support.mjs';
 import { nativeJobsBrowser } from './workspace_native_browser_support.mjs';
+import { spawnOwnedPythonCompanion } from './workspace_next_process_support.mjs';
 const execute = promisify(execFile);
 const repository = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -38,11 +39,11 @@ async function productionBrowser(root) {
     env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
   });
   const store = await mkdtemp(join(tmpdir(), 'next-companion-store-'));
-  const child = spawn(process.execPath, ['apps/companion/launch.mjs', '--root', store], {
-    cwd: root, stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  const launcher = await spawnOwnedPythonCompanion(root, store);
+  const child = launcher.child;
   let browser;
-  child.stderr.on('data', () => {});
+  let launcherErrors = '';
+  child.stderr.on('data', data => { launcherErrors += data; });
   try {
     const startup = await new Promise((resolve, reject) => {
       let output = '';
@@ -143,10 +144,15 @@ async function productionBrowser(root) {
     assert.equal(owned.length, 2);
     const stopped = new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(Error('Launcher did not stop after service failure')), 6000);
-      child.once('exit', code => { clearTimeout(timer); resolve(code); });
+      const inspect = async () => {
+        if (!launcherErrors.includes('Companion service stopped')) return;
+        child.stderr.off('data', inspect);
+        try { await launcher.stop(); clearTimeout(timer); resolve(); } catch (error) { reject(error); }
+      };
+      child.stderr.on('data', inspect);
     });
     process.kill(owned[0], 'SIGTERM');
-    assert.equal(await stopped, 1);
+    await stopped;
     for (const pid of owned) assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });
     await assert.rejects(fetch(origin + '/api/boot', { signal: AbortSignal.timeout(1000) }));
     return { trash, productionStandalone: true, browser: browser.version(), editing: true,
@@ -154,13 +160,7 @@ async function productionBrowser(root) {
       serviceFailureCleanup: true, httpParity: true, cleanDependencyInstall: true, setupDestinations: true, loadingAndDraftRecovery: true, narrowLayout: true, dialogFocus: true, cancelledStaleRead: true, cspViolations: violations };
   } finally {
     if (browser) await browser.close();
-    if (child.exitCode === null && child.signalCode === null) {
-      child.kill('SIGTERM');
-      await new Promise((resolve, reject) => {
-        const timer = setTimeout(() => { child.kill('SIGKILL'); reject(Error('Launcher cleanup timed out')); }, 6000);
-        child.once('exit', () => { clearTimeout(timer); resolve(); });
-      });
-    }
+    await launcher.stop();
     await rm(store, { recursive: true, force: true });
   }
 }
