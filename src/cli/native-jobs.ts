@@ -29,14 +29,7 @@ import { NativeResumeFiles } from "../store/native-resume-files.js";
 import { createNativeStoreBootstrap } from '../store/native-store-bootstrap.js';
 import { withExclusiveFileLock } from '../store/exclusive-file-lock.js';
 
-export const nativeJobsCommandFields: Record<string, string[]> = {
-  ...accountOperationCommands, ...answerLifecycleCommands, ...resumeLifecycleCommands, ...trashCommands,
-  ...groupedApprovalCommands, ...taskIntakeCommands, ...legacyJobCommands, ...jobUpsertCommands,
-  ...jobTransitionCommands, ...projectionCommands, ...claimCommands, ...pendingAnswerCommands,
-  ...profileCommands, ...answerCommands, ...extractionCommands,
-  ...Object.fromEntries([...nativeAutomationCommandNames].map(name => [name, []])),
-  ...Object.fromEntries([...nativeStoreStateCommandNames].map(name => [name, []])),
-  ...nativeStoreBootstrapCommands,
+const directCommandFields: Record<string, string[]> = {
   'fixture-init': [], 'job-create': ['--input', '--origin'], 'job-get': ['--id', '--include-trashed'],
   'job-list': ['--status', '--include-trashed', '--trashed-only'],
   'job-update': ['--id', '--input', '--expected-revision', '--origin'],
@@ -45,6 +38,24 @@ export const nativeJobsCommandFields: Record<string, string[]> = {
   'resume-replace': ['--id', '--path', '--expected-revision'], 'resume-adopt': ['--id', '--path', '--expected-revision'],
   'resume-set-default': ['--id', '--expected-revision'], 'resume-resolve': ['--id'], 'resume-check': ['--id'],
 };
+export const nativeJobsCommandFamilies: Array<{ owner: string; fields: Record<string, string[]> }> = [
+  { owner: 'account-operation', fields: accountOperationCommands }, { owner: 'answer-lifecycle', fields: answerLifecycleCommands },
+  { owner: 'resume-lifecycle', fields: resumeLifecycleCommands }, { owner: 'trash', fields: trashCommands },
+  { owner: 'grouped-approvals', fields: groupedApprovalCommands }, { owner: 'task-intake', fields: taskIntakeCommands },
+  { owner: 'legacy-jobs', fields: legacyJobCommands }, { owner: 'job-upsert', fields: jobUpsertCommands },
+  { owner: 'job-transition', fields: jobTransitionCommands }, { owner: 'projections', fields: projectionCommands },
+  { owner: 'claims', fields: claimCommands }, { owner: 'pending-answers', fields: pendingAnswerCommands },
+  { owner: 'profile', fields: profileCommands }, { owner: 'answers', fields: answerCommands },
+  { owner: 'extractions', fields: extractionCommands },
+  { owner: 'automation', fields: Object.fromEntries([...nativeAutomationCommandNames].map(name => [name, []])) },
+  { owner: 'store-state', fields: Object.fromEntries([...nativeStoreStateCommandNames].map(name => [name, []])) },
+  { owner: 'store-bootstrap', fields: nativeStoreBootstrapCommands }, { owner: 'direct', fields: directCommandFields },
+];
+export const nativeJobsCommandFields: Record<string, string[]> = {};
+for (const family of nativeJobsCommandFamilies) for (const [command, fields] of Object.entries(family.fields)) {
+  if (Object.hasOwn(nativeJobsCommandFields, command)) throw new Error(`duplicate native Jobs command owner: ${command}`);
+  nativeJobsCommandFields[command] = fields;
+}
 
 export async function runJobsCli(args: string[], input: (limit?: number) => Promise<string>): Promise<string> {
   const options = new Map<string, string>();
