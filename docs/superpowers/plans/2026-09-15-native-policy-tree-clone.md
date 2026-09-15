@@ -20,7 +20,7 @@
 ## Task 1: Write failing filesystem-safety tests
 
 - [ ] Cover the exact optional shapes: `.lock`, `campaign.json`, `campaigns/<64-hex>.json`, `applications/<64-hex>/<64-hex>.json`, and `receipts.jsonl`.
-- [ ] Reject symlinks, hard links, FIFOs/special files, loose permissions, stale temporary files, unknown names, and excessive depth/count/file/aggregate bytes.
+- [ ] Reject symlinks, hard links, FIFOs/special files, unsafe permissions, stale temporary files, unknown names, and excessive depth/count/file/aggregate bytes. Accept only the known owner-owned legacy Python structural directories at non-writable `0755`, and always clone them as `0700`.
 - [ ] Prove a rejected tree leaves no target and missing `auto-submit` remains valid.
 
 ## Task 2: Implement the bounded walker and copier
@@ -28,6 +28,7 @@
 - [ ] Validate path components and entry types with descriptor-relative identity checks where required by repository conventions.
 - [ ] Hold `auto-submit/.lock` while inventorying, copying, or hashing an existing policy tree.
 - [ ] Copy exact bytes into `0700` directories and `0600` files.
+- [ ] Preserve source modes in snapshot/tamper evidence without mutating the retained Python tree.
 - [ ] Frame digests with complete relative paths and entry types to avoid ambiguity.
 
 ## Task 3: Compose clone, layout, and writer switch
@@ -42,4 +43,3 @@
 - [ ] Show a valid policy tree copies byte-for-byte and can be opened by `PolicyRepository`.
 - [ ] Generate runtime JavaScript and run focused clone/writer-switch tests, `npm run typecheck`, `npm run build:check`, `npm run check:size`, and `git diff --check`.
 - [ ] Commit only owned files and write an implementation report with commands and results.
-
