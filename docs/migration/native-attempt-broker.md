@@ -44,8 +44,14 @@ wins; an unreachable owned socket can be removed after ownership is acquired.
 The Store's optional `.job-apply-attempt.pid` remains the existing positive ASCII
 PID plus newline. Native Store validation requires an owned regular file with
 one link, mode 0600, and at most 21 bytes. It does not infer authority from process
-liveness. Invalid/symlink/special PID metadata fails closed. Failed bootstrap
-releases endpoint ownership without deleting metadata it did not write.
+liveness. Invalid/symlink/special PID metadata fails closed. Publication writes and
+fsyncs the private `.job-apply-attempt.pid.pending` staging file on the same
+filesystem, atomically renames it to the final PID, and fsyncs the Store directory.
+An interruption leaves the final PID unchanged or wholly replaced. The optional
+staging file permits incomplete PID prefixes while retaining the same ownership,
+mode, single-link and size checks, so an orphan from interrupted publication does
+not block Store status or explicit claim recovery. Failed bootstrap releases
+endpoint ownership without deleting metadata it did not write.
 
 Detached spawning survives launcher process-group loss. The default heartbeat is
 60 seconds; an unacquired broker exits after 10 seconds. Scheduled heartbeat

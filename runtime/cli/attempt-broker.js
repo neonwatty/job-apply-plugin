@@ -1,10 +1,10 @@
 import { spawn } from 'node:child_process';
 import { constants } from 'node:fs';
-import { chmod, lstat, mkdir, open, readFile, unlink } from 'node:fs/promises';
+import { chmod, lstat, mkdir, open, readFile, rename, unlink } from 'node:fs/promises';
 import { createConnection, createServer } from 'node:net';
 import { dirname, join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
-import { nativeAttemptPidName, validateNativeAttemptPid } from '../store/native-store-layout.js';
+import { nativeAttemptPidName, nativeAttemptPidPendingName, validateNativeAttemptPid } from '../store/native-store-layout.js';
 import { AttemptAuthority } from './attempt-authority.js';
 import { AttemptFrameDecoder, attemptError, attemptHeartbeatMilliseconds, attemptIdleMilliseconds, attemptSocketPath, encodeAttemptFrame } from './attempt-protocol.js';
 async function runtimePath(root) {
@@ -38,6 +38,47 @@ async function listen(server, path) {
         server.once('error', reject);
         server.listen({ path, backlog: 8 }, () => { server.off('error', reject); resolve(); });
     });
+}
+/** Stage on the Store filesystem so publication never exposes an empty final PID. */
+async function publishPid(root, processPath) {
+    await validateNativeAttemptPid(root);
+    const pendingPath = join(root, nativeAttemptPidPendingName);
+    const pid = await open(pendingPath, constants.O_WRONLY | constants.O_CREAT | constants.O_NOFOLLOW | constants.O_NONBLOCK, 0o600);
+    let owned;
+    try {
+        const metadata = await pid.stat();
+        if (!metadata.isFile() || metadata.nlink !== 1 || metadata.uid !== process.getuid()
+            || (metadata.mode & 0o777) !== 0o600)
+            throw new Error('attempt PID unavailable');
+        owned = { dev: metadata.dev, ino: metadata.ino };
+        await pid.truncate(0);
+        await pid.writeFile(`${process.pid}\n`);
+        await pid.sync();
+        await rename(pendingPath, processPath);
+        const directory = await open(root, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW);
+        try {
+            await directory.sync();
+        }
+        finally {
+            await directory.close();
+        }
+    }
+    finally {
+        try {
+            await pid.close();
+        }
+        finally {
+            if (owned) {
+                const remaining = await lstat(pendingPath).catch(error => {
+                    if (error.code === 'ENOENT')
+                        return null;
+                    throw error;
+                });
+                if (remaining?.isFile() && remaining.dev === owned.dev && remaining.ino === owned.ino)
+                    await unlink(pendingPath);
+            }
+        }
+    }
 }
 export async function runAttemptBroker(root, service, provider, options = {}) {
     const path = await runtimePath(root), processPath = join(root, nativeAttemptPidName);
@@ -137,20 +178,8 @@ export async function runAttemptBroker(root, service, provider, options = {}) {
         await listen(server, path);
         listening = true;
         await chmod(path, 0o600);
-        await validateNativeAttemptPid(root);
-        const pid = await open(processPath, constants.O_WRONLY | constants.O_CREAT | constants.O_NOFOLLOW | constants.O_NONBLOCK, 0o600);
-        try {
-            const metadata = await pid.stat();
-            if (!metadata.isFile() || metadata.nlink !== 1 || metadata.uid !== process.getuid()
-                || (metadata.mode & 0o777) !== 0o600)
-                throw new Error('attempt PID unavailable');
-            await pid.truncate(0);
-            await pid.writeFile(`${process.pid}\n`);
-            pidWritten = true;
-        }
-        finally {
-            await pid.close();
-        }
+        await publishPid(root, processPath);
+        pidWritten = true;
         begin();
         process.on('SIGTERM', stop);
         process.on('SIGINT', stop);

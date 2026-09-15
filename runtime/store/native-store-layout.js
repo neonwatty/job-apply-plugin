@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { parsePythonPointJsonBytes } from '../contracts/raw-json/point-parser.js';
 import { get, int, object, string, JobsError } from '../contracts/workspace/values.js';
 export const nativeAttemptPidName = '.job-apply-attempt.pid';
+export const nativeAttemptPidPendingName = nativeAttemptPidName + '.pending';
 export const nativeFixtureMarkerName = '.native-jobs-fixture';
 export const nativeCloneMarkerName = '.native-store-clone';
 export const nativeFixtureMarker = '{"mode":"native-jobs-fixture","version":12}\n';
@@ -16,7 +17,7 @@ export const nativeStoreRequiredEntries = [
     'coordinator.json', 'coordinator-journal.json',
 ];
 export const nativeStoreAllowedEntries = new Set([
-    ...nativeStoreRequiredEntries, nativeFixtureMarkerName, nativeCloneMarkerName, nativeAttemptPidName,
+    ...nativeStoreRequiredEntries, nativeFixtureMarkerName, nativeCloneMarkerName, nativeAttemptPidName, nativeAttemptPidPendingName,
 ]);
 export function nativeCloneTrees(bytes) {
     let marker;
@@ -47,10 +48,10 @@ export function validateNativeStoreMarker(name, bytes) {
     return 'clone';
 }
 /** Optional runtime metadata is bounded and private; process liveness is not Store authority. */
-export async function validateNativeAttemptPid(root) {
+async function validatePidFile(root, name, incomplete) {
     let handle;
     try {
-        handle = await open(join(root, nativeAttemptPidName), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+        handle = await open(join(root, name), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
     }
     catch (error) {
         if (error.code === 'ENOENT')
@@ -64,12 +65,20 @@ export async function validateNativeAttemptPid(root) {
             throw new JobsError('native attempt PID must be private, owned and bounded');
         }
         const bytes = await handle.readFile();
-        if (!/^[1-9][0-9]{0,19}\n$/.test(bytes.toString('latin1')))
+        const contents = bytes.toString('latin1');
+        const valid = incomplete ? /^(?:[1-9][0-9]{0,19}\n?)?$/.test(contents) : /^[1-9][0-9]{0,19}\n$/.test(contents);
+        if (!valid)
             throw new JobsError('native attempt PID is invalid');
     }
     finally {
         await handle.close();
     }
+}
+export async function validateNativeAttemptPid(root) {
+    await validatePidFile(root, nativeAttemptPidName, false);
+    // A killed publisher may leave any prefix of the PID in its private staging file.
+    // This is disposable metadata, never a claim or a reason to prevent recovery.
+    await validatePidFile(root, nativeAttemptPidPendingName, true);
 }
 export async function validateNativeStoreMetadata(root, name, bytes) {
     validateNativeStoreMarker(name, bytes);

@@ -125,3 +125,22 @@ test('root resolution follows symlinks before parent traversal, as Python does',
     assert.equal(resolveAttemptRoot(raw,{},'/tmp/home'),oracle.stdout.trim());
   } finally {await rm(root,{recursive:true,force:true});}
 });
+
+test('each duplicate scalar value is validated before a later valid value can replace it',async()=>{
+  const cases=[
+    ['handoff','--status','invalid','--status','needs_info','--input','session.json'],
+    ['handoff','--status=invalid','--status=awaiting_review','--input=session.json'],
+    ['handoff','--stat=invalid','--stat=needs_info','--input=session.json'],
+    ['start','--id','job','--owner','owner','--expected-revision','bad','--expected-revision','2'],
+  ];
+  for(const args of cases) {
+    const oracle=await python(args);
+    assert.equal(oracle.exitCode,2);
+    assert.deepEqual(JSON.parse(oracle.stdout),{ok:false,error:{code:'invalid_invocation'}});
+    assert.throws(()=>parseAttemptArgs(args,{},'/tmp/home'),undefined,JSON.stringify(args));
+  }
+  const valid=['handoff','--status','awaiting_review','--status','needs_info','--input','session.json'];
+  const reference=await python(valid,oracleImport+`print(json.dumps(vars(m.build_parser().parse_args(sys.argv[1:]))))`);
+  assert.equal(reference.exitCode,0);
+  assert.equal(parseAttemptArgs(valid,{},'/tmp/home').status,JSON.parse(reference.stdout).status);
+});

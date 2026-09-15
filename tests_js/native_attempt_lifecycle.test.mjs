@@ -144,3 +144,100 @@ test('failed PID bootstrap releases endpoint ownership and preserves foreign met
     await runAttemptBroker(state.root,state.claims,state.provider,{idleMilliseconds:20});
   } finally {await fixture.cleanup();}
 });
+
+test('invalid earlier handoff status never contacts or changes an installed live attempt',async()=>{
+  const fixture=await nativeFixture();let root;
+  try {
+    const state=await setup(fixture,'invalid-duplicate');root=state.root;
+    await state.claims.select('job',1n,true);const executable=await installAttempt(fixture);
+    assert.equal((await nativeCli(executable,root,start)).value.event,'acquired');
+    const names=['coordinator.json','jobs.json','.job-apply-attempt.pid'];
+    const before=await Promise.all(names.map(name=>readFile(join(root,name),'utf8')));
+    const input=join(fixture.root,'session.json');await writeFile(input,'{"status":"active"}');
+    const result=await nativeCli(executable,root,['handoff','--status','invalid','--status','needs_info','--input',input]);
+    assert.equal(result.exitCode,2);
+    assert.deepEqual(result.value,{ok:false,error:{code:'invalid_invocation'}});
+    assert.equal(result.stderr,'');
+    assert.deepEqual(await Promise.all(names.map(name=>readFile(join(root,name),'utf8'))),before);
+    assert.equal((await nativeCli(executable,root,['heartbeat'])).value.event,'heartbeat');
+  } finally {if(root)await killAttempt(root);await fixture.cleanup();}
+});
+
+test('interrupted PID publication preserves Store status, claim recovery and later broker startup',{timeout:30000},async()=>{
+  const {child}=await import('./exclusive_file_lock_support.mjs');
+  const {text}=await import('../runtime/contracts/workspace/values.js');
+  const fixture=await nativeFixture();
+  const script=`
+    import {open} from 'node:fs/promises';
+    import {join} from 'node:path';
+    import {runAttemptBroker} from './runtime/cli/attempt-broker.js';
+    import {NativeJobsRepository} from './runtime/store/native-jobs.js';
+    import {loadPosixFlockProvider} from './runtime/store/posix-flock.js';
+    import {ClaimsService} from './runtime/workspace-core/claims.js';
+    const [root,addon,mode]=process.argv.slice(1);
+    const probe=await open(join(root,'.store.lock'),'r');
+    const prototype=Object.getPrototypeOf(probe);await probe.close();
+    const originalTruncate=prototype.truncate,originalWrite=prototype.writeFile;
+    let armed=false;
+    prototype.truncate=async function(...args) {
+      const result=await Reflect.apply(originalTruncate,this,args);armed=true;
+      if(mode==='kill')process.kill(process.pid,'SIGKILL');
+      return result;
+    };
+    prototype.writeFile=async function(...args) {
+      if(armed&&mode==='write-failure')throw Error('injected write failure');
+      return Reflect.apply(originalWrite,this,args);
+    };
+    const provider=loadPosixFlockProvider(addon);
+    try {
+      await runAttemptBroker(root,new ClaimsService(new NativeJobsRepository(root,provider)),provider,{idleMilliseconds:20});
+      console.log('unexpected-success');
+    } catch(error) {
+      if(error.message!=='injected write failure')throw error;
+      console.log('write-failed');
+    }
+  `;
+  try {
+    for(const mode of ['kill','write-failure']) for(const priorPid of [null,'999999999\n']) {
+      const state=await setup(fixture,`${mode}-${priorPid===null?'absent':'stale'}`),root=state.root;
+      await state.claims.select('job',1n,true);await state.claims.acquire('job',text('owner'),2n);
+      const pidPath=join(root,'.job-apply-attempt.pid');
+      if(priorPid!==null)await writeFile(pidPath,priorPid,{mode:0o600});
+      const coordinator=await readFile(join(root,'coordinator.json'),'utf8');
+      const worker=child(script,[root,fixture.receipt.artifact,mode]);
+      try {
+        if(mode==='kill')assert.equal((await worker.exited).signal,'SIGKILL');
+        else {await worker.line('write-failed');await worker.success();}
+      } finally {await worker.stop();}
+      assert.equal(await readFile(pidPath,'utf8').catch(error=>error.code==='ENOENT'?null:Promise.reject(error)),priorPid);
+      assert.equal(await readFile(join(root,'coordinator.json'),'utf8'),coordinator);
+      assert.equal(plain(await state.claims.status()).claim.jobId,'job');
+      state.clock.now='2026-09-10T12:10:00Z';
+      assert.equal(plain(await state.claims.recover('job',text('recovery'))).job.id,'job');
+      const recovered=await readFile(join(root,'coordinator.json'),'utf8');
+      await runAttemptBroker(root,state.claims,state.provider,{idleMilliseconds:20});
+      assert.equal(await readFile(join(root,'coordinator.json'),'utf8'),recovered);
+      assert.equal(plain(await state.claims.status()).claim.jobId,'job');
+    }
+  } finally {await fixture.cleanup();}
+});
+
+test('orphan PID staging prefixes remain disposable while unsafe staging metadata is rejected',async()=>{
+  const {chmod,unlink,symlink}=await import('node:fs/promises');
+  const {nativeAttemptPidPendingName}=await import('../runtime/store/native-store-layout.js');
+  const fixture=await nativeFixture();
+  try {
+    const state=await setup(fixture,'pending-pid'),path=join(state.root,nativeAttemptPidPendingName);
+    for(const prefix of ['', '1', '12345', '12345\n']) {
+      await writeFile(path,prefix,{mode:0o600});
+      assert.equal(plain(await state.claims.status()).claim,null);
+    }
+    for(const invalid of ['garbage','0','\n','1\n\n','9'.repeat(22)]) {
+      await writeFile(path,invalid);await assert.rejects(state.claims.status());
+    }
+    await writeFile(path,'123');await chmod(path,0o644);await assert.rejects(state.claims.status());
+    await unlink(path);const target=join(fixture.root,'external-pid');
+    await writeFile(target,'123\n',{mode:0o600});await symlink(target,path);
+    await assert.rejects(state.claims.status());
+  } finally {await fixture.cleanup();}
+});

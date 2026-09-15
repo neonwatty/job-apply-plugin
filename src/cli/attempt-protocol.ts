@@ -86,6 +86,7 @@ export function parseAttemptArgs(args: string[], env: NodeJS.ProcessEnv, home: s
     if (key === '--expected-revision') {
       try { parseTaskRevision(value); } catch { throw new AttemptInvocationError(); }
     }
+    if (key === '--status' && value !== 'needs_info' && value !== 'awaiting_review') throw new AttemptInvocationError();
     options.set(key, value);
   }
   if (!command) throw new AttemptInvocationError();
