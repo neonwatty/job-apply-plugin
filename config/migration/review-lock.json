@@ -303,11 +303,11 @@
     },
     {
       "path": "source-catalog-05.json",
-      "sha256": "765c756ff748397eb1fce8ad47e486b4e4a17fc6332b67f2cf84b9b276b3e998"
+      "sha256": "9b196f9347298a9d7598a60b5a6f4e26e680a2ca07bb5e10003a4c0f111a9515"
     },
     {
       "path": "source-catalog-06.json",
-      "sha256": "2120acf4272d562eaba575c830999030e4ff0732adac676a05102d07a9d3ee95"
+      "sha256": "3cdb1aeea55cb09c0828096574be5a636be862ded6dd484e00b1d72223066036"
     },
     {
       "path": "source-catalog-g02-hybrid.json",
@@ -427,7 +427,7 @@
     },
     {
       "path": "source-catalog-native-store-clone.json",
-      "sha256": "b0a9540dcdccdf5d1b5eaafd2c03b831d33097bfa2df1af6343c6cc9e1d1a8db"
+      "sha256": "412febe76f4bb35b0a026501c8511a4e70077bbbed0f9f499c53d19abfc913cb"
     },
     {
       "path": "source-catalog-native-task-cli.json",
@@ -443,7 +443,7 @@
     },
     {
       "path": "source-catalog-native-writer-switch.json",
-      "sha256": "04d9674bca64b74fd8d425f7c7b5ce8e1bf07fa307ea578348758e8ec78ca3f2"
+      "sha256": "34bcb87aad36ccaa0df12e428b38f3622d6ed5121ae1cb6b1c53721dd313d207"
     },
     {
       "path": "source-catalog-react-trash.json",
