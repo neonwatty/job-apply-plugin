@@ -55,7 +55,15 @@ export class PolicyRepository {
         this.provider = options.provider;
     }
     locked(operation) {
-        return withExclusiveFileLock(this.lockPath, operation, { provider: this.provider, pathProfile: serialization.pathProfile });
+        const policy = () => withExclusiveFileLock(this.lockPath, operation, {
+            provider: this.provider, pathProfile: serialization.pathProfile,
+        });
+        const storeLock = join(this.root, '.store.lock');
+        return exists(storeLock).then(present => present
+            ? withExclusiveFileLock(storeLock, async () => policy(), {
+                provider: this.provider, pathProfile: serialization.pathProfile,
+            })
+            : policy());
     }
     privateDirectory(path) { return ensurePrivateDirectory(path, this.io); }
     writeDocument(path, value) {

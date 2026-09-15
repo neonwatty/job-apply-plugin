@@ -111,3 +111,23 @@ test('rollback holds both policy locks until retained and Python roots are in pl
   } });
   assert.equal(attempted, 2);
 });
+
+test('activation serializes creation of a previously absent policy tree', { timeout: 60000 }, async t => {
+  const fixture = await nativeFixture(); t.after(fixture.cleanup);
+  const parent = await realpath(fixture.root), active = join(parent, 'store'), candidate = `${active}.native-candidate`;
+  await execute('python3', ['-c', python, active]);
+  const provider = loadPosixFlockProvider(fixture.receipt.artifact);
+  await prepareCanonicalStoreClone(active, candidate, provider, now);
+  let mutation;
+  await activateNativeWriter(active, candidate, { provider, boundary: async point => {
+    if (point !== 'before-source-rename') return;
+    let settled = false;
+    mutation = new FinalActionPolicyService(active, deterministicOptions(provider)).activate(campaignInput)
+      .finally(() => { settled = true; });
+    await new Promise(resolve => setTimeout(resolve, 75));
+    assert.equal(settled, false);
+  } });
+  await mutation;
+  assert.equal((await stat(join(active, 'auto-submit'))).isDirectory(), true);
+  await assert.rejects(stat(join(`${active}.python-rollback`, 'auto-submit')), { code: 'ENOENT' });
+});
