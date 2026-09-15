@@ -14,7 +14,7 @@ export const nativeStoreRequiredEntries = [
 export const nativeStoreAllowedEntries = new Set([
     ...nativeStoreRequiredEntries, nativeFixtureMarkerName, nativeCloneMarkerName,
 ]);
-export function nativeCloneSourceTree(bytes) {
+export function nativeCloneTrees(bytes) {
     let marker;
     try {
         marker = object(parsePythonPointJsonBytes(bytes, { diagnosticProfile: '3.12', intMaxStrDigits: 4300 }), 'clone marker');
@@ -23,11 +23,13 @@ export function nativeCloneSourceTree(bytes) {
         throw new JobsError('native Store clone marker is invalid');
     }
     const sourceTree = string(get(marker, 'sourceTree'));
-    if (marker.size !== 3 || string(get(marker, 'mode')) !== 'canonical-store-clone'
-        || int(get(marker, 'version')) !== 1n || !/^sha256:[0-9a-f]{64}$/.test(sourceTree ?? '')) {
+    const candidateTree = string(get(marker, 'candidateTree'));
+    if (marker.size !== 4 || string(get(marker, 'mode')) !== 'canonical-store-clone'
+        || int(get(marker, 'version')) !== 2n || !/^sha256:[0-9a-f]{64}$/.test(sourceTree ?? '')
+        || !/^sha256:[0-9a-f]{64}$/.test(candidateTree ?? '')) {
         throw new JobsError('native Store clone marker is invalid');
     }
-    return sourceTree;
+    return { sourceTree: sourceTree, candidateTree: candidateTree };
 }
 export function validateNativeStoreMarker(name, bytes) {
     if (name === nativeFixtureMarkerName) {
@@ -37,6 +39,6 @@ export function validateNativeStoreMarker(name, bytes) {
     }
     if (name !== nativeCloneMarkerName)
         throw new JobsError('native Store ownership marker is invalid');
-    nativeCloneSourceTree(bytes);
+    nativeCloneTrees(bytes);
     return 'clone';
 }

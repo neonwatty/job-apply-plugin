@@ -10,10 +10,15 @@ const source = new URL('../scripts/smoke/artifacts.py', import.meta.url);
 const fixed = ['.codex-plugin/plugin.json', 'scripts/job-apply-store.py',
   'scripts/job-apply-task.py', 'scripts/job-apply-attempt.py', 'scripts/job-apply-workspace.py',
   'skills/answer-memory/SKILL.md', 'skills/job-apply/SKILL.md'];
-const trees = ['skills', 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace'];
+const trees = ['skills', 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace',
+  'apps/companion', 'native'];
 const files = [...fixed, 'runtime/nested/codec.js', 'scripts/job_apply_store/io.py',
   'scripts/job_apply_workspace/handler.py', 'workspace/app.js',
-  'skills/job-apply/references/runtime-contract.md', 'skills/job-search/SKILL.md'].sort();
+  'skills/job-apply/references/runtime-contract.md', 'skills/job-search/SKILL.md',
+  'apps/companion/.next/standalone/apps/companion/server.js',
+  'apps/companion/.next/standalone/node_modules/next/package.json',
+  'native/packaged-lock/darwin-arm64-napi8/flock.node',
+  'native/packaged-lock/darwin-arm64-napi8/receipt.json'].sort();
 const cases = [
   ['inventory-normal', 'inventory', null],
   ['inventory-extra-runtime', 'inventory', 'extra-runtime'],

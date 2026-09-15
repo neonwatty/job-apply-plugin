@@ -10,7 +10,8 @@ FIXED = ['.codex-plugin/plugin.json', 'scripts/job-apply-store.py',
          'scripts/job-apply-task.py', 'scripts/job-apply-attempt.py',
          'scripts/job-apply-workspace.py', 'skills/answer-memory/SKILL.md',
          'skills/job-apply/SKILL.md']
-TREES = ['runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace']
+TREES = ['runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace',
+         'apps/companion', 'native']
 FILES = sorted(FIXED + ['runtime/data.bin'])
 BASE_NS = 1700000000000000000
 ATTRIBUTE = 'user.job_apply_synthetic'

@@ -15,6 +15,7 @@ export const FIXED_CRITICAL_FILES = [
 export const CRITICAL_TREES = [
     "skills",
     "runtime", "scripts/job_apply_store", "scripts/job_apply_workspace", "workspace",
+    "apps/companion", "native",
 ];
 function pythonStringOrder(left, right) {
     const first = [...left];

@@ -79,16 +79,11 @@ async function missingDocuments(target: string, names: Set<string>, now: string)
   }
 }
 
-/** Computes the clone marker digest. The caller must hold the Store lock. */
-export async function canonicalStoreSourceTreeLocked(source: string): Promise<string> {
-  const entries = new Set(await readdir(source));
-  if (coreFiles.some(name => !entries.has(name)) || [...entries].some(name => !sourceFiles.has(name))) {
-    throw new JobsError('canonical clone source contains unsupported or incomplete state');
-  }
+async function storeTreeLocked(source: string, entries: Set<string>, candidate = false): Promise<string> {
   for (const name of directories) await privateDirectory(join(source, name), `canonical ${name}`);
   const digest = createHash('sha256');
   for (const name of [...entries].sort()) {
-    if (name === '.store.lock') continue;
+    if (name === '.store.lock' || (candidate && name === nativeCloneMarkerName)) continue;
     if (directories.has(name)) {
       digest.update(`directory:${name.length}:${name}:`);
       for (const child of (await readdir(join(source, name))).sort()) {
@@ -104,6 +99,25 @@ export async function canonicalStoreSourceTreeLocked(source: string): Promise<st
     }
   }
   return `sha256:${digest.digest('hex')}`;
+}
+
+/** Computes the source digest. The caller must hold the source Store lock. */
+export async function canonicalStoreSourceTreeLocked(source: string): Promise<string> {
+  const entries = new Set(await readdir(source));
+  if (coreFiles.some(name => !entries.has(name)) || [...entries].some(name => !sourceFiles.has(name))) {
+    throw new JobsError('canonical clone source contains unsupported or incomplete state');
+  }
+  return storeTreeLocked(source, entries);
+}
+
+/** Computes the prepared candidate digest. The caller must hold the candidate Store lock. */
+export async function canonicalStoreCandidateTreeLocked(root: string): Promise<string> {
+  const entries = new Set(await readdir(root));
+  const allowed = new Set<string>([...nativeStoreRequiredEntries, nativeCloneMarkerName]);
+  if (nativeStoreRequiredEntries.some(name => !entries.has(name)) || [...entries].some(name => !allowed.has(name))) {
+    throw new JobsError('canonical clone candidate contains unsupported or incomplete state');
+  }
+  return storeTreeLocked(root, entries, true);
 }
 
 /** Computes the clone marker digest while holding the canonical Store lock. */
@@ -148,9 +162,13 @@ export async function prepareCanonicalStoreClone(source: string, target: string,
       await writePrivate(join(target, '.store.lock'), Buffer.alloc(0)); copied.add('.store.lock');
       await missingDocuments(target, copied, now);
       if (nativeStoreRequiredEntries.some(name => !copied.has(name))) throw new JobsError('canonical clone target is incomplete');
-      const marker = Buffer.from(JSON.stringify({ mode: 'canonical-store-clone', version: 1,
-        sourceTree: `sha256:${digest.digest('hex')}` }) + '\n');
-      await writePrivate(join(target, nativeCloneMarkerName), marker);
+      const sourceTree = `sha256:${digest.digest('hex')}`;
+      await withExclusiveFileLock(join(target, '.store.lock'), async () => {
+        const candidateTree = await canonicalStoreCandidateTreeLocked(target);
+        const marker = Buffer.from(JSON.stringify({ mode: 'canonical-store-clone', version: 2,
+          sourceTree, candidateTree }) + '\n');
+        await writePrivate(join(target, nativeCloneMarkerName), marker);
+      }, { provider, pathProfile: '3.12', signal: AbortSignal.timeout(30_000) });
       const directory = await open(target, constants.O_RDONLY);
       try { await directory.sync(); } finally { await directory.close(); }
     }, { provider, pathProfile: '3.12', signal: AbortSignal.timeout(30_000) });

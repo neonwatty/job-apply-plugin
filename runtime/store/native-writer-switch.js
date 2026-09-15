@@ -3,8 +3,8 @@ import { lstat, open, readFile, realpath, rename } from 'node:fs/promises';
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { JobsError } from '../contracts/workspace/values.js';
 import { withExclusiveFileLock } from './exclusive-file-lock.js';
-import { canonicalStoreSourceTreeLocked } from './native-store-clone.js';
-import { nativeCloneMarkerName, nativeCloneSourceTree, nativeFixtureMarkerName, validateNativeStoreMarker } from './native-store-layout.js';
+import { canonicalStoreCandidateTreeLocked, canonicalStoreSourceTreeLocked } from './native-store-clone.js';
+import { nativeCloneMarkerName, nativeCloneTrees, nativeFixtureMarkerName, validateNativeStoreMarker } from './native-store-layout.js';
 function paths(active, candidate = `${active}.native-candidate`) {
     if (![active, candidate].every(path => isAbsolute(path) && path === resolve(path))
         || candidate !== `${active}.native-candidate` || dirname(active) !== dirname(candidate)) {
@@ -71,10 +71,13 @@ export async function activateNativeWriter(active, candidate, options) {
             throw new JobsError('writer switch activation state is invalid');
         }
         return withExclusiveFileLock(join(value.active, '.store.lock'), async () => withExclusiveFileLock(join(value.candidate, '.store.lock'), async () => {
-            const expectedTree = await canonicalStoreSourceTreeLocked(value.active);
-            const candidateTree = nativeCloneSourceTree(await readFile(join(value.candidate, nativeCloneMarkerName)));
-            if (candidateTree !== expectedTree)
+            const expected = nativeCloneTrees(await readFile(join(value.candidate, nativeCloneMarkerName)));
+            const sourceTree = await canonicalStoreSourceTreeLocked(value.active);
+            const candidateTree = await canonicalStoreCandidateTreeLocked(value.candidate);
+            if (sourceTree !== expected.sourceTree)
                 throw new JobsError('native candidate does not match the active Python Store');
+            if (candidateTree !== expected.candidateTree)
+                throw new JobsError('native candidate content changed after preparation');
             await boundary('before-source-rename');
             await rename(value.active, value.pythonRollback);
             await syncDirectory(dirname(active));

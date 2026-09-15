@@ -11,10 +11,15 @@ FIXED = [
     'scripts/job-apply-workspace.py', 'skills/answer-memory/SKILL.md',
     'skills/job-apply/SKILL.md',
 ]
-TREES = ['skills', 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace']
+TREES = ['skills', 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace',
+         'apps/companion', 'native']
 FILES = FIXED + ['runtime/nested/codec.js', 'scripts/job_apply_store/io.py',
                  'scripts/job_apply_workspace/handler.py', 'workspace/app.js',
-                 'skills/job-apply/references/runtime-contract.md', 'skills/job-search/SKILL.md']
+                 'skills/job-apply/references/runtime-contract.md', 'skills/job-search/SKILL.md',
+                 'apps/companion/.next/standalone/apps/companion/server.js',
+                 'apps/companion/.next/standalone/node_modules/next/package.json',
+                 'native/packaged-lock/darwin-arm64-napi8/flock.node',
+                 'native/packaged-lock/darwin-arm64-napi8/receipt.json']
 STAMP = 1700000000000000000
 
 
