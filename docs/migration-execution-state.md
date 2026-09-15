@@ -63,7 +63,7 @@ The first wave-one batch extends this checkpoint with inert primitives; see the
 | 1A typed JSON | Inert parser/serializer implemented and independently tested | Production byte ingress and caller diagnostic/depth gates remain |
 | 1B Store primitives | Pure object/version validation implemented; filesystem work next | Path/permission/raw-read adapters remain; typed JSON interface available |
 | 1C pure UI helpers | Four inert resume-view helpers implemented and tested | Original JS remains authoritative; no bootstrap changes |
-| Restore staging CI | Required before production cutover | Restore automatic staging triggers and valid required contexts; complete integrated validation |
+| Restore staging CI | Restored 2026-09-15 | Automatic staging triggers and aggregate `PR gate` restored; exact integrated candidates must pass it |
 | Full matching | Held | 0R plus full raw input/Unicode equivalence; held worker not imported |
 | Production cutover/removal | Not ready | Full command/writer/platform/runtime/rollback gates |
 
@@ -76,14 +76,12 @@ The clean migration branch incorporated that exact merge without conflicts in
 The source owner reports its monitor paused. This was an explicitly approved
 exception merge, not a full-CI success or a browser-to-CLI repair.
 
-See [temporary staging CI exception](staging-ci-migration-exception.md): automatic
-staging Validate Plugin triggers and staging required-status checks are temporarily
-disabled; manual dispatch remains. Main/nightly/release validation remains unchanged.
-No ruleset edits were performed by this integration task. Before production
-cutover, the integration owner must restore automatic staging validation and
-current valid required contexts, then complete integrated validation. Do not
-restore the obsolete retired validate context. No publication/live activation
-is authorized by these implementation commits.
+See [restored staging CI gate](staging-ci-migration-exception.md): automatic
+staging Validate Plugin triggers and the aggregate `PR gate` requirement were
+restored on 2026-09-15. Manual dispatch remains available, and
+main/nightly/release validation remains unchanged. The obsolete `validate`
+context remains retired. No publication or live activation is authorized by
+these implementation commits.
 
 Reconciliation checks: 30 focused tests passed, three Python 3.12 checks skipped;
 all six fast suites, size, matrix, typecheck and build parity passed. Full/browser/

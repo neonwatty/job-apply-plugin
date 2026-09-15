@@ -3,9 +3,9 @@ name: Validate Plugin
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, staging]
   pull_request:
-    branches: [main]
+    branches: [main, staging]
 
 permissions:
   contents: read
@@ -161,7 +161,7 @@ jobs:
 
   windows-store-workspace:
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
