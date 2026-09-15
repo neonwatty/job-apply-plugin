@@ -24,7 +24,7 @@ import { validateTrustedFillDocument } from "../contracts/workspace/trusted-fill
 import { validateProfile } from "../contracts/workspace/profile.js";
 import { validateGroups } from "../contracts/workspace/fact-groups.js";
 import { validateAnswers } from "../contracts/workspace/answers.js";
-import { nativeFixtureMarker, nativeFixtureMarkerName, nativeCloneMarkerName, nativeStoreAllowedEntries, nativeStoreRequiredEntries, validateNativeStoreMarker } from './native-store-layout.js';
+import { nativeFixtureMarker, nativeFixtureMarkerName, nativeCloneMarkerName, nativeStoreAllowedEntries, nativeStoreRequiredEntries, validateNativeStoreMetadata } from './native-store-layout.js';
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 };
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 };
@@ -121,7 +121,7 @@ export class NativeJobsRepository {
             || markers.length !== 1) {
             throw new JobsError("native Jobs cannot open unsupported state or recovery journals");
         }
-        validateNativeStoreMarker(markers[0], await this.read(markers[0]));
+        await validateNativeStoreMetadata(this.root, markers[0], await this.read(markers[0]));
         await this.read(".store.lock");
     }
     async document(name) {
