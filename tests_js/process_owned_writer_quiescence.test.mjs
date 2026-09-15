@@ -111,17 +111,19 @@ test('a Store lifetime lease excludes a second process owner before it can start
   assert.equal(competing.mode, null);
 });
 
-test('failed replacement startup restores and restarts the prior Python writer', { timeout: 60000 }, async t => {
+test('failed replacement startup preserves native state for explicit quiescent rollback', { timeout: 60000 }, async t => {
   const { active, controller, provider, records, state } = await setup(t, { native: 'startup-failure' });
   await controller.start('python');
   await assert.rejects(controller.activate(), /owned writer failed before readiness/);
+  assert.equal(await recoverNativeWriterSwitch(active, { provider }), 'native');
+  assert.equal(controller.mode, null);
+  await controller.rollbackQuiescent();
   assert.equal(await recoverNativeWriterSwitch(active, { provider }), 'python');
   assert.equal(controller.mode, 'python');
-  assert.match(records.at(-1), /^python-/);
   assert(alive((await record(state, records.at(-1))).parent));
 });
 
-test('activation interruption restores Python and restarts only after recovery', { timeout: 60000 }, async t => {
+test('activation interruption leaves no writer until explicit recovery', { timeout: 60000 }, async t => {
   const { active, controller, provider, records, state } = await setup(t);
   await controller.start('python');
   const first = await record(state, records.at(-1));
@@ -129,6 +131,9 @@ test('activation interruption restores Python and restarts only after recovery',
     boundary: point => { if (point === 'after-candidate-rename') throw new Error('activation interrupted'); },
   }), /activation interrupted/);
   assert.equal(alive(first.parent), false);
+  assert.equal(await recoverNativeWriterSwitch(active, { provider }), 'native');
+  assert.equal(controller.mode, null);
+  await controller.rollbackQuiescent();
   assert.equal(await recoverNativeWriterSwitch(active, { provider }), 'python');
   assert.equal(controller.mode, 'python');
   assert(alive((await record(state, records.at(-1))).parent));

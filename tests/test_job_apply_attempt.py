@@ -1,4 +1,5 @@
 import importlib.util
+import fcntl
 import json
 import os
 import signal
@@ -257,6 +258,22 @@ class AttemptProtocolTests(unittest.TestCase):
         runtime = ATTEMPT.pid_path(self.store_root).read_text(encoding="ascii")
         self.assertRegex(runtime, r"^\d+\n$")
         self.assertNotIn(bearer_hash, runtime)
+
+    def test_python_broker_refuses_the_shared_supervisor_exclusion_lock(self):
+        path = ATTEMPT.socket_path(self.store_root)
+        lock = os.open(str(path) + ".lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+        try:
+            os.fchmod(lock, 0o600)
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--broker", "--root", str(self.store_root)],
+                text=True, capture_output=True, timeout=15,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(ATTEMPT.pid_path(self.store_root).exists())
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+            os.close(lock)
 
     def test_broker_loss_leaves_exact_claim_and_new_start_fails_value_free(self):
         _command, _result, _acquired = self.start()

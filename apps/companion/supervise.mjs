@@ -1,5 +1,5 @@
 import { constants } from 'node:fs';
-import { chmod, lstat, mkdir, open, realpath } from 'node:fs/promises';
+import { chmod, lstat, mkdir, open, realpath, unlink, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,6 +10,7 @@ import { ProcessOwnedWriterController } from '../../runtime/store/process-owned-
 import { withExclusiveFileLock } from '../../runtime/store/exclusive-file-lock.js';
 import { loadPosixFlockProvider } from '../../runtime/store/posix-flock.js';
 import { resolvePackagedNativeLock } from '../../runtime/package/native-lock-artifact.js';
+import { attemptSocketPath } from '../../runtime/cli/attempt-protocol.js';
 
 const values = new Set(['--root', '--plugin-root', '--port', '--native-lock']);
 export function parseSupervisorOptions(args, app) {
@@ -52,19 +53,64 @@ export async function assertNoLiveDetachedAttempt(root) {
     throw new Error('detached attempt broker is live; stop it before switching writers');
   } finally { await handle.close(); }
 }
+async function clearStaleDetachedAttempt(root) {
+  const path = join(root, '.job-apply-attempt.pid'); let handle;
+  try { handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW); }
+  catch (error) { if (error?.code === 'ENOENT') return; throw new Error('detached attempt broker metadata is unavailable'); }
+  try {
+    const metadata = await handle.stat(), text = (await handle.readFile()).toString('ascii');
+    if (!metadata.isFile() || metadata.nlink !== 1 || metadata.uid !== process.getuid?.() || (metadata.mode & 0o777) !== 0o600
+      || !/^[1-9][0-9]{0,19}\n$/.test(text)) throw new Error('detached attempt broker metadata is invalid');
+    try { process.kill(Number(text.slice(0, -1)), 0); }
+    catch (error) {
+      if (error?.code !== 'ESRCH') throw error;
+      const current = await lstat(path);
+      if (current.dev !== metadata.dev || current.ino !== metadata.ino) throw new Error('detached attempt broker metadata changed');
+      await unlink(path); return;
+    }
+    throw new Error('detached attempt broker is live; stop it before switching writers');
+  } finally { await handle.close(); }
+}
+function failedActivationMarker(root) { return `${root}.native-activation-failed`; }
+export async function acquireAttemptExclusion(root, provider) {
+  if (!process.getuid) throw new Error('attempt broker exclusion is unavailable');
+  const path = attemptSocketPath(root, process.getuid()), directory = dirname(path);
+  try { await mkdir(directory, { mode: 0o700 }); }
+  catch (error) { if (error?.code !== 'EEXIST') throw error; }
+  const directoryInfo = await lstat(directory);
+  if (!directoryInfo.isDirectory() || directoryInfo.isSymbolicLink() || directoryInfo.uid !== process.getuid()
+    || (directoryInfo.mode & 0o777) !== 0o700) throw new Error('attempt broker exclusion is unavailable');
+  const handle = await open(`${path}.lock`, constants.O_RDWR | constants.O_CREAT | constants.O_NOFOLLOW, 0o600);
+  let locked = false;
+  try {
+    const info = await handle.stat();
+    if (!info.isFile() || info.nlink !== 1 || info.uid !== process.getuid() || (info.mode & 0o777) !== 0o600) {
+      throw new Error('attempt broker exclusion is unavailable');
+    }
+    locked = provider.tryLock(handle.fd);
+    if (!locked) throw new Error('detached attempt broker is live; stop it before switching writers');
+    return { async release() { provider.unlock(handle.fd); await handle.close(); } };
+  } catch (error) { if (locked) provider.unlock(handle.fd); await handle.close(); throw error; }
+}
 export async function prepareNativeDefault(root, provider, options = {}) {
   if (!isAbsolute(root) || root !== resolve(root) || await realpath(dirname(root)).catch(() => null) !== dirname(root)) {
     throw new Error('Companion Store root is invalid');
   }
+  await assertNoLiveDetachedAttempt(root);
   await mkdir(root, { recursive: true, mode: 0o700 }); await chmod(root, 0o700);
   const bootstrap = createNativeStoreBootstrap(root, undefined, process.env, undefined, {
     ...(options.now ? { clock: options.now } : {}),
-    locked: operation => withExclusiveFileLock(join(root, '.store.lock'), operation, {
-      provider, pathProfile: '3.12', signal: AbortSignal.timeout(30_000),
+    locked: operation => withExclusiveFileLock(join(root, '.store.lock'), async () => {
+      await clearStaleDetachedAttempt(root); options.signal?.throwIfAborted(); return operation();
+    }, {
+      provider, pathProfile: '3.12', signal: options.signal ?? AbortSignal.timeout(30_000),
     }),
   });
-  await bootstrap.initialize(); await assertNoLiveDetachedAttempt(root);
+  await bootstrap.initialize(); await assertNoLiveDetachedAttempt(root); options.signal?.throwIfAborted();
   const candidate = `${root}.native-candidate`;
+  if (await existing(failedActivationMarker(root)) && !options.allowFailedActivation) {
+    throw new Error('native activation previously failed; run Companion with --rollback before retrying');
+  }
   const marker = await existing(join(root, '.native-store-clone'));
   if (marker) {
     const mode = await recoverNativeWriterSwitch(root, { provider });
@@ -75,7 +121,7 @@ export async function prepareNativeDefault(root, provider, options = {}) {
     if (mode !== 'python') throw new Error('writer switch state is invalid');
     return { mode, candidate };
   }
-  await prepareCanonicalStoreClone(root, candidate, provider, options.now ? options.now() : undefined);
+  await prepareCanonicalStoreClone(root, candidate, provider, options.now ? options.now() : undefined); options.signal?.throwIfAborted();
   return { mode: 'python', candidate };
 }
 function readiness(line) {
@@ -92,31 +138,54 @@ function launchSpec(options, root, nativeLock) {
     env: { ...process.env, COMPANION_PROCESS_OWNER: 'process-group-v1' }, ready: readiness, startupTimeoutMilliseconds: 60_000,
   });
 }
-export async function runSupervisor(options) {
+export async function runSupervisor(options, { signal } = {}) {
   const root = resolveSupervisorRoot(options), nativeLock = options.nativeLock ?? await resolvePackagedNativeLock(options.pluginRoot);
+  signal?.throwIfAborted();
   const provider = loadPosixFlockProvider(nativeLock);
-  await mkdir(root, { recursive: true, mode: 0o700 }); await chmod(root, 0o700);
-  const controller = new ProcessOwnedWriterController({ active: root, provider, createSpec: launchSpec(options, root, nativeLock) });
+  const exclusion = await acquireAttemptExclusion(root, provider);
+  let controller;
   try {
-    const prepared = await controller.prepare(() => prepareNativeDefault(root, provider));
+    await mkdir(root, { recursive: true, mode: 0o700 }); await chmod(root, 0o700);
+    controller = new ProcessOwnedWriterController({ active: root, provider, createSpec: launchSpec(options, root, nativeLock) });
+    const prepared = await controller.prepare(() => prepareNativeDefault(root, provider, { signal, allowFailedActivation: options.rollback }));
     if (options.rollback) {
       if (prepared.mode !== 'native') throw new Error('native rollback state is unavailable');
-      await controller.start('native'); await assertNoLiveDetachedAttempt(root); await controller.rollback();
+      await assertNoLiveDetachedAttempt(root); await controller.rollbackQuiescent({ signal });
+      await unlink(failedActivationMarker(root)).catch(error => { if (error?.code !== 'ENOENT') throw error; });
     } else {
-      await controller.start(prepared.mode);
-      if (prepared.mode === 'python') { await assertNoLiveDetachedAttempt(root); await controller.activate(); }
+      await controller.start(prepared.mode, signal);
+      if (prepared.mode === 'python') {
+        await assertNoLiveDetachedAttempt(root);
+        try { await controller.activate({ signal }); }
+        catch (error) {
+          if (await recoverNativeWriterSwitch(root, { provider }).catch(() => null) === 'native') {
+            await writeFile(failedActivationMarker(root), 'rollback required\n', { mode: 0o600 });
+          }
+          throw error;
+        }
+      }
     }
     const line = controller.startupLine;
     if (!line) throw new Error('Companion startup failed');
-    return { controller, line };
-  } catch (error) { await controller.stop().catch(() => {}); throw error; }
+    const writerCompletion = controller.completion;
+    if (!writerCompletion) throw new Error('Companion startup failed');
+    const completion = writerCompletion.then(async () => {
+      if (controller.stopping) return;
+      await controller.stop(); throw new Error('Companion service stopped unexpectedly');
+    });
+    return { controller, line, completion };
+  } catch (error) { await controller?.stop().catch(() => {}); throw error; }
+  finally { await exclusion.release(); }
 }
-async function main() {
-  const app = dirname(fileURLToPath(import.meta.url));
+export async function superviseMain(args = process.argv.slice(2), app = dirname(fileURLToPath(import.meta.url))) {
   let running;
-  const stop = async code => { await running?.controller.stop().catch(() => {}); process.exitCode = code; };
-  process.on('SIGINT', () => { void stop(0); }); process.on('SIGTERM', () => { void stop(0); });
-  try { running = await runSupervisor(parseSupervisorOptions(process.argv.slice(2), app)); process.stdout.write(`${running.line}\n`); }
-  catch { process.stderr.write('Companion native supervisor failed\n'); await stop(1); }
+  const abort = new AbortController(); let stopped = false;
+  const stop = code => { stopped = true; abort.abort(); void running?.controller.stop().catch(() => {}); process.exitCode = code; };
+  const interrupt = () => stop(0); process.once('SIGINT', interrupt); process.once('SIGTERM', interrupt);
+  try { running = await runSupervisor(parseSupervisorOptions(args, app), { signal: abort.signal }); process.stdout.write(`${running.line}\n`); }
+  catch { process.stderr.write('Companion native supervisor failed\n'); stop(1); }
+  try { if (running) await running.completion; }
+  catch { if (!stopped) { process.stderr.write('Companion native supervisor failed\n'); process.exitCode = 1; } }
+  finally { process.off('SIGINT', interrupt); process.off('SIGTERM', interrupt); }
 }
-if (process.argv[1] === fileURLToPath(import.meta.url)) await main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) await superviseMain();

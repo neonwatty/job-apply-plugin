@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import errno
+import fcntl
 import hashlib
 import importlib.util
 import json
@@ -300,13 +301,27 @@ def bind_listener(path: Path) -> socket.socket:
     return listener
 
 
+def acquire_broker_lock(path: Path) -> int:
+    lock_path = Path(str(path) + ".lock")
+    descriptor = os.open(lock_path, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+    try:
+        info = os.fstat(descriptor)
+        if (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1
+                or info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o600):
+            raise RuntimeError("attempt ownership unavailable")
+        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return descriptor
+    except Exception:
+        os.close(descriptor)
+        raise RuntimeError("attempt ownership unavailable")
+
+
 def run_broker(root: Path) -> int:
     path = socket_path(root)
     process_path = pid_path(root)
-    broker = AttemptBroker(root)
-    listener = bind_listener(path)
-    process_path.write_text(f"{os.getpid()}\n", encoding="ascii")
-    process_path.chmod(0o600)
+    ownership = acquire_broker_lock(path)
+    broker = None
+    listener = None
     acquired = False
     deadline = time.monotonic() + IDLE_SECONDS
 
@@ -316,6 +331,10 @@ def run_broker(root: Path) -> int:
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     try:
+        broker = AttemptBroker(root)
+        listener = bind_listener(path)
+        process_path.write_text(f"{os.getpid()}\n", encoding="ascii")
+        process_path.chmod(0o600)
         while not broker._stop.is_set():
             if not acquired and time.monotonic() >= deadline:
                 break
@@ -345,14 +364,18 @@ def run_broker(root: Path) -> int:
                     break
         return 0
     finally:
-        broker.close()
-        listener.close()
+        if broker is not None:
+            broker.close()
+        if listener is not None:
+            listener.close()
         path.unlink(missing_ok=True)
         try:
             if process_path.read_text(encoding="ascii").strip() == str(os.getpid()):
                 process_path.unlink(missing_ok=True)
         except OSError:
             pass
+        fcntl.flock(ownership, fcntl.LOCK_UN)
+        os.close(ownership)
 
 
 def detached_broker(root: Path) -> None:

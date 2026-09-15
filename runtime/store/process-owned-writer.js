@@ -104,22 +104,27 @@ class WriterOwnershipLease {
 }
 class OwnedWriterProcess {
     startupLine;
+    completion;
     #child;
+    #ownerChannel;
     #shutdownGraceMilliseconds;
     #stopped = false;
     constructor(child, startupLine, shutdownGraceMilliseconds) {
         this.#child = child;
+        this.#ownerChannel = child.stdio[4] ?? null;
         this.startupLine = startupLine;
         this.#shutdownGraceMilliseconds = shutdownGraceMilliseconds;
+        this.completion = childExit(child);
     }
-    static async start(spec, shutdownGraceMilliseconds, ownershipDescriptor) {
+    static async start(spec, shutdownGraceMilliseconds, ownershipDescriptor, signal) {
+        signal?.throwIfAborted();
         const timeout = positiveMilliseconds(spec.startupTimeoutMilliseconds ?? 30_000, 'startup timeout');
         const child = spawn(spec.command, [...spec.argv], {
             cwd: spec.cwd,
             ...(spec.env === undefined ? {} : { env: spec.env }),
             detached: process.platform !== 'win32',
-            // fd 3 keeps the flock open in the writer if this controller dies.
-            stdio: ['ignore', 'pipe', 'pipe', ownershipDescriptor],
+            // fd 3 holds the lease; fd 4 lets the inner launcher observe owner death.
+            stdio: ['ignore', 'pipe', 'pipe', ownershipDescriptor, 'pipe'],
         });
         child.stderr?.resume();
         let text = '';
@@ -131,6 +136,7 @@ class OwnedWriterProcess {
                     child.stdout?.off('data', onData);
                     child.off('error', onError);
                     child.off('exit', onExit);
+                    signal?.removeEventListener('abort', onAbort);
                     if (error)
                         reject(error);
                     else
@@ -138,6 +144,7 @@ class OwnedWriterProcess {
                 }
                 function onError() { finish(new Error('owned writer failed before readiness')); }
                 function onExit() { finish(new Error('owned writer failed before readiness')); }
+                function onAbort() { signalGroup(child, 'SIGTERM'); finish(new Error('owned writer startup cancelled')); }
                 function onData(bytes) {
                     text += bytes.toString('utf8');
                     if (text.length > 16_384) {
@@ -160,6 +167,7 @@ class OwnedWriterProcess {
                 child.stdout?.on('data', onData);
                 child.once('error', onError);
                 child.once('exit', onExit);
+                signal?.addEventListener('abort', onAbort, { once: true });
             });
             child.stdout?.resume();
             return new OwnedWriterProcess(child, line, shutdownGraceMilliseconds);
@@ -178,6 +186,7 @@ class OwnedWriterProcess {
     async stop() {
         if (this.#stopped)
             return;
+        this.#ownerChannel?.destroy();
         signalGroup(this.#child, 'SIGTERM');
         await Promise.race([childExit(this.#child), delay(this.#shutdownGraceMilliseconds)]);
         if (groupAlive(this.#child))
@@ -200,6 +209,7 @@ export class ProcessOwnedWriterController {
     #lease = null;
     #mode = null;
     #writer = null;
+    #stopping = false;
     constructor(options) {
         this.#active = options.active;
         this.#candidate = options.candidate ?? `${options.active}.native-candidate`;
@@ -210,6 +220,8 @@ export class ProcessOwnedWriterController {
     }
     get mode() { return this.#mode; }
     get startupLine() { return this.#writer?.startupLine ?? null; }
+    get completion() { return this.#writer?.completion ?? null; }
+    get stopping() { return this.#stopping; }
     async #exclusive(operation) {
         if (this.#operationActive)
             throw new Error('writer lifecycle operation is already active');
@@ -238,12 +250,12 @@ export class ProcessOwnedWriterController {
                 this.#lease = null;
         }
     }
-    async #start(mode) {
+    async #start(mode, signal) {
         if (this.#writer)
             throw new Error('owned writer is already running');
         if (!this.#lease)
             throw new Error('writer ownership lease is missing');
-        const writer = await OwnedWriterProcess.start(await this.#createSpec(mode, this.#active), this.#shutdownGraceMilliseconds, this.#lease.descriptor);
+        const writer = await OwnedWriterProcess.start(await this.#createSpec(mode, this.#active), this.#shutdownGraceMilliseconds, this.#lease.descriptor, signal);
         this.#writer = writer;
         this.#mode = mode;
     }
@@ -259,23 +271,11 @@ export class ProcessOwnedWriterController {
     #switchOptions(options) {
         return { provider: this.#provider, ...options };
     }
-    async #restorePython(cause) {
-        try {
-            const state = await recoverNativeWriterSwitch(this.#active, { provider: this.#provider });
-            if (state === 'native')
-                await rollbackNativeWriter(this.#active, { provider: this.#provider });
-            await this.#start('python');
-        }
-        catch (recovery) {
-            throw new AggregateError([cause, recovery], 'writer activation failed and Python recovery did not complete');
-        }
-        throw cause;
-    }
-    async start(mode) {
+    async start(mode, signal) {
         return this.#exclusive(async () => {
             await this.#acquireOwnership();
             try {
-                await this.#start(mode);
+                await this.#start(mode, signal);
             }
             catch (error) {
                 await this.#releaseOwnership();
@@ -303,6 +303,7 @@ export class ProcessOwnedWriterController {
         });
     }
     async stop() {
+        this.#stopping = true;
         return this.#exclusive(async () => {
             if (this.#writer)
                 await this.#quiesce();
@@ -316,19 +317,8 @@ export class ProcessOwnedWriterController {
             if (this.#mode !== 'python')
                 throw new Error('Python writer must be owned before activation');
             await this.#quiesce();
-            let result;
-            try {
-                result = await activateNativeWriter(this.#active, this.#candidate, this.#switchOptions(options));
-            }
-            catch (error) {
-                return this.#restorePython(error);
-            }
-            try {
-                await this.#start('native');
-            }
-            catch (error) {
-                return this.#restorePython(error);
-            }
+            const result = await activateNativeWriter(this.#active, this.#candidate, this.#switchOptions(options));
+            await this.#start('native', options.signal);
             return result;
         });
     }
@@ -352,6 +342,18 @@ export class ProcessOwnedWriterController {
                 }
                 throw error;
             }
+        });
+    }
+    /** Restores Python under the existing lifetime lease without starting native first. */
+    async rollbackQuiescent(options = {}) {
+        return this.#exclusive(async () => {
+            if (!this.#lease)
+                throw new Error('writer ownership lease is missing');
+            if (this.#writer || this.#mode)
+                throw new Error('native writer must be quiescent before rollback');
+            const result = await rollbackNativeWriter(this.#active, this.#switchOptions(options));
+            await this.#start('python', options.signal);
+            return result;
         });
     }
 }
