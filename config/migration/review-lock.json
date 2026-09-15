@@ -203,7 +203,7 @@
     },
     {
       "path": "http-g02-next-surfaces.json",
-      "sha256": "9b35cf9a896081a0d0a365cc3551b5a3003bde822913ca215694c3ce2f860f16"
+      "sha256": "68d29f50c5004edbd85da36aa89221a38aa7f4c5fa52e5e970a61fa2c09dc63f"
     },
     {
       "path": "http-native-claims-surfaces.json",
@@ -307,7 +307,7 @@
     },
     {
       "path": "source-catalog-03.json",
-      "sha256": "11ede343ad410dd85d2cd825bc9d62b3b62c43497e9273da01e31626b7f7e54f"
+      "sha256": "b67791d4ee43e7659f922bcb8c16e14d93b0d5c77c17dd64845246d3f86ce87f"
     },
     {
       "path": "source-catalog-04.json",
@@ -327,7 +327,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "c8a1cb83b5da23702c0a45d945c8449f6028d45de6beb44a6bc4fa84bfb95e86"
+      "sha256": "1ebbd7e1226dbb1d1f7dc6f3e3b3091e65460b1dbc0b95018e4ff9455c08d416"
     },
     {
       "path": "source-catalog-m01.json",
@@ -459,7 +459,7 @@
     },
     {
       "path": "source-catalog-native-writer-switch.json",
-      "sha256": "e0cf7c4e2a818b234ece839ad55f69d3797e76ebfc3e3086f844edbee85b5fc1"
+      "sha256": "809d9b064271beb6f35d856610b787bb9360c6bc4977079752f2d36d7927d3ec"
     },
     {
       "path": "source-catalog-react-trash.json",
