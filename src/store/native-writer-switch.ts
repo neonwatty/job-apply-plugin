@@ -80,8 +80,8 @@ export async function activateNativeWriter(active: string, candidate: string,
     return withExclusiveFileLock(join(value.active, '.store.lock'), async () =>
       withExclusiveFileLock(join(value.candidate, '.store.lock'), async () => {
         const expected = nativeCloneTrees(await readFile(join(value.candidate, nativeCloneMarkerName)));
-        const sourceTree = await canonicalStoreSourceTreeLocked(value.active);
-        const candidateTree = await canonicalStoreCandidateTreeLocked(value.candidate);
+        const sourceTree = await canonicalStoreSourceTreeLocked(value.active, options.provider, options.signal);
+        const candidateTree = await canonicalStoreCandidateTreeLocked(value.candidate, options.provider, options.signal);
         if (sourceTree !== expected.sourceTree) throw new JobsError('native candidate does not match the active Python Store');
         if (candidateTree !== expected.candidateTree) throw new JobsError('native candidate content changed after preparation');
         await boundary('before-source-rename');

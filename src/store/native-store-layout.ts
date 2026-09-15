@@ -8,6 +8,7 @@ export const nativeAttemptPidName = '.job-apply-attempt.pid';
 export const nativeAttemptPidPendingName = nativeAttemptPidName + '.pending';
 export const nativeFixtureMarkerName = '.native-jobs-fixture';
 export const nativeCloneMarkerName = '.native-store-clone';
+export const nativePolicyTreeName = 'auto-submit';
 export const nativeFixtureMarker = '{"mode":"native-jobs-fixture","version":12}\n';
 export const nativeStoreRequiredEntries = [
   'automation-settings.json', 'employer-accounts.json', 'account-operation-journal.json',
@@ -19,6 +20,7 @@ export const nativeStoreRequiredEntries = [
 ] as const;
 export const nativeStoreAllowedEntries = new Set([
   ...nativeStoreRequiredEntries, nativeFixtureMarkerName, nativeCloneMarkerName, nativeAttemptPidName, nativeAttemptPidPendingName,
+  nativePolicyTreeName,
 ]);
 
 export function nativeCloneTrees(bytes: Buffer): { sourceTree: string; candidateTree: string } {
