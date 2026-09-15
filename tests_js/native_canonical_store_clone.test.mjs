@@ -50,8 +50,9 @@ test('canonical Store clone leaves Python source untouched and supports durable 
   assert.deepEqual((await readdir(target)).sort(), [...nativeStoreRequiredEntries, '.native-store-clone'].sort());
   const marker = JSON.parse(await readFile(join(target, '.native-store-clone'), 'utf8'));
   assert.equal(marker.mode, 'canonical-store-clone');
-  assert.equal(marker.version, 1);
+  assert.equal(marker.version, 2);
   assert.match(marker.sourceTree, /^sha256:[0-9a-f]{64}$/);
+  assert.match(marker.candidateTree, /^sha256:[0-9a-f]{64}$/);
   assert.equal((await stat(join(target, '.native-store-clone'))).mode & 0o777, 0o600);
   const jobs = new JobsService(new NativeJobsRepository(target, provider), () => fixed, () => 'native-job');
   assert.deepEqual(JSON.parse(serialize(await jobs.list())).map(job => job.id), ['clone-job']);
@@ -89,8 +90,16 @@ test('native repository requires exactly one valid ownership marker', { timeout:
   const provider = loadPosixFlockProvider(fixture.receipt.artifact);
   await prepareCanonicalStoreClone(source, target, provider, fixed);
   const markerPath = join(target, '.native-store-clone'), marker = await readFile(markerPath);
-  await writeFile(markerPath, '{"mode":"canonical-store-clone","version":1,"sourceTree":"fabricated"}\n');
-  await assert.rejects(new NativeJobsRepository(target, provider).transaction(async () => {}), /clone marker is invalid/);
+  const valid = JSON.parse(marker.toString('utf8'));
+  for (const invalid of [
+    { mode: valid.mode, version: 1, sourceTree: valid.sourceTree },
+    { ...valid, sourceTree: 'fabricated' },
+    { ...valid, candidateTree: 'fabricated' },
+    { ...valid, candidateTree: undefined },
+  ]) {
+    await writeFile(markerPath, JSON.stringify(invalid));
+    await assert.rejects(new NativeJobsRepository(target, provider).transaction(async () => {}), /clone marker is invalid/);
+  }
   await writeFile(markerPath, marker);
   await writeFile(join(target, '.native-jobs-fixture'), nativeFixtureMarker, { mode: 0o600 });
   await assert.rejects(new NativeJobsRepository(target, provider).transaction(async () => {}), /unsupported state/);

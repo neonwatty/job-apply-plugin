@@ -87,6 +87,23 @@ test('writer switch rejects ambiguous or adopted paths', { timeout: 60000 }, asy
   await assert.rejects(recoverNativeWriterSwitch(active, { provider }), /invalid|ambiguous/);
 });
 
+test('writer switch rejects candidate edits before moving either Store', { timeout: 60000 }, async t => {
+  const { active, candidate, provider } = await setup(t), before = await snapshot(active);
+  const activeMetadata = await stat(active), candidateMetadata = await stat(candidate);
+  const jobs = JSON.parse(await readFile(join(candidate, 'jobs.json'), 'utf8'));
+  jobs.jobs['post-clone-job'] = { id: 'post-clone-job', url: 'https://example.invalid/later', role: 'Later' };
+  await writeFile(join(candidate, 'jobs.json'), JSON.stringify(jobs), { mode: 0o600 });
+  const candidateBefore = await snapshot(candidate);
+  await assert.rejects(activateNativeWriter(active, candidate, { provider }),
+    /native candidate content changed after preparation/);
+  assert.deepEqual(await snapshot(active), before);
+  assert.deepEqual(await snapshot(candidate), candidateBefore);
+  assert.equal((await stat(active)).ino, activeMetadata.ino);
+  assert.equal((await stat(candidate)).ino, candidateMetadata.ino);
+  await assert.rejects(stat(`${active}.python-rollback`), error => error.code === 'ENOENT');
+  await assert.rejects(stat(`${active}.native-retained`), error => error.code === 'ENOENT');
+});
+
 test('writer switch waits for active Store transactions and leaves both roots unmoved on cancellation', { timeout: 60000 }, async t => {
   const { active, candidate, provider } = await setup(t), before = await snapshot(active);
   let release, entered;
