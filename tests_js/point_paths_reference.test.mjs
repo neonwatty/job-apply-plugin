@@ -456,8 +456,7 @@ test('S05 path support registration preserves the exact prior matrix', t => {
   assert.ok(cloneIndex >= 0);
   assert.deepEqual(matrix.suites.splice(cloneIndex, 1), [{
     id: 'native-canonical-store-clone', kind: 'node-test',
-    include: ['tests_js/native_canonical_store_clone.test.mjs',
-      'tests_js/native_canonical_writer_rehearsal.test.mjs',
+    include: ['tests_js/native_canonical_store_clone.test.mjs', 'tests_js/native_canonical_writer_rehearsal.test.mjs',
       'tests_js/native_writer_switch_rehearsal.test.mjs',
       'tests_js/process_owned_writer_quiescence.test.mjs'],
     platforms: ['darwin', 'linux'], tiers: ['full', 'platform']
@@ -466,24 +465,18 @@ test('S05 path support registration preserves the exact prior matrix', t => {
   assert.ok(cutoverIndex >= 0);
   assert.deepEqual(matrix.suites.splice(cutoverIndex, 1), [{
     id: 'native-default-cutover', kind: 'node-test',
-    include: ['tests_js/companion_default_cutover.test.mjs',
-      'tests_js/final_action_policy_cli.test.mjs',
-      'tests_js/final_action_policy_concurrency.test.mjs',
-      'tests_js/final_action_policy_reference.test.mjs',
-      'tests_js/native_attempt_lifecycle.test.mjs',
-      'tests_js/native_attempt_protocol.test.mjs',
-      'tests_js/native_command_inventory.test.mjs',
-      'tests_js/native_policy_store_clone.test.mjs',
-      'tests_js/native_writer_switch_policy_tamper.test.mjs'],
+    include: ['tests_js/companion_default_cutover.test.mjs', 'tests_js/final_action_policy_cli.test.mjs',
+      'tests_js/final_action_policy_concurrency.test.mjs', 'tests_js/final_action_policy_reference.test.mjs',
+      'tests_js/native_attempt_lifecycle.test.mjs', 'tests_js/native_attempt_protocol.test.mjs',
+      'tests_js/native_command_inventory.test.mjs', 'tests_js/native_policy_store_clone.test.mjs', 'tests_js/native_writer_switch_policy_tamper.test.mjs'],
     platforms: ['darwin', 'linux'], tiers: ['full', 'platform']
   }]);
-  const processOwner = { paths: ['tests_js/process_owned_writer_child.mjs'],
-    suites: ['native-canonical-store-clone'] };
+  const processOwner = { paths: ['tests_js/process_owned_writer_child.mjs'], suites: ['native-canonical-store-clone'] };
   const processOwnerIndex = matrix.ownership.findIndex(rule => rule.paths.includes(processOwner.paths[0]));
   assert.ok(processOwnerIndex >= 0);
   assert.deepEqual(matrix.ownership.splice(processOwnerIndex, 1), [processOwner]);
-  const cutoverOwner = { paths: ['tests_js/final_action_policy_support.mjs',
-    'tests_js/native_attempt_support.mjs'], suites: ['native-default-cutover'] };
+  const cutoverOwner = { paths: ['tests_js/final_action_policy_support.mjs', 'tests_js/native_attempt_support.mjs'],
+    suites: ['native-default-cutover'] };
   const cutoverOwnerIndex = matrix.ownership.findIndex(rule => rule.paths.includes(cutoverOwner.paths[0]));
   assert.ok(cutoverOwnerIndex >= 0);
   assert.deepEqual(matrix.ownership.splice(cutoverOwnerIndex, 1), [cutoverOwner]);
