@@ -209,3 +209,63 @@ print(json.dumps(rows))`;
     } finally { await rm(root, { recursive: true, force: true }); }
   });
 }
+
+
+for (const profile of ['3.12', '3.13', '3.14']) {
+  test(`installed Companion and lock bytes are covered recursively on Python ${profile}`, async t => {
+    if (process.platform === 'win32') { t.skip('POSIX adapter; native Windows remains required'); return; }
+    const root = await mkdtemp(join(tmpdir(), 'ts-artifact-companion-'));
+    const packagedFiles = [
+      'apps/companion/.next/standalone/apps/companion/server.js',
+      'apps/companion/.next/standalone/node_modules/next/package.json',
+      'native/packaged-lock/darwin-arm64-napi8/flock.node',
+      'native/packaged-lock/darwin-arm64-napi8/receipt.json',
+    ];
+    try {
+      const source = await fixture(join(root, 'source'));
+      const target = await fixture(join(root, 'target'));
+      const script = `import importlib.util,json,sys
+from pathlib import Path
+spec=importlib.util.spec_from_file_location('companion_artifact_oracle',sys.argv[1])
+module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+source,target=map(Path,sys.argv[2:4]);rows=[]
+for operation in ['inventory','verify']:
+ try:
+  result=list(module.critical_paths(target)) if operation=='inventory' else module.assert_critical_bytes(target,source,label='synthetic')
+  rows.append({'kind':'value','value':result})
+ except SystemExit as error:rows.append({'kind':'error','name':'SystemExit','message':str(error)})
+print(json.dumps(rows))`;
+      const scenarios = [{ kind: 'normal' }, ...packagedFiles.flatMap(path => [
+        { kind: 'missing', path }, { kind: 'tampered', path },
+      ])];
+      for (const scenario of scenarios) {
+        await rm(target, { recursive: true }); await fixture(target);
+        if (scenario.kind === 'missing') await rm(join(target, scenario.path));
+        if (scenario.kind === 'tampered') await writeFile(join(target, scenario.path), 'changed packaged artifact');
+        const before = await snapshot(root);
+        const run = spawnSync(`python${profile}`, ['-I', '-B', '-c', script,
+          join(repository, 'scripts/smoke/artifacts.py'), source, target], { encoding: 'utf8', timeout: 5000 });
+        if (run.error?.code === 'ENOENT') { t.skip('Required interpreter unavailable'); return; }
+        assert.ifError(run.error); assert.equal(run.status, 0, run.stderr);
+        const python = JSON.parse(run.stdout);
+        const inventory = await criticalPaths(target, profile);
+        let verification;
+        try {
+          await assertCriticalBytes(target, source, { label: 'synthetic', profile });
+          verification = { kind: 'value', value: null };
+        } catch (error) {
+          verification = { kind: 'error', name: error.name, message: error.message };
+        }
+        assert.deepEqual([{ kind: 'value', value: inventory }, verification], python, JSON.stringify(scenario));
+        for (const path of packagedFiles) {
+          assert.equal(inventory.includes(path), !(scenario.kind === 'missing' && scenario.path === path), path);
+        }
+        const message = scenario.kind === 'missing' ? 'synthetic critical package inventory differs'
+          : scenario.kind === 'tampered' ? `synthetic bytes differ for ${scenario.path}` : null;
+        assert.deepEqual(verification, message === null ? { kind: 'value', value: null }
+          : { kind: 'error', name: 'SystemExit', message });
+        assert.deepEqual(await snapshot(root), before);
+      }
+    } finally { await rm(root, { recursive: true, force: true }); }
+  });
+}

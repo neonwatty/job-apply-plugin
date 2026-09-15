@@ -20,6 +20,7 @@ export const FIXED_CRITICAL_FILES = [
 export const CRITICAL_TREES = [
   "skills",
   "runtime", "scripts/job_apply_store", "scripts/job_apply_workspace", "workspace",
+  "apps/companion", "native",
 ] as const;
 
 function pythonStringOrder(left: string, right: string): number {

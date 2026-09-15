@@ -22,6 +22,8 @@ CRITICAL_TREES = (
     "scripts/job_apply_store",
     "scripts/job_apply_workspace",
     "workspace",
+    "apps/companion",
+    "native",
 )
 
 

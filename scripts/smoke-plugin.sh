@@ -54,6 +54,13 @@ tar --exclude='./.git' \
   --exclude='./test_resumes' \
   -cf - -C "$REPO_ROOT" . \
   | tar -xf - -C "$SMOKE_FIXTURE_DIR"
+echo "Building production Companion inside isolated marketplace fixture"
+(
+  cd "$SMOKE_FIXTURE_DIR"
+  npm ci
+  npm run companion:build
+)
+rm -rf -- "$SMOKE_FIXTURE_DIR/node_modules"
 echo "Packaging native lock provider for this host"
 node "$REPO_ROOT/scripts/smoke/package_native_lock.mjs" --package-root "$SMOKE_FIXTURE_DIR"
 python3 "$REPO_ROOT/scripts/smoke/fixture_build.py" verify "$SMOKE_FIXTURE_DIR"
