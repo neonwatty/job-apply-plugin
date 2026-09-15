@@ -1,6 +1,7 @@
 import { constants } from 'node:fs';
-import { lstat, mkdir, open, readdir } from 'node:fs/promises';
-import { homedir } from 'node:os';
+import { lstat, mkdir, open, readdir, rename, unlink } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { homedir, userInfo } from 'node:os';
 import { join } from 'node:path';
 import { parsePythonPointJsonBytes } from '../contracts/raw-json/point-parser.js';
 import { validateAccountsDocument } from '../contracts/workspace/accounts.js';
@@ -16,22 +17,27 @@ import { validateProfile } from '../contracts/workspace/profile.js';
 import { validateTrustedFillDocument } from '../contracts/workspace/trusted-fill.js';
 import { fromJSON, get, object, set, string, JobsError } from '../contracts/workspace/values.js';
 import { validateAccountOperationJournal } from '../contracts/workspace/account-operation.js';
-import { validateAnswerJournal } from './native-answer-journal.js';
-import { validateClaimJournal } from './native-claim-journal.js';
+import { NativeAnswerJournal, validateAnswerJournal } from './native-answer-journal.js';
+import { NativeAnswerResolutionJournal, validateResolutionJournal } from './native-answer-resolution-journal.js';
+import { claimOperationKinds, NativeClaimJournal, validateClaimJournal } from './native-claim-journal.js';
 import { NativeExtractionJournal, validateExtractionJournal, validateExtractionResumes } from './native-extraction-journal.js';
 import { NativeClaimHistory } from './native-claim-history.js';
+import { NativeResumeFiles } from './native-resume-files.js';
 import { atomicWritePointJson } from './point-persistence.js';
 const pointOptions = { pathProfile: '3.12', intMaxStrDigits: 4300 };
 const schemaVersion = 1;
+function child(root, name) { return root === '/' || root === '//' ? root + name : `${root}/${name}`; }
 export function nativeStorePaths(root, legacyProfile) {
+    root = pythonPath(root);
+    legacyProfile = pythonPath(legacyProfile);
     return {
-        schemaVersion, root, profile: join(root, 'profile.json'), factGroups: join(root, 'fact-groups.json'),
-        answers: join(root, 'answers.json'), jobs: join(root, 'jobs.json'), resumes: join(root, 'resumes.json'),
-        resumeExtractionRequests: join(root, 'resume-extraction-requests.json'), history: join(root, 'applications.jsonl'),
-        sessions: join(root, 'sessions'), coordinator: join(root, 'coordinator.json'),
-        coordinatorJournal: join(root, 'coordinator-journal.json'), automationSettings: join(root, 'automation-settings.json'),
-        employerAccounts: join(root, 'employer-accounts.json'), accountOperationJournal: join(root, 'account-operation-journal.json'),
-        trustedFill: join(root, 'trusted-fill.json'), autoSubmitPolicy: join(root, 'auto-submit'), legacyProfile,
+        schemaVersion, root, profile: child(root, 'profile.json'), factGroups: child(root, 'fact-groups.json'),
+        answers: child(root, 'answers.json'), jobs: child(root, 'jobs.json'), resumes: child(root, 'resumes.json'),
+        resumeExtractionRequests: child(root, 'resume-extraction-requests.json'), history: child(root, 'applications.jsonl'),
+        sessions: child(root, 'sessions'), coordinator: child(root, 'coordinator.json'),
+        coordinatorJournal: child(root, 'coordinator-journal.json'), automationSettings: child(root, 'automation-settings.json'),
+        employerAccounts: child(root, 'employer-accounts.json'), accountOperationJournal: child(root, 'account-operation-journal.json'),
+        trustedFill: child(root, 'trusted-fill.json'), autoSubmitPolicy: child(root, 'auto-submit'), legacyProfile,
     };
 }
 const documentValidators = {
@@ -42,16 +48,6 @@ const documentValidators = {
     'trusted-fill.json': validateTrustedFillDocument, 'resume-extractions.json': validateExtractions,
     'resume-extraction-requests.json': validateExtractionRequests,
     'resume-extraction-journal.json': validateExtractionJournal, 'coordinator.json': validateCoordinator,
-    'coordinator-journal.json': value => {
-        if (get(value, 'operation') === null)
-            return validateAnswerJournal(value);
-        try {
-            return validateAnswerJournal(value);
-        }
-        catch {
-            return validateClaimJournal(value);
-        }
-    },
 };
 function identity(metadata) {
     return { dev: Number(metadata.dev), ino: Number(metadata.ino) };
@@ -115,18 +111,21 @@ function document(bytes, label) {
         throw error instanceof JobsError ? error : new JobsError(`cannot read valid ${label} JSON`);
     }
 }
+/** Production callers must supply `locked` around the complete preflight/recovery transaction. */
 export class NativeStoreBootstrap {
     root;
     legacyProfile;
     layout;
     clock;
     boundary;
+    locked;
     constructor(root, legacyProfile = join(homedir(), '.claude-job-profile.json'), options = {}) {
-        this.root = root;
-        this.legacyProfile = legacyProfile;
-        this.layout = nativeStorePaths(root, legacyProfile);
+        this.root = pythonPath(root);
+        this.legacyProfile = pythonPath(legacyProfile);
+        this.layout = nativeStorePaths(this.root, this.legacyProfile);
         this.clock = options.clock ?? (() => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'));
         this.boundary = options.boundary ?? (async () => { });
+        this.locked = options.locked ?? (operation => operation());
     }
     paths() { return fromJSON(this.layout); }
     async validateSessions() {
@@ -154,7 +153,25 @@ export class NativeStoreBootstrap {
             }
             await this.validateSessions();
             const history = await readPrivateFile(this.layout.history, 'history');
-            if (history !== null)
+            let pendingClaim = false;
+            const journalBytes = await readPrivateFile(this.layout.coordinatorJournal, 'coordinator-journal.json');
+            if (journalBytes !== null) {
+                const journal = document(journalBytes, 'coordinator journal'), operation = get(journal, 'operation');
+                if (operation === null)
+                    validateAnswerJournal(journal);
+                else {
+                    const kind = string(get(object(operation, 'coordinator operation'), 'kind'));
+                    if (kind === 'answer_resolution')
+                        validateResolutionJournal(journal);
+                    else if (claimOperationKinds.has(kind)) {
+                        validateClaimJournal(journal);
+                        pendingClaim = true;
+                    }
+                    else
+                        validateAnswerJournal(journal);
+                }
+            }
+            if (history !== null && !pendingClaim)
                 await new NativeClaimHistory(this.root).read();
             await privateDirectory(join(this.root, 'resume-files'), true);
             const autoSubmit = await privateDirectory(this.layout.autoSubmitPolicy, true);
@@ -180,8 +197,129 @@ export class NativeStoreBootstrap {
     async writeDocument(name, value) {
         await atomicWritePointJson(join(this.root, `${name}.json`), value, pointOptions);
     }
-    async initialize() {
-        const checked = await this.preflight();
+    async readDocument(name) {
+        return document((await readPrivateFile(join(this.root, `${name}.json`), `${name}.json`, false)), name);
+    }
+    async sessions() {
+        const result = [];
+        for (const name of (await readdir(this.layout.sessions)).sort())
+            if (name.endsWith('.json')) {
+                result.push(validateAnswerSession(await this.readDocument(`sessions/${name.slice(0, -5)}`)));
+            }
+        return result;
+    }
+    async recoverCoordinator() {
+        const coordinatorExists = await readPrivateFile(this.layout.coordinator, 'coordinator.json') !== null;
+        const journalExists = await readPrivateFile(this.layout.coordinatorJournal, 'coordinator-journal.json') !== null;
+        if (!coordinatorExists && !journalExists)
+            return;
+        if (!coordinatorExists)
+            await this.writeDocument('coordinator', object(fromJSON({ schemaVersion: 1, claim: null }), 'coordinator'));
+        if (!journalExists)
+            await this.writeDocument('coordinator-journal', object(fromJSON({ schemaVersion: 1, operation: null }), 'journal'));
+        const coordinator = validateCoordinator(await this.readDocument('coordinator'));
+        const journal = await this.readDocument('coordinator-journal'), operation = get(journal, 'operation');
+        const history = new NativeClaimHistory(this.root);
+        if (operation === null) {
+            await history.read();
+            return;
+        }
+        const kind = string(get(object(operation, 'coordinator operation'), 'kind'));
+        if (claimOperationKinds.has(kind)) {
+            await history.repairPendingTail();
+            await new NativeClaimJournal((name, value) => this.writeDocument(name, value), history)
+                .recover(journal, validateJobsDocument(await this.readDocument('jobs')));
+            return;
+        }
+        await history.read();
+        if (get(coordinator, 'claim') !== null)
+            throw new JobsError('answer recovery requires an idle coordinator');
+        const sessions = await this.sessions();
+        if (kind === 'answer_resolution') {
+            await new NativeAnswerResolutionJournal((name, value) => this.writeDocument(name, value))
+                .recover(journal, validateJobsDocument(await this.readDocument('jobs')), sessions);
+        }
+        else {
+            await new NativeAnswerJournal((name, value) => this.writeDocument(name, value))
+                .recover(journal, validateAnswers(await this.readDocument('answers')), sessions);
+        }
+    }
+    async recoverResumeFiles() {
+        const directory = join(this.root, 'resume-files'), names = await readdir(directory);
+        if (names.length === 0)
+            return;
+        const resumeBytes = await readPrivateFile(this.layout.resumes, 'resumes.json');
+        let resumes = resumeBytes === null ? object(fromJSON({ schemaVersion: 1, resumes: {}, metadata: {} }), 'resumes')
+            : validateExtractionResumes(document(resumeBytes, 'resumes'));
+        const journalBytes = await readPrivateFile(join(this.root, 'resume-operation.json'), 'resume-operation.json');
+        if (journalBytes !== null) {
+            const journal = document(journalBytes, 'resume recovery journal');
+            if (journal.size !== 2 || get(journal, 'schemaVersion') === null)
+                throw new JobsError('invalid resume recovery journal');
+            const operation = get(journal, 'operation');
+            await new NativeResumeFiles(this.root).recover(operation === null ? null : object(operation, 'resume recovery operation'), resumes, async (value) => { resumes = validateExtractionResumes(value); await this.writeDocument('resumes', resumes); }, () => this.writeDocument('resume-operation', object(fromJSON({ schemaVersion: 1, operation: null }), 'journal')));
+            return;
+        }
+        const cached = new Map();
+        for (const name of names)
+            cached.set(name, (await readPrivateFile(join(directory, name), 'resume recovery file', false)));
+        for (const name of names)
+            if (name.startsWith('.') && name.endsWith('.tmp'))
+                await unlink(join(directory, name));
+        for (const name of names)
+            if (name.startsWith('.browser-upload.') && !name.endsWith('.tmp')) {
+                if ((await lstat(join(directory, name))).mtimeMs <= Date.now() - 300_000)
+                    await unlink(join(directory, name));
+            }
+        const records = object(get(resumes, 'resumes'), 'resumes.resumes');
+        const referenced = new Set();
+        const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
+        for (const [, value] of records.entries()) {
+            const record = object(value, 'resume record');
+            if (string(get(record, 'storageKind')) !== 'managed')
+                continue;
+            const managed = string(get(record, 'managedFile')), expected = string(get(record, 'digest'));
+            referenced.add(managed);
+            const quarantines = names.filter(name => name.startsWith(`.${managed}.`) && name.endsWith('.quarantine')).sort();
+            let canonical = cached.get(managed);
+            if (canonical === undefined || digest(canonical) !== expected) {
+                const recovery = quarantines.find(name => digest(cached.get(name)) === expected);
+                if (recovery !== undefined) {
+                    if (canonical !== undefined)
+                        await unlink(join(directory, managed));
+                    await rename(join(directory, recovery), join(directory, managed));
+                    canonical = cached.get(recovery);
+                }
+            }
+            if (canonical !== undefined && digest(canonical) === expected) {
+                for (const name of quarantines)
+                    await unlink(join(directory, name)).catch(error => {
+                        if (error.code !== 'ENOENT')
+                            throw error;
+                    });
+            }
+        }
+        for (const name of names)
+            if (name.startsWith('.') && name.endsWith('.quarantine')) {
+                await unlink(join(directory, name)).catch(error => { if (error.code !== 'ENOENT')
+                    throw error; });
+            }
+        for (const name of names)
+            if (!name.startsWith('.') && /\.(?:pdf|docx|txt)$/i.test(name) && !referenced.has(name)) {
+                await unlink(join(directory, name)).catch(error => { if (error.code !== 'ENOENT')
+                    throw error; });
+            }
+        const handle = await open(directory, constants.O_RDONLY | constants.O_NOFOLLOW);
+        try {
+            await handle.sync();
+        }
+        finally {
+            await handle.close();
+        }
+    }
+    async initialize() { return this.locked(() => this.initializeLocked()); }
+    async initializeLocked() {
+        let checked = await this.preflight();
         await this.boundary('preflight-complete');
         if (checked.root !== null) {
             const current = await privateDirectory(this.root, false);
@@ -192,6 +330,11 @@ export class NativeStoreBootstrap {
             await mkdir(this.root, { recursive: true, mode: 0o700 });
             await privateDirectory(this.root, false);
         }
+        const confirmed = await this.preflight();
+        if (confirmed.root === null || checked.root !== null && !sameIdentity(checked.root, confirmed.root)) {
+            throw new JobsError('Store root identity changed');
+        }
+        checked = confirmed;
         await mkdir(this.layout.sessions, { recursive: true, mode: 0o700 });
         await privateDirectory(this.layout.sessions, false);
         const resumeFiles = join(this.root, 'resume-files');
@@ -202,6 +345,7 @@ export class NativeStoreBootstrap {
             const recovery = new NativeExtractionJournal(async () => document((await readPrivateFile(join(this.root, 'resume-extraction-journal.json'), 'resume-extraction-journal.json', false)), 'resume extraction journal'), (name, value) => this.writeDocument(name, value));
             await recovery.recover();
         }
+        await this.recoverResumeFiles();
         let migrated = false;
         if (await readPrivateFile(this.layout.profile, 'profile') === null) {
             const createdAt = this.now(), updatedAt = this.now();
@@ -234,13 +378,27 @@ export class NativeStoreBootstrap {
                 await history.close();
             }
         }
+        await this.recoverCoordinator();
         return fromJSON({ initialized: true, migratedLegacyProfile: migrated, ...this.layout });
     }
 }
 function expandUser(path, home) {
-    return path === '~' ? home : path.startsWith('~/') ? join(home, path.slice(2)) : path;
+    const current = `~${userInfo().username}`;
+    if (path === '~' || path === current)
+        return home;
+    if (path.startsWith('~/'))
+        return child(home, path.slice(2));
+    if (path.startsWith(`${current}/`))
+        return child(home, path.slice(current.length + 1));
+    return path;
 }
-export function createNativeStoreBootstrap(root, legacyProfile, environment = process.env, home = homedir()) {
+function pythonPath(path) {
+    const prefix = path.startsWith('//') && !path.startsWith('///') ? '//' : path.startsWith('/') ? '/' : '';
+    const parts = path.split('/').filter(part => part !== '' && part !== '.');
+    const result = prefix + parts.join('/');
+    return result || prefix || '.';
+}
+export function createNativeStoreBootstrap(root, legacyProfile, environment = process.env, home = homedir(), options = {}) {
     const selectedRoot = root || environment.JOB_APPLY_STORE_DIR || join(home, '.job-apply');
-    return new NativeStoreBootstrap(expandUser(selectedRoot, home), expandUser(legacyProfile || join(home, '.claude-job-profile.json'), home));
+    return new NativeStoreBootstrap(expandUser(selectedRoot, home), expandUser(legacyProfile || join(home, '.claude-job-profile.json'), home), options);
 }

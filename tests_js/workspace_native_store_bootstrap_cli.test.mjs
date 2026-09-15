@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { chmod, lstat, mkdir, mkdtemp, readFile, readdir, rename, stat, symlink, unlink, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { tmpdir, userInfo } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { createNativeStoreBootstrap, NativeStoreBootstrap, nativeStorePaths } from '../runtime/store/native-store-bootstrap.js';
@@ -54,6 +55,15 @@ test('root selection matches Python precedence without resolving relative paths'
   assert.equal(createNativeStoreBootstrap(undefined, undefined, environment, '/synthetic-home').root, 'relative-store');
   assert.equal(createNativeStoreBootstrap('~/explicit', '~/legacy', environment, '/synthetic-home').root, '/synthetic-home/explicit');
   assert.equal(createNativeStoreBootstrap(undefined, undefined, {}, '/synthetic-home').root, '/synthetic-home/.job-apply');
+  assert.equal(createNativeStoreBootstrap(`~${userInfo().username}/explicit`, undefined, {}, '/synthetic-home').root,
+    '/synthetic-home/explicit');
+  const lexical = createNativeStoreBootstrap('a/../b', undefined, {}, '/synthetic-home');
+  assert.equal(plain(lexical.paths()).root, 'a/../b');
+  assert.equal(plain(lexical.paths()).profile, 'a/../b/profile.json');
+  assert.equal(plain(createNativeStoreBootstrap('a//./b/', undefined, {}, '/synthetic-home').paths()).root, 'a/b');
+  const named = `~${userInfo().username}/job-apply-store`;
+  const namedLegacy = join(tmpdir(), 'legacy');
+  assert.deepEqual(plain(createNativeStoreBootstrap(named, namedLegacy).paths()), pythonCli(named, namedLegacy, 'paths'));
 });
 
 test('init creates the Python core privately and restarts idempotently', async t => {
@@ -113,6 +123,52 @@ test('init rolls forward a Python-compatible pending extraction journal idempote
   assert.deepEqual(JSON.parse(await readFile(join(root, 'profile.json'), 'utf8')).profile, { recovered: true });
 });
 
+test('init repairs a torn history tail and replays a pending coordinator claim journal', async t => {
+  const { root, legacy } = await fixture(t);
+  const now = '2026-09-15T18:00:00Z';
+  const service = new NativeStoreBootstrap(root, legacy, { clock: () => now });
+  await service.initialize();
+  const claim = { claimId: 'claim-one', jobId: 'job-one', ownerLabel: 'Owner',
+    tokenHash: createHash('sha256').update('token').digest('hex'), acquiredAt: now, heartbeatAt: now,
+    expiresAt: '2026-09-15T18:05:00Z' };
+  const historyEvent = { schemaVersion: 1, eventId: 'event-one', applicationId: 'job-one',
+    event: 'claim-recovered', company: null, role: null, ats: null, status: 'in_progress', answerKeys: [], at: now };
+  await writeFile(join(root, 'coordinator.json'), JSON.stringify({ schemaVersion: 1, claim: null }), { mode: 0o600 });
+  await writeFile(join(root, 'coordinator-journal.json'), JSON.stringify({ schemaVersion: 1, operation: {
+    kind: 'recover', operationId: 'recover-one', jobId: 'job-one', at: now, historyEvent, resultClaim: claim,
+  } }), { mode: 0o600 });
+  await writeFile(join(root, 'applications.jsonl'), '{"torn"', { mode: 0o600 });
+  await service.initialize();
+  assert.deepEqual(JSON.parse(await readFile(join(root, 'coordinator.json'), 'utf8')).claim, claim);
+  assert.equal(JSON.parse(await readFile(join(root, 'coordinator-journal.json'), 'utf8')).operation, null);
+  assert.deepEqual((await readFile(join(root, 'applications.jsonl'), 'utf8')).trim().split('\n').map(JSON.parse), [historyEvent]);
+});
+
+test('init restores referenced managed resume bytes from a Python quarantine', async t => {
+  const { root, legacy } = await fixture(t);
+  const now = '2026-09-15T18:00:00Z', bytes = Buffer.from('resume bytes');
+  const digest = createHash('sha256').update(bytes).digest('hex');
+  const service = new NativeStoreBootstrap(root, legacy, { clock: () => now });
+  await service.initialize();
+  const record = { id: 'resume', label: 'Resume', storageKind: 'managed', managedFile: 'resume.txt',
+    originalFilename: 'resume.txt', mediaType: 'text/plain; charset=utf-8', digest,
+    contentRevision: `content_${'a'.repeat(32)}`, tags: [], default: true, observedSize: bytes.length,
+    observedModifiedAt: now, revision: 1, createdAt: now, updatedAt: now, deletedAt: null };
+  await writeFile(join(root, 'resumes.json'), JSON.stringify({ schemaVersion: 1, resumes: { resume: record },
+    metadata: { createdAt: now, updatedAt: now } }), { mode: 0o600 });
+  const quarantine = join(root, 'resume-files', `.resume.txt.${'b'.repeat(32)}.quarantine`);
+  await writeFile(quarantine, bytes, { mode: 0o600 });
+  const staged = join(root, 'resume-files', '.resume.interrupted.tmp');
+  const orphan = join(root, 'resume-files', 'orphan.txt');
+  await writeFile(staged, 'partial', { mode: 0o600 });
+  await writeFile(orphan, 'orphan', { mode: 0o600 });
+  await service.initialize();
+  assert.deepEqual(await readFile(join(root, 'resume-files/resume.txt')), bytes);
+  await assert.rejects(lstat(quarantine), { code: 'ENOENT' });
+  await assert.rejects(lstat(staged), { code: 'ENOENT' });
+  await assert.rejects(lstat(orphan), { code: 'ENOENT' });
+});
+
 test('preflight rejects corrupt or unsafe existing state before writing', async t => {
   await t.test('corrupt JSON leaves a partial root byte-for-byte unchanged', async t => {
     const { root, legacy } = await fixture(t);
@@ -159,4 +215,15 @@ test('init refuses a symlink introduced after an absent-root preflight', async t
   } });
   await assert.rejects(service.initialize(), /directory without links/);
   assert.deepEqual(await readdir(target), []);
+});
+
+test('init reruns preflight when a private root appears after absent-root preflight', async t => {
+  const { root, legacy } = await fixture(t);
+  const service = new NativeStoreBootstrap(root, legacy, { boundary: async stage => {
+    if (stage !== 'preflight-complete') return;
+    await mkdir(root, { mode: 0o700 });
+    await writeFile(join(root, 'profile.json'), '{broken\n', { mode: 0o600 });
+  } });
+  await assert.rejects(service.initialize(), /profile|JSON/);
+  assert.deepEqual(await readdir(root), ['profile.json']);
 });
