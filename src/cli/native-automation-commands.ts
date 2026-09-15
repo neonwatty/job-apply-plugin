@@ -1,5 +1,5 @@
 import { AccountsService } from '../workspace-core/accounts.js';
-import { AutomationService, nativeAutomationCapability } from '../workspace-core/automation.js';
+import { AutomationService } from '../workspace-core/automation.js';
 import type { AutomationRepository } from '../workspace-core/automation.js';
 import { SyntheticAccountService } from '../workspace-core/synthetic-account.js';
 import type { SyntheticAccountExecutor } from '../workspace-core/synthetic-account.js';
@@ -62,7 +62,7 @@ function optionsFor(command: string, args: string[]): Map<string, string> {
   }
   for (const key of ['--expected-revision', '--expected-profile-revision', '--expected-settings-revision']) {
     const value = options.get(key);
-    if (value !== undefined && (!/^[0-9]+$/.test(value) || BigInt(value) < 1n)) {
+    if (value !== undefined && !/^[+-]?[0-9]+$/.test(value)) {
       throw new JobsError('expected revision must be a positive integer');
     }
   }
@@ -77,13 +77,48 @@ function inputObject(value: Value): Document {
   }
 }
 
+function automationCapability(platform: string): Value {
+  if (platform === 'darwin') return fromJSON({
+    providerId: 'macos-keychain', state: 'available', reasonCode: 'native_compound_boundary',
+    credentialOperationsReady: false, syntheticOperationsReady: true,
+    productionSeamReady: true, liveExecutionEnabled: false, discoveryMode: 'side_effect_free',
+    accountFlowAutomation: {
+      productionSeamReady: true, liveExecutionEnabled: false,
+      workdayPasswordAccountReady: true, greenhouseAccountlessClassificationReady: true,
+      providerId: 'macos-accessibility', state: 'available', emailOnlyCandidateProfileReady: true,
+      credentialOperationsReady: false, discoveryMode: 'side_effect_free',
+    },
+  });
+  const windows = platform === 'win32';
+  const unsupported = platform !== 'linux' && !windows;
+  return fromJSON({
+    providerId: null, state: 'unsupported',
+    reasonCode: unsupported ? 'platform_unsupported'
+      : windows ? 'provider_not_implemented_windows' : 'provider_not_implemented_linux',
+    credentialOperationsReady: false, syntheticOperationsReady: false, discoveryMode: 'side_effect_free',
+    accountFlowAutomation: {
+      productionSeamReady: false, liveExecutionEnabled: false,
+      workdayPasswordAccountReady: false, greenhouseAccountlessClassificationReady: false,
+      providerId: null, state: 'unsupported',
+      reasonCode: unsupported ? 'platform_unsupported'
+        : windows ? 'account_flow_not_implemented_windows' : 'account_flow_not_implemented_linux',
+      discoveryMode: 'side_effect_free',
+    },
+  });
+}
+
 export async function runNativeAutomationCommand(command: string, args: string[],
   context: NativeAutomationCommandContext): Promise<Value | null> {
   if (!nativeAutomationCommandNames.has(command)) return null;
   const options = optionsFor(command, args);
   const required = (key: string): string => options.get(key)!;
   const revision = (key: string): bigint => BigInt(required(key));
-  const payload = async (): Promise<Document> => inputObject(await context.readInput(required('--input')));
+  const payload = async (): Promise<Document> => {
+    let value: Value;
+    try { value = await context.readInput(required('--input')); }
+    catch { throw new JobsError('input is not a readable JSON object'); }
+    return inputObject(value);
+  };
   const automation = context.now
     ? new AutomationService(context.repository, context.now)
     : new AutomationService(context.repository);
@@ -96,7 +131,7 @@ export async function runNativeAutomationCommand(command: string, args: string[]
       return automation.update(await payload(), revision('--expected-revision'), true);
     case 'automation-settings-copy-profile-email':
       return automation.copyProfileEmail(revision('--expected-profile-revision'), revision('--expected-settings-revision'), true);
-    case 'automation-capability': return nativeAutomationCapability();
+    case 'automation-capability': return automationCapability(options.get('--platform') ?? process.platform);
     case 'account-realm-resolve': return accounts.resolve(required('--url'));
     case 'employer-account-list': return accounts.list(true);
     case 'employer-account-get': return accounts.get(required('--realm-ref'), true);

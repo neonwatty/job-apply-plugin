@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { nativeAutomationCapability } from '../runtime/workspace-core/automation.js';
+import { parse } from '../runtime/contracts/workspace/values.js';
 import { fingerprint, operationFingerprint, syntheticProofs } from '../runtime/contracts/workspace/synthetic-account.js';
 import { nativeAutomationCommandNames, runNativeAutomationCommand } from '../runtime/cli/native-automation-commands.js';
-import { documents, fixture, normalized, plain, portal, python } from './workspace_native_automation_cli_support.mjs';
+import { documents, fixture, normalized, plain, portal, python, pythonRaw } from './workspace_native_automation_cli_support.mjs';
 
 const commands = [
   'automation-settings-get', 'automation-settings-update',
@@ -94,7 +94,6 @@ test('the leaf owns a closed argument grammar and rejects malformed calls before
     ['automation-settings-update', ['--input', '-', '--expected-revision', '1.5'], /positive integer/],
     ['automation-capability', ['--platform', 'freebsd'], /platform must be darwin, linux, or win32/],
     ['employer-account-create', [], /required option: --url/],
-    ['employer-account-update', ['--realm-ref', 'x', '--input', '-', '--expected-revision', '0'], /positive integer/],
   ]) await assert.rejects(runNativeAutomationCommand(command, args, context), pattern);
   assert.equal(transactions, 0);
 });
@@ -107,7 +106,8 @@ test('native capability is side-effect free and synthetic execution remains expl
   };
   for (const args of [[], ['--platform', 'darwin'], ['--platform', 'linux'], ['--platform', 'win32']]) {
     const result = await state.native('automation-capability', args);
-    assert.deepEqual(result, { value: plain(nativeAutomationCapability()) });
+    assert.deepEqual(result, python(state.pythonRoot, 'automation-capability', args));
+    assert.doesNotMatch(JSON.stringify(result), /private|credential_/);
   }
 
   const realm = 'a'.repeat(64), control = fingerprint('native-secure-control:v1');
@@ -136,5 +136,56 @@ test('native capability is side-effect free and synthetic execution remains expl
   assert.equal(syntheticCalled, false);
   assert.equal(await readFile(join(state.nativeRoot, 'automation-settings.json'), 'utf8'), before.settings);
   assert.equal(await readFile(join(state.nativeRoot, 'employer-accounts.json'), 'utf8'), before.accounts);
-  assert.doesNotMatch(JSON.stringify(plain(nativeAutomationCapability())), /private|credential_/);
+});
+
+test('signed and stale revision arguments preserve Python domain behavior', async t => {
+  await t.test('automation settings update', async t => {
+    const state = await fixture(t);
+    const args = revision => ['--input', '-', '--expected-revision', revision];
+    for (const revision of ['0', '-1', '+1']) {
+      const input = { enabled: true };
+      assert.deepEqual(normalized(await state.native('automation-settings-update', args(revision), input)),
+        normalized(python(state.pythonRoot, 'automation-settings-update', args(revision), input)));
+    }
+  });
+
+  await t.test('profile email copy', async t => {
+    const state = await fixture(t);
+    for (const args of [
+      ['--expected-profile-revision', '0', '--expected-settings-revision', '1'],
+      ['--expected-profile-revision', '1', '--expected-settings-revision', '-1'],
+      ['--expected-profile-revision', '+1', '--expected-settings-revision', '+1'],
+    ]) assert.deepEqual(normalized(await state.native('automation-settings-copy-profile-email', args)),
+      normalized(python(state.pythonRoot, 'automation-settings-copy-profile-email', args)));
+  });
+
+  await t.test('employer account update', async t => {
+    const state = await fixture(t);
+    const realm = (await state.native('account-realm-resolve', ['--url', portal])).value.realmRef;
+    assert.deepEqual(normalized(await state.native('employer-account-create', ['--url', portal])),
+      normalized(python(state.pythonRoot, 'employer-account-create', ['--url', portal])));
+    for (const revision of ['0', '-1', '+1']) {
+      const args = ['--realm-ref', realm, '--input', '-', '--expected-revision', revision];
+      const input = { signupEmailOverride: null };
+      assert.deepEqual(normalized(await state.native('employer-account-update', args, input)),
+        normalized(python(state.pythonRoot, 'employer-account-update', args, input)));
+    }
+  });
+});
+
+test('unreadable input failures use the stable Python error envelope', async t => {
+  const state = await fixture(t);
+  const stdinArgs = ['--input', '-', '--expected-revision', '1'];
+  const malformed = await state.native('automation-settings-update', stdinArgs, undefined, {
+    readInput: async () => parse('{'),
+  });
+  assert.deepEqual(malformed, pythonRaw(state.pythonRoot, 'automation-settings-update', stdinArgs, '{'));
+  assert.deepEqual(malformed, { error: 'input is not a readable JSON object' });
+
+  const missing = join(state.nativeRoot, 'caller-private-missing.json');
+  const fileArgs = ['--input', missing, '--expected-revision', '1'];
+  const unreadable = await state.native('automation-settings-update', fileArgs);
+  assert.deepEqual(unreadable, python(state.pythonRoot, 'automation-settings-update', fileArgs));
+  assert.deepEqual(unreadable, { error: 'input is not a readable JSON object' });
+  assert.doesNotMatch(JSON.stringify(unreadable), /caller-private-missing/);
 });

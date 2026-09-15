@@ -21,8 +21,12 @@ export function normalized(value) {
 }
 
 export function python(root, command, args = [], input) {
+  return pythonRaw(root, command, args, input === undefined ? undefined : JSON.stringify(input));
+}
+
+export function pythonRaw(root, command, args = [], input) {
   const result = spawnSync('python3', [script, '--root', root, command, ...args], {
-    encoding: 'utf8', input: input === undefined ? undefined : JSON.stringify(input),
+    encoding: 'utf8', input,
   });
   if (result.status === 0) return { value: JSON.parse(result.stdout) };
   return { error: result.stderr.trim().replace(/^job-apply-store: /, '') };
