@@ -18,7 +18,7 @@
     },
     {
       "path": "runtime/cli/task-runner.js",
-      "sha256": "c94bd10a0af9fc7237632bcc98bd8cdbfd38ebb134af21907dd6afd5152c47eb",
+      "sha256": "89c55c63119da4f2e993ce0bd1464ae561e78e07d02301007236f62ee93d1daf",
       "classification": "unreviewed"
     },
     {
@@ -38,7 +38,7 @@
     },
     {
       "path": "src/cli/task-runner.ts",
-      "sha256": "57cc678020637b276378b7887c848870d9eb6c263514350845a780f2de77596d",
+      "sha256": "e4cabd85f291f2a31077cca2b78c730563f388b5e8807320d7755c5a64a43512",
       "classification": "unreviewed"
     }
   ]

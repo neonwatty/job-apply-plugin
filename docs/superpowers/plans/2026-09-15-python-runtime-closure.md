@@ -1,8 +1,8 @@
 # Python Runtime Closure Cutover Plan
 
-**Goal:** Route ordinary application attempts and final-action policy through their existing native TypeScript CLIs, while retaining Python only as isolated development/reference code and preserving the current rollback boundary.
+**Goal:** Route ordinary application attempts and final-action policy through their existing native TypeScript CLIs, with the already-shipped native-first Store and task commands, while preserving explicit whole-process Python rollback, isolated QA replay, and differential oracles.
 
-**Architecture:** The shipped skills invoke `runtime/cli/native-attempt.js` and `runtime/cli/native-final-action-policy.js`. The native attempt broker continues to own claim authority and the native policy service continues to own campaign/final-action authority. Python implementations remain available to differential and QA tests, but are removed from the critical installed runtime contract. Existing Python rollback support for the Companion remains unchanged in this tranche.
+**Architecture:** The shipped skills invoke `runtime/cli/native-attempt.js`, `runtime/cli/native-final-action-policy.js`, `runtime/cli/native-jobs.js`, and `runtime/cli/native-task.js`. The native attempt broker continues to own claim authority and the native policy service continues to own campaign/final-action authority. Python implementations remain available for explicit whole-process rollback, isolated QA replay, and differential oracles; this tranche does not claim a Python-free installed package.
 
 **Tech Stack:** TypeScript/Node.js, Node test runner, Python unittest compatibility oracles, native POSIX flock addon, Markdown skill instructions.
 
@@ -15,6 +15,16 @@
 - Keep Python differential oracles and QA fixtures isolated from ordinary shipped routing.
 - Do not remove the Companion's durable Python rollback path in this tranche.
 - Keep every scoped source and test file at or below 500 physical lines without adding source-size exceptions.
+
+## Review ruling: atomic writer handoff
+
+Review found that ordinary Store and task skill routes had already moved to the
+native CLIs, beyond the original attempt/policy-only wording. This plan records
+that handoff as atomic: an ordinary workflow chooses one complete native writer
+process, while Python is entered only through an explicit whole-process rollback
+or an isolated QA/differential path. A Python rollback never shares or resumes a
+native Store mutation, so the retained package assets do not create dual-writer
+routing or a Python-free-package claim.
 
 ### Task 1: Close native attempt ownership parity
 
@@ -98,7 +108,7 @@
 - [ ] Run the focused installed-artifact tests and confirm the expected inventory mismatch.
 - [ ] Update TypeScript and Python artifact inventories plus smoke entry-point invocation.
 - [ ] Remove the now-stale attempt and policy entries from `python-runtime-closure.json`; retain QA replay and all still-discovered rollback/compatibility entry points.
-- [ ] Update the migration document to describe native ordinary routing, Python differential oracles, and the remaining rollback/package work.
+- [ ] Update the migration document to describe native-first ordinary routing, the atomic writer handoff, Python differential oracles, isolated QA replay, and the remaining rollback/package work without claiming a Python-free package.
 - [ ] Run installed-artifact reference suites and `npm run check:migration`.
 
 ### Task 5: Validate and prepare delivery

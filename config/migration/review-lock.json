@@ -279,7 +279,7 @@
     },
     {
       "path": "python-runtime-closure.json",
-      "sha256": "6c92e89af1d75cc19502c76c8dc876056bc99d9730366f7821da62a3a6e11d6c"
+      "sha256": "d80e2e7dad6d93c93b5e6240695d6aa7b0eff233e15936dbf6d58f7c7d4018d1"
     },
     {
       "path": "requirements-trash-01.json",
@@ -315,11 +315,11 @@
     },
     {
       "path": "source-catalog-05.json",
-      "sha256": "9b196f9347298a9d7598a60b5a6f4e26e680a2ca07bb5e10003a4c0f111a9515"
+      "sha256": "1f1a831641db75c9d0cbb22e633968b38ce2be41b8c10760c402d6ef0ae3f7be"
     },
     {
       "path": "source-catalog-06.json",
-      "sha256": "3cdb1aeea55cb09c0828096574be5a636be862ded6dd484e00b1d72223066036"
+      "sha256": "d4ce3275fd99743d5a3b2ce74eace87845b291c720e444604b675680e807577e"
     },
     {
       "path": "source-catalog-g02-hybrid.json",
@@ -375,7 +375,7 @@
     },
     {
       "path": "source-catalog-native-default-cutover.json",
-      "sha256": "d07b92cb19e169bb2be746fd8b37578c3f9add26ef4b81cb2608dc928793d350"
+      "sha256": "03b6471ecba7434a45b785c89b0ab64591b88f54d2d9eb4ede3217bb45481186"
     },
     {
       "path": "source-catalog-native-email-canary-composition.json",
@@ -411,7 +411,7 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "e6b2f8b4caea0548d7e8b582c79849b3cb482ed060e5529d5568e2b0ddd0cabd"
+      "sha256": "227072a90a89a6952d06d03a2298abfabda414d3cc139b7dee8df18f7985c46b"
     },
     {
       "path": "source-catalog-native-legacy-jobs.json",
@@ -447,7 +447,7 @@
     },
     {
       "path": "source-catalog-native-task-cli.json",
-      "sha256": "fe4c495647466a2a962666c700537ab4f19f07bbeb0539be3d2a92748dc249d3"
+      "sha256": "1b60e1ffb83faef797fb2cbedea16d4d6c9e61ecc2c7e73ec9ba0d0b17994a92"
     },
     {
       "path": "source-catalog-native-task-intake.json",

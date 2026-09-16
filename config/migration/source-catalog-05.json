@@ -3,12 +3,12 @@
   "sources": [
     {
       "path": "scripts/smoke-plugin.sh",
-      "sha256": "7f6cb3e2b3192cd6c5c389c92dc32145b1140ca4a0ae24158a631401b9b6ed39",
+      "sha256": "f2b37092b7f8d4536f76b8e16c802e7d9a51d20d023f2504b677f457c19c8e40",
       "classification": "unreviewed"
     },
     {
       "path": "scripts/smoke/artifacts.py",
-      "sha256": "aeeb7b657008bcc4c76f281f385e43547ab2fcbc1f00dfc9a4f85f368643acb6",
+      "sha256": "5c73a7a8e45a19ab974f7df154fd7f8bb9e4a5add2cf2057ca6bb4ca86100888",
       "classification": "unreviewed"
     },
     {
