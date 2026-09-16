@@ -105,47 +105,42 @@ export default function Companion() {
     return <>
         <a className="skip-link" href="#workspace-content">Skip to workspace</a>
         <header className="topbar">
-            <div className="product-context">
-                <span className="product-mark" aria-hidden="true">J</span>
-                <div className="product-copy">
-                    <p className="eyebrow">Local companion</p>
-                    <h1>Job Apply</h1>
-                    <p id="workspace-trust-context" className="trust-context">Your canonical data stays local. You direct changes and submissions; agents assist from the same record.</p>
+            <div className="topbar-inner">
+                <button className="brand-home" aria-label="Open overview" onClick={() => navigate('overview')}>J</button>
+                <p id="workspace-nav-overflow-hint" className="visually-hidden">Workspace navigation scrolls horizontally on narrow screens.</p>
+                <nav className="workspace-nav" aria-label="Workspace sections" aria-describedby="workspace-nav-overflow-hint">
+                    <div className="nav-group" role="group" aria-labelledby="nav-group-pipeline">
+                        <span id="nav-group-pipeline" className="visually-hidden">Pipeline</span>
+                        <div className="nav-group-links">
+                            {navButton('overview','Overview')}
+                            {navButton('jobs','Jobs')}
+                            {nativeWorkspace&&navButton('attention','Needs Attention',shellCounts?.attention)}
+                        </div>
+                    </div>
+                    <div className="nav-group" role="group" aria-labelledby="nav-group-data">
+                        <span id="nav-group-data" className="visually-hidden">Application data</span>
+                        <div className="nav-group-links">
+                            {navButton('facts','Facts')}
+                            {navButton('resumes','Resumes',undefined,tab==='resumes'||tab==='extractions')}
+                            {nativeWorkspace&&navButton('answers','Answers')}
+                        </div>
+                    </div>
+                    <div className="nav-group" role="group" aria-labelledby="nav-group-controls">
+                        <span id="nav-group-controls" className="visually-hidden">Controls</span>
+                        <div className="nav-group-links">
+                            {token&&!nativeWorkspace&&<a className="nav-link" href={legacyHref} onClick={event => {
+                                if(dirty&&!confirm('Discard unsaved changes?')) event.preventDefault();
+                            }}>Open full workspace</a>}
+                            {nativeWorkspace&&navButton('automation','Automation')}
+                            {navButton('trash','Trash',nativeWorkspace?shellCounts?.trash:undefined)}
+                        </div>
+                    </div>
+                </nav>
+                <div className={`connection ${boot?.status==='ready'?'online':''}`} role="status" aria-label={connection}>
+                    <span className="connection-dot" aria-hidden="true" />
+                    <span className="connection-label">{connection}</span>
                 </div>
             </div>
-            <div className={`connection ${boot?.status==='ready'?'online':''}`} role="status">
-                <span className="connection-dot" aria-hidden="true" />
-                <span>{connection}</span>
-            </div>
-            <p id="workspace-nav-overflow-hint" className="nav-overflow-hint">Scroll horizontally to explore all navigation groups <span aria-hidden="true">→</span></p>
-            <nav className="workspace-nav" aria-label="Workspace sections" aria-describedby="workspace-trust-context workspace-nav-overflow-hint">
-                <div className="nav-group" role="group" aria-labelledby="nav-group-pipeline">
-                    <span id="nav-group-pipeline" className="nav-group-label">Pipeline</span>
-                    <div className="nav-group-links">
-                        {navButton('overview','Overview')}
-                        {navButton('jobs','Jobs')}
-                        {nativeWorkspace&&navButton('attention','Needs Attention',shellCounts?.attention)}
-                    </div>
-                </div>
-                <div className="nav-group" role="group" aria-labelledby="nav-group-data">
-                    <span id="nav-group-data" className="nav-group-label">Application data</span>
-                    <div className="nav-group-links">
-                        {navButton('facts','Facts')}
-                        {navButton('resumes','Resumes',undefined,tab==='resumes'||tab==='extractions')}
-                        {nativeWorkspace&&navButton('answers','Answers')}
-                    </div>
-                </div>
-                <div className="nav-group" role="group" aria-labelledby="nav-group-controls">
-                    <span id="nav-group-controls" className="nav-group-label">Controls</span>
-                    <div className="nav-group-links">
-                        {token&&!nativeWorkspace&&<a className="nav-link" href={legacyHref} onClick={event => {
-                            if(dirty&&!confirm('Discard unsaved changes?')) event.preventDefault();
-                        }}>Open full workspace</a>}
-                        {nativeWorkspace&&navButton('automation','Automation')}
-                        {navButton('trash','Trash',nativeWorkspace?shellCounts?.trash:undefined)}
-                    </div>
-                </div>
-            </nav>
         </header>
         <main id="workspace-content" className="companion" ref={content} tabIndex={-1}>
         {nativeWorkspace&&(shellCounts.attention!==undefined||shellCounts.trash!==undefined)&&<p className="visually-hidden" role="status" aria-live="polite">{shellCounts.attention!==undefined&&`${shellCounts.attention} jobs need attention.`} {shellCounts.trash!==undefined&&`${shellCounts.trash} records are in Trash.`}</p>}
