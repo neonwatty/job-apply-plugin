@@ -73,7 +73,7 @@ export default function Companion() {
     useEffect(()=>{
         if(!focusAfterNavigation.current)return;
         focusAfterNavigation.current=false;
-        requestAnimationFrame(()=>content.current?.focus());
+        requestAnimationFrame(()=>content.current?.focus({preventScroll:true}));
     },[tab]);
     function navigate(next: WorkspaceTab) {
         if(next===tab)
@@ -106,9 +106,12 @@ export default function Companion() {
         <a className="skip-link" href="#workspace-content">Skip to workspace</a>
         <header className="topbar">
             <div className="product-context">
-                <p className="eyebrow">Local companion</p>
-                <h1>Job Apply</h1>
-                <p id="workspace-trust-context" className="trust-context">Your canonical data stays local. You direct changes and submissions; agents assist from the same record.</p>
+                <span className="product-mark" aria-hidden="true">J</span>
+                <div className="product-copy">
+                    <p className="eyebrow">Local companion</p>
+                    <h1>Job Apply</h1>
+                    <p id="workspace-trust-context" className="trust-context">Your canonical data stays local. You direct changes and submissions; agents assist from the same record.</p>
+                </div>
             </div>
             <div className={`connection ${boot?.status==='ready'?'online':''}`} role="status">
                 <span className="connection-dot" aria-hidden="true" />
