@@ -86,7 +86,7 @@ export async function runAttemptBroker(root, service, provider, options = {}) {
     // launchers from unlinking each other's endpoint during stale-socket recovery.
     const ownership = await open(path + '.lock', constants.O_RDWR | constants.O_CREAT | constants.O_NOFOLLOW, 0o600);
     const info = await ownership.stat();
-    if (!info.isFile() || info.uid !== process.getuid() || (info.mode & 0o777) !== 0o600) {
+    if (!info.isFile() || info.nlink !== 1 || info.uid !== process.getuid() || (info.mode & 0o777) !== 0o600) {
         await ownership.close();
         throw new Error('attempt ownership unavailable');
     }
