@@ -1,5 +1,6 @@
-from scripts.skill_documents import skill_text
+from scripts.skill_documents import skill_documents, skill_text
 from tests.support.answer_cli_case import *
+import re
 
 
 class AnswerMemoryIntegrationTests(AnswerCliCase):
@@ -19,8 +20,8 @@ class AnswerMemoryIntegrationTests(AnswerCliCase):
             },
         )
         for name in ("answer-memory", "job-apply", "job-preferences", "job-search"):
-            self.assertIn("job-apply-store.py", skills[name], name)
-        self.assertIn("job-apply-workspace.py", skills["job-workspace"])
+            self.assertIn('node "<plugin-root>/runtime/cli/native-jobs.js"', skills[name], name)
+        self.assertIn("apps/companion/supervise.mjs", skills["job-workspace"])
         self.assertIn("canonical Store contract", skills["job-workspace"])
         for name in ("job-apply", "job-preferences", "job-search"):
             self.assertNotIn("Read `~/.claude-job-profile.json`", skills[name])
@@ -60,6 +61,14 @@ class AnswerMemoryIntegrationTests(AnswerCliCase):
             skills["answer-memory"],
         )
         self.assertNotIn("job_apply_policy.py", "\n".join(skills.values()))
+        ordinary_skill_text = "\n".join(
+            text
+            for entry in (ROOT / "skills").glob("*/SKILL.md")
+            for path, text in skill_documents(entry).items()
+            if path.name != "qa-replay.md"
+        ).replace("qa-replay.py", "")
+        self.assertNotIn("python3", ordinary_skill_text)
+        self.assertIsNone(re.search(r"\b[\w-]+\.py\b", ordinary_skill_text))
         self.assertIn("Never fall back to raw `claim-handoff`", skills["job-apply"])
         self.assertIn("--status awaiting_review", skills["job-apply"])
         self.assertIn("--input <private-temp.json>", skills["job-apply"])

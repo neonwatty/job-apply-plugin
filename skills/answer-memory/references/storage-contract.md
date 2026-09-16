@@ -3,7 +3,7 @@
 The bundled helper is the sole supported mutation interface:
 
 ```bash
-python3 "<plugin-root>/scripts/job-apply-store.py" --help
+node "<plugin-root>/runtime/cli/native-jobs.js" --help
 ```
 
 ## Files

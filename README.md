@@ -157,10 +157,10 @@ Results are automatically saved to `~/.claude-job-searches/`. Both Codex and Cla
 The optional workspace gives you keyboard-accessible **Overview**, **Jobs**, **Needs Attention**, **Facts**, **Resumes**, **Answers**, **Application Activity**, and unified **Trash** views backed by the same canonical records used by the CLI skills. From the plugin directory, start it with one command:
 
 ```bash
-python3 scripts/job-apply-workspace.py
+node "<plugin-root>/apps/companion/supervise.mjs" --plugin-root "<plugin-root>"
 ```
 
-The launcher binds only to `127.0.0.1`, chooses a free port, opens the complete authenticated URL in your default browser, and stops cleanly with Ctrl-C. It requires Python 3 but no Node runtime, account, cloud service, telemetry, or separate database.
+The native-first Companion launcher binds only to `127.0.0.1`, chooses a free port, opens the complete authenticated URL in your default browser, and stops cleanly with Ctrl-C. It requires Node plus the packaged native lock, but no account, cloud service, telemetry, or separate database.
 
 Start on **Overview**. It derives setup readiness and one next action from counts and booleans under the canonical Store lock; it does not expose profile values, paths, record IDs, claims, or secrets, and it never stores an onboarding-complete flag in the browser. A new owner is guided to import a resume, review Facts, capture and prepare a job, resolve Needs Attention, or hand off a Ready job as the current Store state requires.
 
@@ -262,9 +262,9 @@ chmod 600 ~/.job-apply/resume-extractions.json ~/.job-apply/resume-extraction-jo
 
 On first use, an existing `~/.claude-job-profile.json` is copied into the new versioned profile without modifying or deleting the legacy file. Once `~/.job-apply/profile.json` exists it is authoritative; later legacy-file changes are not re-imported. Verify the new profile before deciding whether to archive or remove the old file.
 
-All plugin skills access this data through the bundled `scripts/job-apply-store.py` helper. Canonical JSON updates are atomic, corrupt or future-version files fail closed, and application history and sessions do not duplicate reusable answer values.
+All plugin skills access this data through the bundled `runtime/cli/native-jobs.js` helper. Canonical JSON updates are atomic, corrupt or future-version files fail closed, and application history and sessions do not duplicate reusable answer values.
 
-The packaged `scripts/job-apply-task.py` helper is the ordinary agent-facing job protocol. `snapshot` returns one redacted Store-owned overview/jobs/attention view; `activity --id <job-id>` returns value-free activity for one exact canonical job. `intake --input <private-json>` atomically resolves or creates exactly one active job without returning its URL or the Store's upsert token. After the owner explicitly chooses a displayed job, `select --id <job-id> --expected-revision <revision> --owner-confirmed` rechecks preflight and marks it Ready, or returns a stable no-op when that exact revision is already Ready. `semantic-lookup` recomputes deterministic candidates and bounded reuse policy from current canonical answers without returning answer values. `approval-preview` and `approval-approve` preserve current-use, remember, policy-mode, and use-authority decisions per opaque field reference. `cleanup-preview` never mutates; `cleanup-approve` requires the exact current preview plus explicit owner confirmation. All failures are stable machine-readable JSON; identity conflicts, trashed matches, stale revisions, unavailable jobs, failed policy, and failed preflight stop before browser work.
+The packaged `runtime/cli/native-task.js` helper is the ordinary agent-facing job protocol. `snapshot` returns one redacted Store-owned overview/jobs/attention view; `activity --id <job-id>` returns value-free activity for one exact canonical job. `intake --input <private-json>` atomically resolves or creates exactly one active job without returning its URL or the Store's upsert token. After the owner explicitly chooses a displayed job, `select --id <job-id> --expected-revision <revision> --owner-confirmed` rechecks preflight and marks it Ready, or returns a stable no-op when that exact revision is already Ready. `semantic-lookup` recomputes deterministic candidates and bounded reuse policy from current canonical answers without returning answer values. `approval-preview` and `approval-approve` preserve current-use, remember, policy-mode, and use-authority decisions per opaque field reference. `cleanup-preview` never mutates; `cleanup-approve` requires the exact current preview plus explicit owner confirmation. All failures are stable machine-readable JSON; identity conflicts, trashed matches, stale revisions, unavailable jobs, failed policy, and failed preflight stop before browser work.
 
 The packaged `node "<plugin-root>/runtime/cli/native-attempt.js"` helper uses a detached broker scoped to one Store and exact selected attempt. A short `start` client launches the broker, acquires the exact Ready job and revision, returns the redacted application inputs, and exits; no launcher, stdin stream, terminal, or conversational process stays attached. A separate `restart-review` launcher is available only after the owner explicitly confirms that one exact `awaiting_review` application was not submitted. It requires the exact job revision, complete same-job review evidence with no pending work, no global claim, and a fresh current managed-resume preflight. It atomically advances that same job once to `in_progress`, creates one 300-second claim, records one value-free restart event, and preserves prior review-session bytes until claim-gated progress. Modern sessions still require their complete 1.3.2 review envelope. A one-time legacy rebuild is permitted only when `attemptRevision`, `readiness`, and `browserHandoff` are all structurally absent from a `review`/`final_review` session with no pending work, the latest same-job event is `reviewed`/`awaiting_review`, and no prior restart exists. It records `legacy-review-rebuild`; partial, explicit-null, malformed, or contradictory envelopes fail without mutation. Legacy readiness remains unknown, so the rebuilt attempt must observe the visible form and provide fresh current-attempt readiness and browser handoff before returning to review. Restart never treats reviewed work as Ready or grants browser/final-action authority. The broker retains claim authority only in memory, heartbeats automatically, and accepts later stateless `heartbeat`, value-free `progress`, and `handoff` clients through its OS-user-restricted Store socket. It cannot switch jobs, Stores, revisions, owners, or claims. Its argv, environment, JSON responses, diagnostics, and durable files never carry the raw claim authority. An `awaiting_review` handoff succeeds only when the Store recomputes a complete `agent_attested_current_attempt` readiness report whose attempt revision matches the acquired revision, its complete observed required-control manifest exactly matches the selected bundled fixture, every assertion passes, no unresolved work remains, and final action remains untouched. If the visible form has additional required controls or no exact bundled fixture, readiness fails closed and the attempt must enter Needs Attention. This is an agent attestation over a closed observation, not independent browser provenance proof; the owner must still inspect and submit the visible form. Repository replay evidence is deliberately insufficient. A bounded `needs_info` handoff may instead retain only allowlisted typed blocker codes and a closed browser-handoff state; neither session form retains question text, answers, credentials, URLs, paths, tab IDs, or browser state.
 
@@ -338,7 +338,7 @@ modifies report files.
 Discover candidates without changing or creating the canonical store:
 
 ```bash
-python3 scripts/job-apply-store.py legacy-jobs-preview
+node runtime/cli/native-jobs.js legacy-jobs-preview
 ```
 
 Invalid entries remain visible with a reason. Preview chosen valid `itemId`
@@ -346,7 +346,7 @@ values by repeating `--select`, then commit only after reviewing that exact
 selected preview:
 
 ```bash
-python3 scripts/job-apply-store.py legacy-jobs-preview \
+node runtime/cli/native-jobs.js legacy-jobs-preview \
   --select <item-id> --select <item-id>
 ```
 
