@@ -8,6 +8,8 @@ export async function nativeFactsBrowser(page,root,fixture,buildRoot) {
   await page.getByRole('button',{name:'Close job details'}).click();
   await page.getByRole('button',{name:'Facts',exact:true}).click();
   await page.getByText('No profile facts yet.',{exact:false}).waitFor();
+  assert.equal(await page.getByLabel('Fact name',{exact:true}).count(),0,'new-fact form stays collapsed until requested');
+  await page.getByRole('button',{name:'Add a fact',exact:true}).click();
   await page.getByLabel('Fact name',{exact:true}).fill('custom');
   await page.getByLabel('Value type').selectOption('null');
   await page.getByLabel('Fact name',{exact:true}).fill('firstName');
@@ -56,6 +58,8 @@ export async function nativeFactsBrowser(page,root,fixture,buildRoot) {
   await page.getByLabel('title',{exact:true}).fill('Engineer');
   await page.getByRole('button',{name:'Save facts',exact:true}).click();
   await page.getByText('Facts saved.',{exact:true}).waitFor();
+  assert.equal(await page.getByLabel('Group label',{exact:true}).count(),0,'new-group form stays collapsed until requested');
+  await page.getByRole('button',{name:'New group',exact:true}).click();
   await page.getByLabel('Group label',{exact:true}).fill('Contact');
   await page.getByLabel('Fact paths, one per line',{exact:true}).fill('/firstName\n/phone ');
   await page.getByRole('button',{name:'Save group',exact:true}).click();

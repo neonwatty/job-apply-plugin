@@ -165,11 +165,11 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
                 <button className="primary" data-job-create disabled={busy || transitionBusy || claimsActive} onClick={() => open(null)}>New job</button>
             </div>
         </header>
-        <div className="pipeline-metrics" aria-label="Pipeline summary">
+        {allJobs.length > 0 && <div className="pipeline-metrics" aria-label="Pipeline summary">
             <div><strong>{allJobs.length}</strong><span>Active jobs</span></div>
             <div><strong>{readyJobs}</strong><span>Ready for agent</span></div>
             <div><strong>{attentionJobs}</strong><span>Need information</span></div>
-        </div>
+        </div>}
         <div className="workspace-panel jobs-panel">
             <div className="workspace-panel-heading">
                 <div><p className="eyebrow">Pipeline</p><h2>Jobs</h2></div>

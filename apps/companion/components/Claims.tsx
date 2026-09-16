@@ -24,6 +24,7 @@ export function Claims({ client, jobs, disabled, changed, activityChanged, navig
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
     const [owned, setOwned] = useState(false);
+    const [setupOpen, setSetupOpen] = useState(false);
     const [heartbeatSeconds, setHeartbeatSeconds] = useState(60);
     const credential = useRef<{ token: string; job: Job; claimId: string } | null>(null);
     const alive = useRef(false);
@@ -124,28 +125,35 @@ export function Claims({ client, jobs, disabled, changed, activityChanged, navig
         setSelected(jobs.find(item => item.id === id) ?? null); setError(''); setNotice('');
     }
     const blocked = disabled || busy || !loaded;
-    return <section aria-label="Active application">
-        <h2>Active application</h2>
-        <p>Only one application can be claimed at a time. Final submission remains yours.</p>
-        <button disabled={busy} onClick={() => void refresh()}>Refresh application status</button>
+    const claimedJob = claim ? jobs.find(job => job.id === claim.jobId) : null;
+    const claimName = claimedJob ? String(claimedJob.role || claimedJob.url) : 'Selected job';
+    return <section className="application-control workspace-panel" aria-label="Active application">
+        <div className="application-control-heading">
+            <div><p className="eyebrow">Application agent</p><h2>{claim ? claimName : 'Start an application'}</h2>
+                <p>{claim ? 'Application work is active for this job.' : 'Choose a prepared job when you are ready to begin. Final submission remains yours.'}</p></div>
+            <button className="secondary" disabled={busy} onClick={() => void refresh()}>Refresh application status</button>
+        </div>
         {error && <p role="alert">{error}</p>}
         {notice && <p role="status">{notice}</p>}
-        {loaded && !claim && <p>No active application claim.</p>}
-        {claim && <p>Claimed job: {claim.jobId}. Owner: {claim.ownerLabel}. {claim.expired ? 'Expired' : 'Lease expires'}: {claim.expiresAt}.</p>}
-        {claim && !owned && !claim.expired && <p>This view does not hold the claim credential. After reload or navigation, wait for expiry, refresh status, and explicitly recover the same job.</p>}
-        {owned && <p>This view renews the claim automatically. Keep it open until you hand off; leaving loses its credential.</p>}
-        <label>Claim owner label<input value={owner} onChange={event => setOwner(event.target.value)} disabled={busy || owned} /></label>
-        {!claim && <>
-            <label>Job for application work<select aria-label="Job for application work" style={{ maxWidth: '100%' }} value={selected?.id ?? ''} disabled={blocked} onChange={event => void choose(event.target.value)}>
+        {loaded && !claim && <p className="application-state">No active application claim.</p>}
+        {!claim && !jobs.length && loaded && <div className="application-empty"><strong>No prepared jobs yet.</strong><span>Add a job and complete its required information before starting an application.</span></div>}
+        {!claim && jobs.length > 0 && !setupOpen && <button className="primary application-start" disabled={blocked} onClick={() => setSetupOpen(true)}>Choose a job to apply</button>}
+        {claim && <div className="application-state-card"><span className={`status-pill ${claim.expired ? 'status-needs_info' : 'status-in_progress'}`}>{claim.expired ? 'Expired' : 'In progress'}</span><div><strong>{claimName}</strong><span>Working as {claim.ownerLabel} · {claim.expired ? 'Expired' : 'Lease expires'} {claim.expiresAt}</span></div></div>}
+        {claim && !owned && !claim.expired && <p className="application-guidance">This browser no longer holds the application credential. Wait for the lease to expire, refresh the status, then recover this job.</p>}
+        {owned && <p className="application-guidance">This page keeps the application active while it remains open. Return it when you need to provide more information.</p>}
+        {!claim && setupOpen && <div className="application-setup">
+            <label>Job<select aria-label="Job for application work" value={selected?.id ?? ''} disabled={blocked} onChange={event => void choose(event.target.value)}>
                 <option value="">Choose a job…</option>
-                {jobs.map(item => <option key={item.id} value={item.id}>{String(item.role || item.url)} · {item.status} · revision {item.revision}</option>)}
+                {jobs.map(item => <option key={item.id} value={item.id}>{String(item.role || item.url)} · {item.status.replaceAll('_', ' ')}</option>)}
             </select></label>
-            {selected && <p>Selected revision {selected.revision}. Refresh the jobs list and choose again after a conflict.</p>}
-            <button disabled={blocked || !selected} onClick={() => void action('select')}>Select this job</button>{' '}
-            <button disabled={blocked || selected?.status !== 'ready' || !owner.trim()} onClick={() => void action('acquire')}>Acquire application work</button>
-            {selected?.status === 'awaiting_review' && <button disabled={blocked || !owner.trim()} onClick={() => void action('review-restart')}>Restart reviewed application</button>}
-        </>}
-        {claim?.expired && <button disabled={blocked || !owner.trim()} onClick={() => void action('recover')}>Recover expired application</button>}
-        {owned && !claim?.expired && <button disabled={blocked} onClick={() => void action('handoff')}>Return for owner input</button>}
+            {selected && <p className="application-readiness">Status: <strong>{selected.status.replaceAll('_', ' ')}</strong>{selected.status !== 'ready' && selected.status !== 'awaiting_review' ? '. Finish preparing this job before starting.' : '.'}</p>}
+            <details className="application-settings"><summary>Application settings</summary><label>Agent label<input value={owner} onChange={event => setOwner(event.target.value)} disabled={busy || owned} /></label></details>
+            <div className="button-row"><button className="secondary" disabled={blocked || !selected} onClick={() => void action('select')}>Confirm selected job</button>
+            <button className="primary" disabled={blocked || selected?.status !== 'ready' || !owner.trim()} onClick={() => void action('acquire')}>Start application</button>
+            {selected?.status === 'awaiting_review' && <button className="primary" disabled={blocked || !owner.trim()} onClick={() => void action('review-restart')}>Restart reviewed application</button>}
+            <button className="text-action" disabled={busy} onClick={() => { setSetupOpen(false); setSelected(null); }}>Cancel</button></div>
+        </div>}
+        {claim?.expired && <div className="application-actions"><details className="application-settings"><summary>Recovery settings</summary><label>Agent label<input value={owner} onChange={event => setOwner(event.target.value)} disabled={busy || owned} /></label></details><button className="primary" disabled={blocked || !owner.trim()} onClick={() => void action('recover')}>Recover expired application</button></div>}
+        {owned && !claim?.expired && <div className="application-actions"><button className="primary" disabled={blocked} onClick={() => void action('handoff')}>Return for owner input</button></div>}
     </section>;
 }

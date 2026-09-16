@@ -21,6 +21,7 @@ export async function reviewRestartBrowser(page, jobId) {
     const panel = page.getByRole('region', { name: 'Active application', exact: true });
     const choice = panel.getByRole('combobox', { name: 'Job for application work', exact: true });
     await panel.getByText('No active application claim.', { exact: true }).waitFor();
+    await panel.getByRole('button', { name: 'Choose a job to apply', exact: true }).click();
     await choice.selectOption(jobId);
     const restart = panel.getByRole('button', { name: 'Restart reviewed application', exact: true });
 
@@ -53,6 +54,7 @@ export async function reviewRestartBrowser(page, jobId) {
     assert.equal((await api('/api/claims')).claim, null);
     await page.reload();
     await panel.getByText('No active application claim.', { exact: true }).waitFor();
+    await panel.getByRole('button', { name: 'Choose a job to apply', exact: true }).click();
     await choice.selectOption(jobId);
 
     const acquired = page.waitForResponse(response => response.url().endsWith('/api/claims/review-restart'));

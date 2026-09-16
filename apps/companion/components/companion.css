@@ -266,6 +266,9 @@ button:disabled { cursor:wait;opacity:.58 }
 .workspace-hero-copy { max-width:760px }
 .workspace-hero-copy p:not(.eyebrow) { max-width:650px;margin:.85rem 0 0;color:var(--muted);font-size:1.02rem;line-height:1.65 }
 .workspace-hero-actions { display:flex;flex-wrap:wrap;gap:.65rem }
+.jobs-workspace>.workspace-hero,.facts-workspace>.workspace-hero { align-items:center;padding:2rem 0 1.25rem }
+.jobs-workspace>.workspace-hero h1,.facts-workspace>.workspace-hero h1 { font-size:clamp(2rem,4.5vw,3.4rem) }
+.jobs-workspace>.workspace-hero .workspace-hero-copy p:not(.eyebrow),.facts-workspace>.workspace-hero .workspace-hero-copy p:not(.eyebrow) { margin-top:.55rem;line-height:1.5 }
 .pipeline-metrics { display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem }
 .pipeline-metrics>div {
   display:grid;
@@ -359,19 +362,21 @@ footer { display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.5rem }
   border-radius:18px;
   background:#edf6f0
 }
-.facts-organizer-heading { display:flex;justify-content:space-between;align-items:end;gap:1.5rem }
+.facts-organizer-heading { display:flex;justify-content:space-between;align-items:center;gap:1.5rem }
 .facts-organizer-heading h2 { margin:.2rem 0 .35rem;font:500 clamp(1.4rem,3vw,2rem) Georgia,serif }
 .facts-organizer-heading p:not(.eyebrow),.fact-group-editor>fieldset>p { margin:.2rem 0;color:var(--muted);line-height:1.5 }
 .fact-group-list { list-style:none;display:grid;gap:.6rem;margin:1rem 0 0;padding:0 }
 .fact-group-list li { display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.8rem 1rem;border:1px solid #c9ddd3;border-radius:12px;background:rgba(255,254,249,.78) }
 .fact-group-list li>div:first-child { display:grid;gap:.2rem;min-width:0 }
 .fact-group-list span { overflow-wrap:anywhere;color:var(--muted);font-size:.78rem }
-.facts-groups-empty { margin:1rem 0 0;color:var(--muted) }
+.facts-groups-empty { display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:1rem 0 0;color:var(--muted) }
+.facts-groups-empty p { margin:0 }
 .fact-group-editor { margin-top:1rem;padding-top:1rem;border-top:1px solid #c9ddd3 }
 .fact-group-editor legend { font:600 1.05rem Georgia,serif }
 .fact-group-fields { display:grid;grid-template-columns:minmax(180px,.65fr) minmax(260px,1.35fr);gap:1rem;margin:1rem 0 }
 .fact-group-fields textarea { min-height:82px }
-.facts-panel { margin-top:0 }
+.facts-panel { margin-top:0;padding-bottom:.5rem }
+.facts-heading-actions { display:flex;align-items:center;gap:.75rem }
 .facts-revision { margin:0 0 .35rem;color:var(--muted);font-size:.8rem;font-weight:750;white-space:nowrap }
 .facts-filter { display:flex;align-items:end;gap:1rem;margin:1.25rem 0 }
 .facts-filter label { flex:1 }
@@ -387,9 +392,28 @@ footer { display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.5rem }
 .fact-add-panel legend { padding:0 .4rem;font:600 1.15rem Georgia,serif }
 .fact-add-panel>p { margin:.1rem 0 1rem;color:var(--muted);font-size:.84rem }
 .fact-add-grid { display:grid;grid-template-columns:minmax(180px,1fr) minmax(160px,.75fr) auto;align-items:end;gap:.8rem }
-.facts-actions { display:flex;justify-content:flex-end;gap:.65rem;margin-top:1.25rem }
+.facts-actions { position:sticky;z-index:2;bottom:0;display:flex;justify-content:flex-end;gap:.65rem;margin:1.25rem -1rem 0;padding:.85rem 1rem;border-top:1px solid var(--line);background:rgba(255,254,249,.94);backdrop-filter:blur(12px) }
 .facts-empty { min-height:160px;padding-block:2rem }
 .facts-empty p { margin:0 }
+.application-control { display:grid;gap:1rem;margin-top:1rem;padding:1.35rem 1.5rem }
+.application-control-heading { display:flex;align-items:center;justify-content:space-between;gap:1.5rem }
+.application-control-heading h2 { margin:.2rem 0 .3rem;font:500 clamp(1.4rem,3vw,2rem) Georgia,serif }
+.application-control-heading p:not(.eyebrow) { margin:0;color:var(--muted);line-height:1.5 }
+.application-state { margin:0;color:var(--muted);font-size:.84rem }
+.application-empty { display:grid;gap:.3rem;padding:1rem;border:1px dashed var(--line);border-radius:12px;background:#f8faf6;color:var(--muted) }
+.application-empty strong { color:var(--ink) }
+.application-start { justify-self:start }
+.application-setup { display:grid;gap:.9rem;padding:1rem;border:1px solid var(--line);border-radius:14px;background:#f8faf6 }
+.application-readiness { margin:0;color:var(--muted);font-size:.84rem }
+.application-settings { color:var(--muted);font-size:.82rem }
+.application-settings summary { cursor:pointer;color:var(--green);font-weight:800 }
+.application-settings label { max-width:360px;margin-top:.75rem }
+.application-state-card { display:flex;align-items:center;gap:.9rem;padding:1rem;border:1px solid #c9ddd3;border-radius:13px;background:#edf6f0 }
+.application-state-card>.status-pill { justify-self:auto }
+.application-state-card>div { display:grid;gap:.2rem }
+.application-state-card span:not(.status-pill) { color:var(--muted);font-size:.78rem }
+.application-guidance { margin:0;color:var(--muted);line-height:1.5 }
+.application-actions { display:flex;align-items:end;justify-content:space-between;gap:1rem }
 .resume-metrics { display:grid;grid-template-columns:.55fr .55fr 1.4fr;gap:1rem;margin-bottom:1rem }
 .resume-metrics>div { display:grid;gap:.25rem;min-height:104px;padding:1.2rem 1.35rem;border:1px solid rgba(23,34,29,.08);border-radius:16px;background:rgba(255,254,249,.82) }
 .resume-metrics strong { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:500 1.8rem Georgia,serif }
@@ -529,6 +553,7 @@ footer { display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.5rem }
   .form-grid { grid-template-columns:1fr }
   .notice dl>div { grid-template-columns:1fr }
   .facts-organizer-heading,.fact-group-list li { align-items:stretch;flex-direction:column }
+  .facts-groups-empty,.facts-heading-actions,.application-control-heading,.application-actions { align-items:stretch;flex-direction:column }
   .fact-group-fields,.fact-add-grid { grid-template-columns:1fr }
   .facts-filter { align-items:stretch;flex-direction:column }
   .facts-filter span { padding-bottom:0 }

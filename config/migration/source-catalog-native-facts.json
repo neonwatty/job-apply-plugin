@@ -3,7 +3,7 @@
   "sources": [
     {
       "path": "apps/companion/components/FactGroups.tsx",
-      "sha256": "dc877b9b4c60873b89b387ede6aa008ca30a4de6f1dc751e9f9b6735b2704d48",
+      "sha256": "8756f6da4e1ccd220d4538f67fdc82a028c98159fa2a382d0a48d1784dc6ba9c",
       "classification": "unreviewed"
     },
     {
@@ -13,7 +13,7 @@
     },
     {
       "path": "apps/companion/components/Facts.tsx",
-      "sha256": "e1cb7b5816a67f06aed1377afea3d5ccb6526341fb89cea711a015f65563107f",
+      "sha256": "d65f76ba09f2b729a2052b64e87b9b23f92decfd19402d0a708da00ed7b485a8",
       "classification": "unreviewed"
     },
     {
