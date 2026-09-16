@@ -12,6 +12,11 @@ async function capture(page, name) {
 export async function nextSetupAndLoading(page, url) {
   await page.getByRole('heading', { name: 'Local foundation', exact: true }).waitFor();
   await capture(page, 'overview-desktop.png');
+  await page.evaluate(() => scrollTo(0, 0));
+  await page.getByRole('button', { name: 'Answers', exact: true }).click();
+  assert.equal(await page.evaluate(() => scrollY), 0,
+    'workspace navigation moves focus without pulling the page down to main');
+  await page.getByRole('button', { name: 'Overview', exact: true }).click();
   for (const [label, section] of [['Edit Facts', 'facts'], ['Manage Resumes', 'resumes']]) {
     const control = page.getByRole('button', { name: label, exact: true });
     await control.waitFor();
