@@ -252,12 +252,14 @@ def run(root: Path, smoke_root: Path) -> None:
     application_skill = skill_text(root / "skills/job-apply/SKILL.md")
     workspace_skill = skill_text(root / "skills/job-workspace/SKILL.md")
     answer_memory_skill = skill_text(root / "skills/answer-memory/SKILL.md")
-    for skill in expected:
+    for skill in expected - {"job-workspace"}:
         content = (root / "skills" / skill / "SKILL.md").read_text()
-        if "job-apply-store.py" not in content:
-            raise SystemExit(f"skills/{skill}/SKILL.md does not use the shared storage helper")
+        if "apps/companion/command.mjs" not in content:
+            raise SystemExit(f"skills/{skill}/SKILL.md does not use the native command router")
+    if "apps/companion/launch.mjs" not in workspace_skill:
+        raise SystemExit("job-workspace skill does not use the native Companion launcher")
     for required_root_contract in (
-        "<plugin-root>/scripts/job-apply-store.py",
+        "<plugin-root>/apps/companion/command.mjs",
         "PLUGIN_ROOT",
         "CLAUDE_PLUGIN_ROOT",
     ):
