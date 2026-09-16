@@ -19,7 +19,9 @@ FILES = FIXED + ['runtime/nested/codec.js', 'scripts/job_apply_store/io.py',
                  'apps/companion/.next/standalone/apps/companion/server.js',
                  'apps/companion/.next/standalone/node_modules/next/package.json',
                  'native/packaged-lock/darwin-arm64-napi8/flock.node',
-                 'native/packaged-lock/darwin-arm64-napi8/receipt.json']
+                 'native/packaged-lock/darwin-arm64-napi8/receipt.json',
+                 'native/packaged-lock/linux-x64-napi8/flock.node',
+                 'native/packaged-lock/linux-x64-napi8/receipt.json']
 STAMP = 1700000000000000000
 
 

@@ -67,20 +67,21 @@ for (const command of ['native-jobs.js', 'native-task.js']) {
   });
 }
 
-// Copy tracked source-package assets, without assembling or compiling an addon.
+// Copy tracked source-package assets, including the reviewed host addons.
 async function sourcePackage(t) {
-  const home = await mkdtemp(join(tmpdir(), 'source-install-'));
+  const home = await realpath(await mkdtemp(join(tmpdir(), 'source-install-')));
   t.after(() => rm(home, { recursive: true, force: true }));
   const plugin = join(home, 'plugin');
   const repository = fileURLToPath(new URL('../', import.meta.url));
-  const paths = spawnSync('git', ['ls-files', '-z', 'scripts', 'skills', 'runtime', 'native', 'qa', 'package.json'],
+  const paths = spawnSync('git', ['ls-files', '-z', 'apps/companion', 'scripts', 'skills', 'runtime', 'native', 'qa', 'package.json'],
     { cwd: repository, encoding: 'utf8' });
   assert.equal(paths.status, 0, paths.stderr);
   for (const path of paths.stdout.split('\0').filter(Boolean)) {
     await mkdir(join(plugin, path, '..'), { recursive: true });
     await cp(join(repository, path), join(plugin, path));
   }
-  assert.deepEqual(await readdir(join(plugin, 'native/packaged-lock')), ['README.md']);
+  assert.deepEqual((await readdir(join(plugin, 'native/packaged-lock'))).sort(),
+    ['README.md', 'darwin-arm64-napi8', 'linux-x64-napi8']);
   const python = spawnSync('python3', ['-c', 'import sys; print(sys.executable)'], { encoding: 'utf8' });
   assert.equal(python.status, 0, python.stderr);
   const invoke = (executable, path, args) => spawnSync(executable, [join(plugin, path), ...args], {
@@ -92,9 +93,9 @@ async function sourcePackage(t) {
     python: args => invoke(python.stdout.trim(), 'scripts/job-apply-store.py', args),
     async documented(document, command, args = [], documentedCommand = command) {
       const text = await readFile(join(plugin, document), 'utf8');
-      const match = text.match(new RegExp('(node|python3) "<plugin-root>/([^"\\n]+)"(?: \\[--root <resolved-root>\\])? ' + documentedCommand + '(?: |\\n|$)'));
+      const match = text.match(new RegExp('node "<plugin-root>/(apps/companion/command\\.mjs)" (store|task|attempt|policy)(?: \\[--root <resolved-root>\\])? ' + documentedCommand + '(?: |`|\\n|$)'));
       assert.ok(match, `missing documented ${documentedCommand} invocation in ${document}`);
-      return invoke(match[1] === 'node' ? process.execPath : python.stdout.trim(), match[2], [command, ...args]);
+      return invoke(process.execPath, match[1], [match[2], command, ...args]);
     },
   };
 }
@@ -105,7 +106,7 @@ function succeeded(result) {
 }
 
 for (const existing of [false, true]) {
-  test(`source marketplace commands support ${existing ? 'an existing Python' : 'a fresh'} Store without native assembly`, async t => {
+  test(`source marketplace commands support ${existing ? 'an existing Python' : 'a fresh'} Store from reviewed native artifacts`, async t => {
     const installed = await sourcePackage(t);
     if (existing) {
       succeeded(installed.python(['init']));
@@ -121,7 +122,8 @@ for (const existing of [false, true]) {
     const snapshot = succeeded(await installed.documented('skills/job-apply/references/intake.md', 'snapshot', [], 'intake'));
     assert.equal(snapshot.ok, true);
     if (existing) assert.equal(await readFile(profilePath, 'utf8'), before);
-    assert.equal((await readdir(join(installed.home, '.job-apply'))).some(name => name.includes('native')), false);
+    assert.ok((await readdir(join(installed.home, '.job-apply'))).includes('.native-store-clone'));
+    assert.ok((await readdir(installed.home)).includes('.job-apply.python-rollback'));
     const path = join(installed.home, 'resume.txt');
     await writeFile(path, 'Synthetic source package resume', { mode: 0o600 });
     const input = join(installed.home, 'resume-input.json');

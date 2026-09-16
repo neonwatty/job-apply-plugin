@@ -1,49 +1,31 @@
 # Controlled writer routing and rollback
 
-The Companion launcher now selects one Store writer explicitly. `python` remains
-the default. `native-fixture` accepts only an initialized synthetic fixture, and
-`native-clone` accepts only a prepared canonical clone. Assembled plugin copies
-contain one host-specific Node-API 8 lock provider with a receipt binding its
-source and artifact hashes. Native routes verify and select that provider by
-default. `--native-lock` remains an explicit development-fixture override. The
-legacy `--native-jobs-fixture` option is retained as an exact alias for
-`native-fixture`, but it cannot be combined with the new writer or lock options.
+The ordinary Companion and command router select the native canonical Store.
+Each supported package carries a host-specific Node-API 8 lock provider with a
+receipt binding its source and artifact hashes. Native routes verify that
+provider before touching the Store. `--native-lock` remains a development
+fixture override on the lower-level CLIs.
 
-Before starting either Store server, the launcher checks the root's ownership
-marker. Python is rejected for native fixtures and canonical clones. A native
-route is rejected when its expected marker is missing, invalid, or conflicts
-with another marker. This prevents a launcher restart from silently assigning
-the other runtime to the same writable directory.
+Before activation, the process-owned writer controller holds a Store-lifetime
+ownership lease and the router holds attempt exclusion. It prepares a complete
+clone under Store locks, verifies source and candidate digests, retains the
+original directory under the deterministic rollback name, and selects the clone
+with same-parent renames. Fresh Stores use the same preparation and activation
+machinery. Recovery accepts only unambiguous interruption states and fails
+closed on extra or conflicting directories.
 
-The installed-package rehearsal prepares a disposable native candidate and
-switches the stable Store path to it. It starts the actual installed
-`apps/companion/launch.mjs --writer native-clone` with the packaged provider,
-using a private empty `PATH` that cannot resolve `python` or `python3`. The smoke
-requires HTML from the Next origin and native `/api/boot`, creates a synthetic
-job, stops the Companion, and checks the job survives a fresh Companion launch.
-It then stops the Companion before rolling the stable path back to the unchanged
-Python directory. A separately bounded `--writer python` server check uses the
-normal environment and confirms the canonical job survives without the native
-job; a file digest snapshot confirms exact original Store bytes. The retained
-native directory is reopened through the installed Companion with the same empty
-`PATH`, proving its post-write state remains available.
+The Store, task, attempt, and final-action policy surfaces all pass through the
+same installed router. The workspace launcher uses the same native activation
+path. A command cannot fall back to Python after activation, and ownership
+markers prevent the current launcher from assigning Python to a native clone.
 
-This closes the [installed native Companion candidate](installed-native-companion-candidate.md)
-only for explicit disposable clones. Shipped skills and the ordinary Companion
-default continue to select Python. Native default activation requires
-process-owned quiescence plus closure of the attempt broker, final-action policy,
-and missing native Store commands.
+Explicit rollback stops the complete owned native process group before the
+first rename, preserves the post-write native directory for diagnosis, and
+restores the exact retained Python directory at the stable path. Python remains
+available for that bounded compatibility operation and repository validation;
+it is no longer the ordinary writer.
 
-The disposable switch rehearsal gives the canonical Store one stable path. Its
-[process-owned quiescence controller](process-owned-writer-quiescence.md) starts
-the selected writer while holding a Store-lifetime ownership lease. It proves
-that the complete owned process group is gone before the first rename. It then
-verifies that the prepared clone still matches the
-Python source digest, retains the Python directory under a deterministic rollback
-name, and selects the clone with same-parent renames. Rollback retains the
-post-write native directory for diagnosis and restores the exact Python directory
-at the stable path. Recovery recognizes each unambiguous interruption state and
-fails closed on any extra or conflicting directory. The switch lock serializes
-rehearsal controllers. Failed switching or replacement startup recovers an
-unambiguous Store state and restarts the matching writer before returning the
-failure. Installed defaults and live Stores are unchanged.
+Installed tests run the production launcher and documented command surfaces
+with an empty `PATH`, cover fresh and Python-created Stores, verify restart
+durability, and compare rollback bytes. Unsupported platforms and invalid or
+missing packaged artifacts fail before activation.

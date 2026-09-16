@@ -1,16 +1,16 @@
 ## Profile and preferences
 
 ```bash
-python3 "<plugin-root>/scripts/job-apply-store.py" profile-get
-python3 "<plugin-root>/scripts/job-apply-store.py" profile-inspect
-python3 "<plugin-root>/scripts/job-apply-store.py" profile-replace \
+node "<plugin-root>/apps/companion/command.mjs" store profile-get
+node "<plugin-root>/apps/companion/command.mjs" store profile-inspect
+node "<plugin-root>/apps/companion/command.mjs" store profile-replace \
   --input <profile.json> --expected-revision <revision> \
   --source <user|resume|agent|migration>
-python3 "<plugin-root>/scripts/job-apply-store.py" profile-patch \
+node "<plugin-root>/apps/companion/command.mjs" store profile-patch \
   --input <patch.json> --expected-revision <revision> \
   --source <user|resume|agent|migration>
-python3 "<plugin-root>/scripts/job-apply-store.py" preferences-get
-python3 "<plugin-root>/scripts/job-apply-store.py" preferences-set \
+node "<plugin-root>/apps/companion/command.mjs" store preferences-get
+node "<plugin-root>/apps/companion/command.mjs" store preferences-set \
   --input <preferences.json> --expected-revision <revision> \
   --source <user|resume|agent|migration> [--replace]
 ```
@@ -35,12 +35,12 @@ unique case-insensitively; create, update, and delete use the versioned
 `fact-groups.json` document, and existing-group writes require the exact revision.
 
 ```bash
-python3 "<plugin-root>/scripts/job-apply-store.py" fact-group-list
-python3 "<plugin-root>/scripts/job-apply-store.py" fact-group-get --id <group-id>
-python3 "<plugin-root>/scripts/job-apply-store.py" fact-group-create --input <group.json>
-python3 "<plugin-root>/scripts/job-apply-store.py" fact-group-update \
+node "<plugin-root>/apps/companion/command.mjs" store fact-group-list
+node "<plugin-root>/apps/companion/command.mjs" store fact-group-get --id <group-id>
+node "<plugin-root>/apps/companion/command.mjs" store fact-group-create --input <group.json>
+node "<plugin-root>/apps/companion/command.mjs" store fact-group-update \
   --id <group-id> --expected-revision <revision> --input <patch.json>
-python3 "<plugin-root>/scripts/job-apply-store.py" fact-group-delete \
+node "<plugin-root>/apps/companion/command.mjs" store fact-group-delete \
   --id <group-id> --expected-revision <revision>
 ```
 

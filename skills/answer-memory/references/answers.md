@@ -12,7 +12,7 @@ Answer states have distinct behavior:
 Look up the exact question and relevant scope before filling:
 
 ```bash
-python3 "<plugin-root>/scripts/job-apply-store.py" answer-find \
+node "<plugin-root>/apps/companion/command.mjs" store answer-find \
   --question "Are you authorized to work in the United States?" \
   --scope '{"country":"US"}'
 ```
@@ -26,25 +26,25 @@ the helper. Existing records without explicit revisions are exposed as revision
 1 and gain durable revision metadata on their next mutation.
 
 ```bash
-python3 "<plugin-root>/scripts/job-apply-store.py" answer-list [--state <state>] \
+node "<plugin-root>/apps/companion/command.mjs" store answer-list [--state <state>] \
   [--review-status <accepted|pending|declined> | --all-review-statuses] \
   [--query <text>] [--offset <n>] [--limit <n>] \
   [--include-trashed] [--trashed-only]
-python3 "<plugin-root>/scripts/job-apply-store.py" answer-observe --input <observation.json>
-python3 "<plugin-root>/scripts/job-apply-store.py" answer-review \
+node "<plugin-root>/apps/companion/command.mjs" store answer-observe --input <observation.json>
+node "<plugin-root>/apps/companion/command.mjs" store answer-review \
   --key <answer-key> --decision <accepted|declined> \
   --expected-revision <revision> [--input <patch.json>] [--remember-sensitive]
-python3 "<plugin-root>/scripts/job-apply-store.py" answer-reveal --key <answer-key>
-python3 "<plugin-root>/scripts/job-apply-store.py" answer-update \
+node "<plugin-root>/apps/companion/command.mjs" store answer-reveal --key <answer-key>
+node "<plugin-root>/apps/companion/command.mjs" store answer-update \
   --key <answer-key> --expected-revision <revision> --input <patch.json>
-python3 "<plugin-root>/scripts/job-apply-store.py" answer-merge \
+node "<plugin-root>/apps/companion/command.mjs" store answer-merge \
   --winner-key <accepted-winner-key> --source-key <active-duplicate-key> \
   --expected-winner-revision <revision> --expected-source-revision <revision>
-python3 "<plugin-root>/scripts/job-apply-store.py" answer-trash \
+node "<plugin-root>/apps/companion/command.mjs" store answer-trash \
   --key <answer-key> --expected-revision <revision>
-python3 "<plugin-root>/scripts/job-apply-store.py" answer-restore \
+node "<plugin-root>/apps/companion/command.mjs" store answer-restore \
   --key <answer-key> --expected-revision <revision>
-python3 "<plugin-root>/scripts/job-apply-store.py" answer-delete \
+node "<plugin-root>/apps/companion/command.mjs" store answer-delete \
   --key <answer-key> --expected-revision <revision>
 ```
 
@@ -64,7 +64,7 @@ Permission to fill is not permission to remember. If the user approves current u
 Persist a non-null sensitive value only after explicit field-specific remember consent in the current interaction:
 
 ```bash
-python3 "<plugin-root>/scripts/job-apply-store.py" answer-put \
+node "<plugin-root>/apps/companion/command.mjs" store answer-put \
   --input <sensitive-answer.json> \
   --remember-sensitive
 ```

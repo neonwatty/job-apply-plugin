@@ -3,6 +3,7 @@ import { lstat, mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promise
 import { isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildNativeLock } from '../../tools/build-native-lock.mjs';
+import { resolvePackagedNativeLock } from '../../runtime/package/native-lock-artifact.js';
 
 const repository = fileURLToPath(new URL('../../', import.meta.url));
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -23,7 +24,9 @@ export async function packageNativeLock(packageRoot) {
   if (await realpath(parent) !== parent) throw new Error('Package native lock destination is invalid');
   const outputDirectory = join(parent, `${process.platform}-${process.arch}-napi8`);
   if (await lstat(outputDirectory).catch(error => error?.code === 'ENOENT' ? null : Promise.reject(error))) {
-    throw new Error('Package already contains a native lock artifact for this host');
+    const artifact = await resolvePackagedNativeLock(root);
+    const receipt = JSON.parse(await readFile(join(outputDirectory, 'receipt.json'), 'utf8'));
+    return { ...receipt, directory: outputDirectory, artifact };
   }
   try {
     const built = await buildNativeLock({ outputDirectory });

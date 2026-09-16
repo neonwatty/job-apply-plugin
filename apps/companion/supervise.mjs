@@ -34,7 +34,9 @@ export function parseSupervisorOptions(args, app) {
   return options;
 }
 export function resolveSupervisorRoot(options, environment = process.env, home = homedir()) {
-  return resolve(options.root ?? environment.JOB_APPLY_STORE_DIR ?? join(home, '.job-apply'));
+  const selected = options.root ?? environment.JOB_APPLY_STORE_DIR ?? join(home, '.job-apply');
+  const expanded = selected === '~' || selected.startsWith('~/') ? home + selected.slice(1) : selected;
+  return resolve(expanded);
 }
 async function existing(path) { return lstat(path).then(() => true).catch(error => {
   if (error?.code === 'ENOENT') return false; throw error;
@@ -192,6 +194,34 @@ export async function runSupervisor(options, { signal } = {}) {
     return { controller, line, completion };
   } catch (error) { await controller?.stop().catch(() => {}); throw error; }
   finally { await exclusion.release(); }
+}
+
+/** Performs the one-time Store switch for ordinary native CLI entry points. */
+export async function activateStoreForCli(options, { signal } = {}) {
+  const root = resolveSupervisorRoot(options), nativeLock = options.nativeLock ?? await resolvePackagedNativeLock(options.pluginRoot);
+  signal?.throwIfAborted(); await validateSupervisorRoot(root);
+  const provider = loadPosixFlockProvider(nativeLock);
+  if (await existing(join(root, '.native-store-clone'))) {
+    if (await recoverNativeWriterSwitch(root, { provider, signal }) !== 'native') throw new Error('native Store is not active');
+    return root;
+  }
+  const exclusion = await acquireAttemptExclusion(root, provider);
+  const controller = new ProcessOwnedWriterController({ active: root, provider,
+    createSpec: () => { throw new Error('CLI activation does not start a writer'); } });
+  try {
+    const prepared = await controller.prepare(() => prepareNativeDefault(root, provider, { signal }));
+    if (prepared.mode === 'python') {
+      if (prepared.durablePythonRollback) throw new Error('native rollback is active');
+      try { await controller.activateQuiescent({ signal }); }
+      catch (error) {
+        if (await recoverNativeWriterSwitch(root, { provider }).catch(() => null) === 'native') {
+          await writeFile(failedActivationMarker(root), 'rollback required\n', { mode: 0o600 });
+        }
+        throw error;
+      }
+    }
+    return root;
+  } finally { await controller.stop().catch(() => {}); await exclusion.release(); }
 }
 export async function superviseMain(args = process.argv.slice(2), app = dirname(fileURLToPath(import.meta.url))) {
   let running;

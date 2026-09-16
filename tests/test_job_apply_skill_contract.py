@@ -52,13 +52,13 @@ class JobApplySkillContractTests(unittest.TestCase):
 
     def test_attempt_helper_surface_remains_closed(self):
         invocations = re.findall(
-            r"job-apply-attempt\.py[^`\n]*?\s(start|heartbeat|progress|handoff)(?:\s|`)",
+            r"command\.mjs\" attempt[^`\n]*?\s(start|heartbeat|progress|handoff)(?:\s|`)",
             self.skill,
         )
         self.assertTrue(invocations)
         self.assertEqual(set(invocations), {"start", "heartbeat", "progress", "handoff"})
         for forbidden in (" stop", " abort", " release", " recover", " adopt"):
-            self.assertNotRegex(self.skill, rf"job-apply-attempt\.py[^`\n]*{forbidden}\b")
+            self.assertNotRegex(self.skill, rf"command\.mjs\" attempt[^`\n]*{forbidden}\b")
 
     def test_readme_documents_detached_broker_not_attached_stdin_process(self):
         for required in (

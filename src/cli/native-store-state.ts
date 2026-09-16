@@ -48,7 +48,7 @@ async function input(context: NativeStoreStateCommandContext, path: string): Pro
   try { return await context.readInput(path); }
   catch { throw new JobsError('input is not a readable JSON object'); }
 }
-function withoutPath(payload: Value): { metadata: Document; path: string } {
+export function resumeInputWithoutPath(payload: Value): { metadata: Document; path: string } {
   const source = object(payload, 'resume input'), path = string(get(source, 'path'));
   if (path === null) throw new JobsError('resume path must be a string');
   const metadata = copy(source); metadata.delete(text('path'));
@@ -69,7 +69,7 @@ export async function runNativeStoreStateCommand(command: string, args: string[]
     case 'session-list': return sessions.list();
     case 'session-delete': return sessions.delete(required('--id'));
     case 'resume-create': {
-      const { metadata, path } = withoutPath(await input(context, required('--input')));
+      const { metadata, path } = resumeInputWithoutPath(await input(context, required('--input')));
       if (!context.readResumePath) throw new JobsError('native resume path reader is required');
       return context.repository.resumeImport(metadata, basename(path), await context.readResumePath(path), true);
     }
