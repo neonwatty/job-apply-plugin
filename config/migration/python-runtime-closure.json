@@ -37,12 +37,6 @@
       "role": "contract-helper",
       "state": "typescript-fixture-only",
       "replacement": "runtime/contracts/workspace/claim-session-readiness.js"
-    },
-    {
-      "path": "scripts/qa-replay.py",
-      "role": "qa",
-      "state": "python-required",
-      "replacement": null
     }
   ],
   "packagedPythonTrees": [

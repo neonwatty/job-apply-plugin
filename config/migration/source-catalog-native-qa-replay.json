@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/cli/native-qa-replay.js",
+      "sha256": "ded7591280645578c354b53eef2b4e02aedc031ff42462d7f1b0e46e29183b19",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/qa-replay/auto-submit.js",
+      "sha256": "bd665d58bdd7b23462c82255444212f8ddd0693a9d6a82cbd8aa071ce20ef1fe",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/qa-replay/contracts.js",
+      "sha256": "b773fed16a01a56cc5cc662b15fca47bebfdb17cf1b412633533e14a030962bd",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/qa-replay/coordinator.js",
+      "sha256": "bd44d2b491edebe18c824c8d060cf714e3a9ae8a8e5d7c2148cf10b930b65a4a",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/qa-replay/oracle.js",
+      "sha256": "90a2b1c504818ab2d59b55049a47c1163f7b56f6bfb85a67aab6da65527b0956",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/qa-replay/server.js",
+      "sha256": "551efc2e4afe69f4510bd59ebb66a637d8c8c20805d795e66f62a5233f2382e7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/cli/native-qa-replay.ts",
+      "sha256": "89e36b0cf54ae5271d529072d8a1eb0f8f2a53ae4353f5a7cbf98de412847d19",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/qa-replay/auto-submit.ts",
+      "sha256": "c455aadf493cba81d4da773dd28912864963c98528f1fc234d7a7108d6f4ee77",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/qa-replay/contracts.ts",
+      "sha256": "79a4a0dea50ae9e31922df8249b799b3e00cb7390f71833f1ff1640a0a7d4666",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/qa-replay/coordinator.ts",
+      "sha256": "2fb78be4bc77014ae14523e562c1baebebe62d8ccc3229f85c50f1e87ca42fee",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/qa-replay/oracle.ts",
+      "sha256": "b0875b1c4ceb4e8ea4584d1e3eea4db41ee08142bbf6342a8c8c8e91f1d73967",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/qa-replay/server.ts",
+      "sha256": "a8e3444e8eeaec0a4aa8a17377d0f52c7620886deab991ce098ad874209e4b60",
+      "classification": "unreviewed"
+    }
+  ]
+}
