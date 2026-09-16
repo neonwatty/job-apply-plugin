@@ -262,7 +262,7 @@ chmod 600 ~/.job-apply/resume-extractions.json ~/.job-apply/resume-extraction-jo
 
 On first use, an existing `~/.claude-job-profile.json` is copied into the new versioned profile without modifying or deleting the legacy file. Once `~/.job-apply/profile.json` exists it is authoritative; later legacy-file changes are not re-imported. Verify the new profile before deciding whether to archive or remove the old file.
 
-Ordinary marketplace installs include verified native lock artifacts for the supported macOS arm64 and Linux x64 targets. The first mutating command validates and clones existing canonical state, retains exact Python rollback bytes, atomically activates the native Store, and then routes Store, task, attempt, policy, and Companion operations through TypeScript. See [runtime closure status](docs/migration/python-runtime-closure.md).
+Ordinary marketplace installs include verified native lock artifacts for the supported macOS arm64 and Linux x64 targets. The first mutating command validates and clones existing canonical state, retains a byte-exact migration backup, atomically activates the native Store, and then routes Store, task, attempt, policy, Companion, and QA replay operations through TypeScript. The installed artifact contains no Python files or Python launcher route. See [runtime closure status](docs/migration/python-runtime-closure.md).
 
 All plugin skills access this data through the bundled native command router. Canonical JSON updates are atomic, corrupt or future-version files fail closed, and application history and sessions do not duplicate reusable answer values.
 

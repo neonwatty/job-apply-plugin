@@ -13,25 +13,23 @@ export async function nextSetupAndLoading(page, url) {
   await page.getByRole('heading', { name: 'Local foundation', exact: true }).waitFor();
   await capture(page, 'overview-desktop.png');
   for (const [label, section] of [['Edit Facts', 'facts'], ['Manage Resumes', 'resumes']]) {
-    const link = page.getByRole('link', { name: label, exact: true });
-    await link.waitFor();
-    assert.ok((await link.getAttribute('href')).includes(`workspace=${section}`));
-    await link.click();
-    await page.locator(`#nav-${section}[aria-current]`).waitFor();
+    const control = page.getByRole('button', { name: label, exact: true });
+    await control.waitFor();
+    await control.click();
+    await page.getByRole('button', { name: section[0].toUpperCase() + section.slice(1), exact: true })
+      .and(page.locator('[aria-current="page"]')).waitFor();
     await page.goto(url, { waitUntil: 'networkidle' });
+    await page.getByRole('button', { name: 'Overview', exact: true }).click();
   }
-  // A slow legacy boot must not override a destination the user chose meanwhile.
+  // A slow native boot must not override a destination the user chose meanwhile.
   let bootRelease;
   const bootGate = new Promise(resolve => { bootRelease = resolve; });
   await page.route('**/api/boot', async route => { await bootGate; await route.continue(); });
-  const legacy = new URL(url);
-  const fragment = new URLSearchParams(legacy.hash.slice(1));
-  fragment.set('workspace', 'facts');
-  await page.goto(`${legacy.origin}/legacy/#${fragment}`, { waitUntil: 'domcontentloaded' });
-  await page.locator('#nav-jobs').click();
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  await page.getByRole('button', { name: 'Facts', exact: true }).click();
   bootRelease();
   await page.waitForLoadState('networkidle');
-  assert.equal(await page.locator('#nav-jobs').getAttribute('aria-current'), '');
+  assert.equal(await page.getByRole('button', { name: 'Facts', exact: true }).getAttribute('aria-current'), 'page');
   await page.unroute('**/api/boot');
   await page.goto(url, { waitUntil: 'networkidle' });
   const boot = '**/api/boot';
@@ -41,6 +39,7 @@ export async function nextSetupAndLoading(page, url) {
   await page.unroute(boot);
   await page.getByRole('button', { name: 'Retry connection' }).click();
   await page.getByText('Canonical store connected', { exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Overview', exact: true }).click();
 
   let release;
   const gate = new Promise(resolve => { release = resolve; });

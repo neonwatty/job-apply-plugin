@@ -6,6 +6,7 @@ SMOKE_TEMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/job-apply-smoke.XXXXXX")"
 SMOKE_CLAUDE_CONFIG_DIR="$SMOKE_TEMP_ROOT/claude-config"
 SMOKE_CODEX_HOME="$SMOKE_TEMP_ROOT/codex-home"
 SMOKE_CODEX_UPGRADE_HOME="$SMOKE_TEMP_ROOT/codex-upgrade-home"
+SMOKE_SOURCE_FIXTURE_DIR="$SMOKE_TEMP_ROOT/plugin-source-fixture"
 SMOKE_FIXTURE_DIR="$SMOKE_TEMP_ROOT/plugin-fixture"
 SMOKE_UPGRADE_FIXTURE_DIR="$SMOKE_TEMP_ROOT/plugin-upgrade-fixture"
 
@@ -18,6 +19,7 @@ mkdir -p \
   "$SMOKE_CLAUDE_CONFIG_DIR" \
   "$SMOKE_CODEX_HOME" \
   "$SMOKE_CODEX_UPGRADE_HOME" \
+  "$SMOKE_SOURCE_FIXTURE_DIR" \
   "$SMOKE_FIXTURE_DIR" \
   "$SMOKE_UPGRADE_FIXTURE_DIR"
 
@@ -53,16 +55,18 @@ tar --exclude='./.git' \
   --exclude='./docs/goals' \
   --exclude='./test_resumes' \
   -cf - -C "$REPO_ROOT" . \
-  | tar -xf - -C "$SMOKE_FIXTURE_DIR"
+  | tar -xf - -C "$SMOKE_SOURCE_FIXTURE_DIR"
 echo "Building production Companion inside isolated marketplace fixture"
 (
-  cd "$SMOKE_FIXTURE_DIR"
+  cd "$SMOKE_SOURCE_FIXTURE_DIR"
   npm ci
   npm run companion:build
 )
-rm -rf -- "$SMOKE_FIXTURE_DIR/node_modules"
+rm -rf -- "$SMOKE_SOURCE_FIXTURE_DIR/node_modules"
 echo "Packaging native lock provider for this host"
-node "$REPO_ROOT/scripts/smoke/package_native_lock.mjs" --package-root "$SMOKE_FIXTURE_DIR"
+node "$REPO_ROOT/scripts/smoke/package_native_lock.mjs" --package-root "$SMOKE_SOURCE_FIXTURE_DIR"
+python3 "$REPO_ROOT/scripts/smoke/fixture_build.py" copy-critical \
+  "$SMOKE_SOURCE_FIXTURE_DIR" "$SMOKE_FIXTURE_DIR"
 python3 "$REPO_ROOT/scripts/smoke/fixture_build.py" verify "$SMOKE_FIXTURE_DIR"
 
 echo "Creating isolated prior-version Codex upgrade fixture"
@@ -83,9 +87,9 @@ python3 "$REPO_ROOT/scripts/smoke/upgrade_verify.py" upgrade \
   "$SMOKE_TEMP_ROOT/codex-upgrade-plugin-list.json" "$SMOKE_CODEX_UPGRADE_HOME" \
   "$SMOKE_FIXTURE_DIR"
 
-python3 "$REPO_ROOT/scripts/smoke/workspace_verify.py" "$SMOKE_FIXTURE_DIR" "$SMOKE_TEMP_ROOT"
+python3 "$REPO_ROOT/scripts/smoke/workspace_verify.py" "$SMOKE_SOURCE_FIXTURE_DIR" "$SMOKE_TEMP_ROOT"
 echo "Running Playwright and CLI walkthrough against packaged fixture"
-JOB_WORKSPACE_TEST_ROOT="$SMOKE_FIXTURE_DIR" node --test \
+JOB_WORKSPACE_TEST_ROOT="$SMOKE_SOURCE_FIXTURE_DIR" node --test \
   --test-name-pattern='owner beta clean packaged|real browser and CLI share CRUD|Needs Attention browser and CLI walkthrough' \
   "$REPO_ROOT/tests_js/workspace.test.mjs"
 echo "Selected packaged Playwright and CLI walkthroughs passed"

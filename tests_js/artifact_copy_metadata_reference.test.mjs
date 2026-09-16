@@ -10,8 +10,8 @@ import test from 'node:test';
 
 const driver = fileURLToPath(new URL('../tools/contracts/artifact-copy-metadata/reference.py', import.meta.url));
 const source = new URL('../scripts/smoke/artifacts.py', import.meta.url);
-const files = ['.codex-plugin/plugin.json', 'runtime/data.bin', 'scripts/job-apply-attempt.py',
-  'scripts/job-apply-store.py', 'scripts/job-apply-task.py', 'scripts/job-apply-workspace.py',
+const files = ['.agents/plugins/marketplace.json', '.claude-plugin/marketplace.json',
+  '.claude-plugin/plugin.json', '.codex-plugin/plugin.json', 'package.json', 'runtime/data.bin',
   'skills/answer-memory/SKILL.md', 'skills/job-apply/SKILL.md'];
 const fixtures = [
   ['fractional', '1700000000123456789'], ['negative', '-600'],
@@ -86,7 +86,7 @@ for (const executable of ['python3', 'python3.12', 'python3.13', 'python3.14']) 
       assert.deepEqual(row.sourceAfter, row.sourceBefore);
       const pathSet = new Set();
       for (const prefix of ['source', 'target']) {
-        for (const relative of [...files, 'skills', 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace',
+        for (const relative of [...files, 'skills', 'runtime', 'qa/fixtures', 'qa/scenarios', 'workspace',
           'apps/companion', 'native']) {
           const parts = `${prefix}/${relative}`.split('/');
           for (let length = 1; length <= parts.length; length += 1) pathSet.add(parts.slice(0, length).join('/'));

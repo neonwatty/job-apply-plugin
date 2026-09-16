@@ -4,7 +4,6 @@
 import argparse
 import json
 import os
-import stat
 from pathlib import Path
 
 from artifacts import copy_critical
@@ -35,17 +34,10 @@ def verify_fixture(fixture: Path) -> None:
         except OSError as error:
             raise SystemExit("unable to verify packaged fixture exclusions") from error
         raise SystemExit("packaged fixture contains an excluded private or generated path")
-    launcher = fixture / "scripts" / "qa-chrome.py"
-    try:
-        metadata = launcher.lstat()
-    except OSError as error:
-        raise SystemExit("packaged fixture is missing the replay QA launcher") from error
-    if not os.path.isfile(launcher) or not stat.S_ISREG(metadata.st_mode):
-        raise SystemExit("packaged replay QA launcher must be a regular file")
     for generated in fixture.rglob("*"):
-        if generated.name == "__pycache__" or generated.suffix in {".pyc", ".pyo"}:
-            raise SystemExit("packaged fixture contains generated Python content")
-    print("Packaged fixture exclusions passed")
+        if generated.name == "__pycache__" or generated.suffix in {".py", ".pyc", ".pyo"}:
+            raise SystemExit("packaged fixture contains Python content")
+    print("Packaged Python-free fixture exclusions passed")
 
 
 def prepare_prior(fixture: Path) -> None:
@@ -54,7 +46,7 @@ def prepare_prior(fixture: Path) -> None:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest["version"] = "1.1.0"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
-    (fixture / "scripts" / "job-apply-store.py").write_text(
+    (fixture / "runtime" / "cli" / "native-jobs.js").write_text(
         "# isolated-old-version-sentinel\n", encoding="utf-8"
     )
 

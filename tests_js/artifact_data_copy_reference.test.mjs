@@ -81,12 +81,12 @@ function checkPreflight(row) {
   };
   assert.deepEqual(row.error, failure('SystemExit', messages[id])); assert.deepEqual(row.calls, []);
   assert.deepEqual(unchanged(row.before), unchanged(row.after));
-  const fixed = ['.codex-plugin/plugin.json', 'scripts/job-apply-store.py', 'scripts/job-apply-task.py',
-    'scripts/job-apply-attempt.py', 'scripts/job-apply-workspace.py', 'skills/answer-memory/SKILL.md', 'skills/job-apply/SKILL.md'];
+  const fixed = ['.agents/plugins/marketplace.json', '.claude-plugin/marketplace.json', '.claude-plugin/plugin.json',
+    '.codex-plugin/plugin.json', 'package.json', 'skills/answer-memory/SKILL.md', 'skills/job-apply/SKILL.md'];
   const expectedPaths = new Set(['.']);
   for (const base of ['source', 'target']) {
     expectedPaths.add(base);
-    for (const path of [...fixed, 'skills', 'runtime/z.bin', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace',
+    for (const path of [...fixed, 'skills', 'runtime/z.bin', 'qa/fixtures', 'qa/scenarios', 'workspace',
       'apps/companion', 'native']) {
       const parts = `${base}/${path}`.split('/');
       for (let i = 1; i <= parts.length; i += 1) expectedPaths.add(parts.slice(0, i).join('/'));
@@ -97,7 +97,7 @@ function checkPreflight(row) {
     const relative = item.path.split('/').slice(1).join('/');
     if (item.path === `${id.startsWith('source') ? 'source' : 'target'}/runtime/z.bin`) {
       assert.equal(item.kind, id.endsWith('fifo') ? 'fifo' : 'link');
-      assert.equal(item.target, id.endsWith('fifo') ? null : '../scripts/job-apply-store.py');
+      assert.equal(item.target, id.endsWith('fifo') ? null : '../package.json');
     } else if (fixed.includes(relative) || relative === 'runtime/z.bin') {
       assert.equal(item.kind, 'file');
       const [base, ...parts] = item.path.split('/');

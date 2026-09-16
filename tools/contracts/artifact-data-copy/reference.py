@@ -138,7 +138,7 @@ def preflight(case):
         focus = base / 'runtime/z.bin'
         focus.unlink()
         if case.endswith('fifo'): os.mkfifo(focus)
-        else: focus.symlink_to('../scripts/job-apply-store.py')
+        else: focus.symlink_to('../package.json')
         before = s.snapshot(root)
         calls, error = [], None
         def copied(*args, **kwargs):

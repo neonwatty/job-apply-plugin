@@ -8,8 +8,8 @@ import test from 'node:test';
 
 const driver = fileURLToPath(new URL('../tools/contracts/artifact-copy-order/reference.py', import.meta.url));
 const source = new URL('../scripts/smoke/artifacts.py', import.meta.url);
-const files = ['.codex-plugin/plugin.json', 'runtime/data.bin', 'scripts/job-apply-attempt.py',
-  'scripts/job-apply-store.py', 'scripts/job-apply-task.py', 'scripts/job-apply-workspace.py',
+const files = ['.agents/plugins/marketplace.json', '.claude-plugin/marketplace.json',
+  '.claude-plugin/plugin.json', '.codex-plugin/plugin.json', 'package.json', 'runtime/data.bin',
   'skills/answer-memory/SKILL.md', 'skills/job-apply/SKILL.md'];
 const ids = ['native-times', 'post-data-times', 'source-stat-error', 'utime-error',
   'source-flags', 'clear-target-flags', 'flags-ENOTSUP', 'flags-EOPNOTSUPP', 'flags-EIO',
@@ -41,7 +41,7 @@ function checkMetadata(rows, missing = false) {
 function expectedPaths(missing) {
   const result = new Set();
   for (const prefix of ['source', 'target']) {
-    for (const path of [...files, 'skills', 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace',
+    for (const path of [...files, 'skills', 'runtime', 'qa/fixtures', 'qa/scenarios', 'workspace',
       'apps/companion', 'native']) {
       if (missing && prefix === 'target' && path === 'runtime/data.bin') continue;
       const parts = `${prefix}/${path}`.split('/');

@@ -7,13 +7,13 @@ import test from 'node:test';
 
 const driver = fileURLToPath(new URL('../tools/contracts/installed-artifacts/reference.py', import.meta.url));
 const source = new URL('../scripts/smoke/artifacts.py', import.meta.url);
-const fixed = ['.codex-plugin/plugin.json', 'scripts/job-apply-store.py',
-  'scripts/job-apply-task.py', 'scripts/job-apply-attempt.py', 'scripts/job-apply-workspace.py',
+const fixed = ['.agents/plugins/marketplace.json', '.claude-plugin/marketplace.json',
+  '.claude-plugin/plugin.json', '.codex-plugin/plugin.json', 'package.json',
   'skills/answer-memory/SKILL.md', 'skills/job-apply/SKILL.md'];
-const trees = ['skills', 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace',
+const trees = ['skills', 'runtime', 'qa/fixtures', 'qa/scenarios', 'workspace',
   'apps/companion', 'native'];
-const files = [...fixed, 'runtime/nested/codec.js', 'scripts/job_apply_store/io.py',
-  'scripts/job_apply_workspace/handler.py', 'workspace/app.js',
+const files = [...fixed, 'runtime/nested/codec.js', 'qa/fixtures/example/fixture.json',
+  'qa/scenarios/example/profile.json', 'workspace/app.js',
   'skills/job-apply/references/runtime-contract.md', 'skills/job-search/SKILL.md',
   'apps/companion/.next/standalone/apps/companion/server.js',
   'apps/companion/.next/standalone/node_modules/next/package.json',
@@ -57,26 +57,26 @@ const cases = [
   ['copy-source-invalid', 'copy', 'source-invalid'],
 ];
 const errors = {
-  'inventory-missing-fixed': 'critical package artifact is missing: scripts/job-apply-store.py',
+  'inventory-missing-fixed': 'critical package artifact is missing: package.json',
   'inventory-missing-tree': 'critical package artifact is missing: runtime',
-  'inventory-fixed-directory': 'critical package artifact is not a regular file: scripts/job-apply-store.py',
+  'inventory-fixed-directory': 'critical package artifact is not a regular file: package.json',
   'inventory-tree-file': 'critical package tree is not a directory: runtime',
   'inventory-ancestor-file': 'critical package ancestor is not a directory: skills/answer-memory/SKILL.md',
-  'inventory-fixed-link': 'critical package path contains a symlink: scripts/job-apply-store.py',
-  'inventory-ancestor-link': 'critical package path contains a symlink: scripts/job-apply-store.py',
+  'inventory-fixed-link': 'critical package path contains a symlink: package.json',
+  'inventory-ancestor-link': 'critical package path contains a symlink: qa/fixtures',
   'inventory-nested-directory-link': 'critical package tree contains a symlink: runtime/nested/linked',
   'inventory-nested-file-link': 'critical package tree contains a symlink: runtime/nested/linked.js',
-  'inventory-dangling-link': 'critical package path contains a symlink: scripts/job-apply-store.py',
+  'inventory-dangling-link': 'critical package path contains a symlink: package.json',
   'inventory-nested-fifo': 'critical package artifact is not a regular file: runtime/nested/pipe',
-  'verify-tamper': 'synthetic bytes differ for scripts/job-apply-store.py',
+  'verify-tamper': 'synthetic bytes differ for package.json',
   'verify-extra-runtime': 'synthetic critical package inventory differs',
-  'verify-missing-fixed': 'critical package artifact is missing: scripts/job-apply-store.py',
+  'verify-missing-fixed': 'critical package artifact is missing: package.json',
   'verify-missing-nested': 'synthetic critical package inventory differs',
-  'copy-directory-rejected': 'critical package destination is not a regular file: scripts/job-apply-store.py',
-  'copy-link-rejected': 'critical package path contains a symlink: scripts/job-apply-store.py',
-  'copy-ancestor-rejected': 'critical package path contains a symlink: scripts/job-apply-attempt.py',
-  'copy-dangling-ancestor': 'critical package path contains a symlink: scripts/job-apply-attempt.py',
-  'copy-source-invalid': 'critical package artifact is missing: scripts/job-apply-store.py',
+  'copy-directory-rejected': 'critical package destination is not a regular file: package.json',
+  'copy-link-rejected': 'critical package path contains a symlink: package.json',
+  'copy-ancestor-rejected': 'critical package path contains a symlink: qa/fixtures/example/fixture.json',
+  'copy-dangling-ancestor': 'critical package path contains a symlink: qa/fixtures/example/fixture.json',
+  'copy-source-invalid': 'critical package artifact is missing: package.json',
 };
 const keys = (value, expected) => assert.deepEqual(Object.keys(value).sort(), [...expected].sort());
 const hash = value => createHash('sha256').update(value).digest('hex');

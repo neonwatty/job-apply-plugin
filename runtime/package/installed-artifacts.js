@@ -4,17 +4,17 @@ import { constructPosixPath } from "../contracts/posix-path.js";
 import { withPythonFilesystemErrors } from "../contracts/filesystem-error.js";
 import { artifactBytes, artifactIsSymlink, artifactOSError, artifactRoot, ArtifactVerificationError, checkedArtifactPath, regularArtifactFile } from "./artifact-paths.js";
 export const FIXED_CRITICAL_FILES = [
+    ".agents/plugins/marketplace.json",
+    ".claude-plugin/marketplace.json",
+    ".claude-plugin/plugin.json",
     ".codex-plugin/plugin.json",
-    "scripts/job-apply-store.py",
-    "scripts/job-apply-task.py",
-    "scripts/job-apply-attempt.py",
-    "scripts/job-apply-workspace.py",
+    "package.json",
     "skills/answer-memory/SKILL.md",
     "skills/job-apply/SKILL.md",
 ];
 export const CRITICAL_TREES = [
     "skills",
-    "runtime", "scripts/job_apply_store", "scripts/job_apply_workspace", "workspace",
+    "runtime", "qa/fixtures", "qa/scenarios", "workspace",
     "apps/companion", "native",
 ];
 function pythonStringOrder(left, right) {

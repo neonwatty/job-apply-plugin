@@ -279,7 +279,7 @@
     },
     {
       "path": "python-runtime-closure.json",
-      "sha256": "3d04e908fb1626f715ff3b9da9680aa97d893d6784739cf04aa8c67dfd5bf3c4"
+      "sha256": "6b6534680f0ab8455742c3bf00b8472623b9ce0007b5f63ec3bae3fde7a05ade"
     },
     {
       "path": "requirements-trash-01.json",
@@ -299,7 +299,7 @@
     },
     {
       "path": "source-catalog-01.json",
-      "sha256": "7400e9a773cc4bb84b34de8c10c2c9308db3c13c15bafd6a9838bfb6779af016"
+      "sha256": "8453e22a69141d89152c928058f3b8cbbdc8c601084c94e989a39ad3c7268cf8"
     },
     {
       "path": "source-catalog-02.json",
@@ -315,11 +315,11 @@
     },
     {
       "path": "source-catalog-05.json",
-      "sha256": "533d285a09c4e87937c9c94588049a12f35e5e48e9cc9d794988c795fdfff311"
+      "sha256": "5472d3eda820a7390d92a8a932fd981ddd7520f2ca595ae9c705ca807ed93e06"
     },
     {
       "path": "source-catalog-06.json",
-      "sha256": "3cdb1aeea55cb09c0828096574be5a636be862ded6dd484e00b1d72223066036"
+      "sha256": "50f2a49c6e8147d096d977f8331b49ae1e5d62120637f9fc581b8cc53bf5df95"
     },
     {
       "path": "source-catalog-g02-hybrid.json",
@@ -327,7 +327,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "e75db4a622d139c1f567c4a942f47f041523d48fa8cebe4ffe6debc64c0ac75c"
+      "sha256": "347f58880f56ee935c85fd61904a5240c2f4bd5d0157872859178856d9df63c7"
     },
     {
       "path": "source-catalog-m01.json",
@@ -419,7 +419,7 @@
     },
     {
       "path": "source-catalog-native-lock-package.json",
-      "sha256": "6800cf6689d565b0387466e2eb964b96e7632c96902b017b712c53409c263ed4"
+      "sha256": "df2fdd7f7b2f61484fcd5767ea824dc4c02af8b123e6186242f8e2fd34825cda"
     },
     {
       "path": "source-catalog-native-macos-email-adapter.json",

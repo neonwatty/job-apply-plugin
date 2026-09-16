@@ -42,11 +42,11 @@ class SmokeHarnessSplitTests(unittest.TestCase):
                 self.assertIn(f"{tree}/nested/module.test", inventory)
             self.assertEqual(tuple(sorted(inventory)), inventory)
             assert_critical_bytes(target, source, label="installed Codex")
-            changed = target / "scripts/job_apply_workspace/nested/module.test"
+            changed = target / "qa/scenarios/nested/module.test"
             changed.write_bytes(b"changed\n")
             with self.assertRaisesRegex(
                 SystemExit,
-                "installed Codex bytes differ for scripts/job_apply_workspace",
+                "installed Codex bytes differ for qa/scenarios",
             ):
                 assert_critical_bytes(target, source, label="installed Codex")
             changed.write_bytes((source / changed.relative_to(target)).read_bytes())
@@ -100,7 +100,7 @@ class SmokeHarnessSplitTests(unittest.TestCase):
         text = "\n".join(path.read_text(encoding="utf-8") for path in SMOKE.glob("*.py"))
         for receipt in (
             "Static smoke assertions passed",
-            "Packaged fixture exclusions passed",
+            "Packaged Python-free fixture exclusions passed",
             "Isolated prior Codex package installed",
             "Isolated Codex old-to-new replacement and critical-byte parity passed",
             "Packaged Jobs, Facts, managed resume, extraction, Answers merge recovery, unified Trash API, and store launch passed",

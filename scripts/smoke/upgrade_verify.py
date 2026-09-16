@@ -15,7 +15,7 @@ def verify_prior(codex_home: Path) -> None:
     )
     if cache.name != "1.1.0" or not cache.is_dir():
         raise SystemExit("isolated prior Codex version directory was not selected")
-    sentinel = (cache / "scripts" / "job-apply-store.py").read_text(encoding="utf-8")
+    sentinel = (cache / "runtime" / "cli" / "native-jobs.js").read_text(encoding="utf-8")
     if sentinel != "# isolated-old-version-sentinel\n":
         raise SystemExit("isolated prior Codex sentinel bytes were not installed")
     print("Isolated prior Codex package installed")
@@ -47,7 +47,7 @@ def verify_upgrade(plugin_list: Path, codex_home: Path, source: Path) -> None:
         raise SystemExit("upgraded Codex version directory does not match the manifest")
     assert_critical_bytes(installed, source, label="upgraded Codex")
     if b"isolated-old-version-sentinel" in (
-        installed / "scripts" / "job-apply-store.py"
+        installed / "runtime" / "cli" / "native-jobs.js"
     ).read_bytes():
         raise SystemExit("upgraded Codex package retained prior sentinel bytes")
     print("Isolated Codex old-to-new replacement and critical-byte parity passed")

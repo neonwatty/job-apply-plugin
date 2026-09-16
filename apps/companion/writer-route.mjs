@@ -4,14 +4,14 @@ import { join, resolve } from "node:path";
 import { validateNativeStoreMarker } from "../../runtime/store/native-store-layout.js";
 import { resolvePackagedNativeLock } from "../../runtime/package/native-lock-artifact.js";
 
-const writers = new Set(["python", "native-fixture", "native-clone"]);
+const writers = new Set(["native-fixture", "native-clone"]);
 const valueOptions = new Set([
   "--root", "--plugin-root", "--port", "--writer", "--native-lock", "--native-jobs-fixture",
 ]);
 
 export function parseWriterOptions(args, app) {
   const options = { root: undefined, pluginRoot: resolve(app, "../.."), port: 0, dev: false,
-    writer: "python", nativeLock: undefined };
+    writer: "native-clone", nativeLock: undefined };
   const seen = new Set();
   let legacyNativeLock;
   for (let index = 0; index < args.length; index += 1) {
@@ -61,14 +61,6 @@ export async function storeWriterOwnership(root) {
 
 export async function resolveWriterRoute(options) {
   const ownership = await storeWriterOwnership(options.root);
-  if (options.writer === "python") {
-    if (options.nativeLock) throw new Error("Python writer cannot use a native lock provider");
-    if (ownership) throw new Error("Python writer cannot use a native-owned Store");
-    const script = join(options.pluginRoot, "scripts/job-apply-workspace.py");
-    if (!existsSync(script)) throw new Error("Workspace runtime is unavailable");
-    return { writer: "python", command: "python3",
-      argv: [script, "--no-open", "--json", ...(options.root ? ["--root", options.root] : [])] };
-  }
   if (!options.root) throw new Error("Native writer requires an explicit root");
   const expected = options.writer === "native-clone" ? "clone" : "fixture";
   if (ownership !== expected) throw new Error(`Native ${expected} writer ownership is missing`);

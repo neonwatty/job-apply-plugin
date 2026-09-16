@@ -3,17 +3,17 @@
   "sources": [
     {
       "path": "scripts/smoke-plugin.sh",
-      "sha256": "7f6cb3e2b3192cd6c5c389c92dc32145b1140ca4a0ae24158a631401b9b6ed39",
+      "sha256": "643fe8747c6904ecfb72a32b3cdb1289770219132ea83aef4376dd405b40c606",
       "classification": "unreviewed"
     },
     {
       "path": "scripts/smoke/artifacts.py",
-      "sha256": "aeeb7b657008bcc4c76f281f385e43547ab2fcbc1f00dfc9a4f85f368643acb6",
+      "sha256": "37b551faaadc35341d9b5c17b8f96031eca24bfffad25e7342112e80cd8d11c0",
       "classification": "unreviewed"
     },
     {
       "path": "scripts/smoke/fixture_build.py",
-      "sha256": "9ecbad22f55173f713eaae358e0f630fa70b37b7cf959013605353b128f8160b",
+      "sha256": "6e6fdac9ef44273e8502e643bde0b896be56ff29af3577de4107ae8570716fd1",
       "classification": "unreviewed"
     },
     {
@@ -33,7 +33,7 @@
     },
     {
       "path": "scripts/smoke/upgrade_verify.py",
-      "sha256": "f56a282b1bb4046f4f458729933e0a79b7a1074611d1da7397ecef79c3ae00dc",
+      "sha256": "a698c41f25e69f48c7419759473c1de3054b29b17838c7180e47372ac86d26a1",
       "classification": "unreviewed"
     },
     {
