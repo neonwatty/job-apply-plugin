@@ -1,6 +1,11 @@
 import { readFile } from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { NativeJobsRepository } from '../store/native-jobs.js';
 import { loadPosixFlockProvider } from '../store/posix-flock.js';
+import { resolvePackagedNativeLock } from '../package/native-lock-artifact.js';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
 import { object, parse } from '../contracts/workspace/values.js';
 import { runTaskCommand } from './task-command.js';
@@ -14,9 +19,24 @@ function help(command?: string): string {
     + 'Use the Python task command options; --input reads a JSON object from a file.\n'
     + 'Only explicitly initialized fixtures or prepared canonical clones are supported.\n';
 }
+async function installedTaskArgs(args: string[]): Promise<string[]> {
+  const completed = [...args];
+  if (!completed.some(argument => argument === '--root' || argument.startsWith('--root='))) {
+    const configured = process.env.JOB_APPLY_STORE_DIR;
+    const expanded = configured === '~' || configured?.startsWith('~/')
+      ? realpathSync(homedir()) + configured.slice(1) : configured;
+    completed.unshift('--root', expanded ? resolve(expanded) : join(realpathSync(homedir()), '.job-apply'));
+  }
+  if (!completed.some(argument => argument === '--native-lock' || argument.startsWith('--native-lock='))
+    && !completed.includes('--help') && !completed.includes('-h')) {
+    const executable = fileURLToPath(import.meta.url);
+    completed.unshift('--native-lock', await resolvePackagedNativeLock(realpathSync(resolve(dirname(executable), '../..'))));
+  }
+  return completed;
+}
 export async function runTask(args: string[]): Promise<{ output: string; exitCode: number }> {
   try {
-    const parsed = parseTaskArgs(args);
+    const parsed = parseTaskArgs(await installedTaskArgs(args));
     const repository = new NativeJobsRepository(parsed.options.get('--root')!, loadPosixFlockProvider(parsed.options.get('--native-lock')!));
     const payload = async () => {
       try {

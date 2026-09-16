@@ -114,6 +114,23 @@ test('optional Store PID accepts stale positive PID and rejects unsafe metadata'
     await unlink(path);await mkdir(path);await assert.rejects(state.claims.status());
   } finally {await fixture.cleanup();}
 });
+test('hard-linked broker ownership files are rejected before Store mutation',async()=>{
+  const {link}=await import('node:fs/promises');
+  const fixture=await nativeFixture();
+  try {
+    const state=await setup(fixture,'hard-linked-lock');
+    const lockPath=attemptSocketPath(state.root,process.getuid())+'.lock';
+    const foreignPath=join(fixture.root,'foreign-lock');
+    await writeFile(foreignPath,'',{mode:0o600});
+    await link(foreignPath,lockPath);
+    const before=await Promise.all(['coordinator.json','jobs.json'].map(name=>readFile(join(state.root,name),'utf8')));
+    await assert.rejects(
+      runAttemptBroker(state.root,state.claims,state.provider,{idleMilliseconds:20}),
+      {message:'attempt ownership unavailable'},
+    );
+    assert.deepEqual(await Promise.all(['coordinator.json','jobs.json'].map(name=>readFile(join(state.root,name),'utf8'))),before);
+  } finally {await fixture.cleanup();}
+});
 
 test('killing the launcher process group leaves its detached broker usable',{timeout:30000},async()=>{
   const {spawn}=await import('node:child_process');

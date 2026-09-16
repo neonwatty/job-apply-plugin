@@ -19,8 +19,9 @@ import { nativeStoreBootstrapCommands, runNativeStoreBootstrapCommand } from './
 import { nativeAuthorityCommands, runNativeAuthorityCommand } from './native-authority.js';
 import { readFile } from "node:fs/promises";
 import { realpathSync } from "node:fs";
-import { basename } from "node:path";
-import { pathToFileURL } from "node:url";
+import { homedir } from "node:os";
+import { basename, dirname, join, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { JobsService } from "../workspace-core/jobs.js";
 import { NativeJobsRepository, initializeJobsFixture, fixtureError } from "../store/native-jobs.js";
 import { loadPosixFlockProvider } from "../store/posix-flock.js";
@@ -29,6 +30,20 @@ import { ResumeService } from "../workspace-core/resumes.js";
 import { NativeResumeFiles } from "../store/native-resume-files.js";
 import { createNativeStoreBootstrap } from '../store/native-store-bootstrap.js';
 import { withStoreBootstrapLock } from './native-store-bootstrap-lock.js';
+import { resolvePackagedNativeLock } from '../package/native-lock-artifact.js';
+function defaultStoreRoot(environment = process.env) {
+    const configured = environment.JOB_APPLY_STORE_DIR;
+    const expanded = configured === '~' || configured?.startsWith('~/')
+        ? realpathSync(homedir()) + configured.slice(1) : configured;
+    return expanded ? resolve(expanded) : join(realpathSync(homedir()), '.job-apply');
+}
+async function nativeLock(options) {
+    const explicit = options.get('--native-lock');
+    if (explicit)
+        return explicit;
+    const executable = fileURLToPath(import.meta.url);
+    return resolvePackagedNativeLock(realpathSync(resolve(dirname(executable), '../..')));
+}
 const directCommandFields = {
     'fixture-init': [], 'job-create': ['--input', '--origin'], 'job-get': ['--id', '--include-trashed'],
     'job-list': ['--status', '--include-trashed', '--trashed-only'],
@@ -97,12 +112,12 @@ export async function runJobsCli(args, input) {
             throw new JobsError(`required option: ${key}`);
         return value;
     };
-    const root = required("--root");
+    const root = options.get("--root") ?? defaultStoreRoot();
     if (Object.hasOwn(nativeStoreBootstrapCommands, command)) {
         if ([...options.keys()].some(key => !['--root', '--native-lock', '--legacy-profile'].includes(key))) {
             throw new JobsError('unsupported native Store bootstrap command or option');
         }
-        const provider = command === 'init' ? loadPosixFlockProvider(required('--native-lock')) : undefined;
+        const provider = command === 'init' ? loadPosixFlockProvider(await nativeLock(options)) : undefined;
         const service = createNativeStoreBootstrap(root, options.get('--legacy-profile'), process.env, undefined, provider ? { locked: operation => withStoreBootstrapLock(root, provider, operation) } : {});
         return serialize(await runNativeStoreBootstrapCommand(command, service));
     }
@@ -110,7 +125,7 @@ export async function runJobsCli(args, input) {
         await initializeJobsFixture(root);
         return '{"initialized":true}';
     }
-    const repository = new NativeJobsRepository(root, loadPosixFlockProvider(required("--native-lock")));
+    const repository = new NativeJobsRepository(root, loadPosixFlockProvider(await nativeLock(options)));
     const service = new JobsService(repository);
     const resumes = new ResumeService(repository);
     const payload = async () => {

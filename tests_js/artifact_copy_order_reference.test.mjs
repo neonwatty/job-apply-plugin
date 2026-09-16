@@ -20,6 +20,7 @@ const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const contentHash = (label, path) => hash(Buffer.concat([Buffer.from(`${label}:${path}`), Buffer.from([0, 255])]));
 const keys = (object, expected) => assert.deepEqual(Object.keys(object).sort(), [...expected].sort());
 const rowKeys = ['path', 'atimeNs', 'mtimeNs', 'mode', 'flags', 'size'];
+const focus = files.indexOf('runtime/data.bin');
 
 function checkMetadata(rows, missing = false) {
   assert.deepEqual(rows.map(row => row.path), files);
@@ -77,26 +78,26 @@ function checkCase(row, profile) {
     assert.equal(beforeSource.atimeNs, String(initialAtime));
     assert.equal(beforeSource.mtimeNs, String(initialMtime));
     assert.equal(beforeSource.mode, 0o640);
-    assert.equal(beforeSource.flags, profile.flagsAPI ? ((id === 'source-flags' || id.startsWith('flags-')) && index === 1 ? profile.nodump : 0) : null);
+    assert.equal(beforeSource.flags, profile.flagsAPI ? ((id === 'source-flags' || id.startsWith('flags-')) && index === focus ? profile.nodump : 0) : null);
     if (!beforeTarget.missing) {
       assert.equal(beforeTarget.atimeNs, String(initialAtime - 1000000000n));
       assert.equal(beforeTarget.mtimeNs, String(initialMtime - 1000000000n));
       assert.equal(beforeTarget.mode, 0o600);
-      assert.equal(beforeTarget.flags, profile.flagsAPI ? (id === 'clear-target-flags' && index === 1 ? profile.nodump : 0) : null);
+      assert.equal(beforeTarget.flags, profile.flagsAPI ? (id === 'clear-target-flags' && index === focus ? profile.nodump : 0) : null);
     }
     assert.equal(row.hashes.source[path], contentHash('source', path));
-    assert.equal(row.hashes.target[path], contentHash(failed && index > 1 ? 'target' : 'source', path));
+    assert.equal(row.hashes.target[path], contentHash(failed && index > focus ? 'target' : 'source', path));
     assert.equal(afterSource.mode, beforeSource.mode);
     assert.equal(afterSource.flags, beforeSource.flags);
-    assert.equal(afterSource.mtimeNs, id === 'post-data-times' && index === 1 ? '1750000000222222222' : beforeSource.mtimeNs);
-    if (failed && index > 1) {
+    assert.equal(afterSource.mtimeNs, id === 'post-data-times' && index === focus ? '1750000000222222222' : beforeSource.mtimeNs);
+    if (failed && index > focus) {
       assert.deepEqual(afterTarget, beforeTarget, 'later files untouched after failure');
       assert.deepEqual(afterSource, beforeSource, 'later sources not read');
-    } else if (index !== 1 || !['source-stat-error', 'utime-error'].includes(id)) {
+    } else if (index !== focus || !['source-stat-error', 'utime-error'].includes(id)) {
       assert.equal(afterTarget.atimeNs, afterSource.atimeNs);
       assert.equal(afterTarget.mtimeNs, afterSource.mtimeNs);
-      assert.equal(afterTarget.mode, index === 1 && id === 'chmod-notimplemented' ? 0o600 : 0o640);
-      assert.equal(afterTarget.flags, index === 1 && id.startsWith('flags-') ? 0 : afterSource.flags);
+      assert.equal(afterTarget.mode, index === focus && id === 'chmod-notimplemented' ? 0o600 : 0o640);
+      assert.equal(afterTarget.flags, index === focus && id.startsWith('flags-') ? 0 : afterSource.flags);
     } else {
       assert.equal(afterTarget.mode, 0o600);
       assert.equal(afterTarget.flags, beforeTarget.flags);
@@ -104,15 +105,15 @@ function checkCase(row, profile) {
       assert.notEqual(afterTarget.mtimeNs, beforeSource.mtimeNs);
     }
   }
-  const copies = (failed ? files.slice(0, 2) : files).map(path => ({ op: 'copy', path }));
+  const copies = (failed ? files.slice(0, focus + 1) : files).map(path => ({ op: 'copy', path }));
   const focused = [];
   if (id === 'source-stat-error') focused.push({ op: 'stat-error' });
   else {
-    const statEvent = row.events[2];
+    const statEvent = row.events[focus + 1];
     keys(statEvent, ['op', ...rowKeys.filter(key => key !== 'path')]);
     assert.equal(statEvent.op, 'stat');
     assert.deepEqual(statEvent, { op: 'stat', ...Object.fromEntries(
-      Object.entries(row.after.source[1]).filter(([key]) => key !== 'path')) });
+      Object.entries(row.after.source[focus]).filter(([key]) => key !== 'path')) });
     if (id === 'post-data-times') {
       assert.equal(statEvent.atimeNs, '1500000000111111111');
       assert.equal(statEvent.mtimeNs, '1750000000222222222');
@@ -123,7 +124,7 @@ function checkCase(row, profile) {
       if (profile.flagsAPI) focused.push({ op: 'chflags', flags: statEvent.flags, follow: true });
     }
   }
-  assert.deepEqual(row.events, [...copies.slice(0, 2), ...focused, ...copies.slice(2)]);
+  assert.deepEqual(row.events, [...copies.slice(0, focus + 1), ...focused, ...copies.slice(focus + 1)]);
   if (id.startsWith('xattr-')) {
     assert.deepEqual(row.attributesBefore, { source: '736f7572636500ff', target: id === 'xattr-new' ? null : '74617267657400fe' });
     assert.deepEqual(row.attributesAfter, { source: '736f7572636500ff', target: profile.pythonXattrAPI

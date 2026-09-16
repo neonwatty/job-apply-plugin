@@ -375,7 +375,7 @@
     },
     {
       "path": "source-catalog-native-default-cutover.json",
-      "sha256": "d07b92cb19e169bb2be746fd8b37578c3f9add26ef4b81cb2608dc928793d350"
+      "sha256": "03b6471ecba7434a45b785c89b0ab64591b88f54d2d9eb4ede3217bb45481186"
     },
     {
       "path": "source-catalog-native-email-canary-composition.json",
@@ -411,7 +411,7 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "e6b2f8b4caea0548d7e8b582c79849b3cb482ed060e5529d5568e2b0ddd0cabd"
+      "sha256": "0c10825ede5e98367877a1fe49e5023c3ac4b8c414a48086773522714d957d71"
     },
     {
       "path": "source-catalog-native-legacy-jobs.json",
@@ -447,7 +447,7 @@
     },
     {
       "path": "source-catalog-native-task-cli.json",
-      "sha256": "fe4c495647466a2a962666c700537ab4f19f07bbeb0539be3d2a92748dc249d3"
+      "sha256": "1478c32ff8495c84a4324e5b0d5c00d89075ef2779d97438b41b2023712d8c14"
     },
     {
       "path": "source-catalog-native-task-intake.json",
