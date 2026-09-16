@@ -77,8 +77,9 @@ test("job-apply routes every ordinary URL through the canonical task protocol", 
   const readme = await readFile(join(REPO_ROOT, "README.md"), "utf8");
   assert.match(skill, /resume-import --input/);
   assert.match(skill, /resume-resolve --id <resume-id>/);
-  assert.match(skill, /job-apply-task\.py[\s\S]{0,300}intake --input/);
-  assert.match(skill, /job-apply-task\.py \.\.\. snapshot/);
+  assert.match(skill, /native-task\.js" \[--root <resolved-root>\] intake --input <private-temp\.json>/);
+  assert.match(skill, /native-task\.js \.\.\. snapshot/);
+  assert.doesNotMatch(skill, /job-apply-task\.py/);
   assert.match(skill, /select --id <job-id> --expected-revision <displayed-revision> --owner-confirmed/);
   assert.match(skill, /discard the pre-select displayed revision and retain the exact revision returned in `select\.job\.revision`/);
   assert.match(skill, /job-acquire --id <job-id> --owner <owner-label> --expected-revision <select\.job\.revision>/);
@@ -90,7 +91,8 @@ test("job-apply routes every ordinary URL through the canonical task protocol", 
   assert.doesNotMatch(readme, /Every resume write uses an exact revision/);
   assert.match(readme, /Import is a new-record operation protected by ID\/content uniqueness/);
   assert.match(readme, /resume-resolve/);
-  assert.match(readme, /scripts\/job-apply-task\.py/);
+  assert.match(readme, /runtime\/cli\/native-task\.js/);
+  assert.doesNotMatch(readme, /scripts\/job-apply-task\.py/);
 });
 
 test("skill and documentation contracts keep extraction agent-owned and context-bounded", async () => {

@@ -96,15 +96,24 @@ test('native artifact scan retains Python 3.14 behavior for a readable non-execu
 from pathlib import Path
 spec=importlib.util.spec_from_file_location('artifact_oracle',sys.argv[1])
 module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
-print(json.dumps(module.critical_paths(Path(sys.argv[2]))))`;
+try:
+ print(json.dumps({'kind':'value','value':module.critical_paths(Path(sys.argv[2]))}))
+except SystemExit as error:
+ print(json.dumps({'kind':'error','name':'SystemExit','message':str(error)}))`;
     const run = spawnSync('python3.14', ['-I', '-B', '-c', script, join(repository, 'scripts/smoke/artifacts.py'), source], {
       encoding: 'utf8', timeout: 5000,
     });
     if (run.error?.code === 'ENOENT') { t.skip('Required Python 3.14 unavailable'); return; }
     assert.equal(run.status, 0, run.stderr);
     const expected = JSON.parse(run.stdout);
-    assert.ok(!expected.includes('runtime/nested/codec.js'));
-    assert.deepEqual(await criticalPaths(source, '3.14'), expected);
+    assert.deepEqual(expected, {
+      kind: 'error', name: 'SystemExit',
+      message: 'unable to inspect critical package artifact: runtime/cli/native-attempt.js',
+    });
+    let actual;
+    try { actual = { kind: 'value', value: await criticalPaths(source, '3.14') }; }
+    catch (error) { actual = { kind: 'error', name: error.name, message: error.message }; }
+    assert.deepEqual(actual, expected);
     await chmod(runtime, 0o755);
     assert.deepEqual(await snapshot(root), before);
   } finally {
