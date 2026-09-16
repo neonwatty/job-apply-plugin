@@ -10,20 +10,20 @@ Start the packaged, local-only companion when the user asks to review their next
 
 ## Launch
 
-1. Resolve `<plugin-root>` safely. In Codex, use the installed skill path and walk up from `skills/job-workspace/SKILL.md`; use `PLUGIN_ROOT` only after confirming it contains both `apps/companion/supervise.mjs` and `runtime/cli/native-jobs-server.js`. In Claude Code, use `CLAUDE_PLUGIN_ROOT` after the same checks.
+1. Resolve `<plugin-root>` safely. In Codex, use the installed skill path and walk up from `skills/job-workspace/SKILL.md`; use `PLUGIN_ROOT` only after confirming it contains both `scripts/job-apply-workspace.py` and `workspace/index.html`. In Claude Code, use `CLAUDE_PLUGIN_ROOT` after the same checks.
 2. Run exactly:
 
    ```bash
-   node "<plugin-root>/apps/companion/supervise.mjs" --plugin-root "<plugin-root>"
+   python3 "<plugin-root>/scripts/job-apply-workspace.py"
    ```
 
 3. Leave the process attached while the user works. Report that Ctrl-C stops it cleanly.
 
-The native-first Companion launcher chooses a free port, binds only to `127.0.0.1`, opens the browser, and supervises the canonical native Store service. The browser never reads or writes store files directly. It needs no account, cloud service, telemetry, or separate database.
+The launcher chooses a free port, binds only to `127.0.0.1`, opens the browser, and imports the same canonical Store implementation bundled in `scripts/job-apply-store.py`. The browser never reads or writes store files directly. It needs no account, cloud service, telemetry, separate database, Node runtime, or frontend installation.
 
 ## Boundaries and completion
 
-The workspace uses the canonical native Store contract; it owns no separate applicant database. Never expose its localhost service on another host or copy the printed fragment token into chat or logs. If opening fails, direct the owner to the complete URL printed locally by the launcher.
+The workspace uses the canonical Store contract in `scripts/job-apply-store.py`; it owns no separate applicant database. Never expose its localhost service on another host or copy the printed fragment token into chat or logs. If opening fails, direct the owner to the complete URL printed locally by the launcher.
 
 Confirm the launcher is serving before reporting the workspace ready. Keep the process attached while the user works; Ctrl-C stops it cleanly. Do not restart a healthy workspace merely to explain a feature.
 

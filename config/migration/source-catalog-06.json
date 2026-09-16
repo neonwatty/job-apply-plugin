@@ -68,7 +68,7 @@
     },
     {
       "path": "src/package/installed-artifacts.ts",
-      "sha256": "fa2176b0b9cfc02ea4b6dc0f2ad71ccba472096c846cf4bb1cb667942a40e5f1",
+      "sha256": "8a2cda29c39ffa877e12c82ce7797de5701b45adbf263d78b9286a709c346819",
       "classification": "unreviewed"
     },
     {
@@ -98,7 +98,7 @@
     },
     {
       "path": "runtime/package/installed-artifacts.js",
-      "sha256": "745f0ff70fafbd6e35efb5217310d7418d9077f034b8db869bc6ef87a1b60f0c",
+      "sha256": "1ede5592488beff2a0b1be2e77a7951e99d4e7f9292921d82532f6d565c15d30",
       "classification": "unreviewed"
     },
     {

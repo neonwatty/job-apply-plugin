@@ -1,16 +1,16 @@
 ## Profile and preferences
 
 ```bash
-node "<plugin-root>/runtime/cli/native-jobs.js" profile-get
-node "<plugin-root>/runtime/cli/native-jobs.js" profile-inspect
-node "<plugin-root>/runtime/cli/native-jobs.js" profile-replace \
+python3 "<plugin-root>/scripts/job-apply-store.py" profile-get
+python3 "<plugin-root>/scripts/job-apply-store.py" profile-inspect
+python3 "<plugin-root>/scripts/job-apply-store.py" profile-replace \
   --input <profile.json> --expected-revision <revision> \
   --source <user|resume|agent|migration>
-node "<plugin-root>/runtime/cli/native-jobs.js" profile-patch \
+python3 "<plugin-root>/scripts/job-apply-store.py" profile-patch \
   --input <patch.json> --expected-revision <revision> \
   --source <user|resume|agent|migration>
-node "<plugin-root>/runtime/cli/native-jobs.js" preferences-get
-node "<plugin-root>/runtime/cli/native-jobs.js" preferences-set \
+python3 "<plugin-root>/scripts/job-apply-store.py" preferences-get
+python3 "<plugin-root>/scripts/job-apply-store.py" preferences-set \
   --input <preferences.json> --expected-revision <revision> \
   --source <user|resume|agent|migration> [--replace]
 ```
@@ -35,12 +35,12 @@ unique case-insensitively; create, update, and delete use the versioned
 `fact-groups.json` document, and existing-group writes require the exact revision.
 
 ```bash
-node "<plugin-root>/runtime/cli/native-jobs.js" fact-group-list
-node "<plugin-root>/runtime/cli/native-jobs.js" fact-group-get --id <group-id>
-node "<plugin-root>/runtime/cli/native-jobs.js" fact-group-create --input <group.json>
-node "<plugin-root>/runtime/cli/native-jobs.js" fact-group-update \
+python3 "<plugin-root>/scripts/job-apply-store.py" fact-group-list
+python3 "<plugin-root>/scripts/job-apply-store.py" fact-group-get --id <group-id>
+python3 "<plugin-root>/scripts/job-apply-store.py" fact-group-create --input <group.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" fact-group-update \
   --id <group-id> --expected-revision <revision> --input <patch.json>
-node "<plugin-root>/runtime/cli/native-jobs.js" fact-group-delete \
+python3 "<plugin-root>/scripts/job-apply-store.py" fact-group-delete \
   --id <group-id> --expected-revision <revision>
 ```
 

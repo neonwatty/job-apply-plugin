@@ -6,22 +6,22 @@ and never persist the import source path. Legacy absolute-path records remain va
 until explicitly adopted under the same ID.
 
 ```bash
-node "<plugin-root>/runtime/cli/native-jobs.js" resume-create --input <resume.json>
-node "<plugin-root>/runtime/cli/native-jobs.js" resume-import --input <resume.json>
-node "<plugin-root>/runtime/cli/native-jobs.js" resume-list
-node "<plugin-root>/runtime/cli/native-jobs.js" resume-get --id <resume-id>
-node "<plugin-root>/runtime/cli/native-jobs.js" resume-update \
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-create --input <resume.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-import --input <resume.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-list
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-get --id <resume-id>
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-update \
   --id <resume-id> --expected-revision <revision> --input <patch.json>
-node "<plugin-root>/runtime/cli/native-jobs.js" resume-adopt \
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-adopt \
   --id <legacy-resume-id> --expected-revision <revision> [--path <source-path>]
-node "<plugin-root>/runtime/cli/native-jobs.js" resume-set-default \
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-set-default \
   --id <resume-id> --expected-revision <revision>
-node "<plugin-root>/runtime/cli/native-jobs.js" resume-check --id <resume-id>
-node "<plugin-root>/runtime/cli/native-jobs.js" resume-trash \
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-check --id <resume-id>
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-trash \
   --id <resume-id> --expected-revision <revision>
-node "<plugin-root>/runtime/cli/native-jobs.js" resume-restore \
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-restore \
   --id <resume-id> --expected-revision <revision>
-node "<plugin-root>/runtime/cli/native-jobs.js" resume-delete \
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-delete \
   --id <resume-id> --expected-revision <revision>
 ```
 
@@ -42,13 +42,13 @@ JSON object; the helper does not parse, author, or tailor resumes. Inspect the
 managed resume and profile revisions immediately before creating a proposal:
 
 ```bash
-node "<plugin-root>/runtime/cli/native-jobs.js" resume-proposal-create \
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-proposal-create \
   --resume-id <resume-id> --expected-resume-revision <resume-revision> \
   --expected-profile-revision <profile-revision> --input <candidate.json>
-node "<plugin-root>/runtime/cli/native-jobs.js" resume-proposal-list \
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-proposal-list \
   [--resume-id <resume-id>] [--status pending] [--summary-only]
-node "<plugin-root>/runtime/cli/native-jobs.js" resume-proposal-get --id <proposal-id>
-node "<plugin-root>/runtime/cli/native-jobs.js" resume-proposal-review \
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-proposal-get --id <proposal-id>
+python3 "<plugin-root>/scripts/job-apply-store.py" resume-proposal-review \
   --id <proposal-id> --expected-revision <proposal-revision> \
   --expected-profile-revision <profile-revision> --input <decisions.json>
 ```

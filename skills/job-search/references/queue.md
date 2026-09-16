@@ -14,7 +14,7 @@ never place them in the structured input.
 Before asking for confirmation, preview the exact agent-authored input:
 
 ```bash
-node "<plugin-root>/runtime/cli/native-jobs.js" job-upsert-preview \
+python3 "<plugin-root>/scripts/job-apply-store.py" job-upsert-preview \
   --origin agent --input <temporary-jobs.json>
 ```
 
@@ -27,7 +27,7 @@ Commit only after explicit confirmation, using the exact same input, origin, and
 opaque token returned by preview:
 
 ```bash
-node "<plugin-root>/runtime/cli/native-jobs.js" job-upsert-commit \
+python3 "<plugin-root>/scripts/job-apply-store.py" job-upsert-commit \
   --origin agent --input <temporary-jobs.json> --token <preview-token>
 ```
 

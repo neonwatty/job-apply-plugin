@@ -7,8 +7,8 @@ export const FIXED_CRITICAL_FILES = [
     ".codex-plugin/plugin.json",
     "scripts/job-apply-store.py",
     "scripts/job-apply-task.py",
+    "scripts/job-apply-attempt.py",
     "scripts/job-apply-workspace.py",
-    "runtime/cli/native-attempt.js",
     "skills/answer-memory/SKILL.md",
     "skills/job-apply/SKILL.md",
 ];

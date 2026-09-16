@@ -3,7 +3,7 @@
 The bundled helper is the sole supported mutation interface:
 
 ```bash
-node "<plugin-root>/runtime/cli/native-jobs.js" --help
+python3 "<plugin-root>/scripts/job-apply-store.py" --help
 ```
 
 ## Files
@@ -45,8 +45,8 @@ resume file that changed since registration remain visible warnings.
 
 ### Exclusive ready-job coordinator
 
-Internal protocol: the private attempt broker calls `job-acquire`; ordinary agents use `node "<plugin-root>/runtime/cli/native-attempt.js"` as described in [canonical intake](../../job-apply/references/intake.md), never the raw claim commands below. One version-1 `coordinator.json` record holds at most one claim with a hashed token and a 300-second lease; `coordinator-journal.json` provides idempotent crash roll-forward. Neither file is a second workflow-status model: `jobs.json` remains authoritative.
-The coordinator files are created lazily by the first claim command, and isolated replay workflows retain their separate coordinator lifecycle. Ordinary direct URLs go through canonical intake and the private native attempt broker.
+Internal protocol: the private attempt broker calls `job-acquire`; ordinary agents use `job-apply-attempt.py` as described in [canonical intake](../../job-apply/references/intake.md), never the raw claim commands below. One version-1 `coordinator.json` record holds at most one claim with a hashed token and a 300-second lease; `coordinator-journal.json` provides idempotent crash roll-forward. Neither file is a second workflow-status model: `jobs.json` remains authoritative.
+The coordinator files are created lazily by the first claim command, and isolated replay workflows retain their separate coordinator lifecycle. Ordinary direct URLs go through canonical intake and the private attempt broker.
 
 Acquisition requires the caller's selected job revision, re-runs preflight under the store lock, resolves an assigned resume before the default, transitions the job to `in_progress`, and records `job-started`. An `awaiting_review` job is never Ready and cannot use ordinary acquisition. Its only agent restart is the dedicated exact-revision `job-review-restart` operation with `--owner-confirmed-not-submitted`. Under the same lock it requires no global claim, a complete same-job review session with no pending work, matching reviewed history, and a fresh current managed-resume preflight; it then advances the same job exactly once to `in_progress`, creates one 300-second claim, and records `job-restarted`. It does not copy or rewrite the prior review session; only later claim-gated progress may replace it. Terminal handoff requires the post-acquisition, post-recovery, or post-restart revision retained before browser work; callers must not refresh that revision immediately before handoff. Stale revisions fail without mutation. Heartbeat at least every 60 seconds. Heartbeat and all claim-gated mutations require the canonical job to remain `in_progress`; generic transition, trash, deletion, and session-mutation commands reject active canonical jobs. A live claim cannot be recovered, replaced, or silently cleared. After expiry, `claim-recover` must name the same still-`in_progress` job exposed by `claim-status` and rotates the token while recording `claim-recovered`.
 
@@ -141,7 +141,7 @@ Approved loopback QA runs record `started` and `reviewed` through `qa-replay.py`
 
 ## Auto-submit campaign contract
 
-`node "<plugin-root>/runtime/cli/native-final-action-policy.js"` is the only supported policy mutation interface. Its native policy service is deliberately inert and imports no browser-control implementation. Its closed campaign record contains only:
+`job_apply_policy.py` is the only supported policy mutation interface. It is deliberately inert and imports no browser-control implementation. Its closed campaign record contains only:
 
 - an opaque campaign reference, fixed `auto_submit` mode, lifecycle status, creation/expiry timestamps, risk-acknowledgement timestamp, and persisted kill-switch state;
 - a maximum of ten application reservations and a duration no longer than four hours;

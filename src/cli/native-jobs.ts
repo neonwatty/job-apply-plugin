@@ -34,7 +34,9 @@ import { resolvePackagedNativeLock } from '../package/native-lock-artifact.js';
 
 function defaultStoreRoot(environment = process.env): string {
   const configured = environment.JOB_APPLY_STORE_DIR;
-  return configured ? resolve(configured) : join(realpathSync(homedir()), '.job-apply');
+  const home = realpathSync(homedir());
+  const expanded = configured === '~' || configured?.startsWith('~/') ? home + configured.slice(1) : configured;
+  return expanded ? resolve(expanded) : join(home, '.job-apply');
 }
 
 async function nativeLock(options: Map<string, string>): Promise<string> {

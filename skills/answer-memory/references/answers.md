@@ -12,7 +12,7 @@ Answer states have distinct behavior:
 Look up the exact question and relevant scope before filling:
 
 ```bash
-node "<plugin-root>/runtime/cli/native-jobs.js" answer-find \
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-find \
   --question "Are you authorized to work in the United States?" \
   --scope '{"country":"US"}'
 ```
@@ -26,25 +26,25 @@ the helper. Existing records without explicit revisions are exposed as revision
 1 and gain durable revision metadata on their next mutation.
 
 ```bash
-node "<plugin-root>/runtime/cli/native-jobs.js" answer-list [--state <state>] \
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-list [--state <state>] \
   [--review-status <accepted|pending|declined> | --all-review-statuses] \
   [--query <text>] [--offset <n>] [--limit <n>] \
   [--include-trashed] [--trashed-only]
-node "<plugin-root>/runtime/cli/native-jobs.js" answer-observe --input <observation.json>
-node "<plugin-root>/runtime/cli/native-jobs.js" answer-review \
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-observe --input <observation.json>
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-review \
   --key <answer-key> --decision <accepted|declined> \
   --expected-revision <revision> [--input <patch.json>] [--remember-sensitive]
-node "<plugin-root>/runtime/cli/native-jobs.js" answer-reveal --key <answer-key>
-node "<plugin-root>/runtime/cli/native-jobs.js" answer-update \
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-reveal --key <answer-key>
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-update \
   --key <answer-key> --expected-revision <revision> --input <patch.json>
-node "<plugin-root>/runtime/cli/native-jobs.js" answer-merge \
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-merge \
   --winner-key <accepted-winner-key> --source-key <active-duplicate-key> \
   --expected-winner-revision <revision> --expected-source-revision <revision>
-node "<plugin-root>/runtime/cli/native-jobs.js" answer-trash \
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-trash \
   --key <answer-key> --expected-revision <revision>
-node "<plugin-root>/runtime/cli/native-jobs.js" answer-restore \
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-restore \
   --key <answer-key> --expected-revision <revision>
-node "<plugin-root>/runtime/cli/native-jobs.js" answer-delete \
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-delete \
   --key <answer-key> --expected-revision <revision>
 ```
 
@@ -64,7 +64,7 @@ Permission to fill is not permission to remember. If the user approves current u
 Persist a non-null sensitive value only after explicit field-specific remember consent in the current interaction:
 
 ```bash
-node "<plugin-root>/runtime/cli/native-jobs.js" answer-put \
+python3 "<plugin-root>/scripts/job-apply-store.py" answer-put \
   --input <sensitive-answer.json> \
   --remember-sensitive
 ```

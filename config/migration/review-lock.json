@@ -279,7 +279,7 @@
     },
     {
       "path": "python-runtime-closure.json",
-      "sha256": "d80e2e7dad6d93c93b5e6240695d6aa7b0eff233e15936dbf6d58f7c7d4018d1"
+      "sha256": "6c92e89af1d75cc19502c76c8dc876056bc99d9730366f7821da62a3a6e11d6c"
     },
     {
       "path": "requirements-trash-01.json",
@@ -315,11 +315,11 @@
     },
     {
       "path": "source-catalog-05.json",
-      "sha256": "1f1a831641db75c9d0cbb22e633968b38ce2be41b8c10760c402d6ef0ae3f7be"
+      "sha256": "9b196f9347298a9d7598a60b5a6f4e26e680a2ca07bb5e10003a4c0f111a9515"
     },
     {
       "path": "source-catalog-06.json",
-      "sha256": "d4ce3275fd99743d5a3b2ce74eace87845b291c720e444604b675680e807577e"
+      "sha256": "3cdb1aeea55cb09c0828096574be5a636be862ded6dd484e00b1d72223066036"
     },
     {
       "path": "source-catalog-g02-hybrid.json",
@@ -411,7 +411,7 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "227072a90a89a6952d06d03a2298abfabda414d3cc139b7dee8df18f7985c46b"
+      "sha256": "c492e88f4c222b06b5e488d2c0edb419bde804091cc4f267f822e84ee6e15831"
     },
     {
       "path": "source-catalog-native-legacy-jobs.json",
@@ -447,7 +447,7 @@
     },
     {
       "path": "source-catalog-native-task-cli.json",
-      "sha256": "1b60e1ffb83faef797fb2cbedea16d4d6c9e61ecc2c7e73ec9ba0d0b17994a92"
+      "sha256": "27dccf796fb64838a96387746e4d46d5292f787f247948f3967f11936e8832ec"
     },
     {
       "path": "source-catalog-native-task-intake.json",

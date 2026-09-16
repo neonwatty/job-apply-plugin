@@ -10,12 +10,12 @@ Complete the requested application through verified manual review, or record the
 
 ## Route the request
 
-First read [answer-memory](../answer-memory/SKILL.md) to resolve the plugin and Store routing for `node "<plugin-root>/runtime/cli/native-jobs.js"`. Never access persistent applicant files directly.
+First read [answer-memory](../answer-memory/SKILL.md) to resolve the plugin and Store routing for `python3 "<plugin-root>/scripts/job-apply-store.py"`. Never access persistent applicant files directly.
 
 - An approved loopback URL with `#qa-route=<run-id>.<64-lowercase-hex-token>` requires [QA replay routing](../answer-memory/references/qa-replay.md) **before init or any other Store call**. Keep the isolated root throughout; never fall back to the real Store.
 - Resume, facts, onboarding, or an exact extraction request: read [extraction](references/extraction.md). Never scan for extraction requests during every job application. Stop at proposal review.
 - Empty profile or explicit initial setup: read [profile setup](references/profile-setup.md). Ask only for missing input; use an already supplied resume path.
-- Ordinary application: after Store initialization, load `profile-get`; if empty, complete profile setup first. Read [canonical intake](references/intake.md), then [filling and handoff](references/application.md). Use only an exact user-selected job, canonical managed resume, and the private `node "<plugin-root>/runtime/cli/native-attempt.js"` broker. A supplied URL is ingested before browser work.
+- Ordinary application: after Store initialization, load `profile-get`; if empty, complete profile setup first. Read [canonical intake](references/intake.md), then [filling and handoff](references/application.md). Use only an exact user-selected job, canonical managed resume, and the private `job-apply-attempt.py` broker. A supplied URL is ingested before browser work.
 - Reviewed or blocked job: read [recovery](references/recovery.md). Preserve the job, session, managed resume, and displayed revisions. An expired claim requires explicit recovery outside the ordinary workflow.
 
 Before interacting with a form, read [browser and consent](references/browser.md). It defines post-readiness consent, observed field verification, bounded recovery, and visible manual handoff. Advance through clearly non-final Next, Continue, Save, or Review steps; stop before any final submission action. A Review navigation control is not itself proof that the application reached final review.

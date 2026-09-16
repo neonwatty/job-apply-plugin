@@ -10,7 +10,7 @@ import test from 'node:test';
 
 const driver = fileURLToPath(new URL('../tools/contracts/artifact-copy-metadata/reference.py', import.meta.url));
 const source = new URL('../scripts/smoke/artifacts.py', import.meta.url);
-const files = ['.codex-plugin/plugin.json', 'runtime/cli/native-attempt.js', 'runtime/data.bin',
+const files = ['.codex-plugin/plugin.json', 'runtime/data.bin', 'scripts/job-apply-attempt.py',
   'scripts/job-apply-store.py', 'scripts/job-apply-task.py', 'scripts/job-apply-workspace.py',
   'skills/answer-memory/SKILL.md', 'skills/job-apply/SKILL.md'];
 const fixtures = [

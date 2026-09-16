@@ -82,7 +82,7 @@ function checkPreflight(row) {
   assert.deepEqual(row.error, failure('SystemExit', messages[id])); assert.deepEqual(row.calls, []);
   assert.deepEqual(unchanged(row.before), unchanged(row.after));
   const fixed = ['.codex-plugin/plugin.json', 'scripts/job-apply-store.py', 'scripts/job-apply-task.py',
-    'scripts/job-apply-workspace.py', 'runtime/cli/native-attempt.js', 'skills/answer-memory/SKILL.md', 'skills/job-apply/SKILL.md'];
+    'scripts/job-apply-attempt.py', 'scripts/job-apply-workspace.py', 'skills/answer-memory/SKILL.md', 'skills/job-apply/SKILL.md'];
   const expectedPaths = new Set(['.']);
   for (const base of ['source', 'target']) {
     expectedPaths.add(base);

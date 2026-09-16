@@ -10,14 +10,14 @@ Use the bundled helper for persistent applicant data. Never directly read or edi
 
 ## Initialize only the needed workflow
 
-Resolve `<plugin-root>` once from this installed skill's path. In Codex, use the catalog path, or `PLUGIN_ROOT` after verifying `runtime/cli/native-jobs.js` exists. In Claude Code, verify `CLAUDE_PLUGIN_ROOT` the same way. Never assume the working directory is the plugin root or search unrelated user directories.
+Resolve `<plugin-root>` once from this installed skill's path. In Codex, use the catalog path, or `PLUGIN_ROOT` after verifying `scripts/job-apply-store.py` exists. In Claude Code, verify `CLAUDE_PLUGIN_ROOT` the same way. Never assume the working directory is the plugin root or search unrelated user directories.
 
 Before **any** Store call, check for an approved loopback URL with `#qa-route=<run-id>.<64-lowercase-hex-token>`. For that route only, read [QA replay](references/qa-replay.md), resolve it before `init`, and pass the resolved `--root` throughout. Failure must never fall back to the real or legacy Store.
 
 For ordinary storage work:
 
 ```bash
-node "<plugin-root>/runtime/cli/native-jobs.js" init
+python3 "<plugin-root>/scripts/job-apply-store.py" init
 ```
 
 The helper initializes `~/.job-apply/` and non-destructively migrates the legacy profile. Successful data commands return JSON. On nonzero exit, preserve files and explain the failure without exposing values.
@@ -30,7 +30,7 @@ Use permission-restricted temporary JSON files for `--input`, remove them on suc
 - Managed resume import, replacement, or extraction proposals: [resumes](references/resumes.md).
 - Reusable answers, missing questions, consent, or answer-library edits: [answers](references/answers.md).
 - Canonical job maintenance, history, or standalone sessions: [jobs and history](references/jobs-history.md).
-- Starting or resuming an application: use [job-apply](../job-apply/SKILL.md). Ordinary agents use `node "<plugin-root>/runtime/cli/native-task.js"` and `node "<plugin-root>/runtime/cli/native-attempt.js"`, never raw acquire, recovery, heartbeat, progress, or handoff commands. The broker keeps claim authority private.
+- Starting or resuming an application: use [job-apply](../job-apply/SKILL.md). Ordinary agents use `job-apply-task.py` and `job-apply-attempt.py`, never raw acquire, recovery, heartbeat, progress, or handoff commands. The broker keeps claim authority private.
 - Explicit storage compatibility/debugging: [storage contract](references/storage-contract.md).
 - Explicit inert Auto-submit policy work: [policy](references/policy.md). This never authorizes live submission.
 

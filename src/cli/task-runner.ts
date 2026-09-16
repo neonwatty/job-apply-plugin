@@ -23,7 +23,9 @@ async function installedTaskArgs(args: string[]): Promise<string[]> {
   const completed = [...args];
   if (!completed.some(argument => argument === '--root' || argument.startsWith('--root='))) {
     const configured = process.env.JOB_APPLY_STORE_DIR;
-    completed.unshift('--root', configured ? resolve(configured) : join(realpathSync(homedir()), '.job-apply'));
+    const home = realpathSync(homedir());
+    const expanded = configured === '~' || configured?.startsWith('~/') ? home + configured.slice(1) : configured;
+    completed.unshift('--root', expanded ? resolve(expanded) : join(home, '.job-apply'));
   }
   if (!completed.some(argument => argument === '--native-lock' || argument.startsWith('--native-lock='))
     && !completed.includes('--help') && !completed.includes('-h')) {
