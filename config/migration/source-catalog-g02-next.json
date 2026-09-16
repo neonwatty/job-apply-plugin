@@ -23,7 +23,7 @@
     },
     {
       "path": "apps/companion/components/Jobs.tsx",
-      "sha256": "622f7d8171561551f50fe65c2e13faaa5cf5b9520920298fb95e119c332dabb2",
+      "sha256": "88fa45ce110023052d51fabc025ac761d09c3c88108469fef2f0279d972abd3d",
       "classification": "unreviewed"
     },
     {
@@ -43,7 +43,7 @@
     },
     {
       "path": "apps/companion/components/companion.css",
-      "sha256": "023bba92abaeaa439acf04ba1a8ce83b19c485aef8a596d11adc7142077640db",
+      "sha256": "bbad681469a7143241051146be7e19635675ceba9bd7e9819ddc8ca5aa98577f",
       "classification": "unreviewed"
     },
     {

@@ -61,6 +61,8 @@ export async function nextSetupAndLoading(page, url) {
   await page.unroute('**/api/state');
   await page.getByRole('button', { name: 'Retry loading jobs' }).click();
   await page.getByText('No jobs yet. Capture a job to get started.', { exact: true }).waitFor();
+  assert.equal(await page.getByLabel('Pipeline summary', { exact: true }).count(), 0,
+    'an empty pipeline does not repeat three zero-value metrics');
 }
 
 export async function nextDraftAndRecovery(page, origin, headers) {

@@ -10,7 +10,7 @@ export function Facts({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:b
   const [latest,setLatest]=useState<ProfileSnapshot|null>(null),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
   const [error,setError]=useState(''),[notice,setNotice]=useState(''),[key,setKey]=useState('firstName'),[kind,setKind]=useState('text');
   const [invalid,setInvalid]=useState(false),[editorVersion,setEditorVersion]=useState(0);
-  const [query,setQuery]=useState(''),[groupDirty,setGroupDirty]=useState(false);
+  const [query,setQuery]=useState(''),[groupDirty,setGroupDirty]=useState(false),[addOpen,setAddOpen]=useState(false);
   const alive=useRef(false), generation=useRef(0), request=useRef<AbortController|null>(null);
   const form=useRef<HTMLFormElement|null>(null);
   useEffect(()=>{setInvalid(form.current?!form.current.checkValidity():false);},[draft,editorVersion]);
@@ -54,7 +54,6 @@ export function Facts({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:b
       <div className="workspace-hero-copy"><p className="eyebrow">Facts workspace</p><h1 id="facts-workspace-title">Your canonical application facts.</h1><p>Review and selectively edit the same local profile used by Job Apply agents.</p></div>
       <div className="workspace-hero-actions">
         <button className="secondary" disabled={busy||loading||invalid} onClick={()=>void refresh()}>Refresh facts</button>
-        <button className="primary" type="submit" form="facts-form" disabled={!dirty||Boolean(latest)||invalid||busy}>Save changes</button>
       </div>
     </header>
     <p className="workspace-status" role="status">{loading?'Loading facts…':notice||(base?`Canonical profile revision ${base.revision}.`:'')}</p>
@@ -67,28 +66,29 @@ export function Facts({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:b
     {base&&draft&&<section className="workspace-panel facts-panel" aria-labelledby="facts-form-title">
       <div className="workspace-panel-heading">
         <div><p className="eyebrow">Canonical profile</p><h2 id="facts-form-title">Applicant facts</h2></div>
-        <p className="facts-revision">Revision {base.revision}</p>
+        <div className="facts-heading-actions"><p className="facts-revision">Revision {base.revision}</p>
+          <button className="secondary" type="button" onClick={()=>setAddOpen(value=>!value)} aria-expanded={addOpen} aria-controls="fact-add-panel">{addOpen?'Close new fact':'Add a fact'}</button></div>
       </div>
       <form id="facts-form" ref={form} onChange={event=>setInvalid(!event.currentTarget.checkValidity())} onSubmit={event=>{event.preventDefault();void save();}}><fieldset disabled={busy}>
         <legend className="visually-hidden">Profile facts</legend>
         <div className="facts-filter"><label>Find a fact<input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search canonical facts"/></label><span>{keys(draft).filter(name=>name.toLowerCase().includes(query.toLowerCase())).length} shown</span></div>
-        {!draft.size&&<div className="workspace-empty facts-empty"><span className="empty-check" aria-hidden="true">◇</span><strong>No profile facts yet.</strong><p>Add a field below to start your canonical profile.</p></div>}
+        {!draft.size&&<div className="workspace-empty facts-empty"><span className="empty-check" aria-hidden="true">◇</span><strong>No profile facts yet.</strong><p>Use Add a fact to start your canonical profile.</p></div>}
         {draft.size>0&&!keys(draft).some(name=>name.toLowerCase().includes(query.toLowerCase()))&&<div className="workspace-empty facts-empty"><strong>No matching facts.</strong><p>Try another search or add a new fact below.</p></div>}
         <div className="facts-list">{keys(draft).map(name=><div key={name} hidden={!name.toLowerCase().includes(query.toLowerCase())} className="fact-card">
           <FactValue key={editorVersion} label={name} value={get(draft,name)} change={value=>setDraft(current=>current?set(copy(current),name,value):current)}/>
           <details><summary>Fact source</summary><pre>{factProvenance(base.provenance,name)}</pre></details>
           <button className="text-action" type="button" onClick={()=>{const next=copy(draft);next.delete(text(name));setDraft(next);}}>Remove fact {name}</button>
         </div>)}</div>
-        <fieldset className="fact-add-panel"><legend>Add a fact</legend><p>Add a standard profile field or a custom value used during applications.</p>
+        {addOpen&&<fieldset id="fact-add-panel" className="fact-add-panel"><legend>Add a fact</legend><p>Add a standard profile field or a custom value used during applications.</p>
           <div className="fact-add-grid"><label>Fact name<input list="fact-names" value={key} onChange={event=>setKey(event.target.value)}/><datalist id="fact-names">{sections.map(name=><option key={name} value={name}/>)}</datalist></label>
           <label>Value type<select value={kind} onChange={event=>setKind(event.target.value)}><option value="text">Text</option><option value="object">Fields</option><option value="array">List</option><option value="boolean">Yes / no</option><option value="number">Number</option><option value="null" disabled={sections.includes(key)}>No value (additional facts)</option></select></label>
           <button className="secondary" type="button" disabled={!key||draft.has(text(key))||(kind==='null'&&sections.includes(key))} onClick={()=>{
             const value=['workHistory','education','skills'].includes(key)?parse('[]'):key==='preferences'?parse('{}'):kind==='object'?parse('{}'):kind==='array'?parse('[]'):kind==='boolean'?true:kind==='number'?parse('0'):kind==='null'?null:text('');
             setDraft(set(copy(draft),key,value));setQuery('');
           }}>Add fact</button></div>
-        </fieldset>
-        <div className="facts-actions"><button className="primary" type="submit" disabled={!dirty||Boolean(latest)||invalid}>Save facts</button>
-        <button className="secondary" type="button" disabled={!dirty&&!invalid} onClick={()=>{if(confirm('Discard unsaved facts changes?')){setDraft(base.profile);setEditorVersion(value=>value+1);setInvalid(false);setLatest(null);setError('');setNotice('Draft discarded.');}}}>Discard facts changes</button></div>
+        </fieldset>}
+        {(dirty||invalid)&&<div className="facts-actions"><button className="primary" type="submit" disabled={!dirty||Boolean(latest)||invalid}>Save facts</button>
+        <button className="secondary" type="button" disabled={!dirty&&!invalid} onClick={()=>{if(confirm('Discard unsaved facts changes?')){setDraft(base.profile);setEditorVersion(value=>value+1);setInvalid(false);setLatest(null);setError('');setNotice('Draft discarded.');}}}>Discard facts changes</button></div>}
       </fieldset></form>
     </section>}
   </section>;

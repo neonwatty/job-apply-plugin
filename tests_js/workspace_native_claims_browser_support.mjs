@@ -7,12 +7,15 @@ export async function claimsBrowser(page, { jobId, expireClaim }) {
     const panel = page.getByRole('region', { name: 'Active application', exact: true });
     try { await panel.getByText('No active application claim.', { exact: true }).waitFor(); }
     catch (error) { throw Error(`${error.message}\n${await page.locator('body').innerText()}`); }
+    assert.equal(await panel.getByRole('combobox', { name: 'Job for application work', exact: true }).count(), 0,
+        'application setup stays collapsed until requested');
+    await panel.getByRole('button', { name: 'Choose a job to apply', exact: true }).click();
     await panel.getByRole('combobox', { name: 'Job for application work', exact: true }).selectOption(jobId);
     page.once('dialog', dialog => dialog.accept());
-    await panel.getByRole('button', { name: 'Select this job', exact: true }).click();
+    await panel.getByRole('button', { name: 'Confirm selected job', exact: true }).click();
     await panel.getByText('Job selected. Acquisition checks readiness again.', { exact: true }).waitFor();
     const acquired = page.waitForResponse(response => response.url().endsWith('/api/claims/acquire') && response.request().method() === 'POST');
-    await panel.getByRole('button', { name: 'Acquire application work', exact: true }).click();
+    await panel.getByRole('button', { name: 'Start application', exact: true }).click();
     const response = await acquired;
     assert.equal(response.status(), 200);
     const { token } = await response.json();
@@ -24,7 +27,7 @@ export async function claimsBrowser(page, { jobId, expireClaim }) {
     // Leaving loses the ephemeral credential and stops the old component's renewal timer.
     page.once('dialog', dialog => dialog.accept());
     await page.reload();
-    await page.getByText('This view does not hold the claim credential. After reload or navigation, wait for expiry, refresh status, and explicitly recover the same job.', { exact: true }).waitFor();
+    await page.getByText('This browser no longer holds the application credential. Wait for the lease to expire, refresh the status, then recover this job.', { exact: true }).waitFor();
     assert.equal(await panel.getByRole('button', { name: 'Recover expired application', exact: true }).count(), 0);
     await expireClaim(jobId);
     await panel.getByRole('button', { name: 'Refresh application status', exact: true }).click();
