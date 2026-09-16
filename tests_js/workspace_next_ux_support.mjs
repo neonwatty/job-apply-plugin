@@ -43,7 +43,7 @@ export async function nextSetupAndLoading(page, url) {
   await page.getByText('Connection unavailable', { exact: true }).waitFor();
   await page.unroute(boot);
   await page.getByRole('button', { name: 'Retry connection' }).click();
-  await page.getByText('Canonical store connected', { exact: true }).waitFor();
+  await page.getByRole('status', { name: 'Canonical store connected', exact: true }).waitFor();
   await page.getByRole('button', { name: 'Overview', exact: true }).click();
 
   let release;

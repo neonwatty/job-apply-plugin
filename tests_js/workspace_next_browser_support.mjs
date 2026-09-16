@@ -95,7 +95,7 @@ async function productionBrowser(root) {
       globalThis.recordCsp({ directive: event.violatedDirective, blocked: event.blockedURI });
     }));
     await page.goto(startup.url, { waitUntil: 'networkidle' });
-    await page.getByText('Canonical store connected', { exact: true }).waitFor();
+    await page.getByRole('status', { name: 'Canonical store connected', exact: true }).waitFor();
     await page.getByRole('button', { name: 'Overview', exact: true }).click();
     await nextSetupAndLoading(page, startup.url);
     await page.getByRole('button', { name: 'Jobs', exact: true }).click();
@@ -134,7 +134,7 @@ async function productionBrowser(root) {
     await nextLateRead(page);
     const trash = await reactTrashBrowser(page, { origin, headers });
     await page.reload({ waitUntil: 'networkidle' });
-    await page.getByText('Canonical store connected', { exact: true }).waitFor();
+    await page.getByRole('status', { name: 'Canonical store connected', exact: true }).waitFor();
     assert.equal(await page.getByRole('link', { name: 'Open full workspace', exact: true }).count(), 0);
     assert.deepEqual(errors, []);
     assert.deepEqual(violations, []);
