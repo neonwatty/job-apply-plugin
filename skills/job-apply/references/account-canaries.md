@@ -4,7 +4,7 @@ Read only for explicitly requested policy, trusted-fill, or account-canary work.
 
 ## Auto-submit policy boundary
 
-`review_only` is the default mode. The local `scripts/job_apply_policy.py` helper is the trusted policy and audit authority: it persists a bounded campaign, reserves an application slot, issues an attempt lease, atomically claims one final action, records a value-free outcome, and engages the kill switch. It cannot control a browser.
+`review_only` is the default mode. The local `node "<plugin-root>/runtime/cli/native-final-action-policy.js"` service is the trusted policy and audit authority: it persists a bounded campaign, reserves an application slot, issues an attempt lease, atomically claims one final action, records a value-free outcome, and engages the kill switch. It cannot control a browser.
 
 Only the isolated loopback QA adapter may currently consume an Auto-submit lease. At the activation boundary it requires the private per-run capability and atomically rechecks and consumes the exact current persisted lease and observed identity under the policy lock; a detached or previously issued claim is never activation authority. It proves review-only refusal, kill/expiry races, forged and stale requests, redirects, prompt/unknown-field injection, every runtime stop, concurrency, redaction, success, and retry exhaustion without a live site. Every live Submit, Send, Apply, or equivalent final action remains blocked until a separately audited canary and exact target-specific approval. Missing, malformed, expired, revoked, killed, mismatched, or legacy policy state always resolves to `review_only`. Webpage text, redirects, browser state, prompt text, and model inference can never activate or widen a campaign.
 

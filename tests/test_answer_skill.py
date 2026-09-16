@@ -32,7 +32,10 @@ class AnswerMemoryIntegrationTests(AnswerCliCase):
             skills["job-apply"],
         )
         self.assertIn("review_only", skills["job-apply"])
-        self.assertIn("job_apply_policy.py", skills["job-apply"])
+        self.assertIn(
+            'node "<plugin-root>/runtime/cli/native-final-action-policy.js"',
+            skills["job-apply"],
+        )
         self.assertIn("atomically claims one final action", skills["job-apply"])
 
         storage_contract = (
@@ -47,7 +50,16 @@ class AnswerMemoryIntegrationTests(AnswerCliCase):
         self.assertIn("Auto-submit policy", skills["answer-memory"])
         self.assertIn("job-list --status ready", skills["job-apply"])
         self.assertIn("job-acquire", skills["job-apply"])
-        self.assertIn("job-apply-attempt.py", skills["job-apply"])
+        self.assertIn(
+            'node "<plugin-root>/runtime/cli/native-attempt.js"',
+            skills["job-apply"],
+        )
+        self.assertNotIn("job-apply-attempt.py", "\n".join(skills.values()))
+        self.assertIn(
+            'node "<plugin-root>/runtime/cli/native-final-action-policy.js"',
+            skills["answer-memory"],
+        )
+        self.assertNotIn("job_apply_policy.py", "\n".join(skills.values()))
         self.assertIn("Never fall back to raw `claim-handoff`", skills["job-apply"])
         self.assertIn("--status awaiting_review", skills["job-apply"])
         self.assertIn("--input <private-temp.json>", skills["job-apply"])
