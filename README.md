@@ -594,18 +594,18 @@ npm run test:qa-browser
 bash scripts/smoke-plugin.sh
 bash scripts/check-links.sh
 git diff --check
-python3 scripts/qa-replay.py prepare --fixture linkedin-easy-apply-screening-2026-08-v1 --scenario linkedin-screening
-python3 scripts/qa-replay.py started --run-id GENERATED_RUN_ID
-python3 scripts/qa-replay.py reviewed --run-id GENERATED_RUN_ID
-python3 scripts/qa-replay.py evaluate --run-id GENERATED_RUN_ID
+node runtime/cli/native-qa-replay.js prepare --fixture linkedin-easy-apply-screening-2026-08-v1 --scenario linkedin-screening
+node runtime/cli/native-qa-replay.js started --run-id GENERATED_RUN_ID
+node runtime/cli/native-qa-replay.js reviewed --run-id GENERATED_RUN_ID
+node runtime/cli/native-qa-replay.js evaluate --run-id GENERATED_RUN_ID
 ```
 
-`prepare` prints the same five fields for every supported fixture, with platform-correct Ashby, Greenhouse, or LinkedIn guidance, a unique route fragment, and a unique run ID. It only prepares local instructions; it never launches an agent. The host resolves the route to the isolated store with `python3 scripts/qa-replay.py resolve --route-token 'GENERATED_RUN_ID.GENERATED_ROUTE_TOKEN'`, records `started` before filling, and records `reviewed` only after the visible fixture reaches its review event with zero final-action activations. Both lifecycle commands are idempotent and write only value-free history/session metadata through the existing store helper. Then run `evaluate`. After evaluation—or to abandon an interrupted run—sanitize the run with `python3 scripts/qa-replay.py cleanup --run-id GENERATED_RUN_ID`. Cleanup leaves a minimal tombstone; completed runs retain only the redacted report, while abandoned runs retain no report. The dated IDs above are examples; use the generated ID for every lifecycle, evaluation, and cleanup command.
+`prepare` prints the same five fields for every supported fixture, with platform-correct Ashby, Greenhouse, or LinkedIn guidance, a unique route fragment, and a unique run ID. It only prepares local instructions; it never launches an agent. The host resolves the route to the isolated store with `node runtime/cli/native-qa-replay.js resolve --route-token 'GENERATED_RUN_ID.GENERATED_ROUTE_TOKEN'`, records `started` before filling, and records `reviewed` only after the visible fixture reaches its review event with zero final-action activations. Both lifecycle commands are idempotent and write only value-free history/session metadata through the native Store. Then run `evaluate`. After evaluation—or to abandon an interrupted run—sanitize the run with `node runtime/cli/native-qa-replay.js cleanup --run-id GENERATED_RUN_ID`. Cleanup leaves a minimal tombstone; completed runs retain only the redacted report, while abandoned runs retain no report. The dated IDs above are examples; use the generated ID for every lifecycle, evaluation, and cleanup command.
 
 The committed `linkedin-screening` review lane remains wholly synthetic and requires zero final-action activations. A second repeatable loopback verifier exercises the high-risk Auto-submit state machine at the policy-coupled activation boundary, including actual review-only refusal, kill/expiry and concurrency races, forged/stale/prompt/redirect denial, all runtime stops, redaction, one-winner success with independent confirmation, and terminal one-retry uncertainty:
 
 ```bash
-python3 scripts/qa-replay.py verify-auto-submit --fixture qa/fixtures/linkedin-easy-apply-screening-2026-08-v1/fixture.json --json
+node runtime/cli/native-qa-replay.js verify-auto-submit --fixture qa/fixtures/linkedin-easy-apply-screening-2026-08-v1/fixture.json --json
 ```
 
 That verifier uses only `127.0.0.1`, a private per-run capability, opaque identities, and redacted reports. It does not contact LinkedIn, authenticate, use applicant data, or authorize a live action. A real canary remains a separate audited and exactly approved step.

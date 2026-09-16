@@ -279,7 +279,7 @@
     },
     {
       "path": "python-runtime-closure.json",
-      "sha256": "9aad1363898581efcc066e86be013a0019244381a1827411f198921650415c5c"
+      "sha256": "3d04e908fb1626f715ff3b9da9680aa97d893d6784739cf04aa8c67dfd5bf3c4"
     },
     {
       "path": "requirements-trash-01.json",
@@ -299,7 +299,7 @@
     },
     {
       "path": "source-catalog-01.json",
-      "sha256": "09cc812949cb47b237e804f83e491728a52dae0d03496c203ab41c623d59364e"
+      "sha256": "7400e9a773cc4bb84b34de8c10c2c9308db3c13c15bafd6a9838bfb6779af016"
     },
     {
       "path": "source-catalog-02.json",
@@ -432,6 +432,10 @@
     {
       "path": "source-catalog-native-projections.json",
       "sha256": "7ae28bce007b813be77ac2118e0984236befda16dff9e83b24fa8fe1b77a54e9"
+    },
+    {
+      "path": "source-catalog-native-qa-replay.json",
+      "sha256": "f42165d7c49e5e7ba9c04e3bff7f8778d176e9f4e5393a693e325e64406918f6"
     },
     {
       "path": "source-catalog-native-resume-lifecycle.json",

@@ -9,7 +9,7 @@ class ReplayCoordinatorTests(ReplayCase):
         job_apply = skill_text(ROOT / "skills/job-apply/SKILL.md")
         self.assertIn("../answer-memory/references/qa-replay.md", job_apply)
         for document in (answer_memory,):
-            self.assertIn("qa-replay.py", document)
+            self.assertIn("native-qa-replay.js", document)
             self.assertIn("--route-token", document)
             self.assertIn("--root", document)
             self.assertIn("before", document.lower())
