@@ -13,7 +13,7 @@
     },
     {
       "path": "scripts/smoke/package_native_lock.mjs",
-      "sha256": "998f6f5dbef45908235f295e8fc8edd299551b4325d57b0db9700a883338ba7c",
+      "sha256": "e3169cc087ef489f8debf0d6c5e9bcd3106978ea53146f8e4883a74f3b5da7dc",
       "classification": "unreviewed"
     },
     {

@@ -108,7 +108,7 @@
     },
     {
       "path": "apps/companion/supervise.mjs",
-      "sha256": "4b587f68422940fa32b7dcf2e740d8b1a649768cc123a5faa4822b871fa41821",
+      "sha256": "2cc8827dbfc03ef11a7afbfa0e607261dc2957c193cfff9dfc3483d0dfefdb2e",
       "classification": "unreviewed"
     },
     {
