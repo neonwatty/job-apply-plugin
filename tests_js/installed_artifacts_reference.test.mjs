@@ -8,7 +8,7 @@ import test from 'node:test';
 const driver = fileURLToPath(new URL('../tools/contracts/installed-artifacts/reference.py', import.meta.url));
 const source = new URL('../scripts/smoke/artifacts.py', import.meta.url);
 const fixed = ['.codex-plugin/plugin.json', 'scripts/job-apply-store.py',
-  'scripts/job-apply-task.py', 'scripts/job-apply-attempt.py', 'scripts/job-apply-workspace.py',
+  'scripts/job-apply-task.py', 'scripts/job-apply-workspace.py', 'runtime/cli/native-attempt.js',
   'skills/answer-memory/SKILL.md', 'skills/job-apply/SKILL.md'];
 const trees = ['skills', 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace',
   'apps/companion', 'native'];
@@ -56,9 +56,9 @@ const cases = [
 ];
 const errors = {
   'inventory-missing-fixed': 'critical package artifact is missing: scripts/job-apply-store.py',
-  'inventory-missing-tree': 'critical package artifact is missing: runtime',
+  'inventory-missing-tree': 'critical package artifact is missing: runtime/cli/native-attempt.js',
   'inventory-fixed-directory': 'critical package artifact is not a regular file: scripts/job-apply-store.py',
-  'inventory-tree-file': 'critical package tree is not a directory: runtime',
+  'inventory-tree-file': 'critical package ancestor is not a directory: runtime/cli/native-attempt.js',
   'inventory-ancestor-file': 'critical package ancestor is not a directory: skills/answer-memory/SKILL.md',
   'inventory-fixed-link': 'critical package path contains a symlink: scripts/job-apply-store.py',
   'inventory-ancestor-link': 'critical package path contains a symlink: scripts/job-apply-store.py',
@@ -72,8 +72,8 @@ const errors = {
   'verify-missing-nested': 'synthetic critical package inventory differs',
   'copy-directory-rejected': 'critical package destination is not a regular file: scripts/job-apply-store.py',
   'copy-link-rejected': 'critical package path contains a symlink: scripts/job-apply-store.py',
-  'copy-ancestor-rejected': 'critical package path contains a symlink: scripts/job-apply-attempt.py',
-  'copy-dangling-ancestor': 'critical package path contains a symlink: scripts/job-apply-attempt.py',
+  'copy-ancestor-rejected': 'critical package path contains a symlink: scripts/job-apply-store.py',
+  'copy-dangling-ancestor': 'critical package path contains a symlink: scripts/job-apply-store.py',
   'copy-source-invalid': 'critical package artifact is missing: scripts/job-apply-store.py',
 };
 const keys = (value, expected) => assert.deepEqual(Object.keys(value).sort(), [...expected].sort());
@@ -166,7 +166,9 @@ for (const executable of ['python3', 'python3.12', 'python3.13', 'python3.14']) 
           assert.deepEqual(after.get('target/runtime/extra.js'), before.get('target/runtime/extra.js'));
         }
         if (row.id === 'copy-empty-trees') {
-          for (const tree of trees) assert.equal(after.has(`target/${tree}`), tree === 'skills');
+          for (const tree of trees) {
+            assert.equal(after.has(`target/${tree}`), fixed.some(path => path.startsWith(`${tree}/`)));
+          }
         }
       }
       if (row.id.startsWith('copy-') && errors[row.id]) {

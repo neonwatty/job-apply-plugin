@@ -10,7 +10,7 @@ import test from 'node:test';
 
 const driver = fileURLToPath(new URL('../tools/contracts/artifact-copy-metadata/reference.py', import.meta.url));
 const source = new URL('../scripts/smoke/artifacts.py', import.meta.url);
-const files = ['.codex-plugin/plugin.json', 'runtime/data.bin', 'scripts/job-apply-attempt.py',
+const files = ['.codex-plugin/plugin.json', 'runtime/cli/native-attempt.js', 'runtime/data.bin',
   'scripts/job-apply-store.py', 'scripts/job-apply-task.py', 'scripts/job-apply-workspace.py',
   'skills/answer-memory/SKILL.md', 'skills/job-apply/SKILL.md'];
 const fixtures = [
@@ -21,6 +21,7 @@ const fixtures = [
 const hash = value => createHash('sha256').update(value).digest('hex');
 const keys = (value, expected) => assert.deepEqual(Object.keys(value).sort(), [...expected].sort());
 const contents = (label, path) => Buffer.concat([Buffer.from(`${label}:${path}`), Buffer.from([0, 255])]);
+const focus = files.indexOf('runtime/data.bin');
 function checkedRows(rows) {
   assert.deepEqual(rows.map(row => row.path), files);
   for (const row of rows) {
@@ -105,13 +106,13 @@ for (const executable of ['python3', 'python3.12', 'python3.13', 'python3.14']) 
         assert.equal(before.mode, 0o600);
         assert.equal(before.mtimeNs, '1700000000000000000');
         const after = row.targetAfter[position];
-        if (row.native || position === 0 || position === 1 && row.id === 'after-copy') {
+        if (row.native || position < focus || position === focus && row.id === 'after-copy') {
           const expected = { ...original, xattrs: before.xattrs };
           if (path === 'runtime/data.bin' && receipt.profile.pythonXattrAPI) {
             expected.xattrs = { ...before.xattrs, ...original.xattrs };
           }
           assert.deepEqual(after, expected);
-        } else if (position === 1 && row.id !== 'before-copy') {
+        } else if (position === focus && row.id !== 'before-copy') {
           assert.equal(after.sha256, original.sha256);
           assert.equal(after.size, original.size);
           assert.equal(after.mode, before.mode);
@@ -125,10 +126,10 @@ for (const executable of ['python3', 'python3.12', 'python3.13', 'python3.14']) 
         } else assert.deepEqual(after, before, 'later files retain their original bytes and metadata');
       }
       if (row.id === 'xattrs') {
-        assert.deepEqual(row.sourceBefore[1].xattrs, { 'user.job_apply_synthetic': '73796e74686574696300ff' });
-        assert.deepEqual(row.targetBefore[1].xattrs, { 'user.job_apply_target_only': '72657461696e6564' });
+        assert.deepEqual(row.sourceBefore[focus].xattrs, { 'user.job_apply_synthetic': '73796e74686574696300ff' });
+        assert.deepEqual(row.targetBefore[focus].xattrs, { 'user.job_apply_target_only': '72657461696e6564' });
       }
-      const expectedEvents = (row.native ? files : files.slice(0, 2)).map(path => `copy:${path}`);
+      const expectedEvents = (row.native ? files : files.slice(0, focus + 1)).map(path => `copy:${path}`);
       if (row.id === 'utime-error') expectedEvents.push('fault:utime');
       if (row.id === 'chmod-error') expectedEvents.push('fault:chmod');
       assert.deepEqual(row.events, expectedEvents);

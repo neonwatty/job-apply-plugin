@@ -30,7 +30,7 @@ python3 "$REPO_ROOT/scripts/job-apply-store.py" --help >/dev/null
 echo "Checking task CLI entry point"
 python3 "$REPO_ROOT/scripts/job-apply-task.py" --help >/dev/null
 echo "Checking attempt CLI entry point"
-python3 "$REPO_ROOT/scripts/job-apply-attempt.py" --help >/dev/null
+node "$REPO_ROOT/runtime/cli/native-attempt.js" --help >/dev/null
 echo "Running unified task spine oracle"
 node "$REPO_ROOT/qa/unified_task_spine_oracle.mjs" --json
 

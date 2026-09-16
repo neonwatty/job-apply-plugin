@@ -4,7 +4,7 @@ import { chmod, lstat, mkdir, readFile, readdir, readlink, rm, symlink, utimes, 
 import { join } from 'node:path';
 
 export const fixed = ['.codex-plugin/plugin.json', 'scripts/job-apply-store.py',
-  'scripts/job-apply-task.py', 'scripts/job-apply-attempt.py', 'scripts/job-apply-workspace.py',
+  'scripts/job-apply-task.py', 'scripts/job-apply-workspace.py', 'runtime/cli/native-attempt.js',
   'skills/answer-memory/SKILL.md', 'skills/job-apply/SKILL.md'];
 export const trees = ['skills', 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace',
   'apps/companion', 'native'];
@@ -37,9 +37,13 @@ export async function alter(root, change) {
   else if (change === 'empty-dir') await mkdir(join(root, 'runtime/empty'));
   else if (change === 'empty-trees') {
     for (const tree of trees) {
-      if (tree === 'skills') {
-        for (const relative of files.filter(path => path.startsWith('skills/') && !fixed.includes(path))) await remove(relative);
-      } else { await remove(tree); await mkdir(join(root, tree)); }
+      await remove(tree); await mkdir(join(root, tree));
+      for (const relative of fixed.filter(path => path.startsWith(`${tree}/`))) {
+        const fixedPath = join(root, relative);
+        await mkdir(join(fixedPath, '..'), { recursive: true });
+        await writeFile(fixedPath, Buffer.concat([Buffer.from(`synthetic:${relative}`), Buffer.from([0, 255, 10])]));
+        await chmod(fixedPath, 0o640); await utimes(fixedPath, 1700000000, 1700000000);
+      }
     }
   } else if (change === 'tamper') await writeFile(path, 'tampered');
   else if (change === 'mode') await chmod(path, 0o600);

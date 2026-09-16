@@ -6,12 +6,12 @@ contract, the Companion launcher, and every shipped skill document. A new Python
 target in those files fails `check:migration` until it is explicitly classified.
 Removing a caller also fails until its now-stale declaration is removed.
 
-The current shipped routing reaches eight Python entrypoints:
+The current shipped routing reaches four Python entrypoints:
 
 | State | Entrypoints |
 | --- | --- |
-| TypeScript implementation exists for synthetic fixtures only | Store CLI, task CLI, workspace server, Trusted Fill authority, form-readiness contract |
-| Python implementation still required | attempt broker, campaign/final-action policy, QA replay |
+| TypeScript implementation exists for synthetic fixtures only | Store CLI, task CLI, workspace server |
+| Python implementation still required | QA replay |
 
 The two Python package trees behind the Store and workspace server also remain
 part of the installed critical artifact. A TypeScript implementation is not a
@@ -37,10 +37,15 @@ unavailable on `PATH`. Python initialization and rollback are separately bounded
 checks, and rollback preserves both exact canonical bytes and retained native
 post-write state. The installed rehearsal now owns and proves quiescence of the
 complete Python or native Companion process group before either Store move. This
-evidence does not close ordinary product routing. Before changing shipped skills
-or the default Companion route to Node, the remaining attempt, final-action
-policy, and native Store command surfaces must close and pass staging validation.
+evidence does not close ordinary product routing. Before retiring the rollback
+assets, the native Store command surfaces and installed Companion route must
+close and pass staging validation. The private attempt broker used by ordinary
+application routing is now `runtime/cli/native-attempt.js`; its Python
+predecessor remains packaged only as an unclaimed rollback source, not a
+critical entry point.
 
-Repository tests, reference oracles, source generators, and development checks
-may continue using Python during this phase. Their later removal belongs to the
-final Python-free artifact gate, after runtime routing has closed.
+Repository tests, differential Python oracles, source generators, and
+development checks may continue using Python during this phase. The Store and
+workspace Python package trees remain in the installed critical artifact for
+rollback compatibility; their later removal belongs to the final Python-free
+artifact gate, after runtime routing has closed.

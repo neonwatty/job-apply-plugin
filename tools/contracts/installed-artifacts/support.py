@@ -7,8 +7,8 @@ import stat
 
 FIXED = [
     '.codex-plugin/plugin.json', 'scripts/job-apply-store.py',
-    'scripts/job-apply-task.py', 'scripts/job-apply-attempt.py',
-    'scripts/job-apply-workspace.py', 'skills/answer-memory/SKILL.md',
+    'scripts/job-apply-task.py', 'scripts/job-apply-workspace.py',
+    'runtime/cli/native-attempt.js', 'skills/answer-memory/SKILL.md',
     'skills/job-apply/SKILL.md',
 ]
 TREES = ['skills', 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace',
@@ -70,13 +70,15 @@ def alter(root, change):
         (root / 'runtime/empty').mkdir()
     elif change == 'empty-trees':
         for tree in TREES:
-            if tree == 'skills':
-                for relative in FILES:
-                    if relative.startswith('skills/') and relative not in FIXED:
-                        remove(root / relative)
-            else:
-                remove(root / tree)
-                (root / tree).mkdir()
+            remove(root / tree)
+            (root / tree).mkdir()
+            for relative in FIXED:
+                if relative.startswith(tree + '/'):
+                    path = root / relative
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(b'synthetic:' + relative.encode() + b'\x00\xff\n')
+                    path.chmod(0o640)
+                    os.utime(path, ns=(STAMP, STAMP))
     elif change in ('missing-fixed', 'fixed-directory', 'fixed-link', 'dangling-link', 'tamper', 'mode'):
         path = root / 'scripts/job-apply-store.py'
         if change == 'tamper':
