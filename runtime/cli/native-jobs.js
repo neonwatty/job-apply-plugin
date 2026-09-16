@@ -31,12 +31,10 @@ import { NativeResumeFiles } from "../store/native-resume-files.js";
 import { createNativeStoreBootstrap } from '../store/native-store-bootstrap.js';
 import { withStoreBootstrapLock } from './native-store-bootstrap-lock.js';
 import { resolvePackagedNativeLock } from '../package/native-lock-artifact.js';
-
 function defaultStoreRoot(environment = process.env) {
     const configured = environment.JOB_APPLY_STORE_DIR;
     return configured ? resolve(configured) : join(realpathSync(homedir()), '.job-apply');
 }
-
 async function nativeLock(options) {
     const explicit = options.get('--native-lock');
     if (explicit)
