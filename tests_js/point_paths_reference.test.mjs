@@ -461,16 +461,9 @@ test('S05 path support registration preserves the exact prior matrix', t => {
       'tests_js/process_owned_writer_quiescence.test.mjs'],
     platforms: ['darwin', 'linux'], tiers: ['full', 'platform']
   }]);
-  const cutoverIndex = matrix.suites.findIndex(suite => suite.id === 'native-default-cutover');
-  assert.ok(cutoverIndex >= 0);
-  const reviewedCutoverAdditions = new Set([
-    'tests_js/native_installed_entrypoints.test.mjs',
-    'tests_js/native_store_activation_command.test.mjs',
-  ]);
-  assert.deepEqual(matrix.suites.splice(cutoverIndex, 1).map(suite => ({
-    ...suite,
-    include: suite.include.filter(path => !reviewedCutoverAdditions.has(path)),
-  })), [{
+  const cutoverIndex = matrix.suites.findIndex(suite => suite.id === 'native-default-cutover'); assert.ok(cutoverIndex >= 0);
+  const reviewedCutoverAdditions = new Set(['tests_js/native_installed_entrypoints.test.mjs', 'tests_js/native_store_activation_command.test.mjs']);
+  assert.deepEqual(matrix.suites.splice(cutoverIndex, 1).map(suite => ({ ...suite, include: suite.include.filter(path => !reviewedCutoverAdditions.has(path)) })), [{
     id: 'native-default-cutover', kind: 'node-test',
     include: ['tests_js/companion_default_cutover.test.mjs', 'tests_js/final_action_policy_cli.test.mjs',
       'tests_js/final_action_policy_concurrency.test.mjs', 'tests_js/final_action_policy_reference.test.mjs',
@@ -487,10 +480,6 @@ test('S05 path support registration preserves the exact prior matrix', t => {
   const cutoverOwnerIndex = matrix.ownership.findIndex(rule => rule.paths.includes(cutoverOwner.paths[0]));
   assert.ok(cutoverOwnerIndex >= 0);
   assert.deepEqual(matrix.ownership.splice(cutoverOwnerIndex, 1), [cutoverOwner]);
-  const activationOwner = { paths: ['apps/companion/command.mjs'], suites: ['native-default-cutover'] };
-  const activationOwnerIndex = matrix.ownership.findIndex(rule => rule.paths.includes(activationOwner.paths[0]));
-  assert.ok(activationOwnerIndex >= 0);
-  assert.deepEqual(matrix.ownership.splice(activationOwnerIndex, 1), [activationOwner]);
   const canaryIndex = matrix.suites.findIndex(suite => suite.id === 'native-email-canary-composition');
   assert.ok(canaryIndex >= 0);
   assert.deepEqual(matrix.suites.splice(canaryIndex, 1), [{

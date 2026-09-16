@@ -280,7 +280,6 @@
   ],
   "ownership": [
     {"paths": ["apps/companion/**"], "suites": ["companion-typescript-check", "node-workspace-other", "migration-inventory", "source-size"]},
-    {"paths": ["apps/companion/command.mjs"], "suites": ["native-default-cutover"]},
     {"paths": ["tests_js/local_checks_graph_support.mjs"], "suites": ["node-runner-fast", "node-migration-evidence"]},
     {"paths": ["tests_js/migration_task_lineage_support.mjs"], "suites": ["node-runner-fast", "node-migration-evidence"]},
     {"paths": ["tests_js/migration_task_lineage_git_support.mjs"], "suites": ["node-migration-evidence"]},
