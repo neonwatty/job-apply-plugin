@@ -5,6 +5,15 @@ import {
 export async function runBrowserCrudTrashShutdownPhase(context) {
   const { cli, cliUpdated, newest, page, temporary, uiJob } = context;
   let { browser, server } = context;
+    async function restoreTrashCard(card) {
+      const restored = page.waitForResponse((response) =>
+        response.request().method() === "POST"
+        && new URL(response.url()).pathname.endsWith("/restore")
+        && response.ok());
+      await card.getByRole("button", { name: "Restore" }).click();
+      await restored;
+      await card.waitFor({ state: "hidden" });
+    }
     // The packaged smoke selects this test by name, so this is the source and
     // packaged proof for the top-level unified Trash lifecycle.
     const trashJob = await cli("job-create", [], { id: "trash-ui-job", url: "https://private.example/jobs/trash-ui", role: "Trash UI job" });
@@ -32,7 +41,7 @@ export async function runBrowserCrudTrashShutdownPhase(context) {
     assert.match(await page.locator(".trash-card").innerText(), /Trash UI job/);
 
     // Restore persists canonically, then a stale destructive request is never retried.
-    await page.locator(".trash-card").getByRole("button", { name: "Restore" }).click();
+    await restoreTrashCard(page.locator(".trash-card").filter({ hasText: "Trash UI job" }));
     let currentTrashJob = await cli("job-get", ["--id", trashJob.id]);
     assert.equal(currentTrashJob.deletedAt, null);
     currentTrashJob = await cli("job-trash", ["--id", currentTrashJob.id, "--expected-revision", String(currentTrashJob.revision)]);
@@ -61,7 +70,7 @@ export async function runBrowserCrudTrashShutdownPhase(context) {
 
     // Resume restore persists; its confirmation discloses managed-file destruction.
     await typeFilter.selectOption("resume");
-    await page.locator(".trash-card").filter({ hasText: "Trash UI resume" }).getByRole("button", { name: "Restore" }).click();
+    await restoreTrashCard(page.locator(".trash-card").filter({ hasText: "Trash UI resume" }));
     let currentTrashResume = await cli("resume-get", ["--id", trashResume.id]);
     assert.equal(currentTrashResume.deletedAt, null);
     currentTrashResume = await cli("resume-trash", ["--id", currentTrashResume.id, "--expected-revision", String(currentTrashResume.revision)]);
@@ -76,7 +85,7 @@ export async function runBrowserCrudTrashShutdownPhase(context) {
     // Answer restore persists, while protected history produces actionable blocker copy.
     await typeFilter.selectOption("answer");
     const trashAnswerCard = page.locator(".trash-card").filter({ has: page.getByRole("heading", { name: "Trash UI answer?", exact: true }) });
-    await trashAnswerCard.getByRole("button", { name: "Restore" }).click();
+    await restoreTrashCard(trashAnswerCard);
     let currentTrashAnswer = await cli("answer-get", ["--key", trashAnswer.key]);
     assert.equal(currentTrashAnswer.deletedAt, null);
     currentTrashAnswer = await cli("answer-trash", ["--key", currentTrashAnswer.key, "--expected-revision", String(currentTrashAnswer.revision)]);
