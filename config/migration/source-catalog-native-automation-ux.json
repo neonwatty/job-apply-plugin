@@ -3,7 +3,7 @@
   "sources": [
     {
       "path": "apps/companion/components/Automation.tsx",
-      "sha256": "f2644a8241e87d669f99c1e28328faefe28ff6c950b4e2791bbe9d24682a901a",
+      "sha256": "43192c4bae50a57fd8583189a1b36f2f683c62f6bb85e2256b03ea2ee166034a",
       "classification": "unreviewed"
     },
     {
@@ -23,7 +23,7 @@
     },
     {
       "path": "apps/companion/components/automation.css",
-      "sha256": "6125d32c77c7c1d4e1404d6a82666578724c9924b008648c1a6d752d06135424",
+      "sha256": "a1da328adae3be4a907b8d46af3e0933b072ddca04e2cbf201455f72a02431cc",
       "classification": "unreviewed"
     }
   ]
