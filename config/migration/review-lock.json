@@ -411,7 +411,7 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "c492e88f4c222b06b5e488d2c0edb419bde804091cc4f267f822e84ee6e15831"
+      "sha256": "0c10825ede5e98367877a1fe49e5023c3ac4b8c414a48086773522714d957d71"
     },
     {
       "path": "source-catalog-native-legacy-jobs.json",
@@ -447,7 +447,7 @@
     },
     {
       "path": "source-catalog-native-task-cli.json",
-      "sha256": "27dccf796fb64838a96387746e4d46d5292f787f247948f3967f11936e8832ec"
+      "sha256": "1478c32ff8495c84a4324e5b0d5c00d89075ef2779d97438b41b2023712d8c14"
     },
     {
       "path": "source-catalog-native-task-intake.json",

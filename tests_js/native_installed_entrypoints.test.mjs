@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { cp, mkdir, writeFile, mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
+import { cp, mkdir, writeFile, mkdtemp, readFile, readdir, realpath, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -58,6 +58,12 @@ for (const command of ['native-jobs.js', 'native-task.js']) {
       { JOB_APPLY_STORE_DIR: '~/.job-apply' });
     assert.equal(result.status, 0, result.stderr || result.stdout);
     assert.equal(result.stderr, '');
+  });
+  test(`prepared native ${command} keeps an absolute configured Store independent of HOME`, async t => {
+    const { plugin, root } = await installed(t);
+    const result = run(plugin, command, [command === 'native-jobs.js' ? 'profile-get' : 'snapshot'],
+      { JOB_APPLY_STORE_DIR: await realpath(root), HOME: join(plugin, 'missing-home') });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
   });
 }
 
