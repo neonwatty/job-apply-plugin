@@ -220,6 +220,8 @@ for (const profile of ['3.12', '3.13', '3.14']) {
       'apps/companion/.next/standalone/node_modules/next/package.json',
       'native/packaged-lock/darwin-arm64-napi8/flock.node',
       'native/packaged-lock/darwin-arm64-napi8/receipt.json',
+      'native/packaged-lock/linux-x64-napi8/flock.node',
+      'native/packaged-lock/linux-x64-napi8/receipt.json',
     ];
     try {
       const source = await fixture(join(root, 'source'));

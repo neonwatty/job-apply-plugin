@@ -1,65 +1,42 @@
 # Python runtime closure
 
-The migration gate distinguishes retained Python runtime assets from Python used
-only by repository validation. It scans the installed-artifact contract, the
-Companion launcher, and every shipped skill document. A new Python target in
-those files fails `check:migration` until explicitly classified. Removing a
-caller also fails until its now-stale declaration is removed.
+The migration gate distinguishes retained Python compatibility and validation
+assets from the ordinary installed runtime. It scans the installed-artifact
+contract, Companion launcher, and shipped skill documents. A new Python target
+in those surfaces fails `check:migration` until it is explicitly classified.
 
-## Current supported installation
+## Supported installation
 
-Ordinary GitHub/source marketplace installs use the complete Python writer
-route: Store, task, attempt broker, final-action policy, and workspace commands.
-The shipped skills and README consistently describe that route. Python remains
-required; the package is not Python-free. No ordinary command switches to a
-native writer after a Python task or silently falls back after a native error.
-The explicit whole-process Python rollback remains available for controlled
-native rehearsals. Python and TypeScript writers must never share one live Store.
+Source marketplace packages include reviewed Node-API 8 lock artifacts for
+macOS arm64 and Linux x64. Their receipts bind the platform, architecture,
+source hash, and artifact hash. Unsupported hosts fail closed; the installed
+runtime never compiles or downloads native code.
 
-The inventory retains eight classified Python entrypoints:
+One installed router owns the ordinary Store, task, attempt, and final-action
+policy command surfaces. The Companion launcher owns the workspace surface.
+Before a mutating command or workspace launch, the router verifies the packaged
+lock, acquires attempt exclusion and Store ownership, prepares a complete clone,
+retains the original directory at the deterministic Python rollback path, and
+atomically activates the native Store. A fresh Store follows the same path.
+Read-only discovery commands that are defined as non-creating remain so.
 
-| State | Entrypoints |
-| --- | --- |
-| Ordinary Python runtime with TypeScript prepared-Store or fixture implementations | Store CLI, task CLI, workspace server |
-| Python runtime still required by shipped routing | attempt broker, final-action policy, QA replay |
-| Python helpers still referenced by shipped workflows with TypeScript implementations | trusted fill, form readiness |
+All shipped skills and README commands use these TypeScript surfaces. No
+ordinary command silently falls back to Python, and Python and TypeScript
+writers never share the active Store. Existing cached plugin versions must not
+be run against a Store after native activation because those older versions do
+not participate in native ownership.
 
-The Store and workspace Python package trees remain critical installed assets.
-The Python attempt broker remains a fixed critical file. Native runtime assets
-remain packaged for prepared-Store rehearsals and differential validation.
+## Retained Python assets
 
-## Deferred native cutover
+Python remains in the repository and installed critical-byte inventory for
+rollback compatibility, differential oracles, QA replay, and migration tests.
+Those assets do not form an ordinary workflow route. Rollback is an explicit,
+whole-process Companion operation after native quiescence; it is not an
+automatic per-command fallback.
 
-Final review found that source marketplace packages contain only the packaged
-lock README, not a verified flock addon. The native `init` command does not
-prepare a complete native Store or activate an existing Python Store. Selecting
-native executables in skill instructions cannot close either boundary. Ordinary
-native routing is therefore deferred. Runtime addon compilation/download and
-in-place marking of an existing Python Store are prohibited.
-
-A future cutover must provide a tested assembled installation containing the
-verified addon for each supported target, complete fresh-Store initialization,
-and an exclusive activation/rollback path for an independently prepared copy of
-existing canonical state. It must quiesce the entire previous writer process
-group before any Store move and verify every documented CLI contract, including
-resume import. Changing the default writer requires all ordinary workflows to
-switch together, with no Python/TypeScript mixed mutation path.
-
-## Retained preparation and evidence
-
-The [native canonical Store clone](native-canonical-store-clone.md) gives
-TypeScript a private disposable copy of supported Python state, leaving the
-source untouched. The [writer-switch rehearsal](native-canonical-writer-rehearsal.md)
-compares public envelopes and durable restart behavior on independent clones.
-The Companion retains [controlled routing and rollback](controlled-writer-routing.md).
-The [installed native Companion candidate](installed-native-companion-candidate.md)
-exercises an assembled production launcher on explicit disposable clones; it is
-not evidence that source marketplace installation can activate a live Store.
-
-This tranche retains the native attempt broker hard-link ownership guard and
-prepared native Jobs/task packaged-addon resolution. Both prepared CLIs expand a
-home-relative `JOB_APPLY_STORE_DIR`. Tests distinguish assembled prepared-native
-fixtures from source-only installs and run documented Python initialization,
-profile, task, and resume commands against fresh and existing disposable Stores.
-Repository tests, Python differential oracles, generators, and isolated QA replay
-remain available. Migration acceptance remains open.
+The [native canonical Store clone](native-canonical-store-clone.md),
+[process-owned quiescence controller](process-owned-writer-quiescence.md), and
+[controlled routing and rollback](controlled-writer-routing.md) describe the
+activation boundary. Installed acceptance covers fresh and existing Stores,
+documented profile, task, and resume commands, exact rollback bytes, restart
+durability, and execution with an empty `PATH`.

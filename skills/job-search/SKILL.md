@@ -10,7 +10,7 @@ Return current job opportunities matching explicit criteria, with source links, 
 
 ## Criteria and source selection
 
-Read [answer-memory](../answer-memory/SKILL.md) for root resolution and initialization. Use `python3 "<plugin-root>/scripts/job-apply-store.py" preferences-get` for saved criteria. Read only relevant additional profile facts when needed.
+Read [answer-memory](../answer-memory/SKILL.md) for root resolution and initialization. Use `node "<plugin-root>/apps/companion/command.mjs" store preferences-get` for saved criteria. Read only relevant additional profile facts when needed.
 
 Apply the current request over saved preferences. Missing saved preferences do not block a search when the request provides sufficient criteria. Ask only for missing information that materially determines the search, such as the target role if none is known. Do not require a separate setup invocation or persist transient overrides without a request to save them. A corrupt/unavailable Store is a storage error, not an empty preference set; report it without repairing or overwriting data.
 

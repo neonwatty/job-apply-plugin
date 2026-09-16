@@ -6,22 +6,22 @@ and never persist the import source path. Legacy absolute-path records remain va
 until explicitly adopted under the same ID.
 
 ```bash
-python3 "<plugin-root>/scripts/job-apply-store.py" resume-create --input <resume.json>
-python3 "<plugin-root>/scripts/job-apply-store.py" resume-import --input <resume.json>
-python3 "<plugin-root>/scripts/job-apply-store.py" resume-list
-python3 "<plugin-root>/scripts/job-apply-store.py" resume-get --id <resume-id>
-python3 "<plugin-root>/scripts/job-apply-store.py" resume-update \
+node "<plugin-root>/apps/companion/command.mjs" store resume-create --input <resume.json>
+node "<plugin-root>/apps/companion/command.mjs" store resume-import --input <resume.json>
+node "<plugin-root>/apps/companion/command.mjs" store resume-list
+node "<plugin-root>/apps/companion/command.mjs" store resume-get --id <resume-id>
+node "<plugin-root>/apps/companion/command.mjs" store resume-update \
   --id <resume-id> --expected-revision <revision> --input <patch.json>
-python3 "<plugin-root>/scripts/job-apply-store.py" resume-adopt \
+node "<plugin-root>/apps/companion/command.mjs" store resume-adopt \
   --id <legacy-resume-id> --expected-revision <revision> [--path <source-path>]
-python3 "<plugin-root>/scripts/job-apply-store.py" resume-set-default \
+node "<plugin-root>/apps/companion/command.mjs" store resume-set-default \
   --id <resume-id> --expected-revision <revision>
-python3 "<plugin-root>/scripts/job-apply-store.py" resume-check --id <resume-id>
-python3 "<plugin-root>/scripts/job-apply-store.py" resume-trash \
+node "<plugin-root>/apps/companion/command.mjs" store resume-check --id <resume-id>
+node "<plugin-root>/apps/companion/command.mjs" store resume-trash \
   --id <resume-id> --expected-revision <revision>
-python3 "<plugin-root>/scripts/job-apply-store.py" resume-restore \
+node "<plugin-root>/apps/companion/command.mjs" store resume-restore \
   --id <resume-id> --expected-revision <revision>
-python3 "<plugin-root>/scripts/job-apply-store.py" resume-delete \
+node "<plugin-root>/apps/companion/command.mjs" store resume-delete \
   --id <resume-id> --expected-revision <revision>
 ```
 
@@ -42,13 +42,13 @@ JSON object; the helper does not parse, author, or tailor resumes. Inspect the
 managed resume and profile revisions immediately before creating a proposal:
 
 ```bash
-python3 "<plugin-root>/scripts/job-apply-store.py" resume-proposal-create \
+node "<plugin-root>/apps/companion/command.mjs" store resume-proposal-create \
   --resume-id <resume-id> --expected-resume-revision <resume-revision> \
   --expected-profile-revision <profile-revision> --input <candidate.json>
-python3 "<plugin-root>/scripts/job-apply-store.py" resume-proposal-list \
+node "<plugin-root>/apps/companion/command.mjs" store resume-proposal-list \
   [--resume-id <resume-id>] [--status pending] [--summary-only]
-python3 "<plugin-root>/scripts/job-apply-store.py" resume-proposal-get --id <proposal-id>
-python3 "<plugin-root>/scripts/job-apply-store.py" resume-proposal-review \
+node "<plugin-root>/apps/companion/command.mjs" store resume-proposal-get --id <proposal-id>
+node "<plugin-root>/apps/companion/command.mjs" store resume-proposal-review \
   --id <proposal-id> --expected-revision <proposal-revision> \
   --expected-profile-revision <profile-revision> --input <decisions.json>
 ```

@@ -2,6 +2,11 @@
   "schemaVersion": 1,
   "sources": [
     {
+      "path": "apps/companion/command.mjs",
+      "sha256": "d8a9503afca25a4cf77655914289d2261f0de8543c6845f57c902ff32b5f6203",
+      "classification": "unreviewed"
+    },
+    {
       "path": "runtime/cli/attempt-authority.js",
       "sha256": "d6caadc422694d673406a77ddc7b7f5f6b7806bfec76103493241da9e4f878aa",
       "classification": "unreviewed"
@@ -48,7 +53,7 @@
     },
     {
       "path": "runtime/cli/native-store-state.js",
-      "sha256": "c19c3aba74a4eed10f33f2ecc84755bc8486e95e8d96ce3c1bfd400245210e85",
+      "sha256": "d532f5c9304247bedd3fd16f34f9b45815eec835352e4f9af2b603e9568893c3",
       "classification": "unreviewed"
     },
     {
@@ -168,7 +173,7 @@
     },
     {
       "path": "src/cli/native-store-state.ts",
-      "sha256": "3b36620a863bd2765084ecc4a50333d665fa9d25d7948e5ebf5f889bdbf21bc4",
+      "sha256": "818abcc00152a0a00dc9dbe9e012bcc5952aec7d57d6d9f4a077a36e833ef269",
       "classification": "unreviewed"
     },
     {

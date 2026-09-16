@@ -322,6 +322,16 @@ export class ProcessOwnedWriterController {
             return result;
         });
     }
+    /** Activates a prepared Store while the lifetime lease proves no managed writer is running. */
+    async activateQuiescent(options = {}) {
+        return this.#exclusive(async () => {
+            if (!this.#lease)
+                throw new Error('writer ownership lease is missing');
+            if (this.#writer || this.#mode)
+                throw new Error('writer must be quiescent before activation');
+            return activateNativeWriter(this.#active, this.#candidate, this.#switchOptions(options));
+        });
+    }
     async rollback(options = {}) {
         return this.#exclusive(async () => {
             if (this.#mode !== 'native')

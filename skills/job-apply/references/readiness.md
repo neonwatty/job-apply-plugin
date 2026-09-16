@@ -27,4 +27,4 @@ readinessInput:
   expectedObservationRevision: same fresh observation revision
 ```
 
-Use the private `job-apply-attempt.py ... handoff --status awaiting_review --input <private-temp.json>` client in [application.md](application.md). The Store recomputes the report; an attempted write or successful local serialization is not a confirmed handoff. Delete private input on success or failure, preserve the draft on rejection, and never fall back to raw claim commands. Every final submission control remains untouched for the owner.
+Use the private `node "<plugin-root>/apps/companion/command.mjs" attempt [--root <resolved-root>] handoff --status awaiting_review --input <private-temp.json>` client in [application.md](application.md). The Store recomputes the report; an attempted write or successful local serialization is not a confirmed handoff. Delete private input on success or failure, preserve the draft on rejection, and never fall back to raw claim commands. Every final submission control remains untouched for the owner.

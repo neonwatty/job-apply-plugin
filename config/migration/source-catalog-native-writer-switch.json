@@ -8,7 +8,7 @@
     },
     {
       "path": "runtime/store/process-owned-writer.js",
-      "sha256": "6e1ab3ea4b16de4aa7a02fef68ab93bab63635184dbcea2c1e4e2c050c15ec6c",
+      "sha256": "0a0b7ccda94d4e70e725aa3d6bf437ed560449821a317774f5bb2261c68b06ad",
       "classification": "unreviewed"
     },
     {
@@ -18,7 +18,7 @@
     },
     {
       "path": "src/store/process-owned-writer.ts",
-      "sha256": "fe4282dc3b69b022524f83a791fa972f649ec40ccb72f220f52d7c0a35443eb1",
+      "sha256": "adf5b446fc53b3a0528b43fc618ef733942875dd76bea03bb8bf7c58fc57dac1",
       "classification": "unreviewed"
     }
   ]

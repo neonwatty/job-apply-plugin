@@ -177,7 +177,7 @@ async function assembledPackageRoot() {
   return realpath(root);
 }
 
-test('package assembly emits a verified loadable host lock without runtime compilation', async t => {
+test('package assembly emits or verifies a loadable host lock without runtime compilation', async t => {
   if (!['darwin', 'linux'].includes(process.platform)) { t.skip('POSIX package host required'); return; }
   const root = await assembledPackageRoot();
   try {
@@ -185,7 +185,9 @@ test('package assembly emits a verified loadable host lock without runtime compi
     const receipt = await packageNativeLock(root), artifact = await resolvePackagedNativeLock(root);
     assert.equal(artifact, join(receipt.directory, 'flock.node'));
     assert.deepEqual(Object.keys(loadPosixFlockProvider(artifact)).sort(), ['tryLock', 'unlock']);
-    await assert.rejects(packageNativeLock(root), /already contains/);
+    const verified = await packageNativeLock(root);
+    assert.equal(verified.artifact, artifact);
+    assert.equal(verified.artifactSha256, receipt.artifactSha256);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 

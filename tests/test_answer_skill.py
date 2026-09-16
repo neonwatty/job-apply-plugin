@@ -19,8 +19,8 @@ class AnswerMemoryIntegrationTests(AnswerCliCase):
             },
         )
         for name in ("answer-memory", "job-apply", "job-preferences", "job-search"):
-            self.assertIn("job-apply-store.py", skills[name], name)
-        self.assertIn("job-apply-workspace.py", skills["job-workspace"])
+            self.assertIn('apps/companion/command.mjs" store', skills[name], name)
+        self.assertIn("apps/companion/launch.mjs", skills["job-workspace"])
         self.assertIn("canonical Store contract", skills["job-workspace"])
         for name in ("job-apply", "job-preferences", "job-search"):
             self.assertNotIn("Read `~/.claude-job-profile.json`", skills[name])
@@ -32,7 +32,7 @@ class AnswerMemoryIntegrationTests(AnswerCliCase):
             skills["job-apply"],
         )
         self.assertIn("review_only", skills["job-apply"])
-        self.assertIn("job_apply_policy.py", skills["job-apply"])
+        self.assertIn("native `policy` command surface", skills["job-apply"])
         self.assertIn("atomically claims one final action", skills["job-apply"])
 
         storage_contract = (
@@ -47,7 +47,7 @@ class AnswerMemoryIntegrationTests(AnswerCliCase):
         self.assertIn("Auto-submit policy", skills["answer-memory"])
         self.assertIn("job-list --status ready", skills["job-apply"])
         self.assertIn("job-acquire", skills["job-apply"])
-        self.assertIn("job-apply-attempt.py", skills["job-apply"])
+        self.assertIn('apps/companion/command.mjs" attempt', skills["job-apply"])
         self.assertIn("Never fall back to raw `claim-handoff`", skills["job-apply"])
         self.assertIn("--status awaiting_review", skills["job-apply"])
         self.assertIn("--input <private-temp.json>", skills["job-apply"])

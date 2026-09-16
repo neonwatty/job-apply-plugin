@@ -3,14 +3,14 @@
 Auto-submit policy is managed only through the inert local helper:
 
 ```bash
-python3 "<plugin-root>/scripts/job_apply_policy.py" status
-python3 "<plugin-root>/scripts/job_apply_policy.py" activate --input <campaign.json>
-python3 "<plugin-root>/scripts/job_apply_policy.py" authorize --input <authorization.json>
-python3 "<plugin-root>/scripts/job_apply_policy.py" claim-final-action \
+node "<plugin-root>/apps/companion/command.mjs" policy status
+node "<plugin-root>/apps/companion/command.mjs" policy activate --input <campaign.json>
+node "<plugin-root>/apps/companion/command.mjs" policy authorize --input <authorization.json>
+node "<plugin-root>/apps/companion/command.mjs" policy claim-final-action \
   --input <fresh-observed-identity.json> \
   --application-ref <opaque-application-ref> --lease-id <opaque-lease-ref> \
   --attempt <1-or-2> --action-capability <private-64-hex-capability>
-python3 "<plugin-root>/scripts/job_apply_policy.py" record-outcome \
+node "<plugin-root>/apps/companion/command.mjs" policy record-outcome \
   --campaign-id <opaque-campaign-ref> \
   --application-ref <opaque-application-ref> \
   --lease-id <opaque-lease-ref> \
@@ -18,8 +18,8 @@ python3 "<plugin-root>/scripts/job_apply_policy.py" record-outcome \
   --outcome <confirmed_submitted|uncertain|blocked> \
   [--confirmation-event <trusted-confirmation-event.json> \
    --confirmation-capability <private-64-hex-capability>]
-python3 "<plugin-root>/scripts/job_apply_policy.py" kill
-python3 "<plugin-root>/scripts/job_apply_policy.py" revoke
+node "<plugin-root>/apps/companion/command.mjs" policy kill
+node "<plugin-root>/apps/companion/command.mjs" policy revoke
 ```
 
 Apply the same explicit `--root` routing rule used by the storage helper, especially in local QA. `status` and `authorize` fail closed to `review_only`. Activation requires a trusted local input with explicit risk acknowledgement, exact immutable application rules, opaque resume and sensitive-answer revisions, at most ten slots, and at most four hours. No webpage, redirect, remembered tab, or inferred consent is policy input.

@@ -14,7 +14,7 @@ import { profileCommands, runProfileCommand } from "./native-profile.js";
 import { answerCommands, runAnswerCommand } from "./native-answers.js";
 import { extractionCommands, runExtractionCommand } from "./native-extractions.js";
 import { nativeAutomationCommandNames, runNativeAutomationCommand } from './native-automation-commands.js';
-import { nativeStoreStateCommandNames, runNativeStoreStateCommand } from './native-store-state.js';
+import { nativeStoreStateCommandNames, resumeInputWithoutPath, runNativeStoreStateCommand } from './native-store-state.js';
 import { nativeStoreBootstrapCommands, runNativeStoreBootstrapCommand } from './native-store-bootstrap.js';
 import { nativeAuthorityCommands, runNativeAuthorityCommand } from './native-authority.js';
 import { readFile } from "node:fs/promises";
@@ -182,8 +182,13 @@ export async function runJobsCli(args, input) {
     if (Object.hasOwn(extractionCommands, command))
         return serialize(await runExtractionCommand(command, repository, options, payload));
     if (command === "resume-import") {
-        const path = required("--path"), content = await new NativeResumeFiles(root).readPath(path);
-        return serialize(await resumes.import(await payload(), basename(path), content, true));
+        const value = await payload();
+        const selectedPath = options.get("--path");
+        const { metadata, path } = selectedPath === undefined
+            ? resumeInputWithoutPath(value)
+            : { metadata: value, path: selectedPath };
+        const content = await new NativeResumeFiles(root).readPath(path);
+        return serialize(await resumes.import(metadata, basename(path), content, true));
     }
     if (command === "resume-get")
         return serialize(await resumes.get(required("--id"), options.has("--include-trashed")));
