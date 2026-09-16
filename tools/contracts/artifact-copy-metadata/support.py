@@ -6,11 +6,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-FIXED = ['.codex-plugin/plugin.json', 'scripts/job-apply-store.py',
-         'scripts/job-apply-task.py', 'scripts/job-apply-attempt.py',
-         'scripts/job-apply-workspace.py', 'skills/answer-memory/SKILL.md',
-         'skills/job-apply/SKILL.md']
-TREES = ['runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace',
+FIXED = ['.agents/plugins/marketplace.json', '.claude-plugin/marketplace.json',
+         '.claude-plugin/plugin.json', '.codex-plugin/plugin.json', 'package.json',
+         'skills/answer-memory/SKILL.md', 'skills/job-apply/SKILL.md']
+TREES = ['skills', 'runtime', 'qa/fixtures', 'qa/scenarios', 'workspace',
          'apps/companion', 'native']
 FILES = sorted(FIXED + ['runtime/data.bin'])
 BASE_NS = 1700000000000000000

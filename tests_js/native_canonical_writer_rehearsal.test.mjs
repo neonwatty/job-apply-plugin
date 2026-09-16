@@ -92,24 +92,16 @@ test('canonical clone rehearses Store CLI, task CLI, HTTP mutation and server re
   const nativeRoot = join(root, 'native-writer'), pythonRoot = join(root, 'python-writer');
   await prepareCanonicalStoreClone(source, nativeRoot, provider, fixed);
   await prepareCanonicalStoreClone(source, pythonRoot, provider, fixed);
-  const pythonRoute = await resolveWriterRoute(parseWriterOptions([
-    '--writer', 'python', '--root', source,
-  ], companionRoot));
-  assert.equal(pythonRoute.writer, 'python');
-  assert.deepEqual(pythonRoute.argv.slice(-2), ['--root', source]);
   const nativeRoute = await resolveWriterRoute(parseWriterOptions([
     '--writer', 'native-clone', '--root', nativeRoot, '--native-lock', fixture.receipt.artifact,
   ], companionRoot));
   assert.equal(nativeRoute.writer, 'native-clone');
   assert.deepEqual(nativeRoute.argv.slice(-4), ['--root', nativeRoot, '--native-lock', fixture.receipt.artifact]);
   await assert.rejects(resolveWriterRoute(parseWriterOptions([
-    '--writer', 'python', '--root', nativeRoot,
-  ], companionRoot)), /Python writer cannot use a native-owned Store/);
-  await assert.rejects(resolveWriterRoute(parseWriterOptions([
     '--writer', 'native-clone', '--root', source, '--native-lock', fixture.receipt.artifact,
   ], companionRoot)), /Native clone writer ownership is missing/);
   const blockedLauncher = await invoke(process.execPath, [
-    'apps/companion/launch.mjs', '--writer', 'python', '--root', nativeRoot,
+    'apps/companion/launch.mjs', '--writer', 'native-clone', '--root', nativeRoot,
   ], { env: { ...process.env, PATH: '' } });
   assert.equal(blockedLauncher.code, 1);
   assert.equal(blockedLauncher.stdout, '');
@@ -159,12 +151,12 @@ test('canonical clone rehearses Store CLI, task CLI, HTTP mutation and server re
   assert.deepEqual(await snapshot(source), original);
 });
 
-test('Companion writer selection defaults to Python and rejects ambiguous overrides', () => {
-  assert.equal(parseWriterOptions([], companionRoot).writer, 'python');
+test('Companion writer selection defaults to native and rejects ambiguous overrides', () => {
+  assert.equal(parseWriterOptions([], companionRoot).writer, 'native-clone');
   assert.equal(parseWriterOptions(['--native-jobs-fixture', '/tmp/lock'], companionRoot).writer, 'native-fixture');
   for (const args of [
     ['--writer', 'unknown'],
-    ['--writer', 'python', '--writer', 'native-clone'],
+    ['--writer', 'native-fixture', '--writer', 'native-clone'],
     ['--writer', 'native-fixture', '--native-jobs-fixture', '/tmp/lock'],
     ['--native-lock', '/tmp/one', '--native-jobs-fixture', '/tmp/two'],
   ]) assert.throws(() => parseWriterOptions(args, companionRoot));

@@ -6,15 +6,15 @@ import shutil
 import stat
 
 FIXED = [
-    '.codex-plugin/plugin.json', 'scripts/job-apply-store.py',
-    'scripts/job-apply-task.py', 'scripts/job-apply-attempt.py',
-    'scripts/job-apply-workspace.py', 'skills/answer-memory/SKILL.md',
+    '.agents/plugins/marketplace.json', '.claude-plugin/marketplace.json',
+    '.claude-plugin/plugin.json', '.codex-plugin/plugin.json', 'package.json',
+    'skills/answer-memory/SKILL.md',
     'skills/job-apply/SKILL.md',
 ]
-TREES = ['skills', 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace',
+TREES = ['skills', 'runtime', 'qa/fixtures', 'qa/scenarios', 'workspace',
          'apps/companion', 'native']
-FILES = FIXED + ['runtime/nested/codec.js', 'scripts/job_apply_store/io.py',
-                 'scripts/job_apply_workspace/handler.py', 'workspace/app.js',
+FILES = FIXED + ['runtime/nested/codec.js', 'qa/fixtures/example/fixture.json',
+                 'qa/scenarios/example/profile.json', 'workspace/app.js',
                  'skills/job-apply/references/runtime-contract.md', 'skills/job-search/SKILL.md',
                  'apps/companion/.next/standalone/apps/companion/server.js',
                  'apps/companion/.next/standalone/node_modules/next/package.json',
@@ -80,7 +80,7 @@ def alter(root, change):
                 remove(root / tree)
                 (root / tree).mkdir()
     elif change in ('missing-fixed', 'fixed-directory', 'fixed-link', 'dangling-link', 'tamper', 'mode'):
-        path = root / 'scripts/job-apply-store.py'
+        path = root / 'package.json'
         if change == 'tamper':
             path.write_bytes(b'tampered')
         elif change == 'mode':
@@ -90,7 +90,7 @@ def alter(root, change):
             if change == 'fixed-directory':
                 path.mkdir()
             elif change == 'fixed-link':
-                path.symlink_to('job-apply-task.py')
+                path.symlink_to('.codex-plugin/plugin.json')
             elif change == 'dangling-link':
                 path.symlink_to('absent')
     elif change in ('missing-tree', 'tree-file'):
@@ -101,8 +101,8 @@ def alter(root, change):
         remove(root / 'skills/answer-memory')
         (root / 'skills/answer-memory').write_bytes(b'not-directory')
     elif change in ('ancestor-link', 'dangling-ancestor'):
-        remove(root / 'scripts')
-        (root / 'scripts').symlink_to('../source/scripts' if change == 'ancestor-link' else '../absent', target_is_directory=True)
+        remove(root / 'qa')
+        (root / 'qa').symlink_to('../source/qa' if change == 'ancestor-link' else '../absent', target_is_directory=True)
     elif change == 'nested-directory-link':
         (root / 'runtime/nested/linked').symlink_to('../../workspace', target_is_directory=True)
     elif change == 'nested-file-link':

@@ -8,7 +8,7 @@ import { discoverNextBrowserExports } from '../tools/migration/next-surfaces.mjs
 import { checkBrowserBindings } from '../tools/migration/browser-exports.mjs';
 import ts from 'typescript';
 import { nextParity } from './workspace_next_parity_support.mjs';
-import { spawnOwnedPythonCompanion } from './workspace_next_process_support.mjs';
+import { spawnOwnedCompanion } from './workspace_next_process_support.mjs';
 export async function nextSecurity() {
     const temporary = await mkdtemp(join(tmpdir(), 'companion-security-'));
     try {
@@ -37,7 +37,7 @@ export async function nextSecurity() {
         await mkdir(emptyPath);
         const store = join(temporary, 'private-store-sentinel');
         const started = Date.now();
-        const owned = await spawnOwnedPythonCompanion(root, store, { env: { PATH: emptyPath } });
+        const owned = await spawnOwnedCompanion(root, store, ['--writer', 'python'], { env: { PATH: emptyPath } });
         const failedStart = await new Promise((resolve, reject) => {
             let stdout = '', stderr = '';
             let forced;
@@ -48,7 +48,7 @@ export async function nextSecurity() {
             owned.child.stdout.on('data', chunk => { stdout += chunk; });
             owned.child.stderr.on('data', chunk => {
                 stderr += chunk;
-                if (/Companion child failed to start|Workspace startup failed/.test(stderr)) {
+                if (/Invalid writer/.test(stderr)) {
                     // The test owns the process group and ends a failed launch once its
                     // public diagnostic has been observed, just as the supervisor does.
                     try { process.kill(-owned.child.pid, 'SIGTERM'); } catch {}
@@ -68,7 +68,7 @@ export async function nextSecurity() {
         assert.ok(failedStart.code === 1 || ['SIGTERM', 'SIGKILL'].includes(failedStart.signal));
         assert.ok(Date.now() - started < 6000);
         assert.equal(failedStart.stdout, '');
-        assert.match(failedStart.stderr, /Companion child failed to start|Workspace startup failed/);
+        assert.equal(failedStart.stderr, 'Invalid writer\n');
         for (const privateValue of [root, store, temporary, '#token=', 'Bearer ']) {
             assert.equal(failedStart.stderr.includes(privateValue), false);
         }

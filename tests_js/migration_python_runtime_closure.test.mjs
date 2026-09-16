@@ -46,3 +46,12 @@ test('runtime closure rejects removal claims while Python callers remain', () =>
   assert.match(validatePythonRuntimeClosure(invalid, files, paths).join('\n'),
     /Invalid Python runtime entrypoint scripts\/policy\.py/);
 });
+
+test('runtime closure closes only with no shipped Python targets or packaged trees', () => {
+  const closed = { schemaVersion: 1, status: 'migration-closed', entrypoints: [], packagedPythonTrees: [] };
+  assert.deepEqual(validatePythonRuntimeClosure(closed, new Map(), new Set()), []);
+  assert.match(validatePythonRuntimeClosure({ ...closed, packagedPythonTrees: ['scripts/tree'] }, new Map(), paths).join('\n'),
+    /Closed Python runtime inventory must be empty/);
+  assert.match(validatePythonRuntimeClosure(closed, files, paths).join('\n'),
+    /Unclassified shipped Python runtime target/);
+});

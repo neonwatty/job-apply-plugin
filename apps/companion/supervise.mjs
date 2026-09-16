@@ -14,14 +14,13 @@ import { attemptSocketPath } from '../../runtime/cli/attempt-protocol.js';
 
 const values = new Set(['--root', '--plugin-root', '--port', '--native-lock']);
 export function parseSupervisorOptions(args, app) {
-  const options = { root: undefined, pluginRoot: resolve(app, '../..'), port: 0, nativeLock: undefined, dev: false, rollback: false };
+  const options = { root: undefined, pluginRoot: resolve(app, '../..'), port: 0, nativeLock: undefined, dev: false };
   const seen = new Set();
   for (let index = 0; index < args.length; index += 1) {
     const key = args[index];
     if (seen.has(key)) throw new Error('Duplicate supervisor option');
     seen.add(key);
     if (key === '--dev') { options.dev = true; continue; }
-    if (key === '--rollback') { options.rollback = true; continue; }
     if (!values.has(key)) throw new Error('Unknown supervisor option');
     const value = args[++index];
     if (!value || value.startsWith('--')) throw new Error('Missing supervisor option value');
@@ -146,10 +145,10 @@ function readiness(line) {
   } catch { return false; }
 }
 function launchSpec(options, root, nativeLock) {
-  return mode => ({ command: process.execPath, cwd: options.pluginRoot,
+  return () => ({ command: process.execPath, cwd: options.pluginRoot,
     argv: [join(options.pluginRoot, 'apps/companion/launch.mjs'), '--root', root, '--plugin-root', options.pluginRoot,
-      '--port', String(options.port), '--writer', mode === 'native' ? 'native-clone' : 'python',
-      ...(mode === 'native' ? ['--native-lock', nativeLock] : []), ...(options.dev ? ['--dev'] : [])],
+      '--port', String(options.port), '--writer', 'native-clone', '--native-lock', nativeLock,
+      ...(options.dev ? ['--dev'] : [])],
     env: { ...process.env, COMPANION_PROCESS_OWNER: 'process-group-v1' }, ready: readiness, startupTimeoutMilliseconds: 60_000,
   });
 }
@@ -162,27 +161,19 @@ export async function runSupervisor(options, { signal } = {}) {
   let controller;
   try {
     controller = new ProcessOwnedWriterController({ active: root, provider, createSpec: launchSpec(options, root, nativeLock) });
-    const prepared = await controller.prepare(() => prepareNativeDefault(root, provider, { signal, allowFailedActivation: options.rollback }));
-    if (options.rollback) {
-      if (prepared.mode === 'native') {
-        await assertNoLiveDetachedAttempt(root); await controller.rollbackQuiescent({ signal });
-      } else if (prepared.mode === 'python' && prepared.durablePythonRollback) {
-        await controller.start('python', signal);
-      } else throw new Error('native rollback state is unavailable');
-      await unlink(failedActivationMarker(root)).catch(error => { if (error?.code !== 'ENOENT') throw error; });
-    } else {
-      await controller.start(prepared.mode, signal);
-      if (prepared.mode === 'python' && !prepared.durablePythonRollback) {
-        await assertNoLiveDetachedAttempt(root);
-        try { await controller.activate({ signal }); }
-        catch (error) {
-          if (await recoverNativeWriterSwitch(root, { provider }).catch(() => null) === 'native') {
-            await writeFile(failedActivationMarker(root), 'rollback required\n', { mode: 0o600 });
-          }
-          throw error;
+    const prepared = await controller.prepare(() => prepareNativeDefault(root, provider, { signal }));
+    if (prepared.mode === 'python') {
+      if (prepared.durablePythonRollback) throw new Error('retired rollback state requires the previous package');
+      await assertNoLiveDetachedAttempt(root);
+      try { await controller.activateQuiescent({ signal }); }
+      catch (error) {
+        if (await recoverNativeWriterSwitch(root, { provider }).catch(() => null) === 'native') {
+          await writeFile(failedActivationMarker(root), 'native recovery required\n', { mode: 0o600 });
         }
+        throw error;
       }
     }
+    await controller.start('native', signal);
     const line = controller.startupLine;
     if (!line) throw new Error('Companion startup failed');
     const writerCompletion = controller.completion;

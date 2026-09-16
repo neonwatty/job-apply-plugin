@@ -8,19 +8,19 @@ from pathlib import Path
 
 
 FIXED_CRITICAL_FILES = (
+    ".agents/plugins/marketplace.json",
+    ".claude-plugin/marketplace.json",
+    ".claude-plugin/plugin.json",
     ".codex-plugin/plugin.json",
-    "scripts/job-apply-store.py",
-    "scripts/job-apply-task.py",
-    "scripts/job-apply-attempt.py",
-    "scripts/job-apply-workspace.py",
+    "package.json",
     "skills/answer-memory/SKILL.md",
     "skills/job-apply/SKILL.md",
 )
 CRITICAL_TREES = (
     "skills",
     "runtime",
-    "scripts/job_apply_store",
-    "scripts/job_apply_workspace",
+    "qa/fixtures",
+    "qa/scenarios",
     "workspace",
     "apps/companion",
     "native",

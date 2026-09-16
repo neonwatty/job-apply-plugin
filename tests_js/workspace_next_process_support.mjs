@@ -69,7 +69,3 @@ export async function spawnOwnedCompanion(pluginRoot, store, writerArgs, options
   child.once('exit', () => { void finalize(); });
   return { child, stop, release: stop };
 }
-
-export function spawnOwnedPythonCompanion(pluginRoot, store, options = {}) {
-  return spawnOwnedCompanion(pluginRoot, store, ['--writer', 'python'], options);
-}

@@ -2,14 +2,16 @@ import { reactTrashBrowser } from './workspace_react_trash_browser_support.mjs';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import { execFile } from 'node:child_process';
-import { cp, mkdtemp, rm } from 'node:fs/promises';
+import { cp, mkdtemp, realpath, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { nextSetupAndLoading, nextDraftAndRecovery, nextLateRead } from './workspace_next_ux_support.mjs';
 import { nativeJobsBrowser } from './workspace_native_browser_support.mjs';
-import { spawnOwnedPythonCompanion } from './workspace_next_process_support.mjs';
+import { nativeFixture } from './exclusive_file_lock_support.mjs';
+import { initializeJobsFixture } from '../runtime/store/native-jobs.js';
+import { spawnOwnedCompanion } from './workspace_next_process_support.mjs';
 const execute = promisify(execFile);
 const repository = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -38,8 +40,12 @@ async function productionBrowser(root) {
     cwd: root, timeout: 90000, maxBuffer: 2 * 1024 * 1024,
     env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
   });
-  const store = await mkdtemp(join(tmpdir(), 'next-companion-store-'));
-  const launcher = await spawnOwnedPythonCompanion(root, store);
+  const fixture = await nativeFixture();
+  const store = join(await realpath(fixture.root), 'store');
+  await initializeJobsFixture(store);
+  const launcher = await spawnOwnedCompanion(root, store,
+    ['--writer', 'native-fixture', '--native-lock', fixture.receipt.artifact],
+    { leaseArtifact: fixture.receipt.artifact });
   const child = launcher.child;
   let browser;
   let launcherErrors = '';
@@ -90,6 +96,7 @@ async function productionBrowser(root) {
     }));
     await page.goto(startup.url, { waitUntil: 'networkidle' });
     await page.getByText('Canonical store connected', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Overview', exact: true }).click();
     await nextSetupAndLoading(page, startup.url);
     await page.getByRole('button', { name: 'Jobs', exact: true }).click();
     await page.getByRole('button', { name: 'New job', exact: true }).click();
@@ -127,13 +134,8 @@ async function productionBrowser(root) {
     await nextLateRead(page);
     const trash = await reactTrashBrowser(page, { origin, headers });
     await page.reload({ waitUntil: 'networkidle' });
-    await page.getByRole('link', { name: 'Open full workspace', exact: true }).first().click();
     await page.getByText('Canonical store connected', { exact: true }).waitFor();
-    await page.locator('#nav-jobs').click();
-    await page.getByRole('button', { name: /Next synthetic role/ }).click();
-    assert.equal(await page.locator('#job-form [name="notes"]').inputValue(), 'Preserved React draft');
-    assert.equal((await page.request.get(origin + '/styles.css')).status(), 200);
-    assert.equal((await page.request.get(origin + '/runtime/workspace-ui/lib/activity-view.js')).status(), 200);
+    assert.equal(await page.getByRole('link', { name: 'Open full workspace', exact: true }).count(), 0);
     assert.deepEqual(errors, []);
     assert.deepEqual(violations, []);
     // The launcher owns two process groups. An unexpected service exit must
@@ -156,11 +158,11 @@ async function productionBrowser(root) {
     for (const pid of owned) assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });
     await assert.rejects(fetch(origin + '/api/boot', { signal: AbortSignal.timeout(1000) }));
     return { trash, productionStandalone: true, browser: browser.version(), editing: true,
-      draftRefresh: true, revisionConflict: true, reapply: true, reload: true, legacy: true,
+      draftRefresh: true, revisionConflict: true, reapply: true, reload: true, nativeOnlyNavigation: true,
       serviceFailureCleanup: true, httpParity: true, cleanDependencyInstall: true, setupDestinations: true, loadingAndDraftRecovery: true, narrowLayout: true, dialogFocus: true, cancelledStaleRead: true, cspViolations: violations };
   } finally {
     if (browser) await browser.close();
     await launcher.stop();
-    await rm(store, { recursive: true, force: true });
+    await fixture.cleanup();
   }
 }

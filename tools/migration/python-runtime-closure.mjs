@@ -34,7 +34,7 @@ export function discoverPythonRuntimeTargets(files) {
 
 export function validatePythonRuntimeClosure(manifest, files, existingPaths) {
   const errors = [];
-  if (!manifest || manifest.schemaVersion !== 1 || manifest.status !== 'migration-open'
+  if (!manifest || manifest.schemaVersion !== 1 || !['migration-open', 'migration-closed'].includes(manifest.status)
     || !Array.isArray(manifest.entrypoints) || !Array.isArray(manifest.packagedPythonTrees)) {
     return ['Invalid Python runtime closure manifest'];
   }
@@ -67,6 +67,10 @@ export function validatePythonRuntimeClosure(manifest, files, existingPaths) {
   if (new Set(trees).size !== trees.length || trees.some(path => !safePath(path)
     || !path.startsWith('scripts/') || !existingPaths.has(path))) {
     errors.push('Invalid packaged Python tree inventory');
+  }
+  if (manifest.status === 'migration-closed'
+    && (manifest.entrypoints.length !== 0 || trees.length !== 0 || discovered.size !== 0)) {
+    errors.push('Closed Python runtime inventory must be empty');
   }
   return errors;
 }

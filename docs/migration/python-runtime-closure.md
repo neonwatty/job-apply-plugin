@@ -1,9 +1,9 @@
 # Python runtime closure
 
-The migration gate distinguishes retained Python compatibility and validation
-assets from the ordinary installed runtime. It scans the installed-artifact
-contract, Companion launcher, and shipped skill documents. A new Python target
-in those surfaces fails `check:migration` until it is explicitly classified.
+The migration gate proves that the installed-artifact contract, Companion
+launcher, and shipped skill documents contain no Python runtime target. The
+manifest is closed: any new shipped Python target, classified entrypoint, or
+packaged Python tree fails `check:migration`.
 
 ## Supported installation
 
@@ -16,27 +16,25 @@ One installed router owns the ordinary Store, task, attempt, and final-action
 policy command surfaces. The Companion launcher owns the workspace surface.
 Before a mutating command or workspace launch, the router verifies the packaged
 lock, acquires attempt exclusion and Store ownership, prepares a complete clone,
-retains the original directory at the deterministic Python rollback path, and
+retains the original directory as a deterministic migration backup, and
 atomically activates the native Store. A fresh Store follows the same path.
 Read-only discovery commands that are defined as non-creating remain so.
 
-All shipped skills and README commands use these TypeScript surfaces. No
-ordinary command silently falls back to Python, and Python and TypeScript
-writers never share the active Store. Existing cached plugin versions must not
-be run against a Store after native activation because those older versions do
-not participate in native ownership.
+All shipped skills and ordinary README commands use these TypeScript surfaces.
+No installed command starts or falls back to Python. Existing cached plugin
+versions must not be run against a Store after native activation because those
+older versions do not participate in native ownership.
 
-## Retained Python assets
+## Repository reference assets
 
-Python remains in the repository and installed critical-byte inventory for
-rollback compatibility, differential oracles, QA replay, and migration tests.
-Those assets do not form an ordinary workflow route. Rollback is an explicit,
-whole-process Companion operation after native quiescence; it is not an
-automatic per-command fallback.
+Python reference assets remain in the development repository for differential
+oracles and historical regression evidence. They are excluded from the assembled
+installed artifact and do not form a shipped workflow route. Native QA replay is
+part of the installed TypeScript runtime.
 
 The [native canonical Store clone](native-canonical-store-clone.md),
 [process-owned quiescence controller](process-owned-writer-quiescence.md), and
-[controlled routing and rollback](controlled-writer-routing.md) describe the
+[controlled native routing](controlled-writer-routing.md) describe the
 activation boundary. Installed acceptance covers fresh and existing Stores,
-documented profile, task, and resume commands, exact rollback bytes, restart
-durability, and execution with an empty `PATH`.
+documented profile, task, resume, and replay commands, restart durability,
+artifact scanning, and execution with an empty `PATH`.

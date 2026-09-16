@@ -20,7 +20,7 @@ test('Companion supervisor resolves the ordinary Store root with closed options'
   assert.equal(resolveSupervisorRoot(parseSupervisorOptions([], app), { JOB_APPLY_STORE_DIR: '/tmp/environment' }, '/tmp/home'), '/tmp/environment');
   assert.equal(resolveSupervisorRoot(parseSupervisorOptions([], app), {}, '/tmp/home'), '/tmp/home/.job-apply');
   assert.throws(() => parseSupervisorOptions(['--writer', 'python'], app), /Unknown supervisor option/);
-  assert.throws(() => parseSupervisorOptions(['--rollback', '--rollback'], app), /Duplicate supervisor option/);
+  assert.throws(() => parseSupervisorOptions(['--rollback'], app), /Unknown supervisor option/);
   assert.equal(resolveSupervisorRoot(parseSupervisorOptions([], app), {}, homedir()).endsWith('/.job-apply'), true);
 });
 

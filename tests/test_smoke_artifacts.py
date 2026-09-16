@@ -29,7 +29,7 @@ class SmokeArtifactContainmentTests(unittest.TestCase):
                 assert_critical_bytes(installed, source, label="installed")
 
     def test_inventory_and_receipts_reject_symlinked_ancestors(self):
-        for relative in ("scripts", "skills/answer-memory", ".codex-plugin", "workspace"):
+        for relative in ("runtime", "skills/answer-memory", ".codex-plugin", "workspace"):
             with self.subTest(relative=relative), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 source = source_fixture(root / "source")
@@ -51,7 +51,7 @@ class SmokeArtifactContainmentTests(unittest.TestCase):
             first.write_bytes(b"unchanged target manifest")
             outside = root / "outside.txt"
             outside.write_bytes(b"private sentinel")
-            destination = target / "scripts/job-apply-store.py"
+            destination = target / "package.json"
             destination.unlink()
             destination.symlink_to(outside)
             with self.assertRaisesRegex(SystemExit, "contains a symlink"):
@@ -70,7 +70,7 @@ class SmokeArtifactContainmentTests(unittest.TestCase):
                 outside = root / "outside"
                 if not dangling:
                     outside.mkdir()
-                (target / "scripts").symlink_to(outside, target_is_directory=True)
+                (target / "runtime").symlink_to(outside, target_is_directory=True)
                 with self.assertRaisesRegex(SystemExit, "contains a symlink"):
                     copy_critical(source, target)
                 self.assertFalse((target / ".codex-plugin").exists())

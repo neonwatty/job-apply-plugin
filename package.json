@@ -26,8 +26,8 @@
     "qa:record": "node qa/recorder.mjs",
     "check:migration": "node tools/migration/check.mjs",
     "companion:build": "npm run build --workspace job-apply-companion && node apps/companion/package-standalone.mjs",
-    "companion:start": "node apps/companion/launch.mjs",
-    "companion:dev": "node apps/companion/launch.mjs --dev",
+    "companion:start": "node apps/companion/supervise.mjs",
+    "companion:dev": "node apps/companion/supervise.mjs --dev",
     "companion:typecheck": "npm run typecheck --workspace job-apply-companion"
   },
   "devDependencies": {

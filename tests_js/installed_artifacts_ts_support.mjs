@@ -3,13 +3,13 @@ import { spawnSync } from 'node:child_process';
 import { chmod, lstat, mkdir, readFile, readdir, readlink, rm, symlink, utimes, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-export const fixed = ['.codex-plugin/plugin.json', 'scripts/job-apply-store.py',
-  'scripts/job-apply-task.py', 'scripts/job-apply-attempt.py', 'scripts/job-apply-workspace.py',
+export const fixed = ['.agents/plugins/marketplace.json', '.claude-plugin/marketplace.json',
+  '.claude-plugin/plugin.json', '.codex-plugin/plugin.json', 'package.json',
   'skills/answer-memory/SKILL.md', 'skills/job-apply/SKILL.md'];
-export const trees = ['skills', 'runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace',
+export const trees = ['skills', 'runtime', 'qa/fixtures', 'qa/scenarios', 'workspace',
   'apps/companion', 'native'];
-const files = [...fixed, 'runtime/nested/codec.js', 'scripts/job_apply_store/io.py',
-  'scripts/job_apply_workspace/handler.py', 'workspace/app.js',
+const files = [...fixed, 'runtime/nested/codec.js', 'qa/fixtures/example/fixture.json',
+  'qa/scenarios/example/profile.json', 'workspace/app.js',
   'skills/job-apply/references/runtime-contract.md', 'skills/job-search/SKILL.md',
   'apps/companion/.next/standalone/apps/companion/server.js',
   'apps/companion/.next/standalone/node_modules/next/package.json',
@@ -31,7 +31,7 @@ export async function fixture(root) {
 }
 
 export async function alter(root, change) {
-  const path = join(root, 'scripts/job-apply-store.py');
+  const path = join(root, 'package.json');
   const remove = (relative) => rm(join(root, relative), { recursive: true, force: true });
   if (change === null) return;
   if (change === 'extra-runtime') await writeFile(join(root, 'runtime/extra.js'), 'extra');
@@ -48,7 +48,7 @@ export async function alter(root, change) {
   else if (['missing-fixed', 'fixed-directory', 'fixed-link', 'dangling-link'].includes(change)) {
     await rm(path);
     if (change === 'fixed-directory') await mkdir(path);
-    else if (change !== 'missing-fixed') await symlink(change === 'fixed-link' ? 'job-apply-task.py' : 'absent', path);
+    else if (change !== 'missing-fixed') await symlink(change === 'fixed-link' ? '.codex-plugin/plugin.json' : 'absent', path);
   } else if (['missing-tree', 'tree-file'].includes(change)) {
     await remove('runtime');
     if (change === 'tree-file') await writeFile(join(root, 'runtime'), 'not-directory');
@@ -56,7 +56,7 @@ export async function alter(root, change) {
     await remove('skills/answer-memory');
     await writeFile(join(root, 'skills/answer-memory'), 'not-directory');
   } else if (change === 'ancestor-link') {
-    await remove('scripts'); await symlink('../source/scripts', join(root, 'scripts'));
+    await remove('qa'); await symlink('../source/qa', join(root, 'qa'));
   } else if (change === 'nested-directory-link') {
     await symlink('../../workspace', join(root, 'runtime/nested/linked'));
   } else if (change === 'nested-file-link') {

@@ -13,7 +13,7 @@
     },
     {
       "path": "apps/companion/components/Companion.tsx",
-      "sha256": "fe4b4992780459377094d0a6309b2b6d3a0c041d650fcb14be2e95bdaaf1aa91",
+      "sha256": "cff4fedce7d687836eb2bc9971dcc1d2b1e84735298e941d9ddf15ea98525522",
       "classification": "unreviewed"
     },
     {
@@ -108,12 +108,12 @@
     },
     {
       "path": "apps/companion/supervise.mjs",
-      "sha256": "2cc8827dbfc03ef11a7afbfa0e607261dc2957c193cfff9dfc3483d0dfefdb2e",
+      "sha256": "bb64bfeb445e60d39f7b08194b873168fab754445c47d750723d3185ed7f0e4e",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/writer-route.mjs",
-      "sha256": "fe661f024a6b8d43c7a9a073860917a39e1614478e0090154b0cd31597dbb7cf",
+      "sha256": "3d6ced9074323f6f4b0d39f202c090a98ad3c113c05c98492b814f85b1d3ab61",
       "classification": "unreviewed"
     }
   ]

@@ -4,7 +4,7 @@ Read before the durable awaiting-review handoff. Resolve paths from the installe
 
 Bundled fixtures are under `<plugin-root>/qa/fixtures/<fixture-id>/fixture.json`. Inspect only plausible fixtures for the observed platform, such as `greenhouse-form-readiness-v1`, `workday-form-readiness-v1`, or `rippling-form-readiness-v1`. Their `steps[].controls[]` define control IDs, roles, and required flags. Enumerate the complete required controls from the live form first; select a fixture only if it represents that exact set. A missing match is a Needs Attention blocker, not permission to edit a fixture or omit extra controls.
 
-The pure builders in `<plugin-root>/scripts/job_apply_form_readiness.py` provide the maintained serialization contract:
+The pure builders in `<plugin-root>/runtime/contracts/workspace/claim-session-readiness.js` provide the maintained serialization contract:
 
 - `make_form_manifest(fixture, observation_revision=revision)` constructs the manifest. Its `complete=True` is an agent attestation; use it only after independently confirming the entire observed required-control set matches the fixture.
 - `make_readiness_observation(fixture, control_states, observation_revision=revision, adapter_state=..., upload_capability=..., validation_error_control_ids=..., final_control_state=...)` constructs the value-free observation. Supply each state from current visible evidence. Explicitly provide adapter, upload, validation, and final-control state; do not rely on optimistic defaults.

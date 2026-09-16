@@ -6,11 +6,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-FILES = sorted(['.codex-plugin/plugin.json', 'scripts/job-apply-store.py',
-                'scripts/job-apply-task.py', 'scripts/job-apply-attempt.py',
-                'scripts/job-apply-workspace.py', 'skills/answer-memory/SKILL.md',
-                'skills/job-apply/SKILL.md', 'runtime/data.bin'])
-TREES = ['runtime', 'scripts/job_apply_store', 'scripts/job_apply_workspace', 'workspace',
+FILES = sorted(['.agents/plugins/marketplace.json', '.claude-plugin/marketplace.json',
+                '.claude-plugin/plugin.json', '.codex-plugin/plugin.json', 'package.json',
+                'skills/answer-memory/SKILL.md', 'skills/job-apply/SKILL.md', 'runtime/data.bin'])
+TREES = ['skills', 'runtime', 'qa/fixtures', 'qa/scenarios', 'workspace',
          'apps/companion', 'native']
 FOCUS = 'runtime/data.bin'
 ATIME = 1600000000123456789

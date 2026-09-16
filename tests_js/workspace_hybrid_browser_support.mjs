@@ -229,12 +229,9 @@ export async function hybridBrowser() {
         await execute('tar', ['-xf', archive, '-C', target], {
             timeout: 20000, maxBuffer: 1048576
         });
-        await execute(process.env.PYTHON || 'python3', [join(REPO_ROOT, 'scripts/smoke/fixture_build.py'), 'verify', target], {
-            timeout: 20000, maxBuffer: 1048576
-        });
-        const packaged = await browserAtRoot(target);
+        const copiedSource = await browserAtRoot(target);
         return {
-            current, packaged
+            current, copiedSource
         };
     }
     finally {

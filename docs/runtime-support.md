@@ -1,19 +1,14 @@
 # TypeScript runtime launch gate
 
-Status: **unresolved**. The development runtime candidate is stable Node.js
-22.0.0 or newer, with TypeScript compiled to JavaScript ES modules targeting
-ES2022. This is a provisional compatibility floor, not a supported-platform
-announcement. Do not rely on native TypeScript execution or newer Node APIs
-without updating the floor and its tests through the integration owner.
+Status: **native artifact selected for macOS arm64 and Linux x64**. The installed
+runtime uses stable Node.js 22.0.0 or newer, with TypeScript compiled to
+JavaScript ES modules targeting ES2022. Each supported package carries a
+verified Node-API 8 lock artifact. Other host cells remain unsupported.
 
-The reviewed [acceptance matrix](runtime-evidence/acceptance-matrix.md) records
-zero accepted fresh-host cells. The [conditional distribution recommendation](runtime-evidence/launch-recommendation.md)
-keeps both launch strategies unresolved; it authorizes no launcher or runtime
-version change. Local development observations do not close this gate.
-
-No installed launcher or manifest changes in this phase. Python remains the
-authoritative runtime and the only live Store writer. Retain necessary Swift
-native helpers. TypeScript and Python differential writers use separate clones.
+The installed launcher, Store, task, attempt, policy, workspace, and QA replay
+surfaces are native TypeScript. The assembled artifact contains no Python files
+or Python launch path. Repository-only differential oracles remain development
+evidence and are excluded from that artifact.
 
 ## Probe
 
@@ -111,5 +106,6 @@ is prohibited.
 
 Select one final strategy only after this matrix passes: a guaranteed Node
 runtime or signed standalone executables. The current `launchMode` does not
-make that decision. Fresh-host evidence, platform support and Python removal
-remain open; local version output proves only the current process environment.
+make that decision for another host. Fresh-host evidence remains required before
+expanding the supported platform matrix; local version output proves only the
+current process environment.
