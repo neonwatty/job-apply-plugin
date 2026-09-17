@@ -17,6 +17,31 @@ export async function resumeDraftBrowser(page, root, fixture, buildRoot, id) {
             '--expected-revision', String(current.revision), '--input', input], { env: { PATH: '' } });
     }
 
+    const preview = page.getByRole('button', { name: 'Preview resume', exact: true });
+    assert.equal(await preview.count(), 1, 'managed text resumes expose an authenticated preview action');
+    const popupPromise = page.waitForEvent('popup');
+    await preview.click();
+    const popup = await popupPromise;
+    await popup.waitForURL('blob:**');
+    assert.equal(await popup.locator('body').innerText(), 'updated browser resume');
+    await popup.close();
+
+    // Starting a mutation intentionally cancels an in-flight content read without surfacing an abort error.
+    await page.getByLabel('Label', { exact: true }).fill('Preview cancellation draft');
+    await page.route(`**/api/resumes/${id}/content`, async route => {
+        await new Promise(resolve => setTimeout(resolve, 1_000));
+        await route.continue();
+    }, { times: 1 });
+    const cancelledPopupPromise = page.waitForEvent('popup');
+    await preview.click();
+    const cancelledPopup = await cancelledPopupPromise;
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByText('Resume details saved', { exact: true }).waitFor();
+    await page.waitForTimeout(1_100);
+    const visibleAlerts = (await page.locator('[role="alert"]').allInnerTexts()).filter(text => text.trim());
+    assert.deepEqual(visibleAlerts, [], 'intentional preview cancellation stays silent');
+    await cancelledPopup.close();
+
     // A clean refresh adopts canonical values; it must not turn stale fields into an editable draft.
     await externalPatch({ label: 'Concurrent label' });
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();

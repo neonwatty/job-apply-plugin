@@ -33,12 +33,12 @@
     },
     {
       "path": "apps/companion/components/Resumes.tsx",
-      "sha256": "f2058033f91816bced01221f8bb9b7f15abf028044398c670b1a9666da54b7e5",
+      "sha256": "43a2425bd96dec7a1b214660fdc69dbaf958189e30d49788b0d3b175dc583670",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/client.ts",
-      "sha256": "06fc037eed43a6a3817ca053a920fdf2d504e03e50a95f799624fe14b77896f9",
+      "sha256": "3e3d6cb4c19ce8c2c38c0d5aa372098529c973893a5e2c32bb1338af4364fad8",
       "classification": "unreviewed"
     },
     {
