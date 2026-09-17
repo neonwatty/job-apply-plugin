@@ -22,8 +22,10 @@ const isDirty = (editor: Editor | null) => Boolean(editor && (
 export function Resumes({ client, dirtyChanged, openExtractions }: { client: Client; dirtyChanged: (dirty: boolean) => void; openExtractions?:()=>void }) {
     const [records, setRecords] = useState<ResumeRecord[]>([]), [editor, setEditor] = useState<Editor | null>(null);
     const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false);
+    const [contentBusy, setContentBusy] = useState(false);
     const [error, setError] = useState(''), [notice, setNotice] = useState('');
     const alive = useRef(true), request = useRef<AbortController | null>(null), mutation = useRef<AbortController | null>(null);
+    const contentRequest = useRef<AbortController | null>(null);
     const fileInput = useRef<HTMLInputElement | null>(null);
     const dirty = isDirty(editor);
     async function refresh() {
@@ -54,7 +56,7 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
     useEffect(() => {
         alive.current = true;
         void refresh();
-        return () => { alive.current = false; request.current?.abort(); mutation.current?.abort(); };
+        return () => { alive.current = false; request.current?.abort(); mutation.current?.abort(); contentRequest.current?.abort(); };
     }, [client]);
     useEffect(() => { dirtyChanged(dirty || busy); return () => dirtyChanged(false); }, [dirty, busy, dirtyChanged]);
     function open(record: ResumeRecord | null) {
@@ -80,6 +82,7 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
     }
     async function mutate(operation: (signal: AbortSignal) => Promise<ResumeRecord>, message: string) {
         request.current?.abort();
+        contentRequest.current?.abort();
         const controller = new AbortController();
         mutation.current = controller;
         setBusy(true); setError(''); setNotice('');
@@ -116,6 +119,36 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
         else if (file)
             await mutate(signal => client.replaceResume(base.id, base.revision, file, base.storageKind !== 'managed', signal),
                 base.storageKind === 'managed' ? 'Resume file replaced' : 'Resume adopted');
+    }
+    async function openContent() {
+        const record = editor?.base;
+        if (!record || record.storageKind !== 'managed' || contentBusy) return;
+        const preview = record.mediaType !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        const popup = preview ? window.open('about:blank', '_blank') : null;
+        if (popup) popup.opener = null;
+        contentRequest.current?.abort();
+        const controller = new AbortController();
+        contentRequest.current = controller;
+        setContentBusy(true); setError('');
+        try {
+            const content = await client.resumeContent(record.id, controller.signal);
+            const url = URL.createObjectURL(content);
+            if (popup) popup.location.replace(url);
+            else {
+                const extension = record.mediaType === 'application/pdf' ? '.pdf'
+                    : record.mediaType?.startsWith('text/plain') ? '.txt' : '.docx';
+                const anchor = document.createElement('a');
+                anchor.href = url; anchor.download = `resume-${record.id}${extension}`; anchor.hidden = true;
+                document.body.append(anchor); anchor.click(); anchor.remove();
+            }
+            window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        } catch (cause) {
+            popup?.close();
+            setError(cause instanceof Error ? cause.message : 'Unable to open the managed resume.');
+        } finally {
+            if (contentRequest.current === controller) contentRequest.current = null;
+            if (alive.current) setContentBusy(false);
+        }
     }
     const managed = records.filter(record => record.storageKind === 'managed').length;
     const defaultResume = records.find(record => record.default);
@@ -160,7 +193,9 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
             <label className="resume-file-field">{editor.base?.storageKind === 'managed' ? 'Replacement file' : editor.base ? 'File to adopt' : 'Resume file'}
                 <input ref={fileInput} type="file" accept={accept} onChange={event => setEditor({ ...editor, file: event.target.files?.[0] ?? null })} disabled={busy} />
             </label></div>
-            <div className="resume-editor-actions"><button className="secondary" disabled={busy} onClick={close}>Cancel</button>
+            <div className="resume-editor-actions">{editor.base?.storageKind === 'managed' && <button className="secondary" disabled={busy || contentBusy} onClick={() => void openContent()}>
+                {editor.base.mediaType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ? 'Download resume' : 'Preview resume'}
+            </button>}<button className="secondary" disabled={busy || contentBusy} onClick={close}>Cancel</button>
                 <button className="primary" disabled={busy || loading || Boolean(editor.latest) || editor.missing || !dirty && Boolean(editor.base)} onClick={() => void save()}>Save</button>{' '}
                 {editor.base && !editor.base.default && <button className="secondary" disabled={busy || loading || dirty || Boolean(editor.latest) || editor.missing}
                     onClick={() => void mutate(signal => client.setDefaultResume(editor.base!.id, editor.base!.revision, signal), 'Default resume changed')}>Make default</button>}

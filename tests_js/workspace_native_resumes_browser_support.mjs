@@ -17,6 +17,15 @@ export async function resumeDraftBrowser(page, root, fixture, buildRoot, id) {
             '--expected-revision', String(current.revision), '--input', input], { env: { PATH: '' } });
     }
 
+    const preview = page.getByRole('button', { name: 'Preview resume', exact: true });
+    assert.equal(await preview.count(), 1, 'managed text resumes expose an authenticated preview action');
+    const popupPromise = page.waitForEvent('popup');
+    await preview.click();
+    const popup = await popupPromise;
+    await popup.waitForURL('blob:**');
+    assert.equal(await popup.locator('body').innerText(), 'updated browser resume');
+    await popup.close();
+
     // A clean refresh adopts canonical values; it must not turn stale fields into an editable draft.
     await externalPatch({ label: 'Concurrent label' });
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();

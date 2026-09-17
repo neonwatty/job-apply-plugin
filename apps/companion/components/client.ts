@@ -36,6 +36,22 @@ export function createClient(token: string) {
             binary += String.fromCharCode(...bytes.subarray(offset, offset + 32768));
         return btoa(binary);
     }
+    async function resumeContent(id: string, signal?: AbortSignal): Promise<Blob> {
+        const deadline = AbortSignal.timeout(30_000);
+        const response = await fetch(`/api/resumes/${encodeURIComponent(id)}/content`, {
+            signal: signal ? AbortSignal.any([signal, deadline]) : deadline,
+            headers: { Authorization: `Bearer ${token}` }, cache: 'no-store'
+        });
+        if (!response.ok) {
+            let payload: unknown = null;
+            try { payload = JSON.parse(await response.text()); }
+            catch { /* Status handling remains authoritative. */ }
+            const error = object(payload) && object(payload.error) ? payload.error : {};
+            throw new ApiError(response.status, typeof error.code === 'string' ? error.code : 'request_error',
+                typeof error.message === 'string' ? error.message : `Workspace request failed (${response.status})`);
+        }
+        return response.blob();
+    }
     return {
         automationRequest: async (path: string, method = 'GET', body?: unknown, signal?: AbortSignal) => request(path, method, body, signal),
         extractionRequest: async (path: string, method: string, body: string | undefined, signal: AbortSignal) => request(path, method, body, signal, true) as Promise<string>,
@@ -57,6 +73,7 @@ export function createClient(token: string) {
             patch: fields, expectedRevision: revision
         }, signal)),
         resumes: async (signal?: AbortSignal) => resumeList(await request('/api/resumes', 'GET', undefined, signal)),
+        resumeContent,
         importResume: async (metadata: unknown, file: File, signal?: AbortSignal) => resume(await request('/api/resumes/import', 'POST', {
             metadata, filename: file.name, content: await encoded(file)
         }, signal)),
