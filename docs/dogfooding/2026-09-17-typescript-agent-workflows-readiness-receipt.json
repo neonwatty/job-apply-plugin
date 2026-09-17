@@ -14,6 +14,7 @@
     "tag": "v0.1.0",
     "peeledTagCommit": "5268fa8f287c3b64f55f0c4438815b800f69d778",
     "dependency": "github:lineagehq/workflows#5268fa8f287c3b64f55f0c4438815b800f69d778",
+    "repositoryDependencyKind": "optional (required and verified on authenticated readiness hosts; skippable by unrelated CI without private cross-repository credentials)",
     "integrity": "sha512-4cizzFvck9CWs73P9XKA7sbdUXEmQ1Z+Ck8FndXhTVwVsE7IlCBGTWClRgQa5kO4BPimAcpnFnf6v6QsxDM7mw==",
     "cli": "node_modules/.bin/workflow",
     "node": "v22.22.3",
@@ -56,6 +57,7 @@
     "mobileResolution": "passed",
     "initializerIdempotency": "passed",
     "npmCleanInstall": "passed",
+    "credentiallessCiInstall": "passed with the private optional dependency absent",
     "repositoryAffectedGate": {
       "status": "failed",
       "selectedSuites": 25,

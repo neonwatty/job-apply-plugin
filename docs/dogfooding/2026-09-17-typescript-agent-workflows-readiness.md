@@ -29,6 +29,9 @@ registry:
 The public npm registry has no `@lineagehq/workflows@0.1.0` release. The exact
 Git commit is therefore the distribution identity and reproducibility anchor;
 the generated lockfile additionally records the installed package integrity.
+The private Git package is optional at the repository level so unrelated CI
+jobs can install without private cross-repository credentials; an authenticated
+readiness host must verify it is present before using the `workflow` CLI.
 
 The supported `workflow init --host codex` path generated exactly the pinned
 Codex skill, its OpenAI metadata, and protocol reference under
