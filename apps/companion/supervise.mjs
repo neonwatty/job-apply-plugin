@@ -12,9 +12,10 @@ import { loadPosixFlockProvider } from '../../runtime/store/posix-flock.js';
 import { resolvePackagedNativeLock } from '../../runtime/package/native-lock-artifact.js';
 import { attemptSocketPath } from '../../runtime/cli/attempt-protocol.js';
 
-const values = new Set(['--root', '--plugin-root', '--port', '--native-lock']);
+const values = new Set(['--root', '--plugin-root', '--port', '--native-lock', '--legacy-profile']);
 export function parseSupervisorOptions(args, app) {
-  const options = { root: undefined, pluginRoot: resolve(app, '../..'), port: 0, nativeLock: undefined, dev: false };
+  const options = { root: undefined, pluginRoot: resolve(app, '../..'), port: 0, nativeLock: undefined,
+    legacyProfile: undefined, dev: false };
   const seen = new Set();
   for (let index = 0; index < args.length; index += 1) {
     const key = args[index];
@@ -28,6 +29,7 @@ export function parseSupervisorOptions(args, app) {
     if (key === '--plugin-root') options.pluginRoot = resolve(value);
     if (key === '--port') options.port = Number(value);
     if (key === '--native-lock') options.nativeLock = resolve(value);
+    if (key === '--legacy-profile') options.legacyProfile = resolve(value);
   }
   if (!Number.isInteger(options.port) || options.port < 0 || options.port > 65535) throw new Error('Invalid port');
   return options;
@@ -116,7 +118,7 @@ export async function prepareNativeDefault(root, provider, options = {}) {
     return { mode, candidate, durablePythonRollback: mode === 'python' && await existing(retained) };
   }
   await mkdir(root, { recursive: true, mode: 0o700 }); await chmod(root, 0o700);
-  const bootstrap = createNativeStoreBootstrap(root, undefined, process.env, undefined, {
+  const bootstrap = createNativeStoreBootstrap(root, options.legacyProfile, process.env, undefined, {
     ...(options.now ? { clock: options.now } : {}),
     locked: operation => withExclusiveFileLock(join(root, '.store.lock'), async () => {
       await clearStaleDetachedAttempt(root); options.signal?.throwIfAborted(); return operation();
@@ -161,7 +163,9 @@ export async function runSupervisor(options, { signal } = {}) {
   let controller;
   try {
     controller = new ProcessOwnedWriterController({ active: root, provider, createSpec: launchSpec(options, root, nativeLock) });
-    const prepared = await controller.prepare(() => prepareNativeDefault(root, provider, { signal }));
+    const prepared = await controller.prepare(() => prepareNativeDefault(root, provider, {
+      signal, legacyProfile: options.legacyProfile,
+    }));
     if (prepared.mode === 'python') {
       if (prepared.durablePythonRollback) throw new Error('retired rollback state requires the previous package');
       await assertNoLiveDetachedAttempt(root);
@@ -200,7 +204,9 @@ export async function activateStoreForCli(options, { signal } = {}) {
   const controller = new ProcessOwnedWriterController({ active: root, provider,
     createSpec: () => { throw new Error('CLI activation does not start a writer'); } });
   try {
-    const prepared = await controller.prepare(() => prepareNativeDefault(root, provider, { signal }));
+    const prepared = await controller.prepare(() => prepareNativeDefault(root, provider, {
+      signal, legacyProfile: options.legacyProfile,
+    }));
     if (prepared.mode === 'python') {
       if (prepared.durablePythonRollback) throw new Error('native rollback is active');
       try { await controller.activateQuiescent({ signal }); }

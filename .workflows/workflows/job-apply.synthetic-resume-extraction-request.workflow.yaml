@@ -29,7 +29,9 @@ target:
   supportedPlatforms:
     - id: desktop-web
       adapterCapability: browser
-      viewport: default-desktop
+      viewport:
+        width: 1440
+        height: 900
     - id: mobile-web
       adapterCapability: browser
       viewport:
@@ -38,21 +40,30 @@ target:
   identity:
     requirement: anonymous
     note: >-
-      Use only the new isolated Store and committed fictional resume fixture;
-      no canonical or private applicant data is permitted.
+      Anonymous means no named applicant identity. The local Companion still
+      requires its ephemeral transport token. Use only the new isolated Store
+      and committed fictional resume fixture; no canonical or private applicant
+      data is permitted. The runner does not prove this start state.
 
 start:
   isolation: fresh-context
   path: /
   expectedState: >-
-    The authenticated Job Apply Companion opens against a new isolated Store
-    and displays the synthetic native workspace without any resume records.
+    An external host opens the token-authenticated Job Apply Companion at 1440
+    by 900 against a new isolated Store and verifies the synthetic native
+    workspace has no resume records.
   constraints:
     - >-
-      Build Companion before launch, create .workflows/local with owner-only
-      permissions, and use the complete authenticated URL printed by the start
-      command. The static base URL without its token fragment is not a valid
-      browser target.
+      Workflows 0.1.0 does not execute the configured start command or bind its
+      output. Externally build Companion, create .workflows/local with owner-only
+      permissions, run the command, and give the browser host the complete URL
+      it prints. The static base URL without its token fragment is not valid.
+    - >-
+      Keep .workflows/local/no-legacy-profile.json absent so the explicit
+      legacy-profile source cannot import owner data into the synthetic Store.
+    - >-
+      The browser host must apply and verify the selected platform viewport;
+      Workflows 0.1.0 records the platform but does not enforce its dimensions.
     - >-
       The only upload is qa/testdata/resumes/dogfood-synthetic-resume.txt.
     - >-
@@ -60,8 +71,8 @@ start:
       employer site or job-application flow.
   preflightCapabilities:
     - browser.control
-    - browser.file-upload
-    - screenshot.capture
+    - file-upload
+    - screenshot
 
 execution:
   topology: linear-with-bounded-conditions
@@ -90,6 +101,23 @@ platformOverrides:
         The authenticated Job Apply Companion opens at 390 by 844 against a
         new isolated Store and shows no page-level horizontal overflow.
       constraints:
+        - >-
+          Workflows 0.1.0 does not execute the configured start command or bind
+          its output. Externally build Companion, create .workflows/local with
+          owner-only permissions, run the command, and give the browser host the
+          complete URL it prints. The static base URL without its token fragment
+          is not valid.
+        - >-
+          Keep .workflows/local/no-legacy-profile.json absent so the explicit
+          legacy-profile source cannot import owner data into the synthetic Store.
+        - >-
+          The browser host must apply and verify the selected platform viewport;
+          Workflows 0.1.0 records the platform but does not enforce its dimensions.
+        - >-
+          The only upload is qa/testdata/resumes/dogfood-synthetic-resume.txt.
+        - >-
+          Do not read or copy the canonical Job Apply Store, and do not open any
+          employer site or job-application flow.
         - >-
           Navigation may scroll horizontally, but the document must not have
           page-level horizontal overflow.
@@ -175,6 +203,10 @@ completion:
   cleanup:
     alwaysAttempt: true
     actions:
-      - Stop the Companion process without opening any employer site.
+      - >-
+        The external orchestrator must stop Companion; Workflows 0.1.0 cleanup
+        events do not execute this action. Do not open any employer site.
       - Preserve runner-owned evidence only until the owner reviews this synthetic run.
-      - Remove the isolated Job Apply Store after evidence review; never touch the canonical Store.
+      - >-
+        Leave the isolated Store under .workflows/local for owner-reviewed external
+        cleanup; never remove or touch the canonical Store.

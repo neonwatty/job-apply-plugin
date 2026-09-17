@@ -17,6 +17,7 @@ const execute = promisify(execFile);
 
 test('Companion supervisor resolves the ordinary Store root with closed options', () => {
   assert.equal(resolveSupervisorRoot(parseSupervisorOptions(['--root', '/tmp/explicit'], app), {}, '/tmp/home'), '/tmp/explicit');
+  assert.equal(parseSupervisorOptions(['--legacy-profile', '/tmp/synthetic-missing-profile'], app).legacyProfile, '/tmp/synthetic-missing-profile');
   assert.equal(resolveSupervisorRoot(parseSupervisorOptions([], app), { JOB_APPLY_STORE_DIR: '/tmp/environment' }, '/tmp/home'), '/tmp/environment');
   assert.equal(resolveSupervisorRoot(parseSupervisorOptions([], app), {}, '/tmp/home'), '/tmp/home/.job-apply');
   assert.throws(() => parseSupervisorOptions(['--writer', 'python'], app), /Unknown supervisor option/);
@@ -38,6 +39,15 @@ test('Companion prepares empty and initialized Stores for native activation, the
     assert.equal(restarted.mode, 'native');
     assert.equal(await readFile(join(root, '.native-store-clone'), 'utf8').then(Boolean), true);
   }
+});
+
+test('Companion honors an explicit legacy-profile source during native preparation', { timeout: 60_000 }, async t => {
+  const fixture = await nativeFixture(); t.after(() => fixture.cleanup());
+  const parent = await realpath(fixture.root), root = join(parent, 'explicit-legacy'), legacyProfile = join(parent, 'legacy.json');
+  await writeFile(legacyProfile, '{"firstName":"Synthetic"}\n', { mode: 0o600 });
+  const provider = loadPosixFlockProvider(fixture.receipt.artifact);
+  await prepareNativeDefault(root, provider, { legacyProfile, now: () => '2026-09-15T00:00:00Z' });
+  assert.equal(JSON.parse(await readFile(join(root, 'profile.json'), 'utf8')).profile.firstName, 'Synthetic');
 });
 
 test('completed rollback remains a durable Python restart without a new native activation', { timeout: 60_000 }, async t => {

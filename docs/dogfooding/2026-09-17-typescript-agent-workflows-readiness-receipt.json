@@ -36,16 +36,18 @@
   ],
   "candidate": {
     "config": ".workflows/config.yaml",
-    "configSha256": "2812b3e1c609f6d006f6cd467ad267a17490c097d65b8ebdef19bbebeb850c93",
+    "configSha256": "4351212527c3a05e4cb511fadfb3fba6525026e12848e55f4ac7ce0d5366fb3a",
     "workflow": ".workflows/workflows/job-apply.synthetic-resume-extraction-request.workflow.yaml",
-    "workflowFileSha256": "d0728a079f436943ba3ad1e635d4cd1dc5e4f91cad9449f6011d59d13d32218f",
-    "workflowSourceHash": "sha256:40c81735207ecf6cf1b55a1cd738158d41585d653e7089763a10c82eed84366c",
-    "desktopEffectiveHash": "sha256:17af050cc3363b8b02228ff51f53f241582758844e4420b3d01aa025a9923042",
-    "mobileEffectiveHash": "sha256:b97e89524738163083706073265f79af98c35ece1b9cfcbe01826f84145710ce",
+    "workflowFileSha256": "115de39275639c5a2dfbff31252d2c9b2169020b4ee8e3b229790e0644787719",
+    "workflowSourceHash": "sha256:96cb20be989b65b3544a9e9130910a1116f2d28444e0a4abb114e91c12118bbb",
+    "desktopEffectiveHash": "sha256:5a73ed434e0c1693cac7cb06acd14770757d15dac1133bfb8735fc9578f2493f",
+    "mobileEffectiveHash": "sha256:56998e1639971cc00c028904759f77e647bae79806be9ce7db59fd6ef9fdeabe",
     "fixture": "qa/testdata/resumes/dogfood-synthetic-resume.txt",
     "fixtureSha256": "af8c27e21a03a85656e975308480e5decd88c7a93db2cbc747ed08f06acf8c53",
     "store": ".workflows/local/job-apply-store",
-    "storeCreated": false
+    "storeCreated": false,
+    "conditionalExecutability": "External launch, token URL binding, viewport enforcement, process teardown, and Store disposition are required because Workflows 0.1.0 does not perform them.",
+    "legacyProfileImportBlockedBy": "--legacy-profile .workflows/local/no-legacy-profile.json (must remain absent)"
   },
   "validation": {
     "doctor": "passed",
@@ -59,7 +61,7 @@
       "selectedSuites": 25,
       "unrelatedConditions": [
         "migration-inventory rejects an intentionally dirty pre-commit snapshot",
-        "native-posix-lock host qualification reports Python alias and resolved executable disagree"
+        "unversioned python3 resolves to unsupported CPython 3.9, producing host qualification and downstream differential failures while versioned 3.12, 3.13, and 3.14 profiles pass"
       ]
     },
     "cleanMigrationInventory": "inventory-consistent",
@@ -69,9 +71,20 @@
     "productionApplicationOpened": false,
     "finalActionAttempted": false
   },
+  "independentReview": {
+    "status": "completed",
+    "correctedFindings": [
+      "explicit legacy-profile isolation prevents ambient owner-profile import",
+      "preflight capability names match protocol 1.0 runner semantics",
+      "mobile override retains every base safety constraint",
+      "static URL, viewport, identity, and cleanup limitations are explicit"
+    ]
+  },
   "freshAgentGate": {
     "status": "pending",
     "currentTaskDiscoveryClaimed": false,
+    "managedFreshTaskProvisionAttempts": 2,
+    "managedFreshTaskProvisionOutcome": "Both attempts failed before discovery; no run was created or authorized.",
     "requirements": [
       "Start a new Codex task at this repository root on the clean handoff commit.",
       "Confirm agent-workflows appears in the task's supplied skill catalog.",

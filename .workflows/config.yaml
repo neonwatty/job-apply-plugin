@@ -9,6 +9,7 @@ project:
 commands:
   start: >-
     npm run companion:start -- --root .workflows/local/job-apply-store --port 41739
+    --legacy-profile .workflows/local/no-legacy-profile.json
   healthTimeoutSeconds: 60
 
 paths:
@@ -18,7 +19,9 @@ paths:
 platforms:
   desktop-web:
     adapter: browser
-    viewport: default-desktop
+    viewport:
+      width: 1440
+      height: 900
   mobile-web:
     adapter: browser
     viewport:
