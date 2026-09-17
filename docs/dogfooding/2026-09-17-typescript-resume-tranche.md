@@ -1,7 +1,9 @@
 # TypeScript resume dogfooding tranche
 
-Date: 2026-09-17  
-Branch: `codex/ts-job-apply-dogfood-tranche`  
+Date: 2026-09-17
+
+Branch: `codex/ts-job-apply-dogfood-tranche`
+
 Base: `origin/staging` at `46e335d`
 
 ## Scope and safety
@@ -83,7 +85,18 @@ not as successful download proof or a Workflows-platform finding.
   was rerun with `/opt/homebrew/bin` first in `PATH`: 12 suites passed,
   including 1,897 assertions in `node-workspace-other`; only
   `migration-inventory` rejected the intentionally dirty evidence snapshot.
-  The adjacent JSON receipt preserves that value-free result.
+  The adjacent JSON receipt preserves that value-free result. After committing
+  the implementation and explicitly reconciling the two changed source hashes
+  plus their review-lock binding, `node tools/migration/check.mjs` passed with
+  `inventory-consistent` and no errors.
+- The final clean committed affected run selected 25 suites after that metadata
+  reconciliation. Twenty-three passed. Two host-qualification suites failed for
+  environment drift outside this tranche: `native-frozen-reference-profiles`
+  rejected the newly installed, unreviewed CPython 3.12.14 patch, and
+  `native-posix-lock` found that the pinned Xcode compiler executable could not
+  resolve `sys/file.h` when invoked directly. The ordinary native-lock build
+  used by this walkthrough succeeded; no frozen host evidence was updated or
+  claimed. The adjacent JSON receipt is the final value-free gate result.
 
 The disposable Companion process and private Store are removed after final
 validation; only the fictional fixtures, product fix, regression, and this

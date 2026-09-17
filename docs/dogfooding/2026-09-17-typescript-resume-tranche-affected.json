@@ -1,10 +1,12 @@
 {
   "schemaVersion": 1,
   "baseSha": "46e335df4200b8453713547c8099d04a418f762d",
-  "headSha": "46e335df4200b8453713547c8099d04a418f762d",
+  "headSha": "0e8d5f08807d3909319d80c79e67f7af7d75a0f0",
   "changedPaths": [
     "apps/companion/components/Resumes.tsx",
     "apps/companion/components/client.ts",
+    "config/migration/review-lock.json",
+    "config/migration/source-catalog-g02-next.json",
     "docs/dogfooding/2026-09-17-typescript-resume-tranche-affected.json",
     "docs/dogfooding/2026-09-17-typescript-resume-tranche.md",
     "qa/testdata/resumes/README.md",
@@ -20,78 +22,150 @@
     "matrix-policy",
     "source-size",
     "python-fast",
-    "node-runner-fast",
-    "node-workspace-other",
-    "docs-links",
     "python-qa",
+    "python-workspace-contracts",
+    "python-accounts",
+    "python-core",
+    "node-runner-fast",
+    "node-migration-evidence",
     "node-recorder",
-    "node-renderer"
+    "node-renderer",
+    "node-workspace-other",
+    "native-frozen-reference-profiles",
+    "native-posix-lock",
+    "native-canonical-store-clone",
+    "native-default-cutover",
+    "native-posix-timestamps",
+    "macos-native-typescript-adapter",
+    "native-email-canary-composition",
+    "node-reference-s04",
+    "node-reference-s05"
   ],
-  "fallbackReason": null,
+  "fallbackReason": "global path: config/migration/review-lock.json",
   "timings": [
     {
       "id": "companion-typescript-check",
-      "durationMs": 737,
+      "durationMs": 674,
       "status": "passed"
     },
     {
       "id": "migration-inventory",
-      "durationMs": 447,
-      "status": "failed"
+      "durationMs": 37966,
+      "status": "passed"
     },
     {
       "id": "typescript-check",
-      "durationMs": 1486,
+      "durationMs": 1406,
       "status": "passed"
     },
     {
       "id": "node-foundation-fast",
-      "durationMs": 10259,
+      "durationMs": 9684,
       "status": "passed"
     },
     {
       "id": "matrix-policy",
-      "durationMs": 120,
+      "durationMs": 113,
       "status": "passed"
     },
     {
       "id": "source-size",
-      "durationMs": 205,
+      "durationMs": 186,
       "status": "passed"
     },
     {
       "id": "python-fast",
-      "durationMs": 2617,
-      "status": "passed"
-    },
-    {
-      "id": "node-runner-fast",
-      "durationMs": 51559,
-      "status": "passed"
-    },
-    {
-      "id": "node-workspace-other",
-      "durationMs": 327734,
-      "status": "passed"
-    },
-    {
-      "id": "docs-links",
-      "durationMs": 5080,
+      "durationMs": 2432,
       "status": "passed"
     },
     {
       "id": "python-qa",
-      "durationMs": 121453,
+      "durationMs": 116471,
+      "status": "passed"
+    },
+    {
+      "id": "python-workspace-contracts",
+      "durationMs": 90098,
+      "status": "passed"
+    },
+    {
+      "id": "python-accounts",
+      "durationMs": 44626,
+      "status": "passed"
+    },
+    {
+      "id": "python-core",
+      "durationMs": 15898,
+      "status": "passed"
+    },
+    {
+      "id": "node-runner-fast",
+      "durationMs": 36247,
+      "status": "passed"
+    },
+    {
+      "id": "node-migration-evidence",
+      "durationMs": 201133,
       "status": "passed"
     },
     {
       "id": "node-recorder",
-      "durationMs": 99539,
+      "durationMs": 90296,
       "status": "passed"
     },
     {
       "id": "node-renderer",
-      "durationMs": 7180,
+      "durationMs": 5270,
+      "status": "passed"
+    },
+    {
+      "id": "node-workspace-other",
+      "durationMs": 291592,
+      "status": "passed"
+    },
+    {
+      "id": "native-frozen-reference-profiles",
+      "durationMs": 314,
+      "status": "failed"
+    },
+    {
+      "id": "native-posix-lock",
+      "durationMs": 8913,
+      "status": "failed"
+    },
+    {
+      "id": "native-canonical-store-clone",
+      "durationMs": 11829,
+      "status": "passed"
+    },
+    {
+      "id": "native-default-cutover",
+      "durationMs": 46515,
+      "status": "passed"
+    },
+    {
+      "id": "native-posix-timestamps",
+      "durationMs": 569,
+      "status": "passed"
+    },
+    {
+      "id": "macos-native-typescript-adapter",
+      "durationMs": 7445,
+      "status": "passed"
+    },
+    {
+      "id": "native-email-canary-composition",
+      "durationMs": 1776,
+      "status": "passed"
+    },
+    {
+      "id": "node-reference-s04",
+      "durationMs": 1490,
+      "status": "passed"
+    },
+    {
+      "id": "node-reference-s05",
+      "durationMs": 2186,
       "status": "passed"
     }
   ],
