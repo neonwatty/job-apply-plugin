@@ -144,6 +144,7 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
             window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
         } catch (cause) {
             popup?.close();
+            if (!alive.current || controller.signal.aborted || contentRequest.current !== controller) return;
             setError(cause instanceof Error ? cause.message : 'Unable to open the managed resume.');
         } finally {
             if (contentRequest.current === controller) contentRequest.current = null;

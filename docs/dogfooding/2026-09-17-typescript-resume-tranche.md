@@ -58,6 +58,12 @@ action that previews PDF/TXT in a blob URL or downloads DOCX with an opaque
 filename. Reads are abortable, do not expose the managed path or original
 filename, and do not mark the editor dirty.
 
+An independent branch review then found that a Save or Make default mutation
+could intentionally abort an in-flight preview yet briefly surface the browser's
+abort error. A failing packaged-browser regression reproduced it. The content
+reader now suppresses only cancellation or supersession from its own controller;
+real content-read failures remain visible.
+
 ### Workflows-platform status
 
 No Agent Workflows surface was available, so runner configuration, replay,
@@ -79,6 +85,9 @@ not as successful download proof or a Workflows-platform finding.
 - `npm run companion:build`: passed.
 - `npm run companion:typecheck`: passed when run after the build. A deliberately parallel build/typecheck invocation raced on generated `.next/types`; it was rerun sequentially and is not treated as product or Workflows evidence.
 - Native resume and extraction domain tests passed before the walkthrough.
+- Independent review follow-up: the cancellation regression failed before the
+  fix and passed afterward; Companion typecheck and all nine native managed
+  resume assertions also passed.
 - `npm run test:affected -- --base origin/staging`: with the shell's default
   Apple Python 3.9.6, 13 suites ran and three failed because frozen reference
   tests require the repository's installed 3.12-3.14 profiles. The same gate
