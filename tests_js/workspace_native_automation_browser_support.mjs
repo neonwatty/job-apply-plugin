@@ -21,6 +21,10 @@ export async function nativeAutomationBrowser(page, root) {
 
   const privateEmail='private-native-automation@example.invalid';
   await workspace.getByRole('button',{name:'Add portal',exact:true}).click();
+  await workspace.getByLabel('Exact employer portal URL',{exact:true}).fill('https://job-boards.greenhouse.io/synthetic/jobs/123');
+  await workspace.getByRole('button',{name:'Add employer portal',exact:true}).click();
+  await workspace.getByRole('alert').getByText('This portal is not supported for account preparation. Add an exact Workday or Oracle Recruiting job URL.',{exact:true}).waitFor();
+  assert.equal(Object.keys(JSON.parse(await readFile(join(root,'employer-accounts.json'),'utf8')).accounts).length,0);
   await workspace.getByLabel('Exact employer portal URL',{exact:true}).fill('https://acme.wd5.myworkdayjobs.com/en-US/jobs/one');
   await workspace.getByLabel('Optional signup email override',{exact:true}).fill(privateEmail);
   await workspace.getByRole('button',{name:'Add employer portal',exact:true}).click();
