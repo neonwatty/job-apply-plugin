@@ -22,3 +22,6 @@ test_resumes/
 # Private Job Apply QA recordings and local run evidence
 .qa-private/
 qa/runs/
+
+# Agent Workflows local run control, evidence, and isolated Job Apply Store
+.workflows/local/

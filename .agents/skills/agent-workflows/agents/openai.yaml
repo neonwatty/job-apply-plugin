@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agent Workflows"
+  short_description: "Run leased, evidence-backed app walkthroughs"
+  default_prompt: "Use $agent-workflows to operate this supervised workflow run through the local runner."

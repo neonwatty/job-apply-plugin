@@ -1,0 +1,82 @@
+{
+  "schema": "job-apply-agent-workflows-readiness-receipt/v1",
+  "date": "2026-09-17",
+  "repository": {
+    "branch": "codex/ts-job-apply-dogfood-phase-e-workflows",
+    "baseRef": "origin/staging",
+    "baseCommit": "30c535e80174755a359e789cbc4adcfe3d4584f9",
+    "handoffCommit": "Resolve with git rev-parse HEAD after checking out the clean handoff branch."
+  },
+  "workflows": {
+    "package": "@lineagehq/workflows",
+    "version": "0.1.0",
+    "protocolVersion": "1.0",
+    "tag": "v0.1.0",
+    "peeledTagCommit": "5268fa8f287c3b64f55f0c4438815b800f69d778",
+    "dependency": "github:lineagehq/workflows#5268fa8f287c3b64f55f0c4438815b800f69d778",
+    "integrity": "sha512-4cizzFvck9CWs73P9XKA7sbdUXEmQ1Z+Ck8FndXhTVwVsE7IlCBGTWClRgQa5kO4BPimAcpnFnf6v6QsxDM7mw==",
+    "cli": "node_modules/.bin/workflow",
+    "node": "v22.22.3",
+    "publicRegistryRelease": false,
+    "sourceCheckoutEdited": false
+  },
+  "generatedHostFiles": [
+    {
+      "path": ".agents/skills/agent-workflows/SKILL.md",
+      "sha256": "7041e93cab5010d38801717c09c3af6a0ba685562a2269d6439c38b51c346919"
+    },
+    {
+      "path": ".agents/skills/agent-workflows/agents/openai.yaml",
+      "sha256": "f3becf0ca6f4bb131bf5dce5808de35e051089a17a64f98abcf6cdd66343b023"
+    },
+    {
+      "path": ".agents/skills/agent-workflows/references/protocol.md",
+      "sha256": "9cef431c2bfced51706f83403c7cde48cf64ce294b8e539b8ce38e68e403dc06"
+    }
+  ],
+  "candidate": {
+    "config": ".workflows/config.yaml",
+    "configSha256": "2812b3e1c609f6d006f6cd467ad267a17490c097d65b8ebdef19bbebeb850c93",
+    "workflow": ".workflows/workflows/job-apply.synthetic-resume-extraction-request.workflow.yaml",
+    "workflowFileSha256": "d0728a079f436943ba3ad1e635d4cd1dc5e4f91cad9449f6011d59d13d32218f",
+    "workflowSourceHash": "sha256:40c81735207ecf6cf1b55a1cd738158d41585d653e7089763a10c82eed84366c",
+    "desktopEffectiveHash": "sha256:17af050cc3363b8b02228ff51f53f241582758844e4420b3d01aa025a9923042",
+    "mobileEffectiveHash": "sha256:b97e89524738163083706073265f79af98c35ece1b9cfcbe01826f84145710ce",
+    "fixture": "qa/testdata/resumes/dogfood-synthetic-resume.txt",
+    "fixtureSha256": "af8c27e21a03a85656e975308480e5decd88c7a93db2cbc747ed08f06acf8c53",
+    "store": ".workflows/local/job-apply-store",
+    "storeCreated": false
+  },
+  "validation": {
+    "doctor": "passed",
+    "configAndWorkflow": "passed",
+    "desktopResolution": "passed",
+    "mobileResolution": "passed",
+    "initializerIdempotency": "passed",
+    "npmCleanInstall": "passed",
+    "repositoryAffectedGate": {
+      "status": "failed",
+      "selectedSuites": 25,
+      "unrelatedConditions": [
+        "migration-inventory rejects an intentionally dirty pre-commit snapshot",
+        "native-posix-lock host qualification reports Python alias and resolved executable disagree"
+      ]
+    },
+    "cleanMigrationInventory": "inventory-consistent",
+    "runCreated": false,
+    "trainingEvidenceCreated": false,
+    "browserEvidenceCreated": false,
+    "productionApplicationOpened": false,
+    "finalActionAttempted": false
+  },
+  "freshAgentGate": {
+    "status": "pending",
+    "currentTaskDiscoveryClaimed": false,
+    "requirements": [
+      "Start a new Codex task at this repository root on the clean handoff commit.",
+      "Confirm agent-workflows appears in the task's supplied skill catalog.",
+      "Explicitly invoke agent-workflows and read its installed contract.",
+      "Stop without workflow train or browser control if any requirement fails."
+    ]
+  }
+}

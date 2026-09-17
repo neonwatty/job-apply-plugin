@@ -1,0 +1,180 @@
+schema: agent-workflow/v0
+kind: Workflow
+
+metadata:
+  id: job-apply.synthetic-resume-extraction-request
+  name: Synthetic resume import and extraction-request boundary
+  description: >-
+    In a new isolated Job Apply Store, import the committed fictional TXT
+    resume, request fact extraction, verify the value-free queued state, and
+    stop before proposal authoring or human review.
+  lifecycle: candidate
+  candidateRevision: 1
+  tags:
+    - browser
+    - desktop
+    - mobile
+    - resume
+    - synthetic
+
+promotion:
+  immutableAfterPromotion: true
+  requires:
+    - successful-supervised-replay
+    - human-approval
+
+target:
+  app: job-apply-plugin
+  baseUrl: http://127.0.0.1:41739
+  supportedPlatforms:
+    - id: desktop-web
+      adapterCapability: browser
+      viewport: default-desktop
+    - id: mobile-web
+      adapterCapability: browser
+      viewport:
+        width: 390
+        height: 844
+  identity:
+    requirement: anonymous
+    note: >-
+      Use only the new isolated Store and committed fictional resume fixture;
+      no canonical or private applicant data is permitted.
+
+start:
+  isolation: fresh-context
+  path: /
+  expectedState: >-
+    The authenticated Job Apply Companion opens against a new isolated Store
+    and displays the synthetic native workspace without any resume records.
+  constraints:
+    - >-
+      Build Companion before launch, create .workflows/local with owner-only
+      permissions, and use the complete authenticated URL printed by the start
+      command. The static base URL without its token fragment is not a valid
+      browser target.
+    - >-
+      The only upload is qa/testdata/resumes/dogfood-synthetic-resume.txt.
+    - >-
+      Do not read or copy the canonical Job Apply Store, and do not open any
+      employer site or job-application flow.
+  preflightCapabilities:
+    - browser.control
+    - browser.file-upload
+    - screenshot.capture
+
+execution:
+  topology: linear-with-bounded-conditions
+  agentFreedom: goal-bounded
+  onUnexpectedState: fail
+  environmentChange: block-run
+  failureContinuation: stop
+  recoveryBudget:
+    maxActionsPerStep: 3
+    maxDurationSecondsPerStep: 45
+
+evidencePolicy:
+  default:
+    - declared-checkpoint-screenshots
+  onFailure:
+    - screenshot
+    - video-or-trace
+  retainVerifiedDownloads: false
+
+optionalStateHandlers: []
+
+platformOverrides:
+  mobile-web:
+    start:
+      expectedState: >-
+        The authenticated Job Apply Companion opens at 390 by 844 against a
+        new isolated Store and shows no page-level horizontal overflow.
+      constraints:
+        - >-
+          Navigation may scroll horizontally, but the document must not have
+          page-level horizontal overflow.
+
+steps:
+  - id: open-resumes
+    name: Open the empty resume library
+    action: Select Resumes in the Job Apply workspace navigation.
+    expected:
+      - The Resumes workspace is visible.
+      - The active resume count is zero.
+      - The empty library offers Import resume.
+    evidence:
+      - type: screenshot
+        checkpoint: empty-resume-library
+        required: true
+
+  - id: import-synthetic-resume
+    name: Import the committed fictional resume
+    dependsOn:
+      - open-resumes
+    action: >-
+      Select Import resume, label it Synthetic Workflows Resume, choose only
+      qa/testdata/resumes/dogfood-synthetic-resume.txt, and save it.
+    expected:
+      - The resume import succeeds.
+      - Exactly one active managed resume is visible.
+      - The visible label is Synthetic Workflows Resume.
+    evidence:
+      - type: screenshot
+        checkpoint: synthetic-resume-imported
+        required: true
+
+  - id: open-resume-extraction
+    name: Open resume extraction
+    dependsOn:
+      - import-synthetic-resume
+    action: Select Resume extraction from the Resumes workspace.
+    expected:
+      - The Resume extraction workspace is visible.
+      - Exactly one managed resume is available.
+      - There are no active requests and no proposals to review.
+    evidence:
+      - type: screenshot
+        checkpoint: extraction-empty-state
+        required: true
+
+  - id: request-extraction
+    name: Request extraction for the synthetic resume
+    dependsOn:
+      - open-resume-extraction
+    action: >-
+      Choose Synthetic Workflows Resume and activate Request extraction once.
+    expected:
+      - The application reports that extraction was requested.
+      - Exactly one active request is shown with requested status.
+      - No extracted proposal or review decision is claimed.
+    evidence:
+      - type: screenshot
+        checkpoint: extraction-request-queued
+        required: true
+
+  - id: verify-review-boundary
+    name: Verify the proposal-review boundary
+    dependsOn:
+      - request-extraction
+    action: >-
+      Inspect the Extraction requests, Extracted proposals, and Proposal review
+      sections without cancelling, retrying, or supplying extracted values.
+    expected:
+      - The queued request remains visible.
+      - The proposal list remains empty until a separate Job Apply agent authors one.
+      - Proposal review asks the owner to select a result and exposes no decisions.
+    evidence:
+      - type: screenshot
+        checkpoint: proposal-review-boundary
+        required: true
+
+completion:
+  successRequires:
+    - every-step-passed
+    - required-evidence-verified
+  cleanup:
+    alwaysAttempt: true
+    actions:
+      - Stop the Companion process without opening any employer site.
+      - Preserve runner-owned evidence only until the owner reviews this synthetic run.
+      - Remove the isolated Job Apply Store after evidence review; never touch the canonical Store.
