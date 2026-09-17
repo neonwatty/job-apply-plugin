@@ -1,0 +1,18 @@
+SYNTHETIC DOGFOOD RESUME
+
+Jordan Example
+jordan.example@example.invalid
+
+SUMMARY
+Product-minded software engineer with experience building reliable local-first tools.
+
+EXPERIENCE
+Senior Software Engineer, Example Systems, 2022-2026
+- Built privacy-preserving TypeScript services and accessible React interfaces.
+- Designed reproducible test fixtures and durable retry workflows.
+
+EDUCATION
+Example University, Bachelor of Science in Computer Science, 2022
+
+SKILLS
+TypeScript, React, Node.js, testing, accessibility

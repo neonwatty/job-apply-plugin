@@ -18,3 +18,16 @@ unredacted resume into this directory.
 This fixture complements, but does not replace, the deliberately minimal
 `qa/scenarios/*/synthetic-resume.pdf` fixtures. Those files have a stricter closed
 content contract for deterministic browser replay and privacy validation.
+
+`dogfood-synthetic-resume.txt` and
+`dogfood-synthetic-resume-replacement.txt` are fictional, bounded UTF-8 inputs
+for the TypeScript Companion resume-library and extraction journeys. They contain
+only `.invalid` contact data and invented organizations. A disposable DOCX can be
+derived from the first file for a local macOS walkthrough with:
+
+```text
+textutil -convert docx -output /private/tmp/dogfood-synthetic-resume.docx qa/testdata/resumes/dogfood-synthetic-resume.txt
+```
+
+Generated documents and extraction candidates belong only in an owner-private
+temporary directory and must be removed after the walkthrough.

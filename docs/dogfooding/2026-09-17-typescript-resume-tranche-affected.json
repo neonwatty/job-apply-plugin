@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "baseSha": "46e335df4200b8453713547c8099d04a418f762d",
+  "headSha": "46e335df4200b8453713547c8099d04a418f762d",
+  "changedPaths": [
+    "apps/companion/components/Resumes.tsx",
+    "apps/companion/components/client.ts",
+    "docs/dogfooding/2026-09-17-typescript-resume-tranche-affected.json",
+    "docs/dogfooding/2026-09-17-typescript-resume-tranche.md",
+    "qa/testdata/resumes/README.md",
+    "qa/testdata/resumes/dogfood-synthetic-resume-replacement.txt",
+    "qa/testdata/resumes/dogfood-synthetic-resume.txt",
+    "tests_js/workspace_native_resumes_browser_support.mjs"
+  ],
+  "selectedSuites": [
+    "companion-typescript-check",
+    "migration-inventory",
+    "typescript-check",
+    "node-foundation-fast",
+    "matrix-policy",
+    "source-size",
+    "python-fast",
+    "node-runner-fast",
+    "node-workspace-other",
+    "docs-links",
+    "python-qa",
+    "node-recorder",
+    "node-renderer"
+  ],
+  "fallbackReason": null,
+  "timings": [
+    {
+      "id": "companion-typescript-check",
+      "durationMs": 737,
+      "status": "passed"
+    },
+    {
+      "id": "migration-inventory",
+      "durationMs": 447,
+      "status": "failed"
+    },
+    {
+      "id": "typescript-check",
+      "durationMs": 1486,
+      "status": "passed"
+    },
+    {
+      "id": "node-foundation-fast",
+      "durationMs": 10259,
+      "status": "passed"
+    },
+    {
+      "id": "matrix-policy",
+      "durationMs": 120,
+      "status": "passed"
+    },
+    {
+      "id": "source-size",
+      "durationMs": 205,
+      "status": "passed"
+    },
+    {
+      "id": "python-fast",
+      "durationMs": 2617,
+      "status": "passed"
+    },
+    {
+      "id": "node-runner-fast",
+      "durationMs": 51559,
+      "status": "passed"
+    },
+    {
+      "id": "node-workspace-other",
+      "durationMs": 327734,
+      "status": "passed"
+    },
+    {
+      "id": "docs-links",
+      "durationMs": 5080,
+      "status": "passed"
+    },
+    {
+      "id": "python-qa",
+      "durationMs": 121453,
+      "status": "passed"
+    },
+    {
+      "id": "node-recorder",
+      "durationMs": 99539,
+      "status": "passed"
+    },
+    {
+      "id": "node-renderer",
+      "durationMs": 7180,
+      "status": "passed"
+    }
+  ],
+  "status": "failed"
+}
