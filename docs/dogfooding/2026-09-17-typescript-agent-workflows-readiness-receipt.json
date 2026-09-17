@@ -1,0 +1,97 @@
+{
+  "schema": "job-apply-agent-workflows-readiness-receipt/v1",
+  "date": "2026-09-17",
+  "repository": {
+    "branch": "codex/ts-job-apply-dogfood-phase-e-workflows",
+    "baseRef": "origin/staging",
+    "baseCommit": "30c535e80174755a359e789cbc4adcfe3d4584f9",
+    "handoffCommit": "Resolve with git rev-parse HEAD after checking out the clean handoff branch."
+  },
+  "workflows": {
+    "package": "@lineagehq/workflows",
+    "version": "0.1.0",
+    "protocolVersion": "1.0",
+    "tag": "v0.1.0",
+    "peeledTagCommit": "5268fa8f287c3b64f55f0c4438815b800f69d778",
+    "dependency": "github:lineagehq/workflows#5268fa8f287c3b64f55f0c4438815b800f69d778",
+    "repositoryDependencyKind": "optional (required and verified on authenticated readiness hosts; skippable by unrelated CI without private cross-repository credentials)",
+    "integrity": "sha512-4cizzFvck9CWs73P9XKA7sbdUXEmQ1Z+Ck8FndXhTVwVsE7IlCBGTWClRgQa5kO4BPimAcpnFnf6v6QsxDM7mw==",
+    "cli": "node_modules/.bin/workflow",
+    "node": "v22.22.3",
+    "publicRegistryRelease": false,
+    "sourceCheckoutEdited": false
+  },
+  "generatedHostFiles": [
+    {
+      "path": ".agents/skills/agent-workflows/SKILL.md",
+      "sha256": "7041e93cab5010d38801717c09c3af6a0ba685562a2269d6439c38b51c346919"
+    },
+    {
+      "path": ".agents/skills/agent-workflows/agents/openai.yaml",
+      "sha256": "f3becf0ca6f4bb131bf5dce5808de35e051089a17a64f98abcf6cdd66343b023"
+    },
+    {
+      "path": ".agents/skills/agent-workflows/references/protocol.md",
+      "sha256": "9cef431c2bfced51706f83403c7cde48cf64ce294b8e539b8ce38e68e403dc06"
+    }
+  ],
+  "candidate": {
+    "config": ".workflows/config.yaml",
+    "configSha256": "4351212527c3a05e4cb511fadfb3fba6525026e12848e55f4ac7ce0d5366fb3a",
+    "workflow": ".workflows/workflows/job-apply.synthetic-resume-extraction-request.workflow.yaml",
+    "workflowFileSha256": "115de39275639c5a2dfbff31252d2c9b2169020b4ee8e3b229790e0644787719",
+    "workflowSourceHash": "sha256:96cb20be989b65b3544a9e9130910a1116f2d28444e0a4abb114e91c12118bbb",
+    "desktopEffectiveHash": "sha256:5a73ed434e0c1693cac7cb06acd14770757d15dac1133bfb8735fc9578f2493f",
+    "mobileEffectiveHash": "sha256:56998e1639971cc00c028904759f77e647bae79806be9ce7db59fd6ef9fdeabe",
+    "fixture": "qa/testdata/resumes/dogfood-synthetic-resume.txt",
+    "fixtureSha256": "af8c27e21a03a85656e975308480e5decd88c7a93db2cbc747ed08f06acf8c53",
+    "store": ".workflows/local/job-apply-store",
+    "storeCreated": false,
+    "conditionalExecutability": "External launch, token URL binding, viewport enforcement, process teardown, and Store disposition are required because Workflows 0.1.0 does not perform them.",
+    "legacyProfileImportBlockedBy": "--legacy-profile .workflows/local/no-legacy-profile.json (must remain absent)"
+  },
+  "validation": {
+    "doctor": "passed",
+    "configAndWorkflow": "passed",
+    "desktopResolution": "passed",
+    "mobileResolution": "passed",
+    "initializerIdempotency": "passed",
+    "npmCleanInstall": "passed",
+    "credentiallessCiInstall": "passed with the private optional dependency absent",
+    "repositoryAffectedGate": {
+      "status": "failed",
+      "selectedSuites": 25,
+      "unrelatedConditions": [
+        "migration-inventory rejects an intentionally dirty pre-commit snapshot",
+        "unversioned python3 resolves to unsupported CPython 3.9, producing host qualification and downstream differential failures while versioned 3.12, 3.13, and 3.14 profiles pass"
+      ]
+    },
+    "cleanMigrationInventory": "inventory-consistent",
+    "runCreated": false,
+    "trainingEvidenceCreated": false,
+    "browserEvidenceCreated": false,
+    "productionApplicationOpened": false,
+    "finalActionAttempted": false
+  },
+  "independentReview": {
+    "status": "completed",
+    "correctedFindings": [
+      "explicit legacy-profile isolation prevents ambient owner-profile import",
+      "preflight capability names match protocol 1.0 runner semantics",
+      "mobile override retains every base safety constraint",
+      "static URL, viewport, identity, and cleanup limitations are explicit"
+    ]
+  },
+  "freshAgentGate": {
+    "status": "pending",
+    "currentTaskDiscoveryClaimed": false,
+    "managedFreshTaskProvisionAttempts": 2,
+    "managedFreshTaskProvisionOutcome": "Both attempts failed before discovery; no run was created or authorized.",
+    "requirements": [
+      "Start a new Codex task at this repository root on the clean handoff commit.",
+      "Confirm agent-workflows appears in the task's supplied skill catalog.",
+      "Explicitly invoke agent-workflows and read its installed contract.",
+      "Stop without workflow train or browser control if any requirement fails."
+    ]
+  }
+}

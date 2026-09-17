@@ -36,6 +36,9 @@
     "playwright": "1.62.1",
     "typescript": "5.9.3"
   },
+  "optionalDependencies": {
+    "@lineagehq/workflows": "github:lineagehq/workflows#5268fa8f287c3b64f55f0c4438815b800f69d778"
+  },
   "workspaces": [
     "apps/companion"
   ]
