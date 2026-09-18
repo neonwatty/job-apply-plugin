@@ -42,6 +42,8 @@ const commandOptions: Record<string, { allowed: string[]; required: string[] }> 
   },
   'employer-account-execute-synthetic': { allowed: ['--input'], required: ['--input'] },
 };
+export const nativeAutomationCommandFields = Object.fromEntries(
+  Object.entries(commandOptions).map(([command, specification]) => [command, specification.allowed]));
 
 function expectedRevision(value: string): bigint {
   try { return parseTaskRevision(value); }

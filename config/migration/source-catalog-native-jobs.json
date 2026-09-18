@@ -8,7 +8,7 @@
     },
     {
       "path": "runtime/cli/native-jobs.js",
-      "sha256": "5087ff18932dbf49225176826e1fc8aad95b3912ec4e5a6dd6147e61c1833092",
+      "sha256": "6346e83608b47f2a3108d38769230594c9489ec8009cb4bb6ef61d969ff82c8c",
       "classification": "unreviewed"
     },
     {
@@ -58,7 +58,7 @@
     },
     {
       "path": "src/cli/native-jobs.ts",
-      "sha256": "92000058685d0a8b3f3bdb62ee0fc4096b5516b6bf144b56f34bbccb5754f4c6",
+      "sha256": "6bfbc1f8c0682f21e1b5a4a86d70e2f29bdfe780a5241abfa628b1d0e723a76b",
       "classification": "unreviewed"
     },
     {

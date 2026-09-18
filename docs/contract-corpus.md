@@ -79,5 +79,6 @@ Still pending are other mutation results, other journal kinds and crash boundari
 restart recovery, legacy and trashed stores, all other corrupt/future documents,
 authenticated HTTP routes, and the task, attempt, QA, and policy command
 families. Full secret-bearing output projections and cross-platform permission
-parity also remain pending. No Python removal or TypeScript writer cutover is
-justified by these foundation slices.
+parity also remain pending in this historical corpus. These foundation slices
+alone do not prove parity of the current installed TypeScript writer; use the
+migration acceptance checker and current integrated tests for that assessment.

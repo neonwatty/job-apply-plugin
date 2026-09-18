@@ -3,7 +3,7 @@
   "sources": [
     {
       "path": "apps/companion/command.mjs",
-      "sha256": "d8a9503afca25a4cf77655914289d2261f0de8543c6845f57c902ff32b5f6203",
+      "sha256": "cf5d482230898d394ec0a6449dbcbc6ceb2633e9519bcd11d2712f7dcdacb61a",
       "classification": "unreviewed"
     },
     {
@@ -33,12 +33,12 @@
     },
     {
       "path": "runtime/cli/native-automation-commands.js",
-      "sha256": "d229ebfae2e9f4bbd545192e63a0b506f735bae136bf3876e1d2d73aa0a406b4",
+      "sha256": "438ce03159e63947169652d7300393d0dbc0b809ef3716898c087a8b76c19ff1",
       "classification": "unreviewed"
     },
     {
       "path": "runtime/cli/native-final-action-policy.js",
-      "sha256": "99e555e9f6444955144dad2947fac89dce1f09362f8b8f9cef5d0b47437f85ab",
+      "sha256": "9f9a2632443a8d653d87ef25133b17b949bab375e7960cea3355472dfdc16eb4",
       "classification": "unreviewed"
     },
     {
@@ -53,7 +53,7 @@
     },
     {
       "path": "runtime/cli/native-store-state.js",
-      "sha256": "d532f5c9304247bedd3fd16f34f9b45815eec835352e4f9af2b603e9568893c3",
+      "sha256": "a0aa134a4a27c970eb75298ebf22ea8e9c82fd28f505be9282b133368a7d5d51",
       "classification": "unreviewed"
     },
     {
@@ -153,12 +153,12 @@
     },
     {
       "path": "src/cli/native-automation-commands.ts",
-      "sha256": "5609cbe8007fdf78c0ffa20c1e36600d622bae5787d71cefd5037e90714bbf24",
+      "sha256": "f8525aac6ceb78d783c21c1fa22ed1007d3643f740ea7c28d22b94ac60c96341",
       "classification": "unreviewed"
     },
     {
       "path": "src/cli/native-final-action-policy.ts",
-      "sha256": "fef851bbf5f3addf215bfa5943a2920c6425a3ddb7d4b72dcd4d602e6368f9b7",
+      "sha256": "1e55e5677297a6e27a10e09df0550be47cd0748dd6701fbfd8791a2bde8a48ea",
       "classification": "unreviewed"
     },
     {
@@ -173,7 +173,7 @@
     },
     {
       "path": "src/cli/native-store-state.ts",
-      "sha256": "818abcc00152a0a00dc9dbe9e012bcc5952aec7d57d6d9f4a077a36e833ef269",
+      "sha256": "13c60055fc22fd1c4ee4b8986c38e26478d088100719e684aad922f86ceb3a76",
       "classification": "unreviewed"
     },
     {

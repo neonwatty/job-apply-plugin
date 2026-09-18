@@ -13,8 +13,8 @@ import { pendingAnswerCommands, runPendingAnswerCommand } from './native-pending
 import { profileCommands, runProfileCommand } from "./native-profile.js";
 import { answerCommands, runAnswerCommand } from "./native-answers.js";
 import { extractionCommands, runExtractionCommand } from "./native-extractions.js";
-import { nativeAutomationCommandNames, runNativeAutomationCommand } from './native-automation-commands.js';
-import { nativeStoreStateCommandNames, resumeInputWithoutPath, runNativeStoreStateCommand } from './native-store-state.js';
+import { nativeAutomationCommandFields, nativeAutomationCommandNames, runNativeAutomationCommand } from './native-automation-commands.js';
+import { nativeStoreStateCommandFields, nativeStoreStateCommandNames, resumeInputWithoutPath, runNativeStoreStateCommand } from './native-store-state.js';
 import { nativeStoreBootstrapCommands, runNativeStoreBootstrapCommand } from './native-store-bootstrap.js';
 import { nativeAuthorityCommands, runNativeAuthorityCommand } from './native-authority.js';
 import { readFile } from "node:fs/promises";
@@ -64,8 +64,8 @@ export const nativeJobsCommandFamilies: Array<{ owner: string; fields: Record<st
   { owner: 'claims', fields: claimCommands }, { owner: 'pending-answers', fields: pendingAnswerCommands },
   { owner: 'profile', fields: profileCommands }, { owner: 'answers', fields: answerCommands },
   { owner: 'extractions', fields: extractionCommands },
-  { owner: 'automation', fields: Object.fromEntries([...nativeAutomationCommandNames].map(name => [name, []])) },
-  { owner: 'store-state', fields: Object.fromEntries([...nativeStoreStateCommandNames].map(name => [name, []])) },
+  { owner: 'automation', fields: nativeAutomationCommandFields },
+  { owner: 'store-state', fields: nativeStoreStateCommandFields },
   { owner: 'authority', fields: nativeAuthorityCommands },
   { owner: 'store-bootstrap', fields: nativeStoreBootstrapCommands }, { owner: 'direct', fields: directCommandFields },
 ];
@@ -74,19 +74,118 @@ for (const family of nativeJobsCommandFamilies) for (const [command, fields] of 
   if (Object.hasOwn(nativeJobsCommandFields, command)) throw new Error(`duplicate native Jobs command owner: ${command}`);
   nativeJobsCommandFields[command] = fields;
 }
+export const storeRequiredOptions: Record<string, string[]> = {
+  'profile-replace': ['--input', '--expected-revision', '--source'],
+  'profile-patch': ['--input', '--expected-revision', '--source'],
+  'fact-group-get': ['--id'],
+  'fact-group-create': ['--input'],
+  'fact-group-update': ['--id', '--input', '--expected-revision'],
+  'fact-group-delete': ['--id', '--expected-revision'],
+  'preferences-set': ['--input', '--expected-revision', '--source'],
+  'answer-key': ['--question'],
+  'answer-put': ['--input'],
+  'answer-get': ['--key'],
+  'answer-find': ['--question'],
+  'answer-reveal': ['--key'],
+  'answer-observe': ['--input'],
+  'answer-review': ['--key', '--decision', '--expected-revision'],
+  'answer-update': ['--key', '--input', '--expected-revision'],
+  'answer-trash': ['--key', '--expected-revision'],
+  'answer-restore': ['--key', '--expected-revision'],
+  'answer-delete': ['--key', '--expected-revision'],
+  'answer-merge': ['--winner-key', '--source-key', '--expected-winner-revision', '--expected-source-revision'],
+  'answer-semantic-lookup': ['--input'],
+  'answer-cleanup-approve': ['--input'],
+  'job-create': ['--input'],
+  'job-upsert-preview': ['--input', '--origin'],
+  'job-upsert-commit': ['--input', '--origin', '--token'],
+  'legacy-jobs-commit': ['--select', '--confirm'],
+  'job-get': ['--id'],
+  'job-preflight': ['--id'],
+  'job-update': ['--id', '--input', '--expected-revision'],
+  'job-transition': ['--id', '--status', '--expected-revision'],
+  'job-acquire': ['--id', '--owner', '--expected-revision'],
+  'job-review-restart': ['--id', '--owner', '--expected-revision'],
+  'claim-heartbeat': ['--id', '--token'],
+  'claim-recover': ['--id', '--owner'],
+  'claim-progress': ['--id', '--token', '--input'],
+  'claim-handoff': ['--id', '--token', '--status', '--input', '--expected-revision'],
+  'attention-approval-preview': ['--id', '--expected-job-revision', '--expected-session-revision', '--input'],
+  'attention-approval-approve': ['--id', '--expected-job-revision', '--expected-session-revision', '--preview-token', '--input'],
+  'job-trash': ['--id', '--expected-revision'],
+  'job-restore': ['--id', '--expected-revision'],
+  'job-delete': ['--id', '--expected-revision'],
+  'resume-create': ['--input'],
+  'resume-import': ['--input'],
+  'resume-get': ['--id'],
+  'resume-update': ['--id', '--input', '--expected-revision'],
+  'resume-adopt': ['--id', '--expected-revision'],
+  'resume-set-default': ['--id', '--expected-revision'],
+  'resume-check': ['--id'],
+  'resume-trash': ['--id', '--expected-revision'],
+  'resume-restore': ['--id', '--expected-revision'],
+  'resume-delete': ['--id', '--expected-revision'],
+  'resume-extraction-request-create': ['--resume-id', '--expected-resume-revision'],
+  'resume-extraction-request-get': ['--id'],
+  'resume-extraction-request-cancel': ['--id', '--expected-revision'],
+  'resume-extraction-request-fail': ['--id', '--reason', '--expected-revision'],
+  'resume-extraction-request-retry': ['--id', '--expected-revision', '--expected-resume-revision'],
+  'resume-extraction-request-complete': ['--id', '--input', '--expected-request-revision', '--expected-profile-revision'],
+  'resume-proposal-create': ['--resume-id', '--expected-resume-revision', '--expected-profile-revision', '--input'],
+  'resume-proposal-get': ['--id'],
+  'resume-proposal-review': ['--id', '--expected-revision', '--expected-profile-revision', '--input'],
+  'history-append': ['--input'],
+  'replay-transition': ['--id', '--transition', '--ats'],
+  'session-save': ['--id', '--input'],
+  'session-load': ['--id'],
+  'session-delete': ['--id'],
+  'automation-settings-update': ['--input', '--expected-revision'],
+  'automation-settings-copy-profile-email': ['--expected-profile-revision', '--expected-settings-revision'],
+  'account-realm-resolve': ['--url'],
+  'employer-account-get': ['--realm-ref'],
+  'employer-account-create': ['--url'],
+  'employer-account-update': ['--realm-ref', '--input', '--expected-revision'],
+  'employer-account-execute-synthetic': ['--input'],
+  'trusted-fill-approve': ['--input'],
+  'trusted-fill-status': ['--id'],
+  'trusted-fill-evaluate': ['--input'],
+  'trusted-fill-revoke': ['--id', '--expected-approval-revision'],
+};
+
+const booleanOptions = new Set([
+  '--include-trashed', '--trashed-only', '--replace', '--remember-sensitive',
+  '--all-review-statuses', '--summary-only', '--owner-confirmed',
+  '--owner-confirmed-not-submitted', '--user-confirmed',
+]);
+function storeUsage(command?: string): string {
+  const prefix = 'usage: job-apply-store [-h] [--root ROOT] [--legacy-profile LEGACY_PROFILE]';
+  if (!command) return `${prefix} {${Object.keys(nativeJobsCommandFields).join(',')}}`;
+  const options = nativeJobsCommandFields[command] ?? [];
+  const required = new Set(storeRequiredOptions[command] ?? []);
+  return `usage: job-apply-store ${command} [-h] ${options.map(option => {
+    const label = booleanOptions.has(option) ? option : `${option} ${option.slice(2).toUpperCase().replaceAll('-', '_')}`;
+    return required.has(option) ? label : `[${label}]`;
+  }).join(' ')}`.trimEnd();
+}
+function storeHelp(command?: string): string {
+  const options = command ? nativeJobsCommandFields[command] ?? [] : ['--root', '--legacy-profile'];
+  return `${storeUsage(command)}\n\noptions:\n  -h, --help  show this help message and exit\n`
+    + options.map(option => `  ${option}\n`).join('');
+}
 
 export async function runJobsCli(args: string[], input: (limit?: number) => Promise<string>): Promise<string> {
   const options = new Map<string, string>();
   let command: string | undefined;
+  let help = false;
   const selected: string[] = [];
   for (let index = 0; index < args.length; index++) {
     const key = args[index]!;
+    if (key === '-h' || key === '--help') { help = true; continue; }
     if (!key.startsWith("--")) {
       if (command) throw new JobsError("unexpected CLI argument");
       command = key;
     } else {
-      if (options.has(key) && key !== "--select") throw new JobsError("duplicate CLI option");
-      if (["--include-trashed", "--trashed-only", "--replace", "--remember-sensitive", "--all-review-statuses", "--summary-only", "--owner-confirmed", "--owner-confirmed-not-submitted", "--user-confirmed"].includes(key)) options.set(key, "true");
+      if (booleanOptions.has(key)) options.set(key, "true");
       else {
         const value = args[++index];
         if (!value || value.startsWith("--")) throw new JobsError("missing CLI option value");
@@ -95,12 +194,15 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
       }
     }
   }
+  if (help && (!command || Object.hasOwn(nativeJobsCommandFields, command))) return storeHelp(command).trimEnd();
   const allowed = nativeJobsCommandFields[command ?? ""];
   const delegated = nativeAutomationCommandNames.has(command ?? '') || nativeStoreStateCommandNames.has(command ?? '')
     || Object.hasOwn(nativeAuthorityCommands, command ?? '');
   if (!allowed || !delegated && [...options.keys()].some(key => !["--root", "--native-lock", "--legacy-profile", ...allowed].includes(key))) {
     throw new JobsError("unsupported native Jobs command or option");
   }
+  const missing = (storeRequiredOptions[command!] ?? []).filter(option => !options.has(option));
+  if (missing.length) throw new JobsError(`${storeUsage(command)}\njob-apply-store ${command}: error: the following arguments are required: ${missing.join(', ')}`);
   const required = (key: string): string => {
     const value = options.get(key);
     if (!value) throw new JobsError(`required option: ${key}`);
@@ -203,6 +305,6 @@ if (process.argv[1] && pathToFileURL(realpathSync(process.argv[1])).href === imp
     process.stdout.write(result + "\n");
   } catch (error) {
     process.stderr.write(fixtureError(error) + "\n");
-    process.exitCode = 1;
+    process.exitCode = 2;
   }
 }
