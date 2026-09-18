@@ -1,0 +1,301 @@
+schema: agent-workflow/v0
+kind: Workflow
+
+metadata:
+  id: job-apply.synthetic-profile-answers
+  name: Synthetic candidate profile and reusable answers
+  description: >-
+    In a new isolated Job Apply Store, create and update a small fictional
+    candidate profile, create and edit one non-sensitive reusable answer,
+    verify persistence, and preserve empty and owner-review boundaries.
+  lifecycle: candidate
+  candidateRevision: 1
+  tags:
+    - browser
+    - desktop
+    - mobile
+    - profile
+    - answers
+    - synthetic
+
+promotion:
+  immutableAfterPromotion: true
+  requires:
+    - successful-supervised-replay
+    - human-approval
+
+target:
+  app: job-apply-plugin
+  baseUrl: http://127.0.0.1:41739
+  supportedPlatforms:
+    - id: desktop-web
+      adapterCapability: browser
+      viewport:
+        width: 1440
+        height: 900
+    - id: mobile-web
+      adapterCapability: browser
+      viewport:
+        width: 390
+        height: 844
+  identity:
+    requirement: anonymous
+    note: >-
+      Anonymous means no real applicant or external account identity. The
+      local Companion still requires its ephemeral transport token. Mara and
+      every value in this workflow are fictional and may be used only in the
+      new isolated Store; no canonical or private applicant data is permitted.
+
+start:
+  isolation: fresh-context
+  path: /
+  expectedState: >-
+    An external host opens the token-authenticated Job Apply Companion at 1440
+    by 900 against a new isolated Store and verifies that the canonical profile
+    and reusable-answer library are both empty.
+  constraints:
+    - >-
+      Workflows 0.1.0 does not execute the configured start command or bind its
+      output. Externally build Companion, create .workflows/local with owner-only
+      permissions, run the configured command, and give the browser host the
+      complete URL it prints. The static base URL without its token fragment is
+      not valid.
+    - >-
+      Keep .workflows/local/no-legacy-profile.json absent so the explicit
+      legacy-profile source cannot import owner data into the synthetic Store.
+    - >-
+      The browser host must apply and verify the selected platform viewport;
+      Workflows 0.1.0 records the platform but does not enforce its dimensions.
+    - >-
+      Use only the inline fictional values declared by this workflow. Do not
+      read or copy the canonical Job Apply Store, open an employer site, create
+      an external account, or enter any job-application flow.
+    - >-
+      Stop immediately if either the profile or answer library is non-empty at
+      the start; never clear, overwrite, or reinterpret unexpected state.
+  preflightCapabilities:
+    - browser.control
+    - screenshot
+
+execution:
+  topology: linear-with-bounded-conditions
+  agentFreedom: goal-bounded
+  onUnexpectedState: fail
+  environmentChange: block-run
+  failureContinuation: stop
+  recoveryBudget:
+    maxActionsPerStep: 4
+    maxDurationSecondsPerStep: 60
+
+evidencePolicy:
+  default:
+    - declared-checkpoint-screenshots
+  onFailure:
+    - screenshot
+    - video-or-trace
+  retainVerifiedDownloads: false
+
+optionalStateHandlers: []
+
+platformOverrides:
+  desktop-web:
+    start:
+      expectedState: >-
+        The authenticated Job Apply Companion opens at exactly 1440 by 900
+        against a new isolated Store whose profile and answer library are empty.
+    steps:
+      open-empty-facts:
+        actionGuidance: Use the directly visible Facts navigation control.
+      open-empty-answers:
+        actionGuidance: Use the directly visible Answers navigation control.
+
+  mobile-web:
+    start:
+      expectedState: >-
+        The authenticated Job Apply Companion opens at exactly 390 by 844
+        against a new isolated Store whose profile and answer library are empty,
+        with no page-level horizontal overflow.
+      constraints:
+        - >-
+          Workflows 0.1.0 does not execute the configured start command or bind
+          its output. Externally build Companion, create .workflows/local with
+          owner-only permissions, run the configured command, and give the
+          browser host the complete URL it prints. The static base URL without
+          its token fragment is not valid.
+        - >-
+          Keep .workflows/local/no-legacy-profile.json absent so the explicit
+          legacy-profile source cannot import owner data into the synthetic Store.
+        - >-
+          The browser host must apply and verify the selected 390-by-844
+          viewport; Workflows 0.1.0 records the platform but does not enforce it.
+        - >-
+          Use only the inline fictional values declared by this workflow. Do not
+          read or copy the canonical Job Apply Store, open an employer site,
+          create an external account, or enter any job-application flow.
+        - >-
+          Stop immediately if either the profile or answer library is non-empty
+          at the start; never clear, overwrite, or reinterpret unexpected state.
+        - >-
+          Workspace navigation may scroll horizontally, but the document must
+          not have page-level horizontal overflow at any checkpoint.
+    steps:
+      open-empty-facts:
+        actionGuidance: >-
+          Use the horizontally scrollable workspace navigation to select Facts;
+          do not treat navigation scrolling as page-level overflow.
+      open-empty-answers:
+        actionGuidance: >-
+          Use the horizontally scrollable workspace navigation to select Answers;
+          do not treat navigation scrolling as page-level overflow.
+      verify-manual-review-boundary:
+        actionGuidance: >-
+          Scroll vertically to inspect Pending questions; the document must
+          remain no wider than the 390-pixel viewport.
+
+steps:
+  - id: open-empty-facts
+    name: Open the empty candidate profile
+    action: Select Facts in the Job Apply workspace navigation.
+    expected:
+      - The Facts workspace is visible at canonical profile revision 1.
+      - The applicant facts count is zero.
+      - The empty state says No profile facts yet and offers Add a fact.
+    evidence:
+      - type: screenshot
+        checkpoint: empty-candidate-profile
+        required: true
+
+  - id: create-profile-fields
+    name: Create fictional candidate profile fields
+    dependsOn:
+      - open-empty-facts
+    action: >-
+      Add firstName as text with value Mara, add location as text with value
+      Mesa, Arizona, and activate Save facts once.
+    expected:
+      - The application reports Facts saved.
+      - The canonical profile advances to revision 2.
+      - firstName is Mara and location is Mesa, Arizona.
+      - No other profile field is created.
+    evidence:
+      - type: screenshot
+        checkpoint: fictional-profile-created
+        required: true
+
+  - id: update-and-reload-profile
+    name: Update and reload the fictional profile
+    dependsOn:
+      - create-profile-fields
+    action: >-
+      Change location from Mesa, Arizona to Tempe, Arizona, activate Save facts
+      once, reload the page, and return to Facts.
+    expected:
+      - The save succeeds before reload.
+      - After reload, the canonical profile is revision 3.
+      - firstName remains Mara and location is Tempe, Arizona.
+      - The reloaded profile still contains exactly two fields.
+    evidence:
+      - type: screenshot
+        checkpoint: fictional-profile-persisted
+        required: true
+
+  - id: open-empty-answers
+    name: Open the empty reusable-answer library
+    dependsOn:
+      - update-and-reload-profile
+    action: Select Answers in the Job Apply workspace navigation.
+    expected:
+      - The Answers workspace is visible with the Accepted filter selected.
+      - The library reports zero answers for this review status.
+      - The editor asks the owner to select or create an answer.
+      - Pending questions states that each resolution needs owner confirmation.
+    evidence:
+      - type: screenshot
+        checkpoint: empty-answer-library
+        required: true
+
+  - id: verify-empty-answer-boundary
+    name: Verify a blank answer cannot be created
+    dependsOn:
+      - open-empty-answers
+    action: >-
+      Select New answer, leave Question empty, and activate Create answer once.
+      Do not enter or retain any value in this step.
+    expected:
+      - Browser validation keeps the New answer editor open because Question is required.
+      - No success notice appears.
+      - The accepted library remains empty.
+      - No reusable-answer record is created from the blank draft.
+    evidence:
+      - type: screenshot
+        checkpoint: blank-answer-blocked
+        required: true
+
+  - id: create-reusable-answer
+    name: Create a fictional reusable answer
+    dependsOn:
+      - verify-empty-answer-boundary
+    action: >-
+      In the retained New answer editor, set Question to Are you open to hybrid
+      work?, set Answer value to Yes, up to two days on-site., keep Confirmed,
+      user, general, and None selected, and activate Create answer once.
+    expected:
+      - The application reports Answer created.
+      - Exactly one accepted answer is shown.
+      - Its question is Are you open to hybrid work?.
+      - The library describes the answer as Value retained without exposing it in the list.
+    evidence:
+      - type: screenshot
+        checkpoint: fictional-answer-created
+        required: true
+
+  - id: edit-and-reload-answer
+    name: Edit and reload the fictional reusable answer
+    dependsOn:
+      - create-reusable-answer
+    action: >-
+      Change Answer value to Yes, up to three days on-site., activate Save
+      answer once, reload the page, return to Answers, and reopen Are you open
+      to hybrid work?.
+    expected:
+      - The application reports Answer saved before reload.
+      - After reload, exactly one accepted answer remains.
+      - The reopened Answer value is Yes, up to three days on-site..
+      - Question, Confirmed state, user source, general category, and None sensitivity persist.
+    evidence:
+      - type: screenshot
+        checkpoint: fictional-answer-persisted
+        required: true
+
+  - id: verify-manual-review-boundary
+    name: Verify the empty manual-review boundary
+    dependsOn:
+      - edit-and-reload-answer
+    action: >-
+      Select Pending in Review status, activate Search answers once, and inspect
+      the library and Pending questions without accepting, declining, resolving,
+      merging, revealing, or creating anything.
+    expected:
+      - The Pending filter reports zero answers.
+      - The created confirmed answer is absent from the Pending results.
+      - Pending questions continues to require owner confirmation for each resolution.
+      - Sensitive questions remain outside this recheck path.
+    evidence:
+      - type: screenshot
+        checkpoint: empty-manual-review-boundary
+        required: true
+
+completion:
+  successRequires:
+    - every-step-passed
+    - required-evidence-verified
+  cleanup:
+    alwaysAttempt: true
+    actions:
+      - >-
+        The external orchestrator must stop Companion; Workflows 0.1.0 cleanup
+        events do not execute this action. Do not open any employer site.
+      - Preserve runner-owned evidence only until the owner reviews this synthetic run.
+      - >-
+        Leave the isolated Store under .workflows/local for owner-reviewed
+        external cleanup; never remove or touch the canonical Store.
