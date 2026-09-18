@@ -1,0 +1,362 @@
+schema: agent-workflow/v0
+kind: Workflow
+
+metadata:
+  id: job-apply.synthetic-application-recovery
+  name: Synthetic application lifecycle, cancellation, and recovery
+  description: >-
+    In a new isolated Job Apply Store, create one fictional local job record,
+    start and return an application attempt for owner input, recover the job,
+    and verify the final manual-review boundary without opening an employer or
+    ATS site and without activating the final action.
+  lifecycle: candidate
+  candidateRevision: 1
+  tags:
+    - application
+    - browser
+    - cancellation
+    - desktop
+    - mobile
+    - recovery
+    - synthetic
+
+promotion:
+  immutableAfterPromotion: true
+  requires:
+    - successful-supervised-replay
+    - human-approval
+
+target:
+  app: job-apply-plugin
+  baseUrl: http://127.0.0.1:41739
+  supportedPlatforms:
+    - id: desktop-web
+      adapterCapability: browser
+      viewport:
+        width: 1440
+        height: 900
+    - id: mobile-web
+      adapterCapability: browser
+      viewport:
+        width: 390
+        height: 844
+  identity:
+    requirement: anonymous
+    note: >-
+      Anonymous means no named applicant identity. Companion still requires its
+      ephemeral local transport token. Use only the new isolated Store and the
+      committed fictional fixtures named below; no canonical or private
+      applicant data is permitted. The runner does not prove this start state.
+
+start:
+  isolation: fresh-context
+  path: /
+  expectedState: >-
+    An external host opens the token-authenticated Companion at 1440 by 900
+    against a newly initialized synthetic Store. The Store contains the
+    committed fictional profile and managed resume but no jobs, application
+    sessions, claims, or application-history events.
+  constraints:
+    - >-
+      Do not start training until the pinned Workflows package allows bounded
+      observation-only proposals without creating a safety-boundary approval,
+      and that fix is installed and revalidated on the host.
+    - >-
+      Workflows 0.1.0 does not execute the configured start command or bind its
+      output. Externally build Companion, create .workflows/local with owner-only
+      permissions, initialize a new Store, and give the browser host the complete
+      token URL emitted by Companion. The static base URL is not authenticated.
+    - >-
+      Seed only qa/testdata/workflows/synthetic-application-recovery-profile.json
+      and qa/testdata/workflows/synthetic-application-recovery-resume.json with
+      qa/testdata/workflows/synthetic-application-recovery-resume.txt. Verify the
+      job list, session list, claim status, and application history are empty.
+    - >-
+      Keep .workflows/local/no-legacy-profile.json absent so no ambient owner
+      profile can be imported into the synthetic Store.
+    - >-
+      The browser host must apply and verify the selected platform viewport;
+      Workflows 0.1.0 records the platform but does not enforce dimensions.
+    - >-
+      Register job-apply.fixture-control only when the host can invoke the native
+      fixture CLI against this exact isolated Store, keep claim authority in
+      memory, and emit no private or bearer values into evidence.
+    - >-
+      Never open an employer or ATS site, use a real account or credential,
+      contact an employer, or activate Mark applied.
+  preflightCapabilities:
+    - browser.control
+    - job-apply.fixture-control
+    - screenshot
+
+execution:
+  topology: linear-with-bounded-conditions
+  agentFreedom: goal-bounded
+  onUnexpectedState: fail
+  environmentChange: block-run
+  failureContinuation: stop
+  recoveryBudget:
+    maxActionsPerStep: 3
+    maxDurationSecondsPerStep: 45
+
+evidencePolicy:
+  default:
+    - declared-checkpoint-screenshots
+  onFailure:
+    - screenshot
+    - video-or-trace
+  retainVerifiedDownloads: false
+
+optionalStateHandlers: []
+
+platformOverrides:
+  mobile-web:
+    start:
+      expectedState: >-
+        The authenticated Companion opens at 390 by 844 against a newly
+        initialized synthetic Store containing only the fictional profile and
+        managed resume. No jobs, sessions, claims, or history events exist, and
+        the document has no page-level horizontal overflow.
+      constraints:
+        - >-
+          Do not start training until the pinned Workflows package allows bounded
+          observation-only proposals without creating a safety-boundary approval,
+          and that fix is installed and revalidated on the host.
+        - >-
+          Workflows 0.1.0 does not execute the configured start command or bind
+          its output. Externally build Companion, create .workflows/local with
+          owner-only permissions, initialize a new Store, and give the browser
+          host the complete token URL emitted by Companion.
+        - >-
+          Seed only qa/testdata/workflows/synthetic-application-recovery-profile.json
+          and qa/testdata/workflows/synthetic-application-recovery-resume.json with
+          qa/testdata/workflows/synthetic-application-recovery-resume.txt. Verify
+          the job list, session list, claim status, and history are empty.
+        - >-
+          Keep .workflows/local/no-legacy-profile.json absent so no ambient owner
+          profile can be imported into the synthetic Store.
+        - >-
+          The browser host must apply and verify the selected 390 by 844 viewport;
+          Workflows 0.1.0 records the platform but does not enforce dimensions.
+        - >-
+          Register job-apply.fixture-control only when the host can invoke the
+          native fixture CLI against this exact isolated Store, keep claim
+          authority in memory, and emit no private or bearer values into evidence.
+        - >-
+          Never open an employer or ATS site, use a real account or credential,
+          contact an employer, or activate Mark applied.
+        - >-
+          Navigation may scroll horizontally, but the document must not have
+          page-level horizontal overflow.
+
+steps:
+  - id: inspect-empty-job-workspace
+    name: Inspect the empty local job workspace
+    action: >-
+      Observe the Jobs workspace without mutating the Store, and confirm that
+      the synthetic profile and resume setup did not create a job or application.
+    actionGuidance: >-
+      Propose only an observe action with observation-only risk. Do not activate
+      a control merely to make this step look reversible.
+    expected:
+      - The Jobs workspace is visible and identifies the isolated synthetic workspace.
+      - The active job count is zero.
+      - There is no active application claim.
+      - The document has no page-level horizontal overflow at the selected viewport.
+    evidence:
+      - type: screenshot
+        checkpoint: empty-local-job-workspace
+        required: true
+
+  - id: open-synthetic-job-draft
+    name: Open a new local job draft
+    dependsOn:
+      - inspect-empty-job-workspace
+    action: Activate New job once.
+    expected:
+      - The Capture a job dialog is visible.
+      - The dialog describes a new canonical record.
+      - No job has been saved yet.
+    evidence:
+      - type: screenshot
+        checkpoint: new-local-job-draft
+        required: true
+
+  - id: create-synthetic-job-record
+    name: Create the fictional local job record
+    dependsOn:
+      - open-synthetic-job-draft
+    action: >-
+      Enter the URL and role from
+      qa/testdata/workflows/synthetic-application-recovery-job.json, then activate
+      Save job once. Leave every other field at its default value.
+    expected:
+      - The save is acknowledged by the canonical local Store.
+      - Exactly one active job is visible.
+      - The role is Workflow Recovery Tester and the status is saved.
+      - No application session, claim, or history event exists.
+    evidence:
+      - type: screenshot
+        checkpoint: synthetic-local-job-created
+        required: true
+
+  - id: mark-synthetic-job-ready
+    name: Prepare the synthetic job for an attempt
+    dependsOn:
+      - create-synthetic-job-record
+    action: >-
+      Open Workflow Recovery Tester, activate Mark ready, and accept only the
+      local-status confirmation that states no employer submission occurs.
+    expected:
+      - The same job reaches ready status.
+      - The configured fictional profile and managed resume pass local preflight.
+      - The page still states that final application submission stays manual.
+    evidence:
+      - type: screenshot
+        checkpoint: synthetic-job-ready
+        required: true
+
+  - id: choose-synthetic-application
+    name: Choose the prepared synthetic job
+    dependsOn:
+      - mark-synthetic-job-ready
+    action: >-
+      Close Job details, open Choose a job to apply, and select Workflow Recovery
+      Tester. Do not open any URL stored on the job.
+    expected:
+      - The application setup shows the exact fictional job at ready status.
+      - The setup says final submission remains with the owner.
+      - No application claim exists yet.
+    evidence:
+      - type: screenshot
+        checkpoint: synthetic-application-selected
+        required: true
+
+  - id: confirm-and-start-synthetic-attempt
+    name: Start the first local application attempt
+    dependsOn:
+      - choose-synthetic-application
+    action: >-
+      Activate Confirm selected job, accept its local revision-bound confirmation,
+      then activate Start application once.
+    expected:
+      - The job reaches in progress status.
+      - This browser holds one active local application claim.
+      - The UI offers Return for owner input and does not offer final submission.
+    evidence:
+      - type: screenshot
+        checkpoint: first-synthetic-attempt-active
+        required: true
+
+  - id: cancel-to-owner-input
+    name: Cancel the active attempt back to owner input
+    dependsOn:
+      - confirm-and-start-synthetic-attempt
+    action: Activate Return for owner input once.
+    expected:
+      - The active claim is released.
+      - The same job reaches needs info status.
+      - The application session records only the owner-input-required blocker.
+      - The local record and managed resume remain available for recovery.
+    evidence:
+      - type: screenshot
+        checkpoint: synthetic-attempt-returned
+        required: true
+
+  - id: recover-cancelled-application
+    name: Recover the returned application
+    dependsOn:
+      - cancel-to-owner-input
+    action: >-
+      Open the same job, activate Mark ready, accept only the local-status
+      confirmation, and leave the refreshed Job details open.
+    expected:
+      - The same job returns to ready status at a later revision.
+      - No active claim remains.
+      - The prior owner-input session and history remain readable.
+      - No applied or completed history event exists.
+    evidence:
+      - type: screenshot
+        checkpoint: synthetic-application-recovered
+        required: true
+
+  - id: handoff-synthetic-review
+    name: Create the local manual-review handoff
+    dependsOn:
+      - recover-cancelled-application
+    action: >-
+      Close Job details, invoke job-apply.fixture-control once for the exact
+      isolated Store and job, then activate the Jobs refresh control once. The
+      adapter must acquire the current ready revision, construct a closed
+      fictional greenhouse readiness packet from the committed repository
+      fixture, hand off awaiting_review, keep claim authority in memory, and
+      return only value-free status and revision fields.
+    actionGuidance: >-
+      Propose at most three actions: close the local dialog, invoke the fixture
+      adapter, and refresh the local Jobs view. Use reversible-ui risk because
+      every mutation is confined to the disposable fixture Store. Stop if the
+      exact job, revision, profile, resume, fixture, or empty-claim precondition
+      differs.
+    expected:
+      - The adapter reports awaiting_review for the same job.
+      - Readiness is ready with all seven required assertions passed.
+      - Browser handoff is ready_for_owner with final-review-required.
+      - The claim is released and final action remains untouched.
+    evidence:
+      - type: screenshot
+        checkpoint: synthetic-review-handoff-created
+        required: true
+
+  - id: open-manual-review-record
+    name: Open the manual-review record
+    dependsOn:
+      - handoff-synthetic-review
+    action: >-
+      Activate Needs Attention and open the single Awaiting your review item.
+      Do not activate Mark applied, restart the attempt, close the job, or open
+      the stored URL.
+    expected:
+      - Exactly one attention item says Awaiting your review.
+      - Opening the item shows Job details for Workflow Recovery Tester.
+      - The document has no page-level horizontal overflow at the selected viewport.
+    evidence:
+      - type: screenshot
+        checkpoint: manual-review-record-opened
+        required: true
+
+  - id: verify-manual-review-boundary
+    name: Verify the manual-review boundary
+    dependsOn:
+      - open-manual-review-record
+    action: >-
+      Observe Job status and Job activity without activating Mark applied,
+      restarting the attempt, closing the job, or opening the stored URL.
+    actionGuidance: >-
+      Propose only an observe action with observation-only risk. Do not activate
+      a control merely to make this step look reversible.
+    expected:
+      - The job status is awaiting review and readiness is ready.
+      - Browser handoff is ready for owner with final review required.
+      - There are zero typed blockers and zero pending items.
+      - Mark applied is visible as an owner-only action and remains untouched.
+      - History contains started, blocked, started, and reviewed events but no applied or completed event.
+      - The document has no page-level horizontal overflow at the selected viewport.
+    evidence:
+      - type: screenshot
+        checkpoint: manual-review-boundary
+        required: true
+
+completion:
+  successRequires:
+    - every-step-passed
+    - required-evidence-verified
+  cleanup:
+    alwaysAttempt: true
+    actions:
+      - >-
+        The external orchestrator must stop Companion; Workflows 0.1.0 cleanup
+        events do not execute this action. Do not open an employer or ATS site.
+      - Preserve runner-owned evidence only until the owner reviews this synthetic run.
+      - >-
+        Leave the isolated Store under .workflows/local for owner-reviewed external
+        cleanup; never remove or touch the canonical Store.

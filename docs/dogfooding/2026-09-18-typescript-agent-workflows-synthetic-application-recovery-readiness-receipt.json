@@ -1,0 +1,133 @@
+{
+  "schema": "job-apply-agent-workflows-synthetic-application-recovery-readiness/v1",
+  "date": "2026-09-18",
+  "status": "candidate-validated-training-blocked",
+  "repository": {
+    "branch": "codex/synthetic-application-recovery-workflow",
+    "baseRef": "origin/staging",
+    "baseCommit": "9a7e56ee5426e3334918bd0017f959a78a530144"
+  },
+  "workflow": {
+    "path": ".workflows/workflows/job-apply.synthetic-application-recovery.workflow.yaml",
+    "workflowFileSha256": "b1c43eb9f548e3db6faaa39f3e2031ef878b6e93d4d923efe862bd0855cede84",
+    "workflowSourceHash": "sha256:ca4d371de0a816cea66943a23b3553469c388c92a775a1ea8a3af179f7847fd4",
+    "desktopEffectiveHash": "sha256:23e56e28b3b66d154a250a326168f0239b3173bc2b3e3581613bf009d4920bcf",
+    "mobileEffectiveHash": "sha256:6b31ee7c11738aa1948879e0e96b1b324f195487811b377825a013b0765f29f0",
+    "stepCount": 11,
+    "platforms": {
+      "desktop-web": {
+        "width": 1440,
+        "height": 900
+      },
+      "mobile-web": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    "externalSubmissionPermitted": false,
+    "finalActionPermitted": false
+  },
+  "fixtures": [
+    {
+      "path": "qa/testdata/workflows/synthetic-application-recovery-job.json",
+      "sha256": "4090877989997ae911796b43bd4e8de5eaf8d75eb25680570575895671399efc"
+    },
+    {
+      "path": "qa/testdata/workflows/synthetic-application-recovery-profile.json",
+      "sha256": "e7f68576a126f4a47a9187e4a50f45df121591dc10da33422e83503d7793fc0d"
+    },
+    {
+      "path": "qa/testdata/workflows/synthetic-application-recovery-resume.json",
+      "sha256": "23bba329895aefa0b3f024c9beaab36ca2124a99e0f4b49bbc17aeaa88c0c601"
+    },
+    {
+      "path": "qa/testdata/workflows/synthetic-application-recovery-resume.txt",
+      "sha256": "f8d2276290949fac6ce28e53ee00dd8d6103e171200dec508aa33f9646515e7f"
+    }
+  ],
+  "workflowsRuntime": {
+    "package": "@lineagehq/workflows",
+    "version": "0.1.0",
+    "sourceCommit": "5268fa8f287c3b64f55f0c4438815b800f69d778",
+    "agentServiceSha256": "5aad5fec5e12638ad558adf1e86c7a81b1c6be72f65f86d2a8fbc37248503ed2",
+    "packageLockSha256": "02a2b22c1f953be03288a04458d8ecfecd75f779805355ed6efd33deda4d13c5",
+    "sourceCheckoutEdited": false
+  },
+  "existingDogfoodReviewed": [
+    "docs/dogfooding/2026-09-17-typescript-application-tranche.md",
+    "docs/dogfooding/2026-09-17-typescript-application-tranche-receipt.json",
+    "docs/dogfooding/2026-09-17-typescript-owner-control-plane-tranche.md",
+    "docs/dogfooding/2026-09-17-typescript-owner-control-plane-tranche-receipt.json",
+    "docs/dogfooding/2026-09-17-typescript-agent-workflows-readiness.md",
+    "docs/dogfooding/2026-09-17-typescript-agent-workflows-readiness-receipt.json"
+  ],
+  "exploratoryUiInspection": {
+    "scope": "Disposable local fixture Store outside Agent Workflows; this is design evidence, not runner training evidence.",
+    "desktop": {
+      "viewport": "1440x900",
+      "observedLocalTransitions": [
+        "saved-to-needs_info",
+        "needs_info-to-saved",
+        "ready-to-in_progress",
+        "in_progress-to-awaiting_review"
+      ],
+      "manualBoundary": {
+        "status": "awaiting_review",
+        "readiness": "ready",
+        "browserHandoff": "ready_for_owner",
+        "finalReviewRequired": true,
+        "typedBlockers": 0,
+        "pendingItems": 0,
+        "markAppliedVisibleAndUntouched": true
+      }
+    },
+    "mobile": {
+      "viewport": "390x844",
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "horizontalOverflow": false,
+      "attentionQueueShowedAwaitingReview": true,
+      "ownerSubmissionGuidanceVisible": true
+    },
+    "employerOrAtsOpened": false,
+    "employerContacted": false,
+    "externalSubmissionAttempted": false,
+    "finalActionActivated": false,
+    "disposableStoreMovedToTrash": true
+  },
+  "validation": {
+    "workflowDoctor": "passed",
+    "manifest": "passed without warnings",
+    "desktopResolution": "passed",
+    "mobileResolution": "passed",
+    "sourceSize": "passed",
+    "focusedLifecycleTests": {
+      "status": "passed",
+      "tests": 34,
+      "failed": 0
+    },
+    "repositoryAffectedGate": {
+      "status": "failed-before-commit",
+      "selectedSuites": 25,
+      "workflowRelevantFailure": false,
+      "reason": "migration-inventory rejects the intentionally dirty pre-commit snapshot with 'Historical audit requires a clean current snapshot'",
+      "nodeWorkspaceOther": {
+        "tests": 1897,
+        "passed": 1871,
+        "failed": 0,
+        "skipped": 26
+      }
+    },
+    "cleanPostCommitMigrationInventory": "inventory-consistent",
+    "runCreated": false,
+    "trainingEvidenceCreated": false,
+    "browserRunnerEvidenceCreated": false
+  },
+  "trainingGate": {
+    "status": "blocked",
+    "observationOnlyApprovalDefect": "The installed policy auto-allows reversible-ui proposals but routes observation-only proposals to a safety-boundary approval.",
+    "requiredRuntimeChange": "Install and revalidate a Workflows package that automatically permits bounded observation-only proposals without a safety-boundary approval.",
+    "fixtureControlReadiness": "A fresh host must truthfully register and prove job-apply.fixture-control against the exact isolated Store while retaining claim authority only in memory.",
+    "authorization": "No workflow train, browser runner session, or supervised replay is authorized until both gates are satisfied."
+  }
+}
