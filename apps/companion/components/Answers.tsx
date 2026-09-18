@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AnswerFields } from './answer-fields';
 import { AnswerCleanup } from './AnswerCleanup';
 import { PendingAnswers } from './PendingAnswers';
-import { string, get, object, parse, serialize } from '../../../src/contracts/workspace/values';
+import { string, get, int, object, parse, serialize } from '../../../src/contracts/workspace/values';
 import { answerCreateMutation, newAnswerDraft, answerDraft, answerMutation, answerPath, answerSnapshot, reapplyAnswer } from './answer-model';
 import type { AnswerClient, Document } from './answer-model';
 
@@ -182,7 +182,7 @@ export function Answers({ client, dirtyChanged }: { client: AnswerClient; dirtyC
       })}</ul>
     </section>
     <section className="workspace-panel answer-editor-panel" aria-labelledby="answer-editor-heading">
-      <div className="workspace-panel-heading"><div><p className="eyebrow">Canonical answer</p><h2 id="answer-editor-heading" ref={heading} tabIndex={-1}>{creating ? 'New answer' : 'Answer editor'}</h2></div>{base && <span className="facts-revision">Revision {String(get(base, 'revision'))}</span>}</div>
+      <div className="workspace-panel-heading"><div><p className="eyebrow">Canonical answer</p><h2 id="answer-editor-heading" ref={heading} tabIndex={-1}>{creating ? 'New answer' : 'Answer editor'}</h2></div>{base && <span className="facts-revision">Revision {int(get(base, 'revision'))!.toString()}</span>}</div>
     {draft && (base || creating) ? <div className="answer-editor-body">
       {creating && <p>Create an accepted answer. Choose its state and scope, and give consent before storing a sensitive value.</p>}
       {base && <><div className="button-row answer-editor-tools"><button className="secondary" disabled={pendingBusy || mergeBusy || busy || invalid} onClick={() => void select(string(get(base, 'key'))!, true)}>Refresh selected answer</button>

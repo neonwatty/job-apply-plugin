@@ -1,6 +1,15 @@
 import { FactValue } from './FactValue';
+import { PythonObject } from '../../../src/contracts/python-object';
 import { copy, get, has, parse, set, string, text } from '../../../src/contracts/workspace/values';
 import type { Document, Value } from '../../../src/contracts/workspace/values';
+
+function valueType(value: Value): string {
+  if (string(value) !== null) return 'text';
+  if (typeof value === 'boolean') return 'boolean';
+  if (value instanceof PythonObject) return 'fields';
+  if (Array.isArray(value)) return 'list';
+  return value === null ? 'none' : 'number';
+}
 
 export function AnswerFields({ draft, change, remember, creating = false }: {
   draft: Document;
@@ -15,14 +24,12 @@ export function AnswerFields({ draft, change, remember, creating = false }: {
     <FactValue label="Other ways to ask" value={has(draft, 'aliases') ? get(draft, 'aliases') : []} change={value => update('aliases', value)} />
     {retainedValue ? <>
       <FactValue label="Answer value" value={get(draft, 'value')} change={value => update('value', value)} />
-      <label>{creating ? 'Answer value type' : 'Replace answer with'}<select aria-label={creating ? 'Answer value type' : 'Replace answer with'} value="" onChange={event => {
+      <label>Answer value type<select aria-label="Answer value type" value={valueType(get(draft, 'value'))} onChange={event => {
         const kind = event.target.value;
-        if (!kind) return;
         const value = kind === 'text' ? text('') : kind === 'number' ? parse('0') : kind === 'boolean' ? false
           : kind === 'fields' ? parse('{}') : kind === 'list' ? [] : null;
         update('value', value);
       }}>
-        <option value="">Choose a new value type…</option>
         <option value="text">Text</option><option value="number">Number</option>
         <option value="boolean">Yes / no</option><option value="fields">Fields</option>
         <option value="list">List</option><option value="none">No value</option>

@@ -2,16 +2,17 @@
 
 Date: 2026-09-18
 
-Branch: `codex/synthetic-profile-answers-workflow`
+Branch: `codex/profile-answers-accessible-value-type`
 
-Base: `origin/staging` at `9a7e56ee5426e3334918bd0017f959a78a530144`
+Base: `origin/staging` at `d537abe396e0bcd6a088349b0cd7730efe372a38`
 
 ## Scope and safety
 
-This preparation slice owns only the candidate workflow and this receipt. It
-uses inline fictional data and requires a new isolated Job Apply Store. It does
-not read, clone, or mutate the canonical Store, visit an employer site, create
-an external account, start a real application, or authorize submission.
+This repair owns the candidate workflow, the Answers value-type and revision
+rendering seams, their focused browser coverage, and this receipt. It uses
+inline fictional data and requires a new isolated Job Apply Store. It does not
+read, clone, or mutate the canonical Store, visit an employer site, create an
+external account, start a real application, or authorize submission.
 
 No separate fixture file is required. The bounded values are declared directly
 in the manifest: fictional first name `Mara`, fictional Arizona locations, and
@@ -20,16 +21,34 @@ fresh Store does not begin with an empty profile and empty answer library.
 
 ## Discovery and protocol
 
-The fresh task catalog listed `job-apply:agent-workflows`. The skill was
-explicitly invoked, and its complete `SKILL.md` and referenced `protocol.md`
-were read before preparation. The installed runner is
-`@lineagehq/workflows@0.1.0` with protocol `1.0`.
+The failed training task's fresh catalog listed `job-apply:agent-workflows`.
+That task explicitly invoked the skill and read its complete `SKILL.md` and
+referenced `protocol.md`. The installed runner was
+`@lineagehq/workflows@0.1.0` with protocol `1.0`, resolved from immutable commit
+`1e9f91c6f6f0a04bdc8003ef1dbbe68ad3468225`; installed source contained the
+observation-only approval fix.
 
-No live runner command was issued. In particular, this task did not invoke
-`workflow train`, create or claim a run, request a lease, register evidence, or
-commit an assessment. Live training remains prohibited until the shared
-observation-only approval defect is fixed and that fix is available in the
-training environment.
+Desktop run `run_41759af63cc4441aa4307887aa1316fd` passed its first five
+checkpoints, then failed checkpoint 6 when its worker invoked option selection
+on the tab object after entering Question. The control itself was a labeled
+native select, but the supported option-selection method belongs to an
+accessibility locator. The worker stopped without retrying, committed failure
+evidence, and did not start mobile. This repair starts no live runner command
+and does not reuse or resume that terminal run.
+
+## Bounded repair
+
+The Answer value type select is now stateful: it reports the retained value's
+actual type instead of resetting to a placeholder after each change. A browser
+worker can locate it by the exact accessible label `Answer value type` and use
+the locator's option-selection operation. Focused production-browser coverage
+selects Number, verifies the numeric editor, selects Text, and then completes
+answer creation.
+
+The same Answers component now renders the validated integer revision rather
+than coercing the rich numeric token object. Browser coverage requires the
+selected answer to display `Revision 1`, closing the previously observed
+`Revision [object Object]` defect.
 
 ## UI and prior-evidence inspection
 
@@ -57,14 +76,15 @@ runner evidence. Its Store is not a permissible input to future training.
 
 ## Candidate journey
 
-The candidate has eight linear, screenshot-backed checkpoints:
+Candidate revision 2 has eight linear, screenshot-backed checkpoints:
 
 1. verify the empty candidate profile;
 2. create exactly two fictional profile fields;
 3. update location and prove reload persistence;
 4. verify the empty accepted-answer library and confirmation copy;
 5. prove a blank required question cannot create a record;
-6. create one confirmed, non-sensitive reusable answer;
+6. select Text through the accessibility-labeled value-type control and create
+   one confirmed, non-sensitive reusable answer;
 7. edit that answer and prove reload persistence;
 8. verify Pending remains empty and manual resolution stays owner-confirmed.
 
@@ -80,49 +100,49 @@ show --json` resolves all eight steps on both platforms. Reproducible hashes:
 
 | Platform | Source hash | Effective hash |
 | --- | --- | --- |
-| `desktop-web` | `sha256:11f1177d7703f8e8c38614db72ca97896aa3e48879ee660d31602c6ef096894d` | `sha256:9ffe81d52e0a842d5497ec60db703be859d634d3817fd9b1744d4b8ef1527c49` |
-| `mobile-web` | `sha256:11f1177d7703f8e8c38614db72ca97896aa3e48879ee660d31602c6ef096894d` | `sha256:ef71f299ca231fda1e5fb1a8b33070d6e902347cc8d32699121a2aba7473ef1f` |
+| `desktop-web` | `sha256:b90ca911bbb6ab7d702dd03ff7f71da6de9723750f251c2e7f32f49294093666` | `sha256:9233b487813dfb9dbed27c38044531c625581a2fded375936c99ba057271cd76` |
+| `mobile-web` | `sha256:b90ca911bbb6ab7d702dd03ff7f71da6de9723750f251c2e7f32f49294093666` | `sha256:079d411366e38a7465e019f964a16930d6641c0b5774e3c2e9675e0c5a8e7757` |
 
 Completed local checks:
 
-- `workflow doctor --json` passed with package `0.1.0`, Node `v22.22.3`,
-  and all six expected schemas;
-- `workflow validate` accepted the project config and both candidate manifests;
-- two independent `workflow show --json` invocations per platform produced
-  byte-identical output and the hashes above;
-- YAML parsing accepted the config and both candidate manifests.
-
-- `git diff --check` and `npm run check:size` passed; the manifest is 301
-  physical lines and this receipt is below the 500-line policy limit;
-- `npm run test:affected -- --base origin/staging` selected 25 suites because
-  the new workflow path is not yet classified. Twenty-four suites passed,
-  including the Companion production standalone browser journey and its Facts,
-  Answers, persistence, sensitive-consent, pending-review, and 390-pixel
-  coverage. The aggregate gate remained red only because `migration-inventory`
-  intentionally refuses a dirty pre-commit snapshot (`Historical audit requires
-  a clean current snapshot`). No product or workflow assertion failed.
+- `workflow validate` accepted the project config and repaired candidate;
+- `workflow show --json` resolved revision 2 for both platforms with the hashes
+  above;
+- `npm run companion:typecheck` and `npm run check:size` passed;
+- the focused production standalone browser journey passed, including the new
+  accessible value-type transition and exact revision badge assertion;
+- `npm run companion:build` produced the standalone production Companion;
+- `npm run test:release` passed both suites, including the isolated package
+  build, packaged browser/CLI walkthroughs, link checks, and isolated Claude
+  and Codex installs;
+- `npm run test:affected -- --base origin/staging` selected all 25 suites
+  because the candidate workflow is conservatively unclassified. Its
+  substantive workspace shard passed 1,871 tests with zero failures. The
+  aggregate pre-commit invocation remained red only because the historical
+  migration audit requires a clean current snapshot and the repair was still
+  uncommitted; the clean commit hook and CI are the controlling proof.
 
 ## Readiness gaps
 
-- **Hard block:** the shared observation-only approval defect is not yet fixed
-  and available. Do not begin live runner training.
 - **External orchestration:** Workflows 0.1.0 does not start Companion, bind the
   emitted fragment-token URL, enforce the declared viewport, or stop the
   process. A future operator must perform and verify those steps.
 - **Start-state proof:** the runner does not prove an empty Store. The operator
   must verify profile and answer emptiness and stop on any unexpected record.
-- **Observed product display defect:** after answer creation, the production
-  Companion rendered the selected-answer revision badge as `Revision [object
-  Object]`. Creation, editing, disk persistence, and reload readback still
-  worked. The workflow therefore does not use that badge as persistence proof;
-  a product fix is outside this isolated journey's ownership.
-- **Replay evidence:** no supervised desktop or mobile replay exists yet, so
-  the candidate is not eligible for promotion.
+- **Fresh proof required:** the failed desktop run is terminal and cannot prove
+  revision 2. No supervised desktop or mobile replay exists for the repaired
+  hashes, so the candidate is not eligible for promotion.
 
 ## Handoff gate
 
-After the shared approval defect is fixed and available, use a new ignored
-Store and a fresh authenticated Companion URL. Reconfirm skill discovery and
-the installed `0.1.0`/protocol `1.0` contract, validate the exact committed
-manifest hashes, and only then begin an owner-approved supervised desktop run.
-Mobile must use another fresh Store; no prior Store or evidence may be reused.
+After this repair lands, a fresh task must start from its exact merge commit
+with a clean worktree; rediscover and invoke `job-apply:agent-workflows`; read
+the complete installed contract; install the committed lockfile; verify
+runner `0.1.0`, protocol `1.0`, and immutable dependency commit
+`1e9f91c6f6f0a04bdc8003ef1dbbe68ad3468225`; and validate the exact revision-2
+hashes above. Use a new private Store, fresh run and host IDs, port, fragment
+token, authenticated browser tab, and exact manifest viewport. The worker must
+locate `Answer value type` through the accessibility surface and operate the
+locator-bound select; it must not reuse the failed run, Store, tab, token,
+artifacts, or host identity. Desktop must pass cleanly before a separate fresh
+mobile run is considered.

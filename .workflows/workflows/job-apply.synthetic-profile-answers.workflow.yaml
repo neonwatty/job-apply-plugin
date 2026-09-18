@@ -9,7 +9,7 @@ metadata:
     candidate profile, create and edit one non-sensitive reusable answer,
     verify persistence, and preserve empty and owner-review boundaries.
   lifecycle: candidate
-  candidateRevision: 1
+  candidateRevision: 2
   tags:
     - browser
     - desktop
@@ -236,9 +236,15 @@ steps:
     dependsOn:
       - verify-empty-answer-boundary
     action: >-
-      In the retained New answer editor, set Question to Are you open to hybrid
-      work?, set Answer value to Yes, up to two days on-site., keep Confirmed,
-      user, general, and None selected, and activate Create answer once.
+      In the retained New answer editor, locate Answer value type by its
+      accessible label and select Text through that control's option-selection
+      operation. Then set Question to Are you open to hybrid work?, set Answer
+      value to Yes, up to two days on-site., keep Confirmed, user, general, and
+      None selected, and activate Create answer once.
+    actionGuidance: >-
+      Operate the native Answer value type select through an accessibility
+      locator bound to that control, such as getByLabel followed by selectOption;
+      option selection is not a tab-level operation.
     expected:
       - The application reports Answer created.
       - Exactly one accepted answer is shown.
