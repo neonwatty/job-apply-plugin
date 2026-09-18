@@ -10,7 +10,7 @@ export async function nativeAutomationBrowser(page, root) {
   assert.equal(await workspace.getByLabel(/Enable companion automation controls/).isVisible(),false);
   assert.equal(await workspace.getByLabel('Exact employer portal URL',{exact:true}).isVisible(),false);
   assert.equal(await workspace.getByLabel('Job ID for status or revocation',{exact:true}).isVisible(),false);
-  await workspace.getByText('Change automation settings',{exact:true}).click();
+  await workspace.getByRole('button',{name:'Change automation settings',exact:true}).click();
 
   await workspace.getByLabel(/Enable companion automation controls/).check();
   await workspace.getByRole('button',{name:'Save settings',exact:true}).click();

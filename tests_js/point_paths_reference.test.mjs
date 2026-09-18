@@ -392,7 +392,7 @@ test('S05 point filesystem codec preserves trusted text identity and leaves lega
 });
 
 // Immutable prior matrix canonicalization preserves every key and array order.
-const registrationBaselineSha256 = '9df019e90b2bf485917f94364c36cbfd6ab8dd94f8d3ced21c383957985183ac';
+const registrationBaselineSha256 = 'b278792c2ea16c9999d77ea702ddee99603653d3aff1d341936142162e745078';
 const registrationOwnership = {
   "paths": [
     "tests_js/point_paths_domain_support.mjs",

@@ -37,8 +37,8 @@ target:
     - id: mobile-web
       adapterCapability: browser
       viewport:
-        width: 390
-        height: 844
+        width: 393
+        height: 852
   identity:
     requirement: anonymous
     note: >-
@@ -57,14 +57,16 @@ start:
   constraints:
     - >-
       Workflows 0.1.0 does not execute the start or fixture commands. Externally
-      build Companion, create .workflows/local with owner-only permissions,
-      keep .workflows/local/no-legacy-profile.json absent, start Companion with
-      the configured command, and retain its complete token-bearing loopback URL.
+      build Companion, create .workflows/local-automation-trash with owner-only
+      permissions, keep its no-legacy-profile.json absent, and start Companion
+      against .workflows/local-automation-trash/job-apply-store-desktop. Retain
+      its complete token-bearing loopback URL.
     - >-
       With Companion running on the isolated Store, execute exactly
       node .workflows/fixtures/job-apply.synthetic-automation-trash-v1/prepare.mjs
-      --root .workflows/local/job-apply-store and retain its stdout as fixture
-      provenance before opening the authenticated browser URL.
+      --root .workflows/local-automation-trash/job-apply-store-desktop and
+      retain its stdout as fixture provenance before opening the authenticated
+      browser URL. Do not reuse this product Store for mobile-web.
     - >-
       The browser host must apply and verify the selected platform viewport;
       Workflows 0.1.0 records the platform but does not enforce its dimensions.
@@ -111,24 +113,27 @@ platformOverrides:
   mobile-web:
     start:
       expectedState: >-
-        The authenticated Job Apply Companion opens at 390 by 844 against a new
+        The authenticated Job Apply Companion opens at 393 by 852 against a new
         isolated Store prepared from the committed synthetic fixture. Automation
         is off, no supported portal is registered, Trash contains exactly one
-        job, one resume, and one answer, and document scroll width is 390 pixels.
+        job, one resume, and one answer, and document scroll width is 393 pixels.
       constraints:
         - >-
           Workflows 0.1.0 does not execute the start or fixture commands.
-          Externally build Companion, create .workflows/local with owner-only
-          permissions, keep .workflows/local/no-legacy-profile.json absent,
-          start Companion with the configured command, and retain its complete
-          token-bearing loopback URL.
+          Externally build Companion, create .workflows/local-automation-trash
+          with owner-only permissions, keep its no-legacy-profile.json absent,
+          and start Companion against the distinct
+          .workflows/local-automation-trash/job-apply-store-mobile product Store.
+          Retain its complete token-bearing loopback URL.
         - >-
           With Companion running on the isolated Store, execute exactly
           node .workflows/fixtures/job-apply.synthetic-automation-trash-v1/prepare.mjs
-          --root .workflows/local/job-apply-store and retain its stdout as fixture
-          provenance before opening the authenticated browser URL.
+          --root .workflows/local-automation-trash/job-apply-store-mobile and
+          retain its stdout as fixture provenance before opening the authenticated
+          browser URL. Never rotate or reuse the desktop product Store path;
+          native rollback sidecars are bound to their active Store basename.
         - >-
-          The browser host must apply and verify the 390 by 844 viewport;
+          The browser host must apply and verify the 393 by 852 viewport;
           Workflows 0.1.0 records the platform but does not enforce dimensions.
         - >-
           Do not read, clone, or mutate the canonical Job Apply Store. Do not use
@@ -153,20 +158,20 @@ platformOverrides:
           Automation; do not follow any portal URL.
       enable-local-controls:
         actionGuidance: >-
-          Keep the 390 by 844 viewport while expanding and saving the local
-          settings panel; verify document scroll width remains 390 pixels.
+          Keep the 393 by 852 viewport while expanding and saving the local
+          settings panel; verify document scroll width remains 393 pixels.
       add-fictional-portal-record:
         actionGuidance: >-
-          Use the local dialog at 390 by 844 and never navigate away from the
+          Use the local dialog at 393 by 852 and never navigate away from the
           authenticated loopback origin.
       inspect-final-action-boundary:
         actionGuidance: >-
           Expand the local Trusted Fill disclosure without authorizing anything;
-          verify document scroll width remains 390 pixels.
+          verify document scroll width remains 393 pixels.
       inspect-seeded-trash:
         actionGuidance: >-
           Scroll the horizontal workspace navigation only as needed to select
-          Trash; verify document scroll width remains 390 pixels.
+          Trash; verify document scroll width remains 393 pixels.
       restore-synthetic-job:
         actionGuidance: Use the stacked mobile restore dialog for the job only.
       restore-synthetic-resume:
@@ -176,7 +181,7 @@ platformOverrides:
       verify-local-completion-boundary:
         actionGuidance: >-
           Use the horizontal navigation to open Jobs and keep the viewport at
-          390 by 844; verify document scroll width remains 390 pixels.
+          393 by 852; verify document scroll width remains 393 pixels.
 
 steps:
   - id: inspect-automation-boundary

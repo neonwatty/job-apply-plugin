@@ -327,7 +327,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "a9d2da8a68ef9df90f1daaa898068241969ca384ce00f031f674547a918ed11c"
+      "sha256": "999e39ed1faeb5ae3f354db5d96a9b7056acd0acb30d2b7600b8a158254c74a3"
     },
     {
       "path": "source-catalog-m01.json",
@@ -363,7 +363,7 @@
     },
     {
       "path": "source-catalog-native-automation-ux.json",
-      "sha256": "1fa1fddf0fd50091e929a9716e48df9a9e378cc36471acb6163d295ed4c7853b"
+      "sha256": "57b62bca697e7c950daac29ef95cdd1335e14b9e5977c6b5eeeae9ec4aedb4fb"
     },
     {
       "path": "source-catalog-native-automation.json",
