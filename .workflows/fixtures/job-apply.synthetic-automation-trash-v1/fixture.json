@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "fixtureId": "job-apply.synthetic-automation-trash-v1",
+  "syntheticOnly": true,
+  "job": {
+    "id": "workflow-automation-trash-job-v1",
+    "role": "Synthetic Safety Analyst",
+    "company": "Fictional Local Systems",
+    "url": "https://example.invalid/jobs/workflow-automation-trash-v1",
+    "notes": "Fictional local-only Agent Workflows fixture. Never submit."
+  },
+  "resume": {
+    "id": "workflow-automation-trash-resume-v1",
+    "label": "Synthetic Automation Trash Resume",
+    "source": "resume.txt"
+  },
+  "answer": {
+    "key": "workflow-automation-trash-answer-v1",
+    "question": "May this fictional local-only record contact an employer?",
+    "state": "confirmed",
+    "value": "No. This synthetic journey must remain local and never contact an employer."
+  },
+  "portal": {
+    "url": "https://fictional-workflows.wd5.myworkdayjobs.com/en-US/jobs/synthetic-safe-001",
+    "expectedKind": "password_candidate_account"
+  }
+}
