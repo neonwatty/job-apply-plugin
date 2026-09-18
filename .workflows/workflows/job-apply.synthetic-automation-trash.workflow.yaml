@@ -1,0 +1,340 @@
+schema: agent-workflow/v0
+kind: Workflow
+
+metadata:
+  id: job-apply.synthetic-automation-trash
+  name: Synthetic automation safety and Trash restoration
+  description: >-
+    In a new isolated Job Apply Store, verify that automation remains local and
+    live actions remain unavailable, add one fictional portal record without
+    opening it, restore three pre-trashed synthetic records, and prove that no
+    application claim, employer action, ATS navigation, or submission occurs.
+  lifecycle: candidate
+  candidateRevision: 1
+  tags:
+    - automation
+    - browser
+    - desktop
+    - mobile
+    - synthetic
+    - trash
+
+promotion:
+  immutableAfterPromotion: true
+  requires:
+    - successful-supervised-replay
+    - human-approval
+
+target:
+  app: job-apply-plugin
+  baseUrl: http://127.0.0.1:41739
+  supportedPlatforms:
+    - id: desktop-web
+      adapterCapability: browser
+      viewport:
+        width: 1440
+        height: 900
+    - id: mobile-web
+      adapterCapability: browser
+      viewport:
+        width: 390
+        height: 844
+  identity:
+    requirement: anonymous
+    note: >-
+      Anonymous means no real applicant or employer identity. Companion still
+      requires its ephemeral local transport token. Only the committed
+      job-apply.synthetic-automation-trash-v1 fixture is permitted.
+
+start:
+  isolation: fresh-context
+  path: /
+  expectedState: >-
+    An external host opens the token-authenticated Job Apply Companion at 1440
+    by 900 against a new isolated Store prepared from the committed synthetic
+    fixture. Automation is off, no supported portal is registered, and Trash
+    contains exactly one job, one resume, and one answer.
+  constraints:
+    - >-
+      Workflows 0.1.0 does not execute the start or fixture commands. Externally
+      build Companion, create .workflows/local with owner-only permissions,
+      keep .workflows/local/no-legacy-profile.json absent, start Companion with
+      the configured command, and retain its complete token-bearing loopback URL.
+    - >-
+      With Companion running on the isolated Store, execute exactly
+      node .workflows/fixtures/job-apply.synthetic-automation-trash-v1/prepare.mjs
+      --root .workflows/local/job-apply-store and retain its stdout as fixture
+      provenance before opening the authenticated browser URL.
+    - >-
+      The browser host must apply and verify the selected platform viewport;
+      Workflows 0.1.0 records the platform but does not enforce its dimensions.
+    - >-
+      Do not read, clone, or mutate the canonical Job Apply Store. Do not use
+      real applicant, employer, account, credential, resume, or answer data.
+    - >-
+      Remain on the authenticated 127.0.0.1 Companion origin. Never navigate to,
+      fetch, sign in to, or submit anything to the fictional portal or any ATS,
+      employer site, email service, or other third party.
+    - >-
+      Do not start an application, acquire or recover a claim, mark a job ready
+      or applied, approve Trusted Fill, run account recovery, permanently delete
+      a record, or activate any final action.
+    - >-
+      Live training is forbidden until the shared observation-only approval
+      defect is fixed in the installed Workflows package and the fix is available
+      to this repository. Validation and hash computation are allowed.
+  preflightCapabilities:
+    - browser.control
+    - screenshot
+
+execution:
+  topology: linear-with-bounded-conditions
+  agentFreedom: goal-bounded
+  onUnexpectedState: fail
+  environmentChange: block-run
+  failureContinuation: stop
+  recoveryBudget:
+    maxActionsPerStep: 3
+    maxDurationSecondsPerStep: 45
+
+evidencePolicy:
+  default:
+    - declared-checkpoint-screenshots
+  onFailure:
+    - screenshot
+    - video-or-trace
+  retainVerifiedDownloads: false
+
+optionalStateHandlers: []
+
+platformOverrides:
+  mobile-web:
+    start:
+      expectedState: >-
+        The authenticated Job Apply Companion opens at 390 by 844 against a new
+        isolated Store prepared from the committed synthetic fixture. Automation
+        is off, no supported portal is registered, Trash contains exactly one
+        job, one resume, and one answer, and document scroll width is 390 pixels.
+      constraints:
+        - >-
+          Workflows 0.1.0 does not execute the start or fixture commands.
+          Externally build Companion, create .workflows/local with owner-only
+          permissions, keep .workflows/local/no-legacy-profile.json absent,
+          start Companion with the configured command, and retain its complete
+          token-bearing loopback URL.
+        - >-
+          With Companion running on the isolated Store, execute exactly
+          node .workflows/fixtures/job-apply.synthetic-automation-trash-v1/prepare.mjs
+          --root .workflows/local/job-apply-store and retain its stdout as fixture
+          provenance before opening the authenticated browser URL.
+        - >-
+          The browser host must apply and verify the 390 by 844 viewport;
+          Workflows 0.1.0 records the platform but does not enforce dimensions.
+        - >-
+          Do not read, clone, or mutate the canonical Job Apply Store. Do not use
+          real applicant, employer, account, credential, resume, or answer data.
+        - >-
+          Remain on the authenticated 127.0.0.1 Companion origin. Never navigate
+          to, fetch, sign in to, or submit anything to the fictional portal or any
+          ATS, employer site, email service, or other third party.
+        - >-
+          Do not start an application, acquire or recover a claim, mark a job
+          ready or applied, approve Trusted Fill, run account recovery,
+          permanently delete a record, or activate any final action.
+        - >-
+          Live training is forbidden until the shared observation-only approval
+          defect is fixed in the installed Workflows package and the fix is
+          available to this repository. Validation and hashing are allowed.
+        - Navigation may scroll horizontally, but the document must not overflow.
+    steps:
+      inspect-automation-boundary:
+        actionGuidance: >-
+          Scroll the horizontal workspace navigation only as needed to select
+          Automation; do not follow any portal URL.
+      enable-local-controls:
+        actionGuidance: >-
+          Keep the 390 by 844 viewport while expanding and saving the local
+          settings panel; verify document scroll width remains 390 pixels.
+      add-fictional-portal-record:
+        actionGuidance: >-
+          Use the local dialog at 390 by 844 and never navigate away from the
+          authenticated loopback origin.
+      inspect-final-action-boundary:
+        actionGuidance: >-
+          Expand the local Trusted Fill disclosure without authorizing anything;
+          verify document scroll width remains 390 pixels.
+      inspect-seeded-trash:
+        actionGuidance: >-
+          Scroll the horizontal workspace navigation only as needed to select
+          Trash; verify document scroll width remains 390 pixels.
+      restore-synthetic-job:
+        actionGuidance: Use the stacked mobile restore dialog for the job only.
+      restore-synthetic-resume:
+        actionGuidance: Use the stacked mobile restore dialog for the resume only.
+      restore-synthetic-answer:
+        actionGuidance: Use the stacked mobile restore dialog for the answer only.
+      verify-local-completion-boundary:
+        actionGuidance: >-
+          Use the horizontal navigation to open Jobs and keep the viewport at
+          390 by 844; verify document scroll width remains 390 pixels.
+
+steps:
+  - id: inspect-automation-boundary
+    name: Inspect the closed automation boundary
+    action: Select Automation in the Job Apply workspace navigation.
+    expected:
+      - The Automation workspace is visible and reports Account preparation Off.
+      - Live actions off is visible.
+      - Workday setup unavailable, Greenhouse status unresolved, and Oracle setup unavailable are visible.
+      - The browser remains on the authenticated 127.0.0.1 Companion origin.
+      - The selected viewport has no page-level horizontal overflow.
+    evidence:
+      - type: screenshot
+        checkpoint: automation-closed-boundary
+        required: true
+
+  - id: enable-local-controls
+    name: Enable local preparation controls
+    dependsOn:
+      - inspect-automation-boundary
+    action: >-
+      Expand Change automation settings, enable companion automation controls,
+      and select Save settings once.
+    expected:
+      - The application reports Automation settings saved.
+      - Account preparation reports On while Live actions off remains visible.
+      - All live provider setup statuses remain unavailable or unresolved.
+      - No account operation, application claim, or final action is started.
+    evidence:
+      - type: screenshot
+        checkpoint: local-controls-enabled-live-actions-off
+        required: true
+
+  - id: add-fictional-portal-record
+    name: Add one local fictional portal record
+    dependsOn:
+      - enable-local-controls
+    action: >-
+      Select Add portal, enter only
+      https://fictional-workflows.wd5.myworkdayjobs.com/en-US/jobs/synthetic-safe-001,
+      and select Add employer portal once. Do not open or follow the URL.
+    expected:
+      - Exactly one Workday portal record is visible in Companion.
+      - Workday setup remains unavailable and Live actions off remains visible.
+      - No credential, signup email, external account, employer request, or ATS navigation is created or claimed.
+      - The browser remains on the authenticated 127.0.0.1 Companion origin.
+    evidence:
+      - type: screenshot
+        checkpoint: fictional-portal-local-record
+        required: true
+
+  - id: inspect-final-action-boundary
+    name: Inspect the non-final Trusted Fill boundary
+    dependsOn:
+      - add-fictional-portal-record
+    action: Expand Trusted Fill approvals without entering a job ID or approving, revoking, or evaluating anything.
+    expected:
+      - The expanded section identifies exact non-final field operations.
+      - No Final Action remains visible.
+      - No approval, claim, account operation, application session, or submission is created.
+      - The selected viewport has no page-level horizontal overflow.
+    evidence:
+      - type: screenshot
+        checkpoint: trusted-fill-no-final-action
+        required: true
+
+  - id: inspect-seeded-trash
+    name: Inspect the synthetic Trash fixture
+    dependsOn:
+      - inspect-final-action-boundary
+    action: Select Trash in the Job Apply workspace navigation.
+    expected:
+      - Trash shows exactly 1 job, 1 resume, and 1 answer.
+      - The visible labels match the committed synthetic fixture.
+      - No job URL, notes, answer value, resume path, credential, or signup email is visible.
+      - The selected viewport has no page-level horizontal overflow.
+    evidence:
+      - type: screenshot
+        checkpoint: three-redacted-trash-records
+        required: true
+
+  - id: restore-synthetic-job
+    name: Restore the synthetic job
+    dependsOn:
+      - inspect-seeded-trash
+    action: >-
+      On the Synthetic Safety Analyst card, select Restore and confirm Restore
+      once in the local dialog.
+    expected:
+      - Companion reports that the job was restored and must not be repeated if refresh fails.
+      - Trash shows 0 jobs, 1 resume, and 1 answer.
+      - No application claim, session, status transition, or submission occurs.
+    evidence:
+      - type: screenshot
+        checkpoint: synthetic-job-restored
+        required: true
+
+  - id: restore-synthetic-resume
+    name: Restore the synthetic resume
+    dependsOn:
+      - restore-synthetic-job
+    action: >-
+      On the Synthetic Automation Trash Resume card, select Restore and confirm
+      Restore once in the local dialog.
+    expected:
+      - Companion reports that the resume was restored and must not be repeated if refresh fails.
+      - Trash shows 0 jobs, 0 resumes, and 1 answer.
+      - The managed resume is restored without upload, replacement, or deletion.
+    evidence:
+      - type: screenshot
+        checkpoint: synthetic-resume-restored
+        required: true
+
+  - id: restore-synthetic-answer
+    name: Restore the synthetic answer
+    dependsOn:
+      - restore-synthetic-resume
+    action: >-
+      On the May this fictional local-only record contact an employer? card,
+      select Restore and confirm Restore once in the local dialog.
+    expected:
+      - Companion reports that the answer was restored and must not be repeated if refresh fails.
+      - Trash shows 0 jobs, 0 resumes, and 0 answers and reports Trash is empty.
+      - No record is permanently deleted.
+    evidence:
+      - type: screenshot
+        checkpoint: synthetic-trash-empty-after-restoration
+        required: true
+
+  - id: verify-local-completion-boundary
+    name: Verify the job remains local and unsubmitted
+    dependsOn:
+      - restore-synthetic-answer
+    action: >-
+      Select Jobs, open Synthetic Safety Analyst, and inspect Job status and
+      Active application without changing any value or status.
+    expected:
+      - The restored job is visible with local status Saved.
+      - No active application claim and no application session are visible.
+      - Final application submission stays manual and no applied event is present.
+      - The browser remains on the authenticated 127.0.0.1 Companion origin.
+      - The selected viewport has no page-level horizontal overflow.
+    evidence:
+      - type: screenshot
+        checkpoint: restored-job-unsubmitted-boundary
+        required: true
+
+completion:
+  successRequires:
+    - every-step-passed
+    - required-evidence-verified
+  cleanup:
+    alwaysAttempt: true
+    actions:
+      - >-
+        The external orchestrator must stop Companion; Workflows 0.1.0 cleanup
+        events do not execute this action. Do not open any employer or ATS site.
+      - Preserve runner-owned evidence only until the owner reviews this synthetic run.
+      - >-
+        Leave the isolated Store under .workflows/local for owner-reviewed external
+        cleanup; never remove or touch the canonical Store.
