@@ -154,7 +154,7 @@
     {
       "id": "node-runner-fast",
       "kind": "node-test",
-      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs", "tests_js/local_checks*.test.mjs", "tests_js/migration_inventory.test.mjs", "tests_js/migration_remaining_plan.test.mjs", "tests_js/migration_browser_inventory.test.mjs", "tests_js/migration_python_runtime_closure.test.mjs", "tests_js/migration_packages.test.mjs", "tests_js/migration_requirements.test.mjs", "tests_js/migration_test_bindings.test.mjs", "tests_js/migration_prerequisite_receipts.test.mjs", "tests_js/migration_load_prerequisites.test.mjs", "tests_js/migration_task_manifests.test.mjs", "tests_js/migration_task_receipts.test.mjs", "tests_js/migration_task_lineage.test.mjs"],
+      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs", "tests_js/local_checks*.test.mjs", "tests_js/agent_workflows_automation_trash.test.mjs", "tests_js/migration_inventory.test.mjs", "tests_js/migration_remaining_plan.test.mjs", "tests_js/migration_browser_inventory.test.mjs", "tests_js/migration_python_runtime_closure.test.mjs", "tests_js/migration_packages.test.mjs", "tests_js/migration_requirements.test.mjs", "tests_js/migration_test_bindings.test.mjs", "tests_js/migration_prerequisite_receipts.test.mjs", "tests_js/migration_load_prerequisites.test.mjs", "tests_js/migration_task_manifests.test.mjs", "tests_js/migration_task_receipts.test.mjs", "tests_js/migration_task_lineage.test.mjs"],
       "exclude": ["tests_js/local_checks_run.test.mjs"],
       "tiers": ["fast", "full"]
     },
@@ -207,7 +207,7 @@
     {
       "id": "native-default-cutover",
       "kind": "node-test",
-      "include": ["tests_js/companion_default_cutover.test.mjs", "tests_js/final_action_policy_cli.test.mjs", "tests_js/final_action_policy_concurrency.test.mjs", "tests_js/final_action_policy_reference.test.mjs", "tests_js/native_attempt_lifecycle.test.mjs", "tests_js/native_attempt_protocol.test.mjs", "tests_js/native_command_inventory.test.mjs", "tests_js/native_installed_entrypoints.test.mjs", "tests_js/native_policy_store_clone.test.mjs", "tests_js/native_store_activation_command.test.mjs", "tests_js/native_writer_switch_policy_tamper.test.mjs"],
+      "include": ["tests_js/agent_workflows_application_recovery.test.mjs", "tests_js/companion_default_cutover.test.mjs", "tests_js/final_action_policy_cli.test.mjs", "tests_js/final_action_policy_concurrency.test.mjs", "tests_js/final_action_policy_reference.test.mjs", "tests_js/native_attempt_lifecycle.test.mjs", "tests_js/native_attempt_protocol.test.mjs", "tests_js/native_command_inventory.test.mjs", "tests_js/native_installed_entrypoints.test.mjs", "tests_js/native_policy_store_clone.test.mjs", "tests_js/native_store_activation_command.test.mjs", "tests_js/native_writer_switch_policy_tamper.test.mjs"],
       "platforms": ["darwin", "linux"],
       "tiers": ["full", "platform"]
     },

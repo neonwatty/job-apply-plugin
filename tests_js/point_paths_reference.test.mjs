@@ -392,7 +392,7 @@ test('S05 point filesystem codec preserves trusted text identity and leaves lega
 });
 
 // Immutable prior matrix canonicalization preserves every key and array order.
-const registrationBaselineSha256 = '9df019e90b2bf485917f94364c36cbfd6ab8dd94f8d3ced21c383957985183ac';
+const registrationBaselineSha256 = 'b278792c2ea16c9999d77ea702ddee99603653d3aff1d341936142162e745078';
 const registrationOwnership = {
   "paths": [
     "tests_js/point_paths_domain_support.mjs",
@@ -462,7 +462,7 @@ test('S05 path support registration preserves the exact prior matrix', t => {
     platforms: ['darwin', 'linux'], tiers: ['full', 'platform']
   }]);
   const cutoverIndex = matrix.suites.findIndex(suite => suite.id === 'native-default-cutover'); assert.ok(cutoverIndex >= 0);
-  const reviewedCutoverAdditions = new Set(['tests_js/native_installed_entrypoints.test.mjs', 'tests_js/native_store_activation_command.test.mjs']);
+  const reviewedCutoverAdditions = new Set(['tests_js/agent_workflows_application_recovery.test.mjs', 'tests_js/native_installed_entrypoints.test.mjs', 'tests_js/native_store_activation_command.test.mjs']);
   assert.deepEqual(matrix.suites.splice(cutoverIndex, 1).map(suite => ({ ...suite, include: suite.include.filter(path => !reviewedCutoverAdditions.has(path)) })), [{
     id: 'native-default-cutover', kind: 'node-test',
     include: ['tests_js/companion_default_cutover.test.mjs', 'tests_js/final_action_policy_cli.test.mjs',

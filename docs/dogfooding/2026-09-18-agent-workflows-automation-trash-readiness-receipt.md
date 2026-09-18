@@ -6,6 +6,10 @@ Base: `origin/staging` at `9a7e56ee5426e3334918bd0017f959a78a530144`
 
 Branch: `codex/agent-workflows-automation-trash-journey`
 
+Repair base: `d537abe396e0bcd6a088349b0cd7730efe372a38`
+
+Repair branch: `codex/repair-automation-trash-training`
+
 ## Scope and outcome
 
 This receipt covers candidate authoring, fictional fixture preparation, direct
@@ -37,6 +41,28 @@ job/resume/answer restoration, and zero application completion or applied
 events. This candidate does not elevate those direct dogfood observations into
 Agent Workflows evidence.
 
+## Historical supervised execution and bounded repair
+
+A later supervised session produced one completed desktop run after two
+invalidated attempts. The completed run is retained as historical evidence only:
+the session-level retries mean it is not fresh lifecycle proof and it must not
+be used for promotion. No mobile run was started. The session exposed four
+repairable findings addressed by this change:
+
+- the native `summary` was present in accessibility state but lacked an explicit
+  button role for the supported semantic Playwright lookup;
+- desktop and mobile orchestration reused one product Store basename, so moving
+  only the active Store left its native rollback sibling bound to the mobile
+  startup path;
+- the mobile candidate resolved 390 by 844 instead of the required 393 by 852;
+- the live-region shell copy rendered `1 records are in Trash.`
+
+The repaired candidate gives the settings disclosure an explicit button role,
+uses distinct desktop and mobile product Store basenames under the same isolated
+runner root, resolves mobile to 393 by 852, and pluralizes the Trash status.
+Focused manifest and production-browser tests cover those boundaries. No new
+live Training run was created for this repair.
+
 ## Direct UI observation
 
 Companion was built and opened against two new disposable Stores under
@@ -66,7 +92,11 @@ The browser viewport was explicitly measured on both Automation and Trash:
 | Platform | Viewport | Automation scroll width | Trash scroll width | Overflow |
 | --- | ---: | ---: | ---: | --- |
 | desktop-web | 1440 × 900 | 1440 | 1440 | false |
-| mobile-web | 390 × 844 | 390 | 390 | false |
+| mobile-web (historical observation) | 390 × 844 | 390 | 390 | false |
+
+The repaired candidate now requires 393 × 852. That viewport still requires a
+fresh post-merge supervised observation; the historical 390 × 844 measurement
+is not reused as evidence for it.
 
 No browser left the authenticated loopback Companion origin, and no employer or
 ATS page was opened.
@@ -101,8 +131,8 @@ The installed `@lineagehq/workflows@0.1.0` CLI produced:
 
 | Platform | Source hash | Effective hash |
 | --- | --- | --- |
-| desktop-web | `sha256:273bdbfa5a2673e59e08690b24416059f69fbc5b24899fa85db901d860ffa979` | `sha256:6fc27fa95e6cbc0db52b6a8db9ba326326f4f1b0eb051d94a1bd473d2d47ea66` |
-| mobile-web | `sha256:273bdbfa5a2673e59e08690b24416059f69fbc5b24899fa85db901d860ffa979` | `sha256:46b9ef92bb7a0574e38cfa56e93f71a2e160c03a924fd3069322055abbef0a21` |
+| desktop-web | `sha256:9cd4503e37b9718ba61f83dab44cab6e8682d8cb8df56d1417ddb345f1f24c3b` | `sha256:1f7b9314ae28f96a7a65edd2c16f20e42ec5365289c6aa6d6813e65a6ec3aaaa` |
+| mobile-web | `sha256:9cd4503e37b9718ba61f83dab44cab6e8682d8cb8df56d1417ddb345f1f24c3b` | `sha256:b241d957312d6205e94c9419b2f3f2ebf7bd9c6437a2de30531abe90109ed4df` |
 
 Reproduce them with:
 
@@ -116,7 +146,7 @@ node_modules/.bin/workflow show \
 ```
 
 The raw manifest file SHA-256 is
-`3615a1dfd75b7a39e591269336a3a1fe9340df601c7b9ee15604085a0ca22428`.
+`4f8774e648a66f0d77516d383cc2c41864900f145cc060c7649e3f6093cfceea`.
 
 ## Validation
 
@@ -126,6 +156,10 @@ The raw manifest file SHA-256 is
   and all six expected schema kinds.
 - `workflow validate`: accepted the candidate without warnings.
 - `workflow show`: resolved all nine steps for desktop and mobile.
+- Focused workflow contract tests passed for distinct platform Store roots and
+  the resolved 393 by 852 mobile viewport.
+- The rebuilt production Companion browser journey passed with the exact
+  semantic button lookup and singular `1 record is in Trash.` assertion.
 - Fresh native Companion fixture preparation: passed with exact 1/1/1 Trash
   counts and no active job listing.
 - `npm run check:size`: passed; the workflow and fixture sources remain below
@@ -159,20 +193,22 @@ new data-only files:
 No shared test configuration, package metadata, baseline, or production source
 was changed to mask these environmental gates.
 
-## Readiness gaps and hard stop
+## Fresh-proof prerequisites and hard stop
 
-The installed Workflows package still has the shared observation-only approval
-defect. Its policy sends every proposal whose risk category is not
-`reversible-ui` to `needs-human`, including `observation-only`. The agent
-namespace cannot synthesize a human approval. Until the reviewed fix is present
-in the installed package and available to this repository, this candidate must
-not begin live runner training.
+The installed Workflows package at immutable commit
+`1e9f91c6f6f0a04bdc8003ef1dbbe68ad3468225` contains the observation-only
+policy fix. That prerequisite is now satisfied, but this repair deliberately
+does not create replacement lifecycle proof.
 
-After that fix lands, a fresh Codex task at the exact candidate commit must
-again show `agent-workflows` in its supplied skill catalog, invoke the skill,
-and read the installed contract before any run or browser control. The external
-host must also perform the manifest's explicit start/fixture/viewport/stop
+After merge, a fresh Codex task at the exact merged commit must again show
+`agent-workflows` in its supplied skill catalog, invoke the skill, and read the
+installed contract before any run or browser control. It must use a fresh run
+and host identity for each platform, the distinct product Store roots pinned in
+the resolved manifest, 1440 by 900 for desktop and 393 by 852 for mobile, and a
+new authenticated browser tab. Any retry, intervention, reconciliation,
+unexpected state, uncertainty, or capability gap invalidates that run as proof.
+The external host must still perform start, fixture, viewport, and stop
 orchestration because Workflows 0.1.0 does not execute those operations.
 
-These are readiness gaps, not product failures. Validation and hashing are
-complete; supervised execution and promotion remain intentionally pending.
+Validation and hashing are complete. Promotion, replay, evaluation, and fresh
+supervised lifecycle proof remain intentionally pending.

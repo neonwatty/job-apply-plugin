@@ -130,6 +130,9 @@ export async function reactTrashBrowser(page, { origin, headers }) {
         await modal.getByLabel(new RegExp(`Type DELETE ${fixture.type.toUpperCase()}`)).fill(`DELETE ${fixture.type.toUpperCase()}`);
         await confirm.click();
         await card(fixture).waitFor({ state: 'hidden' });
+        if (fixture.type === 'resume') {
+            await page.getByRole('status').filter({ hasText: '1 record is in Trash.' }).waitFor();
+        }
     }
     await filter.selectOption('');
     await workspace.getByText('Trash is empty.', { exact: true }).waitFor();
