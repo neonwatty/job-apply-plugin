@@ -1,7 +1,7 @@
 {
   "schema": "job-apply-agent-workflows-synthetic-application-recovery-readiness/v1",
   "date": "2026-09-18",
-  "status": "candidate-validated-training-blocked",
+  "status": "candidate-validated-fresh-discovery-blocked",
   "repository": {
     "branch": "codex/synthetic-application-recovery-workflow",
     "baseRef": "origin/staging",
@@ -48,9 +48,9 @@
   "workflowsRuntime": {
     "package": "@lineagehq/workflows",
     "version": "0.1.0",
-    "sourceCommit": "5268fa8f287c3b64f55f0c4438815b800f69d778",
-    "agentServiceSha256": "5aad5fec5e12638ad558adf1e86c7a81b1c6be72f65f86d2a8fbc37248503ed2",
-    "packageLockSha256": "02a2b22c1f953be03288a04458d8ecfecd75f779805355ed6efd33deda4d13c5",
+    "sourceCommit": "1e9f91c6f6f0a04bdc8003ef1dbbe68ad3468225",
+    "agentServiceSha256": "a8e2fa9907b1de285cc22b61aa8d88abfe28678fc2a5b831d943580d159b449d",
+    "packageLockSha256": "2a39856f479e8cc813055e7fdb3ee0b0852796dde3305041c6b38db3d409ad2b",
     "sourceCheckoutEdited": false
   },
   "existingDogfoodReviewed": [
@@ -125,9 +125,9 @@
   },
   "trainingGate": {
     "status": "blocked",
-    "observationOnlyApprovalDefect": "The installed policy auto-allows reversible-ui proposals but routes observation-only proposals to a safety-boundary approval.",
-    "requiredRuntimeChange": "Install and revalidate a Workflows package that automatically permits bounded observation-only proposals without a safety-boundary approval.",
+    "observationOnlyApprovalDefect": "Resolved by source commit 1e9f91c6f6f0a04bdc8003ef1dbbe68ad3468225; the focused runner regression permits strictly observation-only proposals without human approval and still gates UI mutations mislabeled as observation-only.",
+    "requiredRuntimeChange": "Satisfied by the installed immutable Workflows source commit and focused regression verification.",
     "fixtureControlReadiness": "A fresh host must truthfully register and prove job-apply.fixture-control against the exact isolated Store while retaining claim authority only in memory.",
-    "authorization": "No workflow train, browser runner session, or supervised replay is authorized until both gates are satisfied."
+    "authorization": "No workflow train, browser runner session, or supervised replay is authorized until the fresh-agent discovery gate in the foundational readiness receipt is satisfied."
   }
 }

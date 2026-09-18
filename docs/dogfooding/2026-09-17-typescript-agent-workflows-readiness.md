@@ -21,10 +21,10 @@ registry:
 - protocol version: `1.0`
 - tag: `v0.1.0`
 - peeled tag commit: `5268fa8f287c3b64f55f0c4438815b800f69d778`
-- dependency source: `github:lineagehq/workflows#5268fa8f287c3b64f55f0c4438815b800f69d778`
-- installed package integrity: `sha512-4cizzFvck9CWs73P9XKA7sbdUXEmQ1Z+Ck8FndXhTVwVsE7IlCBGTWClRgQa5kO4BPimAcpnFnf6v6QsxDM7mw==`
+- dependency source: `github:lineagehq/workflows#1e9f91c6f6f0a04bdc8003ef1dbbe68ad3468225`
+- installed package integrity: `sha512-F2NQKbibyfLW8BJMKk6Ke+J64Pe4buStDMtALjL1dXjYtnjm5R/ZnPIGO20jgGnjkn6sYyk0uA84R6TOHqCzcw==`
 - CLI: `node_modules/.bin/workflow`
-- minimum Node version declared by the package: `22.13.0`
+- minimum Node version declared by the package: `20`
 
 The public npm registry has no `@lineagehq/workflows@0.1.0` release. The exact
 Git commit is therefore the distribution identity and reproducibility anchor;
