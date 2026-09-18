@@ -43,12 +43,12 @@
     },
     {
       "path": "apps/companion/components/Answers.tsx",
-      "sha256": "bb859933a135fef67219d36ed56ebf47c2d76f5f36dfbb6f2463a0ce4f1837d2",
+      "sha256": "2698e61961b76ee1f953e0b80fb3539086ceb2a4fc6f9551d6bb8ce3d4129e28",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/answer-fields.tsx",
-      "sha256": "096497bc9704b1393d8555030b49e1eab665ab129b8bb27ce05bbd379d31c8fe",
+      "sha256": "0ad9066961f3fec5bacdb2c081b336d40b3da8a9f14f00bef816c44e0bb74074",
       "classification": "unreviewed"
     },
     {
