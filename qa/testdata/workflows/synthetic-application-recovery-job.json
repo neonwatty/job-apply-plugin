@@ -1,0 +1,12 @@
+{
+  "id": "synthetic-application-recovery-job",
+  "url": "https://jobs.example.invalid/synthetic-application-recovery",
+  "company": "Northstar Paper Labs",
+  "role": "Workflow Recovery Tester",
+  "location": "Remote",
+  "workplaceType": "remote",
+  "description": "Fictional local-only record for the Agent Workflows application recovery journey.",
+  "notes": "Synthetic fixture. Never contact an employer or submit to an ATS.",
+  "priority": 2,
+  "resumeId": "synthetic-application-recovery-resume"
+}
