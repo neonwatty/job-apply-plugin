@@ -462,7 +462,7 @@ test('S05 path support registration preserves the exact prior matrix', t => {
     platforms: ['darwin', 'linux'], tiers: ['full', 'platform']
   }]);
   const cutoverIndex = matrix.suites.findIndex(suite => suite.id === 'native-default-cutover'); assert.ok(cutoverIndex >= 0);
-  const reviewedCutoverAdditions = new Set(['tests_js/native_installed_entrypoints.test.mjs', 'tests_js/native_store_activation_command.test.mjs']);
+  const reviewedCutoverAdditions = new Set(['tests_js/agent_workflows_application_recovery.test.mjs', 'tests_js/native_installed_entrypoints.test.mjs', 'tests_js/native_store_activation_command.test.mjs']);
   assert.deepEqual(matrix.suites.splice(cutoverIndex, 1).map(suite => ({ ...suite, include: suite.include.filter(path => !reviewedCutoverAdditions.has(path)) })), [{
     id: 'native-default-cutover', kind: 'node-test',
     include: ['tests_js/companion_default_cutover.test.mjs', 'tests_js/final_action_policy_cli.test.mjs',

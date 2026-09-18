@@ -10,7 +10,7 @@ metadata:
     and verify the final manual-review boundary without opening an employer or
     ATS site and without activating the final action.
   lifecycle: candidate
-  candidateRevision: 1
+  candidateRevision: 2
   tags:
     - application
     - browser
@@ -62,25 +62,40 @@ start:
       observation-only proposals without creating a safety-boundary approval,
       and that fix is installed and revalidated on the host.
     - >-
-      Workflows 0.1.0 does not execute the configured start command or bind its
-      output. Externally build Companion, create .workflows/local with owner-only
-      permissions, initialize a new Store, and give the browser host the complete
-      token URL emitted by Companion. The static base URL is not authenticated.
+      Before creating a Store or invoking workflow train, run
+      node .workflows/fixtures/job-apply.synthetic-application-recovery-v1/host-preflight.mjs
+      --journey-root with a unique absent absolute directory under
+      .workflows/local. This candidate is hard-blocked while that preflight
+      reports that job-apply.fixture-control is not committed.
+    - >-
+      Use only the preflight-returned sibling roots: pass runner-store to every
+      workflow command and product-store to native fixture initialization,
+      fixture commands, and Companion. Never pass the journey root or product
+      Store to workflow --store, and never write runner index.json or runs into
+      the product Store. Product journals remain inside product-store; any
+      product-store.python-rollback is reserved to that product Store only.
+    - >-
+      Workflows 0.1.0 does not execute the product start command or bind its
+      output. Only after host preflight succeeds, initialize the product Store
+      with the native fixture writer, build and start Companion against that
+      exact product-store, and give the browser host the complete token URL.
+      The static base URL is not authenticated.
     - >-
       Seed only qa/testdata/workflows/synthetic-application-recovery-profile.json
       and qa/testdata/workflows/synthetic-application-recovery-resume.json with
       qa/testdata/workflows/synthetic-application-recovery-resume.txt. Verify the
       job list, session list, claim status, and application history are empty.
     - >-
-      Keep .workflows/local/no-legacy-profile.json absent so no ambient owner
-      profile can be imported into the synthetic Store.
+      Keep the preflight-returned no-legacy-profile.json path absent so no
+      ambient owner profile can be imported into the synthetic Store.
     - >-
       The browser host must apply and verify the selected platform viewport;
       Workflows 0.1.0 records the platform but does not enforce dimensions.
     - >-
-      Register job-apply.fixture-control only when the host can invoke the native
-      fixture CLI against this exact isolated Store, keep claim authority in
-      memory, and emit no private or bearer values into evidence.
+      No job-apply.fixture-control adapter is committed in candidate revision 2.
+      Do not create either Store, start Companion, or invoke workflow train until
+      a later reviewed revision adds that adapter and host preflight proves it.
+      Never register the capability from generic native CLI availability alone.
     - >-
       Never open an employer or ATS site, use a real account or credential,
       contact an employer, or activate Mark applied.
@@ -123,25 +138,38 @@ platformOverrides:
           observation-only proposals without creating a safety-boundary approval,
           and that fix is installed and revalidated on the host.
         - >-
-          Workflows 0.1.0 does not execute the configured start command or bind
-          its output. Externally build Companion, create .workflows/local with
-          owner-only permissions, initialize a new Store, and give the browser
-          host the complete token URL emitted by Companion.
+          Before creating a Store or invoking workflow train, run
+          node .workflows/fixtures/job-apply.synthetic-application-recovery-v1/host-preflight.mjs
+          --journey-root with a unique absent absolute directory under
+          .workflows/local. This candidate is hard-blocked while that preflight
+          reports that job-apply.fixture-control is not committed.
+        - >-
+          Use only the preflight-returned sibling roots: pass runner-store to
+          every workflow command and product-store to native fixture
+          initialization, fixture commands, and Companion. Never share or nest
+          those Stores. Product journals and any derived rollback stay on the
+          product side.
+        - >-
+          Workflows 0.1.0 does not execute the product start command or bind its
+          output. Only after host preflight succeeds, initialize the product
+          Store with the native fixture writer, build and start Companion against
+          that exact product-store, and retain the complete token-bearing URL.
         - >-
           Seed only qa/testdata/workflows/synthetic-application-recovery-profile.json
           and qa/testdata/workflows/synthetic-application-recovery-resume.json with
           qa/testdata/workflows/synthetic-application-recovery-resume.txt. Verify
           the job list, session list, claim status, and history are empty.
         - >-
-          Keep .workflows/local/no-legacy-profile.json absent so no ambient owner
-          profile can be imported into the synthetic Store.
+          Keep the preflight-returned no-legacy-profile.json path absent so no
+          ambient owner profile can be imported into the synthetic Store.
         - >-
           The browser host must apply and verify the selected 390 by 844 viewport;
           Workflows 0.1.0 records the platform but does not enforce dimensions.
         - >-
-          Register job-apply.fixture-control only when the host can invoke the
-          native fixture CLI against this exact isolated Store, keep claim
-          authority in memory, and emit no private or bearer values into evidence.
+          No job-apply.fixture-control adapter is committed in candidate revision
+          2. Do not create either Store, start Companion, or invoke workflow train
+          until a later reviewed revision adds that adapter and host preflight
+          proves it. Generic native CLI availability is not this capability.
         - >-
           Never open an employer or ATS site, use a real account or credential,
           contact an employer, or activate Mark applied.
@@ -358,5 +386,6 @@ completion:
         events do not execute this action. Do not open an employer or ATS site.
       - Preserve runner-owned evidence only until the owner reviews this synthetic run.
       - >-
-        Leave the isolated Store under .workflows/local for owner-reviewed external
-        cleanup; never remove or touch the canonical Store.
+        Leave the separate runner-store, product-store, product journals, and any
+        product rollback under their unique .workflows/local journey root for
+        owner-reviewed external cleanup; never remove or touch the canonical Store.
