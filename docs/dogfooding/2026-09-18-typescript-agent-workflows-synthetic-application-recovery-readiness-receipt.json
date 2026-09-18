@@ -1,19 +1,19 @@
 {
   "schema": "job-apply-agent-workflows-synthetic-application-recovery-readiness/v1",
   "date": "2026-09-18",
-  "status": "candidate-v2-separated-stores-fixture-control-blocked",
+  "status": "candidate-v3-fixture-control-implemented-fresh-proof-blocked",
   "repository": {
-    "branch": "codex/application-recovery-separated-stores",
+    "branch": "codex/application-recovery-fixture-control",
     "baseRef": "origin/staging",
-    "baseCommit": "d537abe396e0bcd6a088349b0cd7730efe372a38"
+    "baseCommit": "4c760ef1396da0f4a49678394341f4c80c84d56f"
   },
   "workflow": {
     "path": ".workflows/workflows/job-apply.synthetic-application-recovery.workflow.yaml",
-    "candidateRevision": 2,
-    "workflowFileSha256": "9224714c12618bc9299a622b9600b3e892b0ed0c5ca808adde512a6bf98791cf",
-    "workflowSourceHash": "sha256:80cd6b3c878bab4047a924c42451408e73600719c40c9d0d0eb3ee249947c777",
-    "desktopEffectiveHash": "sha256:8fc4230450bb47c327c3c58dd3ee7861b3274ad21f86f1457c1a38b0c7493e32",
-    "mobileEffectiveHash": "sha256:c3318dc4494627af61e0850cef6ed1ecf28fd4c9cb3a778204c2f5716a675ab8",
+    "candidateRevision": 3,
+    "workflowFileSha256": "e32a2d7ed11334e4c6787a0c70708402c4865013854e6c81beb3d4db7ef94beb",
+    "workflowSourceHash": "sha256:1f5d5f9f7b0e9953a74e9a07caecbab0ac59fdfa977d2a4cf1c81d9af3569d1e",
+    "desktopEffectiveHash": "sha256:c0529ddebe2da6bc6cb97339d13827ac25b385df1b14816058b19ec000308edc",
+    "mobileEffectiveHash": "sha256:c3e2c610107ca042efc35fe842b65bafd27265ead21eba9481509787bda712e0",
     "stepCount": 11,
     "platforms": {
       "desktop-web": {
@@ -47,7 +47,15 @@
     },
     {
       "path": ".workflows/fixtures/job-apply.synthetic-application-recovery-v1/host-preflight.mjs",
-      "sha256": "ff30c93a42b979d2208275f6b3d17619cdedc8c9d24770a1aa387e2779446d94"
+      "sha256": "983a7be19a227dbf4d051ec5b814b58e301dc793c5012f5eb11c7d3811f50e89"
+    },
+    {
+      "path": ".workflows/fixtures/job-apply.synthetic-application-recovery-v1/fixture-control.mjs",
+      "sha256": "b58e0c8a5cfdfe19a46b38dedbcf5ef864b392439fff28c911f8c4327c071e25"
+    },
+    {
+      "path": "qa/fixtures/greenhouse-form-readiness-v1/fixture.json",
+      "sha256": "ae1232593dadb806d97b7d43572b2603acd2530847309324b7e5f19a683aad8e"
     }
   ],
   "repair": {
@@ -59,7 +67,8 @@
       "productRollback": "<journey-root>/product-store.python-rollback",
       "legacyProfile": "<journey-root>/no-legacy-profile.json"
     },
-    "hardGate": "host-preflight.mjs performs no writes and refuses readiness while the repository has no committed job-apply.fixture-control adapter.",
+    "hardGate": "host-preflight.mjs performs no writes and returns the versioned job-apply.fixture-control capability only after the committed adapter successfully probes fixture hashes and the verified native lock. Handoff additionally requires the exact private local journey, synthetic product marker, fictional profile, managed resume bytes, single ready job, expected revision, empty claim, and prior local blocked history.",
+    "fixtureControl": "The adapter injects only a committed fictional Greenhouse readiness simulation into the isolated product Store. It does not visit or attest a real employer or ATS form, use a real account, contact an employer, or invoke the human-only final action.",
     "priorFailedRunsReusable": false
   },
   "workflowsRuntime": {
@@ -120,8 +129,21 @@
     "sourceSize": "passed",
     "separatedStoreRegression": {
       "status": "passed",
-      "tests": 2,
-      "proof": "Host preflight stops before filesystem mutation without fixture control; real native synthetic job creation succeeds while runner index.json and runs remain in a sibling runner Store."
+      "tests": 4,
+      "proof": "Host preflight probes the actual adapter without mutation; synthetic-only handoff succeeds with a private in-process claim and no final action; foreign paths and non-fictional profile data stop before mutation; runner metadata stays outside the native Store."
+    },
+    "fixtureControlAffectedGate": {
+      "status": "failed-before-commit",
+      "selectedSuites": 25,
+      "fixtureControlRelevantFailure": false,
+      "observedHostAndSnapshotFailures": [
+        "migration-inventory requires a clean exact committed snapshot",
+        "native-posix-lock requires SDKROOT to match the fixed xcrun SDK; its isolated test passed when SDKROOT was set to that path",
+        "native-frozen-reference-profiles rejects the unreviewed host CPython 3.12.14 patch"
+      ],
+      "nativeDefaultCutover": { "tests": 92, "passed": 92, "failed": 0 },
+      "nodeWorkspaceOther": { "tests": 1897, "passed": 1871, "failed": 0, "skipped": 26 },
+      "cleanExactSubjectInventory": "inventory-consistent"
     },
     "focusedLifecycleTests": {
       "status": "passed",
@@ -159,7 +181,7 @@
     "status": "blocked",
     "observationOnlyApprovalDefect": "Resolved by source commit 1e9f91c6f6f0a04bdc8003ef1dbbe68ad3468225; the focused runner regression permits strictly observation-only proposals without human approval and still gates UI mutations mislabeled as observation-only.",
     "requiredRuntimeChange": "Satisfied by the installed immutable Workflows source commit and focused regression verification.",
-    "fixtureControlReadiness": "Blocked: no job-apply.fixture-control adapter is committed. Generic native CLI availability is not adapter capability. host-preflight.mjs must remain a no-write hard stop until a later reviewed revision supplies and proves the adapter.",
-    "authorization": "No Store creation, Companion start, workflow train, browser runner session, or supervised replay is authorized for candidate revision 2. A later reviewed revision must add fixture control, pass host preflight with a fresh unique journey root, and satisfy fresh-agent discovery before live proof."
+    "fixtureControlReadiness": "Implemented locally and probed from real native-lock and fixture availability; generic native CLI availability alone is never the capability. The probe is not proof of a browser or screenshot capability.",
+    "authorization": "No live training or replay occurred in this repair. Before a future fresh proof, a new host must complete fresh-agent discovery, establish an owner-private local parent and absent unique journey root, run the no-write preflight, register only the returned exact capability contract, independently prove browser and screenshot capabilities, and receive explicit owner approval. Invalidated/failed runs are not reusable."
   }
 }

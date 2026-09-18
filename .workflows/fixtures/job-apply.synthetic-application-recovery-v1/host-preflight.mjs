@@ -1,6 +1,6 @@
-import { lstat } from 'node:fs/promises';
-import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { lstat, realpath } from 'node:fs/promises';
+import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const fixtureDirectory = dirname(fileURLToPath(import.meta.url));
 const defaultRepositoryRoot = resolve(fixtureDirectory, '../../..');
@@ -42,8 +42,19 @@ async function absent(path, label) {
 export async function applicationRecoveryHostPreflight({
   journeyRoot,
   repositoryRoot = defaultRepositoryRoot,
+  localRoot = join(repositoryRoot, '.workflows/local'),
 } = {}) {
   const layout = applicationRecoveryLayout(journeyRoot);
+  if (dirname(journeyRoot) !== localRoot
+      || !/^application-recovery-[a-z0-9-]{8,64}$/.test(basename(journeyRoot))) {
+    throw new Error('Journey root must be a fresh direct child of the application-recovery local root');
+  }
+  const localMetadata = await lstat(localRoot);
+  if (!localMetadata.isDirectory() || localMetadata.isSymbolicLink()
+      || localMetadata.uid !== process.getuid?.() || localMetadata.mode & 0o077
+      || await realpath(localRoot) !== localRoot) {
+    throw new Error('Application-recovery local root must be a private owned real directory');
+  }
   await absent(layout.journeyRoot, 'Journey root');
   const fixtureControlPath = join(
     repositoryRoot,
@@ -60,14 +71,23 @@ export async function applicationRecoveryHostPreflight({
       'job-apply.fixture-control is not committed; do not create Stores, start Companion, or run workflow train',
     );
   }
-  return { ...layout, fixtureControlPath };
+  const { probeFixtureControl } = await import(pathToFileURL(fixtureControlPath).href);
+  if (typeof probeFixtureControl !== 'function') {
+    throw new Error('job-apply.fixture-control has no probe; do not start training');
+  }
+  const capabilityContract = await probeFixtureControl();
+  if (capabilityContract?.id !== 'job-apply.fixture-control'
+      || !capabilityContract.operations?.includes('synthetic-review-handoff')) {
+    throw new Error('job-apply.fixture-control probe did not establish the required capability');
+  }
+  return { ...layout, fixtureControlPath, capabilityContract };
 }
 
 function parseArgs(args) {
   const values = new Map();
   for (let index = 0; index < args.length; index += 2) {
     const key = args[index], value = args[index + 1];
-    if (!['--journey-root', '--repository-root'].includes(key) || !value || values.has(key)) {
+    if (key !== '--journey-root' || !value || values.has(key)) {
       throw new Error('Usage: node host-preflight.mjs --journey-root /absolute/fresh/root');
     }
     values.set(key, value);
@@ -76,7 +96,6 @@ function parseArgs(args) {
   if (!journeyRoot) throw new Error('Missing --journey-root');
   return {
     journeyRoot,
-    ...(values.has('--repository-root') ? { repositoryRoot: resolve(values.get('--repository-root')) } : {}),
   };
 }
 

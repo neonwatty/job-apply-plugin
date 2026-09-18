@@ -119,6 +119,7 @@ async function browserAtRoot(root) {
         const refreshed = page.waitForResponse(response => new URL(response.url()).pathname === '/api/state');
         await page.evaluate(() => document.querySelector('#refresh').click());
         await refreshed;
+        await page.waitForFunction(() => document.querySelector('#job-form [name="notes"]')?.value === 'Unsaved synthetic draft');
         assert.equal(await page.locator('#job-form [name="notes"]').inputValue(), 'Unsaved synthetic draft');
         const token = new URLSearchParams(new URL(startup.url).hash.slice(1)).get('token');
         const apiHeaders = {

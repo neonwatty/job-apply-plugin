@@ -10,7 +10,7 @@ metadata:
     and verify the final manual-review boundary without opening an employer or
     ATS site and without activating the final action.
   lifecycle: candidate
-  candidateRevision: 2
+  candidateRevision: 3
   tags:
     - application
     - browser
@@ -65,8 +65,9 @@ start:
       Before creating a Store or invoking workflow train, run
       node .workflows/fixtures/job-apply.synthetic-application-recovery-v1/host-preflight.mjs
       --journey-root with a unique absent absolute directory under
-      .workflows/local. This candidate is hard-blocked while that preflight
-      reports that job-apply.fixture-control is not committed.
+      .workflows/local. Its parent must already be an owner-private real
+      directory. Stop before mutation unless preflight returns the probed
+      job-apply.fixture-control contract and separate sibling Store paths.
     - >-
       Use only the preflight-returned sibling roots: pass runner-store to every
       workflow command and product-store to native fixture initialization,
@@ -92,10 +93,11 @@ start:
       The browser host must apply and verify the selected platform viewport;
       Workflows 0.1.0 records the platform but does not enforce dimensions.
     - >-
-      No job-apply.fixture-control adapter is committed in candidate revision 2.
-      Do not create either Store, start Companion, or invoke workflow train until
-      a later reviewed revision adds that adapter and host preflight proves it.
-      Never register the capability from generic native CLI availability alone.
+      Register job-apply.fixture-control only from the successful host-preflight
+      probe of the committed synthetic adapter. Generic native CLI availability
+      is not this capability. A future supervised run still requires fresh-agent
+      discovery, an absent journey root, exact fictional fixture inputs, and
+      explicit owner approval; this revision is not itself a training run.
     - >-
       Never open an employer or ATS site, use a real account or credential,
       contact an employer, or activate Mark applied.
@@ -141,8 +143,9 @@ platformOverrides:
           Before creating a Store or invoking workflow train, run
           node .workflows/fixtures/job-apply.synthetic-application-recovery-v1/host-preflight.mjs
           --journey-root with a unique absent absolute directory under
-          .workflows/local. This candidate is hard-blocked while that preflight
-          reports that job-apply.fixture-control is not committed.
+          .workflows/local. Its parent must already be an owner-private real
+          directory. Stop before mutation unless preflight returns the probed
+          job-apply.fixture-control contract and separate sibling Store paths.
         - >-
           Use only the preflight-returned sibling roots: pass runner-store to
           every workflow command and product-store to native fixture
@@ -166,10 +169,11 @@ platformOverrides:
           The browser host must apply and verify the selected 390 by 844 viewport;
           Workflows 0.1.0 records the platform but does not enforce dimensions.
         - >-
-          No job-apply.fixture-control adapter is committed in candidate revision
-          2. Do not create either Store, start Companion, or invoke workflow train
-          until a later reviewed revision adds that adapter and host preflight
-          proves it. Generic native CLI availability is not this capability.
+          Register job-apply.fixture-control only from the successful
+          host-preflight probe of the committed synthetic adapter. Generic
+          native CLI availability is not this capability. A future supervised
+          run still requires fresh-agent discovery, an absent journey root,
+          exact fictional fixture inputs, and explicit owner approval.
         - >-
           Never open an employer or ATS site, use a real account or credential,
           contact an employer, or activate Mark applied.
@@ -313,12 +317,14 @@ steps:
     dependsOn:
       - recover-cancelled-application
     action: >-
-      Close Job details, invoke job-apply.fixture-control once for the exact
-      isolated Store and job, then activate the Jobs refresh control once. The
-      adapter must acquire the current ready revision, construct a closed
-      fictional greenhouse readiness packet from the committed repository
-      fixture, hand off awaiting_review, keep claim authority in memory, and
-      return only value-free status and revision fields.
+      Close Job details, invoke the probed job-apply.fixture-control adapter once
+      with handoff --journey-root and --expected-revision for the exact isolated
+      synthetic job, then activate the Jobs refresh control once. The adapter
+      acquires the current ready revision, injects the closed fictional
+      Greenhouse readiness fixture only into the local product Store, hands off
+      awaiting_review, keeps claim authority in memory, and returns only
+      value-free status and revision fields. Its packet is synthetic simulation,
+      not evidence of an employer or ATS form visit.
     actionGuidance: >-
       Propose at most three actions: close the local dialog, invoke the fixture
       adapter, and refresh the local Jobs view. Use reversible-ui risk because
