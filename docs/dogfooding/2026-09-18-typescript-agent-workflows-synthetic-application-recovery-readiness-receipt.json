@@ -1,18 +1,19 @@
 {
   "schema": "job-apply-agent-workflows-synthetic-application-recovery-readiness/v1",
   "date": "2026-09-18",
-  "status": "candidate-validated-fresh-discovery-blocked",
+  "status": "candidate-v2-separated-stores-fixture-control-blocked",
   "repository": {
-    "branch": "codex/synthetic-application-recovery-workflow",
+    "branch": "codex/application-recovery-separated-stores",
     "baseRef": "origin/staging",
-    "baseCommit": "9a7e56ee5426e3334918bd0017f959a78a530144"
+    "baseCommit": "d537abe396e0bcd6a088349b0cd7730efe372a38"
   },
   "workflow": {
     "path": ".workflows/workflows/job-apply.synthetic-application-recovery.workflow.yaml",
-    "workflowFileSha256": "b1c43eb9f548e3db6faaa39f3e2031ef878b6e93d4d923efe862bd0855cede84",
-    "workflowSourceHash": "sha256:ca4d371de0a816cea66943a23b3553469c388c92a775a1ea8a3af179f7847fd4",
-    "desktopEffectiveHash": "sha256:23e56e28b3b66d154a250a326168f0239b3173bc2b3e3581613bf009d4920bcf",
-    "mobileEffectiveHash": "sha256:6b31ee7c11738aa1948879e0e96b1b324f195487811b377825a013b0765f29f0",
+    "candidateRevision": 2,
+    "workflowFileSha256": "9224714c12618bc9299a622b9600b3e892b0ed0c5ca808adde512a6bf98791cf",
+    "workflowSourceHash": "sha256:80cd6b3c878bab4047a924c42451408e73600719c40c9d0d0eb3ee249947c777",
+    "desktopEffectiveHash": "sha256:8fc4230450bb47c327c3c58dd3ee7861b3274ad21f86f1457c1a38b0c7493e32",
+    "mobileEffectiveHash": "sha256:c3318dc4494627af61e0850cef6ed1ecf28fd4c9cb3a778204c2f5716a675ab8",
     "stepCount": 11,
     "platforms": {
       "desktop-web": {
@@ -43,8 +44,24 @@
     {
       "path": "qa/testdata/workflows/synthetic-application-recovery-resume.txt",
       "sha256": "f8d2276290949fac6ce28e53ee00dd8d6103e171200dec508aa33f9646515e7f"
+    },
+    {
+      "path": ".workflows/fixtures/job-apply.synthetic-application-recovery-v1/host-preflight.mjs",
+      "sha256": "ff30c93a42b979d2208275f6b3d17619cdedc8c9d24770a1aa387e2779446d94"
     }
   ],
+  "repair": {
+    "rootCause": "Runner index.json and runs were written into the native product Store. Native Store allowlist validation correctly rejected those foreign entries before the first job save.",
+    "orchestration": {
+      "journeyRoot": ".workflows/local/application-recovery-<fresh-id>",
+      "runnerStore": "<journey-root>/runner-store",
+      "productStore": "<journey-root>/product-store",
+      "productRollback": "<journey-root>/product-store.python-rollback",
+      "legacyProfile": "<journey-root>/no-legacy-profile.json"
+    },
+    "hardGate": "host-preflight.mjs performs no writes and refuses readiness while the repository has no committed job-apply.fixture-control adapter.",
+    "priorFailedRunsReusable": false
+  },
   "workflowsRuntime": {
     "package": "@lineagehq/workflows",
     "version": "0.1.0",
@@ -101,6 +118,11 @@
     "desktopResolution": "passed",
     "mobileResolution": "passed",
     "sourceSize": "passed",
+    "separatedStoreRegression": {
+      "status": "passed",
+      "tests": 2,
+      "proof": "Host preflight stops before filesystem mutation without fixture control; real native synthetic job creation succeeds while runner index.json and runs remain in a sibling runner Store."
+    },
     "focusedLifecycleTests": {
       "status": "passed",
       "tests": 34,
@@ -109,13 +131,23 @@
     "repositoryAffectedGate": {
       "status": "failed-before-commit",
       "selectedSuites": 25,
+      "passedSuites": 23,
       "workflowRelevantFailure": false,
-      "reason": "migration-inventory rejects the intentionally dirty pre-commit snapshot with 'Historical audit requires a clean current snapshot'",
+      "reasons": [
+        "migration-inventory rejects the intentionally dirty pre-commit snapshot with 'Historical audit requires a clean current snapshot'",
+        "native-frozen-reference-profiles rejects the host CPython 3.12.14 patch because it is not yet listed as a reviewed patch"
+      ],
       "nodeWorkspaceOther": {
         "tests": 1897,
         "passed": 1871,
         "failed": 0,
         "skipped": 26
+      },
+      "nativeDefaultCutover": {
+        "tests": 90,
+        "passed": 90,
+        "failed": 0,
+        "skipped": 0
       }
     },
     "cleanPostCommitMigrationInventory": "inventory-consistent",
@@ -127,7 +159,7 @@
     "status": "blocked",
     "observationOnlyApprovalDefect": "Resolved by source commit 1e9f91c6f6f0a04bdc8003ef1dbbe68ad3468225; the focused runner regression permits strictly observation-only proposals without human approval and still gates UI mutations mislabeled as observation-only.",
     "requiredRuntimeChange": "Satisfied by the installed immutable Workflows source commit and focused regression verification.",
-    "fixtureControlReadiness": "A fresh host must truthfully register and prove job-apply.fixture-control against the exact isolated Store while retaining claim authority only in memory.",
-    "authorization": "No workflow train, browser runner session, or supervised replay is authorized until the fresh-agent discovery gate in the foundational readiness receipt is satisfied."
+    "fixtureControlReadiness": "Blocked: no job-apply.fixture-control adapter is committed. Generic native CLI availability is not adapter capability. host-preflight.mjs must remain a no-write hard stop until a later reviewed revision supplies and proves the adapter.",
+    "authorization": "No Store creation, Companion start, workflow train, browser runner session, or supervised replay is authorized for candidate revision 2. A later reviewed revision must add fixture control, pass host preflight with a fresh unique journey root, and satisfy fresh-agent discovery before live proof."
   }
 }
