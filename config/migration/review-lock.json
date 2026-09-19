@@ -375,7 +375,7 @@
     },
     {
       "path": "source-catalog-native-default-cutover.json",
-      "sha256": "421cc0a4d6136b6e39b13ca60caee69db8815d3a4acb6bffaa4ad3098e029698"
+      "sha256": "a2733eea51827096889bebc21b0a167df0078d2b14ae60eca54ff1c59cba1d99"
     },
     {
       "path": "source-catalog-native-email-canary-composition.json",
@@ -411,7 +411,7 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "9e7a5d012e83a4eb4d18f101751482adb28ddbdffe3ecd3ee216e7d4c88fcefe"
+      "sha256": "b5f354bd702adf4023ea895a0b9a98514cea2142ba93b60c7d6693cbaa5ab119"
     },
     {
       "path": "source-catalog-native-legacy-jobs.json",

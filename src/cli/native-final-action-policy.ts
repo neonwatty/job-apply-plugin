@@ -16,6 +16,22 @@ const commands: Record<string, readonly string[]> = {
   'record-outcome': ['campaign-id', 'application-ref', 'lease-id', 'claim-id', 'outcome', 'confirmation-event', 'confirmation-capability'],
   kill: [], revoke: [],
 };
+class PolicyHelp extends Error {
+  constructor(readonly usage: string) { super('help requested'); }
+}
+function policyHelp(command?: string): string {
+  const names = Object.keys(commands);
+  const optional = new Set(['confirmation-event', 'confirmation-capability']);
+  const usage = command
+    ? `usage: job-apply-policy ${command} [-h] ${commands[command]!.map(name => {
+      const option = `--${name} ${name.toUpperCase().replaceAll('-', '_')}`;
+      return optional.has(name) ? `[${option}]` : option;
+    }).join(' ')}`.trimEnd()
+    : `usage: job-apply-policy [-h] [--root ROOT] {${names.join(',')}}`;
+  const options = command ? commands[command]! : ['root'];
+  return `${usage}\n\noptions:\n  -h, --help  show this help message and exit\n`
+    + options.map(name => `  --${name}\n`).join('');
+}
 async function readInput(path: string): Promise<Record<string, unknown>> {
   let value: unknown;
   try {
@@ -34,8 +50,13 @@ export async function runPolicyCli(args: string[]): Promise<unknown> {
   let parsed: ReturnType<typeof parseArgs>;
   try {
     parsed = parseArgs({ args, allowPositionals: true, strict: true,
-      options: Object.fromEntries([...names].map(name => [name, { type: 'string' as const }])) });
+      options: { ...Object.fromEntries([...names].map(name => [name, { type: 'string' as const }])),
+        help: { type: 'boolean', short: 'h' } } });
   } catch { throw new PolicyError('command arguments are invalid'); }
+  if (parsed.values.help === true && parsed.positionals.length <= 1) {
+    const selected = parsed.positionals[0];
+    if (selected === undefined || Object.hasOwn(commands, selected)) throw new PolicyHelp(policyHelp(selected));
+  }
   check(parsed.positionals.length === 1, 'command arguments are invalid');
   const command = parsed.positionals[0]!;
   check(Object.hasOwn(commands, command), 'unsupported command');
@@ -73,7 +94,12 @@ export async function runPolicyCli(args: string[]): Promise<unknown> {
 if (process.argv[1] && await realpath(process.argv[1]).catch(() => '') === fileURLToPath(import.meta.url)) {
   try { process.stdout.write(serializeDocument(await runPolicyCli(process.argv.slice(2)))); }
   catch (error) {
-    process.stderr.write(`job-apply-policy: ${error instanceof PolicyError ? error.message : 'policy operation failed'}\n`);
-    process.exitCode = 2;
+    if (error instanceof PolicyHelp) {
+      process.stdout.write(error.usage);
+      process.exitCode = 0;
+    } else {
+      process.stderr.write(`job-apply-policy: ${error instanceof PolicyError ? error.message : 'policy operation failed'}\n`);
+      process.exitCode = 2;
+    }
   }
 }

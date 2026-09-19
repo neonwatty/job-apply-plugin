@@ -8,7 +8,8 @@ dependency, not an installed-plugin dependency. `npm run typecheck` checks the
 shadow scaffold; `npm run build:runtime` updates its one-to-one checked-in ESM
 output, and `npm run build:check` rejects missing, changed, stale, mapped or
 oversized output. Build errors leave the previous runtime intact; stale files
-require explicit review/removal. Existing application launchers still use Python.
+require explicit review/removal. Ordinary installed command and Companion routes
+use the TypeScript runtime; Python remains a development reference oracle.
 
 Install the staged commit and outgoing push hooks with `npm run hooks:install`.
 See the [local hook protocol](local-testing-protocol.md) for escalation and
@@ -25,14 +26,14 @@ For a local production build, run `npm run companion:build`, then
 `npm run companion:start -- --root /absolute/path/to/test-store`.
 The build also assembles the standalone application. For development, use
 `npm run companion:dev -- --root /absolute/path/to/test-store`. Start through
-these launchers so the Next application receives its owned Python server URL
+these launchers so the Next application receives its owned workspace server URL
 and authentication configuration. Use an isolated Store for development checks.
 
-The launcher supervises both local services. Python remains the sole Store
-writer; the React application forwards supported API requests to that server.
-This does not activate a TypeScript Store writer or complete installed-plugin
-packaging. Existing Python launchers remain available. Checkout validation and
-standalone application validation do not replace installed-plugin smoke tests.
+The launcher supervises both local services. The ordinary launcher activates the
+native TypeScript Store writer through the process-owned switch and forwards API
+requests to that server. Python launchers remain in the development repository
+for reference comparisons. Checkout validation and standalone application
+validation do not replace installed-plugin smoke tests.
 
 ## Supported tiers
 

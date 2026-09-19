@@ -13,9 +13,8 @@ const targets = {
 };
 function selectedRoot(args) {
   const positions = args.flatMap((value, index) => value === '--root' ? [index] : []);
-  if (positions.length > 1) throw new Error('duplicate Store root');
-  if (positions.length === 1) {
-    const value = args[positions[0] + 1];
+  if (positions.length) {
+    const value = args[positions.at(-1) + 1];
     if (!value || value.startsWith('--')) throw new Error('missing Store root');
     return resolve(value === '~' || value.startsWith('~/') ? homedir() + value.slice(1) : value);
   }

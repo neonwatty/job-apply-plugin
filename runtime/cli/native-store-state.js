@@ -17,6 +17,7 @@ const specifications = {
     'session-list': { allowed: [], required: [] },
     'session-delete': { allowed: ['--id'], required: ['--id'] },
 };
+export const nativeStoreStateCommandFields = Object.fromEntries(Object.entries(specifications).map(([command, specification]) => [command, specification.allowed]));
 function optionsFor(command, args) {
     const specification = specifications[command], options = new Map();
     for (let index = 0; index < args.length; index++) {
