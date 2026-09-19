@@ -314,6 +314,10 @@
       "sha256": "4613803174a491ebe89bc08d9ec90affb89ac3916c7516eba7bfc1ae30ad71b5"
     },
     {
+      "path": "requirements-current-resume-cli-01.json",
+      "sha256": "65585d76eb5d584e1b89b5aec56f3cde04a19ac0211f15875723a864a1cd6add"
+    },
+    {
       "path": "requirements-trash-01.json",
       "sha256": "bbc212556338c323e049109befdfc3bf2c4049f313cb0189935b727e475c5012"
     },

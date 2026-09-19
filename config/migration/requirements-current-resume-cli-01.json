@@ -1,0 +1,351 @@
+{
+  "schemaVersion": 1,
+  "requirements": [
+    {
+      "id": "RES-current-resume-cli-valid",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:resume-create",
+        "cli:src/cli/native-jobs.ts:resume-get",
+        "cli:src/cli/native-jobs.ts:resume-list",
+        "cli:src/cli/native-jobs.ts:resume-check",
+        "cli:src/cli/native-jobs.ts:resume-resolve",
+        "cli:src/cli/native-jobs.ts:resume-update",
+        "cli:src/cli/native-jobs.ts:resume-set-default",
+        "cli:src/cli/native-jobs.ts:resume-trash",
+        "cli:src/cli/native-jobs.ts:resume-restore",
+        "cli:src/cli/native-jobs.ts:resume-delete"
+      ],
+      "family": "RES",
+      "category": "valid",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_dispatch.py",
+          "sha256": "586f7a5b81258165dc4a9048eae84b360c2d9dd7c16d8bf97414e51780785d0e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/resumes/mutations.py",
+          "sha256": "3a3aed4b346596981a4b8b5bcc65c6035a8ce3ad1b3b8aa714693781375e299e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/resumes/lifecycle.py",
+          "sha256": "67a5612b4ee81f0e33d0f4e0f607e7631273bb9453d2a4f46fe24ef4a39c0090"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/resumes/read.py",
+          "sha256": "ab0f062240dd68460e891bb83c61a545115c9ea49cd57cf1e93095ca1f78b081"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_resume_cli_parity.test.mjs",
+          "testId": "native resume CLI matches Python lifecycle, private bytes and durable state",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_resume_cli_parity.test.mjs"
+          ],
+          "timeoutMs": 90000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile",
+        "durable-state-comparison"
+      ]
+    },
+    {
+      "id": "RES-current-resume-cli-conflict",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:resume-create",
+        "cli:src/cli/native-jobs.ts:resume-update",
+        "cli:src/cli/native-jobs.ts:resume-trash",
+        "cli:src/cli/native-jobs.ts:resume-delete",
+        "cli:src/cli/native-jobs.ts:resume-restore"
+      ],
+      "family": "RES",
+      "category": "conflict",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_dispatch.py",
+          "sha256": "586f7a5b81258165dc4a9048eae84b360c2d9dd7c16d8bf97414e51780785d0e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/resumes/mutations.py",
+          "sha256": "3a3aed4b346596981a4b8b5bcc65c6035a8ce3ad1b3b8aa714693781375e299e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/resumes/lifecycle.py",
+          "sha256": "67a5612b4ee81f0e33d0f4e0f607e7631273bb9453d2a4f46fe24ef4a39c0090"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/resumes/read.py",
+          "sha256": "ab0f062240dd68460e891bb83c61a545115c9ea49cd57cf1e93095ca1f78b081"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_resume_cli_parity.test.mjs",
+          "testId": "native resume CLI rejects conflicts and invalid inputs without side effects",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_resume_cli_parity.test.mjs"
+          ],
+          "timeoutMs": 90000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile",
+        "durable-state-comparison"
+      ]
+    },
+    {
+      "id": "RES-current-resume-cli-invalid",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:resume-create",
+        "cli:src/cli/native-jobs.ts:resume-update"
+      ],
+      "family": "RES",
+      "category": "invalid",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_dispatch.py",
+          "sha256": "586f7a5b81258165dc4a9048eae84b360c2d9dd7c16d8bf97414e51780785d0e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/resumes/mutations.py",
+          "sha256": "3a3aed4b346596981a4b8b5bcc65c6035a8ce3ad1b3b8aa714693781375e299e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/resumes/lifecycle.py",
+          "sha256": "67a5612b4ee81f0e33d0f4e0f607e7631273bb9453d2a4f46fe24ef4a39c0090"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/resumes/read.py",
+          "sha256": "ab0f062240dd68460e891bb83c61a545115c9ea49cd57cf1e93095ca1f78b081"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_resume_cli_parity.test.mjs",
+          "testId": "native resume CLI rejects conflicts and invalid inputs without side effects",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_resume_cli_parity.test.mjs"
+          ],
+          "timeoutMs": 90000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile",
+        "durable-state-comparison"
+      ]
+    },
+    {
+      "id": "RES-current-resume-cli-missing",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:resume-get"
+      ],
+      "family": "RES",
+      "category": "missing",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_dispatch.py",
+          "sha256": "586f7a5b81258165dc4a9048eae84b360c2d9dd7c16d8bf97414e51780785d0e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/resumes/mutations.py",
+          "sha256": "3a3aed4b346596981a4b8b5bcc65c6035a8ce3ad1b3b8aa714693781375e299e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/resumes/lifecycle.py",
+          "sha256": "67a5612b4ee81f0e33d0f4e0f607e7631273bb9453d2a4f46fe24ef4a39c0090"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/resumes/read.py",
+          "sha256": "ab0f062240dd68460e891bb83c61a545115c9ea49cd57cf1e93095ca1f78b081"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_resume_cli_parity.test.mjs",
+          "testId": "native resume CLI matches Python lifecycle, private bytes and durable state",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_resume_cli_parity.test.mjs"
+          ],
+          "timeoutMs": 90000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile",
+        "durable-state-comparison"
+      ]
+    },
+    {
+      "id": "RES-current-resume-cli-noop",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:resume-set-default",
+        "cli:src/cli/native-jobs.ts:resume-restore",
+        "cli:src/cli/native-jobs.ts:resume-trash"
+      ],
+      "family": "RES",
+      "category": "noop",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_dispatch.py",
+          "sha256": "586f7a5b81258165dc4a9048eae84b360c2d9dd7c16d8bf97414e51780785d0e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/resumes/mutations.py",
+          "sha256": "3a3aed4b346596981a4b8b5bcc65c6035a8ce3ad1b3b8aa714693781375e299e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/resumes/lifecycle.py",
+          "sha256": "67a5612b4ee81f0e33d0f4e0f607e7631273bb9453d2a4f46fe24ef4a39c0090"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/resumes/read.py",
+          "sha256": "ab0f062240dd68460e891bb83c61a545115c9ea49cd57cf1e93095ca1f78b081"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_resume_cli_parity.test.mjs",
+          "testId": "native resume CLI matches Python lifecycle, private bytes and durable state",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_resume_cli_parity.test.mjs"
+          ],
+          "timeoutMs": 90000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile",
+        "durable-state-comparison"
+      ]
+    },
+    {
+      "id": "RES-current-resume-cli-privacy",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:resume-create"
+      ],
+      "family": "RES",
+      "category": "privacy",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_dispatch.py",
+          "sha256": "586f7a5b81258165dc4a9048eae84b360c2d9dd7c16d8bf97414e51780785d0e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/resumes/mutations.py",
+          "sha256": "3a3aed4b346596981a4b8b5bcc65c6035a8ce3ad1b3b8aa714693781375e299e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/resumes/lifecycle.py",
+          "sha256": "67a5612b4ee81f0e33d0f4e0f607e7631273bb9453d2a4f46fe24ef4a39c0090"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/resumes/read.py",
+          "sha256": "ab0f062240dd68460e891bb83c61a545115c9ea49cd57cf1e93095ca1f78b081"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_resume_cli_parity.test.mjs",
+          "testId": "native resume CLI matches Python lifecycle, private bytes and durable state",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_resume_cli_parity.test.mjs"
+          ],
+          "timeoutMs": 90000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile",
+        "durable-state-comparison"
+      ]
+    }
+  ]
+}
