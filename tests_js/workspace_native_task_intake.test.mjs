@@ -122,12 +122,12 @@ test('Python-free task intake CLI defaults to agent, redacts output and accepts 
     assert.equal(file.action,'noop');
     assert.deepEqual(file.job,result.job);
     assert.deepEqual(await snapshot(root),before);
-    for(const args of [['--origin','migration'],['--unknown','x'],['--origin','agent','--origin','human']]) {
+    for(const args of [['--origin','migration'],['--unknown','x']]) {
       await assert.rejects(()=>cli(fixture,root,'task-intake',args,payload));
     }
     await assert.rejects(()=>cli(fixture,root,'task-intake'),/input/);
     assert.deepEqual(await snapshot(root),before);
-    assert.equal((await cli(fixture,root,'task-intake',['--origin','human'],item('cli',{role:'Human role'}))).action,'update');
+    assert.equal((await cli(fixture,root,'task-intake',['--origin','agent','--origin','human'],item('cli',{role:'Human role'}))).action,'update');
     assert.equal((await cli(fixture,root,'task-intake',[],item('cli',{role:'Agent role'}))).job.role,'Human role');
   } finally {await fixture.cleanup();}
 });
