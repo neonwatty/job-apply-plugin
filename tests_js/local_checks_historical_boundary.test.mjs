@@ -19,6 +19,7 @@ async function fixture(run) {
     git('init', '-q'); git('config', 'user.name', 'Fixture'); git('config', 'user.email', 'fixture@invalid');
     await put('docs/migration/evidence/original.json', '{}');
     await put('config/migration/task-receipts.json', '{}');
+    await put('config/migration/requirements-trash-01.json', '{}');
     await put('src/product.ts', 'original');
     const base = commit();
     await put('src/product.ts', 'current'); commit();
@@ -31,7 +32,9 @@ test('historical boundary preserves all evidence and permits only current invent
     'config/migration/new-acceptance.json', 'config/migration/packages.json']) assert.equal(historicalRecord(path), true);
   for (const path of ['src/product.ts', 'config/migration/source-catalog-next.json',
     'config/migration/http-next-surfaces.json', 'config/migration/python-runtime-closure.json',
-    'config/migration/review-lock.json']) assert.equal(historicalRecord(path), false);
+    'config/migration/review-lock.json', 'config/migration/requirements-current-cli.json']) {
+    assert.equal(historicalRecord(path), false);
+  }
 });
 
 test('historical audit uses original source every time and grants no current acceptance', async () => fixture(async ({ root, git, base }) => {
@@ -65,5 +68,15 @@ test('modified historical evidence and dirty current snapshots cannot use the bo
   await assert.rejects(auditHistoricalBoundary(root, audit, base), /clean current snapshot/);
   commit();
   await put('docs/migration/evidence/original.json', '{"forged":true}'); commit();
+  await assert.rejects(auditHistoricalBoundary(root, audit, base), /Archived migration evidence changed/);
+}));
+
+test('current requirement declarations remain open while archived requirements stay frozen', async () => fixture(async ({ root, put, commit, base }) => {
+  await put('config/migration/requirements-current-cli.json', '{"schemaVersion":1,"requirements":[]}');
+  commit();
+  const audit = async () => ({ status: 'inventory-consistent', errors: [] });
+  assert.equal((await auditHistoricalBoundary(root, audit, base)).currentAcceptance, 'open');
+  await put('config/migration/requirements-trash-01.json', '{"changed":true}');
+  commit();
   await assert.rejects(auditHistoricalBoundary(root, audit, base), /Archived migration evidence changed/);
 }));

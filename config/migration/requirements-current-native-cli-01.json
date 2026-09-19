@@ -1,0 +1,367 @@
+{
+  "schemaVersion": 1,
+  "requirements": [
+    {
+      "id": "I-native-store-root-help-valid",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:<root>"
+      ],
+      "family": "I",
+      "category": "valid",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_cli_parser_parity.test.mjs",
+          "testId": "Store help covers every Python command and its long options without a Store",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_cli_parser_parity.test.mjs"
+          ],
+          "timeoutMs": 60000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile"
+      ]
+    },
+    {
+      "id": "FINAL-native-policy-root-help-valid",
+      "surfaceIds": [
+        "cli:src/cli/native-final-action-policy.ts:<root>"
+      ],
+      "family": "FINAL",
+      "category": "valid",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_policy/cli.py",
+          "sha256": "99934ad483d332548051bd668f6dc816010cbfcfc410a5d85698f9ea4815a6d7"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_cli_parser_parity.test.mjs",
+          "testId": "policy global and subcommand help match Python success protocol",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_cli_parser_parity.test.mjs"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile"
+      ]
+    },
+    {
+      "id": "PF-native-profile-patch-parser-missing",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:profile-patch"
+      ],
+      "family": "PF",
+      "category": "missing",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_cli_parser_parity.test.mjs",
+          "testId": "Store parse errors match Python exit status and do not create a Store",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_cli_parser_parity.test.mjs"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile"
+      ]
+    },
+    {
+      "id": "ANS-native-answer-key-parser-valid",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:answer-key"
+      ],
+      "family": "ANS",
+      "category": "valid",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_cli_parser_parity.test.mjs",
+          "testId": "Store repeated scalar options use the last value as Python does",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_cli_parser_parity.test.mjs"
+          ],
+          "timeoutMs": 30000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile"
+      ]
+    },
+    {
+      "id": "JOB-native-task-intake-valid",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:task-intake"
+      ],
+      "family": "JOB",
+      "category": "valid",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/domains/jobs/overview.py",
+          "sha256": "ffd6bc42908eac42a78792408d0d7b3d8c3c8d08943e75476b27c4024fb7b162"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "node-workspace-other",
+          "file": "tests_js/workspace_native_task_intake.test.mjs",
+          "testId": "Python-free task intake CLI defaults to agent, redacts output and accepts large stdin",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_native_task_intake.test.mjs"
+          ],
+          "timeoutMs": 60000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile"
+      ]
+    },
+    {
+      "id": "JOB-native-task-intake-invalid",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:task-intake"
+      ],
+      "family": "JOB",
+      "category": "invalid",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/domains/jobs/overview.py",
+          "sha256": "ffd6bc42908eac42a78792408d0d7b3d8c3c8d08943e75476b27c4024fb7b162"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "node-workspace-other",
+          "file": "tests_js/workspace_native_task_intake.test.mjs",
+          "testId": "Python-free task intake CLI defaults to agent, redacts output and accepts large stdin",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_native_task_intake.test.mjs"
+          ],
+          "timeoutMs": 60000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile"
+      ]
+    },
+    {
+      "id": "JOB-native-task-intake-missing",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:task-intake"
+      ],
+      "family": "JOB",
+      "category": "missing",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/domains/jobs/overview.py",
+          "sha256": "ffd6bc42908eac42a78792408d0d7b3d8c3c8d08943e75476b27c4024fb7b162"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "node-workspace-other",
+          "file": "tests_js/workspace_native_task_intake.test.mjs",
+          "testId": "Python-free task intake CLI defaults to agent, redacts output and accepts large stdin",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_native_task_intake.test.mjs"
+          ],
+          "timeoutMs": 60000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile"
+      ]
+    },
+    {
+      "id": "JOB-native-task-intake-noop",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:task-intake"
+      ],
+      "family": "JOB",
+      "category": "noop",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/domains/jobs/overview.py",
+          "sha256": "ffd6bc42908eac42a78792408d0d7b3d8c3c8d08943e75476b27c4024fb7b162"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "node-workspace-other",
+          "file": "tests_js/workspace_native_task_intake.test.mjs",
+          "testId": "Python-free task intake CLI defaults to agent, redacts output and accepts large stdin",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_native_task_intake.test.mjs"
+          ],
+          "timeoutMs": 60000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile"
+      ]
+    },
+    {
+      "id": "JOB-native-task-intake-privacy",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:task-intake"
+      ],
+      "family": "JOB",
+      "category": "privacy",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/domains/jobs/overview.py",
+          "sha256": "ffd6bc42908eac42a78792408d0d7b3d8c3c8d08943e75476b27c4024fb7b162"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "node-workspace-other",
+          "file": "tests_js/workspace_native_task_intake.test.mjs",
+          "testId": "Python-free task intake CLI defaults to agent, redacts output and accepts large stdin",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/workspace_native_task_intake.test.mjs"
+          ],
+          "timeoutMs": 60000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile"
+      ]
+    }
+  ]
+}
