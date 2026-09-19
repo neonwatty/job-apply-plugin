@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { mkdtemp, readdir, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,6 +16,21 @@ const storePython = args => invoke(python, 'scripts/job-apply-store.py', args);
 const storeNative = args => invoke(process.execPath, 'runtime/cli/native-jobs.js', args);
 const policyPython = args => invoke(python, 'scripts/job_apply_policy.py', args);
 const policyNative = args => invoke(process.execPath, 'runtime/cli/native-final-action-policy.js', args);
+
+test('native Store and policy roots and every policy command are inventoried', async () => {
+  const path = join(root, 'config/migration/cli-native-entrypoints-surfaces.json');
+  const inventory = JSON.parse(await readFile(path, 'utf8')).surfaces;
+  const ids = new Set(inventory.map(surface => surface.id));
+  assert.ok(ids.has('cli:src/cli/native-jobs.ts:<root>'));
+  assert.ok(ids.has('cli:src/cli/native-final-action-policy.ts:<root>'));
+  const reference = policyPython(['--help']);
+  help(reference, 'Python policy root');
+  const commands = reference.stdout.match(/\{([^}]+)\}/)?.[1].split(',') ?? [];
+  assert.equal(commands.length, 7);
+  assert.deepEqual(inventory.filter(surface => surface.sources[0] === 'src/cli/native-final-action-policy.ts'
+    && surface.command !== '<root>').map(surface => surface.command).sort(), commands.sort());
+  for (const command of commands) assert.ok(ids.has(`cli:src/cli/native-final-action-policy.ts:${command}`));
+});
 
 function help(result, label) {
   assert.equal(result.status, 0, `${label}: ${result.stderr}`);
