@@ -15,17 +15,14 @@ revisions, and invalid lifecycle actions. The create response is checked for
 absence of the original source path; imported bytes must appear in private
 managed storage with the same digest and mode in each Store.
 
-One **confirmed diagnostic difference** remains. With an initialized Store and
+One **confirmed diagnostic difference** was fixed. With an initialized Store and
 input `{"unexpected":true}`, Python `resume-create --input` exits 2 with
-`resume input contains unsupported fields`. Native exits 2 with
-`resume path must be a string`. Python checks unknown fields before source path;
-native checks source path first. The exact case is retained as a failing
-equality regression in `native_resume_cli_parity.test.mjs` until the native
-implementation is corrected. Neither implementation writes Store state for
-this rejected input. This is one known behavior difference, not a count of
-unassessed inventory cells.
+`resume input contains unsupported fields`. Native previously returned
+`resume path must be a string` because it checked the source path first. The
+native CLI now checks unsupported fields first, matching Python's diagnostic.
+The exact case remains as a passing equality regression. Neither
+implementation writes Store state for this rejected input.
 
 This requirement shard maps only the 22 resume CLI scenario cells exercised by
-passing comparisons. The mismatch is deliberately not mapped as passing
-parity. Mapped requirements remain planned evidence and do not themselves
+passing comparisons. Mapped requirements remain planned evidence and do not themselves
 close migration acceptance.
