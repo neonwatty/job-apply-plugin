@@ -286,6 +286,10 @@
       "sha256": "6b6534680f0ab8455742c3bf00b8472623b9ce0007b5f63ec3bae3fde7a05ade"
     },
     {
+      "path": "requirements-current-job-cli-01.json",
+      "sha256": "be00277efad8e7ba843bb5f39144305c421e5a6d04fb7c52e147ee1477b4caf4"
+    },
+    {
       "path": "requirements-current-native-cli-01.json",
       "sha256": "a14a552db6c92d96e435844abad253c44798eb64411938e17112cce8a3c57341"
     },
