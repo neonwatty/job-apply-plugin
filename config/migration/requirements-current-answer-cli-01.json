@@ -4,7 +4,6 @@
     {
       "id": "ANS-current-answer-cli-valid",
       "surfaceIds": [
-        "cli:src/cli/native-jobs.ts:answer-key",
         "cli:src/cli/native-jobs.ts:answer-get",
         "cli:src/cli/native-jobs.ts:answer-find",
         "cli:src/cli/native-jobs.ts:answer-list",

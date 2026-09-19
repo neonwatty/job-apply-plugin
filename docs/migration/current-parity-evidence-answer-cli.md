@@ -22,7 +22,7 @@ before generic record validation, preserving the generic validator's separate
 diagnostic for persisted records. The equality assertion remains as a passing
 regression.
 
-`requirements-current-answer-cli-01.json` maps 15 specifically exercised cells.
+`requirements-current-answer-cli-01.json` maps 14 specifically exercised cells.
 The mapping remains planned evidence even though the integrated suite passes.
 It does not imply coverage of observe,
 review, merge, semantic lookup, cleanup, process contention, interrupted writes,
