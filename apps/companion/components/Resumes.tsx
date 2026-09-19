@@ -71,6 +71,7 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
     function open(record: ResumeRecord | null) {
         if (busy || (dirty || factsDirty) && !confirm('Discard unsaved resume or fact changes?')) return;
         setEditor(openEditor(record));
+        setExtractByDefault(true);
         if (fileInput.current) fileInput.current.value = '';
         setError(''); setNotice('');
     }
@@ -225,6 +226,7 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
                     onClick={() => void mutate(signal => client.setDefaultResume(editor.base!.id, editor.base!.revision, signal), 'Default resume changed')}>Make default</button>}
             </div>
         </section>}
-        {editor?.base?.storageKind === 'managed' && <ResumeFacts key={editor.base.id} client={client} resume={editor.base} dirtyChanged={setFactsDirty} />}
+        {editor?.base?.storageKind === 'managed' && <ResumeFacts key={editor.base.id} client={client} resume={editor.base}
+            dirtyChanged={setFactsDirty} statusChanged={status => setFactStatus(current => ({ ...current, [editor.base!.id]: status }))} />}
     </section>;
 }
