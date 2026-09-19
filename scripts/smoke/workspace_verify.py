@@ -45,7 +45,7 @@ def run(fixture: Path, smoke_root: Path) -> None:
 
     packaged_job_apply = skill_text(fixture / "skills/job-apply/SKILL.md")
     packaged_workspace = skill_text(fixture / "skills/job-workspace/SKILL.md")
-    if "Stop at proposal review" not in packaged_job_apply or "does not start or launch an agent" not in packaged_workspace:
+    if "Stop at owner review" not in packaged_job_apply or "does not start or launch an agent" not in packaged_workspace:
         raise SystemExit("packaged skills do not preserve the extraction handoff boundary")
     packaged_app = "\n".join(
         path.read_text(encoding="utf-8")
