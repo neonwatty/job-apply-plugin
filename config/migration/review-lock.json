@@ -294,6 +294,10 @@
       "sha256": "a14a552db6c92d96e435844abad253c44798eb64411938e17112cce8a3c57341"
     },
     {
+      "path": "requirements-current-profile-cli-01.json",
+      "sha256": "8cad4f14141190d02191d515fd7f256137aa7b99dc3c6ded08a49d4c8062ab64"
+    },
+    {
       "path": "requirements-trash-01.json",
       "sha256": "bbc212556338c323e049109befdfc3bf2c4049f313cb0189935b727e475c5012"
     },
