@@ -55,6 +55,12 @@ Updating hashes alone is never sufficient review. No automatic refresh command i
 provided; the coordinator must inspect the semantic change and adjust corresponding
 surface/scenario mappings before sealing a new reviewed snapshot.
 
+Current requirement batches use `requirements-current-*.json`. They bind exact
+surface IDs, oracle bytes and registered literal test names while preserving the
+archived `requirements-trash-*.json` records. A mapped cell is a test plan, not a
+passing receipt: the checker leaves every scenario `unverified` and migration
+acceptance `open` until reviewed execution evidence is supported.
+
 ## Reconciliation protocol
 
 1. Identify changed/new/deleted sources and inspect the behavior/dispatch changes.

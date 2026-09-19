@@ -49,9 +49,12 @@ prerequisite and task audit on a disposable checkout of that exact commit.
 There is no stored-success shortcut. Audit failure, timeout, missing output or
 changed historical records fails the current check.
 
-All `docs/migration/evidence/` records and migration configuration other than
-source/surface catalogs and their review lock must remain byte-identical to
-that boundary. New or changed historical acceptance records are rejected.
+All `docs/migration/evidence/` records and archived migration configuration must
+remain byte-identical to that boundary. Current source/surface catalogs, their
+review lock, and `requirements-current-*.json` declarations may change. The new
+requirement namespace records planned test bindings only; it grants no passing
+evidence or migration acceptance. New or changed historical acceptance records
+are rejected.
 Other repository histories retain the original protocol.
 
 Current source hashes, browser exports, source/surface relationships, inventory
