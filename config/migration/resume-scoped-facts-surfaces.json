@@ -1,0 +1,412 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "browser:apps/companion/components/ResumeFacts.tsx:ResumeFacts",
+      "kind": "browser",
+      "export": "ResumeFacts",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/ResumeFacts.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:resume-extraction-request-complete-scoped",
+      "kind": "cli",
+      "command": "resume-extraction-request-complete-scoped",
+      "node": "RES",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-extractions.ts",
+        "src/workspace-core/resume-facts.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:resume-facts-list",
+      "kind": "cli",
+      "command": "resume-facts-list",
+      "node": "RES",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-extractions.ts",
+        "src/workspace-core/resume-facts.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:resume-facts-get",
+      "kind": "cli",
+      "command": "resume-facts-get",
+      "node": "RES",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-extractions.ts",
+        "src/workspace-core/resume-facts.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:resume-facts-draft",
+      "kind": "cli",
+      "command": "resume-facts-draft",
+      "node": "RES",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-extractions.ts",
+        "src/workspace-core/resume-facts.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:resume-facts-confirm",
+      "kind": "cli",
+      "command": "resume-facts-confirm",
+      "node": "RES",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-extractions.ts",
+        "src/workspace-core/resume-facts.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "cli:src/cli/native-jobs.ts:job-input-confirm",
+      "kind": "cli",
+      "command": "job-input-confirm",
+      "node": "SESS",
+      "sources": [
+        "src/cli/native-jobs.ts",
+        "src/cli/native-claims.ts",
+        "src/workspace-core/claims.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/resume-facts",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/resume-facts",
+      "node": "RES",
+      "sources": [
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/extractions-http.ts",
+        "src/workspace-core/resume-facts.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:GET:/api/resume-facts/{id}",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/resume-facts/{id}",
+      "node": "RES",
+      "sources": [
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/extractions-http.ts",
+        "src/workspace-core/resume-facts.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/resume-facts/{id}",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/resume-facts/{id}",
+      "node": "RES",
+      "sources": [
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/extractions-http.ts",
+        "src/workspace-core/resume-facts.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/resume-facts/{id}/confirm",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/resume-facts/{id}/confirm",
+      "node": "RES",
+      "sources": [
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/extractions-http.ts",
+        "src/workspace-core/resume-facts.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "http:POST:/api/claims/confirm-input",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/claims/confirm-input",
+      "node": "SESS",
+      "sources": [
+        "apps/companion/server/routes.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/claims-http.ts",
+        "src/workspace-core/claims.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "document:resume-facts.json",
+      "kind": "document",
+      "path": "resume-facts.json",
+      "artifact": "json",
+      "node": "RES",
+      "sources": [
+        "src/store/native-store-bootstrap.ts",
+        "src/store/native-jobs.ts",
+        "src/contracts/workspace/resume-facts.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:resume-extraction-journal.json:operation.kind:request-complete-scoped",
+      "kind": "journal",
+      "path": "resume-extraction-journal.json",
+      "discriminator": "operation.kind",
+      "value": "request-complete-scoped",
+      "node": "JOUR",
+      "sources": [
+        "src/store/native-extraction-journal.ts",
+        "src/workspace-core/resume-facts.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:resume-extraction-journal.json:operation.kind:facts-draft",
+      "kind": "journal",
+      "path": "resume-extraction-journal.json",
+      "discriminator": "operation.kind",
+      "value": "facts-draft",
+      "node": "JOUR",
+      "sources": [
+        "src/store/native-extraction-journal.ts",
+        "src/workspace-core/resume-facts.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "journal:resume-extraction-journal.json:operation.kind:facts-confirm",
+      "kind": "journal",
+      "path": "resume-extraction-journal.json",
+      "discriminator": "operation.kind",
+      "value": "facts-confirm",
+      "node": "JOUR",
+      "sources": [
+        "src/store/native-extraction-journal.ts",
+        "src/workspace-core/resume-facts.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    }
+  ]
+}

@@ -18,7 +18,7 @@
     },
     {
       "path": "apps/companion/components/JobEditor.tsx",
-      "sha256": "2556555521566b54fd04ef8f6adb78eb1dc05755f888b7a66afc6abfbf7218e7",
+      "sha256": "d500865c2cbed27994d64f7c256b64571e161b138d1d7d160f896a1b6fb5ea71",
       "classification": "unreviewed"
     },
     {
@@ -28,12 +28,12 @@
     },
     {
       "path": "apps/companion/components/Overview.tsx",
-      "sha256": "05d6dd0e60b7dd3fb697a597b54858346e6173f0d7613618eeeeddc91d192c88",
+      "sha256": "a463f6dca9f063570d2f4707db02ca2d594fde1856ecd767d814645bdd46fe65",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/Resumes.tsx",
-      "sha256": "43a2425bd96dec7a1b214660fdc69dbaf958189e30d49788b0d3b175dc583670",
+      "sha256": "2dd4b91f9ffb8e3e1c230772cfeb37dc1874bd3003cf80dee2106b7e0ae5fa80",
       "classification": "unreviewed"
     },
     {
@@ -48,7 +48,7 @@
     },
     {
       "path": "apps/companion/components/contracts.ts",
-      "sha256": "a92ac8e76995c6e3c07ffb2231ed5a70c5a4e9d1f391df544da22fb0b868fa26",
+      "sha256": "a191970a0df16dce8506e22fc492c0f36539192b375ae8c907150970091ef6ff",
       "classification": "unreviewed"
     },
     {
@@ -103,7 +103,7 @@
     },
     {
       "path": "apps/companion/server/routes.ts",
-      "sha256": "99437370e892cad4eaffa71385981dd5ebc9a01048455a9ce0cc91070060e3d3",
+      "sha256": "7441206c3fedcfd3cd6251a042e8336b999e6b58e66c16d3a8384aa301bda8fb",
       "classification": "unreviewed"
     },
     {

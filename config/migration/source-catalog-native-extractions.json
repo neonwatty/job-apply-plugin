@@ -8,7 +8,7 @@
     },
     {
       "path": "apps/companion/components/extraction-model.ts",
-      "sha256": "a2f7190011185bf6f582db04726b9563d738f4c5811dd251a540cf1f2d6e0f2e",
+      "sha256": "58beb62bc84dbb65955fb2e21edcfebf3a58ea0244fd52a33a1751f3c3f1af16",
       "classification": "unreviewed"
     },
     {
@@ -18,7 +18,7 @@
     },
     {
       "path": "runtime/cli/native-extractions.js",
-      "sha256": "4b3b1c21635df57f408adf8ccfab81e000d30fa8cee9c8c4982ad8dee6b15c4c",
+      "sha256": "0e19102641e1130cd8f111fa60bcc611b5cfdf782d07ce490641c3d7fd018487",
       "classification": "unreviewed"
     },
     {
@@ -33,17 +33,17 @@
     },
     {
       "path": "runtime/contracts/workspace/extraction-requests.js",
-      "sha256": "1859106885d1ad5eb7a798f77ea56f54f1743fd02d80f66254b388606599fc4c",
+      "sha256": "8d75bc479c9f61da482d2b370f3c4296d9632315deefd291f210bbb2b76deef0",
       "classification": "unreviewed"
     },
     {
       "path": "runtime/store/native-extraction-journal.js",
-      "sha256": "9b6f6aecad5cc89c4867677a16e8f77ce96dedde6fc94b898fac669962e57d57",
+      "sha256": "5839c6bfb3c69028fd13128d82563e6b226132aac1fafef4ba525527cc202263",
       "classification": "unreviewed"
     },
     {
       "path": "runtime/workspace-core/extraction-context.js",
-      "sha256": "155bf4072ee6d2b08c582413d897a4ed7e67b31571ecedb13859845e7be7b5bb",
+      "sha256": "6edb27ee2dd3956e8e952b2cf6de1f9c9e9ce79d96364b845220e000f2b087c1",
       "classification": "unreviewed"
     },
     {
@@ -53,12 +53,12 @@
     },
     {
       "path": "runtime/workspace-core/extraction-proposals.js",
-      "sha256": "874fe07207fce34a9f424b19d45fe7b8969874082e2b85de33e79af20fb3f838",
+      "sha256": "0874869065b8c056c5d228b8ac5bdcc0482d612bfb7e627644c02d35e8f5c439",
       "classification": "unreviewed"
     },
     {
       "path": "runtime/workspace-core/extraction-requests.js",
-      "sha256": "4a92fa78a3cd2a5b5024213378bb8dbaf0678d0564b17034edb16cb833495c04",
+      "sha256": "36c03e52f73771a2c89ce815ee303c8bfb8df1632154eb1858b76b90e4e239bf",
       "classification": "unreviewed"
     },
     {
@@ -68,12 +68,12 @@
     },
     {
       "path": "runtime/workspace-core/extractions-http.js",
-      "sha256": "1fb0d989426ef6b22e2c4a42572c29ae6caf9f265535e2e021b1f88bcbf1a525",
+      "sha256": "686321d3848b1d69df6b845f7f27f122f7ffc35f6a3e69c40091d8b0fa461b0a",
       "classification": "unreviewed"
     },
     {
       "path": "src/cli/native-extractions.ts",
-      "sha256": "55a12aa0d4da68928cd081704736f9b6d901c932644c7d58c679469544d8dec5",
+      "sha256": "504a7c3362121c35435a753295b6d89e592e957007b7c44f358c3add972a511f",
       "classification": "unreviewed"
     },
     {
@@ -88,17 +88,17 @@
     },
     {
       "path": "src/contracts/workspace/extraction-requests.ts",
-      "sha256": "101ce3f902c3f2909a4d3f64c051b7f1997e5793e2766281fdef038a8f032c99",
+      "sha256": "d41d54723ecd612532c035e0921898795e962258098191ca90677dce38d778d5",
       "classification": "unreviewed"
     },
     {
       "path": "src/store/native-extraction-journal.ts",
-      "sha256": "bd85393749b2ae808c41f3bb1b663767472257a8c3795cf661b10605f99635af",
+      "sha256": "1f8c48fe2ce8dea35138e4b8fcda2165252a24fe3bf6761d4dc53c19ee0b7a38",
       "classification": "unreviewed"
     },
     {
       "path": "src/workspace-core/extraction-context.ts",
-      "sha256": "6ee6a2260e720405792f04ba3753d50118f7790f5131104a737fecb2a56fb242",
+      "sha256": "53992619512bd8d406d3072d8f7ef90ea8bbc31755ec2ff2c510b90c46376cf6",
       "classification": "unreviewed"
     },
     {
@@ -108,12 +108,12 @@
     },
     {
       "path": "src/workspace-core/extraction-proposals.ts",
-      "sha256": "c968793feef658e6d17390de5bb7ee45d8debaea3768f22122aa0797136adde1",
+      "sha256": "d5b3549b1d0508eec76eb8d37f1a7fbbd7ec0146973c53b14cb94e08a7dd0c83",
       "classification": "unreviewed"
     },
     {
       "path": "src/workspace-core/extraction-requests.ts",
-      "sha256": "86e2df274f03b8853b9dbe0646cd586f9edeeddce51c06463cbabc91123803d5",
+      "sha256": "18afd131543817e162ef7b30e0d0187a64a8846ee37380bd82b547b6e111e40b",
       "classification": "unreviewed"
     },
     {
@@ -123,7 +123,7 @@
     },
     {
       "path": "src/workspace-core/extractions-http.ts",
-      "sha256": "498816e52be4940fc840bd0aaed296ebee1fefa5ce6cd459d0fb540c5d65b075",
+      "sha256": "5f705672827f4db5ca35359325851b91ecae4b38f425719d864c51ce0dee7c72",
       "classification": "unreviewed"
     }
   ]

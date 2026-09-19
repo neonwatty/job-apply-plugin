@@ -33,7 +33,7 @@
     },
     {
       "path": "runtime/workspace-core/job-preflight.js",
-      "sha256": "234946e727d4ffd1ce542de896e916eac2ae18cc79f1dc7907e0b434f1311d38",
+      "sha256": "2ed1c8e5538b3c6985830fb2b656d56f45542b46969618ce02f9091b4a655db7",
       "classification": "unreviewed"
     },
     {
@@ -68,7 +68,7 @@
     },
     {
       "path": "src/workspace-core/job-preflight.ts",
-      "sha256": "39ca2088aa755094ee90406781b38c4ce7839ce3d7a01e34a34f66b3e2315200",
+      "sha256": "31555a8af42d9d0cccaf8c5735e1d44ca6ccd57643ab3bb863e9141a93de6d0b",
       "classification": "unreviewed"
     },
     {
