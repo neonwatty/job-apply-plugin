@@ -1,0 +1,200 @@
+{
+  "schemaVersion": 1,
+  "requirements": [
+    {
+      "id": "PF-current-profile-cli-valid",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:profile-get",
+        "cli:src/cli/native-jobs.ts:profile-inspect",
+        "cli:src/cli/native-jobs.ts:preferences-get",
+        "cli:src/cli/native-jobs.ts:profile-replace",
+        "cli:src/cli/native-jobs.ts:profile-patch",
+        "cli:src/cli/native-jobs.ts:preferences-set"
+      ],
+      "family": "PF",
+      "category": "valid",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_dispatch.py",
+          "sha256": "586f7a5b81258165dc4a9048eae84b360c2d9dd7c16d8bf97414e51780785d0e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/profile.py",
+          "sha256": "df7a7540e88137643fd5d067922fa0c6c1a95ca7700d13cfa331c44541f6ddae"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_profile_cli_parity.test.mjs",
+          "testId": "native profile CLI matches Python reads, writes and durable state",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_profile_cli_parity.test.mjs"
+          ],
+          "timeoutMs": 60000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile",
+        "durable-state-comparison"
+      ]
+    },
+    {
+      "id": "PF-current-profile-cli-conflict",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:profile-replace",
+        "cli:src/cli/native-jobs.ts:profile-patch",
+        "cli:src/cli/native-jobs.ts:preferences-set"
+      ],
+      "family": "PF",
+      "category": "conflict",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_dispatch.py",
+          "sha256": "586f7a5b81258165dc4a9048eae84b360c2d9dd7c16d8bf97414e51780785d0e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/profile.py",
+          "sha256": "df7a7540e88137643fd5d067922fa0c6c1a95ca7700d13cfa331c44541f6ddae"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_profile_cli_parity.test.mjs",
+          "testId": "native profile CLI matches Python conflicts, invalid inputs and no-op writes",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_profile_cli_parity.test.mjs"
+          ],
+          "timeoutMs": 60000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile",
+        "durable-state-comparison"
+      ]
+    },
+    {
+      "id": "PF-current-profile-cli-invalid",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:profile-patch"
+      ],
+      "family": "PF",
+      "category": "invalid",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_dispatch.py",
+          "sha256": "586f7a5b81258165dc4a9048eae84b360c2d9dd7c16d8bf97414e51780785d0e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/profile.py",
+          "sha256": "df7a7540e88137643fd5d067922fa0c6c1a95ca7700d13cfa331c44541f6ddae"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_profile_cli_parity.test.mjs",
+          "testId": "native profile CLI matches Python conflicts, invalid inputs and no-op writes",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_profile_cli_parity.test.mjs"
+          ],
+          "timeoutMs": 60000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile",
+        "durable-state-comparison"
+      ]
+    },
+    {
+      "id": "PF-current-profile-cli-noop",
+      "surfaceIds": [
+        "cli:src/cli/native-jobs.ts:profile-patch"
+      ],
+      "family": "PF",
+      "category": "noop",
+      "applicability": {
+        "status": "required"
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "scripts/job_apply_store/cli_parser.py",
+          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+        },
+        {
+          "path": "scripts/job_apply_store/cli_dispatch.py",
+          "sha256": "586f7a5b81258165dc4a9048eae84b360c2d9dd7c16d8bf97414e51780785d0e"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/profile.py",
+          "sha256": "df7a7540e88137643fd5d067922fa0c6c1a95ca7700d13cfa331c44541f6ddae"
+        }
+      ],
+      "testBindings": [
+        {
+          "suiteId": "native-default-cutover",
+          "file": "tests_js/native_profile_cli_parity.test.mjs",
+          "testId": "native profile CLI matches Python conflicts, invalid inputs and no-op writes",
+          "command": [
+            "node",
+            "--test",
+            "tests_js/native_profile_cli_parity.test.mjs"
+          ],
+          "timeoutMs": 60000,
+          "maxOutputBytes": 65536
+        }
+      ],
+      "expectedArtifacts": [
+        "test-log",
+        "environment-profile",
+        "durable-state-comparison"
+      ]
+    }
+  ]
+}
