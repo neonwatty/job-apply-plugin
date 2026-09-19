@@ -2,19 +2,12 @@
   "schemaVersion": 1,
   "requirements": [
     {
-      "id": "JOB-current-job-cli-valid",
+      "id": "JOB-current-job-cli-concurrency-create",
       "surfaceIds": [
-        "cli:src/cli/native-jobs.ts:job-create",
-        "cli:src/cli/native-jobs.ts:job-get",
-        "cli:src/cli/native-jobs.ts:job-list",
-        "cli:src/cli/native-jobs.ts:job-update",
-        "cli:src/cli/native-jobs.ts:job-transition",
-        "cli:src/cli/native-jobs.ts:job-trash",
-        "cli:src/cli/native-jobs.ts:job-restore",
-        "cli:src/cli/native-jobs.ts:job-delete"
+        "cli:src/cli/native-jobs.ts:job-create"
       ],
       "family": "JOB",
-      "category": "valid",
+      "category": "concurrency",
       "applicability": {
         "status": "required"
       },
@@ -33,73 +26,21 @@
         {
           "path": "scripts/job_apply_store/domains/jobs/crud.py",
           "sha256": "fabd58d69d4a990f3c30ce231cad6bf641066430ee03339a98c8e6ab3df8d963"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/coordinator/persistence.py",
+          "sha256": "1296863bad9412b852879a3b9c653a98ca61375811df2690600e6f69bc7c3177"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/sessions/history.py",
+          "sha256": "3d0b6cac869f0ec745f80bc3c9a65eda0460818c9f0b0c0e50b3b9ba57bf049f"
         }
       ],
       "testBindings": [
         {
           "suiteId": "native-default-cutover",
           "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
-          "testId": "native job lifecycle CLI matches Python responses and durable state",
-          "command": [
-            "node",
-            "--test",
-            "tests_js/native_job_cli_lifecycle_parity.test.mjs"
-          ],
-          "timeoutMs": 60000,
-          "maxOutputBytes": 65536
-        },
-        {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
-          "testId": "installed Store router preserves Python job CLI behavior and rollback bytes",
-          "command": [
-            "node",
-            "--test",
-            "tests_js/native_job_cli_lifecycle_parity.test.mjs"
-          ],
-          "timeoutMs": 60000,
-          "maxOutputBytes": 65536
-        }
-      ],
-      "expectedArtifacts": [
-        "test-log",
-        "environment-profile",
-        "durable-state-comparison",
-        "rollback-byte-comparison"
-      ]
-    },
-    {
-      "id": "JOB-current-job-cli-invalid",
-      "surfaceIds": [
-        "cli:src/cli/native-jobs.ts:job-transition"
-      ],
-      "family": "JOB",
-      "category": "invalid",
-      "applicability": {
-        "status": "required"
-      },
-      "platformCells": [
-        "node-local"
-      ],
-      "oracleFiles": [
-        {
-          "path": "scripts/job_apply_store/cli_parser.py",
-          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
-        },
-        {
-          "path": "scripts/job_apply_store/cli_dispatch.py",
-          "sha256": "586f7a5b81258165dc4a9048eae84b360c2d9dd7c16d8bf97414e51780785d0e"
-        },
-        {
-          "path": "scripts/job_apply_store/domains/jobs/crud.py",
-          "sha256": "fabd58d69d4a990f3c30ce231cad6bf641066430ee03339a98c8e6ab3df8d963"
-        }
-      ],
-      "testBindings": [
-        {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
-          "testId": "native job CLI rejects conflicts and invalid actions without changing state",
+          "testId": "concurrent job CLI creates converge to one Python-equivalent writer",
           "command": [
             "node",
             "--test",
@@ -116,17 +57,13 @@
       ]
     },
     {
-      "id": "JOB-current-job-cli-conflict",
+      "id": "JOB-current-job-cli-concurrency-update-trash",
       "surfaceIds": [
-        "cli:src/cli/native-jobs.ts:job-create",
         "cli:src/cli/native-jobs.ts:job-update",
-        "cli:src/cli/native-jobs.ts:job-transition",
-        "cli:src/cli/native-jobs.ts:job-trash",
-        "cli:src/cli/native-jobs.ts:job-restore",
-        "cli:src/cli/native-jobs.ts:job-delete"
+        "cli:src/cli/native-jobs.ts:job-trash"
       ],
       "family": "JOB",
-      "category": "conflict",
+      "category": "concurrency",
       "applicability": {
         "status": "required"
       },
@@ -145,13 +82,21 @@
         {
           "path": "scripts/job_apply_store/domains/jobs/crud.py",
           "sha256": "fabd58d69d4a990f3c30ce231cad6bf641066430ee03339a98c8e6ab3df8d963"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/coordinator/persistence.py",
+          "sha256": "1296863bad9412b852879a3b9c653a98ca61375811df2690600e6f69bc7c3177"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/sessions/history.py",
+          "sha256": "3d0b6cac869f0ec745f80bc3c9a65eda0460818c9f0b0c0e50b3b9ba57bf049f"
         }
       ],
       "testBindings": [
         {
           "suiteId": "native-default-cutover",
           "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
-          "testId": "native job CLI rejects conflicts and invalid actions without changing state",
+          "testId": "concurrent job CLI updates and trash serialize revision checks like Python",
           "command": [
             "node",
             "--test",
@@ -168,12 +113,12 @@
       ]
     },
     {
-      "id": "JOB-current-job-cli-get-missing",
+      "id": "JOB-current-job-cli-interrupted-read",
       "surfaceIds": [
         "cli:src/cli/native-jobs.ts:job-get"
       ],
       "family": "JOB",
-      "category": "missing",
+      "category": "interruption",
       "applicability": {
         "status": "required"
       },
@@ -192,13 +137,21 @@
         {
           "path": "scripts/job_apply_store/domains/jobs/crud.py",
           "sha256": "fabd58d69d4a990f3c30ce231cad6bf641066430ee03339a98c8e6ab3df8d963"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/coordinator/persistence.py",
+          "sha256": "1296863bad9412b852879a3b9c653a98ca61375811df2690600e6f69bc7c3177"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/sessions/history.py",
+          "sha256": "3d0b6cac869f0ec745f80bc3c9a65eda0460818c9f0b0c0e50b3b9ba57bf049f"
         }
       ],
       "testBindings": [
         {
           "suiteId": "native-default-cutover",
           "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
-          "testId": "native job lifecycle CLI matches Python responses and durable state",
+          "testId": "job CLI read completes a torn-tail coordinator recovery exactly once like Python",
           "command": [
             "node",
             "--test",
@@ -215,12 +168,12 @@
       ]
     },
     {
-      "id": "JOB-current-job-cli-delete-missing",
+      "id": "JOB-current-job-cli-recovery-read",
       "surfaceIds": [
-        "cli:src/cli/native-jobs.ts:job-delete"
+        "cli:src/cli/native-jobs.ts:job-get"
       ],
       "family": "JOB",
-      "category": "missing",
+      "category": "recovery",
       "applicability": {
         "status": "required"
       },
@@ -239,62 +192,21 @@
         {
           "path": "scripts/job_apply_store/domains/jobs/crud.py",
           "sha256": "fabd58d69d4a990f3c30ce231cad6bf641066430ee03339a98c8e6ab3df8d963"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/coordinator/persistence.py",
+          "sha256": "1296863bad9412b852879a3b9c653a98ca61375811df2690600e6f69bc7c3177"
+        },
+        {
+          "path": "scripts/job_apply_store/domains/sessions/history.py",
+          "sha256": "3d0b6cac869f0ec745f80bc3c9a65eda0460818c9f0b0c0e50b3b9ba57bf049f"
         }
       ],
       "testBindings": [
         {
           "suiteId": "native-default-cutover",
           "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
-          "testId": "native job CLI rejects conflicts and invalid actions without changing state",
-          "command": [
-            "node",
-            "--test",
-            "tests_js/native_job_cli_lifecycle_parity.test.mjs"
-          ],
-          "timeoutMs": 60000,
-          "maxOutputBytes": 65536
-        }
-      ],
-      "expectedArtifacts": [
-        "test-log",
-        "environment-profile",
-        "durable-state-comparison"
-      ]
-    },
-    {
-      "id": "JOB-current-job-cli-noop",
-      "surfaceIds": [
-        "cli:src/cli/native-jobs.ts:job-trash",
-        "cli:src/cli/native-jobs.ts:job-restore",
-        "cli:src/cli/native-jobs.ts:job-delete"
-      ],
-      "family": "JOB",
-      "category": "noop",
-      "applicability": {
-        "status": "required"
-      },
-      "platformCells": [
-        "node-local"
-      ],
-      "oracleFiles": [
-        {
-          "path": "scripts/job_apply_store/cli_parser.py",
-          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
-        },
-        {
-          "path": "scripts/job_apply_store/cli_dispatch.py",
-          "sha256": "586f7a5b81258165dc4a9048eae84b360c2d9dd7c16d8bf97414e51780785d0e"
-        },
-        {
-          "path": "scripts/job_apply_store/domains/jobs/crud.py",
-          "sha256": "fabd58d69d4a990f3c30ce231cad6bf641066430ee03339a98c8e6ab3df8d963"
-        }
-      ],
-      "testBindings": [
-        {
-          "suiteId": "native-default-cutover",
-          "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
-          "testId": "native job CLI rejects conflicts and invalid actions without changing state",
+          "testId": "job CLI read completes a torn-tail coordinator recovery exactly once like Python",
           "command": [
             "node",
             "--test",
