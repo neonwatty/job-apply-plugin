@@ -48,12 +48,12 @@ async function input(context, path) {
 }
 export function resumeInputWithoutPath(payload) {
     const source = object(payload, 'resume input'), path = string(get(source, 'path'));
-    if (path === null)
-        throw new JobsError('resume path must be a string');
     const metadata = copy(source);
     metadata.delete(text('path'));
     if (keys(metadata).some(key => !['id', 'label', 'tags', 'default'].includes(key)))
         throw new JobsError('resume input contains unsupported fields');
+    if (path === null)
+        throw new JobsError('resume path must be a string');
     return { metadata, path };
 }
 export async function runNativeStoreStateCommand(command, args, context) {

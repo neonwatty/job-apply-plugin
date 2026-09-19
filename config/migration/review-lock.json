@@ -383,7 +383,7 @@
     },
     {
       "path": "source-catalog-native-answers.json",
-      "sha256": "ff674175f85ffe9755e683a6779fc2fb3dc5d7a9dda45b1250c8f6c0e1f38936"
+      "sha256": "46f95155415736c33feac520857f51f7ffe5ef9fa58c1b61ab0fd7ce46cb98e6"
     },
     {
       "path": "source-catalog-native-automation-ux.json",
@@ -399,7 +399,7 @@
     },
     {
       "path": "source-catalog-native-default-cutover.json",
-      "sha256": "a2733eea51827096889bebc21b0a167df0078d2b14ae60eca54ff1c59cba1d99"
+      "sha256": "56bdba80c791ac640f7e2fb344a373fd53609077a5ef1f0ab7c1d702b5e11ca4"
     },
     {
       "path": "source-catalog-native-email-canary-composition.json",

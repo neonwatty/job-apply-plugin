@@ -181,6 +181,9 @@ export class AnswersService {
         const key = string(get(incoming, 'key')) ?? (question === null ? null : answerKey(question, scope));
         if (!key || !key.trim())
             throw new JobsError('answer requires a question or explicit key');
+        if (string(get(incoming, 'state')) === 'confirmed' && get(incoming, 'value') === null) {
+            throw new JobsError('confirmed answers require a value');
+        }
         return this.repository.answerTransaction(async (raw, save, references) => {
             const document = validateAnswers(raw), answers = object(get(document, 'answers'), 'answers');
             if (canonical(document, key) !== key)
