@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, type Client } from './client';
-import type { ResumeRecord } from './contracts';
+import { object, type ResumeRecord } from './contracts';
+import { ResumeFacts } from './ResumeFacts';
 
 const accept = '.pdf,.docx,.txt';
 const tags = (value: string) => value.split(',').map(item => item.trim()).filter(Boolean);
@@ -21,8 +22,11 @@ const isDirty = (editor: Editor | null) => Boolean(editor && (
 
 export function Resumes({ client, dirtyChanged, openExtractions }: { client: Client; dirtyChanged: (dirty: boolean) => void; openExtractions?:()=>void }) {
     const [records, setRecords] = useState<ResumeRecord[]>([]), [editor, setEditor] = useState<Editor | null>(null);
+    const [factStatus, setFactStatus] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false);
     const [contentBusy, setContentBusy] = useState(false);
+    const [factsDirty, setFactsDirty] = useState(false);
+    const [extractByDefault, setExtractByDefault] = useState(true);
     const [error, setError] = useState(''), [notice, setNotice] = useState('');
     const alive = useRef(true), request = useRef<AbortController | null>(null), mutation = useRef<AbortController | null>(null);
     const contentRequest = useRef<AbortController | null>(null);
@@ -34,9 +38,14 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
         request.current = controller;
         setLoading(true);
         try {
-            const next = await client.resumes(controller.signal);
+            const [next, rawFacts] = await Promise.all([client.resumes(controller.signal),
+                client.extractionRequest('/api/resume-facts', 'GET', undefined, controller.signal)]);
             if (!alive.current || controller.signal.aborted || request.current !== controller) return;
             setRecords(next);
+            const facts = JSON.parse(rawFacts);
+            if (!object(facts) || !Array.isArray(facts.facts)) throw Error('Invalid resume fact status.');
+            setFactStatus(Object.fromEntries(facts.facts.filter(object).map(item => [String(item.resumeId),
+                item.current === false ? 'Stale facts' : item.state === 'confirmed' ? 'Facts confirmed' : 'Draft facts to review'])));
             setEditor(current => {
                 if (!current?.base) return current;
                 const latest = next.find(item => item.id === current.base?.id);
@@ -58,15 +67,15 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
         void refresh();
         return () => { alive.current = false; request.current?.abort(); mutation.current?.abort(); contentRequest.current?.abort(); };
     }, [client]);
-    useEffect(() => { dirtyChanged(dirty || busy); return () => dirtyChanged(false); }, [dirty, busy, dirtyChanged]);
+    useEffect(() => { dirtyChanged(dirty || busy || factsDirty); return () => dirtyChanged(false); }, [dirty, busy, factsDirty, dirtyChanged]);
     function open(record: ResumeRecord | null) {
-        if (busy || dirty && !confirm('Discard unsaved resume changes?')) return;
+        if (busy || (dirty || factsDirty) && !confirm('Discard unsaved resume or fact changes?')) return;
         setEditor(openEditor(record));
         if (fileInput.current) fileInput.current.value = '';
         setError(''); setNotice('');
     }
     function close() {
-        if (busy || dirty && !confirm('Discard unsaved resume changes?')) return;
+        if (busy || (dirty || factsDirty) && !confirm('Discard unsaved resume or fact changes?')) return;
         setEditor(null); setError('');
     }
     function reapply() {
@@ -80,7 +89,7 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
         });
         setError('');
     }
-    async function mutate(operation: (signal: AbortSignal) => Promise<ResumeRecord>, message: string) {
+    async function mutate(operation: (signal: AbortSignal) => Promise<ResumeRecord>, message: string, queueFacts = false) {
         request.current?.abort();
         contentRequest.current?.abort();
         const controller = new AbortController();
@@ -89,9 +98,20 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
         try {
             const saved = await operation(controller.signal);
             if (!alive.current || controller.signal.aborted) return;
+            let queueNotice = '';
+            if (queueFacts) {
+                try {
+                    await client.extractionRequest('/api/resume-extraction-requests', 'POST', JSON.stringify({
+                        resumeId: saved.id, expectedResumeRevision: saved.revision, scope: 'resume'
+                    }), controller.signal);
+                    queueNotice = ' Fact extraction requested.';
+                } catch (cause) {
+                    queueNotice = ` Resume saved, but extraction could not be requested: ${cause instanceof Error ? cause.message : 'unknown error'}`;
+                }
+            }
             setEditor(openEditor(saved));
             if (fileInput.current) fileInput.current.value = '';
-            setNotice(message);
+            setNotice(message + queueNotice);
             await refresh();
         } catch (cause) {
             if (alive.current && !controller.signal.aborted) {
@@ -102,12 +122,12 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
         } finally { if (alive.current) setBusy(false); }
     }
     async function save() {
-        if (!editor || busy || editor.latest || editor.missing) return;
+        if (!editor || busy || factsDirty || editor.latest || editor.missing) return;
         const { base, label, tagText, file } = editor;
         if (!label.trim()) { setError('Enter a resume label.'); return; }
         if (!base) {
             if (!file) { setError('Choose a PDF, DOCX, or TXT resume.'); return; }
-            await mutate(signal => client.importResume({ label: label.trim(), tags: tags(tagText) }, file, signal), 'Resume imported');
+            await mutate(signal => client.importResume({ label: label.trim(), tags: tags(tagText) }, file, signal), 'Resume imported.', extractByDefault);
             return;
         }
         const patch: { label?: string; tags?: string[] } = {};
@@ -118,7 +138,7 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
             await mutate(signal => client.updateResume(base.id, base.revision, patch, signal), 'Resume details saved');
         else if (file)
             await mutate(signal => client.replaceResume(base.id, base.revision, file, base.storageKind !== 'managed', signal),
-                base.storageKind === 'managed' ? 'Resume file replaced' : 'Resume adopted');
+                base.storageKind === 'managed' ? 'Resume file replaced.' : 'Resume adopted.', extractByDefault);
     }
     async function openContent() {
         const record = editor?.base;
@@ -171,7 +191,8 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
             <ul className="resume-list">
                 {records.map(record => <li key={record.id}><button className="resume-card" disabled={busy} onClick={() => open(record)}>
                     <span className="resume-card-heading"><span className="resume-file-mark" aria-hidden="true">DOC</span><strong>{record.label}{record.default ? ' · Default' : ''}</strong>{record.default && <span className="status-pill resume-default" aria-hidden="true">Default</span>}</span>
-                    <span className="resume-card-meta"><span>{record.mediaType ?? 'External file'}</span><span>{record.storageKind === 'managed' ? 'Managed locally' : 'External file'}</span></span>
+                    <span className="resume-card-meta"><span>{record.mediaType ?? 'External file'}</span><span>{record.storageKind === 'managed' ? 'Managed locally' : 'External file'}</span>
+                        <span>{factStatus[record.id] ?? 'No extracted facts'}</span></span>
                     <span className="resume-tags">{record.tags.length ? record.tags.map(tag => <small key={tag}>{tag}</small>) : <small>No tags</small>}</span>
                     <span className="resume-card-action">Open resume <span aria-hidden="true">→</span></span>
                     <span className="visually-hidden">revision {record.revision}</span>
@@ -194,13 +215,16 @@ export function Resumes({ client, dirtyChanged, openExtractions }: { client: Cli
             <label className="resume-file-field">{editor.base?.storageKind === 'managed' ? 'Replacement file' : editor.base ? 'File to adopt' : 'Resume file'}
                 <input ref={fileInput} type="file" accept={accept} onChange={event => setEditor({ ...editor, file: event.target.files?.[0] ?? null })} disabled={busy} />
             </label></div>
+            {(!editor.base || editor.file) && <label><input type="checkbox" checked={extractByDefault}
+                onChange={event => setExtractByDefault(event.target.checked)} disabled={busy} /> Request fact extraction after saving</label>}
             <div className="resume-editor-actions">{editor.base?.storageKind === 'managed' && <button className="secondary" disabled={busy || contentBusy} onClick={() => void openContent()}>
                 {editor.base.mediaType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ? 'Download resume' : 'Preview resume'}
             </button>}<button className="secondary" disabled={busy || contentBusy} onClick={close}>Cancel</button>
-                <button className="primary" disabled={busy || loading || Boolean(editor.latest) || editor.missing || !dirty && Boolean(editor.base)} onClick={() => void save()}>Save</button>{' '}
-                {editor.base && !editor.base.default && <button className="secondary" disabled={busy || loading || dirty || Boolean(editor.latest) || editor.missing}
+                <button className="primary" disabled={busy || loading || factsDirty || Boolean(editor.latest) || editor.missing || !dirty && Boolean(editor.base)} onClick={() => void save()}>Save</button>{' '}
+                {editor.base && !editor.base.default && <button className="secondary" disabled={busy || loading || dirty || factsDirty || Boolean(editor.latest) || editor.missing}
                     onClick={() => void mutate(signal => client.setDefaultResume(editor.base!.id, editor.base!.revision, signal), 'Default resume changed')}>Make default</button>}
             </div>
         </section>}
+        {editor?.base?.storageKind === 'managed' && <ResumeFacts key={editor.base.id} client={client} resume={editor.base} dirtyChanged={setFactsDirty} />}
     </section>;
 }

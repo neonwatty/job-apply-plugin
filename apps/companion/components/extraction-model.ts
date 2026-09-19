@@ -70,6 +70,7 @@ export function requestMutation(resume: Document, request?: Document, action?: s
   const body = new PythonObject<Value>();
   if (request) set(body, 'expectedRevision', get(request, 'revision'));
   else set(body, 'resumeId', get(resume, 'id'));
+  if (!request) set(body, 'scope', text('resume'));
   if (action !== 'cancel') set(body, 'expectedResumeRevision', get(resume, 'revision'));
   return serialize(body);
 }

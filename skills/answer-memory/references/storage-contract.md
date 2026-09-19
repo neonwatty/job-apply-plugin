@@ -12,6 +12,7 @@ node "<plugin-root>/apps/companion/command.mjs" store --help
 - `~/.job-apply/answers.json`: versioned answer records with state, source, scope, aliases, sensitivity, and confirmation metadata.
 - `~/.job-apply/jobs.json`: versioned canonical job records with optimistic revisions, focused application status, and recoverable trash state.
 - `~/.job-apply/resumes.json`: versioned local resume references with labels, defaults, file observations, revisions, and recoverable trash state.
+- `~/.job-apply/resume-facts.json`: private, versioned fact-set histories keyed by managed resume ID and content revision. Legacy Stores can omit this file until scoped facts are first written.
 - `~/.job-apply/applications.jsonl`: append-only minimal application events.
 - `~/.job-apply/sessions/<application-id>.json`: resumable workflow metadata with answer-key references.
 - `~/.job-apply/auto-submit/campaign.json`: the current closed version-1 campaign record.
@@ -39,7 +40,7 @@ URLs are normalized and unique; URL fragments and default ports do not create a
 second job identity.
 
 Readiness preflight returns stable error and warning codes without echoing profile
-or resume values. `ready` requires a non-empty valid profile and a current local
+or resume values. The scoped flow requires an exact chat-confirmed resume and current confirmed fact revision bound to the job; legacy jobs without scoped facts retain their non-empty profile requirement. Both require a current local
 file for the assigned or default active resume. Missing role or company and a
 resume file that changed since registration remain visible warnings.
 

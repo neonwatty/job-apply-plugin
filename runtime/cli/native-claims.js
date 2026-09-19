@@ -3,6 +3,7 @@ import { object, text, JobsError } from '../contracts/workspace/values.js';
 export const claimCommands = {
     'job-review-restart': ['--id', '--owner', '--expected-revision', '--owner-confirmed-not-submitted'],
     'task-select': ['--id', '--expected-revision', '--owner-confirmed'],
+    'job-input-confirm': ['--id', '--resume-id', '--expected-revision', '--expected-resume-revision', '--expected-fact-revision', '--owner-confirmed'],
     'job-acquire': ['--id', '--owner', '--expected-revision'], 'claim-status': [],
     'claim-heartbeat': ['--id', '--token'], 'claim-recover': ['--id', '--owner'],
     'claim-progress': ['--id', '--token', '--input'],
@@ -22,11 +23,19 @@ export async function runClaimCommand(command, repository, options, payload) {
             throw new JobsError('expected revision must be an integer');
         return BigInt(value);
     };
+    const positive = (key) => {
+        const value = required(key);
+        if (!/^[0-9]+$/.test(value) || BigInt(value) < 1n)
+            throw new JobsError(`${key} must be a positive integer`);
+        return BigInt(value);
+    };
     if (command === 'claim-status')
         return service.status();
     const id = required('--id');
     if (command === 'task-select')
         return service.select(id, revision(), options.has('--owner-confirmed'));
+    if (command === 'job-input-confirm')
+        return service.confirmInput(id, required('--resume-id'), revision(), positive('--expected-resume-revision'), positive('--expected-fact-revision'), options.has('--owner-confirmed'));
     if (command === 'job-review-restart')
         return service.restart(id, text(required('--owner')), revision(), options.has('--owner-confirmed-not-submitted'));
     if (command === 'job-acquire')

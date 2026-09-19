@@ -24,6 +24,8 @@ function transitioned(job, target, at) {
     set(result, 'closedOutcome', null);
     set(result, 'revision', integer(int(get(job, 'revision')) + 1n));
     set(result, 'updatedAt', text(at));
+    if (has(result, 'inputSelection'))
+        set(object(get(result, 'inputSelection'), 'input selection'), 'jobRevision', get(result, 'revision'));
     return validateJob(string(get(job, 'id')), result);
 }
 function projectJob(job) {
@@ -59,6 +61,53 @@ export class ClaimsService {
     status() {
         return this.repository.claimTransaction(async (tx) => set(doc({ leaseSeconds: claimLeaseSeconds, heartbeatSeconds: claimHeartbeatSeconds }), 'claim', publicClaim(get(tx.coordinator, 'claim'), this.now())));
     }
+    confirmInput(id, resumeId, expectedJob, expectedResume, expectedFacts, confirmed) {
+        safeId(id);
+        safeId(resumeId);
+        if (!confirmed)
+            throw new JobsError('resume and facts require owner confirmation in chat');
+        return this.repository.claimTransaction(async (tx) => {
+            const job = activeJob(tx.jobs, id);
+            if (int(get(job, 'revision')) !== expectedJob)
+                throw new JobsError('job revision conflict');
+            if (!['saved', 'needs_info', 'ready'].includes(string(get(job, 'status'))))
+                throw new JobsError('job cannot change its input selection');
+            requireJobUnclaimed(tx.coordinator, id);
+            const resumeValue = get(object(get(tx.resumes, 'resumes'), 'resumes'), resumeId);
+            if (resumeValue === null)
+                throw new JobsError('resume does not exist');
+            const resume = object(resumeValue, 'resume');
+            if (get(resume, 'deletedAt') !== null || string(get(resume, 'storageKind')) !== 'managed'
+                || int(get(resume, 'revision')) !== expectedResume)
+                throw new JobsError('resume revision conflict');
+            const observation = await tx.files.observation(resume);
+            if (!observation.exists || observation.digest !== string(get(resume, 'digest')))
+                throw new JobsError('resume file changed');
+            const setValue = tx.facts ? get(object(get(tx.facts, 'sets'), 'resume fact sets'), resumeId) : null;
+            const versions = setValue === null ? null : get(object(setValue, 'resume fact set'), 'versions');
+            const latest = Array.isArray(versions) && versions.length ? object(versions[versions.length - 1], 'resume facts') : null;
+            if (!latest || int(get(latest, 'revision')) !== expectedFacts || string(get(latest, 'state')) !== 'confirmed'
+                || string(get(latest, 'contentRevision')) !== string(get(resume, 'contentRevision')))
+                throw new JobsError('confirmed resume facts are unavailable or stale');
+            const next = copy(job), now = this.now();
+            set(next, 'resumeId', text(resumeId));
+            set(next, 'revision', integer(expectedJob + 1n));
+            set(next, 'updatedAt', text(now));
+            const selection = doc({ resumeId, contentRevision: string(get(resume, 'contentRevision')),
+                factRevision: null, jobRevision: null, confirmedAt: now });
+            set(selection, 'factRevision', integer(expectedFacts));
+            set(selection, 'jobRevision', integer(expectedJob + 1n));
+            set(next, 'inputSelection', selection);
+            validateJob(id, next);
+            set(object(get(tx.jobs, 'jobs'), 'jobs'), id, next);
+            set(object(get(tx.jobs, 'metadata'), 'jobs metadata'), 'updatedAt', text(now));
+            await tx.saveJobs(tx.jobs);
+            const result = doc({ resumeId });
+            set(result, 'factRevision', integer(expectedFacts));
+            set(result, 'jobRevision', integer(expectedJob + 1n));
+            return set(result, 'job', projectJob(next));
+        });
+    }
     select(id, expectedRevision, confirmed) {
         safeId(id);
         if (confirmed !== true)
@@ -72,7 +121,7 @@ export class ClaimsService {
             requireJobUnclaimed(tx.coordinator, id);
             if (!['saved', 'needs_info', 'ready'].includes(string(get(job, 'status'))))
                 throw new JobsError('task selection job is unavailable');
-            if (get(await preflightJobRecord(job, tx.profile, tx.resumes, tx.files), 'ready') !== true)
+            if (get(await preflightJobRecord(job, tx.profile, tx.resumes, tx.files, tx.facts, tx.requests), 'ready') !== true)
                 throw new JobsError('task selection preflight failed');
             if (string(get(job, 'status')) === 'ready')
                 return set(doc({ action: 'noop' }), 'job', projectJob(job));
@@ -95,7 +144,7 @@ export class ClaimsService {
                 throw new JobsError('job revision conflict');
             if (string(get(job, 'status')) !== 'ready')
                 throw new JobsError('only a ready job can be acquired');
-            const preflight = await preflightJobRecord(job, tx.profile, tx.resumes, tx.files);
+            const preflight = await preflightJobRecord(job, tx.profile, tx.resumes, tx.files, tx.facts, tx.requests);
             if (get(preflight, 'ready') !== true)
                 throw new JobsError('job is not ready');
             const now = this.now(), { claim, token } = makeClaim(id, ownerLabel, now);
@@ -126,7 +175,7 @@ export class ClaimsService {
                 throw new JobsError('review restart requires an awaiting_review job');
             const session = tx.sessions.find(item => string(get(item, 'applicationId')) === id) ?? null;
             const event = validateReviewRestartEvidence(job, session, tx.history);
-            const preflight = await preflightJobRecord(job, tx.profile, tx.resumes, tx.files);
+            const preflight = await preflightJobRecord(job, tx.profile, tx.resumes, tx.files, tx.facts, tx.requests);
             const rawResume = get(object(get(tx.resumes, 'resumes'), 'resumes'), string(get(preflight, 'resumeId')) ?? '');
             if (get(preflight, 'ready') !== true || rawResume === null || string(get(object(rawResume, 'resume'), 'storageKind')) !== 'managed')
                 throw new JobsError('job is not ready with a current managed resume');
@@ -171,6 +220,8 @@ export class ClaimsService {
     progress(id, token, incoming) {
         return this.repository.claimTransaction(async (tx) => {
             requireClaim(tx.coordinator, tx.jobs, id, token, this.now());
+            if (get(await preflightJobRecord(activeJob(tx.jobs, id), tx.profile, tx.resumes, tx.files, tx.facts, tx.requests), 'ready') !== true)
+                throw new JobsError('confirmed application inputs changed');
             const session = this.session(tx, activeJob(tx.jobs, id), incoming);
             if (string(get(session, 'status')) !== 'active')
                 throw new JobsError('claim progress session must remain active');
@@ -184,6 +235,9 @@ export class ClaimsService {
         return this.repository.claimTransaction(async (tx) => {
             requireClaim(tx.coordinator, tx.jobs, id, token, this.now());
             const job = activeJob(tx.jobs, id);
+            if (status === 'awaiting_review'
+                && get(await preflightJobRecord(job, tx.profile, tx.resumes, tx.files, tx.facts, tx.requests), 'ready') !== true)
+                throw new JobsError('confirmed application inputs changed');
             if (int(get(job, 'revision')) !== expectedRevision)
                 throw new JobsError('job revision conflict');
             const now = this.now(), session = this.session(tx, job, incoming, now);

@@ -51,7 +51,7 @@ async function current(tx, job, claim, answerRefs) {
         throw new JobsError('trusted fill portal realm is unresolved');
     let preflight;
     try {
-        preflight = await preflightJobRecord(job, validateProfile(tx.profile), tx.resumes, tx.files);
+        preflight = await preflightJobRecord(job, validateProfile(tx.profile), tx.resumes, tx.files, tx.facts, tx.requests);
     }
     catch {
         throw new TrustedFillCurrentError('resume_observation_failed');

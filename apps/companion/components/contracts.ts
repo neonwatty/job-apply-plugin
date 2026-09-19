@@ -47,6 +47,7 @@ export type OverviewData = {
     setup: {
         hasProfileFacts: boolean;
         hasResume: boolean;
+        factsWorkspace?: 'resumes';
     };
     counts: Record<'jobs' | 'readyJobs' | 'attentionJobs' | 'resumes' | 'answers', number>;
     nextAction: string;
@@ -120,7 +121,8 @@ export function overview(value: unknown): OverviewData {
     };
     return {
         setup: {
-            hasProfileFacts: setup.hasProfileFacts, hasResume: setup.hasResume
+            hasProfileFacts: setup.hasProfileFacts, hasResume: setup.hasResume,
+            ...(setup.factsWorkspace === 'resumes' ? { factsWorkspace: 'resumes' as const } : {})
         }, counts: {
             jobs: count('jobs'), readyJobs: count('readyJobs'), attentionJobs: count('attentionJobs'), resumes: count('resumes'), answers: count('answers')
         }, nextAction: value.nextAction, targetWorkspace: value.targetWorkspace

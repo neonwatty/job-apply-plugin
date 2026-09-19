@@ -4,7 +4,7 @@ import { safeId } from '../contracts/workspace/jobs.js';
 import { failureReasons, requestStatuses, orderRequests, validateExtractionRequests } from '../contracts/workspace/extraction-requests.js';
 import { ExtractionContext, records, readyResume, revision, touch, closeRequest, newRequest } from './extraction-context.js';
 export class ExtractionRequests extends ExtractionContext {
-  createRequest(resumeId: string, expectedResumeRevision: bigint): Promise<Document> {
+  createRequest(resumeId: string, expectedResumeRevision: bigint, scoped = false): Promise<Document> {
     safeId(resumeId);
     return this.repository.extractionTransaction(async tx => {
       const resume = await readyResume(tx,resumeId,expectedResumeRevision);
@@ -16,7 +16,7 @@ export class ExtractionRequests extends ExtractionContext {
         set(resume,'updatedAt',text(this.now()));
         touch(tx.resumes,this.now());
       }
-      const request = newRequest(this,resume,null);
+      const request = newRequest(this,resume,null,scoped);
       set(records(tx.requests,'requests'),string(get(request,'requestId'))!,request);
       touch(tx.requests,string(get(request,'updatedAt'))!);
       validateExtractionRequests(tx.requests);
@@ -63,7 +63,7 @@ export class ExtractionRequests extends ExtractionContext {
       const resumeId = string(get(current,'resumeId'))!;
       const resume = await readyResume(tx,resumeId,expectedResumeRevision);
       this.noOpen(tx.requests,resumeId);
-      const request = newRequest(this,resume,id);
+      const request = newRequest(this,resume,id,string(get(current,'scope')) === 'resume');
       set(records(tx.requests,'requests'),string(get(request,'requestId'))!,request);
       touch(tx.requests,string(get(request,'updatedAt'))!);
       validateExtractionRequests(tx.requests);

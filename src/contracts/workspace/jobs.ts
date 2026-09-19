@@ -3,6 +3,7 @@ import { PythonObject } from "../python-object.js";
 import { get, has, int, string, object, keys, JobsError } from "./values.js";
 import type { Document, Value } from "./values.js";
 import { normalizeJobUrl } from "./job-url.js";
+import { validateJobInputSelection } from './job-input-selection.js';
 
 export const ingestFields = new Set([
   "url", "source", "sourceId", "role", "company", "location", "workplaceType",
@@ -11,7 +12,7 @@ export const ingestFields = new Set([
 export const patchFields = new Set([...ingestFields, "resumeId", "provenance"]);
 export const createFields = new Set([...patchFields, "id", "status", "closedOutcome"]);
 const recordFields = new Set([...createFields, "normalizedUrl", "legacySources", "revision",
-  "createdAt", "updatedAt", "deletedAt"]);
+  "createdAt", "updatedAt", "deletedAt", "inputSelection"]);
 export const statuses = new Set(["saved", "needs_info", "ready", "in_progress", "awaiting_review", "applied", "closed"]);
 export function safeId(value: string | null): string {
   if (value === null || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value) || /[\r\n]/.test(value) || value.includes("..")) {
@@ -47,6 +48,7 @@ export function validateJob(key: string, value: Value): Document {
   const revision = int(get(record, "revision"));
   if (revision === null || revision < 1n) throw new JobsError("job revision must be a positive integer");
   if (has(record, "provenance")) object(get(record, "provenance"), "job provenance");
+  if (has(record, 'inputSelection')) validateJobInputSelection(get(record, 'inputSelection'));
   const sources = has(record, "legacySources") ? get(record, "legacySources") : [];
   if (!Array.isArray(sources)) throw new JobsError("job legacySources must be an array");
   for (const value of sources) {
@@ -61,7 +63,7 @@ export function validateJob(key: string, value: Value): Document {
     if (!/^[0-9a-f]{64}$/.test(string(get(source, "sourceSha256")) ?? "")) throw new JobsError("job legacy source digest is invalid");
   }
   for (const field of recordFields) {
-    if (["id", "status", "priority", "revision", "provenance", "legacySources"].includes(field)) continue;
+    if (["id", "status", "priority", "revision", "provenance", "legacySources", "inputSelection"].includes(field)) continue;
     const value = get(record, field);
     if (value !== null && !(value instanceof PythonText)) throw new JobsError(`job record.${field} must be a string`);
   }

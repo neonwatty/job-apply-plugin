@@ -1,11 +1,9 @@
 import { emptyObject } from '../contracts/workspace/jobs.js';
-import { get, keys, object, same, set, string, text, integer, truth } from '../contracts/workspace/values.js';
+import { get, int, keys, object, same, set, string, text, integer, truth } from '../contracts/workspace/values.js';
 /** Inspect documents already held by the caller's transaction, without acquiring another lock. */
-export async function preflightJobRecord(job, profileDocument, resumesDocument, files) {
+export async function preflightJobRecord(job, profileDocument, resumesDocument, files, factsDocument, requestsDocument) {
     const errors = [], warnings = [];
     const profile = object(get(profileDocument, 'profile'), 'profile.profile');
-    if (!keys(profile).some(key => key !== 'preferences'))
-        errors.push('profile_empty');
     const resumes = object(get(resumesDocument, 'resumes'), 'resumes.resumes');
     let resumeId = get(job, 'resumeId');
     if (resumeId === null) {
@@ -15,6 +13,28 @@ export async function preflightJobRecord(job, profileDocument, resumesDocument, 
     }
     const value = resumeId === null ? null : get(resumes, string(resumeId));
     const resume = value === null ? null : object(value, 'resume record');
+    const scoped = factsDocument && resumeId !== null
+        ? get(object(get(factsDocument, 'sets'), 'resume fact sets'), string(resumeId)) : null;
+    const scopedRequest = requestsDocument && resumeId !== null && object(get(requestsDocument, 'requests'), 'requests')
+        .entries().some(([, item]) => string(get(object(item, 'request'), 'resumeId')) === string(resumeId)
+        && string(get(object(item, 'request'), 'scope')) === 'resume');
+    if (scoped !== null && scoped !== undefined) {
+        const versions = get(object(scoped, 'resume fact set'), 'versions');
+        const latest = Array.isArray(versions) && versions.length ? object(versions[versions.length - 1], 'resume facts') : null;
+        const selectionValue = get(job, 'inputSelection');
+        const selection = selectionValue === null ? null : object(selectionValue, 'job input selection');
+        if (!selection || !latest || string(get(selection, 'resumeId')) !== string(resumeId)
+            || string(get(job, 'resumeId')) !== string(resumeId) || int(get(selection, 'jobRevision')) !== int(get(job, 'revision'))
+            || int(get(selection, 'factRevision')) !== int(get(latest, 'revision'))
+            || string(get(latest, 'state')) !== 'confirmed'
+            || string(get(selection, 'contentRevision')) !== string(get(latest, 'contentRevision'))
+            || resume === null || string(get(latest, 'contentRevision')) !== string(get(resume, 'contentRevision')))
+            errors.push('resume_facts_unconfirmed');
+    }
+    else if (scopedRequest)
+        errors.push('resume_facts_unconfirmed');
+    if (!keys(profile).some(key => key !== 'preferences') && !scopedRequest && (scoped === null || scoped === undefined))
+        errors.push('profile_empty');
     if (resume === null || get(resume, 'deletedAt') !== null)
         errors.push('resume_missing');
     else {

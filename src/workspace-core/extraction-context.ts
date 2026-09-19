@@ -2,9 +2,9 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { get, set, int, integer, object, string, text, fromJSON, JobsError } from '../contracts/workspace/values.js';
 import type { Document } from '../contracts/workspace/values.js';
 import type { NativeResumeFiles } from '../store/native-resume-files.js';
-export interface ExtractionUpdates { profile?: Document; resumes?: Document; requests?: Document; proposals?: Document }
+export interface ExtractionUpdates { profile?: Document; resumes?: Document; requests?: Document; proposals?: Document; facts?: Document }
 export interface ExtractionTransaction {
-  profile: Document; resumes: Document; requests: Document; proposals: Document;
+  profile: Document; resumes: Document; requests: Document; proposals: Document; facts: Document;
   files: NativeResumeFiles;
   commit(kind: string, updates: ExtractionUpdates): Promise<void>;
 }
@@ -34,7 +34,7 @@ export async function readyResume(tx: ExtractionTransaction, id: string, expecte
   return resume;
 }
 export function closeRequest(document: Document, id: string, expected: bigint, status: string, now: string,
-  failure: string | null = null, proposal: string | null = null): Document {
+  failure: string | null = null, proposal: string | null = null, factRevision: bigint | null = null): Document {
   const value = get(records(document,'requests'),id);
   if (value === null) throw new JobsError('resume extraction request does not exist');
   const current = object(value,'request');
@@ -43,6 +43,7 @@ export function closeRequest(document: Document, id: string, expected: bigint, s
   set(current,'status',text(status));
   set(current,'failureReason',failure === null ? null : text(failure));
   set(current,'proposalId',proposal === null ? null : text(proposal));
+  if (get(current, 'scope') !== null) set(current, 'factRevision', factRevision === null ? null : integer(factRevision));
   set(current,'revision',integer(expected+1n));
   set(current,'updatedAt',text(now));
   set(current,'closedAt',text(now));
@@ -61,10 +62,12 @@ export function staleOpenRequests(document: Document, resumeId: string, now: str
   }
   return changed;
 }
-export function newRequest(context: ExtractionContext, resume: Document, supersedes: string | null): Document {
+export function newRequest(context: ExtractionContext, resume: Document, supersedes: string | null, scoped = false): Document {
   const now = context.now();
   const record = object(fromJSON({ requestId: context.id('request'), resumeId: string(get(resume,'id')),
     revision: 1, status:'requested', createdAt:now, updatedAt:now, closedAt:null, proposalId:null,
     failureReason:null, supersedesRequestId:supersedes }),'request');
-  return set(record,'resumeContentRevision',get(resume,'contentRevision'));
+  set(record,'resumeContentRevision',get(resume,'contentRevision'));
+  if (scoped) { set(record, 'scope', text('resume')); set(record, 'factRevision', null); }
+  return record;
 }

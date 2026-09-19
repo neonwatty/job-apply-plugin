@@ -13,7 +13,7 @@ import { nativeCloneMarkerName, nativePolicyTreeName, nativeStoreRequiredEntries
 import { copyNativePolicyTree, updateNativePolicyDigest, withNativePolicyTree } from './native-policy-tree.js';
 import type { NativePolicyTreeEntry } from './native-policy-tree.js';
 
-const sourceFiles = new Set<string>([...nativeStoreRequiredEntries.filter(name => name !== 'resume-operation.json'), nativePolicyTreeName]);
+const sourceFiles = new Set<string>([...nativeStoreRequiredEntries.filter(name => name !== 'resume-operation.json'), nativePolicyTreeName, 'resume-facts.json']);
 const coreFiles = ['.store.lock', 'jobs.json', 'profile.json', 'resumes.json', 'fact-groups.json',
   'answers.json', 'applications.jsonl', 'resume-files', 'sessions'];
 const directories = new Set(['resume-files', 'sessions']);
@@ -68,6 +68,7 @@ async function missingDocuments(target: string, names: Set<string>, now: string)
     'resume-extractions.json': fromJSON({ schemaVersion: 1, proposals: {}, metadata: { createdAt: now, updatedAt: now } }),
     'resume-extraction-requests.json': fromJSON({ schemaVersion: 1, requests: {}, metadata: { createdAt: now, updatedAt: now } }),
     'resume-extraction-journal.json': fromJSON({ schemaVersion: 1, operation: null }),
+    'resume-facts.json': fromJSON({ schemaVersion: 1, sets: {}, metadata: { createdAt: now, updatedAt: now } }),
     'coordinator.json': fromJSON({ schemaVersion: 1, claim: null }),
     'coordinator-journal.json': fromJSON({ schemaVersion: 1, operation: null }),
     'account-operation-journal.json': emptyAccountOperationJournal(),

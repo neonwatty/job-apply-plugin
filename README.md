@@ -21,15 +21,15 @@ Invoke skills with `$job-apply:...` in Codex or `/job-apply:...` in Claude Code.
 ## Features
 
 ### Job Apply (`job-apply:job-apply`)
-- **One-time profile setup**: Extract your information from a resume (PDF, DOCX, or TXT)
+- **Resume-specific facts**: Extract facts from each managed PDF, DOCX, or TXT resume and confirm them under that resume
 - **Guided ATS coverage**: Workflows for LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday, with current forms unverified
 - **Visible browser automation**: Codex Browser/Chrome or Claude in Chrome fills forms in a session you can see and control
-- **Smart field mapping**: Automatically matches your profile to form fields
+- **Smart field mapping**: Uses the chosen resume's confirmed facts for applicant fields
 - **Confidence-aware answer reuse**: Reuses confirmed non-sensitive answers and flags inferred, missing, or sensitive answers for review
 - **Resumable progress**: Saves application step metadata and answer references without copying answer values
-- **Ready-job handoff**: Selects a canonical ready job, exclusively claims it with a recoverable lease, uses its assigned/default resume, and atomically hands it to needs-info or final review
+- **Ready-job handoff**: Confirms the exact job, resume, and fact revision in chat, then claims that input-bound job with a recoverable lease and hands it to needs-info or final review
 - **Manual submission**: Stops at final review so only you can click Submit or Send
-- **Resume storage**: Profile saved locally for reuse across applications
+- **Local resume library**: Files and versioned facts remain together in the private Store
 
 ### Answer Memory (`job-apply:answer-memory`)
 - **One local contract**: All Job Apply skills use the same bundled storage helper
@@ -101,11 +101,11 @@ The examples below use Codex syntax. In Claude Code, replace the leading `$` wit
    ~/Documents/resume.pdf
    ```
 
-3. Review and confirm extracted profile information
+3. Review and confirm the facts extracted for that specific resume in Companion
 
 ### Applying to Jobs
 
-Once your profile is set up:
+Once a resume's facts are confirmed:
 
 1. Invoke the skill:
    ```
@@ -117,7 +117,7 @@ Once your profile is set up:
    https://www.linkedin.com/jobs/view/123456789
    ```
 
-3. Watch as the agent fills the application from your reviewed local profile
+3. Confirm the exact resume and its facts with the agent in chat for this job, then watch it fill from that fact set
 
 4. Inspect the final review page and field summary. The assistant stops before final submission; only you may decide whether to complete it manually on the third-party site.
 
@@ -175,9 +175,9 @@ The agent acquires the Ready job from the canonical Store. Watch durable progres
 
 Closing the tab or restarting the launcher does not erase progress because the browser owns no durable workflow state. On restart, use the complete newly printed URL. Revision conflicts keep drafts visible and require explicit review; interrupted work is routed to Needs Attention; trashed records remain individually recoverable. If read-only startup validation recognizes an unavailable, corrupt, or future-version Store, the server fails closed: it serves only the static workspace and sanitized recovery status, blocks canonical reads and mutations, and exposes no canonical values, filesystem paths, or raw exceptions to the browser. It does not automatically repair, downgrade, or overwrite the Store. If initialization itself fails after validation, startup aborts instead of presenting a degraded no-mutation claim. Stop the workspace, preserve the Store directory, and restore a known-good backup or use the matching Job Apply version.
 
-Use **Jobs** to manage the opportunity queue, **Facts** to selectively edit profile data, and **Resumes** to manage private canonical files and extraction review. Facts includes compact built-in views plus durable custom groups shared with the CLI. Groups reference canonical fact paths and can be created, renamed, reordered, edited, and removed without moving or deleting the underlying applicant facts. Use **Answers** to search the reusable library, review observed questions, create and selectively edit answers, accept or decline observations, and manage guarded Trash. Observed questions are pending records in `answers.json`, not a second inbox database. Declined records remain durable for deduplication and are hidden from the default library. Generic put creates accepted library records only; pending creation belongs to observation, and declined creation belongs to dedicated review.
+Use **Jobs** to manage the opportunity queue and **Resumes** to manage private files and review each resume's own facts. The separate **Facts** surface maintains the legacy applicant-wide profile and preferences, including saved path groups. Use **Answers** to search reusable answers to application questions, review observed questions, create and selectively edit answers, accept or decline observations, and manage guarded Trash. Observed questions are pending records in `answers.json`, not a second inbox database. Declined records remain durable for deduplication and are hidden from the default library.
 
-In **Resumes**, you can create, cancel, and retry extraction requests. **Request fact extraction** queues work for the next active Job Apply agent; it does not start or launch an agent. The workspace cannot extract facts, complete or fail a request, or author a proposal. Copying the value-free handoff gives an existing agent only the opaque request ID. That agent privately reads the exact managed resume, attempts completion once, removes temporary candidate data, and stops at proposal review so you can reconcile proposed Facts yourself.
+In **Resumes**, an import or replacement requests extraction by default unless you opt out. You can create, cancel, and retry extraction requests. **Request fact extraction** queues work for the next active Job Apply agent; it does not start or launch an agent. The workspace cannot extract facts, complete or fail a request, or author a proposal. Copying the value-free handoff gives an existing agent only the opaque request ID. That agent privately reads the exact managed resume, attempts completion once, and removes temporary candidate data. Review or edit the resulting draft under that resume, then confirm its exact revision. Before an application, confirm the job, chosen resume, and its facts with the agent in chat.
 
 Use the top-level **Trash** view to see deterministic redacted projections and exact counts for trashed jobs, resumes, and answers. Restore and permanent delete use the same canonical Store helpers as the CLI and require the record's exact revision. Permanent deletion is always one record at a time in an accessible identity-bound dialog and requires the exact type-specific phrase `DELETE JOB`, `DELETE RESUME`, or `DELETE ANSWER`. Deleting a managed resume permanently deletes its managed file with the canonical resume record; other record types remove only the selected canonical record. No deletion cascades or erases application history, sessions, or audit evidence. Live claims, nonterminal job sessions, resume references, answer references, duplicate active identities, and stale revisions produce distinct redacted explanations without automatic retry or disclosure of linked identifiers. CLI users can select only trashed jobs or resumes with `job-list --trashed-only` and `resume-list --trashed-only`; answers retain `answer-list --include-trashed --trashed-only`.
 
@@ -213,6 +213,7 @@ Job Apply stores data as **plaintext local files** under `~/.job-apply/`:
   answers.json
   jobs.json
   resumes.json
+  resume-facts.json            # per-resume fact versions, created on first scoped draft
   resume-files/
   resume-extractions.json       # created on first extraction proposal
   resume-extraction-journal.json # created on first extraction proposal
@@ -225,7 +226,8 @@ Job Apply stores data as **plaintext local files** under `~/.job-apply/`:
 
 | File | Purpose |
 |------|---------|
-| `profile.json` | Resume facts and job-search preferences |
+| `profile.json` | Legacy applicant-wide facts and job-search preferences |
+| `resume-facts.json` | Draft and confirmed fact histories keyed by managed resume |
 | `fact-groups.json` | Revisioned saved views that organize canonical profile paths without owning or deleting facts |
 | `answers.json` | Revisioned reusable answers with confirmation, source, scope, sensitivity, and trash state |
 | `jobs.json` | Canonical job records, application status, revisions, and recoverable trash state |

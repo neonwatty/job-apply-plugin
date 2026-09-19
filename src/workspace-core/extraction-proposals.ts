@@ -28,6 +28,7 @@ export class ExtractionProposals extends ExtractionRequests {
       if (value === null) throw new JobsError('resume extraction request does not exist');
       const request = object(value,'request');
       revision(request,expectedRequest,'request revision conflict');
+      if (string(get(request, 'scope')) === 'resume') throw new JobsError('use resume-scoped completion for this request');
       if (string(get(request,'status')) !== 'requested') throw new JobsError('resume extraction request is not open');
       const resume = await readyResume(tx,string(get(request,'resumeId'))!);
       if (string(get(resume,'contentRevision')) !== string(get(request,'resumeContentRevision'))) throw new JobsError('resume content revision conflict');

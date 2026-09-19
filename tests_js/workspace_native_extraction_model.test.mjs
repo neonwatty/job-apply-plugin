@@ -42,7 +42,7 @@ test('reapply drops resolved choices while retaining only still pending decision
 test('request, cancel and retry serialize only their exact revision contracts', () => {
   const resume = record('{"id":"resume-one","revision":9007199254740993}');
   const request = record('{"requestId":"request-one","revision":9007199254740995}');
-  assert.equal(model.requestMutation(resume), '{"expectedResumeRevision":9007199254740993,"resumeId":"resume-one"}');
+  assert.equal(model.requestMutation(resume), '{"expectedResumeRevision":9007199254740993,"resumeId":"resume-one","scope":"resume"}');
   assert.equal(model.requestMutation(resume, request, 'cancel'), '{"expectedRevision":9007199254740995}');
   assert.equal(model.requestMutation(resume, request, 'retry'), '{"expectedResumeRevision":9007199254740993,"expectedRevision":9007199254740995}');
 });

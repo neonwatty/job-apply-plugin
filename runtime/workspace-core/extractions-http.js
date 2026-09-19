@@ -1,4 +1,5 @@
 import { ExtractionService } from './extraction.js';
+import { ResumeFactsService } from './resume-facts.js';
 import { lookup, baseline, replacementScope } from '../contracts/workspace/extraction-pointers.js';
 import { emptyObject } from '../contracts/workspace/jobs.js';
 import { get, has, int, integer, keys, object, parse, serialize, set, string, text, JobsError } from '../contracts/workspace/values.js';
@@ -12,7 +13,7 @@ function project(record, fields) {
     return result;
 }
 export function publicExtractionRequest(record) {
-    return project(record, ['requestId', 'resumeId', 'revision', 'status', 'createdAt', 'updatedAt', 'closedAt', 'proposalId', 'failureReason', 'supersedesRequestId']);
+    return project(record, ['requestId', 'resumeId', 'revision', 'status', 'scope', 'factRevision', 'createdAt', 'updatedAt', 'closedAt', 'proposalId', 'failureReason', 'supersedesRequestId']);
 }
 export function publicProposalSummary(record) {
     const result = project(record, ['id', 'resumeId', 'resumeRevision', 'profileRevision', 'resultProfileRevision', 'status', 'revision', 'createdAt', 'updatedAt', 'supersededBy', 'staleReasons']);
@@ -65,17 +66,46 @@ async function detail(repository, id) {
 }
 export async function extractionHttp(repository, method, path, body) {
     const service = new ExtractionService(repository);
+    const facts = new ResumeFactsService(repository);
+    if (method === 'GET' && path === '/api/resume-facts')
+        return response(envelope('facts', await facts.list()));
+    const factRoute = /^\/api\/resume-facts\/([^/]+)(?:\/(confirm))?$/.exec(path);
+    if (factRoute && method === 'GET' && !factRoute[2]) {
+        const record = await facts.get(decodeURIComponent(factRoute[1]));
+        if (record === null)
+            throw new JobsError('resume facts do not exist');
+        return response(record);
+    }
+    if (factRoute && method === 'POST' && !factRoute[2]) {
+        const payload = object(parse(body), 'body');
+        fields(payload, ['facts', 'expectedResumeRevision', 'expectedFactRevision']);
+        const expectedFact = get(payload, 'expectedFactRevision');
+        if (expectedFact !== null && (int(expectedFact) === null || int(expectedFact) < 1n))
+            throw new JobsError('expectedFactRevision must be null or positive');
+        return response(await facts.createDraft(decodeURIComponent(factRoute[1]), get(payload, 'facts'), revision(payload, 'expectedResumeRevision'), expectedFact === null ? null : int(expectedFact)));
+    }
+    if (factRoute && method === 'POST' && factRoute[2] === 'confirm') {
+        const payload = object(parse(body), 'body');
+        fields(payload, ['expectedFactRevision', 'expectedContentRevision']);
+        const content = string(get(payload, 'expectedContentRevision'));
+        if (content === null)
+            throw new JobsError('expectedContentRevision must be a string');
+        return response(await facts.confirm(decodeURIComponent(factRoute[1]), revision(payload, 'expectedFactRevision'), content));
+    }
     if (method === 'GET' && path === '/api/resume-extraction-requests')
         return response(envelope('requests', (await service.listRequests()).map(publicExtractionRequest)));
     if (method === 'GET' && path === '/api/resume-proposals')
         return response(envelope('proposals', (await service.listProposals()).map(publicProposalSummary)));
     if (method === 'POST' && path === '/api/resume-extraction-requests') {
         const payload = object(parse(body), 'body');
-        fields(payload, ['resumeId', 'expectedResumeRevision']);
+        fields(payload, ['resumeId', 'expectedResumeRevision', 'scope'], ['resumeId', 'expectedResumeRevision']);
         const id = string(get(payload, 'resumeId'));
         if (id === null)
             throw new JobsError('resumeId must be a string');
-        return response(publicExtractionRequest(await service.createRequest(id, revision(payload, 'expectedResumeRevision'))));
+        const scope = has(payload, 'scope') ? string(get(payload, 'scope')) : null;
+        if (scope !== null && scope !== 'resume')
+            throw new JobsError('unsupported extraction scope');
+        return response(publicExtractionRequest(await service.createRequest(id, revision(payload, 'expectedResumeRevision'), scope === 'resume')));
     }
     const request = /^\/api\/resume-extraction-requests\/([^/]+)\/(cancel|retry)$/.exec(path);
     if (method === 'POST' && request) {

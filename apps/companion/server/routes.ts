@@ -2,6 +2,7 @@
 export const apiRoutes = [
   ["GET","/api/claims"],
   ["POST","/api/claims/select"],
+  ["POST","/api/claims/confirm-input"],
   ["POST","/api/claims/acquire"],
   ["POST","/api/claims/review-restart"],
   ["POST","/api/claims/heartbeat"],
@@ -93,6 +94,8 @@ export const apiRoutes = [
     "GET",
     "/api/resume-extraction-requests"
   ],
+  ["GET", "/api/resume-facts"],
+  ["GET", "/api/resume-facts/{id}"],
   [
     "GET",
     "/api/resume-proposals"
@@ -305,6 +308,8 @@ export const apiRoutes = [
     "POST",
     "/api/resume-extraction-requests"
   ],
+  ["POST", "/api/resume-facts/{id}/confirm"],
+  ["POST", "/api/resume-facts/{id}"],
   [
     "POST",
     "/api/resume-extraction-requests/{id}/cancel"

@@ -3,13 +3,15 @@ import { validateProfile } from '../contracts/workspace/profile.js';
 import { validateResumeReferences } from '../contracts/workspace/resume-reference.js';
 import { validateExtractionRequests } from '../contracts/workspace/extraction-requests.js';
 import { validateExtractions } from '../contracts/workspace/extraction-proposals.js';
+import { validateResumeFacts } from '../contracts/workspace/resume-facts.js';
 import { safeId } from '../contracts/workspace/jobs.js';
 import { fromJSON, get, int, integer, keys, object, parse, serialize, set, string, text, JobsError } from '../contracts/workspace/values.js';
-const destinations = { profile: 'profile', proposals: 'resume-extractions', requests: 'resume-extraction-requests', resumes: 'resumes' };
+const destinations = { profile: 'profile', proposals: 'resume-extractions', requests: 'resume-extraction-requests', resumes: 'resumes', facts: 'resume-facts' };
 export const extractionJournalName = 'resume-extraction-journal';
-const kinds = new Set(['create', 'review', 'request-create', 'request-close', 'request-retry', 'request-complete', 'resume-request-close']);
+const kinds = new Set(['create', 'review', 'request-create', 'request-close', 'request-retry', 'request-complete', 'request-complete-scoped', 'resume-request-close', 'facts-draft', 'facts-confirm']);
 const legacy = ['kind', 'operationId', 'profileDocument', 'proposalsDocument'];
 const expanded = [...legacy, 'requestsDocument', 'resumesDocument'];
+const scoped = [...expanded, 'factsDocument'];
 export function validateExtractionResumes(document) {
     if (int(get(document, 'schemaVersion')) !== 1n || document.size !== 3
         || keys(document).some(key => !['schemaVersion', 'resumes', 'metadata'].includes(key))) {
@@ -30,13 +32,15 @@ export function validateExtractionJournal(document) {
     const operation = object(get(document, 'operation'), 'resume extraction journal operation');
     const fields = keys(operation), kind = string(get(operation, 'kind'));
     const isLegacy = fields.length === legacy.length && fields.every(key => legacy.includes(key));
-    if ((!isLegacy && (fields.length !== expanded.length || fields.some(key => !expanded.includes(key))))
+    const isExpanded = fields.length === expanded.length && fields.every(key => expanded.includes(key));
+    const isScoped = fields.length === scoped.length && fields.every(key => scoped.includes(key));
+    if ((!isLegacy && !isExpanded && !isScoped)
         || !kind || !kinds.has(kind) || isLegacy && !['create', 'review'].includes(kind)) {
         throw new JobsError('resume proposal journal operation is invalid');
     }
     safeId(string(get(operation, 'operationId')));
     for (const [key, validator] of Object.entries({ profile: validateProfile, proposals: validateExtractions,
-        requests: validateExtractionRequests, resumes: validateExtractionResumes })) {
+        requests: validateExtractionRequests, resumes: validateExtractionResumes, facts: validateResumeFacts })) {
         const value = get(operation, `${key}Document`);
         if (value !== null)
             validator(object(value, `journal ${key}`));
@@ -69,7 +73,7 @@ export class NativeExtractionJournal {
         if (Object.keys(updates).some(key => !(key in destinations)))
             throw new JobsError('unsupported extraction update');
         const operation = object(fromJSON({ kind, operationId: `extraction-${randomUUID()}`,
-            profileDocument: null, proposalsDocument: null, requestsDocument: null, resumesDocument: null }), 'operation');
+            profileDocument: null, proposalsDocument: null, requestsDocument: null, resumesDocument: null, factsDocument: null }), 'operation');
         for (const [key, value] of Object.entries(updates))
             if (value !== undefined)
                 set(operation, `${key}Document`, value);
@@ -102,6 +106,8 @@ export function closeRequestsForResumes(requestDocument, resumeDocument) {
         set(request, 'updatedAt', text(now));
         set(request, 'failureReason', null);
         set(request, 'proposalId', null);
+        if (get(request, 'scope') !== null)
+            set(request, 'factRevision', null);
         changed = true;
     }
     if (!changed)

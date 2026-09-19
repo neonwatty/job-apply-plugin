@@ -33,7 +33,7 @@ export async function readyResume(tx, id, expected) {
         throw new JobsError('resume file is not ready for extraction');
     return resume;
 }
-export function closeRequest(document, id, expected, status, now, failure = null, proposal = null) {
+export function closeRequest(document, id, expected, status, now, failure = null, proposal = null, factRevision = null) {
     const value = get(records(document, 'requests'), id);
     if (value === null)
         throw new JobsError('resume extraction request does not exist');
@@ -44,6 +44,8 @@ export function closeRequest(document, id, expected, status, now, failure = null
     set(current, 'status', text(status));
     set(current, 'failureReason', failure === null ? null : text(failure));
     set(current, 'proposalId', proposal === null ? null : text(proposal));
+    if (get(current, 'scope') !== null)
+        set(current, 'factRevision', factRevision === null ? null : integer(factRevision));
     set(current, 'revision', integer(expected + 1n));
     set(current, 'updatedAt', text(now));
     set(current, 'closedAt', text(now));
@@ -62,10 +64,15 @@ export function staleOpenRequests(document, resumeId, now) {
     }
     return changed;
 }
-export function newRequest(context, resume, supersedes) {
+export function newRequest(context, resume, supersedes, scoped = false) {
     const now = context.now();
     const record = object(fromJSON({ requestId: context.id('request'), resumeId: string(get(resume, 'id')),
         revision: 1, status: 'requested', createdAt: now, updatedAt: now, closedAt: null, proposalId: null,
         failureReason: null, supersedesRequestId: supersedes }), 'request');
-    return set(record, 'resumeContentRevision', get(resume, 'contentRevision'));
+    set(record, 'resumeContentRevision', get(resume, 'contentRevision'));
+    if (scoped) {
+        set(record, 'scope', text('resume'));
+        set(record, 'factRevision', null);
+    }
+    return record;
 }
