@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "requirements": [
+    {
+      "id": "UI0-pure-browser-helpers-concurrency",
+      "surfaceIds": [
+        "browser:workspace/lib/api.js:tokenFromHash",
+        "browser:workspace/lib/helpers.js:filterJobs"
+      ],
+      "family": "UI0",
+      "category": "concurrency",
+      "applicability": {
+        "status": "inapplicable",
+        "rationale": "The named exports synchronously parse a supplied hash or filter an in-memory job array on ordinary data inputs. They own no scheduling, durable write, interruption checkpoint, or recovery state. Browser bootstrap, callers, and Store mutations retain separate requirements.",
+        "reviewer": "Codex source review with independent noncli_audit",
+        "sourcePaths": [
+          "workspace/lib/api.js",
+          "workspace/lib/helpers.js"
+        ]
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "workspace/lib/api.js",
+          "sha256": "999b7881edfd229ef1e2660f58736b96ddba3dea2e6bc2fd6194e26da1c06556"
+        },
+        {
+          "path": "workspace/lib/helpers.js",
+          "sha256": "6fdaab7896a1944dde732c9cb239507968d30a5bd50ee35e7249c06d89bcb33e"
+        }
+      ],
+      "testBindings": [],
+      "expectedArtifacts": []
+    },
+    {
+      "id": "UI0-pure-browser-helpers-interruption",
+      "surfaceIds": [
+        "browser:workspace/lib/api.js:tokenFromHash",
+        "browser:workspace/lib/helpers.js:filterJobs"
+      ],
+      "family": "UI0",
+      "category": "interruption",
+      "applicability": {
+        "status": "inapplicable",
+        "rationale": "The named exports synchronously parse a supplied hash or filter an in-memory job array on ordinary data inputs. They own no scheduling, durable write, interruption checkpoint, or recovery state. Browser bootstrap, callers, and Store mutations retain separate requirements.",
+        "reviewer": "Codex source review with independent noncli_audit",
+        "sourcePaths": [
+          "workspace/lib/api.js",
+          "workspace/lib/helpers.js"
+        ]
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "workspace/lib/api.js",
+          "sha256": "999b7881edfd229ef1e2660f58736b96ddba3dea2e6bc2fd6194e26da1c06556"
+        },
+        {
+          "path": "workspace/lib/helpers.js",
+          "sha256": "6fdaab7896a1944dde732c9cb239507968d30a5bd50ee35e7249c06d89bcb33e"
+        }
+      ],
+      "testBindings": [],
+      "expectedArtifacts": []
+    },
+    {
+      "id": "UI0-pure-browser-helpers-recovery",
+      "surfaceIds": [
+        "browser:workspace/lib/api.js:tokenFromHash",
+        "browser:workspace/lib/helpers.js:filterJobs"
+      ],
+      "family": "UI0",
+      "category": "recovery",
+      "applicability": {
+        "status": "inapplicable",
+        "rationale": "The named exports synchronously parse a supplied hash or filter an in-memory job array on ordinary data inputs. They own no scheduling, durable write, interruption checkpoint, or recovery state. Browser bootstrap, callers, and Store mutations retain separate requirements.",
+        "reviewer": "Codex source review with independent noncli_audit",
+        "sourcePaths": [
+          "workspace/lib/api.js",
+          "workspace/lib/helpers.js"
+        ]
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "workspace/lib/api.js",
+          "sha256": "999b7881edfd229ef1e2660f58736b96ddba3dea2e6bc2fd6194e26da1c06556"
+        },
+        {
+          "path": "workspace/lib/helpers.js",
+          "sha256": "6fdaab7896a1944dde732c9cb239507968d30a5bd50ee35e7249c06d89bcb33e"
+        }
+      ],
+      "testBindings": [],
+      "expectedArtifacts": []
+    },
+    {
+      "id": "UIF-pure-browser-helpers-concurrency",
+      "surfaceIds": [
+        "browser:runtime/workspace-ui/lib/activity-view.js:filterJobs",
+        "browser:workspace/lib/helpers-bridge.js:filterJobs"
+      ],
+      "family": "UIF",
+      "category": "concurrency",
+      "applicability": {
+        "status": "inapplicable",
+        "rationale": "The named exports synchronously parse a supplied hash or filter an in-memory job array on ordinary data inputs. They own no scheduling, durable write, interruption checkpoint, or recovery state. Browser bootstrap, callers, and Store mutations retain separate requirements.",
+        "reviewer": "Codex source review with independent noncli_audit",
+        "sourcePaths": [
+          "runtime/workspace-ui/lib/activity-view.js",
+          "workspace/lib/helpers-bridge.js"
+        ]
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "workspace/lib/helpers-bridge.js",
+          "sha256": "c475f199d60d10ab20e1a5da1829f8f3f1df94cb21226cbd1659824a3e4678b3"
+        },
+        {
+          "path": "runtime/workspace-ui/lib/activity-view.js",
+          "sha256": "417ff0ff0ddb43fb34082353f2e40635265f2071f497be928caa745273ff7ec7"
+        }
+      ],
+      "testBindings": [],
+      "expectedArtifacts": []
+    },
+    {
+      "id": "UIF-pure-browser-helpers-interruption",
+      "surfaceIds": [
+        "browser:runtime/workspace-ui/lib/activity-view.js:filterJobs",
+        "browser:workspace/lib/helpers-bridge.js:filterJobs"
+      ],
+      "family": "UIF",
+      "category": "interruption",
+      "applicability": {
+        "status": "inapplicable",
+        "rationale": "The named exports synchronously parse a supplied hash or filter an in-memory job array on ordinary data inputs. They own no scheduling, durable write, interruption checkpoint, or recovery state. Browser bootstrap, callers, and Store mutations retain separate requirements.",
+        "reviewer": "Codex source review with independent noncli_audit",
+        "sourcePaths": [
+          "runtime/workspace-ui/lib/activity-view.js",
+          "workspace/lib/helpers-bridge.js"
+        ]
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "workspace/lib/helpers-bridge.js",
+          "sha256": "c475f199d60d10ab20e1a5da1829f8f3f1df94cb21226cbd1659824a3e4678b3"
+        },
+        {
+          "path": "runtime/workspace-ui/lib/activity-view.js",
+          "sha256": "417ff0ff0ddb43fb34082353f2e40635265f2071f497be928caa745273ff7ec7"
+        }
+      ],
+      "testBindings": [],
+      "expectedArtifacts": []
+    },
+    {
+      "id": "UIF-pure-browser-helpers-recovery",
+      "surfaceIds": [
+        "browser:runtime/workspace-ui/lib/activity-view.js:filterJobs",
+        "browser:workspace/lib/helpers-bridge.js:filterJobs"
+      ],
+      "family": "UIF",
+      "category": "recovery",
+      "applicability": {
+        "status": "inapplicable",
+        "rationale": "The named exports synchronously parse a supplied hash or filter an in-memory job array on ordinary data inputs. They own no scheduling, durable write, interruption checkpoint, or recovery state. Browser bootstrap, callers, and Store mutations retain separate requirements.",
+        "reviewer": "Codex source review with independent noncli_audit",
+        "sourcePaths": [
+          "runtime/workspace-ui/lib/activity-view.js",
+          "workspace/lib/helpers-bridge.js"
+        ]
+      },
+      "platformCells": [
+        "node-local"
+      ],
+      "oracleFiles": [
+        {
+          "path": "workspace/lib/helpers-bridge.js",
+          "sha256": "c475f199d60d10ab20e1a5da1829f8f3f1df94cb21226cbd1659824a3e4678b3"
+        },
+        {
+          "path": "runtime/workspace-ui/lib/activity-view.js",
+          "sha256": "417ff0ff0ddb43fb34082353f2e40635265f2071f497be928caa745273ff7ec7"
+        }
+      ],
+      "testBindings": [],
+      "expectedArtifacts": []
+    }
+  ]
+}
