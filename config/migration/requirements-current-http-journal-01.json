@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "requirements": [
+    {
+      "id": "JOUR-current-coordinator-recover-operation",
+      "surfaceIds": ["journal:coordinator-journal.json:operation.kind:recover"],
+      "family": "JOUR",
+      "category": "recovery",
+      "applicability": { "status": "required" },
+      "platformCells": ["node-local"],
+      "oracleFiles": [
+        { "path": "scripts/job_apply_store/domains/coordinator/persistence.py", "sha256": "1296863bad9412b852879a3b9c653a98ca61375811df2690600e6f69bc7c3177" },
+        { "path": "scripts/job_apply_store/domains/sessions/history.py", "sha256": "3d0b6cac869f0ec745f80bc3c9a65eda0460818c9f0b0c0e50b3b9ba57bf049f" }
+      ],
+      "testBindings": [{
+        "suiteId": "native-default-cutover",
+        "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
+        "testId": "job CLI read completes a torn-tail coordinator recovery exactly once like Python",
+        "command": ["node", "--test", "tests_js/native_job_cli_lifecycle_parity.test.mjs"],
+        "timeoutMs": 60000,
+        "maxOutputBytes": 65536
+      }],
+      "expectedArtifacts": ["test-log", "environment-profile", "durable-state-comparison"]
+    },
+    {
+      "id": "JOUR-current-coordinator-recovery-document",
+      "surfaceIds": ["document:coordinator-journal.json"],
+      "family": "JOUR",
+      "category": "recovery",
+      "applicability": { "status": "required" },
+      "platformCells": ["node-local"],
+      "oracleFiles": [
+        { "path": "scripts/job_apply_store/domains/coordinator/persistence.py", "sha256": "1296863bad9412b852879a3b9c653a98ca61375811df2690600e6f69bc7c3177" }
+      ],
+      "testBindings": [{
+        "suiteId": "native-default-cutover",
+        "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
+        "testId": "job CLI read completes a torn-tail coordinator recovery exactly once like Python",
+        "command": ["node", "--test", "tests_js/native_job_cli_lifecycle_parity.test.mjs"],
+        "timeoutMs": 60000,
+        "maxOutputBytes": 65536
+      }],
+      "expectedArtifacts": ["test-log", "environment-profile", "durable-state-comparison"]
+    },
+    {
+      "id": "JOUR-current-coordinator-cleared-journal-noop",
+      "surfaceIds": ["journal:coordinator-journal.json:operation:null"],
+      "family": "JOUR",
+      "category": "noop",
+      "applicability": { "status": "required" },
+      "platformCells": ["node-local"],
+      "oracleFiles": [
+        { "path": "scripts/job_apply_store/domains/coordinator/persistence.py", "sha256": "1296863bad9412b852879a3b9c653a98ca61375811df2690600e6f69bc7c3177" }
+      ],
+      "testBindings": [{
+        "suiteId": "native-default-cutover",
+        "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
+        "testId": "job CLI read completes a torn-tail coordinator recovery exactly once like Python",
+        "command": ["node", "--test", "tests_js/native_job_cli_lifecycle_parity.test.mjs"],
+        "timeoutMs": 60000,
+        "maxOutputBytes": 65536
+      }],
+      "expectedArtifacts": ["test-log", "environment-profile", "durable-state-comparison"]
+    },
+    {
+      "id": "SESS-current-coordinator-recovery-document",
+      "surfaceIds": ["document:coordinator.json"],
+      "family": "SESS",
+      "category": "recovery",
+      "applicability": { "status": "required" },
+      "platformCells": ["node-local"],
+      "oracleFiles": [
+        { "path": "scripts/job_apply_store/domains/coordinator/persistence.py", "sha256": "1296863bad9412b852879a3b9c653a98ca61375811df2690600e6f69bc7c3177" }
+      ],
+      "testBindings": [{
+        "suiteId": "native-default-cutover",
+        "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
+        "testId": "job CLI read completes a torn-tail coordinator recovery exactly once like Python",
+        "command": ["node", "--test", "tests_js/native_job_cli_lifecycle_parity.test.mjs"],
+        "timeoutMs": 60000,
+        "maxOutputBytes": 65536
+      }],
+      "expectedArtifacts": ["test-log", "environment-profile", "durable-state-comparison"]
+    },
+    {
+      "id": "JOB-current-torn-history-recovery-document",
+      "surfaceIds": ["document:applications.jsonl"],
+      "family": "JOB",
+      "category": "recovery",
+      "applicability": { "status": "required" },
+      "platformCells": ["node-local"],
+      "oracleFiles": [
+        { "path": "scripts/job_apply_store/domains/coordinator/persistence.py", "sha256": "1296863bad9412b852879a3b9c653a98ca61375811df2690600e6f69bc7c3177" },
+        { "path": "scripts/job_apply_store/domains/sessions/history.py", "sha256": "3d0b6cac869f0ec745f80bc3c9a65eda0460818c9f0b0c0e50b3b9ba57bf049f" }
+      ],
+      "testBindings": [{
+        "suiteId": "native-default-cutover",
+        "file": "tests_js/native_job_cli_lifecycle_parity.test.mjs",
+        "testId": "job CLI read completes a torn-tail coordinator recovery exactly once like Python",
+        "command": ["node", "--test", "tests_js/native_job_cli_lifecycle_parity.test.mjs"],
+        "timeoutMs": 60000,
+        "maxOutputBytes": 65536
+      }],
+      "expectedArtifacts": ["test-log", "environment-profile", "durable-state-comparison"]
+    }
+  ]
+}
