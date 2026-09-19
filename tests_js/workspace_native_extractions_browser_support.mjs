@@ -30,6 +30,10 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   assert.equal(await page.locator('#workspace-content').evaluate(node => node === document.activeElement), true);
   assert.equal(await page.locator('nav').getByRole('button', { name: 'Resumes', exact: true }).getAttribute('aria-current'), 'page');
   await page.getByLabel('Resume to extract').selectOption(resume.id);
+  // Import and replacement request scoped extraction by default. Verify the
+  // queued request, then clear it for this legacy proposal walkthrough.
+  await page.getByRole('button', { name: 'Cancel extraction', exact: true }).click();
+  await page.getByText('Extraction request cancelled.', { exact: true }).waitFor();
   // With no review choices, an unacknowledged request write still needs navigation protection.
   let releaseWrite, writeStarted;
   const writeGate = new Promise(resolve => { releaseWrite = resolve; });
@@ -55,11 +59,14 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   await page.getByRole('button', { name: 'Cancel extraction', exact: true }).waitFor();
   await page.getByRole('button', { name: 'Cancel extraction', exact: true }).click();
   await page.getByText('Extraction request cancelled.', { exact: true }).waitFor();
-  await page.getByRole('button', { name: 'Request extraction', exact: true }).click();
+  // Legacy proposal review remains readable, but the UI now requests scoped
+  // extraction. Create one legacy request privately to exercise that path.
+  const legacyRequest = await cli('resume-extraction-request-create', ['--resume-id', resume.id,
+    '--expected-resume-revision', String(resume.revision)]);
+  await page.getByRole('button', { name: 'Refresh extraction status', exact: true }).click();
   await page.getByRole('button', { name: 'Cancel extraction', exact: true }).waitFor();
-  const request = Object.values((await document('resume-extraction-requests')).requests).find(item => item.status === 'requested');
   profile = await document('profile');
-  const result = await cli('resume-extraction-request-complete', ['--id', request.requestId,
+  const result = await cli('resume-extraction-request-complete', ['--id', legacyRequest.requestId,
     '--expected-request-revision', '1', '--expected-profile-revision', String(profile.metadata.revision)],
   { firstName: 'Extracted name', employer: { title: 'Engineer' }, extractedCity: 'Remote' });
   await page.getByRole('button', { name: 'Refresh extraction status', exact: true }).click();

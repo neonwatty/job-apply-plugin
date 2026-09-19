@@ -53,10 +53,19 @@ export async function taskCliBrowser(page, root, fixture, buildRoot) {
   assert.deepEqual(denied, { ok: false, error: { code: 'owner_confirmation_required',
     message: 'Explicit owner confirmation is required.' } });
   assert.equal(await readFile(jobsPath, 'utf8'), before);
-  const selected = await cli('select', [...selectArgs, '--owner-confirmed']);
+  const resume = Object.values(JSON.parse(await readFile(join(root, 'resumes.json'), 'utf8')).resumes)[0];
+  const factSet = JSON.parse(await readFile(join(root, 'resume-facts.json'), 'utf8')).sets[resume.id];
+  const factRevision = factSet.versions.at(-1).revision;
+  const input = await execute(process.execPath, [join(buildRoot, 'runtime/cli/native-jobs.js'),
+    '--root', root, '--native-lock', fixture.receipt.artifact, 'job-input-confirm', '--id', id,
+    '--resume-id', resume.id, '--expected-revision', String(created.job.revision),
+    '--expected-resume-revision', String(resume.revision), '--expected-fact-revision', String(factRevision),
+    '--owner-confirmed'], { env: { PATH: '' } });
+  const selectedRevision = JSON.parse(input.stdout).jobRevision;
+  const selected = await cli('select', ['--id', id, '--expected-revision', String(selectedRevision), '--owner-confirmed']);
   assert.equal(selected.action, 'ready');
   assert.equal(selected.job.status, 'ready');
-  assert.equal(selected.job.revision, created.job.revision + 1);
+  assert.equal(selected.job.revision, selectedRevision + 1);
   const activity = await cli('activity', ['--id', id]);
   assert.equal(activity.activity.job.status, 'ready');
   assert.equal(activity.activity.job.revision, selected.job.revision);

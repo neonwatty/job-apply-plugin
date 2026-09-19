@@ -22,7 +22,7 @@ export async function nextSecurity() {
         const catalogs = ['browser-g02-next-surfaces.json', 'browser-native-answers-surfaces.json',
             'browser-native-extractions-surfaces.json', 'browser-native-projections-surfaces.json',
             'browser-native-job-transitions-surfaces.json', 'browser-native-automation-surfaces.json',
-            'browser-react-trash-surfaces.json'];
+            'browser-react-trash-surfaces.json', 'resume-scoped-facts-surfaces.json'];
         const surfaces = (await Promise.all(catalogs.map(async name =>
             JSON.parse(await readFile(join(root, 'config/migration', name), 'utf8')).surfaces))).flat();
         assert.deepEqual(checkBrowserBindings(discoverNextBrowserExports(components), surfaces), []);

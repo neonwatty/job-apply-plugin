@@ -91,7 +91,7 @@ export async function nativeJobsBrowser(buildRoot) {
     await page.locator('dialog [name="notes"]').fill('Browser draft');
     const cli = join(buildRoot, 'runtime/cli/native-jobs.js');
     const patchFile = join(fixture.root, 'update.json');
-    const { writeFile } = await import('node:fs/promises');
+    const { writeFile, unlink } = await import('node:fs/promises');
     await writeFile(patchFile, '{"company":"CLI writer"}');
     const cliResult = await execute(process.execPath, [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
       'job-update', '--id', job.id, '--expected-revision', '1', '--input', patchFile], { env: { PATH: '' } });
@@ -113,14 +113,14 @@ export async function nativeJobsBrowser(buildRoot) {
     await page.getByLabel('Tags, separated by commas').fill('browser, primary');
     await page.getByLabel('Resume file').setInputFiles({ name: 'browser.txt', mimeType: 'text/plain', buffer: Buffer.from('browser resume') });
     await page.getByRole('button', { name: 'Save', exact: true }).click();
-    await page.getByText('Resume imported', { exact: true }).waitFor();
+    await page.getByText('Resume imported. Fact extraction requested.', { exact: true }).waitFor();
     await page.getByRole('button', { name: /Browser resume · Default/ }).click();
     await page.getByLabel('Label', { exact: true }).fill('Browser resume updated');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await page.getByText('Resume details saved', { exact: true }).waitFor();
     await page.getByLabel('Replacement file').setInputFiles({ name: 'updated.txt', mimeType: 'text/plain', buffer: Buffer.from('updated browser resume') });
     await page.getByRole('button', { name: 'Save', exact: true }).click();
-    await page.getByText('Resume file replaced', { exact: true }).waitFor();
+    await page.getByText('Resume file replaced. Fact extraction requested.', { exact: true }).waitFor();
     const resumeDocument = JSON.parse(await readFile(join(root, 'resumes.json'), 'utf8'));
     const browserResume = Object.values(resumeDocument.resumes)[0];
     assert.equal(browserResume.label, 'Browser resume updated');
@@ -129,6 +129,23 @@ export async function nativeJobsBrowser(buildRoot) {
     const answers = await nativeAnswersBrowser(page, root, fixture, buildRoot);
     const extractions = await nativeExtractionsBrowser(page, root, fixture, buildRoot);
     const automation = await nativeAutomationBrowser(page, root);
+    const currentResume = JSON.parse(await readFile(join(root, 'resumes.json'), 'utf8')).resumes[browserResume.id];
+    const candidatePath = join(fixture.root, 'scoped-browser-facts.json');
+    await writeFile(candidatePath, JSON.stringify({ name: 'Synthetic Browser Candidate' }), { mode: 0o600 });
+    let draft;
+    try {
+      draft = JSON.parse((await execute(process.execPath, [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
+        'resume-facts-draft', '--resume-id', browserResume.id, '--expected-resume-revision', String(currentResume.revision),
+        '--input', candidatePath], { env: { PATH: '' } })).stdout);
+    } finally { await unlink(candidatePath); }
+    const confirmed = JSON.parse((await execute(process.execPath, [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
+      'resume-facts-confirm', '--resume-id', browserResume.id, '--expected-fact-revision', String(draft.revision),
+      '--expected-content-revision', currentResume.contentRevision], { env: { PATH: '' } })).stdout);
+    const currentJob = JSON.parse(await readFile(join(root, 'jobs.json'), 'utf8')).jobs[job.id];
+    await execute(process.execPath, [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
+      'job-input-confirm', '--id', job.id, '--resume-id', browserResume.id, '--expected-revision', String(currentJob.revision),
+      '--expected-resume-revision', String(currentResume.revision), '--expected-fact-revision', String(confirmed.revision),
+      '--owner-confirmed'], { env: { PATH: '' } });
     await page.getByRole('button',{name:'Jobs',exact:true}).click();
     await page.setViewportSize({width:390,height:844});
     await claimsBrowser(page,{jobId:job.id,expireClaim:async id => {
@@ -148,6 +165,12 @@ export async function nativeJobsBrowser(buildRoot) {
     const transitions = await jobTransitionsBrowser(page, {
       jobId: job.id,
       readJob: async () => JSON.parse(await readFile(join(root, 'jobs.json'), 'utf8')).jobs[job.id],
+      confirmInputs: async latest => JSON.parse((await execute(process.execPath, [cli, '--root', root,
+        '--native-lock', fixture.receipt.artifact, 'job-input-confirm', '--id', job.id,
+        '--resume-id', browserResume.id, '--expected-revision', String(latest.revision),
+        '--expected-resume-revision', String(currentResume.revision),
+        '--expected-fact-revision', String(confirmed.revision), '--owner-confirmed'],
+      { env: { PATH: '' } })).stdout),
       prepareInterrupted: async () => {
         // root was initialized above from nativeFixture(), never an owner Store.
         const coordinator = JSON.parse(await readFile(join(root, 'coordinator.json'), 'utf8'));

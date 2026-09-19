@@ -23,9 +23,14 @@ export async function nativeGroupedApprovalsBrowser(page, root, fixture, buildRo
     value: 'PRIVATE-GROUPED-BROWSER-VALUE', scope: { ats: 'greenhouse' }, fieldClass: 'authorization' });
   await cli('job-create', [], { id, url: 'https://example.invalid/grouped-browser', ats: 'greenhouse',
     role: 'Grouped fixture role', company: 'Grouped fixture company' });
-  await cli('task-select', ['--id', id, '--expected-revision', '1', '--owner-confirmed']);
-  const acquired = await cli('job-acquire', ['--id', id, '--expected-revision', '2', '--owner', 'Fixture browser']);
-  await cli('claim-handoff', ['--id', id, '--token', acquired.token, '--status', 'needs_info', '--expected-revision', '3'],
+  const resume = Object.values(JSON.parse(await readFile(join(root, 'resumes.json'), 'utf8')).resumes)[0];
+  const facts = await cli('resume-facts-get', ['--resume-id', resume.id]);
+  const confirmed = await cli('job-input-confirm', ['--id', id, '--resume-id', resume.id,
+    '--expected-revision', '1', '--expected-resume-revision', String(resume.revision),
+    '--expected-fact-revision', String(facts.revision), '--owner-confirmed']);
+  const selected = await cli('task-select', ['--id', id, '--expected-revision', String(confirmed.jobRevision), '--owner-confirmed']);
+  const acquired = await cli('job-acquire', ['--id', id, '--expected-revision', String(selected.job.revision), '--owner', 'Fixture browser']);
+  await cli('claim-handoff', ['--id', id, '--token', acquired.token, '--status', 'needs_info', '--expected-revision', String(acquired.job.revision)],
     { status: 'active', pendingFields: [{ question: 'Grouped fixture authorization?', state: 'missing',
       answerKey: key, sensitive: false, fieldClass: 'authorization', scope: { ats: 'greenhouse' } }] });
   const sessionPath = join(root, 'sessions', `${id}.json`);

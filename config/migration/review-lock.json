@@ -485,7 +485,7 @@
     },
     {
       "path": "source-catalog-native-store-clone.json",
-      "sha256": "7152201d4e6aecd1652d93c0bc434447be9bfd43b71543e739d360173b981e0d"
+      "sha256": "20b89c9a9a8e85fbba2b018202df1123570becb72df121b0a89585e111bbebac"
     },
     {
       "path": "source-catalog-native-task-cli.json",

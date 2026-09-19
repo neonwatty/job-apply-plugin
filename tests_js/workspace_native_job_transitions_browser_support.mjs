@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readyPacket } from './workspace_native_claims_support.mjs';
 
 // Caller owns a disposable native fixture with a preflight-ready job and no claim.
-export async function jobTransitionsBrowser(page, { jobId, readJob, prepareInterrupted }) {
+export async function jobTransitionsBrowser(page, { jobId, readJob, confirmInputs, prepareInterrupted }) {
   const authorization = await page.evaluate(() => `Bearer ${sessionStorage.getItem('jobApplyWorkspaceToken')}`);
   async function api(path, body, method = body === undefined ? 'GET' : 'POST') {
     const response = await page.request.fetch(new URL(path, page.url()).href, {
@@ -78,7 +78,8 @@ export async function jobTransitionsBrowser(page, { jobId, readJob, prepareInter
   await close.click();
 
   // Prepare review through the real claim API; no browser or employer submission occurs.
-  const acquired = await api('/api/claims/acquire', { jobId, expectedRevision: latest.revision, ownerLabel: 'Transition fixture' });
+  const selected = await confirmInputs(latest);
+  const acquired = await api('/api/claims/acquire', { jobId, expectedRevision: selected.jobRevision, ownerLabel: 'Transition fixture' });
   const reviewed = await api('/api/claims/handoff', { jobId, token: acquired.token, status: 'awaiting_review',
     expectedRevision: acquired.job.revision, session: { status: 'review', readinessInput: readyPacket(acquired.job.revision) } });
   assert.equal(reviewed.job.status, 'awaiting_review');

@@ -47,7 +47,7 @@ test('canonical Store clone leaves Python source untouched and supports durable 
   const before = await snapshot(source), provider = loadPosixFlockProvider(fixture.receipt.artifact);
   await prepareCanonicalStoreClone(source, target, provider, fixed);
   assert.deepEqual(await snapshot(source), before);
-  assert.deepEqual((await readdir(target)).sort(), [...nativeStoreRequiredEntries, '.native-store-clone'].sort());
+  assert.deepEqual((await readdir(target)).sort(), [...nativeStoreRequiredEntries, '.native-store-clone', 'resume-facts.json'].sort());
   const marker = JSON.parse(await readFile(join(target, '.native-store-clone'), 'utf8'));
   assert.equal(marker.mode, 'canonical-store-clone');
   assert.equal(marker.version, 2);

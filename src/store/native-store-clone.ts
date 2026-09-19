@@ -123,7 +123,7 @@ export async function canonicalStoreSourceTreeLocked(source: string, provider: P
 export async function canonicalStoreCandidateTreeLocked(root: string, provider: PosixFlockProvider,
   signal = AbortSignal.timeout(30_000), policy?: NativePolicyTreeEntry[] | null): Promise<string> {
   const entries = new Set(await readdir(root));
-  const allowed = new Set<string>([...nativeStoreRequiredEntries, nativeCloneMarkerName, nativePolicyTreeName]);
+  const allowed = new Set<string>([...nativeStoreRequiredEntries, nativeCloneMarkerName, nativePolicyTreeName, 'resume-facts.json']);
   if (nativeStoreRequiredEntries.some(name => !entries.has(name)) || [...entries].some(name => !allowed.has(name))) {
     throw new JobsError('canonical clone candidate contains unsupported or incomplete state');
   }
