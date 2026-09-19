@@ -302,6 +302,10 @@
       "sha256": "8cad4f14141190d02191d515fd7f256137aa7b99dc3c6ded08a49d4c8062ab64"
     },
     {
+      "path": "requirements-current-pure-browser-01.json",
+      "sha256": "4613803174a491ebe89bc08d9ec90affb89ac3916c7516eba7bfc1ae30ad71b5"
+    },
+    {
       "path": "requirements-trash-01.json",
       "sha256": "bbc212556338c323e049109befdfc3bf2c4049f313cb0189935b727e475c5012"
     },
