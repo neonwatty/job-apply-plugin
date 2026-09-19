@@ -287,7 +287,11 @@
     },
     {
       "path": "requirements-current-job-cli-01.json",
-      "sha256": "be00277efad8e7ba843bb5f39144305c421e5a6d04fb7c52e147ee1477b4caf4"
+      "sha256": "a223ba2c43b6cec2b618d9de40c66f39ff714b6b131263bf75190acb600f5a23"
+    },
+    {
+      "path": "requirements-current-job-cli-02.json",
+      "sha256": "967b05e296587f85da3aec90eef76b70b8c74acc433241fc817a09b02dbb776a"
     },
     {
       "path": "requirements-current-native-cli-01.json",
