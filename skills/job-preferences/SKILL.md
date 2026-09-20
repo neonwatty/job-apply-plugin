@@ -7,6 +7,7 @@ allowed-tools: Read, Write, Bash
 # Job Preferences
 
 Read [answer-memory](../answer-memory/SKILL.md) for root resolution, initialization, private inputs, and revision handling. Use `node "<plugin-root>/apps/companion/command.mjs" store profile-inspect` to obtain `profile.preferences` and its revision.
+For first use or a handoff to Job Search, read the shared [workflow map](../answer-memory/references/workflow-map.md).
 
 Apply changes already specified in the current request without asking whether the user wants to make them. Ask only about missing or ambiguous values needed for that change. If the user asks to view preferences, show the saved preferences without starting a questionnaire. If no preferences exist, accept a partial set; do not require salary or every other field before saving useful criteria.
 

@@ -26,6 +26,7 @@ Use permission-restricted temporary JSON files for `--input`, remove them on suc
 
 ## Read only the reference for the operation
 
+- First use or a handoff across search, resume facts, and applications: [workflow map](references/workflow-map.md).
 - Profile facts, preferences, or fact groups: [profile](references/profile.md). Inspect the current revision before selective writes; preserve unrelated facts.
 - Managed resume import, replacement, resume-scoped facts, or legacy extraction proposals: [resumes](references/resumes.md).
 - Reusable answers, missing questions, consent, or answer-library edits: [answers](references/answers.md).

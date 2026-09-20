@@ -7,6 +7,7 @@ allowed-tools: Bash
 # Job Workspace
 
 Start the packaged, local-only companion when the user asks to review their next step, manage canonical Jobs, Facts, Resumes, reusable Answers and observed questions, supervise Application Activity or Needs Attention, or recover Trash in a browser.
+For first use or a handoff between Companion and an agent, read the shared [workflow map](../answer-memory/references/workflow-map.md).
 
 ## Launch
 

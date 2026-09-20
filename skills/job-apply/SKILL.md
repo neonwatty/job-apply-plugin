@@ -11,6 +11,7 @@ Complete the requested application through verified manual review, or record the
 ## Route the request
 
 First read [answer-memory](../answer-memory/SKILL.md) to resolve the plugin and Store routing for `node "<plugin-root>/apps/companion/command.mjs" store`. Never access persistent applicant files directly.
+For first use or a cross-skill handoff, read the shared [workflow map](../answer-memory/references/workflow-map.md).
 
 - An approved loopback URL with `#qa-route=<run-id>.<64-lowercase-hex-token>` requires [QA replay routing](../answer-memory/references/qa-replay.md) **before init or any other Store call**. Keep the isolated root throughout; never fall back to the real Store.
 - Resume, facts, onboarding, or an exact extraction request: read [extraction](references/extraction.md). Never scan for extraction requests during every job application. Stop at owner fact review.

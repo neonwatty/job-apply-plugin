@@ -17,6 +17,7 @@ AI-powered job application assistant for Claude Code and Codex that fills job ap
 | `job-apply:job-workspace` | Open the optional local Jobs, Facts, Resumes, Answers, and unified Trash workspace shared with Job Apply agents |
 
 Invoke skills with `$job-apply:...` in Codex or `/job-apply:...` in Claude Code.
+The [workflow map](skills/answer-memory/references/workflow-map.md) shows how first use, job search, and one application move between these skills and the shared Store.
 
 ## Features
 
