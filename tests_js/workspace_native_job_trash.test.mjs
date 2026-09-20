@@ -57,6 +57,7 @@ test('native Trash listing and job lifecycle preserve Python contracts and persi
     });
     await t.test('claims including expired claims block both mutations before noops',async()=>{
       const state=await isolated();
+      await state.startRun();
       await state.claims.select('job',1n,true);
       await state.claims.acquire('job',text('Synthetic owner'),2n);
       await differential(state,join(fixture.root,'python-claimed'),[
@@ -71,6 +72,7 @@ test('native Trash listing and job lifecycle preserve Python contracts and persi
     });
     await t.test('unified listing redacts private values and counts all references in deterministic Unicode order',async()=>{
       const state=await isolated();
+      await state.startRun();
       await state.claims.select('job',1n,true);
       const acquired=plain(await state.claims.acquire('job',text('Synthetic owner'),2n));
       await state.claims.progress('job',text(acquired.token),fromJSON({status:'active',pendingFields:[]}));

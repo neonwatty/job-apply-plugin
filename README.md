@@ -118,7 +118,7 @@ Once a resume's facts are confirmed:
    https://www.linkedin.com/jobs/view/123456789
    ```
 
-3. Confirm the exact resume and its facts with the agent in chat for this job, then watch it fill from that fact set
+3. Confirm the exact resume and its facts with the agent once for an application run, then manage the run's queue and watch each application fill from that fact set
 
 4. Inspect the final review page and field summary. The assistant stops before final submission; only you may decide whether to complete it manually on the third-party site.
 

@@ -33,6 +33,7 @@ test('permanent job deletion matches Python guards, retained evidence and durabl
     });
     await t.test('claimed and expired claims win over trash and session guards', async () => {
       const state = await isolated();
+      await state.startRun();
       await state.claims.select('job', 1n, true);
       await state.claims.acquire('job', text('Synthetic'), 2n);
       await differential(state, join(fixture.root, 'python-delete-claim'), [
@@ -49,6 +50,7 @@ test('permanent job deletion matches Python guards, retained evidence and durabl
     await t.test('nonterminal sessions block while terminal session and history bytes survive', async () => {
       for (const status of ['active', 'completed', 'abandoned']) {
         const state = await isolated();
+        const run = plain(await state.startRun());
         await state.claims.select('job', 1n, true);
         const acquired = plain(await state.claims.acquire('job', text('Synthetic'), 2n));
         await state.claims.progress('job', text(acquired.token), fromJSON({status:'active', pendingFields:[]}));
@@ -58,6 +60,7 @@ test('permanent job deletion matches Python guards, retained evidence and durabl
         const session = await read(state.root, 'sessions/job.json');
         session.status = status;
         await write(state.root, 'sessions/job.json', session);
+        await state.runs.update(run.runId, BigInt(run.revision), fromJSON({jobIds:['other']}));
         await state.service.trashJob('job', 3n);
         await differential(state, join(fixture.root, `python-delete-${status}`), [{kind:'delete', revision:4}]);
         assert.equal(Boolean((await read(state.root, 'jobs.json')).jobs.job), status === 'active');

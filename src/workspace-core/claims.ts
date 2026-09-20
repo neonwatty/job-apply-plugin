@@ -106,7 +106,7 @@ export class ClaimsService {
       if (int(get(job,'revision')) !== expectedRevision) throw new JobsError('task selection revision conflict');
       requireJobUnclaimed(tx.coordinator,id);
       if (!['saved','needs_info','ready'].includes(string(get(job,'status'))!)) throw new JobsError('task selection job is unavailable');
-      if (get(await preflightJobRecord(job,tx.profile,tx.resumes,tx.files,tx.facts,tx.requests),'ready') !== true) throw new JobsError('task selection preflight failed');
+      if (get(await preflightJobRecord(job,tx.profile,tx.resumes,tx.files,tx.facts,tx.requests,tx.jobs),'ready') !== true) throw new JobsError('task selection preflight failed');
       if (string(get(job,'status')) === 'ready') return set(doc({action:'noop'}),'job',projectJob(job));
       const updated = transitioned(job,'ready',this.now());
       set(object(get(tx.jobs,'jobs'),'jobs'),id,updated);
@@ -123,7 +123,7 @@ export class ClaimsService {
       const job = activeJob(tx.jobs,id);
       if (int(get(job,'revision')) !== expectedRevision) throw new JobsError('job revision conflict');
       if (string(get(job,'status')) !== 'ready') throw new JobsError('only a ready job can be acquired');
-      const preflight = await preflightJobRecord(job,tx.profile,tx.resumes,tx.files,tx.facts,tx.requests);
+      const preflight = await preflightJobRecord(job,tx.profile,tx.resumes,tx.files,tx.facts,tx.requests,tx.jobs);
       if (get(preflight,'ready') !== true) throw new JobsError('job is not ready');
       const now = this.now(), {claim,token} = makeClaim(id,ownerLabel,now);
       const resume = copy(object(get(object(get(tx.resumes,'resumes'),'resumes'),string(get(preflight,'resumeId'))!),'resume'));
@@ -146,7 +146,7 @@ export class ClaimsService {
       if (string(get(job,'status')) !== 'awaiting_review') throw new JobsError('review restart requires an awaiting_review job');
       const session = tx.sessions.find(item => string(get(item,'applicationId')) === id) ?? null;
       const event = validateReviewRestartEvidence(job,session,tx.history);
-      const preflight = await preflightJobRecord(job,tx.profile,tx.resumes,tx.files,tx.facts,tx.requests);
+      const preflight = await preflightJobRecord(job,tx.profile,tx.resumes,tx.files,tx.facts,tx.requests,tx.jobs);
       const rawResume = get(object(get(tx.resumes,'resumes'),'resumes'),string(get(preflight,'resumeId')) ?? '');
       if (get(preflight,'ready') !== true || rawResume === null || string(get(object(rawResume,'resume'),'storageKind')) !== 'managed') throw new JobsError('job is not ready with a current managed resume');
       const resume = copy(object(rawResume,'resume'));
@@ -183,7 +183,7 @@ export class ClaimsService {
   progress(id:string,token:Value,incoming:Document):Promise<Value> {
     return this.repository.claimTransaction(async tx => {
       requireClaim(tx.coordinator,tx.jobs,id,token,this.now());
-      if (get(await preflightJobRecord(activeJob(tx.jobs,id),tx.profile,tx.resumes,tx.files,tx.facts,tx.requests),'ready') !== true)
+      if (get(await preflightJobRecord(activeJob(tx.jobs,id),tx.profile,tx.resumes,tx.files,tx.facts,tx.requests,tx.jobs),'ready') !== true)
         throw new JobsError('confirmed application inputs changed');
       const session = this.session(tx,activeJob(tx.jobs,id),incoming);
       if (string(get(session,'status')) !== 'active') throw new JobsError('claim progress session must remain active');
@@ -197,7 +197,7 @@ export class ClaimsService {
       requireClaim(tx.coordinator,tx.jobs,id,token,this.now());
       const job = activeJob(tx.jobs,id);
       if (status === 'awaiting_review'
-        && get(await preflightJobRecord(job,tx.profile,tx.resumes,tx.files,tx.facts,tx.requests),'ready') !== true)
+        && get(await preflightJobRecord(job,tx.profile,tx.resumes,tx.files,tx.facts,tx.requests,tx.jobs),'ready') !== true)
         throw new JobsError('confirmed application inputs changed');
       if (int(get(job,'revision')) !== expectedRevision) throw new JobsError('job revision conflict');
       const now = this.now(), session = this.session(tx,job,incoming,now);

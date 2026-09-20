@@ -28,6 +28,7 @@ import { validateAnswers } from "../contracts/workspace/answers.js";
 import { ResumeService } from '../workspace-core/resumes.js';
 import { preparednessSnapshot, runHistoryTransaction, runReplayTransitionTransaction, runSessionTransaction, stateStorage } from './native-store-state-repository.js';
 import { validateNativeJobsRoot } from './native-root-validation.js';
+import { nativePendingAnswerState } from './native-pending-answer-state.js';
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 };
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 };
@@ -356,14 +357,11 @@ export class NativeJobsRepository {
     }
     async pendingAnswerTransaction(operation) {
         return this.transaction(async () => {
-            const jobs = validateJobsDocument(await this.document('jobs')), sessions = await this.answerSessions();
-            const coordinator = validateCoordinator(await this.journal('coordinator'));
-            return operation({ jobs, sessions, answers: validateAnswers(await this.document('answers')),
-                profile: validateProfile(await this.document('profile')), resumes: validateExtractionResumes(await this.document('resumes')),
-                files: new NativeResumeFiles(this.root), requireUnclaimed: id => requireJobUnclaimed(coordinator, id), commit: value => {
+            const { coordinator, ...state } = await nativePendingAnswerState(name => name === 'resume-facts' ? this.resumeFactsDocument() : this.document(name), name => this.journal(name), () => this.answerSessions(), this.root);
+            return operation({ ...state, requireUnclaimed: id => requireJobUnclaimed(coordinator, id), commit: value => {
                     if (get(coordinator, 'claim') !== null)
                         throw new JobsError('answer resolution requires an idle coordinator');
-                    return this.resolutionJournal().commit(value, jobs, sessions);
+                    return this.resolutionJournal().commit(value, state.jobs, state.sessions);
                 } });
         });
     }

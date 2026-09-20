@@ -8,7 +8,7 @@
     },
     {
       "path": "runtime/cli/native-claims.js",
-      "sha256": "39c295c7c588b1e32f64166c500f2a4622943111be2a5e3217ea116cb6782e28",
+      "sha256": "4df8871fbcd15a13d1edfe53147fd8e774ca2b0e4eecbb2b1a7da34f78020c8d",
       "classification": "unreviewed"
     },
     {
@@ -53,12 +53,12 @@
     },
     {
       "path": "runtime/workspace-core/claims.js",
-      "sha256": "0c5c3acb9cf337a12b952be55e14f1bc15cd5bfb7fd1be26ddbfc28610880792",
+      "sha256": "8efa94ed63202828a955b1f4a6867ee630d0a4dd9873b39f422c6ea97a99ac8f",
       "classification": "unreviewed"
     },
     {
       "path": "src/cli/native-claims.ts",
-      "sha256": "26809093bfe906d0851bb333223bdf9176e3851bada995fa17480fdfc86af151",
+      "sha256": "cf9558ddb738fc89513f2d26299805ad2806ee4c91c1a548656a2c3000450912",
       "classification": "unreviewed"
     },
     {
@@ -103,7 +103,7 @@
     },
     {
       "path": "src/workspace-core/claims.ts",
-      "sha256": "3849b6e3890c38096b7c38338e92af328ed79ef7e9d5b2e6239b877b240ded16",
+      "sha256": "5efa6481d22aba4abed28df5d1afab2032a7fdac2f5172234b48a63cd058a9bb",
       "classification": "unreviewed"
     },
     {

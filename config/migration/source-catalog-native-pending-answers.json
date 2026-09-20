@@ -33,7 +33,7 @@
     },
     {
       "path": "runtime/workspace-core/job-preflight.js",
-      "sha256": "2ed1c8e5538b3c6985830fb2b656d56f45542b46969618ce02f9091b4a655db7",
+      "sha256": "6f5082a5989b6ca69c7eb03603a67e0ca675ebfdf4c37dab574c2d69213c6788",
       "classification": "unreviewed"
     },
     {
@@ -43,7 +43,7 @@
     },
     {
       "path": "runtime/workspace-core/pending-answers.js",
-      "sha256": "acc340232db1b941681d4037263f1fff3e8e9ad70da24f26de8ba7b6a4f932cf",
+      "sha256": "52477897dba3f01d2e2c08845866dd08beccabdbe3bc871484a3a1acdd9c0208",
       "classification": "unreviewed"
     },
     {
@@ -68,7 +68,7 @@
     },
     {
       "path": "src/workspace-core/job-preflight.ts",
-      "sha256": "31555a8af42d9d0cccaf8c5735e1d44ca6ccd57643ab3bb863e9141a93de6d0b",
+      "sha256": "e570ad9066077556efd3a77bbc8e5714b9cc717bb4494f4a419f09504423ed65",
       "classification": "unreviewed"
     },
     {
@@ -78,7 +78,7 @@
     },
     {
       "path": "src/workspace-core/pending-answers.ts",
-      "sha256": "41dcf5668b466ce8d24085b1dc287a0ae676570f226b44fa801dc8df948717fb",
+      "sha256": "f189d397658d977a307f5b0f493ed7771307f24cd38577105869f510f0e0b031",
       "classification": "unreviewed"
     }
   ]

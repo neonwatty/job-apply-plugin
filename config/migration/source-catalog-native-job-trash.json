@@ -13,7 +13,7 @@
     },
     {
       "path": "runtime/workspace-core/trash.js",
-      "sha256": "9f2c42669a109ad95c8bc614485ebef6e29fc27b24c5a7610d6d65474d7d18fa",
+      "sha256": "a8c75232603afc6ff37fae0c30019a8e1f268f236c2ae1af39970df97d4bc3db",
       "classification": "unreviewed"
     },
     {
@@ -28,7 +28,7 @@
     },
     {
       "path": "src/workspace-core/trash.ts",
-      "sha256": "73840304f8c65286a1c1e91bd38e5636d08d1530cf782afa04025ebcfc2a75c9",
+      "sha256": "70b6ea8670aa998ab2174ba8fd14a9c7bd3fc703c0780a317f0a0bf5e489c570",
       "classification": "unreviewed"
     }
   ]

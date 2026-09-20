@@ -112,7 +112,7 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
                 ? await client.update(current.selected.id, current.selected.revision, current.fields, controller.signal)
                 : await client.create(current.fields, controller.signal);
             if (!alive.current || version !== generation.current) return;
-            setData(previous => ({ resumes: previous?.resumes ?? [], jobs:
+            setData(previous => ({ resumes: previous?.resumes ?? [], applicationRun: previous?.applicationRun ?? null, jobs:
                 previous?.jobs.some(job => job.id === saved.id)
                     ? previous.jobs.map(job => job.id === saved.id ? saved : job)
                     : [saved, ...(previous?.jobs ?? [])] }));
@@ -153,6 +153,9 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
     const jobs = allJobs.filter(job => visible.has(job));
     const readyJobs = allJobs.filter(job => job.status === 'ready').length;
     const attentionJobs = allJobs.filter(job => job.status === 'needs_info').length;
+    const run = data?.applicationRun ?? null;
+    const runQueue = new Set(run?.queueVersions.at(-1)?.jobIds ?? []);
+    const runResume = data?.resumes.find(resume => resume.id === run?.selection.resumeId);
     return <section className="jobs-workspace" aria-labelledby="jobs-workspace-title">
         <header className="workspace-hero">
             <div className="workspace-hero-copy">
@@ -169,6 +172,11 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
             <div><strong>{allJobs.length}</strong><span>Active jobs</span></div>
             <div><strong>{readyJobs}</strong><span>Ready for agent</span></div>
             <div><strong>{attentionJobs}</strong><span>Need information</span></div>
+        </div>}
+        {run && <div className="workspace-panel application-run-panel" aria-label="Active application run">
+            <div><p className="eyebrow">Active application run</p><h2>{runResume?.label ?? run.selection.resumeId}</h2></div>
+            <p><strong>{runQueue.size}</strong> queued jobs · queue revision {run.queueVersions.at(-1)?.revision} · confirmed facts revision {run.selection.factRevision}</p>
+            <p>The agent confirmed this resume and fact set for the whole run. The queue may change while these inputs stay locked.</p>
         </div>}
         <div className="workspace-panel jobs-panel">
             <div className="workspace-panel-heading">
@@ -194,12 +202,13 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
                     const company = String(job.company || 'Company not set');
                     const location = String(job.location || job.workplaceType || 'Location not set');
                     const priority = typeof job.priority === 'number' && Number.isFinite(job.priority) ? Math.max(0, Math.min(5, Math.round(job.priority))) : 0;
-                    return <button className="job-card" aria-label={`${role}, ${company}`} disabled={busy || transitionBusy || claimsActive} key={job.id} onClick={() => open(job)}>
+                    return <button className="job-card" aria-label={`${role}, ${company}${runQueue.has(job.id) ? ', in active application run' : ''}`} disabled={busy || transitionBusy || claimsActive} key={job.id} onClick={() => open(job)}>
                         <span className="company-mark" aria-hidden="true">{company.trim().charAt(0).toUpperCase() || '?'}</span>
                         <span className="job-identity"><strong>{role}</strong><span>{company}</span></span>
                         <span className="job-location">{location}</span>
                         <span className="job-priority" aria-label={`Priority ${priority} of 5`}>{priority ? `${'★'.repeat(priority)}${'☆'.repeat(5-priority)}` : 'Priority —'}</span>
                         <span className={`status-pill status-${job.status}`}>{job.status.replaceAll('_', ' ')}</span>
+                        {runQueue.has(job.id) && <span className="run-pill">In active run</span>}
                         <span className="visually-hidden">revision {job.revision}</span>
                     </button>;
                 })}

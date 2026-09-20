@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
-import { plain, read, setup, snapshot } from './workspace_native_claims_support.mjs';
+import { addToRun, plain, read, setup, snapshot } from './workspace_native_claims_support.mjs';
 import { AccountsService } from '../runtime/workspace-core/accounts.js';
 import { AutomationService } from '../runtime/workspace-core/automation.js';
 import { SyntheticAccountService } from '../runtime/workspace-core/synthetic-account.js';
@@ -16,6 +16,7 @@ async function prepared(fixture, name) {
   const state = await setup(fixture, name);
   const created = plain(await state.jobs.create(fromJSON({ id: 'account-job', url: portal,
     role: 'Engineer', company: 'Synthetic', ats: 'workday' })));
+  await addToRun(state, created.id);
   await state.claims.select('account-job', BigInt(created.revision), true);
   const selected = plain(await state.jobs.get('account-job'));
   const acquired = plain(await state.claims.acquire('account-job', fromJSON('Synthetic owner'), BigInt(selected.revision)));

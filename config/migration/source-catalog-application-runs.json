@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "runtime/contracts/workspace/application-runs.js",
+      "sha256": "d37e15eb4ca0307d80e8c584a1913b21dea5b20da46bb153ac847d369af1afc9",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/native-pending-answer-state.js",
+      "sha256": "61bf532fe08137b8cbd9d722f574cc1cb84b55832bc9bf854c66e80b4170da47",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/application-runs.js",
+      "sha256": "78bfcbc5d3e4d85083b7ab3e9f44e0412f3fc0ea0b719a6537cae259b9c11296",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/application-runs.ts",
+      "sha256": "f729b1f770fcf71712ab560bd77407ec765009089944aff77df7f9427832abd6",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/native-pending-answer-state.ts",
+      "sha256": "b02e0333f1c7d0fcf66cc4bf12428874e4f54921c1732f34d65a2ea6df91f736",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/application-runs.ts",
+      "sha256": "126342fae3c553b674d8f2ff25a68c4072f0286365397fde56d35952af3e5a40",
+      "classification": "unreviewed"
+    }
+  ]
+}

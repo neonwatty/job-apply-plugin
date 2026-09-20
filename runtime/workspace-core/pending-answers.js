@@ -72,7 +72,7 @@ export class PendingAnswersService {
             // the final-field path may require preflight, and it must run under this lock.
             const preliminary = prepareAnswerResolution(transaction.jobs, transaction.answers, session, args, true);
             if (get(preliminary.result, 'ready') === true) {
-                const preflight = await preflightJobRecord(job, transaction.profile, transaction.resumes, transaction.files);
+                const preflight = await preflightJobRecord(job, transaction.profile, transaction.resumes, transaction.files, transaction.facts, transaction.requests, transaction.jobs);
                 if (get(preflight, 'ready') !== true)
                     throw new JobsError('job preflight failed after answer resolution');
             }

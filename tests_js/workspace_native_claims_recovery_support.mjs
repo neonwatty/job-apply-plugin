@@ -7,6 +7,8 @@ import { initializeJobsFixture, NativeJobsRepository } from '../runtime/store/na
 import { atomicWritePointJson } from '../runtime/store/point-persistence.js';
 import { JobsService } from '../runtime/workspace-core/jobs.js';
 import { ResumeService } from '../runtime/workspace-core/resumes.js';
+import { ResumeFactsService } from '../runtime/workspace-core/resume-facts.js';
+import { ApplicationRunsService } from '../runtime/workspace-core/application-runs.js';
 import { ClaimsService } from '../runtime/workspace-core/claims.js';
 import { fromJSON, serialize, text } from '../runtime/contracts/workspace/values.js';
 export const fixed = '2026-09-10T12:00:00Z';
@@ -59,7 +61,13 @@ export async function seed(fixture,name) {
   const profile=JSON.parse(await readFile(join(root,'profile.json'),'utf8'));
   profile.profile.name='Synthetic Owner';
   await atomicWritePointJson(join(root,'profile.json'),fromJSON(profile),options);
-  await new ResumeService(repository,()=>fixed).import(fromJSON({id:'resume',label:'Fixture',default:true}),'fixture.txt',Buffer.from('Synthetic resume'));
+  const resume=plain(await new ResumeService(repository,()=>fixed).import(
+    fromJSON({id:'resume',label:'Fixture',default:true}),'fixture.txt',Buffer.from('Synthetic resume')));
+  const facts=new ResumeFactsService(repository,()=>fixed);
+  const draft=plain(await facts.createDraft('resume',fromJSON({name:'Synthetic Owner'}),BigInt(resume.revision),null));
+  const confirmed=plain(await facts.confirm('resume',BigInt(draft.revision),draft.contentRevision));
+  await new ApplicationRunsService(repository,()=>fixed).start('resume',BigInt(resume.revision),
+    BigInt(confirmed.revision),true,fromJSON({jobIds:['job']}));
   const service=new ClaimsService(repository,()=>fixed);
   const {token}=plain(await service.acquire('job',text('Fixture worker'),1n));
   await service.progress('job',text(token),fromJSON(incoming));
