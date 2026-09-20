@@ -44,6 +44,16 @@ test('source edits, additions, deletions and renames require reconciliation', ()
     assert.ok(validateInventory(data, actual).length);
   }
 });
+test('closed runtime migration retires source hashes but keeps live surface source bindings', () => {
+  const { data, actual } = fixture();
+  actual.set('scripts/router.py', 'b'.repeat(64));
+  actual.set('src/private-helper.ts', 'c'.repeat(64));
+  assert.deepEqual(validateInventory(data, actual, { enforceSourceHashes: false }), []);
+
+  actual.delete('scripts/router.py');
+  assert.match(validateInventory(data, actual, { enforceSourceHashes: false }).join('\n'),
+    /Missing source binding/);
+});
 test('unknown owners, duplicate identities, missing sources and malformed methods fail', () => {
   for (const change of [
     (data) => { data.surfaces[0].node = 'UNKNOWN'; },

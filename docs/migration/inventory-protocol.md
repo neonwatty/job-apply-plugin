@@ -1,4 +1,25 @@
-# Executable inventory checkpoint I4
+# Executable inventory checkpoint I4 (archived migration protocol)
+
+## Runtime migration closeout
+
+The shipped runtime migration is closed by
+`config/migration/python-runtime-closure.json`: no Python runtime entry points or
+packaged Python trees remain. The inventory now serves as a contract surface guard
+and historical audit record. Ordinary TypeScript and emitted runtime byte changes no
+longer require source catalog SHA reconciliation.
+
+`npm run check:migration` still validates the closed Python boundary, current CLI,
+HTTP, browser, persisted document and journal declarations, source existence for
+every declared surface, browser export discovery, requirement test bindings, and
+the review lock for current inventory shards. It also re-audits the frozen historical
+evidence at its original revision and rejects changes to archived migration records.
+Runtime emission reproducibility remains enforced by `npm run build:check`; contract
+tests, the test matrix and source-size checks remain separate required gates.
+
+The source hashes retained in `source-catalog-*.json` are historical migration
+bindings. They are no longer a current-code freshness claim once the closure manifest
+is valid and says `migration-closed`. A new or removed public surface still requires
+updating its surface ledger and reconciling `review-lock.json`.
 
 This is a partial implementation of node I, not its acceptance. Parent I remains
 open until writer classification and reviewed
