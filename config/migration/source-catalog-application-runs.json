@@ -3,7 +3,7 @@
   "sources": [
     {
       "path": "runtime/contracts/workspace/application-runs.js",
-      "sha256": "87eb2b1478d1175994eb06e63971b14f6ab35fd27c417937868959fdb7eaa0f1",
+      "sha256": "d37e15eb4ca0307d80e8c584a1913b21dea5b20da46bb153ac847d369af1afc9",
       "classification": "unreviewed"
     },
     {
@@ -18,7 +18,7 @@
     },
     {
       "path": "src/contracts/workspace/application-runs.ts",
-      "sha256": "6520b095fdd1e213365a078fbd300b8a11f8be751a7c6fdc38d482aac455a582",
+      "sha256": "f729b1f770fcf71712ab560bd77407ec765009089944aff77df7f9427832abd6",
       "classification": "unreviewed"
     },
     {

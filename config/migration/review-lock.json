@@ -3,7 +3,7 @@
   "files": [
     {
       "path": "source-catalog-application-runs.json",
-      "sha256": "50ea432ced47982ea3402ababe4466b2bd4c32d418cb6d7a11861e1b5f068eec"
+      "sha256": "9f19ecdabdf5fa98ce24bc646665edb3c768db53a7c7f85962dc8d0d2c258056"
     },
     {
       "path": "application-runs-surfaces.json",
