@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "files": [
     {
+      "path": "source-catalog-application-runs.json",
+      "sha256": "9f19ecdabdf5fa98ce24bc646665edb3c768db53a7c7f85962dc8d0d2c258056"
+    },
+    {
+      "path": "application-runs-surfaces.json",
+      "sha256": "2e8b6926507b2e3875ec90ff9ab2fd1c6bdd55740cbaa3718041c230dab8e03c"
+    },
+    {
       "path": "resume-scoped-facts-surfaces.json",
       "sha256": "69e96a2ef5e3739b52b6ffce4fd12edda0cc0f94b23f9bb9270099c9dff15ba9"
     },
@@ -371,7 +379,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "f45fe646b34a1b0a2c5e8e44c87d9979b6e5501808e14d923da9a19107a825ac"
+      "sha256": "0a2f9b62b5e0ee5c4262b7eb7e63ffc39add7244fc744516c6d8f05ee566aff0"
     },
     {
       "path": "source-catalog-m01.json",
@@ -415,7 +423,7 @@
     },
     {
       "path": "source-catalog-native-claims.json",
-      "sha256": "a8df9053d5a5f47a5d94a790eb603510e123bcec28ed1118d123b6d65cb70e83"
+      "sha256": "297599499b18cc9212f4853c8dfb4fb78ffc656c25f17ba55670febf408be888"
     },
     {
       "path": "source-catalog-native-default-cutover.json",
@@ -443,11 +451,11 @@
     },
     {
       "path": "source-catalog-native-job-transitions.json",
-      "sha256": "d3586b035af22d3f4b4fa3ba3aa7d9e1bc781632317005aff9d158ac78625772"
+      "sha256": "b3c81041608a3bf02afad14ec93e204d4610ae502dc36a7828432c45310cdf9d"
     },
     {
       "path": "source-catalog-native-job-trash.json",
-      "sha256": "2acfa5a69e084fd7ac11adce3e4097e09a128cf35026cbf102ad401777ac9ff3"
+      "sha256": "85089d32a85f59283147ba6cbf3291be746307c5611bc58349768161469fddd2"
     },
     {
       "path": "source-catalog-native-job-upsert.json",
@@ -455,7 +463,7 @@
     },
     {
       "path": "source-catalog-native-jobs.json",
-      "sha256": "28295d9f28612dd591cf8f438054f7ecf1662251246dd76fa4dbf62466862475"
+      "sha256": "547ff1479e6a35dd91a5085c89813a2a9398a9085590232bcf687490eb573284"
     },
     {
       "path": "source-catalog-native-legacy-jobs.json",
@@ -471,11 +479,11 @@
     },
     {
       "path": "source-catalog-native-pending-answers.json",
-      "sha256": "1bca180c778a00c10934ba5d1da6417e91ef0b1d6c320c8474ac06e8570a0218"
+      "sha256": "2eb208606dc5216322d2b3f9e64bcb66342a2902b5898d70f1260ea68f1ad33d"
     },
     {
       "path": "source-catalog-native-projections.json",
-      "sha256": "05dec49b6bb4c03f0eb4f9bc02c0dee4be36cd34d8a3a6f6456e29d85a6239c5"
+      "sha256": "e4ef07bfddb1ad881a8064a2e16c28977d1c2d94412618acabbcbbfc76e518eb"
     },
     {
       "path": "source-catalog-native-qa-replay.json",
@@ -503,7 +511,7 @@
     },
     {
       "path": "source-catalog-native-trusted-fill.json",
-      "sha256": "db2314210bd2d59671ddef06a205d3596001d3dcd1a20620e88bbbe1d0a27eb0"
+      "sha256": "3ab29525098824609b0289a0e5dd7e23ace3f7a77a084505e074de51bf4855b1"
     },
     {
       "path": "source-catalog-native-writer-switch.json",

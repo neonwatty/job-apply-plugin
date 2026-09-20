@@ -41,7 +41,7 @@ Companion requests extraction by default on import or replacement. After CLI imp
 
 Use `resume-facts-list` for value-free status. `resume-facts-get --resume-id <id>` returns the latest version and history privately for owner review. The owner may edit a draft in Companion and confirm it with `resume-facts-confirm --resume-id <id> --expected-fact-revision <revision> --expected-content-revision <content-revision>`. A replacement makes earlier facts stale; editing appends a new draft. Confirmed versions are immutable.
 
-For each application, the agent obtains the owner's chat confirmation of the exact job, resume, and confirmed fact revision. Then `job-input-confirm --id <job-id> --resume-id <resume-id> --expected-revision <job-revision> --expected-resume-revision <resume-revision> --expected-fact-revision <fact-revision> --owner-confirmed` binds that selection before task selection or browser work. The application uses only that resume's confirmed facts. Reusable application answers stay in the separate answer library.
+At the start of an application run, the agent obtains the owner's chat confirmation of one exact resume and confirmed fact revision for the proposed queue. `application-run-start` binds that selection once. Every queued application inherits it, and `application-run-update` may append a revisioned queue version without changing the selection. Complete the run before choosing another resume or fact revision. Reusable application answers stay in the separate answer library.
 
 ## Legacy resume extraction proposals
 

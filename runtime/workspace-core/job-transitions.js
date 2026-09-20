@@ -45,7 +45,7 @@ export class JobTransitionsService {
                 throw new JobsError('in_progress requires atomic job-acquire');
             if (status === 'applied' && !userConfirmed)
                 throw new JobsError('applied status requires explicit user confirmation');
-            if (status === 'ready' && get(await preflightJobRecord(current, tx.profile, tx.resumes, tx.files), 'ready') !== true) {
+            if (status === 'ready' && get(await preflightJobRecord(current, tx.profile, tx.resumes, tx.files, tx.facts, tx.requests, tx.jobs), 'ready') !== true) {
                 throw new JobsError('job is not ready');
             }
             const updated = copy(current);

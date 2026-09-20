@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
-import { plain, read, setup, snapshot } from './workspace_native_claims_support.mjs';
+import { addToRun, plain, read, setup, snapshot } from './workspace_native_claims_support.mjs';
 import { resolveAccountRealm } from '../runtime/contracts/workspace/account-realm.js';
 import { fromJSON } from '../runtime/contracts/workspace/values.js';
 import { TrustedFillService } from '../runtime/workspace-core/trusted-fill.js';
@@ -13,6 +13,7 @@ const portal = suffix => `https://example.wd1.myworkdayjobs.com/en-US/careers/jo
 async function prepared(fixture, name) {
   const state = await setup(fixture, name), id = 'composed-fill-job', url = portal(name);
   await state.jobs.create(fromJSON({ id, url, role: 'Engineer', company: 'Synthetic', ats: 'workday', resumeId: 'resume' }));
+  await addToRun(state, id);
   const selected = plain(await state.claims.select(id, 1n, true));
   const acquired = plain(await state.claims.acquire(id, fromJSON('Composed Trusted Fill'), BigInt(selected.job.revision)));
   const realm = resolveAccountRealm(url); assert.equal(realm.status, 'resolved');

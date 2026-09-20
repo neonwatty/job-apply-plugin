@@ -69,6 +69,12 @@ test('overview setup precedence and accepted active counts',async()=>{
   tx.resumes=fromJSON({resumes:{r:{id:'r',default:true,path:'/synthetic',observedSize:1,observedModifiedAt:now}}});
   assert.equal(plain(await service.overview()).nextAction,'review_facts');
   tx.profile=fromJSON({profile:{name:'PRIVATE'}});
+  assert.equal(plain(await service.overview()).nextAction,'prepare_job');
+  const jobs=plain(tx.jobs),run={runId:'run-unit',status:'active',revision:1,
+    selection:{resumeId:'r',contentRevision:`content_${'a'.repeat(32)}`,factRevision:1,confirmedAt:now},
+    queueVersions:[{revision:1,jobIds:['ready'],updatedAt:now}],createdAt:now,updatedAt:now,completedAt:null};
+  jobs.metadata={applicationRuns:{activeRunId:run.runId,runs:{[run.runId]:run}}};
+  tx.jobs=fromJSON(jobs);
   assert.equal(plain(await service.overview()).nextAction,'handoff_ready_job');
   tx.coordinator=fromJSON({claim:{jobId:'other',expiresAt:'2026-09-10T12:00:01Z'}});
   assert.equal(plain(await service.overview()).nextAction,'prepare_job');

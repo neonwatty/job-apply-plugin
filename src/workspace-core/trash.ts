@@ -7,6 +7,7 @@ import { copy, get, int, integer, object, same, set, string, text, truth, JobsEr
 import type { Document, Value } from '../contracts/workspace/values.js';
 import type { ClaimRepository, ClaimTransaction } from './claims.js';
 import type { JobsRepository } from './jobs.js';
+import { activeApplicationRun, currentRunJobIds } from '../contracts/workspace/application-runs.js';
 
 export interface TrashRepository extends JobsRepository, ClaimRepository {}
 
@@ -105,6 +106,10 @@ export class TrashService {
       const current = object(value, 'job record');
       if (int(get(current, 'revision')) !== expectedRevision) throw new JobsError('job revision conflict');
       requireJobUnclaimed(transaction.coordinator, id);
+      const run = activeApplicationRun(transaction.jobs);
+      if (run !== null && currentRunJobIds(run).includes(id)) {
+        throw new JobsError('remove job from the active application run before deleting it');
+      }
       if (get(current, 'deletedAt') === null) throw new JobsError('job must be trashed before permanent deletion');
       const session = transaction.sessions.find(item => string(get(item, 'applicationId')) === id);
       if (session && !['completed', 'abandoned'].includes(string(get(session, 'status'))!)) {
@@ -126,6 +131,10 @@ export class TrashService {
       const current = object(value, 'job record');
       if (int(get(current, 'revision')) !== expectedRevision) throw new JobsError('job revision conflict');
       transaction.requireUnclaimed?.(id);
+      const run = activeApplicationRun(transaction.document);
+      if (!restore && run !== null && currentRunJobIds(run).includes(id)) {
+        throw new JobsError('remove job from the active application run before trashing it');
+      }
       const trashed = get(current, 'deletedAt') !== null;
       if (restore === !trashed) return current;
       if (restore) {

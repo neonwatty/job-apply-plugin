@@ -23,7 +23,7 @@
     },
     {
       "path": "runtime/workspace-core/job-transitions.js",
-      "sha256": "8bcea6077ecdb78385aac0d2b7aa1eec04e844e08f9a70bc64ee90014bb64b90",
+      "sha256": "7205ff0b1d061211c91ea37a64306a2476b1fde8485c974c7d745d5effe03da4",
       "classification": "unreviewed"
     },
     {
@@ -38,7 +38,7 @@
     },
     {
       "path": "src/workspace-core/job-transitions.ts",
-      "sha256": "9ce8713117a83ba45225c1eaad2f8601b9c0dca4a434a2d3ce05884f441a92dc",
+      "sha256": "0553aef41f8999d1b727672b89deb4d677bfc6abcff31f7f2502263b820445a3",
       "classification": "unreviewed"
     }
   ]

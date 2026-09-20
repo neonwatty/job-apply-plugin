@@ -18,8 +18,10 @@ import { NativeJobsRepository } from '../runtime/store/native-jobs.js';
 import { loadPosixFlockProvider } from '../runtime/store/posix-flock.js';
 import { JobsService } from '../runtime/workspace-core/jobs.js';
 import { ResumeService } from '../runtime/workspace-core/resumes.js';
+import { ResumeFactsService } from '../runtime/workspace-core/resume-facts.js';
+import { ApplicationRunsService } from '../runtime/workspace-core/application-runs.js';
 import { ClaimsService } from '../runtime/workspace-core/claims.js';
-import { fromJSON, text } from '../runtime/contracts/workspace/values.js';
+import { fromJSON, get, int, string, text } from '../runtime/contracts/workspace/values.js';
 
 const execute = promisify(execFile);
 const repository = resolve(new URL('..', import.meta.url).pathname);
@@ -59,9 +61,15 @@ async function reviewStore(fixture, name) {
   const native = new NativeJobsRepository(layout.productStoreRoot, loadPosixFlockProvider(fixture.receipt.artifact));
   const resumeFixture = JSON.parse(await readFile(join(repository, 'qa/testdata/workflows/synthetic-application-recovery-resume.json')));
   const resumeBytes = await readFile(join(repository, 'qa/testdata/workflows/synthetic-application-recovery-resume.txt'));
-  await new ResumeService(native).import(fromJSON(resumeFixture), 'synthetic-application-recovery-resume.txt', resumeBytes);
+  const resume = await new ResumeService(native).import(fromJSON(resumeFixture), 'synthetic-application-recovery-resume.txt', resumeBytes);
   const jobFixture = JSON.parse(await readFile(join(repository, 'qa/testdata/workflows/synthetic-application-recovery-job.json')));
   const job = await new JobsService(native).create(fromJSON(jobFixture));
+  const resumeId = resumeFixture.id;
+  const facts = new ResumeFactsService(native);
+  const draft = await facts.createDraft(resumeId, fromJSON(profile.profile), int(get(resume, 'revision')), null);
+  const confirmed = await facts.confirm(resumeId, int(get(draft, 'revision')), string(get(draft, 'contentRevision')));
+  await new ApplicationRunsService(native).start(resumeId, int(get(resume, 'revision')), int(get(confirmed, 'revision')), true,
+    fromJSON({ jobIds:[jobFixture.id] }));
   const claims = new ClaimsService(native);
   await claims.select(jobFixture.id, 1n, true);
   const acquired = await claims.acquire(jobFixture.id, text('Synthetic browser'), 2n);

@@ -141,9 +141,10 @@ export async function nativeJobsBrowser(buildRoot) {
     const confirmed = JSON.parse((await execute(process.execPath, [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
       'resume-facts-confirm', '--resume-id', browserResume.id, '--expected-fact-revision', String(draft.revision),
       '--expected-content-revision', currentResume.contentRevision], { env: { PATH: '' } })).stdout);
-    const currentJob = JSON.parse(await readFile(join(root, 'jobs.json'), 'utf8')).jobs[job.id];
+    const runInput = join(fixture.root, 'browser-application-run.json');
+    await writeFile(runInput, JSON.stringify({ jobIds: [job.id] }), { mode: 0o600 });
     await execute(process.execPath, [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
-      'job-input-confirm', '--id', job.id, '--resume-id', browserResume.id, '--expected-revision', String(currentJob.revision),
+      'application-run-start', '--resume-id', browserResume.id, '--input', runInput,
       '--expected-resume-revision', String(currentResume.revision), '--expected-fact-revision', String(confirmed.revision),
       '--owner-confirmed'], { env: { PATH: '' } });
     await page.getByRole('button',{name:'Jobs',exact:true}).click();
@@ -165,12 +166,7 @@ export async function nativeJobsBrowser(buildRoot) {
     const transitions = await jobTransitionsBrowser(page, {
       jobId: job.id,
       readJob: async () => JSON.parse(await readFile(join(root, 'jobs.json'), 'utf8')).jobs[job.id],
-      confirmInputs: async latest => JSON.parse((await execute(process.execPath, [cli, '--root', root,
-        '--native-lock', fixture.receipt.artifact, 'job-input-confirm', '--id', job.id,
-        '--resume-id', browserResume.id, '--expected-revision', String(latest.revision),
-        '--expected-resume-revision', String(currentResume.revision),
-        '--expected-fact-revision', String(confirmed.revision), '--owner-confirmed'],
-      { env: { PATH: '' } })).stdout),
+      confirmInputs: async latest => ({ jobRevision: latest.revision }),
       prepareInterrupted: async () => {
         // root was initialized above from nativeFixture(), never an owner Store.
         const coordinator = JSON.parse(await readFile(join(root, 'coordinator.json'), 'utf8'));

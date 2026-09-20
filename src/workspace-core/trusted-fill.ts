@@ -57,7 +57,7 @@ async function current(tx: TrustedFillTransaction, job: Document, claim: Documen
   const realm = resolveAccountRealm(string(get(job, 'url'))!);
   if (realm.status !== 'resolved') throw new JobsError('trusted fill portal realm is unresolved');
   let preflight: Document;
-  try { preflight = await preflightJobRecord(job, validateProfile(tx.profile), tx.resumes, tx.files, tx.facts, tx.requests); }
+  try { preflight = await preflightJobRecord(job, validateProfile(tx.profile), tx.resumes, tx.files, tx.facts, tx.requests, tx.jobs); }
   catch { throw new TrustedFillCurrentError('resume_observation_failed'); }
   if (get(preflight, 'ready') !== true) {
     const errors = (get(preflight, 'errors') as Value[]).map(string);

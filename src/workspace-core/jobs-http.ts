@@ -21,6 +21,7 @@ import { resumesHttp } from "./resumes-http.js";
 import { answerHttp } from "./answers-http.js";
 import { extractionHttp } from "./extractions-http.js";
 import type { TrustedFillHttpDependencies } from './trusted-fill-http.js';
+import { ApplicationRunsService } from './application-runs.js';
 
 export type ApiResult = { status: number; body: string | Buffer; contentType?: string; disposition?: string };
 export interface JobsHttpDependencies {
@@ -73,6 +74,7 @@ export async function jobsHttp(service: JobsService, repository: NativeJobsRepos
       if (path === "/api/state") {
         const state = object(envelope("jobs", await service.list()), "state");
         set(state, "resumes", await repository.resumeSummaries());
+        set(state, "applicationRun", await new ApplicationRunsService(repository).status());
         return response(state);
       }
       const match = /^\/api\/jobs\/([^/]+)$/.exec(path);

@@ -11,7 +11,7 @@ import { preflightJobRecord } from './job-preflight.js';
 export interface PendingAnswerTransaction {
   requireUnclaimed?(id:string):void;
   jobs: Document; answers: Document; sessions: Document[];
-  profile: Document; resumes: Document; files: NativeResumeFiles;
+  profile: Document; resumes: Document; facts: Document; requests: Document; files: NativeResumeFiles;
   commit(operation: Document): Promise<void>;
 }
 export interface PendingAnswerRepository {
@@ -65,7 +65,8 @@ export class PendingAnswersService {
       // the final-field path may require preflight, and it must run under this lock.
       const preliminary = prepareAnswerResolution(transaction.jobs, transaction.answers, session, args, true);
       if (get(preliminary.result, 'ready') === true) {
-        const preflight = await preflightJobRecord(job, transaction.profile, transaction.resumes, transaction.files);
+        const preflight = await preflightJobRecord(job, transaction.profile, transaction.resumes, transaction.files,
+          transaction.facts, transaction.requests, transaction.jobs);
         if (get(preflight, 'ready') !== true) throw new JobsError('job preflight failed after answer resolution');
       }
       await transaction.commit(preliminary.operation);

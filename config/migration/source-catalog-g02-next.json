@@ -23,7 +23,7 @@
     },
     {
       "path": "apps/companion/components/Jobs.tsx",
-      "sha256": "88fa45ce110023052d51fabc025ac761d09c3c88108469fef2f0279d972abd3d",
+      "sha256": "e1d746eff8fe646bb55dd31c6b52e8e18d17a7cf1c18b70a1f7c101794734d9d",
       "classification": "unreviewed"
     },
     {
@@ -43,12 +43,12 @@
     },
     {
       "path": "apps/companion/components/companion.css",
-      "sha256": "bbad681469a7143241051146be7e19635675ceba9bd7e9819ddc8ca5aa98577f",
+      "sha256": "e8a240adfad4f73f4e4b659e2975266ebd6c91b0216610e2c971726f2c8f4591",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/contracts.ts",
-      "sha256": "a191970a0df16dce8506e22fc492c0f36539192b375ae8c907150970091ef6ff",
+      "sha256": "0d55d459d36d7725c1386b2215854cff99e154b176dc6af50939443b87e0af35",
       "classification": "unreviewed"
     },
     {

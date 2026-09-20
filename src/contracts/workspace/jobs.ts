@@ -4,6 +4,7 @@ import { get, has, int, string, object, keys, JobsError } from "./values.js";
 import type { Document, Value } from "./values.js";
 import { normalizeJobUrl } from "./job-url.js";
 import { validateJobInputSelection } from './job-input-selection.js';
+import { validateApplicationRuns } from './application-runs.js';
 
 export const ingestFields = new Set([
   "url", "source", "sourceId", "role", "company", "location", "workplaceType",
@@ -76,7 +77,8 @@ export function validateJobsDocument(value: Value): Document {
   const document = object(value, "jobs");
   if (int(get(document, "schemaVersion")) !== 1n) throw new JobsError("jobs schema version is unsupported");
   const jobs = object(get(document, "jobs"), "jobs.jobs");
-  object(get(document, "metadata"), "jobs.metadata");
+  const metadata = object(get(document, "metadata"), "jobs.metadata");
+  validateApplicationRuns(metadata);
   for (const [key, value] of jobs.entries()) validateJob(string(key)!, value);
   return document;
 }

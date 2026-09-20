@@ -17,6 +17,7 @@ import { ResumeService } from "./resumes.js";
 import { resumesHttp } from "./resumes-http.js";
 import { answerHttp } from "./answers-http.js";
 import { extractionHttp } from "./extractions-http.js";
+import { ApplicationRunsService } from './application-runs.js';
 const response = (value, status = 200) => ({ status, body: serialize(value) });
 export const apiError = (status, code, message) => response(fromJSON({ error: { code, message } }), status);
 const envelope = (key, value) => set(emptyObject(), key, value);
@@ -75,6 +76,7 @@ export async function jobsHttp(service, repository, method, path, body = "", dep
             if (path === "/api/state") {
                 const state = object(envelope("jobs", await service.list()), "state");
                 set(state, "resumes", await repository.resumeSummaries());
+                set(state, "applicationRun", await new ApplicationRunsService(repository).status());
                 return response(state);
             }
             const match = /^\/api\/jobs\/([^/]+)$/.exec(path);
