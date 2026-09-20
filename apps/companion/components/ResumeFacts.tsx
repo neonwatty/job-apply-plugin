@@ -65,7 +65,7 @@ export function ResumeFacts({ client, resume, dirtyChanged, statusChanged }: { c
         expectedFactRevision: version.revision, expectedContentRevision: version.contentRevision
       }), controller.signal);
       await refresh(controller.signal);
-      setNotice('These facts are confirmed for this resume. Confirm the resume and facts with the agent for each job.');
+      setNotice('These facts are confirmed for this resume. Confirm this resume and fact revision with the agent when starting an application run.');
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to confirm facts.'); }
     finally { setBusy(false); }
   }

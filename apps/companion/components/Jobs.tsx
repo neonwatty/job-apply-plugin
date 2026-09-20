@@ -173,10 +173,14 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
             <div><strong>{readyJobs}</strong><span>Ready for agent</span></div>
             <div><strong>{attentionJobs}</strong><span>Need information</span></div>
         </div>}
-        {run && <div className="workspace-panel application-run-panel" aria-label="Active application run">
-            <div><p className="eyebrow">Active application run</p><h2>{runResume?.label ?? run.selection.resumeId}</h2></div>
-            <p><strong>{runQueue.size}</strong> queued jobs · queue revision {run.queueVersions.at(-1)?.revision} · confirmed facts revision {run.selection.factRevision}</p>
-            <p>The agent confirmed this resume and fact set for the whole run. The queue may change while these inputs stay locked.</p>
+        {run ? <div className="workspace-panel application-run-panel" aria-label="Active application run">
+            <div><p className="eyebrow">Locked inputs</p><h2>{runResume?.label ?? run.selection.resumeId}</h2></div>
+            <p><strong>{runQueue.size}</strong> {runQueue.size === 1 ? 'job' : 'jobs'} in queue · queue revision {run.queueVersions.at(-1)?.revision} · confirmed facts revision {run.selection.factRevision}</p>
+            <p>You confirmed this resume and fact set in chat for the whole run. Jobs marked “In active run” are in the current queue. Ask the Job Apply agent to update the queue or complete the run before switching inputs.</p>
+        </div> : allJobs.length > 0 && <div className="workspace-panel application-run-panel" aria-label="No active application run">
+            <div><p className="eyebrow">Application run</p><h2>Not started</h2></div>
+            <p>Saved jobs can stay here until you are ready to apply.</p>
+            <p>Ask the Job Apply agent to review the proposed queue with you and confirm one resume and fact revision. Those inputs stay locked for the whole run.</p>
         </div>}
         <div className="workspace-panel jobs-panel">
             <div className="workspace-panel-heading">
