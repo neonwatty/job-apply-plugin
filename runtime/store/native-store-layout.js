@@ -19,7 +19,7 @@ export const nativeStoreRequiredEntries = [
 ];
 export const nativeStoreAllowedEntries = new Set([
     ...nativeStoreRequiredEntries, nativeFixtureMarkerName, nativeCloneMarkerName, nativeAttemptPidName, nativeAttemptPidPendingName,
-    nativePolicyTreeName,
+    nativePolicyTreeName, 'resume-facts.json',
 ]);
 export function nativeCloneTrees(bytes) {
     let marker;

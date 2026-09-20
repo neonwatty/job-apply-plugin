@@ -116,7 +116,19 @@ async function overviewLocked(tx, now) {
     const jobs = active(records(tx.jobs, 'jobs')), resumes = active(records(tx.resumes, 'resumes'));
     const answers = active(records(tx.answers, 'answers')).filter(item => !has(item, 'reviewStatus') || label(item, 'reviewStatus') === 'accepted');
     const profile = object(get(tx.profile, 'profile'), 'profile');
-    const hasProfileFacts = keys(profile).some(key => key !== 'preferences');
+    const scoped = tx.facts ? object(get(tx.facts, 'sets'), 'resume fact sets') : null;
+    const scopedRequests = tx.requests ? records(tx.requests, 'requests') : [];
+    const hasScopedWorkflow = resumes.some(resume => scoped !== null && has(scoped, label(resume, 'id'))
+        || scopedRequests.some(request => label(request, 'resumeId') === label(resume, 'id')
+            && label(request, 'scope') === 'resume'));
+    const hasScopedFacts = resumes.some(resume => {
+        const raw = scoped === null ? null : get(scoped, label(resume, 'id'));
+        const versions = raw === null ? null : get(object(raw, 'resume fact set'), 'versions');
+        const latest = Array.isArray(versions) && versions.length ? object(versions[versions.length - 1], 'resume fact version') : null;
+        return latest !== null && label(latest, 'state') === 'confirmed'
+            && label(latest, 'contentRevision') === label(resume, 'contentRevision');
+    });
+    const hasProfileFacts = keys(profile).some(key => key !== 'preferences') || hasScopedFacts;
     const attentionJobs = jobs.filter(job => {
         const status = label(job, 'status');
         if (['needs_info', 'awaiting_review'].includes(status))
@@ -129,18 +141,21 @@ async function overviewLocked(tx, now) {
     if (rawClaim === null || claimExpired(object(rawClaim, 'claim'), now)) {
         for (const job of jobs.filter(item => label(item, 'status') === 'ready')) {
             // Do not stop early: Python preflights every ready job, including file errors.
-            if (get(await preflightJobRecord(job, tx.profile, tx.resumes, tx.files), 'ready') === true)
+            if (get(await preflightJobRecord(job, tx.profile, tx.resumes, tx.files, tx.facts, tx.requests), 'ready') === true)
                 acquirable = true;
         }
     }
     const [nextAction, targetWorkspace] = !resumes.length ? ['import_resume', 'resumes']
-        : !hasProfileFacts ? ['review_facts', 'facts']
+        : !hasProfileFacts ? ['review_facts', hasScopedWorkflow ? 'resumes' : 'facts']
             : attentionJobs ? ['resolve_attention', 'attention']
                 : acquirable ? ['handoff_ready_job', 'jobs']
                     : !jobs.length ? ['capture_job', 'jobs'] : ['prepare_job', 'jobs'];
-    return doc({ setup: { hasProfileFacts, hasResume: resumes.length > 0 },
-        counts: { jobs: jobs.length, readyJobs: jobs.filter(item => label(item, 'status') === 'ready').length,
+    const setup = doc({ hasProfileFacts, hasResume: resumes.length > 0 });
+    if (hasScopedWorkflow)
+        set(setup, 'factsWorkspace', text('resumes'));
+    const result = doc({ counts: { jobs: jobs.length, readyJobs: jobs.filter(item => label(item, 'status') === 'ready').length,
             attentionJobs, resumes: resumes.length, answers: answers.length }, nextAction, targetWorkspace });
+    return set(result, 'setup', setup);
 }
 /** Read-only privacy projections from a single coherent native Store transaction. */
 export class WorkspaceProjectionsService {
@@ -158,7 +173,7 @@ export class WorkspaceProjectionsService {
     }
     preflight(id) {
         safeId(id);
-        return this.repository.claimTransaction(tx => preflightJobRecord(jobRecord(tx, id), tx.profile, tx.resumes, tx.files));
+        return this.repository.claimTransaction(tx => preflightJobRecord(jobRecord(tx, id), tx.profile, tx.resumes, tx.files, tx.facts, tx.requests));
     }
     taskSnapshot() {
         return this.repository.claimTransaction(async (tx) => {

@@ -57,6 +57,8 @@ function project(operation, jobs) {
         set(job, 'closedOutcome', null);
         set(job, 'revision', integer(expected + 1n));
         set(job, 'updatedAt', get(operation, 'at'));
+        if (has(job, 'inputSelection'))
+            set(object(get(job, 'inputSelection'), 'input selection'), 'jobRevision', integer(expected + 1n));
         set(object(get(next, 'metadata'), 'jobs.metadata'), 'updatedAt', get(operation, 'at'));
         return validateJobsDocument(next);
     }

@@ -33,7 +33,7 @@
     },
     {
       "path": "runtime/workspace-core/workspace-projections.js",
-      "sha256": "eeea048d2440ba2fd4dfaeb5b00edafaf1578bf65c9d7199a61dd1028eafddf4",
+      "sha256": "d342667df7f1332fd76219529ba1467160596cc664e76502a18c608cb3dc91ff",
       "classification": "unreviewed"
     },
     {
@@ -48,7 +48,7 @@
     },
     {
       "path": "src/workspace-core/workspace-projections.ts",
-      "sha256": "843b95fdf2061c0fbe6739fd2c85c1392eccc8ddda4e6dcf928463699a22a494",
+      "sha256": "5e11195dd9e5ca2d3f4f4847c93236673f5ce4fe2af890bca31ddb113129feb0",
       "classification": "unreviewed"
     }
   ]

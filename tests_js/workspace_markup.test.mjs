@@ -101,8 +101,8 @@ test("skill and documentation contracts keep extraction agent-owned and context-
 
   assert.match(jobApply, /resume-extraction-request-list --status requested/);
   assert.match(jobApply, /Never scan for extraction requests during every job application/);
-  assert.match(jobApply, /delete the permission-restricted candidate file/);
-  assert.match(jobApply, /Stop at proposal review/);
+  assert.match(jobApply, /Delete the temporary candidate/);
+  assert.match(jobApply, /Stop at owner review/);
   for (const text of [workspaceSkill, readme]) {
     assert.match(text, /queues work for the next active Job Apply agent/);
     assert.match(text, /does not start or launch an agent/);

@@ -7,6 +7,7 @@ allowed-tools: Read, Write, Bash, WebSearch, WebFetch, mcp__claude-in-chrome__*
 # Job Search
 
 Return current job opportunities matching explicit criteria, with source links, relevant facts, and visible unknowns. Do not assign numerical suitability scores, normalize rankings across sources, or restrict queue selection with a score cutoff.
+For first use or a handoff into the canonical job queue, read the shared [workflow map](../answer-memory/references/workflow-map.md).
 
 ## Criteria and source selection
 

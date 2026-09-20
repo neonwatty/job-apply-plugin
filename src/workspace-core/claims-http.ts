@@ -10,6 +10,7 @@ export async function claimsHttp(repository:ClaimRepository,method:string,path:s
   const shapes:Record<string,string[]> = {
     'review-restart':['jobId','ownerLabel','expectedRevision','ownerConfirmedNotSubmitted'],
     select:['jobId','expectedRevision','ownerConfirmed'], acquire:['jobId','ownerLabel','expectedRevision'],
+    'confirm-input':['jobId','resumeId','expectedRevision','expectedResumeRevision','expectedFactRevision','ownerConfirmed'],
     heartbeat:['jobId','token'],recover:['jobId','ownerLabel'],progress:['jobId','token','session'],
     handoff:['jobId','token','status','session','expectedRevision'],
   };
@@ -27,6 +28,14 @@ export async function claimsHttp(repository:ClaimRepository,method:string,path:s
   };
   let result:Value;
   if (action === 'select') result = await service.select(id,revision(),get(payload,'ownerConfirmed') === true);
+  else if (action === 'confirm-input') {
+    const resumeId = string(get(payload,'resumeId'));
+    const resumeRevision = int(get(payload,'expectedResumeRevision'));
+    const factRevision = int(get(payload,'expectedFactRevision'));
+    if (resumeId === null || resumeRevision === null || factRevision === null || resumeRevision < 1n || factRevision < 1n)
+      throw new JobsError('confirmed input revisions are invalid');
+    result = await service.confirmInput(id,resumeId,revision(),resumeRevision,factRevision,get(payload,'ownerConfirmed') === true);
+  }
   else if (action === 'review-restart') result = await service.restart(id,get(payload,'ownerLabel'),revision(),get(payload,'ownerConfirmedNotSubmitted') === true);
   else if (action === 'acquire') result = await service.acquire(id,get(payload,'ownerLabel'),revision());
   else if (action === 'heartbeat') result = await service.heartbeat(id,get(payload,'token'));

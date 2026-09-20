@@ -277,15 +277,15 @@ def run(root: Path, smoke_root: Path) -> None:
         raise SystemExit("hard manual-submit contract is missing")
     for required_extraction_contract in (
         "resume-extraction-request-list --status requested",
-        "resume-extraction-request-complete",
-        "delete the permission-restricted candidate file",
+        "resume-extraction-request-complete-scoped",
+        "Delete the temporary candidate",
         "Never scan for extraction requests during every job application",
-        "Stop at proposal review",
+        "Stop at owner review",
     ):
         if required_extraction_contract not in application_skill:
             raise SystemExit(f"job-apply skill is missing extraction contract: {required_extraction_contract}")
     for required_workspace_contract in (
-        "create, cancel, and retry extraction requests",
+        "Its only request mutations are create, cancel, and retry",
         "queues work for the next active Job Apply agent",
         "does not start or launch an agent",
         "cannot extract facts, complete or fail a request, or author a proposal",

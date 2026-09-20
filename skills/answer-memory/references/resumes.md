@@ -35,7 +35,15 @@ Restore selects the resume only when it is the sole active record. Permanent
 deletion requires trash and no job reference, and releases the content digest.
 `resume-check` reports availability without mutating the stored observation.
 
-## Resume extraction proposals
+## Facts belonging to one resume
+
+Companion requests extraction by default on import or replacement. After CLI import or replacement, the agent creates a scoped request with `resume-extraction-request-create --resume-id <id> --expected-resume-revision <revision> --scope resume` unless the owner opted out. The extraction agent completes only that request with `resume-extraction-request-complete-scoped --id <request-id> --expected-request-revision <revision> --input <private-candidate.json>`. This creates a draft in `resume-facts.json` and leaves `profile.json` unchanged.
+
+Use `resume-facts-list` for value-free status. `resume-facts-get --resume-id <id>` returns the latest version and history privately for owner review. The owner may edit a draft in Companion and confirm it with `resume-facts-confirm --resume-id <id> --expected-fact-revision <revision> --expected-content-revision <content-revision>`. A replacement makes earlier facts stale; editing appends a new draft. Confirmed versions are immutable.
+
+For each application, the agent obtains the owner's chat confirmation of the exact job, resume, and confirmed fact revision. Then `job-input-confirm --id <job-id> --resume-id <resume-id> --expected-revision <job-revision> --expected-resume-revision <resume-revision> --expected-fact-revision <fact-revision> --owner-confirmed` binds that selection before task selection or browser work. The application uses only that resume's confirmed facts. Reusable application answers stay in the separate answer library.
+
+## Legacy resume extraction proposals
 
 Extraction is performed by the calling agent and supplied as a bounded structured
 JSON object; the helper does not parse, author, or tailor resumes. Inspect the

@@ -1,16 +1,22 @@
 import { ExtractionService } from '../workspace-core/extraction.js';
+import { ResumeFactsService } from '../workspace-core/resume-facts.js';
 import type { ExtractionRepository } from '../workspace-core/extraction-context.js';
 import { JobsError } from '../contracts/workspace/values.js';
 import type { Value } from '../contracts/workspace/values.js';
 
 export const extractionCommands: Record<string, string[]> = {
-  'resume-extraction-request-create': ['--resume-id', '--expected-resume-revision'],
+  'resume-extraction-request-create': ['--resume-id', '--expected-resume-revision', '--scope'],
   'resume-extraction-request-get': ['--id'],
   'resume-extraction-request-list': ['--resume-id', '--status'],
   'resume-extraction-request-cancel': ['--id', '--expected-revision'],
   'resume-extraction-request-fail': ['--id', '--reason', '--expected-revision'],
   'resume-extraction-request-retry': ['--id', '--expected-revision', '--expected-resume-revision'],
   'resume-extraction-request-complete': ['--id', '--input', '--expected-request-revision', '--expected-profile-revision', '--expected-pending-proposal-id'],
+  'resume-extraction-request-complete-scoped': ['--id', '--input', '--expected-request-revision'],
+  'resume-facts-list': [],
+  'resume-facts-get': ['--resume-id'],
+  'resume-facts-draft': ['--resume-id', '--input', '--expected-resume-revision', '--expected-fact-revision'],
+  'resume-facts-confirm': ['--resume-id', '--expected-fact-revision', '--expected-content-revision'],
   'resume-proposal-create': ['--resume-id', '--input', '--expected-resume-revision', '--expected-profile-revision', '--supersedes'],
   'resume-proposal-get': ['--id'],
   'resume-proposal-list': ['--resume-id', '--status', '--summary-only'],
@@ -20,6 +26,7 @@ export const extractionCommands: Record<string, string[]> = {
 export async function runExtractionCommand(command: string, repository: ExtractionRepository,
   options: Map<string, string>, payload: () => Promise<Value>): Promise<Value> {
   const service = new ExtractionService(repository);
+  const facts = new ResumeFactsService(repository);
   const required = (key: string): string => {
     const value = options.get(key);
     if (!value) throw new JobsError(`required option: ${key}`);
@@ -31,13 +38,23 @@ export async function runExtractionCommand(command: string, repository: Extracti
     return BigInt(value);
   };
   switch (command) {
-    case 'resume-extraction-request-create': return service.createRequest(required('--resume-id'), revision('--expected-resume-revision'));
+    case 'resume-extraction-request-create': {
+      const scope = options.get('--scope');
+      if (scope !== undefined && scope !== 'resume') throw new JobsError('unsupported extraction scope');
+      return service.createRequest(required('--resume-id'), revision('--expected-resume-revision'), scope === 'resume');
+    }
     case 'resume-extraction-request-get': return service.getRequest(required('--id'));
     case 'resume-extraction-request-list': return service.listRequests(options.get('--resume-id'), options.get('--status'));
     case 'resume-extraction-request-cancel': return service.cancelRequest(required('--id'), revision());
     case 'resume-extraction-request-fail': return service.failRequest(required('--id'), required('--reason'), revision());
     case 'resume-extraction-request-retry': return service.retryRequest(required('--id'), revision(), revision('--expected-resume-revision'));
     case 'resume-extraction-request-complete': return service.completeRequest(required('--id'), await payload(), revision('--expected-request-revision'), revision('--expected-profile-revision'), options.get('--expected-pending-proposal-id'));
+    case 'resume-extraction-request-complete-scoped': return facts.completeRequest(required('--id'), await payload(), revision('--expected-request-revision'));
+    case 'resume-facts-list': return facts.list();
+    case 'resume-facts-get': return facts.get(required('--resume-id'));
+    case 'resume-facts-draft': return facts.createDraft(required('--resume-id'), await payload(), revision('--expected-resume-revision'),
+      options.has('--expected-fact-revision') ? revision('--expected-fact-revision') : null);
+    case 'resume-facts-confirm': return facts.confirm(required('--resume-id'), revision('--expected-fact-revision'), required('--expected-content-revision'));
     case 'resume-proposal-create': return service.createProposal(required('--resume-id'), await payload(), revision('--expected-resume-revision'), revision('--expected-profile-revision'), options.get('--supersedes'));
     case 'resume-proposal-get': return service.getProposal(required('--id'));
     case 'resume-proposal-list': return service.listProposals(options.get('--resume-id'), options.get('--status'), options.has('--summary-only'));

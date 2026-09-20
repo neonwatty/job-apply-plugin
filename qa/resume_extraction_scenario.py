@@ -326,8 +326,8 @@ class Oracle:
             for path in ("skills/job-apply/SKILL.md", "skills/job-workspace/SKILL.md")
         )
         agent_stopped_at_review = all(phrase in skills for phrase in (
-            "delete the permission-restricted candidate file",
-            "Stop at proposal review",
+            "Delete the temporary candidate",
+            "Stop at owner review",
             "does not start or launch an agent",
             "opaque request ID",
         ))

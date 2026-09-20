@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "path": "apps/companion/components/ResumeFacts.tsx",
+      "sha256": "eb2fb116e5a935e048c26f3a139c03ab9ba871d4bbc32b7f6b5779f166f9b3c2",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/job-input-selection.js",
+      "sha256": "b78b0249bc5341b581fff4a7c90aaf6eef93013b7fb1d02110f7b587412ee3f7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/contracts/workspace/resume-facts.js",
+      "sha256": "e8299e2a47d7e50e38c38a2fd9db52fd8bfe5119cde30f4f8cf16d8306251fa8",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/store/native-root-validation.js",
+      "sha256": "a8d375fe81694e35e98ff6806f30466966642451030e4fa3534829b670be5578",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "runtime/workspace-core/resume-facts.js",
+      "sha256": "90f0ffec71337a9c1799fae57d3f38b306bb5d7afb1d541a240ff8ad67972f29",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/job-input-selection.ts",
+      "sha256": "5df27b559cf320cf8459b57c3dcbdeb72e8e1eff67c57a964e055e70ccacdcc7",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/contracts/workspace/resume-facts.ts",
+      "sha256": "4c01af70168336dfe0b0af9c35f17738f88500ed288791445472f2892a9a8d74",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/store/native-root-validation.ts",
+      "sha256": "257817960feb92c06d75128e58b48c90d78912def79a7a3529514b5c88181b46",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "src/workspace-core/resume-facts.ts",
+      "sha256": "0783562c3df640d12bd25fff125d80844b5009f6bb40c01c65d03cc485773253",
+      "classification": "unreviewed"
+    }
+  ]
+}

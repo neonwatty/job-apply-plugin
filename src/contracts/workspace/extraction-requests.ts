@@ -12,7 +12,10 @@ export function exact(record: Document, fields: string[], message: string): void
 }
 export function validateExtractionRequest(key: string, value: Value): Document {
   const record = object(value, 'resume extraction request');
-  exact(record, ['requestId','resumeId','resumeContentRevision','revision','status','createdAt','updatedAt','closedAt','proposalId','failureReason','supersedesRequestId'], 'resume extraction request is invalid');
+  const base = ['requestId','resumeId','resumeContentRevision','revision','status','createdAt','updatedAt','closedAt','proposalId','failureReason','supersedesRequestId'];
+  const scoped = get(record, 'scope') !== null;
+  exact(record, scoped ? [...base, 'scope', 'factRevision'] : base, 'resume extraction request is invalid');
+  if (scoped && string(get(record, 'scope')) !== 'resume') throw new JobsError('resume extraction request scope is invalid');
   if (string(get(record, 'requestId')) !== key) throw new JobsError('resume extraction request is invalid');
   safeId(key);
   safeId(string(get(record, 'resumeId')));
@@ -22,8 +25,13 @@ export function validateExtractionRequest(key: string, value: Value): Document {
   if (!requestStatuses.has(status)) throw new JobsError('resume extraction request status is invalid');
   for (const field of ['createdAt','updatedAt']) if (!string(get(record, field))) throw new JobsError('resume extraction request timestamp is invalid');
   if ((status !== 'requested') !== Boolean(string(get(record, 'closedAt')))) throw new JobsError('resume extraction request closure is invalid');
-  if (status === 'completed') safeId(string(get(record, 'proposalId')));
+  if (status === 'completed' && !scoped) safeId(string(get(record, 'proposalId')));
   else if (get(record, 'proposalId') !== null) throw new JobsError('resume extraction request proposal is invalid');
+  if (scoped) {
+    const factRevision = get(record, 'factRevision');
+    if (status === 'completed' ? int(factRevision) === null || int(factRevision)! < 1n : factRevision !== null)
+      throw new JobsError('resume extraction request fact revision is invalid');
+  }
   if (status === 'failed' ? !failureReasons.has(string(get(record, 'failureReason'))!) : get(record, 'failureReason') !== null) throw new JobsError('resume extraction failure reason is invalid');
   if (get(record, 'supersedesRequestId') !== null) {
     if (safeId(string(get(record, 'supersedesRequestId'))) === key) throw new JobsError('resume extraction supersession is invalid');

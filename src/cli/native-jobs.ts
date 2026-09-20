@@ -131,6 +131,10 @@ export const storeRequiredOptions: Record<string, string[]> = {
   'resume-extraction-request-fail': ['--id', '--reason', '--expected-revision'],
   'resume-extraction-request-retry': ['--id', '--expected-revision', '--expected-resume-revision'],
   'resume-extraction-request-complete': ['--id', '--input', '--expected-request-revision', '--expected-profile-revision'],
+  'resume-extraction-request-complete-scoped': ['--id', '--input', '--expected-request-revision'],
+  'resume-facts-get': ['--resume-id'],
+  'resume-facts-draft': ['--resume-id', '--input', '--expected-resume-revision'],
+  'resume-facts-confirm': ['--resume-id', '--expected-fact-revision', '--expected-content-revision'],
   'resume-proposal-create': ['--resume-id', '--expected-resume-revision', '--expected-profile-revision', '--input'],
   'resume-proposal-get': ['--id'],
   'resume-proposal-review': ['--id', '--expected-revision', '--expected-profile-revision', '--input'],
@@ -228,7 +232,7 @@ export async function runJobsCli(args: string[], input: (limit?: number) => Prom
     // escaping and formatting overhead while keeping stdin bounded.
     // Bulk upsert accepts the same input domain through stdin and files, as Python does.
     const limit = (Object.hasOwn(jobUpsertCommands, command!) || Object.hasOwn(taskIntakeCommands, command!)) ? Infinity
-      : ["resume-proposal-create", "resume-extraction-request-complete"].includes(command!) ? 2 * 1024 * 1024 : 65536;
+      : ["resume-proposal-create", "resume-extraction-request-complete", "resume-extraction-request-complete-scoped", "resume-facts-draft"].includes(command!) ? 2 * 1024 * 1024 : 65536;
     return parse(file === "-" ? await input(limit) : await readFile(file, "utf8"));
   };
   const leafArgs = [...options.entries()].filter(([key]) => !['--root', '--native-lock', '--legacy-profile'].includes(key))

@@ -1,6 +1,6 @@
 import { useEffect,useId,useRef } from 'react';
 import type { ReactNode } from 'react';
-import { textFields,type JobFields,type Resume } from './contracts';
+import { object,textFields,type JobFields,type Resume } from './contracts';
 import type { Editor } from './job-editor-state';
 export function JobEditor({ editor,resumes,busy,error,change,close,save,reapply,load,refresh,children }: {
     children?: ReactNode;
@@ -35,6 +35,8 @@ export function JobEditor({ editor,resumes,busy,error,change,close,save,reapply,
             });
         };
     },[]);
+    const selection = object(editor.selected?.inputSelection) ? editor.selected.inputSelection : null;
+    const selectedResume = selection && resumes.find(item => item.id === selection.resumeId);
     return <dialog
         ref={dialog}
         aria-labelledby={titleId}
@@ -70,6 +72,10 @@ export function JobEditor({ editor,resumes,busy,error,change,close,save,reapply,
             {error&&<p role="alert" className="error">
                 {error}
             </p>}
+            {selection && <p className="notice">{selection.jobRevision === editor.selected?.revision
+                ? 'Application inputs confirmed in chat' : 'Application inputs need reconfirmation after this job changed'}:
+                {' '}{selectedResume?.label ?? String(selection.resumeId)} · facts revision {String(selection.factRevision)}.
+                The agent checks these revisions again before and during the attempt.</p>}
 
 
             {editor.missing && <section className="notice" role="alert">

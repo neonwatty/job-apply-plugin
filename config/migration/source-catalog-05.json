@@ -23,7 +23,7 @@
     },
     {
       "path": "scripts/smoke/repository_contracts.py",
-      "sha256": "e9a7b8ce720fa3fc9ad45f8095af06e758f8e6b343b7eecd6cf930c79c8630c5",
+      "sha256": "ecb1e362cc57a691be6ae59f83d5804403bacca5b8b7c77f38df535be3a2dba4",
       "classification": "unreviewed"
     },
     {
@@ -38,7 +38,7 @@
     },
     {
       "path": "scripts/smoke/workspace_verify.py",
-      "sha256": "3354db6271975d442c6e378ac6892f8f1105b9a7f6b2eb3322c5d1a2779d746a",
+      "sha256": "3d53d710cf8f0ee2e89cc4ffbae5f01b967b597f9227297c5cb5a4afc8f2fea4",
       "classification": "unreviewed"
     },
     {

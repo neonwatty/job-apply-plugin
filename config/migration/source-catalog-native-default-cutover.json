@@ -98,7 +98,7 @@
     },
     {
       "path": "runtime/store/native-store-bootstrap.js",
-      "sha256": "809086202c814a2fd3191c723dca9a6a0d0fa1c6c120af2054cb6126a2821243",
+      "sha256": "3424310a5b6bd5a25f3a7f76a044882e3137ead2191e85ba144df682b01343d5",
       "classification": "unreviewed"
     },
     {
@@ -218,7 +218,7 @@
     },
     {
       "path": "src/store/native-store-bootstrap.ts",
-      "sha256": "eae32ba96585597fa2f98fbbb4b4693b4a2230b42c6861b296c32f8d5410d256",
+      "sha256": "c996dd6338ef5badf17902b9df8e79b9734ad7ff40f1c03f5ca5dc5b6844c116",
       "classification": "unreviewed"
     },
     {

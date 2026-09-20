@@ -14,6 +14,7 @@ import { validateExtractions } from '../contracts/workspace/extraction-proposals
 import { validateGroups } from '../contracts/workspace/fact-groups.js';
 import { validateJobsDocument } from '../contracts/workspace/jobs.js';
 import { validateProfile } from '../contracts/workspace/profile.js';
+import { validateResumeFacts } from '../contracts/workspace/resume-facts.js';
 import { validateTrustedFillDocument } from '../contracts/workspace/trusted-fill.js';
 import { fromJSON, get, has, int, object, set, string, JobsError } from '../contracts/workspace/values.js';
 import { validateAccountOperationJournal } from '../contracts/workspace/account-operation.js';
@@ -52,6 +53,7 @@ const documentValidators = {
     'automation-settings.json': validateSettingsDocument, 'employer-accounts.json': validateAccountsDocument,
     'account-operation-journal.json': value => validateAccountOperationJournal(value),
     'trusted-fill.json': validateTrustedFillDocument, 'resume-extractions.json': validateExtractions,
+    'resume-facts.json': validateResumeFacts,
     'resume-extraction-requests.json': validateExtractionRequests,
     'resume-extraction-journal.json': validateExtractionJournal, 'resume-operation.json': validateResumeOperation,
     'coordinator.json': validateCoordinator,
@@ -368,6 +370,7 @@ export class NativeStoreBootstrap {
         const definitions = [
             ['answers.json', 'answers', { redirects: {} }], ['fact-groups.json', 'groups', {}],
             ['jobs.json', 'jobs', {}], ['resumes.json', 'resumes', {}],
+            ['resume-facts.json', 'sets', {}],
         ];
         for (const [name, key, extra] of definitions)
             if (await readPrivateFile(join(this.root, name), name) === null) {

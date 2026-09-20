@@ -26,8 +26,9 @@ Use permission-restricted temporary JSON files for `--input`, remove them on suc
 
 ## Read only the reference for the operation
 
+- First use or a handoff across search, resume facts, and applications: [workflow map](references/workflow-map.md).
 - Profile facts, preferences, or fact groups: [profile](references/profile.md). Inspect the current revision before selective writes; preserve unrelated facts.
-- Managed resume import, replacement, or extraction proposals: [resumes](references/resumes.md).
+- Managed resume import, replacement, resume-scoped facts, or legacy extraction proposals: [resumes](references/resumes.md).
 - Reusable answers, missing questions, consent, or answer-library edits: [answers](references/answers.md).
 - Canonical job maintenance, history, or standalone sessions: [jobs and history](references/jobs-history.md).
 - Starting or resuming an application: use [job-apply](../job-apply/SKILL.md). Ordinary agents use the `task` and `attempt` command surfaces, never raw acquire, recovery, heartbeat, progress, or handoff commands. The broker keeps claim authority private.

@@ -7,6 +7,7 @@ allowed-tools: Bash
 # Job Workspace
 
 Start the packaged, local-only companion when the user asks to review their next step, manage canonical Jobs, Facts, Resumes, reusable Answers and observed questions, supervise Application Activity or Needs Attention, or recover Trash in a browser.
+For first use or a handoff between Companion and an agent, read the shared [workflow map](../answer-memory/references/workflow-map.md).
 
 ## Launch
 
@@ -27,6 +28,6 @@ The workspace uses the same canonical Store contract as the native command route
 
 Confirm the launcher is serving before reporting the workspace ready. Keep the process attached while the user works; Ctrl-C stops it cleanly. Do not restart a healthy workspace merely to explain a feature.
 
-The UI queues work for the next active Job Apply agent and does not start or launch an agent. It cannot extract facts, complete or fail a request, or author a proposal. It never performs final application submission.
+The UI queues work for the next active Job Apply agent and does not start or launch an agent. It cannot extract facts, complete or fail a request, or author a proposal. It lets the owner review, edit, and confirm facts already extracted for an individual resume. It never performs final application submission.
 
 For Jobs, Facts, Resumes, Answers, extraction requests, Activity, Needs Attention, Trash, or recovery details, read [workspace behavior](references/workspace.md) only when that surface is relevant. Preserve drafts on revision conflicts and never automatically repair or downgrade the Store.

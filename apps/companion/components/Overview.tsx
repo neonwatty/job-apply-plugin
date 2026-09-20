@@ -45,6 +45,8 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
     };
     const target = data?.targetWorkspace ?? 'overview';
     const destination = Object.hasOwn(destinations, target) ? target : 'overview';
+    const factsDestination = data?.setup.factsWorkspace ?? 'facts';
+    const factsAction = factsDestination === 'resumes' ? 'Review resume facts' : 'Edit Facts';
     const link = (workspace: string) => `${legacyHref}&workspace=${encodeURIComponent(workspace)}`;
     const guidance = ownerBetaNextStep(data?.nextAction ?? '');
     const heading = Array.isArray(guidance) && typeof guidance[0] === 'string'
@@ -87,7 +89,8 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
                         <li className={data.setup.hasResume?'complete':''}><span>{data.setup.hasResume?'✓':'○'} Resume {data.setup.hasResume?'available':'needed'}</span>
                             {openWorkspace?<button className="text-action" onClick={() => openWorkspace('resumes')}>Manage Resumes</button>:<a href={link('resumes')}>Manage Resumes</a>}</li>
                         <li className={data.setup.hasProfileFacts?'complete':''}><span>{data.setup.hasProfileFacts?'✓':'○'} Facts {data.setup.hasProfileFacts?'reviewed':'needed'}</span>
-                            {openWorkspace?<button className="text-action" onClick={() => openWorkspace('facts')}>Edit Facts</button>:<a href={link('facts')}>Edit Facts</a>}</li>
+                            {openWorkspace?<button className="text-action" onClick={() => openWorkspace(factsDestination)}>{factsAction}</button>
+                                :<a href={link(factsDestination)}>{factsAction}</a>}</li>
                     </ul>
                     <p className="overview-counts">{data.counts.jobs} jobs · {data.counts.readyJobs} ready · {data.counts.attentionJobs} need attention</p>
                 </article>

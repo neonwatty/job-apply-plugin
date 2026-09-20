@@ -8,8 +8,8 @@ import { NativeClaimHistory } from './native-claim-history.js';
 import { validateCoordinator, requireJobUnclaimed } from '../contracts/workspace/claims.js';
 import type { ClaimTransaction } from '../workspace-core/claims.js';
 import { constants } from "node:fs";
-import { lstat, open, readdir, realpath } from "node:fs/promises";
-import { isAbsolute, join, resolve } from "node:path";
+import { lstat, open, readdir } from "node:fs/promises";
+import { join } from "node:path";
 import { parsePythonPointJsonBytes } from "../contracts/raw-json/point-parser.js";
 import { validateJobsDocument, safeId } from "../contracts/workspace/jobs.js";
 import { validateResumeReferences } from "../contracts/workspace/resume-reference.js";
@@ -38,12 +38,13 @@ import type { SessionRepository, SessionTransaction } from "../workspace-core/st
 import type { PreparednessRepository, PreparednessSnapshot } from "../workspace-core/profile-preparedness.js";
 import type { ReplayTransitionRepository, ReplayTransitionTransaction } from '../workspace-core/replay-transition.js';
 import { validateProfile } from "../contracts/workspace/profile.js";
+import { validateResumeFacts } from "../contracts/workspace/resume-facts.js";
 import { validateGroups } from "../contracts/workspace/fact-groups.js";
 import { validateAnswers } from "../contracts/workspace/answers.js";
 import type { AnswerReferenceCounts } from "../workspace-core/answers.js";
 import { ResumeService } from '../workspace-core/resumes.js';
 import { preparednessSnapshot, runHistoryTransaction, runReplayTransitionTransaction, runSessionTransaction, stateStorage } from './native-store-state-repository.js';
-import { nativeFixtureMarkerName, nativeCloneMarkerName, nativeStoreAllowedEntries, nativeStoreRequiredEntries, validateNativeStoreMetadata } from './native-store-layout.js';
+import { validateNativeJobsRoot } from './native-root-validation.js';
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
@@ -74,22 +75,7 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
   }
 
   private async validateRoot(locked = false, allowMissingJobs = false): Promise<void> {
-    if (!isAbsolute(this.root) || this.root !== resolve(this.root) || await realpath(this.root) !== this.root) {
-      throw new JobsError("native fixture root must be a real absolute directory");
-    }
-    const stat = await lstat(this.root);
-    if (!stat.isDirectory() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0 || stat.uid !== process.getuid?.()) {
-      throw new JobsError("native fixture root must be private and owned");
-    }
-    const entries = await readdir(this.root);
-    const markers = [nativeFixtureMarkerName, nativeCloneMarkerName].filter(name => entries.includes(name));
-    if (locked && entries.some(name => !nativeStoreAllowedEntries.has(name))
-      || nativeStoreRequiredEntries.some(name => !(allowMissingJobs && name === "jobs.json") && !entries.includes(name))
-      || markers.length !== 1) {
-      throw new JobsError("native Jobs cannot open unsupported state or recovery journals");
-    }
-    await validateNativeStoreMetadata(this.root, markers[0]!, await this.read(markers[0]!));
-    await this.read(".store.lock");
+    await validateNativeJobsRoot(this.root, name => this.read(name), locked, allowMissingJobs);
   }
 
   private async document(name: string): Promise<Document> {
@@ -99,6 +85,15 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
     if (int(get(value, "schemaVersion")) !== 1n) throw new JobsError(`${name} schema version is unsupported`);
     object(get(value, "metadata"), `${name}.metadata`);
     return value;
+  }
+
+  private async resumeFactsDocument(): Promise<Document> {
+    try { return validateResumeFacts(await this.document('resume-facts')); }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      const now = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+      return object(fromJSON({ schemaVersion: 1, sets: {}, metadata: { createdAt: now, updatedAt: now } }), 'resume facts');
+    }
   }
 
   private async journal(name = journalName): Promise<Document> {
@@ -275,6 +270,7 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
       resumes: validateExtractionResumes(await this.document("resumes")),
       requests: validateExtractionRequests(await this.document("resume-extraction-requests")),
       proposals: validateExtractions(await this.document("resume-extractions")),
+      facts: await this.resumeFactsDocument(),
       files: new NativeResumeFiles(this.root),
       commit: (kind, updates) => this.extractionJournal().commit(kind, updates),
     }));
@@ -350,6 +346,8 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
       return operation({jobs,coordinator:validateCoordinator(await this.journal('coordinator')),
         sessions:await this.answerSessions(), history:await this.answerHistory(), answers:validateAnswers(await this.document('answers')),
         profile:validateProfile(await this.document('profile')),resumes:validateExtractionResumes(await this.document('resumes')),
+        facts:await this.resumeFactsDocument(),
+        requests:validateExtractionRequests(await this.document('resume-extraction-requests')),
         files:new NativeResumeFiles(this.root),
         saveJobs:async document => { validateJobsDocument(document);await this.write(join(this.root,'jobs.json'),document,options); },
         saveCoordinator:async document => { validateCoordinator(document);await this.write(join(this.root,'coordinator.json'),document,options); },
@@ -438,7 +436,9 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
       const jobs = validateJobsDocument(await this.document('jobs'));
       return operation({ approvals: validateTrustedFillDocument(await this.document('trusted-fill')), jobs,
         coordinator: validateCoordinator(await this.journal('coordinator')), profile: validateProfile(await this.document('profile')),
-        resumes: validateExtractionResumes(await this.document('resumes')), answers: validateAnswers(await this.document('answers')),
+        resumes: validateExtractionResumes(await this.document('resumes')), facts: await this.resumeFactsDocument(),
+        requests: validateExtractionRequests(await this.document('resume-extraction-requests')),
+        answers: validateAnswers(await this.document('answers')),
         settings: await this.journal('automation-settings'), accounts: await this.document('employer-accounts'),
         sessions: await this.answerSessions(), files: new NativeResumeFiles(this.root),
         saveApprovals: document => this.write(join(this.root, 'trusted-fill.json'), validateTrustedFillDocument(document), options),
