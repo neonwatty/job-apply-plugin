@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "files": [
     {"path": "resume-scoped-facts-surfaces.json", "sha256": "16ec0b427ae00667d9a333a7332774bcc517b9eb8a4e1f1c1a44b2c1480a3715"},
-    {"path": "source-catalog-resume-scoped-facts.json", "sha256": "e532793437d5be141b97b20ae02feaed5aa60d175fe282159813baceef4fafad"},
+    {"path": "source-catalog-resume-scoped-facts.json", "sha256": "07ef8f71b812dd2b3ab8ed52cb56e1e536c1ec4b444eb574ed2e6e2f6f858625"},
     {
       "path": "browser-app-01-surfaces.json",
       "sha256": "3b7315fda4337f14fa1de7e6542556b6afd36c47f73a3401368f1890c3a6b133"

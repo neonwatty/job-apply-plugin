@@ -25,16 +25,23 @@ export function ResumeFacts({ client, resume, dirtyChanged, statusChanged }: { c
   const dirty = version !== null && draft !== JSON.stringify(version.facts, null, 2);
   useEffect(() => { dirtyChanged(dirty || busy); return () => dirtyChanged(false); }, [dirty, busy, dirtyChanged]);
   const path = `/api/resume-facts/${encodeURIComponent(resume.id)}`;
+  function publishStatus(next: FactVersion | null) {
+    statusChanged(next === null ? 'No extracted facts' : next.current === false ? 'Stale facts'
+      : next.state === 'confirmed' ? 'Facts confirmed' : 'Draft facts to review');
+  }
   async function refresh(signal: AbortSignal): Promise<FactVersion | null> {
     const response = JSON.parse(await client.extractionRequest('/api/resume-facts', 'GET', undefined, signal));
     if (!object(response) || !Array.isArray(response.facts)) throw Error('Unable to read resume fact status.');
-    if (!response.facts.some(item => object(item) && item.resumeId === resume.id)) { setVersion(null); setDraft(''); return null; }
+    if (!response.facts.some(item => object(item) && item.resumeId === resume.id)) {
+      setVersion(null); setDraft(''); publishStatus(null); return null;
+    }
     const detail = JSON.parse(await client.extractionRequest(path, 'GET', undefined, signal));
     if (!object(detail) || !object(detail.facts) || !Array.isArray(detail.versions) || typeof detail.revision !== 'number'
       || typeof detail.contentRevision !== 'string' || (detail.state !== 'draft' && detail.state !== 'confirmed')
       || typeof detail.current !== 'boolean') throw Error('Unable to read resume facts.');
     const next = detail as FactVersion;
     setVersion(next); setDraft(JSON.stringify(next.facts, null, 2));
+    publishStatus(next);
     return next;
   }
   useEffect(() => {
@@ -52,8 +59,7 @@ export function ResumeFacts({ client, resume, dirtyChanged, statusChanged }: { c
     try {
       await client.extractionRequest(path, 'POST', JSON.stringify({ facts,
         expectedResumeRevision: resume.revision, expectedFactRevision: version.revision }), controller.signal);
-      const updated = await refresh(controller.signal);
-      statusChanged(updated?.current === false ? 'Stale facts' : updated?.state === 'confirmed' ? 'Facts confirmed' : 'Draft facts to review');
+      await refresh(controller.signal);
       setNotice('Fact edits saved as a new draft. Review and confirm it before application use.');
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to save facts.'); }
     finally { setBusy(false); }
@@ -66,8 +72,7 @@ export function ResumeFacts({ client, resume, dirtyChanged, statusChanged }: { c
       await client.extractionRequest(`${path}/confirm`, 'POST', JSON.stringify({
         expectedFactRevision: version.revision, expectedContentRevision: version.contentRevision
       }), controller.signal);
-      const updated = await refresh(controller.signal);
-      statusChanged(updated?.current === false ? 'Stale facts' : updated?.state === 'confirmed' ? 'Facts confirmed' : 'Draft facts to review');
+      await refresh(controller.signal);
       setNotice('These facts are confirmed for this resume. Confirm the resume and facts with the agent for each job.');
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to confirm facts.'); }
     finally { setBusy(false); }
