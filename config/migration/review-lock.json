@@ -1,8 +1,14 @@
 {
   "schemaVersion": 1,
   "files": [
-    {"path": "resume-scoped-facts-surfaces.json", "sha256": "16ec0b427ae00667d9a333a7332774bcc517b9eb8a4e1f1c1a44b2c1480a3715"},
-    {"path": "source-catalog-resume-scoped-facts.json", "sha256": "07ef8f71b812dd2b3ab8ed52cb56e1e536c1ec4b444eb574ed2e6e2f6f858625"},
+    {
+      "path": "resume-scoped-facts-surfaces.json",
+      "sha256": "16ec0b427ae00667d9a333a7332774bcc517b9eb8a4e1f1c1a44b2c1480a3715"
+    },
+    {
+      "path": "source-catalog-resume-scoped-facts.json",
+      "sha256": "3a0bdece97aca74e6dd1db94c816e99e438eff8a63c9cb0cb568abd49b1d38a5"
+    },
     {
       "path": "browser-app-01-surfaces.json",
       "sha256": "3b7315fda4337f14fa1de7e6542556b6afd36c47f73a3401368f1890c3a6b133"
@@ -365,7 +371,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "f7e526ec8fead4c1e9188e689b6bdc45eaef2b51e2d2668541a17cb0577a06d1"
+      "sha256": "f45fe646b34a1b0a2c5e8e44c87d9979b6e5501808e14d923da9a19107a825ac"
     },
     {
       "path": "source-catalog-m01.json",
@@ -413,7 +419,7 @@
     },
     {
       "path": "source-catalog-native-default-cutover.json",
-"sha256": "e902e97191290b073e4899cff30033a888c1ee9f20d1433e66275da62f3b4ccf"
+      "sha256": "e902e97191290b073e4899cff30033a888c1ee9f20d1433e66275da62f3b4ccf"
     },
     {
       "path": "source-catalog-native-email-canary-composition.json",

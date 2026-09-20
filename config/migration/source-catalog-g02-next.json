@@ -3,7 +3,7 @@
   "sources": [
     {
       "path": "apps/companion/app/layout.tsx",
-      "sha256": "bab7fc8d29ed0cd67ead43df9771a2cb039f3736eefd33046e82b20c2bfcebf5",
+      "sha256": "07f9bcf3d97892fc7a3cf44706e5d9272dbf2bdb51d80e5e657ae30421bfa4f1",
       "classification": "unreviewed"
     },
     {
@@ -13,7 +13,7 @@
     },
     {
       "path": "apps/companion/components/Companion.tsx",
-      "sha256": "becc34664a808d1374d06fa939f40222fbe0e1c595877c56c5c58eb1701dd7a7",
+      "sha256": "4b6146124bb653d1f501f7154774a511c1810afa3ccdc13ca05a831c146dd783",
       "classification": "unreviewed"
     },
     {
