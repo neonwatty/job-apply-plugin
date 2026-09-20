@@ -286,6 +286,14 @@
       "sha256": "6b6534680f0ab8455742c3bf00b8472623b9ce0007b5f63ec3bae3fde7a05ade"
     },
     {
+      "path": "requirements-current-answer-cli-01.json",
+      "sha256": "f197997e742c46fa5beed828c856e9ad74f32bc4c6b7d9e3bf2fe2edce3a40b6"
+    },
+    {
+      "path": "requirements-current-http-journal-01.json",
+      "sha256": "3662eb099c4883c061849b69689c7fc9db2bddf58eb7738afa0adac2fbf7bd9d"
+    },
+    {
       "path": "requirements-current-job-cli-01.json",
       "sha256": "a223ba2c43b6cec2b618d9de40c66f39ff714b6b131263bf75190acb600f5a23"
     },
@@ -304,6 +312,10 @@
     {
       "path": "requirements-current-pure-browser-01.json",
       "sha256": "4613803174a491ebe89bc08d9ec90affb89ac3916c7516eba7bfc1ae30ad71b5"
+    },
+    {
+      "path": "requirements-current-resume-cli-01.json",
+      "sha256": "65585d76eb5d584e1b89b5aec56f3cde04a19ac0211f15875723a864a1cd6add"
     },
     {
       "path": "requirements-trash-01.json",
@@ -383,7 +395,7 @@
     },
     {
       "path": "source-catalog-native-answers.json",
-      "sha256": "ff674175f85ffe9755e683a6779fc2fb3dc5d7a9dda45b1250c8f6c0e1f38936"
+      "sha256": "46f95155415736c33feac520857f51f7ffe5ef9fa58c1b61ab0fd7ce46cb98e6"
     },
     {
       "path": "source-catalog-native-automation-ux.json",
@@ -399,7 +411,7 @@
     },
     {
       "path": "source-catalog-native-default-cutover.json",
-      "sha256": "a2733eea51827096889bebc21b0a167df0078d2b14ae60eca54ff1c59cba1d99"
+      "sha256": "56bdba80c791ac640f7e2fb344a373fd53609077a5ef1f0ab7c1d702b5e11ca4"
     },
     {
       "path": "source-catalog-native-email-canary-composition.json",

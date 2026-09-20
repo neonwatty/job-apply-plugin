@@ -53,7 +53,7 @@
     },
     {
       "path": "runtime/cli/native-store-state.js",
-      "sha256": "a0aa134a4a27c970eb75298ebf22ea8e9c82fd28f505be9282b133368a7d5d51",
+      "sha256": "1271b84909594fd203ac4711cbd4547d54c1eb0c1e6ea4be89f9d5a7e27496ee",
       "classification": "unreviewed"
     },
     {
@@ -173,7 +173,7 @@
     },
     {
       "path": "src/cli/native-store-state.ts",
-      "sha256": "13c60055fc22fd1c4ee4b8986c38e26478d088100719e684aad922f86ceb3a76",
+      "sha256": "44d56cde08672fcdb8c54b5a11f9ef821be72f39a01bdb208fe7d79fa21a4c33",
       "classification": "unreviewed"
     },
     {
