@@ -100,6 +100,19 @@ test("navigation has a collision-free row and focus-safe narrow-width overflow",
   assert.match(css, /@media \(max-width:\s*760px\)\s*\{[\s\S]*?\.nav-link\s*\{[^}]*padding-inline:\s*\.35rem[^}]*scroll-snap-align:\s*none/);
 });
 
+test("application-run guidance matches run-level resume confirmation", async () => {
+  const [jobs, resumeFacts] = await Promise.all([
+    readFile(join(REPO_ROOT, "apps", "companion", "components", "Jobs.tsx"), "utf8"),
+    readFile(join(REPO_ROOT, "apps", "companion", "components", "ResumeFacts.tsx"), "utf8"),
+  ]);
+  assert.match(jobs, /aria-label="No active application run"/);
+  assert.match(jobs, /Those inputs stay locked for the whole run/);
+  assert.match(jobs, /You confirmed this resume and fact set in chat for the whole run/);
+  assert.match(jobs, /Ask the Job Apply agent to update the queue or complete the run before switching inputs/);
+  assert.match(resumeFacts, /when starting an application run/);
+  assert.doesNotMatch(resumeFacts, /for each job/);
+});
+
 
 import { hybridAssets } from './workspace_hybrid_assets_support.mjs';
 import { hybridBrowser } from './workspace_hybrid_browser_support.mjs';
