@@ -92,6 +92,7 @@ export async function checkPythonRuntimeClosure(root) {
   return {
     schemaVersion: 1,
     status: errors.length ? 'failed' : 'inventory-consistent',
+    migrationStatus: manifest.status,
     pythonRuntimeEntrypoints: discovered.size,
     pythonRequired: manifest.entrypoints.filter(entry => entry.state === 'python-required').length,
     fixtureOnlyReplacements: manifest.entrypoints.filter(entry => entry.state === 'typescript-fixture-only').length,

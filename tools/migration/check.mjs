@@ -47,7 +47,8 @@ export function validateReviewLock(lock, hashes) {
   return errors;
 }
 
-export function validateInventory({ nodes, sources, surfaces }, actual, { acceptance = false } = {}) {
+export function validateInventory({ nodes, sources, surfaces }, actual,
+  { acceptance = false, enforceSourceHashes = true } = {}) {
   const errors = [];
   const nodeMap = new Map();
   for (const node of nodes) {
@@ -76,12 +77,15 @@ export function validateInventory({ nodes, sources, surfaces }, actual, { accept
   for (const source of sources) {
     if (!safePath(source.path) || sourceMap.has(source.path)) errors.push(`Invalid/duplicate source ${source.path}`);
     sourceMap.set(source.path, source);
-    if (!/^[a-f0-9]{64}$/.test(source.sha256) || source.sha256 !== actual.get(source.path)) {
+    if (!/^[a-f0-9]{64}$/.test(source.sha256)) errors.push(`Invalid source digest ${source.path}`);
+    if (enforceSourceHashes && source.sha256 !== actual.get(source.path)) {
       errors.push(`Source changed/missing: ${source.path}; reconcile inventory before proceeding`);
     }
     if (source.classification !== 'unreviewed') errors.push(`Unsupported source classification ${source.path}`);
   }
-  for (const path of actual.keys()) if (!sourceMap.has(path)) errors.push(`Uninventoried source ${path}`);
+  if (enforceSourceHashes) {
+    for (const path of actual.keys()) if (!sourceMap.has(path)) errors.push(`Uninventoried source ${path}`);
+  }
   const surfaceIds = new Set();
   const identities = new Set();
   for (const surface of surfaces) {
@@ -91,7 +95,9 @@ export function validateInventory({ nodes, sources, surfaces }, actual, { accept
     surfaceIds.add(surface.id);
     if (!nodeMap.has(surface.node)) errors.push(`Unknown owner for ${surface.id}`);
     if (!Array.isArray(surface.sources) || !surface.sources.length
-      || surface.sources.some((path) => !sourceMap.has(path))) errors.push(`Missing source binding ${surface.id}`);
+      || surface.sources.some((path) => !sourceMap.has(path) || !actual.has(path))) {
+      errors.push(`Missing source binding ${surface.id}`);
+    }
     let identity;
     if (surface.kind === 'http') {
       if (!['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'].includes(surface.method)
@@ -130,7 +136,7 @@ export function validateInventory({ nodes, sources, surfaces }, actual, { accept
       || SCENARIOS.some((name) => scenarios[name] !== 'unverified')) errors.push(`Unsupported/missing evidence ${surface.id}`);
   }
   if (!nodes.length || !sources.length || !surfaces.length) errors.push('Empty migration inventory');
-  if (acceptance) errors.push('Migration acceptance is open: source/effect classification and behavioral/native evidence are not yet verified');
+  if (acceptance && enforceSourceHashes) errors.push('Migration acceptance is open: source/effect classification and behavioral/native evidence are not yet verified');
   return errors;
 }
 
@@ -182,9 +188,11 @@ export async function checkInventory(root, options = {}) {
     }
     catch (error) { if (error.code !== 'ENOENT') throw error; }
   }
-  let taskEvidence = { currentAcceptance: 'open', acceptedTasks: new Set(), acceptedPackages: new Set() };
-  const errors = validateInventory({ nodes: nodesFile.nodes, sources, surfaces }, actual, options);
   const pythonRuntime = await checkPythonRuntimeClosure(root);
+  const migrationClosed = pythonRuntime?.migrationStatus === 'migration-closed' && !pythonRuntime.errors.length;
+  let taskEvidence = { currentAcceptance: 'open', acceptedTasks: new Set(), acceptedPackages: new Set() };
+  const errors = validateInventory({ nodes: nodesFile.nodes, sources, surfaces }, actual,
+    { ...options, enforceSourceHashes: !migrationClosed });
   if (pythonRuntime) errors.push(...pythonRuntime.errors);
   const servingMap = detectServingMap(new Map([...browserFiles, ...servingFiles]));
   if (servingMap) for (const path of HYBRID_RUNTIME_PATHS) {
@@ -248,7 +256,9 @@ export async function checkInventory(root, options = {}) {
   const lock = JSON.parse(await readFile(resolve(directory, 'review-lock.json'), 'utf8'));
   errors.push(...validateReviewLock(lock, hashes));
   return { schemaVersion: 1, status: errors.length ? 'failed' : 'inventory-consistent',
-    acceptance: 'open', ...(historicalAudit ? { historicalAudit } : {}), taskEvidence: { currentAcceptance: taskEvidence.currentAcceptance,
+    acceptance: migrationClosed ? 'runtime-migration-closed' : 'open',
+    sourceHashPolicy: migrationClosed ? 'retired' : 'enforced',
+    ...(historicalAudit ? { historicalAudit } : {}), taskEvidence: { currentAcceptance: taskEvidence.currentAcceptance,
       acceptedTasks: [...taskEvidence.acceptedTasks].sort(), acceptedPackages: [...taskEvidence.acceptedPackages].sort(), retiredTasks: [...(taskEvidence.retiredTasks ?? [])].sort() }, nodes: nodesFile.nodes.length, sources: sources.length,
     surfaces: surfaces.length, requirements: requirements.length, packages: packages.length,
     unmappedRequirementCells: missingRequirementCoverage(surfaces.map((item) => item.id), requirements).length,
