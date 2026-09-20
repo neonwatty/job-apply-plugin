@@ -2,6 +2,28 @@
   "schemaVersion": 1,
   "surfaces": [
     {
+      "id": "browser:apps/companion/components/resume-fact-editor.tsx:ResumeFactEditor",
+      "kind": "browser",
+      "export": "ResumeFactEditor",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/resume-fact-editor.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
       "id": "browser:apps/companion/components/ResumeFacts.tsx:ResumeFacts",
       "kind": "browser",
       "export": "ResumeFacts",

@@ -3,7 +3,17 @@
   "sources": [
     {
       "path": "apps/companion/components/ResumeFacts.tsx",
-      "sha256": "eb2fb116e5a935e048c26f3a139c03ab9ba871d4bbc32b7f6b5779f166f9b3c2",
+      "sha256": "da0b700cd3bd86b14e770eb60c3d80695b91bbec550b4763b01669974a521052",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/resume-fact-editor.tsx",
+      "sha256": "32284177eb2e82c488deb81a99ef398cf8257a4aa1dc34c94db50f297257f8ad",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/resume-facts.css",
+      "sha256": "b0692072ffd24a9d9a9a05bb168f5aec7b609ad42207f5782ebdefcc1d334b49",
       "classification": "unreviewed"
     },
     {

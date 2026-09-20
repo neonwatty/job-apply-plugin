@@ -13,6 +13,7 @@ import { Automation } from './Automation';
 import './companion.css';
 import './automation.css';
 import './trash.css';
+import './resume-facts.css';
 import { Trash } from './Trash';
 import { createTrashClient } from './trash-client';
 import { compatibilityTrashCapabilities, nativeTrashCapabilities } from './trash-model';

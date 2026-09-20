@@ -1,8 +1,14 @@
 {
   "schemaVersion": 1,
   "files": [
-    {"path": "resume-scoped-facts-surfaces.json", "sha256": "16ec0b427ae00667d9a333a7332774bcc517b9eb8a4e1f1c1a44b2c1480a3715"},
-    {"path": "source-catalog-resume-scoped-facts.json", "sha256": "e532793437d5be141b97b20ae02feaed5aa60d175fe282159813baceef4fafad"},
+    {
+      "path": "resume-scoped-facts-surfaces.json",
+      "sha256": "69e96a2ef5e3739b52b6ffce4fd12edda0cc0f94b23f9bb9270099c9dff15ba9"
+    },
+    {
+      "path": "source-catalog-resume-scoped-facts.json",
+      "sha256": "fd6bedbbf7045351880d66f5f08b6a9c3326b23a0909f0a09109d83a4ce06696"
+    },
     {
       "path": "browser-app-01-surfaces.json",
       "sha256": "3b7315fda4337f14fa1de7e6542556b6afd36c47f73a3401368f1890c3a6b133"
@@ -365,7 +371,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "f7e526ec8fead4c1e9188e689b6bdc45eaef2b51e2d2668541a17cb0577a06d1"
+      "sha256": "f45fe646b34a1b0a2c5e8e44c87d9979b6e5501808e14d923da9a19107a825ac"
     },
     {
       "path": "source-catalog-m01.json",
@@ -413,7 +419,7 @@
     },
     {
       "path": "source-catalog-native-default-cutover.json",
-"sha256": "e902e97191290b073e4899cff30033a888c1ee9f20d1433e66275da62f3b4ccf"
+      "sha256": "e902e97191290b073e4899cff30033a888c1ee9f20d1433e66275da62f3b4ccf"
     },
     {
       "path": "source-catalog-native-email-canary-composition.json",
