@@ -74,7 +74,9 @@ export function validateApplicationRuns(metadata: Document): Document | null {
 }
 
 export function activeApplicationRun(jobs: Document): Document | null {
-  const runs = validateApplicationRuns(object(get(jobs, 'metadata'), 'jobs metadata'));
+  const metadata = get(jobs, 'metadata');
+  if (metadata === null) return null;
+  const runs = validateApplicationRuns(object(metadata, 'jobs metadata'));
   if (runs === null || get(runs, 'activeRunId') === null) return null;
   return object(get(object(get(runs, 'runs'), 'application runs'), string(get(runs, 'activeRunId'))!), 'active application run');
 }

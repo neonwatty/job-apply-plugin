@@ -5,6 +5,7 @@ import { promisify } from 'node:util';
 import { setup as claimsSetup, plain, read, write, snapshot, cli } from './workspace_native_claims_support.mjs';
 import { TrashService } from '../runtime/workspace-core/trash.js';
 import { ApplicationRunsService } from '../runtime/workspace-core/application-runs.js';
+import { ResumeFactsService } from '../runtime/workspace-core/resume-facts.js';
 import { fromJSON } from '../runtime/contracts/workspace/values.js';
 export { plain, read, write, snapshot, cli };
 export const at = '2026-09-10T15:00:00Z';
@@ -12,7 +13,11 @@ export async function setup(fixture,name) {
   const state=await claimsSetup(fixture,name);
   const runs=new ApplicationRunsService(state.repository,()=>at);
   await runs.complete(state.run.runId,BigInt(state.run.revision));
-  const startRun=(jobIds=['job','other'])=>runs.start('resume',1n,2n,true,fromJSON({jobIds}));
+  const resume=(await read(state.root,'resumes.json')).resumes.resume;
+  const facts=new ResumeFactsService(state.repository,()=>at);
+  const draft=plain(await facts.createDraft('resume',fromJSON({name:'PRIVATE-PROFILE'}),BigInt(resume.revision),null));
+  const confirmed=plain(await facts.confirm('resume',BigInt(draft.revision),draft.contentRevision));
+  const startRun=(jobIds=['job','other'])=>runs.start('resume',BigInt(resume.revision),BigInt(confirmed.revision),true,fromJSON({jobIds}));
   return {...state,runs,startRun,service:new TrashService(state.repository,()=>at)};
 }
 const python = `import importlib.util,json,sys

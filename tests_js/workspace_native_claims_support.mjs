@@ -9,7 +9,6 @@ import { loadPosixFlockProvider } from '../runtime/store/posix-flock.js';
 import { ClaimsService } from '../runtime/workspace-core/claims.js';
 import { JobsService } from '../runtime/workspace-core/jobs.js';
 import { ResumeService } from '../runtime/workspace-core/resumes.js';
-import { ResumeFactsService } from '../runtime/workspace-core/resume-facts.js';
 import { ApplicationRunsService } from '../runtime/workspace-core/application-runs.js';
 import { fromJSON, serialize } from '../runtime/contracts/workspace/values.js';
 export const plain = value => JSON.parse(serialize(value));
@@ -30,11 +29,11 @@ export async function setup(fixture,name) {
   const profile=await read(root,'profile.json'); profile.profile.name='PRIVATE-PROFILE'; await write(root,'profile.json',profile);
   const resume=plain(await new ResumeService(repository,now).import(
     fromJSON({id:'resume',label:'Synthetic',default:true}),'resume.txt',Buffer.from('PRIVATE-RESUME')));
-  const facts=new ResumeFactsService(repository,now);
-  const draft=plain(await facts.createDraft('resume',fromJSON({name:'PRIVATE-PROFILE'}),BigInt(resume.revision),null));
-  const confirmed=plain(await facts.confirm('resume',BigInt(draft.revision),draft.contentRevision));
-  const run=plain(await new ApplicationRunsService(repository,now).start(
-    'resume',BigInt(resume.revision),BigInt(confirmed.revision),true,fromJSON({jobIds:['job','other']})));
+  const document=await read(root,'jobs.json'),run={runId:'run-fixture',status:'active',revision:1,
+    selection:{resumeId:'resume',contentRevision:resume.contentRevision,factRevision:1,confirmedAt:clock.now},
+    queueVersions:[{revision:1,jobIds:['job','other'],updatedAt:clock.now}],createdAt:clock.now,updatedAt:clock.now,completedAt:null};
+  document.metadata.applicationRuns={activeRunId:run.runId,runs:{[run.runId]:run}};
+  await write(root,'jobs.json',document);
   return {root,provider,repository,jobs,claims,clock,run};
 }
 export async function addToRun(state,id) {
