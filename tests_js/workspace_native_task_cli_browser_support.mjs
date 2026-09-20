@@ -56,12 +56,14 @@ export async function taskCliBrowser(page, root, fixture, buildRoot) {
   const resume = Object.values(JSON.parse(await readFile(join(root, 'resumes.json'), 'utf8')).resumes)[0];
   const factSet = JSON.parse(await readFile(join(root, 'resume-facts.json'), 'utf8')).sets[resume.id];
   const factRevision = factSet.versions.at(-1).revision;
-  const input = await execute(process.execPath, [join(buildRoot, 'runtime/cli/native-jobs.js'),
-    '--root', root, '--native-lock', fixture.receipt.artifact, 'job-input-confirm', '--id', id,
-    '--resume-id', resume.id, '--expected-revision', String(created.job.revision),
+  const runInput = join(fixture.root, 'application-run-input.json');
+  await writeFile(runInput, JSON.stringify({ jobIds: [id] }), { mode: 0o600 });
+  await execute(process.execPath, [join(buildRoot, 'runtime/cli/native-jobs.js'),
+    '--root', root, '--native-lock', fixture.receipt.artifact, 'application-run-start',
+    '--resume-id', resume.id, '--input', runInput,
     '--expected-resume-revision', String(resume.revision), '--expected-fact-revision', String(factRevision),
     '--owner-confirmed'], { env: { PATH: '' } });
-  const selectedRevision = JSON.parse(input.stdout).jobRevision;
+  const selectedRevision = created.job.revision;
   const selected = await cli('select', ['--id', id, '--expected-revision', String(selectedRevision), '--owner-confirmed']);
   assert.equal(selected.action, 'ready');
   assert.equal(selected.job.status, 'ready');

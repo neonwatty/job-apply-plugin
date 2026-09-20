@@ -75,19 +75,39 @@ flowchart LR
 | Import an older search report | Job Search legacy queue intake | Owner selects exact report entries, reviews their `legacy-jobs-preview`, and confirms its token before commit. This is an optional migration path. |
 | Enter one supplied URL | Job Apply intake | `task intake` creates, updates, or resolves an existing canonical job before browser work; search is optional. |
 
-## 3. One job application
+## 3. Start and maintain an application run
 
 ```mermaid
 flowchart LR
-  Job[Exact canonical job chosen] --> Choice[Agent presents managed resumes and fact status]
-  Choice -->|owner confirms job, resume and fact revision in chat| Bound[Job input selection recorded]
-  Bound -->|task select passes preflight| Ready[Ready]
+  Queue[Canonical job queue] --> Status[Check active application run]
+  Status -->|none active| Choice[Agent presents queue, resumes and fact status]
+  Choice -->|owner confirms one resume and fact revision in chat| Run[Active run with locked inputs]
+  Status -->|active| Run
+  Run -->|add or remove unclaimed jobs| Version[Append queue version]
+  Version --> Run
+  Run -->|resume or facts become stale| Stop[Stop application work]
+  Stop -->|complete run and reconfirm| Choice
+  Run -->|queue finished or owner ends it| Complete[Completed run]
+```
+
+| Transition | Skill or surface | Persisted evidence and guard |
+| --- | --- | --- |
+| Start run | Job Apply intake, with review in Job Workspace → Resumes | `application-run-start` records one managed resume, content revision, confirmed fact revision, initial queue, and chat confirmation. Only one run is active. |
+| Update queue | Job Apply intake | `application-run-update` replaces the full queue at an exact run revision and appends the new version. It cannot change resume or facts or remove an actively claimed job. |
+| End run | Job Apply intake | `application-run-complete` closes the exact active revision. A new resume or fact revision requires a new run and fresh chat confirmation. |
+
+## 4. One job within an application run
+
+```mermaid
+flowchart LR
+  Run[Active application run] -->|exact job is in current queue| Job[Exact canonical job chosen]
+  Job -->|task select passes run-aware preflight| Ready[Ready]
   Ready -->|attempt start acquires exact revision| Claimed[Claimed attempt]
   Claimed -->|open and inspect visible form| Form[Exact form observed]
   Form -->|owner grants bounded fill consent| Filling[Agent fills and verifies]
   Filling -->|missing input or changed inputs| NeedsInfo[Needs Attention; claim released]
-  NeedsInfo -->|pending answer resolved; binding current| Ready
-  NeedsInfo -->|selected inputs changed| Choice
+  NeedsInfo -->|pending answer resolved; run inputs current| Ready
+  NeedsInfo -->|run inputs stale| Stop[Complete run and reconfirm]
   Filling -->|current-form readiness passes| Review[Awaiting owner review; claim released]
   Review -->|owner submits externally and confirms outcome| Applied[Submission recorded]
   Review -->|owner confirms not submitted; explicit restart| Claimed
@@ -95,19 +115,18 @@ flowchart LR
   Expired -->|explicit same-job recovery| Claimed
   Claimed -->|claimless interruption| Interrupted[Interrupted job needs attention]
   Interrupted -->|owner resolves exact state| NeedsInfo
-  Bound -->|job, resume or facts revision changes| Choice
 ```
 
 | Transition | Skill or surface | Persisted evidence and guard |
 | --- | --- | --- |
-| Choose inputs | Job Apply intake, with review in Job Workspace → Resumes | `job-input-confirm` binds exact job, managed resume, content, and confirmed fact revisions after explicit owner confirmation in chat. A default resume is only a suggestion. |
-| Select and acquire | Job Apply `task select` then `attempt start` | Preflight and claim recheck the binding and managed file; the attempt broker retains claim authority privately. |
+| Choose job | Job Apply intake | The exact job must be in the active run's latest queue version. Queue membership can change without changing the run inputs. |
+| Select and acquire | Job Apply `task select` then `attempt start` | Preflight and claim recheck the run selection, queue membership, confirmed facts, and managed file; the attempt broker retains claim authority privately. |
 | Fill or pause | Job Apply visible browser and `attempt` clients | Claiming does not authorize entry. Inspect the exact visible form, then obtain bounded fill consent; a new form instance or material scope change needs renewed consent. Progress saves value-free references. `needs_info` releases the claim before waiting for the owner. |
 | Hand off | Job Apply readiness check and `attempt handoff` | A current-form packet must pass Store checks before `awaiting_review`; the agent leaves final submission untouched. |
 | Finish | Owner in the external application and Job Workspace activity | Only the owner submits. Record `applied` only after the owner confirms that submission. |
-| Recover or restart | Job Apply recovery route | A pending answer can resolve directly to Ready while the binding stays current. An expired same-job claim needs explicit recovery; a reviewed job restarts only after the owner confirms it was not submitted. |
+| Recover or restart | Job Apply recovery route | A pending answer can resolve directly to Ready while the run selection stays current. An expired same-job claim needs explicit recovery; a reviewed job restarts only after the owner confirms it was not submitted. |
 
-Application question answers live in the separate reusable answer library. A change to the selected job, resume content, or confirmed facts requires a fresh chat confirmation before another attempt. An interrupted claim is handled through explicit recovery, never silently replaced.
+Application question answers live in the separate reusable answer library. Job revisions and queue changes do not require resume reconfirmation. A resume content or fact revision change ends the run before another attempt. An interrupted claim is handled through explicit recovery, never silently replaced.
 
 ## Keep the map current
 

@@ -3,7 +3,7 @@ import test from 'node:test';
 import { join } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
-import { plain, read, setup } from './workspace_native_claims_support.mjs';
+import { addToRun, plain, read, setup } from './workspace_native_claims_support.mjs';
 import { AccountsService } from '../runtime/workspace-core/accounts.js';
 import { AutomationService } from '../runtime/workspace-core/automation.js';
 import { LiveEmailOnlyAccountService } from '../runtime/workspace-core/email-only-account.js';
@@ -18,6 +18,7 @@ async function prepared(fixture, name) {
   const state = await setup(fixture, name);
   const created = plain(await state.jobs.create(fromJSON({ id: 'oracle-live', url: portal,
     role: 'Engineer', company: 'Oracle test', ats: 'oracle' })));
+  await addToRun(state, created.id);
   await state.claims.select('oracle-live', BigInt(created.revision), true);
   const selected = plain(await state.jobs.get('oracle-live'));
   const acquired = plain(await state.claims.acquire('oracle-live', fromJSON('Private canary owner'), BigInt(selected.revision)));

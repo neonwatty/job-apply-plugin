@@ -4,6 +4,7 @@ import { casefold } from '../contracts/workspace/casefold.js';
 import { requireJobUnclaimed } from '../contracts/workspace/claims.js';
 import { emptyObject, safeId, validateJob } from '../contracts/workspace/jobs.js';
 import { copy, get, int, integer, object, same, set, string, text, truth, JobsError } from '../contracts/workspace/values.js';
+import { activeApplicationRun, currentRunJobIds } from '../contracts/workspace/application-runs.js';
 function records(document, field) {
     return object(get(document, field), field).entries().map(([, value]) => object(value, field));
 }
@@ -108,6 +109,10 @@ export class TrashService {
             if (int(get(current, 'revision')) !== expectedRevision)
                 throw new JobsError('job revision conflict');
             requireJobUnclaimed(transaction.coordinator, id);
+            const run = activeApplicationRun(transaction.jobs);
+            if (run !== null && currentRunJobIds(run).includes(id)) {
+                throw new JobsError('remove job from the active application run before deleting it');
+            }
             if (get(current, 'deletedAt') === null)
                 throw new JobsError('job must be trashed before permanent deletion');
             const session = transaction.sessions.find(item => string(get(item, 'applicationId')) === id);
@@ -131,6 +136,10 @@ export class TrashService {
             if (int(get(current, 'revision')) !== expectedRevision)
                 throw new JobsError('job revision conflict');
             transaction.requireUnclaimed?.(id);
+            const run = activeApplicationRun(transaction.document);
+            if (!restore && run !== null && currentRunJobIds(run).includes(id)) {
+                throw new JobsError('remove job from the active application run before trashing it');
+            }
             const trashed = get(current, 'deletedAt') !== null;
             if (restore === !trashed)
                 return current;

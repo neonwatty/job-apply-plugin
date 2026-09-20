@@ -3,7 +3,7 @@ import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
-import { plain, read, setup, snapshot, write } from './workspace_native_claims_support.mjs';
+import { addToRun, plain, read, setup, snapshot, write } from './workspace_native_claims_support.mjs';
 import { resolveAccountRealm } from '../runtime/contracts/workspace/account-realm.js';
 import { fromJSON } from '../runtime/contracts/workspace/values.js';
 import { TrustedFillService } from '../runtime/workspace-core/trusted-fill.js';
@@ -15,6 +15,7 @@ const fp = character => `sha256:${character.repeat(64)}`;
 async function prepared(fixture, name) {
   const state = await setup(fixture, name), id = 'trusted-job';
   await state.jobs.create(fromJSON({ id, url: portal(name), role: 'Engineer', company: 'Synthetic', ats: 'workday', resumeId: 'resume' }));
+  await addToRun(state, id);
   const selected = plain(await state.claims.select(id, 1n, true));
   const acquired = plain(await state.claims.acquire(id, fromJSON('Trusted Fill owner'), BigInt(selected.job.revision)));
   const realm = resolveAccountRealm(portal(name));

@@ -23,7 +23,7 @@
     },
     {
       "path": "runtime/workspace-core/trusted-fill.js",
-      "sha256": "03d78bc60f4f6a70b56c8032a5f6a49b22fb5de6fd8542507929faa3978ac49e",
+      "sha256": "09b8d5e651b5d3131c5e50cf34c1b8391e33b665b61b69c915580bd3e1286159",
       "classification": "unreviewed"
     },
     {
@@ -48,7 +48,7 @@
     },
     {
       "path": "src/workspace-core/trusted-fill.ts",
-      "sha256": "c5a3a9fa4d75559773b0a93719de5084eb66ead1b3d9b65868e769783fcd7483",
+      "sha256": "ec628ba166f749768ff100a08683503108b692cdab512cf768a7219d1cca310c",
       "classification": "unreviewed"
     }
   ]

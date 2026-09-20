@@ -1,11 +1,18 @@
 import { emptyObject } from '../contracts/workspace/jobs.js';
 import { get, int, keys, object, same, set, string, text, integer, truth } from '../contracts/workspace/values.js';
+import { activeApplicationRun, currentRunJobIds } from '../contracts/workspace/application-runs.js';
 /** Inspect documents already held by the caller's transaction, without acquiring another lock. */
-export async function preflightJobRecord(job, profileDocument, resumesDocument, files, factsDocument, requestsDocument) {
+export async function preflightJobRecord(job, profileDocument, resumesDocument, files, factsDocument, requestsDocument, jobsDocument) {
     const errors = [], warnings = [];
     const profile = object(get(profileDocument, 'profile'), 'profile.profile');
     const resumes = object(get(resumesDocument, 'resumes'), 'resumes.resumes');
-    let resumeId = get(job, 'resumeId');
+    const run = jobsDocument ? activeApplicationRun(jobsDocument) : null;
+    const runSelection = run === null ? null : object(get(run, 'selection'), 'application run selection');
+    if (jobsDocument && run === null)
+        errors.push('application_run_missing');
+    if (run !== null && !currentRunJobIds(run).includes(string(get(job, 'id'))))
+        errors.push('application_run_job_missing');
+    let resumeId = runSelection === null ? get(job, 'resumeId') : get(runSelection, 'resumeId');
     if (resumeId === null) {
         const defaultResume = resumes.entries().map(([, item]) => object(item, 'resume record'))
             .find(item => get(item, 'deletedAt') === null && truth(get(item, 'default')));
@@ -21,10 +28,11 @@ export async function preflightJobRecord(job, profileDocument, resumesDocument, 
     if (scoped !== null && scoped !== undefined) {
         const versions = get(object(scoped, 'resume fact set'), 'versions');
         const latest = Array.isArray(versions) && versions.length ? object(versions[versions.length - 1], 'resume facts') : null;
-        const selectionValue = get(job, 'inputSelection');
-        const selection = selectionValue === null ? null : object(selectionValue, 'job input selection');
+        const selectionValue = runSelection === null ? get(job, 'inputSelection') : runSelection;
+        const selection = selectionValue === null ? null : object(selectionValue, 'application input selection');
         if (!selection || !latest || string(get(selection, 'resumeId')) !== string(resumeId)
-            || string(get(job, 'resumeId')) !== string(resumeId) || int(get(selection, 'jobRevision')) !== int(get(job, 'revision'))
+            || (runSelection === null && (string(get(job, 'resumeId')) !== string(resumeId)
+                || int(get(selection, 'jobRevision')) !== int(get(job, 'revision'))))
             || int(get(selection, 'factRevision')) !== int(get(latest, 'revision'))
             || string(get(latest, 'state')) !== 'confirmed'
             || string(get(selection, 'contentRevision')) !== string(get(latest, 'contentRevision'))

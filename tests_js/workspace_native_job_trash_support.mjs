@@ -4,11 +4,16 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { setup as claimsSetup, plain, read, write, snapshot, cli } from './workspace_native_claims_support.mjs';
 import { TrashService } from '../runtime/workspace-core/trash.js';
+import { ApplicationRunsService } from '../runtime/workspace-core/application-runs.js';
+import { fromJSON } from '../runtime/contracts/workspace/values.js';
 export { plain, read, write, snapshot, cli };
 export const at = '2026-09-10T15:00:00Z';
 export async function setup(fixture,name) {
   const state=await claimsSetup(fixture,name);
-  return {...state,service:new TrashService(state.repository,()=>at)};
+  const runs=new ApplicationRunsService(state.repository,()=>at);
+  await runs.complete(state.run.runId,BigInt(state.run.revision));
+  const startRun=(jobIds=['job','other'])=>runs.start('resume',1n,2n,true,fromJSON({jobIds}));
+  return {...state,runs,startRun,service:new TrashService(state.repository,()=>at)};
 }
 const python = `import importlib.util,json,sys
 from pathlib import Path

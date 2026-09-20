@@ -9,6 +9,8 @@ import { loadPosixFlockProvider } from '../runtime/store/posix-flock.js';
 import { ClaimsService } from '../runtime/workspace-core/claims.js';
 import { JobsService } from '../runtime/workspace-core/jobs.js';
 import { ResumeService } from '../runtime/workspace-core/resumes.js';
+import { ResumeFactsService } from '../runtime/workspace-core/resume-facts.js';
+import { ApplicationRunsService } from '../runtime/workspace-core/application-runs.js';
 import { fromJSON, serialize } from '../runtime/contracts/workspace/values.js';
 export const plain = value => JSON.parse(serialize(value));
 export const read = async (root,name) => JSON.parse(await readFile(join(root,name),'utf8'));
@@ -26,8 +28,20 @@ export async function setup(fixture,name) {
   const jobs=new JobsService(repository,now), claims=new ClaimsService(repository,now);
   for(const id of ['job','other']) await jobs.create(fromJSON({id,url:`https://example.invalid/${id}`,role:'Engineer',company:'Synthetic',ats:'greenhouse'}));
   const profile=await read(root,'profile.json'); profile.profile.name='PRIVATE-PROFILE'; await write(root,'profile.json',profile);
-  await new ResumeService(repository,now).import(fromJSON({id:'resume',label:'Synthetic',default:true}),'resume.txt',Buffer.from('PRIVATE-RESUME'));
-  return {root,provider,repository,jobs,claims,clock};
+  const resume=plain(await new ResumeService(repository,now).import(
+    fromJSON({id:'resume',label:'Synthetic',default:true}),'resume.txt',Buffer.from('PRIVATE-RESUME')));
+  const facts=new ResumeFactsService(repository,now);
+  const draft=plain(await facts.createDraft('resume',fromJSON({name:'PRIVATE-PROFILE'}),BigInt(resume.revision),null));
+  const confirmed=plain(await facts.confirm('resume',BigInt(draft.revision),draft.contentRevision));
+  const run=plain(await new ApplicationRunsService(repository,now).start(
+    'resume',BigInt(resume.revision),BigInt(confirmed.revision),true,fromJSON({jobIds:['job','other']})));
+  return {root,provider,repository,jobs,claims,clock,run};
+}
+export async function addToRun(state,id) {
+  const ids=[...state.run.queueVersions.at(-1).jobIds,id];
+  state.run=plain(await new ApplicationRunsService(state.repository,()=>state.clock.now).update(
+    state.run.runId,BigInt(state.run.revision),fromJSON({jobIds:ids})));
+  return state.run;
 }
 export function readyPacket(attemptRevision) {
   const fixture=JSON.parse(readFileSync(new URL('../qa/fixtures/greenhouse-form-readiness-v1/fixture.json',import.meta.url),'utf8'));

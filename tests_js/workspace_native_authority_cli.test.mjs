@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
-import { plain, read, setup } from './workspace_native_claims_support.mjs';
+import { addToRun, plain, read, setup } from './workspace_native_claims_support.mjs';
 import { resolveAccountRealm } from '../runtime/contracts/workspace/account-realm.js';
 import { fromJSON } from '../runtime/contracts/workspace/values.js';
 import { runNativeAuthorityCommand } from '../runtime/cli/native-authority.js';
@@ -13,6 +13,7 @@ const fingerprint = character => `sha256:${character.repeat(64)}`;
 async function trusted(fixture, name) {
   const state = await setup(fixture, name), id = 'authority-job';
   await state.jobs.create(fromJSON({ id, url: portal(name), role: 'Engineer', company: 'Synthetic', ats: 'workday', resumeId: 'resume' }));
+  await addToRun(state, id);
   const selected = plain(await state.claims.select(id, 1n, true));
   const claimed = plain(await state.claims.acquire(id, fromJSON('Owner'), BigInt(selected.job.revision)));
   const realm = resolveAccountRealm(portal(name));

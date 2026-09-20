@@ -34,13 +34,13 @@
   revision without overwriting a confirmed version.
 - Confirmation requires the exact displayed fact revision and resume content
   revision. A confirmed version is immutable. Editing forks a draft revision.
-- Record a separate job input selection with exact job, resume, content, and
-  fact revisions plus the owner's explicit chat confirmation. The selected fact
-  version is the only applicant profile source for that application attempt.
+- Record an application run with one exact resume, content revision, and fact
+  revision plus the owner's explicit chat confirmation. Every job in the run's
+  revisioned, updatable queue uses that selection.
 - Preserve legacy `profile.json`, CLI responses, and existing extraction records
   for compatibility. Do not assign existing profile facts to a resume by guess.
-  Existing jobs need explicit resume-and-facts confirmation before using the new
-  agent workflow. Never mix Python and TypeScript writers on one live Store.
+  A run needs explicit resume-and-facts confirmation before using the new agent
+  workflow. Never mix Python and TypeScript writers on one live Store.
 
 ## UX and agent boundaries
 
@@ -48,9 +48,9 @@
   surface displays draft and confirmed revisions, field edits, and stale state.
 - Overview sends scoped fact review to Resumes, including its setup link, so a
   first import does not lead to the applicant-wide legacy Facts page.
-- The agent asks for the resume and facts choice in chat. The UX is for detailed
+- The agent asks for the run's resume and facts choice in chat. The UX is for detailed
   review and correction; a UI click alone cannot authorize application use.
-- Job and attempt views show the selected resume label and closed fact status,
+- Run, job, and attempt views show the selected resume label and closed fact status,
   with no applicant values in value-free activity or diagnostic projections.
 - Claim tokens, managed paths, candidate values, and browser state never enter
   the selection receipt, activity history, or logs.
@@ -60,8 +60,9 @@
 - Two resumes can hold different facts without changing each other.
 - Import queues extraction by default; explicit opt-out does not queue it.
 - An agent can complete an extraction, but a draft cannot start browser work.
-- Chat confirmation for resume A and its confirmed facts allows only A for the
-  exact job. A default resume B cannot replace it.
-- Resume replacement, fact edit, or a stale job revision invalidates selection.
+- Chat confirmation for resume A and its confirmed facts allows only A throughout
+  the run. Queue revisions can add or remove jobs without selecting resume B.
+- Resume replacement or fact editing invalidates the run selection. A job revision
+  change does not require another resume confirmation.
 - Existing legacy Store documents remain readable without silent migration.
 - The final third-party submit action remains human-only.

@@ -2,8 +2,13 @@ import { ClaimsService } from '../workspace-core/claims.js';
 import type { ClaimRepository } from '../workspace-core/claims.js';
 import { object, text, JobsError } from '../contracts/workspace/values.js';
 import type { Value } from '../contracts/workspace/values.js';
+import { ApplicationRunsService } from '../workspace-core/application-runs.js';
 
 export const claimCommands:Record<string,string[]> = {
+  'application-run-status':[],
+  'application-run-start':['--resume-id','--expected-resume-revision','--expected-fact-revision','--owner-confirmed','--input'],
+  'application-run-update':['--run-id','--expected-revision','--input'],
+  'application-run-complete':['--run-id','--expected-revision'],
   'job-review-restart':['--id','--owner','--expected-revision','--owner-confirmed-not-submitted'],
   'task-select':['--id','--expected-revision','--owner-confirmed'],
   'job-input-confirm':['--id','--resume-id','--expected-revision','--expected-resume-revision','--expected-fact-revision','--owner-confirmed'],
@@ -14,6 +19,7 @@ export const claimCommands:Record<string,string[]> = {
 };
 export async function runClaimCommand(command:string,repository:ClaimRepository,options:Map<string,string>,payload:()=>Promise<Value>):Promise<Value> {
   const service = new ClaimsService(repository);
+  const runs = new ApplicationRunsService(repository);
   const required = (key:string):string => {
     const value = options.get(key);
     if (!value) throw new JobsError(`required option: ${key}`);
@@ -30,6 +36,11 @@ export async function runClaimCommand(command:string,repository:ClaimRepository,
     return BigInt(value);
   };
   if (command === 'claim-status') return service.status();
+  if (command === 'application-run-status') return runs.status();
+  if (command === 'application-run-start') return runs.start(required('--resume-id'),positive('--expected-resume-revision'),
+    positive('--expected-fact-revision'),options.has('--owner-confirmed'),object(await payload(),'application run input'));
+  if (command === 'application-run-update') return runs.update(required('--run-id'),revision(),object(await payload(),'application run input'));
+  if (command === 'application-run-complete') return runs.complete(required('--run-id'),revision());
   const id = required('--id');
   if (command === 'task-select') return service.select(id,revision(),options.has('--owner-confirmed'));
   if (command === 'job-input-confirm') return service.confirmInput(id,required('--resume-id'),revision(),

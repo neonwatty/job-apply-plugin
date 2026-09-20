@@ -34,6 +34,13 @@ export type ResumeRecord = Resume & {
 export type WorkspaceState = {
     jobs: Job[];
     resumes: Resume[];
+    applicationRun: ApplicationRun | null;
+};
+export type ApplicationRun = {
+    runId: string;
+    revision: number;
+    selection: { resumeId: string; factRevision: number };
+    queueVersions: Array<{ revision: number; jobIds: string[] }>;
 };
 export type Boot = {
     status: 'ready';
@@ -67,6 +74,20 @@ export function job(value: unknown): Job {
 export function workspaceState(value: unknown): WorkspaceState {
     if (!object(value) || !Array.isArray(value.jobs) || !Array.isArray(value.resumes))
         return invalid();
+    let applicationRun: ApplicationRun | null = null;
+    if (value.applicationRun !== null && value.applicationRun !== undefined) {
+        const run = value.applicationRun;
+        if (!object(run) || typeof run.runId !== 'string' || typeof run.revision !== 'number'
+            || !object(run.selection) || typeof run.selection.resumeId !== 'string'
+            || typeof run.selection.factRevision !== 'number' || !Array.isArray(run.queueVersions)) return invalid();
+        const queueVersions = run.queueVersions.map(version => {
+            if (!object(version) || typeof version.revision !== 'number' || !Array.isArray(version.jobIds)
+                || version.jobIds.some(id => typeof id !== 'string')) return invalid();
+            return { revision: version.revision, jobIds: version.jobIds as string[] };
+        });
+        applicationRun = { runId: run.runId, revision: run.revision,
+            selection: { resumeId: run.selection.resumeId, factRevision: run.selection.factRevision }, queueVersions };
+    }
     return {
         jobs: value.jobs.map(job), resumes: value.resumes.map(value => {
             if (!object(value) || typeof value.id !== 'string')
@@ -74,7 +95,7 @@ export function workspaceState(value: unknown): WorkspaceState {
             return {
                 id: value.id, label: typeof value.label === 'string' ? value.label : value.id, default: value.default === true
             };
-        })
+        }), applicationRun
     };
 }
 export function resume(value: unknown): ResumeRecord {

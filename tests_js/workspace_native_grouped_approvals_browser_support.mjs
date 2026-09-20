@@ -25,10 +25,10 @@ export async function nativeGroupedApprovalsBrowser(page, root, fixture, buildRo
     role: 'Grouped fixture role', company: 'Grouped fixture company' });
   const resume = Object.values(JSON.parse(await readFile(join(root, 'resumes.json'), 'utf8')).resumes)[0];
   const facts = await cli('resume-facts-get', ['--resume-id', resume.id]);
-  const confirmed = await cli('job-input-confirm', ['--id', id, '--resume-id', resume.id,
-    '--expected-revision', '1', '--expected-resume-revision', String(resume.revision),
-    '--expected-fact-revision', String(facts.revision), '--owner-confirmed']);
-  const selected = await cli('task-select', ['--id', id, '--expected-revision', String(confirmed.jobRevision), '--owner-confirmed']);
+  await cli('application-run-start', ['--resume-id', resume.id,
+    '--expected-resume-revision', String(resume.revision), '--expected-fact-revision', String(facts.revision),
+    '--owner-confirmed'], { jobIds: [id] });
+  const selected = await cli('task-select', ['--id', id, '--expected-revision', '1', '--owner-confirmed']);
   const acquired = await cli('job-acquire', ['--id', id, '--expected-revision', String(selected.job.revision), '--owner', 'Fixture browser']);
   await cli('claim-handoff', ['--id', id, '--token', acquired.token, '--status', 'needs_info', '--expected-revision', String(acquired.job.revision)],
     { status: 'active', pendingFields: [{ question: 'Grouped fixture authorization?', state: 'missing',

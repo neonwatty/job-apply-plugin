@@ -141,7 +141,7 @@ async function overviewLocked(tx, now) {
     if (rawClaim === null || claimExpired(object(rawClaim, 'claim'), now)) {
         for (const job of jobs.filter(item => label(item, 'status') === 'ready')) {
             // Do not stop early: Python preflights every ready job, including file errors.
-            if (get(await preflightJobRecord(job, tx.profile, tx.resumes, tx.files, tx.facts, tx.requests), 'ready') === true)
+            if (get(await preflightJobRecord(job, tx.profile, tx.resumes, tx.files, tx.facts, tx.requests, tx.jobs), 'ready') === true)
                 acquirable = true;
         }
     }
@@ -173,7 +173,7 @@ export class WorkspaceProjectionsService {
     }
     preflight(id) {
         safeId(id);
-        return this.repository.claimTransaction(tx => preflightJobRecord(jobRecord(tx, id), tx.profile, tx.resumes, tx.files, tx.facts, tx.requests));
+        return this.repository.claimTransaction(tx => preflightJobRecord(jobRecord(tx, id), tx.profile, tx.resumes, tx.files, tx.facts, tx.requests, tx.jobs));
     }
     taskSnapshot() {
         return this.repository.claimTransaction(async (tx) => {

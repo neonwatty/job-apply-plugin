@@ -10,7 +10,7 @@ node "<plugin-root>/apps/companion/command.mjs" store --help
 
 - `~/.job-apply/profile.json`: versioned canonical profile and preferences.
 - `~/.job-apply/answers.json`: versioned answer records with state, source, scope, aliases, sensitivity, and confirmation metadata.
-- `~/.job-apply/jobs.json`: versioned canonical job records with optimistic revisions, focused application status, and recoverable trash state.
+- `~/.job-apply/jobs.json`: versioned canonical job records with optimistic revisions, focused application status, recoverable trash state, and application-run metadata.
 - `~/.job-apply/resumes.json`: versioned local resume references with labels, defaults, file observations, revisions, and recoverable trash state.
 - `~/.job-apply/resume-facts.json`: private, versioned fact-set histories keyed by managed resume ID and content revision. Legacy Stores can omit this file until scoped facts are first written.
 - `~/.job-apply/applications.jsonl`: append-only minimal application events.
@@ -40,9 +40,14 @@ URLs are normalized and unique; URL fragments and default ports do not create a
 second job identity.
 
 Readiness preflight returns stable error and warning codes without echoing profile
-or resume values. The scoped flow requires an exact chat-confirmed resume and current confirmed fact revision bound to the job; legacy jobs without scoped facts retain their non-empty profile requirement. Both require a current local
-file for the assigned or default active resume. Missing role or company and a
-resume file that changed since registration remain visible warnings.
+or resume values. The scoped flow requires one active application run whose
+chat-confirmed resume and current confirmed fact revision are immutable. The run
+keeps append-only queue versions; an exact-revision update may add or remove jobs
+without changing its input selection, but cannot remove the currently claimed
+job. Each attempted job must be in the latest queue version. Legacy per-job input
+selections remain readable for compatibility but are not the ordinary agent route.
+The selected managed resume file must remain current. Missing role or company and
+a resume file that changed since registration remain visible warnings.
 
 ### Exclusive ready-job coordinator
 

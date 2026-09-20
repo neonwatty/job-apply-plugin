@@ -9,6 +9,8 @@ import { loadPosixFlockProvider } from '../runtime/store/posix-flock.js';
 import { AnswersService } from '../runtime/workspace-core/answers.js';
 import { JobsService } from '../runtime/workspace-core/jobs.js';
 import { ResumeService } from '../runtime/workspace-core/resumes.js';
+import { ResumeFactsService } from '../runtime/workspace-core/resume-facts.js';
+import { ApplicationRunsService } from '../runtime/workspace-core/application-runs.js';
 import { jobsHttp } from '../runtime/workspace-core/jobs-http.js';
 import { PendingAnswersService } from '../runtime/workspace-core/pending-answers.js';
 import { fromJSON, serialize } from '../runtime/contracts/workspace/values.js';
@@ -48,6 +50,11 @@ async function setup(fixture, name, { extraPending = false, blocker = false, rea
     profile.profile.name = 'PRIVATE-PROFILE';
     await write(root, 'profile.json', profile);
     resume = plain(await new ResumeService(repository, () => at).import(fromJSON({ id: 'resume', label: 'Fixture', default: true }), 'fixture.txt', Buffer.from('PRIVATE-RESUME')));
+    const facts = new ResumeFactsService(repository, () => at);
+    const draft = plain(await facts.createDraft('resume', fromJSON({ name:'PRIVATE-PROFILE' }), BigInt(resume.revision), null));
+    const confirmed = plain(await facts.confirm('resume', BigInt(draft.revision), draft.contentRevision));
+    await new ApplicationRunsService(repository, () => at).start(
+      'resume', BigInt(resume.revision), BigInt(confirmed.revision), true, fromJSON({ jobIds:['job'] }));
   }
   const service = new PendingAnswersService(repository, () => at);
   return { root, provider, repository, service, answers, resume };
