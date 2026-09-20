@@ -11,7 +11,7 @@ const groups: FactGroup[] = [
   { title: 'Education', keys: ['education'] }
 ];
 
-export function factLabel(key: string) {
+function factLabel(key: string) {
   const spaced = key.replace(/([a-z])([A-Z])/g, '$1 $2').replaceAll('_', ' ');
   return spaced.replace(/\burl\b/gi, 'URL').replace(/\blinked in\b/i, 'LinkedIn')
     .replace(/^./, character => character.toUpperCase());

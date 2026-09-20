@@ -3,11 +3,11 @@
   "files": [
     {
       "path": "resume-scoped-facts-surfaces.json",
-      "sha256": "16ec0b427ae00667d9a333a7332774bcc517b9eb8a4e1f1c1a44b2c1480a3715"
+      "sha256": "69e96a2ef5e3739b52b6ffce4fd12edda0cc0f94b23f9bb9270099c9dff15ba9"
     },
     {
       "path": "source-catalog-resume-scoped-facts.json",
-      "sha256": "3a0bdece97aca74e6dd1db94c816e99e438eff8a63c9cb0cb568abd49b1d38a5"
+      "sha256": "fd6bedbbf7045351880d66f5f08b6a9c3326b23a0909f0a09109d83a4ce06696"
     },
     {
       "path": "browser-app-01-surfaces.json",
