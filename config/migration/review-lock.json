@@ -319,7 +319,7 @@
     },
     {
       "path": "requirements-current-native-cli-01.json",
-      "sha256": "a14a552db6c92d96e435844abad253c44798eb64411938e17112cce8a3c57341"
+      "sha256": "777ff6606187a4b723ef0e1254ceeec40041e60fcc83993ec0ffaa2739ec492a"
     },
     {
       "path": "requirements-current-profile-cli-01.json",
@@ -331,7 +331,7 @@
     },
     {
       "path": "requirements-current-resume-cli-01.json",
-      "sha256": "65585d76eb5d584e1b89b5aec56f3cde04a19ac0211f15875723a864a1cd6add"
+      "sha256": "55d1ebad19fff926b47060ac0f02654cfeae5902a5596d690bed5c3c9a4dfce1"
     },
     {
       "path": "requirements-trash-01.json",

@@ -169,7 +169,7 @@
       "oracleFiles": [
         {
           "path": "scripts/job_apply_store/domains/jobs/overview.py",
-          "sha256": "ffd6bc42908eac42a78792408d0d7b3d8c3c8d08943e75476b27c4024fb7b162"
+          "sha256": "73722d995e37004df835c6dd7550acf8549eb1f055d0e0aa6deae76a28148f31"
         },
         {
           "path": "scripts/job_apply_store/cli_parser.py",
@@ -211,7 +211,7 @@
       "oracleFiles": [
         {
           "path": "scripts/job_apply_store/domains/jobs/overview.py",
-          "sha256": "ffd6bc42908eac42a78792408d0d7b3d8c3c8d08943e75476b27c4024fb7b162"
+          "sha256": "73722d995e37004df835c6dd7550acf8549eb1f055d0e0aa6deae76a28148f31"
         },
         {
           "path": "scripts/job_apply_store/cli_parser.py",
@@ -253,7 +253,7 @@
       "oracleFiles": [
         {
           "path": "scripts/job_apply_store/domains/jobs/overview.py",
-          "sha256": "ffd6bc42908eac42a78792408d0d7b3d8c3c8d08943e75476b27c4024fb7b162"
+          "sha256": "73722d995e37004df835c6dd7550acf8549eb1f055d0e0aa6deae76a28148f31"
         },
         {
           "path": "scripts/job_apply_store/cli_parser.py",
@@ -295,7 +295,7 @@
       "oracleFiles": [
         {
           "path": "scripts/job_apply_store/domains/jobs/overview.py",
-          "sha256": "ffd6bc42908eac42a78792408d0d7b3d8c3c8d08943e75476b27c4024fb7b162"
+          "sha256": "73722d995e37004df835c6dd7550acf8549eb1f055d0e0aa6deae76a28148f31"
         },
         {
           "path": "scripts/job_apply_store/cli_parser.py",
@@ -337,7 +337,7 @@
       "oracleFiles": [
         {
           "path": "scripts/job_apply_store/domains/jobs/overview.py",
-          "sha256": "ffd6bc42908eac42a78792408d0d7b3d8c3c8d08943e75476b27c4024fb7b162"
+          "sha256": "73722d995e37004df835c6dd7550acf8549eb1f055d0e0aa6deae76a28148f31"
         },
         {
           "path": "scripts/job_apply_store/cli_parser.py",
