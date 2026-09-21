@@ -273,7 +273,8 @@ export class ResumeService {
             set(result, 'id', text(id));
             set(result, 'exists', current.exists);
             set(result, 'changed', !current.exists || current.size !== (observedSize === null ? null : Number(observedSize))
-                || current.modifiedAt !== string(get(record, 'observedModifiedAt')) || managed && current.digest !== string(get(record, 'digest')));
+                || (managed ? current.digest !== string(get(record, 'digest'))
+                    : current.modifiedAt !== string(get(record, 'observedModifiedAt'))));
             set(result, 'observedSize', get(record, 'observedSize'));
             set(result, 'observedModifiedAt', get(record, 'observedModifiedAt'));
             set(result, 'currentSize', current.size === null ? null : integer(BigInt(current.size)));

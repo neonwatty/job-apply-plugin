@@ -42,7 +42,7 @@
         },
         {
           "path": "scripts/job_apply_store/domains/resumes/read.py",
-          "sha256": "ab0f062240dd68460e891bb83c61a545115c9ea49cd57cf1e93095ca1f78b081"
+          "sha256": "1d792eaa53cbdfed1a001fe5979089632f6ef758b32d6c54d7e50ad6783e74b0"
         }
       ],
       "testBindings": [
@@ -101,7 +101,7 @@
         },
         {
           "path": "scripts/job_apply_store/domains/resumes/read.py",
-          "sha256": "ab0f062240dd68460e891bb83c61a545115c9ea49cd57cf1e93095ca1f78b081"
+          "sha256": "1d792eaa53cbdfed1a001fe5979089632f6ef758b32d6c54d7e50ad6783e74b0"
         }
       ],
       "testBindings": [
@@ -157,7 +157,7 @@
         },
         {
           "path": "scripts/job_apply_store/domains/resumes/read.py",
-          "sha256": "ab0f062240dd68460e891bb83c61a545115c9ea49cd57cf1e93095ca1f78b081"
+          "sha256": "1d792eaa53cbdfed1a001fe5979089632f6ef758b32d6c54d7e50ad6783e74b0"
         }
       ],
       "testBindings": [
@@ -212,7 +212,7 @@
         },
         {
           "path": "scripts/job_apply_store/domains/resumes/read.py",
-          "sha256": "ab0f062240dd68460e891bb83c61a545115c9ea49cd57cf1e93095ca1f78b081"
+          "sha256": "1d792eaa53cbdfed1a001fe5979089632f6ef758b32d6c54d7e50ad6783e74b0"
         }
       ],
       "testBindings": [
@@ -269,7 +269,7 @@
         },
         {
           "path": "scripts/job_apply_store/domains/resumes/read.py",
-          "sha256": "ab0f062240dd68460e891bb83c61a545115c9ea49cd57cf1e93095ca1f78b081"
+          "sha256": "1d792eaa53cbdfed1a001fe5979089632f6ef758b32d6c54d7e50ad6783e74b0"
         }
       ],
       "testBindings": [
@@ -324,7 +324,7 @@
         },
         {
           "path": "scripts/job_apply_store/domains/resumes/read.py",
-          "sha256": "ab0f062240dd68460e891bb83c61a545115c9ea49cd57cf1e93095ca1f78b081"
+          "sha256": "1d792eaa53cbdfed1a001fe5979089632f6ef758b32d6c54d7e50ad6783e74b0"
         }
       ],
       "testBindings": [

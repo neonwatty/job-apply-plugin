@@ -84,6 +84,9 @@ test("job-apply routes every ordinary URL through the canonical task protocol", 
   assert.match(skill, /job-acquire --id <job-id> --owner <owner-label> --expected-revision <select\.job\.revision>/);
   assert.match(skill, /other non-success result stops without browser work; do not run `job-acquire`/);
   assert.match(skill, /Never infer a choice from priority/);
+  assert.match(skill, /exactly one active resume is the default/);
+  assert.match(skill, /do not ask for a redundant run confirmation/);
+  assert.match(skill, /never grants post-readiness fill consent or final-action authority/);
   assert.match(skill, /use the acquired canonical job ID as the application\/session ID/);
   assert.doesNotMatch(skill, /direct-URL mode|URL-derived application\/session ID/);
   assert.match(skill, /Never use `profile\.resumePath`, a URL-derived session ID, or a user source path for upload/);

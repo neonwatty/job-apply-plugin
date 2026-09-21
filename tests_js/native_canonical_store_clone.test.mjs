@@ -11,6 +11,7 @@ import { NativeJobsRepository } from '../runtime/store/native-jobs.js';
 import { loadPosixFlockProvider } from '../runtime/store/posix-flock.js';
 import { fromJSON, serialize } from '../runtime/contracts/workspace/values.js';
 import { JobsService } from '../runtime/workspace-core/jobs.js';
+import { ResumeService } from '../runtime/workspace-core/resumes.js';
 
 const execute = promisify(execFile), fixed = '2026-09-14T12:00:00Z';
 const python = `
@@ -21,6 +22,10 @@ m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 m.utc_now=lambda:'${fixed}'
 s=m.Store(Path(sys.argv[1]));s.initialize()
 s.create_job({'id':'clone-job','url':'https://example.invalid/job','role':'Engineer'})
+resume_source=Path(sys.argv[1]).parent/'clone-resume-source.txt'
+resume_source.write_text('Managed resume bytes')
+s.import_resume({'id':'clone-resume','label':'Clone resume','path':str(resume_source)})
+resume_source.unlink()
 `;
 
 async function canonicalSource(root, name) {
@@ -56,6 +61,8 @@ test('canonical Store clone leaves Python source untouched and supports durable 
   assert.equal((await stat(join(target, '.native-store-clone'))).mode & 0o777, 0o600);
   const jobs = new JobsService(new NativeJobsRepository(target, provider), () => fixed, () => 'native-job');
   assert.deepEqual(JSON.parse(serialize(await jobs.list())).map(job => job.id), ['clone-job']);
+  const resumes = new ResumeService(new NativeJobsRepository(target, provider));
+  assert.equal(JSON.parse(serialize(await resumes.check('clone-resume'))).changed, false);
   await jobs.create(fromJSON({ url: 'https://example.invalid/native', role: 'Native Engineer' }));
   const reopened = new JobsService(new NativeJobsRepository(target, provider));
   assert.deepEqual(JSON.parse(serialize(await reopened.list())).map(job => job.id).sort(), ['clone-job', 'native-job']);

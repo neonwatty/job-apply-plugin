@@ -332,10 +332,11 @@ class JobOverviewMixin:
                 errors.append("resume_file_missing")
             elif (
                 observation["size"] != resume.get("observedSize")
-                or observation["modifiedAt"] != resume.get("observedModifiedAt")
                 or (
-                    resume.get("storageKind") == "managed"
-                    and observation.get("digest") != resume.get("digest")
+                    observation.get("digest") != resume.get("digest")
+                    if resume.get("storageKind") == "managed"
+                    else observation["modifiedAt"]
+                    != resume.get("observedModifiedAt")
                 )
             ):
                 if resume.get("storageKind") == "managed":

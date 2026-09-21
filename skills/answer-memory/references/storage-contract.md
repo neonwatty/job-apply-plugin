@@ -41,7 +41,7 @@ second job identity.
 
 Readiness preflight returns stable error and warning codes without echoing profile
 or resume values. The scoped flow requires one active application run whose
-chat-confirmed resume and current confirmed fact revision are immutable. The run
+request-authorized resume and current confirmed fact revision are immutable. The run
 keeps append-only queue versions; an exact-revision update may add or remove jobs
 without changing its input selection, but cannot remove the currently claimed
 job. Each attempted job must be in the latest queue version. Legacy per-job input
