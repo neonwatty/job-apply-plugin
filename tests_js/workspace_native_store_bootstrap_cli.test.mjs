@@ -89,6 +89,21 @@ test('init creates the Python core privately and restarts idempotently', async t
   assert.equal(JSON.parse(await readFile(join(root, 'answers.json'), 'utf8')).schemaVersion, 1);
 });
 
+test('init accepts legacy pending fields without mutating stored session bytes', async t => {
+  const { root, legacy } = await fixture(t);
+  const service = new NativeStoreBootstrap(root, legacy, { clock: () => '2026-09-15T18:00:00Z' });
+  await service.initialize();
+  const session = JSON.stringify({ schemaVersion: 1, applicationId: 'legacy-job', status: 'active',
+    ats: 'linkedin', answerKeys: [], pendingFields: [{ question: 'Legacy question', state: 'missing',
+      answerKey: null, sensitive: false }], createdAt: 'old', updatedAt: 'old' }) + '\n';
+  const path = join(root, 'sessions', 'legacy-job.json');
+  await writeFile(path, session, { mode: 0o600 });
+
+  await service.initialize();
+
+  assert.equal(await readFile(path, 'utf8'), session);
+});
+
 test('init imports a valid legacy profile once with Python metadata', async t => {
   const { root, legacy } = await fixture(t);
   await writeFile(legacy, '{"firstName":"Ada","nested":{"ok":true},"large":9007199254740993}\n', { mode: 0o600 });

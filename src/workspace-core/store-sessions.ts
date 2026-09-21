@@ -1,9 +1,7 @@
-import { createHash } from 'node:crypto';
 import { fallback } from '../contracts/workspace/answers.js';
 import { canonicalJson } from '../contracts/workspace/canonical-json.js';
-import { casefold } from '../contracts/workspace/casefold.js';
 import { fields, requireCondition as check } from '../contracts/workspace/answer-session-fields.js';
-import { safeAnswerSessionId, validateAnswerSession } from '../contracts/workspace/answer-session-validation.js';
+import { projectStoredAnswerSession, safeAnswerSessionId, validateAnswerSession } from '../contracts/workspace/answer-session-validation.js';
 import { buildClaimPending, claimSessionObject, currentClaimApprovals } from '../contracts/workspace/claim-session-pending.js';
 import { copy, fromJSON, get, has, int, object, parse, same, serialize, set, string, text, truth, JobsError } from '../contracts/workspace/values.js';
 import type { Document, Value } from '../contracts/workspace/values.js';
@@ -24,7 +22,6 @@ export interface SessionRepository {
 
 const inputFields = ['applicationId', 'status', 'ats', 'company', 'role', 'url', 'step', 'answerKeys',
   'pendingFields', 'createdAt', 'updatedAt', 'attemptRevision', 'readinessInput', 'blockers', 'browserHandoff'];
-const legacyPendingFields = ['question', 'state', 'answerKey', 'sensitive'];
 const agentTypes: Record<string, string> = {
   'login-required': 'browser_handoff', 'captcha-required': 'browser_handoff',
   'mfa-required': 'browser_handoff', 'email-verification-required': 'browser_handoff',
@@ -33,7 +30,6 @@ const agentTypes: Record<string, string> = {
   'owner-input-required': 'information',
 };
 const clone = (value: Value): Value => parse(serialize(value));
-const hash = (value: string): string => createHash('sha256').update(value).digest('hex');
 
 function jobAllowsMutation(job: CanonicalJob | null, deleting = false): boolean {
   return job === null || job.deletedAt !== null || deleting && ['applied', 'closed'].includes(job.status);
@@ -45,41 +41,6 @@ function blockerType(code: string): string {
   if (code.includes('inaccessible') || code === 'owner-upload-required') return 'browser_handoff';
   return 'readiness';
 }
-function legacyReference(applicationId: string, field: Value): string {
-  return `pending_${hash(canonicalJson(fromJSON({ applicationId, pendingField: JSON.parse(serialize(field)) }))).slice(0, 32)}`;
-}
-function legacyPending(applicationId: string, value: Value, ats: Value): Document {
-  const field = claimSessionObject(value, 'pending field');
-  check(fields(field, legacyPendingFields), 'pending field reference is invalid');
-  const result = object(clone(field), 'pending field'), question = string(get(result, 'question'));
-  result.delete(text('question'));
-  if (question !== null && question.trim()) {
-    const normalized = casefold(question.trim().replace(/\s+/gu, ' '));
-    set(result, 'questionFingerprint', text(hash(normalized)));
-  }
-  if (string(ats)) set(result, 'scopeFingerprint', text(hash(canonicalJson(object(fromJSON({ ats: string(ats) }), 'scope')))));
-  return set(result, 'reference', text(legacyReference(applicationId, field)));
-}
-function projectSession(value: Value, expectedId: string, expectedAts?: string | null): Document {
-  const source = object(value, 'session'), raw = fallback(source, 'pendingFields', []);
-  check(Array.isArray(raw), 'session pendingFields must be a list');
-  const pending = raw as Value[], legacy = pending.some(item => !has(object(item, 'pending field'), 'reference'));
-  if (!legacy) {
-    const validated = validateAnswerSession(source);
-    check(string(get(validated, 'applicationId')) === expectedId, 'session application id does not match path');
-    return validated;
-  }
-  check(!pending.some(item => has(object(item, 'pending field'), 'reference')), 'legacy and modern pending fields cannot be mixed');
-  const id = safeAnswerSessionId(get(source, 'applicationId'));
-  check(id === expectedId, 'session application id does not match path');
-  const result = copy(source), ats = expectedAts === undefined ? get(result, 'ats')
-    : expectedAts === null ? null : text(expectedAts);
-  if (expectedAts !== undefined) set(result, 'ats', ats);
-  for (const key of ['company', 'role', 'url']) result.delete(text(key));
-  set(result, 'pendingFields', pending.map(item => legacyPending(id, item, ats)));
-  return validateAnswerSession(result);
-}
-
 export class SessionService {
   constructor(readonly repository: SessionRepository,
     private readonly now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')) {}
@@ -95,7 +56,7 @@ export class SessionService {
     check(Array.isArray(answerKeys) && answerKeys.every(item => string(item) !== null), 'session answerKeys must be strings');
     return this.repository.sessionTransaction(async transaction => {
       if (!jobAllowsMutation(await transaction.canonicalJob(id))) throw new JobsError('canonical job sessions require a coordinator operation');
-      const stored = await transaction.load(id), existing = stored === null ? null : projectSession(stored, id);
+      const stored = await transaction.load(id), existing = stored === null ? null : projectStoredAnswerSession(stored, id);
       const answers = await transaction.answers(), timestamp = this.now();
       const atsPresent = has(incoming, 'ats') || existing !== null && has(existing, 'ats');
       const ats = has(incoming, 'ats') ? get(incoming, 'ats')
@@ -162,14 +123,14 @@ export class SessionService {
     return this.repository.sessionTransaction(async transaction => {
       const raw = await transaction.load(id);
       if (raw === null) throw new JobsError('session does not exist');
-      return projectSession(raw, id, (await transaction.canonicalJob(id))?.ats);
+      return projectStoredAnswerSession(raw, id, (await transaction.canonicalJob(id))?.ats);
     });
   }
   list(): Promise<Value[]> {
     return this.repository.sessionTransaction(async transaction => {
       const records = await transaction.list(), result: Value[] = [];
       for (const [id, raw] of records.sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) {
-        result.push(projectSession(raw, id, (await transaction.canonicalJob(id))?.ats));
+        result.push(projectStoredAnswerSession(raw, id, (await transaction.canonicalJob(id))?.ats));
       }
       return result;
     });
