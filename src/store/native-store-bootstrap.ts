@@ -6,7 +6,7 @@ import { homedir, userInfo } from 'node:os';
 import { join } from 'node:path';
 import { parsePythonPointJsonBytes } from '../contracts/raw-json/point-parser.js';
 import { validateAccountsDocument } from '../contracts/workspace/accounts.js';
-import { validateAnswerSession } from '../contracts/workspace/answer-session-validation.js';
+import { projectStoredAnswerSession } from '../contracts/workspace/answer-session-validation.js';
 import { validateAnswers } from '../contracts/workspace/answers.js';
 import { validateSettingsDocument } from '../contracts/workspace/automation.js';
 import { validateCoordinator } from '../contracts/workspace/claims.js';
@@ -138,7 +138,8 @@ export class NativeStoreBootstrap {
     if (directoryIdentity === null) return;
     for (const name of (await readdir(this.layout.sessions)).sort()) {
       if (!name.endsWith('.json')) continue;
-      const value = validateAnswerSession(document((await readPrivateFile(join(this.layout.sessions, name), 'session', false))!, 'session'));
+      const value = projectStoredAnswerSession(
+        document((await readPrivateFile(join(this.layout.sessions, name), 'session', false))!, 'session'), name.slice(0, -5));
       if (string(get(value, 'applicationId')) !== name.slice(0, -5)) throw new JobsError('session application id does not match path');
     }
     const closed = await privateDirectory(this.layout.sessions, false);
@@ -194,7 +195,7 @@ export class NativeStoreBootstrap {
   private async sessions(): Promise<Document[]> {
     const result: Document[] = [];
     for (const name of (await readdir(this.layout.sessions)).sort()) if (name.endsWith('.json')) {
-      result.push(validateAnswerSession(await this.readDocument(`sessions/${name.slice(0, -5)}`)));
+      result.push(projectStoredAnswerSession(await this.readDocument(`sessions/${name.slice(0, -5)}`), name.slice(0, -5)));
     }
     return result;
   }
