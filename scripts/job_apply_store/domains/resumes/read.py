@@ -137,13 +137,10 @@ class ResumeReadMixin:
                 str(self._resume_path(record))
             )
         )
-        changed = (
-            current["size"] != record.get("observedSize")
-            or current["modifiedAt"] != record.get("observedModifiedAt")
-            or (
-                record.get("storageKind") == "managed"
-                and current.get("digest") != record.get("digest")
-            )
+        changed = current["size"] != record.get("observedSize") or (
+            current.get("digest") != record.get("digest")
+            if record.get("storageKind") == "managed"
+            else current["modifiedAt"] != record.get("observedModifiedAt")
         )
         return {
             "id": resume_id, "exists": current["exists"], "changed": changed,

@@ -81,7 +81,7 @@ flowchart LR
 flowchart LR
   Queue[Canonical job queue] --> Status[Check active application run]
   Status -->|none active| Choice[Agent presents queue, resumes and fact status]
-  Choice -->|owner confirms one resume and fact revision in chat| Run[Active run with locked inputs]
+  Choice -->|exact-job request authorizes sole current default, or owner chooses inputs| Run[Active run with locked inputs]
   Status -->|active| Run
   Run -->|add or remove unclaimed jobs| Version[Append queue version]
   Version --> Run
@@ -92,7 +92,7 @@ flowchart LR
 
 | Transition | Skill or surface | Persisted evidence and guard |
 | --- | --- | --- |
-| Start run | Job Apply intake, with review in Job Workspace → Resumes | `application-run-start` records one managed resume, content revision, confirmed fact revision, initial queue, and chat confirmation. Only one run is active. |
+| Start run | Job Apply intake, with review in Job Workspace → Resumes | `application-run-start` records one managed resume, content revision, confirmed fact revision, and initial queue. One exact-job manual-review request may authorize the sole active default resume with current confirmed facts; ambiguous or multiple-resume cases require an explicit choice. Only one run is active. |
 | Update queue | Job Apply intake | `application-run-update` replaces the full queue at an exact run revision and appends the new version. It cannot change resume or facts or remove an actively claimed job. |
 | End run | Job Apply intake | `application-run-complete` closes the exact active revision. A new resume or fact revision requires a new run and fresh chat confirmation. |
 

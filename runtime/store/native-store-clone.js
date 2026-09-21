@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { constants } from 'node:fs';
-import { chmod, lstat, mkdir, open, readdir, realpath, rm } from 'node:fs/promises';
+import { chmod, lstat, mkdir, open, readdir, realpath, rm, utimes } from 'node:fs/promises';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { emptyAccountOperationJournal } from '../contracts/workspace/account-operation.js';
 import { fromJSON } from '../contracts/workspace/values.js';
@@ -63,7 +63,9 @@ async function copyDirectory(source, target, digest) {
             throw new JobsError('canonical clone directories must contain regular files');
         const bytes = await privateBytes(path, 10 * 1024 * 1024);
         digest.update(`${name.length}:${name}:${bytes.length}:`).update(bytes);
-        await writePrivate(join(target, name), bytes);
+        const destination = join(target, name);
+        await writePrivate(destination, bytes);
+        await utimes(destination, metadata.atime, metadata.mtime);
     }
     const handle = await open(target, constants.O_RDONLY);
     try {

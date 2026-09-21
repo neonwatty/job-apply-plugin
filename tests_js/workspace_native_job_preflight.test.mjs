@@ -78,6 +78,11 @@ test('real managed bytes, legacy changes and missing files independently gate re
     const input = { job, profile: { name: 'Fixture' }, resumes: { 'resume-one': record } };
     const files = new NativeResumeFiles(root);
     assert.equal((await run(input, files)).ready, true);
+    await utimes(path, new Date('2026-01-02T00:00:00Z'), new Date('2026-01-02T00:00:00Z'));
+    assert.equal((await run(input, files)).ready, true, 'managed digest makes timestamp-only drift harmless');
+    record.storageKind = 'external';
+    assert.deepEqual((await run(input, files)).warnings, ['resume_file_changed'], 'legacy files still use timestamps');
+    record.storageKind = 'managed';
     await writeFile(path, 'bravo');
     await utimes(path, stamp, stamp);
     assert.deepEqual((await run(input, files)).errors, ['resume_file_changed'], 'same-size same-mtime digest change');

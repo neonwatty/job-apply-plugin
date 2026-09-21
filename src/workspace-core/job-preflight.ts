@@ -50,8 +50,8 @@ export async function preflightJobRecord(job: Document, profileDocument: Documen
       : await files.externalObservation(string(get(resume, 'path'))!);
     if (!observation.exists) errors.push('resume_file_missing');
     else if (!same(observation.size === null ? null : integer(BigInt(observation.size)), get(resume, 'observedSize'))
-      || observation.modifiedAt !== string(get(resume, 'observedModifiedAt'))
-      || managed && observation.digest !== string(get(resume, 'digest'))) {
+      || (managed ? observation.digest !== string(get(resume, 'digest'))
+        : observation.modifiedAt !== string(get(resume, 'observedModifiedAt')))) {
       (managed ? errors : warnings).push('resume_file_changed');
     }
   }

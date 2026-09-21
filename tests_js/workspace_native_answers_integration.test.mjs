@@ -27,6 +27,18 @@ test('native answers share locked durable state across HTTP and Python-free CLI'
         const path = join(root, 'answers.json');
         const cli = async args => execute(process.execPath, [join(process.cwd(), 'runtime/cli/native-jobs.js'),
             '--root', root, '--native-lock', fixture.receipt.artifact, ...args], { env: { PATH: '' } });
+        await t.test('legacy session reads remain usable and byte preserving after native activation', async () => {
+            const path = join(root, 'sessions', 'legacy-session.json');
+            const bytes = Buffer.from(JSON.stringify({
+                schemaVersion: 1, applicationId: 'legacy-session', status: 'active', ats: 'lever',
+                company: 'Private', role: 'Secret', url: 'https://private.invalid', answerKeys: [],
+                pendingFields: [{ question: 'Private question', state: 'missing' }],
+                createdAt: '2026-09-15T12:00:00Z', updatedAt: '2026-09-15T12:00:00Z',
+            }));
+            await writeFile(path, bytes, { mode: 0o600 });
+            await service.query();
+            assert.deepEqual(await readFile(path), bytes);
+        });
         await t.test('HTTP creation and CLI editing persist and missing details return 404', async () => {
             const result = await jobsHttp(jobs, repository, 'POST', '/api/answers', JSON.stringify({ answer: {
                 key: 'shared', question: 'Preferred location?', state: 'confirmed', value: 'Remote'

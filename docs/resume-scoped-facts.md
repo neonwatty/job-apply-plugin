@@ -35,7 +35,8 @@
 - Confirmation requires the exact displayed fact revision and resume content
   revision. A confirmed version is immutable. Editing forks a draft revision.
 - Record an application run with one exact resume, content revision, and fact
-  revision plus the owner's explicit chat confirmation. Every job in the run's
+  revision plus authorization from an exact-job request using the sole current
+  default resume, or the owner's explicit choice when selection is ambiguous. Every job in the run's
   revisioned, updatable queue uses that selection.
 - Preserve legacy `profile.json`, CLI responses, and existing extraction records
   for compatibility. Do not assign existing profile facts to a resume by guess.

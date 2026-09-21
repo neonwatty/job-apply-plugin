@@ -15,7 +15,7 @@ import { withExclusiveFileLock } from "./exclusive-file-lock.js";
 import { NativeAnswerResolutionJournal } from "./native-answer-resolution-journal.js";
 import { NativeAnswerJournal, answerJournalName } from "./native-answer-journal.js";
 import { answerReferenceCounts } from "../contracts/workspace/answer-sessions.js";
-import { validateAnswerSession } from "../contracts/workspace/answer-session-validation.js";
+import { projectStoredAnswerSession, validateAnswerSession } from "../contracts/workspace/answer-session-validation.js";
 import { NativeResumeFiles } from "./native-resume-files.js";
 import { NativeExtractionJournal, closeRequestsForResumes, extractionJournalName, validateExtractionResumes } from "./native-extraction-journal.js";
 import { validateExtractionRequests } from "../contracts/workspace/extraction-requests.js";
@@ -284,7 +284,7 @@ export class NativeJobsRepository {
             if (!name.endsWith('.json'))
                 continue;
             const id = safeId(name.slice(0, -5));
-            const session = validateAnswerSession(parsePythonPointJsonBytes(await this.read(`sessions/${name}`), { diagnosticProfile: "3.12", intMaxStrDigits: 4300 }));
+            const session = projectStoredAnswerSession(parsePythonPointJsonBytes(await this.read(`sessions/${name}`), { diagnosticProfile: "3.12", intMaxStrDigits: 4300 }), id);
             if (string(get(session, "applicationId")) !== id)
                 throw new JobsError("session identity does not match its file");
             sessions.push(session);
