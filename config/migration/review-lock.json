@@ -39,7 +39,7 @@
     },
     {
       "path": "browser-g02-next-surfaces.json",
-      "sha256": "9add2687760c1d47831e02903d5b2840394f86f9672507b522a33f5e461d8656"
+      "sha256": "773fe1b2cff457fff85f2f5c2e06809afe9a339032dd3daa3dce5d37fb067827"
     },
     {
       "path": "browser-lib-01-surfaces.json",
@@ -323,7 +323,7 @@
     },
     {
       "path": "requirements-current-profile-cli-01.json",
-      "sha256": "8cad4f14141190d02191d515fd7f256137aa7b99dc3c6ded08a49d4c8062ab64"
+      "sha256": "25044a1176bdf22b082a6e722c8778e6ab1c22fd78351f64b14fafd1e84b9210"
     },
     {
       "path": "requirements-current-pure-browser-01.json",
@@ -379,7 +379,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "0a2f9b62b5e0ee5c4262b7eb7e63ffc39add7244fc744516c6d8f05ee566aff0"
+      "sha256": "dc41aa7b58564a51ec7ec16e441e5207082518e1f8f59b9d7962560d24f39d18"
     },
     {
       "path": "source-catalog-m01.json",
