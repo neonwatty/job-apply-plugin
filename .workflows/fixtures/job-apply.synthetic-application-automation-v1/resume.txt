@@ -1,0 +1,4 @@
+SYNTHETIC TEST RESUME
+
+This fictional file exists only for the local application-automation agent test.
+It contains no real applicant or employer data and must never be submitted.

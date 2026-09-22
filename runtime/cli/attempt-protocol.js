@@ -53,7 +53,7 @@ export function attemptSocketPath(root, uid) {
 const fields = {
     start: ['--id', '--owner', '--expected-revision'],
     'restart-review': ['--id', '--owner', '--expected-revision', '--owner-confirmed-not-submitted'],
-    heartbeat: [], progress: ['--input'], handoff: ['--status', '--input'],
+    heartbeat: [], progress: ['--input'], 'authority-evaluate': ['--input'], handoff: ['--status', '--input'],
 };
 function optionValue(value) {
     return !value.startsWith('-') || value === '-' || value.includes(' ')
@@ -117,7 +117,7 @@ export function parseAttemptArgs(args, env, home) {
     }
     if (command === 'heartbeat')
         return { kind: command, root };
-    if (command === 'progress')
+    if (command === 'progress' || command === 'authority-evaluate')
         return { kind: command, root, input: options.get('--input') };
     const status = options.get('--status');
     if (status !== 'needs_info' && status !== 'awaiting_review')
@@ -135,7 +135,8 @@ export async function attemptRequest(invocation) {
     }
     if ('input' in invocation) {
         const bytes = await readFile(invocation.input);
-        set(request, 'session', object(parse(new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes)), 'session'));
+        const field = invocation.kind === 'authority-evaluate' ? 'evaluation' : 'session';
+        set(request, field, object(parse(new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes)), field));
     }
     if (invocation.kind === 'handoff')
         set(request, 'status', fromJSON(invocation.status));

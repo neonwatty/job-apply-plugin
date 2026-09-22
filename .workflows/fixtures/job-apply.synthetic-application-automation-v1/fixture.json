@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "fixtureId": "job-apply.synthetic-application-automation-v1",
+  "syntheticOnly": true,
+  "job": {
+    "id": "synthetic-agent-automation-job-v1",
+    "role": "Synthetic Application Tester",
+    "company": "Fictional Local Systems",
+    "url": "https://automation-review.example.invalid/application",
+    "ats": "greenhouse"
+  },
+  "resume": {
+    "id": "synthetic-agent-automation-resume-v1",
+    "label": "Synthetic Application Automation Resume"
+  },
+  "requiredOperations": [
+    "fill_canonical_profile",
+    "upload_managed_resume",
+    "fill_confirmed_answer",
+    "navigate_non_final"
+  ],
+  "finalActionLabel": "Submit application"
+}

@@ -38,6 +38,7 @@ export const apiRoutes = [
     "GET",
     "/api/automation"
   ],
+  ["GET", "/api/application-authority/progress"],
   [
     "GET",
     "/api/boot"
@@ -252,6 +253,12 @@ export const apiRoutes = [
     "POST",
     "/api/automation/realm-resolve"
   ],
+  ["POST", "/api/application-authority"],
+  ["POST", "/api/application-authority/evaluate"],
+  ["POST", "/api/application-authority/pause"],
+  ["POST", "/api/application-authority/resume"],
+  ["POST", "/api/application-authority/revoke"],
+  ["POST", "/api/application-authority/stop"],
   [
     "POST",
     "/api/automation/settings/copy-profile-email"

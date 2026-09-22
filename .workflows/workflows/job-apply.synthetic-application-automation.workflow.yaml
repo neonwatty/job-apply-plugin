@@ -1,0 +1,87 @@
+schema: agent-workflow/v0
+kind: Workflow
+
+metadata:
+  id: job-apply.synthetic-application-automation
+  name: Synthetic Campaign to Review boundary
+  description: >-
+    Exercise one live local agent against a fictional isolated application,
+    require authority evaluation for every allowed operation group, reach final
+    review, and prove that the final action remains untouched.
+  lifecycle: candidate
+  candidateRevision: 1
+  tags: [application, automation, campaign, local-only, synthetic]
+
+target:
+  app: job-apply-plugin
+  baseUrl: https://automation-review.example.invalid/application
+  supportedPlatforms:
+    - id: local-agent
+      adapterCapability: shell
+  identity:
+    requirement: synthetic
+    note: No real applicant, employer, account, credential, or ATS is permitted.
+
+start:
+  isolation: fresh-context
+  path: /
+  expectedState: >-
+    A new owner-private directory under .workflows/local contains the committed
+    fictional fixture, a separate initialized Store, one Ready job, one active
+    Campaign to Review grant, and an untouched synthetic form.
+  constraints:
+    - Run locally only; CI must reject this workflow.
+    - >-
+      Use ephemeral codex exec with approvals disabled. The local acceptance
+      process needs danger-full-access so the subagent can reach the detached
+      broker's owner-private Unix socket; the fixture contains only fictional
+      data and a source fingerprint rejects repository changes.
+    - Do not open a browser, use network search, or navigate to any external site.
+    - Do not edit repository source files.
+    - Use only hosts under example.invalid and only the generated isolated Store.
+    - Never invoke the synthetic Submit application action.
+
+execution:
+  topology: linear
+  agentFreedom: bounded
+  onUnexpectedState: fail
+  environmentChange: fail
+  failureContinuation: stop
+  recoveryBudget:
+    maxActionsPerStep: 8
+    maxDurationSecondsPerStep: 120
+
+evidencePolicy:
+  default: [closed-state-oracle]
+  onFailure: [preserve-isolated-journey]
+  retainVerifiedDownloads: false
+
+steps:
+  - id: acquire-bound-attempt
+    name: Acquire the one synthetic job
+    action: The local harness starts the detached attempt broker with the prepared exact revision before dispatching the subagent.
+    expected:
+      - Exactly one local claim exists.
+      - No claim token is returned in durable output or agent result.
+  - id: authorize-operations
+    name: Evaluate the bounded application actions
+    dependsOn: [acquire-bound-attempt]
+    action: Send the committed value-free evaluation packet through the attempt broker.
+    expected:
+      - Campaign to Review authorizes the four non-final operations.
+      - The decision contains no applicant values or claim bearer.
+  - id: fill-to-review
+    name: Complete the fictional form
+    dependsOn: [authorize-operations]
+    action: Apply each authorized synthetic operation in its declared order.
+    expected:
+      - The synthetic form reaches final_review.
+      - Submit application remains untouched.
+  - id: durable-handoff
+    name: Hand off for manual review
+    dependsOn: [fill-to-review]
+    action: Use the attempt broker to commit the prepared awaiting_review packet.
+    expected:
+      - The job is awaiting_review and the claim is released.
+      - History contains job-started and reviewed, with no submitted or applied event.
+      - Campaign authority remains active but has no Ready job.

@@ -8,6 +8,7 @@ export const nativeAttemptPidPendingName = nativeAttemptPidName + '.pending';
 export const nativeFixtureMarkerName = '.native-jobs-fixture';
 export const nativeCloneMarkerName = '.native-store-clone';
 export const nativePolicyTreeName = 'auto-submit';
+export const nativeApplicationAuthorityName = 'application-authority.json';
 export const nativeFixtureMarker = '{"mode":"native-jobs-fixture","version":12}\n';
 export const nativeStoreRequiredEntries = [
     'automation-settings.json', 'employer-accounts.json', 'account-operation-journal.json',
@@ -19,7 +20,7 @@ export const nativeStoreRequiredEntries = [
 ];
 export const nativeStoreAllowedEntries = new Set([
     ...nativeStoreRequiredEntries, nativeFixtureMarkerName, nativeCloneMarkerName, nativeAttemptPidName, nativeAttemptPidPendingName,
-    nativePolicyTreeName, 'resume-facts.json',
+    nativePolicyTreeName, nativeApplicationAuthorityName, 'resume-facts.json',
 ]);
 export function nativeCloneTrees(bytes) {
     let marker;

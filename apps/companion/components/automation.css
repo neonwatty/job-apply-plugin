@@ -7,7 +7,7 @@
 .automation-status-strip i.is-on { background:#26845b;box-shadow:0 0 0 3px rgba(38,132,91,.12) }
 .automation-status-strip .automation-safe-status { border-color:#c9ded1;background:var(--mint);color:var(--green) }
 .automation-grid { display:grid;grid-template-columns:1fr 1fr;gap:1rem }
-.automation-settings-panel,.automation-advanced { grid-column:1/-1 }
+.application-automation-panel,.automation-settings-panel,.automation-advanced { grid-column:1/-1 }
 .automation-workspace .workspace-panel-heading h2 { font-size:clamp(1.5rem,2.4vw,2rem) }
 .automation-capabilities { display:flex;flex-wrap:wrap;gap:.45rem;margin-top:1rem }
 .automation-capabilities span { padding:.42rem .65rem;border-radius:999px;font-size:.74rem;font-weight:750 }
@@ -28,6 +28,8 @@
 .check-row span { display:grid;gap:.25rem }
 .check-row strong { color:var(--ink);font-size:.9rem }
 .automation-safety { color:var(--muted);font-size:.84rem;line-height:1.55 }
+.automation-job-scope { padding:1rem!important;border:1px solid var(--line)!important;border-radius:12px!important }
+.automation-job-scope legend { padding:0 .35rem;color:var(--ink);font-weight:800 }
 .automation-add-realm { margin-top:1rem;padding:1rem;border:1px solid var(--line);border-radius:14px;background:#fafaf6 }
 .automation-add-realm .automation-form { margin-top:0 }
 .automation-accounts { display:grid;gap:.75rem;margin-top:1rem }
@@ -57,7 +59,7 @@
 .trusted-status-form { display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:1rem;margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--line) }
 @media(max-width:760px) {
   .automation-grid,.automation-form-grid { grid-template-columns:1fr }
-  .automation-settings-panel,.automation-advanced,.automation-form-grid .wide { grid-column:auto }
+  .application-automation-panel,.automation-settings-panel,.automation-advanced,.automation-form-grid .wide { grid-column:auto }
   .automation-status-strip { align-items:stretch }
   .automation-status-strip>span { justify-content:center;flex:1 1 auto }
   .automation-advanced>summary { align-items:flex-start }

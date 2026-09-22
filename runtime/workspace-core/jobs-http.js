@@ -9,7 +9,7 @@ import { jobTransitionsHttp } from './job-transitions-http.js';
 import { workspaceProjectionsHttp } from './workspace-projections-http.js';
 import { pendingAnswersHttp } from './pending-answers-http.js';
 import { profileHttp } from "./profile-http.js";
-import { fixtureError } from "../store/native-jobs.js";
+import { fixtureError } from "../store/native-jobs-error.js";
 import { JobsError, fromJSON, get, int, keys, object, parse, serialize, set } from "../contracts/workspace/values.js";
 import { emptyObject } from "../contracts/workspace/jobs.js";
 import { PythonObject } from "../contracts/python-object.js";

@@ -61,6 +61,14 @@ npm run test:release
   covers isolated Claude/Codex installs, Codex upgrades, packaged browser/API
   walkthroughs, privacy assertions, and recursive critical-file byte parity.
 
+## Local live-agent acceptance
+
+`npm run test:agent-local` is an explicit local-only acceptance test; it is not a deterministic tier and exits immediately when `CI` is set. It runs three fresh, sequential, ephemeral `codex exec` subagents with `gpt-5.6-luna` by default. Use `npm run test:agent-local -- --trials 1` for a single diagnostic pass, `--model <available-model>` for an intentional local override, or `--keep` to retain successful local fixtures.
+
+Each trial creates a new ignored directory below `.workflows/local`, initializes a Store containing only committed fictional data and an `example.invalid` destination, grants Campaign to Review for one exact job, and gives an ephemeral subagent a fixed protocol. The harness acquires the detached broker before dispatch because Codex's workspace sandbox cannot reach its owner-private Unix socket. The subagent runs with approvals disabled and `danger-full-access` only for that local socket boundary; the fixture contains no real data or destination, the prompt prohibits network/browser use, and a before/after source fingerprint rejects repository changes. The subagent must receive one authorized value-free decision, complete four synthetic non-final operations, stop at final review, and commit `awaiting_review`. A machine oracle then requires an untouched final action, the exact `job-started`/`reviewed` history, no bearer in the decision, and no repository source-state change. Successful fixtures are deleted; failed fixtures are preserved for diagnosis.
+
+This test consumes live model capacity and can vary with the locally configured Codex model. Repeatability comes from the committed prompt, output schema, fixture, isolated Store, ordered action adapter, and closed oracle—not from accepting prose self-reports. Three consecutive clean trials are the local acceptance bar.
+
 Pass `--receipt path/to/receipt.json` to record selection, status, and elapsed
 milliseconds. Receipts intentionally omit commands, output, and environment
 variables. Pass `--concurrency N` to lower the default bounded concurrency.

@@ -4,13 +4,15 @@ import { validateJobsDocument, safeId } from '../contracts/workspace/jobs.js';
 import { fromJSON, get, has, int, integer, keys, object, parse, serialize, set, string, JobsError } from '../contracts/workspace/values.js';
 import type { Document } from '../contracts/workspace/values.js';
 import { NativeClaimHistory } from './native-claim-history.js';
+import { validateApplicationAuthorityDocument } from '../contracts/workspace/application-authority.js';
 
 export const claimOperationKinds = new Set(['acquire','review_restart','recover','handoff']);
 export function validateClaimJournal(journal: Document): Document {
   if (journal.size !== 2 || int(get(journal,'schemaVersion')) !== 1n || !has(journal,'operation')) throw new JobsError('invalid coordinator journal');
   const operation = object(get(journal,'operation'),'coordinator journal operation');
   const kind = string(get(operation,'kind'))!;
-  const fields = ['kind','operationId','jobId','at','historyEvent','resultClaim',
+  const hasAuthority = has(operation, 'applicationAuthority');
+  const fields = ['kind','operationId','jobId','at','historyEvent','resultClaim', ...(hasAuthority ? ['applicationAuthority'] : []),
     ...(kind === 'recover' ? [] : ['sourceStatus','targetStatus','expectedRevision']), ...(kind === 'handoff' ? ['session'] : [])];
   if (!claimOperationKinds.has(kind) || operation.size !== fields.length || keys(operation).some(key => !fields.includes(key))) throw new JobsError('coordinator journal operation is invalid');
   const id = safeId(string(get(operation,'jobId')));
@@ -24,6 +26,10 @@ export function validateClaimJournal(journal: Document): Document {
     if (string(get(operation,'sourceStatus')) !== 'in_progress' || !['needs_info','awaiting_review'].includes(string(get(operation,'targetStatus'))!)) throw new JobsError('coordinator handoff transition is invalid');
     if (string(get(validateAnswerSession(get(operation,'session')),'applicationId')) !== id) throw new JobsError('coordinator session identity does not match');
     if (get(operation,'resultClaim') !== null) throw new JobsError('coordinator handoff must release its claim');
+    if (hasAuthority) {
+      if (string(get(operation, 'targetStatus')) !== 'awaiting_review') throw new JobsError('application authority can only complete at review');
+      validateApplicationAuthorityDocument(get(operation, 'applicationAuthority'));
+    }
   } else {
     const coordinator = object(fromJSON({schemaVersion:1,claim:null}),'coordinator');
     set(coordinator,'claim',get(operation,'resultClaim'));
@@ -60,6 +66,8 @@ export class NativeClaimJournal {
     await this.history.isIdempotent(event);
     if (next) await this.write('jobs',next);
     if (has(operation,'session')) await this.write(`sessions/${string(get(operation,'jobId'))}`,object(get(operation,'session'),'session'));
+    if (has(operation,'applicationAuthority')) await this.write('application-authority',
+      validateApplicationAuthorityDocument(get(operation,'applicationAuthority')));
     await this.history.append(event);
     await this.checkpoint('history');
     const coordinator = object(fromJSON({schemaVersion:1,claim:null}),'coordinator');

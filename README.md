@@ -19,6 +19,8 @@ AI-powered job application assistant for Claude Code and Codex that fills job ap
 Invoke skills with `$job-apply:...` in Codex or `/job-apply:...` in Claude Code.
 The [workflow map](skills/answer-memory/references/workflow-map.md) shows how first use, job search, and one application move between these skills and the shared Store.
 
+Application filling has three owner-selected modes: Guided, Autofill to Review for one exact job, and Campaign to Review for a bounded application-run queue. Every mode stops at the final review page; Submit, Send, Apply, authentication, verification, and legal consent remain manual. Higher modes are expiring, revocable grants bound to current job, run, destination, resume, facts, answer revisions, and a live attempt claim.
+
 ## Features
 
 ### Job Apply (`job-apply:job-apply`)

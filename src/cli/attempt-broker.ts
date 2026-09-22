@@ -10,6 +10,7 @@ import type { PosixFlockProvider } from '../store/posix-flock.js';
 import type { Document } from '../contracts/workspace/values.js';
 import { AttemptAuthority } from './attempt-authority.js';
 import { AttemptFrameDecoder, attemptError, attemptHeartbeatMilliseconds, attemptIdleMilliseconds, attemptSocketPath, encodeAttemptFrame } from './attempt-protocol.js';
+import type { ApplicationAuthorityService } from '../workspace-core/application-authority.js';
 
 async function runtimePath(root: string): Promise<string> {
   if (!['darwin', 'linux'].includes(process.platform) || !process.getuid) throw new Error('attempt transport unavailable');
@@ -67,7 +68,8 @@ async function publishPid(root: string, processPath: string): Promise<void> {
   }
 }
 interface BrokerOptions { idleMilliseconds?: number; heartbeatMilliseconds?: number }
-export async function runAttemptBroker(root: string, service: ClaimsService, provider: PosixFlockProvider, options: BrokerOptions = {}): Promise<void> {
+export async function runAttemptBroker(root: string, service: ClaimsService, provider: PosixFlockProvider,
+  options: BrokerOptions = {}, application?: ApplicationAuthorityService): Promise<void> {
   const path = await runtimePath(root), processPath = join(root, nativeAttemptPidName);
   // Hold an inode-stable private lock for the whole broker lifetime. It prevents two
   // launchers from unlinking each other's endpoint during stale-socket recovery.
@@ -81,7 +83,8 @@ export async function runAttemptBroker(root: string, service: ClaimsService, pro
   let resolveStopped!: () => void;
   const stoppedPromise = new Promise<void>(resolve => { resolveStopped = resolve; });
   const stop = () => { stopped = true; resolveStopped(); };
-  const authority = new AttemptAuthority(service, { heartbeatMilliseconds: options.heartbeatMilliseconds ?? attemptHeartbeatMilliseconds, onHeartbeatFailure: stop });
+  const authority = new AttemptAuthority(service,
+    { heartbeatMilliseconds: options.heartbeatMilliseconds ?? attemptHeartbeatMilliseconds, onHeartbeatFailure: stop }, application);
   const clients = new Set<Socket>();
   let begin!: () => void;
   let queue = new Promise<void>(resolve => { begin = resolve; });

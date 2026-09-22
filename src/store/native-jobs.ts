@@ -46,6 +46,9 @@ import { ResumeService } from '../workspace-core/resumes.js';
 import { preparednessSnapshot, runHistoryTransaction, runReplayTransitionTransaction, runSessionTransaction, stateStorage } from './native-store-state-repository.js';
 import { validateNativeJobsRoot } from './native-root-validation.js';
 import { nativePendingAnswerState } from './native-pending-answer-state.js';
+import type { ApplicationAuthorityRepository, ApplicationAuthorityTransaction } from '../workspace-core/application-authority.js';
+import { applicationAuthorityTransaction as runApplicationAuthorityTransaction, loadApplicationAuthority } from './native-application-authority.js';
+import { nativeResumeSummaries } from './native-resume-summaries.js';
 const options = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
 const journalName = "resume-operation";
 const documentOptions = { pathProfile: "3.12", intMaxStrDigits: 4300 } as const;
@@ -58,7 +61,7 @@ export interface ResumeTransaction {
 export { initializeJobsFixture } from './native-jobs-fixture.js';
 
 export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepository, TrustedFillRepository,
-  HistoryRepository, SessionRepository, PreparednessRepository, ReplayTransitionRepository {
+  HistoryRepository, SessionRepository, PreparednessRepository, ReplayTransitionRepository, ApplicationAuthorityRepository {
   constructor(readonly root: string, private readonly provider: PosixFlockProvider,
     private readonly write = atomicWritePointJson,
     private readonly checkpoint: (stage:string)=>Promise<void> = async () => {}) {}
@@ -345,6 +348,7 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
     return this.transaction(async () => {
       const jobs = validateJobsDocument(await this.document('jobs'));
       return operation({jobs,coordinator:validateCoordinator(await this.journal('coordinator')),
+        authority:await loadApplicationAuthority(name => this.document(name), () => new Date().toISOString().replace(/\.\d{3}Z$/u,'Z')),
         sessions:await this.answerSessions(), history:await this.answerHistory(), answers:validateAnswers(await this.document('answers')),
         profile:validateProfile(await this.document('profile')),resumes:validateExtractionResumes(await this.document('resumes')),
         facts:await this.resumeFactsDocument(),
@@ -401,6 +405,12 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
       read: name => name === 'automation-settings' ? this.journal(name) : this.document(name),
       write: (name, document) => this.write(join(this.root, `${name}.json`), document, options),
     }, operation));
+  }
+
+  async applicationAuthorityTransaction<T>(operation: (tx: ApplicationAuthorityTransaction) => Promise<T>): Promise<T> {
+    return this.transaction(() => runApplicationAuthorityTransaction({ root:this.root, document:name => this.document(name),
+      journal:name => this.journal(name), facts:() => this.resumeFactsDocument(), now:() => new Date().toISOString().replace(/\.\d{3}Z$/u,'Z'),
+      save:document => this.write(join(this.root,'application-authority.json'),document,options) }, operation));
   }
 
   async accountOperationTransaction<T>(operation: (tx: AccountOperationTransaction) => Promise<T>): Promise<T> {
@@ -480,21 +490,7 @@ export class NativeJobsRepository implements JobsRepository, ResumeLifecycleRepo
 
   async resumeSummaries(): Promise<Value[]> {
     // Reuse the lock and all root checks for projections too.
-    return this.transaction(async () => {
-      const resumes = object(get(await this.document("resumes"), "resumes"), "resumes.resumes");
-      return resumes.entries().flatMap(([key, value]) => {
-        const record = object(value, "resume record");
-        if (get(record, "deletedAt") !== null) return [];
-        const id = safeId(string(key)), label = string(get(record, "label"));
-        if (string(get(record, "id")) !== id || !label || typeof get(record, "default") !== "boolean") {
-          throw new JobsError("resume projection is invalid");
-        }
-        return [fromJSON({ id, label, default: get(record, "default") })];
-      });
-    });
+    return this.transaction(() => nativeResumeSummaries(() => this.document('resumes')));
   }
-}
-export function fixtureError(error: unknown): string {
-  return error instanceof JobsError ? error.message : "native fixture operation failed; inspect the Store before retrying";
 }
 export { serialize };

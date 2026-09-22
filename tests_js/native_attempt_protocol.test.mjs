@@ -63,7 +63,10 @@ test('authority keeps bearer private, survives rejections, and hands off at the 
   const timers={callback:null,cancelled:false,every(callback){this.callback=callback;return 1;},cancel(){this.cancelled=true;}};
   try {
     const state=await setup(fixture,'authority'); await state.claims.select('job',1n,true);
-    const authority=new AttemptAuthority(state.claims,{timers});
+    const {ApplicationAuthorityService}=await import('../runtime/workspace-core/application-authority.js');
+    const application=new ApplicationAuthorityService(state.repository,()=>state.clock.now);
+    await application.set(fromJSON({mode:'autofill_to_review',runId:'run-fixture',jobIds:['job'],sensitiveAnswerRefs:[],durationMinutes:30}),0n);
+    const authority=new AttemptAuthority(state.claims,{timers},application);
     const result=plain(await authority.acquire(fromJSON({command:'start',id:'job',owner:'owner',expectedRevision:2})));
     assert.deepEqual(Object.keys(result.attempt).sort(),['job','resume']);
     assert.deepEqual(Object.keys(result.attempt.job).sort(),['id','revision','url']);
@@ -74,6 +77,12 @@ test('authority keeps bearer private, survives rejections, and hands off at the 
     assert.equal(plain(await state.claims.status()).claim.heartbeatAt,state.clock.now);
     await assert.rejects(authority.dispatch(fromJSON({command:'progress',id:'other',session:{}})));
     assert.deepEqual(plain((await authority.dispatch(fromJSON({command:'heartbeat'}))).response),{ok:true,event:'heartbeat'});
+    const evaluated=plain((await authority.dispatch(fromJSON({command:'authority-evaluate',evaluation:{
+      destinationUrl:'https://example.invalid/application',operations:['navigate_non_final'],answerRefs:[],sensitiveAnswerRefs:[],
+      interrupts:{missingOrUncertainData:false,captcha:false,mfa:false,emailVerification:false,providerLegalConsent:false,
+        unsupportedControls:false,unexpectedDestination:false,ambiguity:false,finalAction:false}}}))).response);
+    assert.equal(evaluated.event,'authority_evaluated');assert.equal(evaluated.decision.authorized,true);
+    assert.doesNotMatch(JSON.stringify(evaluated),/claimToken|tokenHash/);
     const done=await authority.dispatch(fromJSON({command:'handoff',status:'needs_info',session:{status:'active',pendingFields:[{question:'PRIVATE QUESTION',state:'missing'}]}}));
     assert.equal(done.complete,true); assert.equal(plain(done.response).event,'handed_off');
     assert.equal((await read(state.root,'jobs.json')).jobs.job.revision,4);
@@ -112,7 +121,15 @@ test('input documents preserve large revisions and match Python invalid input en
       const oracle=await python(['--root',root,'progress','--input',input]);
       assert.deepEqual(JSON.parse(oracle.stdout),{ok:false,error:{code:'attempt_unavailable'}});
     }
+    await writeFile(input,'{"destinationUrl":"https://example.invalid"}');
+    assert.ok(get(await attemptRequest({kind:'authority-evaluate',root,input}),'evaluation'));
   } finally {await rm(root,{recursive:true,force:true});}
+});
+
+test('authority-evaluate is a bounded local attempt command',()=>{
+  const parsed=parseAttemptArgs(['authority-evaluate','--input','scope.json'],{},'/tmp/home');
+  assert.equal(parsed.kind,'authority-evaluate');assert.equal(parsed.input,'scope.json');
+  assert.throws(()=>parseAttemptArgs(['authority-evaluate','--input','scope.json','--status','needs_info'],{},'/tmp/home'));
 });
 test('root resolution follows symlinks before parent traversal, as Python does',async()=>{
   const {mkdtemp,mkdir,symlink,rm}=await import('node:fs/promises');
