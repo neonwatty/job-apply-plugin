@@ -2,13 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": ["outcome", "mode", "stoppedAt", "finalActionActivated", "authorityEvaluations", "operationsCompleted"],
+  "required": ["outcome", "mode", "stoppedAt", "finalActionActivated", "authorityActivations", "authorityEvaluations", "operationsCompleted"],
   "properties": {
     "outcome": {"type": "string", "enum": ["passed", "failed"]},
     "mode": {"type": "string", "enum": ["campaign_to_review", "guided", "unavailable"]},
     "stoppedAt": {"type": "string", "enum": ["final_review", "error"]},
     "finalActionActivated": {"type": "boolean"},
-    "authorityEvaluations": {"type": "integer", "minimum": 0},
+    "authorityActivations": {"type": "integer", "minimum": 0, "maximum": 1},
+    "authorityEvaluations": {"type": "integer", "minimum": 0, "maximum": 1},
     "operationsCompleted": {"type": "integer", "minimum": 0}
   }
 }

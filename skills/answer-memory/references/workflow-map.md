@@ -7,18 +7,25 @@ This is the shared map for the packaged TypeScript workflow. State names in the 
 ```mermaid
 flowchart LR
   AM[Answer Memory<br/>Store routing and private data]
+  AS[Application Setup] -->|browser and pacing defaults| Store
   JP[Job Preferences] -->|saved criteria| JS[Job Search]
   JS -->|owner selects and confirms queue preview| Jobs[Canonical job resolved in Store]
   JW[Job Workspace<br/>Companion UI] -->|manage and review| Store[(TypeScript Store)]
   JA[Job Apply<br/>extraction or one application] -->|commands and attempt broker| Store
   AM -->|shared Store rules| JP
+  AM -->|shared Store rules| AS
   AM -->|shared Store rules| JS
   AM -->|shared Store rules| JA
   Jobs --> Store
   Direct[User supplies a job link] -->|task intake| Jobs
 ```
 
-Job Workspace launches the UI; it does not start Job Apply. Job Search and Job Preferences are optional for a user who already has a job link. The five packaged skills are [Answer Memory](../SKILL.md), [Job Preferences](../../job-preferences/SKILL.md), [Job Search](../../job-search/SKILL.md), [Job Workspace](../../job-workspace/SKILL.md), and [Job Apply](../../job-apply/SKILL.md).
+Job Workspace launches the UI; it does not start Job Apply. Job Search, Job
+Preferences, and Application Setup are optional for a user who already has a job
+link. The six packaged skills are [Answer Memory](../SKILL.md), [Application
+Setup](../../application-setup/SKILL.md), [Job Preferences](../../job-preferences/SKILL.md),
+[Job Search](../../job-search/SKILL.md), [Job Workspace](../../job-workspace/SKILL.md),
+and [Job Apply](../../job-apply/SKILL.md).
 
 ## 1. First use and resume facts
 

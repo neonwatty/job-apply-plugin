@@ -8,7 +8,7 @@ const root = new URL('../apps/companion/components/', import.meta.url);
 async function modules(run) {
     const temp = await mkdtemp(join(tmpdir(), 'react-editor-'));
     try {
-        for (const name of ['contracts', 'job-editor-state', 'client', 'facts-model']) {
+        for (const name of ['contracts', 'job-editor-state', 'client', 'facts-model', 'application-preferences-model']) {
             const text = await readFile(new URL(name + '.ts', root), 'utf8');
             const js = ts.transpileModule(text, {
                 compilerOptions: {
@@ -20,7 +20,7 @@ async function modules(run) {
                     JSON.stringify(new URL('../runtime/' + path + '.js', import.meta.url).href));
             await writeFile(join(temp, name + '.mjs'), js);
         }
-        await run(await import(pathToFileURL(join(temp, 'job-editor-state.mjs'))), await import(pathToFileURL(join(temp, 'contracts.mjs'))), await import(pathToFileURL(join(temp, 'client.mjs'))), await import(pathToFileURL(join(temp, 'facts-model.mjs'))));
+        await run(await import(pathToFileURL(join(temp, 'job-editor-state.mjs'))), await import(pathToFileURL(join(temp, 'contracts.mjs'))), await import(pathToFileURL(join(temp, 'client.mjs'))), await import(pathToFileURL(join(temp, 'facts-model.mjs'))), await import(pathToFileURL(join(temp, 'application-preferences-model.mjs'))));
     }
     finally {
         await rm(temp, {
@@ -126,7 +126,28 @@ async function factsDraftAssertions() {
         assert.deepEqual(parsed.atomicPaths, ['/name', '/extra']);
     });
 }
+async function applicationPreferencesAssertions() {
+    return modules((_m, _c, _client, facts, setup) => {
+        const empty = facts.snapshot('{"profile":{},"revision":4,"factProvenance":{}}');
+        assert.deepEqual(setup.readApplicationPreferences(empty.profile), {
+            preferences: { preferredBrowser: 'codex_browser', browserFallback: 'ask', progressionMode: 'standard', preferredAutomationMode: 'guided' },
+            complete: false,
+        });
+        const saved = facts.snapshot('{"profile":{"applicationPreferences":{"preferredBrowser":"chrome","browserFallback":"other_supported","progressionMode":"guided","preferredAutomationMode":"campaign_to_review","future":"preserved"}},"revision":7,"factProvenance":{}}');
+        assert.deepEqual(setup.readApplicationPreferences(saved.profile), {
+            preferences: { preferredBrowser: 'chrome', browserFallback: 'other_supported', progressionMode: 'guided', preferredAutomationMode: 'campaign_to_review' },
+            complete: true,
+        });
+        assert.deepEqual(JSON.parse(setup.applicationPreferencesPatch(saved, {
+            preferredBrowser: 'codex_browser', browserFallback: 'ask', progressionMode: 'standard', preferredAutomationMode: 'autofill_to_review',
+        })), {
+            patch: { applicationPreferences: { preferredBrowser: 'codex_browser', browserFallback: 'ask', progressionMode: 'standard', preferredAutomationMode: 'autofill_to_review' } },
+            expectedRevision: 7, atomicPaths: [], deletedPaths: [],
+        });
+    });
+}
 export async function nextEditor() {
+    await applicationPreferencesAssertions();
     await factsDraftAssertions();
     await editorDraftAssertions();
     await editorDtoAssertions();

@@ -614,6 +614,30 @@
         "concurrency": "unverified", "interruption": "unverified",
         "recovery": "unverified", "platform": "unverified"
       }
+    },
+    {
+      "id": "browser:apps/companion/components/ApplicationSettings.tsx:ApplicationSettings",
+      "kind": "browser", "export": "ApplicationSettings", "node": "UIF",
+      "sources": ["apps/companion/components/ApplicationSettings.tsx"], "effects": "unclassified",
+      "scenarios": {"valid":"unverified","invalid":"unverified","missing":"unverified","noop":"unverified","privacy":"unverified","conflict":"unverified","concurrency":"unverified","interruption":"unverified","recovery":"unverified","platform":"unverified"}
+    },
+    {
+      "id": "browser:apps/companion/components/application-preferences-model.ts:defaultApplicationPreferences",
+      "kind": "browser", "export": "defaultApplicationPreferences", "node": "UIF",
+      "sources": ["apps/companion/components/application-preferences-model.ts"], "effects": "unclassified",
+      "scenarios": {"valid":"unverified","invalid":"unverified","missing":"unverified","noop":"unverified","privacy":"unverified","conflict":"unverified","concurrency":"unverified","interruption":"unverified","recovery":"unverified","platform":"unverified"}
+    },
+    {
+      "id": "browser:apps/companion/components/application-preferences-model.ts:readApplicationPreferences",
+      "kind": "browser", "export": "readApplicationPreferences", "node": "UIF",
+      "sources": ["apps/companion/components/application-preferences-model.ts"], "effects": "unclassified",
+      "scenarios": {"valid":"unverified","invalid":"unverified","missing":"unverified","noop":"unverified","privacy":"unverified","conflict":"unverified","concurrency":"unverified","interruption":"unverified","recovery":"unverified","platform":"unverified"}
+    },
+    {
+      "id": "browser:apps/companion/components/application-preferences-model.ts:applicationPreferencesPatch",
+      "kind": "browser", "export": "applicationPreferencesPatch", "node": "UIF",
+      "sources": ["apps/companion/components/application-preferences-model.ts"], "effects": "unclassified",
+      "scenarios": {"valid":"unverified","invalid":"unverified","missing":"unverified","noop":"unverified","privacy":"unverified","conflict":"unverified","concurrency":"unverified","interruption":"unverified","recovery":"unverified","platform":"unverified"}
     }
   ]
 }

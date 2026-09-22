@@ -10,8 +10,7 @@ import { ResumeService } from '../../../runtime/workspace-core/resumes.js';
 import { ResumeFactsService } from '../../../runtime/workspace-core/resume-facts.js';
 import { ApplicationRunsService } from '../../../runtime/workspace-core/application-runs.js';
 import { ClaimsService } from '../../../runtime/workspace-core/claims.js';
-import { ApplicationAuthorityService } from '../../../runtime/workspace-core/application-authority.js';
-import { fromJSON, get, int, serialize, string } from '../../../runtime/contracts/workspace/values.js';
+import { fromJSON, get, int, string } from '../../../runtime/contracts/workspace/values.js';
 
 const directory=dirname(fileURLToPath(import.meta.url)),repository=resolve(directory,'../../..');
 const fixture=JSON.parse(await readFile(join(directory,'fixture.json'),'utf8'));
@@ -23,18 +22,20 @@ const storeRoot=join(journeyRoot,'store');await initializeJobsFixture(storeRoot)
 const lock=await resolvePackagedNativeLock(repository),repositoryStore=new NativeJobsRepository(storeRoot,loadPosixFlockProvider(lock));
 const now=()=>new Date().toISOString().replace(/\.\d{3}Z$/u,'Z');
 const profilePath=join(storeRoot,'profile.json'),profileDocument=JSON.parse(await readFile(profilePath,'utf8'));
-profileDocument.profile={name:'Synthetic Applicant',email:'synthetic@example.invalid',phone:'000-000-0000',location:'Local Fixture'};
+const applicant={name:'Synthetic Applicant',email:'synthetic@example.invalid',phone:'000-000-0000',location:'Local Fixture'};
+profileDocument.profile={...applicant,applicationPreferences:{preferredBrowser:'codex_browser',browserFallback:'ask',
+  progressionMode:'standard',preferredAutomationMode:'campaign_to_review'}};
 await writeFile(profilePath,`${JSON.stringify(profileDocument)}\n`,{mode:0o600});
 const resume=await new ResumeService(repositoryStore,now).import(fromJSON(fixture.resume),'resume.txt',await readFile(join(directory,'resume.txt')));
 const facts=new ResumeFactsService(repositoryStore,now),resumeRevision=int(get(resume,'revision'));
-const draft=await facts.createDraft(fixture.resume.id,fromJSON(profileDocument.profile),resumeRevision,null);
+const draft=await facts.createDraft(fixture.resume.id,fromJSON(applicant),resumeRevision,null);
 const confirmed=await facts.confirm(fixture.resume.id,int(get(draft,'revision')),string(get(draft,'contentRevision')));
 const job=await new JobsService(repositoryStore,now).create(fromJSON(fixture.job));
 const run=await new ApplicationRunsService(repositoryStore,now).start(fixture.resume.id,resumeRevision,int(get(confirmed,'revision')),true,
   fromJSON({jobIds:[fixture.job.id]}));
 const ready=await new ClaimsService(repositoryStore,now).select(fixture.job.id,int(get(job,'revision')),true);
-const authority=await new ApplicationAuthorityService(repositoryStore,now).set(fromJSON({mode:'campaign_to_review',runId:string(get(run,'runId')),
-  jobIds:[fixture.job.id],sensitiveAnswerRefs:[],durationMinutes:120}),0n);
+await writeFile(join(journeyRoot,'activation.json'),`${JSON.stringify({mode:'campaign_to_review',runId:string(get(run,'runId')),
+  jobIds:[fixture.job.id],sensitiveAnswerRefs:[],durationMinutes:120})}\n`,{mode:0o600});
 const portal={schemaVersion:1,fixtureId:fixture.fixtureId,syntheticOnly:true,destinationUrl:fixture.job.url,stage:'form',
   requiredOperations:fixture.requiredOperations,completedOperations:[],finalActionLabel:fixture.finalActionLabel,finalActionActivated:false,audit:[]};
 await writeFile(join(journeyRoot,'portal-state.json'),`${JSON.stringify(portal)}\n`,{mode:0o600});
@@ -53,4 +54,4 @@ const handoff={status:'review',readinessInput:{attemptRevision:3,evidenceKind:'a
     validationErrorControlIds:[],finalControlState:'available'}}};
 await writeFile(join(journeyRoot,'handoff.json'),`${JSON.stringify(handoff)}\n`,{mode:0o600});
 process.stdout.write(`${JSON.stringify({fixtureId:fixture.fixtureId,journeyRoot,storeRoot,jobId:fixture.job.id,
-  readyRevision:Number(int(get(get(ready,'job'),'revision'))),authority:JSON.parse(serialize(authority)),portal:join(directory,'portal.mjs')})}\n`);
+  readyRevision:Number(int(get(get(ready,'job'),'revision'))),preferredAutomationMode:'campaign_to_review',portal:join(directory,'portal.mjs')})}\n`);

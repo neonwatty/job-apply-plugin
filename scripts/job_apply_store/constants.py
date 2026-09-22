@@ -127,6 +127,7 @@ FACT_GROUP_MAX_PATHS = 128
 PROFILE_NAMED_TOP_LEVEL = {
     "firstName", "lastName", "email", "phone", "location", "linkedInUrl",
     "portfolioUrl", "githubUrl", "workHistory", "education", "skills", "preferences",
+    "applicationPreferences",
 }
 REPLAY_TRANSITIONS = {"started", "reviewed"}
 REPLAY_ATS = {"ashby", "greenhouse", "lever", "linkedin-easy-apply"}

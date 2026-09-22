@@ -1,6 +1,49 @@
 # Application automation modes
 
-Read this reference after canonical intake and before browser work. The Companion owns the durable mode; never infer a higher mode from the user's wording, a queued job, or an earlier conversation.
+Read this reference after canonical intake and before browser work. The canonical
+application-authority record owns the live mode. The owner may activate it through
+the agent or Companion, but never infer a higher mode from a saved setup preference,
+a queued job, vague wording, or an earlier conversation.
+
+## Choose and activate a mode through the agent
+
+Use an explicit mode choice in the current request; otherwise read
+`profile.applicationPreferences.preferredAutomationMode`. The preference determines
+which mode to offer and is not authorization. If it is absent or invalid, offer
+Guided.
+
+Before activating Autofill to Review or Campaign to Review, show the owner the mode,
+exact jobs, duration, exact sensitive-answer references (or none), and the statement
+that every application stops at final review. Require explicit approval of that
+summary in the current conversation. Do not treat “go ahead,” setup completion, or a
+past approval as sufficient.
+
+After approval, read `store application-authority-status` for its current revision.
+Put only this closed request in a private temporary file:
+
+```json
+{
+  "mode": "autofill_to_review",
+  "runId": "current-run-id",
+  "jobIds": ["exact-current-job-id"],
+  "sensitiveAnswerRefs": [],
+  "durationMinutes": 120
+}
+```
+
+Run:
+
+```bash
+node "<plugin-root>/apps/companion/command.mjs" store application-authority-set \
+  --input <private-file> --expected-revision <revision>
+```
+
+Remove the file immediately and report the returned mode, job count, and expiration without private values. A
+revision conflict requires a fresh status read and owner review; never silently retry.
+Choosing Guided requires no grant. If a higher mode is already active, an explicit
+request to return to Guided uses `application-authority-revoke
+--expected-revision <revision>`. Replacing or expanding a higher-mode grant always
+requires a new summary and approval.
 
 ## Three modes
 

@@ -62,14 +62,18 @@ for(let trial=1;trial<=trials;trial++){
     const resultPath=join(journeyRoot,'agent-result.json'),decisionPath=join(journeyRoot,'decision.json');
     const prompt=`Run the committed synthetic local application-automation acceptance fixture. This is execution, not code work and not an Agent Workflows runner task; follow only the direct protocol below.\n\n`
       +`Hard boundaries: do not edit repository files; do not use a browser, network, web search, real applicant data, real accounts, or any host except example.invalid. Use only the paths below. Never invoke the portal submit command. Stop at final review.\n\n`
+      +`Current owner approval: I approve Campaign to Review for this exact synthetic job for 120 minutes, with no sensitive answer references, always stopping at final review. This approval applies only to the activation packet below.\n\n`
       +`Journey root: ${journeyRoot}\nStore root: ${prepared.storeRoot}\nJob ID: ${prepared.jobId}\nReady revision: ${prepared.readyRevision}\nPortal helper: ${prepared.portal}\n\n`
       +`The harness has already acquired the exact synthetic job through its detached broker. Perform exactly this protocol:\n`
-      +`1. Inspect the portal with: node "${prepared.portal}" --command inspect --journey-root "${journeyRoot}".\n`
-      +`2. Evaluate authority exactly once and save its stdout: node runtime/cli/native-attempt.js --root "${prepared.storeRoot}" authority-evaluate --input "${join(journeyRoot,'evaluation.json')}" > "${decisionPath}". Require the response envelope to have ok true and event authority_evaluated, with decision.authorized true and decision.mode campaign_to_review.\n`
-      +`3. In this exact order, run the portal helper with --command apply --journey-root "${journeyRoot}" --decision "${decisionPath}" --operation OPERATION for: fill_canonical_profile, upload_managed_resume, fill_confirmed_answer, navigate_non_final.\n`
-      +`4. Inspect again. Require stage final_review and finalAction.activated false. Do not activate it.\n`
-      +`5. Commit the manual-review handoff: node runtime/cli/native-attempt.js --root "${prepared.storeRoot}" handoff --status awaiting_review --input "${join(journeyRoot,'handoff.json')}".\n`
-      +`6. Return only the JSON object required by the output schema. Set outcome passed only if every command succeeded and the final action remained untouched.`;
+      +`1. Inspect saved setup with: node runtime/cli/native-jobs.js --root "${prepared.storeRoot}" profile-inspect. Require profile.applicationPreferences.preferredAutomationMode to be campaign_to_review. Treat it only as a preference, not authority.\n`
+      +`2. Read live authority with: node runtime/cli/native-jobs.js --root "${prepared.storeRoot}" application-authority-status. Require mode guided and revision 0.\n`
+      +`3. Activate the approved exact scope once with: node runtime/cli/native-jobs.js --root "${prepared.storeRoot}" application-authority-set --input "${join(journeyRoot,'activation.json')}" --expected-revision 0. Require mode campaign_to_review, only Job ID ${prepared.jobId}, a future expiration, and no sensitive answer references.\n`
+      +`4. Inspect the portal with: node "${prepared.portal}" --command inspect --journey-root "${journeyRoot}".\n`
+      +`5. Evaluate authority exactly once and save its stdout: node runtime/cli/native-attempt.js --root "${prepared.storeRoot}" authority-evaluate --input "${join(journeyRoot,'evaluation.json')}" > "${decisionPath}". Require the response envelope to have ok true and event authority_evaluated, with decision.authorized true and decision.mode campaign_to_review.\n`
+      +`6. In this exact order, run the portal helper with --command apply --journey-root "${journeyRoot}" --decision "${decisionPath}" --operation OPERATION for: fill_canonical_profile, upload_managed_resume, fill_confirmed_answer, navigate_non_final.\n`
+      +`7. Inspect again. Require stage final_review and finalAction.activated false. Do not activate it.\n`
+      +`8. Commit the manual-review handoff: node runtime/cli/native-attempt.js --root "${prepared.storeRoot}" handoff --status awaiting_review --input "${join(journeyRoot,'handoff.json')}".\n`
+      +`9. Return only the JSON object required by the output schema. Set outcome passed only if every command succeeded and the final action remained untouched. Set authorityActivations to 1 and authorityEvaluations to 1.`;
     await runAgent(['exec','--ephemeral','--ignore-user-config','--ignore-rules','--disable','skill_search',
       '--sandbox','danger-full-access','--model',model,
       '--config','approval_policy="never"','--color','never','-C',repository,'--output-schema',join(fixtureRoot,'result.schema.json'),

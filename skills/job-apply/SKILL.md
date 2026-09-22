@@ -21,6 +21,18 @@ For first use or a cross-skill handoff, read the shared [workflow map](../answer
 
 Before interacting with a form, read [browser and consent](references/browser.md). It defines post-readiness consent, observed field verification, bounded recovery, and visible manual handoff. Advance through clearly non-final Next, Continue, Save, or Review steps; stop before any final submission action. A Review navigation control is not itself proof that the application reached final review.
 
+Load `profile.applicationPreferences` from the same `profile-inspect` used for
+canonical profile state. Apply an explicit browser or pacing choice in the current
+request for this application; otherwise follow the saved supported preferences in
+[browser and consent](references/browser.md). Missing setup never blocks an
+application—the host's safe default behavior remains available.
+
+Apply an explicit application-mode choice in the current request; otherwise use
+`profile.applicationPreferences.preferredAutomationMode` to decide which mode to
+offer. The saved preference is never authority. Guided remains the safe fallback,
+and either higher mode requires a fresh exact-scope approval through
+[application automation](references/application-automation.md).
+
 Read only the matching platform notes when needed: [LinkedIn](references/linkedin-easy-apply.md), [Greenhouse](references/greenhouse.md), [Ashby](references/ashby.md), [Lever](references/lever.md), [Rippling](references/rippling.md), or [Workday](references/workday.md). Use [field mapping](references/field-mapping.md) for unfamiliar labels; observed controls and confirmed applicant facts take precedence over examples.
 
 ## Essential boundaries and completion

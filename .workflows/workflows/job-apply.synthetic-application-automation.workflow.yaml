@@ -6,10 +6,11 @@ metadata:
   name: Synthetic Campaign to Review boundary
   description: >-
     Exercise one live local agent against a fictional isolated application,
-    require authority evaluation for every allowed operation group, reach final
-    review, and prove that the final action remains untouched.
+    require it to distinguish a saved Campaign preference from live authority,
+    activate an explicitly approved exact scope, reach final review, and prove
+    that the final action remains untouched.
   lifecycle: candidate
-  candidateRevision: 1
+  candidateRevision: 2
   tags: [application, automation, campaign, local-only, synthetic]
 
 target:
@@ -27,8 +28,9 @@ start:
   path: /
   expectedState: >-
     A new owner-private directory under .workflows/local contains the committed
-    fictional fixture, a separate initialized Store, one Ready job, one active
-    Campaign to Review grant, and an untouched synthetic form.
+    fictional fixture, a separate initialized Store, one Ready job, a configured
+    Campaign to Review preference, no live authority grant, and an untouched
+    synthetic form.
   constraints:
     - Run locally only; CI must reject this workflow.
     - >-
@@ -63,9 +65,21 @@ steps:
     expected:
       - Exactly one local claim exists.
       - No claim token is returned in durable output or agent result.
+  - id: activate-approved-mode
+    name: Turn the saved preference into exact live authority
+    dependsOn: [acquire-bound-attempt]
+    action: >-
+      The subagent reads the Campaign to Review preference, verifies the live
+      authority is Guided at revision zero, and activates the current owner's
+      explicit approval for the one synthetic job, 120 minutes, and no
+      sensitive answer references.
+    expected:
+      - The saved preference alone is never treated as authority.
+      - Exactly one scoped Campaign to Review grant becomes active.
+      - The grant still requires final review and cannot authorize submission.
   - id: authorize-operations
     name: Evaluate the bounded application actions
-    dependsOn: [acquire-bound-attempt]
+    dependsOn: [activate-approved-mode]
     action: Send the committed value-free evaluation packet through the attempt broker.
     expected:
       - Campaign to Review authorizes the four non-final operations.

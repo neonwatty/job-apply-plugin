@@ -12,6 +12,11 @@
       "classification": "unreviewed"
     },
     {
+      "path": "apps/companion/components/ApplicationSettings.tsx",
+      "sha256": "f1aec73e65f66181d901891b76384effa4223b1bbbde52280b543a05c0e9bac6",
+      "classification": "unreviewed"
+    },
+    {
       "path": "apps/companion/components/Companion.tsx",
       "sha256": "4b6146124bb653d1f501f7154774a511c1810afa3ccdc13ca05a831c146dd783",
       "classification": "unreviewed"
@@ -34,6 +39,11 @@
     {
       "path": "apps/companion/components/Resumes.tsx",
       "sha256": "7275ed683bbac559be0b4e6eabb98e655d0c60ededb076b7451a9d221e4fbded",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/application-preferences-model.ts",
+      "sha256": "4cbc76b041404a46a51f76f387ec47833f5dc71c4a239ec53fcd8f0ee5892137",
       "classification": "unreviewed"
     },
     {
