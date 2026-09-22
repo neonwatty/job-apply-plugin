@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { chmod, mkdtemp, readFile, realpath, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -16,8 +17,12 @@ const repository = resolve(new URL('..', import.meta.url).pathname);
 const workflowPath = join(repository, '.workflows/workflows/job-apply.synthetic-application-setup-preferences.workflow.yaml');
 const execute = promisify(execFile);
 
-test('application-setup workflow satisfies the installed runner schema', async () => {
+test('application-setup workflow satisfies the installed runner schema', async t => {
   const cli = join(repository, 'node_modules/.bin', process.platform === 'win32' ? 'workflow.cmd' : 'workflow');
+  if (!existsSync(cli)) {
+    t.skip('optional @lineagehq/workflows runner is not installed');
+    return;
+  }
   const { stdout } = await execute(cli, ['validate', '--json', workflowPath], { cwd: repository });
   const result = JSON.parse(stdout);
   assert.equal(result.ok, true);
