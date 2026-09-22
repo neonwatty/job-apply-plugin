@@ -8,7 +8,7 @@ export function snapshot(raw: string): ProfileSnapshot {
   if (revision === null || revision < 1n) throw Error('Invalid profile revision');
   return { profile: object(get(doc, 'profile'), 'profile'), revision, provenance: object(get(doc, 'factProvenance'), 'provenance') };
 }
-const named = new Set(['firstName','lastName','email','phone','location','linkedInUrl','portfolioUrl','githubUrl','workHistory','education','skills','preferences']);
+const named = new Set(['firstName','lastName','email','phone','location','linkedInUrl','portfolioUrl','githubUrl','workHistory','education','skills','preferences','applicationPreferences']);
 export const pointer = (key: string) => '/' + key.replaceAll('~','~0').replaceAll('/','~1');
 function mergeDiff(before: Document, after: Document): Document {
   const patch = new PythonObject<Value>();

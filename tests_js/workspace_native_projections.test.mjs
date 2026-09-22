@@ -68,6 +68,8 @@ test('overview setup precedence and accepted active counts',async()=>{
   assert.equal(plain(await service.overview()).nextAction,'import_resume');
   tx.resumes=fromJSON({resumes:{r:{id:'r',default:true,path:'/synthetic',observedSize:1,observedModifiedAt:now}}});
   assert.equal(plain(await service.overview()).nextAction,'review_facts');
+  tx.profile=fromJSON({profile:{applicationPreferences:{preferredBrowser:'chrome',browserFallback:'ask',progressionMode:'guided'}}});
+  assert.equal(plain(await service.overview()).nextAction,'review_facts','setup preferences are not applicant facts');
   tx.profile=fromJSON({profile:{name:'PRIVATE'}});
   assert.equal(plain(await service.overview()).nextAction,'prepare_job');
   const jobs=plain(tx.jobs),run={runId:'run-unit',status:'active',revision:1,

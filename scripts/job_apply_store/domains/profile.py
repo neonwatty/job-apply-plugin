@@ -229,7 +229,7 @@ class ProfileStoreMixin:
     def _has_application_facts(profile: dict[str, Any]) -> bool:
         """Distinguish applicant facts from search-only preferences."""
 
-        return any(key != "preferences" for key in profile)
+        return any(key not in {"preferences", "applicationPreferences"} for key in profile)
 
     def _load_profile_document(self) -> dict[str, Any]:
         document = _read_json_object(self, self.profile_path, "profile")

@@ -4,7 +4,8 @@ import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { activateStoreForCli } from './supervise.mjs';
+import { activateStoreForCli, validateSupervisorRoot } from './supervise.mjs';
+import { storeWriterOwnership } from './writer-route.mjs';
 
 const app = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = resolve(app, '../..');
@@ -34,7 +35,9 @@ async function run() {
   const help = args.includes('--help') || args.includes('-h');
   const root = selectedRoot(args);
   if (!help && !(readOnlyAbsent && !existsSync(root))) {
-    await activateStoreForCli({ root, pluginRoot, nativeLock: undefined });
+    const ownership = await storeWriterOwnership(root);
+    if (ownership === 'fixture') await validateSupervisorRoot(root);
+    else await activateStoreForCli({ root, pluginRoot, nativeLock: undefined });
   }
   const child = spawn(process.execPath, [join(pluginRoot, 'runtime/cli', target), ...args], { stdio: 'inherit', env: process.env });
   const result = await new Promise((done, reject) => { child.once('error', reject); child.once('exit', (code, signal) => done({ code, signal })); });

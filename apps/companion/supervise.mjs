@@ -42,7 +42,7 @@ export function resolveSupervisorRoot(options, environment = process.env, home =
 async function existing(path) { return lstat(path).then(() => true).catch(error => {
   if (error?.code === 'ENOENT') return false; throw error;
 }); }
-async function validateSupervisorRoot(root) {
+export async function validateSupervisorRoot(root) {
   const parent = dirname(root);
   const [canonicalParent, parentInfo, rootInfo, canonicalRoot] = await Promise.all([
     realpath(parent).catch(() => null), lstat(parent).catch(() => null),

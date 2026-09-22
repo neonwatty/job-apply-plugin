@@ -2,8 +2,21 @@
 
 Use the active host's supported visible browser integration so the user can see navigation, authenticated state, entered values, uploads, and the final review page.
 
-- **Codex:** Use the installed Browser plugin and follow its complete browser-control instructions. When the job URL is known, let the Browser runtime select the appropriate in-app or Chrome surface for that URL. Reuse that browser binding and visible tab throughout the application. Do not substitute an unrelated browser automation server.
+- **Codex:** An explicit browser choice in the current request wins. Otherwise read
+  `profile.applicationPreferences.preferredBrowser`: `codex_browser` selects the
+  visible browser built into Codex and `chrome` selects the owner's visible Chrome
+  session. If no valid preference is saved, let the installed Browser plugin select
+  the appropriate in-app or Chrome surface for the URL. Reuse that browser binding
+  and visible tab throughout the application. Do not substitute an unrelated browser
+  automation server.
 - **Claude Code:** Use Claude in Chrome as the default and only required browser integration.
+
+If the preferred Codex surface is unavailable, follow
+`profile.applicationPreferences.browserFallback`: `ask` pauses before switching;
+`other_supported` may select the other supported surface when it is safe to do so.
+If no valid value is saved, ask. Changing to another form instance after private data
+was entered still requires fresh action-time consent under the rules below. Saved
+browser preferences never authorize authentication or data entry.
 
 ### Visible-Browser Rules
 

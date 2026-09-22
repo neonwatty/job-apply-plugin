@@ -1,6 +1,6 @@
 {
   "name": "job-apply",
-  "version": "1.3.5",
+  "version": "1.3.5+codex.20260922002832",
   "description": "AI-powered job application assistant for Claude Code and Codex covering LinkedIn, Greenhouse, Ashby, Lever, Rippling, and Workday.",
   "author": {
     "name": "Jeremy Watt",
@@ -32,6 +32,7 @@
     ],
     "websiteURL": "https://neonwatty.github.io/job-apply-plugin/",
     "defaultPrompt": [
+      "Set up my application preferences.",
       "Fill this job application from my resume.",
       "Review my saved application answers.",
       "Set my job-search preferences."

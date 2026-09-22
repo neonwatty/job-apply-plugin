@@ -408,6 +408,13 @@ footer { display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.5rem }
 .application-empty strong { color:var(--ink) }
 .application-start { justify-self:start }
 .application-setup { display:grid;gap:.9rem;padding:1rem;border:1px solid var(--line);border-radius:14px;background:#f8faf6 }
+.settings-panel fieldset { display:grid;gap:1.1rem;border:0;margin:0;padding:0 }
+.settings-panel legend { font-size:1.15rem;font-weight:900;margin-bottom:.25rem }
+.settings-panel label { display:grid;gap:.4rem;font-weight:800;max-width:44rem }
+.settings-panel select { width:100%;padding:.72rem;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink);font:inherit }
+.field-help { color:var(--muted);font-size:.88rem;font-weight:600 }
+.settings-boundaries { padding:1rem;border:1px solid var(--line);border-radius:12px;background:var(--mint) }
+.settings-boundaries p { margin:.3rem 0 0 }
 .application-readiness { margin:0;color:var(--muted);font-size:.84rem }
 .application-settings { color:var(--muted);font-size:.82rem }
 .application-settings summary { cursor:pointer;color:var(--green);font-weight:800 }
