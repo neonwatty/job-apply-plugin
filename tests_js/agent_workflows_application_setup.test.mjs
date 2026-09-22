@@ -17,8 +17,8 @@ const workflowPath = join(repository, '.workflows/workflows/job-apply.synthetic-
 const execute = promisify(execFile);
 
 test('application-setup workflow satisfies the installed runner schema', async () => {
-  const cli = join(repository, 'node_modules/@lineagehq/workflows/bin/workflow.js');
-  const { stdout } = await execute(process.execPath, [cli, 'validate', '--json', workflowPath], { cwd: repository });
+  const cli = join(repository, 'node_modules/.bin', process.platform === 'win32' ? 'workflow.cmd' : 'workflow');
+  const { stdout } = await execute(cli, ['validate', '--json', workflowPath], { cwd: repository });
   const result = JSON.parse(stdout);
   assert.equal(result.ok, true);
   assert.equal(result.data.items[0].id, 'job-apply.synthetic-application-setup-preferences');

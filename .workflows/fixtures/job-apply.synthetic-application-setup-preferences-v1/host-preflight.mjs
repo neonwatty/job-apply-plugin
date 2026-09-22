@@ -50,7 +50,7 @@ export async function probeApplicationSetupPreferences(repositoryRoot = defaultR
   await regular(join(repositoryRoot, 'apps/companion/command.mjs'), 'Command router');
   await regular(join(repositoryRoot, 'runtime/cli/native-qa-replay.js'), 'QA route resolver');
   await regular(join(repositoryRoot, '.agents/plugins/marketplace.json'), 'Local marketplace');
-  if (manifest.name !== 'job-apply' || !/^[^+]+\+codex\.[0-9]+$/.test(manifest.version)
+  if (manifest.name !== 'job-apply' || !/^\d+\.\d+\.\d+(?:\+codex\.[0-9]+)?$/.test(manifest.version)
       || !skill.includes('name: application-setup') || !skill.includes('profile-patch')) {
     throw new Error('Application Setup plugin contract is unavailable');
   }
