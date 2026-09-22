@@ -5,6 +5,7 @@ import { FactGroups } from './FactGroups';
 import { copy,get,set,text,keys,same,parse,type Document } from '../../../src/contracts/workspace/values';
 import { factProvenance,patchBody,reapplyDraft,type ProfileSnapshot } from './facts-model';
 const sections=['firstName','lastName','email','phone','location','linkedInUrl','portfolioUrl','githubUrl','workHistory','education','skills','preferences'];
+const visibleFactNames=(draft:Document,query:string)=>keys(draft).filter(name=>name!=='applicationPreferences'&&name.toLowerCase().includes(query.toLowerCase()));
 export function Facts({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:boolean)=>void}) {
   const [base,setBase]=useState<ProfileSnapshot|null>(null),[draft,setDraft]=useState<Document|null>(null);
   const [latest,setLatest]=useState<ProfileSnapshot|null>(null),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
@@ -71,10 +72,10 @@ export function Facts({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:b
       </div>
       <form id="facts-form" ref={form} onChange={event=>setInvalid(!event.currentTarget.checkValidity())} onSubmit={event=>{event.preventDefault();void save();}}><fieldset disabled={busy}>
         <legend className="visually-hidden">Profile facts</legend>
-        <div className="facts-filter"><label>Find a fact<input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search canonical facts"/></label><span>{keys(draft).filter(name=>name.toLowerCase().includes(query.toLowerCase())).length} shown</span></div>
-        {!draft.size&&<div className="workspace-empty facts-empty"><span className="empty-check" aria-hidden="true">◇</span><strong>No profile facts yet.</strong><p>Use Add a fact to start your canonical profile.</p></div>}
-        {draft.size>0&&!keys(draft).some(name=>name.toLowerCase().includes(query.toLowerCase()))&&<div className="workspace-empty facts-empty"><strong>No matching facts.</strong><p>Try another search or add a new fact below.</p></div>}
-        <div className="facts-list">{keys(draft).map(name=><div key={name} hidden={!name.toLowerCase().includes(query.toLowerCase())} className="fact-card">
+        <div className="facts-filter"><label>Find a fact<input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search canonical facts"/></label><span>{visibleFactNames(draft,query).length} shown</span></div>
+        {!visibleFactNames(draft,'').length&&<div className="workspace-empty facts-empty"><span className="empty-check" aria-hidden="true">◇</span><strong>No profile facts yet.</strong><p>Use Add a fact to start your canonical profile.</p></div>}
+        {visibleFactNames(draft,'').length>0&&!visibleFactNames(draft,query).length&&<div className="workspace-empty facts-empty"><strong>No matching facts.</strong><p>Try another search or add a new fact below.</p></div>}
+        <div className="facts-list">{visibleFactNames(draft,'').map(name=><div key={name} hidden={!name.toLowerCase().includes(query.toLowerCase())} className="fact-card">
           <FactValue key={editorVersion} label={name} value={get(draft,name)} change={value=>setDraft(current=>current?set(copy(current),name,value):current)}/>
           <details><summary>Fact source</summary><pre>{factProvenance(base.provenance,name)}</pre></details>
           <button className="text-action" type="button" onClick={()=>{const next=copy(draft);next.delete(text(name));setDraft(next);}}>Remove fact {name}</button>

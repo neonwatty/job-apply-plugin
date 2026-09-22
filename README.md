@@ -12,6 +12,7 @@ AI-powered job application assistant for Claude Code and Codex that fills job ap
 |-------|-------------|
 | `job-apply:job-apply` | Prepare application fields from your resume and stop before final submission |
 | `job-apply:answer-memory` | Safely manage your local profile, reusable answers, application history, and resumable sessions |
+| `job-apply:application-setup` | Choose the browser surface, fallback behavior, and page-progression pace used during applications |
 | `job-apply:job-search` | Search LinkedIn, Hacker News, and Twitter/X for jobs, then rank results against your preferences |
 | `job-apply:job-preferences` | Set the titles, salary, remote-work, and filtering preferences used by job search |
 | `job-apply:job-workspace` | Open the optional local Jobs, Facts, Resumes, Answers, and unified Trash workspace shared with Job Apply agents |
@@ -92,17 +93,22 @@ The examples below use Codex syntax. In Claude Code, replace the leading `$` wit
 
 ### First Time Setup
 
-1. Invoke the skill:
+1. Save your application-flow preferences:
+   ```
+   $job-apply:application-setup
+   ```
+
+2. Invoke the application skill:
    ```
    $job-apply:job-apply
    ```
 
-2. Provide your resume path when prompted:
+3. Provide your resume path when prompted:
    ```
    ~/Documents/resume.pdf
    ```
 
-3. Review and confirm the facts extracted for that specific resume in Companion
+4. Review and confirm the facts extracted for that specific resume in Companion
 
 ### Applying to Jobs
 

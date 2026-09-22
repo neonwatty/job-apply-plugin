@@ -7,7 +7,7 @@ import type { Value } from '../contracts/workspace/values.js';
 import { emptyObject } from '../contracts/workspace/jobs.js';
 import { topKey } from './profile-patch.js';
 
-const named = new Set(['firstName', 'lastName', 'email', 'phone', 'location', 'linkedInUrl', 'portfolioUrl', 'githubUrl', 'workHistory', 'education', 'skills', 'preferences']);
+const named = new Set(['firstName', 'lastName', 'email', 'phone', 'location', 'linkedInUrl', 'portfolioUrl', 'githubUrl', 'workHistory', 'education', 'skills', 'preferences', 'applicationPreferences']);
 const response = (value: Value) => ({ status: 200, body: serialize(value) });
 export async function profileHttp(repository: NativeJobsRepository, method: string, path: string, body: string): Promise<{ status: number; body: string } | null> {
   const profile = new ProfileService(repository), groups = new FactGroupsService(repository);

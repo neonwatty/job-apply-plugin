@@ -2,18 +2,20 @@ import { ownerBetaNextStep } from '../../../src/workspace-ui/lib/activity-view';
 import { useEffect, useRef, useState } from 'react';
 import type { Client } from './client';
 import type { OverviewData } from './contracts';
+import { readApplicationPreferences } from './application-preferences-model';
 
 export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
     client: Client;
     openJobs: () => void;
     legacyHref: string;
-    openWorkspace?: (workspace: 'facts' | 'resumes' | 'attention' | 'answers' | 'automation' | 'trash') => void;
+    openWorkspace?: (workspace: 'facts' | 'resumes' | 'attention' | 'answers' | 'automation' | 'settings' | 'trash') => void;
 }) {
     const [data, setData] = useState<OverviewData | null>(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
     const [copyNotice, setCopyNotice] = useState('');
     const [fallback, setFallback] = useState('');
+    const [applicationSetupComplete, setApplicationSetupComplete] = useState(false);
     const sequence = useRef(0);
     const pending = useRef<AbortController | null>(null);
     async function refresh() {
@@ -23,9 +25,10 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
         const request = ++sequence.current;
         setLoading(true);
         try {
-            const next = await client.overview(controller.signal);
+            const [next,profile] = await Promise.all([client.overview(controller.signal),client.profile(controller.signal)]);
             if (request !== sequence.current) return;
             setData(next);
+            setApplicationSetupComplete(readApplicationPreferences(profile.profile).complete);
             setError('');
         } catch (error) {
             if (request === sequence.current && !controller.signal.aborted) {
@@ -41,7 +44,7 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
     }, [client]);
     const destinations: Record<string, string> = {
         facts: 'Facts', resumes: 'Resumes', attention: 'Needs Attention',
-        answers: 'Answers', automation: 'Automation', trash: 'Trash', overview: 'Overview',
+        answers: 'Answers', automation: 'Automation', settings: 'Settings', trash: 'Trash', overview: 'Overview',
     };
     const target = data?.targetWorkspace ?? 'overview';
     const destination = Object.hasOwn(destinations, target) ? target : 'overview';
@@ -53,7 +56,7 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
         ? guidance[0] : 'Review the workspace';
     const guidanceCopy = Array.isArray(guidance) && typeof guidance[1] === 'string'
         ? guidance[1] : 'Refresh the canonical Store and choose a workspace section.';
-    const nativeDestinations = ['facts','resumes','attention','answers','automation','trash'];
+    const nativeDestinations = ['facts','resumes','attention','answers','automation','settings','trash'];
     async function copyInvocation(value:string,label:string) {
         try {
             await navigator.clipboard.writeText(value);
@@ -66,7 +69,7 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
     }
     const action = target === 'jobs' ? <button className="button primary" onClick={openJobs}>Open Jobs</button>
         : openWorkspace && nativeDestinations.includes(target)
-            ? <button className="button primary" onClick={() => openWorkspace(target as 'facts'|'resumes'|'attention'|'answers'|'automation'|'trash')}>Open {destinations[target]}</button>
+            ? <button className="button primary" onClick={() => openWorkspace(target as 'facts'|'resumes'|'attention'|'answers'|'automation'|'settings'|'trash')}>Open {destinations[target]}</button>
             : <a className="button primary" href={link(destination)}>Open {destinations[destination]}</a>;
     return <div className="overview-workspace">
         <section className="overview-hero">
@@ -91,6 +94,9 @@ export function Overview({ client, openJobs, legacyHref, openWorkspace }: {
                         <li className={data.setup.hasProfileFacts?'complete':''}><span>{data.setup.hasProfileFacts?'✓':'○'} Facts {data.setup.hasProfileFacts?'reviewed':'needed'}</span>
                             {openWorkspace?<button className="text-action" onClick={() => openWorkspace(factsDestination)}>{factsAction}</button>
                                 :<a href={link(factsDestination)}>{factsAction}</a>}</li>
+                        <li className={applicationSetupComplete?'complete':''}><span>{applicationSetupComplete?'✓':'○'} Application setup {applicationSetupComplete?'saved':'needed'}</span>
+                            {openWorkspace?<button className="text-action" onClick={() => openWorkspace('settings')}>Edit Settings</button>
+                                :<a href={link('settings')}>Edit Settings</a>}</li>
                     </ul>
                     <p className="overview-counts">{data.counts.jobs} jobs · {data.counts.readyJobs} ready · {data.counts.attentionJobs} need attention</p>
                 </article>

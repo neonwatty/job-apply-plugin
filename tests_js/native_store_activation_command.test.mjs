@@ -2,13 +2,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { constants } from 'node:fs';
-import { cp, mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { open } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { packageNativeLock } from '../scripts/smoke/package_native_lock.mjs';
 import { attemptSocketPath } from '../runtime/cli/attempt-protocol.js';
 import { loadPosixFlockProvider } from '../runtime/store/posix-flock.js';
+import { initializeJobsFixture } from '../runtime/store/native-jobs-fixture.js';
 
 const repository = new URL('../', import.meta.url).pathname;
 async function installed(t) {
@@ -73,4 +74,23 @@ test('paths and absent policy status remain non-creating reads', { timeout: 60_0
   const paths = run(fixture, 'store', ['paths']); assert.equal(paths.status, 0, paths.stderr);
   const status = run(fixture, 'policy', ['status']); assert.equal(status.status, 0, status.stderr);
   await assert.rejects(realpath(fixture.root), { code: 'ENOENT' });
+});
+
+test('ordinary command accepts an explicitly initialized native QA fixture without cloning it', { timeout: 60_000 }, async t => {
+  const fixture = await installed(t);
+  await initializeJobsFixture(fixture.root);
+  const inspected = run(fixture, 'store', ['--root', fixture.root, 'profile-inspect']);
+  assert.equal(inspected.status, 0, inspected.stderr);
+  assert.equal(JSON.parse(inspected.stdout).revision, 1);
+  assert.equal((await readdir(fixture.root)).includes('.native-jobs-fixture'), true);
+  assert.equal((await readdir(fixture.root)).includes('.native-store-clone'), false);
+  const alias = join(fixture.home, 'fixture-alias');
+  await symlink(fixture.root, alias);
+  const symlinked = run(fixture, 'store', ['--root', alias, 'profile-inspect']);
+  assert.equal(symlinked.status, 2);
+  assert.match(symlinked.stderr, /activation failed/);
+  await writeFile(join(fixture.root, '.native-jobs-fixture'), '{"mode":"native-jobs-fixture","version":11}\n', { mode: 0o600 });
+  const rejected = run(fixture, 'store', ['--root', fixture.root, 'profile-inspect']);
+  assert.equal(rejected.status, 2);
+  assert.match(rejected.stderr, /activation failed/);
 });

@@ -12,17 +12,18 @@ class AnswerMemoryIntegrationTests(AnswerCliCase):
             set(skills),
             {
                 "answer-memory",
+                "application-setup",
                 "job-apply",
                 "job-preferences",
                 "job-search",
                 "job-workspace",
             },
         )
-        for name in ("answer-memory", "job-apply", "job-preferences", "job-search"):
+        for name in ("answer-memory", "application-setup", "job-apply", "job-preferences", "job-search"):
             self.assertIn('apps/companion/command.mjs" store', skills[name], name)
         self.assertIn("apps/companion/launch.mjs", skills["job-workspace"])
         self.assertIn("canonical Store contract", skills["job-workspace"])
-        for name in ("job-apply", "job-preferences", "job-search"):
+        for name in ("application-setup", "job-apply", "job-preferences", "job-search"):
             self.assertNotIn("Read `~/.claude-job-profile.json`", skills[name])
             self.assertNotIn("Write the collected values into `~/.claude-job-profile.json`", skills[name])
         self.assertIn("--remember-sensitive", skills["answer-memory"])

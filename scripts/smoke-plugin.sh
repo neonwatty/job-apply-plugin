@@ -101,7 +101,7 @@ CLAUDE_CONFIG_DIR="$SMOKE_CLAUDE_CONFIG_DIR" claude plugin marketplace add "$SMO
 CLAUDE_CONFIG_DIR="$SMOKE_CLAUDE_CONFIG_DIR" claude plugin install job-apply@neonwatty-plugins
 CLAUDE_CONFIG_DIR="$SMOKE_CLAUDE_CONFIG_DIR" claude plugin details \
   job-apply@neonwatty-plugins | tee "$SMOKE_TEMP_ROOT/plugin-details.txt"
-for skill in answer-memory job-apply job-search job-preferences job-workspace; do
+for skill in answer-memory application-setup job-apply job-search job-preferences job-workspace; do
   if ! grep -Fq -- "$skill" "$SMOKE_TEMP_ROOT/plugin-details.txt"; then
     echo "Installed plugin details did not list $skill" >&2
     exit 1

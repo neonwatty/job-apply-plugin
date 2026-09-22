@@ -98,6 +98,21 @@ async function productionBrowser(root) {
     await page.getByRole('status', { name: 'Canonical store connected', exact: true }).waitFor();
     await page.getByRole('button', { name: 'Overview', exact: true }).click();
     await nextSetupAndLoading(page, startup.url);
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.getByLabel('Preferred Codex browser').selectOption('chrome');
+    await page.getByLabel('If that browser is unavailable').selectOption('other_supported');
+    await page.getByLabel('Page progression').selectOption('guided');
+    await page.getByRole('button', { name: 'Save setup', exact: true }).click();
+    await page.getByText('Application setup saved.', { exact: true }).waitFor();
+    const setupProfile = await (await fetch(origin + '/api/profile', { headers })).json();
+    assert.deepEqual(setupProfile.profile.applicationPreferences, {
+      preferredBrowser: 'chrome', browserFallback: 'other_supported', progressionMode: 'guided',
+    });
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    assert.equal(await page.getByLabel('Preferred Codex browser').inputValue(), 'chrome');
+    assert.equal(await page.getByLabel('If that browser is unavailable').inputValue(), 'other_supported');
+    assert.equal(await page.getByLabel('Page progression').inputValue(), 'guided');
     await page.getByRole('button', { name: 'Jobs', exact: true }).click();
     await page.getByRole('button', { name: 'New job', exact: true }).click();
     await page.locator('dialog [name="url"]').fill('https://example.invalid/next-smoke');
@@ -159,7 +174,7 @@ async function productionBrowser(root) {
     await assert.rejects(fetch(origin + '/api/boot', { signal: AbortSignal.timeout(1000) }));
     return { trash, productionStandalone: true, browser: browser.version(), editing: true,
       draftRefresh: true, revisionConflict: true, reapply: true, reload: true, nativeOnlyNavigation: true,
-      serviceFailureCleanup: true, httpParity: true, cleanDependencyInstall: true, setupDestinations: true, loadingAndDraftRecovery: true, narrowLayout: true, dialogFocus: true, cancelledStaleRead: true, cspViolations: violations };
+      serviceFailureCleanup: true, httpParity: true, cleanDependencyInstall: true, setupDestinations: true, applicationSetupPersistence: true, loadingAndDraftRecovery: true, narrowLayout: true, dialogFocus: true, cancelledStaleRead: true, cspViolations: violations };
   } finally {
     if (browser) await browser.close();
     await launcher.stop();

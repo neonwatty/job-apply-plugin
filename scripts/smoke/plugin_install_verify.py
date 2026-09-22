@@ -17,6 +17,7 @@ EXPECTED_SKILLS = {
     "job-apply",
     "job-search",
     "job-preferences",
+    "application-setup",
     "job-workspace",
 }
 

@@ -32,6 +32,7 @@
     ],
     "websiteURL": "https://neonwatty.github.io/job-apply-plugin/",
     "defaultPrompt": [
+      "Set up my application preferences.",
       "Fill this job application from my resume.",
       "Review my saved application answers.",
       "Set my job-search preferences."

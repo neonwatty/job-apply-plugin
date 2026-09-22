@@ -1,0 +1,251 @@
+schema: agent-workflow/v0
+kind: Workflow
+
+metadata:
+  id: job-apply.synthetic-application-setup-preferences
+  name: Local live-agent application setup and Companion audit
+  description: >-
+    Using only an isolated loopback QA Store, have a fresh local Codex sub-agent
+    ask and save the supported application-setup questions, audit and edit those
+    choices in Companion, then have a second fresh local sub-agent read the
+    edited choices without mutating them.
+  lifecycle: candidate
+  candidateRevision: 1
+  tags:
+    - agent
+    - browser
+    - desktop
+    - local-only
+    - preferences
+    - setup
+    - synthetic
+
+promotion:
+  immutableAfterPromotion: true
+  requires:
+    - successful-supervised-replay
+    - human-approval
+
+target:
+  app: job-apply-plugin
+  baseUrl: http://127.0.0.1:41739
+  supportedPlatforms:
+    - id: desktop-web
+      adapterCapability: browser
+      viewport:
+        width: 1280
+        height: 720
+  identity:
+    requirement: anonymous
+    note: >-
+      The live agents use only the synthetic QA route and Store created for this
+      run. No owner profile, default Job Apply Store, external account, employer,
+      or ATS identity may be read or changed.
+
+start:
+  isolation: fresh-context
+  path: /
+  expectedState: >-
+    A local host has prepared separate runner, QA-run, isolated Codex-home, and
+    receipt roots. Companion is open at 1280 by 720 against the QA route's exact
+    Store, whose applicationPreferences object is absent at profile revision 2
+    after the synthetic scenario profile import.
+  constraints:
+    - >-
+      LOCAL MANUAL RUN ONLY. Never schedule this workflow in CI, a remote agent,
+      an automation, or a shared host. Stop if the host cannot launch fresh local
+      Codex sub-agents and supervise their complete tool activity.
+    - >-
+      Before creating any Store or launching an agent, run
+      node .workflows/fixtures/job-apply.synthetic-application-setup-preferences-v1/host-preflight.mjs
+      --journey-root with a unique absent absolute directory directly under the
+      owner-private .workflows/local directory and --codex-home with a unique
+      absent absolute directory outside this repository. Stop unless it returns
+      the probed job-apply.local-agent-control capability and separate roots.
+    - >-
+      Pass runner-store only to workflow commands. Set JOB_APPLY_QA_RUNS_ROOT to
+      qa-runs only while preparing one committed loopback QA replay. Use the
+      resolver-returned Store root for Companion and every Job Apply Store call.
+      Never pass runner-store, journey-root, or the default ~/.job-apply Store.
+    - >-
+      Install the plugin from this exact worktree into isolatedCodexHome through
+      the committed .agents/plugins/marketplace.json, and verify its cachebuster
+      matches .codex-plugin/plugin.json. Do not alter the owner's installed plugin,
+      personal marketplace, Codex configuration, or default Store.
+    - >-
+      Start every live test agent fresh in this repository, using isolatedCodexHome.
+      Its supplied skill catalog must list job-apply:application-setup. Require the
+      agent to invoke that skill; repository file presence is not discovery proof.
+    - >-
+      Give the QA route token to the live agent only through a private prompt or
+      stdin channel. Never place it in argv, screenshots, workflow assessments,
+      receipts, logs, or chat summaries. Every Store command must use the resolved
+      --root. A resolution failure stops the run before Store access.
+    - >-
+      The local host owns live-agent orchestration because Workflows 0.1.0 cannot
+      launch Codex sub-agents, install plugins, bind the token-bearing Companion
+      URL, or prove agent conversations. Register job-apply.local-agent-control
+      only after observing the complete fresh-agent run and validating a redacted
+      receipt with no route token, path, applicant value, or browser state.
+    - >-
+      Keep no-legacy-profile.json absent. Use only the enumerated synthetic setup
+      choices in this workflow. Never open an employer or ATS site, fill an
+      application, create an account, use credentials, or activate a final action.
+  preflightCapabilities:
+    - browser.control
+    - job-apply.local-agent-control
+    - screenshot
+
+execution:
+  topology: linear-with-bounded-conditions
+  agentFreedom: goal-bounded
+  onUnexpectedState: fail
+  environmentChange: block-run
+  failureContinuation: stop
+  recoveryBudget:
+    maxActionsPerStep: 4
+    maxDurationSecondsPerStep: 120
+
+evidencePolicy:
+  default:
+    - declared-checkpoint-screenshots
+  onFailure:
+    - screenshot
+    - video-or-trace
+  retainVerifiedDownloads: false
+
+optionalStateHandlers: []
+
+steps:
+  - id: verify-setup-is-unset
+    name: Verify application setup starts unset
+    action: Select Settings in the local Job Apply workspace navigation.
+    expected:
+      - The Application setup workspace is visible.
+      - The status asks the owner to choose and save application defaults.
+      - The canonical profile is revision 2 and applicationPreferences is absent.
+      - Login, CAPTCHA, MFA, sensitive approval, and final submission are described as always manual.
+    evidence:
+      - type: screenshot
+        checkpoint: application-setup-unset
+        required: true
+
+  - id: run-fresh-setup-writer
+    name: Let a fresh local sub-agent ask and save setup
+    dependsOn:
+      - verify-setup-is-unset
+    action: >-
+      Through the probed local-agent control, launch one fresh local Codex
+      sub-agent and ask it to run job-apply:application-setup for the private QA
+      route without supplying answers in advance. After it asks the setup
+      questions, answer Chrome, Ask before switching, and Guided. End the agent
+      after it confirms the freshly inspected stored choices.
+    expected:
+      - The fresh agent discovers and invokes job-apply:application-setup.
+      - It asks about preferred browser, unavailable-browser behavior, and page progression.
+      - It offers only the Codex built-in browser and Chrome as Codex browser choices.
+      - It writes one revision-checked user-sourced applicationPreferences patch to the resolved QA Store.
+      - It stores chrome, ask, and guided without storing a route token, browser state, credentials, or consent.
+      - The redacted local-agent receipt records profile revision 3 and no private values or paths.
+    evidence:
+      - type: screenshot
+        checkpoint: local-agent-writer-redacted-receipt
+        required: false
+
+  - id: audit-agent-setup-in-companion
+    name: Audit the live-agent choices in Companion
+    dependsOn:
+      - run-fresh-setup-writer
+    action: Refresh Settings without discarding or changing any value.
+    expected:
+      - Companion reports that saved application setup was loaded.
+      - Preferred Codex browser is Chrome.
+      - Unavailable-browser behavior is Ask before switching.
+      - Page progression is Guided.
+      - The canonical profile remains revision 3.
+    evidence:
+      - type: screenshot
+        checkpoint: live-agent-setup-audited
+        required: true
+
+  - id: edit-setup-in-companion
+    name: Edit the durable choices in Companion
+    dependsOn:
+      - audit-agent-setup-in-companion
+    action: >-
+      Change Preferred Codex browser to Codex built-in browser, change
+      unavailable-browser behavior to Use the other supported browser, change
+      page progression to Standard, and activate Save setup once.
+    expected:
+      - Companion reports Application setup saved.
+      - The canonical profile advances exactly once to revision 4.
+      - applicationPreferences contains codex_browser, other_supported, and standard.
+      - The settings mutation does not create applicant facts, consent, jobs, sessions, or browser state.
+    evidence:
+      - type: screenshot
+        checkpoint: companion-setup-edited
+        required: true
+
+  - id: reload-edited-setup
+    name: Reload and verify durable Companion choices
+    dependsOn:
+      - edit-setup-in-companion
+    action: Reload the authenticated loopback page and return to Settings.
+    expected:
+      - The three edited choices remain selected after reload.
+      - Companion reports saved application setup at canonical profile revision 4.
+      - The setup checklist on Overview marks Application setup saved.
+    evidence:
+      - type: screenshot
+        checkpoint: companion-setup-reloaded
+        required: true
+
+  - id: run-fresh-setup-reader
+    name: Let a second fresh local sub-agent read edited setup
+    dependsOn:
+      - reload-edited-setup
+    action: >-
+      Through the probed local-agent control, launch a second fresh local Codex
+      sub-agent and ask it to view application setup for the same private QA
+      route. Do not ask it to change anything. End it after its redacted receipt
+      reports the saved labels.
+    expected:
+      - The second agent independently discovers and invokes job-apply:application-setup.
+      - It reports Codex built-in browser, use the other supported browser, and Standard.
+      - It does not restart the questionnaire because the request was view-only.
+      - It performs no profile mutation and the canonical profile remains revision 4.
+      - Its receipt contains no route token, Store path, credentials, browser state, or applicant values.
+    evidence:
+      - type: screenshot
+        checkpoint: local-agent-reader-redacted-receipt
+        required: false
+
+  - id: verify-fixed-safety-boundaries
+    name: Verify setup cannot configure authority
+    dependsOn:
+      - run-fresh-setup-reader
+    action: Inspect Settings and Overview without editing them.
+    expected:
+      - No setting can authorize login, password, CAPTCHA, MFA, account creation, sensitive-answer use, remembering sensitive values, filling, or final submission.
+      - The workspace contains no jobs, resumes, answers, sessions, claims, or application history created by this workflow.
+      - The browser remains on authenticated 127.0.0.1 Companion content.
+    evidence:
+      - type: screenshot
+        checkpoint: setup-safety-boundaries-fixed
+        required: true
+
+completion:
+  successRequires:
+    - every-step-passed
+    - required-evidence-verified
+    - human-review-of-redacted-agent-receipts
+  cleanup:
+    alwaysAttempt: true
+    actions:
+      - Stop both live sub-agents and Companion.
+      - Run native-qa-replay cleanup for the prepared run so routing secrets and synthetic content are sanitized.
+      - Preserve only runner-owned evidence and redacted local-agent receipts until owner review.
+      - >-
+        Leave the journey under .workflows/local for explicit owner-reviewed local
+        cleanup. Never remove or alter the canonical Job Apply Store or the
+        owner's installed plugin.
