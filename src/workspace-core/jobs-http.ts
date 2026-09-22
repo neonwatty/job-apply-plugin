@@ -11,7 +11,7 @@ import { pendingAnswersHttp } from './pending-answers-http.js';
 import { profileHttp } from "./profile-http.js";
 import type { JobsService } from "./jobs.js";
 import type { NativeJobsRepository } from "../store/native-jobs.js";
-import { fixtureError } from "../store/native-jobs.js";
+import { fixtureError } from "../store/native-jobs-error.js";
 import { JobsError, fromJSON, get, int, keys, object, parse, serialize, set } from "../contracts/workspace/values.js";
 import type { Value } from "../contracts/workspace/values.js";
 import { emptyObject } from "../contracts/workspace/jobs.js";

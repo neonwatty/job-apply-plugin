@@ -7,6 +7,9 @@ export async function nativeAutomationBrowser(page, root) {
   const workspace=page.locator('.automation-workspace');
   await workspace.getByRole('heading',{name:'Automation',exact:true}).waitFor();
   await workspace.getByText('Live actions off',{exact:true}).waitFor();
+  await workspace.getByRole('heading',{name:'Application automation',exact:true}).waitFor();
+  await workspace.getByText('Guided · granular confirmation remains active',{exact:true}).waitFor();
+  await workspace.getByText(/Every mode stops at final review/).waitFor();
   assert.equal(await workspace.getByLabel(/Enable companion automation controls/).isVisible(),false);
   assert.equal(await workspace.getByLabel('Exact employer portal URL',{exact:true}).isVisible(),false);
   assert.equal(await workspace.getByLabel('Job ID for status or revocation',{exact:true}).isVisible(),false);

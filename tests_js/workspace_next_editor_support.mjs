@@ -130,18 +130,18 @@ async function applicationPreferencesAssertions() {
     return modules((_m, _c, _client, facts, setup) => {
         const empty = facts.snapshot('{"profile":{},"revision":4,"factProvenance":{}}');
         assert.deepEqual(setup.readApplicationPreferences(empty.profile), {
-            preferences: { preferredBrowser: 'codex_browser', browserFallback: 'ask', progressionMode: 'standard' },
+            preferences: { preferredBrowser: 'codex_browser', browserFallback: 'ask', progressionMode: 'standard', preferredAutomationMode: 'guided' },
             complete: false,
         });
-        const saved = facts.snapshot('{"profile":{"applicationPreferences":{"preferredBrowser":"chrome","browserFallback":"other_supported","progressionMode":"guided","future":"preserved"}},"revision":7,"factProvenance":{}}');
+        const saved = facts.snapshot('{"profile":{"applicationPreferences":{"preferredBrowser":"chrome","browserFallback":"other_supported","progressionMode":"guided","preferredAutomationMode":"campaign_to_review","future":"preserved"}},"revision":7,"factProvenance":{}}');
         assert.deepEqual(setup.readApplicationPreferences(saved.profile), {
-            preferences: { preferredBrowser: 'chrome', browserFallback: 'other_supported', progressionMode: 'guided' },
+            preferences: { preferredBrowser: 'chrome', browserFallback: 'other_supported', progressionMode: 'guided', preferredAutomationMode: 'campaign_to_review' },
             complete: true,
         });
         assert.deepEqual(JSON.parse(setup.applicationPreferencesPatch(saved, {
-            preferredBrowser: 'codex_browser', browserFallback: 'ask', progressionMode: 'standard',
+            preferredBrowser: 'codex_browser', browserFallback: 'ask', progressionMode: 'standard', preferredAutomationMode: 'autofill_to_review',
         })), {
-            patch: { applicationPreferences: { preferredBrowser: 'codex_browser', browserFallback: 'ask', progressionMode: 'standard' } },
+            patch: { applicationPreferences: { preferredBrowser: 'codex_browser', browserFallback: 'ask', progressionMode: 'standard', preferredAutomationMode: 'autofill_to_review' } },
             expectedRevision: 7, atomicPaths: [], deletedPaths: [],
         });
     });

@@ -101,18 +101,21 @@ async function productionBrowser(root) {
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await page.getByLabel('Preferred Codex browser').selectOption('chrome');
     await page.getByLabel('If that browser is unavailable').selectOption('other_supported');
-    await page.getByLabel('Page progression').selectOption('guided');
+    await page.getByLabel('Page transitions').selectOption('guided');
+    await page.getByLabel('Preferred application mode').selectOption('campaign_to_review');
     await page.getByRole('button', { name: 'Save setup', exact: true }).click();
     await page.getByText('Application setup saved.', { exact: true }).waitFor();
     const setupProfile = await (await fetch(origin + '/api/profile', { headers })).json();
     assert.deepEqual(setupProfile.profile.applicationPreferences, {
       preferredBrowser: 'chrome', browserFallback: 'other_supported', progressionMode: 'guided',
+      preferredAutomationMode: 'campaign_to_review',
     });
     await page.reload({ waitUntil: 'networkidle' });
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     assert.equal(await page.getByLabel('Preferred Codex browser').inputValue(), 'chrome');
     assert.equal(await page.getByLabel('If that browser is unavailable').inputValue(), 'other_supported');
-    assert.equal(await page.getByLabel('Page progression').inputValue(), 'guided');
+    assert.equal(await page.getByLabel('Page transitions').inputValue(), 'guided');
+    assert.equal(await page.getByLabel('Preferred application mode').inputValue(), 'campaign_to_review');
     await page.getByRole('button', { name: 'Jobs', exact: true }).click();
     await page.getByRole('button', { name: 'New job', exact: true }).click();
     await page.locator('dialog [name="url"]').fill('https://example.invalid/next-smoke');

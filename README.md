@@ -12,13 +12,15 @@ AI-powered job application assistant for Claude Code and Codex that fills job ap
 |-------|-------------|
 | `job-apply:job-apply` | Prepare application fields from your resume and stop before final submission |
 | `job-apply:answer-memory` | Safely manage your local profile, reusable answers, application history, and resumable sessions |
-| `job-apply:application-setup` | Choose the browser surface, fallback behavior, and page-progression pace used during applications |
+| `job-apply:application-setup` | Choose the browser surface, fallback behavior, page-transition pace, and preferred review-bounded automation mode |
 | `job-apply:job-search` | Search LinkedIn, Hacker News, and Twitter/X for jobs, then rank results against your preferences |
 | `job-apply:job-preferences` | Set the titles, salary, remote-work, and filtering preferences used by job search |
 | `job-apply:job-workspace` | Open the optional local Jobs, Facts, Resumes, Answers, and unified Trash workspace shared with Job Apply agents |
 
 Invoke skills with `$job-apply:...` in Codex or `/job-apply:...` in Claude Code.
 The [workflow map](skills/answer-memory/references/workflow-map.md) shows how first use, job search, and one application move between these skills and the shared Store.
+
+Application filling has three owner-selected modes: Guided, Autofill to Review for one exact job, and Campaign to Review for a bounded application-run queue. Every mode stops at the final review page; Submit, Send, Apply, authentication, verification, and legal consent remain manual. Higher modes are expiring, revocable grants bound to current job, run, destination, resume, facts, answer revisions, and a live attempt claim.
 
 ## Features
 

@@ -154,7 +154,7 @@
     {
       "id": "node-runner-fast",
       "kind": "node-test",
-      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs", "tests_js/local_checks*.test.mjs", "tests_js/agent_workflows_automation_trash.test.mjs", "tests_js/agent_workflows_application_setup.test.mjs", "tests_js/migration_inventory.test.mjs", "tests_js/migration_remaining_plan.test.mjs", "tests_js/migration_browser_inventory.test.mjs", "tests_js/migration_python_runtime_closure.test.mjs", "tests_js/migration_packages.test.mjs", "tests_js/migration_requirements.test.mjs", "tests_js/migration_triage_report.test.mjs", "tests_js/migration_test_bindings.test.mjs", "tests_js/migration_prerequisite_receipts.test.mjs", "tests_js/migration_load_prerequisites.test.mjs", "tests_js/migration_task_manifests.test.mjs", "tests_js/migration_task_receipts.test.mjs", "tests_js/migration_task_lineage.test.mjs"],
+      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs", "tests_js/local_checks*.test.mjs", "tests_js/agent_workflows_automation_trash.test.mjs", "tests_js/agent_workflows_application_setup.test.mjs", "tests_js/agent_workflows_application_automation.test.mjs", "tests_js/migration_inventory.test.mjs", "tests_js/migration_remaining_plan.test.mjs", "tests_js/migration_browser_inventory.test.mjs", "tests_js/migration_python_runtime_closure.test.mjs", "tests_js/migration_packages.test.mjs", "tests_js/migration_requirements.test.mjs", "tests_js/migration_triage_report.test.mjs", "tests_js/migration_test_bindings.test.mjs", "tests_js/migration_prerequisite_receipts.test.mjs", "tests_js/migration_load_prerequisites.test.mjs", "tests_js/migration_task_manifests.test.mjs", "tests_js/migration_task_receipts.test.mjs", "tests_js/migration_task_lineage.test.mjs"],
       "exclude": ["tests_js/local_checks_run.test.mjs"],
       "tiers": ["fast", "full"]
     },
@@ -291,6 +291,7 @@
     {"paths": ["tests_js/final_action_policy_support.mjs", "tests_js/native_attempt_support.mjs"], "suites": ["native-default-cutover"]},
     {"paths": ["tests_js/resume_stat_profile_support.mjs", "tests_js/managed_resume_path_ts_support.mjs", "tests_js/posix_path_bytes_ts_support.mjs", "tests_js/managed_observation_ts_support.mjs", "tests_js/atomic_write_json_ts_support.mjs", "tests_js/installed_artifacts_ts_support.mjs", "tests_js/jsonl_history_support.mjs", "tests_js/data_copy_support.mjs", "tests_js/python_object_ts_support.mjs", "tests_js/python_json_bytes_ts_support.mjs"], "suites": ["node-workspace-other"]},
     {"paths": ["tools/probe-installed-runtime.mjs"], "suites": ["node-foundation-fast"]},
+    {"paths": ["tools/local-agent-acceptance.mjs"], "suites": ["node-runner-fast"]},
     {"paths": ["tools/capture-python-contracts.mjs", "tools/verify-contract-redaction.mjs", "tools/contracts/**"], "suites": ["node-workspace-other", "node-reference-s04", "node-reference-s05"]},
     {
       "paths": ["tests/__init__.py", "tests/support/**"],

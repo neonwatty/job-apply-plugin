@@ -3,7 +3,9 @@ import { ApiError,type Client } from './client';
 import { applicationPreferencesPatch,readApplicationPreferences,type ApplicationPreferences } from './application-preferences-model';
 import type { ProfileSnapshot } from './facts-model';
 
-const equal=(a:ApplicationPreferences,b:ApplicationPreferences)=>a.preferredBrowser===b.preferredBrowser&&a.browserFallback===b.browserFallback&&a.progressionMode===b.progressionMode;
+const equal=(a:ApplicationPreferences,b:ApplicationPreferences)=>a.preferredBrowser===b.preferredBrowser
+  &&a.browserFallback===b.browserFallback&&a.progressionMode===b.progressionMode
+  &&a.preferredAutomationMode===b.preferredAutomationMode;
 
 export function ApplicationSettings({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:boolean)=>void}) {
   const [base,setBase]=useState<ProfileSnapshot|null>(null),[draft,setDraft]=useState<ApplicationPreferences|null>(null);
@@ -43,8 +45,9 @@ export function ApplicationSettings({client,dirtyChanged}:{client:Client;dirtyCh
     {base&&draft&&<form className="workspace-panel settings-panel" onSubmit={event=>{event.preventDefault();void save();}}><fieldset disabled={busy}><legend>Application defaults</legend>
       <label>Preferred Codex browser<select value={draft.preferredBrowser} onChange={event=>setDraft({...draft,preferredBrowser:event.target.value as ApplicationPreferences['preferredBrowser']})}><option value="codex_browser">Codex built-in browser</option><option value="chrome">Chrome</option></select><span className="field-help">Claude Code continues to use Claude in Chrome.</span></label>
       <label>If that browser is unavailable<select value={draft.browserFallback} onChange={event=>setDraft({...draft,browserFallback:event.target.value as ApplicationPreferences['browserFallback']})}><option value="ask">Ask before switching</option><option value="other_supported">Use the other supported browser</option></select></label>
-      <label>Page progression<select value={draft.progressionMode} onChange={event=>setDraft({...draft,progressionMode:event.target.value as ApplicationPreferences['progressionMode']})}><option value="standard">Standard — continue through clearly non-final steps</option><option value="guided">Guided — pause before each page transition</option></select></label>
-      <div className="settings-boundaries"><strong>Always manual</strong><p>Login, passwords, CAPTCHA, MFA, sensitive-answer approval, and the final Submit or Send action are never enabled by these preferences.</p></div>
+      <label>Page transitions<select value={draft.progressionMode} onChange={event=>setDraft({...draft,progressionMode:event.target.value as ApplicationPreferences['progressionMode']})}><option value="standard">Standard — continue through clearly non-final steps</option><option value="guided">Pause before every page transition</option></select></label>
+      <label>Preferred application mode<select value={draft.preferredAutomationMode} onChange={event=>setDraft({...draft,preferredAutomationMode:event.target.value as ApplicationPreferences['preferredAutomationMode']})}><option value="guided">Guided</option><option value="autofill_to_review">Autofill one application to review</option><option value="campaign_to_review">Process selected applications to review</option></select><span className="field-help">This chooses what the agent offers. Autofill and campaigns still require approval for the exact jobs and expiration.</span></label>
+      <div className="settings-boundaries"><strong>Always manual</strong><p>Login, passwords, CAPTCHA, MFA, sensitive-answer approval, legal consent, and the final Submit or Send action are never enabled by these preferences.</p></div>
       <div className="button-row"><button className="primary" type="submit" disabled={!dirty||Boolean(latest)}>Save setup</button><button className="secondary" type="button" disabled={!dirty} onClick={()=>{const parsed=readApplicationPreferences(base.profile);setDraft(parsed.preferences);setComplete(parsed.complete);setLatest(null);setError('');setNotice('Unsaved setup changes discarded.');}}>Discard changes</button></div>
     </fieldset></form>}
   </section>;

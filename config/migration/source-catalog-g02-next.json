@@ -13,7 +13,7 @@
     },
     {
       "path": "apps/companion/components/ApplicationSettings.tsx",
-      "sha256": "346edb9d924891298c901974c1cb7ded43decb3c53418bc96861a38ab69f80d5",
+      "sha256": "f1aec73e65f66181d901891b76384effa4223b1bbbde52280b543a05c0e9bac6",
       "classification": "unreviewed"
     },
     {
@@ -43,7 +43,7 @@
     },
     {
       "path": "apps/companion/components/application-preferences-model.ts",
-      "sha256": "e7ac283500ba53e9ef00fd309718037e3a4e343e02fbab85d7f85a41822071a0",
+      "sha256": "4cbc76b041404a46a51f76f387ec47833f5dc71c4a239ec53fcd8f0ee5892137",
       "classification": "unreviewed"
     },
     {

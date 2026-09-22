@@ -9,11 +9,12 @@ import { initialAutomationDocuments } from './native-automation.js';
 import { withExclusiveFileLock } from './exclusive-file-lock.js';
 import type { PosixFlockProvider } from './posix-flock.js';
 import { atomicWritePointJson } from './point-persistence.js';
-import { nativeCloneMarkerName, nativePolicyTreeName, nativeStoreRequiredEntries } from './native-store-layout.js';
+import { nativeApplicationAuthorityName, nativeCloneMarkerName, nativePolicyTreeName, nativeStoreRequiredEntries } from './native-store-layout.js';
 import { copyNativePolicyTree, updateNativePolicyDigest, withNativePolicyTree } from './native-policy-tree.js';
 import type { NativePolicyTreeEntry } from './native-policy-tree.js';
 
-const sourceFiles = new Set<string>([...nativeStoreRequiredEntries.filter(name => name !== 'resume-operation.json'), nativePolicyTreeName, 'resume-facts.json']);
+const sourceFiles = new Set<string>([...nativeStoreRequiredEntries.filter(name => name !== 'resume-operation.json'),
+  nativePolicyTreeName, nativeApplicationAuthorityName, 'resume-facts.json']);
 const coreFiles = ['.store.lock', 'jobs.json', 'profile.json', 'resumes.json', 'fact-groups.json',
   'answers.json', 'applications.jsonl', 'resume-files', 'sessions'];
 const directories = new Set(['resume-files', 'sessions']);
@@ -125,7 +126,8 @@ export async function canonicalStoreSourceTreeLocked(source: string, provider: P
 export async function canonicalStoreCandidateTreeLocked(root: string, provider: PosixFlockProvider,
   signal = AbortSignal.timeout(30_000), policy?: NativePolicyTreeEntry[] | null): Promise<string> {
   const entries = new Set(await readdir(root));
-  const allowed = new Set<string>([...nativeStoreRequiredEntries, nativeCloneMarkerName, nativePolicyTreeName, 'resume-facts.json']);
+  const allowed = new Set<string>([...nativeStoreRequiredEntries, nativeCloneMarkerName, nativePolicyTreeName,
+    nativeApplicationAuthorityName, 'resume-facts.json']);
   if (nativeStoreRequiredEntries.some(name => !entries.has(name)) || [...entries].some(name => !allowed.has(name))) {
     throw new JobsError('canonical clone candidate contains unsupported or incomplete state');
   }

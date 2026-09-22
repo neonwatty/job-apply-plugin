@@ -59,7 +59,7 @@
     },
     {
       "path": "browser-native-automation-surfaces.json",
-      "sha256": "8a079c4c04ebbb7b1ab4c011e83d4daf6213b60f683dfb10ec25f2acf218c87f"
+      "sha256": "73fc16e2a5748983a8b78d531e4fde9d64c2f3dda47490616f14fa677e47f415"
     },
     {
       "path": "browser-native-extractions-surfaces.json",
@@ -379,7 +379,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "dc41aa7b58564a51ec7ec16e441e5207082518e1f8f59b9d7962560d24f39d18"
+      "sha256": "19c468f68a3b16d12a318660e0e34169900cbf6afffe5d1ab74e8478d5e7a88f"
     },
     {
       "path": "source-catalog-m01.json",
@@ -415,7 +415,7 @@
     },
     {
       "path": "source-catalog-native-automation-ux.json",
-      "sha256": "57b62bca697e7c950daac29ef95cdd1335e14b9e5977c6b5eeeae9ec4aedb4fb"
+      "sha256": "7693e599d9e701e9cf5861b4ee83d4d04a4c7e74a53fdab9d07d20fba9b72102"
     },
     {
       "path": "source-catalog-native-automation.json",

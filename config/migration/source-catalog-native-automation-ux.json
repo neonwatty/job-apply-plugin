@@ -2,6 +2,11 @@
   "schemaVersion": 1,
   "sources": [
     {
+      "path": "apps/companion/components/ApplicationAutomation.tsx",
+      "sha256": "16f7a6c32b1361abcf237ba9c7518f1062bc559b9efd480edf033e4901dbff6d",
+      "classification": "unreviewed"
+    },
+    {
       "path": "apps/companion/components/Automation.tsx",
       "sha256": "067477a749d296a042f353512f99cac7a662b4d35031846e5b3bc2dbc9b3b6be",
       "classification": "unreviewed"

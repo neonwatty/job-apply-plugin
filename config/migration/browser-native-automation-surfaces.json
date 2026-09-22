@@ -2,6 +2,28 @@
   "schemaVersion": 1,
   "surfaces": [
     {
+      "id": "browser:apps/companion/components/ApplicationAutomation.tsx:ApplicationAutomation",
+      "kind": "browser",
+      "export": "ApplicationAutomation",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/ApplicationAutomation.tsx"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
       "id": "browser:apps/companion/components/Automation.tsx:Automation",
       "kind": "browser",
       "export": "Automation",
@@ -71,6 +93,50 @@
       "id": "browser:apps/companion/components/automation-model.ts:automationProjection",
       "kind": "browser",
       "export": "automationProjection",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/automation-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/automation-model.ts:applicationAuthority",
+      "kind": "browser",
+      "export": "applicationAuthority",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/automation-model.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/automation-model.ts:campaignProgress",
+      "kind": "browser",
+      "export": "campaignProgress",
       "node": "UIF",
       "sources": [
         "apps/companion/components/automation-model.ts"

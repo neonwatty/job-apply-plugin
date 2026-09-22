@@ -80,7 +80,7 @@ async function publishPid(root, processPath) {
         }
     }
 }
-export async function runAttemptBroker(root, service, provider, options = {}) {
+export async function runAttemptBroker(root, service, provider, options = {}, application) {
     const path = await runtimePath(root), processPath = join(root, nativeAttemptPidName);
     // Hold an inode-stable private lock for the whole broker lifetime. It prevents two
     // launchers from unlinking each other's endpoint during stale-socket recovery.
@@ -95,7 +95,7 @@ export async function runAttemptBroker(root, service, provider, options = {}) {
     let resolveStopped;
     const stoppedPromise = new Promise(resolve => { resolveStopped = resolve; });
     const stop = () => { stopped = true; resolveStopped(); };
-    const authority = new AttemptAuthority(service, { heartbeatMilliseconds: options.heartbeatMilliseconds ?? attemptHeartbeatMilliseconds, onHeartbeatFailure: stop });
+    const authority = new AttemptAuthority(service, { heartbeatMilliseconds: options.heartbeatMilliseconds ?? attemptHeartbeatMilliseconds, onHeartbeatFailure: stop }, application);
     const clients = new Set();
     let begin;
     let queue = new Promise(resolve => { begin = resolve; });

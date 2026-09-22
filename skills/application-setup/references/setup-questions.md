@@ -14,10 +14,22 @@ language.
 2. **Unavailable-browser behavior** — `browserFallback`
    - `ask`: pause and ask before switching browser surfaces
    - `other_supported`: use the other currently supported Codex surface when safe
-3. **Page progression** — `progressionMode`
+3. **Page transitions** — `progressionMode`
    - `standard`: after action-time consent, advance through controls that are clearly
      non-final, such as Next, Continue, Save, or Review
    - `guided`: pause for the owner before each page transition
+4. **Preferred application mode** — `preferredAutomationMode`
+   - `guided`: confirm application actions as the form progresses
+   - `autofill_to_review`: offer one exact-job grant to fill a prepared application
+     through final review
+   - `campaign_to_review`: offer one bounded grant to process selected prepared jobs
+     sequentially through final review
+
+Describe all three choices and say that every mode stops at final review. A preferred
+higher mode controls what the agent offers; it does not authorize filling. At
+application time the owner must still approve the exact jobs, expiration, and any
+exact sensitive-answer references. Never infer a higher mode from `standard` page
+transitions, a queued job, or an earlier conversation.
 
 Do not offer arbitrary browser names. The currently supported Codex choices for this
 plugin are the Codex built-in browser and Chrome. A browser explicitly selected in
@@ -34,7 +46,8 @@ like this, including only changed keys:
   "applicationPreferences": {
     "preferredBrowser": "codex_browser",
     "browserFallback": "ask",
-    "progressionMode": "standard"
+    "progressionMode": "standard",
+    "preferredAutomationMode": "guided"
   }
 }
 ```

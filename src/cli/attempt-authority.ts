@@ -1,6 +1,7 @@
 import type { ClaimsService } from '../workspace-core/claims.js';
 import { get, has, int, keys, object, set, string, text, type Document, type Value } from '../contracts/workspace/values.js';
 import { attemptDocument, attemptHeartbeatMilliseconds, attemptSuccess, type AttemptLiveRequest, type AttemptResponse, type AttemptRestartRequest, type AttemptStartRequest } from './attempt-protocol.js';
+import type { ApplicationAuthorityService } from '../workspace-core/application-authority.js';
 
 interface AttemptTimers {
   every(callback: () => Promise<void>, milliseconds: number): unknown;
@@ -33,7 +34,7 @@ export class AttemptAuthority {
   #revision: bigint | null = null;
   #closed = false;
   #pending = Promise.resolve();
-  constructor(service: ClaimsService, options: AuthorityOptions = {}) {
+  constructor(service: ClaimsService, options: AuthorityOptions = {}, private readonly application?: ApplicationAuthorityService) {
     this.#service = service; this.#options = options; this.#timers = options.timers ?? defaultTimers;
   }
   /** Serialize timer and client mutations without exposing the private capability. */
@@ -82,6 +83,19 @@ export class AttemptAuthority {
         exact(request, ['command', 'session']);
         await this.#service.progress(this.#jobId!, this.#token, object(get(request, 'session'), 'session'));
         return { response: attemptSuccess('progress_saved'), complete: false };
+      }
+      if (command === 'authority-evaluate') {
+        exact(request, ['command', 'evaluation']);
+        if (!this.application) throw new Error('application authority is unavailable');
+        const incoming = object(get(request, 'evaluation'), 'evaluation'), evaluation = attemptDocument({});
+        for (const field of ['destinationUrl','operations','answerRefs','sensitiveAnswerRefs','interrupts']) {
+          if (!has(incoming, field)) throw new Error('invalid request'); set(evaluation, field, get(incoming, field));
+        }
+        if (incoming.size !== 5) throw new Error('invalid request');
+        set(evaluation, 'jobId', text(this.#jobId!)); set(evaluation, 'claimToken', this.#token);
+        const response = attemptSuccess('authority_evaluated');
+        set(response, 'decision', await this.application.evaluate(evaluation));
+        return { response, complete: false };
       }
       if (command === 'handoff') {
         exact(request, ['command', 'status', 'session']);

@@ -12,11 +12,19 @@ export type EmployerAccount = {
 };
 export type AutomationProjection = {
   settings: AutomationSettings; accounts: EmployerAccount[]; profileRevision: number;
+  applicationAuthority: ApplicationAuthority;
   capability: { reasonCode: string; accountFlowAutomation: {
     workdayPasswordAccountReady: boolean; greenhouseAccountlessClassificationReady: boolean;
     emailOnlyCandidateProfileReady: boolean; liveExecutionEnabled: boolean;
   } };
 };
+export type ApplicationAuthority = {
+  mode:'guided'|'autofill_to_review'|'campaign_to_review'; status:string; revision:number;
+  authorizationId:string|null; expiresAt:string|null; runId:string|null; jobIds:string[]; sensitiveAnswerRefs:string[];
+};
+export type CampaignProgress = {mode:string;status:string;revision:number;nextJob:{jobId:string;status:string;revision:number}|null;
+  counts:{ready:number;inProgress:number;needsAttention:number;awaitingReview:number;unavailable:number};
+  jobs:Array<{jobId:string;status:string;revision:number|null}>};
 export type AccountOperationStatus = { status: 'idle'; operation: null } | {
   status: 'recovery_required'; operation: { stage: string; realmRef: string };
 };
@@ -43,7 +51,27 @@ export function automationProjection(value: unknown): AutomationProjection {
     return entry as EmployerAccount;
   });
   return { settings: settings as AutomationSettings, accounts, profileRevision: value.profileRevision,
+    applicationAuthority: applicationAuthority(value.applicationAuthority),
     capability: value.capability as AutomationProjection['capability'] };
+}
+export function applicationAuthority(value:unknown):ApplicationAuthority {
+  if(!object(value)||!['guided','autofill_to_review','campaign_to_review'].includes(String(value.mode))
+    ||typeof value.status!=='string'||!Number.isSafeInteger(value.revision)||Number(value.revision)<0
+    ||value.authorizationId!==null&&typeof value.authorizationId!=='string'||value.expiresAt!==null&&typeof value.expiresAt!=='string'
+    ||value.runId!==null&&typeof value.runId!=='string'||!Array.isArray(value.jobIds)||value.jobIds.some(id=>typeof id!=='string')
+    ||!Array.isArray(value.sensitiveAnswerRefs)||value.sensitiveAnswerRefs.some(id=>typeof id!=='string')) invalid();
+  return value as ApplicationAuthority;
+}
+export function campaignProgress(value:unknown):CampaignProgress {
+  if(!object(value)||typeof value.mode!=='string'||typeof value.status!=='string'||!Number.isSafeInteger(value.revision)||!object(value.counts)||!Array.isArray(value.jobs)) invalid();
+  const counts=value.counts;
+  if(!['ready','inProgress','needsAttention','awaitingReview','unavailable'].every(key=>Number.isSafeInteger(counts[key])))invalid();
+  const jobs=value.jobs.map(item=>{if(!object(item)||typeof item.jobId!=='string'||typeof item.status!=='string'
+    ||item.revision!==null&&!positive(item.revision))invalid();return item as CampaignProgress['jobs'][number];});
+  let nextJob:null|CampaignProgress['jobs'][number]=null;
+  if(value.nextJob!==null){if(!object(value.nextJob)||typeof value.nextJob.jobId!=='string'||typeof value.nextJob.status!=='string'||!positive(value.nextJob.revision))invalid();nextJob=value.nextJob as CampaignProgress['jobs'][number];}
+  return {mode:value.mode,status:value.status,revision:value.revision as number,nextJob:nextJob as CampaignProgress['nextJob'],
+    counts:counts as CampaignProgress['counts'],jobs};
 }
 export function accountOperationStatus(value: unknown): AccountOperationStatus {
   if (!object(value)) return invalid();

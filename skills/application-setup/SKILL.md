@@ -22,3 +22,9 @@ Save only the changed keys beneath `applicationPreferences` with `profile-patch`
 inspected revision, and source `user`. Confirm the stored choices from a fresh
 inspection. These preferences guide future agent behavior; they never grant fill,
 sensitive-answer, login, account, remember, or final-submission authority.
+
+`preferredAutomationMode` chooses which mode the application agent should offer. It
+is not a live grant. Guided needs no durable authority; Autofill to Review and
+Campaign to Review still require the owner to approve the exact current job scope,
+expiration, and sensitive-answer references under
+[application automation](../job-apply/references/application-automation.md).

@@ -4,6 +4,7 @@ import { ApiError,type Client } from './client';
 import { accountOperationStatus,automationProjection,type AccountOperationStatus,type AutomationProjection,type AutomationSettings } from './automation-model';
 import { AutomationRealm } from './AutomationRealm';
 import { TrustedFill } from './TrustedFill';
+import { ApplicationAutomation } from './ApplicationAutomation';
 
 type Draft=Pick<AutomationSettings,'enabled'|'automaticAccountCreation'|'passwordStrategy'>&{signupEmail:string};
 const draftFor=(value:AutomationSettings):Draft=>({enabled:value.enabled,automaticAccountCreation:value.automaticAccountCreation,passwordStrategy:value.passwordStrategy,signupEmail:''});
@@ -11,11 +12,12 @@ export function Automation({client,dirtyChanged}:{client:Client;dirtyChanged(val
   const [data,setData]=useState<AutomationProjection|null>(null),[draft,setDraft]=useState<Draft|null>(null),[operation,setOperation]=useState<AccountOperationStatus|null>(null);
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
   const [realmUrl,setRealmUrl]=useState(''),[realmEmail,setRealmEmail]=useState(''),[trustedDirty,setTrustedDirty]=useState(false);
+  const [authorityDirty,setAuthorityDirty]=useState(false);
   const [addingRealm,setAddingRealm]=useState(false);
   const [dirtyRealms,setDirtyRealms]=useState<Set<string>>(()=>new Set());
   const conflict=useRef<HTMLDivElement>(null), request=useRef<AbortController|null>(null);
   const dirty=Boolean(data&&draft&&(draft.enabled!==data.settings.enabled||draft.automaticAccountCreation!==data.settings.automaticAccountCreation||draft.passwordStrategy!==data.settings.passwordStrategy||draft.signupEmail));
-  const allDirty=dirty||Boolean(realmUrl||realmEmail)||trustedDirty||dirtyRealms.size>0;
+  const allDirty=dirty||Boolean(realmUrl||realmEmail)||trustedDirty||authorityDirty||dirtyRealms.size>0;
   useEffect(()=>{dirtyChanged(allDirty||busy);return()=>dirtyChanged(false);},[allDirty,busy,dirtyChanged]);
   const realmDirtyChanged=useCallback((id:string,value:boolean)=>setDirtyRealms(current=>{const next=new Set(current);if(value)next.add(id);else next.delete(id);return next;}),[]);
   const refresh=useCallback(async(quiet=false,preserveDraft=false)=>{request.current?.abort();const controller=new AbortController();request.current=controller;setLoading(true);setError('');try{
@@ -40,11 +42,11 @@ export function Automation({client,dirtyChanged}:{client:Client;dirtyChanged(val
   async function recover(){if(busy)return;setBusy(true);setError('');try{setOperation(accountOperationStatus(await client.automationRequest('/api/account-operation/recover','POST',{})));setNotice('Stranded account operation marked ambiguous.');await refresh(true,true);}catch(failure){setError(failure instanceof Error?failure.message:'Unable to recover account operation.');}finally{setBusy(false);}}
   const flow=data?.capability.accountFlowAutomation;
   return <section className="automation-workspace" aria-labelledby="automation-title">
-    <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Controls</p><h1 id="automation-title">Automation</h1><p>Manage how the companion prepares supported employer accounts. Live account creation and final application submission remain unavailable.</p></div><div className="workspace-hero-actions"><button className="secondary" disabled={loading||busy||allDirty} onClick={()=>void refresh()}>Refresh</button></div></header>
+    <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Controls</p><h1 id="automation-title">Automation</h1><p>Choose bounded application filling through final review and manage supported employer-account preparation. Final submission remains manual.</p></div><div className="workspace-hero-actions"><button className="secondary" disabled={loading||busy||allDirty} onClick={()=>void refresh()}>Refresh</button></div></header>
     {loading&&!data&&<p className="workspace-status" role="status">Loading automation controls…</p>}
     {notice&&<p className="notice" role="status">{notice}</p>}{error&&<div ref={conflict} tabIndex={-1} className="error" role="alert">{error}</div>}
     {data&&draft&&<><div className="automation-status-strip" aria-label="Automation summary"><span><i className={data.settings.enabled?'is-on':''}/><strong>Account preparation</strong> {data.settings.enabled?'On':'Off'}</span><span><strong>{data.accounts.length}</strong> supported {data.accounts.length===1?'portal':'portals'}</span><span className="automation-safe-status">Live actions off</span></div>
-    <div className="automation-grid"><section className="workspace-panel automation-settings-panel" aria-labelledby="automation-settings-heading"><div className="workspace-panel-heading"><div><p className="eyebrow">Account preparation</p><h2 id="automation-settings-heading">Automation settings</h2></div><span className="automation-state">{data.settings.enabled?'On':'Off'}</span></div>
+    <div className="automation-grid"><ApplicationAutomation client={client} authority={data.applicationAuthority} disabled={busy} dirtyChanged={setAuthorityDirty} changed={applicationAuthority=>setData({...data,applicationAuthority})}/><section className="workspace-panel automation-settings-panel" aria-labelledby="automation-settings-heading"><div className="workspace-panel-heading"><div><p className="eyebrow">Account preparation</p><h2 id="automation-settings-heading">Automation settings</h2></div><span className="automation-state">{data.settings.enabled?'On':'Off'}</span></div>
       <div className="automation-capabilities" role="status"><span className={flow?.workdayPasswordAccountReady?'is-available':'is-unavailable'}>{flow?.workdayPasswordAccountReady?'Workday supported':'Workday setup unavailable'}</span><span className={flow?.greenhouseAccountlessClassificationReady?'is-available':'is-unavailable'}>{flow?.greenhouseAccountlessClassificationReady?'Greenhouse needs no account':'Greenhouse status unresolved'}</span><span className={flow?.emailOnlyCandidateProfileReady?'is-available':'is-unavailable'}>{flow?.emailOnlyCandidateProfileReady?'Oracle supported':'Oracle setup unavailable'}</span></div>
       <details className="automation-disclosure"><summary role="button">Change automation settings</summary><div className="automation-disclosure-body"><p className="automation-safety">Settings and recovery remain available while live execution is disabled. Revision {data.settings.revision}.</p><form className="automation-form" onSubmit={save}><fieldset disabled={busy}><legend className="visually-hidden">Automation settings</legend>
         <label className="check-row"><input type="checkbox" checked={draft.enabled} onChange={event=>setDraft({...draft,enabled:event.target.checked})}/><span><strong>Enable companion automation controls</strong><small>Expose reviewed account preparation controls inside this local workspace.</small></span></label>

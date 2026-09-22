@@ -21,9 +21,11 @@ export async function runAttemptCli(args: string[]): Promise<{ output: string; e
       const { loadPosixFlockProvider } = await import('../store/posix-flock.js');
       const { NativeJobsRepository } = await import('../store/native-jobs.js');
       const { ClaimsService } = await import('../workspace-core/claims.js');
+      const { ApplicationAuthorityService } = await import('../workspace-core/application-authority.js');
       const { runAttemptBroker } = await import('./attempt-broker.js');
       const provider = loadPosixFlockProvider(await resolvePackagedNativeLock(pluginRoot));
-      await runAttemptBroker(root, new ClaimsService(new NativeJobsRepository(root, provider)), provider);
+      const repository = new NativeJobsRepository(root, provider);
+      await runAttemptBroker(root, new ClaimsService(repository), provider, {}, new ApplicationAuthorityService(repository));
       return { output: '', exitCode: 0 };
     }
     let invocation;
@@ -31,10 +33,10 @@ export async function runAttemptCli(args: string[]): Promise<{ output: string; e
     catch (error) {
       if (error instanceof protocol.AttemptHelp) {
         return { output: 'Detached, Store-scoped broker for one canonical application attempt.\n'
-          + 'Usage: job-apply-attempt [--root ROOT] {start,restart-review,heartbeat,progress,handoff}\n'
+          + 'Usage: job-apply-attempt [--root ROOT] {start,restart-review,heartbeat,progress,authority-evaluate,handoff}\n'
           + 'start / restart-review: --id ID --owner OWNER --expected-revision INTEGER\n'
           + 'restart-review: --owner-confirmed-not-submitted\n'
-          + 'progress: --input FILE; handoff: --status {needs_info,awaiting_review} --input FILE\n', exitCode: 0 };
+          + 'progress / authority-evaluate: --input FILE; handoff: --status {needs_info,awaiting_review} --input FILE\n', exitCode: 0 };
       }
       invalid = error instanceof protocol.AttemptInvocationError; throw error;
     }

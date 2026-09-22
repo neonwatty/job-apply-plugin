@@ -37,9 +37,11 @@ test('application-setup workflow is explicitly local-only and exercises live-age
   assert.match(source, /width: 1280[\s\S]*height: 720/);
   assert.match(source, /profile revision 2[\s\S]*profile revision 3[\s\S]*revision 4/);
   assert.match(source, /job-apply:application-setup/);
-  assert.match(source, /run-fresh-setup-writer[\s\S]*Chrome, Ask before switching, and Guided/);
+  assert.match(source, /run-fresh-setup-writer[\s\S]*Chrome, Ask before switching,[\s\S]*Pause before every page[\s\S]*transition, and Campaign to Review/);
   assert.match(source, /audit-agent-setup-in-companion/);
-  assert.match(source, /applicationPreferences contains codex_browser, other_supported, and standard/);
+  assert.match(source, /applicationPreferences contains codex_browser, other_supported, standard, and autofill_to_review/);
+  assert.match(source, /preferred application mode is a preference, not a live grant/);
+  assert.match(source, /application-authority\.json remains absent/);
   assert.match(source, /run-fresh-setup-reader/);
   assert.match(source, /does not restart the questionnaire because the request was view-only/);
   assert.match(source, /local-agent-writer-redacted-receipt[\s\S]*required: false/);

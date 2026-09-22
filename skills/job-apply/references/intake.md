@@ -1,6 +1,7 @@
 # Canonical application intake
 
 Read before starting an ordinary application. For an existing reviewed or blocked job, read [recovery.md](recovery.md).
+For Autofill to Review or Campaign to Review, also read [application automation](application-automation.md). An application run selects canonical inputs; it does not itself grant automation authority.
 
 First determine the application mode:
 

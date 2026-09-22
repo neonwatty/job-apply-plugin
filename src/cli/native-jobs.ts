@@ -23,7 +23,8 @@ import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { JobsService } from "../workspace-core/jobs.js";
-import { NativeJobsRepository, initializeJobsFixture, fixtureError } from "../store/native-jobs.js";
+import { NativeJobsRepository, initializeJobsFixture } from "../store/native-jobs.js";
+import { fixtureError } from "../store/native-jobs-error.js";
 import { loadPosixFlockProvider } from "../store/posix-flock.js";
 import { parse, serialize, JobsError } from "../contracts/workspace/values.js";
 import { ResumeService } from "../workspace-core/resumes.js";
@@ -157,6 +158,12 @@ export const storeRequiredOptions: Record<string, string[]> = {
   'trusted-fill-status': ['--id'],
   'trusted-fill-evaluate': ['--input'],
   'trusted-fill-revoke': ['--id', '--expected-approval-revision'],
+  'application-authority-set': ['--input', '--expected-revision'],
+  'application-authority-revoke': ['--expected-revision'],
+  'application-authority-evaluate': ['--input'],
+  'application-authority-pause': ['--expected-revision'],
+  'application-authority-resume': ['--expected-revision'],
+  'application-authority-stop': ['--expected-revision'],
 };
 
 const booleanOptions = new Set([

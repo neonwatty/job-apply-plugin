@@ -16,6 +16,7 @@ function projection(value, fields) {
     return output;
 }
 export class AttemptAuthority {
+    application;
     #service;
     #options;
     #timers;
@@ -25,7 +26,8 @@ export class AttemptAuthority {
     #revision = null;
     #closed = false;
     #pending = Promise.resolve();
-    constructor(service, options = {}) {
+    constructor(service, options = {}, application) {
+        this.application = application;
         this.#service = service;
         this.#options = options;
         this.#timers = options.timers ?? defaultTimers;
@@ -87,6 +89,24 @@ export class AttemptAuthority {
                 exact(request, ['command', 'session']);
                 await this.#service.progress(this.#jobId, this.#token, object(get(request, 'session'), 'session'));
                 return { response: attemptSuccess('progress_saved'), complete: false };
+            }
+            if (command === 'authority-evaluate') {
+                exact(request, ['command', 'evaluation']);
+                if (!this.application)
+                    throw new Error('application authority is unavailable');
+                const incoming = object(get(request, 'evaluation'), 'evaluation'), evaluation = attemptDocument({});
+                for (const field of ['destinationUrl', 'operations', 'answerRefs', 'sensitiveAnswerRefs', 'interrupts']) {
+                    if (!has(incoming, field))
+                        throw new Error('invalid request');
+                    set(evaluation, field, get(incoming, field));
+                }
+                if (incoming.size !== 5)
+                    throw new Error('invalid request');
+                set(evaluation, 'jobId', text(this.#jobId));
+                set(evaluation, 'claimToken', this.#token);
+                const response = attemptSuccess('authority_evaluated');
+                set(response, 'decision', await this.application.evaluate(evaluation));
+                return { response, complete: false };
             }
             if (command === 'handoff') {
                 exact(request, ['command', 'status', 'session']);

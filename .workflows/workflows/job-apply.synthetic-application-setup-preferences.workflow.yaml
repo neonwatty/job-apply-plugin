@@ -138,14 +138,17 @@ steps:
       Through the probed local-agent control, launch one fresh local Codex
       sub-agent and ask it to run job-apply:application-setup for the private QA
       route without supplying answers in advance. After it asks the setup
-      questions, answer Chrome, Ask before switching, and Guided. End the agent
-      after it confirms the freshly inspected stored choices.
+      questions, answer Chrome, Ask before switching, Pause before every page
+      transition, and Campaign to Review. End the agent after it confirms the
+      freshly inspected stored choices.
     expected:
       - The fresh agent discovers and invokes job-apply:application-setup.
-      - It asks about preferred browser, unavailable-browser behavior, and page progression.
+      - It asks about preferred browser, unavailable-browser behavior, page transitions, and preferred application mode.
       - It offers only the Codex built-in browser and Chrome as Codex browser choices.
       - It writes one revision-checked user-sourced applicationPreferences patch to the resolved QA Store.
-      - It stores chrome, ask, and guided without storing a route token, browser state, credentials, or consent.
+      - It stores chrome, ask, guided, and campaign_to_review without storing a route token, browser state, credentials, or consent.
+      - It explains that the preferred application mode is a preference, not a live grant.
+      - application-authority.json remains absent because setup cannot authorize application work.
       - The redacted local-agent receipt records profile revision 3 and no private values or paths.
     evidence:
       - type: screenshot
@@ -161,7 +164,8 @@ steps:
       - Companion reports that saved application setup was loaded.
       - Preferred Codex browser is Chrome.
       - Unavailable-browser behavior is Ask before switching.
-      - Page progression is Guided.
+      - Page transitions is Pause before every page transition.
+      - Preferred application mode is Process selected applications to review.
       - The canonical profile remains revision 3.
     evidence:
       - type: screenshot
@@ -175,12 +179,14 @@ steps:
     action: >-
       Change Preferred Codex browser to Codex built-in browser, change
       unavailable-browser behavior to Use the other supported browser, change
-      page progression to Standard, and activate Save setup once.
+      page transitions to Standard, change preferred application mode to Autofill
+      one application to review, and activate Save setup once.
     expected:
       - Companion reports Application setup saved.
       - The canonical profile advances exactly once to revision 4.
-      - applicationPreferences contains codex_browser, other_supported, and standard.
+      - applicationPreferences contains codex_browser, other_supported, standard, and autofill_to_review.
       - The settings mutation does not create applicant facts, consent, jobs, sessions, or browser state.
+      - application-authority.json remains absent.
     evidence:
       - type: screenshot
         checkpoint: companion-setup-edited
@@ -192,7 +198,7 @@ steps:
       - edit-setup-in-companion
     action: Reload the authenticated loopback page and return to Settings.
     expected:
-      - The three edited choices remain selected after reload.
+      - The four edited choices remain selected after reload.
       - Companion reports saved application setup at canonical profile revision 4.
       - The setup checklist on Overview marks Application setup saved.
     evidence:
@@ -211,7 +217,7 @@ steps:
       reports the saved labels.
     expected:
       - The second agent independently discovers and invokes job-apply:application-setup.
-      - It reports Codex built-in browser, use the other supported browser, and Standard.
+      - It reports Codex built-in browser, use the other supported browser, Standard, and Autofill to Review.
       - It does not restart the questionnaire because the request was view-only.
       - It performs no profile mutation and the canonical profile remains revision 4.
       - Its receipt contains no route token, Store path, credentials, browser state, or applicant values.
@@ -227,6 +233,7 @@ steps:
     action: Inspect Settings and Overview without editing them.
     expected:
       - No setting can authorize login, password, CAPTCHA, MFA, account creation, sensitive-answer use, remembering sensitive values, filling, or final submission.
+      - The preferred application mode is a preference, not a live grant; application-authority.json remains absent.
       - The workspace contains no jobs, resumes, answers, sessions, claims, or application history created by this workflow.
       - The browser remains on authenticated 127.0.0.1 Companion content.
     evidence:

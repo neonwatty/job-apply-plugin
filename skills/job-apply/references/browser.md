@@ -40,6 +40,8 @@ Use the fallback only for the blocked control, then return to the visible review
 
 ### Post-readiness action-time consent
 
+First read [application automation](application-automation.md). Guided follows the consent transition below. Autofill to Review and Campaign to Review replace the repeated granular prompt only after the live attempt broker authorizes the exact current action group; their durable grant never relaxes the visible-browser, verification, interrupt, sensitive-answer, or final-action rules.
+
 Action-time consent has a closed, one-use state transition:
 
 1. Before the exact application form is visibly ready, consent is `not_ready`. Earlier approval, a URL or job selection, consent from another application, and blanket future consent are invalid and cannot authorize entering data.

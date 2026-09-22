@@ -20,6 +20,7 @@ import { validateTrustedFillDocument } from '../contracts/workspace/trusted-fill
 import { fromJSON, get, has, int, object, set, string, JobsError } from '../contracts/workspace/values.js';
 import type { Document, Value } from '../contracts/workspace/values.js';
 import { validateAccountOperationJournal } from '../contracts/workspace/account-operation.js';
+import { validateApplicationAuthorityDocument } from '../contracts/workspace/application-authority.js';
 import { NativeAnswerJournal, validateAnswerJournal } from './native-answer-journal.js';
 import { NativeAnswerResolutionJournal, validateResolutionJournal } from './native-answer-resolution-journal.js';
 import { claimOperationKinds, NativeClaimJournal, validateClaimJournal } from './native-claim-journal.js';
@@ -66,6 +67,7 @@ const documentValidators: Record<string, Validator> = {
   'automation-settings.json': validateSettingsDocument, 'employer-accounts.json': validateAccountsDocument,
   'account-operation-journal.json': value => validateAccountOperationJournal(value),
   'trusted-fill.json': validateTrustedFillDocument, 'resume-extractions.json': validateExtractions,
+  'application-authority.json': validateApplicationAuthorityDocument,
   'resume-facts.json': validateResumeFacts,
   'resume-extraction-requests.json': validateExtractionRequests,
   'resume-extraction-journal.json': validateExtractionJournal, 'resume-operation.json': validateResumeOperation,
