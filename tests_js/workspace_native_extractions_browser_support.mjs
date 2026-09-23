@@ -85,29 +85,23 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   await page.getByRole('button', { name: 'Reapply my decisions', exact: true }).click();
   assert.equal(await page.getByLabel('I confirm replacing /employer for /employer/title.').isChecked(), false);
   await page.getByLabel('I confirm replacing /employer for /employer/title.').check();
-  // Once the write is acknowledged, a slow detail read must not claim the saved decisions are dirty.
-  let releaseDetail, detailStarted;
-  const detailGate = new Promise(resolve => { releaseDetail = resolve; });
-  const detailEntered = new Promise(resolve => { detailStarted = resolve; });
+  // Once the write is acknowledged, a failed detail read must report a refresh problem rather than a failed save.
   const detailPath = `**/api/resume-proposals/${result.proposalSummary.id}`;
   const dialogs = [];
   const dismissDialog = async dialog => { dialogs.push(dialog.message()); await dialog.dismiss(); };
   await page.route(detailPath, async route => {
-    detailStarted();
-    await detailGate;
-    await route.continue();
+    await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: { message: 'Synthetic detail outage' } }) });
   });
   try {
     await page.getByRole('button', { name: 'Save review decisions', exact: true }).click();
     await page.getByText('Review decisions saved.', { exact: true }).waitFor();
-    await detailEntered;
+    await page.getByRole('alert').filter({ hasText: /decisions were saved.*could not be refreshed/i }).waitFor();
     page.on('dialog', dismissDialog);
     await page.getByRole('button', { name: 'Jobs', exact: true }).click();
-    assert.deepEqual(dialogs, [], 'Saved review decisions must allow navigation during the detail refresh');
+    assert.deepEqual(dialogs, [], 'Saved review decisions must allow navigation after a failed detail refresh');
     await page.getByRole('heading', { name: 'Jobs', exact: true }).waitFor();
   } finally {
     page.off('dialog', dismissDialog);
-    releaseDetail();
     await page.unroute(detailPath);
   }
   await page.getByRole('button', { name: 'Resumes', exact: true }).click();
@@ -123,5 +117,5 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   await page.setViewportSize({ width: 390, height: 844 });
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   return { requestCancel: true, cliCompletion: true, replacementConsent: true, conflictReapply: true,
-    pendingWriteNavigationGuard: true, savedNavigationDuringRefresh: true, provenance: true, narrow: true };
+    pendingWriteNavigationGuard: true, savedNavigationAfterRefreshFailure: true, provenance: true, narrow: true };
 }

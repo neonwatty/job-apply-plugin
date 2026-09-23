@@ -3,7 +3,7 @@ import { claimTime } from './claim-time.js';
 import { contentRevision, exact } from './extraction-requests.js';
 import { normalizeJobUrl } from './job-url.js';
 import { safeId } from './jobs.js';
-import { copy, fromJSON, get, int, integer, keys, object, set, string, text, JobsError } from './values.js';
+import { copy, fromJSON, get, has, int, integer, keys, object, set, string, text, JobsError } from './values.js';
 export const applicationAuthorityModes = new Set(['autofill_to_review', 'campaign_to_review']);
 export const applicationAuthorityStatuses = new Set(['active', 'paused', 'revoked', 'replaced', 'consumed', 'stopped']);
 export const applicationAuthorityOperations = new Set([
@@ -64,8 +64,11 @@ export function validateSensitiveAnswerBinding(value) {
 }
 export function validateApplicationAuthority(value) {
     const record = object(value, 'application authority');
-    exact(record, ['authorizationId', 'mode', 'status', 'revision', 'issuedAt', 'expiresAt', 'terminalAt',
-        'runId', 'runRevision', 'jobBindings', 'sensitiveAnswerBindings'], 'application authority contains unsupported fields');
+    const required = ['authorizationId', 'mode', 'status', 'revision', 'issuedAt', 'expiresAt', 'terminalAt',
+        'runId', 'runRevision', 'jobBindings', 'sensitiveAnswerBindings'];
+    if (required.some(field => !has(record, field)) || keys(record).some(key => ![...required, 'profileRevision'].includes(key))) {
+        throw new JobsError('application authority contains unsupported fields');
+    }
     if (!/^application-authority-[0-9a-f-]{36}$/u.test(string(get(record, 'authorizationId')) ?? '')
         || !applicationAuthorityModes.has(string(get(record, 'mode')) ?? '')
         || !applicationAuthorityStatuses.has(string(get(record, 'status')) ?? '')) {
@@ -74,6 +77,8 @@ export function validateApplicationAuthority(value) {
     positive(get(record, 'revision'), 'application authority revision');
     safeId(string(get(record, 'runId')));
     positive(get(record, 'runRevision'), 'application run revision');
+    if (has(record, 'profileRevision'))
+        positive(get(record, 'profileRevision'), 'profile revision');
     const issued = string(get(record, 'issuedAt')), expires = string(get(record, 'expiresAt'));
     if (!issued || !expires || claimTime(expires) <= claimTime(issued))
         throw new JobsError('application authority timestamps are invalid');

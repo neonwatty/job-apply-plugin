@@ -116,6 +116,20 @@ async function productionBrowser(root) {
     assert.equal(await page.getByLabel('If that browser is unavailable').inputValue(), 'other_supported');
     assert.equal(await page.getByLabel('Page transitions').inputValue(), 'guided');
     assert.equal(await page.getByLabel('Preferred application mode').inputValue(), 'campaign_to_review');
+    let releaseSetupRefresh, setupRefreshStarted;
+    const setupRefreshGate = new Promise(resolve => { releaseSetupRefresh = resolve; });
+    const setupRefreshEntered = new Promise(resolve => { setupRefreshStarted = resolve; });
+    await page.route('**/api/profile', async route => {
+      setupRefreshStarted();
+      await setupRefreshGate;
+      await route.continue();
+    });
+    await page.getByRole('button', { name: 'Refresh setup', exact: true }).click();
+    await setupRefreshEntered;
+    assert.equal(await page.getByLabel('Preferred Codex browser').isDisabled(), true);
+    releaseSetupRefresh();
+    await page.getByText('Saved application setup loaded.', { exact: true }).waitFor();
+    await page.unroute('**/api/profile');
     await page.getByRole('button', { name: 'Jobs', exact: true }).click();
     await page.getByRole('button', { name: 'New job', exact: true }).click();
     await page.locator('dialog [name="url"]').fill('https://example.invalid/next-smoke');
