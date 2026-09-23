@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { type Client } from './client';
-import { job as decodeJob, object, type Job } from './contracts';
+import { job as decodeJob, object, parseJson, stringifyJson, type Job } from './contracts';
 
 type Claim = { claimId: string; jobId: string; ownerLabel: string; expiresAt: string; expired: boolean };
 function claimValue(value: unknown): Claim | null {
@@ -31,8 +31,8 @@ export function Claims({ client, jobs, disabled, changed, activityChanged, navig
     const pending = useRef<AbortController | null>(null);
     async function request(path: string, body: unknown, signal: AbortSignal) {
         const raw = await client.extractionRequest('/api/claims' + path, body === undefined ? 'GET' : 'POST',
-            body === undefined ? undefined : JSON.stringify(body), signal);
-        const value: unknown = JSON.parse(raw);
+            body === undefined ? undefined : stringifyJson(body), signal);
+        const value: unknown = parseJson(raw);
         if (!object(value)) throw Error('Invalid claim response');
         return value;
     }

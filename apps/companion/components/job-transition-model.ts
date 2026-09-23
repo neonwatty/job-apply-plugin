@@ -1,4 +1,4 @@
-import { job as decodeJob, type Job } from './contracts';
+import { job as decodeJob, parseJson, stringifyJson, type Job } from './contracts';
 
 export type TransitionTarget = 'saved' | 'needs_info' | 'ready' | 'awaiting_review' | 'applied' | 'closed';
 export const closedOutcomes = ['rejected', 'withdrawn', 'expired', 'duplicate', 'not_interested'] as const;
@@ -16,11 +16,11 @@ export function transitionTargets(job: Job): TransitionTarget[] {
 }
 export function transitionBody(job: Job, status: string, closedOutcome = '', userConfirmed = false): string {
   if (!job.id) throw Error('The job identity is missing.');
-  if (!Number.isSafeInteger(job.revision) || job.revision < 1) throw Error('The job revision is invalid.');
+  if (typeof job.revision !== 'bigint' || job.revision < 1n) throw Error('The job revision is invalid.');
   if (!transitionTargets(job).includes(status as TransitionTarget)) throw Error('This status transition is unavailable.');
   if (status === 'applied' && userConfirmed !== true) throw Error('Confirm that you personally submitted this application.');
   if (status === 'closed' && !closedOutcomes.some(value => value === closedOutcome)) throw Error('Choose a closing outcome.');
-  return JSON.stringify({ status, expectedRevision: job.revision,
+  return stringifyJson({ status, expectedRevision: job.revision,
     ...(status === 'closed' ? { closedOutcome } : {}),
     ...(status === 'applied' ? { userConfirmed: true } : {}),
   });
@@ -34,7 +34,7 @@ export function transitionConfirmation(job: Job, status: TransitionTarget, close
   return `Change this job to ${status.replaceAll('_', ' ')}? ${local}`;
 }
 export function transitionAcknowledgement(raw: string, previous: Job, status: TransitionTarget): Job {
-  const next = decodeJob(JSON.parse(raw));
+  const next = decodeJob(parseJson(raw));
   if (next.id !== previous.id || next.status !== status || next.revision <= previous.revision)
     throw Error('The transition response did not acknowledge the requested job change.');
   return next;

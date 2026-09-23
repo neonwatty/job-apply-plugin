@@ -18,6 +18,8 @@ function lifecycleFailure(error: JobsError, operation: string): Result {
       'This job has a coordinator claim that must be released or completed first.', { claims: 1 }],
     [message.includes('nonterminal application session'), 'session_reference_blocked',
       'This job has a nonterminal application session that must be completed or abandoned first.', { nonterminalSessions: 1 }],
+    [message.includes('active application run'), 'active_run_blocked',
+      'Remove this job from the active application run, or complete the run, before changing its lifecycle.', { applicationRuns: 1 }],
     [message.includes('active job URL already exists'), 'duplicate_active_blocked',
       'An active job with the same canonical identity already exists.', { duplicateActiveRecords: 1 }],
     [message.includes('assigned resume does not exist'), 'assigned_resume_blocked',

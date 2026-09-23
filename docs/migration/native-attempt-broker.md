@@ -28,8 +28,9 @@ the broker.
 
 The transport accepts one UTF-8 newline frame per connection, bounded at 1 MiB
 including the newline. Empty, non-object, invalid UTF-8, over-limit, and trailing
-frames are rejected without reflecting their contents. Newline clients do not
-need to close their write side to receive a response. The runtime directory is
+frames are rejected without reflecting their contents. A client must close its
+write side after the one request frame; the broker validates that EOF before it
+dispatches any Store operation. The runtime directory is
 `/tmp/job-apply-attempt-<uid>`, a real owned directory with mode 0700. Socket names
 use SHA-256 over the canonical root's Python-compatible filesystem bytes; socket
 mode is 0600 and listen backlog is 8. Authentication uses this private directory

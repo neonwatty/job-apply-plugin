@@ -2,7 +2,7 @@
 import type { Client } from './client';
 import { activityProjection, recoveryGuidance } from './projection-model';
 import { humanize, useProjection } from './projection-view';
-export function JobActivity({client,jobId,refreshKey=0,openAnswers}:{client:Client;jobId:string;refreshKey?:number;openAnswers?:()=>void}) {
+export function JobActivity({client,jobId,refreshKey=0,openAnswers}:{client:Client;jobId:string;refreshKey?:number|bigint;openAnswers?:()=>void}) {
   const {data,loading,error,refresh}=useProjection(client,`/api/jobs/${encodeURIComponent(jobId)}/activity`,activityProjection,refreshKey);
   return <section aria-label="Job activity" style={{minWidth:0,overflowWrap:'anywhere'}}>
     <h3>Job activity</h3><button type="button" onClick={refresh} disabled={loading}>Refresh activity</button>

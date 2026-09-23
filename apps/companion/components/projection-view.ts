@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Client } from './client';
 /** Scope-tagged snapshots hide the previous job synchronously on a job switch. */
-export function useProjection<T>(client:Client,path:string,parse:(raw:string)=>T,refreshKey=0) {
+export function useProjection<T>(client:Client,path:string,parse:(raw:string)=>T,refreshKey:unknown=0) {
   const [snapshot,setSnapshot]=useState<{client:Client;path:string;value:T}|null>(null);
   const [state,setState]=useState<{client:Client;path:string;loading:boolean;error:string}|null>(null);
   const [retry,setRetry]=useState(0);

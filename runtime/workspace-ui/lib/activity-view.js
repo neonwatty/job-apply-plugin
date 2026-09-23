@@ -21,20 +21,26 @@ export function canMarkReadyFrom(status) {
 }
 export function shouldUseActivityResponse(activity, ...knownJobs) {
     const responseJob = activity?.job;
-    if (!Number.isInteger(responseJob?.revision))
+    const revision = (value) => typeof value === "bigint" ? value
+        : typeof value === "number" && Number.isSafeInteger(value) ? BigInt(value) : null;
+    const incoming = revision(responseJob?.revision);
+    if (incoming === null)
         return false;
-    const knownRevision = Math.max(0, ...knownJobs
-        .filter((job) => Number.isInteger(job?.revision))
-        .map((job) => job.revision));
-    return responseJob.revision >= knownRevision;
+    const knownRevision = knownJobs.reduce((latest, job) => {
+        const current = revision(job?.revision);
+        return current !== null && current > latest ? current : latest;
+    }, 0n);
+    return incoming >= knownRevision;
 }
 export function newestCanonicalJob(current, incoming) {
     if (!current)
         return incoming;
     if (!incoming || current.id !== incoming.id)
         return current;
-    const currentRevision = Number.isInteger(current.revision) ? current.revision : 0;
-    const incomingRevision = Number.isInteger(incoming.revision) ? incoming.revision : 0;
+    const revision = (value) => typeof value === "bigint" ? value
+        : typeof value === "number" && Number.isSafeInteger(value) ? BigInt(value) : 0n;
+    const currentRevision = revision(current.revision);
+    const incomingRevision = revision(incoming.revision);
     return incomingRevision >= currentRevision ? incoming : current;
 }
 export function activitySignature(activity) {
@@ -42,7 +48,7 @@ export function activitySignature(activity) {
         return "";
     return JSON.stringify({
         status: activity.job?.status,
-        revision: activity.job?.revision,
+        revision: activity.job?.revision === undefined ? undefined : String(activity.job.revision),
         sessionStatus: activity.session?.status,
         sessionStep: activity.session?.step,
         sessionUpdatedAt: activity.session?.updatedAt,

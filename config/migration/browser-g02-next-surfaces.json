@@ -222,6 +222,50 @@
       }
     },
     {
+      "id": "browser:apps/companion/components/contracts.ts:parseJson",
+      "kind": "browser",
+      "export": "parseJson",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/contracts.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/contracts.ts:stringifyJson",
+      "kind": "browser",
+      "export": "stringifyJson",
+      "node": "UIF",
+      "sources": [
+        "apps/companion/components/contracts.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
       "id": "browser:apps/companion/components/contracts.ts:workspaceState",
       "kind": "browser",
       "export": "workspaceState",

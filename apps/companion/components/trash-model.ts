@@ -80,6 +80,7 @@ export function trashErrorText(error: unknown): string {
     const guidance: Record<string, string> = {
         not_found: 'This record no longer exists. Refresh Trash.',
         claim_blocked: 'Release or complete the coordinator claim before changing this job.',
+        active_run_blocked: 'Remove this job from the active application run, or complete the run, before changing it.',
         session_reference_blocked: 'Application session references protect this record from permanent deletion. Review the linked application records.',
         history_reference_blocked: 'Protected application history prevents permanent deletion.',
         job_reference_blocked: 'A job still references this resume. Review and reassign those jobs first.',
