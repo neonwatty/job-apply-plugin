@@ -127,7 +127,7 @@
         },
         {
           "path": "runtime/workspace-ui/lib/activity-view.js",
-          "sha256": "417ff0ff0ddb43fb34082353f2e40635265f2071f497be928caa745273ff7ec7"
+          "sha256": "a14efff078edfe8b0bd6b8b86ccc2537813c3ecae316ea0b6fd321314d2fe487"
         }
       ],
       "testBindings": [],
@@ -160,7 +160,7 @@
         },
         {
           "path": "runtime/workspace-ui/lib/activity-view.js",
-          "sha256": "417ff0ff0ddb43fb34082353f2e40635265f2071f497be928caa745273ff7ec7"
+          "sha256": "a14efff078edfe8b0bd6b8b86ccc2537813c3ecae316ea0b6fd321314d2fe487"
         }
       ],
       "testBindings": [],
@@ -193,7 +193,7 @@
         },
         {
           "path": "runtime/workspace-ui/lib/activity-view.js",
-          "sha256": "417ff0ff0ddb43fb34082353f2e40635265f2071f497be928caa745273ff7ec7"
+          "sha256": "a14efff078edfe8b0bd6b8b86ccc2537813c3ecae316ea0b6fd321314d2fe487"
         }
       ],
       "testBindings": [],
