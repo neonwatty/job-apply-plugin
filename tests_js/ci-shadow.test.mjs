@@ -79,7 +79,7 @@ test("every CI-portable full-only suite is assigned to a required validation sha
   }
   assert.match(workflow, /needs: \[[^\]]*macos-typescript-shards[^\]]*\]/);
   assert.match(workflow, /CI_SELECTED_JOBS: '[^']*macos-typescript-shards[^']*'/);
-  assert.match(workflow, /if: matrix\.suite == 'node-migration-evidence'[\s\S]*?git config user\.name[\s\S]*?git config user\.email/);
+  assert.match(workflow, /if: matrix\.suite == 'node-migration-evidence'[\s\S]*?git config --global user\.name[\s\S]*?git config --global user\.email/);
 });
 
 test("validation workflow preserves contexts, replaces stale modules, and keeps shadow full execution", () => {
