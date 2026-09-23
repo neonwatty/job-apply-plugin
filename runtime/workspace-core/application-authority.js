@@ -34,6 +34,16 @@ function currentAnswer(answers, ref) {
     return get(answer, 'deletedAt') === null && string(has(answer, 'reviewStatus') ? get(answer, 'reviewStatus') : text('accepted')) === 'accepted'
         && string(get(answer, 'state')) === 'confirmed' && get(answer, 'value') !== null ? answer : null;
 }
+function profileRevision(profile) {
+    const metadata = object(get(profile, 'metadata'), 'profile metadata');
+    return has(metadata, 'revision') ? positive(get(metadata, 'revision'), 'profile revision') : 1n;
+}
+function authorityContextIsCurrent(record, jobs, profile) {
+    const run = activeApplicationRun(jobs);
+    return run !== null && string(get(run, 'runId')) === string(get(record, 'runId'))
+        && int(get(run, 'revision')) === int(get(record, 'runRevision'))
+        && has(record, 'profileRevision') && int(get(record, 'profileRevision')) === profileRevision(profile);
+}
 export class ApplicationAuthorityService {
     repository;
     now;
@@ -42,7 +52,14 @@ export class ApplicationAuthorityService {
         this.now = now;
     }
     status() {
-        return this.repository.applicationAuthorityTransaction(async (tx) => applicationAuthorityProjection(tx.authority, this.now()));
+        return this.repository.applicationAuthorityTransaction(async (tx) => {
+            const projection = applicationAuthorityProjection(tx.authority, this.now()), record = activeApplicationAuthority(tx.authority);
+            if (record !== null && string(get(projection, 'mode')) !== 'guided' && !authorityContextIsCurrent(record, tx.jobs, tx.profile)) {
+                set(projection, 'mode', text('guided'));
+                set(projection, 'status', text('stale'));
+            }
+            return projection;
+        });
     }
     progress() {
         return this.repository.applicationAuthorityTransaction(async (tx) => {
@@ -52,6 +69,11 @@ export class ApplicationAuthorityService {
             set(result, 'revision', get(projection, 'revision'));
             if (record === null || string(get(projection, 'mode')) === 'guided')
                 return result;
+            if (!authorityContextIsCurrent(record, tx.jobs, tx.profile)) {
+                set(result, 'mode', text('guided'));
+                set(result, 'status', text('stale'));
+                return result;
+            }
             const records = object(get(tx.jobs, 'jobs'), 'jobs'), jobs = [];
             const counts = object(get(result, 'counts'), 'campaign counts');
             const fields = new Map([['ready', 'ready'], ['in_progress', 'inProgress'], ['needs_info', 'needsAttention'], ['awaiting_review', 'awaitingReview']]);
@@ -94,9 +116,10 @@ export class ApplicationAuthorityService {
             const run = activeApplicationRun(tx.jobs);
             if (run === null || string(get(run, 'runId')) !== runId)
                 throw new JobsError('application authority requires the active application run');
-            const runRevision = int(get(run, 'revision')), queue = new Set(currentRunJobIds(run));
+            const runRevision = int(get(run, 'revision')), queueIds = currentRunJobIds(run), queue = new Set(queueIds);
             if (ids.some(id => !queue.has(id)))
                 throw new JobsError('application authority jobs must belong to the active application run');
+            const requested = new Set(ids), orderedIds = queueIds.filter(id => requested.has(id));
             const selection = object(get(run, 'selection'), 'application run selection');
             const resumeId = string(get(selection, 'resumeId')), resumeValue = get(object(get(tx.resumes, 'resumes'), 'resumes'), resumeId);
             if (resumeValue === null)
@@ -106,7 +129,7 @@ export class ApplicationAuthorityService {
                 throw new JobsError('application authority requires a current managed resume');
             }
             const jobs = object(get(tx.jobs, 'jobs'), 'jobs');
-            for (const id of ids) {
+            for (const id of orderedIds) {
                 const raw = get(jobs, id);
                 if (raw === null)
                     throw new JobsError('application authority job is unavailable');
@@ -132,9 +155,10 @@ export class ApplicationAuthorityService {
             }
             const now = this.now(), expires = new Date(Date.parse(now) + Number(duration) * 60_000).toISOString().replace(/\.\d{3}Z$/u, 'Z');
             const record = doc({ authorizationId: `application-authority-${randomUUID()}`, mode, status: 'active', revision: 1,
-                issuedAt: now, expiresAt: expires, terminalAt: null, runId, runRevision: null, jobBindings: [],
+                issuedAt: now, expiresAt: expires, terminalAt: null, runId, runRevision: null, profileRevision: null, jobBindings: [],
                 sensitiveAnswerBindings: [] });
             set(record, 'runRevision', integer(runRevision));
+            set(record, 'profileRevision', integer(profileRevision(tx.profile)));
             set(record, 'jobBindings', bindings);
             set(record, 'sensitiveAnswerBindings', sensitive);
             validateApplicationAuthority(record);
@@ -212,6 +236,9 @@ export class ApplicationAuthorityService {
             if (run === null || string(get(run, 'runId')) !== string(get(record, 'runId'))
                 || int(get(run, 'revision')) !== int(get(record, 'runRevision'))) {
                 return doc({ authorized: false, mode: 'guided', reasonCode: 'application_run_changed', interrupt: true });
+            }
+            if (!has(record, 'profileRevision') || int(get(record, 'profileRevision')) !== profileRevision(tx.profile)) {
+                return doc({ authorized: false, mode: 'guided', reasonCode: 'canonical_data_changed', interrupt: true });
             }
             const binding = get(record, 'jobBindings').map(item => object(item, 'job binding'))
                 .find(item => string(get(item, 'jobId')) === id);

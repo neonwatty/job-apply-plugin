@@ -11,15 +11,16 @@ export function ApplicationSettings({client,dirtyChanged}:{client:Client;dirtyCh
   const [base,setBase]=useState<ProfileSnapshot|null>(null),[draft,setDraft]=useState<ApplicationPreferences|null>(null);
   const [complete,setComplete]=useState(false),[latest,setLatest]=useState<ProfileSnapshot|null>(null);
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
-  const alive=useRef(false),request=useRef<AbortController|null>(null),generation=useRef(0);
+  const alive=useRef(false),request=useRef<AbortController|null>(null),generation=useRef(0),dirtyRef=useRef(false);
   const dirty=Boolean(base&&draft&&(!complete||!equal(readApplicationPreferences(base.profile).preferences,draft)));
+  dirtyRef.current=dirty;
   useEffect(()=>{dirtyChanged(dirty||busy);return()=>dirtyChanged(false);},[dirty,busy,dirtyChanged]);
   async function refresh(discard=false) {
     request.current?.abort();const controller=new AbortController();request.current=controller;const version=++generation.current;
     setLoading(true);setError('');
     try {
       const next=await client.profile(controller.signal);if(!alive.current||version!==generation.current)return;
-      if(dirty&&!discard){setLatest(next.revision===base?.revision?null:next);setNotice('Latest setup loaded. Your choices are retained.');return;}
+      if(dirtyRef.current&&!discard){setLatest(next.revision===base?.revision?null:next);setNotice('Latest setup loaded. Your choices are retained.');return;}
       const parsed=readApplicationPreferences(next.profile);setBase(next);setDraft(parsed.preferences);setComplete(parsed.complete);setLatest(null);
       setNotice(parsed.complete?'Saved application setup loaded.':'Choose and save your application defaults.');
     } catch(cause){if(alive.current&&version===generation.current&&!controller.signal.aborted)setError(cause instanceof Error?cause.message:'Unable to load setup');}
@@ -42,7 +43,7 @@ export function ApplicationSettings({client,dirtyChanged}:{client:Client;dirtyCh
     <p className="workspace-status" role="status">{loading?'Loading setup…':notice||(base?`Canonical profile revision ${base.revision}.`:'')}</p>
     {error&&<p className="error" role="alert">{error} <button disabled={busy||loading} onClick={()=>void refresh()}>Retry loading setup</button></p>}
     {latest&&<aside className="notice facts-conflict" role="alert"><p><strong>Setup changed elsewhere.</strong> Your choices are retained.</p><button disabled={busy} onClick={()=>{setBase(latest);setLatest(null);setError('');setNotice('Your choices were reapplied to the latest revision. Review before saving.');}}>Reapply my setup choices</button><button disabled={busy} onClick={()=>{const parsed=readApplicationPreferences(latest.profile);setBase(latest);setDraft(parsed.preferences);setComplete(parsed.complete);setLatest(null);setError('');setNotice('Saved setup loaded.');}}>Load saved setup</button></aside>}
-    {base&&draft&&<form className="workspace-panel settings-panel" onSubmit={event=>{event.preventDefault();void save();}}><fieldset disabled={busy}><legend>Application defaults</legend>
+    {base&&draft&&<form className="workspace-panel settings-panel" onSubmit={event=>{event.preventDefault();void save();}}><fieldset disabled={busy||loading}><legend>Application defaults</legend>
       <label>Preferred Codex browser<select value={draft.preferredBrowser} onChange={event=>setDraft({...draft,preferredBrowser:event.target.value as ApplicationPreferences['preferredBrowser']})}><option value="codex_browser">Codex built-in browser</option><option value="chrome">Chrome</option></select><span className="field-help">Claude Code continues to use Claude in Chrome.</span></label>
       <label>If that browser is unavailable<select value={draft.browserFallback} onChange={event=>setDraft({...draft,browserFallback:event.target.value as ApplicationPreferences['browserFallback']})}><option value="ask">Ask before switching</option><option value="other_supported">Use the other supported browser</option></select></label>
       <label>Page transitions<select value={draft.progressionMode} onChange={event=>setDraft({...draft,progressionMode:event.target.value as ApplicationPreferences['progressionMode']})}><option value="standard">Standard — continue through clearly non-final steps</option><option value="guided">Pause before every page transition</option></select></label>

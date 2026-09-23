@@ -102,7 +102,51 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [node-recorder, node-renderer, node-workspace-other]
+        suite: [node-migration-evidence, node-recorder, node-renderer, node-workspace-other, native-posix-lock, native-canonical-store-clone, native-default-cutover, native-posix-timestamps, native-email-canary-composition]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Provision all required CPython reference profiles
+        uses: actions/setup-python@v5
+        with:
+          python-version: |
+            3.13
+            3.14
+            3.12
+      - name: Configure synthetic Git identity for migration fixtures
+        if: matrix.suite == 'node-migration-evidence'
+        run: |
+          git config --global user.name "CI Migration Fixture"
+          git config --global user.email "ci-migration-fixture@example.invalid"
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+      - run: node tools/ci/run-suite.mjs "${{ matrix.suite }}" "ci-receipts/${{ matrix.suite }}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.suite }}-${{ github.run_id }}
+          path: ci-receipts/${{ matrix.suite }}.json
+          if-no-files-found: error
+          retention-days: 14
+
+  macos-typescript-shards:
+    needs: classify
+    runs-on: macos-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # The frozen S08 profile suite remains a local deep gate because it
+        # requires the exact recorded Homebrew ARM64 interpreter binaries.
+        suite: [macos-native-typescript-adapter]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -118,11 +162,6 @@ jobs:
             3.14
             3.12
       - run: npm ci
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
-      - run: npx playwright install --with-deps chromium
       - run: node tools/ci/run-suite.mjs "${{ matrix.suite }}" "ci-receipts/${{ matrix.suite }}.json"
       - uses: actions/upload-artifact@v4
         if: always()
@@ -214,7 +253,7 @@ jobs:
   pr-gate:
     name: PR gate
     if: always()
-    needs: [classify, policy, python-shards, browser-shards, package-contract, windows-store-workspace, macos-credential-helper, macos-account-flow-helper]
+    needs: [classify, policy, python-shards, browser-shards, macos-typescript-shards, package-contract, windows-store-workspace, macos-credential-helper, macos-account-flow-helper]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -222,5 +261,5 @@ jobs:
       - name: Require every parallel validation job
         env:
           CI_RESULTS_JSON: ${{ toJSON(needs) }}
-          CI_SELECTED_JOBS: '["classify","policy","python-shards","browser-shards","package-contract","windows-store-workspace","macos-credential-helper","macos-account-flow-helper"]'
+          CI_SELECTED_JOBS: '["classify","policy","python-shards","browser-shards","macos-typescript-shards","package-contract","windows-store-workspace","macos-credential-helper","macos-account-flow-helper"]'
         run: node tools/ci/gate.mjs

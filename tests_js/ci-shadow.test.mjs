@@ -59,9 +59,32 @@ test("Windows validation budget covers the complete protected Store and workspac
   assert.match(workflow, /windows-store-workspace:\n[\s\S]*?timeout-minutes: 30\n[\s\S]*?macos-credential-helper:/);
 });
 
+test("every CI-portable full-only suite is assigned to a required validation shard", () => {
+  const workflow = fs.readFileSync(path.join(ROOT, ".github/workflows/validate.yml"), "utf8");
+  const matrix = JSON.parse(fs.readFileSync(path.join(ROOT, "config/test-matrix.json"), "utf8"));
+  const fullOnly = matrix.suites.filter(suite => suite.tiers.includes("full") && !suite.tiers.includes("fast"));
+  const localOrHistorical = new Set(["native-frozen-reference-profiles", "node-reference-s04", "node-reference-s05"]);
+  const assigned = [...workflow.matchAll(/suite: \[([^\]]+)\]/g)]
+    .flatMap(match => match[1].split(",").map(value => value.trim()));
+  for (const suite of fullOnly.filter(value => !localOrHistorical.has(value.id))) {
+    assert.equal(assigned.includes(suite.id), true, `CI-portable full suite is not assigned: ${suite.id}`);
+  }
+  for (const id of localOrHistorical) assert.equal(assigned.includes(id), false, `local or historical suite entered hosted CI: ${id}`);
+
+  const macStart = workflow.indexOf("  macos-typescript-shards:");
+  const macEnd = workflow.indexOf("\n  package-contract:", macStart);
+  const macShards = workflow.slice(macStart, macEnd);
+  for (const suite of fullOnly.filter(value => value.platforms?.every(platform => platform === "darwin") && !localOrHistorical.has(value.id))) {
+    assert.match(macShards, new RegExp(`\\b${suite.id}\\b`));
+  }
+  assert.match(workflow, /needs: \[[^\]]*macos-typescript-shards[^\]]*\]/);
+  assert.match(workflow, /CI_SELECTED_JOBS: '[^']*macos-typescript-shards[^']*'/);
+  assert.match(workflow, /if: matrix\.suite == 'node-migration-evidence'[\s\S]*?git config --global user\.name[\s\S]*?git config --global user\.email/);
+});
+
 test("validation workflow preserves contexts, replaces stale modules, and keeps shadow full execution", () => {
   const workflow = fs.readFileSync(path.join(ROOT, ".github/workflows/validate.yml"), "utf8");
-  for (const id of ["python-shards:", "browser-shards:", "package-contract:", "windows-store-workspace:", "macos-credential-helper:", "macos-account-flow-helper:"]) {
+  for (const id of ["python-shards:", "browser-shards:", "macos-typescript-shards:", "package-contract:", "windows-store-workspace:", "macos-credential-helper:", "macos-account-flow-helper:"]) {
     assert.match(workflow, new RegExp(`^  ${id}`, "m"));
   }
   assert.doesNotMatch(workflow, /tests\.test_job_apply_(?:store|workspace)(?:\s|$)/m);

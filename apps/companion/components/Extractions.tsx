@@ -134,10 +134,11 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
     setWriting(true);
     setError('');
     setNotice('');
+    let committed = false;
     try {
       await client.extractionRequest(`/api/resume-proposals/${encodeURIComponent(id)}/review`, 'POST', body, controller.signal);
       if (version !== generation.current) return;
-      // The mutation succeeded even if its subsequent detail refresh fails.
+      committed = true;
       setWriting(false);
       setBase(null);
       setChoices({});
@@ -152,6 +153,10 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
     } catch (failure) {
       if (version !== generation.current || controller.signal.aborted) return;
       setWriting(false);
+      if (committed) {
+        setError('Review decisions were saved, but current proposal details could not be refreshed. Refresh extraction status to load the latest state.');
+        return;
+      }
       setError(failure instanceof Error ? failure.message : 'Unable to save review');
       try {
         const next = proposalSnapshot(await client.extractionRequest(`/api/resume-proposals/${encodeURIComponent(id)}`, 'GET', undefined, controller.signal));

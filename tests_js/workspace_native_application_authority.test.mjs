@@ -5,7 +5,9 @@ import { join } from 'node:path';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
 import { setup, plain, read, write, snapshot, readyPacket, cli } from './workspace_native_claims_support.mjs';
 import { ApplicationAuthorityService } from '../runtime/workspace-core/application-authority.js';
+import { ApplicationRunsService } from '../runtime/workspace-core/application-runs.js';
 import { JobsService } from '../runtime/workspace-core/jobs.js';
+import { ProfileService } from '../runtime/workspace-core/profile.js';
 import { jobsHttp } from '../runtime/workspace-core/jobs-http.js';
 import { fromJSON, text } from '../runtime/contracts/workspace/values.js';
 
@@ -70,6 +72,17 @@ test('native application authority is revisioned, claim-bound, redacted, and fin
     await assert.rejects(()=>service.revoke(1n),/revision conflict/);
   });
 
+  await t.test('canonical profile changes invalidate previously granted authority',async()=>{
+    const other=await setup(fixture,'application-authority-profile-revision');
+    const authority=new ApplicationAuthorityService(other.repository,()=>other.clock.now);
+    await other.claims.select('job',1n,true);await authority.set(fromJSON(authorityInput()),0n);
+    const acquired=plain(await other.claims.acquire('job',text('Profile revision worker'),2n));
+    await new ProfileService(other.repository,()=>other.clock.now).patch(fromJSON({name:'Updated owner'}),1n,'user');
+    const status=plain(await authority.status());assert.equal(status.mode,'guided');assert.equal(status.status,'stale');
+    const denied=plain(await authority.evaluate(fromJSON(evaluation(acquired.token))));
+    assert.deepEqual({authorized:denied.authorized,reasonCode:denied.reasonCode},{authorized:false,reasonCode:'canonical_data_changed'});
+  });
+
   await t.test('Autofill to Review is consumed in the durable review handoff journal',async()=>{
     const other=await setup(fixture,'application-authority-consumption');
     const authority=new ApplicationAuthorityService(other.repository,()=>other.clock.now);
@@ -89,8 +102,8 @@ test('native application authority is revisioned, claim-bound, redacted, and fin
     const other=await setup(fixture,'application-authority-campaign');
     const authority=new ApplicationAuthorityService(other.repository,()=>other.clock.now);
     await other.claims.select('job',1n,true);await other.claims.select('other',1n,true);
-    const active=plain(await authority.set(fromJSON(authorityInput('campaign_to_review',['job','other'])),0n));
-    assert.equal(active.mode,'campaign_to_review');
+    const active=plain(await authority.set(fromJSON(authorityInput('campaign_to_review',['other','job'])),0n));
+    assert.equal(active.mode,'campaign_to_review');assert.deepEqual(active.jobIds,['job','other']);
     let progress=plain(await authority.progress());assert.equal(progress.counts.ready,2);assert.equal(progress.nextJob.jobId,'job');
     const paused=plain(await authority.control('pause',1n));assert.equal(paused.status,'paused');assert.equal(paused.revision,2);
     await assert.rejects(()=>authority.control('pause',2n),/current state/);
@@ -100,6 +113,24 @@ test('native application authority is revisioned, claim-bound, redacted, and fin
     const decision=plain(await authority.evaluate(fromJSON(evaluation(acquired.token))));assert.equal(decision.authorized,true);
     const stopped=plain(await authority.control('stop',3n));assert.equal(stopped.mode,'guided');assert.equal(stopped.revision,4);
     assert.equal(plain(await authority.progress()).nextJob,null);
+  });
+
+  await t.test('campaign progress fails closed when its application run changes or completes',async()=>{
+    const updated=await setup(fixture,'application-authority-run-update');
+    const updatedAuthority=new ApplicationAuthorityService(updated.repository,()=>updated.clock.now);
+    await updated.claims.select('job',1n,true);await updated.claims.select('other',1n,true);
+    await updatedAuthority.set(fromJSON(authorityInput('campaign_to_review',['job','other'])),0n);
+    const runs=new ApplicationRunsService(updated.repository,()=>updated.clock.now);
+    await runs.update('run-fixture',1n,fromJSON({jobIds:['other']}));
+    const stale=plain(await updatedAuthority.progress());
+    assert.equal(stale.mode,'guided');assert.equal(stale.status,'stale');assert.deepEqual(stale.jobs,[]);assert.equal(stale.nextJob,null);
+
+    const completed=await setup(fixture,'application-authority-run-complete');
+    const completedAuthority=new ApplicationAuthorityService(completed.repository,()=>completed.clock.now);
+    await completed.claims.select('job',1n,true);await completedAuthority.set(fromJSON(authorityInput('campaign_to_review',['job'])),0n);
+    await new ApplicationRunsService(completed.repository,()=>completed.clock.now).complete('run-fixture',1n);
+    const ended=plain(await completedAuthority.progress());
+    assert.equal(ended.mode,'guided');assert.equal(ended.status,'stale');assert.deepEqual(ended.jobs,[]);assert.equal(ended.nextJob,null);
   });
 
   await t.test('expired authority exposes no runnable campaign queue',async()=>{
