@@ -1,5 +1,5 @@
 import { snapshot } from './facts-model';
-import { boot, job, object, overview, parseJson, resume, resumeList, stringifyJson, workspaceState, type JobFields } from './contracts';
+import { boot, job, object, overview, resume, resumeList, workspaceState, type JobFields } from './contracts';
 export class ApiError extends Error {
     constructor(public status: number, public code: string, message: string) {
         super(message);
@@ -14,12 +14,12 @@ export function createClient(token: string) {
                 Authorization: `Bearer ${token}`, ...(body === undefined ? {} : {
                     'Content-Type': 'application/json'
                 })
-            }, body: body === undefined ? undefined : raw ? String(body) : stringifyJson(body), cache: 'no-store'
+            }, body: body === undefined ? undefined : raw ? String(body) : object.stringifyJson(body), cache: 'no-store'
         });
         let payload: unknown = null;
         try {
             const content = await response.text();
-            payload = raw && response.ok ? content : parseJson(content);
+            payload = raw && response.ok ? content : object.parseJson(content);
         }
         catch { /* Status handling remains authoritative. */
         }
@@ -44,7 +44,7 @@ export function createClient(token: string) {
         });
         if (!response.ok) {
             let payload: unknown = null;
-            try { payload = parseJson(await response.text()); }
+            try { payload = object.parseJson(await response.text()); }
             catch { /* Status handling remains authoritative. */ }
             const error = object(payload) && object(payload.error) ? payload.error : {};
             throw new ApiError(response.status, typeof error.code === 'string' ? error.code : 'request_error',

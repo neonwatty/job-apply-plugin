@@ -47,15 +47,14 @@ function point(value: unknown, arrayItem = false): Value {
     throw Error('Request body must contain JSON values.');
 }
 
-export const parseJson = (raw: string): unknown => plain(parse(raw));
-export const stringifyJson = (value: unknown): string => serialize(point(value));
-
 export type RecordValue = {
     [key: string]: unknown;
 };
 export function object(value: unknown): value is RecordValue {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
+object.parseJson = (raw: string): unknown => plain(parse(raw));
+object.stringifyJson = (value: unknown): string => serialize(point(value));
 export const textFields = ['url', 'role', 'company', 'location', 'workplaceType', 'employmentType', 'compensation', 'notes', 'description'] as const;
 export type TextField = typeof textFields[number];
 export type JobFields = Record<TextField, string> & {
