@@ -1,5 +1,5 @@
 type Job = { role?: unknown; company?: unknown; location?: unknown; url?: unknown;
-  status?: unknown; revision?: number; id?: unknown };
+  status?: unknown; revision?: number | bigint; id?: unknown };
 type Activity = {
   job?: Job | null;
   session?: { status?: unknown; step?: unknown; updatedAt?: unknown; pendingInformation?: unknown } | null;
@@ -34,18 +34,24 @@ export function canMarkReadyFrom(status: unknown): boolean {
 
 export function shouldUseActivityResponse(activity: Activity | null | undefined, ...knownJobs: (Job | null | undefined)[]): boolean {
   const responseJob = activity?.job;
-  if (!Number.isInteger(responseJob?.revision)) return false;
-  const knownRevision = Math.max(0, ...knownJobs
-    .filter((job) => Number.isInteger(job?.revision))
-    .map((job) => job!.revision!));
-  return responseJob!.revision! >= knownRevision;
+  const revision = (value: unknown): bigint | null => typeof value === "bigint" ? value
+    : typeof value === "number" && Number.isSafeInteger(value) ? BigInt(value) : null;
+  const incoming = revision(responseJob?.revision);
+  if (incoming === null) return false;
+  const knownRevision = knownJobs.reduce((latest, job) => {
+    const current = revision(job?.revision);
+    return current !== null && current > latest ? current : latest;
+  }, 0n);
+  return incoming >= knownRevision;
 }
 
 export function newestCanonicalJob(current: Job | null | undefined, incoming: Job | null | undefined): Job | null | undefined {
   if (!current) return incoming;
   if (!incoming || current.id !== incoming.id) return current;
-  const currentRevision = Number.isInteger(current.revision) ? current.revision! : 0;
-  const incomingRevision = Number.isInteger(incoming.revision) ? incoming.revision! : 0;
+  const revision = (value: unknown): bigint => typeof value === "bigint" ? value
+    : typeof value === "number" && Number.isSafeInteger(value) ? BigInt(value) : 0n;
+  const currentRevision = revision(current.revision);
+  const incomingRevision = revision(incoming.revision);
   return incomingRevision >= currentRevision ? incoming : current;
 }
 
@@ -53,7 +59,7 @@ export function activitySignature(activity: Activity | null | undefined): string
   if (!activity) return "";
   return JSON.stringify({
     status: activity.job?.status,
-    revision: activity.job?.revision,
+    revision: activity.job?.revision === undefined ? undefined : String(activity.job.revision),
     sessionStatus: activity.session?.status,
     sessionStep: activity.session?.step,
     sessionUpdatedAt: activity.session?.updatedAt,

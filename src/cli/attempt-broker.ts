@@ -93,7 +93,7 @@ export async function runAttemptBroker(root: string, service: ClaimsService, pro
     socket.on('error', () => {});
     socket.setTimeout(1000, () => socket.destroy());
     const decoder = new AttemptFrameDecoder();
-    let queued = false, rejected = false, received = false;
+    let queued = false, rejected = false, received = false, incoming: Document | null = null;
     const reject = () => {
       rejected = true;
       socket.end(encodeAttemptFrame(attemptError('request_rejected')), () => { if (!acquired) stop(); });
@@ -104,24 +104,26 @@ export async function runAttemptBroker(root: string, service: ClaimsService, pro
       try { request = decoder.push(bytes); }
       catch { reject(); return; }
       if (!request || queued) return;
+      incoming = request;
+    });
+    socket.once('end', () => {
+      if (rejected) return;
+      if (incoming === null) { if (received) reject(); else socket.destroy(); return; }
       queued = true;
-      const incoming = request;
+      const request = incoming;
       queue = queue.then(async () => {
         if (stopped || rejected) return;
         let complete = false, response: Document;
         try {
           if (!acquired) {
-            response = await authority.acquire(incoming); acquired = true; clearTimeout(idle);
+            response = await authority.acquire(request); acquired = true; clearTimeout(idle);
           } else {
-            const result = await authority.dispatch(incoming); response = result.response; complete = result.complete;
+            const result = await authority.dispatch(request); response = result.response; complete = result.complete;
           }
         } catch { response = attemptError('request_rejected'); complete = !acquired; }
         socket.end(encodeAttemptFrame(response), () => { if (complete) stop(); });
         if (complete && socket.destroyed) stop();
       }).catch(stop);
-    });
-    socket.once('end', () => {
-      if (!queued && !rejected) { if (received) reject(); else socket.destroy(); }
     });
   });
   server.on('error', stop);

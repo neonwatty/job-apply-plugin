@@ -75,24 +75,33 @@ test('unacquired broker idles out and scheduled heartbeat failure shuts it down 
   } finally {if(root)await killAttempt(root);await fixture.cleanup();}
 });
 
-test('newline transport accepts clients without EOF and rejects malformed live frames', {timeout:30000},async()=>{
+test('newline transport requires EOF and rejects delayed trailing bytes before Store mutation', {timeout:30000},async()=>{
   const {createConnection}=await import('node:net');
   const fixture=await nativeFixture();let running;
   try {
     const state=await setup(fixture,'frames');
+    await state.claims.select('job',1n,true);
     const socketPath=attemptSocketPath(state.root,process.getuid());
     running=runAttemptBroker(state.root,state.claims,state.provider,{idleMilliseconds:5000});
     await eventually(async()=>!!(await stat(socketPath).catch(()=>null)));
-    // A rejected acquisition exercises framing without needing a valid Store mutation.
     const result=await new Promise((resolve,reject)=>{
-      const socket=createConnection(socketPath);let output='';
-      socket.on('connect',()=>socket.write('{"command":"heartbeat"}\n'));
+      const socket=createConnection(socketPath);let output='', responded=false;
+      socket.on('connect',()=>{
+        socket.write('{"command":"start","id":"job","owner":"owner","expectedRevision":2}\n');
+        setTimeout(()=>{
+          if(responded){socket.destroy();reject(Error('broker dispatched before client EOF'));return;}
+          socket.end('x');
+        },50);
+      });
       socket.on('data',bytes=>{output+=bytes;});
+      socket.on('data',()=>{responded=true;});
       socket.on('end',()=>{socket.destroy();resolve(output);});
       socket.on('error',reject);
       socket.setTimeout(1500,()=>{socket.destroy();reject(Error('newline client received no response'));});
     });
     assert.deepEqual(JSON.parse(result),rejected);
+    assert.equal(plain(await state.claims.status()).claim,null);
+    assert.equal((await read(state.root,'jobs.json')).jobs.job.status,'ready');
     await running;
   } finally {if(running){process.emit('SIGTERM');await running;}await fixture.cleanup();}
 });

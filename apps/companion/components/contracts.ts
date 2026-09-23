@@ -1,9 +1,60 @@
+import { PythonObject } from '../../../src/contracts/python-object';
+import { PythonText } from '../../../src/contracts/python-text';
+import { integer, parse, serialize, text, type Value } from '../../../src/contracts/workspace/values';
+
+const maxSafe = BigInt(Number.MAX_SAFE_INTEGER);
+const minSafe = BigInt(Number.MIN_SAFE_INTEGER);
+
+function plain(value: Value, exactInteger = false): unknown {
+    if (value instanceof PythonText)
+        return value.codePoints.map(point => String.fromCodePoint(point)).join('');
+    if (value instanceof PythonObject) {
+        const canonicalJob = ['id', 'url', 'status', 'revision'].every(key => value.has(text(key)));
+        return Object.fromEntries(value.entries().map(([key, item]) => {
+            const name = String(plain(key));
+            return [name, plain(item, canonicalJob && name === 'revision')];
+        }));
+    }
+    if (Array.isArray(value)) return value.map(item => plain(item));
+    if (value !== null && typeof value === 'object' && 'kind' in value) {
+        if (value.kind === 'int' && typeof value.value === 'bigint')
+            return exactInteger && (value.value < minSafe || value.value > maxSafe) ? value.value : Number(value.value);
+        return value.value;
+    }
+    return value;
+}
+
+function point(value: unknown, arrayItem = false): Value {
+    if (value === undefined) {
+        if (arrayItem) return null;
+        throw Error('Undefined object fields must be omitted.');
+    }
+    if (value === null || typeof value === 'boolean') return value;
+    if (typeof value === 'string') return text(value);
+    if (typeof value === 'bigint') return integer(value);
+    if (typeof value === 'number') return parse(JSON.stringify(value));
+    if (Array.isArray(value)) return value.map(item => point(item, true));
+    if (typeof value === 'object') {
+        const prototype = Object.getPrototypeOf(value);
+        if (prototype !== Object.prototype && prototype !== null)
+            throw Error('Request body must contain plain JSON values.');
+        const result = new PythonObject<Value>();
+        for (const [key, item] of Object.entries(value)) {
+            if (item !== undefined) result.set(text(key), point(item));
+        }
+        return result;
+    }
+    throw Error('Request body must contain JSON values.');
+}
+
 export type RecordValue = {
     [key: string]: unknown;
 };
 export function object(value: unknown): value is RecordValue {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
+object.parseJson = (raw: string): unknown => plain(parse(raw));
+object.stringifyJson = (value: unknown): string => serialize(point(value));
 export const textFields = ['url', 'role', 'company', 'location', 'workplaceType', 'employmentType', 'compensation', 'notes', 'description'] as const;
 export type TextField = typeof textFields[number];
 export type JobFields = Record<TextField, string> & {
@@ -12,7 +63,7 @@ export type JobFields = Record<TextField, string> & {
 };
 export type Job = RecordValue & {
     id: string;
-    revision: number;
+    revision: bigint;
     status: string;
     url: string;
 };
@@ -63,12 +114,18 @@ export type OverviewData = {
 function invalid(): never {
     throw Error('The workspace returned an invalid response.');
 }
+function revision(value: unknown): bigint {
+    if (typeof value === 'bigint' && value > 0n) return value;
+    if (typeof value === 'number' && Number.isSafeInteger(value) && value > 0) return BigInt(value);
+    return invalid();
+}
 export function job(value: unknown): Job {
     if (!object(value) || typeof value.id !== 'string' || typeof value.url !== 'string'
-        || typeof value.status !== 'string' || typeof value.revision !== 'number' || !Number.isSafeInteger(value.revision) || value.revision < 1)
+        || typeof value.status !== 'string')
         return invalid();
+    const currentRevision = revision(value.revision);
     return {
-        ...value, id: value.id, url: value.url, status: value.status, revision: value.revision
+        ...value, id: value.id, url: value.url, status: value.status, revision: currentRevision
     };
 }
 export function workspaceState(value: unknown): WorkspaceState {

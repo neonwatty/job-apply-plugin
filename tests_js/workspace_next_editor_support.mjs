@@ -31,24 +31,24 @@ async function modules(run) {
 async function editorDraftAssertions() {
     return modules((m) => {
         const first = {
-            id: 'one', url: 'https://example.invalid', revision: 1, status: 'saved', company: 'Old', notes: ''
+            id: 'one', url: 'https://example.invalid', revision: 1n, status: 'saved', company: 'Old', notes: ''
         };
         const draft = m.edit(m.openEditor(first), {
             notes: 'Mine'
         });
         const latest = {
-            ...first, revision: 2, company: 'Other'
+            ...first, revision: 2n, company: 'Other'
         };
         const observed = m.observe(draft, [latest]);
         assert.equal(observed.fields.notes, 'Mine');
-        assert.equal(observed.selected.revision, 1);
+        assert.equal(observed.selected.revision, 1n);
         assert.equal(m.observe({
             ...observed, latest: {
-                ...latest, revision: 3
+                ...latest, revision: 3n
             }
-        }, [latest]).latest.revision, 3);
+        }, [latest]).latest.revision, 3n);
         const rebased = m.reapply(observed);
-        assert.equal(rebased.selected.revision, 2);
+        assert.equal(rebased.selected.revision, 2n);
         assert.equal(rebased.fields.company, 'Other');
         assert.equal(rebased.fields.notes, 'Mine');
         assert.deepEqual([...rebased.dirty], ['notes']);
@@ -80,7 +80,8 @@ async function editorDtoAssertions() {
                 source: 'human'
             }
         };
-        assert.deepEqual(c.job(value), value);
+        assert.deepEqual(c.job(value), { ...value, revision: 1n });
+        assert.equal(c.job({ ...value, revision: 9007199254740993n }).revision, 9007199254740993n);
         assert.deepEqual(c.boot({
             status: 'ready'
         }), {
@@ -89,6 +90,31 @@ async function editorDtoAssertions() {
         assert.throws(() => c.overview({
             setup: {}, counts: {}, nextAction: 'x', targetWorkspace: 'jobs'
         }));
+    });
+}
+async function largeRevisionAssertions() {
+    await modules(async (_m, _c, clientModule) => {
+        const original = globalThis.fetch;
+        const fields = { url:'https://example.invalid',role:'',company:'',location:'',workplaceType:'',employmentType:'',
+            compensation:'',notes:'',description:'',resumeId:null,priority:0 };
+        try {
+            const bodies = [];
+            globalThis.fetch = async (_url, options = {}) => {
+                if (options.body) bodies.push(String(options.body));
+                const revision = options.body ? '9007199254740994' : '9007199254740993';
+                const job = `{"id":"job","url":"https://example.invalid","status":"saved","revision":${revision}}`;
+                const run = '{"runId":"run","revision":9007199254740993,"selection":{"resumeId":"resume","factRevision":9007199254740993},"queueVersions":[{"revision":9007199254740993,"jobIds":["job"]}]}';
+                return new Response(options.body ? job : `{"jobs":[${job}],"resumes":[],"applicationRun":${run}}`);
+            };
+            const client = clientModule.createClient('fixture');
+            const state = await client.state();
+            assert.equal(state.jobs[0].revision, 9007199254740993n);
+            assert.equal(typeof state.applicationRun.selection.factRevision, 'number');
+            assert.equal(typeof state.applicationRun.queueVersions[0].revision, 'number');
+            const updated = await client.update('job', state.jobs[0].revision, fields);
+            assert.equal(updated.revision, 9007199254740994n);
+            assert.match(bodies[0], /"expectedRevision":9007199254740993(?:[,}])/);
+        } finally { globalThis.fetch = original; }
     });
 }
 async function cancellationAssertions() {
@@ -151,5 +177,6 @@ export async function nextEditor() {
     await factsDraftAssertions();
     await editorDraftAssertions();
     await editorDtoAssertions();
+    await largeRevisionAssertions();
     await cancellationAssertions();
 }

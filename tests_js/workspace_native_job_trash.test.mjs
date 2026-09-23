@@ -149,6 +149,19 @@ test('native Trash listing and job lifecycle preserve Python contracts and persi
         assert.equal((await jobsHttp(state.jobs,state.repository,'POST',path,'{"expectedRevision":2}')).status,501);
       }
     });
+    await t.test('HTTP reports active-run Trash conflicts with actionable guidance',async()=>{
+      const state=await isolated();
+      await state.startRun();
+      const before=await snapshot(state.root);
+      const result=await jobsHttp(state.jobs,state.repository,'POST','/api/jobs/job/trash','{"expectedRevision":1}');
+      assert.equal(result.status,409);
+      assert.deepEqual(JSON.parse(result.body).error,{
+        code:'active_run_blocked',
+        message:'Remove this job from the active application run, or complete the run, before changing its lifecycle.',
+        recordType:'job',operation:'trash',counts:{applicationRuns:1},
+      });
+      assert.deepEqual(await snapshot(state.root),before);
+    });
     await t.test('unsupported fixture state fails closed without altering jobs',async()=>{
       const state=await isolated(), before=await readFile(join(state.root,'jobs.json'));
       await writeFile(join(state.root,'pending-journal.json'),'{}');

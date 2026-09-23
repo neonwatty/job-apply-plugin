@@ -14,12 +14,12 @@ export function createClient(token: string) {
                 Authorization: `Bearer ${token}`, ...(body === undefined ? {} : {
                     'Content-Type': 'application/json'
                 })
-            }, body: body === undefined ? undefined : raw ? String(body) : JSON.stringify(body), cache: 'no-store'
+            }, body: body === undefined ? undefined : raw ? String(body) : object.stringifyJson(body), cache: 'no-store'
         });
         let payload: unknown = null;
         try {
             const content = await response.text();
-            payload = raw && response.ok ? content : JSON.parse(content);
+            payload = raw && response.ok ? content : object.parseJson(content);
         }
         catch { /* Status handling remains authoritative. */
         }
@@ -44,7 +44,7 @@ export function createClient(token: string) {
         });
         if (!response.ok) {
             let payload: unknown = null;
-            try { payload = JSON.parse(await response.text()); }
+            try { payload = object.parseJson(await response.text()); }
             catch { /* Status handling remains authoritative. */ }
             const error = object(payload) && object(payload.error) ? payload.error : {};
             throw new ApiError(response.status, typeof error.code === 'string' ? error.code : 'request_error',
@@ -69,7 +69,7 @@ export function createClient(token: string) {
         create: async (fields: JobFields, signal?: AbortSignal) => job(await request('/api/jobs', 'POST', {
             job: fields
         }, signal)),
-        update: async (id: string, revision: number, fields: JobFields, signal?: AbortSignal) => job(await request(`/api/jobs/${encodeURIComponent(id)}`, 'PATCH', {
+        update: async (id: string, revision: bigint, fields: JobFields, signal?: AbortSignal) => job(await request(`/api/jobs/${encodeURIComponent(id)}`, 'PATCH', {
             patch: fields, expectedRevision: revision
         }, signal)),
         resumes: async (signal?: AbortSignal) => resumeList(await request('/api/resumes', 'GET', undefined, signal)),

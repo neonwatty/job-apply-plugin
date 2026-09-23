@@ -105,7 +105,7 @@ export async function runAttemptBroker(root, service, provider, options = {}, ap
         socket.on('error', () => { });
         socket.setTimeout(1000, () => socket.destroy());
         const decoder = new AttemptFrameDecoder();
-        let queued = false, rejected = false, received = false;
+        let queued = false, rejected = false, received = false, incoming = null;
         const reject = () => {
             rejected = true;
             socket.end(encodeAttemptFrame(attemptError('request_rejected')), () => { if (!acquired)
@@ -123,20 +123,32 @@ export async function runAttemptBroker(root, service, provider, options = {}, ap
             }
             if (!request || queued)
                 return;
+            incoming = request;
+        });
+        socket.once('end', () => {
+            if (rejected)
+                return;
+            if (incoming === null) {
+                if (received)
+                    reject();
+                else
+                    socket.destroy();
+                return;
+            }
             queued = true;
-            const incoming = request;
+            const request = incoming;
             queue = queue.then(async () => {
                 if (stopped || rejected)
                     return;
                 let complete = false, response;
                 try {
                     if (!acquired) {
-                        response = await authority.acquire(incoming);
+                        response = await authority.acquire(request);
                         acquired = true;
                         clearTimeout(idle);
                     }
                     else {
-                        const result = await authority.dispatch(incoming);
+                        const result = await authority.dispatch(request);
                         response = result.response;
                         complete = result.complete;
                     }
@@ -150,14 +162,6 @@ export async function runAttemptBroker(root, service, provider, options = {}, ap
                 if (complete && socket.destroyed)
                     stop();
             }).catch(stop);
-        });
-        socket.once('end', () => {
-            if (!queued && !rejected) {
-                if (received)
-                    reject();
-                else
-                    socket.destroy();
-            }
         });
     });
     server.on('error', stop);

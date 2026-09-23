@@ -1,6 +1,6 @@
 # Job Apply Plugin for Codex and Claude Code
 
-Run the isolated cross-client task-spine oracle with `npm run qa:unified-task-spine`. It uses a temporary synthetic Store, the shipped CLIs, an authenticated loopback Companion server, and Playwright; its single JSON report is value-free and cleanup-closed, and it never enables a final application action.
+Run the isolated cross-client reference oracle with `npm run qa:unified-task-spine`. It uses a temporary synthetic Store, the development-only Python reference CLIs and workspace server, and Playwright; its single JSON report is value-free and cleanup-closed, and it never enables a final application action. Installed TypeScript routing and Companion coverage comes from the native Store, CLI, and workspace suites described in `docs/testing.md`.
 
 [![Discord](https://img.shields.io/badge/Discord-Join%20Server-7289da?style=flat&logo=discord&logoColor=white)](https://discord.gg/7xsxU4ZG6A)
 

@@ -85,7 +85,8 @@ test('adapter refuses capability-disabled actions before transport', async () =>
 
 test('errors preserve count guidance while suppressing private server messages and never retry', async () => {
     for (const [code, counts, expected] of [
-        ['revision_conflict', {}, /changed elsewhere/], ['record_referenced', { history: 2 }, /2 protected references/],
+        ['revision_conflict', {}, /changed elsewhere/], ['active_run_blocked', { applicationRuns: 1 }, /active application run/],
+        ['record_referenced', { history: 2 }, /2 protected references/],
         ['recovery_required', {}, /recovery is required/], ['request_error', {}, /could not be confirmed/]
     ]) {
         let calls = 0;

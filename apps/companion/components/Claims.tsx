@@ -31,8 +31,8 @@ export function Claims({ client, jobs, disabled, changed, activityChanged, navig
     const pending = useRef<AbortController | null>(null);
     async function request(path: string, body: unknown, signal: AbortSignal) {
         const raw = await client.extractionRequest('/api/claims' + path, body === undefined ? 'GET' : 'POST',
-            body === undefined ? undefined : JSON.stringify(body), signal);
-        const value: unknown = JSON.parse(raw);
+            body === undefined ? undefined : object.stringifyJson(body), signal);
+        const value: unknown = object.parseJson(raw);
         if (!object(value)) throw Error('Invalid claim response');
         return value;
     }

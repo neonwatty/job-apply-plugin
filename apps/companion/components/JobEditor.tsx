@@ -72,7 +72,7 @@ export function JobEditor({ editor,resumes,busy,error,change,close,save,reapply,
             {error&&<p role="alert" className="error">
                 {error}
             </p>}
-            {selection && <p className="notice">{selection.jobRevision === editor.selected?.revision
+            {selection && <p className="notice">{String(selection.jobRevision) === String(editor.selected?.revision)
                 ? 'Application inputs confirmed in chat' : 'Application inputs need reconfirmation after this job changed'}:
                 {' '}{selectedResume?.label ?? String(selection.resumeId)} · facts revision {String(selection.factRevision)}.
                 The agent checks these revisions again before and during the attempt.</p>}

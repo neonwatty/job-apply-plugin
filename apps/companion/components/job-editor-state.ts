@@ -32,7 +32,8 @@ export function observe(editor: Editor, jobs: Job[]): Editor {
     const latest = jobs.find(job => job.id === editor.selected?.id);
     if (!latest) return { ...editor, missing: true, latest: null };
     const present = { ...editor, missing: false };
-    return latest.revision > Math.max(editor.selected.revision, editor.latest?.revision ?? 0) ? {
+    const observedRevision = editor.latest?.revision ?? 0n;
+    return latest.revision > (editor.selected.revision > observedRevision ? editor.selected.revision : observedRevision) ? {
         ...present, latest
     } : present;
 }
