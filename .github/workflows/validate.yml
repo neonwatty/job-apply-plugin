@@ -117,6 +117,11 @@ jobs:
             3.13
             3.14
             3.12
+      - name: Configure synthetic Git identity for migration fixtures
+        if: matrix.suite == 'node-migration-evidence'
+        run: |
+          git config user.name "CI Migration Fixture"
+          git config user.email "ci-migration-fixture@example.invalid"
       - run: npm ci
       - uses: actions/cache@v4
         with:
