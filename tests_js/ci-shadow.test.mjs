@@ -9,6 +9,30 @@ import { evaluateGate, main as gateMain } from "../tools/ci/gate.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
+test("workflows use action generations backed by Node 24", () => {
+  const expectedVersions = new Map([
+    ["actions/checkout", "v7"],
+    ["actions/setup-node", "v7"],
+    ["actions/setup-python", "v7"],
+    ["actions/cache", "v6"],
+    ["actions/upload-artifact", "v7"],
+  ]);
+  const workflowDirectory = path.join(ROOT, ".github/workflows");
+  const workflows = fs.readdirSync(workflowDirectory)
+    .filter(file => file.endsWith(".yml") || file.endsWith(".yaml"))
+    .map(file => [file, fs.readFileSync(path.join(workflowDirectory, file), "utf8")]);
+  const seen = new Set();
+
+  for (const [file, workflow] of workflows) {
+    for (const match of workflow.matchAll(/uses:\s+(actions\/(?:checkout|setup-node|setup-python|cache|upload-artifact))@(v\d+)/g)) {
+      const [, action, version] = match;
+      assert.equal(version, expectedVersions.get(action), `${file} uses ${action}@${version}`);
+      seen.add(action);
+    }
+  }
+  assert.deepEqual(seen, new Set(expectedVersions.keys()));
+});
+
 test("shadow classification records affected selection without narrowing execution", () => {
   const matrix = {
     schemaVersion: 1,
@@ -103,7 +127,7 @@ test("validation workflow preserves contexts, replaces stale modules, and keeps 
   assert.match(workflow, /push:\n    branches: \[main, staging\]/);
   assert.match(workflow, /pull_request:\n    branches: \[main, staging\]/);
   assert.match(workflow, /workflow_dispatch:/);
-  assert.match(workflow, /policy:[\s\S]*?actions\/checkout@v4\n        with:\n          fetch-depth: 0[\s\S]*?python-shards:/);
+  assert.match(workflow, /policy:[\s\S]*?actions\/checkout@v7\n        with:\n          fetch-depth: 0[\s\S]*?python-shards:/);
   assert.doesNotMatch(workflow, /owner-approved-visible-browser-tests/);
   const nightly = fs.readFileSync(path.join(ROOT, ".github/workflows/nightly.yml"), "utf8");
   assert.match(nightly, /workflow_dispatch:/);
