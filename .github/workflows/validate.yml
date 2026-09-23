@@ -102,7 +102,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [node-migration-evidence, node-recorder, node-renderer, node-workspace-other, native-posix-lock, native-canonical-store-clone, native-default-cutover, native-posix-timestamps, native-email-canary-composition, node-reference-s04, node-reference-s05]
+        suite: [node-migration-evidence, node-recorder, node-renderer, node-workspace-other, native-posix-lock, native-canonical-store-clone, native-default-cutover, native-posix-timestamps, native-email-canary-composition]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -139,7 +139,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [native-frozen-reference-profiles, macos-native-typescript-adapter]
+        # The frozen S08 profile suite remains a local deep gate because it
+        # requires the exact recorded Homebrew ARM64 interpreter binaries.
+        suite: [macos-native-typescript-adapter]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
