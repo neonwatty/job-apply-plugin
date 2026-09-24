@@ -107,6 +107,11 @@ export async function nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot
   assert.match(await panel.locator('.title-discovery-preview').innerText(), /Director of AI/);
   assert.match(await panel.locator('.title-discovery-preview').innerText(), /Concurrent Architect/);
   await panel.getByRole('button', { name: 'I reviewed the changed titles and exact preview' }).click();
+  await panel.getByRole('button', { name: 'Remove Concurrent Architect' }).click();
+  assert.equal(await panel.getByRole('button', { name: 'Confirm and save exact titles' }).isDisabled(), true);
+  await panel.getByRole('button', { name: 'Add title manually' }).click();
+  await panel.locator('.title-discovery-choice').last().getByRole('textbox', { name: 'Title' }).fill('Concurrent Architect');
+  await panel.getByRole('button', { name: 'I reviewed the changed titles and exact preview' }).click();
   await panel.getByRole('button', { name: 'Confirm and save exact titles' }).click();
   await panel.getByText(/Target titles saved/).waitFor();
   const reconciled = JSON.parse(await readFile(profilePath, 'utf8'));
@@ -149,6 +154,34 @@ export async function nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot
     ['Staff Machine Learning Engineer', 'Director of AI', 'Concurrent Architect', 'Principal ML Engineer']);
   page.once('dialog', dialog => dialog.accept());
   await page.getByRole('button', { name: 'Discard facts changes' }).click();
+  await panel.getByRole('button', { name: 'Edit target titles' }).click();
+  const unchanged = JSON.parse(await readFile(profilePath, 'utf8'));
+  await panel.getByRole('button', { name: 'Confirm and save exact titles' }).click();
+  await panel.getByText('Target titles already match the saved set. No changes were made.').waitFor();
+  assert.deepEqual(JSON.parse(await readFile(profilePath, 'utf8')), unchanged);
+  await panel.getByRole('button', { name: 'Edit target titles' }).click();
+  await panel.getByRole('button', { name: 'Add title manually' }).click();
+  await panel.locator('.title-discovery-choice').last().getByRole('textbox', { name: 'Title' }).fill('Staff Forward Deployed Engineer');
+  page.once('dialog', dialog => dialog.dismiss());
+  await page.getByRole('button', { name: 'Overview', exact: true }).click();
+  await panel.locator('.title-discovery-choice').last().getByRole('textbox', { name: 'Title' }).waitFor();
+  assert.deepEqual(JSON.parse(await readFile(profilePath, 'utf8')), unchanged);
+  await panel.getByRole('button', { name: 'Cancel discovery' }).click();
+  const currentRevision = await page.evaluate(async () => {
+    const token = new URLSearchParams(location.hash.slice(1)).get('token');
+    return (await fetch('/api/profile', { headers: { Authorization: `Bearer ${token}` } })).json();
+  });
+  await writeFile(externalPatch, JSON.stringify({ preferences: 'legacy search preferences' }));
+  await execute(process.execPath, [join(buildRoot, 'runtime/cli/native-jobs.js'), '--root', root,
+    '--native-lock', fixture.receipt.artifact, 'profile-patch', '--input', externalPatch,
+    '--expected-revision', String(currentRevision.revision), '--source', 'user'], { env: { PATH: '' } });
+  const legacy = JSON.parse(await readFile(profilePath, 'utf8'));
+  await page.reload();
+  await page.getByRole('button', { name: 'Facts', exact: true }).click();
+  await panel.getByText('Saved preferences have an unsupported shape. Resolve them before saving target titles.').waitFor();
+  await panel.getByRole('button', { name: 'Edit target titles' }).click();
+  assert.equal(await panel.getByRole('button', { name: 'Confirm and save exact titles' }).isDisabled(), true);
+  assert.deepEqual(JSON.parse(await readFile(profilePath, 'utf8')), legacy);
   return { cancel: true, unavailable: true, emptyRetry: true, keyboardFocus: true, delayedSave: true,
     exactSave: true, conflictRetry: true, canonicalReconciliation: true, factsDraft: true };
 }
