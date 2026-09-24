@@ -43,9 +43,9 @@ class StoreCliExtractionTests(unittest.TestCase):
         # Captured from immutable facade 6214176, before extraction.
         cases = (
             (self.cli_parser.build_parser,
-             "6be64140bd654bfec00651e761adea8487bc1bdda95de08b4ede97c0f37abc21"),
+             "b5238eeba5c2b37ab1e742e6bab7362820ae244117f82de8e29bff02cd50ebb3"),
             (self.cli_dispatch.run,
-             "f81da6000101743732227aed753760d5231d7a2a8bdb6da6cd73df5d45c09764"),
+             "c48f69763f82bf17bf31adbc1b44f1a8173193cfaaf25cb0c4d779b58ff5d811"),
         )
         for function, expected in cases:
             with self.subTest(function=function.__name__):
@@ -53,7 +53,7 @@ class StoreCliExtractionTests(unittest.TestCase):
                 body = ast.Module(body=tree.body[0].body, type_ignores=[])
                 self.assertEqual(canonical_ast_digest(body), expected)
 
-    def test_all_98_parser_contracts_remain_exact(self):
+    def test_all_99_parser_contracts_remain_exact(self):
         parser = self.cli_parser.build_parser(vars(self.facade))
         self.assertEqual(parser_receipt(parser), EXPECTED_RECEIPT)
 

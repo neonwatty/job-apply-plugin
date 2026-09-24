@@ -11,7 +11,7 @@ import type { Document, Value } from '../contracts/workspace/values.js';
 export const nativeAutomationCommandNames = new Set([
   'automation-settings-get', 'automation-settings-update',
   'automation-settings-copy-profile-email', 'automation-capability',
-  'account-realm-resolve', 'employer-account-list', 'employer-account-get',
+  'account-realm-resolve', 'account-flow-classify', 'employer-account-list', 'employer-account-get',
   'employer-account-create', 'employer-account-update',
   'employer-account-execute-synthetic',
 ]);
@@ -33,6 +33,7 @@ const commandOptions: Record<string, { allowed: string[]; required: string[] }> 
   },
   'automation-capability': { allowed: ['--platform'], required: [] },
   'account-realm-resolve': { allowed: ['--url'], required: ['--url'] },
+  'account-flow-classify': { allowed: ['--url'], required: ['--url'] },
   'employer-account-list': { allowed: [], required: [] },
   'employer-account-get': { allowed: ['--realm-ref'], required: ['--realm-ref'] },
   'employer-account-create': { allowed: ['--url', '--input'], required: ['--url'] },
@@ -109,6 +110,7 @@ export async function runNativeAutomationCommand(command: string, args: string[]
       return automation.copyProfileEmail(revision('--expected-profile-revision'), revision('--expected-settings-revision'), true);
     case 'automation-capability': return nativeAutomationCapability();
     case 'account-realm-resolve': return accounts.resolve(required('--url'));
+    case 'account-flow-classify': return accounts.classify(required('--url'));
     case 'employer-account-list': return accounts.list(true);
     case 'employer-account-get': return accounts.get(required('--realm-ref'), true);
     case 'employer-account-create': {

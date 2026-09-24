@@ -19,6 +19,14 @@ class AccountMutationMixin:
             else:
                 self._store_call(lambda: store.resolve_account_realm(payload["url"]))
             return True
+        if method == "POST" and path == "/api/account-flows/classify":
+            if set(payload) != {"url"} or not isinstance(payload.get("url"), str):
+                self._error(
+                    HTTPStatus.BAD_REQUEST, "body must contain only a portal URL"
+                )
+            else:
+                self._store_call(lambda: store.classify_account_flow(payload["url"]))
+            return True
         if method == "POST" and path == "/api/trusted-fill/approve":
             self._store_call(lambda: store.approve_trusted_fill(payload, public=True))
             return True

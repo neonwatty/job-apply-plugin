@@ -89,6 +89,24 @@ print(json.dumps({'results':out,'settings':json.loads(s.automation_settings_path
   assert.doesNotMatch(JSON.stringify(actual), /profile@example|synthetic@example|override@example|workday:v1/);
 });
 
+test('MyGreenhouse is a global passwordless provider-free persisted account', async t => {
+  const f = await fixture(t);
+  const first = plain(f.accounts.classify('https://my.greenhouse.io/'));
+  const second = plain(f.accounts.classify('https://my.greenhouse.io/candidate/home'));
+  assert.deepEqual(first, second);
+  assert.equal(first.flowKind, 'passwordless_email_code');
+  assert.equal(first.authorityKind, 'global');
+  assert.equal(first.accountRequired, false);
+  const created = plain(await f.accounts.create('https://my.greenhouse.io/', fromJSON('private@example.invalid'), true));
+  assert.equal(created.providerAssigned, false);
+  assert.equal(created.credentialRequired, false);
+  assert.doesNotMatch(JSON.stringify(created), /private@example/);
+  for (const key of ['descriptor', 'credentialRef', 'signupEmailOverride']) assert.equal(Object.hasOwn(created, key), false);
+  const changed = plain(await f.accounts.update(created.realmRef, fromJSON({signupEmailOverride:null}), 1n, true));
+  assert.equal(changed.revision, 2);
+  assert.throws(() => f.accounts.create('https://boards.greenhouse.io/acme/jobs/12345'), /realm is unresolved/);
+});
+
 test('copy email never returns identity even in internal mode, failures do not persist', async t => {
   const f = await fixture(t);
   assert.deepEqual(plain(await f.settings.copyProfileEmail(1n,1n,false)),{copied:true,revision:2});
@@ -119,6 +137,10 @@ test('HTTP accepts only Python routes and exact revision payloads; public mutati
   assert.doesNotMatch(response.body,/secret@example/);
   await assert.rejects(call('PATCH','/api/automation/settings',{patch:{enabled:true},expectedRevision:true}),/positive integer/);
   await assert.rejects(call('POST','/api/automation/realm-resolve',{url:'https://example.wd1.myworkdayjobs.com',extra:true}),/only a portal URL/);
+  const classified = await call('POST','/api/account-flows/classify',{url:'https://boards.greenhouse.io/acme/jobs/12345'});
+  assert.equal(JSON.parse(classified.body).flowKind, 'account_not_required');
+  const passwordless = await call('POST','/api/account-flows/classify',{url:'https://my.greenhouse.io/'});
+  assert.equal(JSON.parse(passwordless.body).accountRequired, false);
   const created = await call('POST','/api/employer-accounts',{url:'https://example.wd1.myworkdayjobs.com',signupEmailOverride:'private@example.invalid'});
   assert.doesNotMatch(created.body,/private@example|workday:v1/);
   const realm = JSON.parse(created.body).realmRef;

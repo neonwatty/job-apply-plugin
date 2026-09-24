@@ -156,6 +156,35 @@ class StoreTests(StoreTestCase):
         ):
             self.assertNotIn(forbidden, serialized)
 
+    def test_mygreenhouse_global_metadata_is_revisioned_redacted_and_provider_free(self):
+        created = self.store.create_employer_account(
+            "https://my.greenhouse.io/", "private-mygreenhouse@example.invalid", public=True
+        )
+        self.assertEqual(created["adapterId"], "mygreenhouse")
+        self.assertEqual(created["flowKind"], "passwordless_email_code")
+        self.assertFalse(created["credentialRequired"])
+        self.assertFalse(created["providerAssigned"])
+        self.assertNotIn("signupEmailOverride", created)
+        record = self.store.get_employer_account(created["realmRef"])
+        self.assertEqual(record["descriptor"], "mygreenhouse:v1:global")
+        self.assertIsNone(record["providerId"])
+        self.assertIsNone(record["credentialRef"])
+        self.assertIsNone(record["credentialVersion"])
+        reloaded = STORE_MODULE.Store(self.store.root)
+        self.assertEqual(reloaded.get_employer_account(created["realmRef"], public=True), created)
+        changed = reloaded.update_employer_account(
+            created["realmRef"], {"signupEmailOverride": None}, 1, public=True
+        )
+        self.assertEqual(changed["revision"], 2)
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "protected credential metadata|provider-free"):
+            document = reloaded._load_employer_accounts_document()
+            document["accounts"][created["realmRef"]]["providerId"] = "macos-keychain"
+            STORE_MODULE._validate_employer_account_record(
+                created["realmRef"], document["accounts"][created["realmRef"]]
+            )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "unresolved"):
+            reloaded.create_employer_account("https://boards.greenhouse.io/acme/jobs/12345")
+
     def test_profile_email_copy_is_internal_revisioned_and_redacted(self):
         self.store.initialize()
         profile = self.store.replace_profile(

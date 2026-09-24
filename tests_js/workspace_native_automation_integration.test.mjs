@@ -58,6 +58,8 @@ test('integrated native automation registry uses private fixture storage and ser
     const resolved = await call('POST', '/api/automation/realm-resolve', { url: portal });
     assert.equal(resolved.status, 200);
     realm = JSON.parse(resolved.body).realmRef;
+    const classified = await call('POST', '/api/account-flows/classify', { url: 'https://my.greenhouse.io/' });
+    assert.equal(JSON.parse(classified.body).flowKind, 'passwordless_email_code');
     const created = await call('POST', '/api/employer-accounts', { url: portal, signupEmailOverride: 'private-account@example.invalid' });
     assert.equal(created.status, 200, created.body);
     assert.equal(JSON.parse(created.body).realmRef, realm);
@@ -82,6 +84,8 @@ test('integrated native automation registry uses private fixture storage and ser
     assert.equal(publicProjection.profileRevision, 1);
     assert.equal(publicProjection.capability.reasonCode, 'native_provider_not_composed');
     assert.equal(publicProjection.capability.accountFlowAutomation.liveExecutionEnabled, false);
+    assert.equal(publicProjection.capability.accountFlowAutomation.greenhouseAccountlessClassificationReady, true);
+    assert.equal(publicProjection.capability.accountFlowAutomation.myGreenhousePasswordlessConfigurationReady, true);
     assert.doesNotMatch(projection.body, /private-settings@example|private-account@example|"credentialRef":|"descriptor":/);
     assert.equal((await call('POST', '/api/trusted-fill/approve', {})).status, 400);
     assert.deepEqual(JSON.parse((await call('GET', '/api/account-operation')).body), { status: 'idle', operation: null });

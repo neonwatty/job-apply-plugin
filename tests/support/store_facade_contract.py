@@ -156,6 +156,7 @@ PUBLIC_STORE_SIGNATURES = {
     "copy_profile_email_to_automation_settings": "(self, expected_profile_revision: 'int', expected_settings_revision: 'int', *, public: 'bool' = True) -> 'dict[str, Any]'",
     "automation_capability": "(self, platform: 'str | None' = None) -> 'dict[str, Any]'",
     "resolve_account_realm": "(self, portal_url: 'str') -> 'dict[str, Any]'",
+    "classify_account_flow": "(self, portal_url: 'str') -> 'dict[str, Any]'",
     "employer_account_flow_decision": "(self, job_id: 'str') -> 'dict[str, Any]'",
     "list_employer_accounts": "(self, *, public: 'bool' = False, companion: 'bool' = False) -> 'list[dict[str, Any]]'",
     "get_employer_account": "(self, realm_ref: 'str', *, public: 'bool' = False) -> 'dict[str, Any] | None'",

@@ -33,7 +33,7 @@ export async function automationHttp(repository: AutomationRepository & Applicat
     if (account === null) throw new JobsError('employer account does not exist');
     return response(account);
   }
-  const recognized = method === 'POST' && ['/api/automation/realm-resolve', '/api/automation/settings/copy-profile-email', '/api/employer-accounts',
+  const recognized = method === 'POST' && ['/api/automation/realm-resolve', '/api/account-flows/classify', '/api/automation/settings/copy-profile-email', '/api/employer-accounts',
     '/api/application-authority', '/api/application-authority/revoke', '/api/application-authority/evaluate'].includes(path)
     || method === 'POST' && /^\/api\/application-authority\/(pause|resume|stop)$/u.test(path)
     || method === 'PATCH' && (path === '/api/automation/settings' || updateAccount !== null);
@@ -59,6 +59,11 @@ export async function automationHttp(repository: AutomationRepository & Applicat
     exact(payload, ['url'], 'body must contain only a portal URL');
     if (string(get(payload, 'url')) === null) throw new JobsError('body must contain only a portal URL');
     return response(accounts.resolve(string(get(payload, 'url'))));
+  }
+  if (path === '/api/account-flows/classify') {
+    exact(payload, ['url'], 'body must contain only a portal URL');
+    if (string(get(payload, 'url')) === null) throw new JobsError('body must contain only a portal URL');
+    return response(accounts.classify(string(get(payload, 'url'))));
   }
   if (path === '/api/automation/settings/copy-profile-email') {
     exact(payload, ['expectedProfileRevision', 'expectedSettingsRevision'], 'body must contain exact profile and settings revisions');

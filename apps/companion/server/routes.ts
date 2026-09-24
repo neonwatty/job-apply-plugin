@@ -253,6 +253,7 @@ export const apiRoutes = [
     "POST",
     "/api/automation/realm-resolve"
   ],
+  ["POST", "/api/account-flows/classify"],
   ["POST", "/api/application-authority"],
   ["POST", "/api/application-authority/evaluate"],
   ["POST", "/api/application-authority/pause"],

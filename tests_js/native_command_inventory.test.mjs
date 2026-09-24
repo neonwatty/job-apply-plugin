@@ -6,7 +6,7 @@ import { nativeJobsCommandFamilies, nativeJobsCommandFields } from '../runtime/c
 test('every Python Store command has exactly one native owner', async () => {
   const parser = await readFile('scripts/job_apply_store/cli_parser.py', 'utf8');
   const python = [...parser.matchAll(/commands\.add_parser\(["']([^"']+)/g)].map(match => match[1]);
-  assert.equal(python.length, 98, 'Python command inventory changed; update the native ownership registry');
+  assert.equal(python.length, 99, 'Python command inventory changed; update the native ownership registry');
   assert.equal(new Set(python).size, python.length, 'Python parser contains duplicate command names');
 
   const owned = nativeJobsCommandFamilies.flatMap(family => Object.keys(family.fields)

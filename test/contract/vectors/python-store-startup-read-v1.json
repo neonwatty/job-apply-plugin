@@ -8,7 +8,7 @@
     "noncePolicy": "fail-on-use-and-record-zero"
   },
   "inventory": {
-    "total": 98,
+    "total": 99,
     "commands": [
       "init",
       "paths",
@@ -97,6 +97,7 @@
       "automation-settings-copy-profile-email",
       "automation-capability",
       "account-realm-resolve",
+      "account-flow-classify",
       "employer-account-list",
       "employer-account-get",
       "employer-account-create",
@@ -114,7 +115,7 @@
       "employer-account-list",
       "claim-status"
     ],
-    "pending": 95
+    "pending": 96
   },
   "cases": [
     {

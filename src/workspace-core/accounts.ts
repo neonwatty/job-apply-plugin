@@ -2,13 +2,14 @@ import { copy, fromJSON, get, int, integer, object, set, string, text, JobsError
 import type { Document, Value } from '../contracts/workspace/values.js';
 import { exact, optionalEmail } from '../contracts/workspace/automation.js';
 import { publicAccount, validateAccount, validateAccountsDocument } from '../contracts/workspace/accounts.js';
-import { resolveAccountRealm } from '../contracts/workspace/account-realm.js';
+import { classifyAccountFlow, resolveAccountRealm } from '../contracts/workspace/account-realm.js';
 import { cloneDocument } from './automation.js';
 import type { AutomationRepository, AutomationTransaction } from './automation.js';
 
 export class AccountsService {
   constructor(readonly repository: AutomationRepository, private readonly now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')) {}
   resolve(url: unknown): Value { return fromJSON(resolveAccountRealm(url)); }
+  classify(url: unknown): Value { return fromJSON(classifyAccountFlow(url)); }
   list(publicView = false): Promise<Document[]> {
     return this.repository.automationTransaction(async tx => {
       const accounts = object(get(validateAccountsDocument(await tx.loadAccounts()), 'accounts'), 'employer accounts');

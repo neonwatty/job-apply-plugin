@@ -21,11 +21,11 @@ async function goldenCorpus() {
   return JSON.parse(await readFile(GOLDEN, "utf8"));
 }
 
-test("actual Store parser has the exact frozen 98-command inventory", async () => {
+test("actual Store parser has the exact frozen 99-command inventory", async () => {
   const golden = await goldenCorpus();
   const commands = commandInventory();
-  assert.equal(commands.length, 98);
-  assert.equal(new Set(commands).size, 98);
+  assert.equal(commands.length, 99);
+  assert.equal(new Set(commands).size, 99);
   assert.deepEqual(commands, golden.inventory.commands);
 });
 
@@ -33,7 +33,7 @@ test("fresh isolated Python read capture equals the reviewed golden", async () =
   const golden = await goldenCorpus();
   assert.equal(canonicalCorpus(await captureReadCorpus()), canonicalCorpus(golden));
   assert.equal(golden.inventory.captured.length, 9);
-  assert.equal(golden.inventory.pending, 89);
+  assert.equal(golden.inventory.pending, 90);
   assert.equal(golden.cases.every((item) => item.storeUnchanged), true);
   const rejected = golden.cases.filter((item) => item.exitCode === 2);
   assert.deepEqual(rejected.map((item) => item.scenario), ["corrupt-profile", "future-profile"]);

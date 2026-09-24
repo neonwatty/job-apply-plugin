@@ -75,7 +75,7 @@ export async function captureReadCorpus() {
   const temporary = await mkdtemp(join(tmpdir(), "job-apply-contracts-"));
   try {
     const commands = commandInventory();
-    if (commands.length !== 98 || new Set(commands).size !== 98) throw new Error("public_command_inventory_changed");
+    if (commands.length !== 99 || new Set(commands).size !== 99) throw new Error("public_command_inventory_changed");
     const root = await initializedRoot(temporary, "empty");
     const cases = [];
     for (const command of READ_COMMANDS) {

@@ -13,7 +13,9 @@ class WorkspaceServerTests(WorkspaceCase):
         self.assertEqual(account_flow["productionSeamReady"], expected_macos)
         self.assertFalse(account_flow["liveExecutionEnabled"])
         self.assertEqual(account_flow["workdayPasswordAccountReady"], expected_macos)
-        self.assertEqual(account_flow["greenhouseAccountlessClassificationReady"], expected_macos)
+        self.assertTrue(account_flow["greenhouseAccountlessClassificationReady"])
+        self.assertTrue(account_flow["myGreenhousePasswordlessConfigurationReady"])
+        self.assertFalse(account_flow["myGreenhousePasswordlessExecutionReady"])
         self.assertNotIn("signupEmail", projection["settings"])
 
         status, _headers, updated = self.request(
@@ -33,6 +35,17 @@ class WorkspaceServerTests(WorkspaceCase):
             "POST", "/api/automation/realm-resolve", {"url": "https://jobs.example.com/acme/1"}
         )
         self.assertEqual((status, unresolved["status"]), (200, "unresolved"))
+        status, _headers, classified = self.request(
+            "POST", "/api/account-flows/classify", {"url": "https://boards.greenhouse.io/acme/jobs/12345"}
+        )
+        self.assertEqual((status, classified["flowKind"], classified["accountRequired"]), (200, "account_not_required", False))
+        status, _headers, mygreenhouse = self.request(
+            "POST", "/api/account-flows/classify", {"url": "https://my.greenhouse.io/"}
+        )
+        self.assertEqual(
+            (status, mygreenhouse["flowKind"], mygreenhouse["authorityKind"], mygreenhouse["accountRequired"]),
+            (200, "passwordless_email_code", "global", False),
+        )
         for rejected_url in (
             "https://person@acme.wd5.myworkdayjobs.com/jobs/one",
             "https://acme.wd5.myworkdayjobs.com/jobs/one?access_token=",
@@ -76,6 +89,13 @@ class WorkspaceServerTests(WorkspaceCase):
         self.assertTrue(refreshed["accounts"][0]["signupEmailOverrideConfigured"])
         self.assertNotIn("replacement@example.com", json.dumps(refreshed))
         self.assertNotIn("credentialRef", json.dumps(refreshed))
+
+        status, _headers, global_account = self.request(
+            "POST", "/api/employer-accounts",
+            {"url": "https://my.greenhouse.io/", "signupEmailOverride": "private-mygreenhouse@example.invalid"},
+        )
+        self.assertEqual((status, global_account["flowKind"], global_account["providerAssigned"]), (200, "passwordless_email_code", False))
+        self.assertNotIn("private-mygreenhouse", json.dumps(global_account))
 
     def test_automation_mutations_reject_credential_shaped_fields(self):
         for payload in (

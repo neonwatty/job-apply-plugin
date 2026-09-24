@@ -17,6 +17,7 @@ from urllib.parse import parse_qsl, urlsplit
 REALM_DESCRIPTOR_VERSION = 1
 FLOW_PASSWORD = "password_candidate_account"
 FLOW_EMAIL_ONLY = "email_only_candidate_profile"
+FLOW_PASSWORDLESS_EMAIL_CODE = "passwordless_email_code"
 FLOW_ACCOUNT_NOT_REQUIRED = "account_not_required"
 LIFECYCLE_STATES = {
     "discovered", "credential_provisioned", "signup_in_progress", "active",
@@ -34,6 +35,7 @@ _ORACLE_PATH = re.compile(
     r"^/hcmUI/CandidateExperience/(?P<locale>[a-z]{2}(?:-[A-Z]{2})?)/sites/(?P<site>[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?)/job/(?P<job>[1-9][0-9]*)(?:/apply/email)?/?$"
 )
 _GREENHOUSE_HOSTS = {"boards.greenhouse.io", "job-boards.greenhouse.io"}
+_MYGREENHOUSE_HOST = "my.greenhouse.io"
 _GREENHOUSE_APPLICATION_PATH = re.compile(
     r"^/[a-z0-9](?:[a-z0-9_-]{0,126}[a-z0-9])?/jobs/[1-9][0-9]*/?$"
 )
@@ -105,7 +107,30 @@ class OracleRecruitingRealmAdapter:
         }
 
 
-REALM_ADAPTERS = (WorkdayRealmAdapter(), OracleRecruitingRealmAdapter())
+class MyGreenhouseRealmAdapter:
+    """Resolve the single global candidate account, never an employer realm."""
+
+    adapter_id = "mygreenhouse"
+
+    def resolve(self, parsed: Any, host: str) -> dict[str, Any]:
+        if host != _MYGREENHOUSE_HOST:
+            return _unresolved("adapter_unresolved")
+        if parsed.query or "%" in parsed.path or "//" in parsed.path:
+            return _unresolved("mygreenhouse_path_unproven")
+        descriptor = f"mygreenhouse:v{REALM_DESCRIPTOR_VERSION}:global"
+        return {
+            "status": "resolved",
+            "adapterId": self.adapter_id,
+            "descriptorVersion": REALM_DESCRIPTOR_VERSION,
+            "descriptor": descriptor,
+            "realmRef": hashlib.sha256(descriptor.encode("utf-8")).hexdigest(),
+            "authorityKind": "global",
+            "flowKind": FLOW_PASSWORDLESS_EMAIL_CODE,
+            "credentialRequired": False,
+        }
+
+
+REALM_ADAPTERS = (WorkdayRealmAdapter(), OracleRecruitingRealmAdapter(), MyGreenhouseRealmAdapter())
 
 
 def normalize_realm(portal_url: str) -> dict[str, Any]:
@@ -163,7 +188,7 @@ def classify_account_flow(portal_url: str) -> dict[str, Any]:
         return {
             **realm,
             "status": "classified",
-            "accountRequired": True,
+            "accountRequired": realm["adapterId"] != "mygreenhouse",
         }
     try:
         parsed = urlsplit(portal_url.strip()) if isinstance(portal_url, str) else None
@@ -241,7 +266,9 @@ def discover_account_flow_capability(platform: str, adapter_registry: tuple[Any,
         "productionSeamReady": False,
         "liveExecutionEnabled": False,
         "workdayPasswordAccountReady": False,
-        "greenhouseAccountlessClassificationReady": False,
+        "greenhouseAccountlessClassificationReady": True,
+        "myGreenhousePasswordlessConfigurationReady": True,
+        "myGreenhousePasswordlessExecutionReady": False,
         **capability,
         "discoveryMode": "side_effect_free",
     }

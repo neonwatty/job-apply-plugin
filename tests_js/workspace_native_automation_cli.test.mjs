@@ -11,7 +11,7 @@ import { documents, fixture, normalized, plain, portal, python, pythonRaw } from
 const commands = [
   'automation-settings-get', 'automation-settings-update',
   'automation-settings-copy-profile-email', 'automation-capability',
-  'account-realm-resolve', 'employer-account-list', 'employer-account-get',
+  'account-realm-resolve', 'account-flow-classify', 'employer-account-list', 'employer-account-get',
   'employer-account-create', 'employer-account-update',
   'employer-account-execute-synthetic',
 ];
@@ -36,6 +36,11 @@ test('native account and automation command leaf matches Python public envelopes
   ]);
   await compare('automation-settings-update', ['--input', '-', '--expected-revision', '3'], { enabled: true });
   const realm = await compare('account-realm-resolve', ['--url', portal]);
+  const accountless = await compare('account-flow-classify', ['--url', 'https://boards.greenhouse.io/acme/jobs/12345']);
+  assert.equal(accountless.accountRequired, false);
+  const passwordless = await compare('account-flow-classify', ['--url', 'https://my.greenhouse.io/']);
+  assert.equal(passwordless.flowKind, 'passwordless_email_code');
+  assert.equal(passwordless.accountRequired, false);
   const created = await compare('employer-account-create', ['--url', portal, '--input', '-'], {
     signupEmailOverride: 'account-private@example.invalid',
   });

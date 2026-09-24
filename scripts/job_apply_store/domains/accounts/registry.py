@@ -40,6 +40,9 @@ class AccountRegistryMixin:
     def resolve_account_realm(self, portal_url: str) -> dict[str, Any]:
         return _late("ACCOUNTS_MODULE").normalize_realm(portal_url)
 
+    def classify_account_flow(self, portal_url: str) -> dict[str, Any]:
+        return _late("ACCOUNTS_MODULE").classify_account_flow(portal_url)
+
     def employer_account_flow_decision(self, job_id: str) -> dict[str, Any]:
         """Return a value-free account decision for one canonical job."""
 

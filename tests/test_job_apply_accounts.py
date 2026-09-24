@@ -20,6 +20,17 @@ MAC_SPEC.loader.exec_module(MAC)
 
 
 class AccountContractTests(unittest.TestCase):
+    def test_mygreenhouse_is_one_global_passwordless_provider_free_realm(self):
+        first = ACCOUNTS.classify_account_flow("https://my.greenhouse.io/")
+        second = ACCOUNTS.classify_account_flow("https://my.greenhouse.io/candidate/home")
+        self.assertEqual(first, second)
+        self.assertEqual(
+            {key: first[key] for key in ("status", "adapterId", "authorityKind", "flowKind", "credentialRequired", "accountRequired")},
+            {"status": "classified", "adapterId": "mygreenhouse", "authorityKind": "global", "flowKind": "passwordless_email_code", "credentialRequired": False, "accountRequired": False},
+        )
+        self.assertEqual(first["descriptor"], "mygreenhouse:v1:global")
+        for url in ("http://my.greenhouse.io/", "https://person@my.greenhouse.io/", "https://my.greenhouse.io/?token=secret"):
+            self.assertEqual(ACCOUNTS.classify_account_flow(url)["status"], "unresolved")
     def test_flow_registry_classifies_reviewed_greenhouse_as_accountless(self):
         expected = {
             "status": "classified",
@@ -94,6 +105,10 @@ class AccountContractTests(unittest.TestCase):
         self.assertEqual(ACCOUNTS.discover_account_flow_capability("darwin", (adapter,))["providerId"], "macos-accessibility")
         self.assertEqual(ACCOUNTS.discover_account_flow_capability("win32", (adapter,))["state"], "unsupported")
         self.assertEqual(ACCOUNTS.discover_account_flow_capability("linux", (adapter,))["state"], "unsupported")
+        portable = ACCOUNTS.discover_account_flow_capability("linux", (adapter,))
+        self.assertTrue(portable["greenhouseAccountlessClassificationReady"])
+        self.assertTrue(portable["myGreenhousePasswordlessConfigurationReady"])
+        self.assertFalse(portable["myGreenhousePasswordlessExecutionReady"])
     def test_workday_tenant_host_normalizes_job_and_locale_paths_to_one_realm(self):
         first = ACCOUNTS.normalize_realm(
             "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/Phoenix/Engineer_R1"

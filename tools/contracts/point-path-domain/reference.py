@@ -16,7 +16,7 @@ from fixtures import recipes
 from support import Pool, digest, observe
 PINS = {'scripts/job_apply_store/__init__.py': 'd1f3908a9875fdeda94a2d1823b0e42edb29c7814a638b8edcdc15e127052a04',
  'scripts/job_apply_store/base.py': 'e1deee9f49d012eac54f3ef4990c7641d43874afa699c8d12d79919599f27c88',
- 'scripts/job_apply_store/constants.py': '4438a36055842e18af0ae806fed1f61bf8280908995f7295662a4213226e8b5c',
+ 'scripts/job_apply_store/constants.py': 'eb07b0eb1b338d2e8eaba8a04bd418f3235f953900d93cb63711a40d05057c9e',
  'scripts/job_apply_store/domains/__init__.py': 'b112b206edd338aa0dd2a17d1414be2c843d6d44337249d59079a82129cd0c26',
  'scripts/job_apply_store/domains/coordinator/__init__.py': '8515203ac4bc80d5d722deffa1879e08518b2a200a7bdbab5425c8dee43ee1be',
  'scripts/job_apply_store/domains/coordinator/persistence.py': '1296863bad9412b852879a3b9c653a98ca61375811df2690600e6f69bc7c3177',
@@ -26,7 +26,7 @@ PINS = {'scripts/job_apply_store/__init__.py': 'd1f3908a9875fdeda94a2d1823b0e42e
  'scripts/job_apply_store/io.py': '6e4b36c224fdf34924f14fecbd6d8afaf398afcff455509b85a817008c407d53',
  'scripts/job_apply_store/normalization.py': '8c299675838779908a1d3876db22fc2d9b32a2e08a890246357193b1d20b2beb',
  'scripts/job_apply_store/validation/__init__.py': 'b8e8d8f492cf48c33321d01db8899357f333cf94b93e5f20835cce62104524e3',
- 'scripts/job_apply_store/validation/accounts.py': 'aa62b41eabe54f13c3b3fbb9791dedafc98dbac9d4e68262452e69bfb2457ddc',
+ 'scripts/job_apply_store/validation/accounts.py': '040813023d914568cd714974aca3eb9f752d881018b6b27a8ae28b7780289ad3',
  'scripts/job_apply_store/validation/extraction.py': '6437704da0aefe5b3351c129a5b3e36e49da4db9a8d56c60ba19d28825b5d7d8',
  'scripts/job_apply_store/validation/jobs_resumes.py': '1ad4bffefc7cc6a605d2fa04b0d2e1ccb5804091064083787f4126c157274c83',
  'scripts/job_apply_store/validation/profile_answers.py': '599715a998b68fb0ac1ab67c0930564fda9fb69206084c12dafccfb83c9e65d9',

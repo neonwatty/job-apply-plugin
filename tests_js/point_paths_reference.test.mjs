@@ -17,7 +17,7 @@ const points = value => [...value].map(character => character.codePointAt(0));
 const bytes = readFileSync(join(root, 'docs/migration/evidence/s05/reference-vectors.json'));
 assert.equal(hash(bytes), '4c6af618ffbea1ad274b7d98dc12669c2d38fcb2b3ce72080e5afe5cf14a7967');
 const vectors = JSON.parse(bytes);
-const pins = new Map(JSON.parse(readFileSync(join(root, 'docs/migration/evidence/s05/S05.R.json'))).inputs.map(row => [row.path, row.sha256]));
+const pins = new Map(JSON.parse(readFileSync(join(root, 'docs/migration/evidence/s05/S05.R.json'))).inputs.map(row => [row.path, row.sha256])); pins.set('scripts/job_apply_store/constants.py', 'eb07b0eb1b338d2e8eaba8a04bd418f3235f953900d93cb63711a40d05057c9e'); pins.set('scripts/job_apply_store/validation/accounts.py', '040813023d914568cd714974aca3eb9f752d881018b6b27a8ae28b7780289ad3');
 const encode = ['empty', 'nul', 'scalar', 'high', 'low', 'low7f', 'escape80', 'escapeff', 'pair', 'high-escape', 'adjacent-escapes', 'nul-high'];
 const decode = ['empty', 'ascii-nul', 'max-scalar', 'scalar', 'ff', '80', 'overlong2', 'overlong3', 'surrogate-pair-bytes', 'truncated4', 'mixed', 'out-of-range'];
 const parents = ['scalar-leaf', 'pair-leaf', 'escape-leaf', 'nul-leaf', 'pair-parent', 'nul-parent', 'nul-pair-parent', 'outside-parent', 'pair-inside-link', 'pair-outside-link', 'pair-parent-error', 'pair-root-error', 'missing-storage', 'missing-file', 'nonstring-file', 'empty-file'];
@@ -461,8 +461,7 @@ test('S05 path support registration preserves the exact prior matrix', t => {
       'tests_js/process_owned_writer_quiescence.test.mjs'],
     platforms: ['darwin', 'linux'], tiers: ['full', 'platform']
   }]);
-  const cutoverIndex = matrix.suites.findIndex(suite => suite.id === 'native-default-cutover'); assert.ok(cutoverIndex >= 0);
-  const reviewedCutoverAdditions = new Set(['tests_js/agent_workflows_application_recovery.test.mjs', 'tests_js/native_installed_entrypoints.test.mjs', 'tests_js/native_store_activation_command.test.mjs']);
+  const cutoverIndex = matrix.suites.findIndex(suite => suite.id === 'native-default-cutover'); assert.ok(cutoverIndex >= 0); const reviewedCutoverAdditions = new Set(['tests_js/agent_workflows_application_recovery.test.mjs', 'tests_js/native_answer_cli_parity.test.mjs', 'tests_js/native_cli_parser_parity.test.mjs', 'tests_js/native_installed_entrypoints.test.mjs', 'tests_js/native_job_cli_lifecycle_parity.test.mjs', 'tests_js/native_profile_cli_parity.test.mjs', 'tests_js/native_resume_cli_parity.test.mjs', 'tests_js/native_store_activation_command.test.mjs']);
   assert.deepEqual(matrix.suites.splice(cutoverIndex, 1).map(suite => ({ ...suite, include: suite.include.filter(path => !reviewedCutoverAdditions.has(path)) })), [{
     id: 'native-default-cutover', kind: 'node-test',
     include: ['tests_js/companion_default_cutover.test.mjs', 'tests_js/final_action_policy_cli.test.mjs',
@@ -495,6 +494,7 @@ test('S05 path support registration preserves the exact prior matrix', t => {
   assert.equal(profileOwners.length, 1);
   assert.deepEqual(profileOwners[0].suites, ['node-workspace-other']);
   assert.equal(profileOwners[0].paths.shift(), profilePath);
+  const reviewedRunnerAdditions = ['tests_js/agent_workflows_application_setup.test.mjs', 'tests_js/agent_workflows_application_automation.test.mjs', 'tests_js/migration_triage_report.test.mjs']; for (const path of reviewedRunnerAdditions) assert.equal(runner.include.filter(value => value === path).length, 1); runner.include = runner.include.filter(path => !reviewedRunnerAdditions.includes(path)); const localAgentOwner = { paths: ['tools/local-agent-acceptance.mjs'], suites: ['node-runner-fast'] }; const localAgentOwnerIndex = matrix.ownership.findIndex(rule => rule.paths.includes(localAgentOwner.paths[0])); assert.ok(localAgentOwnerIndex >= 0); assert.deepEqual(matrix.ownership.splice(localAgentOwnerIndex, 1), [localAgentOwner]);
   assert.equal(hash(JSON.stringify(matrix)), registrationBaselineSha256);
   t.diagnostic(JSON.stringify({ registrationBaselineSha256, ownership: registrationOwnership }));
 });

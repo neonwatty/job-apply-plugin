@@ -24,9 +24,9 @@
       "additionalProperties": false,
       "required": ["total", "commands", "captured", "pending"],
       "properties": {
-        "total": { "const": 98 },
+        "total": { "const": 99 },
         "commands": {
-          "type": "array", "minItems": 98, "maxItems": 98, "uniqueItems": true,
+          "type": "array", "minItems": 99, "maxItems": 99, "uniqueItems": true,
           "items": { "type": "string", "minLength": 1 },
           "allOf": [
             { "contains": { "const": "automation-settings-get" } },
@@ -37,7 +37,7 @@
         "captured": {
           "const": ["automation-settings-get", "employer-account-list", "claim-status"]
         },
-        "pending": { "const": 95 }
+        "pending": { "const": 96 }
       }
     },
     "cases": {

@@ -1,7 +1,7 @@
 import { copy, fromJSON, get, int, integer, object, set, string, text, JobsError } from '../contracts/workspace/values.js';
 import { exact, optionalEmail } from '../contracts/workspace/automation.js';
 import { publicAccount, validateAccount, validateAccountsDocument } from '../contracts/workspace/accounts.js';
-import { resolveAccountRealm } from '../contracts/workspace/account-realm.js';
+import { classifyAccountFlow, resolveAccountRealm } from '../contracts/workspace/account-realm.js';
 import { cloneDocument } from './automation.js';
 export class AccountsService {
     repository;
@@ -11,6 +11,7 @@ export class AccountsService {
         this.now = now;
     }
     resolve(url) { return fromJSON(resolveAccountRealm(url)); }
+    classify(url) { return fromJSON(classifyAccountFlow(url)); }
     list(publicView = false) {
         return this.repository.automationTransaction(async (tx) => {
             const accounts = object(get(validateAccountsDocument(await tx.loadAccounts()), 'accounts'), 'employer accounts');
