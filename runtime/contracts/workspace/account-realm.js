@@ -81,10 +81,12 @@ export function classifyAccountFlow(input) {
         return realm;
     const value = strip(input).replace(/^[\x00-\x20]+/, '').replace(/[\t\r\n]/g, '');
     const parsed = /^https:\/\/([^/?#]+)([^?#]*)(?:\?([^#]*))?(?:#(.*))?$/is.exec(value);
-    if (!parsed || parsed[1].includes('@') || parsed[3] !== undefined || parsed[4] !== undefined)
+    if (!parsed || parsed[1].includes('@') || parsed[3] || parsed[4])
         return realm;
-    const hostPort = parsed[1].toLowerCase();
-    const host = hostPort.endsWith(':443') ? hostPort.slice(0, -4) : hostPort;
+    const authority = /^([^:]+)(?::([0-9]+))?$/.exec(parsed[1].toLowerCase());
+    if (!authority || authority[2] !== undefined && BigInt(authority[2]) !== 443n)
+        return realm;
+    const host = authority[1];
     if (!['boards.greenhouse.io', 'job-boards.greenhouse.io'].includes(host)
         || !/^\/[a-z0-9](?:[a-z0-9_-]{0,126}[a-z0-9])?\/jobs\/[1-9][0-9]*\/?$/.test(parsed[2]))
         return realm;

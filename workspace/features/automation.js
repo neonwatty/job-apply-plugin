@@ -43,6 +43,7 @@ export function installAutomation(context) {
       const form = document.createElement("div"); form.className = "realm-override-form";
       const actions = document.createElement("div"); actions.className = "button-row";
       const clear = document.createElement("button"); clear.type = "button"; clear.className = "button secondary"; clear.textContent = "Clear contact metadata"; clear.disabled = !account.signupEmailOverrideConfigured;
+      const remove = document.createElement("button"); remove.type = "button"; remove.className = "button trash-delete"; remove.textContent = "Remove saved account";
       const feedback = document.createElement("p"); feedback.className = "realm-override-feedback visually-hidden"; feedback.setAttribute("role", "status"); feedback.setAttribute("aria-live", "polite");
       const conflict = document.createElement("div"); conflict.className = "conflict hidden"; conflict.setAttribute("role", "alert"); conflict.tabIndex = -1; conflict.textContent = "This realm changed elsewhere. Nothing was retried. Refresh and review the latest revision.";
       const submit = async () => {
@@ -53,7 +54,15 @@ export function installAutomation(context) {
           else { feedback.textContent = error.message; feedback.classList.remove("visually-hidden"); }
         }
       };
-      clear.addEventListener("click", submit); actions.append(clear); form.append(actions, feedback, conflict);
+      const removeAccount = async () => {
+        conflict.classList.add("hidden"); feedback.classList.add("visually-hidden");
+        try { await api(`/api/employer-accounts/${encodeURIComponent(account.realmRef)}/delete`, { method: "POST", body: JSON.stringify({ expectedRevision: account.revision }) }); await refreshAutomation({ quiet: true }); toast("Saved account removed"); }
+        catch (error) {
+          if (error.code === "revision_conflict") { conflict.classList.remove("hidden"); conflict.focus(); }
+          else { feedback.textContent = error.message; feedback.classList.remove("visually-hidden"); }
+        }
+      };
+      clear.addEventListener("click", submit); remove.addEventListener("click", removeAccount); actions.append(clear, remove); form.append(actions, feedback, conflict);
       card.append(title, detail, status, form); list.append(card);
     }
     if (!projection.accounts.length) {

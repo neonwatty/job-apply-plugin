@@ -154,4 +154,22 @@ class AccountMutationMixin:
                     )
                 )
             return True
+        if (
+            method == "POST"
+            and len(parts) == 5
+            and parts[1:3] == ["api", "employer-accounts"]
+            and parts[4] == "delete"
+        ):
+            if set(payload) != {"expectedRevision"}:
+                self._error(
+                    HTTPStatus.BAD_REQUEST,
+                    "body must contain only expectedRevision",
+                )
+                return True
+            revision = self._expected_revision(payload)
+            if revision is not None:
+                self._store_call(
+                    lambda: store.remove_employer_account(parts[3], revision)
+                )
+            return True
         return False

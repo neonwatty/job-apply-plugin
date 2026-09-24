@@ -96,6 +96,20 @@ class WorkspaceServerTests(WorkspaceCase):
         )
         self.assertEqual((status, global_account["flowKind"], global_account["providerAssigned"]), (200, "passwordless_email_code", False))
         self.assertNotIn("private-mygreenhouse", json.dumps(global_account))
+        status, _headers, stale_remove = self.request(
+            "POST", f"/api/employer-accounts/{global_account['realmRef']}/delete",
+            {"expectedRevision": 2},
+        )
+        self.assertEqual((status, stale_remove["error"]["code"]), (409, "revision_conflict"))
+        status, _headers, removed = self.request(
+            "POST", f"/api/employer-accounts/{global_account['realmRef']}/delete",
+            {"expectedRevision": global_account["revision"]},
+        )
+        self.assertEqual(
+            (status, removed),
+            (200, {"removed": True, "realmRef": global_account["realmRef"], "revision": 1}),
+        )
+        self.assertNotIn("private-mygreenhouse", json.dumps(removed))
 
     def test_automation_mutations_reject_credential_shaped_fields(self):
         for payload in (

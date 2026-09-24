@@ -2,6 +2,7 @@ import { copy, fromJSON, get, int, integer, object, set, string, text, JobsError
 import type { Document, Value } from '../contracts/workspace/values.js';
 import { exact, optionalEmail } from '../contracts/workspace/automation.js';
 import { publicAccount, validateAccount, validateAccountsDocument } from '../contracts/workspace/accounts.js';
+import { accountOperation } from '../contracts/workspace/account-operation.js';
 import { classifyAccountFlow, resolveAccountRealm } from '../contracts/workspace/account-realm.js';
 import { cloneDocument } from './automation.js';
 import type { AutomationRepository, AutomationTransaction } from './automation.js';
@@ -63,6 +64,10 @@ export class AccountsService {
       const value = get(accounts, realmRef);
       if (value === null) throw new JobsError('employer account does not exist');
       if (int(get(object(value, 'employer account'), 'revision')) !== revision) throw new JobsError('employer account revision conflict');
+      const pending = accountOperation(await tx.loadAccountOperationJournal());
+      if (pending !== null && string(get(pending, 'realmRef')) === realmRef) {
+        throw new JobsError('employer account removal requires account operation recovery');
+      }
       accounts.delete(text(realmRef));
       const updatedAt = text(this.now());
       const metadata = set(copy(object(get(document, 'metadata'), 'employer account metadata')), 'updatedAt', updatedAt);

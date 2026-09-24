@@ -42,6 +42,8 @@ class AccountContractTests(unittest.TestCase):
         for url in (
             "https://boards.greenhouse.io/acme/jobs/12345",
             "https://job-boards.greenhouse.io/acme_engineering/jobs/98765/",
+            "https://boards.greenhouse.io:0443/acme/jobs/12345?",
+            "https://job-boards.greenhouse.io:000443/acme_engineering/jobs/98765/#",
         ):
             self.assertEqual(ACCOUNTS.classify_account_flow(url), expected)
 

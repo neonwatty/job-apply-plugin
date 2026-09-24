@@ -106,6 +106,36 @@ class StoreTests(StoreTestCase):
                 created["realmRef"], {"lifecycleState": "active"}, 2
             )
 
+    def test_employer_account_removal_is_revisioned_and_preserves_pending_recovery(self):
+        account = self.store.create_employer_account(
+            "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/One"
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "revision conflict"):
+            self.store.remove_employer_account(account["realmRef"], 2)
+        operation = {
+            "operationId": "pending-removal", "jobId": "synthetic-job",
+            "jobRevision": 1, "claimId": "synthetic-claim",
+            "realmRef": account["realmRef"], "accountRevision": 1,
+            "settingsRevision": 1, "stage": "prepared",
+            "outcomeCode": "observed_pending", "startedAt": "2026-08-29T00:00:00Z",
+        }
+        STORE_MODULE.atomic_write_json(
+            self.store.account_operation_journal_path,
+            {"schemaVersion": 1, "operation": operation},
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "requires account operation recovery"):
+            self.store.remove_employer_account(account["realmRef"], 1)
+        self.assertIsNotNone(self.store.get_employer_account(account["realmRef"]))
+        STORE_MODULE.atomic_write_json(
+            self.store.account_operation_journal_path,
+            {"schemaVersion": 1, "operation": None},
+        )
+        self.assertEqual(
+            self.store.remove_employer_account(account["realmRef"], 1),
+            {"removed": True, "realmRef": account["realmRef"], "revision": 1},
+        )
+        self.assertIsNone(self.store.get_employer_account(account["realmRef"]))
+
     def test_employer_account_flow_decisions_are_value_free_and_fail_closed(self):
         workday = self.store.create_job({
             "id": "flow-workday", "role": "Engineer", "company": "Acme",

@@ -162,6 +162,7 @@ PUBLIC_STORE_SIGNATURES = {
     "get_employer_account": "(self, realm_ref: 'str', *, public: 'bool' = False) -> 'dict[str, Any] | None'",
     "create_employer_account": "(self, portal_url: 'str', signup_email_override: 'str | None' = None, *, public: 'bool' = False) -> 'dict[str, Any]'",
     "update_employer_account": "(self, realm_ref: 'str', patch: 'dict[str, Any]', expected_revision: 'int', *, public: 'bool' = False) -> 'dict[str, Any]'",
+    "remove_employer_account": "(self, realm_ref: 'str', expected_revision: 'int') -> 'dict[str, Any]'",
     "account_operation_status": "(self) -> 'dict[str, Any]'",
     "recover_account_operation": "(self) -> 'dict[str, Any]'",
     "execute_synthetic_account": "(self, incoming: 'dict[str, Any]', *, provider: 'Any | None' = None, observer: 'Any | None' = None, public: 'bool' = False, test_authority: 'object | None' = None) -> 'dict[str, Any]'",

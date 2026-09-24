@@ -18,7 +18,8 @@ const profile = {schemaVersion:1,profile:{email:'profile@example.invalid'},metad
 export async function fixture(t) {
   const root = await mkdtemp(join(tmpdir(), 'native-automation-'));
   t.after(() => rm(root, {recursive:true,force:true}));
-  const documents = {...initialAutomationDocuments(fixed), profile:fromJSON(profile)};
+  const documents = {...initialAutomationDocuments(fixed), profile:fromJSON(profile),
+    'account-operation-journal':fromJSON({schemaVersion:1,operation:null})};
   const writes = [], reads = [];
   for (const [name, document] of Object.entries(documents)) await atomicWritePointJson(join(root, `${name}.json`), document, {pathProfile:'3.12',intMaxStrDigits:4300});
   const repository = createAutomationRepository(async operation => operation({
@@ -105,6 +106,35 @@ test('MyGreenhouse is a global passwordless provider-free persisted account', as
   const changed = plain(await f.accounts.update(created.realmRef, fromJSON({signupEmailOverride:null}), 1n, true));
   assert.equal(changed.revision, 2);
   assert.throws(() => f.accounts.create('https://boards.greenhouse.io/acme/jobs/12345'), /realm is unresolved/);
+});
+
+test('Greenhouse accountless classification matches Python URL delimiter and port normalization', async t => {
+  const f = await fixture(t);
+  for (const url of [
+    'https://boards.greenhouse.io/acme/jobs/12345?',
+    'https://boards.greenhouse.io/acme/jobs/12345#',
+    'https://job-boards.greenhouse.io:0443/acme/jobs/12345?#',
+    'https://boards.greenhouse.io:000443/acme/jobs/12345',
+  ]) assert.equal(plain(f.accounts.classify(url)).flowKind, 'account_not_required', url);
+  assert.equal(plain(f.accounts.classify('https://boards.greenhouse.io:0444/acme/jobs/12345')).status, 'unresolved');
+});
+
+test('account removal preserves a realm referenced by pending recovery', async t => {
+  const f = await fixture(t);
+  const url = 'https://example.wd1.myworkdayjobs.com/en-US/careers/job/42';
+  const account = plain(await f.accounts.create(url, null, true));
+  const operation = {operationId:'pending-removal',jobId:'synthetic-job',jobRevision:1,
+    claimId:'synthetic-claim',realmRef:account.realmRef,accountRevision:1,settingsRevision:1,
+    stage:'prepared',outcomeCode:'observed_pending',startedAt:fixed};
+  await atomicWritePointJson(join(f.root,'account-operation-journal.json'),
+    fromJSON({schemaVersion:1,operation}),{pathProfile:'3.12',intMaxStrDigits:4300});
+  const before = await readFile(join(f.root,'employer-accounts.json'),'utf8');
+  await assert.rejects(f.accounts.remove(account.realmRef,1n),/requires account operation recovery/);
+  assert.equal(await readFile(join(f.root,'employer-accounts.json'),'utf8'),before);
+  await atomicWritePointJson(join(f.root,'account-operation-journal.json'),
+    fromJSON({schemaVersion:1,operation:null}),{pathProfile:'3.12',intMaxStrDigits:4300});
+  assert.deepEqual(plain(await f.accounts.remove(account.realmRef,1n)),
+    {removed:true,realmRef:account.realmRef,revision:1});
 });
 
 test('copy email never returns identity even in internal mode, failures do not persist', async t => {

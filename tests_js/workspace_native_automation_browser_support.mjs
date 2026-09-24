@@ -37,8 +37,14 @@ export async function nativeAutomationBrowser(page, root) {
   await accountsWorkspace.getByRole('button',{name:'Add portal',exact:true}).click();
   await accountsWorkspace.getByText('Workday realm',{exact:true}).waitFor();
   await accountsWorkspace.getByText('Keychain setup pending',{exact:true}).waitFor();
+  await accountsWorkspace.getByRole('button',{name:'Add portal',exact:true}).click();
+  const unrelatedDraft='https://tenant.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/jobsearch/job/331081';
+  await accountsWorkspace.getByLabel('Exact employer portal URL',{exact:true}).fill(unrelatedDraft);
   await accountsWorkspace.getByRole('button',{name:'Add MyGreenhouse',exact:true}).click();
   await accountsWorkspace.getByText('Global account',{exact:true}).waitFor();
+  await accountsWorkspace.getByRole('button',{name:'Add portal',exact:true}).click();
+  assert.equal(await accountsWorkspace.getByLabel('Exact employer portal URL',{exact:true}).inputValue(),unrelatedDraft);
+  await accountsWorkspace.getByRole('button',{name:'Cancel',exact:true}).click();
   assert.equal(await accountsWorkspace.getByRole('listitem').count(),2);
   const persisted=JSON.parse(await readFile(join(root,'employer-accounts.json'),'utf8')).accounts;
   assert.equal(Object.values(persisted).every(account=>account.signupEmailOverride===null),true);
