@@ -172,7 +172,10 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
       {fallback && <label>Invocation to copy<textarea readOnly value={fallback} onFocus={event => event.currentTarget.select()} rows={5} /></label>}
       <label>Title discovery JSON result packet<textarea value={packetText} onChange={event => { setPacketText(event.target.value); setPacket(null); setReviewedChange(false); setChoices(choicesFor(snapshot)); }} rows={5} /></label>
       <button type="button" className="secondary" disabled={!packetText.trim() || busy} onClick={acceptPacket}>Review packet</button>
-      {packet && <div className="title-discovery-source" role="status"><strong>Research source: {packet.source.status.replace('_', ' ')}</strong><p>{packet.source.detail}</p>{packet.source.status !== 'observed' && <p>No browser evidence was available. Retry research in the agent when access is available; manual titles can still be reviewed here.</p>}</div>}
+      {packet && <div className="title-discovery-source" role="status"><strong>Research source: {packet.source.status.replace('_', ' ')}</strong><p>{packet.source.detail}</p>
+        {packet.source.status === 'empty' && <p>The inspected results yielded no useful title evidence. Try different search criteria or add titles manually.</p>}
+        {!['observed', 'empty'].includes(packet.source.status) && <p>No browser evidence was available. Retry research in the agent when access is available; manual titles can still be reviewed here.</p>}
+      </div>}
       <fieldset disabled={busy}><legend>Choose exact target titles</legend>
         {choices.map(choice => <div className="title-discovery-choice" key={choice.id}>
           <label><input type="checkbox" checked={choice.selected} onChange={event => updateChoice(choice.id, { selected: event.target.checked })} />{choice.existing ? 'Saved title' : 'Suggested title'}{choice.category ? ` · ${choice.category}` : ''}</label>

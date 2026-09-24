@@ -45,6 +45,8 @@ export async function nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot
   }));
   await panel.getByRole('button', { name: 'Review packet' }).click();
   await panel.getByText('Research source: empty').waitFor();
+  await panel.getByText('The inspected results yielded no useful title evidence. Try different search criteria or add titles manually.').waitFor();
+  assert.equal(await panel.getByText(/No browser evidence was available/).count(), 0);
   assert.equal(await panel.locator('.title-discovery-choice').count(), 0);
   await panel.getByRole('button', { name: 'Copy Codex invocation' }).click();
   await panel.getByText(/invocation copied|Clipboard unavailable/).waitFor();
