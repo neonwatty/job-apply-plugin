@@ -5,6 +5,7 @@
 - Clear field labels
 - Often has "Add another" for work history/education
 - May be embedded in an iframe on a company career site
+- A direct Greenhouse job application is account-free. A `my.greenhouse.io` request is a distinct optional passwordless flow owned by [Account Setup](../../account-setup/SKILL.md).
 
 **Approach (visible browser first):**
 1. Navigate to the application URL in the host-managed visible browser

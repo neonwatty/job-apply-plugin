@@ -18,7 +18,7 @@ import './resume-facts.css';
 import { Trash } from './Trash';
 import { createTrashClient } from './trash-client';
 import { compatibilityTrashCapabilities, nativeTrashCapabilities } from './trash-model';
-type WorkspaceTab = 'overview'|'jobs'|'facts'|'resumes'|'answers'|'extractions'|'attention'|'automation'|'settings'|'trash';
+type WorkspaceTab = 'overview'|'jobs'|'facts'|'resumes'|'answers'|'extractions'|'attention'|'accounts'|'automation'|'settings'|'trash';
 export default function Companion() {
     const [client,setClient]=useState<Client|null>(null);
     const [boot,setBoot]=useState<Boot|null>(null);
@@ -134,6 +134,7 @@ export default function Companion() {
                                 if(dirty&&!confirm('Discard unsaved changes?')) event.preventDefault();
                             }}>Open full workspace</a>}
                             {nativeWorkspace&&navButton('automation','Automation')}
+                            {nativeWorkspace&&navButton('accounts','Accounts & Sign-in')}
                             {nativeWorkspace&&navButton('settings','Settings')}
                             {navButton('trash','Trash',nativeWorkspace?shellCounts?.trash:undefined)}
                         </div>
@@ -159,7 +160,7 @@ export default function Companion() {
             <p>
                 {boot.guidance}
             </p>
-        </section>:boot?.status==='ready'&&client? (tab==='trash'?<Trash client={trashClient} capabilities={trashCapabilities} dirtyChanged={dirtyChanged} onMutation={refreshShellCounts} countChanged={trashCountChanged}/>:tab==='automation'?<Automation client={client} dirtyChanged={dirtyChanged}/>:tab==='overview'? <Overview
+        </section>:boot?.status==='ready'&&client? (tab==='trash'?<Trash client={trashClient} capabilities={trashCapabilities} dirtyChanged={dirtyChanged} onMutation={refreshShellCounts} countChanged={trashCountChanged}/>:tab==='automation'?<Automation client={client} dirtyChanged={dirtyChanged}/>:tab==='accounts'?<Automation mode="accounts" client={client} dirtyChanged={dirtyChanged}/>:tab==='overview'? <Overview
             client={client}
             openJobs={() => navigate('jobs')}
             openWorkspace={nativeWorkspace ? navigate : undefined}

@@ -298,6 +298,8 @@ def build_parser(runtime: dict[str, Any]) -> argparse.ArgumentParser:
     automation_capability.add_argument("--platform", choices=["darwin", "linux", "win32"])
     realm_resolve = commands.add_parser("account-realm-resolve")
     realm_resolve.add_argument("--url", required=True)
+    flow_classify = commands.add_parser("account-flow-classify")
+    flow_classify.add_argument("--url", required=True)
     commands.add_parser("employer-account-list")
     account_get = commands.add_parser("employer-account-get")
     account_get.add_argument("--realm-ref", required=True)

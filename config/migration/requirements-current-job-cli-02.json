@@ -17,11 +17,11 @@
       "oracleFiles": [
         {
           "path": "scripts/job_apply_store/cli_parser.py",
-          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+          "sha256": "6b2af62bebfb2da6b4d5c650570cbaada89dfec5c2fed9d0b42bf95dca1e9f23"
         },
         {
           "path": "scripts/job_apply_store/cli_dispatch.py",
-          "sha256": "586f7a5b81258165dc4a9048eae84b360c2d9dd7c16d8bf97414e51780785d0e"
+          "sha256": "800c9a01212cfe661031e1a2b5fd8d82205c842a58b15c219c7cf970f8caf06e"
         },
         {
           "path": "scripts/job_apply_store/domains/jobs/crud.py",
@@ -73,11 +73,11 @@
       "oracleFiles": [
         {
           "path": "scripts/job_apply_store/cli_parser.py",
-          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+          "sha256": "6b2af62bebfb2da6b4d5c650570cbaada89dfec5c2fed9d0b42bf95dca1e9f23"
         },
         {
           "path": "scripts/job_apply_store/cli_dispatch.py",
-          "sha256": "586f7a5b81258165dc4a9048eae84b360c2d9dd7c16d8bf97414e51780785d0e"
+          "sha256": "800c9a01212cfe661031e1a2b5fd8d82205c842a58b15c219c7cf970f8caf06e"
         },
         {
           "path": "scripts/job_apply_store/domains/jobs/crud.py",
@@ -128,11 +128,11 @@
       "oracleFiles": [
         {
           "path": "scripts/job_apply_store/cli_parser.py",
-          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+          "sha256": "6b2af62bebfb2da6b4d5c650570cbaada89dfec5c2fed9d0b42bf95dca1e9f23"
         },
         {
           "path": "scripts/job_apply_store/cli_dispatch.py",
-          "sha256": "586f7a5b81258165dc4a9048eae84b360c2d9dd7c16d8bf97414e51780785d0e"
+          "sha256": "800c9a01212cfe661031e1a2b5fd8d82205c842a58b15c219c7cf970f8caf06e"
         },
         {
           "path": "scripts/job_apply_store/domains/jobs/crud.py",
@@ -183,11 +183,11 @@
       "oracleFiles": [
         {
           "path": "scripts/job_apply_store/cli_parser.py",
-          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+          "sha256": "6b2af62bebfb2da6b4d5c650570cbaada89dfec5c2fed9d0b42bf95dca1e9f23"
         },
         {
           "path": "scripts/job_apply_store/cli_dispatch.py",
-          "sha256": "586f7a5b81258165dc4a9048eae84b360c2d9dd7c16d8bf97414e51780785d0e"
+          "sha256": "800c9a01212cfe661031e1a2b5fd8d82205c842a58b15c219c7cf970f8caf06e"
         },
         {
           "path": "scripts/job_apply_store/domains/jobs/crud.py",

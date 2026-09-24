@@ -12,6 +12,7 @@ class AnswerMemoryIntegrationTests(AnswerCliCase):
             set(skills),
             {
                 "answer-memory",
+                "account-setup",
                 "application-setup",
                 "job-apply",
                 "job-preferences",
@@ -19,7 +20,7 @@ class AnswerMemoryIntegrationTests(AnswerCliCase):
                 "job-workspace",
             },
         )
-        for name in ("answer-memory", "application-setup", "job-apply", "job-preferences", "job-search"):
+        for name in ("answer-memory", "account-setup", "application-setup", "job-apply", "job-preferences", "job-search"):
             self.assertIn('apps/companion/command.mjs" store', skills[name], name)
         self.assertIn("apps/companion/launch.mjs", skills["job-workspace"])
         self.assertIn("canonical Store contract", skills["job-workspace"])

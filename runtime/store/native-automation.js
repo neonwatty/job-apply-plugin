@@ -1,6 +1,7 @@
 import { fromJSON, object } from '../contracts/workspace/values.js';
 import { validateSettingsDocument } from '../contracts/workspace/automation.js';
 import { validateAccountsDocument } from '../contracts/workspace/accounts.js';
+import { validateAccountOperationJournal } from '../contracts/workspace/account-operation.js';
 export function initialAutomationDocuments(now) {
     return {
         'automation-settings': object(fromJSON({ schemaVersion: 1, settings: { enabled: false,
@@ -14,6 +15,7 @@ export async function automationTransaction(access, operation) {
     return operation({
         loadSettings: () => access.read('automation-settings'),
         loadAccounts: () => access.read('employer-accounts'),
+        loadAccountOperationJournal: async () => validateAccountOperationJournal(await access.read('account-operation-journal')),
         loadProfile: () => access.read('profile'),
         saveSettings: document => access.write('automation-settings', validateSettingsDocument(document)),
         saveAccounts: document => access.write('employer-accounts', validateAccountsDocument(document)),

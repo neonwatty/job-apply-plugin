@@ -19,6 +19,14 @@ class AccountMutationMixin:
             else:
                 self._store_call(lambda: store.resolve_account_realm(payload["url"]))
             return True
+        if method == "POST" and path == "/api/account-flows/classify":
+            if set(payload) != {"url"} or not isinstance(payload.get("url"), str):
+                self._error(
+                    HTTPStatus.BAD_REQUEST, "body must contain only a portal URL"
+                )
+            else:
+                self._store_call(lambda: store.classify_account_flow(payload["url"]))
+            return True
         if method == "POST" and path == "/api/trusted-fill/approve":
             self._store_call(lambda: store.approve_trusted_fill(payload, public=True))
             return True
@@ -144,6 +152,24 @@ class AccountMutationMixin:
                     lambda: store.update_employer_account(
                         parts[3], payload["patch"], revision, public=True
                     )
+                )
+            return True
+        if (
+            method == "POST"
+            and len(parts) == 5
+            and parts[1:3] == ["api", "employer-accounts"]
+            and parts[4] == "delete"
+        ):
+            if set(payload) != {"expectedRevision"}:
+                self._error(
+                    HTTPStatus.BAD_REQUEST,
+                    "body must contain only expectedRevision",
+                )
+                return True
+            revision = self._expected_revision(payload)
+            if revision is not None:
+                self._store_call(
+                    lambda: store.remove_employer_account(parts[3], revision)
                 )
             return True
         return False

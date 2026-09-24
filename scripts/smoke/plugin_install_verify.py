@@ -13,6 +13,7 @@ from artifacts import assert_critical_bytes
 
 
 EXPECTED_SKILLS = {
+    "account-setup",
     "answer-memory",
     "job-apply",
     "job-search",

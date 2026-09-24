@@ -39,6 +39,13 @@
 .automation-realm-mark { display:grid;place-items:center;width:40px;height:40px;border-radius:11px;background:var(--mint);color:var(--green);font-weight:850 }
 .automation-state { padding:.35rem .6rem;border-radius:999px;background:#eef0eb;color:#405047;font-size:.68rem;font-weight:850;text-transform:capitalize;white-space:nowrap }
 .automation-account>p { color:var(--muted);font-size:.8rem;line-height:1.45 }
+.account-readiness { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem;margin:.9rem 0 }
+.account-readiness div { padding:.65rem;border-radius:10px;background:white }
+.account-readiness dt { color:var(--muted);font-size:.7rem;font-weight:800;text-transform:uppercase }
+.account-readiness dd { margin:.25rem 0 0;color:var(--ink);font-size:.82rem;font-weight:700 }
+.account-callout { display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:1rem;padding:1rem;border:1px solid var(--line);border-radius:14px;background:var(--mint) }
+.account-callout p { margin:.25rem 0 0;color:var(--muted);font-size:.8rem }
+.account-not-required { margin-top:1rem;border-style:dashed }
 .realm-override-form { padding-top:.8rem;border-top:1px solid var(--line) }
 .operation-panel.needs-recovery { border-color:#d8b3a3;background:#fffaf7 }
 .automation-advanced { overflow:hidden;border:1px solid var(--line);border-radius:16px;background:rgba(255,254,249,.82) }
@@ -67,4 +74,6 @@
   .automation-state { grid-column:2;justify-self:start }
   .trusted-operations { grid-template-columns:1fr }
   .trusted-status-form { grid-template-columns:1fr;align-items:stretch }
+  .account-readiness { grid-template-columns:1fr }
+  .account-callout { align-items:stretch;flex-direction:column }
 }

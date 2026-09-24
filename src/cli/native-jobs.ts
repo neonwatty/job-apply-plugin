@@ -150,6 +150,7 @@ export const storeRequiredOptions: Record<string, string[]> = {
   'automation-settings-update': ['--input', '--expected-revision'],
   'automation-settings-copy-profile-email': ['--expected-profile-revision', '--expected-settings-revision'],
   'account-realm-resolve': ['--url'],
+  'account-flow-classify': ['--url'],
   'employer-account-get': ['--realm-ref'],
   'employer-account-create': ['--url'],
   'employer-account-update': ['--realm-ref', '--input', '--expected-revision'],

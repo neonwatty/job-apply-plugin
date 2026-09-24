@@ -40,6 +40,9 @@ class AccountRegistryMixin:
     def resolve_account_realm(self, portal_url: str) -> dict[str, Any]:
         return _late("ACCOUNTS_MODULE").normalize_realm(portal_url)
 
+    def classify_account_flow(self, portal_url: str) -> dict[str, Any]:
+        return _late("ACCOUNTS_MODULE").classify_account_flow(portal_url)
+
     def employer_account_flow_decision(self, job_id: str) -> dict[str, Any]:
         """Return a value-free account decision for one canonical job."""
 
@@ -189,3 +192,29 @@ class AccountRegistryMixin:
             _late("atomic_write_json")(self.employer_accounts_path, document)
         result = _late("copy").deepcopy(updated)
         return _late("ACCOUNTS_MODULE").public_account(result) if public else result
+
+    def remove_employer_account(
+        self, realm_ref: str, expected_revision: int
+    ) -> dict[str, Any]:
+        self.initialize()
+        self._ensure_account_control_documents()
+        with _late("exclusive_file_lock")(self.store_lock_path):
+            document = self._load_employer_accounts_document()
+            current = document["accounts"].get(realm_ref)
+            if current is None:
+                raise StoreError("employer account does not exist")
+            if current["revision"] != expected_revision:
+                raise StoreError("employer account revision conflict")
+            operation = self._load_account_operation_journal()["operation"]
+            if operation is not None and operation["realmRef"] == realm_ref:
+                raise StoreError(
+                    "employer account removal requires account operation recovery"
+                )
+            del document["accounts"][realm_ref]
+            document["metadata"]["updatedAt"] = self._now()
+            _late("atomic_write_json")(self.employer_accounts_path, document)
+        return {
+            "removed": True,
+            "realmRef": realm_ref,
+            "revision": expected_revision,
+        }

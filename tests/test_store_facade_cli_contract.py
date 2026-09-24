@@ -337,6 +337,7 @@ COMMAND_RECEIPTS = [
     ]),
     command("automation-capability", [o("platform", choices=("darwin", "linux", "win32"))]),
     command("account-realm-resolve", [o("url", required=True)]),
+    command("account-flow-classify", [o("url", required=True)]),
     command("employer-account-list", []),
     command("employer-account-get", [o("realm-ref", required=True)]),
     command("employer-account-create", [o("url", required=True), o("input")]),
@@ -388,9 +389,9 @@ class StoreCliContractTests(unittest.TestCase):
     def setUpClass(cls):
         cls.module = load_module(name="store_cli_contract")
 
-    def test_all_98_commands_have_exact_structural_receipt(self):
+    def test_all_99_commands_have_exact_structural_receipt(self):
         receipt = parser_receipt(self.module.build_parser())
-        self.assertEqual(len(receipt["commands"]), 98)
+        self.assertEqual(len(receipt["commands"]), 99)
         self.assertEqual(receipt, EXPECTED_RECEIPT)
 
     def test_parser_and_dispatch_sets_and_order_match(self):

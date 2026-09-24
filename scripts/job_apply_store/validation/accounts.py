@@ -71,18 +71,20 @@ def _validate_employer_account_record(
     flow_kind = record.get("flowKind", accounts_module.FLOW_PASSWORD)
     credential_required = record.get("credentialRequired", True)
     descriptor_prefix = f"{adapter_id}:v{accounts_module.REALM_DESCRIPTOR_VERSION}:"
+    adapter_flows = {
+        "workday": accounts_module.FLOW_PASSWORD,
+        "oracle-recruiting": accounts_module.FLOW_EMAIL_ONLY,
+        "mygreenhouse": accounts_module.FLOW_PASSWORDLESS_EMAIL_CODE,
+    }
     if (
-        adapter_id not in {"workday", "oracle-recruiting"}
-        or flow_kind
-        != {
-            "workday": accounts_module.FLOW_PASSWORD,
-            "oracle-recruiting": accounts_module.FLOW_EMAIL_ONLY,
-        }[adapter_id]
+        adapter_id not in adapter_flows
+        or flow_kind != adapter_flows[adapter_id]
         or credential_required is not (adapter_id == "workday")
         or record["descriptorVersion"] != accounts_module.REALM_DESCRIPTOR_VERSION
         or not isinstance(descriptor, str)
         or not descriptor.startswith(descriptor_prefix)
         or hashlib.sha256(descriptor.encode("utf-8")).hexdigest() != key
+        or (adapter_id == "mygreenhouse" and descriptor != "mygreenhouse:v1:global")
     ):
         raise StoreError("employer account realm descriptor is invalid")
     _optional_email(record["signupEmailOverride"], "signup email override")
@@ -102,7 +104,10 @@ def _validate_employer_account_record(
                 "failed_definitive",
                 "ambiguous",
             }
-            if flow_kind == accounts_module.FLOW_EMAIL_ONLY
+            if flow_kind in {
+                accounts_module.FLOW_EMAIL_ONLY,
+                accounts_module.FLOW_PASSWORDLESS_EMAIL_CODE,
+            }
             else {"discovered", "signup_in_progress", "ambiguous"}
         )
         if (
@@ -111,8 +116,11 @@ def _validate_employer_account_record(
             or lifecycle not in provider_free_states
         ):
             raise StoreError("credential metadata requires the protected provider")
-    elif flow_kind == accounts_module.FLOW_EMAIL_ONLY:
-        raise StoreError("email-only account cannot have protected credential metadata")
+    elif flow_kind in {
+        accounts_module.FLOW_EMAIL_ONLY,
+        accounts_module.FLOW_PASSWORDLESS_EMAIL_CODE,
+    }:
+        raise StoreError("provider-free account cannot have protected credential metadata")
     elif (
         not isinstance(provider_id, str)
         or re.fullmatch(r"[a-z][a-z0-9-]{2,63}", provider_id) is None

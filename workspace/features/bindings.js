@@ -130,11 +130,9 @@ export function installBindings(context) {
   function firstListDestination() { return $(".job-card") || $("#new-job"); }
 
   form.addEventListener("submit", save); form.addEventListener("input", (event) => { if (state.selected && event.target.name) { state.dirty = true; state.dirtyFields.add(event.target.name); } });
-  $("#nav-overview").addEventListener("click", () => navigateWorkspace("overview")); $("#nav-jobs").addEventListener("click", () => navigateWorkspace("jobs")); $("#nav-attention").addEventListener("click", () => navigateWorkspace("attention")); $("#nav-facts").addEventListener("click", () => navigateWorkspace("facts")); $("#nav-resumes").addEventListener("click", () => navigateWorkspace("resumes")); $("#nav-answers").addEventListener("click", () => navigateWorkspace("answers")); $("#nav-automation").addEventListener("click", () => navigateWorkspace("automation")); $("#nav-trash").addEventListener("click", () => navigateWorkspace("trash"));
+  $("#nav-overview").addEventListener("click", () => navigateWorkspace("overview")); $("#nav-jobs").addEventListener("click", () => navigateWorkspace("jobs")); $("#nav-attention").addEventListener("click", () => navigateWorkspace("attention")); $("#nav-facts").addEventListener("click", () => navigateWorkspace("facts")); $("#nav-resumes").addEventListener("click", () => navigateWorkspace("resumes")); $("#nav-answers").addEventListener("click", () => navigateWorkspace("answers")); $("#nav-automation").addEventListener("click", () => navigateWorkspace("automation")); $("#nav-accounts").addEventListener("click", () => navigateWorkspace("accounts")); $("#nav-trash").addEventListener("click", () => navigateWorkspace("trash"));
   $("#automation-refresh").addEventListener("click", () => refreshAutomation());
   $("#automation-form").addEventListener("submit", saveAutomation);
-  $("#automation-copy-profile-email").addEventListener("click", copyProfileEmailToAutomation);
-  $("#automation-clear-email").addEventListener("click", (event) => saveAutomation(event, true));
   $("#account-operation-refresh").addEventListener("click", refreshAccountOperation);
   $("#account-operation-recover").addEventListener("click", recoverAccountOperation);
   $("#realm-form").addEventListener("submit", addEmployerRealm);

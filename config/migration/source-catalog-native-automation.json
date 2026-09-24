@@ -23,12 +23,12 @@
     },
     {
       "path": "runtime/workspace-core/accounts.js",
-      "sha256": "d4990182aa9360cb9af8b83051bc36db31009b71e57073ffda9465ca191ef198",
+      "sha256": "821a5cf62fa92749ce208daf1a6e7e39dd55f1e6a4a59b7e333172c518a62b1f",
       "classification": "unreviewed"
     },
     {
       "path": "runtime/workspace-core/automation-http.js",
-      "sha256": "bf2a0850fe44cbbefcf0c804701111be8c903b0db25ad48911ec939eeaabe9c8",
+      "sha256": "f44035bca5c17b2a64ba2efdae07ec54c3889a0b953dea72c47c508d03edb087",
       "classification": "unreviewed"
     },
     {
@@ -58,12 +58,12 @@
     },
     {
       "path": "src/workspace-core/accounts.ts",
-      "sha256": "1cb1d368c9ead3665b10278c63b72432f225f37c7a69c78cd0e9ad9cfee35ff0",
+      "sha256": "c4fd4b8bb2aa65504760ed5464bffe6ba44fd5ad6f789e3a65917e5b1d0b22b5",
       "classification": "unreviewed"
     },
     {
       "path": "src/workspace-core/automation-http.ts",
-      "sha256": "fe97df35d477b1658cda09655bf18be71c9b7e79ef000f7e27af13b66799d0ad",
+      "sha256": "911a39b8c5f086277f85956cdc6337a0ac347deab465c613bc773a987e917cf4",
       "classification": "unreviewed"
     },
     {

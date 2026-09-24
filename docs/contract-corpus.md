@@ -7,7 +7,7 @@ not evidence that the full migration contract is complete.
 ## Frozen in this slice
 
 The committed `python-store-read-v1` vector records the exact ordered command
-inventory obtained from the real Store parser. The inventory contains 98 public
+inventory obtained from the real Store parser. The inventory contains 99 public
 commands. Nine read-only commands currently have golden behavior:
 
 - `profile-inspect` and `profile-preparedness-get`
@@ -67,9 +67,9 @@ adds 19 cases across four mutation commands, with exact persisted bytes,
 revision conflicts, provenance rejection, no-op preservation and write sets.
 Its cross-platform evidence remains pending; it does not port a Store writer.
 
-Across the read/startup vectors, 86 Store commands remain inventory-only rather than
+Across the read/startup vectors, 87 Store commands remain inventory-only rather than
 behaviorally frozen.
-The profile/fact slice reduces the inventory-only remainder to 82 commands;
+The profile/fact slice reduces the inventory-only remainder to 83 commands;
 coverage within the 16 exercised commands is still partial.
 The startup-read corpus does not make these three commands pure reads; it freezes
 their current write-aware behavior so a future implementation cannot silently

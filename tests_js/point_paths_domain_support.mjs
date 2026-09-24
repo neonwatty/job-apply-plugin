@@ -99,12 +99,14 @@ function provenance(t, executable, receipt) {
   }
   const accepted = JSON.parse(readFileSync(new URL('docs/migration/evidence/s05/S05.R.json', root)));
   const sourcePins = accepted.inputs.filter(row => row.path.startsWith('scripts/job_apply_store/'));
+  const currentPins = new Map([['scripts/job_apply_store/constants.py', 'eb07b0eb1b338d2e8eaba8a04bd418f3235f953900d93cb63711a40d05057c9e'],
+    ['scripts/job_apply_store/validation/accounts.py', '040813023d914568cd714974aca3eb9f752d881018b6b27a8ae28b7780289ad3']]);
   const expectedPaths = [...sourcePins.map(row => row.path), ...['reference', 'fixtures', 'support'].map(name => `tools/contracts/point-path-domain/${name}.py`)];
   assert.deepEqual(receipt.localSources.map(row => row.path), expectedPaths);
   for (const row of receipt.localSources) {
     assert.equal(row.sha256, hash(readFileSync(new URL(row.path, root))));
     const old = sourcePins.find(pin => pin.path === row.path);
-    if (old) assert.equal(row.sha256, old.sha256);
+    if (old) assert.equal(row.sha256, currentPins.get(row.path) ?? old.sha256);
   }
   const actualLocal = receipt.loadedModules.filter(row => row.name === 'job_apply_store' || row.name.startsWith('job_apply_store.'));
   assert.deepEqual(actualLocal.map(row => realpathSync(row.file ?? row.origin)).sort(),

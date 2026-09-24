@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { fromJSON, get, has, int, object, set, string, same, JobsError } from './values.js';
 import { exact, optionalEmail, revisionAndTime } from './automation.js';
-import { emailFlow, passwordFlow } from './account-realm.js';
+import { emailFlow, passwordFlow, passwordlessEmailCodeFlow } from './account-realm.js';
 const legacy = ['realmRef', 'adapterId', 'descriptorVersion', 'descriptor', 'signupEmailOverride', 'providerId', 'credentialRef', 'credentialVersion', 'lifecycleState', 'revision', 'createdAt', 'updatedAt'];
 const lifecycles = ['discovered', 'credential_provisioned', 'signup_in_progress', 'active', 'verification_required', 'reset_required', 'failed_definitive', 'ambiguous'];
 export function validateAccount(key, value) {
@@ -14,9 +14,12 @@ export function validateAccount(key, value) {
     const adapter = string(get(record, 'adapterId')), descriptor = string(get(record, 'descriptor'));
     const flow = has(record, 'flowKind') ? string(get(record, 'flowKind')) : passwordFlow;
     const required = has(record, 'credentialRequired') ? get(record, 'credentialRequired') : true;
-    if (!['workday', 'oracle-recruiting'].includes(adapter ?? '') || flow !== (adapter === 'workday' ? passwordFlow : emailFlow)
+    const expectedFlow = adapter === 'workday' ? passwordFlow : adapter === 'oracle-recruiting' ? emailFlow
+        : adapter === 'mygreenhouse' ? passwordlessEmailCodeFlow : null;
+    if (expectedFlow === null || flow !== expectedFlow
         || required !== (adapter === 'workday') || !same(get(record, 'descriptorVersion'), fromJSON(1))
-        || !descriptor?.startsWith(`${adapter}:v1:`) || createHash('sha256').update(descriptor).digest('hex') !== key)
+        || !descriptor?.startsWith(`${adapter}:v1:`) || adapter === 'mygreenhouse' && descriptor !== 'mygreenhouse:v1:global'
+        || createHash('sha256').update(descriptor).digest('hex') !== key)
         throw new JobsError('employer account realm descriptor is invalid');
     optionalEmail(get(record, 'signupEmailOverride'), 'signup email override');
     const provider = get(record, 'providerId'), reference = get(record, 'credentialRef'), version = get(record, 'credentialVersion');
@@ -24,12 +27,13 @@ export function validateAccount(key, value) {
     if (!lifecycles.includes(lifecycle))
         throw new JobsError('account lifecycle state is invalid');
     if (provider === null) {
-        const allowed = flow === emailFlow ? ['discovered', 'signup_in_progress', 'active', 'verification_required', 'failed_definitive', 'ambiguous'] : ['discovered', 'signup_in_progress', 'ambiguous'];
+        const providerFree = flow === emailFlow || flow === passwordlessEmailCodeFlow;
+        const allowed = providerFree ? ['discovered', 'signup_in_progress', 'active', 'verification_required', 'failed_definitive', 'ambiguous'] : ['discovered', 'signup_in_progress', 'ambiguous'];
         if (reference !== null || version !== null || !allowed.includes(lifecycle))
             throw new JobsError('credential metadata requires the protected provider');
     }
-    else if (flow === emailFlow)
-        throw new JobsError('email-only account cannot have protected credential metadata');
+    else if (flow === emailFlow || flow === passwordlessEmailCodeFlow)
+        throw new JobsError('provider-free account cannot have protected credential metadata');
     else if (!/^[a-z][a-z0-9-]{2,63}$/.test(string(provider) ?? '') || !/^credential_[0-9a-f]{64}$/.test(string(reference) ?? '') || (int(version) ?? 0n) < 1n || lifecycle === 'discovered')
         throw new JobsError('protected credential metadata is invalid');
     revisionAndTime(record, 'employer account');

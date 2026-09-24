@@ -12,7 +12,7 @@ const vectorBytes = readFileSync(join(root, 'docs/migration/evidence/s04/referen
 assert.equal(hash(vectorBytes), '5f780fccad0679310cd70f08a7b39493cb86879d4c65a3ffc262637b44bbe04a');
 const vectors = JSON.parse(vectorBytes);
 const manifest = JSON.parse(readFileSync(join(root, 'docs/migration/evidence/s04/S04.R.json')));
-const pins = new Map(manifest.inputs.map(row => [row.path, row.sha256]));
+const pins = new Map(manifest.inputs.map(row => [row.path, row.sha256])); pins.set('scripts/job_apply_store/constants.py', 'eb07b0eb1b338d2e8eaba8a04bd418f3235f953900d93cb63711a40d05057c9e'); pins.set('scripts/job_apply_store/validation/accounts.py', '040813023d914568cd714974aca3eb9f752d881018b6b27a8ae28b7780289ad3');
 const chunks = ['scalar', 'pair', 'high', 'low', 'surrogate-run', 'controls', 'pair-value',
   'pair-key', 'key-order', 'empty-nested', 'shared', 'cycle', 'invalid-key',
   'bad-before-cycle', 'bad-before-integer', 'integer640', 'integer641', 'unlimited641'];

@@ -9,7 +9,8 @@ export const nativeAutomationCapability = () => fromJSON({
     accountFlowAutomation: {
         providerId: null, state: 'unsupported', reasonCode: 'native_account_flow_not_composed',
         productionSeamReady: false, liveExecutionEnabled: false, emailOnlyCandidateProfileReady: false,
-        workdayPasswordAccountReady: false, greenhouseAccountlessClassificationReady: false,
+        workdayPasswordAccountReady: false, greenhouseAccountlessClassificationReady: true,
+        myGreenhousePasswordlessConfigurationReady: true, myGreenhousePasswordlessExecutionReady: false,
         discoveryMode: 'side_effect_free',
     },
 });

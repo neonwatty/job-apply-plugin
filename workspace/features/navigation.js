@@ -45,11 +45,12 @@ export function installNavigation(context) {
     const facts = name === "facts";
     const resumes = name === "resumes";
     const answers = name === "answers";
+    const accounts = name === "accounts";
     const automation = name === "automation";
     const trash = name === "trash";
-    $("#overview-workspace").classList.toggle("hidden", !overview); $("#jobs-workspace").classList.toggle("hidden", overview || attention || facts || resumes || answers || automation || trash); $("#attention-workspace").classList.toggle("hidden", !attention); $("#facts-workspace").classList.toggle("hidden", !facts); $("#resumes-workspace").classList.toggle("hidden", !resumes); $("#answers-workspace").classList.toggle("hidden", !answers); $("#automation-workspace").classList.toggle("hidden", !automation); $("#trash-workspace").classList.toggle("hidden", !trash);
-    for (const section of ["overview", "jobs", "attention", "facts", "resumes", "answers", "automation", "trash"]) { const active = name === section; $(`#nav-${section}`).classList.toggle("active", active); $(`#nav-${section}`).toggleAttribute("aria-current", active); }
-    document.title = `${overview ? "Overview" : attention ? "Needs Attention" : facts ? "Facts" : resumes ? "Resumes" : answers ? "Answers" : automation ? "Automation" : trash ? "Trash" : "Jobs"} · Job Apply Workspace`;
+    $("#overview-workspace").classList.toggle("hidden", !overview); $("#jobs-workspace").classList.toggle("hidden", overview || attention || facts || resumes || answers || accounts || automation || trash); $("#attention-workspace").classList.toggle("hidden", !attention); $("#facts-workspace").classList.toggle("hidden", !facts); $("#resumes-workspace").classList.toggle("hidden", !resumes); $("#answers-workspace").classList.toggle("hidden", !answers); $("#accounts-workspace").classList.toggle("hidden", !accounts); $("#automation-workspace").classList.toggle("hidden", !automation); $("#trash-workspace").classList.toggle("hidden", !trash);
+    for (const section of ["overview", "jobs", "attention", "facts", "resumes", "answers", "accounts", "automation", "trash"]) { const active = name === section; $(`#nav-${section}`).classList.toggle("active", active); $(`#nav-${section}`).toggleAttribute("aria-current", active); }
+    document.title = `${overview ? "Overview" : attention ? "Needs Attention" : facts ? "Facts" : resumes ? "Resumes" : answers ? "Answers" : accounts ? "Accounts & Sign-in" : automation ? "Automation" : trash ? "Trash" : "Jobs"} · Job Apply Workspace`;
     if (overview && !overviewState.available) await refreshOverview({ quiet: true });
     if (attention && !attentionState.loaded) await refreshAttention();
     if (facts && (!profileState.loaded || !factGroupState.loaded)) await Promise.all([
@@ -58,7 +59,7 @@ export function installNavigation(context) {
     ]);
     if (resumes && !resumeState.loaded) await refreshResumes();
     if (answers && !answerState.loaded) await refreshAnswers();
-    if (automation && !automationState.loaded) await Promise.all([refreshAutomation(), refreshAccountOperation()]);
+    if (accounts && !automationState.loaded) await Promise.all([refreshAutomation(), refreshAccountOperation()]);
     if (trash && !trashState.loaded) await refreshTrash();
   }
 

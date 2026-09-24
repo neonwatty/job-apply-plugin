@@ -18,7 +18,7 @@
     },
     {
       "path": "apps/companion/components/Companion.tsx",
-      "sha256": "4b6146124bb653d1f501f7154774a511c1810afa3ccdc13ca05a831c146dd783",
+      "sha256": "ebc3bee5e40ea0c65839f4af256749c73b899412e9bbca38072ada6fc1b9c5aa",
       "classification": "unreviewed"
     },
     {
@@ -113,7 +113,7 @@
     },
     {
       "path": "apps/companion/server/routes.ts",
-      "sha256": "7441206c3fedcfd3cd6251a042e8336b999e6b58e66c16d3a8384aa301bda8fb",
+      "sha256": "9b17f43f83f6ba0d0dca662780be4136bf5361aaa9388846409c2adde289644a",
       "classification": "unreviewed"
     },
     {

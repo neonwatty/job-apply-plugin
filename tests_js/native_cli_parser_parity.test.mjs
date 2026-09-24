@@ -43,7 +43,7 @@ test('Store help covers every Python command and its long options without a Stor
   const native = storeNative(['--help']);
   help(reference, 'Python Store'); help(native, 'native Store');
   const commands = reference.stdout.match(/\{([^}]+)\}/)?.[1].split(',') ?? [];
-  assert.equal(commands.length, 98);
+  assert.equal(commands.length, 99);
   assert.deepEqual(commands.filter(name => !Object.hasOwn(nativeJobsCommandFields, name)), []);
   for (const command of commands) {
     const source = storePython([command, '--help']);

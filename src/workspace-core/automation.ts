@@ -7,6 +7,7 @@ import { publicAccount, validateAccountsDocument } from '../contracts/workspace/
 export interface AutomationTransaction {
   loadSettings(): Promise<Document>;
   loadAccounts(): Promise<Document>;
+  loadAccountOperationJournal(): Promise<Document>;
   loadProfile(): Promise<Document>;
   saveSettings(document: Document): Promise<void>;
   saveAccounts(document: Document): Promise<void>;
@@ -21,7 +22,8 @@ export const nativeAutomationCapability = (): Value => fromJSON({
   accountFlowAutomation: {
     providerId: null, state: 'unsupported', reasonCode: 'native_account_flow_not_composed',
     productionSeamReady: false, liveExecutionEnabled: false, emailOnlyCandidateProfileReady: false,
-    workdayPasswordAccountReady: false, greenhouseAccountlessClassificationReady: false,
+    workdayPasswordAccountReady: false, greenhouseAccountlessClassificationReady: true,
+    myGreenhousePasswordlessConfigurationReady: true, myGreenhousePasswordlessExecutionReady: false,
     discoveryMode: 'side_effect_free',
   },
 });

@@ -103,12 +103,12 @@
     },
     {
       "path": "workspace/features/automation.js",
-      "sha256": "e85037840fce9a20f7aa07c612c634dc6e8593bc970a6c40342f0787a55bffd3",
+      "sha256": "f6d025aa9711d7d2fefafc53067288fd6f50357ed6bd5ea68cf532748fa8d41d",
       "classification": "unreviewed"
     },
     {
       "path": "workspace/features/bindings.js",
-      "sha256": "8a25444892a514f303683d878947a68f13f711bc0c407eabcf714c5b473770cd",
+      "sha256": "2bcd7a04d0f43a669f82197ad54b84d26035620f258dfc86f91a17a2a30eab8b",
       "classification": "unreviewed"
     },
     {
@@ -123,7 +123,7 @@
     },
     {
       "path": "workspace/features/navigation.js",
-      "sha256": "1bf514de76dd7edad2cc3f17e962b2b425f6f89558abdc0a875a8783c84574f0",
+      "sha256": "779595bdbce476f5a433d1e77ac847085fe16b6f81080619eef71cf2f3521408",
       "classification": "unreviewed"
     },
     {
@@ -143,7 +143,7 @@
     },
     {
       "path": "workspace/index.html",
-      "sha256": "b5b535acbd2e3cd7fce6a39698bf7a27daa5a33c9cb09fed35139690e5ac5930",
+      "sha256": "fe6eb92afdd0889e4db8b8c8443cfd2580efa2f8ddd44c9fcdbea1d0239a6eaf",
       "classification": "unreviewed"
     },
     {

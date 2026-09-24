@@ -19,9 +19,9 @@ from tests.support.store_facade_contract import ROOT
 
 
 METHODS = (
-    "resolve_account_realm", "employer_account_flow_decision",
+    "resolve_account_realm", "classify_account_flow", "employer_account_flow_decision",
     "list_employer_accounts", "get_employer_account",
-    "create_employer_account", "update_employer_account",
+    "create_employer_account", "update_employer_account", "remove_employer_account",
 )
 
 
@@ -62,6 +62,10 @@ class AccountRegistryExtractionTests(unittest.TestCase):
                 self.composed(clone_store_root(seed, root / "extracted"), clock=clock),
             )
             url = "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/One"
+            self.assertEqual(
+                [store.classify_account_flow("https://boards.greenhouse.io/acme/jobs/123") for store in stores],
+                [{"status": "classified", "adapterId": "greenhouse", "flowKind": "account_not_required", "credentialRequired": False, "accountRequired": False}] * 2,
+            )
             created = [store.create_employer_account(url, "private@example.invalid") for store in stores]
             self.assertEqual(created[0], created[1])
             public = [store.get_employer_account(created[0]["realmRef"], public=True) for store in stores]

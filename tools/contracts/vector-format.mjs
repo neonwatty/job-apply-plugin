@@ -41,8 +41,8 @@ export function validateCorpus(corpus) {
   if (corpus.fixture.kind !== "synthetic-empty-store" || corpus.fixture.clock !== "2026-09-05T00:00:00Z" || corpus.fixture.noncePolicy !== "not-used-by-captured-reads") throw new Error("fixture_invalid");
   closed(corpus.inventory, ["total", "commands", "captured", "pending"], "inventory");
   required(corpus.inventory, ["total", "commands", "captured", "pending"], "inventory");
-  if (corpus.inventory.total !== 98 || corpus.inventory.pending !== 98 - corpus.inventory.captured.length) throw new Error("inventory_count_invalid");
-  if (!Array.isArray(corpus.inventory.commands) || corpus.inventory.commands.length !== 98 || new Set(corpus.inventory.commands).size !== 98 || corpus.inventory.commands.some((name) => typeof name !== "string" || name.length === 0)) throw new Error("inventory_commands_invalid");
+  if (corpus.inventory.total !== 99 || corpus.inventory.pending !== 99 - corpus.inventory.captured.length) throw new Error("inventory_count_invalid");
+  if (!Array.isArray(corpus.inventory.commands) || corpus.inventory.commands.length !== 99 || new Set(corpus.inventory.commands).size !== 99 || corpus.inventory.commands.some((name) => typeof name !== "string" || name.length === 0)) throw new Error("inventory_commands_invalid");
   if (!Array.isArray(corpus.inventory.captured) || new Set(corpus.inventory.captured).size !== corpus.inventory.captured.length || corpus.inventory.captured.some((name) => typeof name !== "string" || name.length === 0 || !corpus.inventory.commands.includes(name))) throw new Error("captured_commands_invalid");
   if (!Array.isArray(corpus.cases) || corpus.cases.length !== corpus.inventory.captured.length + 2) throw new Error("cases_invalid");
   for (const item of corpus.cases) {

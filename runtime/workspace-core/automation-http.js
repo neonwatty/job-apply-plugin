@@ -29,15 +29,20 @@ export async function automationHttp(repository, method, path, body) {
             throw new JobsError('employer account does not exist');
         return response(account);
     }
-    const recognized = method === 'POST' && ['/api/automation/realm-resolve', '/api/automation/settings/copy-profile-email', '/api/employer-accounts',
+    const removeAccount = /^\/api\/employer-accounts\/([^/]+)\/delete$/.exec(path);
+    const recognized = method === 'POST' && ['/api/automation/realm-resolve', '/api/account-flows/classify', '/api/automation/settings/copy-profile-email', '/api/employer-accounts',
         '/api/application-authority', '/api/application-authority/revoke', '/api/application-authority/evaluate'].includes(path)
-        || method === 'POST' && /^\/api\/application-authority\/(pause|resume|stop)$/u.test(path)
+        || method === 'POST' && (/^\/api\/application-authority\/(pause|resume|stop)$/u.test(path) || removeAccount !== null)
         || method === 'PATCH' && (path === '/api/automation/settings' || updateAccount !== null);
     if (!recognized)
         return null;
     if (path.startsWith('/api/application-authority') && authority === null)
         return null;
     const payload = object(parse(body), 'body');
+    if (removeAccount) {
+        exact(payload, ['expectedRevision'], 'body must contain expectedRevision');
+        return response(await accounts.remove(decodeURIComponent(removeAccount[1]), revision(get(payload, 'expectedRevision'))));
+    }
     if (path === '/api/application-authority/evaluate')
         return response(await authority.evaluate(payload));
     if (path === '/api/application-authority/revoke') {
@@ -60,6 +65,12 @@ export async function automationHttp(repository, method, path, body) {
         if (string(get(payload, 'url')) === null)
             throw new JobsError('body must contain only a portal URL');
         return response(accounts.resolve(string(get(payload, 'url'))));
+    }
+    if (path === '/api/account-flows/classify') {
+        exact(payload, ['url'], 'body must contain only a portal URL');
+        if (string(get(payload, 'url')) === null)
+            throw new JobsError('body must contain only a portal URL');
+        return response(accounts.classify(string(get(payload, 'url'))));
     }
     if (path === '/api/automation/settings/copy-profile-email') {
         exact(payload, ['expectedProfileRevision', 'expectedSettingsRevision'], 'body must contain exact profile and settings revisions');

@@ -127,8 +127,8 @@ export function validateStartupCorpus(corpus) {
   required(corpus.inventory, ["total", "commands", "captured", "pending"], "inventory");
   stringArray(corpus.inventory.commands, "inventory_commands", { unique: true });
   stringArray(corpus.inventory.captured, "captured_commands", { unique: true });
-  if (corpus.inventory.total !== 98 || corpus.inventory.commands.length !== 98
-    || corpus.inventory.pending !== 95
+  if (corpus.inventory.total !== 99 || corpus.inventory.commands.length !== 99
+    || corpus.inventory.pending !== 96
     || JSON.stringify(corpus.inventory.captured) !== JSON.stringify([
       "automation-settings-get", "employer-account-list", "claim-status",
     ]) || corpus.inventory.captured.some((name) => !corpus.inventory.commands.includes(name))) {

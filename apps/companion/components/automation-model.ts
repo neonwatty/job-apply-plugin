@@ -6,7 +6,7 @@ export type AutomationSettings = {
   passwordStrategy: PasswordStrategy; revision: number;
 };
 export type EmployerAccount = {
-  realmRef: string; adapterId: 'workday' | 'oracle-recruiting'; lifecycleState: string;
+  realmRef: string; adapterId: 'workday' | 'oracle-recruiting' | 'mygreenhouse'; lifecycleState: string;
   flowKind: string; credentialRequired: boolean; signupEmailOverrideConfigured: boolean;
   providerAssigned: boolean; revision: number;
 };
@@ -15,7 +15,8 @@ export type AutomationProjection = {
   applicationAuthority: ApplicationAuthority;
   capability: { reasonCode: string; accountFlowAutomation: {
     workdayPasswordAccountReady: boolean; greenhouseAccountlessClassificationReady: boolean;
-    emailOnlyCandidateProfileReady: boolean; liveExecutionEnabled: boolean;
+    emailOnlyCandidateProfileReady: boolean; myGreenhousePasswordlessConfigurationReady:boolean;
+    myGreenhousePasswordlessExecutionReady:boolean; liveExecutionEnabled: boolean;
   } };
 };
 export type ApplicationAuthority = {
@@ -42,10 +43,10 @@ export function automationProjection(value: unknown): AutomationProjection {
   if (!bool(settings.enabled) || !bool(settings.automaticAccountCreation) || !bool(settings.signupEmailConfigured)
     || !positive(settings.revision) || !['unique_per_realm','shared','custom','ask_each_time'].includes(String(settings.passwordStrategy))
     || typeof value.capability.reasonCode !== 'string'
-    || !['workdayPasswordAccountReady','greenhouseAccountlessClassificationReady','emailOnlyCandidateProfileReady','liveExecutionEnabled'].every(key => bool(flow[key]))) invalid();
+    || !['workdayPasswordAccountReady','greenhouseAccountlessClassificationReady','emailOnlyCandidateProfileReady','myGreenhousePasswordlessConfigurationReady','myGreenhousePasswordlessExecutionReady','liveExecutionEnabled'].every(key => bool(flow[key]))) invalid();
   const accounts = value.accounts.map(entry => {
     if (!object(entry) || !/^[0-9a-f]{64}$/.test(String(entry.realmRef))
-      || !['workday','oracle-recruiting'].includes(String(entry.adapterId)) || typeof entry.lifecycleState !== 'string'
+      || !['workday','oracle-recruiting','mygreenhouse'].includes(String(entry.adapterId)) || typeof entry.lifecycleState !== 'string'
       || typeof entry.flowKind !== 'string' || !bool(entry.credentialRequired) || !bool(entry.signupEmailOverrideConfigured)
       || !bool(entry.providerAssigned) || !positive(entry.revision)) invalid();
     return entry as EmployerAccount;

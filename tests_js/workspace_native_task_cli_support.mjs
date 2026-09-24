@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { cp, writeFile } from 'node:fs/promises';
+import { cp, mkdir, writeFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { join } from 'node:path';
@@ -10,11 +10,13 @@ export async function invoke(fixture, root, args, { python = false, cwd, globals
   const command = python ? 'python3' : process.execPath;
   const script = entry ?? new URL(python ? '../scripts/job-apply-task.py' : '../runtime/cli/native-task.js', import.meta.url).pathname;
   const globalArgs = globals ? ['--root', root, ...python ? [] : ['--native-lock', fixture.receipt.artifact]] : [];
+  const isolatedHome = join(fixture.root, 'task-home');
+  if (!python) await mkdir(isolatedHome, { recursive: true });
   let result;
   try {
     result = { ...await execute(command, [script, ...globalArgs, ...args], {
       cwd: cwd ?? new URL('../', import.meta.url), timeout: 15000,
-      env: python ? process.env : { PATH: '' }, maxBuffer: 4 * 1024 * 1024,
+      env: python ? process.env : { PATH: '', HOME: isolatedHome }, maxBuffer: 4 * 1024 * 1024,
     }), code: 0 };
   } catch (error) {
     if (typeof error.code !== 'number') throw error;

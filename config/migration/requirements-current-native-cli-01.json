@@ -17,7 +17,7 @@
       "oracleFiles": [
         {
           "path": "scripts/job_apply_store/cli_parser.py",
-          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+          "sha256": "6b2af62bebfb2da6b4d5c650570cbaada89dfec5c2fed9d0b42bf95dca1e9f23"
         }
       ],
       "testBindings": [
@@ -93,7 +93,7 @@
       "oracleFiles": [
         {
           "path": "scripts/job_apply_store/cli_parser.py",
-          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+          "sha256": "6b2af62bebfb2da6b4d5c650570cbaada89dfec5c2fed9d0b42bf95dca1e9f23"
         }
       ],
       "testBindings": [
@@ -131,7 +131,7 @@
       "oracleFiles": [
         {
           "path": "scripts/job_apply_store/cli_parser.py",
-          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+          "sha256": "6b2af62bebfb2da6b4d5c650570cbaada89dfec5c2fed9d0b42bf95dca1e9f23"
         }
       ],
       "testBindings": [
@@ -173,7 +173,7 @@
         },
         {
           "path": "scripts/job_apply_store/cli_parser.py",
-          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+          "sha256": "6b2af62bebfb2da6b4d5c650570cbaada89dfec5c2fed9d0b42bf95dca1e9f23"
         }
       ],
       "testBindings": [
@@ -215,7 +215,7 @@
         },
         {
           "path": "scripts/job_apply_store/cli_parser.py",
-          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+          "sha256": "6b2af62bebfb2da6b4d5c650570cbaada89dfec5c2fed9d0b42bf95dca1e9f23"
         }
       ],
       "testBindings": [
@@ -257,7 +257,7 @@
         },
         {
           "path": "scripts/job_apply_store/cli_parser.py",
-          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+          "sha256": "6b2af62bebfb2da6b4d5c650570cbaada89dfec5c2fed9d0b42bf95dca1e9f23"
         }
       ],
       "testBindings": [
@@ -299,7 +299,7 @@
         },
         {
           "path": "scripts/job_apply_store/cli_parser.py",
-          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+          "sha256": "6b2af62bebfb2da6b4d5c650570cbaada89dfec5c2fed9d0b42bf95dca1e9f23"
         }
       ],
       "testBindings": [
@@ -341,7 +341,7 @@
         },
         {
           "path": "scripts/job_apply_store/cli_parser.py",
-          "sha256": "c24a169f98e307bd60a531f3206c38175f81aa31a1e9427cdaf47a8bb40289c3"
+          "sha256": "6b2af62bebfb2da6b4d5c650570cbaada89dfec5c2fed9d0b42bf95dca1e9f23"
         }
       ],
       "testBindings": [

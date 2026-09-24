@@ -370,7 +370,7 @@ export class NativeJobsRepository {
     }
     async automationTransaction(operation) {
         return this.transaction(async () => runAutomationTransaction({
-            read: name => name === 'automation-settings' ? this.journal(name) : this.document(name),
+            read: name => name === 'automation-settings' || name === 'account-operation-journal' ? this.journal(name) : this.document(name),
             write: (name, document) => this.write(join(this.root, `${name}.json`), document, options),
         }, operation));
     }

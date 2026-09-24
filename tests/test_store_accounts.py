@@ -106,6 +106,36 @@ class StoreTests(StoreTestCase):
                 created["realmRef"], {"lifecycleState": "active"}, 2
             )
 
+    def test_employer_account_removal_is_revisioned_and_preserves_pending_recovery(self):
+        account = self.store.create_employer_account(
+            "https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/One"
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "revision conflict"):
+            self.store.remove_employer_account(account["realmRef"], 2)
+        operation = {
+            "operationId": "pending-removal", "jobId": "synthetic-job",
+            "jobRevision": 1, "claimId": "synthetic-claim",
+            "realmRef": account["realmRef"], "accountRevision": 1,
+            "settingsRevision": 1, "stage": "prepared",
+            "outcomeCode": "observed_pending", "startedAt": "2026-08-29T00:00:00Z",
+        }
+        STORE_MODULE.atomic_write_json(
+            self.store.account_operation_journal_path,
+            {"schemaVersion": 1, "operation": operation},
+        )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "requires account operation recovery"):
+            self.store.remove_employer_account(account["realmRef"], 1)
+        self.assertIsNotNone(self.store.get_employer_account(account["realmRef"]))
+        STORE_MODULE.atomic_write_json(
+            self.store.account_operation_journal_path,
+            {"schemaVersion": 1, "operation": None},
+        )
+        self.assertEqual(
+            self.store.remove_employer_account(account["realmRef"], 1),
+            {"removed": True, "realmRef": account["realmRef"], "revision": 1},
+        )
+        self.assertIsNone(self.store.get_employer_account(account["realmRef"]))
+
     def test_employer_account_flow_decisions_are_value_free_and_fail_closed(self):
         workday = self.store.create_job({
             "id": "flow-workday", "role": "Engineer", "company": "Acme",
@@ -155,6 +185,35 @@ class StoreTests(StoreTestCase):
             "https://", "owner@", "signupEmail", "descriptor", "credentialRef", "providerId",
         ):
             self.assertNotIn(forbidden, serialized)
+
+    def test_mygreenhouse_global_metadata_is_revisioned_redacted_and_provider_free(self):
+        created = self.store.create_employer_account(
+            "https://my.greenhouse.io/", "private-mygreenhouse@example.invalid", public=True
+        )
+        self.assertEqual(created["adapterId"], "mygreenhouse")
+        self.assertEqual(created["flowKind"], "passwordless_email_code")
+        self.assertFalse(created["credentialRequired"])
+        self.assertFalse(created["providerAssigned"])
+        self.assertNotIn("signupEmailOverride", created)
+        record = self.store.get_employer_account(created["realmRef"])
+        self.assertEqual(record["descriptor"], "mygreenhouse:v1:global")
+        self.assertIsNone(record["providerId"])
+        self.assertIsNone(record["credentialRef"])
+        self.assertIsNone(record["credentialVersion"])
+        reloaded = STORE_MODULE.Store(self.store.root)
+        self.assertEqual(reloaded.get_employer_account(created["realmRef"], public=True), created)
+        changed = reloaded.update_employer_account(
+            created["realmRef"], {"signupEmailOverride": None}, 1, public=True
+        )
+        self.assertEqual(changed["revision"], 2)
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "protected credential metadata|provider-free"):
+            document = reloaded._load_employer_accounts_document()
+            document["accounts"][created["realmRef"]]["providerId"] = "macos-keychain"
+            STORE_MODULE._validate_employer_account_record(
+                created["realmRef"], document["accounts"][created["realmRef"]]
+            )
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "unresolved"):
+            reloaded.create_employer_account("https://boards.greenhouse.io/acme/jobs/12345")
 
     def test_profile_email_copy_is_internal_revisioned_and_redacted(self):
         self.store.initialize()

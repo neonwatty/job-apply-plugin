@@ -296,6 +296,8 @@ def run(args: argparse.Namespace, runtime: dict[str, Any]) -> Any:
         return store.automation_capability(args.platform)
     if command == "account-realm-resolve":
         return store.resolve_account_realm(args.url)
+    if command == "account-flow-classify":
+        return store.classify_account_flow(args.url)
     if command == "employer-account-list":
         return store.list_employer_accounts(public=True)
     if command == "employer-account-get":

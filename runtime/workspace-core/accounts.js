@@ -1,7 +1,8 @@
 import { copy, fromJSON, get, int, integer, object, set, string, text, JobsError } from '../contracts/workspace/values.js';
 import { exact, optionalEmail } from '../contracts/workspace/automation.js';
 import { publicAccount, validateAccount, validateAccountsDocument } from '../contracts/workspace/accounts.js';
-import { resolveAccountRealm } from '../contracts/workspace/account-realm.js';
+import { accountOperation } from '../contracts/workspace/account-operation.js';
+import { classifyAccountFlow, resolveAccountRealm } from '../contracts/workspace/account-realm.js';
 import { cloneDocument } from './automation.js';
 export class AccountsService {
     repository;
@@ -11,6 +12,7 @@ export class AccountsService {
         this.now = now;
     }
     resolve(url) { return fromJSON(resolveAccountRealm(url)); }
+    classify(url) { return fromJSON(classifyAccountFlow(url)); }
     list(publicView = false) {
         return this.repository.automationTransaction(async (tx) => {
             const accounts = object(get(validateAccountsDocument(await tx.loadAccounts()), 'accounts'), 'employer accounts');
@@ -59,6 +61,26 @@ export class AccountsService {
             set(updated, 'updatedAt', text(this.now()));
             await this.save(tx, document, realmRef, updated);
             return this.project(updated, publicView);
+        });
+    }
+    remove(realmRef, revision) {
+        return this.repository.automationTransaction(async (tx) => {
+            const document = validateAccountsDocument(await tx.loadAccounts());
+            const accounts = copy(object(get(document, 'accounts'), 'employer accounts'));
+            const value = get(accounts, realmRef);
+            if (value === null)
+                throw new JobsError('employer account does not exist');
+            if (int(get(object(value, 'employer account'), 'revision')) !== revision)
+                throw new JobsError('employer account revision conflict');
+            const pending = accountOperation(await tx.loadAccountOperationJournal());
+            if (pending !== null && string(get(pending, 'realmRef')) === realmRef) {
+                throw new JobsError('employer account removal requires account operation recovery');
+            }
+            accounts.delete(text(realmRef));
+            const updatedAt = text(this.now());
+            const metadata = set(copy(object(get(document, 'metadata'), 'employer account metadata')), 'updatedAt', updatedAt);
+            await tx.saveAccounts(set(set(copy(document), 'accounts', accounts), 'metadata', metadata));
+            return object(fromJSON({ removed: true, realmRef, revision: Number(revision) }), 'removed employer account');
         });
     }
     project(record, publicView) { return cloneDocument(publicView ? publicAccount(record) : record); }

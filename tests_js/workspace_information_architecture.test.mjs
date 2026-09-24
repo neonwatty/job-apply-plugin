@@ -28,7 +28,7 @@ test("global navigation exposes the pipeline, application data, and controls mod
   const expectedGroups = [
     ["nav-group-pipeline", "Pipeline", ["nav-overview", "nav-jobs", "nav-attention"]],
     ["nav-group-application-data", "Application data", ["nav-facts", "nav-resumes", "nav-answers"]],
-    ["nav-group-controls", "Controls", ["nav-automation", "nav-trash"]],
+    ["nav-group-controls", "Controls", ["nav-automation", "nav-accounts", "nav-trash"]],
   ];
 
   let priorPosition = -1;
@@ -56,6 +56,7 @@ test("navigation preserves button, badge, active-state, and event-binding contra
     ["resumes", "Resumes"],
     ["answers", "Answers"],
     ["automation", "Automation"],
+    ["accounts", "Accounts &amp; Sign-in"],
     ["trash", "Trash"],
   ];
 
@@ -72,7 +73,7 @@ test("navigation preserves button, badge, active-state, and event-binding contra
   assert.match(html, /id="nav-overview" class="nav-link active" type="button" aria-current="page"/);
   assert.match(html, /id="attention-nav-count" aria-label="attention count">0</);
   assert.match(html, /id="trash-nav-count" aria-label="trashed records">0</);
-  assert.ok(app.includes('for (const section of ["overview", "jobs", "attention", "facts", "resumes", "answers", "automation", "trash"])'));
+  assert.ok(app.includes('for (const section of ["overview", "jobs", "attention", "facts", "resumes", "answers", "accounts", "automation", "trash"])'));
   assert.ok(app.includes('$(`#nav-${section}`).classList.toggle("active", active)'));
   assert.ok(app.includes('$(`#nav-${section}`).toggleAttribute("aria-current", active)'));
 });

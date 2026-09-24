@@ -162,7 +162,7 @@ const CASES = [
 
 export async function captureStartupReadCorpus() {
   const commands = commandInventory();
-  if (commands.length !== 98 || new Set(commands).size !== 98) {
+  if (commands.length !== 99 || new Set(commands).size !== 99) {
     throw new Error("public_command_inventory_changed");
   }
   const cases = [];
@@ -173,7 +173,7 @@ export async function captureStartupReadCorpus() {
       kind: "synthetic-initialized-store-clones", clock: FIXED_CLOCK,
       noncePolicy: "fail-on-use-and-record-zero",
     },
-    inventory: { total: 98, commands, captured: CAPTURED, pending: 95 },
+    inventory: { total: 99, commands, captured: CAPTURED, pending: 96 },
     cases,
     redaction: {
       secretCanaryAbsent: !secretCanaryPresent(cases),

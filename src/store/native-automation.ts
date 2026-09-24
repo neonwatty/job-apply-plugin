@@ -2,12 +2,13 @@ import type { Document } from '../contracts/workspace/values.js';
 import { fromJSON, object } from '../contracts/workspace/values.js';
 import { validateSettingsDocument } from '../contracts/workspace/automation.js';
 import { validateAccountsDocument } from '../contracts/workspace/accounts.js';
+import { validateAccountOperationJournal } from '../contracts/workspace/account-operation.js';
 import type { AutomationRepository, AutomationTransaction } from '../workspace-core/automation.js';
 
 export type AutomationDocumentName = 'automation-settings' | 'employer-accounts';
 /** All callbacks run inside the composing repository's validated fixture lock. */
 export interface AutomationDocumentAccess {
-  read(name: AutomationDocumentName | 'profile'): Promise<Document>;
+  read(name: AutomationDocumentName | 'profile' | 'account-operation-journal'): Promise<Document>;
   write(name: AutomationDocumentName, document: Document): Promise<void>;
 }
 export function initialAutomationDocuments(now: string): Record<AutomationDocumentName, Document> {
@@ -24,6 +25,7 @@ export async function automationTransaction<T>(access: AutomationDocumentAccess,
   return operation({
     loadSettings: () => access.read('automation-settings'),
     loadAccounts: () => access.read('employer-accounts'),
+    loadAccountOperationJournal: async () => validateAccountOperationJournal(await access.read('account-operation-journal')),
     loadProfile: () => access.read('profile'),
     saveSettings: document => access.write('automation-settings', validateSettingsDocument(document)),
     saveAccounts: document => access.write('employer-accounts', validateAccountsDocument(document)),
