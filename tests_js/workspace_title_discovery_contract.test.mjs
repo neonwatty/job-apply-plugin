@@ -1,7 +1,16 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
-import { parseTitleDiscoveryPacket, titleKey } from '../apps/companion/components/title-discovery-model.ts';
+import ts from 'typescript';
+
+const source = await readFile(new URL('../apps/companion/components/title-discovery-model.ts', import.meta.url), 'utf8');
+const emitted = ts.transpileModule(source, {
+  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 },
+}).outputText;
+const { parseTitleDiscoveryPacket, titleKey } = await import(
+  `data:text/javascript;base64,${Buffer.from(emitted).toString('base64')}`
+);
 
 const fixture = name => JSON.parse(readFileSync(new URL(`./fixtures/title-discovery/${name}.json`, import.meta.url), 'utf8'));
 

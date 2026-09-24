@@ -36,6 +36,9 @@ class JobCrudDomainTests(unittest.TestCase):
         cls.leaf = importlib.import_module(
             f"{cls.facade._PACKAGE_NAME}.domains.jobs.crud"
         )
+        cls.facade._resumes_mutations_domain._bind_runtime(
+            lambda: vars(cls.facade)
+        )
         cls.mixin = cls.leaf.JobCrudMixin
         cls.composed = composed_store_class(cls.facade.Store, cls.mixin)
 
