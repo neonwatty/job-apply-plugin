@@ -103,7 +103,7 @@
     },
     {
       "path": "cli-07-surfaces.json",
-      "sha256": "946f56fdba7fc42fc3a91be38270a371cf9f5f3db5ca701be4336b4b8c0a1f21"
+      "sha256": "c66f1d482a3fe57061473f785501704d61199ab59af5222bd6e3452a84a0496d"
     },
     {
       "path": "cli-08-surfaces.json",
@@ -127,7 +127,7 @@
     },
     {
       "path": "cli-native-automation-surfaces.json",
-      "sha256": "afc02c1e5488c3317ddc4f57668c3d3718aa398bc3d3f2ebf27f6ab430c22f80"
+      "sha256": "36bbbfa50d0790db811961bd571af6067e036ad66e6add936fef148149d491ad"
     },
     {
       "path": "cli-native-claims-surfaces.json",
@@ -239,7 +239,7 @@
     },
     {
       "path": "http-write-accounts-surfaces.json",
-      "sha256": "c3dde298634965f0bb9247912ba1296dc878635985c0f353307c8643d1d01933"
+      "sha256": "dab7460ce1f8950c8b675aab853548a79d0f1fe8cdff42195bd442811135f7a3"
     },
     {
       "path": "http-write-answers-02-surfaces.json",
@@ -303,7 +303,7 @@
     },
     {
       "path": "requirements-current-answer-cli-01.json",
-      "sha256": "f197997e742c46fa5beed828c856e9ad74f32bc4c6b7d9e3bf2fe2edce3a40b6"
+      "sha256": "c0d2448ebc8f35c5370e6db7104d1500d6775036ec39d2ed31bf79ad1acf9956"
     },
     {
       "path": "requirements-current-http-journal-01.json",
@@ -311,19 +311,19 @@
     },
     {
       "path": "requirements-current-job-cli-01.json",
-      "sha256": "a223ba2c43b6cec2b618d9de40c66f39ff714b6b131263bf75190acb600f5a23"
+      "sha256": "6e08d30289c937f7a6d1dc80711d3c2d1adc8fa51468f1312c5a985277f077c1"
     },
     {
       "path": "requirements-current-job-cli-02.json",
-      "sha256": "967b05e296587f85da3aec90eef76b70b8c74acc433241fc817a09b02dbb776a"
+      "sha256": "eb516a4606e561d0e9301432dff7085066d795efd889cb3d147f0b078a1cd230"
     },
     {
       "path": "requirements-current-native-cli-01.json",
-      "sha256": "777ff6606187a4b723ef0e1254ceeec40041e60fcc83993ec0ffaa2739ec492a"
+      "sha256": "665290edfc7fd8bb46a3db86be802334fd120a831241bf8c046f3c1daf746109"
     },
     {
       "path": "requirements-current-profile-cli-01.json",
-      "sha256": "25044a1176bdf22b082a6e722c8778e6ab1c22fd78351f64b14fafd1e84b9210"
+      "sha256": "bb2fcc6f59a6ea83324153166a02202d5ed9886e20d6ad8f428c7d94256aa25b"
     },
     {
       "path": "requirements-current-pure-browser-01.json",
@@ -331,7 +331,7 @@
     },
     {
       "path": "requirements-current-resume-cli-01.json",
-      "sha256": "55d1ebad19fff926b47060ac0f02654cfeae5902a5596d690bed5c3c9a4dfce1"
+      "sha256": "57207de9f24a82b8a4008944d49a8610a8ec6d8ac06516d997d73da5ddd1290a"
     },
     {
       "path": "requirements-trash-01.json",

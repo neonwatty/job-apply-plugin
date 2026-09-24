@@ -332,6 +332,28 @@
       }
     },
     {
+      "id": "cli:scripts/job_apply_store/cli_parser.py:account-flow-classify",
+      "kind": "cli",
+      "command": "account-flow-classify",
+      "node": "ACC",
+      "sources": [
+        "scripts/job_apply_store/cli_parser.py"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
       "id": "cli:scripts/job_apply_store/cli_parser.py:employer-account-list",
       "kind": "cli",
       "command": "employer-account-list",
