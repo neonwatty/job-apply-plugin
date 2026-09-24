@@ -13,6 +13,7 @@ AI-powered job application assistant for Claude Code and Codex that fills job ap
 | `job-apply:job-apply` | Prepare application fields from your resume and stop before final submission |
 | `job-apply:answer-memory` | Safely manage your local profile, reusable answers, application history, and resumable sessions |
 | `job-apply:application-setup` | Choose the browser surface, fallback behavior, page-transition pace, and preferred review-bounded automation mode |
+| `job-apply:account-setup` | Classify supported account flows and manage only redacted metadata; passwords, email values, verification codes, and live sign-in remain outside the skill |
 | `job-apply:job-search` | Search LinkedIn, Hacker News, and Twitter/X for jobs, then rank results against your preferences |
 | `job-apply:job-preferences` | Set the titles, salary, remote-work, and filtering preferences used by job search |
 | `job-apply:job-workspace` | Open the optional local Jobs, Facts, Resumes, Answers, and unified Trash workspace shared with Job Apply agents |

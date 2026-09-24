@@ -7,7 +7,7 @@ not evidence that the full migration contract is complete.
 ## Frozen in this slice
 
 The committed `python-store-read-v1` vector records the exact ordered command
-inventory obtained from the real Store parser. The inventory contains 98 public
+inventory obtained from the real Store parser. The inventory contains 99 public
 commands. Nine read-only commands currently have golden behavior:
 
 - `profile-inspect` and `profile-preparedness-get`
