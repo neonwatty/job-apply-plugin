@@ -9,6 +9,7 @@ import { jobTransitionsBrowser } from './workspace_native_job_transitions_browse
 import { jobUpsertBrowser } from './workspace_native_job_upsert_browser_support.mjs';
 import { projectionsBrowser } from './workspace_native_projections_browser_support.mjs';
 import { nativeFactsBrowser } from './workspace_native_facts_browser_support.mjs';
+import { nativeTitleDiscoveryBrowser } from './workspace_native_title_discovery_browser_support.mjs';
 import { resumeDraftBrowser } from './workspace_native_resumes_browser_support.mjs';
 import { nativeAnswersBrowser } from './workspace_native_answers_browser_support.mjs';
 import { nativeExtractionsBrowser } from './workspace_native_extractions_browser_support.mjs';
@@ -109,6 +110,7 @@ export async function nativeJobsBrowser(buildRoot) {
     assert.equal(await page.locator('dialog [name="notes"]').inputValue(), 'Browser draft');
     assert.equal(await page.locator('dialog [name="company"]').inputValue(), 'CLI writer');
     const facts = await nativeFactsBrowser(page, root, fixture, buildRoot);
+    const titleDiscovery = await nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot);
     await page.getByRole('button', { name: 'Resumes', exact: true }).click();
     await page.getByRole('button', { name: 'Import resume', exact: true }).click();
     await page.getByLabel('Label', { exact: true }).fill('Browser resume');
@@ -241,7 +243,7 @@ export async function nativeJobsBrowser(buildRoot) {
     const unsupported = await fetch(startup.origin + '/api/resumes/fixture/unknown', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Origin: startup.origin }, body: JSON.stringify({expectedRevision:1}) });
     assert.equal(unsupported.status, 404);
     assert.deepEqual(pageErrors, []);
-    return { reactTrash, jobTrash, taskCli, groupedApprovals, taskIntake, legacyJobs, upsert, transitions, projections, claims:true, facts, answers, extractions, automation, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
+    return { reactTrash, jobTrash, taskCli, groupedApprovals, taskIntake, legacyJobs, upsert, transitions, projections, claims:true, facts, titleDiscovery, answers, extractions, automation, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
   } finally {
     releaseInitialClaim?.();
     if (browser) await browser.close();

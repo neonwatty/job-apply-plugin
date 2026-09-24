@@ -10,6 +10,7 @@ flowchart LR
   AS[Application Setup] -->|browser and pacing defaults| Store
   AC[Account Setup<br/>redacted sign-in metadata] -->|classified realm configuration| Store
   JP[Job Preferences] -->|saved criteria| JS[Job Search]
+  TD[Job Title Discovery<br/>browser evidence and result packet] -->|owner reviews exact titles in Companion| JP
   JS -->|owner selects and confirms queue preview| Jobs[Canonical job resolved in Store]
   JW[Job Workspace<br/>Companion UI] -->|manage and review| Store[(TypeScript Store)]
   JA[Job Apply<br/>extraction or one application] -->|commands and attempt broker| Store
@@ -24,9 +25,9 @@ flowchart LR
 
 Job Workspace launches the UI; it does not start Job Apply. Job Search, Job
 Preferences, Application Setup, and Account Setup are optional for a user who already has a job
-link. The seven packaged skills are [Answer Memory](../SKILL.md), [Application
+link. The eight packaged skills are [Answer Memory](../SKILL.md), [Application
 Setup](../../application-setup/SKILL.md), [Account Setup](../../account-setup/SKILL.md), [Job Preferences](../../job-preferences/SKILL.md),
-[Job Search](../../job-search/SKILL.md), [Job Workspace](../../job-workspace/SKILL.md),
+[Job Search](../../job-search/SKILL.md), [Job Title Discovery](../../job-title-discovery/SKILL.md), [Job Workspace](../../job-workspace/SKILL.md),
 and [Job Apply](../../job-apply/SKILL.md).
 
 ## 1. First use and resume facts
@@ -62,6 +63,28 @@ flowchart LR
 Legacy applicant-wide profile facts and reusable application answers remain separate. A confirmed fact revision is necessary for the new scoped application route, but does not choose a job or authorize browser work.
 
 ## 2. Search and queue jobs
+
+### Discover and approve target titles
+
+```mermaid
+flowchart LR
+  Facts[Facts / Search preferences] --> Input[Owner enters role interests and constraints]
+  Input --> Copy[Copy Codex or Claude invocation]
+  Copy --> Research[Job Title Discovery uses visible browser]
+  Research -->|observed| Packet[Evidence-backed result packet]
+  Research -->|logged out, blocked, unavailable, or empty| Limited[Limitation packet and retry guidance]
+  Packet --> Review[Owner edits, selects, and previews exact titles]
+  Limited --> Review
+  Review -->|confirm exact set| Save[Job Preferences / canonical Store revision-checked save]
+  Save --> Search[Job Search reads saved targetTitles]
+  Input -->|cancel| NoWrite[No preference write]
+  Limited -->|cancel or retry research| NoWrite
+  Review -->|cancel or invalid packet| NoWrite
+  Save -->|revision conflict| Refresh[Reload and review changed titles]
+  Refresh --> Review
+```
+
+Companion copies an invocation for the chosen host; it does not launch the skill. The skill reads relevant profile and resume context through Answer Memory and returns a versioned JSON packet. Its research and any source limitation remain separate from saved preferences. The owner can retry or edit suggestions, including when the source is unavailable. A valid packet alone does not save anything. Companion writes only approved `targetTitles` through the canonical profile API at the inspected revision; other preferences and unsaved Facts drafts remain intact. A conflict requires a reload and, if saved titles changed elsewhere, explicit review of the new exact preview before another save. The legacy workspace Target titles field points to this primary Companion flow.
 
 ```mermaid
 flowchart LR

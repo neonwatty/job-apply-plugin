@@ -133,7 +133,9 @@ export async function discoverConsumerGraph(root, tracked) {
       && item.sourceSha256 === hashes.get(call.path));
     if (recipe) {
       if (recipe.skillDocuments) {
-        if (await observedPythonInventory(root, paths, hashes, SKILL_SOURCE_PATH) !== recipe.skillInventorySha256) {
+        const reviewedInventories = Array.isArray(recipe.skillInventorySha256)
+          ? recipe.skillInventorySha256 : [recipe.skillInventorySha256];
+        if (!reviewedInventories.includes(await observedPythonInventory(root, paths, hashes, SKILL_SOURCE_PATH))) {
           reasons.push('Unreviewed skill document inventory');
         }
         for (const target of [...paths].filter(SKILL_SOURCE_PATH)) edges.push({ from: call.path, to: target, kind: 'reviewed-skill-document' });

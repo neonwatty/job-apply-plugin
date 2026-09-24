@@ -15,6 +15,7 @@ AI-powered job application assistant for Claude Code and Codex that fills job ap
 | `job-apply:application-setup` | Choose the browser surface, fallback behavior, page-transition pace, and preferred review-bounded automation mode |
 | `job-apply:account-setup` | Classify supported account flows and manage only redacted metadata; passwords, email values, verification codes, and live sign-in remain outside the skill |
 | `job-apply:job-search` | Search LinkedIn, Hacker News, and Twitter/X for jobs, then rank results against your preferences |
+| `job-apply:job-title-discovery` | Research related job titles with visible job-board evidence and return reviewable suggestions without changing saved preferences |
 | `job-apply:job-preferences` | Set the titles, salary, remote-work, and filtering preferences used by job search |
 | `job-apply:job-workspace` | Open the optional local Jobs, Facts, Resumes, Answers, and unified Trash workspace shared with Job Apply agents |
 
@@ -49,6 +50,13 @@ Application filling has three owner-selected modes: Guided, Autofill to Review f
 - **Hiring manager discovery**: Identifies jobs with hiring managers listed
 - **Multi-source discovery**: Searches LinkedIn, Hacker News Who's Hiring, and Twitter/X
 - **Results saved**: Full search results saved to the shared `~/.claude-job-searches/` compatibility directory as Markdown
+
+### Job Title Discovery (`job-apply:job-title-discovery`)
+- **Evidence-backed options**: Explore core, adjacent, and stretch titles using visible LinkedIn Jobs listings when available
+- **Owner control**: Review the result packet before choosing titles; discovery never changes saved preferences
+- **Clear limitations**: Login, blocked, unavailable, and empty source states are reported explicitly
+
+In Companion, open Facts → Search preferences → Discover related titles. Enter role interests or exclusions, copy the Codex or Claude Code invocation, and run it in that host. Paste the returned JSON packet into Companion to inspect evidence, edit or select titles, and preview the exact saved set. Canceling or retrying research writes nothing. After confirmation, Companion saves only approved target titles to the canonical profile; Job Search then uses those titles. The page copies an invocation but does not launch an agent. See the [workflow map](skills/answer-memory/references/workflow-map.md) for conflict and source-limitation branches.
 
 ### Job Preferences (`job-apply:job-preferences`)
 - **Reusable search settings**: Save target titles, salary floor, remote preference, exclusion patterns, and time range

@@ -15,6 +15,7 @@ import './companion.css';
 import './automation.css';
 import './trash.css';
 import './resume-facts.css';
+import './title-discovery.css';
 import { Trash } from './Trash';
 import { createTrashClient } from './trash-client';
 import { compatibilityTrashCapabilities, nativeTrashCapabilities } from './trash-model';

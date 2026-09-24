@@ -14,6 +14,13 @@ For skill changes, keep entry points concise and load references by task. Coordi
 
 Buffer context is relevant only to Buffer publishing or analytics tasks; use the available `buffer-workflows` skill for those tasks.
 
+## Code Review Rules
+
+- Before creating a PR, run `codex-pr-review-toolkit:review-pull-request` as a read-only **branch review** against the intended PR base. Resolve validated findings locally, rerun affected checks, and repeat the review if the diff changes materially; only then push/create the PR. If the toolkit is unavailable, stop and report that the pre-PR review gate was not met rather than using CI as the first review pass.
+- For canonical Store, profile, or Companion mutation changes, verify exact-revision conflict handling, selective writes, user provenance, and preservation of unrelated facts/preferences and browser drafts; these are contracts exercised by `npm run test:affected -- --base <intended-base>` and the relevant workspace tests.
+- For skill, runtime, or packaging changes, verify the installed Codex/Claude artifacts and Companion handoff with `npm run test:release`; source-tree tests alone do not prove the packaged workflow.
+- When a local gate is red, identify whether the same failure reproduces on the clean base and report the gate as red until it passes; do not present a baseline reproduction as a green result.
+
 ## Codebase modernization architecture
 
 Keep behavioral, CLI, JSON, HTTP, privacy, and persisted-data contracts stable

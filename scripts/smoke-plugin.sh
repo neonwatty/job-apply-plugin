@@ -101,7 +101,7 @@ CLAUDE_CONFIG_DIR="$SMOKE_CLAUDE_CONFIG_DIR" claude plugin marketplace add "$SMO
 CLAUDE_CONFIG_DIR="$SMOKE_CLAUDE_CONFIG_DIR" claude plugin install job-apply@neonwatty-plugins
 CLAUDE_CONFIG_DIR="$SMOKE_CLAUDE_CONFIG_DIR" claude plugin details \
   job-apply@neonwatty-plugins | tee "$SMOKE_TEMP_ROOT/plugin-details.txt"
-for skill in answer-memory application-setup job-apply job-search job-preferences job-workspace; do
+for skill in answer-memory application-setup job-apply job-search job-preferences job-title-discovery job-workspace; do
   if ! grep -Fq -- "$skill" "$SMOKE_TEMP_ROOT/plugin-details.txt"; then
     echo "Installed plugin details did not list $skill" >&2
     exit 1
@@ -124,5 +124,11 @@ python3 "$REPO_ROOT/scripts/smoke/plugin_install_verify.py" codex \
   --installed-root-output "$SMOKE_TEMP_ROOT/codex-installed-root.txt"
 node "$REPO_ROOT/scripts/smoke/native_activation.mjs" \
   "$(cat "$SMOKE_TEMP_ROOT/codex-installed-root.txt")" "$SMOKE_TEMP_ROOT"
+
+echo "Running installed Codex/Claude title-discovery and packaged Companion browser journey"
+JOB_TITLE_DISCOVERY_CODEX_ROOT="$(cat "$SMOKE_TEMP_ROOT/codex-installed-root.txt")" \
+JOB_TITLE_DISCOVERY_CLAUDE_CONFIG="$SMOKE_CLAUDE_CONFIG_DIR" \
+node --test --test-name-pattern='packaged title discovery Codex and Claude skills drive Companion owner review' \
+  "$REPO_ROOT/tests_js/workspace.test.mjs"
 
 echo "Plugin smoke checks passed"

@@ -17,6 +17,21 @@
       "classification": "unreviewed"
     },
     {
+      "path": "apps/companion/components/TitleDiscovery.tsx",
+      "sha256": "d7b3f72e99c78c9f5bcbe5117088806107390e86f42a313bb2649c730fd89494",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/title-discovery-model.ts",
+      "sha256": "93e91c4915f590ac9831664855637194336e635eb920f035d2362131f2c0984c",
+      "classification": "unreviewed"
+    },
+    {
+      "path": "apps/companion/components/title-discovery.css",
+      "sha256": "db06f3398de293c2e44ef47556abdcf2b8330e11196602c4af916b0f76293546",
+      "classification": "unreviewed"
+    },
+    {
       "path": "apps/companion/components/facts-model.ts",
       "sha256": "c058174bfe7077c36b196acf0d0890a54dcdcebaa14683f07081ea985672b7e0",
       "classification": "unreviewed"

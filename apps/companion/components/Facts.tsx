@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, type Client } from './client';
 import { FactValue } from './FactValue';
 import { FactGroups } from './FactGroups';
+import { TitleDiscovery } from './TitleDiscovery';
 import { copy,get,set,text,keys,same,parse,type Document } from '../../../src/contracts/workspace/values';
 import { factProvenance,patchBody,reapplyDraft,type ProfileSnapshot } from './facts-model';
 const sections=['firstName','lastName','email','phone','location','linkedInUrl','portfolioUrl','githubUrl','workHistory','education','skills','preferences'];
@@ -11,7 +12,7 @@ export function Facts({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:b
   const [latest,setLatest]=useState<ProfileSnapshot|null>(null),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
   const [error,setError]=useState(''),[notice,setNotice]=useState(''),[key,setKey]=useState('firstName'),[kind,setKind]=useState('text');
   const [invalid,setInvalid]=useState(false),[editorVersion,setEditorVersion]=useState(0);
-  const [query,setQuery]=useState(''),[groupDirty,setGroupDirty]=useState(false),[addOpen,setAddOpen]=useState(false);
+  const [query,setQuery]=useState(''),[groupDirty,setGroupDirty]=useState(false),[titleDirty,setTitleDirty]=useState(false),[addOpen,setAddOpen]=useState(false);
   const alive=useRef(false), generation=useRef(0), request=useRef<AbortController|null>(null);
   const form=useRef<HTMLFormElement|null>(null);
   useEffect(()=>{setInvalid(form.current?!form.current.checkValidity():false);},[draft,editorVersion]);
@@ -19,7 +20,7 @@ export function Facts({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:b
   state.current={base,draft};
   const dirty=Boolean(base&&draft&&!same(base.profile,draft));
   const groupChanged=useCallback((value:boolean)=>setGroupDirty(value),[]);
-  useEffect(()=>{dirtyChanged(dirty||busy||groupDirty||invalid);return()=>dirtyChanged(false);},[dirty,busy,groupDirty,invalid,dirtyChanged]);
+  useEffect(()=>{dirtyChanged(dirty||busy||groupDirty||titleDirty||invalid);return()=>dirtyChanged(false);},[dirty,busy,groupDirty,titleDirty,invalid,dirtyChanged]);
   async function refresh() {
     request.current?.abort();const controller=new AbortController();request.current=controller;const version=++generation.current;
     setLoading(true);setError('');
@@ -63,6 +64,12 @@ export function Facts({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:b
       <button disabled={busy} onClick={()=>{setDraft(reapplyDraft(base.profile,draft,latest.profile));setBase(latest);setLatest(null);setError('');setNotice('Draft reapplied. Review it before saving.');}}>Reapply my facts draft</button>
       <button disabled={busy} onClick={()=>{if(confirm('Discard your facts draft and load saved facts?')){setBase(latest);setDraft(latest.profile);setLatest(null);setError('');}}}>Load saved facts</button>
     </aside>}
+    <TitleDiscovery client={client} dirtyChanged={setTitleDirty} onSaved={next=>{
+      const current=state.current;
+      if(current.base?.revision===next.revision)return;
+      if(current.base&&current.draft&&!same(current.base.profile,current.draft))setLatest(next);
+      else{setBase(next);setDraft(next.profile);setLatest(null);}
+    }}/>
     <FactGroups client={client} dirtyChanged={groupChanged}/>
     {base&&draft&&<section className="workspace-panel facts-panel" aria-labelledby="facts-form-title">
       <div className="workspace-panel-heading">
