@@ -56,6 +56,7 @@ function titlePatch(snapshot: ProfileSnapshot, titles: string[]): string {
 
 export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Client; onSaved: (snapshot: ProfileSnapshot) => void; dirtyChanged: (dirty: boolean) => void }) {
   const [snapshot, setSnapshot] = useState<ProfileSnapshot | null>(null);
+  const [loading, setLoading] = useState(true), [reload, setReload] = useState(0);
   const [open, setOpen] = useState(false), [busy, setBusy] = useState(false);
   const [criteria, setCriteria] = useState(''), [packetText, setPacketText] = useState('');
   const [packet, setPacket] = useState<TitleDiscoveryPacket | null>(null);
@@ -70,10 +71,12 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
   const controller = useRef<AbortController | null>(null);
   useEffect(() => {
     const active = new AbortController(); controller.current = active;
-    void client.profile(active.signal).then(value => { setSnapshot(value); setChoices(choicesFor(value)); })
-      .catch(failure => { if (!active.signal.aborted) setError(failure instanceof Error ? failure.message : 'Unable to load target titles.'); });
+    setLoading(true); setError('');
+    void client.profile(active.signal).then(value => { if (!active.signal.aborted) { setSnapshot(value); setChoices(choicesFor(value)); } })
+      .catch(failure => { if (!active.signal.aborted) setError(failure instanceof Error ? failure.message : 'Unable to load target titles.'); })
+      .finally(() => { if (!active.signal.aborted) setLoading(false); });
     return () => active.abort();
-  }, [client]);
+  }, [client, reload]);
   useEffect(() => { dirtyChanged(open && (Boolean(packetText || criteria || packet) || busy || Boolean(snapshot && choicesChanged(snapshot, packet, choices)))); return () => dirtyChanged(false); }, [open, packetText, criteria, packet, choices, snapshot, busy, dirtyChanged]);
   function begin() { setOpen(true); setNotice(''); setError(''); requestAnimationFrame(() => heading.current?.focus()); }
   function cancel() {
@@ -153,7 +156,8 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
     <div className="workspace-panel-heading"><div><p className="eyebrow">Search preferences</p><h2 id="title-discovery-title">Target titles</h2></div>
       {!open && <button ref={openButton} className="secondary" type="button" onClick={begin} disabled={!snapshot}>Discover related titles</button>}</div>
     <p>These saved titles guide Job Search. You can edit them directly or research related roles with the Job Title Discovery skill.</p>
-    {!snapshot && <p role="status">Loading saved target titles…</p>}
+    {!snapshot && <p role="status">{loading ? 'Loading saved target titles…' : 'Saved target titles are unavailable.'}</p>}
+    {!snapshot && !loading && <button className="secondary" type="button" onClick={() => setReload(value => value + 1)}>Retry loading target titles</button>}
     {snapshot && <p>Saved now: {current.length ? current.join(' · ') : 'No target titles yet.'}</p>}
     {invalidPreferences && <p className="error" role="alert">Saved preferences have an unsupported shape. Resolve them before saving target titles.</p>}
     {notice && <p role="status">{notice}</p>}

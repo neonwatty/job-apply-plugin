@@ -204,6 +204,22 @@ export async function nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot
   await panel.getByRole('button', { name: 'Confirm and save exact titles' }).click();
   await panel.getByText('Target titles saved. Job Search will use these approved titles.').waitFor();
   assert.deepEqual(JSON.parse(await readFile(profilePath, 'utf8')).profile.preferences.targetTitles, []);
+  let profileUnavailable = true;
+  const failProfileLoads = async route => {
+    if (profileUnavailable && route.request().method() === 'GET')
+      await route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"temporarily unavailable"}' });
+    else await route.continue();
+  };
+  await page.route('**/api/profile', failProfileLoads);
+  try {
+    await page.reload();
+    await page.getByRole('button', { name: 'Facts', exact: true }).click();
+    await panel.getByText('Saved target titles are unavailable.').waitFor();
+    profileUnavailable = false;
+    await panel.getByRole('button', { name: 'Retry loading target titles' }).click();
+    await panel.getByText('Saved now: No target titles yet.').waitFor();
+    assert.equal(await panel.getByRole('button', { name: 'Discover related titles' }).isEnabled(), true);
+  } finally { await page.unroute('**/api/profile', failProfileLoads); }
   return { cancel: true, unavailable: true, emptyRetry: true, keyboardFocus: true, delayedSave: true,
     exactSave: true, conflictRetry: true, canonicalReconciliation: true, factsDraft: true };
 }
