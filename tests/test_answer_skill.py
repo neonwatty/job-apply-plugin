@@ -17,6 +17,7 @@ class AnswerMemoryIntegrationTests(AnswerCliCase):
                 "job-apply",
                 "job-preferences",
                 "job-search",
+                "job-title-discovery",
                 "job-workspace",
             },
         )

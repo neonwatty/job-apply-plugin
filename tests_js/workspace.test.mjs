@@ -17,6 +17,15 @@ import { runBrowserCrudResumesPhase } from "./workspace_browser_crud_resumes_pha
 import { runBrowserCrudJobsPhase } from "./workspace_browser_crud_jobs_phase.mjs";
 import { runBrowserCrudAnswersPhase } from "./workspace_browser_crud_answers_phase.mjs";
 import { runBrowserCrudTrashShutdownPhase } from "./workspace_browser_crud_trash_phase.mjs";
+import { packagedTitleDiscoveryJourney } from './workspace_title_discovery_packaged_support.mjs';
+
+test('packaged title discovery Codex and Claude skills drive Companion owner review', { timeout: 120_000 }, async () => {
+  assert.ok(process.env.JOB_TITLE_DISCOVERY_CODEX_ROOT, 'Codex installed root is required');
+  assert.ok(process.env.JOB_TITLE_DISCOVERY_CLAUDE_CONFIG, 'Claude isolated config root is required');
+  assert.deepEqual(await packagedTitleDiscoveryJourney(process.env.JOB_TITLE_DISCOVERY_CODEX_ROOT,
+    process.env.JOB_TITLE_DISCOVERY_CLAUDE_CONFIG),
+    { codexSkill: true, claudeSkill: true, packagedBrowser: true, cancel: true, sourceLimit: true, canonicalSave: true });
+});
 
 test("owner beta clean packaged browser and CLI journey survives restart and fails closed for recovery", { timeout: 90_000 }, async () => {
   const context = await createOwnerBetaScenario();
