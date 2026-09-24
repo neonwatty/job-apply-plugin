@@ -21,7 +21,7 @@ from tests.support.store_facade_contract import ROOT
 METHODS = (
     "resolve_account_realm", "classify_account_flow", "employer_account_flow_decision",
     "list_employer_accounts", "get_employer_account",
-    "create_employer_account", "update_employer_account",
+    "create_employer_account", "update_employer_account", "remove_employer_account",
 )
 
 
