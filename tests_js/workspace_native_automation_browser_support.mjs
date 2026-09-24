@@ -42,9 +42,26 @@ export async function nativeAutomationBrowser(page, root) {
   await accountsWorkspace.getByLabel('Exact employer portal URL',{exact:true}).fill(unrelatedDraft);
   await accountsWorkspace.getByRole('button',{name:'Add MyGreenhouse',exact:true}).click();
   await accountsWorkspace.getByText('Global account',{exact:true}).waitFor();
+  assert.equal(await accountsWorkspace.getByRole('button',{name:'Refresh',exact:true}).isDisabled(),true);
   await accountsWorkspace.getByRole('button',{name:'Add portal',exact:true}).click();
   assert.equal(await accountsWorkspace.getByLabel('Exact employer portal URL',{exact:true}).inputValue(),unrelatedDraft);
   await accountsWorkspace.getByRole('button',{name:'Cancel',exact:true}).click();
+  assert.equal(await accountsWorkspace.getByLabel('Exact employer portal URL',{exact:true}).count(),0);
+  assert.equal(await accountsWorkspace.getByRole('button',{name:'Refresh',exact:true}).isEnabled(),true);
+  await accountsWorkspace.getByRole('button',{name:'Add portal',exact:true}).click();
+  assert.equal(await accountsWorkspace.getByLabel('Exact employer portal URL',{exact:true}).inputValue(),'');
+  await accountsWorkspace.getByRole('button',{name:'Cancel',exact:true}).click();
+  const navigationPrompts=[];
+  const acceptNavigation=async dialog=>{navigationPrompts.push(dialog.message());await dialog.accept();};
+  page.on('dialog',acceptNavigation);
+  try {
+    await page.getByRole('button',{name:'Jobs',exact:true}).click();
+    await page.getByRole('heading',{name:'Jobs',exact:true}).waitFor();
+  } finally { page.off('dialog',acceptNavigation); }
+  assert.deepEqual(navigationPrompts,[],'Cancel clears the hidden portal draft before navigation');
+  await page.getByRole('button',{name:'Accounts & Sign-in',exact:true}).click();
+  await accountsWorkspace.getByRole('heading',{name:'Accounts & Sign-in',exact:true}).waitFor();
+  await accountsWorkspace.getByText('Global account',{exact:true}).waitFor();
   assert.equal(await accountsWorkspace.getByRole('listitem').count(),2);
   const persisted=JSON.parse(await readFile(join(root,'employer-accounts.json'),'utf8')).accounts;
   assert.equal(Object.values(persisted).every(account=>account.signupEmailOverride===null),true);
