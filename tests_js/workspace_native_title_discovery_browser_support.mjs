@@ -182,6 +182,21 @@ export async function nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot
   await panel.getByRole('button', { name: 'Edit target titles' }).click();
   assert.equal(await panel.getByRole('button', { name: 'Confirm and save exact titles' }).isDisabled(), true);
   assert.deepEqual(JSON.parse(await readFile(profilePath, 'utf8')), legacy);
+  const legacyRevision = await page.evaluate(async () => {
+    const token = new URLSearchParams(location.hash.slice(1)).get('token');
+    return (await fetch('/api/profile', { headers: { Authorization: `Bearer ${token}` } })).json();
+  });
+  await writeFile(externalPatch, JSON.stringify({ preferences: { targetTitles: [42] } }));
+  await execute(process.execPath, [join(buildRoot, 'runtime/cli/native-jobs.js'), '--root', root,
+    '--native-lock', fixture.receipt.artifact, 'profile-patch', '--input', externalPatch,
+    '--expected-revision', String(legacyRevision.revision), '--source', 'user'], { env: { PATH: '' } });
+  await page.reload();
+  await page.getByRole('button', { name: 'Facts', exact: true }).click();
+  await panel.getByText('Saved now: No target titles yet.').waitFor();
+  await panel.getByRole('button', { name: 'Edit target titles' }).click();
+  await panel.getByRole('button', { name: 'Confirm and save exact titles' }).click();
+  await panel.getByText('Target titles saved. Job Search will use these approved titles.').waitFor();
+  assert.deepEqual(JSON.parse(await readFile(profilePath, 'utf8')).profile.preferences.targetTitles, []);
   return { cancel: true, unavailable: true, emptyRetry: true, keyboardFocus: true, delayedSave: true,
     exactSave: true, conflictRetry: true, canonicalReconciliation: true, factsDraft: true };
 }

@@ -12,6 +12,12 @@ function savedTitles(snapshot: ProfileSnapshot): string[] {
   const titles = get(preferences, 'targetTitles');
   return Array.isArray(titles) ? titles.map(string).filter((value): value is string => value !== null) : [];
 }
+function savedTitlesExactlyMatch(snapshot: ProfileSnapshot, titles: string[]): boolean {
+  const preferences = get(snapshot.profile, 'preferences');
+  if (!(preferences instanceof PythonObject) || !has(preferences, 'targetTitles')) return titles.length === 0;
+  const stored = get(preferences, 'targetTitles');
+  return Array.isArray(stored) && stored.length === titles.length && stored.every((value, index) => string(value) === titles[index]);
+}
 function writablePreferences(snapshot: ProfileSnapshot): boolean {
   return !has(snapshot.profile, 'preferences') || get(snapshot.profile, 'preferences') instanceof PythonObject;
 }
@@ -125,8 +131,7 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
       if (latest.revision !== snapshot.revision) {
         setConflict(true); setNotice(''); setError('Profile changed elsewhere. Reload saved titles and review before retrying.'); return;
       }
-      const existing = savedTitles(snapshot);
-      if (titles.length === existing.length && titles.every((title, index) => title === existing[index])) {
+      if (savedTitlesExactlyMatch(snapshot, titles)) {
         setSnapshot(latest); setChoices(choicesFor(latest)); setPacket(null); setPacketText(''); setOpen(false); setCanonicalChange(null); setReviewedChange(false);
         setNotice('Target titles already match the saved set. No changes were made.'); onSaved(latest);
         requestAnimationFrame(() => openButton.current?.focus()); return;
