@@ -28,7 +28,8 @@ function publicUrl(value: unknown): string {
   try { parsed = new URL(input); } catch { throw Error('Invalid evidence URL.'); }
   if (!['http:', 'https:'].includes(parsed.protocol) || !parsed.hostname || parsed.username || parsed.password)
     throw Error('Evidence URL must be a public web link.');
-  if (parsed.hostname === 'localhost' || parsed.hostname.endsWith('.local') || /^\d+(?:\.\d+){3}$/.test(parsed.hostname))
+  if (parsed.hostname === 'localhost' || parsed.hostname.endsWith('.localhost') || parsed.hostname.endsWith('.local')
+    || /^\d+(?:\.\d+){3}$/.test(parsed.hostname) || (parsed.hostname.startsWith('[') && parsed.hostname.endsWith(']')))
     throw Error('Evidence URL must be a public web link.');
   return parsed.toString();
 }

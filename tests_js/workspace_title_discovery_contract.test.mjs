@@ -28,6 +28,9 @@ test('parser rejects invented, unsafe, or private payloads', () => {
   assert.throws(() => parseTitleDiscoveryPacket({ ...observed, resumeText: 'private' }));
   assert.throws(() => parseTitleDiscoveryPacket({ ...observed, suggestions: [{ ...first, evidence: [] }] }));
   assert.throws(() => parseTitleDiscoveryPacket({ ...observed, suggestions: [{ ...first, evidence: [{ ...first.evidence[0], url: 'file:///tmp/x' }] }] }));
+  for (const url of ['http://[::1]/admin', 'http://[fc00::1]/', 'http://example.localhost/']) {
+    assert.throws(() => parseTitleDiscoveryPacket({ ...observed, suggestions: [{ ...first, evidence: [{ ...first.evidence[0], url }] }] }));
+  }
   const deduplicated = parseTitleDiscoveryPacket({ ...observed, suggestions: [first, { ...first, title: ' machine  learning engineer ', evidence: [{ ...first.evidence[0], url: 'https://www.linkedin.com/jobs/view/synthetic-core-2/' }] }] });
   assert.equal(deduplicated.suggestions.length, 1);
   assert.equal(deduplicated.suggestions[0].evidence.length, 2);

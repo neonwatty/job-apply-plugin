@@ -66,6 +66,7 @@ export function Facts({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:b
     </aside>}
     <TitleDiscovery client={client} dirtyChanged={setTitleDirty} onSaved={next=>{
       const current=state.current;
+      if(current.base?.revision===next.revision)return;
       if(current.base&&current.draft&&!same(current.base.profile,current.draft))setLatest(next);
       else{setBase(next);setDraft(next.profile);setLatest(null);}
     }}/>

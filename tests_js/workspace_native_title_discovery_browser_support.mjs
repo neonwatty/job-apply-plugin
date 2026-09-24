@@ -26,6 +26,13 @@ export async function nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot
   assert.deepEqual(JSON.parse(await readFile(profilePath, 'utf8')), before);
   await page.waitForFunction(() => document.activeElement?.textContent?.trim() === 'Discover related titles');
 
+  await panel.getByRole('button', { name: 'Edit target titles' }).click();
+  await panel.getByRole('button', { name: 'Confirm and save exact titles' }).click();
+  await panel.getByText('Target titles already match the saved set. No changes were made.').waitFor();
+  assert.equal(await page.getByText('Facts changed elsewhere.').count(), 0);
+  assert.equal(await page.getByRole('button', { name: 'Save facts' }).isEnabled(), true);
+  assert.deepEqual(JSON.parse(await readFile(profilePath, 'utf8')), before);
+
   await panel.getByRole('button', { name: 'Discover related titles' }).click();
   const unavailable = await readFile(new URL('./fixtures/title-discovery/unavailable.json', import.meta.url), 'utf8');
   await panel.getByLabel('Title discovery JSON result packet').fill(unavailable);
