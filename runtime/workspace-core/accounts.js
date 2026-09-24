@@ -62,6 +62,22 @@ export class AccountsService {
             return this.project(updated, publicView);
         });
     }
+    remove(realmRef, revision) {
+        return this.repository.automationTransaction(async (tx) => {
+            const document = validateAccountsDocument(await tx.loadAccounts());
+            const accounts = copy(object(get(document, 'accounts'), 'employer accounts'));
+            const value = get(accounts, realmRef);
+            if (value === null)
+                throw new JobsError('employer account does not exist');
+            if (int(get(object(value, 'employer account'), 'revision')) !== revision)
+                throw new JobsError('employer account revision conflict');
+            accounts.delete(text(realmRef));
+            const updatedAt = text(this.now());
+            const metadata = set(copy(object(get(document, 'metadata'), 'employer account metadata')), 'updatedAt', updatedAt);
+            await tx.saveAccounts(set(set(copy(document), 'accounts', accounts), 'metadata', metadata));
+            return object(fromJSON({ removed: true, realmRef, revision: Number(revision) }), 'removed employer account');
+        });
+    }
     project(record, publicView) { return cloneDocument(publicView ? publicAccount(record) : record); }
     async save(tx, document, realm, record) {
         validateAccount(realm, record);

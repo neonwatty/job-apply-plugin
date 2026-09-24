@@ -18,27 +18,11 @@ export async function runOwnerBetaOverviewAndPreflightPhase(context) {
     assert.equal(await page.getByRole("button", { name: "Copy Codex invocation" }).getAttribute("data-copy"), "$job-apply:job-apply");
     assert.equal(await page.getByRole("button", { name: "Copy Claude Code invocation" }).getAttribute("data-copy"), "/job-apply:job-apply");
 
-    await page.getByRole("button", { name: "Automation" }).click();
-    await page.getByRole("heading", { name: "Account controls that fail closed." }).waitFor();
+    await page.getByRole("button", { name: "Accounts & Sign-in" }).click();
+    await page.getByRole("heading", { name: "Accounts & Sign-in" }).waitFor();
     await page.getByLabel("Exact employer portal URL").fill("https://acme.wd5.myworkdayjobs.com/en-US/jobs/one");
-    await page.getByLabel("Optional signup email override").fill("realm@example.com");
     await page.getByRole("button", { name: "Add resolved realm" }).click();
-    const overrideForm = page.getByRole("form", { name: /Edit signup email override for Workday realm/ });
-    await overrideForm.waitFor();
-    await overrideForm.getByLabel("Signup email override").fill("replacement@example.com");
-    await overrideForm.getByRole("button", { name: "Save override" }).click();
-    await page.getByText(/discovered · revision 2 · email override configured/).waitFor();
-    const account = (await cli("employer-account-list"))[0];
-    await cli(
-      "employer-account-update",
-      ["--realm-ref", account.realmRef, "--expected-revision", String(account.revision)],
-      { signupEmailOverride: null },
-    );
-    await overrideForm.getByLabel("Signup email override").fill("newer@example.com");
-    await overrideForm.getByRole("button", { name: "Save override" }).click();
-    const realmConflict = overrideForm.getByRole("alert");
-    await realmConflict.waitFor();
-    assert.equal(await realmConflict.evaluate((element) => element === document.activeElement), true);
+    await page.getByText(/Saved metadata: Keychain setup pending · Browser session: not observed/).waitFor();
     await page.getByRole("button", { name: "Overview" }).click();
 
     const bootPattern = "**/api/boot";

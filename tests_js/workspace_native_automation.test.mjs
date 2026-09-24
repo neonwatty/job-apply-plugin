@@ -145,6 +145,10 @@ test('HTTP accepts only Python routes and exact revision payloads; public mutati
   assert.doesNotMatch(created.body,/private@example|workday:v1/);
   const realm = JSON.parse(created.body).realmRef;
   assert.equal((await call('GET',`/api/employer-accounts/${realm}`,{})).body,created.body);
+  await assert.rejects(call('POST',`/api/employer-accounts/${realm}/delete`,{expectedRevision:2}),/revision conflict/);
+  const removed = await call('POST',`/api/employer-accounts/${realm}/delete`,{expectedRevision:1});
+  assert.deepEqual(JSON.parse(removed.body),{removed:true,realmRef:realm,revision:1});
+  await assert.rejects(call('GET',`/api/employer-accounts/${realm}`,{}),/does not exist/);
   await assert.rejects(call('GET','/api/employer-accounts/missing',{}),/does not exist/);
   const projection = await call('GET','/api/automation',{});
   assert.equal(JSON.parse(projection.body).capability.reasonCode,'native_provider_not_composed');

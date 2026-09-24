@@ -270,6 +270,10 @@ export const apiRoutes = [
   ],
   [
     "POST",
+    "/api/employer-accounts/{id}/delete"
+  ],
+  [
+    "POST",
     "/api/fact-groups"
   ],
   [
