@@ -158,8 +158,21 @@ async function group1(t) {
     'tests_js/workspace_skill_support.mjs', 'tests_js/workspace_answers.test.mjs', 'tests_js/workspace_markup.test.mjs']) {
     await f.write(file, reviewed.get(file).toString('utf8'));
   }
-  assert.ok(!(await discoverConsumerGraph(f.root, f.tracked())).reasons.includes('Unreviewed skill document inventory'));
+  const historicalSkillGraph = await discoverConsumerGraph(f.root, f.tracked());
+  assert.ok(!historicalSkillGraph.reasons.includes('Unreviewed skill document inventory'), historicalSkillGraph.reasons.join('; '));
   await f.write('skills/job-apply/references/new-consumer.md', '[new source](../../../scripts/new-source.py)\n');
+  assert.ok((await discoverConsumerGraph(f.root, f.tracked())).reasons.includes('Unreviewed skill document inventory'));
+  const liveSkillFiles = (await trackedPaths(GRAPH_ROOT)).filter(SKILL_SOURCE_PATH);
+  assert.equal(liveSkillFiles.length, 30);
+  for (const file of [...liveSkillFiles, 'tests_js/workspace_skill_support.mjs',
+    'tests_js/workspace_answers.test.mjs', 'tests_js/workspace_markup.test.mjs']) {
+    await f.write(file, await fs.promises.readFile(path.join(GRAPH_ROOT, file)));
+  }
+  await fs.promises.rm(path.join(f.root, 'skills/job-apply/references/new-consumer.md'));
+  f.files.delete('skills/job-apply/references/new-consumer.md');
+  const liveSkillGraph = await discoverConsumerGraph(f.root, f.tracked());
+  assert.ok(!liveSkillGraph.reasons.includes('Unreviewed skill document inventory'), liveSkillGraph.reasons.join('; '));
+  await fs.promises.rm(path.join(f.root, 'skills/account-setup/SKILL.md'));
   assert.ok((await discoverConsumerGraph(f.root, f.tracked())).reasons.includes('Unreviewed skill document inventory'));
   for (const file of ['qa/unified_task_spine_oracle.mjs', 'tests_js/unified_task_spine_oracle.test.mjs', 'workspace/index.html']) {
     await f.write(file, reviewed.get(file).toString('utf8'));

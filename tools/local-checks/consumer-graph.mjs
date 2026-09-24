@@ -5,7 +5,7 @@ import { delimiter, join, isAbsolute } from 'node:path';
 import ts from 'typescript';
 import { suiteFiles, validateMatrix } from '../test-runner/matrix.mjs';
 import { analyzeSource, resolveEdge, inspectRunnerBindings, RUNNER_MODULES, RUNNER_IDENTITIES, EXECUTABLE_TARGET_HASHES, CALLER_PROCESS_RECIPES } from './graph-syntax.mjs';
-import { CONTRACT_PATH, SOURCE_SUFFIX, NATIVE_ROOTS, PYTHON_SOURCE_PATH, PYTHON_INVENTORY_SHA256, SKILL_SOURCE_PATH, SKILL_INVENTORY_SHA256, PROCESS_RECIPES, EXTRA_CALLER_PROCESS_RECIPES, NPM_QUERY_SOURCE_SHA256, FINITE_EXPRESSIONS, digest, ordered, readRegular, loadFocusedContracts } from './focused-contracts.mjs';
+import { CONTRACT_PATH, SOURCE_SUFFIX, NATIVE_ROOTS, PYTHON_SOURCE_PATH, PYTHON_INVENTORY_SHA256, SKILL_SOURCE_PATH, PROCESS_RECIPES, EXTRA_CALLER_PROCESS_RECIPES, NPM_QUERY_SOURCE_SHA256, FINITE_EXPRESSIONS, digest, ordered, readRegular, loadFocusedContracts } from './focused-contracts.mjs';
 
 export function reverseClosure(edges, seeds, { types = false, emissions = types, tracked = new Set() } = {}) {
   const reverse = new Map(), changedBytes = new Set(seeds);
@@ -133,7 +133,7 @@ export async function discoverConsumerGraph(root, tracked) {
       && item.sourceSha256 === hashes.get(call.path));
     if (recipe) {
       if (recipe.skillDocuments) {
-        if (await observedPythonInventory(root, paths, hashes, SKILL_SOURCE_PATH) !== SKILL_INVENTORY_SHA256) {
+        if (await observedPythonInventory(root, paths, hashes, SKILL_SOURCE_PATH) !== recipe.skillInventorySha256) {
           reasons.push('Unreviewed skill document inventory');
         }
         for (const target of [...paths].filter(SKILL_SOURCE_PATH)) edges.push({ from: call.path, to: target, kind: 'reviewed-skill-document' });

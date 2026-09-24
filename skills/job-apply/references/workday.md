@@ -3,10 +3,10 @@
 **Characteristics:**
 - Multi-page wizard with heavy JavaScript
 - Non-standard UI components (custom dropdowns, date pickers)
-- Often requires account creation (pause so the user can decide and handle it)
+- Requires a tenant-host account realm; use [Account Setup](../../account-setup/SKILL.md) for value-free local metadata
 
 **Approach (visible browser first):**
-1. If login, CAPTCHA, MFA, or account creation is required, pause for the user; never handle credentials or create the account
+1. If login, CAPTCHA, MFA, or account creation is required, pause for the user. Account Setup may configure redacted local metadata, but only the user handles the live account and macOS Keychain credential.
 2. Navigate through "My Information" → "My Experience" → "Application Questions"
 3. Read the visible form structure on each page
 4. For dropdowns: open the field, read the visible options, then choose the supported value

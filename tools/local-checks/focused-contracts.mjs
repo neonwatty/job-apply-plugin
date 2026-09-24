@@ -430,7 +430,7 @@ export const FINITE_EXPRESSIONS = new Map([
 
 
 // Set only after the complete query helper/import implementation receives independent review.
-export const NPM_QUERY_SOURCE_SHA256 = '3a90057166e8ce16170cb5552876c1ca636428ac6bf8404df645424c72ab44ca';
+export const NPM_QUERY_SOURCE_SHA256 = '988b2e0b2e35d87a91fd684eb20d8eae672df893ffb0fedba8a401d41a834147';
 
 // Identified native boundaries require the separately fresh native roots, never cached acceptance.
 
@@ -479,20 +479,22 @@ export const EXTRA_CALLER_PROCESS_RECIPES = [
     ],
     requiredSourceBindings: [{"path":"qa/renderer/index.html","sha256":"e8712f68b72db688e490f1f56ddc99bdde4e2f5f217b2431b5a3bec73079e34e"}],
   },
-  {
-    path: "tests_js/workspace_skill_support.mjs",
-    sourceSha256: "0bb332ebf459b43129cad659375555b9145d07e7d9b139562d89bff87db3f458",
-    callHashes: ["abd8aecb67959240163579e59f53c215c4896675b27b019eb297f0aa5357355e"],
-    python: true,
-    skillDocuments: true,
+  { path: "tests_js/workspace_skill_support.mjs", sourceSha256: "0bb332ebf459b43129cad659375555b9145d07e7d9b139562d89bff87db3f458",
+    callHashes: ["abd8aecb67959240163579e59f53c215c4896675b27b019eb297f0aa5357355e"], python: true, skillDocuments: true,
+    skillInventorySha256: "c59f8dd05c0b304706ea6eb2eab227636c4b4f575fc6a69c9b895f94629a3d03",
     repositoryTargets: ["scripts/skill_documents.py"],
-    callers: [
-      {"path":"tests_js/workspace_answers.test.mjs","sha256":"c3b6c03908af35d61f6b74ef113f069befe1993b2c0b350eaeed55957dd0c7c3"},
+    callers: [{"path":"tests_js/workspace_answers.test.mjs","sha256":"c3b6c03908af35d61f6b74ef113f069befe1993b2c0b350eaeed55957dd0c7c3"},
       {"path":"tests_js/workspace_markup.test.mjs","sha256":"dedfa6a03a6f4c238f1c687764698949246762255019e700fbaa9a8537b8e2f8"},
-      {"path":"tests_js/workspace_skill_support.mjs","sha256":"0bb332ebf459b43129cad659375555b9145d07e7d9b139562d89bff87db3f458"},
-    ],
+      {"path":"tests_js/workspace_skill_support.mjs","sha256":"0bb332ebf459b43129cad659375555b9145d07e7d9b139562d89bff87db3f458"}],
+  },
+  { path: "tests_js/workspace_skill_support.mjs", sourceSha256: "0bb332ebf459b43129cad659375555b9145d07e7d9b139562d89bff87db3f458",
+    callHashes: ["abd8aecb67959240163579e59f53c215c4896675b27b019eb297f0aa5357355e"], python: true, skillDocuments: true,
+    skillInventorySha256: "0de7d2d8b590d74a856afeb6702abe4dc70e6aeb50f9d14de3cfa73cbdf63d94",
+    repositoryTargets: ["scripts/skill_documents.py"],
+    callers: [{"path":"tests_js/workspace_answers.test.mjs","sha256":"c3b6c03908af35d61f6b74ef113f069befe1993b2c0b350eaeed55957dd0c7c3"},
+      {"path":"tests_js/workspace_markup.test.mjs","sha256":"c1106f88c3b055223d7a07a0ec25f91bd5443107555c8de538fd8b4e76bbabdb"},
+      {"path":"tests_js/workspace_skill_support.mjs","sha256":"0bb332ebf459b43129cad659375555b9145d07e7d9b139562d89bff87db3f458"}],
   },
 ];
 
-export const SKILL_SOURCE_PATH = path => /^skills\/(?:answer-memory|job-apply|job-workspace)\/.*\.md$/.test(path);
-export const SKILL_INVENTORY_SHA256 = 'c59f8dd05c0b304706ea6eb2eab227636c4b4f575fc6a69c9b895f94629a3d03';
+export const SKILL_SOURCE_PATH = path => /^skills\/(?:account-setup|answer-memory|job-apply|job-workspace)\/.*\.md$/.test(path);
