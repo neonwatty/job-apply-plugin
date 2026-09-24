@@ -8,12 +8,12 @@
     },
     {
       "path": "apps/companion/components/Automation.tsx",
-      "sha256": "067477a749d296a042f353512f99cac7a662b4d35031846e5b3bc2dbc9b3b6be",
+      "sha256": "9ad137f2fd5b3db1908e05d975d67267a439016028310d05d2e7cef7a7d6ea09",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/AutomationRealm.tsx",
-      "sha256": "5e049f641591353e192a79b2c5477d89afe8abff6c9473a2401707eb95ed3ff4",
+      "sha256": "08e1f64574b2f9b2d543c9f523bd2cffa46aa73a93b2aeb47da5e8eeb75e380f",
       "classification": "unreviewed"
     },
     {
@@ -23,12 +23,12 @@
     },
     {
       "path": "apps/companion/components/automation-model.ts",
-      "sha256": "1cc77a7cc18caae3dab53e51b6c0f51e7e2984dfa13cbc364c7888830ae1c45f",
+      "sha256": "82ff9acf5b33e27dcea41da37c17e454b6310b9f39f67c80d262a68a6dffeece",
       "classification": "unreviewed"
     },
     {
       "path": "apps/companion/components/automation.css",
-      "sha256": "a1da328adae3be4a907b8d46af3e0933b072ddca04e2cbf201455f72a02431cc",
+      "sha256": "99badcb11513b6c9b1d05e34d6ece653a77cad42544f4b768873886deafd182d",
       "classification": "unreviewed"
     }
   ]

@@ -239,7 +239,7 @@
     },
     {
       "path": "http-write-accounts-surfaces.json",
-      "sha256": "dab7460ce1f8950c8b675aab853548a79d0f1fe8cdff42195bd442811135f7a3"
+      "sha256": "4956d5a0ba954c2ae1142e9e43b58a3a93d68f89eeb1f29cfbf683172541cb29"
     },
     {
       "path": "http-write-answers-02-surfaces.json",
@@ -367,7 +367,7 @@
     },
     {
       "path": "source-catalog-05.json",
-      "sha256": "6b24e5108b20b759d017997902e79406abe9680b268fb3b21d13a985406229e7"
+      "sha256": "8dd4432161fada602a221b92f3f5c6ca17bfe575124297c04c735791ae9fd678"
     },
     {
       "path": "source-catalog-06.json",
@@ -379,7 +379,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "19c468f68a3b16d12a318660e0e34169900cbf6afffe5d1ab74e8478d5e7a88f"
+      "sha256": "eb0b8cc6f4f634de5ba84aef73023a137b6524dd06e9f7c2c767f15844dbb627"
     },
     {
       "path": "source-catalog-m01.json",
@@ -415,11 +415,11 @@
     },
     {
       "path": "source-catalog-native-automation-ux.json",
-      "sha256": "7693e599d9e701e9cf5861b4ee83d4d04a4c7e74a53fdab9d07d20fba9b72102"
+      "sha256": "8e5c92953809960c55ed7c4c7f7c1a4f1f660cb93ecc1cb5f6844d612201a5f4"
     },
     {
       "path": "source-catalog-native-automation.json",
-      "sha256": "dec3083384a8ebacbf1f7011b0962d9c3b02eebdd6c3dd7d3979e1ade8e47180"
+      "sha256": "da98a364a164661665e342be79e67df5a6bfd651c3ff3ffe55270cd42c36b306"
     },
     {
       "path": "source-catalog-native-claims.json",

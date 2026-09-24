@@ -283,6 +283,37 @@
       }
     },
     {
+      "id": "http:POST:/api/employer-accounts/{id}/delete",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/employer-accounts/{id}/delete",
+      "node": "ACC",
+      "sources": [
+        "apps/companion/proxy.ts",
+        "apps/companion/server/config.ts",
+        "apps/companion/server/forward.ts",
+        "apps/companion/server/routes.ts",
+        "src/cli/native-jobs-server.ts",
+        "src/workspace-core/jobs-http.ts",
+        "src/workspace-core/automation-http.ts",
+        "src/workspace-core/accounts.ts",
+        "src/store/native-jobs.ts"
+      ],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified",
+        "invalid": "unverified",
+        "missing": "unverified",
+        "noop": "unverified",
+        "privacy": "unverified",
+        "conflict": "unverified",
+        "concurrency": "unverified",
+        "interruption": "unverified",
+        "recovery": "unverified",
+        "platform": "unverified"
+      }
+    },
+    {
       "id": "http:PATCH:/api/automation/settings",
       "kind": "http",
       "method": "PATCH",
