@@ -45,7 +45,8 @@ test('Companion title discovery reviews, cancels, saves and retries conflicts ag
     await page.getByRole('button', { name: 'Facts', exact: true }).click();
     await page.locator('#title-discovery').getByText('Saved now: No target titles yet.').waitFor();
     assert.deepEqual(await nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot),
-      { cancel: true, unavailable: true, exactSave: true, conflictRetry: true, canonicalReconciliation: true, factsDraft: true });
+      { cancel: true, unavailable: true, emptyRetry: true, keyboardFocus: true, delayedSave: true,
+        exactSave: true, conflictRetry: true, canonicalReconciliation: true, factsDraft: true });
     assert.deepEqual(errors, []);
   } finally {
     await browser?.close();

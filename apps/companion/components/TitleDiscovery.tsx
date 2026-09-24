@@ -50,6 +50,8 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
   const [canonicalChange, setCanonicalChange] = useState<{ before: string[]; now: string[] } | null>(null);
   const [reviewedChange, setReviewedChange] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
+  const openButton = useRef<HTMLButtonElement>(null);
+  const busyNow = useRef(false);
   const controller = useRef<AbortController | null>(null);
   useEffect(() => {
     const active = new AbortController(); controller.current = active;
@@ -59,7 +61,13 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
   }, [client]);
   useEffect(() => { dirtyChanged(open && (Boolean(packetText || criteria || packet) || busy)); return () => dirtyChanged(false); }, [open, packetText, criteria, packet, busy, dirtyChanged]);
   function begin() { setOpen(true); setNotice(''); setError(''); requestAnimationFrame(() => heading.current?.focus()); }
-  function cancel() { controller.current?.abort(); setBusy(false); setOpen(false); setPacket(null); setPacketText(''); setCriteria(''); setFallback(''); setConflict(false); setCanonicalChange(null); setReviewedChange(false); setError(''); if (snapshot) setChoices(choicesFor(snapshot)); setNotice('Discovery canceled. No titles were saved.'); }
+  function cancel() {
+    if (busyNow.current) return;
+    setOpen(false); setPacket(null); setPacketText(''); setCriteria(''); setFallback(''); setConflict(false); setCanonicalChange(null); setReviewedChange(false); setError('');
+    if (snapshot) setChoices(choicesFor(snapshot));
+    setNotice('Discovery canceled. No titles were saved.');
+    requestAnimationFrame(() => openButton.current?.focus());
+  }
   function acceptPacket() {
     try { const parsed = parseTitleDiscoveryPacket(packetText); setPacket(parsed); if (snapshot) setChoices(choicesFor(snapshot, parsed)); setError(''); setConflict(false); setNotice(parsed.source.status === 'observed' ? 'Suggestions ready for your review.' : 'Source limitation recorded. You can retry research or edit titles manually.'); }
     catch (failure) { setError(failure instanceof Error ? failure.message : 'Invalid discovery packet.'); }
@@ -72,7 +80,8 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
   }
   function updateChoice(id: string, patch: Partial<Choice>) { setReviewedChange(false); setChoices(current => current.map(choice => choice.id === id ? { ...choice, ...patch } : choice)); }
   async function refreshForConflict() {
-    setBusy(true); setError('');
+    if (busyNow.current) return;
+    busyNow.current = true; setBusy(true); setError('');
     try {
       const latest = await client.profile();
       const before = snapshot ? savedTitles(snapshot) : [];
@@ -94,13 +103,13 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
       setNotice(changed ? 'Saved target titles changed elsewhere. Review the changed set and exact preview before continuing.' : 'Latest profile revision loaded. Your title selections and edits are retained.');
       onSaved(latest);
     } catch (failure) { setError(failure instanceof Error ? failure.message : 'Unable to reload titles.'); }
-    finally { setBusy(false); }
+    finally { busyNow.current = false; setBusy(false); }
   }
   async function save() {
-    if (!snapshot || busy || conflict || (canonicalChange && !reviewedChange)) return;
+    if (!snapshot || busyNow.current || conflict || (canonicalChange && !reviewedChange)) return;
     const titles = uniqueTitles(choices);
     if (titles.some(title => title.length > 200) || choices.some(choice => choice.selected && !choice.title.trim())) { setError('Selected titles must contain 1–200 characters.'); return; }
-    setBusy(true); setError(''); setNotice('Saving selected titles…');
+    busyNow.current = true; setBusy(true); setError(''); setNotice('Saving selected titles…');
     try {
       const latest = await client.profile();
       if (latest.revision !== snapshot.revision) {
@@ -109,17 +118,18 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
       const saved = await client.patchProfile(titlePatch(snapshot, titles));
       setSnapshot(saved); setChoices(choicesFor(saved)); setPacket(null); setPacketText(''); setOpen(false); setCanonicalChange(null); setReviewedChange(false);
       setNotice('Target titles saved. Job Search will use these approved titles.'); onSaved(saved);
+      requestAnimationFrame(() => openButton.current?.focus());
     } catch (failure) {
       if (failure instanceof ApiError && failure.status === 409) { setConflict(true); setError('Profile changed elsewhere. Reload saved titles and review before retrying.'); }
       else setError(failure instanceof Error ? failure.message : 'Unable to save target titles. Retry when ready.');
       setNotice('');
-    } finally { setBusy(false); }
+    } finally { busyNow.current = false; setBusy(false); }
   }
   const preview = uniqueTitles(choices);
   const current = snapshot ? savedTitles(snapshot) : [];
   return <section className="workspace-panel title-discovery" id="title-discovery" aria-labelledby="title-discovery-title">
     <div className="workspace-panel-heading"><div><p className="eyebrow">Search preferences</p><h2 id="title-discovery-title">Target titles</h2></div>
-      {!open && <button className="secondary" type="button" onClick={begin} disabled={!snapshot}>Discover related titles</button>}</div>
+      {!open && <button ref={openButton} className="secondary" type="button" onClick={begin} disabled={!snapshot}>Discover related titles</button>}</div>
     <p>These saved titles guide Job Search. You can edit them directly or research related roles with the Job Title Discovery skill.</p>
     {!snapshot && <p role="status">Loading saved target titles…</p>}
     {snapshot && <p>Saved now: {current.length ? current.join(' · ') : 'No target titles yet.'}</p>}
@@ -154,7 +164,7 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
         <button type="button" className="secondary" disabled={busy} onClick={() => setReviewedChange(true)}>I reviewed the changed titles and exact preview</button>
       </aside>}
       {conflict && <button type="button" className="secondary" disabled={busy} onClick={() => void refreshForConflict()}>Reload saved titles for review</button>}
-      <div className="title-discovery-actions"><button type="button" className="primary" disabled={busy || conflict || Boolean(canonicalChange && !reviewedChange) || choices.some(choice => choice.selected && (!choice.title.trim() || choice.title.length > 200))} onClick={() => void save()}>Confirm and save exact titles</button><button type="button" className="secondary" onClick={cancel}>Cancel discovery</button></div>
+      <div className="title-discovery-actions"><button type="button" className="primary" disabled={busy || conflict || Boolean(canonicalChange && !reviewedChange) || choices.some(choice => choice.selected && (!choice.title.trim() || choice.title.length > 200))} onClick={() => void save()}>Confirm and save exact titles</button><button type="button" className="secondary" disabled={busy} onClick={cancel}>Cancel discovery</button></div>
     </div>}
   </section>;
 }

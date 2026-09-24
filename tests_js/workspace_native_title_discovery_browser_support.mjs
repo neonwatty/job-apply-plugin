@@ -15,12 +15,16 @@ export async function nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot
   await page.getByLabel('firstName', { exact: true }).fill('Unsent facts draft');
   const before = JSON.parse(await readFile(profilePath, 'utf8'));
   const panel = page.locator('#title-discovery');
-  await panel.getByRole('button', { name: 'Discover related titles' }).click();
+  const discover = panel.getByRole('button', { name: 'Discover related titles' });
+  await discover.focus();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => document.activeElement?.textContent?.trim() === 'Discover and review target titles');
   await panel.getByLabel(/Role interests, constraints/).fill('Adjacent ML roles; no director roles');
   await panel.getByRole('button', { name: 'Copy Codex invocation' }).click();
   await panel.getByText(/invocation copied|Clipboard unavailable/).waitFor();
   await panel.getByRole('button', { name: 'Cancel discovery' }).click();
   assert.deepEqual(JSON.parse(await readFile(profilePath, 'utf8')), before);
+  await page.waitForFunction(() => document.activeElement?.textContent?.trim() === 'Discover related titles');
 
   await panel.getByRole('button', { name: 'Discover related titles' }).click();
   const unavailable = await readFile(new URL('./fixtures/title-discovery/unavailable.json', import.meta.url), 'utf8');
@@ -28,6 +32,15 @@ export async function nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot
   await panel.getByRole('button', { name: 'Review packet' }).click();
   await panel.getByText('Research source: logged out').waitFor();
   assert.equal(await panel.getByText(/No browser evidence was available/).count(), 1);
+  assert.deepEqual(JSON.parse(await readFile(profilePath, 'utf8')), before);
+  await panel.getByLabel('Title discovery JSON result packet').fill(JSON.stringify({
+    version: 1, source: { status: 'empty', detail: 'No matching listings were visible for these criteria.' }, suggestions: [],
+  }));
+  await panel.getByRole('button', { name: 'Review packet' }).click();
+  await panel.getByText('Research source: empty').waitFor();
+  assert.equal(await panel.locator('.title-discovery-choice').count(), 0);
+  await panel.getByRole('button', { name: 'Copy Codex invocation' }).click();
+  await panel.getByText(/invocation copied|Clipboard unavailable/).waitFor();
   assert.deepEqual(JSON.parse(await readFile(profilePath, 'utf8')), before);
   await panel.getByLabel('Title discovery JSON result packet').fill('{invalid');
   await panel.getByRole('button', { name: 'Review packet' }).click();
@@ -38,7 +51,9 @@ export async function nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot
   await panel.getByLabel('Title discovery JSON result packet').fill(observed);
   await panel.getByRole('button', { name: 'Review packet' }).click();
   const adjacent = panel.locator('.title-discovery-choice').filter({ hasText: 'Staff Machine Learning Engineer' });
-  await adjacent.getByRole('checkbox').check();
+  await adjacent.getByRole('checkbox').focus();
+  await page.keyboard.press('Space');
+  assert.equal(await adjacent.getByRole('checkbox').isChecked(), true);
   await panel.locator('.title-discovery-choice').filter({ hasText: 'Machine Learning Engineer' }).first()
     .getByRole('button', { name: 'Remove Machine Learning Engineer' }).click();
   await panel.locator('.title-discovery-choice').filter({ hasText: 'Director of AI' }).getByRole('textbox', { name: 'Title' }).fill('Director of Applied AI');
@@ -98,7 +113,42 @@ export async function nativeTitleDiscoveryBrowser(page, root, fixture, buildRoot
   assert.deepEqual(reconciled.profile.preferences.targetTitles,
     ['Staff Machine Learning Engineer', 'Director of AI', 'Concurrent Architect']);
   assert.equal(await page.getByLabel('firstName', { exact: true }).inputValue(), 'Unsent facts draft');
+  await panel.getByRole('button', { name: 'Discover related titles' }).click();
+  await panel.getByRole('button', { name: 'Add title manually' }).click();
+  await panel.locator('.title-discovery-choice').last().getByRole('textbox', { name: 'Title' }).fill('Principal ML Engineer');
+  assert.match(await panel.locator('.title-discovery-preview').innerText(), /Principal ML Engineer/);
+  let patchArrived;
+  const interceptedPatch = new Promise(resolve => { patchArrived = resolve; });
+  let releasePatch;
+  const patchGate = new Promise(resolve => { releasePatch = resolve; });
+  const delayPatch = async route => {
+    if (route.request().method() === 'PATCH') {
+      patchArrived();
+      await patchGate;
+    }
+    await route.continue();
+  };
+  await page.route('**/api/profile', delayPatch);
+  try {
+    await panel.getByRole('button', { name: 'Confirm and save exact titles' }).click();
+    await interceptedPatch;
+    const cancelDuringSave = panel.getByRole('button', { name: 'Cancel discovery' });
+    assert.equal(await cancelDuringSave.isDisabled(), true);
+    await cancelDuringSave.evaluate(button => button.click());
+    assert.equal(await panel.getByText('Saving selected titles…').count(), 1);
+    assert.equal(await panel.getByText('Discovery canceled. No titles were saved.').count(), 0);
+    assert.deepEqual(JSON.parse(await readFile(profilePath, 'utf8')), reconciled);
+    releasePatch();
+    await panel.getByText(/Target titles saved/).waitFor();
+  } finally {
+    releasePatch();
+    await page.unroute('**/api/profile', delayPatch);
+  }
+  const delayedSaved = JSON.parse(await readFile(profilePath, 'utf8'));
+  assert.deepEqual(delayedSaved.profile.preferences.targetTitles,
+    ['Staff Machine Learning Engineer', 'Director of AI', 'Concurrent Architect', 'Principal ML Engineer']);
   page.once('dialog', dialog => dialog.accept());
   await page.getByRole('button', { name: 'Discard facts changes' }).click();
-  return { cancel: true, unavailable: true, exactSave: true, conflictRetry: true, canonicalReconciliation: true, factsDraft: true };
+  return { cancel: true, unavailable: true, emptyRetry: true, keyboardFocus: true, delayedSave: true,
+    exactSave: true, conflictRetry: true, canonicalReconciliation: true, factsDraft: true };
 }

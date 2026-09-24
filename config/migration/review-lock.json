@@ -443,7 +443,7 @@
     },
     {
       "path": "source-catalog-native-facts.json",
-      "sha256": "a122854f6c58df1e8634681d95fb7174d62b40e781368aa21468c001123627c2"
+      "sha256": "078ddba24abd6dc5dc16ed622abcc7d8473858d88d6098706dd4fbc4a67ccba2"
     },
     {
       "path": "source-catalog-native-grouped-approvals.json",
