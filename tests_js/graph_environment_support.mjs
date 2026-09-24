@@ -163,7 +163,12 @@ async function group1(t) {
   await f.write('skills/job-apply/references/new-consumer.md', '[new source](../../../scripts/new-source.py)\n');
   assert.ok((await discoverConsumerGraph(f.root, f.tracked())).reasons.includes('Unreviewed skill document inventory'));
   const liveSkillFiles = (await trackedPaths(GRAPH_ROOT)).filter(SKILL_SOURCE_PATH);
-  assert.equal(liveSkillFiles.length, 30);
+  assert.equal(liveSkillFiles.length, 33);
+  assert.deepEqual(liveSkillFiles.filter(file => file.startsWith('skills/job-title-discovery/')), [
+    'skills/job-title-discovery/SKILL.md',
+    'skills/job-title-discovery/references/discovery-workflow.md',
+    'skills/job-title-discovery/references/result-format.md',
+  ]);
   for (const file of [...liveSkillFiles, 'tests_js/workspace_skill_support.mjs',
     'tests_js/workspace_answers.test.mjs', 'tests_js/workspace_markup.test.mjs']) {
     await f.write(file, await fs.promises.readFile(path.join(GRAPH_ROOT, file)));
