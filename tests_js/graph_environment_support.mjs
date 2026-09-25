@@ -170,9 +170,11 @@ async function group1(t) {
     'skills/job-title-discovery/references/result-format.md',
   ]);
   const workspaceDocument = 'skills/job-workspace/references/workspace.md';
+  const extractionDocument = 'skills/job-apply/references/extraction.md';
   const companionLauncherInputs = ['apps/companion/launch.mjs', 'apps/companion/writer-route.mjs',
     'apps/companion/supervise.mjs'];
-  for (const file of [...liveSkillFiles.filter(file => file !== workspaceDocument), ...companionLauncherInputs,
+  for (const file of [...liveSkillFiles.filter(file => ![workspaceDocument, extractionDocument].includes(file)),
+    ...companionLauncherInputs,
     'tests_js/workspace_skill_support.mjs',
     'tests_js/workspace_answers.test.mjs', 'tests_js/workspace_markup.test.mjs']) {
     await f.write(file, await fs.promises.readFile(path.join(GRAPH_ROOT, file)));
@@ -186,6 +188,11 @@ async function group1(t) {
   assert.equal(priorWorkspaceDocument.split(liveExtractionDocumentation).length, 2);
   await f.write(workspaceDocument, priorWorkspaceDocument.replace(liveExtractionDocumentation,
     reviewedExtractionDocumentation));
+  let priorExtractionDocument = await fs.promises.readFile(path.join(GRAPH_ROOT, extractionDocument), 'utf8');
+  const reviewedExtractionPrivacy = '   For a copied Companion handoff, the opaque request ID is the only mutable value. Do not ask the owner to share, or echo back, resume data, candidate data, file paths, or filenames.\n';
+  assert.equal(priorExtractionDocument.split(reviewedExtractionPrivacy).length, 2);
+  priorExtractionDocument = priorExtractionDocument.replace(reviewedExtractionPrivacy, '');
+  await f.write(extractionDocument, priorExtractionDocument);
   await fs.promises.rm(path.join(f.root, 'skills/job-apply/references/new-consumer.md'));
   f.files.delete('skills/job-apply/references/new-consumer.md');
   const liveSkillGraph = await discoverConsumerGraph(f.root, f.tracked());
