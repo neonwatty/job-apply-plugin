@@ -288,7 +288,8 @@
     }
   ],
   "ownership": [
-    {"paths": ["config/core-workflows.json", "tools/validate-agent-workflows.mjs", "tools/audit-core-workflows.mjs"], "suites": ["core-workflow-audit"]},
+    {"paths": ["config/core-workflows.json"], "suites": ["core-workflow-audit", "python-qa"]},
+    {"paths": ["tools/validate-agent-workflows.mjs", "tools/audit-core-workflows.mjs"], "suites": ["core-workflow-audit"]},
     {"paths": ["apps/companion/**"], "suites": ["companion-typescript-check", "node-workspace-other", "migration-inventory", "source-size"]},
     {"paths": ["tests_js/local_checks_graph_support.mjs"], "suites": ["node-runner-fast", "node-migration-evidence"]},
     {"paths": ["tests_js/migration_task_lineage_support.mjs"], "suites": ["node-runner-fast", "node-migration-evidence"]},

@@ -20,6 +20,38 @@ export async function claimsBrowser(page, { jobId, claimRequests = [] }) {
         assert.equal(await page.evaluate(() => navigator.clipboard.readText()), '$job-apply:job-apply');
         await panel.getByText('Codex invocation copied.', { exact: true }).waitFor();
 
+        const codexCopy = panel.getByRole('button', { name: 'Copy Codex invocation', exact: true });
+        const claudeCopy = panel.getByRole('button', { name: 'Copy Claude invocation', exact: true });
+        await page.evaluate(() => {
+            globalThis.claimsClipboardAttempts = [];
+            Object.defineProperty(navigator, 'clipboard', {
+                configurable: true,
+                value: { writeText: text => new Promise((resolve, reject) => {
+                    globalThis.claimsClipboardAttempts.push({ text, resolve, reject });
+                }) },
+            });
+        });
+        await codexCopy.click();
+        await claudeCopy.click();
+        await page.waitForFunction(() => globalThis.claimsClipboardAttempts.length === 2);
+        await page.evaluate(() => globalThis.claimsClipboardAttempts[1].reject(new Error('latest denied')));
+        const fallback = panel.getByLabel('Invocation to copy', { exact: true });
+        await fallback.waitFor();
+        assert.equal(await fallback.inputValue(), '/job-apply:job-apply');
+        await page.evaluate(() => globalThis.claimsClipboardAttempts[0].resolve());
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        assert.equal(await fallback.inputValue(), '/job-apply:job-apply');
+
+        await codexCopy.click();
+        await claudeCopy.click();
+        await page.waitForFunction(() => globalThis.claimsClipboardAttempts.length === 4);
+        await page.evaluate(() => globalThis.claimsClipboardAttempts[3].resolve());
+        await panel.getByText('Claude Code invocation copied.', { exact: true }).waitFor();
+        await page.evaluate(() => globalThis.claimsClipboardAttempts[2].reject(new Error('older denied')));
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        assert.equal(await fallback.count(), 0);
+        await panel.getByText('Claude Code invocation copied.', { exact: true }).waitFor();
+
         await page.reload();
         await page.getByRole('heading', { name: 'Know what to do next.', exact: true }).waitFor();
         assert.equal(await page.getByRole('button', { name: 'Overview', exact: true }).getAttribute('aria-current'), 'page');

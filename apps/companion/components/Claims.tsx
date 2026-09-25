@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Job } from './contracts';
 
 const CODEX_INVOCATION = '$job-apply:job-apply';
@@ -7,13 +7,18 @@ const CLAUDE_INVOCATION = '/job-apply:job-apply';
 export function Claims({ jobs }: { jobs: Job[] }) {
     const [notice, setNotice] = useState('');
     const [fallback, setFallback] = useState('');
+    const copyGeneration = useRef(0);
     const ready = jobs.filter(job => job.status === 'ready').length;
+    useEffect(() => () => { copyGeneration.current++; }, []);
     async function copy(value: string, label: string) {
+        const version = ++copyGeneration.current;
         try {
             await navigator.clipboard.writeText(value);
+            if (version !== copyGeneration.current) return;
             setFallback('');
             setNotice(`${label} invocation copied.`);
         } catch {
+            if (version !== copyGeneration.current) return;
             setFallback(value);
             setNotice('Clipboard unavailable. Select and copy the invocation below.');
         }

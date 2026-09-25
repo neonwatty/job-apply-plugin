@@ -21,7 +21,7 @@ import { ResumeService } from '../runtime/workspace-core/resumes.js';
 import { ResumeFactsService } from '../runtime/workspace-core/resume-facts.js';
 import { ApplicationRunsService } from '../runtime/workspace-core/application-runs.js';
 import { ClaimsService } from '../runtime/workspace-core/claims.js';
-import { fromJSON, get, int, string, text } from '../runtime/contracts/workspace/values.js';
+import { fromJSON, get, int, string } from '../runtime/contracts/workspace/values.js';
 
 const execute = promisify(execFile);
 const repository = resolve(new URL('..', import.meta.url).pathname);
@@ -72,10 +72,6 @@ async function reviewStore(fixture, name) {
     fromJSON({ jobIds:[jobFixture.id] }));
   const claims = new ClaimsService(native);
   await claims.select(jobFixture.id, 1n, true);
-  const acquired = await claims.acquire(jobFixture.id, text('Synthetic browser'), 2n);
-  await claims.handoff(jobFixture.id, acquired.get(text('token')), 'needs_info',
-    fromJSON({ status: 'active', blockers: [{ type: 'information', code: 'owner-input-required' }] }), 3n);
-  await claims.select(jobFixture.id, 4n, true);
   return { journeyRoot, localRoot, layout };
 }
 
@@ -87,7 +83,9 @@ test('fixture control performs one synthetic local handoff without a site, submi
     const originalFetch = globalThis.fetch;
     globalThis.fetch = () => { throw Error('network must not be used'); };
     t.after(() => { globalThis.fetch = originalFetch; });
-    const result = await handoffSyntheticReview({ journeyRoot: state.journeyRoot, localRoot: state.localRoot, expectedRevision: 5 });
+    const result = await handoffSyntheticReview({ journeyRoot: state.journeyRoot, localRoot: state.localRoot, expectedRevision: 2 });
+    assert.equal(result.blockedStatus, 'needs_info');
+    assert.equal(result.recoveredStatus, 'ready');
     assert.equal(result.status, 'awaiting_review');
     assert.equal(result.revision, 7);
     assert.equal(result.readiness, 'ready');
@@ -112,11 +110,11 @@ test('fixture control rejects non-synthetic identity and foreign roots before mu
     await writeFile(path, JSON.stringify(profile), { mode: 0o600 });
     const before = await readFile(join(state.layout.productStoreRoot, 'coordinator.json'));
     await assert.rejects(handoffSyntheticReview({ journeyRoot: state.journeyRoot,
-      localRoot: state.localRoot, expectedRevision: 5 }), /unavailable/);
+      localRoot: state.localRoot, expectedRevision: 2 }), /unavailable/);
     await assert.rejects(handoffSyntheticReview({ journeyRoot: state.layout.productStoreRoot,
-      localRoot: state.localRoot, expectedRevision: 5 }), /unavailable/);
+      localRoot: state.localRoot, expectedRevision: 2 }), /unavailable/);
     await assert.rejects(handoffSyntheticReview({ journeyRoot: join(homedir(), '.job-apply'),
-      localRoot: state.localRoot, expectedRevision: 5 }), /unavailable/);
+      localRoot: state.localRoot, expectedRevision: 2 }), /unavailable/);
     assert.deepEqual(await readFile(join(state.layout.productStoreRoot, 'coordinator.json')), before);
   });
 

@@ -57,6 +57,7 @@ test("real production paths conservatively include cross-language consumers", as
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
   const [realMatrix, realPaths] = await Promise.all([loadMatrix(root), trackedPaths(root)]);
   const cases = new Map([
+    ["config/core-workflows.json", ["core-workflow-audit", "python-qa"]],
     ["scripts/qa-replay.py", ["python-qa", "python-workspace-contracts", "python-accounts", "python-core", "node-recorder", "node-renderer", "node-workspace-other"]],
     ["scripts/job_apply_store/domains/jobs/crud.py", ["python-workspace-contracts", "python-accounts", "python-core", "node-workspace-other"]],
     ["scripts/job_apply_workspace/server.py", ["python-workspace-contracts", "node-workspace-other"]],

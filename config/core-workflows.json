@@ -50,9 +50,9 @@
       "workflowPath": ".workflows/workflows/job-apply.synthetic-application-recovery.workflow.yaml",
       "uxSurfaces": ["Jobs", "Needs Attention", "Application Activity"],
       "cliEntrypoints": [".workflows/fixtures/job-apply.synthetic-application-recovery-v1/host-preflight.mjs", ".workflows/fixtures/job-apply.synthetic-application-recovery-v1/fixture-control.mjs", "runtime/cli/native-jobs.js"],
-      "tests": ["tests_js/agent_workflows_application_recovery.test.mjs"],
+      "tests": ["tests_js/agent_workflows_application_recovery.test.mjs", "tests_js/workspace_information_architecture.test.mjs"],
       "evidence": {
-        "deterministicLocal": {"status": "verified", "sources": ["tests_js/agent_workflows_application_recovery.test.mjs"], "receiptRefs": [], "note": "The credential-free test executes fixture-control recovery against the exact hash-bound, hand-authored synthetic Greenhouse catalog; this is local proof only and makes no live ATS or recorder-provenance claim."},
+        "deterministicLocal": {"status": "verified", "sources": ["tests_js/agent_workflows_application_recovery.test.mjs", "tests_js/workspace_information_architecture.test.mjs"], "receiptRefs": [], "note": "Credential-free tests execute the copy-only Companion handoff and fixture-control recovery against the exact hash-bound, hand-authored synthetic Greenhouse catalog; this is local proof only and makes no live ATS or recorder-provenance claim."},
         "installedHost": {"status": "unverified", "sources": [], "receiptRefs": [], "note": "No completed installed browser-host receipt exists for this candidate revision."},
         "replay": {"status": "unverified", "sources": ["docs/dogfooding/2026-09-18-typescript-agent-workflows-synthetic-application-recovery-readiness-receipt.json"], "receiptRefs": [], "note": "The committed readiness receipt explicitly records fresh proof as blocked."},
         "currentLiveAts": {"status": "not-applicable", "sources": [], "receiptRefs": [], "note": "The workflow forbids employer and ATS sites."}

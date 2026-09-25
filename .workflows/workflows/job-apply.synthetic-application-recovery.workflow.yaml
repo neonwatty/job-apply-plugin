@@ -6,11 +6,12 @@ metadata:
   name: Synthetic application lifecycle, cancellation, and recovery
   description: >-
     In a new isolated Job Apply Store, create one fictional local job record,
-    start and return an application attempt for owner input, recover the job,
-    and verify the final manual-review boundary without opening an employer or
-    ATS site and without activating the final action.
+    verify the copy-only browser handoff, let the bounded synthetic adapter
+    exercise an agent-owned cancellation and recovery, and verify the final
+    manual-review boundary without opening an employer or ATS site and without
+    activating the final action.
   lifecycle: candidate
-  candidateRevision: 3
+  candidateRevision: 4
   tags:
     - application
     - browser
@@ -248,94 +249,64 @@ steps:
         checkpoint: synthetic-job-ready
         required: true
 
-  - id: choose-synthetic-application
-    name: Choose the prepared synthetic job
+  - id: inspect-agent-handoff
+    name: Inspect the copy-only agent handoff
     dependsOn:
       - mark-synthetic-job-ready
     action: >-
-      Close Job details, open Choose a job to apply, and select Workflow Recovery
-      Tester. Do not open any URL stored on the job.
+      Close Job details and observe the Ready-job handoff. Do not open any URL
+      stored on the job and do not invoke an agent yet.
     expected:
-      - The application setup shows the exact fictional job at ready status.
-      - The setup says final submission remains with the owner.
-      - No application claim exists yet.
+      - The handoff reports exactly one ready job.
+      - It offers the Codex and Claude Code copy controls.
+      - It states that the agent, not this browser, acquires the job.
+      - No application claim, session, or history event exists yet.
     evidence:
       - type: screenshot
-        checkpoint: synthetic-application-selected
+        checkpoint: synthetic-agent-handoff-visible
         required: true
 
-  - id: confirm-and-start-synthetic-attempt
-    name: Start the first local application attempt
+  - id: copy-synthetic-agent-invocation
+    name: Copy the synthetic agent invocation
     dependsOn:
-      - choose-synthetic-application
+      - inspect-agent-handoff
     action: >-
-      Activate Confirm selected job, accept its local revision-bound confirmation,
-      then activate Start application once.
+      Activate Copy Codex invocation once. If the clipboard is unavailable,
+      observe the read-only fallback without invoking it.
     expected:
-      - The job reaches in progress status.
-      - This browser holds one active local application claim.
-      - The UI offers Return for owner input and does not offer final submission.
+      - The copied or fallback value is exactly $job-apply:job-apply.
+      - Copying does not create a claim, session, or history event.
+      - The job remains ready and final submission remains with the owner.
     evidence:
       - type: screenshot
-        checkpoint: first-synthetic-attempt-active
-        required: true
-
-  - id: cancel-to-owner-input
-    name: Cancel the active attempt back to owner input
-    dependsOn:
-      - confirm-and-start-synthetic-attempt
-    action: Activate Return for owner input once.
-    expected:
-      - The active claim is released.
-      - The same job reaches needs info status.
-      - The application session records only the owner-input-required blocker.
-      - The local record and managed resume remain available for recovery.
-    evidence:
-      - type: screenshot
-        checkpoint: synthetic-attempt-returned
-        required: true
-
-  - id: recover-cancelled-application
-    name: Recover the returned application
-    dependsOn:
-      - cancel-to-owner-input
-    action: >-
-      Open the same job, activate Mark ready, accept only the local-status
-      confirmation, and leave the refreshed Job details open.
-    expected:
-      - The same job returns to ready status at a later revision.
-      - No active claim remains.
-      - The prior owner-input session and history remain readable.
-      - No applied or completed history event exists.
-    evidence:
-      - type: screenshot
-        checkpoint: synthetic-application-recovered
+        checkpoint: synthetic-agent-invocation-copied
         required: true
 
   - id: handoff-synthetic-review
-    name: Create the local manual-review handoff
+    name: Exercise agent-owned cancellation, recovery, and review handoff
     dependsOn:
-      - recover-cancelled-application
+      - copy-synthetic-agent-invocation
     action: >-
-      Close Job details, invoke the probed job-apply.fixture-control adapter once
-      with handoff --journey-root and --expected-revision for the exact isolated
-      synthetic job, then activate the Jobs refresh control once. The adapter
-      acquires the current ready revision, injects the closed fictional
-      Greenhouse readiness fixture only into the local product Store, hands off
-      awaiting_review, keeps claim authority in memory, and returns only
-      value-free status and revision fields. Its packet is synthetic simulation,
-      not evidence of an employer or ATS form visit.
+      Invoke the probed job-apply.fixture-control adapter once with handoff
+      --journey-root and --expected-revision for the exact isolated ready job,
+      then activate the Jobs refresh control once. The adapter owns both claims:
+      it hands the first attempt back as needs info, recovers the same job to
+      ready, acquires it again, injects the closed fictional Greenhouse readiness
+      fixture only into the local product Store, and hands off awaiting_review.
+      It keeps claim authority in memory and returns only value-free status and
+      revision fields. Its packet is synthetic simulation, not evidence of an
+      employer or ATS form visit.
     actionGuidance: >-
-      Propose at most three actions: close the local dialog, invoke the fixture
-      adapter, and refresh the local Jobs view. Use reversible-ui risk because
-      every mutation is confined to the disposable fixture Store. Stop if the
-      exact job, revision, profile, resume, fixture, or empty-claim precondition
-      differs.
+      Propose at most two actions: invoke the fixture adapter and refresh the
+      local Jobs view. Use reversible-ui risk because every mutation is confined
+      to the disposable fixture Store. Stop if the exact job, revision, profile,
+      resume, fixture, empty-history, or empty-claim precondition differs.
     expected:
+      - The adapter reports needs info followed by ready for the same job before final handoff.
       - The adapter reports awaiting_review for the same job.
       - Readiness is ready with all seven required assertions passed.
       - Browser handoff is ready_for_owner with final-review-required.
-      - The claim is released and final action remains untouched.
+      - Both claims are released and final action remains untouched.
     evidence:
       - type: screenshot
         checkpoint: synthetic-review-handoff-created
