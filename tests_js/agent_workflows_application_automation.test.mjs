@@ -23,6 +23,7 @@ test('application automation workflow is synthetic, local-only, and review bound
   assert.equal(fixture.syntheticOnly,true);assert.match(fixture.job.url,/\.example\.invalid\//);
   assert.deepEqual(fixture.requiredOperations,['fill_canonical_profile','upload_managed_resume','fill_confirmed_answer','navigate_non_final']);
   assert.match(workflow,/local-only/);assert.match(workflow,/Never invoke the synthetic Submit application action/);
+  assert.match(workflow,/dispatched subagent uses the installed public router to start the detached attempt/);
   assert.match(workflow,/final_review/);assert.match(workflow,/no submitted or applied event/);
   assert.match(portal,/decision\.authorized!==true/);assert.match(portal,/campaign_to_review/);assert.match(portal,/finalActionActivated=true/);
 });
@@ -51,6 +52,10 @@ test('local live-agent runner uses three clean ephemeral trials and is excluded 
   ]);
   assert.match(runner,/if\(process\.env\.CI\)throw Error/);assert.match(runner,/let trials=3/);
   assert.match(runner,/installLocalPlugin/);assert.match(runner,/runAgent\(\['exec','--ephemeral'/);
+  assert.match(runner,/const temporary=await mkdtemp[\s\S]*try\{[\s\S]*catch\(error\)\{[\s\S]*await rm\(temporary/);
+  for(const excluded of ['.qa-private','qa/runs','.job-apply-qa','test_resumes','apps/companion/.next']){
+    assert.match(runner,new RegExp(`--exclude=\\.\\/${excluded.replaceAll('.','\\.')}`));
+  }
   assert.match(runner,/installedRoot=await realpath\(join\(codexHome/);
   assert.match(runner,/\$job-apply:job-apply/);assert.match(runner,/apps','companion','command\.mjs/);
   assert.match(runner,/task --root \"\$\{prepared\.storeRoot\}\" select --id \$\{prepared\.jobId\} --expected-revision \$\{prepared\.readyRevision\} --owner-confirmed/);

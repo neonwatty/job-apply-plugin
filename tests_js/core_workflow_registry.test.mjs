@@ -71,11 +71,51 @@ test("registry audit rejects stale UX, CLI, test, and evidence mappings", () => 
   assert.ok(errors.includes(`${registry.workflows[0].id}: deterministicLocal source does not exist: missing-receipt.md`));
 });
 
-test("verified evidence requires a durable source or task receipt", () => {
+test("registry mappings require concrete files and real test paths", () => {
   const registry = structuredClone(readCoreWorkflowRegistry(rootPath));
   const validation = validateAgentWorkflows({ root: rootPath });
-  registry.workflows[0].evidence.installedHost.sources = [];
-  registry.workflows[0].evidence.installedHost.receiptRefs = [];
+  registry.workflows[0].cliEntrypoints = ["skills"];
+  registry.workflows[0].tests = ["README.md"];
+  registry.workflows[0].evidence.deterministicLocal.sources = ["docs"];
   const errors = auditCoreWorkflowRegistry(registry, validation, { root: rootPath });
-  assert.ok(errors.includes(`${registry.workflows[0].id}: installedHost cannot be verified without a source or receipt`));
+  assert.ok(errors.includes(`${registry.workflows[0].id}: cliEntrypoints path must be a file: skills`));
+  assert.ok(errors.includes(`${registry.workflows[0].id}: tests must reference a tests/ or tests_js/ file: README.md`));
+  assert.ok(errors.includes(`${registry.workflows[0].id}: deterministicLocal source must be a file: docs`));
+  assert.ok(errors.includes(`${registry.workflows[0].id}: deterministicLocal verification requires a committed test source`));
+});
+
+test("registry audit validates exact handoff placement", () => {
+  const registry = structuredClone(readCoreWorkflowRegistry(rootPath));
+  const validation = validateAgentWorkflows({ root: rootPath });
+  registry.companion.applicationHandoff.surfaces = ["Trash"];
+  registry.companion.resumeExtractionHandoff.surface = "Jobs";
+  const errors = auditCoreWorkflowRegistry(registry, validation, { root: rootPath });
+  assert.ok(errors.includes("companion application handoff must retain the exact copy-only invocations"));
+  assert.ok(errors.includes("companion resume extraction handoff must retain the value-free request template"));
+});
+
+test("verified evidence requires a committed lane-appropriate source", () => {
+  const registry = structuredClone(readCoreWorkflowRegistry(rootPath));
+  const validation = validateAgentWorkflows({ root: rootPath });
+  registry.workflows[0].evidence.installedHost.status = "verified";
+  registry.workflows[0].evidence.installedHost.receiptRefs = ["T999"];
+  const errors = auditCoreWorkflowRegistry(registry, validation, { root: rootPath });
+  assert.ok(errors.includes(`${registry.workflows[0].id}: installedHost receiptRefs are ambiguous; commit durable receipt files in sources`));
+  assert.ok(errors.includes(`${registry.workflows[0].id}: installedHost verification requires a committed dogfooding receipt`));
+});
+
+test("synthetic and aggregate ATS evidence cannot be silently upgraded", () => {
+  const registry = structuredClone(readCoreWorkflowRegistry(rootPath));
+  const validation = validateAgentWorkflows({ root: rootPath });
+  registry.workflows[0].evidence.currentLiveAts = {
+    status: "verified", sources: ["package.json"], receiptRefs: [], note: "invented",
+  };
+  registry.atsReadinessEvidence.currentLiveAts = { status: "verified", sources: [] };
+  const errors = auditCoreWorkflowRegistry(registry, validation, { root: rootPath });
+  assert.ok(errors.includes(`${registry.workflows[0].id}: synthetic workflows cannot claim currentLiveAts evidence`));
+  assert.ok(errors.includes("global currentLiveAts must remain unverified without sources"));
+  delete registry.atsReadinessEvidence;
+  const missing = auditCoreWorkflowRegistry(registry, validation, { root: rootPath });
+  assert.ok(missing.includes("atsReadinessEvidence catalogs must be a non-empty array"));
+  assert.ok(missing.includes("global currentLiveAts must remain unverified without sources"));
 });

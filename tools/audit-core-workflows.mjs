@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -14,9 +14,26 @@ export const evidenceLanes = [
   "currentLiveAts",
 ];
 const evidenceStatuses = new Set(["verified", "unverified", "blocked", "not-applicable"]);
+const deterministicTestRoots = ["tests/", "tests_js/"];
+const durableEvidenceRoot = "docs/dogfooding/";
 
 export function readCoreWorkflowRegistry(root = defaultRoot) {
   return JSON.parse(readFileSync(path.join(root, "config", "core-workflows.json"), "utf8"));
+}
+
+function concreteFileError(root, value) {
+  if (typeof value !== "string" || value.length === 0 || path.isAbsolute(value)) {
+    return "must be a non-empty repository-relative path";
+  }
+  const candidate = path.resolve(root, value);
+  const relative = path.relative(root, candidate);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) return "escapes the repository";
+  if (!existsSync(candidate)) return "does not exist";
+  if (!statSync(candidate).isFile()) return "must be a file";
+  const real = realpathSync(candidate);
+  const realRelative = path.relative(realpathSync(root), real);
+  if (realRelative.startsWith("..") || path.isAbsolute(realRelative)) return "escapes the repository";
+  return null;
 }
 
 function checkPathList(errors, root, row, field) {
@@ -26,10 +43,10 @@ function checkPathList(errors, root, row, field) {
     return;
   }
   for (const value of values) {
-    if (typeof value !== "string" || value.length === 0) {
-      errors.push(`${row.id}: ${field} must contain non-empty paths`);
-    } else if (!existsSync(path.join(root, value))) {
-      errors.push(`${row.id}: ${field} path does not exist: ${value}`);
+    const problem = concreteFileError(root, value);
+    if (problem) errors.push(`${row.id}: ${field} path ${problem}: ${value}`);
+    if (!problem && field === "tests" && !deterministicTestRoots.some((prefix) => value.startsWith(prefix))) {
+      errors.push(`${row.id}: tests must reference a tests/ or tests_js/ file: ${value}`);
     }
   }
 }
@@ -49,11 +66,13 @@ export function auditCoreWorkflowRegistry(registry, validation, { root = default
   const applicationHandoff = registry?.companion?.applicationHandoff;
   if (applicationHandoff?.kind !== "copy-only"
       || applicationHandoff?.codex !== "$job-apply:job-apply"
-      || applicationHandoff?.claude !== "/job-apply:job-apply") {
+      || applicationHandoff?.claude !== "/job-apply:job-apply"
+      || JSON.stringify(applicationHandoff?.surfaces) !== JSON.stringify(["Overview", "Jobs"])) {
     errors.push("companion application handoff must retain the exact copy-only invocations");
   }
   const extractionHandoff = registry?.companion?.resumeExtractionHandoff;
   if (extractionHandoff?.kind !== "copy-only"
+      || extractionHandoff?.surface !== "Resumes"
       || extractionHandoff?.onlyMutableValue !== "opaque request ID"
       || extractionHandoff?.template !== "Use the Job Apply resume workflow to process extraction request <request-id>.") {
     errors.push("companion resume extraction handoff must retain the value-free request template");
@@ -89,22 +108,31 @@ export function auditCoreWorkflowRegistry(registry, validation, { root = default
         errors.push(`${row.id}: ${lane} sources must be an array`);
       } else {
         for (const source of evidence.sources) {
-          if (typeof source !== "string" || !existsSync(path.join(root, source))) {
-            errors.push(`${row.id}: ${lane} source does not exist: ${source}`);
-          }
+          const problem = concreteFileError(root, source);
+          if (problem) errors.push(`${row.id}: ${lane} source ${problem}: ${source}`);
         }
       }
       if (!Array.isArray(evidence.receiptRefs)) {
         errors.push(`${row.id}: ${lane} receiptRefs must be an array`);
-      } else if (evidence.receiptRefs.some((receipt) => !/^T\d{3}$/.test(receipt))) {
-        errors.push(`${row.id}: ${lane} has an invalid receipt reference`);
+      } else if (evidence.receiptRefs.length !== 0) {
+        errors.push(`${row.id}: ${lane} receiptRefs are ambiguous; commit durable receipt files in sources`);
       }
       if (evidence.status === "verified"
           && Array.isArray(evidence.sources)
-          && Array.isArray(evidence.receiptRefs)
-          && evidence.sources.length === 0
-          && evidence.receiptRefs.length === 0) {
-        errors.push(`${row.id}: ${lane} cannot be verified without a source or receipt`);
+          && evidence.sources.length === 0) {
+        errors.push(`${row.id}: ${lane} cannot be verified without a committed source file`);
+      }
+      if (evidence.status === "verified" && lane === "deterministicLocal"
+          && !evidence.sources?.some((source) => deterministicTestRoots.some((prefix) => source.startsWith(prefix)))) {
+        errors.push(`${row.id}: deterministicLocal verification requires a committed test source`);
+      }
+      if (evidence.status === "verified" && ["installedHost", "replay"].includes(lane)
+          && !evidence.sources?.some((source) => source.startsWith(durableEvidenceRoot))) {
+        errors.push(`${row.id}: ${lane} verification requires a committed dogfooding receipt`);
+      }
+      if (lane === "currentLiveAts" && row?.id?.startsWith("job-apply.synthetic-")
+          && (evidence.status !== "not-applicable" || evidence.sources?.length || evidence.receiptRefs?.length)) {
+        errors.push(`${row.id}: synthetic workflows cannot claim currentLiveAts evidence`);
       }
       if (typeof evidence.note !== "string" || evidence.note.length === 0) {
         errors.push(`${row.id}: ${lane} must explain its evidence boundary`);
@@ -127,6 +155,25 @@ export function auditCoreWorkflowRegistry(registry, validation, { root = default
   const committed = new Set((validation?.results ?? []).map((item) => item.workflowPath));
   for (const workflowPath of byPath.keys()) {
     if (!committed.has(workflowPath)) errors.push(`registry maps no committed workflow: ${workflowPath}`);
+  }
+  const atsReadiness = registry?.atsReadinessEvidence;
+  if (!Array.isArray(atsReadiness?.catalogs) || atsReadiness.catalogs.length === 0) {
+    errors.push("atsReadinessEvidence catalogs must be a non-empty array");
+  } else {
+    for (const catalog of atsReadiness.catalogs) {
+      if (typeof catalog?.fixtureId !== "string" || catalog.evidenceKind !== "hand-authored-synthetic"
+          || catalog.currentLiveAtsStatus !== "unverified") {
+        errors.push("ATS readiness catalogs must remain identified as hand-authored synthetic and live-unverified");
+      }
+    }
+  }
+  if (typeof atsReadiness?.note !== "string" || atsReadiness.note.length === 0) {
+    errors.push("atsReadinessEvidence must explain its evidence boundary");
+  }
+  if (atsReadiness?.currentLiveAts?.status !== "unverified"
+      || !Array.isArray(atsReadiness?.currentLiveAts?.sources)
+      || atsReadiness.currentLiveAts.sources.length !== 0) {
+    errors.push("global currentLiveAts must remain unverified without sources");
   }
   return errors;
 }

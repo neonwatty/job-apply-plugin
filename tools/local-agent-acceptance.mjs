@@ -50,20 +50,28 @@ async function runAgent(args,env){
 
 async function installLocalPlugin(){
   const temporary=await mkdtemp(join(tmpdir(),'job-apply-agent-package-'));
-  const fixture=join(temporary,'marketplace'),archive=join(temporary,'marketplace.tar'),codexHome=join(temporary,'codex-home');
-  await mkdir(fixture,{mode:0o700});await mkdir(codexHome,{mode:0o700});
-  const hostCodexHome=resolve(process.env.CODEX_HOME??join(homedir(),'.codex'));
-  await symlink(join(hostCodexHome,'auth.json'),join(codexHome,'auth.json'));
-  await run('tar',['--exclude=./.git','--exclude=./node_modules','--exclude=./.workflows/local','--exclude=./docs/goals',
-    '--exclude=./coverage','--exclude=./dist','--exclude=./build','--exclude=./.worktrees','-cf',archive,'-C',repository,'.']);
-  await run('tar',['-xf',archive,'-C',fixture]);
-  await run('python3',[join(repository,'scripts/smoke/fixture_build.py'),'rewrite-marketplace',join(fixture,'.claude-plugin/marketplace.json')]);
-  const env={CODEX_HOME:codexHome};
-  await run('codex',['plugin','marketplace','add',fixture,'--json'],{env});
-  await run('codex',['plugin','add','job-apply@neonwatty-plugins','--json'],{env});
-  const version=JSON.parse(await readFile(join(fixture,'.codex-plugin/plugin.json'),'utf8')).version;
-  const installedRoot=await realpath(join(codexHome,'plugins','cache','neonwatty-plugins','job-apply',version));
-  return {temporary,codexHome,installedRoot};
+  try{
+    const fixture=join(temporary,'marketplace'),archive=join(temporary,'marketplace.tar'),codexHome=join(temporary,'codex-home');
+    await mkdir(fixture,{mode:0o700});await mkdir(codexHome,{mode:0o700});
+    const hostCodexHome=resolve(process.env.CODEX_HOME??join(homedir(),'.codex'));
+    await symlink(join(hostCodexHome,'auth.json'),join(codexHome,'auth.json'));
+    await run('tar',['--exclude=./.git','--exclude=./.qa-private','--exclude=./qa/runs','--exclude=./.job-apply-qa',
+      '--exclude=./node_modules','--exclude=./.workflows/local','--exclude=./docs/goals','--exclude=./test_resumes',
+      '--exclude=./coverage','--exclude=./dist','--exclude=./build','--exclude=./apps/companion/.next',
+      '--exclude=./.worktrees','--exclude=__pycache__','--exclude=*.py[co]','-cf',archive,'-C',repository,'.']);
+    await run('tar',['-xf',archive,'-C',fixture]);
+    await run('python3',[join(repository,'scripts/smoke/fixture_build.py'),'rewrite-marketplace',join(fixture,'.claude-plugin/marketplace.json')]);
+    const env={CODEX_HOME:codexHome};
+    await run('codex',['plugin','marketplace','add',fixture,'--json'],{env});
+    await run('codex',['plugin','add','job-apply@neonwatty-plugins','--json'],{env});
+    const version=JSON.parse(await readFile(join(fixture,'.codex-plugin/plugin.json'),'utf8')).version;
+    const installedRoot=await realpath(join(codexHome,'plugins','cache','neonwatty-plugins','job-apply',version));
+    return {temporary,codexHome,installedRoot};
+  }catch(error){
+    try{await rm(temporary,{recursive:true,force:true});}
+    catch(cleanupError){throw new AggregateError([error,cleanupError],'plugin installation and temporary cleanup failed');}
+    throw error;
+  }
 }
 async function stopBroker(storeRoot){
   if(!storeRoot)return;
