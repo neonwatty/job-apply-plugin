@@ -169,14 +169,31 @@ async function group1(t) {
     'skills/job-title-discovery/references/discovery-workflow.md',
     'skills/job-title-discovery/references/result-format.md',
   ]);
-  for (const file of [...liveSkillFiles, 'tests_js/workspace_skill_support.mjs',
+  const workspaceDocument = 'skills/job-workspace/references/workspace.md';
+  const companionLauncherInputs = ['apps/companion/launch.mjs', 'apps/companion/writer-route.mjs',
+    'apps/companion/supervise.mjs'];
+  for (const file of [...liveSkillFiles.filter(file => file !== workspaceDocument), ...companionLauncherInputs,
+    'tests_js/workspace_skill_support.mjs',
     'tests_js/workspace_answers.test.mjs', 'tests_js/workspace_markup.test.mjs']) {
     await f.write(file, await fs.promises.readFile(path.join(GRAPH_ROOT, file)));
   }
+  let priorWorkspaceDocument = await fs.promises.readFile(path.join(GRAPH_ROOT, workspaceDocument), 'utf8');
+  const reviewedLauncherDocumentation = '- Start the Companion from the installed plugin directory with `node apps/companion/launch.mjs`. It binds to `127.0.0.1`, opens the complete token-bearing URL locally, and starts on Overview. Never reuse an old URL after restart.\n- The complete native navigation inventory is Overview, Jobs, Needs Attention, Facts, Resumes, Answers, Automation, Accounts & Sign-in, Settings, and Trash. Application Activity is the selected job\'s contextual progress view. A workflow may use only a subset; absence from a workflow map does not remove a surface from Companion.\n\n';
+  assert.equal(priorWorkspaceDocument.split(reviewedLauncherDocumentation).length, 2);
+  priorWorkspaceDocument = priorWorkspaceDocument.replace(reviewedLauncherDocumentation, '');
+  const liveExtractionDocumentation = '- **Request fact extraction** queues work for the next active Job Apply agent; it does not start or launch an agent. The workspace cannot extract facts, complete or fail a request, or author a proposal. Its only request mutations are create, cancel, and retry. **Copy agent handoff** copies exactly `Use the Job Apply resume workflow to process extraction request <request-id>.`; the request ID is the only mutable value and no resume or candidate data is included.';
+  const reviewedExtractionDocumentation = '- **Request fact extraction** queues work for the next active Job Apply agent; it does not start or launch an agent. The workspace cannot extract facts, complete or fail a request, or author a proposal. Its only request mutations are create, cancel, and retry, and its handoff contains an opaque request ID rather than resume or candidate data.';
+  assert.equal(priorWorkspaceDocument.split(liveExtractionDocumentation).length, 2);
+  await f.write(workspaceDocument, priorWorkspaceDocument.replace(liveExtractionDocumentation,
+    reviewedExtractionDocumentation));
   await fs.promises.rm(path.join(f.root, 'skills/job-apply/references/new-consumer.md'));
   f.files.delete('skills/job-apply/references/new-consumer.md');
   const liveSkillGraph = await discoverConsumerGraph(f.root, f.tracked());
   assert.ok(!liveSkillGraph.reasons.includes('Unreviewed skill document inventory'), liveSkillGraph.reasons.join('; '));
+  assert.ok(liveSkillGraph.edges.some(edge => edge.from === companionLauncherInputs[0]
+    && edge.to === companionLauncherInputs[1]));
+  assert.ok(liveSkillGraph.edges.some(edge => edge.from === companionLauncherInputs[0]
+    && edge.to === companionLauncherInputs[2]));
   await fs.promises.rm(path.join(f.root, 'skills/account-setup/SKILL.md'));
   assert.ok((await discoverConsumerGraph(f.root, f.tracked())).reasons.includes('Unreviewed skill document inventory'));
   for (const file of ['qa/unified_task_spine_oracle.mjs', 'tests_js/unified_task_spine_oracle.test.mjs', 'workspace/index.html']) {

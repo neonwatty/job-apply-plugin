@@ -299,7 +299,7 @@
     {"paths": ["tests_js/process_owned_writer_child.mjs"], "suites": ["native-canonical-store-clone"]},
     {"paths": ["tests_js/final_action_policy_support.mjs", "tests_js/native_attempt_support.mjs"], "suites": ["native-default-cutover"]},
     {"paths": ["tests_js/resume_stat_profile_support.mjs", "tests_js/managed_resume_path_ts_support.mjs", "tests_js/posix_path_bytes_ts_support.mjs", "tests_js/managed_observation_ts_support.mjs", "tests_js/atomic_write_json_ts_support.mjs", "tests_js/installed_artifacts_ts_support.mjs", "tests_js/jsonl_history_support.mjs", "tests_js/data_copy_support.mjs", "tests_js/python_object_ts_support.mjs", "tests_js/python_json_bytes_ts_support.mjs"], "suites": ["node-workspace-other"]},
-    {"paths": ["tools/probe-installed-runtime.mjs"], "suites": ["node-foundation-fast"]},
+    {"paths": ["tools/probe-installed-runtime.mjs", "tools/run-qa-browser.mjs"], "suites": ["node-foundation-fast"]},
     {"paths": ["tools/local-agent-acceptance.mjs"], "suites": ["node-runner-fast"]},
     {"paths": ["tools/capture-python-contracts.mjs", "tools/verify-contract-redaction.mjs", "tools/contracts/**"], "suites": ["node-workspace-other", "node-reference-s04", "node-reference-s05"]},
     {
