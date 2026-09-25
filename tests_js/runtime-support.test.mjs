@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { realpathSync } from "node:fs";
 import test from "node:test";
 import { probeRuntime, PROBE_TIMEOUT_MS } from "../tools/probe-installed-runtime.mjs";
-import { qaBrowserInvocation, selectMacSdk, selectSupportedPython,
+import { qaBrowserInvocation, qaHostEnvironment, selectMacSdk, selectSupportedPython,
   selectSupportedPythonProfiles, supportedPythonProfiles } from "../tools/run-qa-browser.mjs";
 
 const probe = (runner, options = {}) => probeRuntime({ runner, platform: "win32", arch: "x64", ...options });
@@ -108,6 +108,12 @@ test("broad QA selects a supported CPython on macOS without changing other platf
   assert.deepEqual(sdk, { path: "/synthetic/sdk", compiler: process.execPath });
   assert.throws(() => selectMacSdk({ platform: "darwin", probe: args =>
     args[0] === "--show-sdk-path" ? "relative-sdk" : process.execPath }), /absolute SDK and Clang paths/);
+  const host = qaHostEnvironment({ platform: "darwin", selections, sdk });
+  assert.equal(host.environment.SDKROOT, sdk.path);
+  assert.equal(host.environment.JOB_APPLY_QA_XCRUN_CLANG, sdk.compiler);
+  assert.equal(host.environment.JOB_APPLY_CONTRACT_PYTHON.endsWith("/python3"), true);
+  assert.equal(realpathSync(host.environment.JOB_APPLY_CONTRACT_PYTHON), process.execPath);
+  host.cleanup();
   const mac = qaBrowserInvocation({ platform: "darwin", selections, sdk });
   assert.equal(mac.options.env.SDKROOT, sdk.path);
   assert.equal(mac.options.env.JOB_APPLY_QA_XCRUN_CLANG, sdk.compiler);

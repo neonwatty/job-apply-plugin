@@ -7,6 +7,7 @@ import { executeSuites } from "./test-runner/execute.mjs";
 import { collectChanges, trackedPaths } from "./test-runner/git.mjs";
 import { loadMatrix, selectAffected, tierSuites, validateMatrix } from "./test-runner/matrix.mjs";
 import { buildReceipt, writeReceipt } from "./test-runner/receipt.mjs";
+import { qaHostEnvironment } from "./run-qa-browser.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const VALID_TIERS = new Set(["fast", "affected", "full", "platform", "release"]);
@@ -60,7 +61,17 @@ export async function main(argv = process.argv.slice(2)) {
   }
   const suitesById = new Map(matrix.suites.map((suite) => [suite.id, suite]));
   const suites = selection.suiteIds.map((id) => suitesById.get(id));
-  const results = await executeSuites(ROOT, suites, tracked, { concurrency: options.concurrency });
+  const needsEvidenceBoundHost = ["affected", "full", "platform"].includes(options.tier);
+  const host = needsEvidenceBoundHost ? qaHostEnvironment() : { environment: process.env, cleanup: () => {} };
+  let results;
+  try {
+    results = await executeSuites(ROOT, suites, tracked, {
+      concurrency: options.concurrency,
+      environment: host.environment,
+    });
+  } finally {
+    host.cleanup();
+  }
   const receipt = buildReceipt(selection, results);
   if (options.receipt) await writeReceipt(ROOT, options.receipt, receipt);
   process.stdout.write(`[summary] ${receipt.status}; ${results.length} suite(s)\n`);

@@ -65,7 +65,7 @@ export function selectSupportedPython(options = {}) {
   return selectSupportedPythonProfiles(options)?.[0] ?? null;
 }
 
-export function qaBrowserInvocation({ platform = process.platform,
+export function qaHostEnvironment({ platform = process.platform,
   selections = selectSupportedPythonProfiles({ platform }),
   sdk = selectMacSdk({ platform }) } = {}) {
   const environment = { ...process.env };
@@ -84,12 +84,17 @@ export function qaBrowserInvocation({ platform = process.platform,
     environment.JOB_APPLY_QA_XCRUN_CLANG = sdk.compiler;
     cleanup = () => rmSync(shimRoot, { recursive: true, force: true });
   }
+  return { environment, cleanup };
+}
+
+export function qaBrowserInvocation(options = {}) {
+  const host = qaHostEnvironment(options);
   return {
     command: process.execPath,
     args: ["--test", "--test-concurrency=1", ...readdirSync(join(root, "tests_js"))
       .filter(name => name.endsWith(".test.mjs")).sort().map(name => join("tests_js", name))],
-    options: { cwd: root, env: environment, stdio: "inherit", shell: false },
-    cleanup,
+    options: { cwd: root, env: host.environment, stdio: "inherit", shell: false },
+    cleanup: host.cleanup,
   };
 }
 
