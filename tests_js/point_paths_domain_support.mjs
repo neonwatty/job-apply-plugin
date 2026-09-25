@@ -246,7 +246,8 @@ export function refuseDomain() {
   }
 }
 
-export function removeReviewedCoreWorkflowMatrixAdditions(matrix) {
+export function removeReviewedCoreWorkflowMatrixAdditions(matrix, registrationOwnership) {
+  assert.deepEqual(matrix.ownership.pop(), registrationOwnership);
   const coreWorkflowSuite = { id: 'core-workflow-audit', kind: 'command',
     command: ['npm', 'run', 'audit:core-workflows'], tiers: ['fast', 'full'] };
   const coreWorkflowIndex = matrix.suites.findIndex(suite => suite.id === coreWorkflowSuite.id);

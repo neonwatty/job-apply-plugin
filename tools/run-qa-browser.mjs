@@ -67,8 +67,8 @@ export function selectSupportedPython(options = {}) {
 
 export function qaHostEnvironment({ platform = process.platform,
   selections = selectSupportedPythonProfiles({ platform }),
-  sdk = selectMacSdk({ platform }) } = {}) {
-  const environment = { ...process.env };
+  sdk = selectMacSdk({ platform }), baseEnvironment = process.env } = {}) {
+  const environment = { ...baseEnvironment };
   let cleanup = () => {};
   if (platform === "darwin") {
     if (!Array.isArray(selections) || selections.length !== supportedPythonProfiles.length) {
@@ -79,6 +79,7 @@ export function qaHostEnvironment({ platform = process.platform,
     symlinkSync(selections[0].executable, join(shimRoot, "python3"));
     environment.PATH = `${shimRoot}${delimiter}${environment.PATH ?? ""}`;
     environment.JOB_APPLY_CONTRACT_PYTHON = join(shimRoot, "python3");
+    environment.PYTHON = join(shimRoot, "python3");
     if (!sdk?.path || !sdk?.compiler) throw new Error("Broad QA xcrun SDK selection is unavailable");
     environment.SDKROOT = sdk.path;
     environment.JOB_APPLY_QA_XCRUN_CLANG = sdk.compiler;

@@ -105,7 +105,7 @@ try{for(let trial=1;trial<=trials;trial++){
       +`8. Inspect again. Require stage final_review and finalAction.activated false. Do not activate it.\n`
       +`9. Commit the manual-review handoff through the router attempt surface with status awaiting_review and "${join(journeyRoot,'handoff.json')}".\n`
       +`10. Return only the JSON object required by the output schema. Set outcome passed only if the installed skill and public router completed every command and the final action remained untouched. Set authorityActivations to 1 and authorityEvaluations to 1.`;
-    await runAgent(['exec','--ephemeral','--ignore-user-config','--ignore-rules',
+    await runAgent(['exec','--ephemeral','--ignore-rules',
       '--sandbox','danger-full-access','--model',model,
       '--config','approval_policy="never"','--color','never','-C',repository,'--output-schema',join(installedFixture,'result.schema.json'),
       '--output-last-message',resultPath,prompt],{CODEX_HOME:installation.codexHome});

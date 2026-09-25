@@ -70,12 +70,16 @@ Each trial creates a new ignored directory below `.workflows/local`, installs th
 ## Core workflow evidence audit
 
 `npm run audit:core-workflows` is the primary account-free audit. It validates
-all committed workflow YAML, the complete workflow-to-Companion/CLI/test map,
-referenced local files, exact copy-only handoffs, and evidence-lane labels. Its
-JSON output reports separate counts for deterministic local, installed-host,
-supervised replay, and current-live ATS evidence. A green result proves registry
-integrity and workflow schema validity; it does not rerun historical host or
-replay receipts.
+all committed workflow YAML, requires one registry row per workflow, verifies
+that referenced local files exist, and checks the registry's surface names,
+copy-only handoff literals, placement declarations, and evidence-lane labels
+for internal consistency. Its JSON output reports separate counts for
+deterministic local, installed-host, supervised replay, and current-live ATS
+evidence. A green result proves registry integrity and workflow schema validity;
+it does not establish that an arbitrary referenced file semantically covers its
+workflow, inspect the rendered Companion, or rerun historical host or replay
+receipts. The mapped tests and packaged walkthroughs provide that behavioral
+correspondence.
 
 The optional installed-host lane is `npm run test:agent-local -- --trials 1`.
 It requires an available authenticated Codex host and executes the installed

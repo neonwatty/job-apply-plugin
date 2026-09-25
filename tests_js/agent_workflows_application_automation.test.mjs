@@ -58,6 +58,7 @@ test('local live-agent runner uses three clean ephemeral trials and is excluded 
   }
   assert.match(runner,/installedRoot=await realpath\(join\(codexHome/);
   assert.match(runner,/\$job-apply:job-apply/);assert.match(runner,/apps','companion','command\.mjs/);
+  assert.doesNotMatch(runner,/--ignore-user-config/);
   assert.match(runner,/task --root \"\$\{prepared\.storeRoot\}\" select --id \$\{prepared\.jobId\} --expected-revision \$\{prepared\.readyRevision\} --owner-confirmed/);
   assert.doesNotMatch(runner,/--disable','skill_search'/);assert.doesNotMatch(runner,/runtime\/cli\/native-(?:jobs|attempt)\.js/);
   assert.match(runner,/--sandbox','danger-full-access'/);

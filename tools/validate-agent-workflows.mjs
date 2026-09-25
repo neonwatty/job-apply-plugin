@@ -28,9 +28,13 @@ export function parseValidatorResult(stdout, workflowPath) {
   return result;
 }
 
-export function validateAgentWorkflows({ root = defaultRoot, workflowPaths } = {}) {
+export function workflowRunnerPath(root, platform = process.platform) {
+  return path.join(root, "node_modules", ".bin", platform === "win32" ? "workflow.cmd" : "workflow");
+}
+
+export function validateAgentWorkflows({ root = defaultRoot, workflowPaths, platform = process.platform } = {}) {
   const paths = workflowPaths ?? committedWorkflowPaths(root);
-  const runner = path.join(root, "node_modules", ".bin", "workflow");
+  const runner = workflowRunnerPath(root, platform);
   const results = paths.map((workflowPath) => {
     const child = spawnSync(runner, ["validate", "--json", workflowPath], {
       cwd: root,

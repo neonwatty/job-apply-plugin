@@ -419,7 +419,7 @@ test('S05 path support registration preserves the exact prior matrix', t => {
     assert.equal(suites[0].kind, 'node-test');
     assert.ok(suites[0].tiers.includes('full'));
   }
-  matrix.ownership.pop(); removeReviewedCoreWorkflowMatrixAdditions(matrix);
+  removeReviewedCoreWorkflowMatrixAdditions(matrix, registrationOwnership);
   // Companion adds coverage without changing any prior registration. Remove
   // only the exact reviewed additions before comparing the original matrix.
   const companionPaths = ['apps/companion/**/*.ts', 'apps/companion/**/*.tsx',

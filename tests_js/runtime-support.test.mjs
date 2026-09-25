@@ -108,17 +108,20 @@ test("broad QA selects a supported CPython on macOS without changing other platf
   assert.deepEqual(sdk, { path: "/synthetic/sdk", compiler: process.execPath });
   assert.throws(() => selectMacSdk({ platform: "darwin", probe: args =>
     args[0] === "--show-sdk-path" ? "relative-sdk" : process.execPath }), /absolute SDK and Clang paths/);
-  const host = qaHostEnvironment({ platform: "darwin", selections, sdk });
+  const host = qaHostEnvironment({ platform: "darwin", selections, sdk,
+    baseEnvironment: { ...process.env, PYTHON: "/unreviewed/python" } });
   assert.equal(host.environment.SDKROOT, sdk.path);
   assert.equal(host.environment.JOB_APPLY_QA_XCRUN_CLANG, sdk.compiler);
   assert.equal(host.environment.JOB_APPLY_CONTRACT_PYTHON.endsWith("/python3"), true);
   assert.equal(realpathSync(host.environment.JOB_APPLY_CONTRACT_PYTHON), process.execPath);
+  assert.equal(realpathSync(host.environment.PYTHON), process.execPath);
   host.cleanup();
   const mac = qaBrowserInvocation({ platform: "darwin", selections, sdk });
   assert.equal(mac.options.env.SDKROOT, sdk.path);
   assert.equal(mac.options.env.JOB_APPLY_QA_XCRUN_CLANG, sdk.compiler);
   assert.equal(mac.options.env.JOB_APPLY_CONTRACT_PYTHON.endsWith("/python3"), true);
   assert.equal(realpathSync(mac.options.env.JOB_APPLY_CONTRACT_PYTHON), process.execPath);
+  assert.equal(realpathSync(mac.options.env.PYTHON), process.execPath);
   for (const profile of supportedPythonProfiles) {
     assert.equal(realpathSync(mac.options.env.JOB_APPLY_CONTRACT_PYTHON.replace(/python3$/, profile.alias)),
       process.execPath);
@@ -127,6 +130,7 @@ test("broad QA selects a supported CPython on macOS without changing other platf
   const nonMac = qaBrowserInvocation({ platform: "linux", selections: null });
   assert.equal(nonMac.options.env.PATH, process.env.PATH);
   assert.equal(nonMac.options.env.JOB_APPLY_CONTRACT_PYTHON, process.env.JOB_APPLY_CONTRACT_PYTHON);
+  assert.equal(nonMac.options.env.PYTHON, process.env.PYTHON);
   assert.equal(nonMac.options.env.SDKROOT, process.env.SDKROOT);
   assert.equal(nonMac.options.env.JOB_APPLY_QA_XCRUN_CLANG, process.env.JOB_APPLY_QA_XCRUN_CLANG);
   nonMac.cleanup();

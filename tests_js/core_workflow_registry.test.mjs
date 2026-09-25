@@ -11,6 +11,7 @@ import {
   committedWorkflowPaths,
   parseValidatorResult,
   validateAgentWorkflows,
+  workflowRunnerPath,
 } from "../tools/validate-agent-workflows.mjs";
 
 const root = new URL("../", import.meta.url);
@@ -44,6 +45,11 @@ test("validator JSON ok is authoritative even when the process can exit successf
   const result = parseValidatorResult('{"ok":false,"error":{"code":"VALIDATION_FAILED"}}', "fixture.workflow.yaml");
   assert.equal(result.ok, false);
   assert.throws(() => parseValidatorResult("not json", "fixture.workflow.yaml"), /did not return one JSON result/);
+});
+
+test("workflow validator selects the native npm launcher", () => {
+  assert.equal(workflowRunnerPath("/repo", "win32"), "/repo/node_modules/.bin/workflow.cmd");
+  assert.equal(workflowRunnerPath("/repo", "darwin"), "/repo/node_modules/.bin/workflow");
 });
 
 test("registry audit rejects invalid and unmapped workflows", () => {
