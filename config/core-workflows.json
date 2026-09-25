@@ -66,8 +66,8 @@
       "tests": ["tests_js/agent_workflows_application_setup.test.mjs"],
       "evidence": {
         "deterministicLocal": {"status": "verified", "sources": ["tests_js/agent_workflows_application_setup.test.mjs"], "receiptRefs": [], "note": "Local tests check schema, isolation, capability preflight, and the declared setup-to-Companion contract."},
-        "installedHost": {"status": "verified", "sources": ["docs/dogfooding/2026-09-22-application-setup-live-replay.md"], "receiptRefs": [], "note": "The committed receipt records fresh installed writer and reader Codex processes plus the Companion durability round trip."},
-        "replay": {"status": "verified", "sources": ["docs/dogfooding/2026-09-22-application-setup-live-replay.md"], "receiptRefs": [], "note": "A supervised local host replay passed; it was not a promoted runner evaluation."},
+        "installedHost": {"status": "unverified", "sources": ["docs/dogfooding/2026-09-22-application-setup-live-replay.md"], "receiptRefs": [], "note": "The committed installed-host receipt predates the current four-setting workflow and does not verify preferredAutomationMode or the authority-file boundary."},
+        "replay": {"status": "unverified", "sources": ["docs/dogfooding/2026-09-22-application-setup-live-replay.md"], "receiptRefs": [], "note": "The older three-setting replay is retained as history but does not prove this workflow candidate."},
         "currentLiveAts": {"status": "not-applicable", "sources": [], "receiptRefs": [], "note": "Application preferences are local and this workflow accesses no ATS."}
       }
     },
@@ -76,7 +76,7 @@
       "workflowPath": ".workflows/workflows/job-apply.synthetic-automation-trash.workflow.yaml",
       "uxSurfaces": ["Automation", "Trash", "Jobs"],
       "cliEntrypoints": [".workflows/fixtures/job-apply.synthetic-automation-trash-v1/prepare.mjs"],
-      "tests": ["tests_js/agent_workflows_automation_trash.test.mjs", "tests_js/workspace_information_architecture.test.mjs"],
+      "tests": ["tests_js/agent_workflows_automation_trash.test.mjs"],
       "evidence": {
         "deterministicLocal": {"status": "verified", "sources": ["tests_js/agent_workflows_automation_trash.test.mjs", "docs/dogfooding/2026-09-18-agent-workflows-automation-trash-readiness-receipt.md"], "receiptRefs": [], "note": "Local fixture, viewport, production Companion, and restore contracts passed without creating a Training run."},
         "installedHost": {"status": "unverified", "sources": [], "receiptRefs": [], "note": "Runner validation and product browser checks are not installed-host execution."},
@@ -89,9 +89,9 @@
       "workflowPath": ".workflows/workflows/job-apply.synthetic-profile-answers.workflow.yaml",
       "uxSurfaces": ["Facts", "Answers"],
       "cliEntrypoints": ["skills/answer-memory/SKILL.md"],
-      "tests": ["tests_js/workspace_information_architecture.test.mjs"],
+      "tests": ["tests_js/workspace.test.mjs"],
       "evidence": {
-        "deterministicLocal": {"status": "verified", "sources": ["tests_js/workspace_information_architecture.test.mjs", "docs/dogfooding/2026-09-18-typescript-synthetic-profile-answers-readiness.md"], "receiptRefs": [], "note": "Production Companion and packaged local checks cover the repaired Facts and Answers behavior."},
+        "deterministicLocal": {"status": "verified", "sources": ["tests_js/workspace.test.mjs", "docs/dogfooding/2026-09-18-typescript-synthetic-profile-answers-readiness.md"], "receiptRefs": [], "note": "The packaged browser and CLI walkthrough exercises Facts and Answers behavior; this is not a supervised replay of the exact workflow."},
         "installedHost": {"status": "unverified", "sources": [], "receiptRefs": [], "note": "Package installation passed, but no fresh installed host completed the repaired workflow."},
         "replay": {"status": "unverified", "sources": ["docs/dogfooding/2026-09-18-typescript-synthetic-profile-answers-readiness.md"], "receiptRefs": [], "note": "The earlier run failed and no supervised replay exists for the repaired candidate hashes."},
         "currentLiveAts": {"status": "not-applicable", "sources": [], "receiptRefs": [], "note": "Profile and answer management is local and accesses no ATS."}
@@ -102,9 +102,9 @@
       "workflowPath": ".workflows/workflows/job-apply.synthetic-resume-extraction-request.workflow.yaml",
       "uxSurfaces": ["Resumes"],
       "cliEntrypoints": ["skills/job-apply/SKILL.md", "skills/job-apply/references/extraction.md"],
-      "tests": ["tests_js/workspace_information_architecture.test.mjs"],
+      "tests": ["tests_js/workspace.test.mjs"],
       "evidence": {
-        "deterministicLocal": {"status": "verified", "sources": ["tests_js/workspace_information_architecture.test.mjs", "docs/dogfooding/2026-09-17-typescript-agent-workflows-readiness-receipt.json"], "receiptRefs": [], "note": "Schema, fixture, desktop/mobile resolution, and production Companion request boundaries have local evidence."},
+        "deterministicLocal": {"status": "verified", "sources": ["tests_js/workspace.test.mjs", "docs/dogfooding/2026-09-17-typescript-agent-workflows-readiness-receipt.json"], "receiptRefs": [], "note": "The packaged browser and CLI walkthrough exercises resume import and extraction-request boundaries; this is not a supervised replay of the exact workflow."},
         "installedHost": {"status": "unverified", "sources": [], "receiptRefs": [], "note": "The managed fresh-task attempts failed before host discovery and did not execute the workflow."},
         "replay": {"status": "unverified", "sources": ["docs/dogfooding/2026-09-17-typescript-agent-workflows-readiness-receipt.json"], "receiptRefs": [], "note": "The readiness receipt records no authorized replay run."},
         "currentLiveAts": {"status": "not-applicable", "sources": [], "receiptRefs": [], "note": "Resume extraction is local and accesses no ATS."}

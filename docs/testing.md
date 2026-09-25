@@ -67,6 +67,8 @@ npm run test:release
 
 Each trial creates a new ignored directory below `.workflows/local`, installs the plugin into a fresh temporary Codex home, initializes a Store containing only committed fictional data and an `example.invalid` destination, and gives an ephemeral subagent a fixed protocol that invokes the installed `$job-apply:job-apply` skill. The subagent uses the installed public router to inspect and select the exact Ready job, start its detached attempt, grant Campaign to Review for that job, and perform the remaining Store and attempt operations. It runs with approvals disabled and `danger-full-access` for this isolated local installed-router and socket journey; the fixture contains no real data or destination, the prompt prohibits network/browser use, and a before/after source fingerprint rejects repository changes. The subagent must receive one authorized value-free decision, complete four synthetic non-final operations, stop at final review, and commit `awaiting_review`. A machine oracle then requires an untouched final action, the exact `job-started`/`reviewed` history, no bearer in the decision, and no repository source-state change. Successful fixtures are deleted; failed fixtures are preserved for diagnosis.
 
+This test consumes live model capacity and can vary with the locally configured Codex model. Repeatability comes from the committed prompt, output schema, fixture, isolated Store, ordered action adapter, and closed oracle—not from accepting prose self-reports. Three consecutive clean trials are the local acceptance bar.
+
 ## Core workflow evidence audit
 
 `npm run audit:core-workflows` is the primary account-free audit. It validates
@@ -102,8 +104,6 @@ Other platforms retain their existing interpreter selection. The same macOS proc
 `SDKROOT` and Clang with `/usr/bin/xcrun`; the native witness requires that exact
 SDK and the independently fingerprinted compiler before exercising real flock
 contention and unlock operations.
-
-This test consumes live model capacity and can vary with the locally configured Codex model. Repeatability comes from the committed prompt, output schema, fixture, isolated Store, ordered action adapter, and closed oracle—not from accepting prose self-reports. Three consecutive clean trials are the local acceptance bar.
 
 Pass `--receipt path/to/receipt.json` to record selection, status, and elapsed
 milliseconds. Receipts intentionally omit commands, output, and environment
@@ -165,14 +165,11 @@ browser, package, policy, and classification job. The separate **Release
 Validation** workflow runs installed-package validation for pushes to `main`
 and `staging`, version tags, and manual dispatch.
 
-On both target branches, the duplicate full deterministic lane is temporary
-equivalence evidence, not an optimization. The `classify` job records
-affected-suite selection but does not skip full shards, and `PR gate` rejects
-any failed, cancelled, skipped, or missing selected job.
-
-The 20-PR equivalence gate and two-week affected-selection observation are both
-pending external evidence. Local test receipts and merged workflow code cannot
-mark either gate complete.
+The `classify` job records affected-suite selection in shadow mode but does not
+skip full shards, and `PR gate` rejects any failed, cancelled, skipped, or
+missing selected job. The former duplicate sequential validation lane and its
+planned 20-PR observation window were retired after matrix equivalence was
+established; `docs/legacy-validation-retirement.md` records that decision.
 
 Required Windows and deterministic macOS contracts run on pull requests targeting
 either `main` or `staging`.

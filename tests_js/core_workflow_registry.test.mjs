@@ -47,9 +47,10 @@ test("validator JSON ok is authoritative even when the process can exit successf
   assert.throws(() => parseValidatorResult("not json", "fixture.workflow.yaml"), /did not return one JSON result/);
 });
 
-test("workflow validator selects the native npm launcher", () => {
-  assert.equal(workflowRunnerPath("/repo", "win32"), "/repo/node_modules/.bin/workflow.cmd");
-  assert.equal(workflowRunnerPath("/repo", "darwin"), "/repo/node_modules/.bin/workflow");
+test("workflow validator invokes the package JavaScript entry point through Node", () => {
+  const expected = "/repo/node_modules/@lineagehq/workflows/bin/workflow.js";
+  assert.equal(workflowRunnerPath("/repo", "win32"), expected);
+  assert.equal(workflowRunnerPath("/repo", "darwin"), expected);
 });
 
 test("registry audit rejects invalid and unmapped workflows", () => {
@@ -88,6 +89,16 @@ test("registry mappings require concrete files and real test paths", () => {
   assert.ok(errors.includes(`${registry.workflows[0].id}: tests must reference a tests/ or tests_js/ file: README.md`));
   assert.ok(errors.includes(`${registry.workflows[0].id}: deterministicLocal source must be a file: docs`));
   assert.ok(errors.includes(`${registry.workflows[0].id}: deterministicLocal verification requires a committed test source`));
+});
+
+test("registry mappings require an explicit workflow-to-behavioral-test binding", () => {
+  const registry = structuredClone(readCoreWorkflowRegistry(rootPath));
+  const validation = validateAgentWorkflows({ root: rootPath });
+  registry.workflows[0].tests = ["tests_js/atomic_write_json_ts.test.mjs"];
+  registry.workflows[0].evidence.deterministicLocal.sources = ["tests_js/atomic_write_json_ts.test.mjs"];
+  const errors = auditCoreWorkflowRegistry(registry, validation, { root: rootPath });
+  assert.ok(errors.includes(`${registry.workflows[0].id}: mapped test must name the workflow id: tests_js/atomic_write_json_ts.test.mjs`));
+  assert.ok(errors.includes(`${registry.workflows[0].id}: deterministicLocal verification must cite a workflow-bound mapped test`));
 });
 
 test("registry audit validates exact handoff placement", () => {

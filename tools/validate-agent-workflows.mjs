@@ -28,15 +28,15 @@ export function parseValidatorResult(stdout, workflowPath) {
   return result;
 }
 
-export function workflowRunnerPath(root, platform = process.platform) {
-  return path.join(root, "node_modules", ".bin", platform === "win32" ? "workflow.cmd" : "workflow");
+export function workflowRunnerPath(root) {
+  return path.join(root, "node_modules", "@lineagehq", "workflows", "bin", "workflow.js");
 }
 
-export function validateAgentWorkflows({ root = defaultRoot, workflowPaths, platform = process.platform } = {}) {
+export function validateAgentWorkflows({ root = defaultRoot, workflowPaths } = {}) {
   const paths = workflowPaths ?? committedWorkflowPaths(root);
-  const runner = workflowRunnerPath(root, platform);
+  const runner = workflowRunnerPath(root);
   const results = paths.map((workflowPath) => {
-    const child = spawnSync(runner, ["validate", "--json", workflowPath], {
+    const child = spawnSync(process.execPath, [runner, "validate", "--json", workflowPath], {
       cwd: root,
       encoding: "utf8",
       env: { ...process.env, NO_COLOR: "1" },

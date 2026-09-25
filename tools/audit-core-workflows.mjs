@@ -51,6 +51,22 @@ function checkPathList(errors, root, row, field) {
   }
 }
 
+function checkWorkflowTestBinding(errors, root, row) {
+  if (typeof row?.id !== "string" || row.id.length === 0) return;
+  const tests = Array.isArray(row?.tests) ? row.tests : [];
+  const boundTests = tests.filter((testPath) => {
+    if (concreteFileError(root, testPath)) return false;
+    return readFileSync(path.resolve(root, testPath), "utf8").includes(row.id);
+  });
+  for (const testPath of tests.filter((testPath) => !boundTests.includes(testPath))) {
+    errors.push(`${row.id}: mapped test must name the workflow id: ${testPath}`);
+  }
+  if (row?.evidence?.deterministicLocal?.status === "verified"
+      && !boundTests.some((testPath) => row.evidence.deterministicLocal.sources?.includes(testPath))) {
+    errors.push(`${row.id}: deterministicLocal verification must cite a workflow-bound mapped test`);
+  }
+}
+
 export function auditCoreWorkflowRegistry(registry, validation, { root = defaultRoot } = {}) {
   const errors = [];
   if (registry?.schemaVersion !== 2) errors.push("registry schemaVersion must be 2");
@@ -89,6 +105,7 @@ export function auditCoreWorkflowRegistry(registry, validation, { root = default
     byPath.set(row?.workflowPath, row);
     checkPathList(errors, root, row, "cliEntrypoints");
     checkPathList(errors, root, row, "tests");
+    checkWorkflowTestBinding(errors, root, row);
     if (!Array.isArray(row?.uxSurfaces) || row.uxSurfaces.length === 0) {
       errors.push(`${row?.id ?? "unknown"}: uxSurfaces must be a non-empty array`);
     } else {
