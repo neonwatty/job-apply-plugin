@@ -10,8 +10,9 @@ const approval=key=>({reference,answerKey:key,currentUse:true,remember:false,eli
 const pending=key=>({reference,answerKey:key,state:'confirmed',question:'Private question',sensitive:false,fieldClass:'general',scopeFingerprint:'a'.repeat(64),questionFingerprint:'b'.repeat(64),matchConfidence:'exact',matchReasonCodes:['match_exact_question'],matchAnswerRevision:3});
 const base=()=>({schemaVersion:1,applicationId:'fixture-1',status:'review',answerKeys:['source','winner','source'],pendingFields:[pending('source')],approvals:[approval('source'),approval('winner')],attemptRevision:2,createdAt:'old',updatedAt:'old'});
 const capture=callback=>{try{return {value:callback()};}catch(error){return {error:error.message};}};
+const ORACLE_TIMEOUT_MS=30000;
 function oracle(operation,items) {
- const run=spawnSync('python3',['-c',String.raw`
+ const run=spawnSync('python3',['-I','-B','-c',String.raw`
 import json,sys
 sys.path.insert(0,'scripts')
 from job_apply_store.sessions_runtime import _validate_session_document
@@ -27,7 +28,9 @@ for item in json.load(sys.stdin):
   result.append({'value':value})
  except Exception as error: result.append({'error':str(error)})
 print(json.dumps(result))
-`,operation],{cwd:new URL('..',import.meta.url),encoding:'utf8',input:JSON.stringify(items)});
+ `,operation],{cwd:new URL('..',import.meta.url),encoding:'utf8',input:JSON.stringify(items),
+  timeout:ORACLE_TIMEOUT_MS,maxBuffer:2**20,shell:false});
+ assert.ifError(run.error);
  assert.equal(run.status,0,run.stderr);
  return JSON.parse(run.stdout);
 }

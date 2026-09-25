@@ -2,24 +2,23 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, realpath, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { initializeJobsFixture, NativeJobsRepository } from '../../../runtime/store/native-jobs.js';
-import { resolvePackagedNativeLock } from '../../../runtime/package/native-lock-artifact.js';
-import { loadPosixFlockProvider } from '../../../runtime/store/posix-flock.js';
-import { JobsService } from '../../../runtime/workspace-core/jobs.js';
-import { ResumeService } from '../../../runtime/workspace-core/resumes.js';
-import { ResumeFactsService } from '../../../runtime/workspace-core/resume-facts.js';
-import { ApplicationRunsService } from '../../../runtime/workspace-core/application-runs.js';
-import { ClaimsService } from '../../../runtime/workspace-core/claims.js';
-import { fromJSON, get, int, string } from '../../../runtime/contracts/workspace/values.js';
+import { pathToFileURL } from 'node:url';
 
 const directory=dirname(fileURLToPath(import.meta.url)),repository=resolve(directory,'../../..');
 const fixture=JSON.parse(await readFile(join(directory,'fixture.json'),'utf8'));
-const requested=process.argv[2]==='--journey-root'?process.argv[3]:null;
+const value=name=>{const index=process.argv.indexOf(name);return index<0?null:process.argv[index+1];};
+const requested=value('--journey-root'),pluginRoot=resolve(value('--plugin-root')??repository),workspaceRoot=resolve(value('--workspace-root')??repository);
 if(!requested||requested!==resolve(requested)||fixture.syntheticOnly!==true)throw Error('Usage: node prepare.mjs --journey-root /absolute/disposable/root');
+const moduleFrom=relative=>import(pathToFileURL(join(pluginRoot,relative)).href);
+const [{initializeJobsFixture,NativeJobsRepository},{resolvePackagedNativeLock},{loadPosixFlockProvider},
+  {JobsService},{ResumeService},{ResumeFactsService},{ApplicationRunsService},{ClaimsService},{fromJSON,get,int,string}]=await Promise.all([
+  moduleFrom('runtime/store/native-jobs.js'),moduleFrom('runtime/package/native-lock-artifact.js'),moduleFrom('runtime/store/posix-flock.js'),
+  moduleFrom('runtime/workspace-core/jobs.js'),moduleFrom('runtime/workspace-core/resumes.js'),moduleFrom('runtime/workspace-core/resume-facts.js'),
+  moduleFrom('runtime/workspace-core/application-runs.js'),moduleFrom('runtime/workspace-core/claims.js'),moduleFrom('runtime/contracts/workspace/values.js')]);
 await mkdir(requested,{recursive:false,mode:0o700});const journeyRoot=await realpath(requested);
-if(journeyRoot!==requested||!journeyRoot.includes(`${join(repository,'.workflows','local')}/`))throw Error('journey root must be under .workflows/local');
+if(journeyRoot!==requested||!journeyRoot.includes(`${join(workspaceRoot,'.workflows','local')}/`))throw Error('journey root must be under .workflows/local');
 const storeRoot=join(journeyRoot,'store');await initializeJobsFixture(storeRoot);
-const lock=await resolvePackagedNativeLock(repository),repositoryStore=new NativeJobsRepository(storeRoot,loadPosixFlockProvider(lock));
+const lock=await resolvePackagedNativeLock(pluginRoot),repositoryStore=new NativeJobsRepository(storeRoot,loadPosixFlockProvider(lock));
 const now=()=>new Date().toISOString().replace(/\.\d{3}Z$/u,'Z');
 const profilePath=join(storeRoot,'profile.json'),profileDocument=JSON.parse(await readFile(profilePath,'utf8'));
 const applicant={name:'Synthetic Applicant',email:'synthetic@example.invalid',phone:'000-000-0000',location:'Local Fixture'};
@@ -42,7 +41,7 @@ await writeFile(join(journeyRoot,'portal-state.json'),`${JSON.stringify(portal)}
 await writeFile(join(journeyRoot,'evaluation.json'),`${JSON.stringify({destinationUrl:fixture.job.url,operations:fixture.requiredOperations,
   answerRefs:[],sensitiveAnswerRefs:[],interrupts:{missingOrUncertainData:false,captcha:false,mfa:false,emailVerification:false,
     providerLegalConsent:false,unsupportedControls:false,unexpectedDestination:false,ambiguity:false,finalAction:false}})}\n`,{mode:0o600});
-const readiness=JSON.parse(await readFile(join(repository,'qa/fixtures/greenhouse-form-readiness-v1/fixture.json'),'utf8'));
+const readiness=JSON.parse(await readFile(join(pluginRoot,'qa/fixtures/greenhouse-form-readiness-v1/fixture.json'),'utf8'));
 const controls=readiness.steps.flatMap(step=>step.controls),requiredControlIds=controls.filter(control=>control.required).map(control=>control.id).sort();
 const fingerprint=createHash('sha256').update(JSON.stringify({platformFamily:readiness.platformFamily,requiredControlIds})).digest('hex');
 const kinds={textbox:'text',combobox:'selection',radiogroup:'selection',checkbox:'toggle',file:'upload'};

@@ -1,8 +1,18 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
-const root=new URL('../',import.meta.url),read=path=>readFile(new URL(path,root),'utf8');
+import { validateAgentWorkflows } from '../tools/validate-agent-workflows.mjs';
+
+const root=new URL('../',import.meta.url),rootPath=fileURLToPath(root),read=path=>readFile(new URL(path,root),'utf8');
+
+test('application automation workflow is accepted by the pinned runner',()=>{
+  const workflowPath='.workflows/workflows/job-apply.synthetic-application-automation.workflow.yaml';
+  const validation=validateAgentWorkflows({root:rootPath,workflowPaths:[workflowPath]});
+  assert.equal(validation.ok,true,JSON.stringify(validation));
+  assert.equal(validation.results[0].result.data.items[0].id,'job-apply.synthetic-application-automation');
+});
 
 test('application automation workflow is synthetic, local-only, and review bounded',async()=>{
   const [workflow,fixture,portal]=await Promise.all([
@@ -39,11 +49,16 @@ test('local live-agent runner uses three clean ephemeral trials and is excluded 
     read('.workflows/fixtures/job-apply.synthetic-application-automation-v1/prepare.mjs'),
   ]);
   assert.match(runner,/if\(process\.env\.CI\)throw Error/);assert.match(runner,/let trials=3/);
-  assert.match(runner,/runAgent\(\['exec','--ephemeral'/);assert.match(runner,/--sandbox','danger-full-access'/);
-  assert.match(runner,/--disable','skill_search'/);
+  assert.match(runner,/installLocalPlugin/);assert.match(runner,/runAgent\(\['exec','--ephemeral'/);
+  assert.match(runner,/installedRoot=await realpath\(join\(codexHome/);
+  assert.match(runner,/\$job-apply:job-apply/);assert.match(runner,/apps','companion','command\.mjs/);
+  assert.match(runner,/task --root \"\$\{prepared\.storeRoot\}\" select --id \$\{prepared\.jobId\} --expected-revision \$\{prepared\.readyRevision\} --owner-confirmed/);
+  assert.doesNotMatch(runner,/--disable','skill_search'/);assert.doesNotMatch(runner,/runtime\/cli\/native-(?:jobs|attempt)\.js/);
+  assert.match(runner,/--sandbox','danger-full-access'/);
   assert.match(runner,/approval_policy="never"/);
   assert.match(runner,/model='gpt-5\.6-luna'/);assert.match(runner,/child\.stdin\.end\(\)/);
-  assert.match(runner,/sourceFingerprint/);assert.match(runner,/Never invoke the portal submit command/);
+  assert.match(runner,/ls-files','--others','--exclude-standard','-z'/);
+  assert.match(runner,/await readFile\(join\(repository,bytes\)\)/);assert.match(runner,/Never invoke the portal submit command/);
   assert.match(runner,/Current owner approval:[\s\S]*exact synthetic job for 120 minutes/);
   assert.match(runner,/preferredAutomationMode[\s\S]*Treat it only as a preference, not authority/);
   assert.match(runner,/application-authority-status[\s\S]*application-authority-set/);

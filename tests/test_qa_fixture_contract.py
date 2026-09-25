@@ -1,4 +1,5 @@
 from tests.support.contract_case import *
+import hashlib
 
 
 class ContractTests(ContractCase):
@@ -350,6 +351,46 @@ class ContractTests(ContractCase):
                 fixture = self.valid_fixture()
                 fixture["provenance"][key] = invalid
                 self.assert_contract_error(fixture, message)
+
+    def test_explicit_recorder_provenance_rejects_placeholder_receipts(self):
+        fixture = self.valid_fixture()
+        fixture["provenance"] = {
+            "evidenceKind": "recorder-derived",
+            "recorderVersion": "1.0.0",
+            "captureMonth": fixture["captureMonth"],
+            "sourceRecordingSha256": hashlib.sha256(b"recording").hexdigest(),
+        }
+        self.assertIsNone(validate_fixture(fixture))
+
+        for key, placeholder, message in (
+            (
+                "recorderVersion",
+                "placeholder",
+                "placeholder recorder version is not evidence",
+            ),
+            (
+                "sourceRecordingSha256",
+                "b" * 64,
+                "placeholder source recording sha256 is not evidence",
+            ),
+        ):
+            with self.subTest(key=key):
+                invalid = copy.deepcopy(fixture)
+                invalid["provenance"][key] = placeholder
+                self.assert_contract_error(invalid, message)
+
+    def test_hand_authored_synthetic_provenance_cannot_claim_recorder_fields(self):
+        fixture = self.valid_fixture()
+        fixture["provenance"] = {
+            "evidenceKind": "hand-authored-synthetic",
+            "captureMonth": fixture["captureMonth"],
+        }
+        self.assertIsNone(validate_fixture(fixture))
+
+        fixture["provenance"]["recorderVersion"] = "1.0.0"
+        self.assert_contract_error(
+            fixture, "unknown provenance key: recorderVersion"
+        )
 
     def test_missing_required_fields_fail_closed(self):
         for key in (

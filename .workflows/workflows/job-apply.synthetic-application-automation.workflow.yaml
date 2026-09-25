@@ -10,8 +10,14 @@ metadata:
     activate an explicitly approved exact scope, reach final review, and prove
     that the final action remains untouched.
   lifecycle: candidate
-  candidateRevision: 2
+  candidateRevision: 3
   tags: [application, automation, campaign, local-only, synthetic]
+
+promotion:
+  immutableAfterPromotion: true
+  requires:
+    - successful-supervised-replay
+    - human-approval
 
 target:
   app: job-apply-plugin
@@ -19,9 +25,13 @@ target:
   supportedPlatforms:
     - id: local-agent
       adapterCapability: shell
+      viewport: default-desktop
   identity:
-    requirement: synthetic
-    note: No real applicant, employer, account, credential, or ATS is permitted.
+    requirement: anonymous
+    note: >-
+      Anonymous means no real applicant or external account identity is used.
+      The local agent operates only on the committed fictional fixture; no real
+      applicant, employer, account, credential, or ATS is permitted.
 
 start:
   isolation: fresh-context
@@ -42,12 +52,14 @@ start:
     - Do not edit repository source files.
     - Use only hosts under example.invalid and only the generated isolated Store.
     - Never invoke the synthetic Submit application action.
+  preflightCapabilities:
+    - shell
 
 execution:
-  topology: linear
-  agentFreedom: bounded
+  topology: linear-with-bounded-conditions
+  agentFreedom: goal-bounded
   onUnexpectedState: fail
-  environmentChange: fail
+  environmentChange: block-run
   failureContinuation: stop
   recoveryBudget:
     maxActionsPerStep: 8
@@ -58,6 +70,8 @@ evidencePolicy:
   onFailure: [preserve-isolated-journey]
   retainVerifiedDownloads: false
 
+optionalStateHandlers: []
+
 steps:
   - id: acquire-bound-attempt
     name: Acquire the one synthetic job
@@ -65,6 +79,8 @@ steps:
     expected:
       - Exactly one local claim exists.
       - No claim token is returned in durable output or agent result.
+    evidence:
+      - closed-state-oracle
   - id: activate-approved-mode
     name: Turn the saved preference into exact live authority
     dependsOn: [acquire-bound-attempt]
@@ -77,6 +93,8 @@ steps:
       - The saved preference alone is never treated as authority.
       - Exactly one scoped Campaign to Review grant becomes active.
       - The grant still requires final review and cannot authorize submission.
+    evidence:
+      - closed-state-oracle
   - id: authorize-operations
     name: Evaluate the bounded application actions
     dependsOn: [activate-approved-mode]
@@ -84,6 +102,8 @@ steps:
     expected:
       - Campaign to Review authorizes the four non-final operations.
       - The decision contains no applicant values or claim bearer.
+    evidence:
+      - closed-state-oracle
   - id: fill-to-review
     name: Complete the fictional form
     dependsOn: [authorize-operations]
@@ -91,6 +111,8 @@ steps:
     expected:
       - The synthetic form reaches final_review.
       - Submit application remains untouched.
+    evidence:
+      - closed-state-oracle
   - id: durable-handoff
     name: Hand off for manual review
     dependsOn: [fill-to-review]
@@ -99,3 +121,16 @@ steps:
       - The job is awaiting_review and the claim is released.
       - History contains job-started and reviewed, with no submitted or applied event.
       - Campaign authority remains active but has no Ready job.
+    evidence:
+      - closed-state-oracle
+
+completion:
+  successRequires:
+    - every-step-passed
+    - required-evidence-verified
+  cleanup:
+    alwaysAttempt: true
+    actions:
+      - Stop the detached attempt broker even when the journey fails.
+      - Remove a passing isolated journey unless the owner requested retention.
+      - Preserve a failed isolated journey for local diagnosis without exposing its paths in durable evidence.

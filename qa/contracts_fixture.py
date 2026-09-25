@@ -162,8 +162,28 @@ def _validate_control(
 def _validate_provenance(value: Any, fixture_capture_month: str) -> None:
     if not isinstance(value, dict):
         raise ContractError("provenance must be an object")
-    _closed(value, PROVENANCE_KEYS, "provenance")
-    _non_empty_string(value.get("recorderVersion"), "recorderVersion")
+
+    evidence_kind = value.get("evidenceKind")
+    if evidence_kind == "hand-authored-synthetic":
+        _closed(
+            value,
+            {"evidenceKind", "captureMonth"},
+            "provenance",
+        )
+    elif evidence_kind == "recorder-derived":
+        _closed(
+            value,
+            PROVENANCE_KEYS | {"evidenceKind"},
+            "provenance",
+        )
+        _validate_recorder_provenance(value, reject_sentinels=True)
+    elif evidence_kind is None:
+        # Version 1 promoted replay fixtures predate an explicit evidence kind.
+        # Preserve their closed shape and semantics without rewriting them.
+        _closed(value, PROVENANCE_KEYS, "provenance")
+        _validate_recorder_provenance(value, reject_sentinels=False)
+    else:
+        raise ContractError("unsupported provenance evidence kind")
 
     capture_month = value.get("captureMonth")
     if (
@@ -174,6 +194,24 @@ def _validate_provenance(value: Any, fixture_capture_month: str) -> None:
     if capture_month != fixture_capture_month:
         raise ContractError("provenance capture month must match fixture")
 
+
+def _validate_recorder_provenance(
+    value: dict[str, Any], *, reject_sentinels: bool
+) -> None:
+    recorder_version = _non_empty_string(
+        value.get("recorderVersion"), "recorderVersion"
+    )
+    if reject_sentinels and recorder_version.strip().lower() in {
+        "placeholder",
+        "synthetic",
+        "test",
+        "unknown",
+        "unverified",
+    }:
+        raise ContractError("placeholder recorder version is not evidence")
+
     digest = value.get("sourceRecordingSha256")
     if not isinstance(digest, str) or not SHA256.fullmatch(digest):
         raise ContractError("invalid source recording sha256")
+    if reject_sentinels and len(set(digest)) == 1:
+        raise ContractError("placeholder source recording sha256 is not evidence")

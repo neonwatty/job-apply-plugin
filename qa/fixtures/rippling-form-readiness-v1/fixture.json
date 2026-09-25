@@ -8,8 +8,7 @@
   "platformFamily": "rippling",
   "provenance": {
     "captureMonth": "2026-09",
-    "recorderVersion": "1.0.0",
-    "sourceRecordingSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    "evidenceKind": "hand-authored-synthetic"
   },
   "schemaVersion": 1,
   "steps": [

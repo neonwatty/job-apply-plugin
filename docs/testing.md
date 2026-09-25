@@ -67,6 +67,38 @@ npm run test:release
 
 Each trial creates a new ignored directory below `.workflows/local`, initializes a Store containing only committed fictional data and an `example.invalid` destination, grants Campaign to Review for one exact job, and gives an ephemeral subagent a fixed protocol. The harness acquires the detached broker before dispatch because Codex's workspace sandbox cannot reach its owner-private Unix socket. The subagent runs with approvals disabled and `danger-full-access` only for that local socket boundary; the fixture contains no real data or destination, the prompt prohibits network/browser use, and a before/after source fingerprint rejects repository changes. The subagent must receive one authorized value-free decision, complete four synthetic non-final operations, stop at final review, and commit `awaiting_review`. A machine oracle then requires an untouched final action, the exact `job-started`/`reviewed` history, no bearer in the decision, and no repository source-state change. Successful fixtures are deleted; failed fixtures are preserved for diagnosis.
 
+## Core workflow evidence audit
+
+`npm run audit:core-workflows` is the primary account-free audit. It validates
+all committed workflow YAML, the complete workflow-to-Companion/CLI/test map,
+referenced local files, exact copy-only handoffs, and evidence-lane labels. Its
+JSON output reports separate counts for deterministic local, installed-host,
+supervised replay, and current-live ATS evidence. A green result proves registry
+integrity and workflow schema validity; it does not rerun historical host or
+replay receipts.
+
+The optional installed-host lane is `npm run test:agent-local -- --trials 1`.
+It requires an available authenticated Codex host and executes the installed
+skill and public router against fictional local data. Record it as unrun when
+that host capability is unavailable. There is no credential-free current-live
+ATS command: such a lane must run only under its separately approved supervised
+protocol, and until then the registry and compatibility table remain
+`unverified`. Closed replay and synthetic readiness catalogs never upgrade that
+status.
+
+On macOS, `npm run test:qa-browser` resolves the evidence-bound CPython patches
+3.12.13, 3.13.13, and 3.14.4. It asks an already-installed `uv` for each exact
+local interpreter, then accepts the corresponding PATH alias only when its full
+version matches. Discovery never installs or downloads Python. Process-local
+shims expose the selected executables as `python3`, `python3.12`, `python3.13`,
+and `python3.14`, so default and explicit profile tests use the same reviewed
+identities. The command fails before testing if any patch is unavailable or
+mismatched; it does not accept Homebrew 3.12.14 or the Xcode CPython 3.9 shim.
+Other platforms retain their existing interpreter selection. The same macOS process resolves
+`SDKROOT` and Clang with `/usr/bin/xcrun`; the native witness requires that exact
+SDK and the independently fingerprinted compiler before exercising real flock
+contention and unlock operations.
+
 This test consumes live model capacity and can vary with the locally configured Codex model. Repeatability comes from the committed prompt, output schema, fixture, isolated Store, ordered action adapter, and closed oracle—not from accepting prose self-reports. Three consecutive clean trials are the local acceptance bar.
 
 Pass `--receipt path/to/receipt.json` to record selection, status, and elapsed
@@ -119,28 +151,27 @@ targets are fast p95 at most 30 seconds, affected p95 at most 90 seconds, and
 full CI p95 at most five minutes. Do not describe a single run as a percentile
 or as completion of the CI observation window.
 
-## CI shadow mode
+## Staging and CI validation
 
-The validation workflow currently runs for main pushes, pull requests targeting
-main, and manual dispatch. Staging validation is frozen during the migration;
-staging changes depend on the local hook and integration evidence described in
-the [local protocol](local-testing-protocol.md). The release workflow still
-includes staging pushes. Restoring the required staging gates is a final
-migration prerequisite, tracked by T05 in the
-[remaining plan](migration/remaining-migration-plan.md).
+The checked-in **Validate Plugin** workflow runs for pushes to `main` and
+`staging`, pull requests targeting either branch, and manual dispatch. It always
+runs the full deterministic shards while recording affected selection in shadow
+mode. The aggregate `PR gate` requires every selected Linux, macOS, Windows,
+browser, package, policy, and classification job. The separate **Release
+Validation** workflow runs installed-package validation for pushes to `main`
+and `staging`, version tags, and manual dispatch.
 
-On main-targeted pull requests, the retained `validate` job and deterministic
-Python and browser shards still run. The duplicate legacy lane is temporary equivalence
-evidence, not an optimization: remove it only after at least 20 PR runs show no
-unexplained divergence. The `classify` job records affected-suite selection but
-does not skip full shards, and `PR gate` rejects any failed, cancelled, skipped,
-or missing selected job.
+On both target branches, the duplicate full deterministic lane is temporary
+equivalence evidence, not an optimization. The `classify` job records
+affected-suite selection but does not skip full shards, and `PR gate` rejects
+any failed, cancelled, skipped, or missing selected job.
 
 The 20-PR equivalence gate and two-week affected-selection observation are both
 pending external evidence. Local test receipts and merged workflow code cannot
 mark either gate complete.
 
-Required Windows and deterministic macOS contracts remain on main-targeted pull requests.
+Required Windows and deterministic macOS contracts run on pull requests targeting
+either `main` or `staging`.
 Visible live-browser/native observations are advisory in the scheduled or
 manual nightly workflow. Release installation evidence runs nightly and for
 staging/main, version tags, and manual dispatch. No CI timing percentile or

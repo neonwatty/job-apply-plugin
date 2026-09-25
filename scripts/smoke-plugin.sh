@@ -23,6 +23,11 @@ mkdir -p \
   "$SMOKE_FIXTURE_DIR" \
   "$SMOKE_UPGRADE_FIXTURE_DIR"
 
+CODEX_HOST_STATUS="unavailable_unrun"
+CLAUDE_HOST_STATUS="unavailable_unrun"
+command -v codex >/dev/null 2>&1 && CODEX_HOST_STATUS="available_unrun"
+command -v claude >/dev/null 2>&1 && CLAUDE_HOST_STATUS="available_unrun"
+
 echo "Validating plugin manifest"
 claude plugin validate "$REPO_ROOT"
 echo "Verifying reproducible checked-in TypeScript runtime"
@@ -125,10 +130,12 @@ python3 "$REPO_ROOT/scripts/smoke/plugin_install_verify.py" codex \
 node "$REPO_ROOT/scripts/smoke/native_activation.mjs" \
   "$(cat "$SMOKE_TEMP_ROOT/codex-installed-root.txt")" "$SMOKE_TEMP_ROOT"
 
-echo "Running installed Codex/Claude title-discovery and packaged Companion browser journey"
+echo "Running installed title-discovery artifacts and packaged Companion browser journey"
 JOB_TITLE_DISCOVERY_CODEX_ROOT="$(cat "$SMOKE_TEMP_ROOT/codex-installed-root.txt")" \
 JOB_TITLE_DISCOVERY_CLAUDE_CONFIG="$SMOKE_CLAUDE_CONFIG_DIR" \
-node --test --test-name-pattern='packaged title discovery Codex and Claude skills drive Companion owner review' \
+JOB_TITLE_DISCOVERY_CODEX_HOST="$CODEX_HOST_STATUS" \
+JOB_TITLE_DISCOVERY_CLAUDE_HOST="$CLAUDE_HOST_STATUS" \
+node --test --test-name-pattern='packaged title discovery installed skills drive Companion with host lanes truthfully unrun' \
   "$REPO_ROOT/tests_js/workspace.test.mjs"
 
 echo "Plugin smoke checks passed"

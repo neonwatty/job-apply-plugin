@@ -70,22 +70,13 @@ export async function nativeFactsBrowser(page,root,fixture,buildRoot) {
   await page.getByRole('button',{name:'Edit Contact renamed',exact:true}).waitFor();
   const groups=JSON.parse(await readFile(join(root,'fact-groups.json'),'utf8')).groups;
   assert.deepEqual(Object.values(groups)[0].paths,['/firstName','/phone ']);
-  let releaseClaim, claimRequested;
-  const heldClaim = new Promise(resolve => { releaseClaim = resolve; });
-  const startedClaim = new Promise(resolve => { claimRequested = resolve; });
-  const holdStatus = async route => { claimRequested(); await heldClaim; await route.continue(); };
-  await page.route('**/api/claims', holdStatus);
-  try {
-    await page.reload();
-    await startedClaim;
-    await page.locator('[data-job-create]:disabled').waitFor();
-    // Read-only claim loading must not trigger a discard prompt or prevent navigation.
-    await page.getByRole('button',{name:'Facts',exact:true}).click();
-    await page.getByLabel('firstName',{exact:true}).waitFor();
-  } finally {
-    releaseClaim();
-    await page.unroute('**/api/claims', holdStatus);
-  }
+  await page.reload();
+  await page.getByRole('heading', { name: 'Know what to do next.', exact: true }).waitFor();
+  assert.equal(await page.getByRole('button', { name: 'Overview', exact: true }).getAttribute('aria-current'), 'page');
+  // Reload returns to Overview; navigate explicitly instead of synchronizing on
+  // claim traffic that the Companion must never own.
+  await page.getByRole('button',{name:'Facts',exact:true}).click();
+  await page.getByLabel('firstName',{exact:true}).waitFor();
   assert.equal(await page.getByLabel('firstName',{exact:true}).inputValue(),'Browser draft');
   assert.equal(await page.getByLabel('phone',{exact:true}).inputValue(),'CLI phone');
   assert.equal(await page.getByLabel('company',{exact:true}).inputValue(),'Synthetic employer');

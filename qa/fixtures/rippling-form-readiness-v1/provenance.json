@@ -1,14 +1,8 @@
 {
-  "approvedAt": "2026-09-01T00:00:00Z",
-  "approvedBy": "qa-owner",
-  "captureMonth": "2026-09",
-  "compilerVersion": "1.1.0",
+  "currentLiveAtsStatus": "unverified",
+  "evidenceKind": "hand-authored-synthetic",
   "fixtureId": "rippling-form-readiness-v1",
-  "fixtureSha256": "0221133f8003e099636ed8da197733c74837a9aa921b0c4c7aa43419f52a7be8",
+  "fixtureSha256": "34fd59c2fc0b6390f1e057c9472ce4b4da60b64deab42edf2a9316e85af7317e",
   "platformFamily": "rippling",
-  "promotedAt": "2026-09-01T00:00:01Z",
-  "recorderVersion": "1.0.0",
-  "scannerVersion": "1.0.0",
-  "schemaVersion": 1,
-  "sourceRecordingSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  "schemaVersion": 1
 }

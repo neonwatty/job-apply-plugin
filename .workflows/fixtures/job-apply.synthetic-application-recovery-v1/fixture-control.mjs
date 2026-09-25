@@ -48,7 +48,7 @@ async function fixtures() {
   const formMetadata = await lstat(formPath);
   if (!formMetadata.isFile() || formMetadata.isSymbolicLink()) fail();
   const formBytes = await readFile(formPath);
-  if (sha256(formBytes) !== 'ae1232593dadb806d97b7d43572b2603acd2530847309324b7e5f19a683aad8e') fail();
+  if (sha256(formBytes) !== '0c0396aaa93152f5a58ef592d0d18c1047ff9ca993789be86bc6cf1f916d1551') fail();
   const form = JSON.parse(formBytes);
   if (form.id !== 'greenhouse-form-readiness-v1' || form.platformFamily !== 'greenhouse') fail();
   return { ...data, form };

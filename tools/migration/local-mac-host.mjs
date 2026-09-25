@@ -51,7 +51,9 @@ export function validateLocalMacHost(identity) {
   for (const [index, python] of identity.python.entries()) {
     closed(python, ['alias', 'resolved', 'sha256', 'version', 'implementation', 'profile', 'filesystemEncoding', 'filesystemErrors']);
     requireCondition(python.alias === aliases[index] && path(python.resolved) && digest(python.sha256)
-      && version(python.version) && ['3.12', '3.13', '3.14'].includes(python.profile)
+      && version(python.version) && (index === 0
+        ? ['3.9', '3.12', '3.13', '3.14'].includes(python.profile)
+        : ['3.12', '3.13', '3.14'].includes(python.profile))
       && python.version.split('.').slice(0, 2).join('.') === python.profile
       && (index === 0 || python.profile === aliases[index].slice(6))
       && python.implementation === 'CPython' && python.filesystemEncoding === 'utf-8'
@@ -84,6 +86,23 @@ const pythonProbe = [
   ' filesystemEncoding=sys.getfilesystemencoding(),filesystemErrors=sys.getfilesystemencodeerrors())))',
 ].join('\n');
 const stableStat = value => [value.dev, value.ino, value.size, value.mtimeNs, value.ctimeNs];
+
+/** Observe the interpreter selected by a Python launcher, rather than the launcher file itself. */
+export async function observePythonAlias(alias, { run, resolveAlias, binaryIdentity }) {
+  const launcher = await resolveAlias(alias);
+  const viaAlias = JSON.parse(await run(alias, ['-I', '-B', '-c', pythonProbe]));
+  const viaLauncher = JSON.parse(await run(launcher, ['-I', '-B', '-c', pythonProbe]));
+  requireCondition(isDeepStrictEqual(viaAlias, viaLauncher) && path(viaLauncher.resolved),
+    'Python alias and launcher disagree');
+  const binary = await binaryIdentity(viaLauncher.resolved);
+  requireCondition(binary.resolved === viaLauncher.resolved,
+    'Python reported executable does not resolve to the observed binary');
+  return { identity: { alias, ...viaLauncher, sha256: binary.sha256 }, binary };
+}
+
+export function assertPythonAliasUnchanged(before, after) {
+  requireCondition(isDeepStrictEqual(before, after), 'Python executable changed during identity probes');
+}
 
 /** Fixed probes only; missing tools on the required host are failures, never skips. */
 export async function collectLocalMacHost() {
@@ -151,24 +170,18 @@ export async function collectLocalMacHost() {
     const python = [];
     const binaryPins = [];
     for (const alias of aliases) {
-      const resolved = await resolveAlias(alias);
-      const binary = await binaryIdentity(resolved);
-      const viaAlias = JSON.parse(await run(alias, ['-I', '-B', '-c', pythonProbe]));
-      const viaPath = JSON.parse(await run(resolved, ['-I', '-B', '-c', pythonProbe]));
-      requireCondition(isDeepStrictEqual(viaAlias, viaPath) && viaPath.resolved === resolved,
-        'Python alias and resolved executable disagree');
-      await sameBinary(resolved, binary);
-      python.push({ alias, ...viaPath, sha256: binary.sha256 });
-      binaryPins.push({ alias, binary });
+      const observed = await observePythonAlias(alias, { run, resolveAlias, binaryIdentity });
+      python.push(observed.identity);
+      binaryPins.push(observed);
     }
     const compilerPath = (await run('/usr/bin/xcrun', ['--find', 'clang'])).trim();
     requireCondition(path(compilerPath), 'Compiler lookup did not return an absolute path');
     const compiler = await binaryIdentity(compilerPath);
     const compilerVersion = await run(compiler.resolved, ['--version']);
     await sameBinary(compilerPath, compiler);
-    for (const { alias, binary } of binaryPins) {
-      requireCondition(await resolveAlias(alias) === binary.resolved, 'Python alias resolution changed');
-      await sameBinary(binary.resolved, binary);
+    for (const before of binaryPins) {
+      const after = await observePythonAlias(before.identity.alias, { run, resolveAlias, binaryIdentity });
+      assertPythonAliasUnchanged(before, after);
     }
     requireCondition(await realpath((await run('/usr/bin/xcrun', ['--find', 'clang'])).trim()) === compiler.resolved,
       'Compiler resolution changed');

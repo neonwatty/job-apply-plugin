@@ -1,52 +1,36 @@
 import assert from 'node:assert/strict';
-import { reviewRestartBrowser } from './workspace_native_review_restart_browser_support.mjs';
 
-// The caller owns the disposable fixture and prepares one preflight-ready job.
-// expireClaim must adjust only that fixture's lease; never use an owner Store.
-export async function claimsBrowser(page, { jobId, expireClaim }) {
-    const panel = page.getByRole('region', { name: 'Active application', exact: true });
-    try { await panel.getByText('No active application claim.', { exact: true }).waitFor(); }
-    catch (error) { throw Error(`${error.message}\n${await page.locator('body').innerText()}`); }
-    assert.equal(await panel.getByRole('combobox', { name: 'Job for application work', exact: true }).count(), 0,
-        'application setup stays collapsed until requested');
-    await panel.getByRole('button', { name: 'Choose a job to apply', exact: true }).click();
-    await panel.getByRole('combobox', { name: 'Job for application work', exact: true }).selectOption(jobId);
-    page.once('dialog', dialog => dialog.accept());
-    await panel.getByRole('button', { name: 'Confirm selected job', exact: true }).click();
-    await panel.getByText('Job selected. Acquisition checks readiness again.', { exact: true }).waitFor();
-    const acquired = page.waitForResponse(response => response.url().endsWith('/api/claims/acquire') && response.request().method() === 'POST');
-    await panel.getByRole('button', { name: 'Start application', exact: true }).click();
-    const response = await acquired;
-    assert.equal(response.status(), 200);
-    const { token } = await response.json();
-    assert.equal(typeof token, 'string');
-    await panel.getByText('Application work acquired. You can return it for owner input below.', { exact: true }).waitFor();
-    assert.equal((await page.locator('body').innerText()).includes(token), false);
-    assert.equal(await page.evaluate(secret => [...Object.values(localStorage), ...Object.values(sessionStorage)].some(value => value.includes(secret)), token), false);
+// The browser may advertise an agent handoff, but it must never acquire or
+// recover an application claim. The agent owns that lifecycle after copy.
+export async function claimsBrowser(page, { jobId, claimRequests = [] }) {
+    const handoffClaimRequests = [];
+    const observeClaimRequest = request => {
+        const path = new URL(request.url()).pathname;
+        if (path.startsWith('/api/claims')) handoffClaimRequests.push({ method: request.method(), path });
+    };
+    page.on('request', observeClaimRequest);
+    try {
+        const panel = page.getByRole('region', { name: 'Ready-job handoff', exact: true });
+        await panel.getByRole('heading', { name: 'Hand off a Ready job', exact: true }).waitFor();
+        assert.equal((await panel.innerText()).includes(jobId), false, 'the handoff does not expose a record ID');
+        assert.equal(await panel.getByRole('button', { name: 'Start application', exact: true }).count(), 0);
+        assert.equal(await panel.getByRole('button', { name: /Recover expired application/ }).count(), 0);
 
-    // Leaving loses the ephemeral credential and stops the old component's renewal timer.
-    page.once('dialog', dialog => dialog.accept());
-    await page.reload();
-    await page.getByText('This browser no longer holds the application credential. Wait for the lease to expire, refresh the status, then recover this job.', { exact: true }).waitFor();
-    assert.equal(await panel.getByRole('button', { name: 'Recover expired application', exact: true }).count(), 0);
-    await expireClaim(jobId);
-    await panel.getByRole('button', { name: 'Refresh application status', exact: true }).click();
-    const recovery = page.waitForResponse(result => result.url().endsWith('/api/claims/recover') && result.request().method() === 'POST');
-    await panel.getByRole('button', { name: 'Recover expired application', exact: true }).click();
-    const recovered = await recovery;
-    assert.equal(recovered.status(), 200);
-    const recoveredPayload = await recovered.json();
-    assert.notEqual(recoveredPayload.token, token);
-    assert.equal(recoveredPayload.claim.jobId, jobId);
-    const handoff = page.waitForResponse(result => result.url().endsWith('/api/claims/handoff') && result.request().method() === 'POST');
-    await panel.getByRole('button', { name: 'Return for owner input', exact: true }).click();
-    const handedOff = await handoff;
-    assert.equal(handedOff.status(), 200);
-    const request = handedOff.request().postDataJSON();
-    assert.equal(request.status, 'needs_info');
-    assert.deepEqual(request.session.blockers, [{ type: 'information', code: 'owner-input-required' }]);
-    await panel.getByText('Application returned for owner input.', { exact: true }).waitFor();
-    await panel.getByText('No active application claim.', { exact: true }).waitFor();
-    assert.equal((await page.locator('body').innerText()).includes(recoveredPayload.token), false);
-    await reviewRestartBrowser(page, jobId);
+        await panel.getByRole('button', { name: 'Copy Codex invocation', exact: true }).click();
+        assert.equal(await page.evaluate(() => navigator.clipboard.readText()), '$job-apply:job-apply');
+        await panel.getByText('Codex invocation copied.', { exact: true }).waitFor();
+
+        await page.reload();
+        await page.getByRole('heading', { name: 'Know what to do next.', exact: true }).waitFor();
+        assert.equal(await page.getByRole('button', { name: 'Overview', exact: true }).getAttribute('aria-current'), 'page');
+        await page.getByRole('button', { name: 'Jobs', exact: true }).click();
+        const reloadedPanel = page.getByRole('region', { name: 'Ready-job handoff', exact: true });
+        await reloadedPanel.getByRole('button', { name: 'Copy Claude invocation', exact: true }).click();
+        assert.equal(await page.evaluate(() => navigator.clipboard.readText()), '/job-apply:job-apply');
+        assert.deepEqual(handoffClaimRequests, [],
+            'navigation, copy, and reload must not create or touch an application claim');
+        assert.deepEqual(claimRequests, [], 'the production browser journey must not call the claims API');
+    } finally {
+        page.off('request', observeClaimRequest);
+    }
 }

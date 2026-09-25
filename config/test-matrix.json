@@ -17,6 +17,8 @@
       "qa/**/*.py",
       "qa/**/*.js",
       "qa/**/*.mjs",
+      ".workflows/workflows/*.workflow.yaml",
+      "config/core-workflows.json",
       "workspace/**/*.js",
       "native/macos/*.swift",
       "native/posix/*.c",
@@ -76,6 +78,12 @@
       "id": "matrix-policy",
       "kind": "command",
       "command": ["node", "tools/check-test-matrix.mjs"],
+      "tiers": ["fast", "full"]
+    },
+    {
+      "id": "core-workflow-audit",
+      "kind": "command",
+      "command": ["npm", "run", "audit:core-workflows"],
       "tiers": ["fast", "full"]
     },
     {
@@ -154,7 +162,7 @@
     {
       "id": "node-runner-fast",
       "kind": "node-test",
-      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs", "tests_js/local_checks*.test.mjs", "tests_js/agent_workflows_automation_trash.test.mjs", "tests_js/agent_workflows_application_setup.test.mjs", "tests_js/agent_workflows_application_automation.test.mjs", "tests_js/migration_inventory.test.mjs", "tests_js/migration_remaining_plan.test.mjs", "tests_js/migration_browser_inventory.test.mjs", "tests_js/migration_python_runtime_closure.test.mjs", "tests_js/migration_packages.test.mjs", "tests_js/migration_requirements.test.mjs", "tests_js/migration_triage_report.test.mjs", "tests_js/migration_test_bindings.test.mjs", "tests_js/migration_prerequisite_receipts.test.mjs", "tests_js/migration_load_prerequisites.test.mjs", "tests_js/migration_task_manifests.test.mjs", "tests_js/migration_task_receipts.test.mjs", "tests_js/migration_task_lineage.test.mjs"],
+      "include": ["tests_js/test-runner*.test.mjs", "tests_js/ci-*.test.mjs", "tests_js/local_checks*.test.mjs", "tests_js/agent_workflows_automation_trash.test.mjs", "tests_js/agent_workflows_application_setup.test.mjs", "tests_js/agent_workflows_application_automation.test.mjs", "tests_js/core_workflow_registry.test.mjs", "tests_js/migration_inventory.test.mjs", "tests_js/migration_remaining_plan.test.mjs", "tests_js/migration_browser_inventory.test.mjs", "tests_js/migration_python_runtime_closure.test.mjs", "tests_js/migration_packages.test.mjs", "tests_js/migration_requirements.test.mjs", "tests_js/migration_triage_report.test.mjs", "tests_js/migration_test_bindings.test.mjs", "tests_js/migration_prerequisite_receipts.test.mjs", "tests_js/migration_load_prerequisites.test.mjs", "tests_js/migration_task_manifests.test.mjs", "tests_js/migration_task_receipts.test.mjs", "tests_js/migration_task_lineage.test.mjs"],
       "exclude": ["tests_js/local_checks_run.test.mjs"],
       "tiers": ["fast", "full"]
     },
@@ -279,6 +287,7 @@
     }
   ],
   "ownership": [
+    {"paths": [".workflows/workflows/*.workflow.yaml", "config/core-workflows.json", "tools/validate-agent-workflows.mjs", "tools/audit-core-workflows.mjs"], "suites": ["core-workflow-audit"]},
     {"paths": ["apps/companion/**"], "suites": ["companion-typescript-check", "node-workspace-other", "migration-inventory", "source-size"]},
     {"paths": ["tests_js/local_checks_graph_support.mjs"], "suites": ["node-runner-fast", "node-migration-evidence"]},
     {"paths": ["tests_js/migration_task_lineage_support.mjs"], "suites": ["node-runner-fast", "node-migration-evidence"]},

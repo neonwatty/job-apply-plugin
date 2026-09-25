@@ -27,7 +27,7 @@ const execute = promisify(execFile);
 
 export async function nativeJobsBrowser(buildRoot) {
   const fixture = await nativeFixture();
-  let child, launcher, browser, releaseInitialClaim;
+  let child, launcher, browser;
   try {
     const root = join(await realpath(fixture.root), 'jobs');
     await initializeJobsFixture(root);
@@ -60,23 +60,20 @@ export async function nativeJobsBrowser(buildRoot) {
       }
     });
     page.on('pageerror', error => pageErrors.push(error.message));
-    let initialClaimSeen;
-    const claimStarted = new Promise(resolve => { initialClaimSeen = resolve; });
-    const claimGate = new Promise(resolve => { releaseInitialClaim = resolve; });
-    let firstClaim = true;
-    await page.route('**/api/claims', async route => {
-      if (firstClaim && route.request().method() === 'GET') {
-        firstClaim = false; initialClaimSeen(); await claimGate;
-      }
-      await route.continue();
+    const claimRequests = [];
+    page.on('request', request => {
+      const path = new URL(request.url()).pathname;
+      if (path.startsWith('/api/claims')) claimRequests.push({ method: request.method(), path });
+    });
+    await browser.contexts()[0].grantPermissions(['clipboard-read', 'clipboard-write'], {
+      origin: new URL(startup.url).origin,
     });
     await page.goto(startup.url);
     await page.getByText(/Synthetic native workspace/).waitFor();
+    await page.getByRole('heading', { name: 'Know what to do next.', exact: true }).waitFor();
+    assert.equal(await page.getByRole('button', { name: 'Overview', exact: true }).getAttribute('aria-current'), 'page');
     assert.equal(await page.getByRole('link', { name: 'Open full workspace' }).count(), 0);
-    await claimStarted;
-    await page.locator('[data-job-create]:disabled').waitFor();
-    releaseInitialClaim();
-    await page.locator('[data-job-create]:enabled').waitFor();
+    assert.deepEqual(claimRequests, [], 'Overview-first startup must not call the claims API');
     await page.getByRole('button',{name:'Needs Attention',exact:true}).click();
     await page.getByText('No jobs need attention.',{exact:true}).waitFor();
     await page.getByRole('button',{name:'Jobs',exact:true}).click();
@@ -106,6 +103,9 @@ export async function nativeJobsBrowser(buildRoot) {
     await page.getByRole('button', { name: 'Save job', exact: true }).click();
     await page.locator('dialog').waitFor({ state: 'hidden' });
     await page.reload();
+    await page.getByRole('heading', { name: 'Know what to do next.', exact: true }).waitFor();
+    assert.equal(await page.getByRole('button', { name: 'Overview', exact: true }).getAttribute('aria-current'), 'page');
+    await page.getByRole('button', { name: 'Jobs', exact: true }).click();
     await page.getByRole('button', { name: /Native fixture role/ }).click();
     assert.equal(await page.locator('dialog [name="notes"]').inputValue(), 'Browser draft');
     assert.equal(await page.locator('dialog [name="company"]').inputValue(), 'CLI writer');
@@ -151,6 +151,10 @@ export async function nativeJobsBrowser(buildRoot) {
       'application-run-start', '--resume-id', browserResume.id, '--input', runInput,
       '--expected-resume-revision', String(currentResume.revision), '--expected-fact-revision', String(confirmed.revision),
       '--owner-confirmed'], { env: { PATH: '' } });
+    const queuedJob = JSON.parse(await readFile(join(root, 'jobs.json'), 'utf8')).jobs[job.id];
+    await execute(process.execPath, [cli, '--root', root, '--native-lock', fixture.receipt.artifact,
+      'job-transition', '--id', job.id, '--status', 'needs_info',
+      '--expected-revision', String(queuedJob.revision)], { env: { PATH: '' } });
     await page.getByRole('button',{name:'Jobs',exact:true}).click();
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     const applicationRun = page.getByLabel('Active application run', { exact: true });
@@ -159,20 +163,17 @@ export async function nativeJobsBrowser(buildRoot) {
     await applicationRun.getByText('Ask the Job Apply agent to update the queue', { exact: false }).waitFor();
     await page.getByRole('button', { name: /Native fixture role, CLI writer, in active application run/ }).waitFor();
     await page.setViewportSize({width:390,height:844});
-    await claimsBrowser(page,{jobId:job.id,expireClaim:async id => {
-      const coordinatorPath = join(root,'coordinator.json');
-      const coordinator = JSON.parse(await readFile(coordinatorPath,'utf8'));
-      assert.equal(coordinator.claim.jobId,id);
-      coordinator.claim.expiresAt = '2000-01-01T00:00:00Z';
-      await writeFile(coordinatorPath,JSON.stringify(coordinator),{mode:0o600});
-    }});
-    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     const token = new URLSearchParams(new URL(startup.url).hash.slice(1)).get('token');
     const projections = await projectionsBrowser(page,{jobId:job.id,markReady:async()=>{
       const current = JSON.parse(await readFile(join(root,'jobs.json'),'utf8')).jobs[job.id];
       await execute(process.execPath,[cli,'--root',root,'--native-lock',fixture.receipt.artifact,
         'task-select','--id',job.id,'--expected-revision',String(current.revision),'--owner-confirmed'],{env:{PATH:''}});
     }});
+    // task-select above is the canonical transition to Ready. Exercise the
+    // copy-only application handoff only after that durable state is visible.
+    await page.getByRole('button', { name: 'Jobs', exact: true }).click();
+    await claimsBrowser(page, { jobId: job.id, claimRequests });
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     const transitions = await jobTransitionsBrowser(page, {
       jobId: job.id,
       readJob: async () => JSON.parse(await readFile(join(root, 'jobs.json'), 'utf8')).jobs[job.id],
@@ -245,7 +246,6 @@ export async function nativeJobsBrowser(buildRoot) {
     assert.deepEqual(pageErrors, []);
     return { reactTrash, jobTrash, taskCli, groupedApprovals, taskIntake, legacyJobs, upsert, transitions, projections, claims:true, facts, titleDiscovery, answers, extractions, automation, resumes: true, browserHttpTsDisk: true, cliSharesService: true, conflictReapplyReload: true, pythonAbsentFromPath: true };
   } finally {
-    releaseInitialClaim?.();
     if (browser) await browser.close();
     await launcher?.stop();
     await fixture.cleanup();

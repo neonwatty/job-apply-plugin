@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 2,
+  "companion": {
+    "startupSurface": "Overview",
+    "surfaces": ["Overview", "Jobs", "Needs Attention", "Facts", "Resumes", "Answers", "Application Activity", "Automation", "Accounts & Sign-in", "Settings", "Trash"],
+    "applicationHandoff": {
+      "surfaces": ["Overview", "Jobs"],
+      "kind": "copy-only",
+      "codex": "$job-apply:job-apply",
+      "claude": "/job-apply:job-apply"
+    },
+    "resumeExtractionHandoff": {
+      "surface": "Resumes",
+      "kind": "copy-only",
+      "template": "Use the Job Apply resume workflow to process extraction request <request-id>.",
+      "onlyMutableValue": "opaque request ID"
+    }
+  },
+  "evidenceModel": {
+    "deterministicLocal": "Credential-free source, schema, fixture, or local product checks. This is not installed-host or live ATS proof.",
+    "installedHost": "A host actually ran an installed skill and public entry point. Static packaging checks do not satisfy this lane.",
+    "replay": "A supervised replay completed against the exact workflow revision or its documented candidate. Schema validation is not replay proof.",
+    "currentLiveAts": "A current third-party ATS run completed. Synthetic, loopback, example.invalid, and closed replay evidence do not satisfy this lane."
+  },
+  "atsReadinessEvidence": {
+    "catalogs": [
+      {"fixtureId": "greenhouse-form-readiness-v1", "evidenceKind": "hand-authored-synthetic", "currentLiveAtsStatus": "unverified"},
+      {"fixtureId": "rippling-form-readiness-v1", "evidenceKind": "hand-authored-synthetic", "currentLiveAtsStatus": "unverified"},
+      {"fixtureId": "workday-form-readiness-v1", "evidenceKind": "hand-authored-synthetic", "currentLiveAtsStatus": "unverified"}
+    ],
+    "note": "Schema-valid synthetic catalogs are deterministic local inputs, not recorder-derived replay receipts or current live ATS evidence.",
+    "currentLiveAts": {"status": "unverified", "sources": [], "receiptRefs": []}
+  },
+  "workflows": [
+    {
+      "id": "job-apply.synthetic-application-automation",
+      "workflowPath": ".workflows/workflows/job-apply.synthetic-application-automation.workflow.yaml",
+      "uxSurfaces": ["Overview", "Jobs", "Needs Attention", "Application Activity"],
+      "cliEntrypoints": ["skills/job-apply/SKILL.md", "skills/job-apply/references/application.md", "skills/job-apply/references/application-automation.md", "tools/local-agent-acceptance.mjs"],
+      "tests": ["tests_js/agent_workflows_application_automation.test.mjs"],
+      "evidence": {
+        "deterministicLocal": {"status": "verified", "sources": ["tests_js/agent_workflows_application_automation.test.mjs"], "receiptRefs": [], "note": "Pinned-schema and fictional fixture boundaries are checked locally; this lane does not claim that an agent ran."},
+        "installedHost": {"status": "verified", "sources": ["tools/local-agent-acceptance.mjs"], "receiptRefs": ["T015"], "note": "T015 ran one installed Codex skill/public-router trial to awaiting_review with no final action."},
+        "replay": {"status": "unverified", "sources": [], "receiptRefs": [], "note": "The installed local acceptance is not an Agent Workflows supervised replay or promotion receipt."},
+        "currentLiveAts": {"status": "not-applicable", "sources": [], "receiptRefs": [], "note": "The journey is restricted to a fictional example.invalid fixture and forbids external ATS access."}
+      }
+    },
+    {
+      "id": "job-apply.synthetic-application-recovery",
+      "workflowPath": ".workflows/workflows/job-apply.synthetic-application-recovery.workflow.yaml",
+      "uxSurfaces": ["Jobs", "Needs Attention", "Application Activity"],
+      "cliEntrypoints": [".workflows/fixtures/job-apply.synthetic-application-recovery-v1/host-preflight.mjs", ".workflows/fixtures/job-apply.synthetic-application-recovery-v1/fixture-control.mjs", "runtime/cli/native-jobs.js"],
+      "tests": ["tests_js/agent_workflows_application_recovery.test.mjs"],
+      "evidence": {
+        "deterministicLocal": {"status": "verified", "sources": ["tests_js/agent_workflows_application_recovery.test.mjs"], "receiptRefs": ["T016"], "note": "T016 executed the credential-free fixture-control recovery against the exact hash-bound, hand-authored synthetic Greenhouse catalog; this is local proof only and makes no live ATS or recorder-provenance claim."},
+        "installedHost": {"status": "unverified", "sources": [], "receiptRefs": [], "note": "No completed installed browser-host receipt exists for this candidate revision."},
+        "replay": {"status": "unverified", "sources": ["docs/dogfooding/2026-09-18-typescript-agent-workflows-synthetic-application-recovery-readiness-receipt.json"], "receiptRefs": [], "note": "The committed readiness receipt explicitly records fresh proof as blocked."},
+        "currentLiveAts": {"status": "not-applicable", "sources": [], "receiptRefs": [], "note": "The workflow forbids employer and ATS sites."}
+      }
+    },
+    {
+      "id": "job-apply.synthetic-application-setup-preferences",
+      "workflowPath": ".workflows/workflows/job-apply.synthetic-application-setup-preferences.workflow.yaml",
+      "uxSurfaces": ["Overview", "Settings"],
+      "cliEntrypoints": ["skills/application-setup/SKILL.md", ".workflows/fixtures/job-apply.synthetic-application-setup-preferences-v1/host-preflight.mjs"],
+      "tests": ["tests_js/agent_workflows_application_setup.test.mjs"],
+      "evidence": {
+        "deterministicLocal": {"status": "verified", "sources": ["tests_js/agent_workflows_application_setup.test.mjs"], "receiptRefs": [], "note": "Local tests check schema, isolation, capability preflight, and the declared setup-to-Companion contract."},
+        "installedHost": {"status": "verified", "sources": ["docs/dogfooding/2026-09-22-application-setup-live-replay.md"], "receiptRefs": [], "note": "The committed receipt records fresh installed writer and reader Codex processes plus the Companion durability round trip."},
+        "replay": {"status": "verified", "sources": ["docs/dogfooding/2026-09-22-application-setup-live-replay.md"], "receiptRefs": [], "note": "A supervised local host replay passed; it was not a promoted runner evaluation."},
+        "currentLiveAts": {"status": "not-applicable", "sources": [], "receiptRefs": [], "note": "Application preferences are local and this workflow accesses no ATS."}
+      }
+    },
+    {
+      "id": "job-apply.synthetic-automation-trash",
+      "workflowPath": ".workflows/workflows/job-apply.synthetic-automation-trash.workflow.yaml",
+      "uxSurfaces": ["Automation", "Trash", "Jobs"],
+      "cliEntrypoints": [".workflows/fixtures/job-apply.synthetic-automation-trash-v1/prepare.mjs"],
+      "tests": ["tests_js/agent_workflows_automation_trash.test.mjs", "tests_js/workspace_information_architecture.test.mjs"],
+      "evidence": {
+        "deterministicLocal": {"status": "verified", "sources": ["tests_js/agent_workflows_automation_trash.test.mjs", "docs/dogfooding/2026-09-18-agent-workflows-automation-trash-readiness-receipt.md"], "receiptRefs": [], "note": "Local fixture, viewport, production Companion, and restore contracts passed without creating a Training run."},
+        "installedHost": {"status": "unverified", "sources": [], "receiptRefs": [], "note": "Runner validation and product browser checks are not installed-host execution."},
+        "replay": {"status": "unverified", "sources": ["docs/dogfooding/2026-09-18-agent-workflows-automation-trash-readiness-receipt.md"], "receiptRefs": [], "note": "The readiness receipt explicitly says no replay or evaluation was run."},
+        "currentLiveAts": {"status": "not-applicable", "sources": [], "receiptRefs": [], "note": "The workflow uses a fictional local portal and forbids external navigation."}
+      }
+    },
+    {
+      "id": "job-apply.synthetic-profile-answers",
+      "workflowPath": ".workflows/workflows/job-apply.synthetic-profile-answers.workflow.yaml",
+      "uxSurfaces": ["Facts", "Answers"],
+      "cliEntrypoints": ["skills/answer-memory/SKILL.md"],
+      "tests": ["tests_js/workspace_information_architecture.test.mjs"],
+      "evidence": {
+        "deterministicLocal": {"status": "verified", "sources": ["tests_js/workspace_information_architecture.test.mjs", "docs/dogfooding/2026-09-18-typescript-synthetic-profile-answers-readiness.md"], "receiptRefs": [], "note": "Production Companion and packaged local checks cover the repaired Facts and Answers behavior."},
+        "installedHost": {"status": "unverified", "sources": [], "receiptRefs": [], "note": "Package installation passed, but no fresh installed host completed the repaired workflow."},
+        "replay": {"status": "unverified", "sources": ["docs/dogfooding/2026-09-18-typescript-synthetic-profile-answers-readiness.md"], "receiptRefs": [], "note": "The earlier run failed and no supervised replay exists for the repaired candidate hashes."},
+        "currentLiveAts": {"status": "not-applicable", "sources": [], "receiptRefs": [], "note": "Profile and answer management is local and accesses no ATS."}
+      }
+    },
+    {
+      "id": "job-apply.synthetic-resume-extraction-request",
+      "workflowPath": ".workflows/workflows/job-apply.synthetic-resume-extraction-request.workflow.yaml",
+      "uxSurfaces": ["Resumes"],
+      "cliEntrypoints": ["skills/job-apply/SKILL.md", "skills/job-apply/references/extraction.md"],
+      "tests": ["tests_js/workspace_information_architecture.test.mjs"],
+      "evidence": {
+        "deterministicLocal": {"status": "verified", "sources": ["tests_js/workspace_information_architecture.test.mjs", "docs/dogfooding/2026-09-17-typescript-agent-workflows-readiness-receipt.json"], "receiptRefs": [], "note": "Schema, fixture, desktop/mobile resolution, and production Companion request boundaries have local evidence."},
+        "installedHost": {"status": "unverified", "sources": [], "receiptRefs": [], "note": "The managed fresh-task attempts failed before host discovery and did not execute the workflow."},
+        "replay": {"status": "unverified", "sources": ["docs/dogfooding/2026-09-17-typescript-agent-workflows-readiness-receipt.json"], "receiptRefs": [], "note": "The readiness receipt records no authorized replay run."},
+        "currentLiveAts": {"status": "not-applicable", "sources": [], "receiptRefs": [], "note": "Resume extraction is local and accesses no ATS."}
+      }
+    }
+  ]
+}

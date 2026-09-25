@@ -51,6 +51,19 @@ npm run verify:push
 npm run verify:deep -- --head HEAD --base origin/staging
 ```
 
+For the account-free core workflow and evidence-map check, run:
+
+```sh
+npm run audit:core-workflows
+```
+
+This audit validates workflow schemas and local evidence references only. It
+reports installed-host, replay, and current-live ATS states without rerunning or
+upgrading them. `npm run test:agent-local -- --trials 1` is an optional
+authenticated installed-host lane using fictional local data; unavailable hosts
+stay unrun. Current-live ATS validation is never implied by either command and
+requires its separately authorized supervised protocol.
+
 `verify:commit` checks the exact staged index in a disposable checkout, preserving
 unstaged edits and the original index. It refuses success if the index changes
 during validation. Commit checks therefore require all needed files to be staged.
@@ -88,6 +101,23 @@ The hooks have local macOS validation; native Windows execution remains unverifi
 Python reference tests may also report version-specific skips inside suite output;
 retain those logs and keep the corresponding migration acceptance cells open.
 Local success is not full cross-platform or full migration acceptance.
+
+On the frozen Mac dogfood host, the local identity check fingerprints the Python
+interpreter reported by each launcher. The unversioned `/usr/bin/python3`
+developer-tool shim may select Xcode's CPython 3.9 interpreter; that observation
+is distinct from the required explicit `python3.12`, `python3.13`, and
+`python3.14` profiles. A changed reported path, binary digest, or stable file
+identity still fails the check.
+
+Broad macOS QA resolves the frozen 3.12.13, 3.13.13, and 3.14.4 identities from
+already-installed interpreters, preferring local `uv python find` results and
+requiring an exact full-version match. It installs nothing and fails closed when
+any profile is missing or drifted. Shims for `python3` and all three explicit
+aliases, `SDKROOT`, and the xcrun Clang identity exist only in the child test
+process. Python comparison oracles use isolated mode and bounded execution;
+exhausting an oracle timeout fails the test. Loaded-host scheduling is
+accommodated by a 30-second atomic-buffer oracle ceiling without changing its
+sequence, byte, or filesystem-effect comparisons.
 
 Git hooks are bypassable and are not server-side enforcement; see
 [Git hook documentation](https://git-scm.com/docs/githooks).

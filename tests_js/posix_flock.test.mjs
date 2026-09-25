@@ -53,8 +53,26 @@ const { spawnSync } = await import('node:child_process');
 const { mkdtemp, rm, writeFile } = await import('node:fs/promises');
 const { tmpdir } = await import('node:os');
 const { parseTaskTap } = await import('../tools/migration/tap-evidence.mjs');
+const { qaBrowserInvocation } = await import('../tools/run-qa-browser.mjs');
 const requiredCells = JSON.parse(await readFile(new URL('../docs/migration/evidence/s04/implementation-spec.json', import.meta.url), 'utf8')).cells;
 const sha256 = value => createHash('sha256').update(value).digest('hex');
+async function withMacQaEnvironment(callback) {
+  if (process.platform !== 'darwin') return callback();
+  const invocation = qaBrowserInvocation();
+  const keys = ['PATH', 'JOB_APPLY_CONTRACT_PYTHON', 'SDKROOT', 'JOB_APPLY_QA_XCRUN_CLANG'];
+  const previous = new Map(keys.map(key => [key,
+    { present: Object.hasOwn(process.env, key), value: process.env[key] }]));
+  try {
+    for (const key of keys) process.env[key] = invocation.options.env[key];
+    return await callback();
+  } finally {
+    for (const [key, prior] of previous) {
+      if (prior.present) process.env[key] = prior.value;
+      else delete process.env[key];
+    }
+    invocation.cleanup();
+  }
+}
 function syntheticObservation(cell, stdout) {
   return { id: cell.id, command: [...cell.command], stdout, stderr: '',
     stdoutSha256: sha256(stdout), stderrSha256: sha256(''), exitCode: 0, signal: null,
@@ -136,8 +154,14 @@ test('P05 required cells reject skipped nested malformed and incomplete evidence
 });
 
 test('P05 local Mac native addon binds compiler and actual owned kernel operations', async t => {
-  let evidence;
-  try { evidence = await observeLocalMacNativeAddon(); }
+  let observation;
+  try {
+    observation = await withMacQaEnvironment(async () => ({
+      evidence: await observeLocalMacNativeAddon(),
+      compiler: process.env.JOB_APPLY_QA_XCRUN_CLANG,
+      sdkRoot: process.env.SDKROOT,
+    }));
+  }
   catch (error) {
     if (error.code === 'LOCAL_MAC_HOST_MISMATCH') {
       t.skip('Frozen Mac dogfood host required; no native acceptance');
@@ -145,9 +169,12 @@ test('P05 local Mac native addon binds compiler and actual owned kernel operatio
     }
     throw error;
   }
+  const { evidence, compiler, sdkRoot } = observation;
   assert.equal(evidence.scope, 'mac-dogfood-native-addon');
   assert.deepEqual(evidence.hostBefore, evidence.hostAfter);
   assert.equal(evidence.compiler, evidence.hostBefore.compiler.resolved);
+  assert.equal(compiler, evidence.compiler,
+    'Native witness requires the identity-checked xcrun Clang selection');
   assert.equal(evidence.artifactBytesSha256, evidence.build.artifactSha256);
   assert.deepEqual(evidence.operations, ['first descriptor lock succeeds', 'second descriptor contention returns false',
     'unlock first', 'second descriptor lock succeeds', 'unlock second']);
@@ -161,14 +188,14 @@ test('P05 local Mac native addon binds compiler and actual owned kernel operatio
     sdk[key] = probe.stdout.trim();
     assert.ok(sdk[key]);
   }
-  assert.equal(process.env.SDKROOT, sdk.path, 'Native witness requires the fixed xcrun SDK selection');
+  assert.equal(sdkRoot, sdk.path, 'Native witness requires the fixed xcrun SDK selection');
   t.diagnostic(JSON.stringify({ kind: 'actual-local-mac-sdk', ...sdk }));
   t.diagnostic(JSON.stringify({ kind: 'actual-local-mac-native-addon', ...evidence }));
 });
 
 test('P05 local Mac persistence cells preserve all frozen witnesses and raw output', async t => {
   let evidence;
-  try { evidence = await runLocalMacPersistenceCells(); }
+  try { evidence = await withMacQaEnvironment(() => runLocalMacPersistenceCells()); }
   catch (error) {
     if (error.code === 'LOCAL_MAC_HOST_MISMATCH') {
       t.skip('Frozen Mac dogfood host required; no persistence acceptance');
