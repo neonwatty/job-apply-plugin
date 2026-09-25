@@ -2,6 +2,7 @@ import { PythonText, PythonUnicodeEncodeError } from '../runtime/contracts/pytho
 import { filesystemEncode, filesystemDecode } from '../runtime/contracts/posix-path-bytes.js';
 import { pointContents } from '../runtime/contracts/raw-json/point-text-codec.js';
 import { filesystemEncodePoint, filesystemDecodePoint } from '../runtime/contracts/point-filesystem.js';
+import { removeReviewedCoreWorkflowMatrixAdditions } from './point_paths_domain_support.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync, realpathSync } from 'node:fs';
@@ -390,7 +391,6 @@ test('S05 point filesystem codec preserves trusted text identity and leaves lega
     || (point >= 0xdc80 && point <= 0xdcff)));
   assert.deepEqual(filesystemEncodePoint(decoded), Buffer.from(allBytes));
 });
-
 // Immutable prior matrix canonicalization preserves every key and array order.
 const registrationBaselineSha256 = 'b278792c2ea16c9999d77ea702ddee99603653d3aff1d341936142162e745078';
 const registrationOwnership = {
@@ -419,22 +419,7 @@ test('S05 path support registration preserves the exact prior matrix', t => {
     assert.equal(suites[0].kind, 'node-test');
     assert.ok(suites[0].tiers.includes('full'));
   }
-  matrix.ownership.pop();
-  const coreWorkflowSuite = { id: 'core-workflow-audit', kind: 'command',
-    command: ['npm', 'run', 'audit:core-workflows'], tiers: ['fast', 'full'] };
-  const coreWorkflowIndex = matrix.suites.findIndex(suite => suite.id === coreWorkflowSuite.id);
-  assert.ok(coreWorkflowIndex >= 0);
-  assert.deepEqual(matrix.suites.splice(coreWorkflowIndex, 1), [coreWorkflowSuite]);
-  const coreWorkflowOwner = { paths: ['.workflows/workflows/*.workflow.yaml', 'config/core-workflows.json',
-    'tools/validate-agent-workflows.mjs', 'tools/audit-core-workflows.mjs'], suites: ['core-workflow-audit'] };
-  const coreWorkflowOwnerIndex = matrix.ownership.findIndex(rule => rule.paths.includes(coreWorkflowOwner.paths[0]));
-  assert.ok(coreWorkflowOwnerIndex >= 0);
-  assert.deepEqual(matrix.ownership.splice(coreWorkflowOwnerIndex, 1), [coreWorkflowOwner]);
-  const coreWorkflowInventoryPaths = ['.workflows/workflows/*.workflow.yaml', 'config/core-workflows.json'];
-  for (const path of coreWorkflowInventoryPaths) {
-    assert.equal(matrix.inventory.include.filter(value => value === path).length, 1);
-  }
-  matrix.inventory.include = matrix.inventory.include.filter(path => !coreWorkflowInventoryPaths.includes(path));
+  matrix.ownership.pop(); removeReviewedCoreWorkflowMatrixAdditions(matrix);
   // Companion adds coverage without changing any prior registration. Remove
   // only the exact reviewed additions before comparing the original matrix.
   const companionPaths = ['apps/companion/**/*.ts', 'apps/companion/**/*.tsx',
@@ -509,14 +494,6 @@ test('S05 path support registration preserves the exact prior matrix', t => {
   assert.equal(profileOwners.length, 1);
   assert.deepEqual(profileOwners[0].suites, ['node-workspace-other']);
   assert.equal(profileOwners[0].paths.shift(), profilePath);
-  const qaLauncherPath = 'tools/run-qa-browser.mjs';
-  const runtimeOwner = matrix.ownership.find(rule => rule.paths.includes(qaLauncherPath));
-  assert.deepEqual(runtimeOwner, { paths: ['tools/probe-installed-runtime.mjs', qaLauncherPath],
-    suites: ['node-foundation-fast'] });
-  runtimeOwner.paths = runtimeOwner.paths.filter(path => path !== qaLauncherPath);
-  const coreWorkflowTestPath = 'tests_js/core_workflow_registry.test.mjs';
-  assert.equal(runner.include.filter(path => path === coreWorkflowTestPath).length, 1);
-  runner.include = runner.include.filter(path => path !== coreWorkflowTestPath);
   const reviewedRunnerAdditions = ['tests_js/agent_workflows_application_setup.test.mjs', 'tests_js/agent_workflows_application_automation.test.mjs', 'tests_js/migration_triage_report.test.mjs']; for (const path of reviewedRunnerAdditions) assert.equal(runner.include.filter(value => value === path).length, 1); runner.include = runner.include.filter(path => !reviewedRunnerAdditions.includes(path)); const localAgentOwner = { paths: ['tools/local-agent-acceptance.mjs'], suites: ['node-runner-fast'] }; const localAgentOwnerIndex = matrix.ownership.findIndex(rule => rule.paths.includes(localAgentOwner.paths[0])); assert.ok(localAgentOwnerIndex >= 0); assert.deepEqual(matrix.ownership.splice(localAgentOwnerIndex, 1), [localAgentOwner]);
   assert.equal(hash(JSON.stringify(matrix)), registrationBaselineSha256);
   t.diagnostic(JSON.stringify({ registrationBaselineSha256, ownership: registrationOwnership }));

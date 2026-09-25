@@ -245,3 +245,30 @@ export function refuseDomain() {
     assert.equal(run.stderr, 'point_paths_domain_reference_input_rejected\n');
   }
 }
+
+export function removeReviewedCoreWorkflowMatrixAdditions(matrix) {
+  const coreWorkflowSuite = { id: 'core-workflow-audit', kind: 'command',
+    command: ['npm', 'run', 'audit:core-workflows'], tiers: ['fast', 'full'] };
+  const coreWorkflowIndex = matrix.suites.findIndex(suite => suite.id === coreWorkflowSuite.id);
+  assert.ok(coreWorkflowIndex >= 0);
+  assert.deepEqual(matrix.suites.splice(coreWorkflowIndex, 1), [coreWorkflowSuite]);
+  const coreWorkflowOwner = { paths: ['.workflows/workflows/*.workflow.yaml', 'config/core-workflows.json',
+    'tools/validate-agent-workflows.mjs', 'tools/audit-core-workflows.mjs'], suites: ['core-workflow-audit'] };
+  const coreWorkflowOwnerIndex = matrix.ownership.findIndex(rule => rule.paths.includes(coreWorkflowOwner.paths[0]));
+  assert.ok(coreWorkflowOwnerIndex >= 0);
+  assert.deepEqual(matrix.ownership.splice(coreWorkflowOwnerIndex, 1), [coreWorkflowOwner]);
+  const coreWorkflowInventoryPaths = ['.workflows/workflows/*.workflow.yaml', 'config/core-workflows.json'];
+  for (const path of coreWorkflowInventoryPaths) {
+    assert.equal(matrix.inventory.include.filter(value => value === path).length, 1);
+  }
+  matrix.inventory.include = matrix.inventory.include.filter(path => !coreWorkflowInventoryPaths.includes(path));
+  const qaLauncherPath = 'tools/run-qa-browser.mjs';
+  const runtimeOwner = matrix.ownership.find(rule => rule.paths.includes(qaLauncherPath));
+  assert.deepEqual(runtimeOwner, { paths: ['tools/probe-installed-runtime.mjs', qaLauncherPath],
+    suites: ['node-foundation-fast'] });
+  runtimeOwner.paths = runtimeOwner.paths.filter(path => path !== qaLauncherPath);
+  const runner = matrix.suites.find(suite => suite.id === 'node-runner-fast');
+  const coreWorkflowTestPath = 'tests_js/core_workflow_registry.test.mjs';
+  assert.equal(runner.include.filter(path => path === coreWorkflowTestPath).length, 1);
+  runner.include = runner.include.filter(path => path !== coreWorkflowTestPath);
+}
