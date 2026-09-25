@@ -19,6 +19,10 @@ const repository = process.env.JOB_WORKSPACE_TEST_ROOT
   : sourceRepository;
 
 export async function nextBrowser() {
+  if (process.env.JOB_WORKSPACE_TEST_ROOT) {
+    const compatibility = await productionBrowser(repository);
+    return { ...compatibility, nativeJobs: await nativeJobsBrowser(repository) };
+  }
   // Hook snapshots share node_modules for unit checks. Next standalone tracing
   // needs dependencies physically inside its build root, including workspace
   // links. Build from copied current source with its own locked installation.

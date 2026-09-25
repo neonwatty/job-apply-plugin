@@ -67,7 +67,6 @@ echo "Building production Companion inside isolated marketplace fixture"
   npm ci
   npm run companion:build
 )
-rm -rf -- "$SMOKE_SOURCE_FIXTURE_DIR/node_modules"
 echo "Packaging native lock provider for this host"
 node "$REPO_ROOT/scripts/smoke/package_native_lock.mjs" --package-root "$SMOKE_SOURCE_FIXTURE_DIR"
 python3 "$REPO_ROOT/scripts/smoke/fixture_build.py" copy-critical \
@@ -100,6 +99,7 @@ JOB_WORKSPACE_TEST_ROOT="$SMOKE_SOURCE_FIXTURE_DIR" node --test \
   "$REPO_ROOT/tests_js/workspace.test.mjs" \
   "$REPO_ROOT/tests_js/workspace_information_architecture.test.mjs"
 echo "Selected packaged Playwright and CLI walkthroughs passed"
+rm -rf -- "$SMOKE_SOURCE_FIXTURE_DIR/node_modules"
 
 python3 "$REPO_ROOT/scripts/smoke/fixture_build.py" rewrite-marketplace \
   "$SMOKE_FIXTURE_DIR/.claude-plugin/marketplace.json"
