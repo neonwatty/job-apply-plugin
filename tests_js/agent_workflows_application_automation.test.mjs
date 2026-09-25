@@ -42,11 +42,12 @@ test('agent mode selection separates setup preference from exact live authority'
 });
 
 test('local live-agent runner uses three clean ephemeral trials and is excluded from CI',async()=>{
-  const [runner,schema,evaluator,prepare]=await Promise.all([
+  const [runner,schema,evaluator,prepare,testingDocs]=await Promise.all([
     read('tools/local-agent-acceptance.mjs'),
     read('.workflows/fixtures/job-apply.synthetic-application-automation-v1/result.schema.json'),
     read('.workflows/fixtures/job-apply.synthetic-application-automation-v1/evaluate.mjs'),
     read('.workflows/fixtures/job-apply.synthetic-application-automation-v1/prepare.mjs'),
+    read('docs/testing.md'),
   ]);
   assert.match(runner,/if\(process\.env\.CI\)throw Error/);assert.match(runner,/let trials=3/);
   assert.match(runner,/installLocalPlugin/);assert.match(runner,/runAgent\(\['exec','--ephemeral'/);
@@ -69,4 +70,8 @@ test('local live-agent runner uses three clean ephemeral trials and is excluded 
   assert.match(evaluator,/preferredAutomationMode,'campaign_to_review'/);
   assert.match(evaluator,/portal\.stage,'final_review'/);assert.match(evaluator,/finalActionActivated,false/);
   assert.match(evaluator,/\['job-started','reviewed'\]/);
+  assert.match(testingDocs,/installs the plugin into a fresh temporary Codex home/);
+  assert.match(testingDocs,/installed `\$job-apply:job-apply` skill/);
+  assert.match(testingDocs,/installed public router[\s\S]*start its detached attempt/);
+  assert.doesNotMatch(testingDocs,/harness acquires the detached broker before dispatch/);
 });

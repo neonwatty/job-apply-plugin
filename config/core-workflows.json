@@ -29,7 +29,7 @@
       {"fixtureId": "workday-form-readiness-v1", "evidenceKind": "hand-authored-synthetic", "currentLiveAtsStatus": "unverified"}
     ],
     "note": "Schema-valid synthetic catalogs are deterministic local inputs, not recorder-derived replay receipts or current live ATS evidence.",
-    "currentLiveAts": {"status": "unverified", "sources": [], "receiptRefs": []}
+    "currentLiveAts": {"status": "unverified", "sources": []}
   },
   "workflows": [
     {
