@@ -59,7 +59,10 @@ jobs:
       - run: npm ci
       - run: npm run check:size -- --base "${{ github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }}"
       - name: "Shadow only: full deterministic shards still execute"
-        run: npm run test:fast -- --receipt ci-receipts/fast.json
+        # The workflow validator is also exercised by node-runner-fast. Keep
+        # the policy lane serialized so two pinned validator processes cannot
+        # contend for the bounded Linux runner at the same time.
+        run: npm run test:fast -- --concurrency 1 --receipt ci-receipts/fast.json
       - uses: actions/upload-artifact@v7
         if: always()
         with:

@@ -32,7 +32,6 @@ export default function Companion() {
     const [shellCounts,setShellCounts]=useState<{attention?:number;trash?:number}>({});
     const content=useRef<HTMLElement|null>(null);
     const focusAfterNavigation=useRef(false);
-    const ownerSelectedWorkspace=useRef(false);
     useEffect(() => {
         let active=true;
         const controller=new AbortController();
@@ -49,7 +48,6 @@ export default function Companion() {
         void client.boot(controller.signal).then(value => {
             if(active) {
                 setBoot(value);
-                if(value.status==='ready'&&value.mode!==undefined&&!ownerSelectedWorkspace.current) setTab('jobs');
             }
         }).catch(error => {
             if(active)
@@ -84,7 +82,6 @@ export default function Companion() {
         if(dirty&&!confirm('Discard unsaved changes?'))
             return;
         setDirty(false);
-        ownerSelectedWorkspace.current=true;
         focusAfterNavigation.current=true;
         setTab(next);
     }

@@ -2,6 +2,7 @@ import { PythonText, PythonUnicodeEncodeError } from '../runtime/contracts/pytho
 import { filesystemEncode, filesystemDecode } from '../runtime/contracts/posix-path-bytes.js';
 import { pointContents } from '../runtime/contracts/raw-json/point-text-codec.js';
 import { filesystemEncodePoint, filesystemDecodePoint } from '../runtime/contracts/point-filesystem.js';
+import { removeReviewedCoreWorkflowMatrixAdditions } from './point_paths_domain_support.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync, realpathSync } from 'node:fs';
@@ -390,7 +391,6 @@ test('S05 point filesystem codec preserves trusted text identity and leaves lega
     || (point >= 0xdc80 && point <= 0xdcff)));
   assert.deepEqual(filesystemEncodePoint(decoded), Buffer.from(allBytes));
 });
-
 // Immutable prior matrix canonicalization preserves every key and array order.
 const registrationBaselineSha256 = 'b278792c2ea16c9999d77ea702ddee99603653d3aff1d341936142162e745078';
 const registrationOwnership = {
@@ -419,7 +419,7 @@ test('S05 path support registration preserves the exact prior matrix', t => {
     assert.equal(suites[0].kind, 'node-test');
     assert.ok(suites[0].tiers.includes('full'));
   }
-  matrix.ownership.pop();
+  removeReviewedCoreWorkflowMatrixAdditions(matrix, registrationOwnership);
   // Companion adds coverage without changing any prior registration. Remove
   // only the exact reviewed additions before comparing the original matrix.
   const companionPaths = ['apps/companion/**/*.ts', 'apps/companion/**/*.tsx',

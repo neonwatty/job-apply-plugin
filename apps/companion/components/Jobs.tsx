@@ -21,8 +21,6 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
     const [editor, setEditor] = useState<Editor | null>(null);
     const [busy, setBusy] = useState(false);
     const [transitionBusy, setTransitionBusy] = useState(false);
-    const [claimsActive, setClaimsActive] = useState(false);
-    const [claimsDirty, setClaimsDirty] = useState(false);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
     const [error, setError] = useState('');
@@ -69,19 +67,19 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
         };
     }, [client]);
     useEffect(() => {
-        dirtyChanged(Boolean(editor?.dirty.size) || busy || transitionBusy || claimsDirty);
+        dirtyChanged(Boolean(editor?.dirty.size) || busy || transitionBusy);
         return () => dirtyChanged(false);
-    }, [editor, busy, transitionBusy, claimsDirty, dirtyChanged]);
+    }, [editor, busy, transitionBusy, dirtyChanged]);
     useEffect(() => {
-        if (!requestedJobId || !data || loading || loadError || claimsActive) return;
+        if (!requestedJobId || !data || loading || loadError) return;
         const selected = data.jobs.find(job => job.id === requestedJobId);
         if (selected) open(selected);
         else setError('The selected job is no longer available. Refresh Jobs to check its current state.');
         jobOpened?.();
-    }, [requestedJobId, data, loading, loadError, claimsActive, jobOpened]);
+    }, [requestedJobId, data, loading, loadError, jobOpened]);
 
     function open(job: Job | null) {
-        if (mutation.current || transitionBusy || claimsActive) return;
+        if (mutation.current || transitionBusy) return;
         if (editor?.dirty.size && !confirm('Discard unsaved job changes?')) return;
         generation.current++;
         setError('');
@@ -165,7 +163,7 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
             </div>
             <div className="workspace-hero-actions">
                 <button disabled={busy || transitionBusy} onClick={() => void refresh()}>Refresh</button>{' '}
-                <button className="primary" data-job-create disabled={busy || transitionBusy || claimsActive} onClick={() => open(null)}>New job</button>
+                <button className="primary" data-job-create disabled={busy || transitionBusy} onClick={() => open(null)}>New job</button>
             </div>
         </header>
         {allJobs.length > 0 && <div className="pipeline-metrics" aria-label="Pipeline summary">
@@ -206,7 +204,7 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
                     const company = String(job.company || 'Company not set');
                     const location = String(job.location || job.workplaceType || 'Location not set');
                     const priority = typeof job.priority === 'number' && Number.isFinite(job.priority) ? Math.max(0, Math.min(5, Math.round(job.priority))) : 0;
-                    return <button className="job-card" aria-label={`${role}, ${company}${runQueue.has(job.id) ? ', in active application run' : ''}`} disabled={busy || transitionBusy || claimsActive} key={job.id} onClick={() => open(job)}>
+                    return <button className="job-card" aria-label={`${role}, ${company}${runQueue.has(job.id) ? ', in active application run' : ''}`} disabled={busy || transitionBusy} key={job.id} onClick={() => open(job)}>
                         <span className="company-mark" aria-hidden="true">{company.trim().charAt(0).toUpperCase() || '?'}</span>
                         <span className="job-identity"><strong>{role}</strong><span>{company}</span></span>
                         <span className="job-location">{location}</span>
@@ -222,9 +220,8 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
                     : <><strong>No jobs yet. Capture a job to get started.</strong><span>Your saved opportunities will appear here.</span><button className="text-action" onClick={() => open(null)}>Create your first job</button></>}
             </div>}
         </div>
-        {claimsEnabled && <Claims client={client} jobs={allJobs} disabled={busy || transitionBusy || loading || Boolean(editor?.dirty.size)}
-            activityChanged={setClaimsActive} navigationChanged={setClaimsDirty} changed={() => { void workspaceChanged?.(); void refresh(); }} />}
-        {editor && <JobEditor editor={editor} resumes={data?.resumes ?? []} busy={busy || transitionBusy || claimsActive} error={error}
+        {claimsEnabled && <Claims jobs={allJobs} />}
+        {editor && <JobEditor editor={editor} resumes={data?.resumes ?? []} busy={busy || transitionBusy} error={error}
             change={(fields: Partial<JobFields>) => setEditor(current => current ? edit(current, fields) : current)}
             close={close} save={() => void save()}
             refresh={() => {
@@ -243,7 +240,7 @@ export function Jobs({ client, dirtyChanged, claimsEnabled = false, requestedJob
                 }
             }} >
             {claimsEnabled && editor.selected && <JobTransitions client={client} job={editor.selected}
-                disabled={busy || loading || claimsActive || Boolean(editor.dirty.size) || Boolean(editor.latest) || editor.missing}
+                disabled={busy || loading || Boolean(editor.dirty.size) || Boolean(editor.latest) || editor.missing}
                 onBusyChanged={setTransitionBusy} onChanged={job => {
                     // The write is acknowledged: replace the clean editor before a background read.
                     refreshRequest.current?.abort(); listGeneration.current++;

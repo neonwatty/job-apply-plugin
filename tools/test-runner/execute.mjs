@@ -32,7 +32,7 @@ export async function executeSuites(root, suites, tracked, options = {}) {
         id: suite.id,
         ...await run(executable, args, {
           cwd: root,
-          env: { ...process.env, ...(suite.env ?? {}) },
+          env: { ...(options.environment ?? process.env), ...(suite.env ?? {}) },
           label: suite.id,
           stdout: options.stdout,
           stderr: options.stderr,

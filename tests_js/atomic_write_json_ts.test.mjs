@@ -8,9 +8,14 @@ import { createHash } from 'node:crypto';
 import { atomicWriteJson } from '../runtime/store/atomic-write-json.js';
 import { createNativeAtomicWriteIO } from '../runtime/store/private-filesystem.js';
 import { ids, payload, setup, snapshot, observedIO } from './atomic_write_json_ts_support.mjs';
+import { selectSupportedPython } from '../tools/run-qa-browser.mjs';
 
 const reference = fileURLToPath(new URL('../tools/contracts/atomic-write-json/reference.py', import.meta.url));
 const fixedTime = '1600000000000000000';
+const BUFFER_ORACLE_TIMEOUT_MS = 30000;
+const defaultPython = process.platform === 'darwin'
+  ? (process.env.JOB_APPLY_CONTRACT_PYTHON ?? selectSupportedPython().executable)
+  : 'python3';
 function filesystemEffects(rows) {
   // Separate trees have different creation times. Preserve whether each exact
   // fixture mtime changed, alongside every byte, permission and path witness.
@@ -24,15 +29,16 @@ function outcome(error) {
     context: context === undefined ? null : { name: context.name, stage: context.stage ?? null } };
 }
 
-for (const executable of ['python3', 'python3.12', 'python3.13', 'python3.14']) {
-  test(`atomic TS preserves actual Python persisted bytes and failure effects: ${executable}`, async (t) => {
+for (const [label, executable] of [['python3', defaultPython], ['python3.12', 'python3.12'],
+  ['python3.13', 'python3.13'], ['python3.14', 'python3.14']]) {
+  test(`atomic TS preserves actual Python persisted bytes and failure effects: ${label}`, async (t) => {
     if (process.platform === 'win32') return t.skip('POSIX native adapter; Windows remains unverified');
     const run = spawnSync(executable, ['-I', reference], { input: '', encoding: 'utf8', timeout: 15000, maxBuffer: 2 ** 20 });
-    if (run.error?.code === 'ENOENT' && executable !== 'python3') return t.skip('Interpreter alias unavailable');
+    if (run.error?.code === 'ENOENT' && label !== 'python3') return t.skip('Interpreter alias unavailable');
     assert.equal(run.status, 0, run.stderr);
     const receipt = JSON.parse(run.stdout);
     const profile = receipt.profile.python.split('.').slice(0, 2).join('.');
-    if (executable !== 'python3') assert.equal(profile, executable.slice(6));
+    if (label !== 'python3') assert.equal(profile, label.slice(6));
     assert.deepEqual(receipt.cases.map(row => row.id), ids);
     await t.test('native temporary text buffering matches observable Python write boundaries', async () => {
       const sequences = [[8191], [8192], [8193], [20000], [100, 8192], [8191, 1],
@@ -53,7 +59,10 @@ for (const executable of ['python3', 'python3.12', 'python3.13', 'python3.14']) 
         '  steps.append(observe());path.unlink();rows.append(steps)',
         'print(json.dumps(rows))',
       ].join('\n');
-      const run = spawnSync(executable, ['-I', '-c', script], { input: JSON.stringify(sequences), encoding: 'utf8', timeout: 5000 });
+      const run = spawnSync(executable, ['-I', '-c', script], {
+        input: JSON.stringify(sequences), encoding: 'utf8', timeout: BUFFER_ORACLE_TIMEOUT_MS,
+      });
+      assert.ifError(run.error);
       assert.equal(run.status, 0, run.stderr);
       const expected = JSON.parse(run.stdout);
       assert.equal(expected.length, sequences.length);

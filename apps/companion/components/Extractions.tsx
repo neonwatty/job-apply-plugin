@@ -21,6 +21,9 @@ const reasonMessages = new Map([
   ['resume_file_changed', 'The resume file changed after this extraction.'],
 ]);
 const reasonMessage = (code: string): string => reasonMessages.get(code) ?? 'The extraction is no longer available for review.';
+const extractionHandoff = (requestId: string): string =>
+  `Use the Job Apply resume workflow to process extraction request ${requestId}.`;
+const fallbackNotice = 'Clipboard unavailable. Select and copy the agent handoff below.';
 
 export function Extractions({ client, dirtyChanged, openResumes }: { client: ExtractionClient; dirtyChanged: (dirty: boolean) => void; openResumes?:()=>void }) {
   const [resumes, setResumes] = useState<Document[]>([]);
@@ -37,7 +40,8 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const generation = useRef(0), listGeneration = useRef(0);
+  const [fallback, setFallback] = useState<{requestId:string;value:string}|null>(null);
+  const generation = useRef(0), listGeneration = useRef(0), handoffGeneration = useRef(0);
   const request = useRef<AbortController | null>(null), listRequest = useRef<AbortController | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const dirty = Object.keys(choices).length > 0;
@@ -47,10 +51,12 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
   useEffect(() => () => {
     generation.current++;
     listGeneration.current++;
+    handoffGeneration.current++;
     request.current?.abort();
     listRequest.current?.abort();
   }, []);
   async function refreshLists() {
+    handoffGeneration.current++;
     listRequest.current?.abort();
     const controller = new AbortController(), version = ++listGeneration.current;
     listRequest.current = controller;
@@ -65,6 +71,9 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
       setResumes(nextResumes);
       setRequests(nextRequests);
       setProposals(nextProposals);
+      setFallback(current => current && nextRequests.some(item => string(get(item, 'requestId')) === current.requestId
+        && string(get(item, 'status')) === 'requested') ? current : null);
+      setNotice(current => current === fallbackNotice ? '' : current);
       setLoaded(true);
     } catch (failure) {
       if (version === listGeneration.current && !controller.signal.aborted) setError(failure instanceof Error ? failure.message : 'Unable to load extraction status');
@@ -99,6 +108,7 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
     } finally { if (version === generation.current) setBusy(false); }
   }
   async function mutateRequest(resume: Document, record?: Document, action?: string) {
+    handoffGeneration.current++;
     const controller = new AbortController(), version = ++generation.current;
     request.current?.abort();
     request.current = controller;
@@ -111,6 +121,10 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
       await client.extractionRequest(path, 'POST', requestMutation(resume, record, action), controller.signal);
       if (version !== generation.current) return;
       setWriting(false);
+      if (action === 'cancel' && record) {
+        const requestId = string(get(record, 'requestId'));
+        setFallback(current => current?.requestId === requestId ? null : current);
+      }
       setNotice(action === 'cancel' ? 'Extraction request cancelled.' : 'Extraction requested. An agent can now extract facts from this resume.');
       await refreshLists();
     } catch (failure) {
@@ -120,6 +134,20 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
         await refreshLists();
       }
     } finally { if (version === generation.current) { setBusy(false); setWriting(false); } }
+  }
+  async function copyHandoff(requestId: string) {
+    const version = ++handoffGeneration.current;
+    const value = extractionHandoff(requestId);
+    try {
+      await navigator.clipboard.writeText(value);
+      if (version !== handoffGeneration.current) return;
+      setFallback(null);
+      setNotice('Agent handoff copied.');
+    } catch {
+      if (version !== handoffGeneration.current) return;
+      setFallback({requestId, value});
+      setNotice(fallbackNotice);
+    }
   }
   async function saveReview() {
     if (!base || latest) return;
@@ -176,6 +204,7 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
     <section className="workspace-panel extraction-request-panel" aria-labelledby="extraction-request-heading">
       <div className="workspace-panel-heading"><div><p className="eyebrow">Start extraction</p><h2 id="extraction-request-heading">Request facts from a resume</h2></div><span className="extraction-step">Step 1 of 3</span></div>
       <p className="workspace-status" role="status">{loading ? 'Loading extraction status…' : notice || 'Choose a managed resume to prepare an extraction request.'}</p>
+      {fallback && <label className="clipboard-fallback">Agent handoff to copy<input readOnly value={fallback.value} onFocus={event => event.currentTarget.select()} /></label>}
       {error && <p className="error" role="alert">{error}</p>}
       <form className="extraction-request-form" onSubmit={event => { event.preventDefault(); if (selectedResume) void mutateRequest(selectedResume); }}>
         <label>Resume to extract<select value={resumeId} disabled={busy || loading} onChange={event => setResumeId(event.target.value)}>
@@ -194,7 +223,7 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
       return <li key={id}>
         <div className="extraction-item-heading"><strong>{resume ? string(get(resume, 'label')) || 'Untitled resume' : 'Unavailable resume'}</strong><span className={`status-pill status-${status}`}>{status}</span></div>
         {string(get(item, 'failureReason')) && <p>{reasonMessage(string(get(item, 'failureReason'))!)}</p>}
-        <div className="button-row">{status === 'requested' && <button className="secondary" disabled={busy || loading} onClick={() => void mutateRequest(resume ?? item, item, 'cancel')}>Cancel extraction</button>}
+        <div className="button-row">{status === 'requested' && <><button className="secondary" disabled={busy || loading} onClick={() => void copyHandoff(id)}>Copy agent handoff</button><button className="secondary" disabled={busy || loading} onClick={() => void mutateRequest(resume ?? item, item, 'cancel')}>Cancel extraction</button></>}
         {(status === 'failed' || status === 'stale') && <button className="secondary" disabled={busy || loading || !resume || string(get(resume, 'storageKind')) !== 'managed' || get(resume, 'deletedAt') !== null} onClick={() => { if (resume) void mutateRequest(resume, item, 'retry'); }}>Retry extraction</button>}
         {string(get(item, 'proposalId')) && <button className="primary" disabled={busy} onClick={() => void selectProposal(string(get(item, 'proposalId'))!)}>Review extraction result</button>}</div>
       </li>;

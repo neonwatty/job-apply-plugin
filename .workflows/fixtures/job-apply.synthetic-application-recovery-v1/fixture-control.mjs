@@ -48,7 +48,7 @@ async function fixtures() {
   const formMetadata = await lstat(formPath);
   if (!formMetadata.isFile() || formMetadata.isSymbolicLink()) fail();
   const formBytes = await readFile(formPath);
-  if (sha256(formBytes) !== 'ae1232593dadb806d97b7d43572b2603acd2530847309324b7e5f19a683aad8e') fail();
+  if (sha256(formBytes) !== '0c0396aaa93152f5a58ef592d0d18c1047ff9ca993789be86bc6cf1f916d1551') fail();
   const form = JSON.parse(formBytes);
   if (form.id !== 'greenhouse-form-readiness-v1' || form.platformFamily !== 'greenhouse') fail();
   return { ...data, form };
@@ -136,14 +136,7 @@ async function validateProduct(repository, data, expectedRevision) {
   if (!content.equals(data['synthetic-application-recovery-resume.txt'])) fail();
   if (Object.keys(JSON.parse(answers).answers).length || JSON.parse(coordinator).claim !== null) fail();
   const sessions = await readdir(join(repository.root, 'sessions'));
-  if (sessions.length !== 1 || sessions[0] !== `${job.id}.json`) fail();
-  const session = JSON.parse(await repository.read(join('sessions', sessions[0])));
-  if (session.applicationId !== job.id || session.status !== 'active'
-      || session.pendingFields?.length || session.answerKeys?.length
-      || session.blockers?.length !== 1 || session.blockers[0].code !== 'owner-input-required') fail();
-  const events = history.toString('utf8').trim().split('\n').map(line => JSON.parse(line));
-  if (events.length !== 2 || events[0].event !== 'job-started' || events[1].event !== 'job-blocked'
-      || events.some(event => event.applicationId !== job.id)) fail();
+  if (sessions.length || history.toString('utf8').trim()) fail();
   return job;
 }
 
@@ -156,21 +149,29 @@ export async function handoffSyntheticReview({ journeyRoot, expectedRevision, lo
   const artifact = await resolvePackagedNativeLock(repositoryRoot);
   const repository = new NativeJobsRepository(layout.productStoreRoot, loadPosixFlockProvider(artifact));
   const job = await validateProduct(repository, data, expectedRevision);
-  const readinessInput = packet(data.form, expectedRevision + 1);
-  const report = plain(recomputeClaimReadiness(fromJSON(readinessInput), integer(BigInt(expectedRevision + 1)), null));
-  if (report.status !== 'ready' || Object.values(report.assertions).some(value => value !== 'passed')) fail();
   const claims = new ClaimsService(repository);
-  const acquired = object(await claims.acquire(job.id, text('Synthetic fixture control'), BigInt(expectedRevision)), 'acquired');
+  const first = object(await claims.acquire(job.id, text('Synthetic fixture control'), BigInt(expectedRevision)), 'first acquired');
+  const blocked = plain(await claims.handoff(job.id, get(first, 'token'), 'needs_info', fromJSON({
+    status: 'active', blockers: [{ type: 'information', code: 'owner-input-required' }],
+  }), BigInt(expectedRevision + 1)));
+  if (blocked.job.status !== 'needs_info' || blocked.job.revision !== expectedRevision + 2) fail();
+  const recovered = plain(await claims.select(job.id, BigInt(expectedRevision + 2), true));
+  if (recovered.job.status !== 'ready' || recovered.job.revision !== expectedRevision + 3) fail();
+  const readinessInput = packet(data.form, expectedRevision + 4);
+  const report = plain(recomputeClaimReadiness(fromJSON(readinessInput), integer(BigInt(expectedRevision + 4)), null));
+  if (report.status !== 'ready' || Object.values(report.assertions).some(value => value !== 'passed')) fail();
+  const acquired = object(await claims.acquire(job.id, text('Synthetic fixture control'), BigInt(expectedRevision + 3)), 'acquired');
   const token = get(acquired, 'token');
   const attempt = object(get(acquired, 'job'), 'job');
-  if (string(get(attempt, 'id')) !== job.id || plain(get(attempt, 'revision')) !== expectedRevision + 1) fail();
+  if (string(get(attempt, 'id')) !== job.id || plain(get(attempt, 'revision')) !== expectedRevision + 4) fail();
   const result = plain(await claims.handoff(job.id, token, 'awaiting_review', fromJSON({
     status: 'review', step: 'review', pendingFields: [], readinessInput,
-  }), BigInt(expectedRevision + 1)));
+  }), BigInt(expectedRevision + 4)));
   const storedEvents = (await repository.read('applications.jsonl')).toString('utf8').trim().split('\n').map(line => JSON.parse(line));
   const finalActionUntouched = result.session.readiness.assertions['final-action-untouched'] === 'passed'
     && !storedEvents.some(event => ['applied', 'completed'].includes(event.event));
   return { capabilityId: capability.id, event: 'synthetic_review_handoff', jobId: job.id,
+    blockedStatus: blocked.job.status, recoveredStatus: recovered.job.status,
     status: result.job.status, revision: result.job.revision, readiness: result.session.readiness.status,
     assertionsPassed: Object.values(result.session.readiness.assertions).filter(value => value === 'passed').length,
     browserHandoff: result.session.browserHandoff.state, finalActionUntouched };

@@ -35,13 +35,21 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   await page.getByRole('button', { name: 'Cancel extraction', exact: true }).click();
   await page.getByText('Extraction request cancelled.', { exact: true }).waitFor();
   // With no review choices, an unacknowledged request write still needs navigation protection.
-  let releaseWrite, writeStarted;
+  let releaseWrite, writeStarted, writeFinished;
   const writeGate = new Promise(resolve => { releaseWrite = resolve; });
   const writeEntered = new Promise(resolve => { writeStarted = resolve; });
-  await page.route('**/api/resume-extraction-requests', async route => {
-    if (route.request().method() === 'POST') { writeStarted(); await writeGate; }
+  const writeCompleted = new Promise(resolve => { writeFinished = resolve; });
+  const holdWrite = async route => {
+    if (route.request().method() === 'POST') {
+      writeStarted();
+      await writeGate;
+      await route.continue();
+      writeFinished();
+      return;
+    }
     await route.continue();
-  });
+  };
+  await page.route('**/api/resume-extraction-requests', holdWrite);
   let writePrompt;
   const dismissWrite = async dialog => { writePrompt = dialog.message(); await dialog.dismiss(); };
   try {
@@ -54,11 +62,54 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   } finally {
     page.off('dialog', dismissWrite);
     releaseWrite();
-    await page.unroute('**/api/resume-extraction-requests');
+    await writeCompleted;
+    await page.unroute('**/api/resume-extraction-requests', holdWrite);
   }
+  const copyHandoff = page.getByRole('button', { name: 'Copy agent handoff', exact: true });
+  await copyHandoff.waitFor();
+  const requested = Object.values((await document('resume-extraction-requests')).requests)
+    .find(item => item.status === 'requested' && item.resumeId === resume.id);
+  assert.ok(requested, 'the browser request is durably queued before handoff');
+  await copyHandoff.click();
+  const handoff = await page.evaluate(() => navigator.clipboard.readText());
+  assert.equal(handoff, `Use the Job Apply resume workflow to process extraction request ${requested.requestId}.`);
+  assert.equal(handoff.includes(resume.label), false);
+  await page.evaluate(() => {
+    Object.defineProperty(navigator.clipboard, 'writeText', {
+      configurable: true,
+      value: () => Promise.reject(new Error('Synthetic clipboard denial')),
+    });
+  });
+  await copyHandoff.click();
+  const fallback = page.getByLabel('Agent handoff to copy', { exact: true });
+  await fallback.waitFor();
+  assert.equal(await fallback.inputValue(), handoff);
   await page.getByRole('button', { name: 'Cancel extraction', exact: true }).waitFor();
-  await page.getByRole('button', { name: 'Cancel extraction', exact: true }).click();
-  await page.getByText('Extraction request cancelled.', { exact: true }).waitFor();
+  await page.evaluate(() => {
+    let rejectWrite;
+    Object.defineProperty(navigator.clipboard, 'writeText', {
+      configurable: true,
+      value: () => new Promise((resolve, reject) => { rejectWrite = reject; }),
+    });
+    globalThis.rejectSyntheticClipboardWrite = () => rejectWrite(new Error('Delayed clipboard denial'));
+  });
+  await copyHandoff.click();
+  await cli('resume-extraction-request-cancel', ['--id', requested.requestId,
+    '--expected-revision', String(requested.revision)]);
+  await page.getByRole('button', { name: 'Refresh extraction status', exact: true }).click();
+  await copyHandoff.waitFor({ state: 'hidden' });
+  await fallback.waitFor({ state: 'hidden' });
+  await page.evaluate(() => globalThis.rejectSyntheticClipboardWrite());
+  await page.waitForTimeout(0);
+  assert.equal(await fallback.count(), 0);
+  assert.equal(await copyHandoff.count(), 0);
+  // The rejected method is synthetic and page-scoped. Reload through the normal
+  // application lifecycle so later copy assertions exercise the real clipboard.
+  await page.reload();
+  await page.getByRole('heading', { name: 'Know what to do next.', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Resumes', exact: true }).click();
+  await page.getByRole('button', { name: 'Resume extraction', exact: true }).click();
+  await page.getByRole('heading', { name: 'Resume extraction', exact: true }).waitFor();
   // Legacy proposal review remains readable, but the UI now requests scoped
   // extraction. Create one legacy request privately to exercise that path.
   const legacyRequest = await cli('resume-extraction-request-create', ['--resume-id', resume.id,
@@ -117,5 +168,6 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   await page.setViewportSize({ width: 390, height: 844 });
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   return { requestCancel: true, cliCompletion: true, replacementConsent: true, conflictReapply: true,
-    pendingWriteNavigationGuard: true, savedNavigationAfterRefreshFailure: true, provenance: true, narrow: true };
+    exactValueFreeHandoff: true, staleFallbackCleared: true, pendingWriteNavigationGuard: true,
+    savedNavigationAfterRefreshFailure: true, provenance: true, narrow: true };
 }

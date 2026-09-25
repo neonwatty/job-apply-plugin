@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import { realpathSync } from "node:fs";
 import test from "node:test";
 import { probeRuntime, PROBE_TIMEOUT_MS } from "../tools/probe-installed-runtime.mjs";
+import { qaBrowserInvocation, qaHostEnvironment, selectMacSdk, selectSupportedPython,
+  selectSupportedPythonProfiles, supportedPythonProfiles } from "../tools/run-qa-browser.mjs";
 
 const probe = (runner, options = {}) => probeRuntime({ runner, platform: "win32", arch: "x64", ...options });
 const closedKeys = ["platform", "arch", "nodeAvailable", "nodeVersion", "launchMode"];
@@ -68,7 +71,73 @@ test("unsupported platform or architecture cannot be mistaken for proven support
   });
 });
 
-const { collectLocalMacHost, validateLocalMacHost, assertLocalMacHostUnchanged } =
+test("broad QA selects a supported CPython on macOS without changing other platforms", () => {
+  const discoveries = [];
+  const probes = [];
+  const selections = selectSupportedPythonProfiles({ platform: "darwin",
+    discover: version => { discoveries.push(version); return `/synthetic/${version}`; },
+    probe: executable => {
+      probes.push(executable);
+      const version = executable.slice(executable.lastIndexOf('/') + 1);
+      return JSON.stringify({ implementation: "CPython", version,
+        profile: version.split('.').slice(0, 2).join('.'), executable: process.execPath });
+    },
+  });
+  assert.deepEqual(discoveries, supportedPythonProfiles.map(row => row.version));
+  assert.deepEqual(probes, supportedPythonProfiles.map(row => `/synthetic/${row.version}`));
+  assert.deepEqual(selections, supportedPythonProfiles.map(row => ({ ...row, executable: process.execPath })));
+  const primary = selectSupportedPython({ platform: "darwin",
+    discover: version => `/synthetic/${version}`,
+    probe: executable => {
+      const version = executable.slice(executable.lastIndexOf('/') + 1);
+      return JSON.stringify({ implementation: "CPython", version,
+        profile: version.split('.').slice(0, 2).join('.'), executable: process.execPath });
+    },
+  });
+  assert.deepEqual(primary, selections[0]);
+  assert.throws(() => selectSupportedPythonProfiles({ platform: "darwin", discover: () => null,
+    probe: () => JSON.stringify({ implementation: "CPython", version: "3.12.14",
+      profile: "3.12", executable: process.execPath }) }), /requires evidence-bound python3\.12 3\.12\.13/);
+  assert.equal(selectSupportedPython({ platform: "linux", probe: () => { throw Error("must not probe"); } }), null);
+  const sdkCalls = [];
+  const sdk = selectMacSdk({ platform: "darwin", probe: args => {
+    sdkCalls.push(args);
+    return args[0] === "--show-sdk-path" ? "/synthetic/sdk\n" : `${process.execPath}\n`;
+  }});
+  assert.deepEqual(sdkCalls, [["--show-sdk-path"], ["--find", "clang"]]);
+  assert.deepEqual(sdk, { path: "/synthetic/sdk", compiler: process.execPath });
+  assert.throws(() => selectMacSdk({ platform: "darwin", probe: args =>
+    args[0] === "--show-sdk-path" ? "relative-sdk" : process.execPath }), /absolute SDK and Clang paths/);
+  const host = qaHostEnvironment({ platform: "darwin", selections, sdk,
+    baseEnvironment: { ...process.env, PYTHON: "/unreviewed/python" } });
+  assert.equal(host.environment.SDKROOT, sdk.path);
+  assert.equal(host.environment.JOB_APPLY_QA_XCRUN_CLANG, sdk.compiler);
+  assert.equal(host.environment.JOB_APPLY_CONTRACT_PYTHON.endsWith("/python3"), true);
+  assert.equal(realpathSync(host.environment.JOB_APPLY_CONTRACT_PYTHON), process.execPath);
+  assert.equal(realpathSync(host.environment.PYTHON), process.execPath);
+  host.cleanup();
+  const mac = qaBrowserInvocation({ platform: "darwin", selections, sdk });
+  assert.equal(mac.options.env.SDKROOT, sdk.path);
+  assert.equal(mac.options.env.JOB_APPLY_QA_XCRUN_CLANG, sdk.compiler);
+  assert.equal(mac.options.env.JOB_APPLY_CONTRACT_PYTHON.endsWith("/python3"), true);
+  assert.equal(realpathSync(mac.options.env.JOB_APPLY_CONTRACT_PYTHON), process.execPath);
+  assert.equal(realpathSync(mac.options.env.PYTHON), process.execPath);
+  for (const profile of supportedPythonProfiles) {
+    assert.equal(realpathSync(mac.options.env.JOB_APPLY_CONTRACT_PYTHON.replace(/python3$/, profile.alias)),
+      process.execPath);
+  }
+  mac.cleanup();
+  const nonMac = qaBrowserInvocation({ platform: "linux", selections: null });
+  assert.equal(nonMac.options.env.PATH, process.env.PATH);
+  assert.equal(nonMac.options.env.JOB_APPLY_CONTRACT_PYTHON, process.env.JOB_APPLY_CONTRACT_PYTHON);
+  assert.equal(nonMac.options.env.PYTHON, process.env.PYTHON);
+  assert.equal(nonMac.options.env.SDKROOT, process.env.SDKROOT);
+  assert.equal(nonMac.options.env.JOB_APPLY_QA_XCRUN_CLANG, process.env.JOB_APPLY_QA_XCRUN_CLANG);
+  nonMac.cleanup();
+});
+
+const { collectLocalMacHost, validateLocalMacHost, assertLocalMacHostUnchanged,
+  observePythonAlias, assertPythonAliasUnchanged } =
   await import('../tools/migration/local-mac-host.mjs');
 const macDeferred = [
   'Linux/Windows native qualification', 'other Mac OS/CPU/runtime versions',
@@ -91,6 +160,10 @@ function macIdentityFixture() {
 test('P02 Mac dogfood scope preserves deferred release qualification', () => {
   const fixture = macIdentityFixture();
   assert.doesNotThrow(() => validateLocalMacHost(fixture));
+  const developerShimFixture = structuredClone(fixture);
+  developerShimFixture.python[0].version = '3.9.6';
+  developerShimFixture.python[0].profile = '3.9';
+  assert.doesNotThrow(() => validateLocalMacHost(developerShimFixture));
   assert.doesNotThrow(() => assertLocalMacHostUnchanged(fixture, structuredClone(fixture)));
   for (const mutate of [
     value => { value.scope = 'release'; },
@@ -127,6 +200,35 @@ test('P02 Mac dogfood scope preserves deferred release qualification', () => {
     mutate(changed);
     assert.throws(() => assertLocalMacHostUnchanged(fixture, changed), /identity changed/);
   }
+});
+
+test('P02 local Mac identity follows launcher-reported executable and rejects its drift', async () => {
+  const reported = { resolved: '/actual/python3', version: '3.9.6', implementation: 'CPython',
+    profile: '3.9', filesystemEncoding: 'utf-8', filesystemErrors: 'surrogateescape' };
+  const commands = [];
+  let sha256 = 'a'.repeat(64);
+  const operations = {
+    resolveAlias: async alias => {
+      assert.equal(alias, 'python3');
+      return '/usr/bin/python3';
+    },
+    run: async (command, args) => {
+      commands.push(command);
+      assert.deepEqual(args.slice(0, 3), ['-I', '-B', '-c']);
+      return JSON.stringify(reported);
+    },
+    binaryIdentity: async executable => {
+      assert.equal(executable, reported.resolved);
+      return { resolved: executable, sha256, stat: ['synthetic-stat'] };
+    },
+  };
+  const before = await observePythonAlias('python3', operations);
+  assert.deepEqual(commands, ['python3', '/usr/bin/python3']);
+  assert.equal(before.identity.resolved, reported.resolved);
+  assert.equal(before.identity.sha256, sha256);
+  sha256 = 'b'.repeat(64);
+  const after = await observePythonAlias('python3', operations);
+  assert.throws(() => assertPythonAliasUnchanged(before, after), /Python executable changed/);
 });
 
 test('P02 local Mac identity binds actual executables and rejects drift', async t => {

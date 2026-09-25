@@ -4,7 +4,7 @@ import { chromium } from 'playwright';
 import { execFile } from 'node:child_process';
 import { cp, mkdtemp, realpath, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { nextSetupAndLoading, nextDraftAndRecovery, nextLateRead } from './workspace_next_ux_support.mjs';
@@ -13,9 +13,16 @@ import { nativeFixture } from './exclusive_file_lock_support.mjs';
 import { initializeJobsFixture } from '../runtime/store/native-jobs.js';
 import { spawnOwnedCompanion } from './workspace_next_process_support.mjs';
 const execute = promisify(execFile);
-const repository = dirname(dirname(fileURLToPath(import.meta.url)));
+const sourceRepository = dirname(dirname(fileURLToPath(import.meta.url)));
+const repository = process.env.JOB_WORKSPACE_TEST_ROOT
+  ? resolve(process.env.JOB_WORKSPACE_TEST_ROOT)
+  : sourceRepository;
 
 export async function nextBrowser() {
+  if (process.env.JOB_WORKSPACE_TEST_ROOT) {
+    const compatibility = await productionBrowser(repository);
+    return { ...compatibility, nativeJobs: await nativeJobsBrowser(repository) };
+  }
   // Hook snapshots share node_modules for unit checks. Next standalone tracing
   // needs dependencies physically inside its build root, including workspace
   // links. Build from copied current source with its own locked installation.

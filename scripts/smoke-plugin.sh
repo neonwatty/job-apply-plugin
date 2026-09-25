@@ -23,6 +23,11 @@ mkdir -p \
   "$SMOKE_FIXTURE_DIR" \
   "$SMOKE_UPGRADE_FIXTURE_DIR"
 
+CODEX_HOST_STATUS="unavailable_unrun"
+CLAUDE_HOST_STATUS="unavailable_unrun"
+command -v codex >/dev/null 2>&1 && CODEX_HOST_STATUS="available_unrun"
+command -v claude >/dev/null 2>&1 && CLAUDE_HOST_STATUS="available_unrun"
+
 echo "Validating plugin manifest"
 claude plugin validate "$REPO_ROOT"
 echo "Verifying reproducible checked-in TypeScript runtime"
@@ -62,7 +67,6 @@ echo "Building production Companion inside isolated marketplace fixture"
   npm ci
   npm run companion:build
 )
-rm -rf -- "$SMOKE_SOURCE_FIXTURE_DIR/node_modules"
 echo "Packaging native lock provider for this host"
 node "$REPO_ROOT/scripts/smoke/package_native_lock.mjs" --package-root "$SMOKE_SOURCE_FIXTURE_DIR"
 python3 "$REPO_ROOT/scripts/smoke/fixture_build.py" copy-critical \
@@ -90,9 +94,12 @@ python3 "$REPO_ROOT/scripts/smoke/upgrade_verify.py" upgrade \
 python3 "$REPO_ROOT/scripts/smoke/workspace_verify.py" "$SMOKE_SOURCE_FIXTURE_DIR" "$SMOKE_TEMP_ROOT"
 echo "Running Playwright and CLI walkthrough against packaged fixture"
 JOB_WORKSPACE_TEST_ROOT="$SMOKE_SOURCE_FIXTURE_DIR" node --test \
-  --test-name-pattern='owner beta clean packaged|real browser and CLI share CRUD|Needs Attention browser and CLI walkthrough' \
-  "$REPO_ROOT/tests_js/workspace.test.mjs"
+  --test-concurrency=1 \
+  --test-name-pattern='owner beta clean packaged|real browser and CLI share CRUD|Needs Attention browser and CLI walkthrough|job-apply.synthetic-profile-answers and job-apply.synthetic-resume-extraction-request native Companion behavior' \
+  "$REPO_ROOT/tests_js/workspace.test.mjs" \
+  "$REPO_ROOT/tests_js/workspace_information_architecture.test.mjs"
 echo "Selected packaged Playwright and CLI walkthroughs passed"
+rm -rf -- "$SMOKE_SOURCE_FIXTURE_DIR/node_modules"
 
 python3 "$REPO_ROOT/scripts/smoke/fixture_build.py" rewrite-marketplace \
   "$SMOKE_FIXTURE_DIR/.claude-plugin/marketplace.json"
@@ -125,10 +132,12 @@ python3 "$REPO_ROOT/scripts/smoke/plugin_install_verify.py" codex \
 node "$REPO_ROOT/scripts/smoke/native_activation.mjs" \
   "$(cat "$SMOKE_TEMP_ROOT/codex-installed-root.txt")" "$SMOKE_TEMP_ROOT"
 
-echo "Running installed Codex/Claude title-discovery and packaged Companion browser journey"
+echo "Running installed title-discovery artifacts and packaged Companion browser journey"
 JOB_TITLE_DISCOVERY_CODEX_ROOT="$(cat "$SMOKE_TEMP_ROOT/codex-installed-root.txt")" \
 JOB_TITLE_DISCOVERY_CLAUDE_CONFIG="$SMOKE_CLAUDE_CONFIG_DIR" \
-node --test --test-name-pattern='packaged title discovery Codex and Claude skills drive Companion owner review' \
+JOB_TITLE_DISCOVERY_CODEX_HOST="$CODEX_HOST_STATUS" \
+JOB_TITLE_DISCOVERY_CLAUDE_HOST="$CLAUDE_HOST_STATUS" \
+node --test --test-name-pattern='packaged title discovery installed skills drive Companion with host lanes truthfully unrun' \
   "$REPO_ROOT/tests_js/workspace.test.mjs"
 
 echo "Plugin smoke checks passed"

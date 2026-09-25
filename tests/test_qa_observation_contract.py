@@ -12,6 +12,13 @@ class ContractTests(ContractCase):
         self.assertIsNone(validate_fixture(fixture))
         self.assertEqual(fixture["platformFamily"], "greenhouse")
         self.assertEqual(
+            fixture["provenance"],
+            {
+                "captureMonth": "2026-09",
+                "evidenceKind": "hand-authored-synthetic",
+            },
+        )
+        self.assertEqual(
             [
                 control["role"]
                 for step in fixture["steps"]
@@ -20,8 +27,9 @@ class ContractTests(ContractCase):
             ["textbox", "combobox", "file", "combobox", "textbox"],
         )
 
-    def test_committed_workday_and_rippling_readiness_fixtures_are_closed(self):
+    def test_committed_readiness_manifests_are_explicitly_synthetic(self):
         for fixture_id, platform in (
+            ("greenhouse-form-readiness-v1", "greenhouse"),
             ("workday-form-readiness-v1", "workday"),
             ("rippling-form-readiness-v1", "rippling"),
         ):
@@ -31,6 +39,54 @@ class ContractTests(ContractCase):
                 ).read_text(encoding="utf-8"))
                 self.assertIsNone(validate_fixture(fixture))
                 self.assertEqual(fixture["platformFamily"], platform)
+                self.assertEqual(
+                    fixture["provenance"]["evidenceKind"],
+                    "hand-authored-synthetic",
+                )
+                provenance = json.loads((
+                    ROOT / "qa" / "fixtures" / fixture_id / "provenance.json"
+                ).read_text(encoding="utf-8"))
+                approval = json.loads((
+                    ROOT / "qa" / "fixtures" / fixture_id / "approval.json"
+                ).read_text(encoding="utf-8"))
+                self.assertEqual(
+                    provenance["evidenceKind"], "hand-authored-synthetic"
+                )
+                self.assertEqual(provenance["currentLiveAtsStatus"], "unverified")
+                self.assertEqual(approval["approvalStatus"], "not-applicable")
+                for forbidden in (
+                    "sourceRecordingSha256", "recorderVersion", "approvedAt",
+                    "approvedBy", "promotedAt", "reviewer",
+                ):
+                    self.assertNotIn(forbidden, provenance)
+                    self.assertNotIn(forbidden, approval)
+
+    def test_workflow_registry_keeps_live_ats_readiness_unverified(self):
+        registry = json.loads(
+            (ROOT / "config/core-workflows.json").read_text(encoding="utf-8")
+        )
+        evidence = registry["atsReadinessEvidence"]
+        self.assertEqual(
+            evidence["currentLiveAts"], {"status": "unverified", "sources": []}
+        )
+        self.assertEqual(
+            {
+                (
+                    item["fixtureId"],
+                    item["evidenceKind"],
+                    item["currentLiveAtsStatus"],
+                )
+                for item in evidence["catalogs"]
+            },
+            {
+                (
+                    f"{platform}-form-readiness-v1",
+                    "hand-authored-synthetic",
+                    "unverified",
+                )
+                for platform in ("greenhouse", "rippling", "workday")
+            },
+        )
 
     def test_readiness_observation_contract_is_closed_and_revisioned(self):
         fixture = self.valid_greenhouse_fixture()

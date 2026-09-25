@@ -1,10 +1,7 @@
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
-import { existsSync } from 'node:fs';
 import { chmod, mkdtemp, readFile, realpath, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { promisify } from 'node:util';
 import test from 'node:test';
 
 import {
@@ -12,19 +9,15 @@ import {
   applicationSetupPreferencesLayout,
   probeApplicationSetupPreferences,
 } from '../.workflows/fixtures/job-apply.synthetic-application-setup-preferences-v1/host-preflight.mjs';
+import { validateAgentWorkflows } from '../tools/validate-agent-workflows.mjs';
 
 const repository = resolve(new URL('..', import.meta.url).pathname);
 const workflowPath = join(repository, '.workflows/workflows/job-apply.synthetic-application-setup-preferences.workflow.yaml');
-const execute = promisify(execFile);
-
-test('application-setup workflow satisfies the installed runner schema', async t => {
-  const cli = join(repository, 'node_modules/.bin', process.platform === 'win32' ? 'workflow.cmd' : 'workflow');
-  if (!existsSync(cli)) {
-    t.skip('optional @lineagehq/workflows runner is not installed');
-    return;
-  }
-  const { stdout } = await execute(cli, ['validate', '--json', workflowPath], { cwd: repository });
-  const result = JSON.parse(stdout);
+test('application-setup workflow satisfies the installed runner schema', () => {
+  const validation = validateAgentWorkflows({ root: repository, workflowPaths: [
+    '.workflows/workflows/job-apply.synthetic-application-setup-preferences.workflow.yaml',
+  ] });
+  const result = validation.results[0].result;
   assert.equal(result.ok, true);
   assert.equal(result.data.items[0].id, 'job-apply.synthetic-application-setup-preferences');
 });

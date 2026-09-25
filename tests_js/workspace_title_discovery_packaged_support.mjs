@@ -27,11 +27,15 @@ async function claudeInstalledRoot(configRoot) {
   return join(versions, names[0]);
 }
 
-export async function packagedTitleDiscoveryJourney(codexRoot, claudeConfigRoot) {
-  const installed = resolve(codexRoot);
-  assert.equal(installed, codexRoot);
-  await assertInstalledSkill(installed);
-  await assertInstalledSkill(await claudeInstalledRoot(claudeConfigRoot));
+export async function packagedTitleDiscoveryJourney({ codexRoot, claudeConfigRoot, codexHost, claudeHost }) {
+  assert.match(codexHost, /^(?:available|unavailable)_unrun$/);
+  assert.match(claudeHost, /^(?:available|unavailable)_unrun$/);
+  const codexInstalled = codexRoot ? resolve(codexRoot) : null;
+  if (codexInstalled) { assert.equal(codexInstalled, codexRoot); await assertInstalledSkill(codexInstalled); }
+  const claudeInstalled = claudeConfigRoot ? await claudeInstalledRoot(claudeConfigRoot) : null;
+  if (claudeInstalled) await assertInstalledSkill(claudeInstalled);
+  const installed = codexInstalled ?? claudeInstalled;
+  assert.ok(installed, 'at least one capability-gated packaged host is required for the Companion journey');
   const { initializeJobsFixture } = await import(pathToFileURL(join(installed, 'runtime/store/native-jobs.js')).href);
   const { resolvePackagedNativeLock } = await import(pathToFileURL(join(installed, 'runtime/package/native-lock-artifact.js')).href);
   const lock = await resolvePackagedNativeLock(installed);
@@ -87,7 +91,9 @@ export async function packagedTitleDiscoveryJourney(codexRoot, claudeConfigRoot)
     const { stdout } = await execute(process.execPath, [join(installed, 'runtime/cli/native-jobs.js'), '--root', root,
       '--native-lock', lock, 'profile-inspect']);
     assert.deepEqual(JSON.parse(stdout).profile.preferences.targetTitles, saved.profile.preferences.targetTitles);
-    return { codexSkill: true, claudeSkill: true, packagedBrowser: true, cancel: true, sourceLimit: true, canonicalSave: true };
+    return { codex: { installed: Boolean(codexInstalled), agent: codexHost },
+      claude: { installed: Boolean(claudeInstalled), agent: claudeHost },
+      packagedBrowser: true, cancel: true, sourceLimit: true, canonicalSave: true };
   } finally {
     await browser?.close();
     await launcher.stop();

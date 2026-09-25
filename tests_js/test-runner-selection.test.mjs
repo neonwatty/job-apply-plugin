@@ -57,6 +57,7 @@ test("real production paths conservatively include cross-language consumers", as
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
   const [realMatrix, realPaths] = await Promise.all([loadMatrix(root), trackedPaths(root)]);
   const cases = new Map([
+    ["config/core-workflows.json", ["core-workflow-audit", "python-qa"]],
     ["scripts/qa-replay.py", ["python-qa", "python-workspace-contracts", "python-accounts", "python-core", "node-recorder", "node-renderer", "node-workspace-other"]],
     ["scripts/job_apply_store/domains/jobs/crud.py", ["python-workspace-contracts", "python-accounts", "python-core", "node-workspace-other"]],
     ["scripts/job_apply_workspace/server.py", ["python-workspace-contracts", "node-workspace-other"]],
@@ -67,6 +68,18 @@ test("real production paths conservatively include cross-language consumers", as
     const selected = selectAffected(realMatrix, realPaths, [changed]);
     assert.equal(selected.fallbackReason, null);
     for (const id of expected) assert.equal(selected.suiteIds.includes(id), true, `${changed} omitted ${id}`);
+  }
+});
+
+test("Agent Workflow definitions fail closed to every full-tier behavioral suite", async () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const [realMatrix, realPaths] = await Promise.all([loadMatrix(root), trackedPaths(root)]);
+  const selected = selectAffected(realMatrix, realPaths, [
+    ".workflows/workflows/job-apply.synthetic-resume-extraction-request.workflow.yaml",
+  ]);
+  assert.match(selected.fallbackReason, /^global path:/);
+  for (const id of ["core-workflow-audit", "native-default-cutover", "node-workspace-other"]) {
+    assert.equal(selected.suiteIds.includes(id), true, `workflow change omitted ${id}`);
   }
 });
 

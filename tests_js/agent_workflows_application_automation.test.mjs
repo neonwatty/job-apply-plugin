@@ -1,8 +1,18 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
-const root=new URL('../',import.meta.url),read=path=>readFile(new URL(path,root),'utf8');
+import { validateAgentWorkflows } from '../tools/validate-agent-workflows.mjs';
+
+const root=new URL('../',import.meta.url),rootPath=fileURLToPath(root),read=path=>readFile(new URL(path,root),'utf8');
+
+test('application automation workflow is accepted by the pinned runner',()=>{
+  const workflowPath='.workflows/workflows/job-apply.synthetic-application-automation.workflow.yaml';
+  const validation=validateAgentWorkflows({root:rootPath,workflowPaths:[workflowPath]});
+  assert.equal(validation.ok,true,JSON.stringify(validation));
+  assert.equal(validation.results[0].result.data.items[0].id,'job-apply.synthetic-application-automation');
+});
 
 test('application automation workflow is synthetic, local-only, and review bounded',async()=>{
   const [workflow,fixture,portal]=await Promise.all([
@@ -13,6 +23,7 @@ test('application automation workflow is synthetic, local-only, and review bound
   assert.equal(fixture.syntheticOnly,true);assert.match(fixture.job.url,/\.example\.invalid\//);
   assert.deepEqual(fixture.requiredOperations,['fill_canonical_profile','upload_managed_resume','fill_confirmed_answer','navigate_non_final']);
   assert.match(workflow,/local-only/);assert.match(workflow,/Never invoke the synthetic Submit application action/);
+  assert.match(workflow,/dispatched subagent uses the installed public router to start the detached attempt/);
   assert.match(workflow,/final_review/);assert.match(workflow,/no submitted or applied event/);
   assert.match(portal,/decision\.authorized!==true/);assert.match(portal,/campaign_to_review/);assert.match(portal,/finalActionActivated=true/);
 });
@@ -32,18 +43,29 @@ test('agent mode selection separates setup preference from exact live authority'
 });
 
 test('local live-agent runner uses three clean ephemeral trials and is excluded from CI',async()=>{
-  const [runner,schema,evaluator,prepare]=await Promise.all([
+  const [runner,schema,evaluator,prepare,testingDocs]=await Promise.all([
     read('tools/local-agent-acceptance.mjs'),
     read('.workflows/fixtures/job-apply.synthetic-application-automation-v1/result.schema.json'),
     read('.workflows/fixtures/job-apply.synthetic-application-automation-v1/evaluate.mjs'),
     read('.workflows/fixtures/job-apply.synthetic-application-automation-v1/prepare.mjs'),
+    read('docs/testing.md'),
   ]);
   assert.match(runner,/if\(process\.env\.CI\)throw Error/);assert.match(runner,/let trials=3/);
-  assert.match(runner,/runAgent\(\['exec','--ephemeral'/);assert.match(runner,/--sandbox','danger-full-access'/);
-  assert.match(runner,/--disable','skill_search'/);
+  assert.match(runner,/installLocalPlugin/);assert.match(runner,/runAgent\(\['exec','--ephemeral'/);
+  assert.match(runner,/const temporary=await mkdtemp[\s\S]*try\{[\s\S]*catch\(error\)\{[\s\S]*await rm\(temporary/);
+  for(const excluded of ['.qa-private','qa/runs','.job-apply-qa','test_resumes','apps/companion/.next']){
+    assert.match(runner,new RegExp(`--exclude=\\.\\/${excluded.replaceAll('.','\\.')}`));
+  }
+  assert.match(runner,/installedRoot=await realpath\(join\(codexHome/);
+  assert.match(runner,/\$job-apply:job-apply/);assert.match(runner,/apps','companion','command\.mjs/);
+  assert.doesNotMatch(runner,/--ignore-user-config/);
+  assert.match(runner,/task --root \"\$\{prepared\.storeRoot\}\" select --id \$\{prepared\.jobId\} --expected-revision \$\{prepared\.readyRevision\} --owner-confirmed/);
+  assert.doesNotMatch(runner,/--disable','skill_search'/);assert.doesNotMatch(runner,/runtime\/cli\/native-(?:jobs|attempt)\.js/);
+  assert.match(runner,/--sandbox','danger-full-access'/);
   assert.match(runner,/approval_policy="never"/);
   assert.match(runner,/model='gpt-5\.6-luna'/);assert.match(runner,/child\.stdin\.end\(\)/);
-  assert.match(runner,/sourceFingerprint/);assert.match(runner,/Never invoke the portal submit command/);
+  assert.match(runner,/ls-files','--others','--exclude-standard','-z'/);
+  assert.match(runner,/await readFile\(join\(repository,bytes\)\)/);assert.match(runner,/Never invoke the portal submit command/);
   assert.match(runner,/Current owner approval:[\s\S]*exact synthetic job for 120 minutes/);
   assert.match(runner,/preferredAutomationMode[\s\S]*Treat it only as a preference, not authority/);
   assert.match(runner,/application-authority-status[\s\S]*application-authority-set/);
@@ -54,4 +76,8 @@ test('local live-agent runner uses three clean ephemeral trials and is excluded 
   assert.match(evaluator,/preferredAutomationMode,'campaign_to_review'/);
   assert.match(evaluator,/portal\.stage,'final_review'/);assert.match(evaluator,/finalActionActivated,false/);
   assert.match(evaluator,/\['job-started','reviewed'\]/);
+  assert.match(testingDocs,/installs the plugin into a fresh temporary Codex home/);
+  assert.match(testingDocs,/installed `\$job-apply:job-apply` skill/);
+  assert.match(testingDocs,/installed public router[\s\S]*start its detached attempt/);
+  assert.doesNotMatch(testingDocs,/harness acquires the detached broker before dispatch/);
 });

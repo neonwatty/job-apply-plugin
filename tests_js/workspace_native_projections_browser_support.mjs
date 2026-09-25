@@ -27,7 +27,7 @@ export async function projectionsBrowser(page, {jobId, markReady}) {
   await modal.waitFor();
   const activity = modal.getByRole('region',{name:'Job activity',exact:true});
   await activity.getByText(/Status: needs info/i).waitFor();
-  await activity.getByText(/Job restarted/i).first().waitFor();
+  await activity.getByText('No history recorded for this job.', { exact: true }).waitFor();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   await page.route('**/api/jobs/*/activity',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));
   await activity.getByRole('button',{name:'Refresh activity',exact:true}).click();

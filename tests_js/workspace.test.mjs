@@ -19,17 +19,19 @@ import { runBrowserCrudAnswersPhase } from "./workspace_browser_crud_answers_pha
 import { runBrowserCrudTrashShutdownPhase } from "./workspace_browser_crud_trash_phase.mjs";
 import { packagedTitleDiscoveryJourney } from './workspace_title_discovery_packaged_support.mjs';
 
-test('packaged title discovery Codex and Claude skills drive Companion owner review', { timeout: 120_000 }, async (t) => {
+test('packaged title discovery installed skills drive Companion with host lanes truthfully unrun', { timeout: 120_000 }, async (t) => {
   const codexRoot = process.env.JOB_TITLE_DISCOVERY_CODEX_ROOT;
   const claudeConfig = process.env.JOB_TITLE_DISCOVERY_CLAUDE_CONFIG;
-  if (!codexRoot && !claudeConfig) {
+  const codexHost = process.env.JOB_TITLE_DISCOVERY_CODEX_HOST;
+  const claudeHost = process.env.JOB_TITLE_DISCOVERY_CLAUDE_HOST;
+  if (!codexHost && !claudeHost) {
     t.skip('isolated installed Codex and Claude roots are provided by plugin smoke');
     return;
   }
-  assert.ok(codexRoot, 'Codex installed root is required');
-  assert.ok(claudeConfig, 'Claude isolated config root is required');
-  assert.deepEqual(await packagedTitleDiscoveryJourney(codexRoot, claudeConfig),
-    { codexSkill: true, claudeSkill: true, packagedBrowser: true, cancel: true, sourceLimit: true, canonicalSave: true });
+  assert.deepEqual(await packagedTitleDiscoveryJourney({ codexRoot, claudeConfigRoot: claudeConfig, codexHost, claudeHost }),
+    { codex: { installed: Boolean(codexRoot), agent: codexHost },
+      claude: { installed: Boolean(claudeConfig), agent: claudeHost },
+      packagedBrowser: true, cancel: true, sourceLimit: true, canonicalSave: true });
 });
 
 test("owner beta clean packaged browser and CLI journey survives restart and fails closed for recovery", { timeout: 90_000 }, async () => {

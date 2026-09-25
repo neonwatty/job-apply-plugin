@@ -172,7 +172,7 @@ Results are automatically saved to `~/.claude-job-searches/`. Both Codex and Cla
 
 ### Local Companion Workspace
 
-The optional workspace gives you keyboard-accessible **Overview**, **Jobs**, **Needs Attention**, **Facts**, **Resumes**, **Answers**, **Application Activity**, and unified **Trash** views backed by the same canonical records used by the CLI skills. From the plugin directory, start it with one command:
+The optional workspace gives you keyboard-accessible **Overview**, **Jobs**, **Needs Attention**, **Facts**, **Resumes**, **Answers**, **Automation**, **Accounts & Sign-in**, **Settings**, and unified **Trash** navigation, plus the selected job's contextual **Application Activity** view. All are backed by the same canonical records used by the CLI skills. From the plugin directory, start it with one command:
 
 ```bash
 node apps/companion/launch.mjs
@@ -182,7 +182,7 @@ The launcher binds only to `127.0.0.1`, chooses a free port, opens the complete 
 
 Start on **Overview**. It derives setup readiness and one next action from counts and booleans under the canonical Store lock; it does not expose profile values, paths, record IDs, claims, or secrets, and it never stores an onboarding-complete flag in the browser. A new owner is guided to import a resume, review Facts, capture and prepare a job, resolve Needs Attention, or hand off a Ready job as the current Store state requires.
 
-For a Ready job, copy the invocation for the host you already use. These are static, separately labelled, copy-only commands; the workspace does not detect a host, run a command, embed a terminal, or interpolate credentials:
+For a Ready job, use the copy-only handoff on **Overview** or **Jobs** for the host you already use. These are static, separately labelled commands; the workspace does not detect a host, run a command, embed a terminal, interpolate credentials, or acquire an application claim:
 
 ```text
 Codex:       $job-apply:job-apply
@@ -195,7 +195,7 @@ Closing the tab or restarting the launcher does not erase progress because the b
 
 Use **Jobs** to manage the opportunity queue and **Resumes** to manage private files and review each resume's own facts. The separate **Facts** surface maintains the legacy applicant-wide profile and preferences, including saved path groups. Use **Answers** to search reusable answers to application questions, review observed questions, create and selectively edit answers, accept or decline observations, and manage guarded Trash. Observed questions are pending records in `answers.json`, not a second inbox database. Declined records remain durable for deduplication and are hidden from the default library.
 
-In **Resumes**, an import or replacement requests extraction by default unless you opt out. You can create, cancel, and retry extraction requests. **Request fact extraction** queues work for the next active Job Apply agent; it does not start or launch an agent. The workspace cannot extract facts, complete or fail a request, or author a proposal. Copying the value-free handoff gives an existing agent only the opaque request ID. That agent privately reads the exact managed resume, attempts completion once, and removes temporary candidate data. Review or edit the resulting draft under that resume, then confirm its exact revision. Before an application, confirm the job, chosen resume, and its facts with the agent in chat.
+In **Resumes**, an import or replacement requests extraction by default unless you opt out. You can create, cancel, and retry extraction requests. **Request fact extraction** queues work for the next active Job Apply agent; it does not start or launch an agent. The workspace cannot extract facts, complete or fail a request, or author a proposal. **Copy agent handoff** copies exactly `Use the Job Apply resume workflow to process extraction request <request-id>.`, containing only that static invocation and the opaque request ID. That agent privately reads the exact managed resume, attempts completion once, and removes temporary candidate data. Review or edit the resulting draft under that resume, then confirm its exact revision. Before an application, confirm the job, chosen resume, and its facts with the agent in chat.
 
 Use the top-level **Trash** view to see deterministic redacted projections and exact counts for trashed jobs, resumes, and answers. Restore and permanent delete use the same canonical Store helpers as the CLI and require the record's exact revision. Permanent deletion is always one record at a time in an accessible identity-bound dialog and requires the exact type-specific phrase `DELETE JOB`, `DELETE RESUME`, or `DELETE ANSWER`. Deleting a managed resume permanently deletes its managed file with the canonical resume record; other record types remove only the selected canonical record. No deletion cascades or erases application history, sessions, or audit evidence. Live claims, nonterminal job sessions, resume references, answer references, duplicate active identities, and stale revisions produce distinct redacted explanations without automatic retry or disclosure of linked identifiers. CLI users can select only trashed jobs or resumes with `job-list --trashed-only` and `resume-list --trashed-only`; answers retain `answer-list --include-trashed --trashed-only`.
 
@@ -209,16 +209,31 @@ The workspace never runs an application, reads arbitrary filesystem paths, parse
 
 ## Compatibility and Verification Status
 
-The plugin includes guided workflows for six ATS families. Codex and Claude Code host instructions were reviewed on **2026-07-28**. Live end-to-end ATS acceptance is tracked separately; individual flows remain unverified and may drift as sites change.
+Run the credential-free workflow audit from the repository root:
+
+```bash
+npm run audit:core-workflows
+```
+
+It validates every committed Agent Workflow with the pinned runner, requires one
+registry row per workflow, and checks each row's Companion surfaces, CLI entry
+points, tests, and evidence sources. Its evidence summary keeps deterministic
+local, installed-host, supervised replay, and current-live ATS proof separate.
+It does not launch an agent, browser, account flow, or ATS. See
+[`docs/testing.md`](docs/testing.md#core-workflow-evidence-audit) before running
+the optional installed-host lane; current-live ATS proof remains a separately
+authorized supervised activity.
+
+The plugin includes guided workflows for six ATS families. Codex and Claude Code host instructions were reviewed on **2026-07-28**. Live end-to-end ATS acceptance is tracked separately; individual flows remain unverified and may drift as sites change. The Greenhouse, Rippling, and Workday readiness catalogs are explicitly hand-authored synthetic schema fixtures. They are useful for deterministic local contract checks, but they are not recorder-derived evidence, replay receipts, or proof of a current live ATS run.
 
 | Platform | URL Pattern | Default browser path | Verification status |
 |----------|-------------|----------------------|---------------------|
 | LinkedIn Easy Apply | `linkedin.com/jobs/view/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
-| Greenhouse | `boards.greenhouse.io/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
+| Greenhouse | `boards.greenhouse.io/*` | Codex Browser or Claude in Chrome | Guided; synthetic readiness catalog only; current ATS flow unverified |
 | Ashby | `jobs.ashbyhq.com/*` | Codex Browser or Claude in Chrome | Guided; closed replay lane supported |
 | Lever | `jobs.lever.co/*` | Codex Browser or Claude in Chrome | Guided; closed replay lane supported |
-| Rippling | `*.rippling.com/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
-| Workday | `*.myworkdayjobs.com/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
+| Rippling | `*.rippling.com/*` | Codex Browser or Claude in Chrome | Guided; synthetic readiness catalog only; current ATS flow unverified |
+| Workday | `*.myworkdayjobs.com/*` | Codex Browser or Claude in Chrome | Guided; synthetic readiness catalog only; current ATS flow unverified |
 
 ## Profile Storage
 

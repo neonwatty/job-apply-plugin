@@ -76,6 +76,19 @@ test("suite execution honors its concurrency bound and runs each suite once", as
   assert.deepEqual(results.map(({ id }) => id), ["a", "b", "c", "d"]);
 });
 
+test("suite execution composes an evidence-bound host environment with suite overrides", async () => {
+  let observed;
+  await executeSuites(process.cwd(), [{ id: "environment", kind: "command",
+    command: [process.execPath, "-e", ""], env: { SUITE_ONLY: "suite" } }], [], {
+    environment: { PATH: "/evidence-bound", SHARED: "host" },
+    run: async (_executable, _args, options) => {
+      observed = options.env;
+      return { status: "passed", exitCode: 0, durationMs: 1 };
+    },
+  });
+  assert.deepEqual(observed, { PATH: "/evidence-bound", SHARED: "host", SUITE_ONLY: "suite" });
+});
+
 test("process execution terminates hangs and bounds noisy output", async () => {
   let stderr = "";
   const timed = await runStreaming(process.execPath, ["-e", "setInterval(() => {}, 1000)"], {

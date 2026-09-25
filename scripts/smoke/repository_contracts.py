@@ -131,6 +131,13 @@ def run(root: Path, smoke_root: Path) -> None:
         )
 
     allowed_fixture_files = {"approval.json", "fixture.json", "provenance.json"}
+    synthetic_approval_keys = {
+        "schemaVersion", "evidenceKind", "approvalStatus", "fixtureSha256"
+    }
+    synthetic_provenance_keys = {
+        "schemaVersion", "fixtureId", "platformFamily", "evidenceKind",
+        "fixtureSha256", "currentLiveAtsStatus",
+    }
     fixture_id_pattern = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*-v[1-9][0-9]*$")
     fixture_inventory: dict[str, set[str]] = {}
     for mode, path in tracked_entries:
@@ -168,29 +175,53 @@ def run(root: Path, smoke_root: Path) -> None:
             approval = documents["approval.json"]
             provenance = documents["provenance.json"]
             validate_fixture(fixture)
-            _validate_approval(approval, digest)
-            if (
-                not isinstance(approval, dict)
-                or set(approval) != APPROVAL_KEYS
-                or not isinstance(provenance, dict)
-                or set(provenance) != PROVENANCE_KEYS
-                or fixture.get("id") != fixture_id
-                or provenance.get("fixtureId") != fixture_id
-                or provenance.get("fixtureSha256") != digest
-                or provenance.get("schemaVersion") != approval.get("schemaVersion")
-                or provenance.get("platformFamily") != fixture.get("platformFamily")
-                or provenance.get("captureMonth") != fixture.get("captureMonth")
-                or provenance.get("recorderVersion")
-                != fixture.get("provenance", {}).get("recorderVersion")
-                or provenance.get("sourceRecordingSha256")
-                != fixture.get("provenance", {}).get("sourceRecordingSha256")
-                or provenance.get("compilerVersion") != approval.get("compilerVersion")
-                or provenance.get("scannerVersion") != approval.get("scannerVersion")
-                or provenance.get("approvedBy") != approval.get("reviewer")
-                or provenance.get("approvedAt") != approval.get("approvedAt")
-            ):
+            if fixture.get("id") != fixture_id:
                 raise ValueError
-            _timestamp(provenance.get("promotedAt"))
+            evidence_kind = fixture.get("provenance", {}).get("evidenceKind")
+            if evidence_kind == "hand-authored-synthetic":
+                if (
+                    not isinstance(approval, dict)
+                    or set(approval) != synthetic_approval_keys
+                    or approval.get("schemaVersion") != 1
+                    or approval.get("evidenceKind") != evidence_kind
+                    or approval.get("approvalStatus") != "not-applicable"
+                    or approval.get("fixtureSha256") != digest
+                    or not isinstance(provenance, dict)
+                    or set(provenance) != synthetic_provenance_keys
+                    or provenance.get("schemaVersion") != 1
+                    or provenance.get("fixtureId") != fixture_id
+                    or provenance.get("platformFamily") != fixture.get("platformFamily")
+                    or provenance.get("evidenceKind") != evidence_kind
+                    or provenance.get("fixtureSha256") != digest
+                    or provenance.get("currentLiveAtsStatus") != "unverified"
+                ):
+                    raise ValueError
+            else:
+                _validate_approval(approval, digest)
+                source_digest = provenance.get("sourceRecordingSha256")
+                if (
+                    not isinstance(approval, dict)
+                    or set(approval) != APPROVAL_KEYS
+                    or not isinstance(provenance, dict)
+                    or set(provenance) != PROVENANCE_KEYS
+                    or provenance.get("fixtureId") != fixture_id
+                    or provenance.get("fixtureSha256") != digest
+                    or provenance.get("schemaVersion") != approval.get("schemaVersion")
+                    or provenance.get("platformFamily") != fixture.get("platformFamily")
+                    or provenance.get("captureMonth") != fixture.get("captureMonth")
+                    or provenance.get("recorderVersion")
+                    != fixture.get("provenance", {}).get("recorderVersion")
+                    or source_digest
+                    != fixture.get("provenance", {}).get("sourceRecordingSha256")
+                    or not isinstance(source_digest, str)
+                    or len(set(source_digest)) == 1
+                    or provenance.get("compilerVersion") != approval.get("compilerVersion")
+                    or provenance.get("scannerVersion") != approval.get("scannerVersion")
+                    or provenance.get("approvedBy") != approval.get("reviewer")
+                    or provenance.get("approvedAt") != approval.get("approvedAt")
+                ):
+                    raise ValueError
+                _timestamp(provenance.get("promotedAt"))
             scan_tree(fixture_root, [])
         except (
             ContractError,
@@ -298,8 +329,9 @@ def run(root: Path, smoke_root: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("root", type=Path)
-    parser.add_argument("smoke_root", type=Path)
+    default_root = Path(__file__).resolve().parents[2]
+    parser.add_argument("root", type=Path, nargs="?", default=default_root)
+    parser.add_argument("smoke_root", type=Path, nargs="?", default=default_root)
     arguments = parser.parse_args()
     run(arguments.root, arguments.smoke_root)
 
