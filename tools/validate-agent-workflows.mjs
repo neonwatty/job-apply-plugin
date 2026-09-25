@@ -1,11 +1,17 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { readdirSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const modulePath = fileURLToPath(import.meta.url);
 const defaultRoot = path.resolve(path.dirname(modulePath), "..");
+const validationContract = {
+  "schemas/workflow.schema.json": "9a8ec6738c54e22db369db6d2d11b3c6ffe0f59799992dbfa796d0e6dcfe563e",
+  "src/workflow.js": "f479c42d901571ac8a8a8adf0b5e77d7433c9c674cb6c47360be564a239b386c",
+};
+const runnerPackages = ["@lineagehq/workflows", "@neonwatty/agent-workflows"];
 
 export function committedWorkflowPaths(root = defaultRoot) {
   const directory = path.join(root, ".workflows", "workflows");
@@ -28,15 +34,35 @@ export function parseValidatorResult(stdout, workflowPath) {
   return result;
 }
 
-export function workflowRunnerPath(root) {
-  return path.join(root, "node_modules", "@lineagehq", "workflows", "bin", "workflow.js");
+export function workflowRunnerPath(root, packageName = runnerPackages[0]) {
+  return path.join(root, "node_modules", ...packageName.split("/"), "bin", "workflow.js");
+}
+
+function sha256(filePath) {
+  return createHash("sha256").update(readFileSync(filePath)).digest("hex");
+}
+
+export function selectWorkflowRunner(root = defaultRoot) {
+  for (const packageName of runnerPackages) {
+    const runnerPath = workflowRunnerPath(root, packageName);
+    if (!existsSync(runnerPath)) continue;
+    const packageRoot = path.dirname(path.dirname(runnerPath));
+    for (const [relativePath, expected] of Object.entries(validationContract)) {
+      const actual = sha256(path.join(packageRoot, relativePath));
+      if (actual !== expected) {
+        throw new Error(`${packageName} validation contract drifted at ${relativePath}`);
+      }
+    }
+    return { packageName, runnerPath };
+  }
+  throw new Error(`workflow validator unavailable; npm ci must install ${runnerPackages.join(" or ")}`);
 }
 
 export function validateAgentWorkflows({ root = defaultRoot, workflowPaths } = {}) {
   const paths = workflowPaths ?? committedWorkflowPaths(root);
-  const runner = workflowRunnerPath(root);
+  const runner = selectWorkflowRunner(root);
   const results = paths.map((workflowPath) => {
-    const child = spawnSync(process.execPath, [runner, "validate", "--json", workflowPath], {
+    const child = spawnSync(process.execPath, [runner.runnerPath, "validate", "--json", workflowPath], {
       cwd: root,
       encoding: "utf8",
       env: { ...process.env, NO_COLOR: "1" },
@@ -61,7 +87,7 @@ export function validateAgentWorkflows({ root = defaultRoot, workflowPaths } = {
       stderr: child.stderr.trim(),
     };
   });
-  return { ok: results.every((item) => item.ok), results };
+  return { ok: results.every((item) => item.ok), runnerPackage: runner.packageName, results };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === modulePath) {

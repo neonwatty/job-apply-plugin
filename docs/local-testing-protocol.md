@@ -64,6 +64,11 @@ authenticated installed-host lane using fictional local data; unavailable hosts
 stay unrun. Current-live ATS validation is never implied by either command and
 requires its separately authorized supervised protocol.
 
+The validator prefers the optional source-pinned runner and falls back on clean,
+credential-free installs to `@neonwatty/agent-workflows@0.1.0`. Both paths must
+match the pinned workflow-schema and semantic-validator hashes before the audit
+runs, so a fallback cannot silently weaken the validation contract.
+
 `verify:commit` checks the exact staged index in a disposable checkout, preserving
 unstaged edits and the original index. It refuses success if the index changes
 during validation. Commit checks therefore require all needed files to be staged.

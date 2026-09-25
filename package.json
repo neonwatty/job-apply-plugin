@@ -33,6 +33,7 @@
     "companion:typecheck": "npm run typecheck --workspace job-apply-companion"
   },
   "devDependencies": {
+    "@neonwatty/agent-workflows": "0.1.0",
     "@types/node": "22.20.1",
     "ajv": "8.20.0",
     "playwright": "1.62.1",

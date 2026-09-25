@@ -83,6 +83,13 @@ workflow, inspect the rendered Companion, or rerun historical host or replay
 receipts. The mapped tests and packaged walkthroughs provide that behavioral
 correspondence.
 
+The audit prefers the optional source-pinned `@lineagehq/workflows` runner when
+it is available. Credential-free clean installs use the exact public
+`@neonwatty/agent-workflows@0.1.0` validation baseline instead. Before invoking
+either runner, the audit checks the workflow schema and semantic validator
+against hashes recorded from source commit
+`1e9f91c6f6f0a04bdc8003ef1dbbe68ad3468225`; contract drift fails closed.
+
 The optional installed-host lane is `npm run test:agent-local -- --trials 1`.
 It requires an available authenticated Codex host and executes the installed
 skill and public router against fictional local data. Record it as unrun when

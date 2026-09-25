@@ -11,6 +11,7 @@ import {
 import {
   committedWorkflowPaths,
   parseValidatorResult,
+  selectWorkflowRunner,
   validateAgentWorkflows,
   workflowRunnerPath,
 } from "../tools/validate-agent-workflows.mjs";
@@ -50,8 +51,14 @@ test("validator JSON ok is authoritative even when the process can exit successf
 
 test("workflow validator invokes the package JavaScript entry point through Node", () => {
   const expected = path.join("/repo", "node_modules", "@lineagehq", "workflows", "bin", "workflow.js");
-  assert.equal(workflowRunnerPath("/repo", "win32"), expected);
-  assert.equal(workflowRunnerPath("/repo", "darwin"), expected);
+  assert.equal(workflowRunnerPath("/repo"), expected);
+  assert.equal(
+    workflowRunnerPath("/repo", "@neonwatty/agent-workflows"),
+    path.join("/repo", "node_modules", "@neonwatty", "agent-workflows", "bin", "workflow.js"),
+  );
+  const selected = selectWorkflowRunner(rootPath);
+  assert.ok(["@lineagehq/workflows", "@neonwatty/agent-workflows"].includes(selected.packageName));
+  assert.equal(selected.runnerPath, workflowRunnerPath(rootPath, selected.packageName));
 });
 
 test("registry audit rejects invalid and unmapped workflows", () => {
