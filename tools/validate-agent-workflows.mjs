@@ -42,6 +42,14 @@ export function validateAgentWorkflows({ root = defaultRoot, workflowPaths } = {
       env: { ...process.env, NO_COLOR: "1" },
     });
     if (child.error) throw new Error(`${workflowPath}: validator unavailable: ${child.error.message}`);
+    if (child.status !== 0 || child.signal !== null) {
+      const diagnostic = child.stderr.trim() || "no stderr";
+      throw new Error(`${workflowPath}: validator process failed (status ${child.status}, signal ${child.signal}): ${diagnostic}`);
+    }
+    if (!child.stdout.trim()) {
+      const diagnostic = child.stderr.trim() || "no stderr";
+      throw new Error(`${workflowPath}: validator returned no JSON (status 0): ${diagnostic}`);
+    }
     const result = parseValidatorResult(child.stdout, workflowPath);
     const runnerSucceeded = child.status === 0 && child.signal === null;
     return {
