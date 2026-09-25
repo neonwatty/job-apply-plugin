@@ -85,9 +85,22 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
   await fallback.waitFor();
   assert.equal(await fallback.inputValue(), handoff);
   await page.getByRole('button', { name: 'Cancel extraction', exact: true }).waitFor();
+  await page.evaluate(() => {
+    let rejectWrite;
+    Object.defineProperty(navigator.clipboard, 'writeText', {
+      configurable: true,
+      value: () => new Promise((resolve, reject) => { rejectWrite = reject; }),
+    });
+    globalThis.rejectSyntheticClipboardWrite = () => rejectWrite(new Error('Delayed clipboard denial'));
+  });
+  await copyHandoff.click();
   await page.getByRole('button', { name: 'Cancel extraction', exact: true }).click();
   await page.getByText('Extraction request cancelled.', { exact: true }).waitFor();
   await fallback.waitFor({ state: 'hidden' });
+  await page.evaluate(() => globalThis.rejectSyntheticClipboardWrite());
+  await page.waitForTimeout(0);
+  assert.equal(await fallback.count(), 0);
+  await page.getByText('Extraction request cancelled.', { exact: true }).waitFor();
   // The rejected method is synthetic and page-scoped. Reload through the normal
   // application lifecycle so later copy assertions exercise the real clipboard.
   await page.reload();

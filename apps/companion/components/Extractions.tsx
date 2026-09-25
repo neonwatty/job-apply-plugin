@@ -41,7 +41,7 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [fallback, setFallback] = useState<{requestId:string;value:string}|null>(null);
-  const generation = useRef(0), listGeneration = useRef(0);
+  const generation = useRef(0), listGeneration = useRef(0), handoffGeneration = useRef(0);
   const request = useRef<AbortController | null>(null), listRequest = useRef<AbortController | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const dirty = Object.keys(choices).length > 0;
@@ -51,6 +51,7 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
   useEffect(() => () => {
     generation.current++;
     listGeneration.current++;
+    handoffGeneration.current++;
     request.current?.abort();
     listRequest.current?.abort();
   }, []);
@@ -106,6 +107,7 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
     } finally { if (version === generation.current) setBusy(false); }
   }
   async function mutateRequest(resume: Document, record?: Document, action?: string) {
+    handoffGeneration.current++;
     const controller = new AbortController(), version = ++generation.current;
     request.current?.abort();
     request.current = controller;
@@ -133,12 +135,15 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
     } finally { if (version === generation.current) { setBusy(false); setWriting(false); } }
   }
   async function copyHandoff(requestId: string) {
+    const version = ++handoffGeneration.current;
     const value = extractionHandoff(requestId);
     try {
       await navigator.clipboard.writeText(value);
+      if (version !== handoffGeneration.current) return;
       setFallback(null);
       setNotice('Agent handoff copied.');
     } catch {
+      if (version !== handoffGeneration.current) return;
       setFallback({requestId, value});
       setNotice(fallbackNotice);
     }

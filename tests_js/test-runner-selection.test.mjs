@@ -70,6 +70,18 @@ test("real production paths conservatively include cross-language consumers", as
   }
 });
 
+test("Agent Workflow definitions fail closed to every full-tier behavioral suite", async () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const [realMatrix, realPaths] = await Promise.all([loadMatrix(root), trackedPaths(root)]);
+  const selected = selectAffected(realMatrix, realPaths, [
+    ".workflows/workflows/job-apply.synthetic-resume-extraction-request.workflow.yaml",
+  ]);
+  assert.match(selected.fallbackReason, /^global path:/);
+  for (const id of ["core-workflow-audit", "native-default-cutover", "node-workspace-other"]) {
+    assert.equal(selected.suiteIds.includes(id), true, `workflow change omitted ${id}`);
+  }
+});
+
 test("matrix validation rejects omissions and duplicate full inventory", () => {
   assert.deepEqual(validateMatrix(matrix, tracked), []);
   const duplicate = structuredClone(matrix);

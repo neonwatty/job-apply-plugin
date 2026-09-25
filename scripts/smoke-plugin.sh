@@ -95,7 +95,7 @@ python3 "$REPO_ROOT/scripts/smoke/upgrade_verify.py" upgrade \
 python3 "$REPO_ROOT/scripts/smoke/workspace_verify.py" "$SMOKE_SOURCE_FIXTURE_DIR" "$SMOKE_TEMP_ROOT"
 echo "Running Playwright and CLI walkthrough against packaged fixture"
 JOB_WORKSPACE_TEST_ROOT="$SMOKE_SOURCE_FIXTURE_DIR" node --test \
-  --test-name-pattern='owner beta clean packaged|real browser and CLI share CRUD|Needs Attention browser and CLI walkthrough' \
+  --test-name-pattern='owner beta clean packaged|job-apply.synthetic-profile-answers and job-apply.synthetic-resume-extraction-request browser/CLI behavior|Needs Attention browser and CLI walkthrough' \
   "$REPO_ROOT/tests_js/workspace.test.mjs"
 echo "Selected packaged Playwright and CLI walkthroughs passed"
 

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -48,7 +49,7 @@ test("validator JSON ok is authoritative even when the process can exit successf
 });
 
 test("workflow validator invokes the package JavaScript entry point through Node", () => {
-  const expected = "/repo/node_modules/@lineagehq/workflows/bin/workflow.js";
+  const expected = path.join("/repo", "node_modules", "@lineagehq", "workflows", "bin", "workflow.js");
   assert.equal(workflowRunnerPath("/repo", "win32"), expected);
   assert.equal(workflowRunnerPath("/repo", "darwin"), expected);
 });
