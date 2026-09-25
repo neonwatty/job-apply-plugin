@@ -256,11 +256,15 @@ export function removeReviewedCoreWorkflowMatrixAdditions(matrix, registrationOw
   const workflowGlobalPath = '.workflows/workflows/*.workflow.yaml';
   assert.equal(matrix.globalPaths.filter(path => path === workflowGlobalPath).length, 1);
   matrix.globalPaths = matrix.globalPaths.filter(path => path !== workflowGlobalPath);
-  const coreWorkflowOwner = { paths: ['config/core-workflows.json', 'tools/validate-agent-workflows.mjs',
-    'tools/audit-core-workflows.mjs'], suites: ['core-workflow-audit'] };
-  const coreWorkflowOwnerIndex = matrix.ownership.findIndex(rule => rule.paths.includes(coreWorkflowOwner.paths[0]));
-  assert.ok(coreWorkflowOwnerIndex >= 0);
-  assert.deepEqual(matrix.ownership.splice(coreWorkflowOwnerIndex, 1), [coreWorkflowOwner]);
+  const coreWorkflowOwners = [
+    { paths: ['config/core-workflows.json'], suites: ['core-workflow-audit', 'python-qa'] },
+    { paths: ['tools/validate-agent-workflows.mjs', 'tools/audit-core-workflows.mjs'], suites: ['core-workflow-audit'] },
+  ];
+  for (const owner of coreWorkflowOwners) {
+    const index = matrix.ownership.findIndex(rule => rule.paths.includes(owner.paths[0]));
+    assert.ok(index >= 0);
+    assert.deepEqual(matrix.ownership.splice(index, 1), [owner]);
+  }
   const coreWorkflowInventoryPaths = ['.workflows/workflows/*.workflow.yaml', 'config/core-workflows.json'];
   for (const path of coreWorkflowInventoryPaths) {
     assert.equal(matrix.inventory.include.filter(value => value === path).length, 1);
