@@ -330,7 +330,7 @@ test("Needs Attention browser and CLI walkthrough converges all canonical reason
 });
 
 
-test("job-apply.synthetic-profile-answers and job-apply.synthetic-resume-extraction-request browser/CLI behavior", { timeout: 90_000 }, async () => {
+test("real browser and CLI share CRUD, conflict, ready handoff, semantics, focus, and shutdown", { timeout: 90_000 }, async () => {
   const context = await createBrowserCrudScenario();
   try {
     await runBrowserCrudFactsPhase(context);

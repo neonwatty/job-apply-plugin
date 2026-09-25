@@ -56,6 +56,7 @@ export function Extractions({ client, dirtyChanged, openResumes }: { client: Ext
     listRequest.current?.abort();
   }, []);
   async function refreshLists() {
+    handoffGeneration.current++;
     listRequest.current?.abort();
     const controller = new AbortController(), version = ++listGeneration.current;
     listRequest.current = controller;

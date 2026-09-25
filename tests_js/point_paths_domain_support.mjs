@@ -253,8 +253,11 @@ export function removeReviewedCoreWorkflowMatrixAdditions(matrix, registrationOw
   const coreWorkflowIndex = matrix.suites.findIndex(suite => suite.id === coreWorkflowSuite.id);
   assert.ok(coreWorkflowIndex >= 0);
   assert.deepEqual(matrix.suites.splice(coreWorkflowIndex, 1), [coreWorkflowSuite]);
-  const coreWorkflowOwner = { paths: ['.workflows/workflows/*.workflow.yaml', 'config/core-workflows.json',
-    'tools/validate-agent-workflows.mjs', 'tools/audit-core-workflows.mjs'], suites: ['core-workflow-audit'] };
+  const workflowGlobalPath = '.workflows/workflows/*.workflow.yaml';
+  assert.equal(matrix.globalPaths.filter(path => path === workflowGlobalPath).length, 1);
+  matrix.globalPaths = matrix.globalPaths.filter(path => path !== workflowGlobalPath);
+  const coreWorkflowOwner = { paths: ['config/core-workflows.json', 'tools/validate-agent-workflows.mjs',
+    'tools/audit-core-workflows.mjs'], suites: ['core-workflow-audit'] };
   const coreWorkflowOwnerIndex = matrix.ownership.findIndex(rule => rule.paths.includes(coreWorkflowOwner.paths[0]));
   assert.ok(coreWorkflowOwnerIndex >= 0);
   assert.deepEqual(matrix.ownership.splice(coreWorkflowOwnerIndex, 1), [coreWorkflowOwner]);

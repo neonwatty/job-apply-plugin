@@ -94,13 +94,15 @@ export async function nativeExtractionsBrowser(page, root, fixture, buildRoot) {
     globalThis.rejectSyntheticClipboardWrite = () => rejectWrite(new Error('Delayed clipboard denial'));
   });
   await copyHandoff.click();
-  await page.getByRole('button', { name: 'Cancel extraction', exact: true }).click();
-  await page.getByText('Extraction request cancelled.', { exact: true }).waitFor();
+  await cli('resume-extraction-request-cancel', ['--id', requested.requestId,
+    '--expected-revision', String(requested.revision)]);
+  await page.getByRole('button', { name: 'Refresh extraction status', exact: true }).click();
+  await copyHandoff.waitFor({ state: 'hidden' });
   await fallback.waitFor({ state: 'hidden' });
   await page.evaluate(() => globalThis.rejectSyntheticClipboardWrite());
   await page.waitForTimeout(0);
   assert.equal(await fallback.count(), 0);
-  await page.getByText('Extraction request cancelled.', { exact: true }).waitFor();
+  assert.equal(await copyHandoff.count(), 0);
   // The rejected method is synthetic and page-scoped. Reload through the normal
   // application lifecycle so later copy assertions exercise the real clipboard.
   await page.reload();

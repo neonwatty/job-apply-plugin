@@ -128,6 +128,6 @@ import { nextEditor } from './workspace_next_editor_support.mjs';
 import { nextBrowser } from './workspace_next_browser_support.mjs';
 test('Next Companion enforces local transport security and bounded proxy contracts', { timeout: 15000 }, () => nextSecurity());
 test('Next Companion editor preserves drafts and validates canonical response contracts', () => nextEditor());
-test('Next Companion production standalone supports editing conflicts reload and native navigation', { timeout: 120000 }, async t => {
+test('job-apply.synthetic-profile-answers and job-apply.synthetic-resume-extraction-request native Companion behavior', { timeout: 180000 }, async t => {
   t.diagnostic(JSON.stringify(await nextBrowser()));
 });
