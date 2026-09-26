@@ -195,9 +195,10 @@ class SessionReadinessMixin:
         expected_ats: str | None = None,
     ) -> dict[str, Any]:
         packet = _late('_require_object')(raw, "readiness input")
+        legacy = "fixture" in packet
         required = {
-            "attemptRevision", "evidenceKind", "fixture", "observation",
-            "expectedObservationRevision", "formManifest",
+            "attemptRevision", "evidenceKind", "fixture" if legacy else "observedForm",
+            "observation", "expectedObservationRevision", "formManifest",
         }
         if set(packet) != required:
             raise StoreError("readiness input contains unsupported fields")
@@ -206,51 +207,66 @@ class SessionReadinessMixin:
         if packet.get("evidenceKind") not in _late('READINESS_EVIDENCE_KINDS'):
             raise StoreError("readiness evidence kind is unsupported")
         try:
-            fixture = _late('_require_object')(packet["fixture"], "readiness fixture")
-            fixture_id = fixture.get("id")
-            if (
-                not isinstance(fixture_id, str)
-                or _late('re').fullmatch(r"[a-z0-9][a-z0-9-]{0,127}", fixture_id) is None
-            ):
-                raise StoreError("readiness fixture id is invalid")
-            fixture_path = (
-                _late('Path')(_late('__file__')).resolve().parent.parent
-                / "qa" / "fixtures" / fixture_id / "fixture.json"
-            )
-            trusted_fixture = _late('read_json_object')(fixture_path, "readiness fixture")
-            if not _late('hmac').compare_digest(
-                _late('_canonical_json')(fixture), _late('_canonical_json')(trusted_fixture)
-            ):
-                raise StoreError("readiness fixture is not the bundled definition")
-            if (
-                isinstance(expected_ats, str)
-                and expected_ats
-                and fixture.get("platformFamily") != expected_ats
-            ):
-                raise StoreError("readiness fixture does not match the job ATS")
-            steps = fixture.get("steps")
-            if (
-                not isinstance(steps, list)
-                or not any(
-                    isinstance(control, dict) and control.get("required") is True
-                    for step in steps
-                    if isinstance(step, dict)
-                    for control in step.get("controls", [])
-                    if isinstance(step.get("controls", []), list)
+            if legacy:
+                fixture = _late('_require_object')(packet["fixture"], "readiness fixture")
+                fixture_id = fixture.get("id")
+                if (
+                    not isinstance(fixture_id, str)
+                    or _late('re').fullmatch(r"[a-z0-9][a-z0-9-]{0,127}", fixture_id) is None
+                ):
+                    raise StoreError("readiness fixture id is invalid")
+                fixture_path = (
+                    _late('Path')(_late('__file__')).resolve().parent.parent
+                    / "qa" / "fixtures" / fixture_id / "fixture.json"
                 )
-            ):
-                raise StoreError(
-                    "readiness evidence requires an observed required control"
+                trusted_fixture = _late('read_json_object')(fixture_path, "readiness fixture")
+                if not _late('hmac').compare_digest(
+                    _late('_canonical_json')(fixture), _late('_canonical_json')(trusted_fixture)
+                ):
+                    raise StoreError("readiness fixture is not the bundled definition")
+                if (
+                    isinstance(expected_ats, str) and expected_ats
+                    and fixture.get("platformFamily") != expected_ats
+                ):
+                    raise StoreError("readiness fixture does not match the job ATS")
+                steps = fixture.get("steps")
+                if (
+                    not isinstance(steps, list)
+                    or not any(
+                        isinstance(control, dict) and control.get("required") is True
+                        for step in steps
+                        if isinstance(step, dict)
+                        for control in step.get("controls", [])
+                        if isinstance(step.get("controls", []), list)
+                    )
+                ):
+                    raise StoreError("readiness evidence requires an observed required control")
+                _late('FORM_READINESS_MODULE').validate_form_manifest(
+                    fixture, packet["formManifest"],
+                    expected_observation_revision=packet["expectedObservationRevision"],
                 )
-            _late('FORM_READINESS_MODULE').validate_form_manifest(
-                fixture,
-                packet["formManifest"],
-                expected_observation_revision=packet["expectedObservationRevision"],
-            )
-            report = _late('FORM_READINESS_MODULE').evaluate_readiness(
-                fixture, packet["observation"],
-                expected_observation_revision=packet["expectedObservationRevision"],
-            )
+                report = _late('FORM_READINESS_MODULE').evaluate_readiness(
+                    fixture, packet["observation"],
+                    expected_observation_revision=packet["expectedObservationRevision"],
+                )
+            else:
+                if packet["evidenceKind"] != "agent_attested_current_attempt":
+                    raise StoreError("live form requires current attempt attestation")
+                form = _late('_require_object')(packet["observedForm"], "observed form")
+                module = _late('FORM_READINESS_MODULE')
+                manifest = module.make_live_form_manifest(
+                    form, observation_revision=packet["expectedObservationRevision"]
+                )
+                module.validate_live_form(
+                    form, expected_observation_revision=packet["expectedObservationRevision"],
+                    expected_platform=expected_ats,
+                )
+                if packet["formManifest"] != manifest:
+                    raise StoreError("observed form manifest mismatch")
+                report = module.evaluate_live_readiness(
+                    form, packet["observation"],
+                    expected_observation_revision=packet["expectedObservationRevision"],
+                )
         except Exception:
             raise StoreError("readiness evidence is invalid") from None
         return {

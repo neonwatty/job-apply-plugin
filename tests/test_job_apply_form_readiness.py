@@ -72,6 +72,48 @@ class FormReadinessTests(unittest.TestCase):
         for forbidden in ("filename", "filepath", "https://", "browser", "value"):
             self.assertNotIn(forbidden, serialized.lower())
 
+    def test_live_form_inventory_accepts_custom_fields_and_blocks_missing_required(self):
+        form = {
+            "schemaVersion": 1, "platformFamily": "greenhouse",
+            "observationRevision": 7, "complete": True,
+            "controls": [
+                {"id": "contact.email", "role": "textbox", "required": True},
+                {"id": "custom.question", "role": "combobox", "required": True},
+                {"id": "profile.website", "role": "textbox", "required": False},
+                {"id": "resume.file", "role": "file", "required": True},
+            ],
+        }
+        manifest = READINESS.make_live_form_manifest(form, observation_revision=7)
+        self.assertEqual(manifest["requiredControlIds"], [
+            "contact.email", "custom.question", "resume.file",
+        ])
+        states = {"contact.email": "complete", "custom.question": "complete", "resume.file": "accepted"}
+        observation = READINESS.make_live_readiness_observation(
+            form, states, observation_revision=7, adapter_state="accessible",
+            upload_capability="available", validation_error_control_ids=(),
+            final_control_state="available",
+        )
+        self.assertEqual(READINESS.evaluate_live_readiness(
+            form, observation, expected_observation_revision=7,
+        )["status"], "ready")
+        incomplete = copy.deepcopy(observation)
+        incomplete["controls"] = [item for item in incomplete["controls"] if item["controlId"] != "custom.question"]
+        report = READINESS.evaluate_live_readiness(
+            form, incomplete, expected_observation_revision=7,
+        )
+        self.assertEqual(report["status"], "blocked")
+        self.assertIn("required-control-evidence-missing", report["blockerCodes"])
+        tampered = copy.deepcopy(form)
+        tampered["controls"].append({"id": "special.extra", "role": "checkbox", "required": True})
+        self.assertNotEqual(manifest, READINESS.make_live_form_manifest(tampered, observation_revision=7))
+        for changed in (
+            {**form, "complete": False},
+            {**form, "observationRevision": 6},
+            {**form, "controls": list(reversed(form["controls"]))},
+        ):
+            with self.assertRaises(READINESS.FormReadinessError):
+                READINESS.make_live_form_manifest(changed, observation_revision=7)
+
     def test_optional_control_may_be_absent(self):
         self.assertEqual(self.evaluate()["status"], "ready")
 

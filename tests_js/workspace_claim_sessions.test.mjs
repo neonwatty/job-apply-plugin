@@ -4,6 +4,8 @@ import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import test from 'node:test';
 import { buildClaimSession, validateClaimHandoff } from '../runtime/contracts/workspace/claim-session.js';
+import { makeLiveFormManifest, makeLiveReadinessObservation } from '../runtime/contracts/workspace/claim-session-readiness.js';
+import { canonicalJson } from '../runtime/contracts/workspace/canonical-json.js';
 import { fromJSON, serialize } from '../runtime/contracts/workspace/values.js';
 
 const plain = value => JSON.parse(serialize(value));
@@ -21,6 +23,42 @@ function readyPacket() {
       controls:controls.map(control => ({controlId:control.id,kind:kinds[control.role],state:control.role === 'file' ? 'accepted':'complete',observationRevision:7})),
       validationErrorControlIds:[],finalControlState:'available'}};
 }
+function livePacket(platformFamily='greenhouse') {
+  const controls = [
+    {id:'authorization.sponsorship',role:'combobox',required:true},
+    {id:'contact.email',role:'textbox',required:true},
+    {id:'contact.first_name',role:'textbox',required:true},
+    {id:'contact.last_name',role:'textbox',required:true},
+    {id:'demographic.consent',role:'checkbox',required:true},
+    {id:'demographic.gender',role:'combobox',required:true},
+    {id:'demographic.race',role:'combobox',required:true},
+    {id:'demographic.veteran',role:'combobox',required:true},
+    {id:'location.state',role:'combobox',required:true},
+    {id:'profile.website',role:'textbox',required:false},
+    {id:'resume.file',role:'file',required:true},
+    {id:'work_authorization',role:'combobox',required:true},
+  ];
+  const observationRevision=7;
+  const requiredControlIds=controls.filter(control=>control.required).map(control=>control.id);
+  const fingerprint=createHash('sha256').update(canonicalJson(fromJSON({platformFamily,controls}))).digest('hex');
+  const observedForm={schemaVersion:1,platformFamily,observationRevision,complete:true,controls};
+  return {attemptRevision:3,evidenceKind:'agent_attested_current_attempt',observedForm,expectedObservationRevision:observationRevision,
+    formManifest:{schemaVersion:1,platformFamily,observationRevision,requiredControlIds,controlSetFingerprint:`sha256:${fingerprint}`,complete:true},
+    observation:{schemaVersion:1,platformFamily,observationRevision,adapterState:'accessible',uploadCapability:'available',
+      controls:controls.filter(control=>control.required).map(control=>({controlId:control.id,
+        kind:{textbox:'text',combobox:'selection',checkbox:'toggle',file:'upload'}[control.role],
+        state:control.role==='file'?'accepted':'complete',observationRevision})),
+      validationErrorControlIds:[],finalControlState:'available'}};
+}
+test('live-form builders serialize observed custom controls without applicant values',()=>{
+  const packet=livePacket();
+  assert.deepEqual(plain(makeLiveFormManifest(fromJSON(packet.observedForm),fromJSON(7),fromJSON('greenhouse'))),packet.formManifest);
+  const states=Object.fromEntries(packet.observation.controls.map(control=>[control.controlId,control.state]));
+  const observed=makeLiveReadinessObservation(fromJSON(packet.observedForm),states,fromJSON(7),{
+    adapterState:'accessible',uploadCapability:'available',validationErrorControlIds:[],finalControlState:'available'});
+  assert.deepEqual(plain(observed),packet.observation);
+  assert.doesNotMatch(JSON.stringify(plain(observed)),/PRIVATE|https:|filename|filepath/i);
+});
 function base() {
   return {incoming:{status:'active',company:'EPHEMERAL_COMPANY',role:'EPHEMERAL_ROLE',url:'https://private.invalid',
     pendingFields:[{question:' Preferred  CITY? ',state:'missing',answerKey:'answer',scope:{ats:'greenhouse'},matchConfidence:'high',matchReasonCodes:['fabricated']}],answerKeys:['answer']},
@@ -119,6 +157,33 @@ test('claim sessions preserve Python privacy, reference identity, approvals and 
   readiness('missing evidence controls',(item,packet)=>packet.observation.controls=[]);
   readiness('pending information',(item)=>item.incoming.pendingFields=base().incoming.pendingFields);
   readiness('status mismatch',item=>item.incoming.status='active');
+  function live(name, change=()=>{}) { add(`live ${name}`,item=>{
+    item.incoming={status:'review',readinessInput:livePacket()};item.target='awaiting_review';change(item,item.incoming.readinessInput);
+  }); }
+  live('custom greenhouse form reaches review');
+  for (const platform of ['ashby','lever','linkedin-easy-apply','rippling','workday']) live(`${platform} custom form`,(item)=>{
+    item.context.ats=platform;
+    item.incoming.readinessInput=livePacket(platform);
+  });
+  live('one required control missing',(item,packet)=>packet.observation.controls=packet.observation.controls.filter(control=>control.controlId!=='location.state'));
+  live('optional control may lack state',(item,packet)=>assert.ok(!packet.observation.controls.some(control=>control.controlId==='profile.website')));
+  live('extra required control is enforced',(item,packet)=>{
+    packet.observedForm.controls.splice(10,0,{id:'question.extra',role:'textbox',required:true});
+    packet.formManifest.requiredControlIds.splice(9,0,'question.extra');
+    packet.formManifest.controlSetFingerprint=`sha256:${createHash('sha256').update(canonicalJson(fromJSON({platformFamily:'greenhouse',controls:packet.observedForm.controls}))).digest('hex')}`;
+  });
+  live('manifest omission',(item,packet)=>packet.formManifest.requiredControlIds.pop());
+  live('inventory incomplete',(item,packet)=>packet.observedForm.complete=false);
+  live('inventory unsorted',(item,packet)=>packet.observedForm.controls.reverse());
+  live('inventory duplicate',(item,packet)=>packet.observedForm.controls.splice(1,0,clone(packet.observedForm.controls[0])));
+  live('inventory value rejected',(item,packet)=>packet.observedForm.controls[0].value='PRIVATE');
+  live('replay rejected',(item,packet)=>packet.evidenceKind='repository_replay');
+  live('wrong ATS',item=>item.context.ats='lever');
+  live('stale inventory',(item,packet)=>packet.observedForm.observationRevision=6);
+  live('upload rejected',(item,packet)=>packet.observation.controls.find(control=>control.kind==='upload').state='rejected');
+  live('validation error',(item,packet)=>packet.observation.validationErrorControlIds=['profile.website']);
+  live('final action activated',(item,packet)=>packet.observation.finalControlState='activated');
+  live('fixture and inventory mixed',(item,packet)=>packet.fixture=clone(fixture));
   const readyExisting=native({...base(),incoming:{status:'review',readinessInput:readyPacket()}}).session;
   add('retained readiness does not authorize handoff',item=>{item.context.existing=readyExisting;item.incoming={status:'review'};item.target='awaiting_review';});
   add('new attempt drops readiness',item=>{item.context.existing=readyExisting;item.context.attemptRevision=5;item.incoming={status:'active'};});
