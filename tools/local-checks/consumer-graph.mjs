@@ -125,7 +125,7 @@ export async function discoverConsumerGraph(root, tracked) {
         === JSON.stringify(nativeRecipe.callers.map(row => row.path))) continue;
 
     if (dispatch.sites.has(`${call.path}:${call.sha256}`)) continue;
-    if (call.path === 'tools/local-checks/consumer-graph.mjs' && hashes.get(call.path) === NPM_QUERY_SOURCE_SHA256
+    if (call.path === 'tools/local-checks/consumer-graph.mjs' && NPM_QUERY_SOURCE_SHA256.includes(hashes.get(call.path))
       && call.expression === NPM_QUERY_EXPRESSION) continue;
     const available = [...PROCESS_RECIPES, ...LOCAL_PROCESS_RECIPES, ...callerRecipes,
       ...(!process.env.PYTHON && dispatch.proved ? PROFILE_RECIPES : [])];
@@ -151,7 +151,7 @@ export async function discoverConsumerGraph(root, tracked) {
       }
       if (recipe.python || PROFILE_RECIPES.includes(recipe)) {
         pythonInventory ??= await observedPythonInventory(root, paths, hashes);
-        if (pythonInventory !== PYTHON_INVENTORY_SHA256) reasons.push('Unreviewed Python source inventory');
+        if (!PYTHON_INVENTORY_SHA256.includes(pythonInventory)) reasons.push('Unreviewed Python source inventory');
       }
       for (const target of recipe.repositoryTargets.filter(PYTHON_SOURCE_PATH)) {
         if (!hashes.has(target)) {
