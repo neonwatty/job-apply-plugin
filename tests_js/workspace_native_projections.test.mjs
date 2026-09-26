@@ -84,6 +84,21 @@ test('overview setup precedence and accepted active counts',async()=>{
   assert.equal(plain(await service.overview()).counts.answers,1);
 });
 
+test('scoped resume onboarding does not treat applicant-wide profile facts as confirmed resume facts',async()=>{
+  const {service,tx}=setup();
+  tx.resumes=fromJSON({resumes:{r:{id:'r',default:true,contentRevision:'content_current'}}});
+  tx.profile=fromJSON({profile:{name:'PRIVATE LEGACY FACT'}});
+  tx.requests=fromJSON({requests:{request:{requestId:'request',resumeId:'r',scope:'resume',status:'requested'}}});
+  const pending=plain(await service.overview());
+  assert.equal(pending.setup.hasProfileFacts,false);
+  assert.equal(pending.setup.factsWorkspace,'resumes');
+  assert.equal(pending.nextAction,'review_facts');
+  tx.facts=fromJSON({sets:{r:{versions:[{state:'confirmed',contentRevision:'content_current'}]}}});
+  const confirmed=plain(await service.overview());
+  assert.equal(confirmed.setup.hasProfileFacts,true);
+  assert.equal(confirmed.nextAction,'capture_job');
+});
+
 test('all modern projection payloads and signatures match authoritative Python',async()=>{
   const {service,tx}=setup([job('α','needs_info'),job('one','awaiting_review'),job('two','in_progress'),job('deleted','saved',{deletedAt:now})]);
   // Canonical job ids are ASCII; unicode in projected labels still tests canonical hashing.
