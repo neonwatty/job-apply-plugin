@@ -100,6 +100,21 @@ class StoreTests(StoreTestCase):
             mixed_claim["job"]["revision"],
         )["job"]
 
+        consent_ready = ready("consent-job", 4)
+        consent_claim = self.store.acquire_ready_job(
+            consent_ready["id"], "private-consent-owner", consent_ready["revision"]
+        )
+        consent_action = self.store.handoff_claimed_job(
+            consent_ready["id"], consent_claim["token"], "needs_info",
+            {
+                "status": "active", "step": "questions",
+                "attemptRevision": consent_claim["job"]["revision"],
+                "pendingFields": [],
+                "blockers": [{"type": "owner_review", "code": "consent-required"}],
+            },
+            consent_claim["job"]["revision"],
+        )["job"]
+
         interrupted_ready = ready("interrupted-job", 3)
         self.store.acquire_ready_job(
             interrupted_ready["id"], "private-interrupted-owner", interrupted_ready["revision"]
@@ -125,6 +140,7 @@ class StoreTests(StoreTestCase):
                 "browser_action_required",
                 "needs_information",
                 "needs_information",
+                "owner_confirmation_required",
             ],
         )
         allowed = {
@@ -133,7 +149,8 @@ class StoreTests(StoreTestCase):
             "missingInformationCount", "sessionRevision", "session",
         }
         self.assertTrue(all(set(item) == allowed for item in projection["items"]))
-        self.assertEqual(projection["items"][-1]["missingInformationCount"], 2)
+        needs_row = next(item for item in projection["items"] if item["jobId"] == needs["id"])
+        self.assertEqual(needs_row["missingInformationCount"], 2)
         browser_row = next(
             item for item in projection["items"]
             if item["jobId"] == browser_action["id"]
@@ -152,6 +169,10 @@ class StoreTests(StoreTestCase):
             {entry["code"] for entry in mixed_row["session"]["blockers"]},
             {"unsupported-control", "owner-input-required", "captcha-required"},
         )
+        consent_row = next(item for item in projection["items"] if item["jobId"] == consent_action["id"])
+        self.assertEqual(consent_row["reasonCode"], "owner_confirmation_required")
+        self.assertEqual(consent_row["missingInformationCount"], 0)
+        self.assertNotIn("missing facts", consent_row["guidance"].lower())
         self.assertEqual(projection, self.store.list_needs_attention())
         serialized = json.dumps(projection)
         for forbidden in (
@@ -177,6 +198,7 @@ class StoreTests(StoreTestCase):
         self.store.transition_job(
             "browser-action-job", "saved", browser_action["revision"]
         )
+        self.store.transition_job("consent-job", "saved", consent_action["revision"])
         self.store.transition_job(
             "mixed-browser-action-job", "saved", mixed_action["revision"]
         )

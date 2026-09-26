@@ -50,6 +50,7 @@ class CoordinatorAttentionMixin:
             "awaiting_human_review": 2,
             "browser_action_required": 3,
             "needs_information": 4,
+            "owner_confirmation_required": 5,
         }
         reason_details = {
             "expired_agent_attempt": (
@@ -71,6 +72,10 @@ class CoordinatorAttentionMixin:
             "browser_action_required": (
                 "Browser action required",
                 "Open Job details and continue in the visible browser. The saved information is already known; do not create or re-enter an answer in Companion.",
+            ),
+            "owner_confirmation_required": (
+                "Confirmation needed",
+                "Confirm the requested action for the visible application form, then mark the job ready to resume the attempt.",
             ),
         }
         rows: list[dict[str, Any]] = []
@@ -133,6 +138,14 @@ class CoordinatorAttentionMixin:
                         }
                     ):
                         reason_code = "browser_action_required"
+                    elif (
+                        reason_code == "needs_information"
+                        and missing_count == 0
+                        and session.get("blockers") == [
+                            {"type": "owner_review", "code": "consent-required"}
+                        ]
+                    ):
+                        reason_code = "owner_confirmation_required"
             reason_label, guidance = reason_details[reason_code]
             rows.append({
                 "jobId": job["id"],

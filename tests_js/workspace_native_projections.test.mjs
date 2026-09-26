@@ -43,6 +43,14 @@ test('activity is selected-job-only, missing sessions work and unknown/deleted j
   await assert.rejects(service.activity('deleted'),/job does not exist/);
   assert.throws(()=>service.activity('../escape'));
 });
+test('a consent-only handoff requests confirmation rather than missing information',async()=>{
+  const consent=session('consent',{blockers:[{type:'owner_review',code:'consent-required'}]});
+  const {service}=setup([job('consent','needs_info')],[consent]);
+  const attention=plain(await service.attention());
+  assert.equal(attention.items[0].reasonCode,'owner_confirmation_required');
+  assert.equal(attention.items[0].missingInformationCount,0);
+  assert.doesNotMatch(attention.items[0].guidance,/missing facts|missing answers/i);
+});
 test('activity pending information is value-free and stale approvals are suppressed',async()=>{
   const reference=`pending_${'a'.repeat(32)}`;
   const approval={reference,answerKey:'answer',answerRevision:1,currentUse:true,remember:false,policyMode:'strict',useAuthority:'per_use',eligible:true,confidenceBand:'none',reasonCodes:[]};

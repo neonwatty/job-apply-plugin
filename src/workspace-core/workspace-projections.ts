@@ -52,6 +52,7 @@ const reasons = [
   ['awaiting_human_review', 'Awaiting your review', 'Open Job details. After you personally submit on the third-party site, confirm Applied, or close the job with an outcome.'],
   ['browser_action_required', 'Browser action required', 'Open Job details and continue in the visible browser. The saved information is already known; do not create or re-enter an answer in Companion.'],
   ['needs_information', 'Needs information', 'Open Job details and resolve the missing facts, resume, or answers, then run preflight and mark the job ready.'],
+  ['owner_confirmation_required', 'Confirmation needed', 'Confirm the requested action for the visible application form, then mark the job ready to resume the attempt.'],
 ] as const;
 function compareText(a: string, b: string): number {
   return text(a).compare(text(b));
@@ -68,6 +69,11 @@ function browserOnly(session: Document): boolean {
   const pairs = new Set(blockers.map(item => `${label(item, 'type')}/${label(item, 'code')}`));
   return same(handoff, expected) && pairs.size === 2
     && pairs.has('browser_handoff/unsupported-control') && pairs.has('information/owner-input-required');
+}
+function consentOnly(session: Document): boolean {
+  const blockers = (get(session, 'blockers') ?? []) as Document[];
+  return blockers.length === 1 && label(blockers[0]!, 'type') === 'owner_review'
+    && label(blockers[0]!, 'code') === 'consent-required';
 }
 function attentionLocked(tx: ProjectionTransaction, now: string): Document {
   const rows: Document[] = [];
@@ -92,6 +98,7 @@ function attentionLocked(tx: ProjectionTransaction, now: string): Document {
         revision = integer(sessionRevision(session));
         projected = select(session, sessionFields);
         if (reason === 4 && missing === 0 && browserOnly(session)) reason = 3;
+        else if (reason === 4 && missing === 0 && consentOnly(session)) reason = 5;
       }
     }
     const [code, reasonLabel, guidance] = reasons[reason]!;
