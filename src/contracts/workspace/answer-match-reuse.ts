@@ -8,7 +8,7 @@ export interface ReuseInput {
   match: Value; candidate: Value; scope: Value; fieldClass: Value; sensitivity: Value;
   mode: Value; useAuthority: Value; allowedSensitiveFieldClasses?: Value;
 }
-export function policyReasons(record: Document): string[] {
+export function policyReasons(record: Document, sensitiveUseAuthorized = false): string[] {
   const status = string(fallback(record,'recordStatus',text('active')));
   const review = string(fallback(record,'reviewStatus',text('accepted')));
   const state = string(get(record,'state'));
@@ -19,7 +19,8 @@ export function policyReasons(record: Document): string[] {
   if (!['seen','unseen','missing'].includes(value!)) throw new AnswerMatchError('candidate value state is invalid');
   return [status === 'active' ? 'candidate_active':'candidate_deleted',
     review === 'accepted' ? 'candidate_accepted':'candidate_not_accepted',
-    state === 'confirmed' ? 'candidate_confirmed':'candidate_not_confirmed',`value_${value}`];
+    (state === 'confirmed' || (state === 'sensitive' && sensitiveUseAuthorized))
+      ? 'candidate_confirmed':'candidate_not_confirmed',`value_${value}`];
 }
 export function evaluateReuse(input: ReuseInput): Document {
   if (!(input.match instanceof PythonObject) || !(input.candidate instanceof PythonObject)) throw new AnswerMatchError('reuse input is invalid');
@@ -36,7 +37,9 @@ export function evaluateReuse(input: ReuseInput): Document {
   if (!Array.isArray(allowlist)) throw new AnswerMatchError('field class allowlist is invalid');
   const allowed = new Set(allowlist.map(fieldClass));
   const metadata = metadataReasons(input.candidate,input.scope,observedClass,observedSensitivity);
-  const policy = policyReasons(input.candidate);
+  const sensitiveUseAuthorized = observedSensitivity !== 'none' && (authority === 'per_use'
+    || (mode === 'bounded_loose' && authority === 'bounded_policy' && allowed.has(observedClass)));
+  const policy = policyReasons(input.candidate,sensitiveUseAuthorized);
   const confidenceSafe = ['exact','high'].includes(band!) && !reasons.some(value => string(value) === 'ambiguous_tie');
   const output = [mode === 'strict' ? 'mode_strict':'mode_bounded_loose',...metadata,...policy,
     confidenceSafe ? 'confidence_eligible':'confidence_ineligible'];
