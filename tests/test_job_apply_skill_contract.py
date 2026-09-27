@@ -117,9 +117,16 @@ class JobApplySkillContractTests(unittest.TestCase):
     def test_upload_uses_resolved_path_and_completes_other_fields_before_handoff(self) -> None:
         for required in (
             "store resume-resolve --id <confirmed-resume-id>",
-            "Check that this exact file exists and is nonempty",
+            "Require the returned ID and revision to match the selected run's resume",
+            "Check that this exact path is an absolute, readable, nonempty regular file",
+            "Pass that returned path unchanged",
             "Never construct an upload path from a Store root",
-            "Compare the path passed to the chooser with the exact `resume-resolve` path",
+            "First rerun `resume-resolve` for the selected resume",
+            "correct it from `resume-resolve` and retry once",
+            "do not reload it merely to retry",
+            "Do not blame or ask the owner to change Chrome's extension file-URL permission",
+            "ask the owner where their original resume file is",
+            "never upload the owner-supplied source path directly",
             "finish and verify every other field supported by the current form",
             "count a visible selected chip as a selection",
             "An unresolved required upload cannot support `awaiting_review`",
