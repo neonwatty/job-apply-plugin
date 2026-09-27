@@ -436,7 +436,7 @@ export const NPM_QUERY_SOURCE_SHA256 = ['f295db40d83c48c649109fd62b17fcef03d2a93
 
 
 export const PYTHON_SOURCE_PATH = path => /\.(?:py|pyw|sh|bash)$/.test(path) || path.startsWith('.githooks/');
-export const PYTHON_INVENTORY_SHA256 = ['78742fd1dc69395209329ddaaf847f28d1d88fd2983528c13d5446755d855089', '748484926caf5174705dc16743372b673fc43320229bd6be50ec50fd226d33ca', 'f29d952f9a2f6ff91ea3cc4758f96c61d956b46e5dfd88ca90f42e9ae02e9d37', '6f72a97f50d3b04ba9a9d64857b9184135180f649a70d5fc8aa7a9283221a1bc'];
+export const PYTHON_INVENTORY_SHA256 = ['78742fd1dc69395209329ddaaf847f28d1d88fd2983528c13d5446755d855089', '748484926caf5174705dc16743372b673fc43320229bd6be50ec50fd226d33ca', 'f29d952f9a2f6ff91ea3cc4758f96c61d956b46e5dfd88ca90f42e9ae02e9d37', '6f72a97f50d3b04ba9a9d64857b9184135180f649a70d5fc8aa7a9283221a1bc', '42eba419b126e083c562a45bdf16a733ec3f8efe6dffe4334f061cbc4324ac50'];
 
 export const EXTRA_CALLER_PROCESS_RECIPES = [
   {
@@ -489,7 +489,7 @@ export const EXTRA_CALLER_PROCESS_RECIPES = [
   },
   { path: "tests_js/workspace_skill_support.mjs", sourceSha256: "0bb332ebf459b43129cad659375555b9145d07e7d9b139562d89bff87db3f458",
     callHashes: ["abd8aecb67959240163579e59f53c215c4896675b27b019eb297f0aa5357355e"], python: true, skillDocuments: true,
-    skillInventorySha256: ["0de7d2d8b590d74a856afeb6702abe4dc70e6aeb50f9d14de3cfa73cbdf63d94", "829a2e19d973a9b49eeea37a94b976d13744296d4af1a68ef6580794849c2f80", "2d5e12b68e59011904d99cc666eb3a02031a4e46ab778aa01329767623cfb55f", "2bfc2ede0e12f5099747d5a4fdf9d249bd2cb2229bbdc3a2780e1a5b99009b98", "a06e56128fa4807c2fbfe7f120f57b259de58c386b4abd3d456c286ce0cf021e"],
+    skillInventorySha256: ["0de7d2d8b590d74a856afeb6702abe4dc70e6aeb50f9d14de3cfa73cbdf63d94", "829a2e19d973a9b49eeea37a94b976d13744296d4af1a68ef6580794849c2f80", "2d5e12b68e59011904d99cc666eb3a02031a4e46ab778aa01329767623cfb55f", "2bfc2ede0e12f5099747d5a4fdf9d249bd2cb2229bbdc3a2780e1a5b99009b98", "a06e56128fa4807c2fbfe7f120f57b259de58c386b4abd3d456c286ce0cf021e", "bc70add9f7a412b8a26b7c5ba7e77f77927fbdc536f6c2f3bc43ad19b27afef8", "a918222f73d2b50c1b439143e101997829fba6b3d6be21792736312b24fe3eb7"],
     repositoryTargets: ["scripts/skill_documents.py"],
     callers: [{"path":"tests_js/workspace_answers.test.mjs","sha256":"c3b6c03908af35d61f6b74ef113f069befe1993b2c0b350eaeed55957dd0c7c3"},
       {"path":"tests_js/workspace_markup.test.mjs","sha256":"c1106f88c3b055223d7a07a0ec25f91bd5443107555c8de538fd8b4e76bbabdb"},
