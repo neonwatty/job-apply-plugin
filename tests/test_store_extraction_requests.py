@@ -78,6 +78,46 @@ class StoreTests(StoreTestCase):
         with self.assertRaisesRegex(STORE_MODULE.StoreError, "request is invalid"):
             STORE_MODULE.Store(self.root, self.legacy).validate_workspace_startup()
 
+    def test_scoped_resume_extraction_request_matches_native_schema(self):
+        source = self.home / "scoped-request.txt"
+        source.write_text("synthetic resume", encoding="utf-8")
+        resume = self.store.create_resume({
+            "id": "scoped-request-resume", "label": "Scoped", "path": str(source)
+        })
+        request = self.store.create_resume_extraction_request(
+            resume["id"], resume["revision"]
+        )
+        path = self.store.resume_extraction_requests_path
+        document = json.loads(path.read_text(encoding="utf-8"))
+        record = document["requests"][request["requestId"]]
+        record.update({"scope": "resume", "factRevision": None})
+        path.write_text(json.dumps(document), encoding="utf-8")
+        STORE_MODULE.Store(self.root, self.legacy).validate_workspace_startup()
+        cancelled = self.store.cancel_resume_extraction_request(
+            request["requestId"], request["revision"]
+        )
+        self.assertEqual(cancelled["status"], "cancelled")
+        record.update({"status": "completed", "closedAt": record["updatedAt"],
+                       "factRevision": 4})
+        path.write_text(json.dumps(document), encoding="utf-8")
+        STORE_MODULE.Store(self.root, self.legacy).validate_workspace_startup()
+        for changes, removed in (
+            ({"factRevision": 0}, None),
+            ({"factRevision": False}, None),
+            ({"status": "requested", "closedAt": None}, None),
+            ({"scope": "other"}, None),
+            ({}, "factRevision"),
+        ):
+            with self.subTest(changes=changes, removed=removed):
+                invalid = json.loads(json.dumps(document))
+                item = invalid["requests"][request["requestId"]]
+                item.update(changes)
+                if removed:
+                    del item[removed]
+                path.write_text(json.dumps(invalid), encoding="utf-8")
+                with self.assertRaises(STORE_MODULE.StoreError):
+                    STORE_MODULE.Store(self.root, self.legacy).validate_workspace_startup()
+
     def test_resume_extraction_request_assigns_legacy_content_revision(self):
         source = self.home / "legacy-content-revision.txt"
         source.write_text("synthetic legacy managed resume", encoding="utf-8")

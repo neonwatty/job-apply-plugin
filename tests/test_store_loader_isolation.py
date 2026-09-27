@@ -66,6 +66,7 @@ IMPLEMENTATION_SUFFIXES = {
     ".errors",
     ".io",
     ".normalization",
+    ".scoped_extraction",
     ".base",
     ".validation",
     ".validation.profile_answers",

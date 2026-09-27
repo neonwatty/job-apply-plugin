@@ -13,6 +13,7 @@ from ...constants import (
 from ...errors import StoreError
 from ...io import exclusive_file_lock
 from ...validation.extraction import order_extraction_requests
+from ...scoped_extraction import validate_request
 
 
 _RUNTIME_PROVIDER = lambda: globals()
@@ -155,7 +156,7 @@ class ExtractionRequestMixin:
             "proposalId": proposal_id, "revision": current["revision"] + 1,
             "updatedAt": now, "closedAt": now,
         }
-        _late("_validate_extraction_request")(request_id, updated)
+        validate_request(request_id, updated, _late("_validate_extraction_request"))
         requests_document["requests"][request_id] = updated
         requests_document["metadata"]["updatedAt"] = now
         return updated

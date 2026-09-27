@@ -9,6 +9,7 @@ from typing import Any
 from ...constants import SCHEMA_VERSION
 from ...errors import StoreError
 from ...io import atomic_write_json, read_json_object, require_object, validate_version
+from ...scoped_extraction import validate_document
 
 
 _RUNTIME_PROVIDER = lambda: globals()
@@ -37,6 +38,13 @@ def _utc_now() -> str:
     )
 
 
+def _validate_requests_document(document: dict[str, Any]) -> dict[str, Any]:
+    validator = _late("_validate_extraction_requests_document")
+    if validator is None:
+        raise RuntimeError("extraction request validation is not bound")
+    return validate_document(document, validator)
+
+
 class ExtractionJournalMixin:
     """Journal reads, initialization, recovery, and atomic multi-file commits."""
 
@@ -53,10 +61,7 @@ class ExtractionJournalMixin:
         document = _late("read_json_object", read_json_object)(
             self.resume_extraction_requests_path, "resume extraction requests"
         )
-        validator = _late("_validate_extraction_requests_document")
-        if validator is None:
-            raise RuntimeError("extraction request validation is not bound")
-        return validator(document)
+        return _validate_requests_document(document)
 
     def _load_extraction_journal(self) -> dict[str, Any]:
         document = _late("read_json_object", read_json_object)(
@@ -105,7 +110,7 @@ class ExtractionJournalMixin:
                     )
                 )
             if "requestsDocument" in item and item["requestsDocument"] is not None:
-                _late("_validate_extraction_requests_document")(
+                _validate_requests_document(
                     _late("_require_object", require_object)(
                         item["requestsDocument"], "journal requests"
                     )

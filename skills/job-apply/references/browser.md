@@ -38,6 +38,16 @@ Use the fallback only for the blocked control, then return to the visible review
 
 ---
 
+### Embedded ATS resume uploads
+
+For a resume input inside an iframe, arm the selected browser's documented file-chooser listener before clicking the input. If the input is visually hidden and no chooser event arrives, inspect the visible control once and try its **Attach** button with a fresh listener. Verify the selected filename or the ATS's accepted-file state; a click or chooser timeout is not upload proof. Do not infer that Chrome's file-URL permission is disabled from a chooser timeout.
+
+If the embedded control remains inaccessible, a direct form on the same ATS may be used only when its URL comes from the observed application and the company and job identity match. Open it in the same selected visible browser; do not guess a URL, switch automation tools, or treat the embedded draft as transferred. The direct page is a separate form instance. Read its blank form, obtain fresh post-readiness consent for the resume and profile data before entering them, and reconfirm each sensitive saved answer for that use. Refill and verify every field and the accepted resume there. Keep the embedded draft until the direct form is verified, and leave all consent and final submission controls to the owner.
+
+If the direct control also fails, save value-free progress and use the `unsupported-control` browser handoff. Report the observed control failure without proposing a permission change that has not been verified as the cause.
+
+---
+
 ### Post-readiness action-time consent
 
 First read [application automation](application-automation.md). Guided follows the consent transition below. Autofill to Review and Campaign to Review replace the repeated granular prompt only after the live attempt broker authorizes the exact current action group; their durable grant never relaxes the visible-browser, verification, interrupt, sensitive-answer, or final-action rules.
