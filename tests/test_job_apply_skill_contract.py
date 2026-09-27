@@ -114,6 +114,18 @@ class JobApplySkillContractTests(unittest.TestCase):
         ):
             self.assertIn(required, self.skill)
 
+    def test_upload_uses_resolved_path_and_completes_other_fields_before_handoff(self) -> None:
+        for required in (
+            "store resume-resolve --id <confirmed-resume-id>",
+            "Check that this exact file exists and is nonempty",
+            "Never construct an upload path from a Store root",
+            "Compare the path passed to the chooser with the exact `resume-resolve` path",
+            "finish and verify every other field supported by the current form",
+            "count a visible selected chip as a selection",
+            "An unresolved required upload cannot support `awaiting_review`",
+        ):
+            self.assertIn(required, self.skill)
+
     def test_resume_extraction_discovery_is_context_bounded(self) -> None:
         self.assertIn("resume-extraction-request-list --status requested", self.skill)
         self.assertIn("when the owner asks about resume facts", self.skill)

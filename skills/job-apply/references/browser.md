@@ -42,9 +42,13 @@ Use the fallback only for the blocked control, then return to the visible review
 
 For a resume input inside an iframe, arm the selected browser's documented file-chooser listener before clicking the input. If the input is visually hidden and no chooser event arrives, inspect the visible control once and try its **Attach** button with a fresh listener. Verify the selected filename or the ATS's accepted-file state; a click or chooser timeout is not upload proof. Do not infer that Chrome's file-URL permission is disabled from a chooser timeout.
 
+If `setFiles` returns but the ATS remains at an upload progress indicator, treat the upload as unresolved. Compare the path passed to the chooser with the exact `resume-resolve` path and check that the latter exists; inspect the visible widget and browser errors for another specific cause. Do not infer success from `setFiles`, a pending progress bar, or an empty file input. Do not repeatedly reattach the file to a stalled control. Chrome's extension file-URL access is a troubleshooting possibility, not an established diagnosis unless its setting or an upload error confirms it.
+
 If the embedded control remains inaccessible, a direct form on the same ATS may be used only when its URL comes from the observed application and the company and job identity match. Open it in the same selected visible browser; do not guess a URL, switch automation tools, or treat the embedded draft as transferred. The direct page is a separate form instance. Read its blank form, obtain fresh post-readiness consent for the resume and profile data before entering them, and reconfirm each sensitive saved answer for that use. Refill and verify every field and the accepted resume there. Keep the embedded draft until the direct form is verified, and leave all consent and final submission controls to the owner.
 
 If the direct control also fails, save value-free progress and use the `unsupported-control` browser handoff. Report the observed control failure without proposing a permission change that has not been verified as the cause.
+
+Before that handoff, finish and verify every other field supported by the current form, including permitted saved answers and conditional questions. Recheck earlier fields after the failed upload because the form may rerender. For multi-selects, count a visible selected chip as a selection even when the underlying text input is empty. Leave only the failed upload, user-only consent or authentication, and final submission for the owner; list those remaining actions by field name without values. Preserve the visible draft. An unresolved required upload cannot support `awaiting_review`.
 
 ---
 
