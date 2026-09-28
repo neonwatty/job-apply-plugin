@@ -117,11 +117,13 @@ class JobApplySkillContractTests(unittest.TestCase):
     def test_upload_uses_resolved_path_and_completes_other_fields_before_handoff(self) -> None:
         for required in (
             "store resume-resolve --id <confirmed-resume-id>",
-            "Require the returned ID and revision to match the selected run's resume",
-            "Check that this exact path is an absolute, readable, nonempty regular file",
-            "Pass that returned path unchanged",
+            "apps/companion/resume-upload-guard.mjs",
+            "--expected-revision <selected-resume-revision> --candidate-path <proposed-chooser-path>",
+            "This code guard resolves the Store again and rejects a path",
+            "Pass the successful guard's returned `path` unchanged",
             "Never construct an upload path from a Store root",
-            "First rerun `resume-resolve` for the selected resume",
+            "Do not open the chooser until it succeeds",
+            "First rerun the guard",
             "correct it from `resume-resolve` and retry once",
             "do not reload it merely to retry",
             "Do not blame or ask the owner to change Chrome's extension file-URL permission",
