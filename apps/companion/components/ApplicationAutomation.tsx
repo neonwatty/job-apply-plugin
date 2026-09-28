@@ -5,14 +5,19 @@ import type { WorkspaceState } from './contracts';
 import { applicationAuthority,campaignProgress,type ApplicationAuthority,type CampaignProgress } from './automation-model';
 
 type Mode='autofill_to_review'|'campaign_to_review';
-export function ApplicationAutomation({client,authority,disabled,dirtyChanged,changed}:{client:Client;authority:ApplicationAuthority;
+export function ApplicationAutomation({client,authority,refreshVersion,disabled,dirtyChanged,changed}:{client:Client;authority:ApplicationAuthority;refreshVersion:number;
   disabled:boolean;dirtyChanged(value:boolean):void;changed(value:ApplicationAuthority):void}) {
   const [state,setState]=useState<WorkspaceState|null>(null),[mode,setMode]=useState<Mode>('autofill_to_review');
+  const [stateLoading,setStateLoading]=useState(true);
   const [selected,setSelected]=useState<string[]>([]),[duration,setDuration]=useState(120),[sensitive,setSensitive]=useState('');
   const [progress,setProgress]=useState<CampaignProgress|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
   const active=authority.mode!=='guided',dirty=!active&&(selected.length>0||duration!==120||sensitive.trim()!==''||mode!=='autofill_to_review');
   useEffect(()=>{dirtyChanged(dirty||busy);return()=>dirtyChanged(false);},[dirty,busy,dirtyChanged]);
-  useEffect(()=>{void client.state().then(setState).catch(failure=>setError(failure instanceof Error?failure.message:'Unable to load application run.'));},[client]);
+  useEffect(()=>{const controller=new AbortController();setStateLoading(true);setState(null);setSelected([]);
+    void client.state(controller.signal).then(next=>{if(!controller.signal.aborted){setState(next);setError('');}})
+      .catch(failure=>{if(!controller.signal.aborted)setError(failure instanceof Error?failure.message:'Unable to load application run.');})
+      .finally(()=>{if(!controller.signal.aborted)setStateLoading(false);});
+    return()=>controller.abort();},[client,refreshVersion]);
   useEffect(()=>{if(authority.mode==='campaign_to_review')void loadProgress();else setProgress(null);},[authority.mode,authority.revision]);
   const queued=useMemo(()=>{const ids=state?.applicationRun?.queueVersions.at(-1)?.jobIds??[];
     return ids.map(id=>state?.jobs.find(job=>job.id===id)).filter((job):job is NonNullable<typeof job>=>Boolean(job));},[state]);
@@ -35,10 +40,10 @@ export function ApplicationAutomation({client,authority,disabled,dirtyChanged,ch
     <div className="workspace-panel-heading"><div><p className="eyebrow">Application authority</p><h2 id="application-automation-heading">Application automation</h2></div><span className="automation-state">{authority.mode.replaceAll('_',' ')}</span></div>
     <p className="automation-safety">Every mode stops at final review. Submit, Send, Apply, login, CAPTCHA, MFA, verification, and legal consent remain manual.</p>
     <p className="notice" role="status">{authority.mode==='guided'?'Guided · granular confirmation remains active':`${authority.mode.replaceAll('_',' ')} · ${authority.status} · ${authority.jobIds.length} job${authority.jobIds.length===1?'':'s'} · expires ${authority.expiresAt}`}</p>
-    {!active?<form className="automation-form" onSubmit={approve}><fieldset disabled={disabled||busy||!state?.applicationRun}><legend className="visually-hidden">Application automation scope</legend>
+    {!active?<form className="automation-form" onSubmit={approve}><fieldset disabled={disabled||busy||stateLoading||!state?.applicationRun}><legend className="visually-hidden">Application automation scope</legend>
       <label>Mode<select value={mode} onChange={event=>changeMode(event.target.value as Mode)}><option value="autofill_to_review">Autofill to Review</option><option value="campaign_to_review">Campaign to Review</option></select></label>
       <label>Duration in minutes<input type="number" min="1" max="1440" value={duration} onChange={event=>setDuration(Number(event.target.value))}/></label>
-      <fieldset className="automation-job-scope"><legend>Jobs in the active application run</legend>{queued.length?queued.map(job=><label className="check-row" key={job.id}><input type="checkbox" checked={selected.includes(job.id)} disabled={!['ready','in_progress'].includes(job.status)} onChange={()=>toggle(job.id)}/><span><strong>{String(job.role||'Untitled role')} · {String(job.company||'Unknown company')}</strong><small>{job.status.replaceAll('_',' ')} · revision {job.revision}</small></span></label>):<p>No queued jobs are available. Start an application run and prepare its jobs first.</p>}</fieldset>
+      <fieldset className="automation-job-scope"><legend>Jobs in the active application run</legend>{stateLoading?<p>Loading application run…</p>:queued.length?queued.map(job=><label className="check-row" key={job.id}><input type="checkbox" checked={selected.includes(job.id)} disabled={!['ready','in_progress'].includes(job.status)} onChange={()=>toggle(job.id)}/><span><strong>{String(job.role||'Untitled role')} · {String(job.company||'Unknown company')}</strong><small>{job.status.replaceAll('_',' ')} · revision {job.revision}</small></span></label>):<p>No queued jobs are available. Start an application run and prepare its jobs first.</p>}</fieldset>
       <details><summary>Exact sensitive answer permissions</summary><label>Approved answer references, one per line<textarea rows={3} value={sensitive} onChange={event=>setSensitive(event.target.value)}/></label><small>Current use only. Values and broad sensitive categories are never authorized here.</small></details>
       <button className="primary" disabled={!selected.length}>Approve bounded mode</button></fieldset></form>:<div className="button-row"><button className="secondary" disabled={disabled||busy} onClick={guided}>Return to Guided</button>
       {authority.mode==='campaign_to_review'&&authority.status==='active'&&<button className="secondary" disabled={disabled||busy} onClick={()=>control('pause')}>Pause campaign</button>}

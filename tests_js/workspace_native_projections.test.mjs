@@ -43,6 +43,14 @@ test('activity is selected-job-only, missing sessions work and unknown/deleted j
   await assert.rejects(service.activity('deleted'),/job does not exist/);
   assert.throws(()=>service.activity('../escape'));
 });
+test('a consent-only handoff requests confirmation rather than missing information',async()=>{
+  const consent=session('consent',{blockers:[{type:'owner_review',code:'consent-required'}]});
+  const {service}=setup([job('consent','needs_info')],[consent]);
+  const attention=plain(await service.attention());
+  assert.equal(attention.items[0].reasonCode,'owner_confirmation_required');
+  assert.equal(attention.items[0].missingInformationCount,0);
+  assert.doesNotMatch(attention.items[0].guidance,/missing facts|missing answers/i);
+});
 test('activity pending information is value-free and stale approvals are suppressed',async()=>{
   const reference=`pending_${'a'.repeat(32)}`;
   const approval={reference,answerKey:'answer',answerRevision:1,currentUse:true,remember:false,policyMode:'strict',useAuthority:'per_use',eligible:true,confidenceBand:'none',reasonCodes:[]};
@@ -82,6 +90,21 @@ test('overview setup precedence and accepted active counts',async()=>{
   assert.equal(plain(await service.overview()).nextAction,'prepare_job');
   tx.answers=fromJSON({answers:{a:{},b:{reviewStatus:'proposed'},c:{deletedAt:now}}});
   assert.equal(plain(await service.overview()).counts.answers,1);
+});
+
+test('scoped resume onboarding does not treat applicant-wide profile facts as confirmed resume facts',async()=>{
+  const {service,tx}=setup();
+  tx.resumes=fromJSON({resumes:{r:{id:'r',default:true,contentRevision:'content_current'}}});
+  tx.profile=fromJSON({profile:{name:'PRIVATE LEGACY FACT'}});
+  tx.requests=fromJSON({requests:{request:{requestId:'request',resumeId:'r',scope:'resume',status:'requested'}}});
+  const pending=plain(await service.overview());
+  assert.equal(pending.setup.hasProfileFacts,false);
+  assert.equal(pending.setup.factsWorkspace,'resumes');
+  assert.equal(pending.nextAction,'review_facts');
+  tx.facts=fromJSON({sets:{r:{versions:[{state:'confirmed',contentRevision:'content_current'}]}}});
+  const confirmed=plain(await service.overview());
+  assert.equal(confirmed.setup.hasProfileFacts,true);
+  assert.equal(confirmed.nextAction,'capture_job');
 });
 
 test('all modern projection payloads and signatures match authoritative Python',async()=>{

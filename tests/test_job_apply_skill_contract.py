@@ -101,6 +101,40 @@ class JobApplySkillContractTests(unittest.TestCase):
         self.assertIn("requires fresh consent", self.normalized)
         self.assertIn("Keep every final action untouched throughout recovery", self.normalized)
 
+    def test_embedded_upload_fallback_verifies_new_form_and_consent(self) -> None:
+        for required in (
+            "try its **Attach** button with a fresh listener",
+            "a click or chooser timeout is not upload proof",
+            "company and job identity match",
+            "The direct page is a separate form instance",
+            "obtain fresh post-readiness consent",
+            "reconfirm each sensitive saved answer",
+            "Keep the embedded draft until the direct form is verified",
+            "Do not infer that Chrome's file-URL permission is disabled",
+        ):
+            self.assertIn(required, self.skill)
+
+    def test_upload_uses_resolved_path_and_completes_other_fields_before_handoff(self) -> None:
+        for required in (
+            "store resume-resolve --id <confirmed-resume-id>",
+            "apps/companion/resume-upload-guard.mjs",
+            "--expected-revision <selected-resume-revision> --candidate-path <proposed-chooser-path>",
+            "This code guard resolves the Store again and rejects a path",
+            "Pass the successful guard's returned `path` unchanged",
+            "Never construct an upload path from a Store root",
+            "Do not open the chooser until it succeeds",
+            "First rerun the guard",
+            "correct it from `resume-resolve` and retry once",
+            "do not reload it merely to retry",
+            "Do not blame or ask the owner to change Chrome's extension file-URL permission",
+            "ask the owner where their original resume file is",
+            "never upload the owner-supplied source path directly",
+            "finish and verify every other field supported by the current form",
+            "count a visible selected chip as a selection",
+            "An unresolved required upload cannot support `awaiting_review`",
+        ):
+            self.assertIn(required, self.skill)
+
     def test_resume_extraction_discovery_is_context_bounded(self) -> None:
         self.assertIn("resume-extraction-request-list --status requested", self.skill)
         self.assertIn("when the owner asks about resume facts", self.skill)

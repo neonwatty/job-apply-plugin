@@ -123,6 +123,24 @@ async function productionBrowser(root) {
     assert.equal(await page.getByLabel('If that browser is unavailable').inputValue(), 'other_supported');
     assert.equal(await page.getByLabel('Page transitions').inputValue(), 'guided');
     assert.equal(await page.getByLabel('Preferred application mode').inputValue(), 'campaign_to_review');
+    await page.getByLabel('Preferred Codex browser').selectOption('codex_browser');
+    const beforeConflict = await (await fetch(origin + '/api/profile', { headers })).json();
+    const otherWriter = await fetch(origin + '/api/profile', { method: 'PATCH', headers, body: JSON.stringify({
+      patch: { applicationPreferences: { preferredAutomationMode: 'guided', future: 'preserved' } },
+      expectedRevision: beforeConflict.revision, atomicPaths: [], deletedPaths: [],
+    }) });
+    assert.equal(otherWriter.status, 200);
+    await page.getByRole('button', { name: 'Save setup', exact: true }).click();
+    await page.getByRole('button', { name: 'Reapply my setup choices', exact: true }).click();
+    assert.equal(await page.getByLabel('Preferred Codex browser').inputValue(), 'codex_browser');
+    assert.equal(await page.getByLabel('Preferred application mode').inputValue(), 'guided');
+    await page.getByRole('button', { name: 'Save setup', exact: true }).click();
+    await page.getByText('Application setup saved.', { exact: true }).waitFor();
+    const afterConflict = await (await fetch(origin + '/api/profile', { headers })).json();
+    assert.deepEqual(afterConflict.profile.applicationPreferences, {
+      preferredBrowser: 'codex_browser', browserFallback: 'other_supported', progressionMode: 'guided',
+      preferredAutomationMode: 'guided', future: 'preserved',
+    });
     let releaseSetupRefresh, setupRefreshStarted;
     const setupRefreshGate = new Promise(resolve => { releaseSetupRefresh = resolve; });
     const setupRefreshEntered = new Promise(resolve => { setupRefreshStarted = resolve; });

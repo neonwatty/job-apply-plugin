@@ -170,6 +170,17 @@ async function applicationPreferencesAssertions() {
             patch: { applicationPreferences: { preferredBrowser: 'codex_browser', browserFallback: 'ask', progressionMode: 'standard', preferredAutomationMode: 'autofill_to_review' } },
             expectedRevision: 7, atomicPaths: [], deletedPaths: [],
         });
+        const latest = facts.snapshot('{"profile":{"applicationPreferences":{"preferredBrowser":"chrome","browserFallback":"ask","progressionMode":"guided","preferredAutomationMode":"campaign_to_review","future":"preserved"}},"revision":8,"factProvenance":{}}');
+        assert.deepEqual(JSON.parse(setup.applicationPreferencesPatch(latest, {
+            preferredBrowser: 'codex_browser', browserFallback: 'ask', progressionMode: 'guided', preferredAutomationMode: 'campaign_to_review',
+        })), {
+            patch: { applicationPreferences: { preferredBrowser: 'codex_browser' } },
+            expectedRevision: 8, atomicPaths: [], deletedPaths: [],
+        });
+        assert.deepEqual(JSON.parse(setup.applicationPreferencesPatch(empty, setup.defaultApplicationPreferences)), {
+            patch: { applicationPreferences: setup.defaultApplicationPreferences },
+            expectedRevision: 4, atomicPaths: [], deletedPaths: [],
+        });
     });
 }
 export async function nextEditor() {

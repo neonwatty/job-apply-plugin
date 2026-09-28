@@ -21,7 +21,7 @@ from tests.support import store_fixtures
 METHOD_HASHES = {
     'profile_preparedness': 'af2d047ad657c641cb20c88919a5e131d488c95598088d2cd68db3e1ce1b6563',
     '_readiness_blocker_type': '692401032aac15c30a35fb7149052062de0f24d2644d286b13ed5848103e7f60',
-    '_recompute_readiness': 'd1d475381152f79d166d6f055ce48b83e24428fca13fb678cce77eaf73c6271f',
+    '_recompute_readiness': 'dd9f3d33a4bf40b0e6200bf9425e845cb88f46efc423ee180e83bb856b64cadb',
 }
 
 

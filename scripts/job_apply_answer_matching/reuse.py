@@ -13,7 +13,9 @@ from .features import (
     _scope_fingerprint, _sensitivity,
 )
 
-def _candidate_policy_reasons(record: Mapping[str, Any]) -> tuple[str, ...]:
+def _candidate_policy_reasons(
+    record: Mapping[str, Any], sensitive_use_authorized: bool = False
+) -> tuple[str, ...]:
     record_status = record.get("recordStatus", "active")
     if record_status not in RECORD_STATUSES:
         raise AnswerMatchError("candidate record status is invalid")
@@ -32,7 +34,7 @@ def _candidate_policy_reasons(record: Mapping[str, Any]) -> tuple[str, ...]:
         if review_status == "accepted"
         else "candidate_not_accepted",
         "candidate_confirmed"
-        if state == "confirmed"
+        if state == "confirmed" or (state == "sensitive" and sensitive_use_authorized)
         else "candidate_not_confirmed",
         {
             "seen": "value_seen",
@@ -92,7 +94,17 @@ def evaluate_reuse(
     metadata_reasons = _metadata_reasons(
         candidate, scope=scope, field_class=field_class, sensitivity=sensitivity
     )
-    policy_reasons = _candidate_policy_reasons(candidate)
+    sensitive_use_authorized = sensitivity != "none" and (
+        use_authority == AUTHORITY_PER_USE
+        or (
+            mode == MODE_BOUNDED_LOOSE
+            and use_authority == AUTHORITY_BOUNDED_POLICY
+            and field_class in allowed
+        )
+    )
+    policy_reasons = _candidate_policy_reasons(
+        candidate, sensitive_use_authorized=sensitive_use_authorized
+    )
     output_reasons = [
         "mode_strict" if mode == MODE_STRICT else "mode_bounded_loose",
         *metadata_reasons,

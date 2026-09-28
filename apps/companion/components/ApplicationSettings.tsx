@@ -6,6 +6,13 @@ import type { ProfileSnapshot } from './facts-model';
 const equal=(a:ApplicationPreferences,b:ApplicationPreferences)=>a.preferredBrowser===b.preferredBrowser
   &&a.browserFallback===b.browserFallback&&a.progressionMode===b.progressionMode
   &&a.preferredAutomationMode===b.preferredAutomationMode;
+const preferenceKeys=['preferredBrowser','browserFallback','progressionMode','preferredAutomationMode'] as const;
+function reapplyPreferences(before:ProfileSnapshot,draft:ApplicationPreferences,latest:ProfileSnapshot):ApplicationPreferences {
+  const previous=readApplicationPreferences(before.profile).preferences;
+  const result={...readApplicationPreferences(latest.profile).preferences};
+  for(const key of preferenceKeys)if(draft[key]!==previous[key])Object.assign(result,{[key]:draft[key]});
+  return result;
+}
 
 export function ApplicationSettings({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:boolean)=>void}) {
   const [base,setBase]=useState<ProfileSnapshot|null>(null),[draft,setDraft]=useState<ApplicationPreferences|null>(null);
@@ -42,7 +49,7 @@ export function ApplicationSettings({client,dirtyChanged}:{client:Client;dirtyCh
     <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Application setup</p><h1 id="settings-workspace-title">Choose how Job Apply works with you.</h1><p>These local defaults guide future application runs. A choice in your current request can still override them for one application.</p></div><div className="workspace-hero-actions"><button className="secondary" disabled={busy||loading} onClick={()=>void refresh()}>Refresh setup</button></div></header>
     <p className="workspace-status" role="status">{loading?'Loading setup…':notice||(base?`Canonical profile revision ${base.revision}.`:'')}</p>
     {error&&<p className="error" role="alert">{error} <button disabled={busy||loading} onClick={()=>void refresh()}>Retry loading setup</button></p>}
-    {latest&&<aside className="notice facts-conflict" role="alert"><p><strong>Setup changed elsewhere.</strong> Your choices are retained.</p><button disabled={busy} onClick={()=>{setBase(latest);setLatest(null);setError('');setNotice('Your choices were reapplied to the latest revision. Review before saving.');}}>Reapply my setup choices</button><button disabled={busy} onClick={()=>{const parsed=readApplicationPreferences(latest.profile);setBase(latest);setDraft(parsed.preferences);setComplete(parsed.complete);setLatest(null);setError('');setNotice('Saved setup loaded.');}}>Load saved setup</button></aside>}
+    {latest&&<aside className="notice facts-conflict" role="alert"><p><strong>Setup changed elsewhere.</strong> Your choices are retained.</p><button disabled={busy} onClick={()=>{if(base&&draft)setDraft(reapplyPreferences(base,draft,latest));setBase(latest);setComplete(readApplicationPreferences(latest.profile).complete);setLatest(null);setError('');setNotice('Only your changed choices were reapplied to the latest revision. Review before saving.');}}>Reapply my setup choices</button><button disabled={busy} onClick={()=>{const parsed=readApplicationPreferences(latest.profile);setBase(latest);setDraft(parsed.preferences);setComplete(parsed.complete);setLatest(null);setError('');setNotice('Saved setup loaded.');}}>Load saved setup</button></aside>}
     {base&&draft&&<form className="workspace-panel settings-panel" onSubmit={event=>{event.preventDefault();void save();}}><fieldset disabled={busy||loading}><legend>Application defaults</legend>
       <label>Preferred Codex browser<select value={draft.preferredBrowser} onChange={event=>setDraft({...draft,preferredBrowser:event.target.value as ApplicationPreferences['preferredBrowser']})}><option value="codex_browser">Codex built-in browser</option><option value="chrome">Chrome</option></select><span className="field-help">Claude Code continues to use Claude in Chrome.</span></label>
       <label>If that browser is unavailable<select value={draft.browserFallback} onChange={event=>setDraft({...draft,browserFallback:event.target.value as ApplicationPreferences['browserFallback']})}><option value="ask">Ask before switching</option><option value="other_supported">Use the other supported browser</option></select></label>

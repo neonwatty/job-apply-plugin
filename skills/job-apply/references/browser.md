@@ -38,6 +38,22 @@ Use the fallback only for the blocked control, then return to the visible review
 
 ---
 
+### Embedded ATS resume uploads
+
+For a resume input inside an iframe, arm the selected browser's documented file-chooser listener before clicking the input. If the input is visually hidden and no chooser event arrives, inspect the visible control once and try its **Attach** button with a fresh listener. Verify the selected filename or the ATS's accepted-file state; a click or chooser timeout is not upload proof. Do not infer that Chrome's file-URL permission is disabled from a chooser timeout.
+
+If the upload guard rejects the path, rerun `resume-resolve` for the selected resume, correct the proposed path and selected revision, then run the guard again. Do not open the chooser until it succeeds. If the chooser fails, `setFiles` returns without an accepted upload, or the ATS remains at an upload progress indicator, treat the upload as unresolved. First rerun the guard with the path and revision actually passed to the chooser. A constructed or stale path is an agent error: correct it from `resume-resolve` and retry once only if the same visible widget still exposes an upload control. If the widget is stuck, preserve the filled draft and do not reload it merely to retry. Inspect the visible widget and browser errors for another specific cause. Do not infer success from `setFiles`, a pending progress bar, or an empty file input. Do not repeatedly reattach the file to a stalled control. Do not blame or ask the owner to change Chrome's extension file-URL permission unless its disabled setting or a specific browser error confirms that cause.
+
+If `resume-resolve` cannot provide a valid path, do not guess another local path, use a different saved resume, or ask the owner to locate the Store's internal managed copy. Save a value-free `needs_info` handoff, then ask the owner where their original resume file is or ask them to provide it. Import or repair that file through the canonical Store and follow the selected-resume fact and application-run revision rules in [intake.md](intake.md) before starting another attempt; never upload the owner-supplied source path directly. If the canonical path is valid but the browser still cannot upload it, report a browser-control failure and ask the owner to handle that control rather than asking where the resume is.
+
+If the embedded control remains inaccessible, a direct form on the same ATS may be used only when its URL comes from the observed application and the company and job identity match. Open it in the same selected visible browser; do not guess a URL, switch automation tools, or treat the embedded draft as transferred. The direct page is a separate form instance. Read its blank form, obtain fresh post-readiness consent for the resume and profile data before entering them, and reconfirm each sensitive saved answer for that use. Refill and verify every field and the accepted resume there. Keep the embedded draft until the direct form is verified, and leave all consent and final submission controls to the owner.
+
+If the direct control also fails, save value-free progress and use the `unsupported-control` browser handoff. Report the observed control failure without proposing a permission change that has not been verified as the cause.
+
+Before that handoff, finish and verify every other field supported by the current form, including permitted saved answers and conditional questions. Recheck earlier fields after the failed upload because the form may rerender. For multi-selects, count a visible selected chip as a selection even when the underlying text input is empty. Leave only the failed upload, user-only consent or authentication, and final submission for the owner; list those remaining actions by field name without values. Preserve the visible draft. An unresolved required upload cannot support `awaiting_review`.
+
+---
+
 ### Post-readiness action-time consent
 
 First read [application automation](application-automation.md). Guided follows the consent transition below. Autofill to Review and Campaign to Review replace the repeated granular prompt only after the live attempt broker authorizes the exact current action group; their durable grant never relaxes the visible-browser, verification, interrupt, sensitive-answer, or final-action rules.

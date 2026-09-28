@@ -9,18 +9,22 @@ import { ApplicationAutomation } from './ApplicationAutomation';
 function ApplicationAutomationWorkspace({client,dirtyChanged}:{client:Client;dirtyChanged(value:boolean):void}) {
   const [data,setData]=useState<AutomationProjection|null>(null);
   const [loading,setLoading]=useState(true),[error,setError]=useState('');
+  const [refreshVersion,setRefreshVersion]=useState(0);
   const [trustedDirty,setTrustedDirty]=useState(false),[authorityDirty,setAuthorityDirty]=useState(false);
   const request=useRef<AbortController|null>(null),dirty=trustedDirty||authorityDirty;
   useEffect(()=>{dirtyChanged(dirty);return()=>dirtyChanged(false);},[dirty,dirtyChanged]);
   const refresh=useCallback(async()=>{request.current?.abort();const controller=new AbortController();request.current=controller;setLoading(true);setError('');try{
-    setData(automationProjection(await client.automationRequest('/api/automation','GET',undefined,controller.signal)));
+    const next=automationProjection(await client.automationRequest('/api/automation','GET',undefined,controller.signal));
+    if(controller.signal.aborted)return;
+    setData(next);
+    setRefreshVersion(value=>value+1);
   }catch(failure){if(!controller.signal.aborted)setError(failure instanceof Error?failure.message:'Unable to load automation controls.');}finally{if(!controller.signal.aborted)setLoading(false);}},[client]);
   useEffect(()=>{void refresh();return()=>request.current?.abort();},[refresh]);
   return <section className="automation-workspace" aria-labelledby="automation-title">
     <header className="workspace-hero"><div className="workspace-hero-copy"><p className="eyebrow">Controls</p><h1 id="automation-title">Automation</h1><p>Choose bounded application filling through final review. Account setup and sign-in readiness have their own workspace; final submission remains manual.</p></div><div className="workspace-hero-actions"><button className="secondary" disabled={loading||dirty} onClick={()=>void refresh()}>Refresh</button></div></header>
     {loading&&!data&&<p className="workspace-status" role="status">Loading automation controls…</p>}{error&&<p className="error" role="alert">{error}</p>}
-    {data&&<><div className="automation-status-strip" aria-label="Automation summary"><span><i/><strong>Application authority</strong> Review bounded</span><span className="automation-safe-status">Live actions off</span></div><div className="automation-grid">
-      <ApplicationAutomation client={client} authority={data.applicationAuthority} disabled={loading} dirtyChanged={setAuthorityDirty} changed={applicationAuthority=>setData({...data,applicationAuthority})}/>
+    {data&&<><div className="automation-status-strip" aria-label="Automation summary"><span><i/><strong>Application authority</strong> Review bounded</span><span className="automation-safe-status">{data.applicationAuthority.mode==='guided'?'Guided mode':`Bounded grant ${data.applicationAuthority.status}`}</span></div><div className="automation-grid">
+      <ApplicationAutomation client={client} authority={data.applicationAuthority} refreshVersion={refreshVersion} disabled={loading} dirtyChanged={setAuthorityDirty} changed={applicationAuthority=>setData({...data,applicationAuthority})}/>
       <details className="automation-advanced"><summary><span><strong>Trusted Fill approvals</strong><small>Advanced controls for exact, non-final field operations</small></span><span className="automation-state">No final action</span></summary><TrustedFill client={client} disabled={loading} dirtyChanged={setTrustedDirty}/></details>
     </div></>}
   </section>;

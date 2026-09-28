@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { copyFile, readFile, readdir, realpath, stat, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, readdir, realpath, rm, stat, symlink, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { runUploadGuard, UploadGuardError } from '../apps/companion/resume-upload-guard.mjs';
 import { nativeFixture } from './exclusive_file_lock_support.mjs';
 import { snapshot } from './workspace_native_claims_support.mjs';
 
@@ -11,6 +13,31 @@ const python = process.env.JOB_APPLY_REFERENCE_PYTHON || 'python3.12';
 const timestamp = /^20\d\d-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|\+00:00)$/;
 const contentRevision = /^content_[A-Za-z0-9_-]{32,128}$/;
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
+
+test('upload guard accepts only the current Store path and revision before chooser use', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'job-apply-upload-guard-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const canonical = join(root, 'resume-files', 'resume-one.pdf');
+  await mkdir(join(root, 'resume-files'));
+  await writeFile(canonical, '%PDF-1.4\ncontent');
+  const resolved = { id: 'resume-one', revision: 2, path: canonical };
+  const args = path => ['--id', 'resume-one', '--expected-revision', '2', '--candidate-path', path];
+  const resolve = async () => resolved;
+  assert.deepEqual(await runUploadGuard(args(canonical), resolve), { ok: true, ...resolved });
+  await assert.rejects(runUploadGuard(args(join(root, 'resume-one.pdf')), resolve),
+    error => error instanceof UploadGuardError && error.code === 'path_mismatch');
+  await assert.rejects(runUploadGuard(['--id', 'resume-one', '--expected-revision', '1',
+    '--candidate-path', canonical], resolve), error => error.code === 'path_mismatch');
+  await assert.rejects(runUploadGuard(args(canonical).slice(0, 4), resolve),
+    error => error.code === 'invalid_invocation');
+  const link = join(root, 'linked.pdf');
+  await symlink(canonical, link);
+  await assert.rejects(runUploadGuard(args(link), async () => ({ ...resolved, path: link })),
+    error => error.code === 'file_unavailable');
+  await writeFile(canonical, '');
+  await assert.rejects(runUploadGuard(args(canonical), resolve),
+    error => error.code === 'file_unavailable');
+});
 
 function normalized(value, roots) {
   if (typeof value === 'string') {

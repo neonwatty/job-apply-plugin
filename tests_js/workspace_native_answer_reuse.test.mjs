@@ -16,6 +16,7 @@ const packet = (changes = {}) => ({ question: 'Is employment authorization avail
 const records = [
   { key: 'work', question: 'Does the applicant have permission to work in this jurisdiction?', state: 'confirmed', value: 'PRIVATE-WORK-VALUE', scope: { ats: 'greenhouse' }, fieldClass: 'authorization' },
   { key: 'private', question: 'Preferred name?', state: 'confirmed', value: 'PRIVATE-NAME-VALUE', scope: {}, fieldClass: 'identity', sensitivity: 'personal' },
+  { key: 'gender', question: 'Gender', state: 'sensitive', value: 'PRIVATE-GENDER-VALUE', scope: { country: 'US' }, fieldClass: 'demographic', sensitivity: 'high' },
   { key: 'integer', question: 'Exact numeric scope?', state: 'confirmed', value: 'PRIVATE-INTEGER-VALUE', scope: { number: 1 } },
 ];
 
@@ -34,9 +35,13 @@ test('semantic HTTP and Python-free CLI agree with Python Store and do not persi
       packet({ question: 'Preferred name?', scope: {}, fieldClass: 'identity', sensitivity: 'personal', mode: 'bounded_loose', useAuthority: 'bounded_policy', allowedSensitiveFieldClasses: ['identity'] }),
       packet({ question: 'Exact numeric scope?', scope: { number: true }, fieldClass: 'general' }),
       packet({ question: 'Exact numeric scope?', scope: { number: 1 }, fieldClass: 'general' }),
+      packet({ question: 'Gender', scope: { country: 'US' }, fieldClass: 'demographic', sensitivity: 'high', useAuthority: 'none' }),
+      packet({ question: 'Gender', scope: { country: 'US' }, fieldClass: 'demographic', sensitivity: 'high', useAuthority: 'per_use' }),
     ];
     const script = `import sys,json,importlib.util\nfrom pathlib import Path\nsys.path.insert(0,'scripts')\nspec=importlib.util.spec_from_file_location('reuse_reference','scripts/job-apply-store.py')\nm=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)\ns=m.Store(Path(sys.argv[1]));s.initialize()\nfor record in json.loads(sys.argv[2]):s.put_answer(record,remember_sensitive=True)\nprint(json.dumps([s.semantic_answer_lookup(q) for q in json.loads(sys.argv[3])]))`;
     const expected = JSON.parse(execFileSync('python3', ['-c', script, join(fixture.root, 'python'), JSON.stringify(records), JSON.stringify(queries)], { encoding: 'utf8' }));
+    assert.ok(!expected.at(-2).candidates.find(item => item.answerKey === 'gender').reasonCodes.includes('reuse_eligible'));
+    assert.ok(expected.at(-1).candidates.find(item => item.answerKey === 'gender').reasonCodes.includes('reuse_eligible'));
     const files = (await readdir(root)).filter(name => name.endsWith('.json'));
     const before = await Promise.all(files.map(name => readFile(join(root, name), 'utf8')));
     const readonly = new NativeJobsRepository(root, provider, async () => { throw Error('semantic lookup attempted persistence'); });

@@ -358,14 +358,13 @@ export async function checkLiveGraph() {
   const baseline = { paths: new Set(files.keys()), files };
   const { discoverConsumerGraph } = await import('../tools/local-checks/consumer-graph.mjs');
   const { evaluateFocusedClosure } = await import('../tools/local-checks/focused-closure.mjs');
-  const { digest } = await import('../tools/local-checks/focused-contracts.mjs');
+  const { digest, PYTHON_INVENTORY_SHA256 } = await import('../tools/local-checks/focused-contracts.mjs');
   const liveGraph = await discoverConsumerGraph(GRAPH_ROOT, await trackedPaths(GRAPH_ROOT));
   const { PYTHON_SOURCE_PATH } = await import('../tools/local-checks/focused-contracts.mjs');
   const livePython = [...liveGraph.tracked].filter(PYTHON_SOURCE_PATH).sort();
-  const frozenPython = [...baseline.paths].filter(PYTHON_SOURCE_PATH).sort();
-  const pythonChanged = JSON.stringify(livePython) !== JSON.stringify(frozenPython)
-    || livePython.some(file => liveGraph.hashes.get(file) !== digest(baseline.files.get(file)));
-  if (pythonChanged) assert.ok(liveGraph.reasons.includes('Unreviewed Python source inventory'));
+  const pythonInventory = digest(JSON.stringify(livePython.map(file => ({ path: file, sha256: liveGraph.hashes.get(file) }))));
+  assert.ok(PYTHON_INVENTORY_SHA256.includes(pythonInventory), 'live Python inventory requires review');
+  assert.ok(!liveGraph.reasons.includes('Unreviewed Python source inventory'));
   const impactInput = file => ![...ANALYZER_FILES, 'tests_js/test-runner-selection.test.mjs'].includes(file);
   const liveInputs = [...liveGraph.tracked].filter(impactInput).sort();
   const reviewedInputs = [...baseline.paths].filter(impactInput).sort();

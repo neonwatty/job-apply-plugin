@@ -3,6 +3,53 @@ from tests.support.store_case import *
 
 class StoreTests(StoreTestCase):
 
+    def test_custom_greenhouse_form_can_reach_review_without_bundled_fixture(self):
+        ready = self._make_ready_job(ats="greenhouse")
+        acquired = self.store.acquire_ready_job(
+            ready["id"], "live-custom-form", ready["revision"]
+        )
+        form = {
+            "schemaVersion": 1, "platformFamily": "greenhouse",
+            "observationRevision": 11, "complete": True,
+            "controls": [
+                {"id": "contact.email", "role": "textbox", "required": True},
+                {"id": "custom.state", "role": "combobox", "required": True},
+                {"id": "profile.website", "role": "textbox", "required": False},
+                {"id": "resume.file", "role": "file", "required": True},
+            ],
+        }
+        module = STORE_MODULE.FORM_READINESS_MODULE
+        packet = {
+            "attemptRevision": acquired["job"]["revision"],
+            "evidenceKind": "agent_attested_current_attempt",
+            "observedForm": form,
+            "expectedObservationRevision": 11,
+            "formManifest": module.make_live_form_manifest(form, observation_revision=11),
+            "observation": module.make_live_readiness_observation(
+                form,
+                {"contact.email": "complete", "custom.state": "complete", "resume.file": "accepted"},
+                observation_revision=11, adapter_state="accessible",
+                upload_capability="available", validation_error_control_ids=(),
+                final_control_state="available",
+            ),
+        }
+        review = {"status": "review", "step": "final_review", "pendingFields": [],
+                  "attemptRevision": acquired["job"]["revision"], "readinessInput": packet}
+        mismatch = copy.deepcopy(review)
+        mismatch["readinessInput"]["formManifest"]["requiredControlIds"].pop()
+        with self.assertRaisesRegex(STORE_MODULE.StoreError, "readiness evidence is invalid"):
+            self.store.handoff_claimed_job(
+                ready["id"], acquired["token"], "awaiting_review", mismatch,
+                acquired["job"]["revision"],
+            )
+        self.assertEqual(self.store.get_job(ready["id"])["status"], "in_progress")
+        handed = self.store.handoff_claimed_job(
+            ready["id"], acquired["token"], "awaiting_review", review,
+            acquired["job"]["revision"],
+        )
+        self.assertEqual(handed["job"]["status"], "awaiting_review")
+        self.assertIsNone(self.store.claim_status()["claim"])
+
     def test_awaiting_review_requires_fresh_readiness_input_on_handoff(self):
         ready = self._make_ready_job()
         acquired = self.store.acquire_ready_job(

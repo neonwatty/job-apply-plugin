@@ -22,6 +22,7 @@ const allowedBrowsers = new Set<PreferredBrowser>(['codex_browser','chrome']);
 const allowedFallbacks = new Set<BrowserFallback>(['ask','other_supported']);
 const allowedProgression = new Set<ProgressionMode>(['standard','guided']);
 const allowedAutomation = new Set<PreferredAutomationMode>(['guided','autofill_to_review','campaign_to_review']);
+const preferenceKeys = ['preferredBrowser','browserFallback','progressionMode','preferredAutomationMode'] as const;
 
 export function readApplicationPreferences(profile: Document): { preferences: ApplicationPreferences; complete: boolean } {
   if (!has(profile,'applicationPreferences')) return { preferences: defaultApplicationPreferences, complete: false };
@@ -45,11 +46,12 @@ export function readApplicationPreferences(profile: Document): { preferences: Ap
 }
 
 export function applicationPreferencesPatch(snapshot: ProfileSnapshot, preferences: ApplicationPreferences): string {
+  const stored = get(snapshot.profile,'applicationPreferences');
+  const current = stored instanceof PythonObject ? stored : new PythonObject<Value>();
   const values = new PythonObject<Value>();
-  set(values,'preferredBrowser',text(preferences.preferredBrowser));
-  set(values,'browserFallback',text(preferences.browserFallback));
-  set(values,'progressionMode',text(preferences.progressionMode));
-  set(values,'preferredAutomationMode',text(preferences.preferredAutomationMode));
+  for (const key of preferenceKeys) {
+    if (!has(current,key) || string(get(current,key)) !== preferences[key]) set(values,key,text(preferences[key]));
+  }
   const patch = new PythonObject<Value>(); set(patch,'applicationPreferences',values);
   const body = new PythonObject<Value>();
   set(body,'patch',patch); set(body,'expectedRevision',integer(snapshot.revision));

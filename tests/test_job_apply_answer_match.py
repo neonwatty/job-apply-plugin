@@ -219,6 +219,30 @@ class ReusePolicyTests(unittest.TestCase):
         self.assertIn("reuse_eligible", allowed["reasonCodes"])
         self.assertIn("authority_per_use", allowed["reasonCodes"])
 
+    def test_accepted_sensitive_state_requires_per_use_authority(self):
+        record = candidate(
+            "a", "Gender", field_class="demographic", state="sensitive"
+        )
+        match = MATCH.rank_candidates(
+            question="Gender", scope={"region": "alpha"},
+            field_class="demographic", sensitivity="high", candidates=[record],
+        )[0]
+        arguments = {
+            "match": match, "candidate": record,
+            "scope": {"region": "alpha"}, "field_class": "demographic",
+            "sensitivity": "high", "mode": MATCH.MODE_STRICT,
+        }
+        self.assert_denied(
+            MATCH.evaluate_reuse(
+                **arguments, use_authority=MATCH.AUTHORITY_NONE
+            ), "authority_missing"
+        )
+        allowed = MATCH.evaluate_reuse(
+            **arguments, use_authority=MATCH.AUTHORITY_PER_USE
+        )
+        self.assertIn("candidate_confirmed", allowed["reasonCodes"])
+        self.assertIn("reuse_eligible", allowed["reasonCodes"])
+
     def test_bounded_loose_requires_policy_authority_and_allowlisted_class(self):
         denied = self.evaluate(
             mode=MATCH.MODE_BOUNDED_LOOSE,

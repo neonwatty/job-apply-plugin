@@ -11,11 +11,18 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from typing import Any, Iterable, Mapping
 
 from qa.contracts import (
     READINESS_CONTROL_KIND_BY_ROLE,
+    READINESS_CONTROL_STATES,
+    READINESS_ADAPTER_STATES,
+    READINESS_FINAL_CONTROL_STATES,
+    READINESS_OBSERVATION_KEYS,
     READINESS_SCHEMA_VERSION,
+    READINESS_UPLOAD_CAPABILITY_STATES,
+    PLATFORM_CONTROL_KINDS,
     ContractError,
     validate_fixture,
     validate_readiness_observation,
@@ -27,6 +34,9 @@ FORM_MANIFEST_KEYS = {
     "schemaVersion", "platformFamily", "observationRevision",
     "requiredControlIds", "controlSetFingerprint", "complete",
 }
+LIVE_FORM_KEYS = {"schemaVersion", "platformFamily", "observationRevision", "complete", "controls"}
+LIVE_CONTROL_KEYS = {"id", "role", "required"}
+LIVE_CONTROL_ID = re.compile(r"[a-z][a-z0-9._-]{0,127}\Z", re.ASCII)
 
 
 class FormReadinessError(ValueError):
@@ -163,6 +173,118 @@ def make_readiness_observation(
     return observation
 
 
+def validate_live_form(
+    form: Any, *, expected_observation_revision: int,
+    expected_platform: str | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Validate a complete, value-free inventory attested from the visible form."""
+    revision = _positive_revision(expected_observation_revision, "observation revision")
+    if not isinstance(form, dict) or set(form) != LIVE_FORM_KEYS:
+        raise FormReadinessError("invalid observed form")
+    if (type(form["schemaVersion"]) is not int or form["schemaVersion"] != READINESS_SCHEMA_VERSION
+        or type(form["observationRevision"]) is not int or form["observationRevision"] != revision
+        or form["complete"] is not True):
+        raise FormReadinessError("invalid observed form attestation")
+    platform = form["platformFamily"]
+    if not isinstance(platform, str) or platform not in PLATFORM_CONTROL_KINDS or (expected_platform and platform != expected_platform):
+        raise FormReadinessError("observed form platform mismatch")
+    raw = form["controls"]
+    if not isinstance(raw, list) or not 1 <= len(raw) <= 256:
+        raise FormReadinessError("invalid observed form controls")
+    controls: dict[str, dict[str, Any]] = {}
+    previous = ""
+    for control in raw:
+        if not isinstance(control, dict) or set(control) != LIVE_CONTROL_KEYS:
+            raise FormReadinessError("invalid observed form control")
+        control_id = control["id"]
+        if (not isinstance(control_id, str) or LIVE_CONTROL_ID.fullmatch(control_id) is None
+            or control_id <= previous or not isinstance(control["role"], str)
+            or control["role"] not in READINESS_CONTROL_KIND_BY_ROLE
+            or type(control["required"]) is not bool):
+            raise FormReadinessError("invalid observed form control")
+        controls[control_id] = control
+        previous = control_id
+    if not any(control["required"] for control in controls.values()):
+        raise FormReadinessError("observed form has no required control")
+    return controls
+
+
+def make_live_form_manifest(form: dict[str, Any], *, observation_revision: int) -> dict[str, Any]:
+    controls = validate_live_form(form, expected_observation_revision=observation_revision)
+    required = [control_id for control_id, control in controls.items() if control["required"]]
+    payload = json.dumps({"platformFamily": form["platformFamily"], "controls": form["controls"]},
+                         ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    return {
+        "schemaVersion": READINESS_SCHEMA_VERSION,
+        "platformFamily": form["platformFamily"],
+        "observationRevision": observation_revision,
+        "requiredControlIds": required,
+        "controlSetFingerprint": "sha256:" + hashlib.sha256(payload).hexdigest(),
+        "complete": True,
+    }
+
+
+def validate_live_observation(observation: Any, form: dict[str, Any]) -> None:
+    controls = validate_live_form(form, expected_observation_revision=form["observationRevision"])
+    if not isinstance(observation, dict) or set(observation) != READINESS_OBSERVATION_KEYS:
+        raise FormReadinessError("invalid live observation")
+    if (type(observation["schemaVersion"]) is not int or observation["schemaVersion"] != READINESS_SCHEMA_VERSION
+        or observation["platformFamily"] != form["platformFamily"]
+        or type(observation["observationRevision"]) is not int or observation["observationRevision"] < 1
+        or not isinstance(observation["adapterState"], str)
+        or observation["adapterState"] not in READINESS_ADAPTER_STATES
+        or not isinstance(observation["uploadCapability"], str)
+        or observation["uploadCapability"] not in READINESS_UPLOAD_CAPABILITY_STATES
+        or not isinstance(observation["finalControlState"], str)
+        or observation["finalControlState"] not in READINESS_FINAL_CONTROL_STATES):
+        raise FormReadinessError("invalid live observation")
+    raw = observation["controls"]
+    if not isinstance(raw, list):
+        raise FormReadinessError("invalid live observation controls")
+    seen: set[str] = set()
+    for item in raw:
+        if not isinstance(item, dict) or set(item) != {"controlId", "kind", "state", "observationRevision"}:
+            raise FormReadinessError("invalid live observation control")
+        control_id = item["controlId"]
+        if not isinstance(control_id, str) or control_id not in controls or control_id in seen:
+            raise FormReadinessError("invalid live observation control")
+        seen.add(control_id)
+        kind = READINESS_CONTROL_KIND_BY_ROLE[controls[control_id]["role"]]
+        if (item["kind"] != kind or not isinstance(item["state"], str)
+            or item["state"] not in READINESS_CONTROL_STATES[kind]
+            or type(item["observationRevision"]) is not int or item["observationRevision"] < 1):
+            raise FormReadinessError("invalid live observation control")
+    errors = observation["validationErrorControlIds"]
+    if (not isinstance(errors, list) or any(not isinstance(item, str) for item in errors)
+        or errors != sorted(set(errors)) or not set(errors) <= set(controls)):
+        raise FormReadinessError("invalid live validation errors")
+
+
+def make_live_readiness_observation(
+    form: dict[str, Any], control_states: Mapping[str, str], *, observation_revision: int,
+    adapter_state: str, upload_capability: str,
+    validation_error_control_ids: Iterable[str], final_control_state: str,
+) -> dict[str, Any]:
+    controls = validate_live_form(form, expected_observation_revision=observation_revision)
+    if not isinstance(control_states, Mapping) or not set(control_states) <= set(controls):
+        raise FormReadinessError("invalid live control states")
+    observation = {
+        "schemaVersion": READINESS_SCHEMA_VERSION,
+        "platformFamily": form["platformFamily"],
+        "observationRevision": observation_revision,
+        "adapterState": adapter_state,
+        "uploadCapability": upload_capability,
+        "controls": [{"controlId": control_id,
+                      "kind": READINESS_CONTROL_KIND_BY_ROLE[controls[control_id]["role"]],
+                      "state": state, "observationRevision": observation_revision}
+                     for control_id, state in sorted(control_states.items())],
+        "validationErrorControlIds": sorted(validation_error_control_ids),
+        "finalControlState": final_control_state,
+    }
+    validate_live_observation(observation, form)
+    return observation
+
+
 def evaluate_readiness(
     fixture: dict[str, Any],
     observation: dict[str, Any],
@@ -184,6 +306,29 @@ def evaluate_readiness(
         for step in fixture["steps"]
         for control in step["controls"]
     }
+    return _evaluate_controls(
+        fixture["platformFamily"], fixture_controls, observation, expected_revision
+    )
+
+
+def evaluate_live_readiness(
+    form: dict[str, Any], observation: dict[str, Any], *,
+    expected_observation_revision: int,
+) -> dict[str, Any]:
+    controls = validate_live_form(
+        form, expected_observation_revision=expected_observation_revision
+    )
+    validate_live_observation(observation, form)
+    return _evaluate_controls(
+        form["platformFamily"], controls, observation,
+        expected_observation_revision,
+    )
+
+
+def _evaluate_controls(
+    platform_family: str, fixture_controls: dict[str, dict[str, Any]],
+    observation: dict[str, Any], expected_revision: int,
+) -> dict[str, Any]:
     required_ids = {
         control_id
         for control_id, control in fixture_controls.items()
@@ -286,7 +431,7 @@ def evaluate_readiness(
         "schemaVersion": READINESS_SCHEMA_VERSION,
         "proofScope": PROOF_SCOPE,
         "status": "ready" if all(checks.values()) else "blocked",
-        "platformFamily": fixture["platformFamily"],
+        "platformFamily": platform_family,
         "observationRevision": observation["observationRevision"],
         "assertions": {
             name: "passed" if passed else "failed" for name, passed in checks.items()

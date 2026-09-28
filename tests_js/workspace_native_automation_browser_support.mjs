@@ -6,12 +6,32 @@ export async function nativeAutomationBrowser(page, root) {
   await page.getByRole('button',{name:'Automation',exact:true}).click();
   const workspace=page.locator('.automation-workspace');
   await workspace.getByRole('heading',{name:'Automation',exact:true}).waitFor();
-  await workspace.getByText('Live actions off',{exact:true}).waitFor();
+  await workspace.getByText('Guided mode',{exact:true}).waitFor();
   await workspace.getByRole('heading',{name:'Application automation',exact:true}).waitFor();
   await workspace.getByText('Guided · granular confirmation remains active',{exact:true}).waitFor();
   await workspace.getByText(/Every mode stops at final review/).waitFor();
   assert.equal(await workspace.getByLabel(/Enable companion automation controls/).isVisible(),false);
   assert.equal(await workspace.getByLabel('Exact employer portal URL',{exact:true}).isVisible(),false);
+  await workspace.getByText('No queued jobs are available. Start an application run and prepare its jobs first.').waitFor();
+  const refreshedJob={id:'refreshed-job',url:'https://example.invalid/refreshed',status:'ready',revision:1,
+    role:'Refreshed role',company:'Synthetic employer'};
+  await page.route('**/api/state',async route=>{
+    const response=await route.fetch(),body=await response.json();
+    await route.fulfill({response,json:{...body,jobs:[...body.jobs,refreshedJob],applicationRun:{
+      runId:'refreshed-run',revision:1,selection:{resumeId:'synthetic-resume',factRevision:1},
+      queueVersions:[{revision:1,jobIds:[refreshedJob.id]}],
+    }}});
+  });
+  await workspace.getByRole('button',{name:'Refresh',exact:true}).click();
+  await workspace.getByText('Refreshed role · Synthetic employer',{exact:true}).waitFor();
+  const refreshedChoice=workspace.getByRole('checkbox',{name:/Refreshed role/});
+  await refreshedChoice.check();
+  await page.waitForFunction(()=>[...document.querySelectorAll('.automation-workspace button')]
+    .some(button=>button.textContent?.trim()==='Refresh'&&button.disabled));
+  await refreshedChoice.uncheck();
+  await page.waitForFunction(()=>[...document.querySelectorAll('.automation-workspace button')]
+    .some(button=>button.textContent?.trim()==='Refresh'&&!button.disabled));
+  await page.unroute('**/api/state');
   await workspace.getByText('Trusted Fill approvals',{exact:true}).click();
   await workspace.getByLabel('Job ID for status or revocation',{exact:true}).fill('missing-job');
   await workspace.getByRole('button',{name:'Check approval status',exact:true}).click();
