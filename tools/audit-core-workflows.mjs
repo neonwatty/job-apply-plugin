@@ -79,16 +79,16 @@ function checkLiveObservation(errors, root, observation) {
       || !livePlatforms.has(observation.platformFamily)
       || typeof observation.employer !== "string" || !observation.employer.trim()
       || observation.outcome !== "review-only-observed"
-      || !observation.source?.startsWith(durableEvidenceRoot)
+      || typeof observation.source !== "string" || !observation.source.startsWith(durableEvidenceRoot)
       || !observation.source.endsWith(".json")
       || concreteFileError(root, observation.source)) return invalid();
   let receipt;
   try { receipt = JSON.parse(readFileSync(path.resolve(root, observation.source), "utf8")); }
   catch { return invalid(); }
-  const result = receipt.result, scope = receipt.scope, provenance = receipt.provenance;
   if (!exactKeys(receipt, ["schemaVersion", "evidenceKind", "observedAt", "platformFamily", "employer", "browser",
-        "installedPluginVersion", "stagingCommit", "scope", "result", "provenance"])
-      || receipt.schemaVersion !== 1 || receipt.evidenceKind !== "agent-attested-live-ats-review"
+    "installedPluginVersion", "stagingCommit", "scope", "result", "provenance"])) return invalid();
+  const result = receipt.result, scope = receipt.scope, provenance = receipt.provenance;
+  if (receipt.schemaVersion !== 1 || receipt.evidenceKind !== "agent-attested-live-ats-review"
       || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(receipt.observedAt)
       || receipt.platformFamily !== observation.platformFamily || receipt.employer !== observation.employer
       || typeof receipt.browser !== "string" || !receipt.browser.trim()

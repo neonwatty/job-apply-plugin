@@ -157,4 +157,9 @@ test("live ATS observations stay scoped to an existing redacted receipt", () => 
   observation.source = "package.json";
   assert.ok(auditCoreWorkflowRegistry(registry, validation, { root: rootPath })
     .includes("currentLiveAts observation must cite a scoped redacted review receipt"));
+  for (const source of [42, null, {}, []]) {
+    observation.source = source;
+    assert.ok(auditCoreWorkflowRegistry(registry, validation, { root: rootPath })
+      .includes("currentLiveAts observation must cite a scoped redacted review receipt"));
+  }
 });
