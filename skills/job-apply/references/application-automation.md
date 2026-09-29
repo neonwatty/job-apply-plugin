@@ -51,7 +51,7 @@ requires a new summary and approval.
 - **Autofill to Review** is one exact-job grant. It may fill canonical resume facts, upload the run's managed resume, enter currently confirmed answers, repair a cleared field once, and navigate clearly non-final controls. It is consumed only by a successful durable `awaiting_review` handoff.
 - **Campaign to Review** is a bounded, sequential grant over the exact jobs shown in the active application run. It performs the same operations one claim at a time. Pause, stop, expiry, revocation, run drift, or canonical-data drift ends unattended work immediately.
 
-All modes stop at final review. Submit, Send, Apply, Mark applied, or any equivalent final action is never an authorized operation. Login, passwords, account creation, CAPTCHA, MFA, email verification, provider legal consent, missing or uncertain data, unsupported controls, an unexpected destination, and ambiguity always interrupt automation.
+All modes stop at final review. Submit, Send, Apply, Mark applied, or any equivalent final action is never an authorized operation. Login, passwords, account creation, CAPTCHA, MFA, email verification, provider legal consent, missing or uncertain data, unsupported controls, an unexpected destination, and ambiguity always interrupt unattended automation. A consent interrupt returns to Guided for the live-form approval and control action in [reusable consent intents](consent-intents.md); the timed grant does not authorize that action.
 
 ## Action-time evaluation
 

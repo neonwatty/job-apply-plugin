@@ -21,6 +21,7 @@ For first use or a cross-skill handoff, read the shared [workflow map](../answer
 - Reviewed or blocked job: read [recovery](references/recovery.md). Preserve the job, session, managed resume, and displayed revisions. An expired claim requires explicit recovery outside the ordinary workflow.
 
 Before interacting with a form, read [browser and consent](references/browser.md). It defines post-readiness consent, observed field verification, bounded recovery, and visible manual handoff. Advance through clearly non-final Next, Continue, Save, or Review steps; stop before any final submission action. A Review navigation control is not itself proof that the application reached final review.
+For consent or acknowledgment questions, also read [reusable consent intents](references/consent-intents.md).
 
 Load `profile.applicationPreferences` from the same `profile-inspect` used for
 canonical profile state. Apply an explicit browser or pacing choice in the current
@@ -38,7 +39,7 @@ Read only the matching platform notes when needed: [LinkedIn](references/linkedi
 
 ## Essential boundaries and completion
 
-Guided is the default; Autofill to Review and Campaign to Review are durable, bounded grants defined in [application automation](references/application-automation.md). Every mode remains review-only. User confirmation never authorizes this skill to click Submit, Send, Apply, or any equivalent final-action button. Authentication, passwords, CAPTCHA, MFA, verification, legal consent, and ordinary account creation remain user-only steps. Explicit account-canary or policy work uses [account and policy internals](references/account-canaries.md); its approvals never spill into ordinary applications.
+Guided is the default; Autofill to Review and Campaign to Review are durable, bounded grants defined in [application automation](references/application-automation.md). Every mode remains review-only. User confirmation never authorizes this skill to click Submit, Send, Apply, or any equivalent final-action button. Authentication, passwords, CAPTCHA, MFA, verification, and ordinary account creation remain user-only steps. A saved consent answer is a proposed choice; act on a consent control only under [reusable consent intents](references/consent-intents.md) after live-form approval. Explicit account-canary or policy work uses [account and policy internals](references/account-canaries.md); its approvals never spill into ordinary applications.
 
 Obtain the bounded post-readiness consent before entering applicant data. Reuse matching authorization within that pass; do not ask again for unchanged scope, destination, and purpose. Keep sensitive current-use consent separate from permission to remember.
 

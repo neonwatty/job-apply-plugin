@@ -73,3 +73,12 @@ Even a remembered sensitive answer must be shown and reconfirmed before each fut
 Changing a stored sensitive value through `answer-update` requires a fresh
 `--remember-sensitive` decision. Editing only its aliases or question wording
 does not manufacture a new retention decision.
+
+For consent and acknowledgment answers, store the owner's semantic decision in a
+purpose-specific `fieldClass`, not a browser control state. A generic scope `{}`
+may be used across employers only when the owner explicitly chooses that scope;
+aliases represent common wording, while a provider-specific decision keeps its
+narrower scope. The [consent-intent workflow](../../job-apply/references/consent-intents.md)
+matches the live purpose, requests current-use action approval, and maps the
+decision to a checkbox, menu, radio group, or requested assent phrase. Remembering
+the answer alone never authorizes the action.
