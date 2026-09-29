@@ -266,16 +266,9 @@
         <div class="hero-actions"><button id="automation-refresh" class="button secondary" type="button">Refresh</button></div>
       </section>
       <section class="automation-panel" aria-labelledby="automation-settings-title">
-        <div class="panel-heading"><div><p class="eyebrow">CONTROL PLANE</p><h2 id="automation-settings-title">Automation settings</h2></div><p id="automation-revision">Revision —</p></div>
+        <div class="panel-heading"><div><p class="eyebrow">READINESS</p><h2 id="automation-settings-title">Before you apply</h2></div></div>
         <p id="automation-capability" class="notice" role="status">Open Automation to check local capability.</p>
-        <form id="automation-form" class="automation-form">
-          <label><span><input name="enabled" type="checkbox"> Enable companion automation controls</span></label>
-          <label><span><input name="automaticAccountCreation" type="checkbox"> Allow protected account preparation</span><small>Live Workday execution still requires a separate one-shot owner approval.</small></label>
-          <label>Workday credential strategy <select name="passwordStrategy"><option value="unique_per_realm">Unique per employer realm</option><option value="shared">Shared credential version</option><option value="custom">Custom per realm</option><option value="ask_each_time">Ask each time</option></select></label>
-          <div class="button-row"><button class="button primary" type="submit">Save settings</button></div>
-          <p class="safety-note">Configuration readiness does not mean a browser session is signed in. This workspace never receives credentials or email codes.</p>
-        </form>
-        <div id="automation-conflict" class="conflict hidden" role="alert" tabindex="-1"><h3>Settings changed elsewhere</h3><p>Nothing was retried. Refresh and review the latest revision.</p></div>
+        <p class="safety-note">The agent checks each application for an account requirement and flags sign-in or account creation for you. A saved record does not prove you are signed in. A single login across employers or ATS platforms is not offered. This workspace never receives credentials or email codes.</p>
         <p id="automation-error" class="error hidden" role="alert"></p>
       </section>
       <section class="automation-panel" aria-labelledby="realm-heading">

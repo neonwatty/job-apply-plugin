@@ -54,7 +54,6 @@ export function installBindings(context) {
   const refreshAutomation = (...args) => coordinators.refreshAutomation(...args);
   const refreshAccountOperation = (...args) => coordinators.refreshAccountOperation(...args);
   const recoverAccountOperation = (...args) => coordinators.recoverAccountOperation(...args);
-  const saveAutomation = (...args) => coordinators.saveAutomation(...args);
   const copyProfileEmailToAutomation = (...args) => coordinators.copyProfileEmailToAutomation(...args);
   const addEmployerRealm = (...args) => coordinators.addEmployerRealm(...args);
   const approveTrustedFill = (...args) => coordinators.approveTrustedFill(...args);
@@ -132,7 +131,6 @@ export function installBindings(context) {
   form.addEventListener("submit", save); form.addEventListener("input", (event) => { if (state.selected && event.target.name) { state.dirty = true; state.dirtyFields.add(event.target.name); } });
   $("#nav-overview").addEventListener("click", () => navigateWorkspace("overview")); $("#nav-jobs").addEventListener("click", () => navigateWorkspace("jobs")); $("#nav-attention").addEventListener("click", () => navigateWorkspace("attention")); $("#nav-facts").addEventListener("click", () => navigateWorkspace("facts")); $("#nav-resumes").addEventListener("click", () => navigateWorkspace("resumes")); $("#nav-answers").addEventListener("click", () => navigateWorkspace("answers")); $("#nav-automation").addEventListener("click", () => navigateWorkspace("automation")); $("#nav-accounts").addEventListener("click", () => navigateWorkspace("accounts")); $("#nav-trash").addEventListener("click", () => navigateWorkspace("trash"));
   $("#automation-refresh").addEventListener("click", () => refreshAutomation());
-  $("#automation-form").addEventListener("submit", saveAutomation);
   $("#account-operation-refresh").addEventListener("click", refreshAccountOperation);
   $("#account-operation-recover").addEventListener("click", recoverAccountOperation);
   $("#realm-form").addEventListener("submit", addEmployerRealm);

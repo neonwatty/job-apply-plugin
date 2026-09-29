@@ -13,6 +13,11 @@ test('dedicated account workspace keeps redacted configuration separate from aut
   assert.match(legacy,/id="accounts-workspace"[\s\S]*Workday stays Keychain-managed[\s\S]*MyGreenhouse[\s\S]*Oracle remains email-only[\s\S]*direct Greenhouse applications require no account/);
   assert.match(companion,/navButton\('accounts','Accounts & Sign-in'\)/);
   assert.match(automation,/Saved account metadata[\s\S]*Browser session/);
+  assert.match(automation,/agent checks whether that portal requires an account/);
+  assert.doesNotMatch(automation,/Shared credential version|Workday credential strategy|Allow protected Workday preparation/);
+  assert.doesNotMatch(legacy,/Shared credential version|Workday credential strategy|Allow protected account preparation/);
+  assert.doesNotMatch(automation,/Save settings|Enable account metadata controls/);
+  assert.doesNotMatch(legacy,/id="automation-form"|Save settings|Enable account metadata controls/);
   assert.match(automation,/Direct Greenhouse applications[\s\S]*Account not required[\s\S]*Unpersisted/);
   assert.match(automation,/myGreenhousePasswordlessConfigurationReady[\s\S]*myGreenhousePasswordlessExecutionReady/);
   assert.match(automation,/add\(undefined,'https:\/\/my\.greenhouse\.io\/',false\)/);
@@ -21,6 +26,15 @@ test('dedicated account workspace keeps redacted configuration separate from aut
   assert.match(legacyAutomation,/Remove saved account/);
   const legacyAccounts=legacy.match(/<div id="accounts-workspace"[\s\S]*?<div id="automation-workspace"/)?.[0] ?? '';
   assert.doesNotMatch(`${legacyAccounts}\n${automation}\n${realm}`,/type="(?:password|email)"|autocomplete="email"|name="signupEmail"|name="signupEmailOverride"/i);
+});
+
+test('application skill checks account readiness before Guided acquisition',async()=>{
+  const [skill,intake,check]=await Promise.all([read('skills/job-apply/SKILL.md'),read('skills/job-apply/references/intake.md'),read('skills/job-apply/references/account-readiness.md')]);
+  assert.match(skill,/\[early account check\]\(references\/account-readiness\.md\)/);
+  assert.match(intake,/Before `task select` in Guided mode, perform the read-only \[early account check\]/);
+  assert.match(check,/account-flow-classify[\s\S]*employer-account-get[\s\S]*before `task select` and attempt acquisition/);
+  assert.match(check,/leave the job queued with no claim/);
+  assert.match(check,/Do not request or handle passwords, codes, or browser secrets/);
 });
 
 test('account mutations are revisioned and public removal is allowlisted',async()=>{
