@@ -38,6 +38,7 @@ export {
   newestCanonicalJob,
   activitySignature,
   activityAnnouncement,
+  repeatReviewRequest,
   attentionMembershipSignature,
   attentionAnnouncement,
   attentionMissingInformationText,

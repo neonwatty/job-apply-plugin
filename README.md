@@ -28,7 +28,7 @@ Application filling has three owner-selected modes: Guided, Autofill to Review f
 
 ### Job Apply (`job-apply:job-apply`)
 - **Resume-specific facts**: Extract facts from each managed PDF, DOCX, or TXT resume and confirm them under that resume
-- **Guided ATS coverage**: Workflows for LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday, with current forms unverified
+- **Guided ATS coverage**: Workflows for LinkedIn Easy Apply, Greenhouse, Ashby, Lever, Rippling, and Workday. One Pinterest Greenhouse form reached review in Chrome; broader current-form coverage remains unverified.
 - **Visible browser automation**: Codex Browser/Chrome or Claude in Chrome fills forms in a session you can see and control
 - **Smart field mapping**: Uses the chosen resume's confirmed facts for applicant fields
 - **Confidence-aware answer reuse**: Reuses confirmed non-sensitive answers and flags inferred, missing, or sensitive answers for review
@@ -224,12 +224,12 @@ It does not launch an agent, browser, account flow, or ATS. See
 the optional installed-host lane; current-live ATS proof remains a separately
 authorized supervised activity.
 
-The plugin includes guided workflows for six ATS families. Codex and Claude Code host instructions were reviewed on **2026-07-28**. Live end-to-end ATS acceptance is tracked separately; individual flows remain unverified and may drift as sites change. The Greenhouse, Rippling, and Workday readiness catalogs are explicitly hand-authored synthetic schema fixtures. They are useful for deterministic local contract checks, but they are not recorder-derived evidence, replay receipts, or proof of a current live ATS run.
+The plugin includes guided workflows for six ATS families. Codex and Claude Code host instructions were reviewed on **2026-07-28**. A [single Pinterest Greenhouse form reached manual review on 2026-09-29](docs/dogfooding/2026-09-29-pinterest-greenhouse-live-review.md); that agent-attested observation does not establish general Greenhouse acceptance or coverage of the other ATS families. Forms may drift as sites change. The Greenhouse, Rippling, and Workday readiness catalogs remain hand-authored synthetic schema fixtures, not recorder-derived replay evidence.
 
 | Platform | URL Pattern | Default browser path | Verification status |
 |----------|-------------|----------------------|---------------------|
 | LinkedIn Easy Apply | `linkedin.com/jobs/view/*` | Codex Browser or Claude in Chrome | Guided; current ATS flow unverified |
-| Greenhouse | `boards.greenhouse.io/*` | Codex Browser or Claude in Chrome | Guided; synthetic readiness catalog only; current ATS flow unverified |
+| Greenhouse | `boards.greenhouse.io/*`, `job-boards.greenhouse.io/*` | Codex Browser or Claude in Chrome | Guided; Pinterest review-only observation on 2026-09-29; broader flow unverified |
 | Ashby | `jobs.ashbyhq.com/*` | Codex Browser or Claude in Chrome | Guided; closed replay lane supported |
 | Lever | `jobs.lever.co/*` | Codex Browser or Claude in Chrome | Guided; closed replay lane supported |
 | Rippling | `*.rippling.com/*` | Codex Browser or Claude in Chrome | Guided; synthetic readiness catalog only; current ATS flow unverified |

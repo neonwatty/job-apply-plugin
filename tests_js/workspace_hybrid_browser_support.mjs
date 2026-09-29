@@ -183,7 +183,7 @@ async function browserAtRoot(root) {
             };
         });
         assert.deepEqual(identity.names, identity.originalNames);
-        assert.equal(identity.names.length, 36);
+        assert.equal(identity.names.length, 37);
         assert.equal(identity.runtimeMatches, true);
         assert.equal(identity.fileReaderMatches, true);
         assert.deepEqual(errors, []);

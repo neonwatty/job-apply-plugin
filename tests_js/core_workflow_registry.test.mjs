@@ -144,3 +144,17 @@ test("synthetic and aggregate ATS evidence cannot be silently upgraded", () => {
   assert.ok(missing.includes("atsReadinessEvidence catalogs must be a non-empty array"));
   assert.ok(missing.includes("global currentLiveAts must remain unverified without sources"));
 });
+
+test("live ATS observations stay scoped to an existing redacted receipt", () => {
+  const registry = structuredClone(readCoreWorkflowRegistry(rootPath));
+  const validation = validateAgentWorkflows({ root: rootPath });
+  const observation = registry.atsReadinessEvidence.currentLiveAts.observations[0];
+  assert.deepEqual(auditCoreWorkflowRegistry(registry, validation, { root: rootPath }), []);
+  observation.outcome = "all-greenhouse-verified";
+  assert.ok(auditCoreWorkflowRegistry(registry, validation, { root: rootPath })
+    .includes("currentLiveAts observation must cite a scoped redacted review receipt"));
+  observation.outcome = "review-only-observed";
+  observation.source = "package.json";
+  assert.ok(auditCoreWorkflowRegistry(registry, validation, { root: rootPath })
+    .includes("currentLiveAts observation must cite a scoped redacted review receipt"));
+});
