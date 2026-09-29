@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -162,4 +164,25 @@ test("live ATS observations stay scoped to an existing redacted receipt", () => 
     assert.ok(auditCoreWorkflowRegistry(registry, validation, { root: rootPath })
       .includes("currentLiveAts observation must cite a scoped redacted review receipt"));
   }
+});
+
+test("malformed live ATS receipt values return audit errors", (t) => {
+  const fixtureRoot = mkdtempSync(path.join(tmpdir(), "job-apply-live-audit-"));
+  t.after(() => rmSync(fixtureRoot, { recursive: true, force: true }));
+  const relative = "docs/dogfooding/probe.json";
+  const receiptPath = path.join(fixtureRoot, relative);
+  mkdirSync(path.dirname(receiptPath), { recursive: true });
+  const receipt = JSON.parse(readFileSync(path.join(rootPath,
+    "docs/dogfooding/2026-09-29-pinterest-greenhouse-live-review.json"), "utf8"));
+  const registry = structuredClone(readCoreWorkflowRegistry(rootPath));
+  registry.atsReadinessEvidence.currentLiveAts.observations[0].source = relative;
+  const validation = validateAgentWorkflows({ root: rootPath });
+  for (const field of ["observedAt", "stagingCommit"]) {
+    writeFileSync(receiptPath, JSON.stringify({ ...receipt, [field]: { toString: null } }));
+    assert.ok(auditCoreWorkflowRegistry(registry, validation, { root: fixtureRoot })
+      .includes("currentLiveAts observation must cite a scoped redacted review receipt"), field);
+  }
+  writeFileSync(receiptPath, "null");
+  assert.ok(auditCoreWorkflowRegistry(registry, validation, { root: fixtureRoot })
+    .includes("currentLiveAts observation must cite a scoped redacted review receipt"));
 });

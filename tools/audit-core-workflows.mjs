@@ -89,11 +89,11 @@ function checkLiveObservation(errors, root, observation) {
     "installedPluginVersion", "stagingCommit", "scope", "result", "provenance"])) return invalid();
   const result = receipt.result, scope = receipt.scope, provenance = receipt.provenance;
   if (receipt.schemaVersion !== 1 || receipt.evidenceKind !== "agent-attested-live-ats-review"
-      || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(receipt.observedAt)
+      || typeof receipt.observedAt !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(receipt.observedAt)
       || receipt.platformFamily !== observation.platformFamily || receipt.employer !== observation.employer
       || typeof receipt.browser !== "string" || !receipt.browser.trim()
       || typeof receipt.installedPluginVersion !== "string" || !receipt.installedPluginVersion.trim()
-      || !/^[0-9a-f]{40}$/.test(receipt.stagingCommit)
+      || typeof receipt.stagingCommit !== "string" || !/^[0-9a-f]{40}$/.test(receipt.stagingCommit)
       || !exactKeys(scope, ["formInstances", "directFallback", "submitted"])
       || scope.formInstances !== 1 || typeof scope.directFallback !== "boolean" || scope.submitted !== false
       || !exactKeys(result, ["status", "logicalControlCount", "requiredControlCount", "requiredControlsComplete",
