@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { repeatReviewRequest } from '../../../src/workspace-ui/lib/activity-view';
+import { repeatReviewRequest } from '../repeat-review-request';
 import type { Client } from './client';
 import { activityProjection, recoveryGuidance } from './projection-model';
 import { humanize, useProjection } from './projection-view';

@@ -66,7 +66,7 @@ test('helper browser contract: emitted modules load and preserve browser-native 
     };
   });
   assert.deepEqual(result.compiledExports, result.originalExports);
-  assert.equal(result.compiledExports.length, 36);
+  assert.equal(result.compiledExports.length, 35);
   assert.deepEqual(result.compiled, result.original);
   assert.deepEqual(result.compiled, {
     encoded: '/api/answers/by-key/w6nwn5iA/reveal', surrogate: '/api/answers/by-key/77-9',
@@ -79,5 +79,5 @@ test('helper browser contract: emitted modules load and preserve browser-native 
   assert.equal(result.fileReference, 'AP+A');
   assert.equal(result.nodeGlobals, 'undefined');
   assert.deepEqual(unexpected, []);
-  t.diagnostic(`Chromium ${browser.version()}; 36 inert exports; no application or Store launched`);
+  t.diagnostic(`Chromium ${browser.version()}; 35 inert exports; no application or Store launched`);
 });
