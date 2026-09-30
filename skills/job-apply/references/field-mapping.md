@@ -17,4 +17,13 @@
 | education[0].degree | Degree, Degree Type |
 | education[0].field | Major, Field of Study, Concentration |
 
+For recurring application questions, classify "Have you ever worked here
+before?", "Are you a former employee?", and employer-named variants as
+`prior_employment`. Match a confirmed generic `{}` answer only when the owner's
+stated rule applies to the employer and the live wording does not broaden the
+question (for example, to contractor or any-capacity work). Use the observed
+employer as a narrower scope when the answer is employer-specific. Do not label
+these questions `employment_history`; that would prevent reuse of the saved
+prior-employment answer.
+
 ---

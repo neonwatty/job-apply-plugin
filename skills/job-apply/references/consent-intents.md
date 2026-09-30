@@ -15,6 +15,10 @@ decision. The canonical question may describe the purpose in ordinary language;
 aliases can record common phrasings. Exact wording and control type are not the
 answer's identity. Store a sensitive value only with field-specific permission to
 remember it; a remembered decision does not authorize a future consent action.
+For example, a recruiting-text-message opt-in belongs to its own `sms_consent`
+answer. If the owner has not chosen whether to opt in, observe a missing question
+and ask for the decision before storing a value. Do not translate a prior privacy
+acknowledgment or demographic-data consent into permission for recruiting texts.
 
 ## Match the live request
 
@@ -38,6 +42,12 @@ an agreement or data-processing consent with legal effect, require confirmation
 at action time even when the choice was saved or previously approved. A response
 to that request authorizes only the listed controls in this form instance; it
 does not authorize a changed notice, another employer, or final submission.
+If an application-level approval was given after this exact notice was visible
+and explicitly included this consent action, honor it without another prompt.
+Do not infer agreement from an application-level instruction to fill saved
+questions. If a page calls consent voluntary but validation requires its sole
+affirmative checkbox, preserve the draft and report that conflict; do not check
+the box merely to advance.
 
 After approval, map the saved decision to the visible control:
 

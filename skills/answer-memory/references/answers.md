@@ -4,10 +4,10 @@ Answer states have distinct behavior:
 
 | State | Meaning | May fill without asking? |
 |---|---|---|
-| `confirmed` | The user confirmed this value | Yes, only when non-sensitive and scope still matches |
+| `confirmed` | The user confirmed this value | Yes, when non-sensitive, scope matches, and filling this application is approved |
 | `inferred` | A candidate derived from context | No; show it and ask |
 | `missing` | No supported answer is known | No; ask |
-| `sensitive` | Salary, authorization, visa, demographic, disability, or similar | Never; ask before every use |
+| `sensitive` | Salary, authorization, visa, demographic, disability, or similar | Only with current-form approval for this specific saved answer or an exact active grant |
 
 Look up the exact question and relevant scope before filling:
 
@@ -54,7 +54,7 @@ Legacy active records without `reviewStatus` are accepted without changing their
 
 ### Sensitive answers require two decisions
 
-Ask separately:
+Make two separate decisions, which may be requested together:
 
 1. May I use this answer in the current form?
 2. Would you like me to remember this specific answer for later applications?
@@ -69,7 +69,9 @@ node "<plugin-root>/apps/companion/command.mjs" store answer-put \
   --remember-sensitive
 ```
 
-Even a remembered sensitive answer must be shown and reconfirmed before each future form entry.
+Even a remembered sensitive answer needs field-specific current-use authority for
+each future form. When that authority was already granted for the exact form and
+answer, use it without asking again or requesting that the owner re-enter the value.
 Changing a stored sensitive value through `answer-update` requires a fresh
 `--remember-sensitive` decision. Editing only its aliases or question wording
 does not manufacture a new retention decision.
