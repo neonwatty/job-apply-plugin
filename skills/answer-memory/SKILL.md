@@ -28,6 +28,7 @@ Use permission-restricted temporary JSON files for `--input`, remove them on suc
 
 - First use or a handoff across search, resume facts, and applications: [workflow map](references/workflow-map.md).
 - Profile facts, preferences, or fact groups: [profile](references/profile.md). Inspect the current revision before selective writes; preserve unrelated facts.
+- Saved worker model defaults: [agent model preferences](references/agent-model-preferences.md). These are host-scoped choices, not worker launch or application authority.
 - Managed resume import, replacement, resume-scoped facts, or legacy extraction proposals: [resumes](references/resumes.md).
 - Reusable answers, missing questions, consent, or answer-library edits: [answers](references/answers.md).
 - Canonical job maintenance, history, or standalone sessions: [jobs and history](references/jobs-history.md).

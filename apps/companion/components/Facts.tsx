@@ -6,7 +6,7 @@ import { TitleDiscovery } from './TitleDiscovery';
 import { copy,get,set,text,keys,same,parse,type Document } from '../../../src/contracts/workspace/values';
 import { factProvenance,patchBody,reapplyDraft,type ProfileSnapshot } from './facts-model';
 const sections=['firstName','lastName','email','phone','location','linkedInUrl','portfolioUrl','githubUrl','workHistory','education','skills','preferences'];
-const visibleFactNames=(draft:Document,query:string)=>keys(draft).filter(name=>name!=='applicationPreferences'&&name.toLowerCase().includes(query.toLowerCase()));
+const visibleFactNames=(draft:Document,query:string)=>keys(draft).filter(name=>!['applicationPreferences','agentModelPreferences'].includes(name)&&name.toLowerCase().includes(query.toLowerCase()));
 export function Facts({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:boolean)=>void}) {
   const [base,setBase]=useState<ProfileSnapshot|null>(null),[draft,setDraft]=useState<Document|null>(null);
   const [latest,setLatest]=useState<ProfileSnapshot|null>(null),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true);

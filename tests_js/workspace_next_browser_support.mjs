@@ -110,6 +110,8 @@ async function productionBrowser(root) {
     await page.getByLabel('If that browser is unavailable').selectOption('other_supported');
     await page.getByLabel('Page transitions').selectOption('guided');
     await page.getByLabel('Preferred application mode').selectOption('campaign_to_review');
+    await page.getByLabel('Codex search model').fill('gpt-6-luna');
+    await page.getByLabel('Codex application model').fill('gpt-6-sol');
     await page.getByRole('button', { name: 'Save setup', exact: true }).click();
     await page.getByText('Application setup saved.', { exact: true }).waitFor();
     const setupProfile = await (await fetch(origin + '/api/profile', { headers })).json();
@@ -117,16 +119,22 @@ async function productionBrowser(root) {
       preferredBrowser: 'chrome', browserFallback: 'other_supported', progressionMode: 'guided',
       preferredAutomationMode: 'campaign_to_review',
     });
+    assert.deepEqual(setupProfile.profile.agentModelPreferences, {
+      codex: { search: 'gpt-6-luna', application: 'gpt-6-sol' },
+    });
     await page.reload({ waitUntil: 'networkidle' });
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     assert.equal(await page.getByLabel('Preferred Codex browser').inputValue(), 'chrome');
     assert.equal(await page.getByLabel('If that browser is unavailable').inputValue(), 'other_supported');
     assert.equal(await page.getByLabel('Page transitions').inputValue(), 'guided');
     assert.equal(await page.getByLabel('Preferred application mode').inputValue(), 'campaign_to_review');
+    assert.equal(await page.getByLabel('Codex search model').inputValue(), 'gpt-6-luna');
+    assert.equal(await page.getByLabel('Codex application model').inputValue(), 'gpt-6-sol');
     await page.getByLabel('Preferred Codex browser').selectOption('codex_browser');
     const beforeConflict = await (await fetch(origin + '/api/profile', { headers })).json();
     const otherWriter = await fetch(origin + '/api/profile', { method: 'PATCH', headers, body: JSON.stringify({
-      patch: { applicationPreferences: { preferredAutomationMode: 'guided', future: 'preserved' } },
+      patch: { applicationPreferences: { preferredAutomationMode: 'guided', future: 'preserved' },
+        agentModelPreferences: { codex: { application: 'gpt-6-luna', future: 'preserved' } } },
       expectedRevision: beforeConflict.revision, atomicPaths: [], deletedPaths: [],
     }) });
     assert.equal(otherWriter.status, 200);
@@ -134,12 +142,16 @@ async function productionBrowser(root) {
     await page.getByRole('button', { name: 'Reapply my setup choices', exact: true }).click();
     assert.equal(await page.getByLabel('Preferred Codex browser').inputValue(), 'codex_browser');
     assert.equal(await page.getByLabel('Preferred application mode').inputValue(), 'guided');
+    assert.equal(await page.getByLabel('Codex application model').inputValue(), 'gpt-6-luna');
     await page.getByRole('button', { name: 'Save setup', exact: true }).click();
     await page.getByText('Application setup saved.', { exact: true }).waitFor();
     const afterConflict = await (await fetch(origin + '/api/profile', { headers })).json();
     assert.deepEqual(afterConflict.profile.applicationPreferences, {
       preferredBrowser: 'codex_browser', browserFallback: 'other_supported', progressionMode: 'guided',
       preferredAutomationMode: 'guided', future: 'preserved',
+    });
+    assert.deepEqual(afterConflict.profile.agentModelPreferences, {
+      codex: { search: 'gpt-6-luna', application: 'gpt-6-luna', future: 'preserved' },
     });
     let releaseSetupRefresh, setupRefreshStarted;
     const setupRefreshGate = new Promise(resolve => { releaseSetupRefresh = resolve; });

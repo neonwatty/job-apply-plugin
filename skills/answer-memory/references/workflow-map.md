@@ -8,12 +8,15 @@ This is the shared map for the packaged TypeScript workflow. State names in the 
 flowchart LR
   AM[Answer Memory<br/>Store routing and private data]
   AS[Application Setup] -->|browser and pacing defaults| Store
+  AS -->|optional host-specific worker models| Store
   AC[Account Setup<br/>redacted sign-in metadata] -->|classified realm configuration| Store
   JP[Job Preferences] -->|saved criteria| JS[Job Search]
   TD[Job Title Discovery<br/>browser evidence and result packet] -->|owner reviews exact titles in Companion| JP
   JS -->|owner selects and confirms queue preview| Jobs[Canonical job resolved in Store]
   JW[Job Workspace<br/>Companion UI] -->|manage and review| Store[(TypeScript Store)]
   JA[Job Apply<br/>extraction or one application] -->|commands and attempt broker| Store
+  JA -->|host launches at most one filling worker| Worker[Application worker]
+  Worker -->|same task and attempt commands| Store
   AM -->|shared Store rules| JP
   AM -->|shared Store rules| AS
   AM -->|shared Store rules| AC
@@ -29,6 +32,9 @@ link. The eight packaged skills are [Answer Memory](../SKILL.md), [Application
 Setup](../../application-setup/SKILL.md), [Account Setup](../../account-setup/SKILL.md), [Job Preferences](../../job-preferences/SKILL.md),
 [Job Search](../../job-search/SKILL.md), [Job Title Discovery](../../job-title-discovery/SKILL.md), [Job Workspace](../../job-workspace/SKILL.md),
 and [Job Apply](../../job-apply/SKILL.md).
+Worker model IDs are optional, host-specific profile settings. The host agent
+launches workers; Companion and the TypeScript CLI do not dispatch agents. A
+model choice never creates an application run or grants browser authority.
 
 ## 1. First use and resume facts
 
@@ -153,7 +159,7 @@ flowchart LR
 | --- | --- | --- |
 | Choose job | Job Apply intake | The exact job must be in the active run's latest queue version. Queue membership can change without changing the run inputs. |
 | Select and acquire | Job Apply `task select` then `attempt start` | Preflight and claim recheck the run selection, queue membership, confirmed facts, and managed file; the attempt broker retains claim authority privately. |
-| Fill or pause | Job Apply visible browser and `attempt` clients | Claiming does not authorize entry. Inspect the exact visible form, then obtain bounded fill consent; a new form instance or material scope change needs renewed consent. Progress saves value-free references. `needs_info` releases the claim before waiting for the owner. |
+| Fill or pause | Job Apply visible browser and `attempt` clients; optionally one host-launched worker | Claiming or choosing a worker model does not authorize entry. Inspect the exact visible form, then obtain bounded fill consent; a new form instance or material scope change needs renewed consent. Progress saves value-free references. `needs_info` releases the claim before waiting for the owner. Only one worker owns the visible browser and live claim. |
 | Hand off | Job Apply readiness check and `attempt handoff` | A current-form packet must pass Store checks before `awaiting_review`; the agent leaves final submission untouched. |
 | Finish | Owner in the external application and Job Workspace activity | Only the owner submits. Record `applied` only after the owner confirms that submission. |
 | Recover or restart | Job Apply recovery route | A pending answer can resolve directly to Ready while the run selection stays current. An expired same-job claim needs explicit recovery; a reviewed job restarts only after the owner confirms it was not submitted. |
