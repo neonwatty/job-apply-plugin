@@ -6,6 +6,14 @@ For a live application, enumerate every user-facing logical input across the app
 
 Bundled fixtures remain for deterministic QA replay and older packets. A live ATS form does not need to match a fixture; company-specific questions belong in its observed inventory.
 
+### Build from accumulated browser observations
+
+Prefer the installed `node "<plugin-root>/apps/companion/readiness-packet.mjs" --input <private-json>` helper. Capture each visible logical-control inventory from the selected browser before an upload or page transition and again after any form change. The helper unions those inventories, so an accepted resume input that disappears after upload is retained. Supply only value-free semantic IDs, roles, and required flags; do not include labels, applicant values, filenames, URLs, browser tab IDs, or screenshots. Record `verifiedStates` separately from actual post-entry observations. Do not generate success states by iterating the inventory. A missing required state produces a blocked report. Conflicting control definitions and unexpected fields are rejected without echoing the input.
+
+The private input has `attemptRevision`, `platformFamily`, positive `observationRevision`, `complete:true`, `inventories:[{"controls":[{"id":"contact.email","role":"textbox","required":true}]}]`, `verifiedStates:[{"id":"contact.email","state":"complete"}]`, `adapterState`, `uploadCapability`, `validationErrorControlIds`, and `finalControlState`. Include every observed logical control, including optional and conditional controls, across all inventories. `complete:true` is an agent attestation after that inspection; the helper cannot independently collect the browser state. Remove the temporary input on success or failure.
+
+Use its `readinessInput` in the review session only when the returned `readiness.status` is `ready` and the current form still matches the observations. Recheck fields after rerenders. A blocked result requires a typed Needs Attention handoff. The helper constructs the manifest and closed observation with the maintained builders below; never hand-author those derived structures.
+
 The pure builders in `<plugin-root>/runtime/contracts/workspace/claim-session-readiness.js` provide the maintained serialization contract (convert ordinary JSON with `fromJSON` from `runtime/contracts/workspace/values.js`):
 
 - `makeLiveFormManifest(observedForm, revision, ats)` derives the manifest from the full current inventory. Set `observedForm` to `{schemaVersion:1, platformFamily, observationRevision:revision, complete:true, controls:[{id,role,required},...]}` only after enumerating the visible form.

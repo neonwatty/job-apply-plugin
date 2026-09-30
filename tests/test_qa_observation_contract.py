@@ -66,8 +66,17 @@ class ContractTests(ContractCase):
             (ROOT / "config/core-workflows.json").read_text(encoding="utf-8")
         )
         evidence = registry["atsReadinessEvidence"]
+        live = evidence["currentLiveAts"]
+        self.assertEqual(live["status"], "unverified")
+        self.assertEqual(live["sources"], [])
         self.assertEqual(
-            evidence["currentLiveAts"], {"status": "unverified", "sources": []}
+            live["observations"],
+            [{
+                "platformFamily": "greenhouse",
+                "employer": "Pinterest",
+                "outcome": "review-only-observed",
+                "source": "docs/dogfooding/2026-09-29-pinterest-greenhouse-live-review.json",
+            }],
         )
         self.assertEqual(
             {

@@ -29,7 +29,13 @@
       {"fixtureId": "workday-form-readiness-v1", "evidenceKind": "hand-authored-synthetic", "currentLiveAtsStatus": "unverified"}
     ],
     "note": "Schema-valid synthetic catalogs are deterministic local inputs, not recorder-derived replay receipts or current live ATS evidence.",
-    "currentLiveAts": {"status": "unverified", "sources": []}
+    "currentLiveAts": {
+      "status": "unverified",
+      "sources": [],
+      "observations": [
+        {"platformFamily": "greenhouse", "employer": "Pinterest", "outcome": "review-only-observed", "source": "docs/dogfooding/2026-09-29-pinterest-greenhouse-live-review.json"}
+      ]
+    }
   },
   "workflows": [
     {

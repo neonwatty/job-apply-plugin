@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "evidenceKind": "agent-attested-live-ats-review",
+  "observedAt": "2026-09-29T19:54:50Z",
+  "platformFamily": "greenhouse",
+  "employer": "Pinterest",
+  "browser": "Chrome",
+  "installedPluginVersion": "1.3.5+codex.20260929180408",
+  "stagingCommit": "ef4cf1ad0b2df8feaa42dd66da492504275a1614",
+  "scope": {"formInstances": 1, "directFallback": true, "submitted": false},
+  "result": {
+    "status": "awaiting_review",
+    "logicalControlCount": 20,
+    "requiredControlCount": 11,
+    "requiredControlsComplete": true,
+    "managedResumeUploadAccepted": true,
+    "approvedConsentControlComplete": true,
+    "finalActionUntouched": true,
+    "claimReleased": true
+  },
+  "provenance": {"agentAttested": true, "independentBrowserProof": false, "screenshotCommitted": false}
+}
