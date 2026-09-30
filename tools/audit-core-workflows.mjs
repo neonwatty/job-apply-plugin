@@ -16,6 +16,7 @@ export const evidenceLanes = [
 const evidenceStatuses = new Set(["verified", "unverified", "blocked", "not-applicable"]);
 const deterministicTestRoots = ["tests/", "tests_js/"];
 const durableEvidenceRoot = "docs/dogfooding/";
+const livePlatforms = new Set(["ashby", "greenhouse", "lever", "linkedin-easy-apply", "rippling", "workday"]);
 
 export function readCoreWorkflowRegistry(root = defaultRoot) {
   return JSON.parse(readFileSync(path.join(root, "config", "core-workflows.json"), "utf8"));
@@ -65,6 +66,46 @@ function checkWorkflowTestBinding(errors, root, row) {
       && !boundTests.some((testPath) => row.evidence.deterministicLocal.sources?.includes(testPath))) {
     errors.push(`${row.id}: deterministicLocal verification must cite a workflow-bound mapped test`);
   }
+}
+
+function exactKeys(value, expected) {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...expected].sort());
+}
+
+function checkLiveObservation(errors, root, observation) {
+  const invalid = () => errors.push("currentLiveAts observation must cite a scoped redacted review receipt");
+  if (!exactKeys(observation, ["platformFamily", "employer", "outcome", "source"])
+      || !livePlatforms.has(observation.platformFamily)
+      || typeof observation.employer !== "string" || !observation.employer.trim()
+      || observation.outcome !== "review-only-observed"
+      || typeof observation.source !== "string" || !observation.source.startsWith(durableEvidenceRoot)
+      || !observation.source.endsWith(".json")
+      || concreteFileError(root, observation.source)) return invalid();
+  let receipt;
+  try { receipt = JSON.parse(readFileSync(path.resolve(root, observation.source), "utf8")); }
+  catch { return invalid(); }
+  if (!exactKeys(receipt, ["schemaVersion", "evidenceKind", "observedAt", "platformFamily", "employer", "browser",
+    "installedPluginVersion", "stagingCommit", "scope", "result", "provenance"])) return invalid();
+  const result = receipt.result, scope = receipt.scope, provenance = receipt.provenance;
+  if (receipt.schemaVersion !== 1 || receipt.evidenceKind !== "agent-attested-live-ats-review"
+      || typeof receipt.observedAt !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(receipt.observedAt)
+      || receipt.platformFamily !== observation.platformFamily || receipt.employer !== observation.employer
+      || typeof receipt.browser !== "string" || !receipt.browser.trim()
+      || typeof receipt.installedPluginVersion !== "string" || !receipt.installedPluginVersion.trim()
+      || typeof receipt.stagingCommit !== "string" || !/^[0-9a-f]{40}$/.test(receipt.stagingCommit)
+      || !exactKeys(scope, ["formInstances", "directFallback", "submitted"])
+      || scope.formInstances !== 1 || typeof scope.directFallback !== "boolean" || scope.submitted !== false
+      || !exactKeys(result, ["status", "logicalControlCount", "requiredControlCount", "requiredControlsComplete",
+        "managedResumeUploadAccepted", "approvedConsentControlComplete", "finalActionUntouched", "claimReleased"])
+      || result.status !== "awaiting_review" || !Number.isSafeInteger(result.logicalControlCount)
+      || !Number.isSafeInteger(result.requiredControlCount) || result.requiredControlCount < 1
+      || result.logicalControlCount < result.requiredControlCount || result.logicalControlCount > 256
+      || [result.requiredControlsComplete, result.managedResumeUploadAccepted, result.approvedConsentControlComplete,
+        result.finalActionUntouched, result.claimReleased].some(value => value !== true)
+      || !exactKeys(provenance, ["agentAttested", "independentBrowserProof", "screenshotCommitted"])
+      || provenance.agentAttested !== true || provenance.independentBrowserProof !== false
+      || provenance.screenshotCommitted !== false) invalid();
 }
 
 export function auditCoreWorkflowRegistry(registry, validation, { root = defaultRoot } = {}) {
@@ -191,6 +232,12 @@ export function auditCoreWorkflowRegistry(registry, validation, { root = default
       || !Array.isArray(atsReadiness?.currentLiveAts?.sources)
       || atsReadiness.currentLiveAts.sources.length !== 0) {
     errors.push("global currentLiveAts must remain unverified without sources");
+  }
+  const observations = atsReadiness?.currentLiveAts?.observations;
+  if (!Array.isArray(observations)) {
+    errors.push("currentLiveAts observations must be an array");
+  } else {
+    for (const observation of observations) checkLiveObservation(errors, root, observation);
   }
   return errors;
 }

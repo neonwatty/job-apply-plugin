@@ -95,7 +95,8 @@ It requires an available authenticated Codex host and executes the installed
 skill and public router against fictional local data. Record it as unrun when
 that host capability is unavailable. There is no credential-free current-live
 ATS command: such a lane must run only under its separately approved supervised
-protocol, and until then the registry and compatibility table remain
+protocol. The registry records one narrowly scoped Pinterest Greenhouse
+review-only observation from 2026-09-29, while aggregate live coverage remains
 `unverified`. Closed replay and synthetic readiness catalogs never upgrade that
 status.
 
