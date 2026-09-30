@@ -42,7 +42,8 @@ export async function preflightJobRecord(job: Document, profileDocument: Documen
       || resume === null || string(get(latest, 'contentRevision')) !== string(get(resume, 'contentRevision'))) errors.push('resume_facts_unconfirmed');
   }
   else if (scopedRequest) errors.push('resume_facts_unconfirmed');
-  if (!keys(profile).some(key => key !== 'preferences') && !scopedRequest && (scoped === null || scoped === undefined)) errors.push('profile_empty');
+  if (!keys(profile).some(key => !['preferences','applicationPreferences','agentModelPreferences'].includes(key))
+    && !scopedRequest && (scoped === null || scoped === undefined)) errors.push('profile_empty');
   if (resume === null || get(resume, 'deletedAt') !== null) errors.push('resume_missing');
   else {
     const managed = string(get(resume, 'storageKind')) === 'managed';

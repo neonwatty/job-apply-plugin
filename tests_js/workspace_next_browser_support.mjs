@@ -167,6 +167,11 @@ async function productionBrowser(root) {
     releaseSetupRefresh();
     await page.getByText('Saved application setup loaded.', { exact: true }).waitFor();
     await page.unroute('**/api/profile');
+    await page.getByRole('button', { name: 'Facts', exact: true }).click();
+    await page.getByRole('button', { name: 'Add a fact', exact: true }).click();
+    await page.getByLabel('Fact name').fill('agentModelPreferences');
+    assert.equal(await page.getByRole('button', { name: 'Add fact', exact: true }).isDisabled(), true);
+    await page.getByText('Change application and worker settings in Settings.').waitFor();
     await page.getByRole('button', { name: 'Jobs', exact: true }).click();
     await page.getByRole('button', { name: 'New job', exact: true }).click();
     await page.locator('dialog [name="url"]').fill('https://example.invalid/next-smoke');

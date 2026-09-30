@@ -31,9 +31,11 @@ resuming; do not start a replacement worker against an unseen attempt.
 
 ## Worker boundaries
 
-The worker runs the ordinary `task` and `attempt` commands itself. It must acquire
-the exact selected Ready job through the private attempt broker before browser
-work, and it must evaluate any active Autofill or Campaign authority before each
+The worker runs the ordinary `task` and `attempt` commands itself. In Guided mode,
+it first completes the visible early account check before selection or acquisition;
+an authentication gate leaves the job queued without a claim. It must then acquire
+the exact selected Ready job through the private attempt broker before form entry,
+and it must evaluate any active Autofill or Campaign authority before each
 action group. A model preference, parent delegation, or prior approval is never
 application authority. If authority evaluation denies or a consent interrupt
 appears, follow Guided live-form approval and the existing Needs Attention rules.
