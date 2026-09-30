@@ -1,27 +1,31 @@
 # Search sources
 
-Read only the section for the requested source. Use visible, current results as evidence; URL patterns are hints to verify, not proof that a filter was applied.
+Read only the sections for requested sources. Use current, visible results as evidence. Search URLs and snippets are navigation hints, not proof that a filter applied or a job remains open. Keep queries to role words and public location or work-arrangement terms; never paste resume text, private profile facts, or saved answers into a site.
+
+## Host browser route
+
+- **Codex:** Use its selected, visible Browser plugin surface (the in-app browser or the user's selected Chrome tab). Keep navigation on that surface and inspect its current page state before acting. A generic web search can locate public pages, but it does not substitute for checking LinkedIn or X filters and detail pages in the selected browser.
+- **Claude Code:** Use Claude in Chrome and the owner's existing visible session for LinkedIn and X. Do not create an independent headless session to bypass login or visibility. Host web search and fetch tools may locate public HN threads and call the HN API.
+- For either host, if the required browser tool or site session is unavailable, report that source as unavailable and continue the others. Leave sign-in, CAPTCHA, and MFA to the owner. Do not launch a separate worker or ask Companion to start one.
 
 ## LinkedIn
 
-Use the host-managed visible browser and its existing session. Search jobs using the requested titles, location, work arrangement, and date range; verify selected filters on the page. Do not impose an experience level that the user did not request. Inspect up to 25 listings by default and report truncation.
+Open LinkedIn Jobs in the selected browser. Search one saved or explicitly requested title at a time, combining close spelling variants only when the result set remains clear. Enter the requested location, then apply work arrangement and date filters in the page UI. Inspect the displayed filter chips or controls after every change; a URL parameter alone is insufficient. Do not set experience level, salary, or remote-only filters unless requested. When multiple approved related titles exist, cover each useful title family and disclose any title or query you did not run.
 
-Capture title, company, URL, posting date, location, work arrangement, listed compensation, and application method. Connections, hiring-manager links, and applicant counts are optional context when visible; they do not create a ranking. Avoid visiting a detail page twice for the same facts. Observe page readiness instead of fixed loading sleeps. Respect rate limits with a conservative request cadence/backoff.
-
-If login is needed, leave authentication to the owner and continue any other requested sources that are available. Report the unavailable source.
+Inspect up to 25 distinct listings by default, opening a detail page only when the card lacks required facts. Capture the exact listing URL, title, company, observed posting date, location, work arrangement, listed compensation, and application method. Mark missing fields unknown. Connections, hiring-manager links, and applicant counts are optional visible context, not ranking weights. Avoid revisiting the same detail page. Wait for page readiness, respect rate limits, and back off rather than bypassing a challenge.
 
 ## Hacker News
 
-Find the current monthly “Ask HN: Who is hiring?” thread using host web search. Fall back to the previous month if necessary and label the date accurately. Read the thread and top-level comments via `https://hacker-news.firebaseio.com/v0/item/{id}.json`; use the official Firebase API rather than scraping HTML. Start with up to 50 comments, with conservative request pacing, and report this limit. Never imply those comments exhaust the thread.
+Use host web search to find the current month's “Ask HN: Who is hiring?” thread on `news.ycombinator.com`; if it is absent, use the previous month's thread and label its month. Verify the thread title, date, and item ID on the actual page. Fetch the thread and its top-level comment IDs through the official `https://hacker-news.firebaseio.com/v0/item/{id}.json` endpoint; do not scrape rendered HTML or mistake nested replies for employer posts. Start with up to 50 top-level comments, pace requests conservatively, and disclose both the cap and any skipped, deleted, or unavailable comments.
 
-Interpret company, role, location, remote restrictions, compensation, description, and application URL from each posting. Respect the user's date range using comment timestamps. Do not substitute a seniority level or infer an unlisted salary. Report skipped/deleted comments or an unavailable thread without stopping other sources.
+Interpret company, role, location, remote restrictions, compensation, description, and application URL from each posting. Use comment timestamps to enforce the user's date range. Keep an exact HN comment link alongside an external application URL when provided. Do not infer an unlisted salary or seniority. An unavailable thread does not stop other requested sources.
 
 ## Twitter/X
 
-Use the host-managed visible browser. Search hiring phrases combined with the user's role criteria and a `since:` date, use Latest when available, and verify results against the actual criteria. Include a remote constraint only when the user requested it. Inspect up to 20 posts by default and report truncation.
+Open X search in the selected browser. Combine a requested title or close role phrase with hiring terms and a `since:YYYY-MM-DD` operator based on the requested range; use the Latest tab when available. Inspect visible posts and their dates to verify the query, date range, and whether the post is actually a job opportunity. Add remote terms only when the owner requested them. Run separate title-family queries when needed and report which were searched.
 
-Capture post URL, author, date, role/company when stated, location/remote terms, compensation, and application link. Likes and reposts do not measure job suitability. If unavailable, rate-limited, or logged out, continue other requested sources and disclose the gap.
+Inspect up to 20 distinct posts by default and disclose truncation. Capture the post URL, author, observed date, role and company only when stated, location or remote terms, listed compensation, and exact application link. A repost or discussion about hiring is not automatically an open job. Likes and reposts do not measure suitability. If X is unavailable, rate-limited, or logged out, disclose the gap and continue other sources.
 
-## Shared browser boundaries
+## Shared boundaries
 
-Use the selected host browser throughout. Never handle credentials, authentication state, CAPTCHA, or MFA. Search does not authorize account creation or application actions. Skip failed pages with a concise explanation; do not invent missing facts or bypass rate limits.
+Search does not authorize account creation, applying, messaging, or changing the canonical queue. Skip failed pages with a concise explanation; do not invent missing facts or bypass rate limits. Once the owner selects exact results, [queue intake](queue.md) governs preview and commit through the TypeScript CLI.

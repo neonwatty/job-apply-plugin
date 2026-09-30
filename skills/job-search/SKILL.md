@@ -1,7 +1,6 @@
 ---
 name: job-search
-description: Find jobs on LinkedIn, Hacker News, and Twitter/X using the user's criteria.
-allowed-tools: Read, Write, Bash, WebSearch, WebFetch, mcp__claude-in-chrome__*
+description: Find current jobs on LinkedIn, Hacker News, and Twitter/X using saved search preferences and related titles.
 ---
 
 # Job Search
@@ -11,11 +10,11 @@ For first use or a handoff into the canonical job queue, read the shared [workfl
 
 ## Criteria and source selection
 
-Read [answer-memory](../answer-memory/SKILL.md) for root resolution and initialization. Use `node "<plugin-root>/apps/companion/command.mjs" store preferences-get` for saved criteria. Read only relevant additional profile facts when needed.
+Read [answer-memory](../answer-memory/SKILL.md) for root resolution and initialization. Use `node "<plugin-root>/apps/companion/command.mjs" store preferences-get` for saved criteria, including approved related `targetTitles` from Job Title Discovery. Those titles are search terms, not verified qualifications or an instruction to search for a different seniority. Read only relevant additional profile facts when needed; never send private profile or resume content to a job site. On every search, read [model defaults](references/model-defaults.md) and inspect the current host's saved search model preference. If the host cannot select that model for the active task, disclose the mismatch briefly and continue the search with the active model.
 
 Apply the current request over saved preferences. Missing saved preferences do not block a search when the request provides sufficient criteria. Ask only for missing information that materially determines the search, such as the target role if none is known. Do not require a separate setup invocation or persist transient overrides without a request to save them. A corrupt/unavailable Store is a storage error, not an empty preference set; report it without repairing or overwriting data.
 
-Search the requested sources; otherwise use LinkedIn, HN, and X where available. Read the applicable sections of [source guidance](references/sources.md). If one source fails or requires login, continue available sources and disclose what was skipped.
+Search the requested sources; otherwise use LinkedIn, HN, and X where available. Read the applicable sections of [source guidance](references/sources.md), including the host-specific browser route. If one source fails or requires login, continue available sources and disclose what was skipped. Search is performed by the host agent through its browser or web tools; the TypeScript Store CLI only previews and commits selected queue changes.
 
 Apply explicit requirements as filters. Exclude known conflicts. Keep unknown salary, location eligibility, or other required facts visibly marked as **Unknown—verify**, rather than assuming a match or silently excluding the job. If the user explicitly requires a verified fact (for example, listed salary), exclude unknowns for that fact. Do not infer seniority, salary floors, remote-only status, or demographic criteria.
 

@@ -21,6 +21,7 @@ EXPECTED_SKILLS = {
     "job-title-discovery",
     "application-setup",
     "job-workspace",
+    "saved-jobs",
 }
 
 

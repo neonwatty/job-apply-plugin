@@ -14,7 +14,8 @@ AI-powered job application assistant for Claude Code and Codex that fills job ap
 | `job-apply:answer-memory` | Safely manage your local profile, reusable answers, application history, and resumable sessions |
 | `job-apply:application-setup` | Choose the browser surface, fallback behavior, page-transition pace, and preferred review-bounded automation mode |
 | `job-apply:account-setup` | Classify supported account flows and manage only redacted metadata; passwords, email values, verification codes, and live sign-in remain outside the skill |
-| `job-apply:job-search` | Search LinkedIn, Hacker News, and Twitter/X for jobs, then rank results against your preferences |
+| `job-apply:job-search` | Search LinkedIn, Hacker News, and Twitter/X for current jobs using saved preferences and approved related titles |
+| `job-apply:saved-jobs` | Read and present canonical saved jobs without changing them |
 | `job-apply:job-title-discovery` | Research related job titles with visible job-board evidence and return reviewable suggestions without changing saved preferences |
 | `job-apply:job-preferences` | Set the titles, salary, remote-work, and filtering preferences used by job search |
 | `job-apply:job-workspace` | Open the optional local Jobs, Facts, Resumes, Answers, and unified Trash workspace shared with Job Apply agents |
@@ -46,10 +47,16 @@ Application filling has three owner-selected modes: Guided, Autofill to Review f
 
 ### Job Search (`job-apply:job-search`)
 - **Preference-based search**: Searches for the titles, salary range, remote options, and time range you saved
+- **Approved related titles**: Uses target titles saved after Job Title Discovery review
+- **Host model default**: Can save a search-only model preference for Codex or Claude Code in `profile.agentModelPreferences`; the application model preference stays separate
 - **Connection insights**: Finds jobs at companies where you have connections
 - **Hiring manager discovery**: Identifies jobs with hiring managers listed
 - **Multi-source discovery**: Searches LinkedIn, Hacker News Who's Hiring, and Twitter/X
 - **Results saved**: Full search results saved to the shared `~/.claude-job-searches/` compatibility directory as Markdown
+
+### Saved Jobs (`job-apply:saved-jobs`)
+- **Canonical list**: Shows active Store jobs with status `saved`, including their exact IDs and links
+- **Read-only workflow**: Does not search sites, import reports, change status, or start an application
 
 ### Job Title Discovery (`job-apply:job-title-discovery`)
 - **Evidence-backed options**: Explore core, adjacent, and stretch titles using visible LinkedIn Jobs listings when available
