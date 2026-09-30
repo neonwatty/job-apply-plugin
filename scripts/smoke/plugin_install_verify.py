@@ -17,6 +17,7 @@ EXPECTED_SKILLS = {
     "answer-memory",
     "job-apply",
     "job-search",
+    "saved-jobs",
     "job-preferences",
     "job-title-discovery",
     "application-setup",

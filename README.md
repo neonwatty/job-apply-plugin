@@ -14,7 +14,8 @@ AI-powered job application assistant for Claude Code and Codex that fills job ap
 | `job-apply:answer-memory` | Safely manage your local profile, reusable answers, application history, and resumable sessions |
 | `job-apply:application-setup` | Choose the browser surface, fallback behavior, page-transition pace, and preferred review-bounded automation mode |
 | `job-apply:account-setup` | Classify supported account flows and manage only redacted metadata; passwords, email values, verification codes, and live sign-in remain outside the skill |
-| `job-apply:job-search` | Search LinkedIn, Hacker News, and Twitter/X for jobs, then rank results against your preferences |
+| `job-apply:job-search` | Coordinate LinkedIn, Hacker News, and Twitter/X job research, then let you select results to save |
+| `job-apply:saved-jobs` | Read and filter your canonical saved jobs |
 | `job-apply:job-title-discovery` | Research related job titles with visible job-board evidence and return reviewable suggestions without changing saved preferences |
 | `job-apply:job-preferences` | Set the titles, salary, remote-work, and filtering preferences used by job search |
 | `job-apply:job-workspace` | Open the optional local Jobs, Facts, Resumes, Answers, and unified Trash workspace shared with Job Apply agents |
@@ -46,10 +47,11 @@ Application filling has three owner-selected modes: Guided, Autofill to Review f
 
 ### Job Search (`job-apply:job-search`)
 - **Preference-based search**: Searches for the titles, salary range, remote options, and time range you saved
+- **Source research**: The host agent coordinates a worker for each source and reports partial or unavailable sources
 - **Connection insights**: Finds jobs at companies where you have connections
 - **Hiring manager discovery**: Identifies jobs with hiring managers listed
 - **Multi-source discovery**: Searches LinkedIn, Hacker News Who's Hiring, and Twitter/X
-- **Results saved**: Full search results saved to the shared `~/.claude-job-searches/` compatibility directory as Markdown
+- **Results saved**: Observed search results saved to the shared `~/.claude-job-searches/` compatibility directory as Markdown
 
 ### Job Title Discovery (`job-apply:job-title-discovery`)
 - **Evidence-backed options**: Explore core, adjacent, and stretch titles using visible LinkedIn Jobs listings when available
@@ -141,7 +143,7 @@ Once a resume's facts are confirmed:
 
 ### Searching for Jobs
 
-First run `$job-apply:job-preferences` to save your search preferences. Then use `$job-apply:job-search` to search LinkedIn, Hacker News, and Twitter/X and rank matching jobs:
+Use `$job-apply:job-preferences` to save reusable criteria, or provide criteria directly to `$job-apply:job-search`. The host agent researches LinkedIn, Hacker News, and Twitter/X and shows matching jobs:
 
 1. Set or update your preferences:
    ```
@@ -163,12 +165,10 @@ First run `$job-apply:job-preferences` to save your search preferences. Then use
    - Sources: LinkedIn, HN, Twitter
    ```
 
-4. Review ranked results, including:
-   - Jobs with hiring managers listed (highest priority)
-   - Jobs with 1st-degree connections
-   - Matching Hacker News and Twitter/X opportunities
+4. Review results ordered by observed posting date, with unknown facts and source gaps marked. Select exact jobs if you want them added to the canonical Store; the agent previews those changes and commits only after you confirm that preview.
 
 Results are automatically saved to `~/.claude-job-searches/`. Both Codex and Claude Code use this legacy-compatible path.
+To retrieve jobs already saved in the canonical Store, invoke `$job-apply:saved-jobs`. It reads through the TypeScript CLI and can filter by status or fields in the returned records; search reports are not the saved-job list.
 
 ### Local Companion Workspace
 
@@ -362,7 +362,7 @@ Each file contains:
 - Search parameters (keywords, location, filters)
 - List of jobs with full details
 - Connection and hiring manager information
-- Priority ranking
+- Source availability and observed result ordering
 
 ### Guided legacy job migration
 

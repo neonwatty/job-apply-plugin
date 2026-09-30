@@ -25,7 +25,7 @@ def run(root: Path, smoke_root: Path) -> None:
         _validate_approval,
     )
 
-    expected = {"account-setup", "answer-memory", "application-setup", "job-apply", "job-search", "job-preferences", "job-title-discovery", "job-workspace"}
+    expected = {"account-setup", "answer-memory", "application-setup", "job-apply", "job-search", "saved-jobs", "job-preferences", "job-title-discovery", "job-workspace"}
 
     launcher = root / "scripts" / "qa-chrome.py"
     try:
@@ -273,7 +273,7 @@ def run(root: Path, smoke_root: Path) -> None:
             raise SystemExit(f"skills/{skill}/SKILL.md frontmatter name is missing or incorrect")
 
     invocation_pattern = re.compile(
-        r"(?:\$|/)?job-apply:(account-setup|answer-memory|application-setup|job-apply|job-search|job-preferences|job-title-discovery|job-workspace)"
+        r"(?:\$|/)?job-apply:(account-setup|answer-memory|application-setup|job-apply|job-search|saved-jobs|job-preferences|job-title-discovery|job-workspace)"
     )
     for relative in ("README.md", "site/index.html"):
         found = set(invocation_pattern.findall((root / relative).read_text()))

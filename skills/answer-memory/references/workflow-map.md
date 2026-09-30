@@ -12,6 +12,7 @@ flowchart LR
   JP[Job Preferences] -->|saved criteria| JS[Job Search]
   TD[Job Title Discovery<br/>browser evidence and result packet] -->|owner reviews exact titles in Companion| JP
   JS -->|owner selects and confirms queue preview| Jobs[Canonical job resolved in Store]
+  SJ[Saved Jobs<br/>read-only list and filters] -->|read| Store
   JW[Job Workspace<br/>Companion UI] -->|manage and review| Store[(TypeScript Store)]
   JA[Job Apply<br/>extraction or one application] -->|commands and attempt broker| Store
   AM -->|shared Store rules| JP
@@ -25,9 +26,9 @@ flowchart LR
 
 Job Workspace launches the UI; it does not start Job Apply. Job Search, Job
 Preferences, Application Setup, and Account Setup are optional for a user who already has a job
-link. The eight packaged skills are [Answer Memory](../SKILL.md), [Application
+link. The nine packaged skills are [Answer Memory](../SKILL.md), [Application
 Setup](../../application-setup/SKILL.md), [Account Setup](../../account-setup/SKILL.md), [Job Preferences](../../job-preferences/SKILL.md),
-[Job Search](../../job-search/SKILL.md), [Job Title Discovery](../../job-title-discovery/SKILL.md), [Job Workspace](../../job-workspace/SKILL.md),
+[Job Search](../../job-search/SKILL.md), [Saved Jobs](../../saved-jobs/SKILL.md), [Job Title Discovery](../../job-title-discovery/SKILL.md), [Job Workspace](../../job-workspace/SKILL.md),
 and [Job Apply](../../job-apply/SKILL.md).
 
 ## 1. First use and resume facts
@@ -88,7 +89,7 @@ Companion copies an invocation for the chosen host; it does not launch the skill
 
 ```mermaid
 flowchart LR
-  Criteria[User request or saved preferences] --> Search[Job Search checks requested sources]
+  Criteria[User request or saved preferences] --> Search[Host coordinates source research workers]
   Search --> Report[Timestamped search report]
   Report -->|owner selects exact results| Preview[Canonical queue preview]
   Preview -->|owner confirms that preview| Queue[Canonical jobs resolved in Store]
@@ -97,12 +98,14 @@ flowchart LR
   Legacy -->|owner confirms exact preview| Queue
   Report -->|no selection| End[Search ends without queue change]
   Direct[User supplies a job link] -->|Job Apply task intake| Queue
+  Queue -->|read-only list and filters| Saved[Saved Jobs]
 ```
 
 | Transition | Skill or surface | Persisted evidence and guard |
 | --- | --- | --- |
 | Save criteria | Job Preferences or Job Workspace → Facts | `profile.preferences` with revision checking; a search can also use request-only criteria without saving them. |
-| Search | Job Search | Timestamped Markdown report in the compatibility search directory; it is not the canonical queue. Missing source data stays visible as unknown. |
+| Search | Job Search | The host agent combines source worker evidence, including partial or unavailable sources. Timestamped Markdown report in the compatibility search directory; it is not the canonical queue. Missing source data stays visible as unknown. |
+| Retrieve saved jobs | Saved Jobs | `job-list` reads canonical Store records; no report parsing or job mutation. |
 | Queue chosen results | Job Search queue intake | Owner confirms the exact `job-upsert-preview`; `job-upsert-commit` uses that input and preview token. Drift requires another preview and confirmation. |
 | Import an older search report | Job Search legacy queue intake | Owner selects exact report entries, reviews their `legacy-jobs-preview`, and confirms its token before commit. This is an optional migration path. |
 | Enter one supplied URL | Job Apply intake | `task intake` creates, updates, or resolves an existing canonical job before browser work; search is optional. |

@@ -17,14 +17,22 @@ class AnswerMemoryIntegrationTests(AnswerCliCase):
                 "job-apply",
                 "job-preferences",
                 "job-search",
+                "saved-jobs",
                 "job-title-discovery",
                 "job-workspace",
             },
         )
-        for name in ("answer-memory", "account-setup", "application-setup", "job-apply", "job-preferences", "job-search"):
+        for name in ("answer-memory", "account-setup", "application-setup", "job-apply", "job-preferences", "job-search", "saved-jobs"):
             self.assertIn('apps/companion/command.mjs" store', skills[name], name)
         self.assertIn("apps/companion/launch.mjs", skills["job-workspace"])
         self.assertIn("canonical Store contract", skills["job-workspace"])
+        self.assertIn('store job-list', skills["saved-jobs"])
+        self.assertIn('only job-record reads', skills["saved-jobs"])
+        self.assertIn('zero disk writes', skills["saved-jobs"])
+        self.assertIn('not the canonical saved-job list', skills["saved-jobs"])
+        self.assertIn('worker result contract', skills["job-search"])
+        self.assertIn('partial', skills["job-search"])
+        self.assertIn('profile.preferences.searchModel', skills["job-search"])
         for name in ("application-setup", "job-apply", "job-preferences", "job-search"):
             self.assertNotIn("Read `~/.claude-job-profile.json`", skills[name])
             self.assertNotIn("Write the collected values into `~/.claude-job-profile.json`", skills[name])
