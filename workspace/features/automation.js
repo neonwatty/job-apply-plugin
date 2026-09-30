@@ -20,12 +20,6 @@ export function installAutomation(context) {
   const save = (...args) => coordinators.save(...args);
   function renderAutomation(projection) {
     automationState.projection = projection; automationState.loaded = true;
-    const settings = projection.settings;
-    const form = $("#automation-form");
-    form.elements.enabled.checked = settings.enabled;
-    form.elements.automaticAccountCreation.checked = settings.automaticAccountCreation;
-    form.elements.passwordStrategy.value = settings.passwordStrategy;
-    $("#automation-revision").textContent = `Revision ${settings.revision}`;
     const capability = projection.capability;
     const accountFlow = capability.accountFlowAutomation || {};
     const capabilityReason = capability.reasonCode ? capability.reasonCode.replaceAll("_", " ") : capability.state;
@@ -73,7 +67,7 @@ export function installAutomation(context) {
   async function refreshAutomation({ quiet = false } = {}) {
     try {
       const projection = await api("/api/automation"); renderAutomation(projection);
-      $("#automation-error").classList.add("hidden"); $("#automation-conflict").classList.add("hidden");
+      $("#automation-error").classList.add("hidden");
       if (!quiet) toast("Automation controls refreshed");
     } catch (error) {
       $("#automation-error").textContent = error.message; $("#automation-error").classList.remove("hidden");
@@ -100,23 +94,6 @@ export function installAutomation(context) {
       renderAccountOperation({ status: "idle", operation: null }); await refreshAutomation({ quiet: true });
       toast(result.recovered ? "Stranded account operation marked ambiguous" : "No stranded operation found");
     } catch (error) { $("#account-operation-error").textContent = error.message; $("#account-operation-error").classList.remove("hidden"); }
-  }
-
-  async function saveAutomation(event) {
-    event?.preventDefault(); const current = automationState.projection?.settings; if (!current) return;
-    const form = $("#automation-form");
-    const patch = {
-      enabled: form.elements.enabled.checked,
-      automaticAccountCreation: form.elements.automaticAccountCreation.checked,
-      passwordStrategy: form.elements.passwordStrategy.value,
-    };
-    try {
-      await api("/api/automation/settings", { method: "PATCH", body: JSON.stringify({ patch, expectedRevision: current.revision }) });
-      await refreshAutomation({ quiet: true }); toast("Automation settings saved");
-    } catch (error) {
-      if (error.code === "revision_conflict") { $("#automation-conflict").classList.remove("hidden"); $("#automation-conflict").focus(); }
-      else { $("#automation-error").textContent = error.message; $("#automation-error").classList.remove("hidden"); }
-    }
   }
 
   async function addEmployerRealm(event) {
@@ -173,5 +150,5 @@ export function installAutomation(context) {
   }
 
 
-  Object.assign(coordinators, { renderAutomation, refreshAutomation, renderAccountOperation, refreshAccountOperation, recoverAccountOperation, saveAutomation, addEmployerRealm, renderTrustedFillStatus, approveTrustedFill, loadTrustedFillStatus, revokeTrustedFill });
+  Object.assign(coordinators, { renderAutomation, refreshAutomation, renderAccountOperation, refreshAccountOperation, recoverAccountOperation, addEmployerRealm, renderTrustedFillStatus, approveTrustedFill, loadTrustedFillStatus, revokeTrustedFill });
 }

@@ -41,12 +41,11 @@ export async function nativeAutomationBrowser(page, root) {
   const accountsWorkspace=page.locator('.accounts-workspace');
   await accountsWorkspace.getByRole('heading',{name:'Accounts & Sign-in',exact:true}).waitFor();
   await accountsWorkspace.getByText('Browser sessions not observed',{exact:true}).waitFor();
-  await accountsWorkspace.getByLabel(/Enable account preparation controls/).check();
-  await accountsWorkspace.getByRole('button',{name:'Save settings',exact:true}).click();
-  await accountsWorkspace.getByText('Account settings saved.',{exact:true}).waitFor();
-  const settings=JSON.parse(await readFile(join(root,'automation-settings.json'),'utf8')).settings;
-  assert.equal(settings.enabled,true);
-  assert.equal(settings.revision,2);
+  await accountsWorkspace.getByText('Sign-in is yours to complete',{exact:true}).waitFor();
+  assert.equal(await accountsWorkspace.getByLabel('Workday credential strategy').count(),0);
+  assert.equal(await accountsWorkspace.getByLabel(/Allow protected Workday preparation/).count(),0);
+  assert.equal(await accountsWorkspace.getByRole('button',{name:'Save settings',exact:true}).count(),0);
+  const settingsBefore=await readFile(join(root,'automation-settings.json'),'utf8');
 
   await accountsWorkspace.getByRole('button',{name:'Add portal',exact:true}).click();
   await accountsWorkspace.getByLabel('Exact employer portal URL',{exact:true}).fill('https://job-boards.greenhouse.io/synthetic/jobs/123');
@@ -57,6 +56,7 @@ export async function nativeAutomationBrowser(page, root) {
   await accountsWorkspace.getByRole('button',{name:'Add portal',exact:true}).click();
   await accountsWorkspace.getByText('Workday realm',{exact:true}).waitFor();
   await accountsWorkspace.getByText('Keychain setup pending',{exact:true}).waitFor();
+  assert.equal(await readFile(join(root,'automation-settings.json'),'utf8'),settingsBefore);
   await accountsWorkspace.getByRole('button',{name:'Add portal',exact:true}).click();
   const unrelatedDraft='https://tenant.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/jobsearch/job/331081';
   await accountsWorkspace.getByLabel('Exact employer portal URL',{exact:true}).fill(unrelatedDraft);
@@ -95,5 +95,5 @@ export async function nativeAutomationBrowser(page, root) {
     await page.setViewportSize({width,height:844});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
   }
-  return {settings:true,redactedRealm:true,removal:true,idleRecovery:true,trustedFillStatus:true,layouts:[390,1280],liveExecutionDisabled:true};
+  return {settingsReadOnly:true,redactedRealm:true,removal:true,idleRecovery:true,trustedFillStatus:true,layouts:[390,1280],liveExecutionDisabled:true};
 }
