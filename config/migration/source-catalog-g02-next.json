@@ -47,6 +47,11 @@
       "classification": "unreviewed"
     },
     {
+      "path": "apps/companion/components/agent-model-preferences-model.ts",
+      "sha256": "62566a6ad6bf2fe306a6be6bd14b6c57e00979ef9a5e469d9885deaf4a3d281c",
+      "classification": "unreviewed"
+    },
+    {
       "path": "apps/companion/components/client.ts",
       "sha256": "3e3d6cb4c19ce8c2c38c0d5aa372098529c973893a5e2c32bb1338af4364fad8",
       "classification": "unreviewed"
