@@ -46,7 +46,7 @@ Application filling has three owner-selected modes: Guided, Autofill to Review f
 - **Non-destructive migration**: Imports an existing legacy profile once and leaves the original file untouched
 
 ### Job Search (`job-apply:job-search`)
-- **Preference-based search**: Searches for the titles, salary range, remote options, and time range you saved
+- **Background-aware search**: Uses saved titles as seeds and current skills and experience to find relevant roles with different titles, while honoring saved filters
 - **Source research**: The host agent coordinates a worker for each source and reports partial or unavailable sources
 - **Connection insights**: Finds jobs at companies where you have connections
 - **Hiring manager discovery**: Identifies jobs with hiring managers listed
