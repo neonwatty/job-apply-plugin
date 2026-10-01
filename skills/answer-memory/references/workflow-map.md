@@ -33,9 +33,11 @@ link. The nine packaged skills are [Answer Memory](../SKILL.md), [Application
 Setup](../../application-setup/SKILL.md), [Account Setup](../../account-setup/SKILL.md), [Job Preferences](../../job-preferences/SKILL.md),
 [Job Search](../../job-search/SKILL.md), [Job Title Discovery](../../job-title-discovery/SKILL.md), [Job Workspace](../../job-workspace/SKILL.md),
 [Saved Jobs](../../saved-jobs/SKILL.md), and [Job Apply](../../job-apply/SKILL.md).
-Worker model IDs are optional, host-specific profile settings. The host agent
-launches workers; Companion and the TypeScript CLI do not dispatch agents. A
-model choice never creates an application run or grants browser authority.
+Worker model IDs are optional, host-specific profile settings for Job Search
+source research and one Job Apply filling worker. Title discovery and resume fact
+extraction use the active host task model. The host agent launches workers;
+Companion and the TypeScript CLI do not dispatch agents. A model choice never
+creates an application run or grants browser authority.
 
 ## 1. First use and resume facts
 

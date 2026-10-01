@@ -1,7 +1,7 @@
 # Agent model preferences
 
 The canonical profile may contain `agentModelPreferences`. It holds optional model
-IDs for search and application workers on each supported host:
+IDs for two host-launched worker tasks on each supported host:
 
 ```json
 {
@@ -11,6 +11,16 @@ IDs for search and application workers on each supported host:
   }
 }
 ```
+
+| Task key | Worker that uses it | Direct host work |
+| --- | --- | --- |
+| `search` | Job Search's source research workers for LinkedIn, Hacker News, or X when delegation is available | The active host task model is used when the host researches directly. |
+| `application` | Job Apply's one exact-job form-filling worker when delegation is available | The active host task model is used when the host fills directly. |
+
+Job Title Discovery and resume fact extraction currently run in the active host
+task. They have no separate worker route or model key. Add a new task key only
+when that task has a real host-launched worker boundary that can select a model.
+Do not reuse either existing key for these workflows.
 
 Read this field through `store profile-inspect` after the ordinary Answer Memory
 initialization and root-routing rules. Each field is optional. A missing or empty
