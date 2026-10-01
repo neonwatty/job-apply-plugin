@@ -70,6 +70,11 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
   const busyNow = useRef(false);
   const controller = useRef<AbortController | null>(null);
   useEffect(() => {
+    if (!open) return;
+    const frame = requestAnimationFrame(() => heading.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [open]);
+  useEffect(() => {
     const active = new AbortController(); controller.current = active;
     setLoading(true); setError('');
     void client.profile(active.signal).then(value => { if (!active.signal.aborted) { setSnapshot(value); setChoices(choicesFor(value)); } })
@@ -78,7 +83,7 @@ export function TitleDiscovery({ client, onSaved, dirtyChanged }: { client: Clie
     return () => active.abort();
   }, [client, reload]);
   useEffect(() => { dirtyChanged(open && (Boolean(packetText || criteria || packet) || busy || Boolean(snapshot && choicesChanged(snapshot, packet, choices)))); return () => dirtyChanged(false); }, [open, packetText, criteria, packet, choices, snapshot, busy, dirtyChanged]);
-  function begin() { setOpen(true); setNotice(''); setError(''); requestAnimationFrame(() => heading.current?.focus()); }
+  function begin() { setOpen(true); setNotice(''); setError(''); }
   function cancel() {
     if (busyNow.current) return;
     setOpen(false); setPacket(null); setPacketText(''); setCriteria(''); setFallback(''); setConflict(false); setCanonicalChange(null); setReviewedChange(false); setError('');
