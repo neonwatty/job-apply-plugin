@@ -89,7 +89,7 @@ Companion copies an invocation for the chosen host; it does not launch the skill
 
 ```mermaid
 flowchart LR
-  Criteria[User request or saved preferences] --> Search[Job Search checks requested sources]
+  Criteria[User request or saved preferences] --> Search[Host researches requested sources]
   Search --> Report[Timestamped search report]
   Report -->|owner selects exact results| Preview[Canonical queue preview]
   Preview -->|owner confirms that preview| Queue[Canonical jobs resolved in Store]
@@ -104,8 +104,8 @@ flowchart LR
 | Transition | Skill or surface | Persisted evidence and guard |
 | --- | --- | --- |
 | Save criteria | Job Preferences or Job Workspace → Facts | `profile.preferences` with revision checking; a search can also use request-only criteria without saving them. |
-| Search | Job Search | Timestamped Markdown report in the compatibility search directory; it is not the canonical queue. Missing source data stays visible as unknown. |
-| View saved jobs | Saved Jobs | `job-list --status saved` presents active canonical records without an agent-authored job mutation or browser search. |
+| Search | Job Search | The host combines direct or permitted worker research across saved-title and capability lanes. The timestamped Markdown report records source status and limits; it is not the canonical queue. Missing source data stays visible as unknown. |
+| View saved jobs | Saved Jobs | `job-list --status saved` presents active canonical records, with requested field filters applied in memory, without an agent-authored job mutation or browser search. |
 | Queue chosen results | Job Search queue intake | Owner confirms the exact `job-upsert-preview`; `job-upsert-commit` uses that input and preview token. Drift requires another preview and confirmation. |
 | Import an older search report | Job Search legacy queue intake | Owner selects exact report entries, reviews their `legacy-jobs-preview`, and confirms its token before commit. This is an optional migration path. |
 | Enter one supplied URL | Job Apply intake | `task intake` creates, updates, or resolves an existing canonical job before browser work; search is optional. |

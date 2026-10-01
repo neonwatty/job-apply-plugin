@@ -14,6 +14,7 @@ class SearchSavedSkillsTests(unittest.TestCase):
         self.assertEqual(documents, {
             entry,
             entry.parent / 'references/sources.md',
+            entry.parent / 'references/worker-results.md',
             entry.parent / 'references/model-defaults.md',
             entry.parent / 'references/queue.md',
         })
@@ -27,8 +28,10 @@ class SearchSavedSkillsTests(unittest.TestCase):
         ):
             self.assertIn(expected, text)
         self.assertIn('TypeScript Store CLI only previews and commits', text)
+        self.assertIn('worker result contract', text)
+        self.assertIn('capability', text)
         self.assertIn('On every search, read [model defaults]', entry.read_text())
-        self.assertIn('cannot change the active model, disclose the mismatch', text)
+        self.assertIn('saved worker model cannot change the active task model', text)
 
     def test_saved_jobs_is_canonical_read_only_entry_point(self):
         entry = ROOT / 'skills/saved-jobs/SKILL.md'
@@ -39,6 +42,7 @@ class SearchSavedSkillsTests(unittest.TestCase):
         self.assertIn('job-list --include-trashed', text)
         self.assertIn('Trash is not a status', text)
         self.assertIn('exact canonical job ID', text)
+        self.assertIn('filter the returned records in memory', text)
         self.assertIn('It never searches sites', text)
         self.assertNotIn('job-upsert-commit', text)
 
