@@ -36,6 +36,32 @@ fails, explain the unavailable choice and wait for an owner-selected alternative
 Never silently substitute another model or treat a model preference as permission
 to search a site, fill an application, use sensitive data, consent, or submit.
 
+### Codex model preflight
+
+For a Codex model choice made through an agent, inspect the **current Codex
+host's** worker-tool model list or host model picker and its model-override
+capability before offering or saving an exact `codex.search` or
+`codex.application` ID. Require an exact ID match; do not infer support from a
+model family, an API model list, a hard-coded catalog, or another host's choices.
+If the current host does not expose a usable worker model list, or the chosen ID
+or override is unavailable, leave the stored Codex preference unchanged.
+Explain what could not be checked and ask the owner for an available choice or
+the host default.
+
+Repeat that check immediately before each Codex worker launch, even for a saved
+ID. Stop **before** an application claim or browser work if the application
+worker ID or override is unavailable, or before launching a search-source worker
+if its ID or override is unavailable. Direct research in the active task may
+continue with that task's model. A host catalog is not proof of
+account entitlement: if the actual worker launch rejects the ID, report the
+failure and preserve the selected job, run, and claim-free state. Never retry
+silently with another model. A successful worker turn confirms access for that
+turn, not future availability.
+
+This Codex check does not validate `claudeCode` IDs. Use Claude Code's own host
+capabilities when that host is active. Companion accepts manually entered model
+IDs with format validation only; its saved field is not an availability receipt.
+
 For an owner-requested settings change, inspect the current profile revision and
 write only the changed nested keys with `store profile-patch --source user`. Use
 `null` to remove one model ID and return that field to the host default. Preserve
