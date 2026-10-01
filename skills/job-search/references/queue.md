@@ -11,6 +11,18 @@ each item. Keep connections, hiring-manager details, applicant counts,
 engagement, and other search-only details in the timestamped Markdown report;
 never place them in the structured input.
 
+Before preparing that input, read active canonical records with `store job-list`.
+Deduplicate selected results by normalized job URL and source ID, and compare
+cross-posts against existing jobs using a verified employer requisition or
+application URL. A matching company and title alone are not enough to merge
+records. If a selected result may be the same opportunity as an existing job
+under another URL, show the existing ID and both links to the owner and leave
+that result out of the commit until its identity is resolved. Never create a
+second job merely to represent another source link, and never change an
+existing job's application status to resolve a search duplicate. The Store's
+preview remains authoritative: a repeated exact identity should show `noop`,
+while an unexpected `create` or `conflict` needs review before commit.
+
 Before asking for confirmation, preview the exact agent-authored input:
 
 ```bash

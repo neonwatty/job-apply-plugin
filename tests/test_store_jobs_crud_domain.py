@@ -134,8 +134,17 @@ class JobCrudDomainTests(unittest.TestCase):
         resume_path = self.home / "resume.pdf"
         resume_path.write_bytes(b"%PDF-1.7\nresume")
         content_revision = stores[0]._new_resume_content_revision()
+        validate_resume_bytes = self.facade._validate_resume_bytes
+
+        def validate_with_stable_mtime(path, extension):
+            self.facade.os.utime(path, (1_700_000_000, 1_700_000_000))
+            return validate_resume_bytes(path, extension)
+
         with mock.patch.object(
             self.facade, "utc_now", return_value="2026-09-04T13:00:00Z"
+        ), mock.patch.object(
+            self.facade, "_validate_resume_bytes",
+            side_effect=validate_with_stable_mtime,
         ), mock.patch.object(
             self.facade.Store,
             "_new_resume_content_revision",
