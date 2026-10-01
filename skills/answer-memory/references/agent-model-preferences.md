@@ -49,8 +49,10 @@ Explain what could not be checked and ask the owner for an available choice or
 the host default.
 
 Repeat that check immediately before each Codex worker launch, even for a saved
-ID. Stop **before** an application claim or browser work, or before search-source
-research, if the ID or override is unavailable. A host catalog is not proof of
+ID. Stop **before** an application claim or browser work if the application
+worker ID or override is unavailable, or before launching a search-source worker
+if its ID or override is unavailable. Direct research in the active task may
+continue with that task's model. A host catalog is not proof of
 account entitlement: if the actual worker launch rejects the ID, report the
 failure and preserve the selected job, run, and claim-free state. Never retry
 silently with another model. A successful worker turn confirms access for that
