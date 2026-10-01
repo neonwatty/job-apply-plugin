@@ -14,9 +14,12 @@ expired or interrupted claim.
    Use `codex.application` or `claudeCode.application` for the current host, unless
    the owner chose another model in the current request. A missing field means the
    host's default worker model.
-3. Check that the host can launch one sub-agent with the selected model. If a
-   non-default model is unavailable, stop before claim or browser work and tell
-   the owner. Do not silently substitute another model.
+3. Check that the host can launch one sub-agent with the selected model. For
+   Codex, repeat the exact-ID and override check in [Codex model preflight](../../answer-memory/references/agent-model-preferences.md#codex-model-preflight)
+   using this host's current worker options. If a non-default model is
+   unavailable or cannot be verified, stop before claim or browser work and tell
+   the owner. Do not silently substitute another model. If the launch itself
+   fails, preserve the unclaimed job and ask for another available choice.
 4. Launch one worker for the exact job. Give it the job ID and the current request's
    exact authorization scope, but no applicant values, resume path, credentials,
    claim token, browser state, or blanket consent. Tell it to follow this skill's

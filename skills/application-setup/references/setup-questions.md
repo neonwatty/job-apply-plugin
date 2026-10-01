@@ -34,6 +34,14 @@ language.
    - Job Title Discovery and resume fact extraction run in the active host task;
      no separate model setting applies to them yet.
 
+For an agent-led Codex model change, follow the [Codex model preflight](../../answer-memory/references/agent-model-preferences.md#codex-model-preflight)
+before presenting or saving the ID. Check the current host's worker model list
+and override support, not just the ID format. If unavailable, leave the stored
+Codex preference unchanged and offer a supported ID or the host default. A
+Codex check cannot validate a Claude Code model. Companion's manual text fields
+cannot inspect either host's live model access; explain that distinction when
+helping the owner use Settings.
+
 Describe all three choices and say that every mode stops at final review. A preferred
 higher mode controls what the agent offers; it does not authorize filling. At
 application time the owner must still approve the exact jobs, expiration, and any
