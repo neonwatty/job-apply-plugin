@@ -26,6 +26,11 @@ selective edit to obtain the current revision and fact provenance, then pass tha
 revision to `profile-patch`. A conflict means another client changed the profile;
 reload and show the user the current data instead of retrying a stale patch.
 
+Optional host-specific search and application worker model IDs live beneath
+`profile.agentModelPreferences`; see [agent model preferences](agent-model-preferences.md).
+They are separate from job-search criteria in `profile.preferences` and from
+application authority.
+
 ## Fact groups
 
 Fact groups are durable saved views over canonical profile JSON-pointer paths. They

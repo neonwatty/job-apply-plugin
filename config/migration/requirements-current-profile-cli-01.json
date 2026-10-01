@@ -30,7 +30,7 @@
         },
         {
           "path": "scripts/job_apply_store/domains/profile.py",
-          "sha256": "164c932fab38eb105da38b83ec9f574d9ae6b5c8aafff0d18363156a8989662b"
+          "sha256": "30397f18716fcc156ddde6c3a4ea2a78da21199ad7dc68d7db3a20fc8a907728"
         }
       ],
       "testBindings": [
@@ -79,7 +79,7 @@
         },
         {
           "path": "scripts/job_apply_store/domains/profile.py",
-          "sha256": "164c932fab38eb105da38b83ec9f574d9ae6b5c8aafff0d18363156a8989662b"
+          "sha256": "30397f18716fcc156ddde6c3a4ea2a78da21199ad7dc68d7db3a20fc8a907728"
         }
       ],
       "testBindings": [
@@ -126,7 +126,7 @@
         },
         {
           "path": "scripts/job_apply_store/domains/profile.py",
-          "sha256": "164c932fab38eb105da38b83ec9f574d9ae6b5c8aafff0d18363156a8989662b"
+          "sha256": "30397f18716fcc156ddde6c3a4ea2a78da21199ad7dc68d7db3a20fc8a907728"
         }
       ],
       "testBindings": [
@@ -173,7 +173,7 @@
         },
         {
           "path": "scripts/job_apply_store/domains/profile.py",
-          "sha256": "164c932fab38eb105da38b83ec9f574d9ae6b5c8aafff0d18363156a8989662b"
+          "sha256": "30397f18716fcc156ddde6c3a4ea2a78da21199ad7dc68d7db3a20fc8a907728"
         }
       ],
       "testBindings": [

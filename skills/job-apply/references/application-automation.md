@@ -88,7 +88,7 @@ Only include a non-sensitive `answerRef` after the current canonical lookup conf
 Campaign is a local sequential driver, not background submission and not parallel browser work:
 
 1. Read `store application-authority-progress`. Continue only while its mode is `campaign_to_review` and status is `active`.
-2. Use only `nextJob`, re-run canonical selection/preflight, and start one broker claim. Never keep two claims or delegate a scoped grant to an unbound worker.
+2. Use only `nextJob`, re-run canonical selection/preflight, and start one broker claim. Never keep two claims or pass a scoped grant as a worker prompt. A delegated worker must acquire that exact job through the broker and evaluate action-time authority itself under [worker delegation](worker-delegation.md).
 3. Re-evaluate authority before each action group. Fill and verify through final review, then use the ordinary durable `awaiting_review` handoff. Never activate the final control.
 4. On an interrupt, save one value-free `needs_info` handoff and release the claim. Continue to another Ready job only after progress still reports the campaign active. Never wait for the owner while holding a claim.
 5. Between jobs, and after every handoff, read progress again. Pause leaves queued work untouched; stop or Guided ends the loop. When no Ready job remains, report counts at review, needing attention, or unavailable and stop.

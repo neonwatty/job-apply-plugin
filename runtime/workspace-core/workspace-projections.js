@@ -137,7 +137,7 @@ async function overviewLocked(tx, now) {
             && label(latest, 'contentRevision') === label(resume, 'contentRevision');
     });
     const hasProfileFacts = hasScopedWorkflow ? hasScopedFacts
-        : keys(profile).some(key => !['preferences', 'applicationPreferences'].includes(key));
+        : keys(profile).some(key => !['preferences', 'applicationPreferences', 'agentModelPreferences'].includes(key));
     const attentionJobs = jobs.filter(job => {
         const status = label(job, 'status');
         if (['needs_info', 'awaiting_review'].includes(status))

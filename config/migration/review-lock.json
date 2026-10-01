@@ -42,6 +42,10 @@
       "sha256": "f989066982130f857b4cc8fd57cf42ad507011faefc698974c9fe60e6f5a5caa"
     },
     {
+      "path": "browser-agent-model-preferences-surfaces.json",
+      "sha256": "8466959019850e9e6f7239b0fbc3b973757ea49ab44507872ad8bc24242c6259"
+    },
+    {
       "path": "browser-lib-01-surfaces.json",
       "sha256": "e68116f734464048d66fe0a5fda2aeb9ca1f5a74835c60421842b4e1c7437ad5"
     },
@@ -323,7 +327,7 @@
     },
     {
       "path": "requirements-current-profile-cli-01.json",
-      "sha256": "bb2fcc6f59a6ea83324153166a02202d5ed9886e20d6ad8f428c7d94256aa25b"
+      "sha256": "de6d36f2e8de17dc63257a6254b83e516e36e79dc63a39eaf8c95dd0046bc129"
     },
     {
       "path": "requirements-current-pure-browser-01.json",
@@ -379,7 +383,7 @@
     },
     {
       "path": "source-catalog-g02-next.json",
-      "sha256": "eb0b8cc6f4f634de5ba84aef73023a137b6524dd06e9f7c2c767f15844dbb627"
+      "sha256": "4fa8cc305d18ac2d374327d391b46bc8a0a0b6443b1ae5d1f64b6ddd66cf267d"
     },
     {
       "path": "source-catalog-m01.json",

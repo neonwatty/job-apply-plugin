@@ -6,7 +6,8 @@ import { TitleDiscovery } from './TitleDiscovery';
 import { copy,get,set,text,keys,same,parse,type Document } from '../../../src/contracts/workspace/values';
 import { factProvenance,patchBody,reapplyDraft,type ProfileSnapshot } from './facts-model';
 const sections=['firstName','lastName','email','phone','location','linkedInUrl','portfolioUrl','githubUrl','workHistory','education','skills','preferences'];
-const visibleFactNames=(draft:Document,query:string)=>keys(draft).filter(name=>name!=='applicationPreferences'&&name.toLowerCase().includes(query.toLowerCase()));
+const settingsNames=['applicationPreferences','agentModelPreferences'];
+const visibleFactNames=(draft:Document,query:string)=>keys(draft).filter(name=>!settingsNames.includes(name)&&name.toLowerCase().includes(query.toLowerCase()));
 export function Facts({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:boolean)=>void}) {
   const [base,setBase]=useState<ProfileSnapshot|null>(null),[draft,setDraft]=useState<Document|null>(null);
   const [latest,setLatest]=useState<ProfileSnapshot|null>(null),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
@@ -90,10 +91,11 @@ export function Facts({client,dirtyChanged}:{client:Client;dirtyChanged:(dirty:b
         {addOpen&&<fieldset id="fact-add-panel" className="fact-add-panel"><legend>Add a fact</legend><p>Add a standard profile field or a custom value used during applications.</p>
           <div className="fact-add-grid"><label>Fact name<input list="fact-names" value={key} onChange={event=>setKey(event.target.value)}/><datalist id="fact-names">{sections.map(name=><option key={name} value={name}/>)}</datalist></label>
           <label>Value type<select value={kind} onChange={event=>setKind(event.target.value)}><option value="text">Text</option><option value="object">Fields</option><option value="array">List</option><option value="boolean">Yes / no</option><option value="number">Number</option><option value="null" disabled={sections.includes(key)}>No value (additional facts)</option></select></label>
-          <button className="secondary" type="button" disabled={!key||draft.has(text(key))||(kind==='null'&&sections.includes(key))} onClick={()=>{
+          <button className="secondary" type="button" disabled={!key||settingsNames.includes(key)||draft.has(text(key))||(kind==='null'&&sections.includes(key))} onClick={()=>{
             const value=['workHistory','education','skills'].includes(key)?parse('[]'):key==='preferences'?parse('{}'):kind==='object'?parse('{}'):kind==='array'?parse('[]'):kind==='boolean'?true:kind==='number'?parse('0'):kind==='null'?null:text('');
             setDraft(set(copy(draft),key,value));setQuery('');
           }}>Add fact</button></div>
+          {settingsNames.includes(key)&&<p className="field-help">Change application and worker settings in Settings.</p>}
         </fieldset>}
         {(dirty||invalid)&&<div className="facts-actions"><button className="primary" type="submit" disabled={!dirty||Boolean(latest)||invalid}>Save facts</button>
         <button className="secondary" type="button" disabled={!dirty&&!invalid} onClick={()=>{if(confirm('Discard unsaved facts changes?')){setDraft(base.profile);setEditorVersion(value=>value+1);setInvalid(false);setLatest(null);setError('');setNotice('Draft discarded.');}}}>Discard facts changes</button></div>}

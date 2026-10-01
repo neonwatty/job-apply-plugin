@@ -1,6 +1,6 @@
 # Search model defaults
 
-When Agent Model Settings support is installed, the canonical profile stores optional durable defaults at `profile.agentModelPreferences`:
+When Agent Model Settings support is installed, the canonical profile stores optional durable defaults at `profile.agentModelPreferences`. Read the shared [task-key contract](../../answer-memory/references/agent-model-preferences.md) before changing a model choice:
 
 ```json
 {

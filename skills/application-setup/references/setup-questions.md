@@ -24,6 +24,15 @@ language.
      through final review
    - `campaign_to_review`: offer one bounded grant to process selected prepared jobs
      sequentially through final review
+5. **Optional worker models** — `agentModelPreferences`
+   - `codex.search` and `claudeCode.search` select source research workers in
+     Job Search. `codex.application` and `claudeCode.application` select one
+     exact-job filling worker in Job Apply.
+   - Omit or clear a field to use the host's default worker model. Ask for these
+     IDs only when the owner wants to configure worker models; never require them
+     to complete ordinary application setup.
+   - Job Title Discovery and resume fact extraction run in the active host task;
+     no separate model setting applies to them yet.
 
 Describe all three choices and say that every mode stops at final review. A preferred
 higher mode controls what the agent offers; it does not authorize filling. At
@@ -39,7 +48,8 @@ does not silently rewrite setup.
 ## Persistence
 
 After `profile-inspect`, create a permission-restricted temporary JSON object shaped
-like this, including only changed keys:
+like this, including only changed keys. A model choice is separate from application
+authority; see [agent model preferences](../../answer-memory/references/agent-model-preferences.md):
 
 ```json
 {
@@ -48,6 +58,9 @@ like this, including only changed keys:
     "browserFallback": "ask",
     "progressionMode": "standard",
     "preferredAutomationMode": "guided"
+  },
+  "agentModelPreferences": {
+    "codex": { "application": "model-id" }
   }
 }
 ```

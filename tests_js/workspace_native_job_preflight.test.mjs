@@ -22,7 +22,8 @@ async function run(input, files) {
 
 test('job preflight agrees with Python for profile facts, resume selection and observation policy', async () => {
   const fixtures = [];
-  for (const profile of [{}, { preferences: { title: 'Engineer' } }, { name: '' }, { preferences: {}, identity: {} }]) {
+  for (const profile of [{}, { preferences: { title: 'Engineer' } }, { agentModelPreferences: { codex: { application: 'gpt-6-luna' } } },
+    { applicationPreferences: {}, agentModelPreferences: {} }, { name: '' }, { preferences: {}, identity: {} }]) {
     for (const storageKind of ['managed', 'external']) {
       for (const changed of [{}, { exists: false, size: null, modifiedAt: null, digest: null },
         { size: 8 }, { modifiedAt: '2026-01-02T00:00:00Z' }, { digest: 'b'.repeat(64) }]) {
@@ -64,6 +65,7 @@ print(json.dumps(results))
     assert.ok(calls <= 1, 'one observation per preflight');
   }
   assert.deepEqual(actual, JSON.parse(oracle.stdout));
+  assert.ok(actual[20].errors.includes('profile_empty'), 'model preferences alone are not applicant facts');
 });
 
 test('real managed bytes, legacy changes and missing files independently gate readiness', async () => {

@@ -8,7 +8,7 @@ const root = new URL('../apps/companion/components/', import.meta.url);
 async function modules(run) {
     const temp = await mkdtemp(join(tmpdir(), 'react-editor-'));
     try {
-        for (const name of ['contracts', 'job-editor-state', 'client', 'facts-model', 'application-preferences-model']) {
+        for (const name of ['contracts', 'job-editor-state', 'client', 'facts-model', 'agent-model-preferences-model', 'application-preferences-model']) {
             const text = await readFile(new URL(name + '.ts', root), 'utf8');
             const js = ts.transpileModule(text, {
                 compilerOptions: {
@@ -16,11 +16,12 @@ async function modules(run) {
                 }
             }).outputText.replaceAll("'./contracts'", "'./contracts.mjs'")
                 .replaceAll("'./facts-model'", "'./facts-model.mjs'")
+                .replaceAll("'./agent-model-preferences-model'", "'./agent-model-preferences-model.mjs'")
                 .replace(/'\.\.\/\.\.\/\.\.\/src\/([^']+)'/g, (_match, path) =>
                     JSON.stringify(new URL('../runtime/' + path + '.js', import.meta.url).href));
             await writeFile(join(temp, name + '.mjs'), js);
         }
-        await run(await import(pathToFileURL(join(temp, 'job-editor-state.mjs'))), await import(pathToFileURL(join(temp, 'contracts.mjs'))), await import(pathToFileURL(join(temp, 'client.mjs'))), await import(pathToFileURL(join(temp, 'facts-model.mjs'))), await import(pathToFileURL(join(temp, 'application-preferences-model.mjs'))));
+        await run(await import(pathToFileURL(join(temp, 'job-editor-state.mjs'))), await import(pathToFileURL(join(temp, 'contracts.mjs'))), await import(pathToFileURL(join(temp, 'client.mjs'))), await import(pathToFileURL(join(temp, 'facts-model.mjs'))), await import(pathToFileURL(join(temp, 'application-preferences-model.mjs'))), await import(pathToFileURL(join(temp, 'agent-model-preferences-model.mjs'))));
     }
     finally {
         await rm(temp, {
@@ -153,7 +154,7 @@ async function factsDraftAssertions() {
     });
 }
 async function applicationPreferencesAssertions() {
-    return modules((_m, _c, _client, facts, setup) => {
+    return modules((_m, _c, _client, facts, setup, models) => {
         const empty = facts.snapshot('{"profile":{},"revision":4,"factProvenance":{}}');
         assert.deepEqual(setup.readApplicationPreferences(empty.profile), {
             preferences: { preferredBrowser: 'codex_browser', browserFallback: 'ask', progressionMode: 'standard', preferredAutomationMode: 'guided' },
@@ -181,6 +182,19 @@ async function applicationPreferencesAssertions() {
             patch: { applicationPreferences: setup.defaultApplicationPreferences },
             expectedRevision: 4, atomicPaths: [], deletedPaths: [],
         });
+        assert.deepEqual(models.readAgentModelPreferences(empty.profile), models.defaultAgentModelPreferences);
+        const modelDraft = { codexSearch: 'gpt-6-luna', codexApplication: '',
+            claudeCodeSearch: '', claudeCodeApplication: 'claude-sonnet' };
+        assert.deepEqual(JSON.parse(setup.applicationPreferencesPatch(saved,
+            setup.readApplicationPreferences(saved.profile).preferences, modelDraft)), {
+            patch: { applicationPreferences: {}, agentModelPreferences: {
+                codex: { search: 'gpt-6-luna' }, claudeCode: { application: 'claude-sonnet' }
+            } }, expectedRevision: 7, atomicPaths: [], deletedPaths: [],
+        });
+        const configured = facts.snapshot('{"profile":{"agentModelPreferences":{"codex":{"search":"gpt-6-luna","future":"preserved"},"claudeCode":{"application":"claude-sonnet"}}},"revision":9,"factProvenance":{}}');
+        assert.deepEqual(JSON.parse(setup.applicationPreferencesPatch(configured,
+            setup.defaultApplicationPreferences, { ...modelDraft, codexSearch: '' })).patch.agentModelPreferences,
+            { codex: { search: null } });
     });
 }
 export async function nextEditor() {

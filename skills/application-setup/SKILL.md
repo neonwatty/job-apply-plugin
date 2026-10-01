@@ -1,12 +1,12 @@
 ---
 name: application-setup
-description: Set or review durable Job Apply browser and application-flow preferences.
+description: Set or review durable Job Apply browser, application-flow, and worker model preferences.
 allowed-tools: Read, Write, Bash
 ---
 
 # Application Setup
 
-Set up or selectively update the owner's durable application-flow preferences. Read
+Set up or selectively update the owner's durable application-flow and worker model preferences. Read
 [answer-memory](../answer-memory/SKILL.md) first for plugin resolution, Store
 initialization, private temporary inputs, and exact-revision handling, then read
 [setup questions](references/setup-questions.md).
@@ -18,8 +18,10 @@ already specified one or more changes, apply those changes and ask only for miss
 choices needed to complete the requested setup. Accept partial setup and never erase
 an unrelated saved choice.
 
-Save only the changed keys beneath `applicationPreferences` with `profile-patch`, the
-inspected revision, and source `user`. Confirm the stored choices from a fresh
+Save only the changed keys beneath `applicationPreferences` or `agentModelPreferences`
+with `profile-patch`, the inspected revision, and source `user`. Read
+[agent model preferences](../answer-memory/references/agent-model-preferences.md)
+before changing model IDs. Confirm the stored choices from a fresh
 inspection. These preferences guide future agent behavior; they never grant fill,
 sensitive-answer, login, account, remember, or final-submission authority.
 
