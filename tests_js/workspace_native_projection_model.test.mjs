@@ -13,6 +13,13 @@ test('attention preserves canonical server order and lossless revisions', () => 
  assert.equal(parsed.items[0].revision,9007199254740993n);
  assert.equal(model.filterAttention(parsed.items,'browser_action_required').length,0);
 });
+test('Companion parses and labels closed handoff actions',()=>{
+ const checklist=['resume_upload','passport_country','country_of_residence','age_over_18'];
+ const parsed=model.attentionProjection(JSON.stringify({items:[{...row,session:{handoffChecklist:checklist}}],snapshotSignature:'x'}));
+ assert.deepEqual(parsed.items[0].session.handoffChecklist,checklist);
+ assert.equal(model.handoffActionLabels.resume_upload,'Attach resume');
+ assert.throws(()=>model.attentionProjection(JSON.stringify({items:[{...row,session:{handoffChecklist:['PRIVATE_VALUE']}}],snapshotSignature:'x'})));
+});
 test('malformed attention fails without silently producing an empty queue',()=>{
  for(const items of [null,[{...row,revision:0}],[{...row,missingInformationCount:-1}],[{...row,reasonCode:'secret'}],[row,row]]) assert.throws(()=>model.attentionProjection(JSON.stringify({items,snapshotSignature:'x'})));
 });

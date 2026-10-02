@@ -4,6 +4,7 @@ import { safeAnswerSessionId, validateAnswerSession } from './answer-session-val
 import { agentCodes, fields, member, requireCondition as check } from './answer-session-fields.js';
 import { buildClaimPending, currentClaimApprovals, claimSessionObject } from './claim-session-pending.js';
 import { recomputeClaimReadiness } from './claim-session-readiness.js';
+import { validateHandoffChecklist } from './handoff-checklist.js';
 import { get, has, object, parse, same, serialize, set, string, text, truth, fromJSON } from './values.js';
 const clone = (value) => parse(serialize(value));
 function blockerType(code) {
@@ -19,7 +20,7 @@ function blockerType(code) {
 }
 const agentTypes = Object.fromEntries(agentCodes.map(code => [code, code === 'consent-required' ? 'owner_review' : code === 'owner-input-required' ? 'information' : 'browser_handoff']));
 export function buildClaimSession(applicationId, incoming, context) {
-    check(fields(incoming, ['applicationId', 'status', 'ats', 'company', 'role', 'url', 'step', 'answerKeys', 'pendingFields', 'createdAt', 'updatedAt', 'attemptRevision', 'readinessInput', 'blockers', 'browserHandoff']), 'session contains unsupported fields');
+    check(fields(incoming, ['applicationId', 'status', 'ats', 'company', 'role', 'url', 'step', 'answerKeys', 'pendingFields', 'createdAt', 'updatedAt', 'attemptRevision', 'readinessInput', 'blockers', 'browserHandoff', 'handoffChecklist']), 'session contains unsupported fields');
     safeAnswerSessionId(text(applicationId));
     check(same(fallback(incoming, 'applicationId', text(applicationId)), text(applicationId)), 'session application id does not match path');
     const attempt = fallback(incoming, 'attemptRevision', context.attemptRevision);
@@ -28,6 +29,8 @@ export function buildClaimSession(applicationId, incoming, context) {
     check(member(status, ['active', 'review', 'completed', 'abandoned']), 'session status is unsupported');
     const answerKeys = fallback(incoming, 'answerKeys', []);
     check(Array.isArray(answerKeys) && answerKeys.every(item => string(item) !== null), 'session answerKeys must be strings');
+    const checklist = fallback(incoming, 'handoffChecklist', []);
+    validateHandoffChecklist(checklist);
     const existing = context.existing;
     if (existing) {
         validateAnswerSession(existing);
@@ -95,6 +98,8 @@ export function buildClaimSession(applicationId, incoming, context) {
     set(session, 'readiness', readiness);
     set(session, 'blockers', unique);
     set(session, 'browserHandoff', handoff);
+    if (has(incoming, 'handoffChecklist'))
+        set(session, 'handoffChecklist', clone(checklist));
     set(session, 'approvals', currentClaimApprovals(existing, pending, context.answers, attempt));
     if (truth(created))
         set(session, 'createdAt', created);
@@ -113,6 +118,6 @@ export function validateClaimHandoff(session, incoming, target, attemptRevision)
             && string(get(report, 'status')) === 'ready' && !truth(get(report, 'blockerCodes'))
             && object(get(report, 'assertions'), 'assertions').entries().every(([, value]) => string(value) === 'passed');
     })();
-    check(complete && !truth(get(session, 'pendingFields')) && !truth(get(session, 'blockers'))
+    check(complete && !truth(get(session, 'pendingFields')) && !truth(get(session, 'blockers')) && !truth(get(session, 'handoffChecklist'))
         && same(get(session, 'browserHandoff'), fromJSON({ state: 'ready_for_owner', reasonCode: 'final-review-required', revision: 1 })), 'awaiting_review requires complete current agent-attested readiness');
 }

@@ -5,6 +5,14 @@ export const attentionReasons = {
   awaiting_human_review: 'Awaiting your review', browser_action_required: 'Browser action required', needs_information: 'Needs information',
   owner_confirmation_required: 'Confirmation needed', pending_live_reconfirmation: 'Live confirmation needed',
 } as const;
+export const handoffActionLabels: Record<string,string> = {
+  resume_upload: 'Attach resume', passport_country: 'Answer passport country',
+  country_of_residence: 'Answer country of residence', age_over_18: 'Answer over-18 question',
+  profile_fact: 'Provide missing profile fact', saved_answer: 'Confirm saved answer',
+  required_question: 'Answer required question', consent_choice: 'Decide consent request',
+  sign_in: 'Sign in', verification: 'Complete verification', captcha: 'Complete CAPTCHA',
+  browser_control: 'Complete browser control', other_required_field: 'Complete another required field',
+};
 export type AttentionReason = keyof typeof attentionReasons;
 export const recoveryGuidance = {
   expired: 'Resume this attempt using the supported CLI claim-recover command for this job.',
@@ -46,16 +54,22 @@ function nullableRecord(value: Value | undefined): Document | null {
   return value === null || value === undefined ? null : object(value,'projection');
 }
 export interface SessionSummary {
-  readiness: string; blockers: {type:string;code:string}[]; handoff: string; handoffReason: string; attemptRevision?: bigint;
+  readiness: string; blockers: {type:string;code:string}[]; handoff: string; handoffReason: string; handoffChecklist:string[]; attemptRevision?: bigint;
 }
 function summary(d: Document | null): SessionSummary {
   const readiness = d && nullableRecord(get(d,'readiness'));
   const handoff = d && nullableRecord(get(d,'browserHandoff'));
+  const checklist = d ? array(d,'handoffChecklist',true).map(value=>{
+    const code=string(value);
+    if (code===null || !Object.hasOwn(handoffActionLabels,code)) throw Error('Invalid handoff checklist');
+    return code;
+  }) : [];
   return {
     readiness: readiness ? str(readiness,'status','Not recorded') : 'Not recorded',
     blockers: d ? array(d,'blockers',true).map(value=>{const item=object(value,'blocker');return {type:str(item,'type'),code:str(item,'code')};}) : [],
     handoff: handoff ? str(handoff,'state','Not recorded') : 'Not recorded',
     handoffReason: handoff ? str(handoff,'reasonCode','') : '',
+    handoffChecklist:checklist,
     ...(d && has(d,'attemptRevision') && get(d,'attemptRevision') !== null ? {attemptRevision:revision(d,'attemptRevision')} : {}),
   };
 }

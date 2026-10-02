@@ -45,7 +45,7 @@ function selectedClaim(tx: ProjectionTransaction, id: string): Document | null {
   const claim = object(raw, 'claim');
   return label(claim, 'jobId') === id ? claim : null;
 }
-const sessionFields = ['attemptRevision', 'readiness', 'blockers', 'browserHandoff'];
+const sessionFields = ['attemptRevision', 'readiness', 'blockers', 'browserHandoff', 'handoffChecklist'];
 const reasons = [
   ['expired_agent_attempt', 'Expired agent attempt', 'Resume this attempt with the CLI claim-recover command for this job.'],
   ['claimless_interrupted_attempt', 'Interrupted agent attempt', 'Reset this claimless attempt to needs_info with the revision-bound CLI job-transition command, then resolve it before starting a new attempt.'],

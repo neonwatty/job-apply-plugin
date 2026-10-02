@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import type { Client } from './client';
-import { attentionGuidance, attentionProjection, attentionReasons, filterAttention, type AttentionReason } from './projection-model';
+import { attentionGuidance, attentionProjection, attentionReasons, filterAttention, handoffActionLabels, type AttentionReason } from './projection-model';
 import { humanize, useProjection } from './projection-view';
 export function NeedsAttention({client,openJob}:{client:Client;openJob:(id:string)=>void}) {
   const {data,loading,error,refresh}=useProjection(client,'/api/attention',attentionProjection);
@@ -40,6 +40,7 @@ export function NeedsAttention({client,openJob}:{client:Client;openJob:(id:strin
                 <span className="attention-guidance">{attentionGuidance[item.reasonCode]}</span>
                 <span className="attention-detail">
                   {blockers.length>0 && <span><small>Blockers</small><strong>{blockers.join(', ')}</strong></span>}
+                  {item.session.handoffChecklist.length>0 && <span><small>To do on form</small><strong>{item.session.handoffChecklist.map(code=>handoffActionLabels[code]).join(' · ')}</strong></span>}
                   {handoff && <span><small>Browser handoff</small><strong>{handoff}{item.session.handoffReason&&` · ${humanize(item.session.handoffReason)}`}</strong></span>}
                 </span>
                 <span className="attention-meta">
