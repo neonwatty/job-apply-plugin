@@ -59,7 +59,7 @@ function nullableRecord(value: Value | undefined): Document | null {
   return value === null || value === undefined ? null : object(value,'projection');
 }
 export interface SessionSummary {
-  readiness: string; blockers: {type:string;code:string}[]; handoff: string; handoffReason: string; handoffChecklist:string[]; attemptRevision?: bigint;
+  readiness: string; blockers: {type:string;code:string}[]; handoff: string; handoffReason: string; handoffChecklist:string[]; handoffChecklistRecorded:boolean; attemptRevision?: bigint;
 }
 function summary(d: Document | null): SessionSummary {
   const readiness = d && nullableRecord(get(d,'readiness'));
@@ -75,6 +75,7 @@ function summary(d: Document | null): SessionSummary {
     handoff: handoff ? str(handoff,'state','Not recorded') : 'Not recorded',
     handoffReason: handoff ? str(handoff,'reasonCode','') : '',
     handoffChecklist:checklist,
+    handoffChecklistRecorded:d !== null && has(d,'handoffChecklist'),
     ...(d && has(d,'attemptRevision') && get(d,'attemptRevision') !== null ? {attemptRevision:revision(d,'attemptRevision')} : {}),
   };
 }

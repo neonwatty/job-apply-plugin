@@ -17,6 +17,11 @@ test('Companion parses and labels closed handoff actions',()=>{
  const checklist=['resume_upload','passport_country','country_of_residence','age_over_18'];
  const parsed=model.attentionProjection(JSON.stringify({items:[{...row,session:{handoffChecklist:checklist}}],snapshotSignature:'x'}));
  assert.deepEqual(parsed.items[0].session.handoffChecklist,checklist);
+ assert.equal(parsed.items[0].session.handoffChecklistRecorded,true);
+ const cleared=model.attentionProjection(JSON.stringify({items:[{...row,session:{handoffChecklist:[]}}],snapshotSignature:'x'}));
+ assert.equal(cleared.items[0].session.handoffChecklistRecorded,true);
+ const older=model.attentionProjection(JSON.stringify({items:[{...row,session:{}}],snapshotSignature:'x'}));
+ assert.equal(older.items[0].session.handoffChecklistRecorded,false);
  assert.equal(model.handoffActionLabels.resume_upload,'Attach resume');
  assert.deepEqual(model.handoffChecklistLabels(['resume_upload','required_question','required_question']),['Attach resume','Answer required question (2)']);
  assert.throws(()=>model.attentionProjection(JSON.stringify({items:[{...row,session:{handoffChecklist:['PRIVATE_VALUE']}}],snapshotSignature:'x'})));
