@@ -28,13 +28,13 @@ export function buildClaimSession(applicationId: string, incoming: Document, con
   check(member(status,['active','review','completed','abandoned']), 'session status is unsupported');
   const answerKeys = fallback(incoming,'answerKeys',[]);
   check(Array.isArray(answerKeys) && answerKeys.every(item => string(item) !== null), 'session answerKeys must be strings');
-  const checklist = fallback(incoming,'handoffChecklist',[]);
-  validateHandoffChecklist(checklist);
   const existing = context.existing;
   if (existing) {
     validateAnswerSession(existing);
     check(string(get(existing,'applicationId')) === applicationId,'session application id does not match path');
   }
+  const checklist = fallback(incoming,'handoffChecklist',existing ? fallback(existing,'handoffChecklist',[]) : []);
+  validateHandoffChecklist(checklist);
   const pending = buildClaimPending(incoming,existing,context.ats,context.answers);
   let readiness: Value = null;
   if (has(incoming,'readinessInput')) {
@@ -88,7 +88,7 @@ export function buildClaimSession(applicationId: string, incoming: Document, con
   set(session,'readiness',readiness);
   set(session,'blockers',unique);
   set(session,'browserHandoff',handoff);
-  if (has(incoming,'handoffChecklist')) set(session,'handoffChecklist',clone(checklist));
+  if (has(incoming,'handoffChecklist') || existing && has(existing,'handoffChecklist')) set(session,'handoffChecklist',clone(checklist));
   set(session,'approvals',currentClaimApprovals(existing,pending,context.answers,attempt));
   if (truth(created)) set(session,'createdAt',created);
   return validateAnswerSession(session);

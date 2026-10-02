@@ -13,6 +13,11 @@ export const handoffActionLabels: Record<string,string> = {
   sign_in: 'Sign in', verification: 'Complete verification', captcha: 'Complete CAPTCHA',
   browser_control: 'Complete browser control', other_required_field: 'Complete another required field',
 };
+export function handoffChecklistLabels(codes:string[]):string[] {
+  const counts=new Map<string,number>();
+  for(const code of codes) counts.set(code,(counts.get(code) ?? 0)+1);
+  return [...counts].map(([code,count])=>`${handoffActionLabels[code]}${count>1 ? ` (${count})` : ''}`);
+}
 export type AttentionReason = keyof typeof attentionReasons;
 export const recoveryGuidance = {
   expired: 'Resume this attempt using the supported CLI claim-recover command for this job.',

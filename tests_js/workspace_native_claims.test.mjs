@@ -58,13 +58,17 @@ test('native active claims persist complete lifecycle, exact expiry and safe rec
       const selected=plain(await claims.select('job',4n,true));assert.equal(selected.job.revision,5);
       const second=plain(await claims.acquire('job',text('Second owner'),5n));
       assert.notEqual(second.token,first.token);assert.equal(second.job.revision,6);
+      const resumed=plain(await claims.progress('job',text(second.token),fromJSON({status:'active',step:'resumed'})));
+      assert.deepEqual(resumed.handoffChecklist,pending.handoffChecklist);
       await unchangedFailure(root,()=>claims.handoff('job',text(second.token),'awaiting_review',fromJSON({status:'review'}),6n),/fresh current live/);
       const review={status:'review',readinessInput:readyPacket(6)};
       const replay=structuredClone(review);replay.readinessInput.evidenceKind='repository_replay';
       await unchangedFailure(root,()=>claims.handoff('job',text(second.token),'awaiting_review',fromJSON(replay),6n),/agent-attested readiness/);
+      await unchangedFailure(root,()=>claims.handoff('job',text(second.token),'awaiting_review',fromJSON(review),6n),/agent-attested readiness/);
+      review.handoffChecklist=[];
       const completed=plain(await claims.handoff('job',text(second.token),'awaiting_review',fromJSON(review),6n));
       assert.equal(completed.job.revision,7);assert.equal(completed.job.status,'awaiting_review');
-      assert.equal((await read(root,'sessions/job.json')).handoffChecklist,undefined);
+      assert.deepEqual((await read(root,'sessions/job.json')).handoffChecklist,[]);
       assert.equal((await read(root,'coordinator-journal.json')).operation,null);
       const history=await readFile(join(root,'applications.jsonl'),'utf8');
       assert.deepEqual(history.trim().split('\n').map(line=>JSON.parse(line).event),['job-started','job-blocked','job-started','reviewed']);

@@ -55,10 +55,11 @@ export class SessionService {
     check(['active', 'review', 'completed', 'abandoned'].includes(string(status) ?? ''), 'session status is unsupported');
     const answerKeys = fallback(incoming, 'answerKeys', []);
     check(Array.isArray(answerKeys) && answerKeys.every(item => string(item) !== null), 'session answerKeys must be strings');
-    validateHandoffChecklist(fallback(incoming, 'handoffChecklist', []));
     return this.repository.sessionTransaction(async transaction => {
       if (!jobAllowsMutation(await transaction.canonicalJob(id))) throw new JobsError('canonical job sessions require a coordinator operation');
       const stored = await transaction.load(id), existing = stored === null ? null : projectStoredAnswerSession(stored, id);
+      const checklist = fallback(incoming, 'handoffChecklist', existing ? fallback(existing, 'handoffChecklist', []) : []);
+      validateHandoffChecklist(checklist);
       const answers = await transaction.answers(), timestamp = this.now();
       const atsPresent = has(incoming, 'ats') || existing !== null && has(existing, 'ats');
       const ats = has(incoming, 'ats') ? get(incoming, 'ats')
@@ -112,7 +113,7 @@ export class SessionService {
       set(result, 'status', status); set(result, 'answerKeys', clone(answerKeys)); set(result, 'pendingFields', pending);
       set(result, 'attemptRevision', attempt); set(result, 'readiness', readiness); set(result, 'blockers', unique);
       set(result, 'browserHandoff', handoff);
-      if (has(incoming, 'handoffChecklist')) set(result, 'handoffChecklist', clone(get(incoming, 'handoffChecklist')));
+      if (has(incoming, 'handoffChecklist') || existing && has(existing, 'handoffChecklist')) set(result, 'handoffChecklist', clone(checklist));
       set(result, 'approvals', currentClaimApprovals(existing, pending, answers, attempt));
       const created = get(incoming, 'createdAt');
       if (truth(created)) set(result, 'createdAt', created);

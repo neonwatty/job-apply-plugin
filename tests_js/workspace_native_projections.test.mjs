@@ -62,6 +62,15 @@ test('closed handoff checklist reaches attention and activity without form wordi
   assert.deepEqual(activity.session.handoffChecklist,checklist);
   assert.doesNotMatch(JSON.stringify({attention,activity}),/PRIVATE|filename|filepath/iu);
 });
+test('mixed browser and missing-answer checklist uses needs-information guidance',async()=>{
+  const stored=session('one',{handoffChecklist:['resume_upload','passport_country'],
+    blockers:[{type:'browser_handoff',code:'unsupported-control'},{type:'information',code:'owner-input-required'}],
+    browserHandoff:{state:'required',reasonCode:'unsupported-control',revision:1}});
+  const {service}=setup([job('one','needs_info')],[stored]);
+  const attention=plain(await service.attention());
+  assert.equal(attention.items[0].reasonCode,'needs_information');
+  assert.deepEqual(attention.items[0].session.handoffChecklist,['resume_upload','passport_country']);
+});
 test('a Ready job with an unresolved sensitive question remains in attention without projecting its value',async()=>{
   const pending={reference:`pending_${'a'.repeat(32)}`,answerKey:'sensitive',state:'missing',sensitive:true,fieldClass:'sms_consent',question:'PRIVATE QUESTION'};
   const {service}=setup([job('one','ready')],[session('one',{pendingFields:[pending]})]);

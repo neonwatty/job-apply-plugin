@@ -1,5 +1,5 @@
 import { member, requireCondition as check } from './answer-session-fields.js';
-import { JobsError, string } from './values.js';
+import { JobsError } from './values.js';
 import type { Value } from './values.js';
 
 // Closed field/action categories keep applicant values and form wording out of sessions.
@@ -10,7 +10,6 @@ export const handoffActionCodes = [
 ] as const;
 
 export function validateHandoffChecklist(value: Value): void {
-  if (!Array.isArray(value) || value.length > handoffActionCodes.length) throw new JobsError('handoff checklist must be a bounded list');
+  if (!Array.isArray(value) || value.length > 32) throw new JobsError('handoff checklist must be a bounded list');
   check(value.every(item => member(item, handoffActionCodes)), 'handoff checklist contains an unsupported action');
-  check(new Set(value.map(string)).size === value.length, 'handoff checklist actions must be unique');
 }

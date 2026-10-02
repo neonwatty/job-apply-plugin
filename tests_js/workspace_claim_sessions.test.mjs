@@ -84,7 +84,9 @@ test('Needs Attention keeps a closed field checklist without applicant values',(
   const result=native(item);
   assert.deepEqual(result.session?.handoffChecklist,item.incoming.handoffChecklist);
   assert.doesNotMatch(JSON.stringify(result),/PRIVATE|https:|filename|filepath/iu);
-  for (const checklist of [['resume_upload','resume_upload'],['PRIVATE_RESUME'],[{code:'resume_upload',value:'PRIVATE'}]]) {
+  item.incoming.handoffChecklist=['required_question','required_question'];
+  assert.deepEqual(native(item).session?.handoffChecklist,item.incoming.handoffChecklist);
+  for (const checklist of [Array(33).fill('required_question'),['PRIVATE_RESUME'],[{code:'resume_upload',value:'PRIVATE'}]]) {
     item.incoming.handoffChecklist=checklist;
     assert.match(native(item).error,/handoff checklist/iu);
   }

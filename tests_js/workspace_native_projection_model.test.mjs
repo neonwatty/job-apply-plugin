@@ -18,6 +18,7 @@ test('Companion parses and labels closed handoff actions',()=>{
  const parsed=model.attentionProjection(JSON.stringify({items:[{...row,session:{handoffChecklist:checklist}}],snapshotSignature:'x'}));
  assert.deepEqual(parsed.items[0].session.handoffChecklist,checklist);
  assert.equal(model.handoffActionLabels.resume_upload,'Attach resume');
+ assert.deepEqual(model.handoffChecklistLabels(['resume_upload','required_question','required_question']),['Attach resume','Answer required question (2)']);
  assert.throws(()=>model.attentionProjection(JSON.stringify({items:[{...row,session:{handoffChecklist:['PRIVATE_VALUE']}}],snapshotSignature:'x'})));
 });
 test('malformed attention fails without silently producing an empty queue',()=>{
