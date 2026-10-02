@@ -1,6 +1,6 @@
 ---
 name: application-setup
-description: Set or review durable Job Apply browser, application-flow, and task model preferences.
+description: Set or review durable Job Apply browser, application-flow, task model, and Codex reasoning-effort preferences.
 allowed-tools: Read, Write, Bash
 ---
 
@@ -21,7 +21,7 @@ an unrelated saved choice.
 Save only the changed keys beneath `applicationPreferences` or `agentModelPreferences`
 with `profile-patch`, the inspected revision, and source `user`. Read
 [agent model preferences](../answer-memory/references/agent-model-preferences.md)
-before changing model IDs. Confirm the stored choices from a fresh
+before changing model IDs or Codex reasoning effort. Confirm the stored choices from a fresh
 inspection. These preferences guide future agent behavior; they never grant fill,
 sensitive-answer, login, account, remember, or final-submission authority.
 

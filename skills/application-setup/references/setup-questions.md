@@ -24,7 +24,7 @@ language.
      through final review
    - `campaign_to_review`: offer one bounded grant to process selected prepared jobs
      sequentially through final review
-5. **Optional task and worker models** — `agentModelPreferences`
+5. **Optional task models and Codex reasoning effort** — `agentModelPreferences`
    - `codex.search` and `codex.application` propose models for owner-requested,
      top-level local Codex tasks for Job Search and one exact-job Job Apply run.
      `claudeCode.search` selects source research workers and
@@ -32,15 +32,19 @@ language.
    - Omit or clear a field to use the host's default model at the chosen boundary.
      Ask for these IDs only when the owner wants to configure model defaults; never require them
      to complete ordinary application setup.
+   - `codex.searchReasoningEffort` and `codex.applicationReasoningEffort` may be
+     `low`, `medium`, or `high`. Omit or clear either for the host default. These
+     choices apply to new dedicated tasks, separately from model IDs. Validate
+     the resolved model and effort pair against the current Codex host.
    - Job Title Discovery and resume fact extraction run in the active host task;
      no separate model setting applies to them yet.
 
-For an agent-led Codex model change, follow the [Codex model preflight](../../answer-memory/references/agent-model-preferences.md#codex-model-preflight)
-before presenting or saving the ID. Check the current host's model list and the
-intended task or worker tool's model override support, not just the ID format. If unavailable, leave the stored
-Codex preference unchanged and offer a supported ID or the host default. A
+For an agent-led Codex model or effort change, follow the [Codex model preflight](../../answer-memory/references/agent-model-preferences.md#codex-model-preflight)
+before presenting or saving the choice. Check the current host's model list and the
+intended task tool's model and effort override support, not just the value format. If unavailable, leave the stored
+Codex preference unchanged and offer a supported pair or the host default. A
 Codex check cannot validate a Claude Code model. A saved model does not create a
-task or change the model of the current task. Companion's manual text fields
+task or change the model or effort of the current task. Companion's settings
 cannot inspect either host's live model access; explain that distinction when
 helping the owner use Settings.
 
@@ -70,7 +74,7 @@ authority; see [agent model preferences](../../answer-memory/references/agent-mo
     "preferredAutomationMode": "guided"
   },
   "agentModelPreferences": {
-    "codex": { "application": "model-id" }
+    "codex": { "application": "model-id", "applicationReasoningEffort": "medium" }
   }
 }
 ```

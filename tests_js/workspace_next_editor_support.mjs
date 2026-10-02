@@ -183,18 +183,23 @@ async function applicationPreferencesAssertions() {
             expectedRevision: 4, atomicPaths: [], deletedPaths: [],
         });
         assert.deepEqual(models.readAgentModelPreferences(empty.profile), models.defaultAgentModelPreferences);
-        const modelDraft = { codexSearch: 'gpt-6-luna', codexApplication: '',
-            claudeCodeSearch: '', claudeCodeApplication: 'claude-sonnet' };
+        const modelDraft = { ...models.defaultAgentModelPreferences, codexSearch: 'gpt-6-luna',
+            codexSearchEffort: 'low', codexApplicationEffort: 'medium', claudeCodeApplication: 'claude-sonnet' };
         assert.deepEqual(JSON.parse(setup.applicationPreferencesPatch(saved,
             setup.readApplicationPreferences(saved.profile).preferences, modelDraft)), {
             patch: { applicationPreferences: {}, agentModelPreferences: {
-                codex: { search: 'gpt-6-luna' }, claudeCode: { application: 'claude-sonnet' }
+                codex: { search: 'gpt-6-luna', searchReasoningEffort: 'low', applicationReasoningEffort: 'medium' },
+                claudeCode: { application: 'claude-sonnet' }
             } }, expectedRevision: 7, atomicPaths: [], deletedPaths: [],
         });
-        const configured = facts.snapshot('{"profile":{"agentModelPreferences":{"codex":{"search":"gpt-6-luna","future":"preserved"},"claudeCode":{"application":"claude-sonnet"}}},"revision":9,"factProvenance":{}}');
+        const configured = facts.snapshot('{"profile":{"agentModelPreferences":{"codex":{"search":"gpt-6-luna","searchReasoningEffort":"low","applicationReasoningEffort":"medium","future":"preserved"},"claudeCode":{"application":"claude-sonnet"}}},"revision":9,"factProvenance":{}}');
         assert.deepEqual(JSON.parse(setup.applicationPreferencesPatch(configured,
-            setup.defaultApplicationPreferences, { ...modelDraft, codexSearch: '' })).patch.agentModelPreferences,
-            { codex: { search: null } });
+            setup.defaultApplicationPreferences, { ...modelDraft, codexSearch: '', codexSearchEffort: '' })).patch.agentModelPreferences,
+            { codex: { search: null, searchReasoningEffort: null } });
+        assert.equal(models.validCodexReasoningEffort('high'), true);
+        assert.equal(models.validCodexReasoningEffort('xhigh'), false);
+        assert.throws(() => models.agentModelPreferencesDiff(empty.profile,
+            { ...modelDraft, codexSearchEffort: 'xhigh' }), /Codex reasoning effort/);
     });
 }
 export async function nextEditor() {
