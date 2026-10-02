@@ -53,6 +53,7 @@ const reasons = [
   ['browser_action_required', 'Browser action required', 'Open Job details and continue in the visible browser. The saved information is already known; do not create or re-enter an answer in Companion.'],
   ['needs_information', 'Needs information', 'Open Job details and resolve the missing facts, resume, or answers, then run preflight and mark the job ready.'],
   ['owner_confirmation_required', 'Confirmation needed', 'Confirm the requested action for the visible application form, then mark the job ready to resume the attempt.'],
+  ['pending_live_reconfirmation', 'Live confirmation needed', 'This Ready job still has a pending question. Resume its exact application and confirm the choice against the live form.'],
 ] as const;
 function compareText(a: string, b: string): number {
   return text(a).compare(text(b));
@@ -89,9 +90,13 @@ function attentionLocked(tx: ProjectionTransaction, now: string): Document {
       }
     } else if (status === 'awaiting_review') reason = 2;
     else if (status === 'needs_info') reason = 4;
+    else if (status === 'ready') {
+      const session = sessionRecord(tx, id);
+      if (session !== null && ((get(session, 'pendingFields') ?? []) as Value[]).length > 0) reason = 6;
+    }
     if (reason === null) continue;
     let missing = 0, revision: Value = null, projected: Value = null;
-    if (reason === 2 || reason === 4) {
+    if (reason === 2 || reason === 4 || reason === 6) {
       const session = sessionRecord(tx, id);
       if (session !== null) {
         missing = ((get(session, 'pendingFields') ?? []) as Value[]).length;
@@ -135,9 +140,13 @@ async function overviewLocked(tx: ProjectionTransaction, now: string): Promise<D
   const hasProfileFacts = hasScopedWorkflow ? hasScopedFacts
     : keys(profile).some(key => !['preferences','applicationPreferences','agentModelPreferences'].includes(key));
   const attentionJobs = jobs.filter(job => {
-    const status = label(job, 'status');
+    const status = label(job, 'status'), id = label(job, 'id');
     if (['needs_info', 'awaiting_review'].includes(status)) return true;
-    const claim = selectedClaim(tx, label(job, 'id'));
+    if (status === 'ready') {
+      const session = sessionRecord(tx, id);
+      return session !== null && ((get(session, 'pendingFields') ?? []) as Value[]).length > 0;
+    }
+    const claim = selectedClaim(tx, id);
     return status === 'in_progress' && (claim === null || claimExpired(claim, now));
   }).length;
   const rawClaim = get(tx.coordinator, 'claim');

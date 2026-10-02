@@ -131,6 +131,27 @@ test('stale revisions, references, owner denial and sensitive answers preserve a
     assert.deepEqual(await snapshot(root), sensitiveBefore);
   } finally { await fixture.cleanup(); }
 });
+test('Ready with a pending sensitive question stays listed but cannot use the saved-answer resolver', { timeout: 60000 }, async () => {
+  const fixture = await nativeFixture();
+  try {
+    const { root, service } = await setup(fixture, 'ready-pending', { ready: true });
+    const session = await read(root, 'sessions/job.json');
+    session.pendingFields[0].answerKey = 'sensitive';
+    session.pendingFields[0].sensitive = true;
+    await write(root, 'sessions/job.json', session);
+    const jobs = await read(root, 'jobs.json');
+    jobs.jobs.job.status = 'ready';
+    await write(root, 'jobs.json', jobs);
+    const before = await snapshot(root);
+    const { group, field } = await current(service);
+    assert.equal(group.status, 'ready');
+    assert.equal(field.resolutionEligible, false);
+    assert.doesNotMatch(JSON.stringify(group), /PRIVATE-/);
+    assert.deepEqual(await snapshot(root), before);
+    await assert.rejects(resolve(service), /answer resolution requires a needs_info job/);
+    assert.deepEqual(await snapshot(root), before);
+  } finally { await fixture.cleanup(); }
+});
 
 test('only the final unobstructed field needs preflight; missing profile and changed or missing managed resumes deny writes', { timeout: 60000 }, async () => {
   const fixture = await nativeFixture();

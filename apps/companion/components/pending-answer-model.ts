@@ -71,11 +71,14 @@ export function pendingAnswers(raw: string): PendingJob[] {
     const record = object(value, 'pending job');
     closed(record, ['id', 'role', 'company', 'status', 'jobRevision', 'sessionRevision', 'pendingInformation']);
     const pending = get(record, 'pendingInformation');
-    if (!Array.isArray(pending) || requiredString(record, 'status') !== 'needs_info') throw Error('Invalid pending job');
+    const status = requiredString(record, 'status');
+    if (!Array.isArray(pending) || !['needs_info', 'ready'].includes(status)) throw Error('Invalid pending job');
+    const questions = pending.map(question);
+    if (status === 'ready' && questions.some(field => field.resolutionEligible)) throw Error('Invalid pending job eligibility');
     return {
       id: requiredString(record, 'id'), role: requiredString(record, 'role'), company: requiredString(record, 'company'),
-      status: 'needs_info', jobRevision: revision(record, 'jobRevision'), sessionRevision: revision(record, 'sessionRevision'),
-      pendingInformation: pending.map(question),
+      status, jobRevision: revision(record, 'jobRevision'), sessionRevision: revision(record, 'sessionRevision'),
+      pendingInformation: questions,
     };
   });
 }

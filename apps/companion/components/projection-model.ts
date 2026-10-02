@@ -3,7 +3,7 @@ import type { Document, Value } from '../../../src/contracts/workspace/values';
 export const attentionReasons = {
   expired_agent_attempt: 'Expired agent attempt', claimless_interrupted_attempt: 'Interrupted agent attempt',
   awaiting_human_review: 'Awaiting your review', browser_action_required: 'Browser action required', needs_information: 'Needs information',
-  owner_confirmation_required: 'Confirmation needed',
+  owner_confirmation_required: 'Confirmation needed', pending_live_reconfirmation: 'Live confirmation needed',
 } as const;
 export type AttentionReason = keyof typeof attentionReasons;
 export const recoveryGuidance = {
@@ -16,6 +16,7 @@ export const attentionGuidance: Record<AttentionReason, string> = {
   browser_action_required: 'Continue in the visible browser. Saved information is already known; do not create or re-enter an answer in Companion.',
   needs_information: 'Open Job details and resolve missing facts, resume, or answers. Run preflight, then mark the job Ready.',
   owner_confirmation_required: 'Confirm the requested action for the visible application form, then mark the job Ready to resume the attempt.',
+  pending_live_reconfirmation: 'This Ready job still has a pending question. Resume its exact application and confirm the choice against the live form.',
 };
 function str(d: Document, key: string, fallback?: string): string {
   const value = get(d,key);

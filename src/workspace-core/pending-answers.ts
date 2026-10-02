@@ -32,12 +32,14 @@ export class PendingAnswersService {
       const groups: Document[] = [];
       for (const [id, raw] of jobs.entries()) {
         const job = object(raw, 'job');
-        if (get(job, 'deletedAt') !== null || string(get(job, 'status')) !== 'needs_info') continue;
+        const status = string(get(job, 'status'));
+        if (get(job, 'deletedAt') !== null || !['needs_info', 'ready'].includes(status ?? '')) continue;
         const session = transaction.sessions.find(item => string(get(item, 'applicationId')) === string(id));
         if (!session) continue;
         const pending = pendingInformation(session, answers);
         if (!pending.length) continue;
-        const group = object(fromJSON({id:string(id),role:string(get(job,'role')) ?? '',company:string(get(job,'company')) ?? '',status:'needs_info'}), 'pending job');
+        if (status === 'ready') for (const field of pending) set(field, 'resolutionEligible', false);
+        const group = object(fromJSON({id:string(id),role:string(get(job,'role')) ?? '',company:string(get(job,'company')) ?? '',status}), 'pending job');
         set(group, 'jobRevision', get(job, 'revision'));set(group, 'sessionRevision', integer(sessionRevision(session)));set(group, 'pendingInformation', pending);
         groups.push(group);
       }

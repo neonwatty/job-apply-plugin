@@ -81,7 +81,7 @@ export function PendingAnswers({ client, revision, disabled, onBusyChanged, onRe
   const jobs = result?.client === client && result.revision === revision ? result.jobs : null;
   return <section className="answer-support-panel" aria-label="Pending questions">
     <div className="answer-support-heading"><div><p className="eyebrow">Application inbox</p><h2>Pending questions</h2></div><button className="secondary" type="button" disabled={loading || resolving} onClick={() => void refresh()}>Refresh pending questions</button></div>
-    <p>Recheck saved answers for applications waiting for information. Each resolution needs your confirmation.</p>
+    <p>Review pending questions for applications that need information or live confirmation. Each saved-answer resolution needs your confirmation.</p>
     <p>Sensitive questions need separate confirmation and cannot be handled by this recheck.</p>
     {loading && <p role="status">Loading pending questions…</p>}
     {resolving && <p role="status">Rechecking the saved answer…</p>}
@@ -91,6 +91,7 @@ export function PendingAnswers({ client, revision, disabled, onBusyChanged, onRe
       {!jobs.some(job => job.pendingInformation.length > 0) && <p role="status">No pending questions found.</p>}
       <ul className="answer-support-list">{jobs.map(job => <li key={job.id}>
         <h3>{job.role} · {job.company}</h3>
+        {job.status === 'ready' && <p>Resume this application to confirm the pending choice against the live form.</p>}
         <ul className="pending-question-list">{job.pendingInformation.map((field, index) => <li key={`${field.reference}-${index}`}>
           <p>{field.question || 'Information requested'}</p>
           {!field.resolutionEligible && <p>This question needs further review before it can be resolved.</p>}
