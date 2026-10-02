@@ -46,6 +46,34 @@
       }
     },
     {
+      "id": "browser:apps/companion/components/projection-model.ts:handoffActionLabels",
+      "kind": "browser",
+      "export": "handoffActionLabels",
+      "node": "UIF",
+      "sources": ["apps/companion/components/projection-model.ts"],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified", "invalid": "unverified", "missing": "unverified",
+        "noop": "unverified", "privacy": "unverified", "conflict": "unverified",
+        "concurrency": "unverified", "interruption": "unverified",
+        "recovery": "unverified", "platform": "unverified"
+      }
+    },
+    {
+      "id": "browser:apps/companion/components/projection-model.ts:handoffChecklistLabels",
+      "kind": "browser",
+      "export": "handoffChecklistLabels",
+      "node": "UIF",
+      "sources": ["apps/companion/components/projection-model.ts"],
+      "effects": "unclassified",
+      "scenarios": {
+        "valid": "unverified", "invalid": "unverified", "missing": "unverified",
+        "noop": "unverified", "privacy": "unverified", "conflict": "unverified",
+        "concurrency": "unverified", "interruption": "unverified",
+        "recovery": "unverified", "platform": "unverified"
+      }
+    },
+    {
       "id": "browser:apps/companion/components/projection-model.ts:attentionReasons",
       "kind": "browser",
       "export": "attentionReasons",
