@@ -11,23 +11,27 @@ replay, account canaries, or recovery of an expired or interrupted claim.
    selected job under [intake](intake.md). A saved model choice cannot select a job.
 2. Read `profile.agentModelPreferences` through `store profile-inspect` under
    [agent model preferences](../../answer-memory/references/agent-model-preferences.md).
-   Use the current host's `application` key unless the owner chose another model
-   for this request. A missing field means the host default at the chosen boundary.
+   Use the current host's `application` key and Codex's
+   `applicationReasoningEffort` unless the owner chose another model or effort
+   for this request. A missing field means the host default for that choice.
 3. Choose a boundary the host can actually launch. In Codex desktop, browser-bound
    filling uses this top-level task or, only when the owner explicitly requests a
-   separate task, one new top-level local task with the saved or current-request
-   model. Do not use a browser-bound subagent merely to change models. A worker route requires
+   separate task, one new top-level local task with the selected model and effort.
+   Do not use a browser-bound subagent merely to change models. A worker route requires
    verified access to its own required browser surface. Repeat [Codex model
    preflight](../../answer-memory/references/agent-model-preferences.md#codex-model-preflight)
-   for the intended task or worker tool. If the model or override is unavailable,
+   for the intended task or worker tool. If the model, effort, or override is unavailable,
    stop before task creation, claim, or browser work. Never silently substitute.
 4. For a new Codex task, resolve the local project through the host project list
-   and create a local task with the selected exact model. Do not request a new
+   and create a local task with the selected exact `model` and `thinking` overrides;
+   omit either when its host default is selected. Do not request a new
    worktree for form filling. Give it only the canonical job ID and the current
    request's exact authorization scope, plus directions to follow this skill.
    Do not include applicant values, resume path, credentials, claim token,
    browser state, or blanket consent. The new task reads the canonical Store and
-   owns the visible browser. It does not create another task or worker. For a
+   owns the visible browser. It does not create another task or worker. Record
+   the selected pair and successful launch tool result in the coordinator handoff;
+   the child must not infer its runtime model from the prompt. For a
    capable worker on another host, pass the same limited context and boundaries.
 
 The coordinator does not separately select, acquire, fill, navigate, or submit
