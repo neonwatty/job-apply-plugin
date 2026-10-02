@@ -45,7 +45,7 @@ export function NeedsAttention({client,openJob}:{client:Client;openJob:(id:strin
                 <span className="attention-meta">
                   <span><small>Status</small><strong>{humanize(item.status)}</strong></span>
                   <span><small>Since</small><strong>{item.attentionAt}</strong></span>
-                  {item.reasonCode==='needs_information' && <span><small>Missing</small><strong>{String(item.missingInformationCount)}</strong></span>}
+                  {['needs_information','pending_live_reconfirmation'].includes(item.reasonCode) && <span><small>Missing</small><strong>{String(item.missingInformationCount)}</strong></span>}
                 </span>
                 <span className="attention-action">Open Job details <span aria-hidden="true">→</span></span>
                 <span className="visually-hidden">Revision {String(item.revision)}</span>

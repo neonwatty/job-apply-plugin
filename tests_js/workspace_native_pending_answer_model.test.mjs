@@ -56,6 +56,11 @@ test('unresolved questions without a saved answer remain visible without mutatio
   const [eligible] = model.pendingAnswers(listing(job));
   assert.throws(() => model.pendingAnswerResolution(eligible, { ...eligible.pendingInformation[0] }));
 });
+test('Ready pending questions are visible but cannot produce a resolution request', () => {
+  const [snapshot] = model.pendingAnswers(listing({ ...job, status: 'ready', pendingInformation: [{ ...field, resolutionEligible: false }] }));
+  assert.equal(snapshot.status, 'ready');
+  assert.throws(() => model.pendingAnswerResolution(snapshot, snapshot.pendingInformation[0]));
+});
 
 test('successful resolution requires a closed confirmed response and valid projected remaining questions', () => {
   const response = { job: { id: job.id, status: 'ready', revision: 2 }, session: { revision: 3, pendingInformation: [] }, resolved: true, ready: true };

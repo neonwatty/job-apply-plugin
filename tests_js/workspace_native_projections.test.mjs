@@ -51,6 +51,17 @@ test('a consent-only handoff requests confirmation rather than missing informati
   assert.equal(attention.items[0].missingInformationCount,0);
   assert.doesNotMatch(attention.items[0].guidance,/missing facts|missing answers/i);
 });
+test('a Ready job with an unresolved sensitive question remains in attention without projecting its value',async()=>{
+  const pending={reference:`pending_${'a'.repeat(32)}`,answerKey:'sensitive',state:'missing',sensitive:true,fieldClass:'sms_consent',question:'PRIVATE QUESTION'};
+  const {service}=setup([job('one','ready')],[session('one',{pendingFields:[pending]})]);
+  const attention=plain(await service.attention());
+  assert.equal(attention.items.length,1);
+  assert.equal(attention.items[0].reasonCode,'pending_live_reconfirmation');
+  assert.equal(attention.items[0].missingInformationCount,1);
+  assert.equal(plain(await service.overview()).counts.attentionJobs,1);
+  assert.equal(plain(await service.taskSnapshot()).overview.counts.attentionJobs,1);
+  assert.doesNotMatch(JSON.stringify(attention),/PRIVATE QUESTION|sensitive|sms_consent/);
+});
 test('activity pending information is value-free and stale approvals are suppressed',async()=>{
   const reference=`pending_${'a'.repeat(32)}`;
   const approval={reference,answerKey:'answer',answerRevision:1,currentUse:true,remember:false,policyMode:'strict',useAuthority:'per_use',eligible:true,confidenceBand:'none',reasonCodes:[]};
