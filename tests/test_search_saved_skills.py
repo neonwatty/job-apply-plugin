@@ -31,7 +31,7 @@ class SearchSavedSkillsTests(unittest.TestCase):
         self.assertIn('worker result contract', text)
         self.assertIn('capability', text)
         self.assertIn('On every search, read [model defaults]', entry.read_text())
-        self.assertIn('saved worker model cannot change the active task model', text)
+        self.assertIn('A saved model cannot change the active task model', text)
 
     def test_saved_jobs_is_canonical_read_only_entry_point(self):
         entry = ROOT / 'skills/saved-jobs/SKILL.md'

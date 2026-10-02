@@ -1,12 +1,12 @@
 ---
 name: application-setup
-description: Set or review durable Job Apply browser, application-flow, and worker model preferences.
+description: Set or review durable Job Apply browser, application-flow, and task model preferences.
 allowed-tools: Read, Write, Bash
 ---
 
 # Application Setup
 
-Set up or selectively update the owner's durable application-flow and worker model preferences. Read
+Set up or selectively update the owner's durable application-flow and agent model preferences. Read
 [answer-memory](../answer-memory/SKILL.md) first for plugin resolution, Store
 initialization, private temporary inputs, and exact-revision handling, then read
 [setup questions](references/setup-questions.md).

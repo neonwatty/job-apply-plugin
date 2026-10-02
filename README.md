@@ -49,7 +49,7 @@ Application filling has three owner-selected modes: Guided, Autofill to Review f
 - **Preference-based search**: Searches for the titles, salary range, remote options, and time range you saved
 - **Background-aware search**: Uses approved titles as seeds and demonstrated skills and experience to find relevant roles with different titles while honoring your filters
 - **Source research**: The host researches each source directly or coordinates permitted source workers, and reports partial or unavailable sources
-- **Search worker model default**: Can save a search-only worker model preference for Codex or Claude Code in `profile.agentModelPreferences` when model settings are available; the application worker preference stays separate
+- **Search model default**: Saves a search-only model preference for an owner-requested Codex desktop task or permitted Claude Code workers in `profile.agentModelPreferences`; the application model stays separate. A saved model does not launch a task or change the current task's model.
 - **Connection insights**: Finds jobs at companies where you have connections
 - **Hiring manager discovery**: Identifies jobs with hiring managers listed
 - **Multi-source discovery**: Searches LinkedIn, Hacker News Who's Hiring, and Twitter/X

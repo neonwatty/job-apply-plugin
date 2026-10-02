@@ -24,21 +24,23 @@ language.
      through final review
    - `campaign_to_review`: offer one bounded grant to process selected prepared jobs
      sequentially through final review
-5. **Optional worker models** — `agentModelPreferences`
-   - `codex.search` and `claudeCode.search` select source research workers in
-     Job Search. `codex.application` and `claudeCode.application` select one
-     exact-job filling worker in Job Apply.
-   - Omit or clear a field to use the host's default worker model. Ask for these
-     IDs only when the owner wants to configure worker models; never require them
+5. **Optional task and worker models** — `agentModelPreferences`
+   - `codex.search` and `codex.application` propose models for owner-requested,
+     top-level local Codex tasks for Job Search and one exact-job Job Apply run.
+     `claudeCode.search` selects source research workers and
+     `claudeCode.application` selects one exact-job filling worker.
+   - Omit or clear a field to use the host's default model at the chosen boundary.
+     Ask for these IDs only when the owner wants to configure model defaults; never require them
      to complete ordinary application setup.
    - Job Title Discovery and resume fact extraction run in the active host task;
      no separate model setting applies to them yet.
 
 For an agent-led Codex model change, follow the [Codex model preflight](../../answer-memory/references/agent-model-preferences.md#codex-model-preflight)
-before presenting or saving the ID. Check the current host's worker model list
-and override support, not just the ID format. If unavailable, leave the stored
+before presenting or saving the ID. Check the current host's model list and the
+intended task or worker tool's model override support, not just the ID format. If unavailable, leave the stored
 Codex preference unchanged and offer a supported ID or the host default. A
-Codex check cannot validate a Claude Code model. Companion's manual text fields
+Codex check cannot validate a Claude Code model. A saved model does not create a
+task or change the model of the current task. Companion's manual text fields
 cannot inspect either host's live model access; explain that distinction when
 helping the owner use Settings.
 
