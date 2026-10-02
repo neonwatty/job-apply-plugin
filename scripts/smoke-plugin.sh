@@ -59,8 +59,9 @@ tar --exclude='./.git' \
   --exclude='./.worktrees' \
   --exclude='./docs/goals' \
   --exclude='./test_resumes' \
-  -cf - -C "$REPO_ROOT" . \
-  | tar -xf - -C "$SMOKE_SOURCE_FIXTURE_DIR"
+  -cf "$SMOKE_TEMP_ROOT/plugin-source.tar" -C "$REPO_ROOT" .
+tar -xf "$SMOKE_TEMP_ROOT/plugin-source.tar" -C "$SMOKE_SOURCE_FIXTURE_DIR"
+rm -f -- "$SMOKE_TEMP_ROOT/plugin-source.tar"
 echo "Building production Companion inside isolated marketplace fixture"
 (
   cd "$SMOKE_SOURCE_FIXTURE_DIR"

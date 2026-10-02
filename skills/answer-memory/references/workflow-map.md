@@ -8,7 +8,7 @@ This is the shared map for the packaged TypeScript workflow. State names in the 
 flowchart LR
   AM[Answer Memory<br/>Store routing and private data]
   AS[Application Setup] -->|browser and pacing defaults| Store
-  AS -->|optional host-specific worker models| Store
+  AS -->|optional host-specific task or worker models| Store
   AC[Account Setup<br/>redacted sign-in metadata] -->|classified realm configuration| Store
   JP[Job Preferences] -->|saved criteria| JS[Job Search]
   TD[Job Title Discovery<br/>browser evidence and result packet] -->|owner reviews exact titles in Companion| JP
@@ -16,7 +16,7 @@ flowchart LR
   SJ[Saved Jobs<br/>read-only canonical list] -->|owner chooses exact ID| Jobs
   JW[Job Workspace<br/>Companion UI] -->|manage and review| Store[(TypeScript Store)]
   JA[Job Apply<br/>extraction or one application] -->|commands and attempt broker| Store
-  JA -->|host launches at most one filling worker| Worker[Application worker]
+  JA -->|host may launch one filling task or worker| Worker[Filling agent]
   Worker -->|same task and attempt commands| Store
   AM -->|shared Store rules| JP
   AM -->|shared Store rules| AS
@@ -164,7 +164,7 @@ flowchart LR
 | --- | --- | --- |
 | Choose job | Job Apply intake | The exact job must be in the active run's latest queue version. Queue membership can change without changing the run inputs. |
 | Select and acquire | Job Apply `task select` then `attempt start` | Preflight and claim recheck the run selection, queue membership, confirmed facts, and managed file; the attempt broker retains claim authority privately. |
-| Fill or pause | Job Apply visible browser and `attempt` clients; optionally one host-launched worker | Claiming or choosing a worker model does not authorize entry. Inspect the exact visible form, then obtain bounded fill consent; a new form instance or material scope change needs renewed consent. Progress saves value-free references. `needs_info` releases the claim before waiting for the owner. Only one worker owns the visible browser and live claim. |
+| Fill or pause | Job Apply visible browser and `attempt` clients; optionally one owner-requested Codex task or capable worker | Claiming or choosing a model does not authorize entry. Inspect the exact visible form, then obtain bounded fill consent; a new form instance or material scope change needs renewed consent. Progress saves value-free references. `needs_info` releases the claim before waiting for the owner. Only one filling agent owns the visible browser and live claim. |
 | Hand off | Job Apply readiness check and `attempt handoff` | A current-form packet must pass Store checks before `awaiting_review`; the agent leaves final submission untouched. |
 | Finish | Owner in the external application and Job Workspace activity | Only the owner submits. Record `applied` only after the owner confirms that submission. |
 | Recover or restart | Job Apply recovery route | An accepted, confirmed non-sensitive pending answer can resolve directly to Ready while the run selection stays current. A sensitive pending answer requires a same-job new attempt and fresh approval at the live control; selecting it Ready does not resolve or approve the old answer. An expired same-job claim needs explicit recovery; a reviewed job restarts only after the owner confirms it was not submitted. |

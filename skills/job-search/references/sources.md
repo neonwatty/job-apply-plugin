@@ -4,9 +4,9 @@ Read only the sections for requested sources. Use current, visible results as ev
 
 ## Host browser route
 
-- **Codex:** Use its selected, visible Browser plugin surface (the in-app browser or the user's selected Chrome tab). Keep navigation on that surface and inspect its current page state before acting. A generic web search can locate public pages, but it does not substitute for checking LinkedIn or X filters and detail pages in the selected browser.
+- **Codex:** Use its selected, visible Browser plugin surface (the in-app browser or the user's selected Chrome tab) in the current top-level task or an owner-requested dedicated top-level task. Keep navigation on that surface and inspect its current page state before acting. A generic web search can locate public pages, but it does not substitute for checking LinkedIn or X filters and detail pages in the selected browser.
 - **Claude Code:** Use Claude in Chrome and the owner's existing visible session for LinkedIn and X. Do not create an independent headless session to bypass login or visibility. Host web search and fetch tools may locate public HN threads and call the HN API.
-- For either host, if the required browser tool or site session is unavailable, report that source as unavailable and continue the others. Leave sign-in, CAPTCHA, and MFA to the owner. A delegated source worker must have permitted access to the selected visible browser; otherwise the host researches that source. Companion never starts workers.
+- For either host, if the required browser tool or site session is unavailable, report that source as unavailable and continue the others. Leave sign-in, CAPTCHA, and MFA to the owner. A delegated source worker must have permitted access to its required visible browser; otherwise a top-level task researches that source. Companion never starts tasks or workers.
 
 ## LinkedIn
 

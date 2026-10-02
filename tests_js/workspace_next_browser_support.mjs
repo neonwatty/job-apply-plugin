@@ -115,8 +115,8 @@ async function productionBrowser(root) {
     await page.getByLabel('If that browser is unavailable').selectOption('other_supported');
     await page.getByLabel('Page transitions').selectOption('guided');
     await page.getByLabel('Preferred application mode').selectOption('campaign_to_review');
-    await page.getByLabel('Codex job search worker model').fill('gpt-6-luna');
-    await page.getByLabel('Codex application filling worker model').fill('gpt-6-sol');
+    await page.getByLabel('Codex job search task model').fill('gpt-6-luna');
+    await page.getByLabel('Codex application task model').fill('gpt-6-sol');
     await page.getByRole('button', { name: 'Save setup', exact: true }).click();
     await page.getByText('Application setup saved.', { exact: true }).waitFor();
     const setupProfile = await (await fetch(origin + '/api/profile', { headers })).json();
@@ -133,8 +133,8 @@ async function productionBrowser(root) {
     assert.equal(await page.getByLabel('If that browser is unavailable').inputValue(), 'other_supported');
     assert.equal(await page.getByLabel('Page transitions').inputValue(), 'guided');
     assert.equal(await page.getByLabel('Preferred application mode').inputValue(), 'campaign_to_review');
-    assert.equal(await page.getByLabel('Codex job search worker model').inputValue(), 'gpt-6-luna');
-    assert.equal(await page.getByLabel('Codex application filling worker model').inputValue(), 'gpt-6-sol');
+    assert.equal(await page.getByLabel('Codex job search task model').inputValue(), 'gpt-6-luna');
+    assert.equal(await page.getByLabel('Codex application task model').inputValue(), 'gpt-6-sol');
     await page.getByLabel('Preferred Codex browser').selectOption('codex_browser');
     const beforeConflict = await (await fetch(origin + '/api/profile', { headers })).json();
     const otherWriter = await fetch(origin + '/api/profile', { method: 'PATCH', headers, body: JSON.stringify({
@@ -147,7 +147,7 @@ async function productionBrowser(root) {
     await page.getByRole('button', { name: 'Reapply my setup choices', exact: true }).click();
     assert.equal(await page.getByLabel('Preferred Codex browser').inputValue(), 'codex_browser');
     assert.equal(await page.getByLabel('Preferred application mode').inputValue(), 'guided');
-    assert.equal(await page.getByLabel('Codex application filling worker model').inputValue(), 'gpt-6-luna');
+    assert.equal(await page.getByLabel('Codex application task model').inputValue(), 'gpt-6-luna');
     await page.getByRole('button', { name: 'Save setup', exact: true }).click();
     await page.getByText('Application setup saved.', { exact: true }).waitFor();
     const afterConflict = await (await fetch(origin + '/api/profile', { headers })).json();
