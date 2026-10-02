@@ -149,7 +149,7 @@ flowchart LR
   Claimed -->|open and inspect visible form| Form[Exact form observed]
   Form -->|owner grants bounded fill consent| Filling[Agent fills and verifies]
   Filling -->|missing input or changed inputs| NeedsInfo[Needs Attention; claim released]
-  NeedsInfo -->|pending answer resolved; run inputs current| Ready
+  NeedsInfo -->|non-sensitive answer resolved or sensitive live-form reattempt; run inputs current| Ready
   NeedsInfo -->|run inputs stale| Stop[Complete run and reconfirm]
   Filling -->|current-form readiness passes| Review[Awaiting owner review; claim released]
   Review -->|owner submits externally and confirms outcome| Applied[Submission recorded]
@@ -167,7 +167,7 @@ flowchart LR
 | Fill or pause | Job Apply visible browser and `attempt` clients; optionally one host-launched worker | Claiming or choosing a worker model does not authorize entry. Inspect the exact visible form, then obtain bounded fill consent; a new form instance or material scope change needs renewed consent. Progress saves value-free references. `needs_info` releases the claim before waiting for the owner. Only one worker owns the visible browser and live claim. |
 | Hand off | Job Apply readiness check and `attempt handoff` | A current-form packet must pass Store checks before `awaiting_review`; the agent leaves final submission untouched. |
 | Finish | Owner in the external application and Job Workspace activity | Only the owner submits. Record `applied` only after the owner confirms that submission. |
-| Recover or restart | Job Apply recovery route | A pending answer can resolve directly to Ready while the run selection stays current. An expired same-job claim needs explicit recovery; a reviewed job restarts only after the owner confirms it was not submitted. |
+| Recover or restart | Job Apply recovery route | An accepted, confirmed non-sensitive pending answer can resolve directly to Ready while the run selection stays current. A sensitive pending answer requires a same-job new attempt and fresh approval at the live control; selecting it Ready does not resolve or approve the old answer. An expired same-job claim needs explicit recovery; a reviewed job restarts only after the owner confirms it was not submitted. |
 
 Application question answers live in the separate reusable answer library. Job revisions and queue changes do not require resume reconfirmation. A resume content or fact revision change ends the run before another attempt. An interrupted claim is handled through explicit recovery, never silently replaced.
 
