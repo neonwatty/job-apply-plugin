@@ -105,6 +105,19 @@ test('answer merge preserves winner authority and values and replay cannot doubl
   for (const invalid of variants.slice(1)) assert.match(native(invalid).error, /cannot be reconciled/);
 });
 
+test('merging cannot discard or change a source consent intent', () => {
+  const intent = { kind: 'opt_in', purpose: 'recruiting_sms' };
+  const sensitive = { state: 'sensitive', sensitivity: 'high', rememberedWithConsentAt: at };
+  for (const winner of [{}, { ...sensitive, consentIntent: { kind: 'opt_in', purpose: 'other_sms' } }]) {
+    const input = fixture(winner, { ...sensitive, consentIntent: intent });
+    const document = fromJSON(input.document), before = serialize(document);
+    assert.throws(() => applyAnswerMerge(document, fromJSON(input.operation)), /discard or change a consent default/);
+    assert.equal(serialize(document), before);
+  }
+  const allowed = fixture({ ...sensitive, consentIntent: intent }, { ...sensitive, consentIntent: intent });
+  assert.deepEqual(native(allowed).result.consentIntent, intent);
+});
+
 test('answer merge preserves numeric scope equality while separating booleans and exact large revisions', () => {
   const input = fixture({ scope: { nested: [1] } }, { scope: { nested: [1] } });
   const documentText = JSON.stringify(input.document).replace('"nested":[1]', '"nested":[1.0]');

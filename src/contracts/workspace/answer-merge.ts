@@ -1,6 +1,6 @@
-import { answerKey, answerNames, answerRevision, answerView, fallback, normalizeAnswerQuestion, sameAnswerScope, validateAnswer, validateAnswers } from './answers.js';
+import { answerKey, answerNames, answerRevision, answerView, consentIntent, fallback, normalizeAnswerQuestion, sameAnswerScope, validateAnswer, validateAnswers } from './answers.js';
 import { emptyObject } from './jobs.js';
-import { copy, get, has, int, integer, keys, object, set, string, text, JobsError } from './values.js';
+import { copy, get, has, int, integer, keys, object, same, set, string, text, JobsError } from './values.js';
 import type { Document, Value } from './values.js';
 
 const nonblank = (value: Value): string | null => {
@@ -58,6 +58,10 @@ export function applyAnswerMerge(document: Document, operation: Document): Docum
   if (string(fallback(winner, 'reviewStatus', text('accepted'))) !== 'accepted') throw new JobsError('answer merge winner must be accepted');
   if (!sameAnswerScope(fallback(winner, 'scope', emptyObject()), fallback(source, 'scope', emptyObject()))) {
     throw new JobsError('answer merge requires exact matching scope');
+  }
+  const winnerIntent = consentIntent(winner), sourceIntent = consentIntent(source);
+  if (sourceIntent !== null && (winnerIntent === null || !same(winnerIntent, sourceIntent))) {
+    throw new JobsError('answer merge would discard or change a consent default');
   }
   const winnerQuestion = normalizeAnswerQuestion(nonblank(get(winner, 'question')) ?? winnerKey);
   const aliases: string[] = [];
